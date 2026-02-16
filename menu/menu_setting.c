@@ -2567,12 +2567,12 @@ static int setting_action_ok_bind_all(rarch_setting_t *setting,
 static int setting_action_ok_bind_all_save_autoconfig(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   unsigned index_offset     = 0;
-   unsigned map              = 0;
-   const char *name          = NULL;
-   settings_t      *settings = config_get_ptr();
+   unsigned index_offset = 0;
+   unsigned map          = 0;
+   const char *name      = NULL;
+   settings_t *settings  = config_get_ptr();
 
-   if (!setting)
+   if (!setting || !settings)
       return -1;
 
    index_offset = setting->index_offset;
@@ -2580,16 +2580,37 @@ static int setting_action_ok_bind_all_save_autoconfig(
    name         = input_config_get_device_name(map);
 
    if (    !string_is_empty(name)
-         && config_save_autoconf_profile(name, index_offset))
+         && config_save_autoconf_profile(name, map))
    {
+      int i;
       size_t _len;
       char buf[128];
       char msg[NAME_MAX_LENGTH];
-      config_get_autoconf_profile_filename(name, index_offset, buf, sizeof(buf));
+      struct retro_keybind *target = &input_config_binds[map][0];
+
+      config_get_autoconf_profile_filename(name, map, buf, sizeof(buf));
       _len = snprintf(msg, sizeof(msg),
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED), buf);
       runloop_msg_queue_push(msg, _len, 1, 180, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+
+      /* Clear manual controller binds */
+      for ( i  = MENU_SETTINGS_BIND_BEGIN;
+            i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+      {
+         target->joykey  = NO_BTN;
+         target->joyaxis = AXIS_NONE;
+      }
+
+      /* Load and activate saved profile */
+      {
+         const input_device_driver_t *joypad = input_state_get_ptr()->primary_joypad;
+
+         if (joypad)
+            input_autoconfigure_connect(joypad->name(map),
+                  NULL, NULL, joypad->ident,
+                  map, 0, 0);
+      }
    }
    else
    {
@@ -9890,16 +9911,19 @@ static bool setting_append_list_input_player_options(
    }
 
    {
-      const char *value_na =
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+      const char *value_na               = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+      bool input_descriptor_label_show   = settings->bools.input_descriptor_label_show
+            && core_has_set_input_descriptor();
+      bool input_descriptor_hide_unbound = settings->bools.input_descriptor_hide_unbound;
+
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
          char label[NAME_MAX_LENGTH];
          char name[NAME_MAX_LENGTH];
          size_t _len = 0;
-         i           =  (j < RARCH_ANALOG_BIND_LIST_END)
-            ? input_config_bind_order[j]
-            : j;
+         i           = (j < RARCH_ANALOG_BIND_LIST_END)
+               ? input_config_bind_order[j]
+               : j;
 
          if (input_config_bind_map_get_meta(i))
             continue;
@@ -9907,12 +9931,8 @@ static bool setting_append_list_input_player_options(
          name[0]          = '\0';
          label[0]         = '\0';
 
-         if (
-               settings->bools.input_descriptor_label_show
-               && (i < RARCH_FIRST_META_KEY)
-               && core_has_set_input_descriptor()
-               && (i != RARCH_TURBO_ENABLE)
-            )
+         if (     input_descriptor_label_show
+               && i < RARCH_LIGHTGUN_BIND_LIST_END)
          {
             const char *input_desc_btn;
 
@@ -9945,7 +9965,7 @@ static bool setting_append_list_input_player_options(
                      input_config_bind_map_get_desc(i),
                      value_na);
 
-               if (settings->bools.input_descriptor_hide_unbound)
+               if (input_descriptor_hide_unbound)
                   continue;
             }
          }

@@ -262,107 +262,103 @@ static bool input_autoconfigure_scan_config_files_external(
    const char *dir_driver_autoconfig    = autoconfig_handle->dir_driver_autoconfig;
    struct string_list *config_file_list = NULL;
    unsigned max_affinity                = 0;
+   bool match_found                     = false;
+   bool dir_driver_iterated             = false;
 
-   /* Attempt to fetch file listing from driver-specific
-    * autoconfig directory */
-   if (  !string_is_empty(dir_driver_autoconfig)
-       && path_is_directory(dir_driver_autoconfig))
+   /* First attempt to fetch from autoconfig base directory */
+   if (     !string_is_empty(dir_autoconfig)
+         && path_is_directory(dir_autoconfig))
       config_file_list = dir_list_new_special(
-            dir_driver_autoconfig, DIR_LIST_AUTOCONFIG,
+            dir_autoconfig, DIR_LIST_AUTOCONFIG,
             "cfg", false);
 
-   if (!config_file_list || (config_file_list->size < 1))
+list_iterate:
+   if (config_file_list && config_file_list->size)
    {
-      /* No files found - attempt to fetch listing
-       * from autoconfig base directory */
-      if (config_file_list)
+      size_t i;
+      config_file_t *best_config = NULL;
+
+      /* Loop through external config files */
+      for (i = 0; i < config_file_list->size; i++)
       {
-         string_list_free(config_file_list);
-         config_file_list = NULL;
+         const char *config_file_path = config_file_list->elems[i].data;
+         config_file_t *config        = NULL;
+         unsigned affinity            = 0;
+
+         if (string_is_empty(config_file_path))
+            continue;
+
+         /* Load autoconfig file */
+         if (!(config = config_file_new_from_path_to_string(config_file_path)))
+            continue;
+
+         /* Check for a match */
+         if (autoconfig_handle && config)
+            affinity = input_autoconfigure_get_config_file_affinity(
+                  autoconfig_handle, config);
+
+         if (affinity > max_affinity)
+         {
+            if (best_config)
+            {
+               config_file_free(best_config);
+               best_config = NULL;
+            }
+
+            /* 'Cache' config file for later processing */
+            best_config  = config;
+            config       = NULL;
+            max_affinity = affinity;
+
+            /* An affinity of 6x is a 'perfect' match,
+             * and means we can return immediately */
+            if (affinity >= 60)
+               break;
+         }
+         /* No match - just clean up config file */
+         else
+         {
+            config_file_free(config);
+            config = NULL;
+         }
       }
 
-      if (  !string_is_empty(dir_autoconfig)
-          && path_is_directory(dir_autoconfig))
-         config_file_list = dir_list_new_special(
-               dir_autoconfig, DIR_LIST_AUTOCONFIG,
-               "cfg", false);
+      /* If we reach this point and a config file has
+       * been cached, then we have a match */
+      if (best_config)
+      {
+         if (autoconfig_handle && best_config)
+            input_autoconfigure_set_config_file(
+                  autoconfig_handle, best_config,
+                  max_affinity % 10);
+         match_found = true;
+      }
+
+      RARCH_DBG("[Autoconf] Config files scanned: driver \"%s\", name \"%s\" (%04x/%04x), phys \"%s\", affinity %d.\n",
+            autoconfig_handle->device_info.joypad_driver,
+            autoconfig_handle->device_info.name,
+            autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
+            autoconfig_handle->device_info.phys,
+            max_affinity);
    }
 
-   if (config_file_list)
+   string_list_free(config_file_list);
+   config_file_list = NULL;
+
+   if (match_found)
+      return true;
+   else if (!match_found && !dir_driver_iterated)
    {
-      bool match_found = false;
-      if (config_file_list->size >= 1)
-      {
-         size_t i;
-         config_file_t *best_config = NULL;
+      /* Attempt to fetch file listing from driver-specific
+       * autoconfig directory */
+      if (     !string_is_empty(dir_driver_autoconfig)
+            && path_is_directory(dir_driver_autoconfig))
+         config_file_list = dir_list_new_special(
+               dir_driver_autoconfig, DIR_LIST_AUTOCONFIG,
+               "cfg", false);
 
-         /* Loop through external config files */
-         for (i = 0; i < config_file_list->size; i++)
-         {
-            const char *config_file_path = config_file_list->elems[i].data;
-            config_file_t *config        = NULL;
-            unsigned affinity            = 0;
-
-            if (string_is_empty(config_file_path))
-               continue;
-
-            /* Load autoconfig file */
-            if (!(config = config_file_new_from_path_to_string(config_file_path)))
-               continue;
-
-            /* Check for a match */
-            if (autoconfig_handle && config)
-               affinity = input_autoconfigure_get_config_file_affinity(
-                     autoconfig_handle, config);
-
-            if (affinity > max_affinity)
-            {
-               if (best_config)
-               {
-                  config_file_free(best_config);
-                  best_config = NULL;
-               }
-
-               /* 'Cache' config file for later processing */
-               best_config  = config;
-               config       = NULL;
-               max_affinity = affinity;
-
-               /* An affinity of 6x is a 'perfect' match,
-                * and means we can return immediately */
-               if (affinity >= 60)
-                  break;
-            }
-            /* No match - just clean up config file */
-            else
-            {
-               config_file_free(config);
-               config = NULL;
-            }
-         }
-
-         /* If we reach this point and a config file has
-          * been cached, then we have a match */
-         if (best_config)
-         {
-            if (autoconfig_handle && best_config)
-               input_autoconfigure_set_config_file(
-                     autoconfig_handle, best_config,
-                     max_affinity % 10);
-            match_found = true;
-         }
-      }
-      string_list_free(config_file_list);
-      config_file_list = NULL;
-      RARCH_DBG("[Autoconf] Config files scanned: driver \"%s\", pad name \"%s\" (%04x/%04x), phys %s, affinity %d.\n",
-                autoconfig_handle->device_info.joypad_driver,
-                autoconfig_handle->device_info.name,
-                autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
-                autoconfig_handle->device_info.phys,
-                max_affinity);
-
-      if (match_found)
-         return true;
+      dir_driver_iterated = true;
+      goto list_iterate;
    }
 
    return false;
