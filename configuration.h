@@ -165,6 +165,7 @@ typedef struct settings
       unsigned input_joypad_index[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
+      unsigned input_sensor_index[MAX_USERS];
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
@@ -173,6 +174,7 @@ typedef struct settings
       unsigned input_remap_ports[MAX_USERS];
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
       unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_sensor_ids[MAX_USERS][RETROPAD_RETRO_SENSOR_LAST];
       unsigned input_remap_port_map[MAX_USERS][MAX_USERS + 1];
 
       unsigned led_map[MAX_LEDS];
@@ -1424,6 +1426,12 @@ void input_config_parse_mouse_button(
       void *conf_data, const char *prefix,
       const char *btn, void *bind_data);
 
+/* Parse Accelerometer and Gyroscope Bindings
+ * from the controller configuration file */
+unsigned input_config_parse_sensor(
+      unsigned id,
+      char *s,
+      void *conf_data);
 const char *input_config_get_prefix(unsigned user, bool meta);
 
 RETRO_END_DECLS

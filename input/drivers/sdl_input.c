@@ -28,6 +28,7 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
 #ifdef __linux__
@@ -35,12 +36,56 @@
 #endif
 
 #ifdef HAVE_SDL2
+#define SDL_SUPPORT_SENSORS SDL_VERSION_ATLEAST(2,0,9)
+#define SDL_SUPPORT_FANCY_GAMEPAD SDL_VERSION_ATLEAST(2,0,14)
 #include "../../gfx/common/sdl2_common.h"
+#else 
+#define SDL_SUPPORT_SENSORS 0
+#define SDL_SUPPORT_FANCY_GAMEPAD 0
 #endif
 
 #ifdef WEBOS
 #include <SDL_webOS.h>
 #include <dlfcn.h>
+#endif
+
+#if SDL_SUPPORT_FANCY_GAMEPAD 
+#define SDL_SUBSYSTEM_BITMASK (SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR)
+#elif SDL_SUPPORT_SENSORS
+#define SDL_SUBSYSTEM_BITMASK SDL_INIT_SENSOR
+#else 
+#define SDL_SUBSYSTEM_BITMASK 0
+#endif
+
+/* TODO/FIXME -
+ * fix game focus toggle */
+enum sdl_input_auxiliary_device_type{
+   SDL_AUXILIARY_DEVICE_TYPE_NONE,
+   SDL_AUXILIARY_DEVICE_TYPE_SENSOR,
+   SDL_AUXILIARY_DEVICE_TYPE_TOUCHID,
+   SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER
+};
+#ifdef HAVE_SDL2
+#if SDL_SUPPORT_FANCY_GAMEPAD
+struct sdl_input_game_controller_data{
+   SDL_GameController * ptr;
+   bool has_accelerometer : 1;
+   bool has_gyro : 1;
+   unsigned num_touchpads:14;
+};
+#endif
+typedef struct {
+   union {
+#if SDL_SUPPORT_SENSORS
+      SDL_Sensor * sensor;
+#endif
+      SDL_TouchID touch_id;
+#if SDL_SUPPORT_FANCY_GAMEPAD
+      struct sdl_input_game_controller_data game_controller;
+#endif
+   } dev;
+   enum sdl_input_auxiliary_device_type type;
+} sdl_input_auxiliary_device;
 #endif
 
 typedef struct sdl_input
@@ -58,6 +103,10 @@ typedef struct sdl_input
    int mouse_wd;
    int mouse_wl;
    int mouse_wr;
+#ifdef HAVE_SDL2
+   unsigned auxiliary_device_number;
+   sdl_input_auxiliary_device * auxiliary_devices;
+#endif
 #ifdef __linux__
    /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
    linux_illuminance_sensor_t *illuminance_sensor;
@@ -83,6 +132,128 @@ static void *sdl_input_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_sdl);
 
+#ifdef HAVE_SDL2
+   {
+      int numJoysticks=0,numTouchDevices=0,numSensors=0;
+      int i; int sensor_count=0, touch_device_count=0;
+
+      if (!SDL_InitSubSystem(SDL_SUBSYSTEM_BITMASK)) {
+         numTouchDevices=SDL_GetNumTouchDevices();
+         RARCH_DBG(
+            "[SDL]: SDL_GetNumTouchDevices: %d\n",
+            numTouchDevices
+         );
+#if SDL_SUPPORT_SENSORS
+         numSensors=SDL_NumSensors();
+         RARCH_DBG(
+            "[SDL]: SDL_NumSensors: %d\n",
+            numSensors
+         );
+#endif
+      sdl->auxiliary_device_number=0;
+
+#if SDL_SUPPORT_FANCY_GAMEPAD
+         numJoysticks=SDL_NumJoysticks();
+         RARCH_DBG(
+            "[SDL]: SDL_NumJoysticks: %d\n",numJoysticks
+         );
+         if (numJoysticks > MAX_USERS)
+            numJoysticks=MAX_USERS;
+         sdl->auxiliary_devices=malloc(sizeof(sdl_input_auxiliary_device)*(numJoysticks+numSensors+numTouchDevices));
+         for (i=0; i<numJoysticks; i++){
+            SDL_GameController * gamepad=SDL_GameControllerOpen(i);
+            if (gamepad) {
+               RARCH_DBG(
+                  "[SDL]: Gamepad no %d (%s 0x%p)\n"
+                  "\tHasSensor: %d\n"
+                  "\tGetNumTouchpads: %d\n"
+                  ,i,SDL_GameControllerName(gamepad),gamepad,
+                  SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL),
+                  SDL_GameControllerGetNumTouchpads(gamepad)
+               );
+      
+               if (
+                  SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL) ||
+                  SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_GYRO)
+               ){
+                  bool has_accelerometer, has_gyro;
+                  sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                     dev.game_controller.ptr=gamepad;
+                  has_accelerometer=sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                     dev.game_controller.has_accelerometer=SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL);
+                  has_gyro=sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                     dev.game_controller.has_gyro=SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_GYRO);
+                  sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                     dev.game_controller.num_touchpads=SDL_GameControllerGetNumTouchpads(gamepad);
+                  if (sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                     dev.game_controller.num_touchpads > 0)
+                        touch_device_count++;
+                  if (has_accelerometer||has_gyro){
+                     input_config_set_sensor_display_name(sensor_count,SDL_GameControllerName(gamepad));
+                     sensor_count++;
+                  }
+                  sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                     type=SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER;
+                  sdl->auxiliary_device_number++;
+               } 
+            } else RARCH_DBG (
+               "[SDL]: SDL_GameControllerOpen returned NULL:\n\t%s\n",
+               SDL_GetError()
+            );
+
+         }
+#endif
+#if SDL_SUPPORT_SENSORS
+         for(i=0; (i<numSensors) && (sensor_count<MAX_USERS); i++){
+            SDL_Sensor * sensor = SDL_SensorOpen(i);
+            if (sensor){
+
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+               dev.sensor=sensor;
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  type=SDL_AUXILIARY_DEVICE_TYPE_SENSOR;
+               input_config_set_sensor_display_name(
+                  sensor_count++,
+                  SDL_SensorGetName(sdl->auxiliary_devices[sdl->auxiliary_device_number].dev.sensor)
+               );
+               sdl->auxiliary_device_number++;
+            } else 
+               RARCH_DBG(
+                  "[SDL]: Failed to open sensor on slot %d\n\t%s\n",
+                  SDL_GetError()
+               );
+         }
+#endif
+         for (i=0; (i<numTouchDevices) && (touch_device_count<MAX_USERS); i++){
+            SDL_TouchID touch_id=SDL_GetTouchDevice(i);
+            if (touch_id){
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  dev.touch_id=touch_id;
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  type=SDL_AUXILIARY_DEVICE_TYPE_TOUCHID;
+               sdl->auxiliary_device_number++;
+               touch_device_count++;
+            } else {
+               RARCH_DBG(
+                  "[SDL]: Failed to open touch device on slot %d\n\t%s\n",
+                  SDL_GetError()
+               );
+            }
+         }
+         
+      } else {
+         RARCH_DBG(
+            "[SDL] Can't Initialize Gamepad subsystem\n\tSDL_GetError(): %s\n",
+            SDL_GetError()
+         );
+         free(sdl);
+         return NULL;
+      }
+      
+
+
+   }
+#endif
    return sdl;
 }
 
@@ -147,7 +318,6 @@ static int16_t sdl_input_state(
 {
    int16_t      ret = 0;
    sdl_input_t *sdl = (sdl_input_t*)data;
-
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -258,6 +428,52 @@ static int16_t sdl_input_state(
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
+
+#ifdef HAVE_SDL2
+         if (sdl->auxiliary_devices[port].type == SDL_AUXILIARY_DEVICE_TYPE_TOUCHID ){
+            SDL_Finger * finger=SDL_GetTouchFinger(
+               sdl->auxiliary_devices[port].dev.touch_id,
+               idx
+            );
+            if (!finger) 
+               return 0;
+            
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return (int16_t)((finger->x-0.5f)*65535);
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return (int16_t)((finger->y-0.5f)*65535);
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return finger->pressure>0.f;
+
+            }
+         }
+#if SDL_SUPPORT_FANCY_GAMEPAD
+         else if (
+            sdl->auxiliary_devices[port].type == SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER && 
+            sdl->auxiliary_devices[port].dev.game_controller.num_touchpads
+         ){
+            float x,y,pressure;
+            
+            SDL_GameControllerGetTouchpadFinger(
+               sdl->auxiliary_devices[port].dev.game_controller.ptr,
+               0, idx, NULL, &x, &y,
+               &pressure);
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return (int16_t)((x-0.5f)*65535);
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return (int16_t)((y-0.5f)*65535);
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return pressure>0.f;
+
+            }
+         }
+#endif
+         else 
+#endif
          if (idx == 0)
          {
             video_viewport_t vp         = {0};
@@ -348,6 +564,8 @@ static void sdl_input_free(void *data)
    /* Flush out all pending events. */
 #ifdef HAVE_SDL2
    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+   SDL_QuitSubSystem(SDL_SUBSYSTEM_BITMASK);
+   free(sdl->auxiliary_devices);
 #else
    while (SDL_PollEvent(&event));
 #endif
@@ -358,10 +576,39 @@ static void sdl_input_free(void *data)
 
    free(data);
 }
-
+#if SDL_SUPPORT_SENSORS
+static sdl_input_auxiliary_device * sdl_find_sensor_auxiliary_device(
+   sdl_input_t *sdl, unsigned port, SDL_SensorType sensor_type
+){
+   int i;
+   for (i=0; i<(int)sdl->auxiliary_device_number;i++){
+   #if SDL_SUPPORT_FANCY_GAMEPAD
+      if (
+         sdl->auxiliary_devices[i].type == SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER &&
+         (sdl->auxiliary_devices[i].dev.game_controller.has_accelerometer || 
+         sdl->auxiliary_devices[i].dev.game_controller.has_gyro)
+      ){
+         if (port==0){
+            return &sdl->auxiliary_devices[i];
+         } else port--;
+      } else
+   #endif
+      if(
+         sdl->auxiliary_devices[i].type == SDL_AUXILIARY_DEVICE_TYPE_SENSOR &&
+         SDL_SensorGetType(sdl->auxiliary_devices[i].dev.sensor) == sensor_type
+      ){
+         if (port==0){
+            return &sdl->auxiliary_devices[i];
+         } else port--;
+      }
+   }
+   return NULL;
+}
+#endif
 static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned rate)
 {
    sdl_input_t *sdl = (sdl_input_t*)data;
+   int i;
 
    if (!sdl)
       return false;
@@ -374,11 +621,37 @@ static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_ac
          linux_close_illuminance_sensor(sdl->illuminance_sensor); /* noop if NULL */
          sdl->illuminance_sensor = NULL;
 #endif
+#if SDL_SUPPORT_SENSORS
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-         /** Unimplemented sensor actions that probably shouldn't fail */
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         
+         {
+         sdl_input_auxiliary_device * aux_device;
+         bool isgyro =
+            (action == RETRO_SENSOR_GYROSCOPE_ENABLE) || (action == RETRO_SENSOR_GYROSCOPE_DISABLE);
+         bool to_enable = 
+            (action==RETRO_SENSOR_GYROSCOPE_ENABLE)||(action==RETRO_SENSOR_ACCELEROMETER_ENABLE);
+         
+         
+         aux_device = sdl_find_sensor_auxiliary_device(sdl, port,isgyro?SDL_SENSOR_GYRO:SDL_SENSOR_ACCEL);
+         if (aux_device->type == SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER) {
+            RARCH_DBG("[SDL]: Initializing %s on port %u\n",
+               isgyro?"gyroscope":"accelerometer",
+               port);
+
+            if (SDL_GameControllerSetSensorEnabled(
+                  aux_device->dev.game_controller.ptr,
+                  isgyro?SDL_SENSOR_GYRO:SDL_SENSOR_ACCEL,to_enable)) {
+                  return false;
+            }
+            
+         }
+         }
          return true;
 
+#endif
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:
 #ifdef __linux__
          /* Unsupported on non-Linux platforms */
@@ -395,28 +668,6 @@ static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_ac
    }
 
    return false;
-}
-
-static float sdl_get_sensor_input(void *data, unsigned port, unsigned id)
-{
-   sdl_input_t *sdl = (sdl_input_t*)data;
-
-   if (!sdl)
-      return 0.0f;
-
-   switch (id)
-   {
-      case RETRO_SENSOR_ILLUMINANCE:
-#ifdef __linux__
-         if (sdl->illuminance_sensor)
-            return linux_get_illuminance_reading(sdl->illuminance_sensor);
-#endif
-      /* Unsupported on non-Linux platforms */
-      default:
-         break;
-   }
-
-   return 0.0f;
 }
 
 #ifdef HAVE_SDL2
@@ -437,7 +688,6 @@ static void sdl2_grab_mouse(void *data, bool state)
 static void sdl_poll_mouse(sdl_input_t *sdl)
 {
    Uint8 btn     = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
-
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
 
    sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
@@ -457,7 +707,6 @@ static void sdl_input_poll(void *data)
    sdl_input_t *sdl = (sdl_input_t*)data;
 
    SDL_PumpEvents();
-
    sdl_poll_mouse(sdl);
 
 #ifdef HAVE_SDL2
@@ -573,13 +822,68 @@ static uint64_t sdl_get_capabilities(void *data)
          | (1 << RETRO_DEVICE_ANALOG);
 }
 
+
+static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id) {
+   sdl_input_t * sdl = (sdl_input_t *)data;
+#if SDL_SUPPORT_SENSORS
+   SDL_SensorType sensor_type;
+   int i;
+   float sensor_data[3],sensor_value;
+   sdl_input_auxiliary_device * auxiliary_device;
+
+#endif
+   #ifdef __linux__
+   if (id == RETRO_SENSOR_ILLUMINANCE && sdl->illuminance_sensor)
+      return linux_get_illuminance_reading(sdl->illuminance_sensor);
+   #endif
+#if SDL_SUPPORT_SENSORS
+   if ((id == RETRO_SENSOR_ACCELEROMETER_X) |
+      (id == RETRO_SENSOR_ACCELEROMETER_Y) | 
+      (id == RETRO_SENSOR_ACCELEROMETER_Z)
+      ) sensor_type=SDL_SENSOR_ACCEL;
+      
+   else if ((id == RETRO_SENSOR_GYROSCOPE_X) |
+      (id == RETRO_SENSOR_GYROSCOPE_Y) | 
+      (id == RETRO_SENSOR_GYROSCOPE_Z)
+      ) sensor_type=SDL_SENSOR_GYRO;
+   else return 0.f; /*Unimplemented*/
+
+   auxiliary_device = sdl_find_sensor_auxiliary_device(sdl, port,sensor_type);
+   if (!auxiliary_device){
+      RARCH_ERR("[SDL]: sdl_input_get_sensor_input received a "
+         "device at port %u where none of it's children are sensors\n",
+         port);
+      return 0.f;
+   }
+
+   #if SDL_SUPPORT_FANCY_GAMEPAD
+   else if (auxiliary_device->type == SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER )
+      SDL_GameControllerGetSensorData(auxiliary_device->dev.game_controller.ptr, sensor_type, sensor_data,3);
+   #endif
+   else if (auxiliary_device->type == SDL_AUXILIARY_DEVICE_TYPE_SENSOR) 
+      SDL_SensorGetData(auxiliary_device->dev.sensor,sensor_data, 3);
+
+   if (id>=RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z){
+      sensor_value=sensor_data[id-RETRO_SENSOR_ACCELEROMETER_X];
+   } else if (id>=RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z){
+      sensor_value=sensor_data[id-RETRO_SENSOR_GYROSCOPE_X];
+   } else {
+      return 0.f; /*UNIMPLEMENTED*/
+   }
+   return sensor_value;
+#else 
+   return 0.f;
+#endif 
+}
+
+
 input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
    sdl_input_state,
    sdl_input_free,
    sdl_set_sensor_state,
-   sdl_get_sensor_input,
+   sdl_input_get_sensor_input,
    sdl_get_capabilities,
 #ifdef HAVE_SDL2
    "sdl2",

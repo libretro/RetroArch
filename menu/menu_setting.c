@@ -198,6 +198,10 @@
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_float(a, b, c, d, e, f, g, h, i, j, k, l)
 
+#define CONFIG_FLOAT_ALT(a, b, c, d, e, f, g, h, i, j, k, l) \
+   if (SETTINGS_LIST_APPEND(a, b)) \
+      config_float_alt(a, b, c, d, e, f, g, h, i, j, k, l)
+
 #define CONFIG_DIR(a, b, c, d, e, f, g, h, i, j, k, l, m) \
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_dir(a, b, c, d, e, f, g, h, i, j, k, l, m)
@@ -2335,6 +2339,29 @@ static void config_float(
 
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(list, list_info, SHORT_enum_idx);
+}
+
+static void config_float_alt(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      float *target,
+      const char *name, const char *SHORT,
+      float default_value, const char *rounding,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler)
+{
+   (*list)[list_info->index++]             = setting_float_setting(
+         name,
+         SHORT, target, default_value, rounding,
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler, true);
+   (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FLOAT_SPINBOX;
+   /*
+   MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
+   MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(list, list_info, SHORT_enum_idx);
+   */
 }
 
 static void config_path(
@@ -7953,6 +7980,7 @@ static int setting_action_start_input_mouse_index(rarch_setting_t *setting)
    return 0;
 }
 
+
 /**
  ******* ACTION TOGGLE CALLBACK FUNCTIONS *******
 **/
@@ -8188,6 +8216,20 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    }
    return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
+static size_t
+setting_get_string_representation_st_float_sensor_auto(
+      rarch_setting_t *setting, char *s, size_t len){
+
+   settings_t * settings = config_get_ptr();
+   int remapped_port = settings->uints.input_sensor_index[setting->index_offset];
+   if (settings->bools.input_sensors_enable) {
+      float sensor_poll = input_driver_get_sensor(
+         remapped_port,settings->bools.input_sensors_enable,setting->retropad_sensor_index);
+      return snprintf(s,len,"%.0f", 100.f*sensor_poll);
+   }
+   else 
+      return strlcpy(s, "Disabled", len);
+}
 
 #ifdef HAVE_LIBNX
 static size_t get_string_representation_split_joycon(
@@ -8303,7 +8345,59 @@ static size_t get_string_representation_input_mouse_index(
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
    return _len;
 }
+static size_t get_string_representation_input_sensor_index(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned map              = 0;
+   size_t new_len            = 0;
 
+   if (!setting || !settings)
+      return 0;
+
+   map = settings->uints.input_sensor_index[setting->index_offset];
+
+   if (map < MAX_INPUT_DEVICES)
+   {
+      const char *device_name = input_config_get_sensor_display_name(map);
+
+      if (!string_is_empty(device_name))
+         new_len=strlcpy(s, device_name, len);
+      else if (map > 0)
+      {
+         size_t _len = strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               len);
+         new_len=snprintf(s + _len, len - _len, " (#%u)", map + 1);
+      }
+      else
+         new_len=strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+   }
+
+   if (string_is_empty(s))
+      new_len=strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+   return new_len;
+}
+static size_t get_string_representation_of_abs_device(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned index=settings->uints.input_sensor_ids
+      [setting->index_offset]
+      [setting->retropad_sensor_index];
+   
+
+   return snprintf(
+      s,len,
+      msg_hash_to_str(
+         (index%2)?MENU_ENUM_LABEL_INPUT_ABS_SOURCE_INVERTED:MENU_ENUM_LABEL_INPUT_ABS_SOURCE
+      ),
+      index/2
+   );
+   
+
+   
+}
 static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
@@ -8323,6 +8417,7 @@ static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
       audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
    }
 }
+
 
 static void general_read_handler(rarch_setting_t *setting)
 {
@@ -9613,8 +9708,9 @@ static bool setting_append_list_input_player_options(
     * Keep it up to date or you'll get some really obvious bugs.
     * 2 is the length of '99'; we don't need more users than that.
     */
+   static char buffer[MAX_USERS][13+2+1];
+
    static char group_label[MAX_USERS][NAME_MAX_LENGTH];
-   unsigned i, j;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
@@ -9646,6 +9742,7 @@ static bool setting_append_list_input_player_options(
       static char device_reservation_type[MAX_USERS][64];
       static char device_reserved_device[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];
+      static char sensor_index[MAX_USERS][64];
       static char analog_to_digital[MAX_USERS][64];
       static char bind_all[MAX_USERS][64];
       static char bind_all_save_autoconfig[MAX_USERS][64];
@@ -9655,6 +9752,7 @@ static bool setting_append_list_input_player_options(
       static char label_device_reservation_type[MAX_USERS][64];
       static char label_device_reserved_device[MAX_USERS][64];
       static char label_mouse_index[MAX_USERS][64];
+      static char label_sensor_index[MAX_USERS][64];
       static char label_analog_to_digital[MAX_USERS][64];
       static char label_bind_all[MAX_USERS][64];
       static char label_bind_all_save_autoconfig[MAX_USERS][64];
@@ -9675,12 +9773,15 @@ static bool setting_append_list_input_player_options(
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME), user + 1);
       snprintf(mouse_index[user],              sizeof(mouse_index[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),                 user + 1);
+      snprintf(sensor_index[user],              sizeof(sensor_index[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX),                user + 1);
       snprintf(bind_all[user],                 sizeof(bind_all[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),              user + 1);
       snprintf(bind_all_save_autoconfig[user], sizeof(bind_all_save_autoconfig[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX),       user + 1);
       snprintf(bind_defaults[user],            sizeof(bind_defaults[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),         user + 1);
+
 
       strlcpy(label_analog_to_digital[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
@@ -9697,6 +9798,9 @@ static bool setting_append_list_input_player_options(
       strlcpy(label_mouse_index[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
             sizeof(label_mouse_index[user]));
+      strlcpy(label_sensor_index[user],
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_INDEX),
+            sizeof(label_sensor_index[user]));
       strlcpy(label_bind_all[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL),
             sizeof(label_bind_all[user]));
@@ -9847,9 +9951,29 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].get_string_representation =
             &get_string_representation_input_mouse_index;
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
+
+
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
-
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_sensor_index[user],
+            sensor_index[user],
+            label_sensor_index[user],
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index                     = user + 1;
+      (*list)[list_info->index - 1].index_offset              = user;
+      (*list)[list_info->index - 1].get_string_representation =
+            &get_string_representation_input_sensor_index;
+      (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX + user));
       CONFIG_ACTION_ALT(
             list, list_info,
             bind_all[user],
@@ -9888,8 +10012,8 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_cancel  = NULL;
 #endif
    }
-
-   {
+   { 
+      unsigned i,j;
       const char *value_na =
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
@@ -9972,6 +10096,71 @@ static bool setting_append_list_input_player_options(
                parent_group);
          (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
       }
+      for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
+
+         char label[NAME_MAX_LENGTH];
+         char name[NAME_MAX_LENGTH];
+         strlcpy(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_FIRST+j),NAME_MAX_LENGTH);
+         snprintf(name,NAME_MAX_LENGTH,
+            "tmp name sensor bind %d", j);
+         CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_sensor_ids[user][j],
+            strdup(name),
+            strdup(label),
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].index                     = user + 1;
+         (*list)[list_info->index - 1].index_offset              = user;
+         (*list)[list_info->index - 1].retropad_sensor_index     = j;
+         (*list)[list_info->index - 1].action_start              = &setting_action_start_input_mouse_index;
+         (*list)[list_info->index - 1].action_left               = &setting_action_left_input_mouse_index;
+         (*list)[list_info->index - 1].action_right              = &setting_action_right_input_mouse_index;
+         (*list)[list_info->index - 1].action_select             = &setting_action_right_input_mouse_index;
+         (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation = &get_string_representation_of_abs_device;
+         menu_settings_list_current_add_range(list, list_info, 0, (RETROPAD_RETRO_SENSOR_LAST*2) - 1, 1, true, true);
+         MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_MAPPING + j));
+      }
+
+      for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
+         char name[NAME_MAX_LENGTH];
+         char label[NAME_MAX_LENGTH];
+         static float dummy;
+         snprintf(
+            label,
+            NAME_MAX_LENGTH,
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE_AUTO),
+            j
+         );
+         snprintf(name,NAME_MAX_LENGTH, "tmp name sensor poll %d", j);
+         CONFIG_FLOAT_ALT(
+            list, list_info,
+            &dummy,
+            strdup(name),
+            strdup(label),
+            0.f,
+            "%.3f",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].index                     = user + 1;
+         (*list)[list_info->index - 1].index_offset              = user;
+         (*list)[list_info->index - 1].retropad_sensor_index     = j;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_st_float_sensor_auto;
+         MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_AUTO_DISPLAY + j));
+      
+      }
+      
    }
 
    END_SUB_GROUP(list, list_info, parent_group);
