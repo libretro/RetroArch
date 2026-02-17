@@ -5259,12 +5259,13 @@ void cb_generic_download(retro_task_t *task,
    char output_path[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
 #if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
-   bool extract                          = true;
+   bool extract               = true;
 #endif
-   const char             *dir_path      = NULL;
-   file_transfer_t     *transf           = (file_transfer_t*)user_data;
-   settings_t              *settings     = config_get_ptr();
-   http_transfer_data_t        *data     = (http_transfer_data_t*)task_data;
+   const char *dir_path       = NULL;
+   const char *subdir         = NULL;
+   file_transfer_t *transf    = (file_transfer_t*)user_data;
+   settings_t *settings       = config_get_ptr();
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
 
    if (!data || !data->data || !transf)
       goto finish;
@@ -5296,6 +5297,20 @@ void cb_generic_download(retro_task_t *task,
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
          dir_path = settings->paths.directory_autoconfig;
+         /* Extract autoconf profiles only for available drivers */
+         {
+            const char *subdir_options = config_get_joypad_driver_options();
+
+            /* Add trailing "|" for extracting directories in
+             * separate directories even with one driver.
+             * See: 'file_decompressed_subdir()' */
+            if (!string_is_empty(subdir_options))
+            {
+               strlcpy(buf, subdir_options, sizeof(buf));
+               strlcat(buf, "|", sizeof(buf));
+               subdir = buf;
+            }
+         }
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
          dir_path = settings->paths.path_content_database;
@@ -5404,11 +5419,15 @@ void cb_generic_download(retro_task_t *task,
       task->frontend_userdata       = NULL;
 
       decompress_task = (retro_task_t*)task_push_decompress(
-            output_path, dir_path,
-            NULL, NULL, NULL,
+            output_path,
+            dir_path,
+            NULL,
+            subdir,
+            NULL,
             cb_decompressed,
             (void*)(uintptr_t)transf->enum_idx,
-            frontend_userdata, false);
+            frontend_userdata,
+            false);
 
       if (!decompress_task)
       {

@@ -43,13 +43,38 @@ static int file_decompressed_subdir(const char *name,
    char path_dir[DIR_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
    size_t _len        = strlen(name);
+
    /* Look at last character. Ignore directories, go to next file. */
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
-   if (strstr(name, userdata->dec->subdir) != name)
+   /* Loop multiple subdirs */
+   if (strstr(userdata->dec->subdir, "|"))
+   {
+      const char *subdir = NULL;
+      char *save         = NULL;
+      char temp[PATH_MAX_LENGTH];
+
+      strlcpy(temp, userdata->dec->subdir, sizeof(temp));
+      subdir = strtok_r(temp, "|", &save);
+
+      while (subdir)
+      {
+         if (strstr(name, subdir) == name)
+            break;
+
+         subdir = strtok_r(NULL, "|", &save);
+      }
+
+      if (!subdir)
+         return 1;
+   }
+   else if (strstr(name, userdata->dec->subdir) != name)
       return 1;
 
-   name += strlen(userdata->dec->subdir) + 1;
+   /* Remove desired subdir from the file path
+    * if not extracting multiple subdirs */
+   if (!strstr(userdata->dec->subdir, "|"))
+      name += strlen(userdata->dec->subdir) + 1;
 
    fill_pathname_join_special(path,
          userdata->dec->target_dir, name, sizeof(path));
