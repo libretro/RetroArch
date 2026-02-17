@@ -5112,7 +5112,8 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
 static void save_keybind_joykey(config_file_t *conf,
       const char *prefix,
       const char *base,
-      const struct retro_keybind *bind, bool save_empty)
+      const struct retro_keybind *bind,
+      bool save_empty)
 {
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
@@ -5130,10 +5131,28 @@ static void save_keybind_joykey(config_file_t *conf,
       config_set_uint64(conf, key, bind->joykey);
 }
 
+static void save_keybind_joykey_label(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind)
+{
+   char key[64];
+   size_t _len = fill_pathname_join_delim(key, prefix,
+         base, '_', sizeof(key));
+   strlcpy(key + _len, "_btn", sizeof(key) - _len);
+
+   if (!string_is_empty(bind->joykey_label))
+   {
+      strlcat(key, "_label", sizeof(key));
+      config_set_string(conf, key, bind->joykey_label);
+   }
+}
+
 static void save_keybind_axis(config_file_t *conf,
       const char *prefix,
       const char *base,
-      const struct retro_keybind *bind, bool save_empty)
+      const struct retro_keybind *bind,
+      bool save_empty)
 {
    char key[64];
    char config[16];
@@ -5158,6 +5177,23 @@ static void save_keybind_axis(config_file_t *conf,
             (unsigned long)AXIS_POS_GET(bind->joyaxis));
    }
    config_set_string(conf, key, config);
+}
+
+static void save_keybind_axis_label(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind)
+{
+   char key[64];
+   char config[16];
+   size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+   strlcpy(key + _len, "_axis", sizeof(key) - _len);
+
+   if (!string_is_empty(bind->joyaxis_label))
+   {
+      strlcat(key, "_label", sizeof(key));
+      config_set_string(conf, key, bind->joyaxis_label);
+   }
 }
 
 static void save_keybind_mbutton(config_file_t *conf,
@@ -5328,36 +5364,17 @@ void config_get_autoconf_profile_filename(
       const char *device_name, unsigned user,
       char *s, size_t len)
 {
-   static const char* invalid_filename_chars[] = {
+   const char* invalid_filename_chars[] = {
       /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
       "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
       NULL
    };
    size_t i;
    size_t _len;
-
-   settings_t *settings                 = config_st;
-   const char *autoconf_dir             = settings->paths.directory_autoconfig;
-   const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
-   const char *joypad_driver            = NULL;
    char *sanitised_name                 = NULL;
 
    if (string_is_empty(device_name))
       return;
-
-   /* Get currently set joypad driver */
-   joypad_driver = input_config_get_device_joypad_driver(user);
-   if (string_is_empty(joypad_driver))
-   {
-      /* This cannot happen, but if we reach this
-       * point without a driver being set for the
-       * current input device then use the value
-       * from the settings struct as a fallback */
-      joypad_driver = joypad_driver_fallback;
-
-      if (string_is_empty(joypad_driver))
-         return;
-   }
 
    sanitised_name = strdup(device_name);
 
@@ -5367,8 +5384,7 @@ void config_get_autoconf_profile_filename(
    {
       for (;;)
       {
-         char *tmp = strstr(sanitised_name,
-               invalid_filename_chars[i]);
+         char *tmp = strstr(sanitised_name, invalid_filename_chars[i]);
 
          if (!tmp)
             break;
@@ -5377,14 +5393,9 @@ void config_get_autoconf_profile_filename(
    }
 
    /* Generate autoconfig file path */
-   fill_pathname_join_special(s, autoconf_dir, joypad_driver, len);
-
-   /* Driver specific autoconf dir may not exist, if autoconfs are not downloaded. */
-   if (!path_is_directory(s))
-      _len = strlcpy(s, sanitised_name, len);
-   else
-      _len = fill_pathname_join_special(s, joypad_driver, sanitised_name, len);
+   _len = strlcpy(s, sanitised_name, len);
    strlcpy(s + _len, ".cfg", len - _len);
+
    free(sanitised_name);
    sanitised_name = NULL;
 }
@@ -5404,6 +5415,7 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    int32_t pid_user                     = 0;
    int32_t vid_user                     = 0;
    bool ret                             = false;
+   bool valid                           = true;
    settings_t *settings                 = config_st;
    const char *autoconf_dir             = settings->paths.directory_autoconfig;
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
@@ -5439,39 +5451,123 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
       return false;
    }
 
+   /* Pre-fill existing autoconf binds for empty binds */
+   for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
+   {
+      struct retro_keybind *bind      = &input_config_binds[user][i];
+      struct retro_keybind *auto_bind = &input_autoconf_binds[user][i];
+
+      if (bind->joykey == NO_BTN && auto_bind->joykey != NO_BTN)
+      {
+         bind->joykey = auto_bind->joykey;
+         if (!string_is_empty(auto_bind->joykey_label))
+            bind->joykey_label = strdup(auto_bind->joykey_label);
+      }
+
+      if (bind->joyaxis == AXIS_NONE && auto_bind->joyaxis != AXIS_NONE)
+      {
+         bind->joyaxis = auto_bind->joyaxis;
+         if (!string_is_empty(auto_bind->joyaxis_label))
+            bind->joyaxis_label = strdup(auto_bind->joyaxis_label);
+      }
+   }
+
+   /* Require at least directions (D-Pad or Left Analog) and South button,
+    * otherwise the profile is completely useless */
+   if (input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_B].joykey == NO_BTN)
+      valid = false;
+
+   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_UP].joykey  == NO_BTN
+         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_UP].joyaxis == AXIS_NONE
+         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_MINUS].joykey  == NO_BTN
+         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_MINUS].joyaxis == AXIS_NONE)
+      valid = false;
+
+   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  == NO_BTN
+         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis == AXIS_NONE
+         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_PLUS].joykey  == NO_BTN
+         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_PLUS].joyaxis == AXIS_NONE)
+      valid = false;
+
+   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  == NO_BTN
+         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis == AXIS_NONE
+         && input_config_binds[user][RARCH_ANALOG_LEFT_X_MINUS].joykey  == NO_BTN
+         && input_config_binds[user][RARCH_ANALOG_LEFT_X_MINUS].joyaxis == AXIS_NONE)
+      valid = false;
+
+   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey  == NO_BTN
+         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis == AXIS_NONE
+         && input_config_binds[user][RARCH_ANALOG_LEFT_X_PLUS].joykey  == NO_BTN
+         && input_config_binds[user][RARCH_ANALOG_LEFT_X_PLUS].joyaxis == AXIS_NONE)
+      valid = false;
+
    /* Update config file */
    config_set_string(conf, "input_driver",
          joypad_driver);
    config_set_string(conf, "input_device",
          input_config_get_device_name(settings->uints.input_joypad_index[user]));
+   config_set_string(conf, "input_device_display_name",
+         !string_is_empty(input_config_get_device_display_name(settings->uints.input_joypad_index[user]))
+            ? input_config_get_device_display_name(settings->uints.input_joypad_index[user])
+            : input_config_get_device_name(settings->uints.input_joypad_index[user]));
 
    pid_user = input_config_get_device_pid(settings->uints.input_joypad_index[user]);
    vid_user = input_config_get_device_vid(settings->uints.input_joypad_index[user]);
 
    if (pid_user && vid_user)
    {
-      config_set_int(conf, "input_vendor_id",
-            vid_user);
-      config_set_int(conf, "input_product_id",
-            pid_user);
+      config_set_int(conf, "input_vendor_id", vid_user);
+      config_set_int(conf, "input_product_id", pid_user);
    }
 
-   for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+   for (i = 0; i < RARCH_ANALOG_BIND_LIST_END && valid; i++)
    {
-      const struct retro_keybind *bind = &input_config_binds[user][i];
+      unsigned id                      = input_config_bind_order[i];
+      const struct retro_keybind *bind = &input_config_binds[user][id];
+
       if (bind->valid)
       {
-         save_keybind_joykey(conf, "input",
-               input_config_bind_map_get_base(i), bind, false);
-         save_keybind_axis(conf, "input",
-               input_config_bind_map_get_base(i), bind, false);
+         save_keybind_joykey(conf, "input", input_config_bind_map_get_base(id), bind, false);
+         save_keybind_axis(conf, "input", input_config_bind_map_get_base(id), bind, false);
       }
    }
 
-   RARCH_LOG("[Autoconf] Writing autoconf file for device \"%s\" to \"%s\".\n", device_name, autoconf_file);
-   ret = config_file_write(conf, autoconf_file, false);
+   for (i = 0; i < RARCH_ANALOG_BIND_LIST_END && valid; i++)
+   {
+      unsigned id                      = input_config_bind_order[i];
+      const struct retro_keybind *bind = &input_config_binds[user][id];
+
+      if (bind->valid)
+      {
+         if (!string_is_empty(bind->joykey_label))
+         {
+            save_keybind_joykey_label(conf, "input", input_config_bind_map_get_base(id), bind);
+            free(bind->joykey_label);
+         }
+
+         if (!string_is_empty(bind->joyaxis_label))
+         {
+            save_keybind_axis_label(conf, "input", input_config_bind_map_get_base(id), bind);
+            free(bind->joyaxis_label);
+         }
+      }
+   }
+
+   if (valid)
+   {
+      ret = config_file_write(conf, autoconf_file, false);
+
+      if (ret)
+         RARCH_LOG("[Autoconf] Saved profile to \"%s\".\n", autoconf_file);
+      else
+         RARCH_LOG("[Autoconf] Failed saving profile to \"%s\".\n", autoconf_file);
+   }
+   else
+      RARCH_ERR("[Autoconf] Not saving invalid profile for device \"%s\".\n", device_name);
+
    if (conf)
       config_file_free(conf);
+
    return ret;
 }
 
@@ -6784,8 +6880,7 @@ void input_config_parse_joy_axis(char *s,
 
    tmp[0] = '\0';
 
-   fill_pathname_join_delim(key, s,
-         "axis", '_', sizeof(key));
+   fill_pathname_join_delim(key, s, "axis", '_', sizeof(key));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
@@ -6816,10 +6911,9 @@ void input_config_parse_joy_axis(char *s,
 
    tmp_a = config_get_entry(conf, key);
 
-   if (tmp_a && (!string_is_empty(tmp_a->value)))
+   if (tmp_a && !string_is_empty(tmp_a->value))
    {
-      if (bind->joyaxis_label &&
-            !string_is_empty(bind->joyaxis_label))
+      if (!string_is_empty(bind->joyaxis_label))
          free(bind->joyaxis_label);
       bind->joyaxis_label = strdup(tmp_a->value);
    }
@@ -6915,7 +7009,6 @@ void input_config_parse_joy_button(
    {
       if (!string_is_empty(bind->joykey_label))
          free(bind->joykey_label);
-
       bind->joykey_label = strdup(tmp_a->value);
    }
 }
