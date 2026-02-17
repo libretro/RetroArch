@@ -342,7 +342,11 @@
 /* Specifies whether to cache core info
  * into a single (compressed) file for improved
  * load times on platforms with slow IO */
+#if defined(__x86_64__) || defined(_M_X64)
+#define DEFAULT_CORE_INFO_CACHE_ENABLE false
+#else
 #define DEFAULT_CORE_INFO_CACHE_ENABLE true
+#endif
 
 /* Specifies whether to ignore core info
  * savestate capabilities, allowing to
@@ -1419,7 +1423,7 @@
 #define DEFAULT_SAVESTATE_AUTO_LOAD false
 
 /* Take screenshots for save states */
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(_M_X64)
 #define DEFAULT_SAVESTATE_THUMBNAIL_ENABLE true
 #else
 #define DEFAULT_SAVESTATE_THUMBNAIL_ENABLE false
