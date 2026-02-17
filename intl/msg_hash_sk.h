@@ -6008,10 +6008,6 @@ MSG_HASH(
    "Chyba pri ukladaní profilu herného ovládača."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Profil herného ovládača úspešne uložený."
-   )
-MSG_HASH(
    MSG_CONNECTED_TO,
    "Pripojené k"
    )

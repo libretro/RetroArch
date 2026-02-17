@@ -13100,10 +13100,6 @@ MSG_HASH(
    "Hiba a kontrollerprofil mentésekor."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Kontrollerprofil mentése sikeres."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Kontroller profil elmentve a Kontrollerprofilok könyvtárba, ezen a néven:\n\"%s\""
    )

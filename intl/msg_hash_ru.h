@@ -13368,10 +13368,6 @@ MSG_HASH(
    "Ошибка сохранения профиля контроллера."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Профиль контроллера успешно сохранён."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Профиль сохранён в каталог с профилями контроллеров как\n\"%s\""
    )

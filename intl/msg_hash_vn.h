@@ -13412,10 +13412,6 @@ MSG_HASH(
    "Lỗi khi lưu cấu hình tay cầm."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Lưu cấu hình tay cầm thành công."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Cấu hình tay cầm đã được lưu trong thư mục Controller Profiles dưới tên\n\"%s\""
    )

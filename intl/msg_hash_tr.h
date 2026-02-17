@@ -13012,10 +13012,6 @@ MSG_HASH(
    "Kontrolcü profili kaydedilirken hata oluştu."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Kontrolcü profili başarıyla kaydedildi."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Kontrolcü profili, Kontrolcü Profilleri dizinine şu şekilde kaydedildi:\n\"%s\""
    )

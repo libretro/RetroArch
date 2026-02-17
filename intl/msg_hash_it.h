@@ -12772,10 +12772,6 @@ MSG_HASH(
    "Errore nel salvataggio del profilo del controller."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Profilo controller salvato con successo."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Profilo controller salvato nella directory dei profili Controller come\n\"%s\""
    )

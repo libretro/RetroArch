@@ -13416,10 +13416,6 @@ MSG_HASH(
    "Earráid ag sábháil phróifíl an rialaitheora."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Sábháileadh próifíl an rialaitheora go rathúil."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Próifíl rialtóra sábháilte in eolaire Próifílí Rialaitheora mar\n\"%s\""
    )

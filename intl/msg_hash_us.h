@@ -14136,10 +14136,6 @@ MSG_HASH(
    "Error saving controller profile."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Controller profile saved successfully."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Controller profile saved as \"%s\"."
    )

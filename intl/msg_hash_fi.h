@@ -11480,10 +11480,6 @@ MSG_HASH(
    "Virhe tallennettaessa ohjaimen profiilia."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Ohjaimen profiili tallennettu onnistuneesti."
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Automaatti tallennusta ei voitu alustaa."
    )

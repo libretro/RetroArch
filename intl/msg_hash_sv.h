@@ -12756,10 +12756,6 @@ MSG_HASH(
    "Fel vid sparande av handkontrollerprofil."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Kontrollerprofilen sparades."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Kontrollerprofilen sparad i katalogen för kontrollerprofiler som\n\"%s\""
    )

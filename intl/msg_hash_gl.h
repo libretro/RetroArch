@@ -13016,10 +13016,6 @@ MSG_HASH(
    "Produciuse un erro ao gardar o perfil do controlador."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "O perfil do controlador gardouse correctamente."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Perfil do controlador gardado no directorio Perfís do controlador como\n\"%s\""
    )

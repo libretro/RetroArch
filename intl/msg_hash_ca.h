@@ -13252,10 +13252,6 @@ MSG_HASH(
    "S’ha produït un error desant el perfil del controlador."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "S’ha desat correctament el perfil del controlador."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "El perfil de controlador s'ha desat a la carpeta corresponent com:\n\"%s\""
    )

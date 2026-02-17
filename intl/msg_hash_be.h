@@ -12664,10 +12664,6 @@ MSG_HASH(
    "Памылка захавання профіля кантролера."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Профіль кантролера паспяхова захаваны."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Профіль захаваны ў каталог з профілямі кантролераў як\n\"%s\""
    )

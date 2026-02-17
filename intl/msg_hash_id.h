@@ -3848,10 +3848,6 @@ MSG_HASH(
    "Galat menyimpan profil stik kendali."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Profil stik kendali berhasil disimpan."
-   )
-MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    "Lepas pampat sudah berlangsung."
    )

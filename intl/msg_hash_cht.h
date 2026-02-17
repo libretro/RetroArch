@@ -12536,10 +12536,6 @@ MSG_HASH(
    "無法儲存為隨插即用配置檔。"
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "已儲存為隨插即用配置檔。"
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "自動儲存無法初始化。"
    )

@@ -13344,10 +13344,6 @@ MSG_HASH(
    "Error al guardar el perfil del mando."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Se ha guardado el perfil del mando."
-   )
-MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
    "Perfil de mando guardado en el directorio correspondiente como:\n«%s»"
    )
