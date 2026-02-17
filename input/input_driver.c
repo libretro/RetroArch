@@ -5282,24 +5282,25 @@ void config_read_keybinds_conf(void *data)
       for (j = 0; input_config_bind_map_get_valid(j); j++)
       {
          char str[NAME_MAX_LENGTH];
+         char prefix[16];
          const struct input_bind_map *keybind =
             (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
          struct retro_keybind *bind = &input_config_binds[i][j];
          bool meta                  = false;
-         const char *prefix         = NULL;
          const char *btn            = NULL;
          struct config_entry_list
             *entry                  = NULL;
 
+         if (!bind || !bind->valid || !keybind || !keybind->valid)
+            continue;
 
-         if (!bind || !bind->valid || !keybind)
-            continue;
-         if (!keybind->valid)
-            continue;
+         prefix[0]                  = '\0';
+         input_config_get_prefix(prefix, sizeof(prefix), i, meta);
+
          meta                       = keybind->meta;
          btn                        = keybind->base;
-         prefix                     = input_config_get_prefix(i, meta);
-         if (!btn || !prefix)
+
+         if (!btn || string_is_empty(prefix))
             continue;
 
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));

@@ -5243,34 +5243,16 @@ static void save_keybind_mbutton(config_file_t *conf,
    }
 }
 
-const char *input_config_get_prefix(unsigned user, bool meta)
+void input_config_get_prefix(char *s, char len, char user, bool meta)
 {
-   static const char *bind_user_prefix[MAX_USERS] = {
-      "input_player1",
-      "input_player2",
-      "input_player3",
-      "input_player4",
-      "input_player5",
-      "input_player6",
-      "input_player7",
-      "input_player8",
-      "input_player9",
-      "input_player10",
-      "input_player11",
-      "input_player12",
-      "input_player13",
-      "input_player14",
-      "input_player15",
-      "input_player16",
-   };
    if (meta)
    {
+      /* Meta binds are only for the first user. */
       if (user == 0)
-         return "input";
-      /* Don't bother with meta bind for anyone else than first user. */
-      return NULL;
+         strlcpy(s, "input", len);
    }
-   return bind_user_prefix[user];
+   else
+      snprintf(s, len, "input_player%u", user + 1);
 }
 
 /**
@@ -5287,14 +5269,17 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
    {
       char key[64];
       char btn[64];
+      char prefix[16];
       const struct input_bind_map *keybind =
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
-      const char *prefix                   = input_config_get_prefix(user, meta);
       const struct retro_keybind *bind     = &input_config_binds[user][i];
       const char                 *base     = NULL;
 
-      if (!prefix || !bind->valid || !keybind)
+      prefix[0]                            = '\0';
+      input_config_get_prefix(prefix, sizeof(prefix), user, meta);
+
+      if (string_is_empty(prefix) || !bind->valid || !keybind)
          continue;
 
       base                                 = keybind->base;
@@ -5331,14 +5316,17 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
    {
       char key[64];
       char btn[64];
+      char prefix[16];
       const struct input_bind_map *keybind =
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
-      const char *prefix                   = input_config_get_prefix(user, meta);
       const struct retro_keybind *bind     = &input_config_binds[user][i];
       const char                 *base     = NULL;
 
-      if (!prefix || !bind->valid || !keybind)
+      prefix[0]                            = '\0';
+      input_config_get_prefix(prefix, sizeof(prefix), user, meta);
+
+      if (string_is_empty(prefix) || !bind->valid || !keybind)
          return;
 
       base                                 = keybind->base;

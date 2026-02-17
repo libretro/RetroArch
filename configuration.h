@@ -1425,7 +1425,7 @@ void input_config_parse_mouse_button(
       void *conf_data, const char *prefix,
       const char *btn, void *bind_data);
 
-const char *input_config_get_prefix(unsigned user, bool meta);
+void input_config_get_prefix(char *s, char len, char user, bool meta);
 
 RETRO_END_DECLS
 
