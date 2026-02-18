@@ -2369,9 +2369,9 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       }
       else if (d3d12->shader_preset && d3d12->shader_preset->passes && (d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT))
       {
-         /* If the last shader pass uses a RGBA16 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper */
+         /* If the last shader pass uses a RGBA16 back buffer and hdr has been enabled assume we want to skip the inverse tonemapper and hdr10 conversion */
          d3d12_set_hdr_inverse_tonemap(d3d12, false);
-         d3d12_set_hdr10(d3d12, true);
+         d3d12_set_hdr10(d3d12, false);
          d3d12->flags |= D3D12_ST_FLAG_RESIZE_CHAIN;
       }
       else if (d3d12->shader_preset && d3d12->shader_preset->passes && (d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format == SLANG_FORMAT_R8G8B8A8_UNORM))

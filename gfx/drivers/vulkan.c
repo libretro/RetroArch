@@ -3218,9 +3218,9 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
       {
          /* If the last shader pass uses a RGBA16 backbuffer
           * and HDR has been enabled, assume we want to
-          * skip the inverse tonemapper */
+          * skip the inverse tonemapper and hdr10 conversion */
          vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, false);
-         vulkan_set_hdr10(vk, vk->filter_chain_default, true);
+         vulkan_set_hdr10(vk, vk->filter_chain_default, false);
          vk->flags |= VK_FLAG_SHOULD_RESIZE;
       }
       else if (rt_format == VK_FORMAT_B8G8R8A8_UNORM)
@@ -3326,9 +3326,9 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
       {
          /* If the last shader pass uses a RGBA16 backbuffer
           * and HDR has been enabled, assume we want to
-          * skip the inverse tonemapper */
+          * skip the inverse tonemapper and hdr10 conversion */
          vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, false);
-         vulkan_set_hdr10(vk, vk->filter_chain, true);
+         vulkan_set_hdr10(vk, vk->filter_chain, false);
          vk->flags |= VK_FLAG_SHOULD_RESIZE;
       }
       else if (rt_format == VK_FORMAT_B8G8R8A8_UNORM)
