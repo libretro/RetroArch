@@ -5294,11 +5294,11 @@ void config_read_keybinds_conf(void *data)
          if (!bind || !bind->valid || !keybind || !keybind->valid)
             continue;
 
-         prefix[0]                  = '\0';
-         input_config_get_prefix(prefix, sizeof(prefix), i, meta);
-
          meta                       = keybind->meta;
          btn                        = keybind->base;
+
+         prefix[0]                  = '\0';
+         input_config_get_prefix(prefix, sizeof(prefix), i, meta);
 
          if (!btn || string_is_empty(prefix))
             continue;
