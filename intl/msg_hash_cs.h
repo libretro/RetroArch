@@ -12432,10 +12432,6 @@ MSG_HASH(
    "Chyba při ukládání profilu ovladače."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Profil řadiče uložený v adresáři Ovladač profilu as\n\"%s“"
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Automatické ukládání nelze inicializovat."
    )

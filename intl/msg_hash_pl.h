@@ -11172,10 +11172,6 @@ MSG_HASH(
    "Błąd podczas zapisywania profilu kontrolera."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Profil kontrolera zapisany w katalogu profili kontrolera jako\n\"%s\""
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Nie można zainicjować automatycznego zapisu."
    )

@@ -13008,10 +13008,6 @@ MSG_HASH(
    "控制器配置文件保存错误。"
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "控制器配置文件保存目录为\n\"%s\""
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "无法初始化自动保存。"
    )

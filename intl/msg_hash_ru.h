@@ -13369,7 +13369,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Профиль сохранён в каталог с профилями контроллеров как\n\"%s\""
+   "Профиль контроллера сохранён как \"%s\"."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

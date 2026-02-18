@@ -13345,7 +13345,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Perfil de mando guardado en el directorio correspondiente como:\n«%s»"
+   "Se ha guardado el perfil del mando como «%s»."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

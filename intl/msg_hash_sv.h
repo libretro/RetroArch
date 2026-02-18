@@ -12757,7 +12757,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Kontrollerprofilen sparad i katalogen för kontrollerprofiler som\n\"%s\""
+   "Kontrollerprofil sparad som \"%s\"."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

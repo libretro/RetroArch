@@ -13012,10 +13012,6 @@ MSG_HASH(
    "Fehler beim Speichern des Controller-Profils."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Controller-Profil im Controller-Profilverzeichnis als\n„%s“ gespeichert"
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Initialisierung der Autospeichern-Funktion fehlgeschlagen."
    )

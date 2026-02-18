@@ -13332,10 +13332,6 @@ MSG_HASH(
    "컨트롤러 프로필 저장 중 오류가 발생했습니다."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "컨트롤러 프로필이 다음 이름으로 컨트롤러 프로필 디렉토리에 저장되었습니다.\n\"%s\""
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "자동저장을 초기화 하지 못했습니다."
    )

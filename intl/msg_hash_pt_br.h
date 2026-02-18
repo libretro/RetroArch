@@ -13192,10 +13192,6 @@ MSG_HASH(
    "Houve um erro ao salvar o perfil do controle."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Perfil de controle salvo no diretório de Perfis de Controle como\n\"%s\""
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Não foi possível inicializar o salvamento automático."
    )

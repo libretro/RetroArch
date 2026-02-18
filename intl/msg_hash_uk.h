@@ -13152,10 +13152,6 @@ MSG_HASH(
    "Помилка збереження профілю геймпада."
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Профіль контролера збережено в каталозі профілів контролера як\n\"%s\""
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Не вдається ініціалізувати автозбереження."
    )

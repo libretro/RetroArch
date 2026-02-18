@@ -13325,7 +13325,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Le profil de manette a été enregistré dans le dossier des profils de manettes en tant que\n\"%s\""
+   "Profil de manette enregistré sous \"%s\"."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

@@ -12176,10 +12176,6 @@ MSG_HASH(
    "コントローラープロファイルの保存に失敗しました。"
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "コントローラープロファイルがコントローラープロファイルディレクトリに次の名前で保存されました\n\"%s\""
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "自動セーブを初期化できませんでした。"
    )
