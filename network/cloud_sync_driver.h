@@ -58,6 +58,9 @@ extern cloud_sync_driver_t cloud_sync_icloud;
 #ifdef HAVE_ICLOUD_DRIVE
 extern cloud_sync_driver_t cloud_sync_icloud_drive;
 #endif
+#ifdef HAVE_SMBCLIENT
+extern cloud_sync_driver_t cloud_sync_smb;
+#endif
 
 extern const cloud_sync_driver_t *cloud_sync_drivers[];
 

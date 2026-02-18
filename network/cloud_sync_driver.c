@@ -37,6 +37,9 @@ const cloud_sync_driver_t *cloud_sync_drivers[] = {
 #ifdef HAVE_ICLOUD_DRIVE
    &cloud_sync_icloud_drive,
 #endif
+#ifdef HAVE_SMBCLIENT
+   &cloud_sync_smb,
+#endif
    &cloud_sync_null,
    NULL
 };

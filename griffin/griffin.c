@@ -1718,6 +1718,9 @@ CLOUD SYNC
 #ifdef HAVE_SSL
 #include "../network/cloud_sync/google_drive.c"
 #endif
+#ifdef HAVE_SMBCLIENT
+#include "../network/cloud_sync/smb.c"
+#endif
 #endif
 
 /*============================================================
