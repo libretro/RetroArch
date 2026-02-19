@@ -927,7 +927,9 @@ bool run_translation_service(settings_t *settings, bool paused)
          (uint8_t *)bit24_image,
          (const uint8_t*)data + ((int)height - 1)*pitch,
          width, height,
-         (int)-pitch);
+         (int)-pitch,
+         width, height,
+         (int)pitch);
    }
    scaler_ctx_gen_reset(scaler);
 

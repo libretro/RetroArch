@@ -79,6 +79,8 @@ struct screenshot_task_state
    int pitch;
    unsigned width;
    unsigned height;
+   unsigned out_width;
+   unsigned out_height;
    unsigned pixel_format_type;
 
    uint8_t flags;
@@ -110,17 +112,22 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
          state->out_buffer,
          (const uint8_t*)state->frame + ((int)state->height - 1)
          * state->pitch,
-         state->width, state->height,
-         -state->pitch);
+         state->width,
+         state->height,
+         -state->pitch,
+         state->out_width,
+         state->out_height,
+         state->out_width * 3
+         );
 
    scaler_ctx_gen_reset(&state->scaler);
 
    ret = rpng_save_image_bgr24(
          state->filename,
          state->out_buffer,
-         state->width,
-         state->height,
-         state->width * 3
+         state->out_width,
+         state->out_height,
+         state->out_width * 3
          );
 
    free(state->out_buffer);
@@ -299,8 +306,10 @@ static bool screenshot_dump(
       state->flags              |= SS_TASK_FLAG_IS_PAUSED;
    if (bgr24)
       state->flags              |= SS_TASK_FLAG_BGR24;
-   state->height                 = height;
    state->width                  = width;
+   state->height                 = height;
+   state->out_width              = width;
+   state->out_height             = height;
    state->pitch                  = pitch;
    state->frame                  = frame;
    state->userbuf                = userbuf;
@@ -309,7 +318,21 @@ static bool screenshot_dump(
       state->flags              |= SS_TASK_FLAG_WIDGETS_READY;
 #endif
    if (savestate)
+   {
+      /* Use native core output dimensions */
+      video_driver_state_t *video_st = video_state_get_ptr();
+      if (video_st)
+      {
+         state->out_width       = (video_st->frame_cache_width  <= 4)
+               ? video_st->av_info.geometry.base_width
+               : video_st->frame_cache_width;
+         state->out_height      = (video_st->frame_cache_height <= 4)
+               ? video_st->av_info.geometry.base_height
+               : video_st->frame_cache_height;
+      }
+
       state->flags              |= SS_TASK_FLAG_SILENCE;
+   }
 
    if (history_list_enable)
       state->flags              |= SS_TASK_FLAG_HISTORY_LIST_ENABLE;
