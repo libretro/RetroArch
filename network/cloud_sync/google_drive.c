@@ -13,6 +13,7 @@
  */
 
 #include <features/features_cpu.h>
+#include <file/file_path.h>
 #include <formats/rjson.h>
 #include <net/net_http.h>
 #include <queues/task_queue.h>
@@ -76,10 +77,20 @@ static const char *gdrive_client_secret(void)
 
 /* ========== Types ========== */
 
+#define GDRIVE_MAX_FOLDERS 128
+
+typedef struct
+{
+   char path[PATH_MAX_LENGTH]; /* dir path, e.g. "config/Beetle Lynx" */
+   char id[256];               /* Google Drive folder ID */
+} gdrive_folder_entry_t;
+
 typedef struct
 {
    char access_token[2048];
    char folder_id[256];
+   gdrive_folder_entry_t folders[GDRIVE_MAX_FOLDERS];
+   int folder_count;
 } gdrive_state_t;
 
 typedef struct
@@ -87,6 +98,7 @@ typedef struct
    char path[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char file_id[256];
+   char parent_id[256];
    cloud_sync_complete_handler_t cb;
    void *user_data;
    RFILE *rfile;
@@ -101,6 +113,16 @@ typedef struct
    gdrive_op_fn_t retry_fn;
    gdrive_cb_state_t *cb_st;
 } gdrive_refresh_ctx_t;
+
+/* For async folder resolution (walking path components) */
+typedef struct
+{
+   char dir_path[PATH_MAX_LENGTH]; /* full dir path being resolved */
+   const char *remaining;          /* pointer into dir_path: next segment */
+   char current_parent[256];       /* folder ID resolved so far */
+   gdrive_cb_state_t *cb_st;
+   gdrive_op_fn_t op_fn;           /* operation to call when done */
+} gdrive_folder_walk_t;
 
 /* For the begin sequence (token + folder lookup) */
 typedef struct
@@ -155,6 +177,60 @@ static void gdrive_log_http_failure(const char *context,
       data->data[data->len] = 0;
       RARCH_WARN("%s\n", data->data);
    }
+}
+
+/* ========== Encoding Helpers ========== */
+
+/*
+ * Escape a filename for use in a Google Drive API query URL.
+ * 1) Escape \ -> \\ and ' -> \' (Drive query string syntax)
+ * 2) Percent-encode the result for URL safety
+ */
+static void gdrive_url_encode_name(char *dest, size_t dest_size,
+      const char *name)
+{
+   char escaped[PATH_MAX_LENGTH];
+   char *encoded = NULL;
+   const char *s;
+   size_t i = 0;
+
+   /* Step 1: escape for Drive query syntax */
+   for (s = name; *s && i < sizeof(escaped) - 2; s++)
+   {
+      if (*s == '\\' || *s == '\'')
+         escaped[i++] = '\\';
+      escaped[i++] = *s;
+   }
+   escaped[i] = '\0';
+
+   /* Step 2: percent-encode for URL */
+   net_http_urlencode(&encoded, escaped);
+   if (encoded)
+   {
+      strlcpy(dest, encoded, dest_size);
+      free(encoded);
+   }
+   else
+      strlcpy(dest, escaped, dest_size);
+}
+
+/*
+ * Escape a string for embedding in a JSON string value.
+ * Escapes \ -> \\ and " -> \"
+ */
+static void gdrive_json_escape(char *dest, size_t dest_size,
+      const char *str)
+{
+   const char *s;
+   size_t i = 0;
+
+   for (s = str; *s && i < dest_size - 2; s++)
+   {
+      if (*s == '\\' || *s == '"')
+         dest[i++] = '\\';
+      dest[i++] = *s;
+   }
+   dest[i] = '\0';
 }
 
 /* ========== JSON Parsing ========== */
@@ -513,19 +589,305 @@ static void gdrive_find_folder(gdrive_begin_ctx_t *ctx)
    free(headers);
 }
 
+/* ========== Folder Cache ========== */
+
+static const char *gdrive_folder_cache_lookup(const char *path)
+{
+   int i;
+   for (i = 0; i < gdrive_st.folder_count; i++)
+      if (string_is_equal(gdrive_st.folders[i].path, path))
+         return gdrive_st.folders[i].id;
+   return NULL;
+}
+
+static void gdrive_folder_cache_add(const char *path, const char *id)
+{
+   if (gdrive_st.folder_count >= GDRIVE_MAX_FOLDERS)
+      return;
+   strlcpy(gdrive_st.folders[gdrive_st.folder_count].path,
+         path, sizeof(gdrive_st.folders[0].path));
+   strlcpy(gdrive_st.folders[gdrive_st.folder_count].id,
+         id, sizeof(gdrive_st.folders[0].id));
+   gdrive_st.folder_count++;
+}
+
+/* ========== Folder Resolution ========== */
+
+/*
+ * remaining always points to the START of the current segment.
+ * walk_next fires a search for it; callbacks advance remaining.
+ */
+
+static void gdrive_folder_walk_next(gdrive_folder_walk_t *walk);
+
+/* Extract the segment name that remaining points to */
+static size_t gdrive_walk_segment(const gdrive_folder_walk_t *walk,
+      char *seg, size_t seg_size)
+{
+   const char *end = strchr(walk->remaining, '/');
+   size_t len = end
+      ? (size_t)(end - walk->remaining)
+      : strlen(walk->remaining);
+   strlcpy(seg, walk->remaining,
+         (len + 1 < seg_size) ? len + 1 : seg_size);
+   return len;
+}
+
+/* Advance remaining past the current segment */
+static void gdrive_walk_advance(gdrive_folder_walk_t *walk)
+{
+   const char *end = strchr(walk->remaining, '/');
+   if (end)
+   {
+      walk->remaining = end + 1;
+      while (*walk->remaining == '/')
+         walk->remaining++;
+      if (!*walk->remaining)
+         walk->remaining = NULL;
+   }
+   else
+      walk->remaining = NULL;
+}
+
+/* Compute the cache path: dir_path up through the current segment */
+static void gdrive_walk_cache_path(const gdrive_folder_walk_t *walk,
+      char *out, size_t out_size)
+{
+   size_t len;
+   const char *end;
+   if (!walk->remaining)
+   {
+      strlcpy(out, walk->dir_path, out_size);
+      return;
+   }
+   end = strchr(walk->remaining, '/');
+   len = end
+      ? (size_t)(end - walk->dir_path)
+      : (size_t)(walk->remaining - walk->dir_path)
+        + strlen(walk->remaining);
+   if (len > 0 && walk->dir_path[len - 1] == '/')
+      len--;
+   strlcpy(out, walk->dir_path,
+         (len + 1 < out_size) ? len + 1 : out_size);
+}
+
+/* Called after a folder is found or created: cache, advance, continue */
+static void gdrive_folder_walk_resolved(gdrive_folder_walk_t *walk,
+      const char *folder_id)
+{
+   char cache_path[PATH_MAX_LENGTH];
+
+   gdrive_walk_cache_path(walk, cache_path, sizeof(cache_path));
+   gdrive_folder_cache_add(cache_path, folder_id);
+   strlcpy(walk->current_parent, folder_id,
+         sizeof(walk->current_parent));
+
+   gdrive_walk_advance(walk);
+
+   if (!walk->remaining)
+   {
+      /* All segments resolved */
+      strlcpy(walk->cb_st->parent_id, walk->current_parent,
+            sizeof(walk->cb_st->parent_id));
+      walk->op_fn(walk->cb_st);
+      free(walk);
+      return;
+   }
+
+   gdrive_folder_walk_next(walk);
+}
+
+static void gdrive_folder_create_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   gdrive_folder_walk_t *walk = (gdrive_folder_walk_t *)user_data;
+   http_transfer_data_t *data = (http_transfer_data_t *)task_data;
+   char folder_id[256];
+
+   if (!data || data->status < 200 || data->status >= 300)
+   {
+      if (data)
+         gdrive_log_http_failure("create folder", data);
+      walk->cb_st->cb(walk->cb_st->user_data,
+            walk->cb_st->path, false, walk->cb_st->rfile);
+      free(walk->cb_st);
+      free(walk);
+      return;
+   }
+
+   if (!gdrive_json_string(data->data, data->len,
+            "id", folder_id, sizeof(folder_id)))
+   {
+      RARCH_WARN(GDPFX "Folder create response missing ID\n");
+      walk->cb_st->cb(walk->cb_st->user_data,
+            walk->cb_st->path, false, walk->cb_st->rfile);
+      free(walk->cb_st);
+      free(walk);
+      return;
+   }
+
+   RARCH_DBG(GDPFX "Created folder (id: %s)\n", folder_id);
+   gdrive_folder_walk_resolved(walk, folder_id);
+}
+
+static void gdrive_folder_search_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   gdrive_folder_walk_t *walk = (gdrive_folder_walk_t *)user_data;
+   http_transfer_data_t *data = (http_transfer_data_t *)task_data;
+   char folder_id[256];
+
+   if (!data || data->status < 200 || data->status >= 300)
+   {
+      if (data)
+         gdrive_log_http_failure("folder search", data);
+      walk->cb_st->cb(walk->cb_st->user_data,
+            walk->cb_st->path, false, walk->cb_st->rfile);
+      free(walk->cb_st);
+      free(walk);
+      return;
+   }
+
+   folder_id[0] = '\0';
+   gdrive_extract_first_id(data->data, data->len,
+         folder_id, sizeof(folder_id));
+
+   if (folder_id[0])
+   {
+      /* Folder exists */
+      gdrive_folder_walk_resolved(walk, folder_id);
+   }
+   else
+   {
+      /* Folder doesn't exist — create it */
+      char segment[256];
+      char json[1024];
+      char escaped_segment[512];
+      char *headers;
+
+      gdrive_walk_segment(walk, segment, sizeof(segment));
+      gdrive_json_escape(escaped_segment, sizeof(escaped_segment), segment);
+      snprintf(json, sizeof(json),
+            "{\"name\":\"%s\","
+            "\"mimeType\":\"application/vnd.google-apps.folder\","
+            "\"parents\":[\"%s\"]}",
+            escaped_segment, walk->current_parent);
+
+      headers = gdrive_get_headers("Content-Type: application/json\r\n");
+      task_push_http_post_transfer_with_headers(
+            GDRIVE_API_BASE "/files", json, true, NULL,
+            headers, gdrive_folder_create_cb, walk);
+      free(headers);
+   }
+}
+
+static void gdrive_folder_walk_next(gdrive_folder_walk_t *walk)
+{
+   char url[2048];
+   char segment[256];
+   char encoded_segment[PATH_MAX_LENGTH];
+   char *headers;
+
+   gdrive_walk_segment(walk, segment, sizeof(segment));
+   gdrive_url_encode_name(encoded_segment, sizeof(encoded_segment), segment);
+   snprintf(url, sizeof(url),
+         GDRIVE_API_BASE "/files?"
+         "q=name='%s'+and+'%s'+in+parents"
+         "+and+mimeType='application/vnd.google-apps.folder'"
+         "+and+trashed=false"
+         "&fields=files(id)&pageSize=1",
+         encoded_segment, walk->current_parent);
+
+   headers = gdrive_get_headers(NULL);
+   task_push_http_transfer_with_headers(url, true, NULL,
+         headers, gdrive_folder_search_cb, walk);
+   free(headers);
+}
+
+/*
+ * Resolve the parent folder for a file path, creating directories as needed.
+ * When done, sets cb_st->parent_id and calls op_fn(cb_st).
+ */
+static void gdrive_resolve_parent(const char *path,
+      gdrive_op_fn_t op_fn, gdrive_cb_state_t *cb_st)
+{
+   const char *last_slash = strrchr(path, '/');
+   char dir_path[PATH_MAX_LENGTH];
+   const char *cached_id;
+   gdrive_folder_walk_t *walk;
+
+   if (!last_slash)
+   {
+      /* No directory component — file is in root folder */
+      strlcpy(cb_st->parent_id, gdrive_st.folder_id,
+            sizeof(cb_st->parent_id));
+      op_fn(cb_st);
+      return;
+   }
+
+   /* Extract directory portion */
+   strlcpy(dir_path, path,
+         ((size_t)(last_slash - path) + 1 < sizeof(dir_path))
+         ? (size_t)(last_slash - path) + 1 : sizeof(dir_path));
+
+   /* Check cache */
+   cached_id = gdrive_folder_cache_lookup(dir_path);
+   if (cached_id)
+   {
+      strlcpy(cb_st->parent_id, cached_id, sizeof(cb_st->parent_id));
+      op_fn(cb_st);
+      return;
+   }
+
+   /* Need to walk and create folders */
+   walk = (gdrive_folder_walk_t *)calloc(1, sizeof(*walk));
+   strlcpy(walk->dir_path, dir_path, sizeof(walk->dir_path));
+   walk->remaining = walk->dir_path;
+   strlcpy(walk->current_parent, gdrive_st.folder_id,
+         sizeof(walk->current_parent));
+   walk->cb_st = cb_st;
+   walk->op_fn = op_fn;
+
+   /* Check if any prefix is cached to skip some levels */
+   {
+      char prefix[PATH_MAX_LENGTH];
+      const char *slash;
+      strlcpy(prefix, dir_path, sizeof(prefix));
+
+      /* Try progressively shorter prefixes */
+      for (slash = strrchr(prefix, '/'); slash; slash = strrchr(prefix, '/'))
+      {
+         prefix[slash - prefix] = '\0';
+         cached_id = gdrive_folder_cache_lookup(prefix);
+         if (cached_id)
+         {
+            strlcpy(walk->current_parent, cached_id,
+                  sizeof(walk->current_parent));
+            walk->remaining = walk->dir_path + strlen(prefix) + 1;
+            break;
+         }
+      }
+   }
+
+   gdrive_folder_walk_next(walk);
+}
+
 /* ========== Per-File Search ========== */
 
 static void gdrive_search_file(const char *name,
+      const char *parent_id,
       retro_task_callback_t cb, void *user_data)
 {
    char url[2048];
+   char encoded_name[PATH_MAX_LENGTH];
    char *headers;
 
+   gdrive_url_encode_name(encoded_name, sizeof(encoded_name), name);
    snprintf(url, sizeof(url),
          GDRIVE_API_BASE "/files?"
          "q=name='%s'+and+'%s'+in+parents+and+trashed=false"
          "&fields=files(id)&pageSize=1",
-         name, gdrive_st.folder_id);
+         encoded_name, parent_id);
 
    headers = gdrive_get_headers(NULL);
    task_push_http_transfer_with_headers(url, true, NULL,
@@ -822,6 +1184,7 @@ static bool gdrive_sync_end(cloud_sync_complete_handler_t cb,
 {
    gdrive_st.access_token[0] = '\0';
    gdrive_st.folder_id[0]    = '\0';
+   gdrive_st.folder_count    = 0;
    cb(user_data, NULL, true, NULL);
    return true;
 }
@@ -912,10 +1275,16 @@ static void gdrive_read_search_cb(retro_task_t *task, void *task_data,
    free(headers);
 }
 
-static void gdrive_do_read(gdrive_cb_state_t *cb_st)
+static void gdrive_do_read_impl(gdrive_cb_state_t *cb_st)
 {
    cb_st->file_id[0] = '\0';
-   gdrive_search_file(cb_st->path, gdrive_read_search_cb, cb_st);
+   gdrive_search_file(path_basename(cb_st->path),
+         cb_st->parent_id, gdrive_read_search_cb, cb_st);
+}
+
+static void gdrive_do_read(gdrive_cb_state_t *cb_st)
+{
+   gdrive_resolve_parent(cb_st->path, gdrive_do_read_impl, cb_st);
 }
 
 static bool gdrive_read(const char *path, const char *file,
@@ -1057,10 +1426,13 @@ static void gdrive_update_search_cb(retro_task_t *task, void *task_data,
    {
       /* File doesn't exist - create metadata first, then upload */
       char json[1024];
+      char escaped_name[PATH_MAX_LENGTH];
       char *headers;
+      gdrive_json_escape(escaped_name, sizeof(escaped_name),
+            path_basename(cb_st->path));
       snprintf(json, sizeof(json),
             "{\"name\":\"%s\",\"parents\":[\"%s\"]}",
-            cb_st->path, gdrive_st.folder_id);
+            escaped_name, cb_st->parent_id);
 
       headers = gdrive_get_headers("Content-Type: application/json\r\n");
 
@@ -1072,10 +1444,16 @@ static void gdrive_update_search_cb(retro_task_t *task, void *task_data,
    }
 }
 
-static void gdrive_do_update(gdrive_cb_state_t *cb_st)
+static void gdrive_do_update_impl(gdrive_cb_state_t *cb_st)
 {
    cb_st->file_id[0] = '\0';
-   gdrive_search_file(cb_st->path, gdrive_update_search_cb, cb_st);
+   gdrive_search_file(path_basename(cb_st->path),
+         cb_st->parent_id, gdrive_update_search_cb, cb_st);
+}
+
+static void gdrive_do_update(gdrive_cb_state_t *cb_st)
+{
+   gdrive_resolve_parent(cb_st->path, gdrive_do_update_impl, cb_st);
 }
 
 static bool gdrive_update(const char *path, RFILE *rfile,
@@ -1177,8 +1555,13 @@ static void gdrive_delete_search_cb(retro_task_t *task, void *task_data,
       rtime_localtime(&cur_time, &tm_);
       strftime(timestamp, sizeof(timestamp), "-%y%m%d-%H%M%S", &tm_);
 
-      json_len = snprintf(json, sizeof(json),
-            "{\"name\":\"%s%s\"}", cb_st->path, timestamp);
+      {
+         char escaped_name[PATH_MAX_LENGTH];
+         gdrive_json_escape(escaped_name, sizeof(escaped_name),
+               path_basename(cb_st->path));
+         json_len = snprintf(json, sizeof(json),
+               "{\"name\":\"%s%s\"}", escaped_name, timestamp);
+      }
 
       snprintf(url, sizeof(url),
             GDRIVE_API_BASE "/files/%s", cb_st->file_id);
@@ -1198,10 +1581,16 @@ static void gdrive_delete_search_cb(retro_task_t *task, void *task_data,
    free(headers);
 }
 
-static void gdrive_do_delete(gdrive_cb_state_t *cb_st)
+static void gdrive_do_delete_impl(gdrive_cb_state_t *cb_st)
 {
    cb_st->file_id[0] = '\0';
-   gdrive_search_file(cb_st->path, gdrive_delete_search_cb, cb_st);
+   gdrive_search_file(path_basename(cb_st->path),
+         cb_st->parent_id, gdrive_delete_search_cb, cb_st);
+}
+
+static void gdrive_do_delete(gdrive_cb_state_t *cb_st)
+{
+   gdrive_resolve_parent(cb_st->path, gdrive_do_delete_impl, cb_st);
 }
 
 static bool gdrive_delete(const char *path,
