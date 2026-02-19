@@ -4445,7 +4445,7 @@ void runloop_set_frame_limit(
       float fastforward_ratio)
 {
    runloop_state_t *runloop_st  = &runloop_state;
-   if (fastforward_ratio < 1.0f)
+   if (fastforward_ratio < 0.1f)
       runloop_st->frame_limit_minimum_time = 0.0f;
    else
       runloop_st->frame_limit_minimum_time = (retro_time_t)
