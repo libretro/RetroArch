@@ -1634,24 +1634,6 @@ static int action_bind_sublabel_subsystem_load(
    return 0;
 }
 
-static int action_bind_sublabel_remap_kbd_sublabel(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
-   size_t _len       = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
-         len);
-   snprintf(s + _len, len - _len, " %u: %s", user_idx + 1,
-           input_config_get_device_display_name(user_idx)
-         ? input_config_get_device_display_name(user_idx)
-         : (input_config_get_device_name(user_idx)
-         ? input_config_get_device_name(user_idx)
-         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
-   return 0;
-}
-
 #ifdef HAVE_AUDIOMIXER
 static int action_bind_sublabel_audio_mixer_stream(
       file_list_t *list,
@@ -1704,49 +1686,19 @@ static int action_bind_sublabel_audio_mixer_stream(
 }
 #endif
 
-static int action_bind_sublabel_remap_sublabel(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   settings_t *settings = config_get_ptr();
-   unsigned port        = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
-         / (RARCH_FIRST_CUSTOM_BIND + 8);
-
-   if (settings && (port < MAX_USERS))
-   {
-      /* Device name is set per-port
-       * If the user changes the device index for
-       * a port, then we are effectively changing
-       * the port to which the corresponding
-       * controller is connected... */
-      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
-      port = settings->uints.input_joypad_index[port];
-      snprintf(s + _len, len - _len, " %u: %s",
-            port + 1,
-            input_config_get_device_display_name(port)
-            ? input_config_get_device_display_name(port)
-            : (input_config_get_device_name(port)
-            ? input_config_get_device_name(port)
-            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
-   }
-   return 0;
-}
-
 static int action_bind_sublabel_input_remap_port(
       file_list_t *list,
       unsigned type, unsigned i,
       const char *label, const char *path,
       char *s, size_t len)
 {
+   size_t _len;
+   unsigned user_idx     = 0;
    unsigned display_port = 0;
    menu_entry_t entry;
 
    MENU_ENTRY_INITIALIZE(entry);
-
    entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
-
    menu_entry_get(&entry, 0, i, NULL, false);
 
    /* We need the actual frontend port index.
@@ -1760,9 +1712,20 @@ static int action_bind_sublabel_input_remap_port(
        || (display_port >= MAX_USERS + 1))
       return 0;
 
-   snprintf(s, len,
+   _len = snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT),
          display_port);
+
+   if (display_port)
+      user_idx = display_port - 1;
+
+   /* Remove trailing dot */
+   snprintf(s + _len - 1, len - _len - 1, ": %s",
+           input_config_get_device_display_name(user_idx)
+         ? input_config_get_device_display_name(user_idx)
+         : (input_config_get_device_name(user_idx)
+         ? input_config_get_device_name(user_idx)
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
 
    /* We can safely cache the sublabel here, since
     * frontend port index cannot change while the
@@ -2232,11 +2195,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    } info_range_list_t;
 
    static const info_range_list_t info_list[] = {
-      {
-         MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
-         MENU_SETTINGS_INPUT_DESC_KBD_END,
-         action_bind_sublabel_remap_kbd_sublabel
-      },
 #ifdef HAVE_AUDIOMIXER
       {
          MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN,
@@ -2274,11 +2232,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          action_bind_sublabel_audio_mixer_stream
       },
 #endif
-      {
-         MENU_SETTINGS_INPUT_DESC_BEGIN,
-         MENU_SETTINGS_INPUT_DESC_END,
-         action_bind_sublabel_remap_sublabel
-      },
 #ifdef HAVE_CHEATS
       {
          MENU_SETTINGS_CHEAT_BEGIN,
