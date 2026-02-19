@@ -3269,6 +3269,10 @@ MSG_HASH(
    "rewind_buffer_size_step"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,
+   "frame_throttle_settings"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS,
    "frame_time_counter_settings"
    )
