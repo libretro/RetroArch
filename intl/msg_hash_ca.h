@@ -13252,6 +13252,10 @@ MSG_HASH(
    "S’ha produït un error desant el perfil del controlador."
    )
 MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "S'ha desat el perfil del controlador com \"%s\"."
+   )
+MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "No s’ha pogut inicialitzar el desament automàtic."
    )
