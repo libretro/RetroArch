@@ -4183,6 +4183,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
          if (type == input_id + 43)
             return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
+         if (type == input_id + 44)
+            return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
          /* Align to use the same code of Quickmenu controls */
          input_id = input_id + 8;
       }

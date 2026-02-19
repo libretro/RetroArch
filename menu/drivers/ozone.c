@@ -2590,6 +2590,8 @@ static uintptr_t ozone_entries_icon_get_texture(
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN];
          if (type == input_id + 43)
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
+         if (type == input_id + 44)
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
          /* Align to use the same code of Quickmenu controls */
          input_id = input_id + 8;
       }
