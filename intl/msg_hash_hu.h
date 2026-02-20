@@ -1667,7 +1667,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   "Rögzítés"
+   "Felvétel"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
@@ -13098,6 +13098,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
    "Hiba a kontrollerprofil mentésekor."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Kontrollerprofil mentve \"%s\" néven."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

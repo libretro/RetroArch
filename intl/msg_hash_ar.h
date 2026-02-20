@@ -83,7 +83,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "حدد محاكي للاستخدام."
+   "حدد أي النواة لاستخدامها."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
@@ -5266,7 +5266,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE,
-   "لا نواة"
+   "لا يوجد نواة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SEARCH,
