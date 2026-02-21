@@ -1739,30 +1739,17 @@ bool content_save_state_to_ram(void)
    if (_len == 0)
       return false;
 
-   if (!save_state_in_background)
+   if (!(data = content_get_serialized_data(&_len)))
    {
-      if (!(data = content_get_serialized_data(&_len)))
-      {
-         RARCH_ERR("[State] %s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
-         return false;
-      }
-
-      RARCH_LOG("[State] %s, %u %s.\n",
-            msg_hash_to_str(MSG_SAVING_STATE),
-            (unsigned)_len,
-            msg_hash_to_str(MSG_BYTES));
+      RARCH_ERR("[State] %s.\n",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
+      return false;
    }
 
-   if (!data)
-   {
-      if (!(data = content_get_serialized_data(&_len)))
-      {
-         RARCH_ERR("[State] %s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
-         return false;
-      }
-   }
+   RARCH_LOG("[State] %s, %u %s.\n",
+         msg_hash_to_str(MSG_SAVING_STATE),
+         (unsigned)_len,
+         msg_hash_to_str(MSG_BYTES));
 
    /* If we were holding onto an old state already, clean it up first */
    if (ram_buf.state_buf.data)
