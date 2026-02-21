@@ -1672,9 +1672,7 @@ bool content_undo_save_buf_is_empty(void)
  **/
 bool content_load_state_from_ram(void)
 {
-   size_t temp_data_size;
    bool ret        = false;
-   void* temp_data = NULL;
 
    if (!core_info_current_supports_savestate())
    {
@@ -1691,21 +1689,10 @@ bool content_load_state_from_ram(void)
          (unsigned)ram_buf.state_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
-   /* We need to make a temporary copy of the buffer, to allow the swap below */
-   temp_data       = malloc(ram_buf.state_buf.size);
-   temp_data_size  = ram_buf.state_buf.size;
-   memcpy(temp_data, ram_buf.state_buf.data, ram_buf.state_buf.size);
-
-   /* Swap the current state with the backup state. This way, we can undo
-   what we're undoing */
+   /* Backup the current state so we can undo this load */
    content_save_state("RAM", false);
 
-   ret             = content_deserialize_state(temp_data, temp_data_size);
-
-   /* Clean up the temporary copy */
-   free(temp_data);
-   temp_data       = NULL;
-
+   ret = content_deserialize_state(ram_buf.state_buf.data, ram_buf.state_buf.size);
    if (!ret)
    {
       RARCH_ERR("[State] %s.\n",
