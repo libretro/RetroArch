@@ -1573,8 +1573,8 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.size                      = sizeof(unsigned int);
 
-   result.name                      = name;
-   result.short_description         = short_description;
+   result.name                      = dont_use_enum_idx ? strdup(name) : name;
+   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
@@ -1845,8 +1845,8 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
    result.size                      = size;
 
-   result.name                      = name;
-   result.short_description         = short_description;
+   result.name                      = dont_use_enum_idx ? strdup(name) : name;
+   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
    result.parent_group              = parent_group;
@@ -2175,13 +2175,17 @@ static void config_bool_alt(
       change_handler_t read_handler,
       uint32_t flags)
 {
-   (*list)[list_info->index++] = setting_bool_setting(name, SHORT, target,
-         default_value,
-         msg_hash_to_str(off_enum_idx), msg_hash_to_str(on_enum_idx),
+   (*list)[list_info->index++] = setting_bool_setting(
+         strdup(name), strdup(SHORT),
+         target, default_value,
+         msg_hash_to_str(off_enum_idx),
+         msg_hash_to_str(on_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, true);
    if (flags != SD_FLAG_NONE)
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, flags);
+   /* Request name and short description to be freed later */
+   SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
 }
 #endif
 
@@ -2201,11 +2205,10 @@ static void config_bool(
       change_handler_t read_handler,
       uint32_t flags)
 {
-   (*list)[list_info->index++]             = setting_bool_setting(
+   (*list)[list_info->index++] = setting_bool_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target,
-         default_value,
+         target, default_value,
          msg_hash_to_str(off_enum_idx),
          msg_hash_to_str(on_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
@@ -2254,11 +2257,14 @@ static void config_uint_alt(
       change_handler_t change_handler, change_handler_t read_handler)
 {
    (*list)[list_info->index++] = setting_uint_setting(
-         name, SHORT, target, default_value,
-         group_info->name,
-         subgroup_info->name, parent_group, change_handler, read_handler,
+         strdup(name), strdup(SHORT),
+         target, default_value,
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler,
          true);
    (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
+   /* Request name and short description to be freed later */
+   SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
 }
 
 static void config_uint(
@@ -2273,12 +2279,11 @@ static void config_uint(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   (*list)[list_info->index++]             = setting_uint_setting  (
+   (*list)[list_info->index++] = setting_uint_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          target, default_value,
-         group_info->name,
-         subgroup_info->name, parent_group,
+         group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false);
    (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
@@ -2300,12 +2305,11 @@ static void config_size(
       change_handler_t change_handler, change_handler_t read_handler,
 	  get_string_representation_t string_representation_handler)
 {
-   (*list)[list_info->index++] = setting_size_setting  (
+   (*list)[list_info->index++] = setting_size_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          target, default_value,
-         group_info->name,
-         subgroup_info->name, parent_group,
+         group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false, string_representation_handler);
    (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_SIZE_SPINBOX;
@@ -2326,9 +2330,10 @@ static void config_float(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   (*list)[list_info->index++]             = setting_float_setting(
+   (*list)[list_info->index++] = setting_float_setting(
          msg_hash_to_str(name_enum_idx),
-         msg_hash_to_str(SHORT_enum_idx), target, default_value, rounding,
+         msg_hash_to_str(SHORT_enum_idx),
+         target, default_value, rounding,
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FLOAT_SPINBOX;
@@ -2349,10 +2354,11 @@ static void config_path(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   (*list)[list_info->index++]             = setting_string_setting(ST_PATH,
+   (*list)[list_info->index++] = setting_string_setting(ST_PATH,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         s, (unsigned)len, default_value, "",
+         s, (unsigned)len,
+         default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false);
@@ -2375,11 +2381,11 @@ static void config_dir(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   (*list)[list_info->index++]             = setting_string_setting(ST_DIR,
+   (*list)[list_info->index++] = setting_string_setting(ST_DIR,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         s, (unsigned)len, default_value,
-         msg_hash_to_str(empty_enum_idx),
+         s, (unsigned)len,
+         default_value, msg_hash_to_str(empty_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false);
@@ -2408,7 +2414,8 @@ static void config_string(
    (*list)[list_info->index++] = setting_string_setting(ST_STRING,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         s, (unsigned)len, default_value, "",
+         s, (unsigned)len,
+         default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
@@ -2420,7 +2427,7 @@ static void config_string_alt(
       rarch_setting_info_t *list_info,
       char *s, size_t len,
       char *label,
-      char* shortname,
+      const char* shortname,
       const char *default_value,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
@@ -2428,10 +2435,13 @@ static void config_string_alt(
       change_handler_t change_handler, change_handler_t read_handler)
 {
    (*list)[list_info->index++] = setting_string_setting(ST_STRING,
-         label, shortname,
-         s, (unsigned)len, default_value, "",
+         strdup(label), strdup(shortname),
+         s, (unsigned)len,
+         default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, true);
+   /* Request name and short description to be freed later */
+   SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
 }
 
 static void config_string_options(
@@ -2446,11 +2456,12 @@ static void config_string_options(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   (*list)[list_info->index++]                = setting_string_setting_options(
+   (*list)[list_info->index++] = setting_string_setting_options(
          ST_STRING_OPTIONS,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         s, (unsigned)len, default_value, "", values,
+         s, (unsigned)len,
+         default_value, "", values,
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_STRING_COMBOBOX;
@@ -2461,7 +2472,6 @@ static void config_string_options(
    SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_VALUES);
 }
 
-/* Please strdup() NAME and SHORT */
 static void config_bind_alt(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -2473,8 +2483,10 @@ static void config_bind_alt(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   (*list)[list_info->index++] = setting_bind_setting(name, SHORT, s,
-         player, player_offset, default_value,
+   (*list)[list_info->index++] = setting_bind_setting(
+         strdup(name), strdup(SHORT),
+         s, player, player_offset,
+         default_value,
          group_info->name, subgroup_info->name, parent_group,
          true);
    /* Request name and short description to be freed later */
@@ -2489,9 +2501,12 @@ static void config_action_alt(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   (*list)[list_info->index++] = setting_action_setting(name, SHORT,
+   (*list)[list_info->index++] = setting_action_setting(
+         strdup(name), strdup(SHORT),
          group_info->name, subgroup_info->name, parent_group,
          true);
+   /* Request name and short description to be freed later */
+   SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
 }
 
 static void config_action(
@@ -2506,8 +2521,7 @@ static void config_action(
    (*list)[list_info->index++] = setting_action_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         group_info->name,
-         subgroup_info->name, parent_group,
+         group_info->name, subgroup_info->name, parent_group,
          false);
 
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
@@ -2520,14 +2534,14 @@ static void START_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
 {
    group_info->name = name;
    if (SETTINGS_LIST_APPEND(list, list_info))
-      (*list)[list_info->index++] = setting_group_setting (ST_GROUP, name, parent_group);
+      (*list)[list_info->index++] = setting_group_setting(ST_GROUP, name, parent_group);
 }
 
 static void end_group(rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   (*list)[list_info->index++] = setting_group_setting (ST_END_GROUP, 0, parent_group);
+   (*list)[list_info->index++] = setting_group_setting(ST_END_GROUP, 0, parent_group);
 }
 
 static bool start_sub_group(rarch_setting_t **list,
@@ -2540,7 +2554,7 @@ static bool start_sub_group(rarch_setting_t **list,
 
    if (!SETTINGS_LIST_APPEND(list, list_info))
       return false;
-   (*list)[list_info->index++] = setting_subgroup_setting (ST_SUB_GROUP,
+   (*list)[list_info->index++] = setting_subgroup_setting(ST_SUB_GROUP,
          name, group_info->name, parent_group, false);
    return true;
 }
@@ -2550,7 +2564,7 @@ static void end_sub_group(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   (*list)[list_info->index++] = setting_group_setting (ST_END_SUB_GROUP, 0, parent_group);
+   (*list)[list_info->index++] = setting_group_setting(ST_END_SUB_GROUP, 0, parent_group);
 }
 
 /* MENU SETTINGS */
@@ -9677,11 +9691,6 @@ static bool setting_append_list_input_player_options(
       const char *parent_group,
       unsigned user)
 {
-   /* This constants matches the string length.
-    * Keep it up to date or you'll get some really obvious bugs.
-    * 2 is the length of '99'; we don't need more users than that.
-    */
-   static char group_label[MAX_USERS][NAME_MAX_LENGTH];
    unsigned i, j;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
@@ -9689,15 +9698,13 @@ static bool setting_append_list_input_player_options(
    rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
    const struct retro_keybind* const defaults = (user == 0)
          ? retro_keybinds_1 : retro_keybinds_rest;
-   const char *temp_value                     = msg_hash_to_str
+   const char *binds_group_label              = msg_hash_to_str
          ((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
 
    group_info.name                            = NULL;
    subgroup_info.name                         = NULL;
 
-   strlcpy(group_label[user], temp_value, sizeof(group_label[user]));
-
-   START_GROUP(list, list_info, &group_info, group_label[user], parent_group);
+   START_GROUP(list, list_info, &group_info, binds_group_label, parent_group);
 
    parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
@@ -9710,83 +9717,57 @@ static bool setting_append_list_input_player_options(
          parent_group);
 
    {
-      static char device_index[MAX_USERS][64];
-      static char device_reservation_type[MAX_USERS][64];
-      static char device_reserved_device[MAX_USERS][64];
-      static char mouse_index[MAX_USERS][64];
-      static char analog_to_digital[MAX_USERS][64];
-      static char bind_all[MAX_USERS][64];
-      static char bind_all_save_autoconfig[MAX_USERS][64];
-      static char bind_defaults[MAX_USERS][64];
-
-      static char label_device_index[MAX_USERS][64];
-      static char label_device_reservation_type[MAX_USERS][64];
-      static char label_device_reserved_device[MAX_USERS][64];
-      static char label_mouse_index[MAX_USERS][64];
-      static char label_analog_to_digital[MAX_USERS][64];
-      static char label_bind_all[MAX_USERS][64];
-      static char label_bind_all_save_autoconfig[MAX_USERS][64];
-      static char label_bind_defaults[MAX_USERS][64];
+      char analog_to_digital[64];
+      char device_index[64];
+      char device_reservation_type[64];
+      char device_reserved_device[64];
+      char mouse_index[64];
+      char bind_all[64];
+      char bind_all_save_autoconfig[64];
+      char bind_defaults[64];
 
 #ifdef HAVE_LIBNX
-      static char split_joycon[MAX_USERS][64];
-      static char label_split_joycon[MAX_USERS][64];
+      char split_joycon[64];
+      char label_split_joycon[64];
 #endif
 
-      snprintf(analog_to_digital[user],        sizeof(analog_to_digital[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),     user + 1);
-      snprintf(device_index[user],             sizeof(device_index[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX),                user + 1);
-      snprintf(device_reservation_type[user], sizeof(device_reservation_type[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE),     user + 1);
-      snprintf(device_reserved_device[user],  sizeof(device_reserved_device[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME), user + 1);
-      snprintf(mouse_index[user],              sizeof(mouse_index[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),                 user + 1);
-      snprintf(bind_all[user],                 sizeof(bind_all[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),              user + 1);
-      snprintf(bind_all_save_autoconfig[user], sizeof(bind_all_save_autoconfig[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX),       user + 1);
-      snprintf(bind_defaults[user],            sizeof(bind_defaults[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),         user + 1);
-
-      strlcpy(label_analog_to_digital[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
-            sizeof(label_analog_to_digital[user]));
-      strlcpy(label_device_index[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX),
-            sizeof(label_device_index[user]));
-      strlcpy(label_device_reservation_type[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE),
-            sizeof(label_device_reservation_type[user]));
-      strlcpy(label_device_reserved_device[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME),
-            sizeof(label_device_reserved_device[user]));
-      strlcpy(label_mouse_index[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
-            sizeof(label_mouse_index[user]));
-      strlcpy(label_bind_all[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL),
-            sizeof(label_bind_all[user]));
-      strlcpy(label_bind_defaults[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL),
-            sizeof(label_bind_defaults[user]));
-      strlcpy(label_bind_all_save_autoconfig[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG),
-            sizeof(label_bind_all_save_autoconfig[user]));
+      snprintf(analog_to_digital, sizeof(analog_to_digital),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),
+            user + 1);
+      snprintf(device_index, sizeof(device_index),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX),
+            user + 1);
+      snprintf(device_reservation_type, sizeof(device_reservation_type),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE),
+            user + 1);
+      snprintf(device_reserved_device, sizeof(device_reserved_device),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME),
+            user + 1);
+      snprintf(mouse_index, sizeof(mouse_index),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),
+            user + 1);
+      snprintf(bind_all, sizeof(bind_all),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),
+            user + 1);
+      snprintf(bind_all_save_autoconfig, sizeof(bind_all_save_autoconfig),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX),
+            user + 1);
+      snprintf(bind_defaults, sizeof(bind_defaults),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),
+            user + 1);
 
 #ifdef HAVE_LIBNX
-      snprintf(split_joycon[user], sizeof(split_joycon[user]),
+      snprintf(split_joycon, sizeof(split_joycon),
             "%s_%u", msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), user + 1);
-      snprintf(label_split_joycon[user], sizeof(label_split_joycon[user]),
+      snprintf(label_split_joycon, sizeof(label_split_joycon),
             "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
 #endif
 
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_analog_dpad_mode[user],
-            analog_to_digital[user],
-            label_analog_to_digital[user],
+            analog_to_digital,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
             ANALOG_DPAD_LSTICK,
             &group_info,
             &subgroup_info,
@@ -9809,8 +9790,8 @@ static bool setting_append_list_input_player_options(
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_split_joycon[user],
-            split_joycon[user],
-            label_split_joycon[user],
+            split_joycon,
+            label_split_joycon,
             user,
             &group_info,
             &subgroup_info,
@@ -9826,8 +9807,8 @@ static bool setting_append_list_input_player_options(
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_joypad_index[user],
-            device_index[user],
-            label_device_index[user],
+            device_index,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX),
             user,
             &group_info,
             &subgroup_info,
@@ -9850,8 +9831,8 @@ static bool setting_append_list_input_player_options(
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_device_reservation_type[user],
-            device_reservation_type[user],
-            label_device_reservation_type[user],
+            device_reservation_type,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE),
             INPUT_DEVICE_RESERVATION_NONE,
             &group_info,
             &subgroup_info,
@@ -9875,8 +9856,8 @@ static bool setting_append_list_input_player_options(
             list, list_info,
             settings->arrays.input_reserved_devices[user],
             sizeof(settings->arrays.input_reserved_devices[user]),
-            device_reserved_device[user],
-            label_device_reserved_device[user],
+            device_reserved_device,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE),
             &group_info,
             &subgroup_info,
@@ -9897,8 +9878,8 @@ static bool setting_append_list_input_player_options(
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_mouse_index[user],
-            mouse_index[user],
-            label_mouse_index[user],
+            mouse_index,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
             user,
             &group_info,
             &subgroup_info,
@@ -9920,8 +9901,8 @@ static bool setting_append_list_input_player_options(
 
       CONFIG_ACTION_ALT(
             list, list_info,
-            bind_all[user],
-            label_bind_all[user],
+            bind_all,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL),
             &group_info,
             &subgroup_info,
             parent_group);
@@ -9932,8 +9913,8 @@ static bool setting_append_list_input_player_options(
 
       CONFIG_ACTION_ALT(
             list, list_info,
-            bind_defaults[user],
-            label_bind_defaults[user],
+            bind_defaults,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL),
             &group_info,
             &subgroup_info,
             parent_group);
@@ -9945,8 +9926,8 @@ static bool setting_append_list_input_player_options(
 #ifdef HAVE_CONFIGFILE
       CONFIG_ACTION_ALT(
             list, list_info,
-            bind_all_save_autoconfig[user],
-            label_bind_all_save_autoconfig[user],
+            bind_all_save_autoconfig,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG),
             &group_info,
             &subgroup_info,
             parent_group);
@@ -10031,8 +10012,8 @@ static bool setting_append_list_input_player_options(
                &input_config_binds[user][i],
                user + 1,
                user,
-               strdup(name),
-               strdup(label),
+               name,
+               label,
                &defaults[i],
                &group_info,
                &subgroup_info,
@@ -10054,8 +10035,8 @@ static bool setting_append_list_input_libretro_device_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
-   static char key_device_type[MAX_USERS][64];
-   static char label_device_type[MAX_USERS][64];
+   char key_device_type[64];
+   char label_device_type[64];
    unsigned user;
 
    group_info.name    = NULL;
@@ -10071,22 +10052,22 @@ static bool setting_append_list_input_libretro_device_options(
 
    for (user = 0; user < MAX_USERS; user++)
    {
-      key_device_type[user][0]   = '\0';
-      label_device_type[user][0] = '\0';
+      key_device_type[0]   = '\0';
+      label_device_type[0] = '\0';
 
-      snprintf(key_device_type[user], sizeof(key_device_type[user]),
+      snprintf(key_device_type, sizeof(key_device_type),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE),
             user + 1);
 
-      strlcpy(label_device_type[user],
+      strlcpy(label_device_type,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE),
-            sizeof(label_device_type[user]));
+            sizeof(label_device_type));
 
       CONFIG_UINT_ALT(
             list, list_info,
             input_config_get_device_ptr(user),
-            key_device_type[user],
-            label_device_type[user],
+            key_device_type,
+            label_device_type,
             user,
             &group_info,
             &subgroup_info,
@@ -10120,8 +10101,8 @@ static bool setting_append_list_input_remap_port_options(
    unsigned user;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
-   static char key_port[MAX_USERS][64];
-   static char label_port[MAX_USERS][64];
+   char key_port[64];
+   char label_port[64];
    settings_t *settings = config_get_ptr();
 
    group_info.name      = NULL;
@@ -10137,22 +10118,22 @@ static bool setting_append_list_input_remap_port_options(
 
    for (user = 0; user < MAX_USERS; user++)
    {
-      key_port[user][0]   = '\0';
-      label_port[user][0] = '\0';
+      key_port[0]   = '\0';
+      label_port[0] = '\0';
 
-      snprintf(key_port[user], sizeof(key_port[user]),
-               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
-               user + 1);
+      snprintf(key_port, sizeof(key_port),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
+            user + 1);
 
-      strlcpy(label_port[user],
+      strlcpy(label_port,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT),
-            sizeof(label_port[user]));
+            sizeof(label_port));
 
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_remap_ports[user],
-            key_port[user],
-            label_port[user],
+            key_port,
+            label_port,
             user,
             &group_info,
             &subgroup_info,
@@ -15519,7 +15500,7 @@ static bool setting_append_list(
 #endif
       case SETTINGS_LIST_INPUT:
          {
-            unsigned user;
+
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN),
                   parent_group);
@@ -16418,31 +16399,32 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
+
             {
+               unsigned user;
+               char binds_label[NAME_MAX_LENGTH];
                const char *val_input_user_binds =
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS);
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS);
+
                for (user = 0; user < MAX_USERS; user++)
                {
-                  static char binds_list[MAX_USERS][64];
-                  static char binds_label[MAX_USERS][NAME_MAX_LENGTH];
-                  unsigned user_value = user + 1;
-                  size_t _len = snprintf(binds_list[user],  sizeof(binds_list[user]), "%d", user_value);
-                  strlcpy(binds_list[user] + _len, "_input_binds_list", sizeof(binds_list[user]) - _len);
-                  snprintf(binds_label[user], sizeof(binds_label[user]),
-                        val_input_user_binds, user_value);
+                  snprintf(binds_label, sizeof(binds_label),
+                        val_input_user_binds, user + 1);
 
                   CONFIG_ACTION_ALT(
                         list, list_info,
-                        binds_list[user],
-                        binds_label[user],
+                        msg_hash_to_str((enum msg_hash_enums)
+                              (MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user)),
+                        binds_label,
                         &group_info,
                         &subgroup_info,
                         parent_group);
                   (*list)[list_info->index - 1].ui_type        = ST_UI_TYPE_BIND_BUTTON;
-                  (*list)[list_info->index - 1].index          = user_value;
+                  (*list)[list_info->index - 1].index          = user + 1;
                   (*list)[list_info->index - 1].index_offset   = user;
 
-                  MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
+                  MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                        (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
                }
             }
 
@@ -16814,8 +16796,8 @@ static bool setting_append_list(
                      list, list_info,
                      &input_config_binds[0][i],
                      0, 0,
-                     strdup(input_config_bind_map_get_base(i)),
-                     strdup(input_config_bind_map_get_desc(i)),
+                     input_config_bind_map_get_base(i),
+                     input_config_bind_map_get_desc(i),
                      &retro_keybinds_1[i],
                      &group_info, &subgroup_info, parent_group);
                (*list)[list_info->index - 1].ui_type        = ST_UI_TYPE_BIND_BUTTON;
@@ -23812,8 +23794,8 @@ static bool setting_append_list(
                CONFIG_BOOL_ALT(
                      list, list_info,
                      &settings->bools.netplay_request_devices[user],
-                     strdup(dev_req_label),
-                     strdup(dev_req_value),
+                     dev_req_label,
+                     dev_req_value,
                      false,
                      MENU_ENUM_LABEL_VALUE_NO,
                      MENU_ENUM_LABEL_VALUE_YES,
@@ -23823,7 +23805,6 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler,
                      SD_FLAG_ADVANCED);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
                MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user));
             }
 
@@ -23926,8 +23907,8 @@ static bool setting_append_list(
                         list, list_info,
                         &settings->bools.network_remote_enable_user[user],
                         /* todo: figure out this value, it's working fine but I don't think this is correct */
-                        strdup(s1),
-                        strdup(s2),
+                        s1,
+                        s2,
                         false,
                         MENU_ENUM_LABEL_VALUE_OFF,
                         MENU_ENUM_LABEL_VALUE_ON,
@@ -23937,7 +23918,6 @@ static bool setting_append_list(
                         general_write_handler,
                         general_read_handler,
                         SD_FLAG_ADVANCED);
-                  SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
                   MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user));
                }
             }
