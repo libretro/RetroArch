@@ -2537,10 +2537,11 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_SETTING_ACTION:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_SETTINGS_INPUT_LIBRETRO_DEVICE:
-      case MENU_SETTINGS_INPUT_INPUT_REMAP_PORT:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
       case MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
+      case MENU_SETTINGS_INPUT_INPUT_REMAP_PORT:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE];
    }
 
 #ifdef HAVE_CHEEVOS
@@ -2565,110 +2566,73 @@ static uintptr_t ozone_entries_icon_get_texture(
    if (     type >= MENU_SETTINGS_INPUT_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
+      size_t enum_label_len = strlen(enum_label);
+
       /* This part is only utilized by Input User # Binds */
-      unsigned input_id;
       if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
       {
-         input_id = MENU_SETTINGS_INPUT_BEGIN;
-         if (type == input_id)
-            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
-#ifdef HAVE_LIBNX
-         /* Account for the additional split JoyCon option in Input Port # Binds */
-         input_id++;
-#endif
-         if (type >= input_id + 1 && type <= input_id + 3)
+         if (     string_ends_with_size(enum_label, "_joypad_index", enum_label_len, STRLEN_CONST("_joypad_index")))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
-         if (type == input_id + 4)
+         else if (string_ends_with_size(enum_label, "_mouse_index", enum_label_len, STRLEN_CONST("_mouse_index")))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE];
-         if (type == input_id + 5)
+         else if (string_ends_with_size(enum_label, "_analog_dpad_mode", enum_label_len, STRLEN_CONST("_analog_dpad_mode")))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
+         else if (string_ends_with_size(enum_label, "_bind_all", enum_label_len, STRLEN_CONST("_bind_all")))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BIND_ALL];
-         if (type == input_id + 6)
+         else if (string_ends_with_size(enum_label, "_bind_defaults", enum_label_len, STRLEN_CONST("_bind_defaults")))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
-         if (type == input_id + 7)
+         else if (string_ends_with_size(enum_label, "_save_autoconfig", enum_label_len, STRLEN_CONST("_save_autoconfig")))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVING];
-         if (type >= input_id + 32 && type <= input_id + 42)
+         else if (string_ends_with_size(enum_label, "_turbo", enum_label_len, STRLEN_CONST("_turbo"))
+               || string_ends_with_size(enum_label, "_hold", enum_label_len, STRLEN_CONST("_hold")))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
+         else if (strstr(enum_label, "_gun_"))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN];
-         if (type == input_id + 43)
-            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
-         if (type == input_id + 44)
-            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
-         /* Align to use the same code of Quickmenu controls */
-         input_id = input_id + 8;
-      }
-      else
-      {
-         /* Quickmenu controls repeats the same icons for all users */
-         if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
-            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-         else
-            input_id = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
-         while (type > (input_id + 23))
-            input_id = (input_id + 24);
-
-         /* Human readable bind order */
-         if (type < (input_id + RARCH_ANALOG_BIND_LIST_END))
-         {
-            unsigned index = 0;
-            int input_num  = type - input_id;
-            for (index = 0; index < ARRAY_SIZE(input_config_bind_order); index++)
-            {
-               if (input_num == (int)input_config_bind_order[index])
-               {
-                  type = input_id + index;
-                  break;
-               }
-            }
-         }
+         else if (string_starts_with_size(enum_label, "input_device_reserv", STRLEN_CONST("input_device_reserv")))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE];
       }
 
       /* This is used for both Input Port Binds and Quickmenu controls */
-      if (type == input_id)
+      if (     string_ends_with_size(enum_label, "_up", enum_label_len, STRLEN_CONST("_up")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_U];
-      if (type == (input_id + 1))
+      else if (string_ends_with_size(enum_label, "_down", enum_label_len, STRLEN_CONST("_down")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_D];
-      if (type == (input_id + 2))
+      else if (string_ends_with_size(enum_label, "_left", enum_label_len, STRLEN_CONST("_left")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_L];
-      if (type == (input_id + 3))
+      else if (string_ends_with_size(enum_label, "_right", enum_label_len, STRLEN_CONST("_right")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_R];
-      if (type == (input_id + 4))
+      else if (string_ends_with_size(enum_label, "_b", enum_label_len, STRLEN_CONST("_b")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D];
-      if (type == (input_id + 5))
+      else if (string_ends_with_size(enum_label, "_a", enum_label_len, STRLEN_CONST("_a")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R];
-      if (type == (input_id + 6))
+      else if (string_ends_with_size(enum_label, "_y", enum_label_len, STRLEN_CONST("_y")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L];
-      if (type == (input_id + 7))
+      else if (string_ends_with_size(enum_label, "_x", enum_label_len, STRLEN_CONST("_x")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U];
-      if (type == (input_id + 8))
+      else if (string_ends_with_size(enum_label, "_select", enum_label_len, STRLEN_CONST("_select")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT];
-      if (type == (input_id + 9))
+      else if (string_ends_with_size(enum_label, "_start", enum_label_len, STRLEN_CONST("_start")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START];
-      if (type == (input_id + 10))
+      else if (string_ends_with_size(enum_label, "_l", enum_label_len, STRLEN_CONST("_l")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LB];
-      if (type == (input_id + 11))
+      else if (string_ends_with_size(enum_label, "_r", enum_label_len, STRLEN_CONST("_r")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RB];
-      if (type == (input_id + 12))
+      else if (string_ends_with_size(enum_label, "_l2", enum_label_len, STRLEN_CONST("_l2")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LT];
-      if (type == (input_id + 13))
+      else if (string_ends_with_size(enum_label, "_r2", enum_label_len, STRLEN_CONST("_r2")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_RT];
-      if (type == (input_id + 14))
+      else if (string_ends_with_size(enum_label, "_l3", enum_label_len, STRLEN_CONST("_l3")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_P];
-      if (type == (input_id + 15))
+      else if (string_ends_with_size(enum_label, "_r3", enum_label_len, STRLEN_CONST("_r3")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_P];
-      if (type == (input_id + 16))
+
+      else if (string_ends_with_size(enum_label, "_y_minus", enum_label_len, STRLEN_CONST("_y_minus")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_U];
-      if (type == (input_id + 17))
+      else if (string_ends_with_size(enum_label, "_y_plus", enum_label_len, STRLEN_CONST("_y_plus")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_D];
-      if (type == (input_id + 18))
+      else if (string_ends_with_size(enum_label, "_x_minus", enum_label_len, STRLEN_CONST("_x_minus")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_L];
-      if (type == (input_id + 19))
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_R];
-      if (type == (input_id + 20))
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_U];
-      if (type == (input_id + 21))
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_D];
-      if (type == (input_id + 22))
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_L];
-      if (type == (input_id + 23))
+      else if (string_ends_with_size(enum_label, "_x_plus", enum_label_len, STRLEN_CONST("_x_plus")))
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_R];
    }
 
@@ -5997,10 +5961,9 @@ border_iterate:
 
       MENU_ENTRY_INITIALIZE(entry);
       entry.flags    |= MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                      | MENU_ENTRY_FLAG_LABEL_ENABLED
                       | MENU_ENTRY_FLAG_VALUE_ENABLED
                       | MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
-      if (ozone->flags & OZONE_FLAG_IS_CONTENTLESS_CORES)
-         entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
       menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
 
       if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)

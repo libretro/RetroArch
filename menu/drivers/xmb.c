@@ -2326,10 +2326,12 @@ static void xmb_set_title(xmb_handle_t *xmb)
       enum msg_hash_enums enum_idx = MSG_UNKNOWN;
       const char *path             = NULL;
       const char *label            = NULL;
+      const char *label_original   = NULL;
       uintptr_t texture            = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
       bool search                  = true;
 
       menu_entries_get_last_stack(&path, &label, &type, &enum_idx, &entry_idx);
+      label_original               = label;
 
       /* Direct exceptions */
       if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST)))
@@ -2369,6 +2371,48 @@ static void xmb_set_title(xmb_handle_t *xmb)
          enum_idx = MENU_ENUM_LABEL_HORIZONTAL_MENU;
       else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
          enum_idx = MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS;
+      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE)))
+         enum_idx = MENU_ENUM_LABEL_INPUT_DEVICE_INDEX;
+      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE)))
+         enum_idx = MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME;
+      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD)))
+      {
+         unsigned input_id;
+         if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
+         else
+            input_id = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+
+         while (type > (input_id + (RARCH_ANALOG_BIND_LIST_END - 1)))
+            input_id = (input_id + RARCH_ANALOG_BIND_LIST_END);
+
+         type     = type - input_id;
+         enum_idx = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
+      }
+      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND)))
+         enum_idx = atoi(path);
+      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
+      {
+         enum_idx = atoi(path);
+         if (     enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+               && enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
+            enum_idx = MENU_ENUM_LABEL_INPUT_DEVICE_INDEX;
+         else if (enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX
+               && enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST)
+            enum_idx = MENU_ENUM_LABEL_INPUT_MOUSE_INDEX;
+         else if (enum_idx >= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE
+               && enum_idx <= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE_LAST)
+            enum_idx = MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE;
+         else if (enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT
+               && enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST)
+            enum_idx = MENU_ENUM_LABEL_INPUT_REMAP_PORT;
+         else if (enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE
+               && enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE_LAST)
+            enum_idx = MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE;
+      }
 
       if (type == MENU_SETTING_ACTION_CORE_OPTIONS)
          path = xmb->title_name;
@@ -2399,8 +2443,12 @@ static void xmb_set_title(xmb_handle_t *xmb)
             if (string_ends_with(label, "_list"))
             {
                label_temp[strlen(label_temp) - strlen("_list")] = '\0';
-               label = label_temp;
-
+               label    = label_temp;
+               enum_idx = xmb_search_enum(label);
+            }
+            else if (string_starts_with(label, "dropdown_box_list_"))
+            {
+               label    = label_original;
                enum_idx = xmb_search_enum(label);
             }
          }
@@ -3448,6 +3496,56 @@ static void xmb_populate_entries(void *data,
    }
 }
 
+#define TEXTURE_RETROPAD(id) \
+   switch (id) \
+   { \
+      case RETRO_DEVICE_ID_JOYPAD_UP: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_U]; \
+      case RETRO_DEVICE_ID_JOYPAD_DOWN: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_D]; \
+      case RETRO_DEVICE_ID_JOYPAD_LEFT: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_L]; \
+      case RETRO_DEVICE_ID_JOYPAD_RIGHT: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_R]; \
+      case RETRO_DEVICE_ID_JOYPAD_B: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D]; \
+      case RETRO_DEVICE_ID_JOYPAD_A: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R]; \
+      case RETRO_DEVICE_ID_JOYPAD_Y: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_L]; \
+      case RETRO_DEVICE_ID_JOYPAD_X: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_U]; \
+      case RETRO_DEVICE_ID_JOYPAD_SELECT: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_SELECT]; \
+      case RETRO_DEVICE_ID_JOYPAD_START: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_START]; \
+      case RETRO_DEVICE_ID_JOYPAD_L: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_LB]; \
+      case RETRO_DEVICE_ID_JOYPAD_R: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_RB]; \
+      case RETRO_DEVICE_ID_JOYPAD_L2: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_LT]; \
+      case RETRO_DEVICE_ID_JOYPAD_R2: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_RT]; \
+      case RETRO_DEVICE_ID_JOYPAD_L3: \
+      case RETRO_DEVICE_ID_JOYPAD_R3: \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_P]; \
+      case 19: /* Left Analog Up */ \
+      case 23: /* Right Analog Up */ \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_U]; \
+      case 18: /* Left Analog Down */ \
+      case 22: /* Right Analog Down */ \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_D]; \
+      case 17: /* Left Analog Left */ \
+      case 21: /* Right Analog Left */ \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_L]; \
+      case 16: /* Left Analog Right */ \
+      case 20: /* Right Analog Right */ \
+         return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_R]; \
+      default: \
+         break; \
+   } \
+
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node,
       enum msg_hash_enums enum_idx, const char *enum_path,
@@ -3488,6 +3586,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_DISK_OPTIONS:
+      case MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX:
       case MENU_ENUM_LABEL_DISK_INDEX:
          return xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS];
       case MENU_ENUM_LABEL_DISK_TRAY_EJECT:
@@ -3700,6 +3799,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS:
       case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
+      case MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE:
+      case MENU_ENUM_LABEL_INPUT_DEVICE_INDEX:
       case MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
@@ -3719,6 +3820,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
       case MENU_ENUM_LABEL_START_NET_RETROPAD:
          return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
+      case MENU_ENUM_LABEL_INPUT_MOUSE_INDEX:
+         return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
+      case MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE:
+         return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
       case MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
       case MENU_ENUM_LABEL_INPUT_TURBO_BIND:
@@ -3730,56 +3835,13 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          if (enum_idx == MENU_ENUM_LABEL_INPUT_TURBO_BUTTON)
             turbo_bind = settings->uints.input_turbo_button;
 
-         switch (turbo_bind)
-         {
-            case RETRO_DEVICE_ID_JOYPAD_UP:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_U];
-            case RETRO_DEVICE_ID_JOYPAD_DOWN:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_D];
-            case RETRO_DEVICE_ID_JOYPAD_LEFT:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_L];
-            case RETRO_DEVICE_ID_JOYPAD_RIGHT:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_R];
-            case RETRO_DEVICE_ID_JOYPAD_B:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D];
-            case RETRO_DEVICE_ID_JOYPAD_A:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R];
-            case RETRO_DEVICE_ID_JOYPAD_Y:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_L];
-            case RETRO_DEVICE_ID_JOYPAD_X:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_U];
-            case RETRO_DEVICE_ID_JOYPAD_SELECT:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_SELECT];
-            case RETRO_DEVICE_ID_JOYPAD_START:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_START];
-            case RETRO_DEVICE_ID_JOYPAD_L:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_LB];
-            case RETRO_DEVICE_ID_JOYPAD_R:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_RB];
-            case RETRO_DEVICE_ID_JOYPAD_L2:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_LT];
-            case RETRO_DEVICE_ID_JOYPAD_R2:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_RT];
-            case RETRO_DEVICE_ID_JOYPAD_L3:
-            case RETRO_DEVICE_ID_JOYPAD_R3:
-               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_P];
-            case 19: /* Left Analog Up */
-            case 23: /* Right Analog Up */
-               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_U];
-            case 18: /* Left Analog Down */
-            case 22: /* Right Analog Down */
-               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_D];
-            case 17: /* Left Analog Left */
-            case 21: /* Right Analog Left */
-               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_L];
-            case 16: /* Left Analog Right */
-            case 20: /* Right Analog Right */
-               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_R];
-            default:
-               break;
-         }
+         TEXTURE_RETROPAD(turbo_bind)
          break;
       }
+      case MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION:
+      case MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND:
+         TEXTURE_RETROPAD(type)
+         break;
       case MENU_ENUM_LABEL_LATENCY_SETTINGS:
       case MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY:
@@ -3886,6 +3948,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_REWIND_SETTINGS:
       case MENU_ENUM_LABEL_CONTENT_SHOW_REWIND:
          return xmb->textures.list[XMB_TEXTURE_REWIND];
+      case MENU_ENUM_LABEL_INPUT_REMAP_PORT:
+      case MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE:
+      case MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME:
       case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES:
@@ -4130,10 +4195,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_ROOM_RELAY];
 #endif
       case MENU_SETTINGS_INPUT_LIBRETRO_DEVICE:
-      case MENU_SETTINGS_INPUT_INPUT_REMAP_PORT:
-         return xmb->textures.list[XMB_TEXTURE_SETTING];
+         return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
       case MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE:
          return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
+      case MENU_SETTINGS_INPUT_INPUT_REMAP_PORT:
+         return xmb->textures.list[XMB_TEXTURE_OVERRIDE];
    }
 
 #ifdef HAVE_CHEEVOS
@@ -4158,110 +4224,73 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    if (     type >= MENU_SETTINGS_INPUT_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
+      size_t enum_label_len = strlen(enum_label);
+
       /* This part is only utilized by Input User # Binds */
-      unsigned input_id;
       if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
       {
-         input_id = MENU_SETTINGS_INPUT_BEGIN;
-         if (type == input_id)
-            return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
-#ifdef HAVE_LIBNX
-         /* Account for the additional split JoyCon option in Input Port # Binds */
-         input_id++;
-#endif
-         if (type >= input_id + 1 && type <= input_id + 3)
+         if (     string_ends_with_size(enum_label, "_joypad_index", enum_label_len, STRLEN_CONST("_joypad_index")))
             return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
-         if (type == input_id + 4)
+         else if (string_ends_with_size(enum_label, "_mouse_index", enum_label_len, STRLEN_CONST("_mouse_index")))
             return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
-         if (type == input_id + 5)
+         else if (string_ends_with_size(enum_label, "_analog_dpad_mode", enum_label_len, STRLEN_CONST("_analog_dpad_mode")))
+            return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
+         else if (string_ends_with_size(enum_label, "_bind_all", enum_label_len, STRLEN_CONST("_bind_all")))
             return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
-         if (type == input_id + 6)
+         else if (string_ends_with_size(enum_label, "_bind_defaults", enum_label_len, STRLEN_CONST("_bind_defaults")))
             return xmb->textures.list[XMB_TEXTURE_RELOAD];
-         if (type == input_id + 7)
+         else if (string_ends_with_size(enum_label, "_save_autoconfig", enum_label_len, STRLEN_CONST("_save_autoconfig")))
             return xmb->textures.list[XMB_TEXTURE_SAVING];
-         if (type >= input_id + 32 && type <= input_id + 42)
+         else if (string_ends_with_size(enum_label, "_turbo", enum_label_len, STRLEN_CONST("_turbo"))
+               || string_ends_with_size(enum_label, "_hold", enum_label_len, STRLEN_CONST("_hold")))
+            return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
+         else if (strstr(enum_label, "_gun_"))
             return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
-         if (type == input_id + 43)
-            return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
-         if (type == input_id + 44)
-            return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
-         /* Align to use the same code of Quickmenu controls */
-         input_id = input_id + 8;
-      }
-      else
-      {
-         /* Quickmenu controls repeats the same icons for all users */
-         if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
-            input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-         else
-            input_id = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
-         while (type > (input_id + 23))
-            input_id = (input_id + 24);
-
-         /* Human readable bind order */
-         if (type < (input_id + RARCH_ANALOG_BIND_LIST_END))
-         {
-            unsigned index = 0;
-            int input_num  = type - input_id;
-            for (index = 0; index < ARRAY_SIZE(input_config_bind_order); index++)
-            {
-               if (input_num == (int)input_config_bind_order[index])
-               {
-                  type = input_id + index;
-                  break;
-               }
-            }
-         }
+         else if (string_starts_with_size(enum_label, "input_device_reserv", STRLEN_CONST("input_device_reserv")))
+            return xmb->textures.list[XMB_TEXTURE_OVERRIDE];
       }
 
       /* This is used for both Input Port Binds and Quickmenu controls */
-      if (type == input_id)
+      if (     string_ends_with_size(enum_label, "_up", enum_label_len, STRLEN_CONST("_up")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_U];
-      if (type == (input_id + 1))
+      else if (string_ends_with_size(enum_label, "_down", enum_label_len, STRLEN_CONST("_down")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_D];
-      if (type == (input_id + 2))
+      else if (string_ends_with_size(enum_label, "_left", enum_label_len, STRLEN_CONST("_left")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_L];
-      if (type == (input_id + 3))
+      else if (string_ends_with_size(enum_label, "_right", enum_label_len, STRLEN_CONST("_right")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_R];
-      if (type == (input_id + 4))
+      else if (string_ends_with_size(enum_label, "_b", enum_label_len, STRLEN_CONST("_b")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D];
-      if (type == (input_id + 5))
+      else if (string_ends_with_size(enum_label, "_a", enum_label_len, STRLEN_CONST("_a")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R];
-      if (type == (input_id + 6))
+      else if (string_ends_with_size(enum_label, "_y", enum_label_len, STRLEN_CONST("_y")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_L];
-      if (type == (input_id + 7))
+      else if (string_ends_with_size(enum_label, "_x", enum_label_len, STRLEN_CONST("_x")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_U];
-      if (type == (input_id + 8))
+      else if (string_ends_with_size(enum_label, "_select", enum_label_len, STRLEN_CONST("_select")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_SELECT];
-      if (type == (input_id + 9))
+      else if (string_ends_with_size(enum_label, "_start", enum_label_len, STRLEN_CONST("_start")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_START];
-      if (type == (input_id + 10))
+      else if (string_ends_with_size(enum_label, "_l", enum_label_len, STRLEN_CONST("_l")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_LB];
-      if (type == (input_id + 11))
+      else if (string_ends_with_size(enum_label, "_r", enum_label_len, STRLEN_CONST("_r")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_RB];
-      if (type == (input_id + 12))
+      else if (string_ends_with_size(enum_label, "_l2", enum_label_len, STRLEN_CONST("_l2")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_LT];
-      if (type == (input_id + 13))
+      else if (string_ends_with_size(enum_label, "_r2", enum_label_len, STRLEN_CONST("_r2")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_RT];
-      if (type == (input_id + 14))
+      else if (string_ends_with_size(enum_label, "_l3", enum_label_len, STRLEN_CONST("_l3")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_P];
-      if (type == (input_id + 15))
+      else if (string_ends_with_size(enum_label, "_r3", enum_label_len, STRLEN_CONST("_r3")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_P];
-      if (type == (input_id + 16))
+
+      else if (string_ends_with_size(enum_label, "_y_minus", enum_label_len, STRLEN_CONST("_y_minus")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_U];
-      if (type == (input_id + 17))
+      else if (string_ends_with_size(enum_label, "_y_plus", enum_label_len, STRLEN_CONST("_y_plus")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_D];
-      if (type == (input_id + 18))
+      else if (string_ends_with_size(enum_label, "_x_minus", enum_label_len, STRLEN_CONST("_x_minus")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_L];
-      if (type == (input_id + 19))
-         return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_R];
-      if (type == (input_id + 20))
-         return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_U];
-      if (type == (input_id + 21))
-         return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_D];
-      if (type == (input_id + 22))
-         return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_L];
-      if (type == (input_id + 23))
+      else if (string_ends_with_size(enum_label, "_x_plus", enum_label_len, STRLEN_CONST("_x_plus")))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_R];
    }
    if (     type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN
@@ -4927,10 +4956,9 @@ static int xmb_draw_item(
 
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                | MENU_ENTRY_FLAG_LABEL_ENABLED
                 | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
                 | MENU_ENTRY_FLAG_VALUE_ENABLED;
-   if (xmb->is_contentless_cores)
-      entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
    if (i == current)
       entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, i, list, true);
