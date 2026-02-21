@@ -920,7 +920,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
-   "Guarda la configuración actual en la principal."
+   "Guarda la configuración actual como la principal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
@@ -1136,7 +1136,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Cambia los ajustes del registro."
+   "Cambia los ajustes de los registros."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -3466,11 +3466,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
-   "Permitir ir atrás desde las selecciones"
+   "Permitir ir atrás desde las secciones"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
-   "Vuelve al menú principal desde las secciones o la barra lateral al pulsar el botón de Atrás."
+   "Permite volver al menú principal desde las secciones o la barra lateral al pulsar el botón Volver."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
@@ -3553,11 +3553,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   "Dirigir las teclas rápidas al jugador 1"
+   "Reconocer solo las teclas rápidas en el jugador 1"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   "Las teclas rápidas estarán asignadas al puerto 1 del núcleo, aunque dicho puerto sea reasignado a otro usuario. Nota: las teclas rápidas del teclado no funcionarán si el puerto 1 del núcleo es reasignado a cualquier usuario > 1 (las acciones del teclado son del usuario 1)."
+   "Las teclas rápidas se asignarán al puerto 1 del núcleo, aunque dicho puerto sea reasignado a otro usuario. Nota: las teclas rápidas del teclado no funcionarán si el puerto 1 del núcleo es reasignado a cualquier usuario que no sea el 1 (las acciones del teclado son del usuario 1)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -3855,23 +3855,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
-   "Guardar punto de control de repetición"
+   "Guardar punto de control en repetición"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
-   "Marca un punto de control en la repetición que se está reproduciendo."
+   "Marca un punto de control en la repetición que se esté reproduciendo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
-   "Punto de control de repetición anterior"
+   "Ir a punto de control de repetición anterior"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
-   "Rebobina la repetición hasta el punto de control anterior que se haya guardado automática o manualmente."
+   "Retrocede la repetición hasta el punto de control anterior que se haya guardado automática o manualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
-   "Punto de control de repetición siguiente"
+   "Ir a siguiente punto de control de repetición"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
@@ -4312,12 +4312,12 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
-   "Ejecuta lógicas adicionales del núcleo para reducir la latencia. El modo de una instancia ejecuta la lógica hasta un fotograma futuro y luego vuelve a cargar el estado actual. El modo de doble instancia mantiene activa una instancia del núcleo solo para la señal de vídeo en un fotograma futuro para evitar problemas con el estado del audio. El modo de fotogramas preventivos ejecuta los fotogramas pasados con acciones de entrada nuevas cuando sean necesarias para mejorar la eficacia."
+   "Ejecuta lógicas adicionales del núcleo para reducir la latencia. El modo de una instancia ejecuta la lógica hasta un fotograma posterior y luego vuelve a cargar el estado actual. El modo de doble instancia mantiene activa una instancia del núcleo solo para la señal de vídeo en un fotograma futuro para evitar problemas con el estado del audio. El modo de fotogramas preventivos ejecuta los fotogramas pasados con acciones de entrada nuevas cuando sean necesarias para mejorar la eficacia."
    )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
-   "Ejecuta lógicas adicionales del núcleo para reducir la latencia. El modo de una instancia ejecuta la lógica hasta un fotograma futuro y luego vuelve a cargar el estado actual. El modo de fotogramas preventivos ejecuta los fotogramas pasados con acciones de entrada nuevas cuando sean necesarias para mejorar la eficacia."
+   "Ejecuta lógicas adicionales del núcleo para reducir la latencia. El modo de una instancia ejecuta la lógica hasta un fotograma posterior y luego vuelve a cargar el estado actual. El modo de fotogramas preventivos ejecuta los fotogramas pasados con acciones de entrada nuevas cuando sean necesarias para mejorar la eficacia."
    )
 #endif
 MSG_HASH(
@@ -4609,7 +4609,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
-   "Guarda automáticamente y a intervalos regulares el estado del juego durante la grabación de una repetición. Esta opción está desactivada por defecto a menos que se especifique lo contrario. Esta función se desactiva seleccionando 0."
+   "Guarda automáticamente y a intervalos regulares el estado del juego durante la grabación de una repetición. Esta opción está desactivada por defecto a menos que se especifique lo contrario. Se desactiva seleccionando 0."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
@@ -6963,7 +6963,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
-   "Selecciona el back-end de traducción a utilizar. HTTP utilizará un servidor remoto localizable en la dirección URL configurada. Apple utilizará el reconocimiento de texto OCR y traducción internas del dispositivo (para macOS/iOS)."
+   "Selecciona el back-end de traducción a utilizar. HTTP utilizará un servidor remoto localizable en la dirección URL configurada. Apple utilizará los sistemas internos del propio dispositivo para reconocimiento de texto OCR y traducción (en macOS/iOS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -8954,7 +8954,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia el contenido desde el principio. Pulsa Start en el RetroPad para un reinicio completo."
+   "Reinicia el contenido desde el principio. Pulsa Start en el RetroPad para hacer un reinicio completo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9172,7 +9172,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
-   "Guarda las opciones del núcleo que se aplicará al contenido actual."
+   "Guarda las opciones del núcleo que se aplicarán solo al contenido actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
@@ -9180,7 +9180,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Elimina las opciones del núcleo que se aplicará al contenido actual."
+   "Elimina las opciones del núcleo que se aplicarán solo al contenido actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
@@ -9204,7 +9204,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
-   "El archivo de opciones que se está utilizando actualmente."
+   "El archivo de opciones que se está utilizando."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
@@ -9242,7 +9242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
-   "El archivo de reasignación que se está utilizando actualmente."
+   "El archivo de reasignación que se está utilizando."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
@@ -9298,7 +9298,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
-   "Guarda un archivo de reasignación que se aplicará al contenido actual."
+   "Guarda un archivo de reasignación que se aplicará solo al contenido actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
@@ -9306,7 +9306,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
-   "Elimina el archivo de reasignación que se aplicará al contenido actual."
+   "Elimina el archivo de reasignación que se aplicará solo al contenido actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -9937,7 +9937,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
-   "El archivo de personalización que se está utilizando actualmente."
+   "El archivo de personalización que se está utilizando."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
@@ -10001,7 +10001,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Elimina el archivo de configuraciones personalizadas que se aplicará únicamente al contenido actual."
+   "Elimina el archivo de configuraciones personalizadas que se aplicará solo al contenido actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
@@ -11028,7 +11028,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Indica el tipo de miniatura que se mostrará en la esquina superior derecha de las listas de reproducción. Puede cambiarse moviendo el stick analógico derecho hacia la izquierda o la derecha."
+   "Indica el tipo de miniatura que se mostrará en la esquina inferior derecha de las listas de reproducción. Puede cambiarse moviendo el analógico derecho hacia arriba o la izquierda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11036,7 +11036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Indica el tipo de miniatura que se mostrará en la esquina inferior derecha de las listas de reproducción. Puede cambiarse moviendo el stick analógico derecho hacia la izquierda o la derecha."
+   "Indica el tipo de miniatura que se mostrará en la esquina inferior derecha de las listas de reproducción. Puede cambiarse moviendo el analógico derecho hacia abajo o la derecha."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
@@ -11358,11 +11358,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
-   "Icono actual del menú"
+   "Icono de menú actual"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
-   "El icono actual del menú puede ocultarse o colocarse bajo el menú horizontal o en el título del encabezado."
+   "El icono del menú actual puede ocultarse, colocarse bajo el menú horizontal o colocarse en el título del encabezado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
@@ -11668,7 +11668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
-   "Cambia el tamaño de la fuente de letra de las etiquetas de las opciones del menú y los elementos de las lista de reproducción. También afecta al tamaño de letra de las ventanas de ayuda."
+   "Cambia el tamaño de la fuente de letra de las etiquetas de las opciones del menú y los elementos de las listas de reproducción. También afecta al tamaño de letra de las ventanas de ayuda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
@@ -11676,11 +11676,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
-   "Cambia el tamaño de la fuente de letra de las subetiquetas de las opciones del menú y los elementos de las lista de reproducción."
+   "Cambia el tamaño de la fuente de letra de las subetiquetas de las opciones del menú y los elementos de las listas de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
-   "Factor de escala de la fuente de letra de las fechas y horas"
+   "Factor de escala de la fuente de letra de la fecha y hora"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
@@ -11688,11 +11688,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
-   "Factor de escala de la fuente de letra del pie de página"
+   "Factor de escala de la fuente de letra del pie de ventana"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
-   "Cambia el tamaño de la fuente de letra del pie de página del menú. También afecta al tamaño de letra de la barra lateral para miniaturas, a la derecha."
+   "Cambia el tamaño de la fuente de letra del pie de la ventana del menú. También afecta al tamaño de letra de la barra lateral para miniaturas, a la derecha."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
@@ -11764,7 +11764,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
-   "Indica un ancho alternativo para los separadores del encabezado y del pie de página."
+   "Indica un ancho alternativo para los separadores del encabezado y del pie de ventana."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
@@ -13385,7 +13385,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
-   "El servidor está ejecutando un juego distinto."
+   "El servidor está ejecutando otro juego."
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,
@@ -13745,7 +13745,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
-   "No se puede cargar un guardado rápido futuro durante una reproducción"
+   "No se puede cargar un guardado rápido posterior durante una reproducción"
    )
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
@@ -13757,19 +13757,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
-   "Buscar hacia atrás"
+   "Retroceder"
    )
 MSG_HASH(
    MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
-   "Error al buscar hacia atrás"
+   "Error al retroceder"
    )
 MSG_HASH(
    MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
-   "Buscar hacia delante"
+   "Avanzar"
    )
 MSG_HASH(
    MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
-   "Error al buscar hacia delante"
+   "Error al avanzar"
    )
 MSG_HASH(
    MSG_REPLAY_SEEK_TO_FRAME,
@@ -14637,11 +14637,11 @@ MSG_HASH(
 )
 MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_COUNT,
-   "%d no compatibles"
+   "%d no compatible(s)"
 )
 MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_WARNING,
-   "Se han detectado logros no soportados. Prueba otro núcleo o actualiza RetroArch."
+   "Se han detectado logros no compatibles. Prueba a usar otro núcleo o actualiza RetroArch."
 )
 MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
@@ -15452,7 +15452,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
-   "Activa la emulación de un ratón virtual mediante el uso de acciones táctiles como acciones de entrada."
+   "Activa la emulación de un ratón virtual mediante el uso de acciones táctiles."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
@@ -15708,7 +15708,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
-   "Activa el acceso a la red compartida SMB. Se recomienda encarecidamente utilizar un cable Ethernet en vez de una señal wifi para tener una conexión más fiable. Nota: si cambias cualquiera de los siguientes ajustes, es necesario reiniciar RetroArch."
+   "Activa el acceso a la red compartida SMB. Se recomienda encarecidamente utilizar un cable Ethernet en vez de una señal wifi para tener una conexión más fiable. Nota: si cambias cualquiera de estos ajustes, es necesario reiniciar RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,

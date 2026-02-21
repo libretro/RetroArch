@@ -13412,6 +13412,10 @@ MSG_HASH(
    "Lỗi khi lưu cấu hình tay cầm."
    )
 MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Cấu hình bộ điều khiển đã được lưu dưới dạng \"%s\"."
+   )
+MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Không thể khởi tạo lưu tự động."
    )
