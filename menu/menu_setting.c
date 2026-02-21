@@ -9495,6 +9495,33 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
    }
 }
 
+static void systemd_samba_service_toggle(const char *path, char *unit, bool enable)
+{
+   /* There is difference between samba and ssh/bluetooth.
+    * - samba.service is disabled if "/storage/.cache/services/samba.disabled" file is exist.
+    * - ssh.service is enabled if "/storage/.cache/services/sshd.conf" file is exist.
+    * - bluetooth.service is enabled if "/storage/.cache/services/bluez.conf" file is exist.
+    * So it separates the systemd_service_toggle for samba.service. */
+
+   pid_t pid    = fork();
+   char* args[] = {(char*)"systemctl",
+                   enable ? (char*)"start" : (char*)"stop",
+                   unit,
+                   NULL};
+
+   if (pid == 0)
+   {
+      if (enable)
+         filestream_delete(path);
+      else
+         filestream_close(filestream_open(path,
+                  RETRO_VFS_FILE_ACCESS_WRITE,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE));
+
+      execvp(args[0], args);
+   }
+}
+
 #ifdef HAVE_LAKKA_SWITCH
 static void switch_oc_enable_toggle_change_handler(rarch_setting_t *setting)
 {
@@ -9543,7 +9570,7 @@ static void ssh_enable_toggle_change_handler(rarch_setting_t *setting)
 
 static void samba_enable_toggle_change_handler(rarch_setting_t *setting)
 {
-   systemd_service_toggle(LAKKA_SAMBA_PATH, (char*)"smbd.service",
+   systemd_samba_service_toggle(LAKKA_SAMBA_DISABLED_FILE_PATH, (char*)"smbd.service",
          *setting->value.target.boolean);
 }
 
