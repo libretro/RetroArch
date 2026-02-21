@@ -1012,19 +1012,12 @@ static void content_load_state_cb(retro_task_t *task,
    {
       /* If we were previously backing up a file, let go of it first */
       if (undo_save_buf.data)
-      {
          free(undo_save_buf.data);
-         undo_save_buf.data = NULL;
-      }
 
-      if (!(undo_save_buf.data = malloc(_len)))
-         goto error;
-
-      memcpy(undo_save_buf.data, buf, _len);
+      undo_save_buf.data = buf;
       undo_save_buf.size = _len;
       strlcpy(undo_save_buf.path, load_data->path, sizeof(undo_save_buf.path));
 
-      free(buf);
       free(load_data);
       return;
    }
@@ -1463,19 +1456,9 @@ bool content_save_state(const char *path, bool save_to_disk)
 
       /* If we were holding onto an old state already, clean it up first */
       if (undo_load_buf.data)
-      {
          free(undo_load_buf.data);
-         undo_load_buf.data = NULL;
-      }
 
-      if (!(undo_load_buf.data = malloc(_len)))
-      {
-         free(data);
-         return false;
-      }
-
-      memcpy(undo_load_buf.data, data, _len);
-      free(data);
+      undo_load_buf.data = data;
       undo_load_buf.size = _len;
       strlcpy(undo_load_buf.path, path, sizeof(undo_load_buf.path));
    }
@@ -1722,9 +1705,13 @@ bool content_save_state_to_ram(void)
    }
 
    _len = core_serialize_size();
-
    if (_len == 0)
       return false;
+
+   RARCH_LOG("[State] %s, %u %s.\n",
+         msg_hash_to_str(MSG_SAVING_STATE),
+         (unsigned)_len,
+         msg_hash_to_str(MSG_BYTES));
 
    if (!(data = content_get_serialized_data(&_len)))
    {
@@ -1733,26 +1720,10 @@ bool content_save_state_to_ram(void)
       return false;
    }
 
-   RARCH_LOG("[State] %s, %u %s.\n",
-         msg_hash_to_str(MSG_SAVING_STATE),
-         (unsigned)_len,
-         msg_hash_to_str(MSG_BYTES));
-
-   /* If we were holding onto an old state already, clean it up first */
    if (ram_buf.state_buf.data)
-   {
       free(ram_buf.state_buf.data);
-      ram_buf.state_buf.data = NULL;
-   }
 
-   if (!(ram_buf.state_buf.data = malloc(_len)))
-   {
-      free(data);
-      return false;
-   }
-
-   memcpy(ram_buf.state_buf.data, data, _len);
-   free(data);
+   ram_buf.state_buf.data = data;
    ram_buf.state_buf.size = _len;
    ram_buf.to_write_file  = true;
 
