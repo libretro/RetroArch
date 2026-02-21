@@ -9756,54 +9756,6 @@ static bool setting_append_list_input_player_options(
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),
             user + 1);
 
-#ifdef HAVE_LIBNX
-      snprintf(split_joycon, sizeof(split_joycon),
-            "%s_%u", msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), user + 1);
-      snprintf(label_split_joycon, sizeof(label_split_joycon),
-            "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
-#endif
-
-      CONFIG_UINT_ALT(
-            list, list_info,
-            &settings->uints.input_analog_dpad_mode[user],
-            analog_to_digital,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
-            ANALOG_DPAD_LSTICK,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
-      (*list)[list_info->index - 1].index_offset  = user;
-      (*list)[list_info->index - 1].action_left   = &setting_action_left_analog_dpad_mode;
-      (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
-      (*list)[list_info->index - 1].action_select = &setting_action_right_analog_dpad_mode;
-      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-      (*list)[list_info->index - 1].get_string_representation =
-         &setting_get_string_representation_uint_analog_dpad_mode;
-      menu_settings_list_current_add_range(list, list_info, 0, ANALOG_DPAD_LAST-1, 1.0, true, true);
-      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
-            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
-
-#ifdef HAVE_LIBNX
-      CONFIG_UINT_ALT(
-            list, list_info,
-            &settings->uints.input_split_joycon[user],
-            split_joycon,
-            label_split_joycon,
-            user,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
-      (*list)[list_info->index - 1].index_offset  = user;
-      (*list)[list_info->index - 1].get_string_representation = &get_string_representation_split_joycon;
-      menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0, true, true);
-#endif
-
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_joypad_index[user],
@@ -9827,6 +9779,76 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_DEVICE_INDEX + user));
+
+#ifdef HAVE_LIBNX
+      snprintf(split_joycon, sizeof(split_joycon),
+            "%s_%u", msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), user + 1);
+      snprintf(label_split_joycon, sizeof(label_split_joycon),
+            "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_split_joycon[user],
+            split_joycon,
+            label_split_joycon,
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      (*list)[list_info->index - 1].get_string_representation = &get_string_representation_split_joycon;
+      menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0, true, true);
+#endif
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_mouse_index[user],
+            mouse_index,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_input_mouse_index;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_input_mouse_index;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_input_mouse_index;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_input_mouse_index;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+      (*list)[list_info->index - 1].get_string_representation =
+            &get_string_representation_input_mouse_index;
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_analog_dpad_mode[user],
+            analog_to_digital,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
+            ANALOG_DPAD_LSTICK,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+      (*list)[list_info->index - 1].get_string_representation =
+         &setting_get_string_representation_uint_analog_dpad_mode;
+      menu_settings_list_current_add_range(list, list_info, 0, ANALOG_DPAD_LAST-1, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
 
       CONFIG_UINT_ALT(
             list, list_info,
@@ -9874,30 +9896,6 @@ static bool setting_append_list_input_player_options(
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME + user));
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME));
-
-      CONFIG_UINT_ALT(
-            list, list_info,
-            &settings->uints.input_mouse_index[user],
-            mouse_index,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
-            user,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
-      (*list)[list_info->index - 1].index_offset  = user;
-      (*list)[list_info->index - 1].action_start  = &setting_action_start_input_mouse_index;
-      (*list)[list_info->index - 1].action_left   = &setting_action_left_input_mouse_index;
-      (*list)[list_info->index - 1].action_right  = &setting_action_right_input_mouse_index;
-      (*list)[list_info->index - 1].action_select = &setting_action_right_input_mouse_index;
-      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-      (*list)[list_info->index - 1].get_string_representation =
-            &get_string_representation_input_mouse_index;
-      menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
-      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
-            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
 
       CONFIG_ACTION_ALT(
             list, list_info,
