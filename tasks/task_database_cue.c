@@ -789,6 +789,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len,
    char raw_game_id[50];
    char lgame_id[20];
    char rgame_id[20];
+   char region_id;
 
    /* Load raw serial or quit */
    if (intfstream_seek(fd, 0x0050, SEEK_SET) < 0)
@@ -796,6 +797,12 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len,
 
    if (intfstream_read(fd, raw_game_id, 10) <= 0)
       return 0;
+
+   if (intfstream_seek(fd, 0x0042, SEEK_SET) < 0)
+      return false;
+
+   if (intfstream_read(fd, &region_id, 1) <= 0)
+      return false;
 
    raw_game_id[10] = '\0';
 
@@ -913,7 +920,21 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len,
           * Sega GT being the only exception (MK-51053), 
           * we have to check if it's not that game first */
          if (memcmp(raw_game_id, "MK-51053", STRLEN_CONST("MK-51053")) != 0)
-            strlcpy(s, raw_game_id + 3, 6);
+         {
+            /* Europe region serials need the MK- prefix and -50 postfix for database match. */
+            if (region_id == 'E')
+            {
+               strlcpy(s, raw_game_id, 9);
+               s[ 8] = '-';
+               s[ 9] = '5';
+               s[10] = '0';
+               s[11] = '\0';
+            }
+            else
+            {
+               strlcpy(s, raw_game_id + 3, 6);
+            }
+         }
          else
             strlcpy(s, raw_game_id, 9);
       }
@@ -1707,7 +1728,7 @@ int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc,
 
    track_path[0] = '\0';
 
-   if (gdi_find_track(name, true,
+   if (gdi_find_track(name, false,
        track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
