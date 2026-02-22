@@ -134,6 +134,7 @@ static struct save_state_buf undo_load_buf;
 static struct ram_save_state_buf ram_buf;
 
 static bool save_state_in_background       = false;
+static bool save_state_disable_undo        = false;
 
 typedef struct rastate_size_info
 {
@@ -1396,6 +1397,9 @@ bool content_save_state(const char *path, bool save_to_disk)
    size_t _len;
    void *data  = NULL;
 
+   if (!save_to_disk && save_state_disable_undo)
+      return false;
+
    if (!core_info_current_supports_savestate())
    {
       RARCH_LOG("[State] %s\n",
@@ -1426,7 +1430,7 @@ bool content_save_state(const char *path, bool save_to_disk)
 
    if (save_to_disk)
    {
-      if (path_is_valid(path))
+      if (!save_state_disable_undo && path_is_valid(path))
       {
          /* Before overwriting the savestate file, load it into a buffer
          to allow undo_save_state() to work */
@@ -1647,6 +1651,11 @@ bool content_undo_save_buf_is_empty(void)
    return undo_save_buf.data == NULL || undo_save_buf.size == 0;
 }
 
+bool content_undo_save_disabled(void)
+{
+   return save_state_disable_undo;
+}
+
 /**
  * content_load_state_from_ram:
  * Load a state from RAM.
@@ -1713,6 +1722,13 @@ bool content_save_state_to_ram(void)
          (unsigned)_len,
          msg_hash_to_str(MSG_BYTES));
 
+   if (save_state_disable_undo && ram_buf.state_buf.data)
+   {
+      /* Undo off means lack of memory, free before we alloc the new one */
+      free(ram_buf.state_buf.data);
+      ram_buf.state_buf.data = NULL;
+   }
+
    if (!(data = content_get_serialized_data(&_len)))
    {
       RARCH_ERR("[State] %s.\n",
@@ -1771,4 +1787,9 @@ success:
 void set_save_state_in_background(bool state)
 {
    save_state_in_background = state;
+}
+
+void set_save_state_disable_undo(bool disable)
+{
+   save_state_disable_undo = disable;
 }

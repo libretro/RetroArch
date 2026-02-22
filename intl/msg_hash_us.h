@@ -14196,6 +14196,10 @@ MSG_HASH(
    "Core does not support save states."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "Core does not support save state undo."
+   )
+MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    "Core does not support Disc Control."
    )

@@ -261,6 +261,7 @@ bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
 
 void set_save_state_in_background(bool state);
+void set_save_state_disable_undo(bool disable);
 
 #ifdef HAVE_CDROM
 void task_push_cdrom_dump(const char *drive);
