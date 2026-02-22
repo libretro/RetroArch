@@ -1170,6 +1170,48 @@ static void gl2_size_format(GLint* internalFormat)
 #endif
 }
 
+static bool gl2_tex_storage_allowed(void)
+{
+#if defined(HAVE_OPENGLES) && defined(ANDROID)
+   static int allowed = -1;
+
+   if (allowed < 0)
+   {
+      const char *vendor       = (const char*)glGetString(GL_VENDOR);
+      const char *renderer     = (const char*)glGetString(GL_RENDERER);
+      const char *model        = NULL;
+      unsigned long model_id   = 0;
+
+      allowed = 1;
+
+      if (vendor && renderer
+            && strstr(vendor, "Qualcomm")
+            && strstr(renderer, "Adreno"))
+      {
+         /* Handle both "Adreno (TM) 830" and "Adreno X1-xx" styles. */
+         model = strstr(renderer, "Adreno");
+
+         while (model && *model && (*model < '0' || *model > '9'))
+            model++;
+
+         if (model && *model)
+            model_id = strtoul(model, NULL, 10);
+
+         if (model_id >= 800 || strstr(renderer, "X1"))
+         {
+            allowed = 0;
+            RARCH_WARN("[GL] Disabling glTexStorage on %s to avoid black-screen regressions on Qualcomm Adreno 8xx/X1 Android drivers.\n",
+                  renderer);
+         }
+      }
+   }
+
+   return allowed == 1;
+#else
+   return true;
+#endif
+}
+
 /* This function should only be used without mipmaps
    and when data == NULL */
 static void gl2_load_texture_image(GLenum target,
@@ -1189,7 +1231,9 @@ static void gl2_load_texture_image(GLenum target,
    enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE;
 #endif
 
-   if (gl_check_capability(cap) && internalFormat != GL_BGRA_EXT)
+   if (gl2_tex_storage_allowed()
+         && gl_check_capability(cap)
+         && internalFormat != GL_BGRA_EXT)
    {
       gl2_size_format(&internalFormat);
 #ifdef HAVE_OPENGLES2
