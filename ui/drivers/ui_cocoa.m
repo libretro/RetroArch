@@ -60,6 +60,10 @@
 #include "steam/steam.h"
 #endif
 
+#ifdef HAVE_MCP
+#include "network/mcp/mcp_server.h"
+#endif
+
 typedef struct ui_application_cocoa
 {
    void *empty;
@@ -827,6 +831,10 @@ static ui_application_t ui_application_cocoa = {
 
 #ifdef HAVE_MIST
        steam_poll();
+#endif
+
+#ifdef HAVE_MCP
+       mcp_server_poll();
 #endif
 
        while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE)

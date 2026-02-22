@@ -200,8 +200,10 @@ if [ "$HAVE_NETWORKING" != 'no' ]; then
    fi
 
    add_opt NETWORK_CMD yes
+   add_opt MCP yes
 else
    add_opt NETWORK_CMD no
+   add_opt MCP no
 fi
 
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false

@@ -243,6 +243,9 @@ typedef struct settings
       unsigned replay_max_keep;
       unsigned savestate_max_keep;
       unsigned network_cmd_port;
+#ifdef HAVE_MCP
+      unsigned mcp_server_port;
+#endif
       unsigned network_remote_base_port;
       unsigned keymapper_port;
       unsigned cloud_sync_sync_mode;
@@ -539,6 +542,10 @@ typedef struct settings
       char audio_device[NAME_MAX_LENGTH];
       char camera_device[NAME_MAX_LENGTH];
       char netplay_mitm_server[NAME_MAX_LENGTH];
+#ifdef HAVE_MCP
+      char mcp_server_address[64];
+      char mcp_server_password[NAME_MAX_LENGTH];
+#endif
       char webdav_url[NAME_MAX_LENGTH];
       char webdav_username[NAME_MAX_LENGTH];
       char webdav_password[NAME_MAX_LENGTH];
@@ -1061,6 +1068,9 @@ typedef struct settings
       bool save_file_compression;
       bool savestate_file_compression;
       bool network_cmd_enable;
+#ifdef HAVE_MCP
+      bool mcp_server_enable;
+#endif
       bool stdin_cmd_enable;
       bool keymapper_enable;
       bool network_remote_enable;

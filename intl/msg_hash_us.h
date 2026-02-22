@@ -7607,6 +7607,38 @@ MSG_HASH(
    "Network Command Port"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MCP_SERVER_ENABLE,
+   "MCP Server"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MCP_SERVER_ENABLE,
+   "Enable the Model Context Protocol (MCP) server for AI assistant integration."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MCP_SERVER_ADDRESS,
+   "MCP Server Address"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MCP_SERVER_ADDRESS,
+   "Bind address for the MCP HTTP server (e.g. 127.0.0.1)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MCP_SERVER_PORT,
+   "MCP Server Port"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MCP_SERVER_PORT,
+   "Port for the MCP HTTP server to listen on."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MCP_SERVER_PASSWORD,
+   "MCP Server Password"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MCP_SERVER_PASSWORD,
+   "Password for MCP server authentication (Bearer token). Leave empty to disable auth."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
    "Network RetroPad"
    )

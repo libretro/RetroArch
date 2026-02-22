@@ -127,6 +127,10 @@
 #endif
 #endif
 
+#ifdef HAVE_MCP
+#include "../network/mcp/mcp_server.h"
+#endif
+
 #if defined(HAVE_OVERLAY)
 #include "../input/input_overlay.h"
 #endif
@@ -9603,6 +9607,22 @@ static void timezone_change_handler(rarch_setting_t *setting)
       filestream_printf(tzfp, "TIMEZONE=%s", setting->value.target.string);
       filestream_close(tzfp);
    }
+}
+#endif
+
+#ifdef HAVE_MCP
+static void mcp_setting_change_handler(rarch_setting_t *setting)
+{
+   (void)setting;
+   mcp_server_deinit();
+}
+
+static size_t setting_get_string_representation_mcp_password(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting && !string_is_empty(setting->value.target.string))
+      return strlcpy(s, "********", len);
+   return 0;
 }
 #endif
 
@@ -23911,6 +23931,79 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
+
+#ifdef HAVE_MCP
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.mcp_server_enable,
+                  MENU_ENUM_LABEL_MCP_SERVER_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_MCP_SERVER_ENABLE,
+                  DEFAULT_MCP_SERVER_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+            CONFIG_STRING(
+                  list, list_info,
+                  settings->arrays.mcp_server_address,
+                  sizeof(settings->arrays.mcp_server_address),
+                  MENU_ENUM_LABEL_MCP_SERVER_ADDRESS,
+                  MENU_ENUM_LABEL_VALUE_MCP_SERVER_ADDRESS,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  NULL,
+                  NULL);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+            (*list)[list_info->index - 1].change_handler = mcp_setting_change_handler;
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.mcp_server_port,
+                  MENU_ENUM_LABEL_MCP_SERVER_PORT,
+                  MENU_ENUM_LABEL_VALUE_MCP_SERVER_PORT,
+                  DEFAULT_MCP_SERVER_PORT,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  NULL,
+                  NULL);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by = 1;
+            menu_settings_list_current_add_range(list, list_info, 0, 65535, 1, true, true);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].change_handler = mcp_setting_change_handler;
+
+            CONFIG_STRING(
+                  list, list_info,
+                  settings->arrays.mcp_server_password,
+                  sizeof(settings->arrays.mcp_server_password),
+                  MENU_ENUM_LABEL_MCP_SERVER_PASSWORD,
+                  MENU_ENUM_LABEL_VALUE_MCP_SERVER_PASSWORD,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  NULL,
+                  NULL);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_mcp_password;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+            (*list)[list_info->index - 1].change_handler = mcp_setting_change_handler;
+#endif
 #endif
             CONFIG_BOOL(
                   list, list_info,
