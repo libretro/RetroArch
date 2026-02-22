@@ -37,6 +37,7 @@ uniform Texture2D <float4> t0;
 
 /* const definitions */
 static const float kMaxNitsFor2084        = 10000.0f;
+static const float kscRGBWhiteNits        = 80.0f;
 
 static const float kPi                    = 3.1415926536f;
 static const float kEuler                 = 2.718281828459f;
@@ -167,11 +168,11 @@ static const float3x3 k2020to709 =
 /* Converts a non-linear HDR10 PQ value in BT.2020 to scRGB linear.
  * scRGB uses Rec.709 primaries with 1.0 = 80 nits.
  * HDR10 PQ: 1.0 normalised linear = 10,000 nits, scalar = 10000/80 = 125. */
-float3 ConvertHDR10_To_scRGB(float3 hdr10Color)
+float3 HDR10ToscRGB(float3 hdr10Color)
 {
    float3 linear10k = ST2084ToLinear(hdr10Color);
    float3 linear709 = mul(k2020to709, linear10k);
-   return linear709 * 125.0f;
+   return linear709 * (kMaxNitsFor2084 / kscRGBWhiteNits);
 }
 /* END Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 
@@ -471,12 +472,12 @@ float4 PSMain(PSInput input) : SV_TARGET
        * Source is PQ-encoded Rec.2020 from the shader's output.
        * Decode PQ to linear, convert gamut to Rec.709, scale for scRGB. */
       float4 pq = t0.Sample(s0, input.texcoord);
-      return float4(ConvertHDR10_To_scRGB(pq.rgb), pq.a);
+      return float4(HDR10ToscRGB(pq.rgb), pq.a);
    }
    else if(global.hdr_mode == 2)
    {
       /* scRGB mode: sRGB to linear for scRGB / HDR16 swapchain.
-       * Scale by MaxNits / 80.0 because scRGB 1.0 = 80 nits. */
+       * Scale by MaxNits / kscRGBWhiteNits because scRGB 1.0 = 80 nits. */
       if((global.scanlines > 0.0f) && (global.OutputSize.y > 240.0f * 4.0f))
       {
          /* Scanlines() returns linear Rec.2020 after InverseTonemap.
@@ -485,13 +486,13 @@ float4 PSMain(PSInput input) : SV_TARGET
           * Convert Rec.2020 back to Rec.709 and scale for scRGB. */
          float3 linear_2020 = Scanlines(input.texcoord);
          float3 linear_709  = mul(k2020to709, linear_2020);
-         return float4(linear_709 * (global.paper_white_nits / 80.0f), 1.0f);
+         return float4(linear_709 * (global.paper_white_nits / kscRGBWhiteNits), 1.0f);
       }
       else
       {
          float4 sdr = input.color * t0.Sample(s0, input.texcoord);
          float3 linear_col = pow(abs(sdr.rgb), 2.4f);
-         linear_col *= global.max_nits / 80.0f;
+         linear_col *= global.max_nits / kscRGBWhiteNits;
          return float4(linear_col, sdr.a);
       }
    }

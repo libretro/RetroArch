@@ -366,12 +366,12 @@ void main()
        * Source is PQ-encoded Rec.2020 from the shader's output.
        * Decode PQ to linear, convert gamut to Rec.709, scale for scRGB. */
       vec4 pq = texture(Source, vTexCoord);
-      FragColor = vec4(ConvertHDR10_To_scRGB(pq.rgb), pq.a);
+      FragColor = vec4(HDR10ToscRGB(pq.rgb), pq.a);
    }
    else if(global.HDRMode == 2u)
    {
       /* scRGB mode: sRGB to linear for scRGB / HDR16 swapchain.
-       * Scale by MaxNits / 80.0 because scRGB 1.0 = 80 nits.
+       * Scale by MaxNits / kscRGBWhiteNits because scRGB 1.0 = 80 nits.
        * Using MaxNits (not PaperWhiteNits) so the SDR UI fills the
        * display's native range, preserving tonal balance uniformly. */
       if((global.Scanlines > 0.0) && (global.OutputSize.y > 240.0 * 4.0))
@@ -382,12 +382,12 @@ void main()
           * Convert Rec.2020 back to Rec.709 and scale for scRGB. */
          vec3 linear_2020 = Scanlines(vTexCoord);
          vec3 linear_709  = linear_2020 * k2020to709;
-         FragColor = vec4(linear_709 * (global.PaperWhiteNits / 80.0), 1.0);
+         FragColor = vec4(linear_709 * (global.PaperWhiteNits / kscRGBWhiteNits), 1.0);
       }
       else
       {
          vec4 linear = Sample(kDefaultColor, vTexCoord);
-         linear.rgb *= global.MaxNits / 80.0;
+         linear.rgb *= global.MaxNits / kscRGBWhiteNits;
          FragColor = linear;
       }
    }
