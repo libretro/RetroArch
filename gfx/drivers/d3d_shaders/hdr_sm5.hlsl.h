@@ -13,6 +13,7 @@ SRC(
    uint  expand_gamut;       /* 0        */
    float inverse_tonemap;
    float hdr10;
+   uint  hdr_mode;          /* 0 = off, 1 = HDR10, 2 = scRGB, 3 = PQ->scRGB */
 };
 uniform UBO global;
 
@@ -145,6 +146,32 @@ float3 LinearToST2084(float3 normalizedLinearValue)
 {
    float3 ST2084 = pow((0.8359375f + 18.8515625f * pow(abs(normalizedLinearValue), 0.1593017578f)) / (1.0f + 18.6875f * pow(abs(normalizedLinearValue), 0.1593017578f)), 78.84375f);
    return ST2084;  /* Don't clamp between [0..1], so we can still perform operations on scene values higher than 10,000 nits */
+}
+
+float3 ST2084ToLinear(float3 ST2084)
+{
+   float3 Np  = pow(abs(ST2084), 1.0f / 78.84375f);
+   float3 num = max(Np - 0.8359375f, 0.0f);
+   float3 den = 18.8515625f - 18.6875f * Np;
+   return pow(num / den, 1.0f / 0.1593017578f);
+}
+
+/* Color rotation matrix to rotate Rec.2020 color primaries into Rec.709 */
+static const float3x3 k2020to709 =
+{
+   {  1.6604910f, -0.5876411f, -0.0728499f },
+   { -0.1245505f,  1.1328999f, -0.0083494f },
+   { -0.0181508f, -0.1005789f,  1.1187297f }
+};
+
+/* Converts a non-linear HDR10 PQ value in BT.2020 to scRGB linear.
+ * scRGB uses Rec.709 primaries with 1.0 = 80 nits.
+ * HDR10 PQ: 1.0 normalised linear = 10,000 nits, scalar = 10000/80 = 125. */
+float3 ConvertHDR10_To_scRGB(float3 hdr10Color)
+{
+   float3 linear10k = ST2084ToLinear(hdr10Color);
+   float3 linear709 = mul(k2020to709, linear10k);
+   return linear709 * 125.0f;
 }
 /* END Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 
@@ -433,16 +460,46 @@ float3 Scanlines(float2 texcoord)
 
    float3 linear_colour = pow(max(scanline_colour, float3(0.0f, 0.0f, 0.0f)), 2.4f);
 
-   return HDR10(linear_colour);
+   return linear_colour;
 }
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-   if((global.inverse_tonemap > 0.0f) && (global.hdr10 > 0.0f))
+   if(global.hdr_mode == 3)
+   {
+      /* PQ HDR10 to scRGB conversion.
+       * Source is PQ-encoded Rec.2020 from the shader's output.
+       * Decode PQ to linear, convert gamut to Rec.709, scale for scRGB. */
+      float4 pq = t0.Sample(s0, input.texcoord);
+      return float4(ConvertHDR10_To_scRGB(pq.rgb), pq.a);
+   }
+   else if(global.hdr_mode == 2)
+   {
+      /* scRGB mode: sRGB to linear for scRGB / HDR16 swapchain.
+       * Scale by MaxNits / 80.0 because scRGB 1.0 = 80 nits. */
+      if((global.scanlines > 0.0f) && (global.OutputSize.y > 240.0f * 4.0f))
+      {
+         /* Scanlines() returns linear Rec.2020 after InverseTonemap.
+          * InverseTonemap output units: 1.0 = PaperWhiteNits.
+          * scRGB units: 1.0 = 80 nits.
+          * Convert Rec.2020 back to Rec.709 and scale for scRGB. */
+         float3 linear_2020 = Scanlines(input.texcoord);
+         float3 linear_709  = mul(k2020to709, linear_2020);
+         return float4(linear_709 * (global.paper_white_nits / 80.0f), 1.0f);
+      }
+      else
+      {
+         float4 sdr = input.color * t0.Sample(s0, input.texcoord);
+         float3 linear_col = pow(abs(sdr.rgb), 2.4f);
+         linear_col *= global.max_nits / 80.0f;
+         return float4(linear_col, sdr.a);
+      }
+   }
+   else if((global.inverse_tonemap > 0.0f) && (global.hdr10 > 0.0f))
    {
       if((global.scanlines > 0.0f) && (global.OutputSize.y > 240.0f * 4.0f))
       {
-         return float4(Scanlines(input.texcoord), 1.0f);
+         return float4(HDR10(Scanlines(input.texcoord)), 1.0f);
       }
       else
       {

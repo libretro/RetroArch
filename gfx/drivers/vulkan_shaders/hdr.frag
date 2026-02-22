@@ -355,26 +355,47 @@ vec3 Scanlines(vec2 texcoord)
 
    vec3 linear_colour = pow(max(scanline_colour, vec3(0.0f)), vec3(2.4f));
 
-   return HDR10(linear_colour);
+   return linear_colour;
 }
 
 void main()
 {
-   if(global.HDRMode == 2u)
+   if(global.HDRMode == 3u)
+   {
+      /* PQ HDR10 to scRGB conversion.
+       * Source is PQ-encoded Rec.2020 from the shader's output.
+       * Decode PQ to linear, convert gamut to Rec.709, scale for scRGB. */
+      vec4 pq = texture(Source, vTexCoord);
+      FragColor = vec4(ConvertHDR10_To_scRGB(pq.rgb), pq.a);
+   }
+   else if(global.HDRMode == 2u)
    {
       /* scRGB mode: sRGB to linear for scRGB / HDR16 swapchain.
        * Scale by MaxNits / 80.0 because scRGB 1.0 = 80 nits.
        * Using MaxNits (not PaperWhiteNits) so the SDR UI fills the
        * display's native range, preserving tonal balance uniformly. */
-      vec4 linear = Sample(kDefaultColor, vTexCoord);
-      linear.rgb *= global.MaxNits / 80.0;
-      FragColor = linear;
+      if((global.Scanlines > 0.0) && (global.OutputSize.y > 240.0 * 4.0))
+      {
+         /* Scanlines() returns linear Rec.2020 after InverseTonemap.
+          * InverseTonemap output units: 1.0 = PaperWhiteNits.
+          * scRGB units: 1.0 = 80 nits.
+          * Convert Rec.2020 back to Rec.709 and scale for scRGB. */
+         vec3 linear_2020 = Scanlines(vTexCoord);
+         vec3 linear_709  = linear_2020 * k2020to709;
+         FragColor = vec4(linear_709 * (global.PaperWhiteNits / 80.0), 1.0);
+      }
+      else
+      {
+         vec4 linear = Sample(kDefaultColor, vTexCoord);
+         linear.rgb *= global.MaxNits / 80.0;
+         FragColor = linear;
+      }
    }
    else if((global.InverseTonemap > 0.0) && (global.HDR10 > 0.0))
    {
       if((global.Scanlines > 0.0) && (global.OutputSize.y > 240.0 * 4.0))
       {
-         FragColor = vec4(Scanlines(vTexCoord), 1.0);
+         FragColor = vec4(HDR10(Scanlines(vTexCoord)), 1.0);
       }
       else
       {

@@ -2225,19 +2225,18 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
-         if (settings->uints.video_hdr_mode > 0)
+         unsigned video_hdr_mode = settings->uints.video_hdr_mode;
+
+         if (video_hdr_mode > 0)
             vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
          else
             vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
          video_driver_unset_hdr_support();
 
-         /* When a shader preset requests RGBA16F output, prefer an
-          * R16G16B16A16_SFLOAT swapchain with extended linear sRGB
-          * (scRGB) colour space.  Fall back to HDR10 (RGB10A2 + PQ)
-          * if the surface does not expose such a format. */
-         if (vk->context.flags & VK_CTX_FLAG_HDR_SCRGB)
+         if (video_hdr_mode == 2)
          {
+            /* scRGB mode: always use R16G16B16A16_SFLOAT + extended linear sRGB */
             for (i = 0; i < format_count; i++)
             {
                if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
@@ -2251,14 +2250,20 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
             }
 
             if (format.format != VK_FORMAT_R16G16B16A16_SFLOAT)
+            {
                RARCH_WARN("[Vulkan] R16G16B16A16_SFLOAT + scRGB not available, falling back to HDR10.\n");
+               vk->context.flags &= ~VK_CTX_FLAG_HDR_SCRGB;
+               /* Fall through to HDR10 format search below */
+            }
          }
 
-         if (format.format != VK_FORMAT_R16G16B16A16_SFLOAT)
+         if (video_hdr_mode == 1
+            || (video_hdr_mode == 2 && format.format != VK_FORMAT_R16G16B16A16_SFLOAT))
          {
-            /* RGBA16F was not available; clear the flag so the normal
-             * HDR10 rendering path (with SDR offscreen buffer) is used
-             * instead of a mismatched direct-to-swapchain path. */
+            /* HDR10 mode: always A2B10G10R10 + ST.2084 PQ.
+             * Shaders that output RGBA16F with PQ data get quantised
+             * to 10-bit by the swapchain — R16G16B16A16_SFLOAT is not
+             * paired with HDR10_ST2084 on any known implementation. */
             vk->context.flags &= ~VK_CTX_FLAG_HDR_SCRGB;
 
             for (i = 0; i < format_count; i++)

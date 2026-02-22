@@ -133,3 +133,13 @@ vec3 HDR10ToLinear(vec3 hdr10)
 
    return hdr;
 }
+
+/* Converts a non-linear HDR10 PQ value in the BT. 2020 colorspace to scRGB linear.
+ * scRGB uses Rec.709 primaries with 1.0 = 80 nits.
+ * HDR10 PQ: 1.0 normalised linear = 10,000 nits, so scalar = 10000/80 = 125. */
+vec3 ConvertHDR10_To_scRGB(vec3 hdr10Color)
+{
+   vec3 linear10k = ST2084ToLinear(hdr10Color);
+   vec3 linear709 = linear10k * k2020to709;
+   return linear709 * 125.0;
+}

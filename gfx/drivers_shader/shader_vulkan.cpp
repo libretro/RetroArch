@@ -3181,28 +3181,23 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                chain->set_hdr10();
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-            /* If the final pass explicitly requests RGBA16F, expose
-             * that through get_pass_rt_format() so the driver can
-             * switch the swapchain to 16-bit float and skip the
-             * internal HDR10 / inverse-tonemap conversion.
+            /* If the final pass explicitly requests RGBA16F, flag it so
+             * the driver knows this shader handles HDR conversion and
+             * can skip the internal HDR pipeline (passthrough mode).
              * The final pass renders directly to the swapchain, so
-             * no framebuffer is created from this format. */
+             * rt_format inherits the swapchain format — the hardware
+             * handles any quantisation (e.g. float → 10-bit for PQ). */
             if (explicit_format && pass_format == VK_FORMAT_R16G16B16A16_SFLOAT)
-            {
-               pass_info.rt_format = pass_format;
                chain->set_hdr16();
-            }
-            else
 #endif
-            {
-               /* Inherit swapchain format. */
-               pass_info.rt_format = tmpinfo.swapchain.format;
 
-               if (explicit_format && pass_format != pass_info.rt_format)
-               {
-                  RARCH_WARN("[Vulkan] Using explicit format for last pass in chain,"
+            /* Inherit swapchain format. */
+            pass_info.rt_format = tmpinfo.swapchain.format;
+
+            if (explicit_format && pass_format != pass_info.rt_format)
+            {
+               RARCH_WARN("[Vulkan] Using explicit format for last pass in chain,"
                         " but it is not rendered to framebuffer, using swapchain format instead.\n");
-               }
             }
          }
          else
@@ -3306,23 +3301,12 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             opaque_vert,
             sizeof(opaque_vert) / sizeof(uint32_t));
 
-
-#ifdef VULKAN_HDR_SWAPCHAIN
-      if (info->hdr_enabled)
-      {
-         chain->set_shader(shader->passes, 
-               VK_SHADER_STAGE_FRAGMENT_BIT,
-               hdr_frag,
-               sizeof(hdr_frag) / sizeof(uint32_t));
-      }
-      else
-#endif /* VULKAN_HDR_SWAPCHAIN */ 
-      {
-         chain->set_shader(shader->passes,
-               VK_SHADER_STAGE_FRAGMENT_BIT,
-               opaque_frag,
-               sizeof(opaque_frag) / sizeof(uint32_t));
-      }
+      /* The hidden copy/scale pass is always a plain blit.
+       * HDR conversion is handled by the HDR pipeline, not here. */
+      chain->set_shader(shader->passes,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            opaque_frag,
+            sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
    chain->set_shader_preset(std::move(shader));
