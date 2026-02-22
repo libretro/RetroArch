@@ -1260,9 +1260,12 @@ static bool task_database_check_serial_and_crc(
    if (!config_get_ptr()->bools.scan_serial_and_crc)
        return false;
    /* the PSP shares serials for disc/download content */
-   return string_starts_with(
+   return (string_starts_with(
          path_basename_nocompression(database_info_get_current_name(db_state)),
-         "Sony - PlayStation Portable");
+         "Sony - PlayStation Portable") ||
+           string_starts_with(
+         path_basename_nocompression(database_info_get_current_name(db_state)),
+         "Sega - Dreamcast"));
 }
 
 static int task_database_iterate_serial_lookup(
@@ -1363,29 +1366,37 @@ static int task_database_iterate_serial_lookup(
 
    if (db_state->info)
    {
-      database_info_t *db_info_entry = &db_state->info->list[
-         db_state->entry_index];
-
-      if (db_info_entry && db_info_entry->serial)
+      while (db_state->entry_index <= db_state->info->count)
       {
-         if (string_is_equal(db_state->serial, db_info_entry->serial))
+         database_info_t *db_info_entry = &db_state->info->list[
+            db_state->entry_index];
+
+         if (db_info_entry && db_info_entry->serial)
          {
-            if (task_database_check_serial_and_crc(db_state))
+            if (string_is_equal(db_state->serial, db_info_entry->serial))
             {
-               if (db_state->crc == 0)
-                  intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
-               if (db_state->crc == db_info_entry->crc32)
+               if (task_database_check_serial_and_crc(db_state))
+               {
+                  if (db_state->crc == 0)
+                  {
+                     if (extension_to_file_type(path_get_extension(name)) == FILE_TYPE_GDI)
+                        task_database_gdi_get_crc_and_size(name, &db_state->crc, &db_state->size);
+                     else
+                        intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
+                  }
+
+                  if (db_state->crc == db_info_entry->crc32)
+                     return database_info_list_iterate_found_match(_db,
+                           db_state, db, NULL);
+               }
+               else
                   return database_info_list_iterate_found_match(_db,
                         db_state, db, NULL);
             }
-            else
-               return database_info_list_iterate_found_match(_db,
-                     db_state, db, NULL);
          }
+         db_state->entry_index++;
       }
    }
-
-   db_state->entry_index++;
 
    if (db_state->info)
    {
