@@ -3080,7 +3080,7 @@ void config_set_defaults(void *data)
    configuration_set_bool(settings,
          settings->bools.ssh_enable, filestream_exists(LAKKA_SSH_PATH));
    configuration_set_bool(settings,
-         settings->bools.samba_enable, filestream_exists(LAKKA_SAMBA_PATH));
+         settings->bools.samba_enable, !filestream_exists(LAKKA_SAMBA_DISABLED_FILE_PATH));
    configuration_set_bool(settings,
          settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
    configuration_set_bool(settings, settings->bools.localap_enable, false);
@@ -4450,7 +4450,7 @@ static bool config_load_file(global_t *global,
    configuration_set_bool(settings,
          settings->bools.ssh_enable, filestream_exists(LAKKA_SSH_PATH));
    configuration_set_bool(settings,
-         settings->bools.samba_enable, filestream_exists(LAKKA_SAMBA_PATH));
+         settings->bools.samba_enable, !filestream_exists(LAKKA_SAMBA_DISABLED_FILE_PATH));
    configuration_set_bool(settings,
          settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
 #ifdef HAVE_RETROFLAG
@@ -5792,11 +5792,11 @@ bool config_save_file(const char *path)
    else
       filestream_delete(LAKKA_SSH_PATH);
    if (settings->bools.samba_enable)
-      filestream_close(filestream_open(LAKKA_SAMBA_PATH,
+      filestream_delete(LAKKA_SAMBA_DISABLED_FILE_PATH);
+   else
+      filestream_close(filestream_open(LAKKA_SAMBA_DISABLED_FILE_PATH,
                RETRO_VFS_FILE_ACCESS_WRITE,
                RETRO_VFS_FILE_ACCESS_HINT_NONE));
-   else
-      filestream_delete(LAKKA_SAMBA_PATH);
    if (settings->bools.bluetooth_enable)
       filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH,
                RETRO_VFS_FILE_ACCESS_WRITE,
