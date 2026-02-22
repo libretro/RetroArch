@@ -3471,7 +3471,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    }
 
 #ifdef HAVE_DXGI_HDR
-   if (settings->bools.video_hdr_enable)
+   if (settings->uints.video_hdr_mode > 0)
       d3d12->flags                       |=  D3D12_ST_FLAG_HDR_ENABLE;
    else
       d3d12->flags                       &= ~D3D12_ST_FLAG_HDR_ENABLE;
@@ -3884,7 +3884,7 @@ static bool d3d12_gfx_frame(
 #endif
 #ifdef HAVE_DXGI_HDR
    bool d3d12_hdr_enable          = false;
-   bool video_hdr_enable          = video_info->hdr_enable;
+   bool video_hdr_enable          = video_info->hdr_mode > 0;
    DXGI_FORMAT back_buffer_format = d3d12->shader_preset && d3d12->shader_preset->passes ? glslang_format_to_dxgi(d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format) : d3d12->chain.formats[d3d12->chain.bit_depth];
    bool use_back_buffer           = back_buffer_format != d3d12->chain.formats[d3d12->chain.bit_depth];     /* this is used when presets use scale_type in their last pass */
 

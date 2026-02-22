@@ -500,8 +500,8 @@
 /* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
 
-/* Should we enable hdr when its supported */
-#define DEFAULT_VIDEO_HDR_ENABLE false
+/* HDR output mode: 0 = off, 1 = HDR10, 2 = scRGB */
+#define DEFAULT_VIDEO_HDR_MODE 0
 
 /* The maximum nunmber of nits the actual display can show - needs to be calibrated */
 #define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f

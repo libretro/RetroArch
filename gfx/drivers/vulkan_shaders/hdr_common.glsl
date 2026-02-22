@@ -10,6 +10,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
    uint ExpandGamut;
    float InverseTonemap;
    float HDR10;
+   uint HDRMode;
 } global;
 
 /* Tonemapping: conversion from HDR to SDR (and vice-versa) */

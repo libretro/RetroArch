@@ -10315,9 +10315,9 @@ unsigned menu_displaylist_build_list(
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
-                        PARSE_ONLY_BOOL, false) == 0)
+                        PARSE_ONLY_UINT, false) == 0)
                   count++;
-               if (settings->bools.video_hdr_enable)
+               if (settings->uints.video_hdr_mode > 0)
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS,

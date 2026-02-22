@@ -267,7 +267,7 @@ class Pass
       void set_core_aspect_rot(float coreaspectrot) { core_aspect_rot = coreaspectrot; }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-      void set_enable_hdr(float enable_hdr_) { enable_hdr = enable_hdr_; }
+      void set_hdr_mode(unsigned hdr_mode_) { hdr_mode = hdr_mode_; }
       void set_paper_white_nits(float paper_white_nits_) { paper_white_nits = paper_white_nits_; }
       void set_max_nits(float max_nits_) { max_nits = max_nits_; }
       void set_expand_gamut(unsigned expand_gamut_) { expand_gamut = expand_gamut_; }
@@ -275,7 +275,7 @@ class Pass
       void set_subpixel_layout(unsigned subpixel_layout_ ) { subpixel_layout = subpixel_layout_; }
       void set_inverse_tonemap(float inverse_tonemap_) { inverse_tonemap = inverse_tonemap_; }
       void set_hdr10(float hdr10_) { hdr10 = hdr10_; }
-#endif /* VULKAN_HDR_SWAPCHAIN */ 
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
@@ -377,7 +377,7 @@ class Pass
       uint32_t current_subframe   = 1;
       
 #ifdef VULKAN_HDR_SWAPCHAIN
-      float enable_hdr            = 0.0f;
+      unsigned hdr_mode           = 0;
       float paper_white_nits      = 0.0f;
       float max_nits              = 10000.0f;
       unsigned expand_gamut       = 0;
@@ -455,7 +455,7 @@ struct vulkan_filter_chain
       void set_core_aspect(float coreaspect);
       void set_core_aspect_rot(float coreaspect);
 #ifdef VULKAN_HDR_SWAPCHAIN
-      void set_enable_hdr(float enable_hdr);
+      void set_hdr_mode(unsigned hdr_mode);
       void set_paper_white_nits(float paper_white_nits);
       void set_max_nits(float max_nits);
       void set_expand_gamut(unsigned expand_gamut);
@@ -463,7 +463,7 @@ struct vulkan_filter_chain
       void set_subpixel_layout(unsigned subpixel_layout);
       void set_inverse_tonemap(float inverse_tonemap);
       void set_hdr10(float hdr10);
-#endif /* VULKAN_HDR_SWAPCHAIN */ 
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
       void set_pass_name(unsigned pass, const char *name);
 
@@ -475,6 +475,9 @@ struct vulkan_filter_chain
 
       bool emits_hdr10() const;
       void set_hdr10();
+
+      bool emits_hdr16() const;
+      void set_hdr16();
 
    private:
       VkDevice device;
@@ -496,6 +499,7 @@ struct vulkan_filter_chain
       std::vector<std::unique_ptr<Framebuffer>> original_history;
       bool require_clear        = false;
       bool emits_hdr_colorspace = false;
+      bool emits_hdr16_output   = false;
 
       void flush();
 
@@ -1323,6 +1327,16 @@ void vulkan_filter_chain::set_hdr10()
    emits_hdr_colorspace = true;
 }
 
+bool vulkan_filter_chain::emits_hdr16() const
+{
+   return emits_hdr16_output;
+}
+
+void vulkan_filter_chain::set_hdr16()
+{
+   emits_hdr16_output = true;
+}
+
 void vulkan_filter_chain::set_num_passes(unsigned num_passes)
 {
    unsigned i;
@@ -1524,11 +1538,11 @@ void vulkan_filter_chain::set_core_aspect_rot(float coreaspectrot)
 }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-void vulkan_filter_chain::set_enable_hdr(float enable_hdr)
+void vulkan_filter_chain::set_hdr_mode(unsigned hdr_mode)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
-      passes[i]->set_enable_hdr(enable_hdr);
+      passes[i]->set_hdr_mode(hdr_mode);
 }
 
 void vulkan_filter_chain::set_paper_white_nits(float paper_white_nits)
@@ -1579,7 +1593,8 @@ void vulkan_filter_chain::set_hdr10(float hdr10)
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_hdr10(hdr10);
 }
-#endif /* VULKAN_HDR_SWAPCHAIN */ 
+
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
@@ -2510,8 +2525,8 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
                       core_aspect_rot);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   build_semantic_float(buffer, SLANG_SEMANTIC_HDR,
-                      enable_hdr);
+   build_semantic_uint(buffer, SLANG_SEMANTIC_HDR,
+                      hdr_mode);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
                       paper_white_nits);
@@ -2526,14 +2541,14 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
                       subpixel_layout);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
-                      expand_gamut);                      
+                      expand_gamut);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_INVERSE_TONEMAP,
                       inverse_tonemap);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_HDR10,
                       hdr10);
-#endif /* VULKAN_HDR_SWAPCHAIN */ 
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
@@ -3159,18 +3174,35 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
             pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
 
-            /* Always inherit swapchain format. */
-            pass_info.rt_format  = tmpinfo.swapchain.format;
             VkFormat pass_format = glslang_format_to_vk(output.meta.rt_format);
 
             /* If final pass explicitly emits RGB10, consider it HDR color space. */
             if (explicit_format && vulkan_is_hdr10_format(pass_format))
                chain->set_hdr10();
 
-            if (explicit_format && pass_format != pass_info.rt_format)
+#ifdef VULKAN_HDR_SWAPCHAIN
+            /* If the final pass explicitly requests RGBA16F, expose
+             * that through get_pass_rt_format() so the driver can
+             * switch the swapchain to 16-bit float and skip the
+             * internal HDR10 / inverse-tonemap conversion.
+             * The final pass renders directly to the swapchain, so
+             * no framebuffer is created from this format. */
+            if (explicit_format && pass_format == VK_FORMAT_R16G16B16A16_SFLOAT)
             {
-               RARCH_WARN("[Vulkan] Using explicit format for last pass in chain,"
-                     " but it is not rendered to framebuffer, using swapchain format instead.\n");
+               pass_info.rt_format = pass_format;
+               chain->set_hdr16();
+            }
+            else
+#endif
+            {
+               /* Inherit swapchain format. */
+               pass_info.rt_format = tmpinfo.swapchain.format;
+
+               if (explicit_format && pass_format != pass_info.rt_format)
+               {
+                  RARCH_WARN("[Vulkan] Using explicit format for last pass in chain,"
+                        " but it is not rendered to framebuffer, using swapchain format instead.\n");
+               }
             }
          }
          else
@@ -3194,6 +3226,21 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
          RARCH_LOG("[Vulkan] Using render target format %s for pass output #%u.\n",
                glslang_format_to_string(output.meta.rt_format), i);
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+         /* If the final pass explicitly emits an HDR10 or RGBA16F
+          * format via #pragma format, flag it so the driver skips its
+          * own inverse-tonemap / HDR10 conversion (passthrough mode).
+          * Without this, the hidden copy pass added for scale_type
+          * would re-apply HDR processing on already-HDR content. */
+         if (i + 1 == shader->passes)
+         {
+            if (explicit_format && vulkan_is_hdr10_format(pass_info.rt_format))
+               chain->set_hdr10();
+            else if (explicit_format && pass_info.rt_format == VK_FORMAT_R16G16B16A16_SFLOAT)
+               chain->set_hdr16();
+         }
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
          switch (pass->fbo.type_x)
          {
@@ -3433,11 +3480,11 @@ void vulkan_filter_chain_set_core_aspect_rot(
 }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-void vulkan_filter_chain_set_enable_hdr(
+void vulkan_filter_chain_set_hdr_mode(
       vulkan_filter_chain_t *chain,
-      float enable_hdr)
+      unsigned hdr_mode)
 {
-   chain->set_enable_hdr(enable_hdr);
+   chain->set_hdr_mode(hdr_mode);
 }
 
 void vulkan_filter_chain_set_paper_white_nits(
@@ -3488,7 +3535,7 @@ void vulkan_filter_chain_set_hdr10(
 {
    chain->set_hdr10(hdr10);
 }
-#endif /* VULKAN_HDR_SWAPCHAIN */ 
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 void vulkan_filter_chain_set_pass_name(
       vulkan_filter_chain_t *chain,
@@ -3522,4 +3569,9 @@ void vulkan_filter_chain_end_frame(
 bool vulkan_filter_chain_emits_hdr10(vulkan_filter_chain_t *chain)
 {
    return chain->emits_hdr10();
+}
+
+bool vulkan_filter_chain_emits_hdr16(vulkan_filter_chain_t *chain)
+{
+   return chain->emits_hdr16();
 }

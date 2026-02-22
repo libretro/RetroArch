@@ -497,7 +497,7 @@ typedef struct video_frame_info
    bool fastforward_frameskip;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
-   bool hdr_enable;
+   unsigned hdr_mode;
    bool overlay_behind_menu;
    bool scan_subframes;
    bool shader_active;

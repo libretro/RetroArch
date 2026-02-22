@@ -3056,7 +3056,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->scale_height                = video_st->scale_height;
 
    video_info->shader_active               = !(menu_shdr_flags & SHDR_FLAG_DISABLED) ? true : false;
-   video_info->hdr_enable                  = settings->bools.video_hdr_enable;
+   video_info->hdr_mode                    = settings->uints.video_hdr_mode;
 
    video_info->libretro_running            = false;
    video_info->msg_bgcolor_enable          = settings->bools.video_msg_bgcolor_enable;

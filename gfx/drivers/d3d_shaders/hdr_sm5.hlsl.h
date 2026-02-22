@@ -167,7 +167,7 @@ float3 Sample(float2 texcoord)
 {
    const float4 sdr = t0.Sample(s0, texcoord);
 
-   const float3 sdr_linear = pow(abs(sdr.rgb), 2.22f);
+   const float3 sdr_linear = pow(abs(sdr.rgb), 2.4f);
 
    return sdr_linear;
 }
@@ -176,7 +176,7 @@ float4 Sample(float4 colour, float2 texcoord)
 {
    const float4 sdr = colour * t0.Sample(s0, texcoord);
 
-   const float3 sdr_linear = pow(abs(sdr.rgb), 2.22f);
+   const float3 sdr_linear = pow(abs(sdr.rgb), 2.4f);
 
    return float4(sdr_linear, sdr.a);
 }
@@ -459,7 +459,8 @@ float4 PSMain(PSInput input) : SV_TARGET
    }
    else
    {
-      return Sample(input.color, input.texcoord);
+      // Pure passthrough
+      return t0.Sample(s0, input.texcoord);
    }
 };
 )

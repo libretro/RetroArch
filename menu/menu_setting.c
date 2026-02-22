@@ -3157,6 +3157,26 @@ static size_t setting_get_string_representation_video_hdr_expand_gamut(
    return 0;
 }
 
+static size_t setting_get_string_representation_video_hdr_mode(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF), len);
+         case 1:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_HDR10), len);
+         case 2:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_SCRGB), len);
+      }
+   }
+   return 0;
+}
 
 static size_t setting_get_string_representation_video_hdr_subpixel_layout(
       rarch_setting_t *setting, char *s, size_t len)
@@ -8725,7 +8745,7 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
          settings->flags                  |= SETTINGS_FLG_MODIFIED;
-         settings->bools.video_hdr_enable  = *setting->value.target.boolean;
+         settings->uints.video_hdr_mode    = *setting->value.target.unsigned_integer;
 
          rarch_cmd = CMD_EVENT_REINIT;
          break;
@@ -14023,29 +14043,27 @@ static bool setting_append_list(
                      &subgroup_info,
                      parent_group);
 
-               CONFIG_BOOL(
+               CONFIG_UINT(
                      list, list_info,
-                     &settings->bools.video_hdr_enable,
+                     &settings->uints.video_hdr_mode,
                      MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
                      MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
-                     DEFAULT_VIDEO_HDR_ENABLE,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
+                     DEFAULT_VIDEO_HDR_MODE,
                      &group_info,
                      &subgroup_info,
                      parent_group,
                      general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_NONE);
-               (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
-               (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
-               (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_video_hdr_mode;
+               menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
                MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
                      list,
                      list_info,
                      CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
-               /* if (settings->bools.video_hdr_enable) */
+               /* if (settings->uints.video_hdr_mode > 0) */
                {
                   CONFIG_FLOAT(
                         list, list_info,

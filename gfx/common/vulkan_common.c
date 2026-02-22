@@ -2225,25 +2225,56 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
-         if (settings->bools.video_hdr_enable)
+         if (settings->uints.video_hdr_mode > 0)
             vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
          else
             vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
          video_driver_unset_hdr_support();
 
-         for (i = 0; i < format_count; i++)
+         /* When a shader preset requests RGBA16F output, prefer an
+          * R16G16B16A16_SFLOAT swapchain with extended linear sRGB
+          * (scRGB) colour space.  Fall back to HDR10 (RGB10A2 + PQ)
+          * if the surface does not expose such a format. */
+         if (vk->context.flags & VK_CTX_FLAG_HDR_SCRGB)
          {
-            if (     (vulkan_is_hdr10_format(formats[i].format))
-                  && (formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT))
+            for (i = 0; i < format_count; i++)
             {
-               format = formats[i];
-               video_driver_set_hdr_support();
-               break;
+               if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+                  && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
+               {
+                  format = formats[i];
+                  video_driver_set_hdr_support();
+                  RARCH_LOG("[Vulkan] Selecting R16G16B16A16_SFLOAT swapchain with scRGB colour space.\n");
+                  break;
+               }
+            }
+
+            if (format.format != VK_FORMAT_R16G16B16A16_SFLOAT)
+               RARCH_WARN("[Vulkan] R16G16B16A16_SFLOAT + scRGB not available, falling back to HDR10.\n");
+         }
+
+         if (format.format != VK_FORMAT_R16G16B16A16_SFLOAT)
+         {
+            /* RGBA16F was not available; clear the flag so the normal
+             * HDR10 rendering path (with SDR offscreen buffer) is used
+             * instead of a mismatched direct-to-swapchain path. */
+            vk->context.flags &= ~VK_CTX_FLAG_HDR_SCRGB;
+
+            for (i = 0; i < format_count; i++)
+            {
+               if (     (vulkan_is_hdr10_format(formats[i].format))
+                     && (formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT))
+               {
+                  format = formats[i];
+                  video_driver_set_hdr_support();
+                  break;
+               }
             }
          }
 
-         if (!vulkan_is_hdr10_format(format.format))
+         if (  !vulkan_is_hdr10_format(format.format)
+            && format.format != VK_FORMAT_R16G16B16A16_SFLOAT)
             vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
       }
       else

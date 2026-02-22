@@ -2591,7 +2591,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
    d3d11->hdr.min_output_nits             = 0.001f;
    d3d11->hdr.max_cll                     = 0.0f;
    d3d11->hdr.max_fall                    = 0.0f;
-   if (settings->bools.video_hdr_enable)
+   if (settings->uints.video_hdr_mode > 0)
       d3d11->flags |=  D3D11_ST_FLAG_HDR_ENABLE;
    else
       d3d11->flags &= ~D3D11_ST_FLAG_HDR_ENABLE;
@@ -3299,7 +3299,7 @@ static bool d3d11_gfx_frame(
 #endif
 #ifdef HAVE_DXGI_HDR
    bool d3d11_hdr_enable          = (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) ? true : false;
-   bool video_hdr_enable          = video_info->hdr_enable;
+   bool video_hdr_enable          = video_info->hdr_mode > 0;
    DXGI_FORMAT back_buffer_format = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : d3d11->chain_formats[d3d11->chain_bit_depth];
    bool use_back_buffer           = back_buffer_format != d3d11->chain_formats[d3d11->chain_bit_depth];     /* this is used when presets use scale_type in their last pass */
 #endif

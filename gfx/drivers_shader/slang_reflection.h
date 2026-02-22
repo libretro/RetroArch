@@ -84,7 +84,7 @@ enum slang_semantic
    SLANG_SEMANTIC_TOTAL_SUBFRAMES  = 10,
    /* uint, current sub frame */
    SLANG_SEMANTIC_CURRENT_SUBFRAME = 11,
-   /* float, Enable HDR */
+   /* uint, HDR mode: 0=off, 1=HDR10, 2=scRGB */
    SLANG_SEMANTIC_HDR              = 12,
    /* float, HDR Paper white luminace */
    SLANG_SEMANTIC_PAPER_WHITE_NITS = 13,

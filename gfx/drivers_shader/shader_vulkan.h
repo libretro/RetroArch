@@ -156,8 +156,8 @@ void vulkan_filter_chain_set_core_aspect_rot(vulkan_filter_chain_t *chain,
       float coreaspectrot);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-void vulkan_filter_chain_set_enable_hdr(vulkan_filter_chain_t *chain,
-      float enable_hdr);
+void vulkan_filter_chain_set_hdr_mode(vulkan_filter_chain_t *chain,
+      unsigned hdr_mode);
 
 void vulkan_filter_chain_set_paper_white_nits(vulkan_filter_chain_t *chain,
       float paper_white_nits);
@@ -179,7 +179,7 @@ void vulkan_filter_chain_set_inverse_tonemap(vulkan_filter_chain_t *chain,
 
 void vulkan_filter_chain_set_hdr10(vulkan_filter_chain_t *chain,
       float hdr10);
-#endif /* VULKAN_HDR_SWAPCHAIN */ 
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp);
@@ -200,6 +200,7 @@ struct video_shader *vulkan_filter_chain_get_preset(
       vulkan_filter_chain_t *chain);
 
 bool vulkan_filter_chain_emits_hdr10(vulkan_filter_chain_t *chain);
+bool vulkan_filter_chain_emits_hdr16(vulkan_filter_chain_t *chain);
 
 RETRO_END_DECLS
 

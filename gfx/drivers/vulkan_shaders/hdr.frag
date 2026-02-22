@@ -91,14 +91,14 @@ const mat4 kCubicBezier = mat4(
 vec3 Sample(vec2 texcoord)
 {
    vec4 sdr = texture(Source, texcoord);
-   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.22));
+   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.4));
    return sdr_linear;
 }
 
 vec4 Sample(vec4 colour, vec2 texcoord)
 {
    vec4 sdr = colour * texture(Source, texcoord);
-   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.22));
+   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.4));
    return vec4(sdr_linear, sdr.a);
 }
 
@@ -360,7 +360,17 @@ vec3 Scanlines(vec2 texcoord)
 
 void main()
 {
-   if((global.InverseTonemap > 0.0) && (global.HDR10 > 0.0))
+   if(global.HDRMode == 2u)
+   {
+      /* scRGB mode: sRGB to linear for scRGB / HDR16 swapchain.
+       * Scale by MaxNits / 80.0 because scRGB 1.0 = 80 nits.
+       * Using MaxNits (not PaperWhiteNits) so the SDR UI fills the
+       * display's native range, preserving tonal balance uniformly. */
+      vec4 linear = Sample(kDefaultColor, vTexCoord);
+      linear.rgb *= global.MaxNits / 80.0;
+      FragColor = linear;
+   }
+   else if((global.InverseTonemap > 0.0) && (global.HDR10 > 0.0))
    {
       if((global.Scanlines > 0.0) && (global.OutputSize.y > 240.0 * 4.0))
       {
@@ -381,6 +391,6 @@ void main()
    }
    else
    {
-      FragColor = Sample(kDefaultColor, vTexCoord);
+      FragColor = texture(Source, vTexCoord);
    }
 }
