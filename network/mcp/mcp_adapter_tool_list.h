@@ -22,8 +22,11 @@ RETRO_BEGIN_DECLS
 
 /* Handler function for a single MCP tool.
  * Writes the raw JSON result object into the provided buffer.
- * The dispatcher wraps it in the JSON-RPC response envelope. */
-typedef void (*mcp_tool_handler_t)(char *buf, size_t buf_size);
+ * The dispatcher wraps it in the JSON-RPC response envelope.
+ * args_json / args_len contain the raw JSON of the
+ * "arguments" object (may be empty or NULL). */
+typedef void (*mcp_tool_handler_t)(const char *args_json,
+      size_t args_len, char *buf, size_t buf_size);
 
 /* Definition of one MCP tool. */
 typedef struct
@@ -37,7 +40,9 @@ typedef struct
 void mcp_tools_build_list(int64_t id, char *buf, size_t buf_size);
 
 /* Dispatch a "tools/call" request to the matching tool handler. */
-void mcp_tools_call(int64_t id, const char *tool_name, char *buf, size_t buf_size);
+void mcp_tools_call(int64_t id, const char *tool_name,
+      const char *args_json, size_t args_len,
+      char *buf, size_t buf_size);
 
 RETRO_END_DECLS
 

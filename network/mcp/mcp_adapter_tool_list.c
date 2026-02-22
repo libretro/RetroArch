@@ -28,6 +28,11 @@
 #include "../../content.h"
 #include "../../paths.h"
 #include "../../verbosity.h"
+#include "../../command.h"
+#include "../../configuration.h"
+#include "../../version.h"
+#include "../../gfx/video_driver.h"
+#include "../../audio/audio_driver.h"
 
 #include "mcp_adapter_tools.h"
 
@@ -39,7 +44,12 @@
  */
 
 static const mcp_tool_t mcp_tools[] = {
-   { "get_content_info", tool_get_content_info_json, mcp_tool_get_content_info },
+   { "get_content_info",      tool_get_content_info_json,      mcp_tool_get_content_info },
+   { "get_status",            tool_get_status_json,            mcp_tool_get_status },
+   { "pause_resume",          tool_pause_resume_json,          mcp_tool_pause_resume },
+   { "reset",                 tool_reset_json,                 mcp_tool_reset },
+   { "save_state",            tool_save_state_json,            mcp_tool_save_state },
+   { "load_state",            tool_load_state_json,            mcp_tool_load_state },
 };
 
 static const size_t mcp_tools_count = sizeof(mcp_tools) / sizeof(mcp_tools[0]);
@@ -66,7 +76,9 @@ void mcp_tools_build_list(int64_t id, char *buf, size_t buf_size)
    strlcpy(buf + pos, "]}}", buf_size - pos);
 }
 
-void mcp_tools_call(int64_t id, const char *tool_name, char *buf, size_t buf_size)
+void mcp_tools_call(int64_t id, const char *tool_name,
+      const char *args_json, size_t args_len,
+      char *buf, size_t buf_size)
 {
    char normalized[128];
    size_t i;
@@ -84,7 +96,7 @@ void mcp_tools_call(int64_t id, const char *tool_name, char *buf, size_t buf_siz
       if (string_is_equal(normalized, mcp_tools[i].name))
       {
          char escaped[MCP_JSON_MAX_RESPONSE];
-         mcp_tools[i].handler(buf, buf_size);
+         mcp_tools[i].handler(args_json, args_len, buf, buf_size);
          mcp_json_escape(escaped, sizeof(escaped), buf);
          snprintf(buf, buf_size, mcp_content_info_fmt, (long long)id, escaped);
          return;

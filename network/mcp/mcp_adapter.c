@@ -23,6 +23,7 @@
 #include "mcp_adapter.h"
 #include "mcp_defines.h"
 #include "mcp_adapter_tool_list.h"
+#include "mcp_adapter_utils.h"
 #include "mcp_json_templates.h"
 #include "../../version.h"
 #include "../../verbosity.h"
@@ -36,6 +37,8 @@ typedef struct
    char    method[128];
    char    tool_name[128];
    char    protocol_version[32];
+   char    args_json[MCP_JSON_MAX_REQUEST];
+   size_t  args_len;
    bool    is_notification;
 } mcp_request_t;
 
@@ -46,6 +49,9 @@ static bool mcp_parse_request(const char *json, size_t len, mcp_request_t *req)
    int depth         = 0;
    bool in_params    = false;
    int params_depth  = 0;
+   bool in_arguments = false;
+   int args_depth    = 0;
+   const char *args_key = NULL;
    const char *key   = NULL;
    size_t key_len    = 0;
 
@@ -65,8 +71,24 @@ static bool mcp_parse_request(const char *json, size_t len, mcp_request_t *req)
       if (type == RJSON_OBJECT)
       {
          depth++;
-         if (in_params)
+         if (in_arguments)
+         {
+            args_depth++;
+         }
+         else if (in_params)
+         {
             params_depth++;
+            if (params_depth == 2 && key && string_is_equal(key, "arguments"))
+            {
+               in_arguments   = true;
+               args_depth     = 1;
+               args_key       = NULL;
+               req->args_json[0] = '{';
+               req->args_json[1] = '\0';
+               req->args_len     = 1;
+               key            = NULL;
+            }
+         }
          else if (depth == 2 && key && string_is_equal(key, "params"))
          {
             in_params    = true;
@@ -77,6 +99,19 @@ static bool mcp_parse_request(const char *json, size_t len, mcp_request_t *req)
       }
       if (type == RJSON_OBJECT_END)
       {
+         if (in_arguments)
+         {
+            args_depth--;
+            if (args_depth <= 0)
+            {
+               if (req->args_len + 2 < sizeof(req->args_json))
+               {
+                  req->args_json[req->args_len++] = '}';
+                  req->args_json[req->args_len]   = '\0';
+               }
+               in_arguments = false;
+            }
+         }
          if (in_params)
          {
             params_depth--;
@@ -88,14 +123,75 @@ static bool mcp_parse_request(const char *json, size_t len, mcp_request_t *req)
       }
       if (type == RJSON_ARRAY)
       {
-         if (in_params)
+         if (in_arguments)
+            args_depth++;
+         else if (in_params)
             params_depth++;
          continue;
       }
       if (type == RJSON_ARRAY_END)
       {
-         if (in_params)
+         if (in_arguments)
+            args_depth--;
+         else if (in_params)
             params_depth--;
+         continue;
+      }
+
+      /* inside arguments - capture flat key/value pairs */
+      if (in_arguments && args_depth == 1)
+      {
+         if (type == RJSON_STRING)
+         {
+            size_t slen;
+            const char *s = rjson_get_string(parser, &slen);
+            if (!args_key)
+               args_key = s;
+            else
+            {
+               /* string value: append "key":"value" */
+               char tmp[512];
+               char escaped[256];
+               mcp_json_escape(escaped, sizeof(escaped), s);
+               if (req->args_len > 1)
+                  req->args_json[req->args_len++] = ',';
+               snprintf(tmp, sizeof(tmp), "\"%s\":\"%s\"", args_key, escaped);
+               req->args_len += strlcpy(
+                     req->args_json + req->args_len,
+                     tmp,
+                     sizeof(req->args_json) - req->args_len);
+               args_key = NULL;
+            }
+         }
+         else if (type == RJSON_NUMBER && args_key)
+         {
+            /* number value: append "key":123 */
+            char tmp[256];
+            if (req->args_len > 1)
+               req->args_json[req->args_len++] = ',';
+            snprintf(tmp, sizeof(tmp), "\"%s\":%d", args_key,
+                  rjson_get_int(parser));
+            req->args_len += strlcpy(
+                  req->args_json + req->args_len,
+                  tmp,
+                  sizeof(req->args_json) - req->args_len);
+            args_key = NULL;
+         }
+         else if ((type == RJSON_TRUE || type == RJSON_FALSE) && args_key)
+         {
+            char tmp[256];
+            if (req->args_len > 1)
+               req->args_json[req->args_len++] = ',';
+            snprintf(tmp, sizeof(tmp), "\"%s\":%s", args_key,
+                  type == RJSON_TRUE ? "true" : "false");
+            req->args_len += strlcpy(
+                  req->args_json + req->args_len,
+                  tmp,
+                  sizeof(req->args_json) - req->args_len);
+            args_key = NULL;
+         }
+         else
+            args_key = NULL;
          continue;
       }
 
@@ -233,7 +329,9 @@ void mcp_adapter_handle_request(const char *json_request, size_t len,
                "Invalid params: missing tool name");
          return;
       }
-      mcp_tools_call(req.id, req.tool_name, response, response_size);
+      mcp_tools_call(req.id, req.tool_name,
+            req.args_json, req.args_len,
+            response, response_size);
       return;
    }
 
