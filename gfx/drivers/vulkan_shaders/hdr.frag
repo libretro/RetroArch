@@ -387,6 +387,18 @@ void main()
       else
       {
          vec4 linear = Sample(kDefaultColor, vTexCoord);
+
+         /* Colour boost in scRGB: always convert back to Rec.709 via k2020to709,
+          * with the forward matrix controlling saturation boost.
+          * 0=Accurate (just k2020to709), 1=Expanded, 2=Wide, 3=Super (passthrough) */
+         uint gamut = global.ExpandGamut;
+         if(gamut == 0u)
+            linear.rgb = linear.rgb * k2020to709;
+         else if(gamut == 1u)
+            linear.rgb = (linear.rgb * kExpanded709to2020) * k2020to709;
+         else if(gamut == 2u)
+            linear.rgb = (linear.rgb * kP3to2020) * k2020to709;
+
          linear.rgb *= global.MaxNits / kscRGBWhiteNits;
          FragColor = linear;
       }

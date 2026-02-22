@@ -492,6 +492,17 @@ float4 PSMain(PSInput input) : SV_TARGET
       {
          float4 sdr = input.color * t0.Sample(s0, input.texcoord);
          float3 linear_col = pow(abs(sdr.rgb), 2.4f);
+
+         /* Colour boost in scRGB: always convert back to Rec.709 via k2020to709,
+          * with the forward matrix controlling saturation boost.
+          * 0=Accurate (just k2020to709), 1=Expanded, 2=Wide, 3=Super (passthrough) */
+         if(global.expand_gamut == 0)
+            linear_col = mul(k2020to709, linear_col);
+         else if(global.expand_gamut == 1)
+            linear_col = mul(k2020to709, mul(kExpanded709to2020, linear_col));
+         else if(global.expand_gamut == 2)
+            linear_col = mul(k2020to709, mul(kP3to2020, linear_col));
+
          linear_col *= global.max_nits / kscRGBWhiteNits;
          return float4(linear_col, sdr.a);
       }
