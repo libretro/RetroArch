@@ -3383,6 +3383,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 
+      case RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO:
+         {
+            bool state = *(const bool*)data;
+
+            RARCH_LOG("[Environ] RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO: %s.\n", state ? "yes" : "no");
+
+            set_save_state_disable_undo(state);
+         }
+         break;
+
       case RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE:
          {
             const struct retro_system_content_info_override *overrides =

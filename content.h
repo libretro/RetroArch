@@ -103,9 +103,10 @@ bool content_init(void);
 /* Resets the state and savefile backup buffers */
 void content_reset_savestate_backups(void);
 
-/* Checks if the buffers are empty */
+/* Checks if the buffers are empty, or undo feature is disabled */
 bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
+bool content_undo_save_disabled(void);
 
 /* Clears the pending subsystem rom buffer */
 bool content_is_subsystem_pending_load(void);

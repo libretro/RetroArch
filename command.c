@@ -1351,8 +1351,12 @@ static size_t command_event_save_config(const char *config_path,
 static size_t command_event_undo_save_state(char *s, size_t len)
 {
    if (content_undo_save_buf_is_empty())
-      return strlcpy(s,
-         msg_hash_to_str(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET), len);
+   {
+      enum msg_hash_enums msg = content_undo_save_disabled()
+         ? MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO
+         : MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET;
+      return strlcpy(s, msg_hash_to_str(msg), len);
+   }
    if (!content_undo_save_state())
       return strlcpy(s,
          msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE), len);
@@ -1363,9 +1367,12 @@ static size_t command_event_undo_save_state(char *s, size_t len)
 static size_t command_event_undo_load_state(char *s, size_t len)
 {
    if (content_undo_load_buf_is_empty())
-      return strlcpy(s,
-         msg_hash_to_str(MSG_NO_STATE_HAS_BEEN_LOADED_YET),
-         len);
+   {
+      enum msg_hash_enums msg = content_undo_save_disabled()
+         ? MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO
+         : MSG_NO_STATE_HAS_BEEN_LOADED_YET;
+      return strlcpy(s, msg_hash_to_str(msg), len);
+   }
    if (!content_undo_load_state())
       return snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),

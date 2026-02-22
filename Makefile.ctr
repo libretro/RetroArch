@@ -200,6 +200,9 @@ ASFLAGS	 := -g $(ARCH) -O3
 LDFLAGS  += -specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 CFLAGS   += -std=gnu99
 
+CFLAGS   += -ffunction-sections -fdata-sections
+LDFLAGS  += -Wl,--gc-sections
+
 LIB_CORE      :=
 LIB_CORE_FULL :=
 
