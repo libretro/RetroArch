@@ -13400,6 +13400,10 @@ MSG_HASH(
    "El núcleo no es compatible con guardados rápidos."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "El núcleo no es compatible con la característica de deshacer guardados rápidos."
+   )
+MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    "El núcleo no es compatible con el control de discos."
    )

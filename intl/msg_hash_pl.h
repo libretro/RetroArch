@@ -11224,6 +11224,10 @@ MSG_HASH(
    "Rdzeń nie obsługuje stanów zapisywania."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "Rdzeń nie obsługuje cofnięcia zapisywania stanu."
+   )
+MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
    "Plik opcji rdzenia został pomyślnie utworzony."
    )

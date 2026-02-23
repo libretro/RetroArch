@@ -13472,6 +13472,10 @@ MSG_HASH(
    "Core không hỗ trợ trạng thái lưu."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "Core không hỗ trợ chức năng hoàn tác lưu trò chơi."
+   )
+MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    "Core không hỗ trợ Điều khiển Đĩa."
    )

@@ -13308,6 +13308,10 @@ MSG_HASH(
    "El nucli no admet estats desats."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "El nucli no admet desfer estats desats."
+   )
+MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    "El nucli no té suport per Disc Control."
    )

@@ -13248,6 +13248,10 @@ MSG_HASH(
    "O núcleo não suporta save states."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "​O núcleo não suporta desfazer save state."
+   )
+MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    "O núcleo não suporte Controle de Disco."
    )

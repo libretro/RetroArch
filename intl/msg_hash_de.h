@@ -13072,6 +13072,10 @@ MSG_HASH(
    "Core unterstützt keine Speicherabbilder."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "Core unterstützt keine Rücknahme des Speicherzustands."
+   )
+MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    "Core unterstützt kein Disc Control."
    )

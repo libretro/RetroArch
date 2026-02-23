@@ -13428,6 +13428,10 @@ MSG_HASH(
    "Ядро не поддерживает быстрые сохранения."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "Ядро не поддерживает отмену сохранения состояния."
+   )
+MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    "Управление дисками не поддерживается ядром."
    )
