@@ -91,6 +91,7 @@ typedef struct VKALIGN(16)
    unsigned          expand_gamut;     /* 0       */
    float             inverse_tonemap;  /* 1.0f    */
    float             hdr10;            /* 1.0f    */
+   unsigned          hdr_mode;         /* 0       */
 } vulkan_hdr_uniform_t;
 #endif
 
@@ -3172,7 +3173,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
 #ifdef VULKAN_HDR_SWAPCHAIN
-   info.hdr_enabled           = settings->bools.video_hdr_enable;
+   info.hdr_enabled           = settings->uints.video_hdr_mode > 0;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vk->filter_chain_default   = vulkan_filter_chain_create_default(
@@ -3192,10 +3193,9 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(
       vk->filter_chain_default);
-      VkFormat rt_format = (shader_preset && shader_preset->passes)
-         ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain_default, shader_preset->passes - 1)
-         : VK_FORMAT_UNDEFINED;
       bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain_default);
+      bool emits_hdr16 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain_default);
+      unsigned hdr_mode = settings->uints.video_hdr_mode;
 
       vulkan_filter_chain_set_max_nits(vk->filter_chain_default, settings->floats.video_hdr_max_nits);
       vulkan_filter_chain_set_paper_white_nits(vk->filter_chain_default, settings->floats.video_hdr_paper_white_nits);
@@ -3203,40 +3203,50 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
       vulkan_filter_chain_set_scanlines(vk->filter_chain_default, settings->bools.video_hdr_scanlines ? 1.0f : 0.0f);
       vulkan_filter_chain_set_subpixel_layout(vk->filter_chain_default, settings->uints.video_hdr_subpixel_layout);
 
-      if (vulkan_is_hdr10_format(rt_format))
+      if (hdr_mode == 2)
       {
-         /* If the last shader pass uses a RGB10A2 back buffer
-          * and HDR has been enabled, assume we want to skip
-          * the inverse tonemapper and HDR10 conversion.
-          * If we just inherited HDR10 format based on backbuffer,
-          * we would have used RGBA8, and thus we should do inverse tonemap as expected. */
-         vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, !emits_hdr10);
-         vulkan_set_hdr10(vk, vk->filter_chain_default, !emits_hdr10);
-         vk->flags |= VK_FLAG_SHOULD_RESIZE;
-      }
-      else if (rt_format == VK_FORMAT_R16G16B16A16_SFLOAT)
-      {
-         /* If the last shader pass uses a RGBA16 backbuffer
-          * and HDR has been enabled, assume we want to
-          * skip the inverse tonemapper */
-         vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, false);
-         vulkan_set_hdr10(vk, vk->filter_chain_default, true);
-         vk->flags |= VK_FLAG_SHOULD_RESIZE;
-      }
-      else if (rt_format == VK_FORMAT_B8G8R8A8_UNORM)
-      {
-         vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, true);
-         vulkan_set_hdr10(vk, vk->filter_chain_default, true);
-         vulkan_filter_chain_set_scanlines(vk->filter_chain_default, 0.0f);
-         settings->bools.video_hdr_scanlines = false;
-         vk->flags |= VK_FLAG_SHOULD_RESIZE;
-      }
-      else
-      {
-         vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, true);
-         vulkan_set_hdr10(vk, vk->filter_chain_default, true);
-      }
+         /* scRGB mode: swapchain is always RGBA16F + extended linear sRGB */
+         vk->context->flags |= VK_CTX_FLAG_HDR_SCRGB;
 
+         if (emits_hdr16)
+         {
+            /* Shader outputs RGBA16F (scRGB): passthrough to swapchain */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, false);
+            vulkan_set_hdr10(vk, vk->filter_chain_default, false);
+         }
+         else if (emits_hdr10)
+         {
+            /* Shader outputs HDR10 PQ: HDR pipeline converts PQ->scRGB (mode 3) */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, false);
+            vulkan_set_hdr10(vk, vk->filter_chain_default, false);
+         }
+         else
+         {
+            /* Shader outputs SDR: HDR pipeline converts sRGB->scRGB (mode 2) */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, false);
+            vulkan_set_hdr10(vk, vk->filter_chain_default, false);
+         }
+         vk->flags |= VK_FLAG_SHOULD_RESIZE;
+      }
+      else /* hdr_mode == 1, HDR10 */
+      {
+         vk->context->flags &= ~VK_CTX_FLAG_HDR_SCRGB;
+
+         if (emits_hdr10 || emits_hdr16)
+         {
+            /* Shader outputs HDR10 PQ (10-bit or RGBA16F): passthrough.
+             * RGBA16F PQ data gets quantised to 10-bit by the swapchain. */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, false);
+            vulkan_set_hdr10(vk, vk->filter_chain_default, false);
+         }
+         else
+         {
+            /* Shader outputs SDR: HDR pipeline converts sRGB->HDR10 PQ */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, true);
+            vulkan_set_hdr10(vk, vk->filter_chain_default, true);
+         }
+         vk->flags |= VK_FLAG_SHOULD_RESIZE;
+      }
    }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -3267,7 +3277,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
 #ifdef VULKAN_HDR_SWAPCHAIN
-   info.hdr_enabled           = settings->bools.video_hdr_enable;
+   info.hdr_enabled           = settings->uints.video_hdr_mode > 0;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vk->filter_chain           = vulkan_filter_chain_create_from_preset(
@@ -3286,10 +3296,9 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain);
-      VkFormat rt_format = (shader_preset && shader_preset->passes)
-         ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1)
-         : VK_FORMAT_UNDEFINED;
       bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain);
+      bool emits_hdr16 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain);
+      unsigned hdr_mode = settings->uints.video_hdr_mode;
 
       vulkan_filter_chain_set_max_nits(vk->filter_chain, settings->floats.video_hdr_max_nits);
       vulkan_filter_chain_set_paper_white_nits(vk->filter_chain, settings->floats.video_hdr_paper_white_nits);
@@ -3297,52 +3306,80 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
       vulkan_filter_chain_set_scanlines(vk->filter_chain, settings->bools.video_hdr_scanlines ? 1.0f : 0.0f);
       vulkan_filter_chain_set_subpixel_layout(vk->filter_chain, settings->uints.video_hdr_subpixel_layout);
 
-      if (vulkan_is_hdr10_format(rt_format))
+      if (hdr_mode == 2)
       {
-         /* If the last shader pass uses a RGB10A2 back buffer
-          * and HDR has been enabled, assume we want to skip
-          * the inverse tonemapper and HDR10 conversion.
-          * If we just inherited HDR10 format based on backbuffer,
-          * we would have used RGBA8, and thus we should do inverse tonemap as expected. */
-         vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, !emits_hdr10);
-         vulkan_set_hdr10(vk, vk->filter_chain, !emits_hdr10);
-         vk->flags |= VK_FLAG_SHOULD_RESIZE;
+         /* scRGB mode: swapchain is always RGBA16F + extended linear sRGB */
+         vk->context->flags |= VK_CTX_FLAG_HDR_SCRGB;
 
-         if (!emits_hdr10)
+         if (emits_hdr16)
          {
-            /* Rendering goes through the SDR offscreen buffer;
-             * rebuild the filter chain's final pass pipeline
-             * to use the SDR render pass. */
-            struct vulkan_filter_chain_swapchain_info sdr_swapchain;
-            sdr_swapchain.vp          = vk->vk_vp;
-            sdr_swapchain.format      = vk->context->swapchain_format;
-            sdr_swapchain.render_pass = vk->sdr_render_pass;
-            sdr_swapchain.num_indices = vk->context->num_swapchain_images;
-            vulkan_filter_chain_update_swapchain_info(
-                  vk->filter_chain, &sdr_swapchain);
+            /* Shader outputs RGBA16F (scRGB): passthrough to swapchain */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, false);
+            vulkan_set_hdr10(vk, vk->filter_chain, false);
          }
-      }
-      else if (rt_format == VK_FORMAT_R16G16B16A16_SFLOAT)
-      {
-         /* If the last shader pass uses a RGBA16 backbuffer
-          * and HDR has been enabled, assume we want to
-          * skip the inverse tonemapper */
-         vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, false);
-         vulkan_set_hdr10(vk, vk->filter_chain, true);
+         else if (emits_hdr10)
+         {
+            /* Shader outputs HDR10 PQ: filter chain renders to its own
+             * A2B10G10R10 FBO, HDR pipeline converts PQ->scRGB (mode 3).
+             * Rebuild last pass to use SDR render pass for the FBO. */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, false);
+            vulkan_set_hdr10(vk, vk->filter_chain, false);
+            {
+               struct vulkan_filter_chain_swapchain_info sdr_swapchain;
+               sdr_swapchain.vp          = vk->vk_vp;
+               sdr_swapchain.format      = vk->context->swapchain_format;
+               sdr_swapchain.render_pass = vk->sdr_render_pass;
+               sdr_swapchain.num_indices = vk->context->num_swapchain_images;
+               vulkan_filter_chain_update_swapchain_info(
+                     vk->filter_chain, &sdr_swapchain);
+            }
+         }
+         else
+         {
+            /* Shader outputs SDR: HDR pipeline converts sRGB->scRGB (mode 2).
+             * Rebuild last pass to use SDR render pass for the offscreen buffer. */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, false);
+            vulkan_set_hdr10(vk, vk->filter_chain, false);
+            {
+               struct vulkan_filter_chain_swapchain_info sdr_swapchain;
+               sdr_swapchain.vp          = vk->vk_vp;
+               sdr_swapchain.format      = vk->context->swapchain_format;
+               sdr_swapchain.render_pass = vk->sdr_render_pass;
+               sdr_swapchain.num_indices = vk->context->num_swapchain_images;
+               vulkan_filter_chain_update_swapchain_info(
+                     vk->filter_chain, &sdr_swapchain);
+            }
+         }
          vk->flags |= VK_FLAG_SHOULD_RESIZE;
       }
-      else if (rt_format == VK_FORMAT_B8G8R8A8_UNORM)
+      else /* hdr_mode == 1, HDR10 */
       {
-         vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, true);
-         vulkan_set_hdr10(vk, vk->filter_chain, true);
-         vulkan_filter_chain_set_subpixel_layout(vk->filter_chain, 0.0f);
-         settings->bools.video_hdr_scanlines = false;
+         vk->context->flags &= ~VK_CTX_FLAG_HDR_SCRGB;
+
+         if (emits_hdr10 || emits_hdr16)
+         {
+            /* Shader outputs HDR10 PQ (10-bit or RGBA16F): passthrough.
+             * RGBA16F PQ data gets quantised to 10-bit by the swapchain. */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, false);
+            vulkan_set_hdr10(vk, vk->filter_chain, false);
+         }
+         else
+         {
+            /* Shader outputs SDR: HDR pipeline converts sRGB->HDR10 PQ.
+             * Rebuild last pass to use SDR render pass for the offscreen buffer. */
+            vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, true);
+            vulkan_set_hdr10(vk, vk->filter_chain, true);
+            {
+               struct vulkan_filter_chain_swapchain_info sdr_swapchain;
+               sdr_swapchain.vp          = vk->vk_vp;
+               sdr_swapchain.format      = vk->context->swapchain_format;
+               sdr_swapchain.render_pass = vk->sdr_render_pass;
+               sdr_swapchain.num_indices = vk->context->num_swapchain_images;
+               vulkan_filter_chain_update_swapchain_info(
+                     vk->filter_chain, &sdr_swapchain);
+            }
+         }
          vk->flags |= VK_FLAG_SHOULD_RESIZE;
-      }
-      else
-      {
-         vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain, true);
-         vulkan_set_hdr10(vk, vk->filter_chain, true);
       }
    }
 #endif /* VULKAN_HDR_SWAPCHAIN */
@@ -3372,6 +3409,8 @@ static bool vulkan_init_filter_chain(vk_t *vk)
             vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, true);
             vulkan_set_hdr10(vk, vk->filter_chain_default, true);
          }
+         /* Stock shader does not need 16-bit float swapchain. */
+         vk->context->flags &= ~VK_CTX_FLAG_HDR_SCRGB;
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -3860,6 +3899,7 @@ static void *vulkan_init(const video_info_t *video,
 
    vk->hdr.ubo_values.inverse_tonemap     = 1.0f;     /* Use this to turn on/off the inverse tonemap */
    vk->hdr.ubo_values.hdr10               = 1.0f;     /* Use this to turn on/off the hdr10 */
+   vk->hdr.ubo_values.hdr_mode            = 0;        /* 0=off, 1=HDR10, 2=scRGB */
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vulkan_init_hw_render(vk);
@@ -4072,18 +4112,27 @@ static void vulkan_check_swapchain(vk_t *vk)
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* When rendering through the SDR offscreen buffer, the filter chain's
-    * final pass must use the SDR render pass to match the framebuffer format. */
-   if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+    * final pass must use the SDR render pass to match the framebuffer format.
+    * The default filter chain has hdr_frag built in and renders directly to
+    * the swapchain — only custom shader chains need the SDR render pass.
+    * Passthrough (direct to swapchain) when:
+    *   scRGB mode: shader emits RGBA16F (scRGB)
+    *   HDR10 mode: shader emits A2B10G10R10 (HDR10 PQ) or RGBA16F */
+   if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && vk->filter_chain)
    {
-      vulkan_filter_chain_t *chain   = vk->filter_chain
-         ? vk->filter_chain : vk->filter_chain_default;
-      struct video_shader *preset    = vulkan_filter_chain_get_preset(chain);
-      if (preset && preset->passes)
+      bool emits_hdr10 = vulkan_filter_chain_emits_hdr10(vk->filter_chain);
+      bool emits_hdr16 = vulkan_filter_chain_emits_hdr16(vk->filter_chain);
+
+      if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
       {
-         VkFormat rt_format = vulkan_filter_chain_get_pass_rt_format(
-               chain, preset->passes - 1);
-         if (  vulkan_is_hdr10_format(rt_format)
-            && !vulkan_filter_chain_emits_hdr10(chain))
+         /* scRGB: passthrough only when shader writes scRGB (RGBA16F) */
+         if (!emits_hdr16)
+            filter_info.render_pass = vk->sdr_render_pass;
+      }
+      else
+      {
+         /* HDR10: passthrough when shader writes HDR10 PQ (A2B10G10R10 or RGBA16F) */
+         if (!emits_hdr10 && !emits_hdr16)
             filter_info.render_pass = vk->sdr_render_pass;
       }
    }
@@ -4648,19 +4697,30 @@ static void vulkan_init_render_target(struct vk_image* image, uint32_t width, ui
    vkCreateFramebuffer(ctx->device, &info, NULL, &image->framebuffer);
 }
 
-static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pass, const struct vk_image* source_image, struct vk_image* render_target, vk_t* vk, struct vk_buffer* ubo)
+static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pass, const struct vk_image* source_image, struct vk_image* render_target, vk_t* vk, struct vk_buffer* ubo, unsigned hdr_mode)
 {
    VkRenderPassBeginInfo rp_info;
    VkClearValue clear_color;
 
-   //const bool prev_scanlines                = vk->hdr.ubo_values.scanlines;
    const float prev_inverse_tonemap           = vk->hdr.ubo_values.inverse_tonemap;
    const float prev_hdr10                     = vk->hdr.ubo_values.hdr10;
+   const unsigned prev_hdr_mode               = vk->hdr.ubo_values.hdr_mode;
 
    vk->hdr.ubo_values.mvp                 = vk->mvp_no_rot;
-   //vk->hdr.ubo_values.scanlines           = false;
-   vk->hdr.ubo_values.inverse_tonemap     = 1.0f;
-   vk->hdr.ubo_values.hdr10               = 1.0f;
+   vk->hdr.ubo_values.hdr_mode            = hdr_mode;
+
+   if (hdr_mode == 2 || hdr_mode == 3)
+   {
+      /* scRGB paths: no legacy inverse tonemap / PQ encoding */
+      vk->hdr.ubo_values.inverse_tonemap  = 0.0f;
+      vk->hdr.ubo_values.hdr10            = 0.0f;
+   }
+   else
+   {
+      /* HDR10 path: legacy inverse tonemap + PQ encoding */
+      vk->hdr.ubo_values.inverse_tonemap  = 1.0f;
+      vk->hdr.ubo_values.hdr10            = 1.0f;
+   }
 
    rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
    rp_info.pNext                    = NULL;
@@ -4794,6 +4854,7 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
 
    vk->hdr.ubo_values.inverse_tonemap     = prev_inverse_tonemap;
    vk->hdr.ubo_values.hdr10               = prev_hdr10;
+   vk->hdr.ubo_values.hdr_mode            = prev_hdr_mode;
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -4854,15 +4915,30 @@ static bool vulkan_frame(void *data, const void *frame,
       filter_chain = vk->filter_chain_default;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   struct video_shader* shader_preset = vulkan_filter_chain_get_preset(
-      filter_chain);
-   VkFormat back_buffer_format = (shader_preset && shader_preset->passes)
-         ? vulkan_filter_chain_get_pass_rt_format(filter_chain, shader_preset->passes - 1)
-         : vk->context->swapchain_format;
-   bool use_offscreen_buffer           = vulkan_is_hdr10_format(back_buffer_format) &&
-      (shader_preset && shader_preset->passes) &&
-      (filter_chain && !vulkan_filter_chain_emits_hdr10(filter_chain)) &&
-      (vk->offscreen_buffer.image != VK_NULL_HANDLE);     /* this is used when presets use scale_type in their last pass */
+   /* Use the offscreen buffer when the shader's output format doesn't match
+    * the swapchain format and the HDR pipeline needs to convert.
+    * The default filter chain already contains the internal HDR shader
+    * (hdr_frag) so it renders directly to the swapchain — no offscreen needed.
+    * Custom shader chains need offscreen unless they emit HDR natively. */
+   bool use_offscreen_buffer = false;
+   if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+      && filter_chain != vk->filter_chain_default)
+   {
+      if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
+      {
+         /* scRGB: only passthrough if shader emits RGBA16F (scRGB) */
+         use_offscreen_buffer = (filter_chain && !vulkan_filter_chain_emits_hdr16(filter_chain))
+            && (vk->offscreen_buffer.image != VK_NULL_HANDLE);
+      }
+      else
+      {
+         /* HDR10: passthrough if shader emits HDR10 or RGBA16F (PQ at higher precision) */
+         use_offscreen_buffer = (filter_chain
+            && !vulkan_filter_chain_emits_hdr10(filter_chain)
+            && !vulkan_filter_chain_emits_hdr16(filter_chain))
+            && (vk->offscreen_buffer.image != VK_NULL_HANDLE);
+      }
+   }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Bookkeeping on start of frame. */
@@ -5054,8 +5130,13 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)filter_chain, core_aspect_rot);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   vulkan_filter_chain_set_enable_hdr(
-         (vulkan_filter_chain_t*)filter_chain, (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) ? 1.0f : 0.0f);
+   {
+      unsigned mode = 0;
+      if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         mode = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
+      vulkan_filter_chain_set_hdr_mode(
+            (vulkan_filter_chain_t*)filter_chain, mode);
+   }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Render offscreen filter chain passes. */
@@ -5220,7 +5301,26 @@ static bool vulkan_frame(void *data, const void *frame,
                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-         vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo);
+         {
+            /* Determine HDR pipeline mode for game content conversion.
+             * scRGB + HDR10 source -> mode 3 (PQ->scRGB)
+             * scRGB + HDR16 source -> mode 0 (passthrough, already scRGB)
+             * scRGB + SDR source   -> mode 2 (sRGB->scRGB)
+             * HDR10 + SDR source   -> mode 1 (sRGB->HDR10 PQ) */
+            unsigned game_hdr_mode;
+            if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
+            {
+               if (filter_chain && vulkan_filter_chain_emits_hdr10(filter_chain))
+                  game_hdr_mode = 3;
+               else if (filter_chain && vulkan_filter_chain_emits_hdr16(filter_chain))
+                  game_hdr_mode = 0;
+               else
+                  game_hdr_mode = 2;
+            }
+            else
+               game_hdr_mode = 1;
+            vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo, game_hdr_mode);
+         }
 
          VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->offscreen_buffer.image,
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -5363,7 +5463,11 @@ static bool vulkan_frame(void *data, const void *frame,
                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-         vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo);
+         {
+            /* Menu/overlay composite: source is always SDR (B8G8R8A8_UNORM) */
+            unsigned composite_hdr_mode = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
+            vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo, composite_hdr_mode);
+         }
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
    }
@@ -5395,7 +5499,7 @@ static bool vulkan_frame(void *data, const void *frame,
                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
             }
-            vulkan_run_hdr_pipeline(vk->pipelines.hdr_to_sdr, vk->readback_render_pass, readback_source, &vk->readback_image, vk, &vk->hdr.ubo);
+            vulkan_run_hdr_pipeline(vk->pipelines.hdr_to_sdr, vk->readback_render_pass, readback_source, &vk->readback_image, vk, &vk->hdr.ubo, 0);
             readback_source = &vk->readback_image;
          }
 #endif /* VULKAN_HDR_SWAPCHAIN */
@@ -5560,7 +5664,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
 #ifdef VULKAN_HDR_SWAPCHAIN
-   bool video_hdr_enable = video_driver_supports_hdr() && video_info->hdr_enable;
+   bool video_hdr_enable = video_driver_supports_hdr() && (video_info->hdr_mode > 0);
    if (       (vk->flags & VK_FLAG_SHOULD_RESIZE)
          || (((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) > 0)
          != video_hdr_enable))
@@ -5591,13 +5695,29 @@ static bool vulkan_frame(void *data, const void *frame,
       mode.width  = width;
       mode.height = height;
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+      /* Force swapchain recreation if the HDR format mode changed.
+       * Without this, vulkan_create_swapchain's early-return check
+       * (same width/height/interval) would skip the recreation. */
+      {
+         bool need_16bit = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) != 0;
+         bool have_16bit = vk->context->swapchain_format
+            == VK_FORMAT_R16G16B16A16_SFLOAT;
+         if (need_16bit != have_16bit)
+            vk->context->flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      }
+#endif
+
       if (vk->ctx_driver->set_resize)
          vk->ctx_driver->set_resize(vk->ctx_data, mode.width, mode.height);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       {
-         /* Create intermediary buffer to render filter chain output to */
+         /* Create intermediary buffer to render menu/overlay content to.
+          * In HDR10 mode the game also renders through this buffer;
+          * in HDR16 (scRGB) mode only the menu/overlay uses it so
+          * that the copy pass can linearize sRGB content. */
          vulkan_init_render_target(&vk->offscreen_buffer, video_width, video_height,
                                   VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
          /* Create image for readback target in bgra8 format */

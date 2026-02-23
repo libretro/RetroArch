@@ -91,71 +91,78 @@ const mat4 kCubicBezier = mat4(
 vec3 Sample(vec2 texcoord)
 {
    vec4 sdr = texture(Source, texcoord);
-   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.22));
+   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.4));
    return sdr_linear;
 }
 
 vec4 Sample(vec4 colour, vec2 texcoord)
 {
    vec4 sdr = colour * texture(Source, texcoord);
-   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.22));
+   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.4));
    return vec4(sdr_linear, sdr.a);
 }
 
+/* Convert Rec.709 input to the target colour space for ExpandGamut.
+ * Accurate (0): Rec.709 -> Rec.2020 (proper conversion, no boost)
+ * Expanded (1): Rec.709 -> Expanded709 (slightly wider than 709)
+ * Wide (2):     Rec.709 -> DCI-P3
+ * Super (3):    passthrough (stays Rec.709)
+ * k2020to709 is always applied after this for scRGB output — the mismatch
+ * between the target space and Rec.2020 creates the colour boost. */
 vec3 To2020(const vec3 sdr_linear)
 {
-   vec3 rec2020;
-   
+   vec3 result;
+
    uint gamut = global.ExpandGamut;
-   
+
    if(gamut == 0u)
    {
-      rec2020 = sdr_linear * k709to2020;
+      result = sdr_linear * k709to2020;
    }
    else if(gamut == 1u)
    {
-      rec2020 = sdr_linear * kExpanded709to2020;
+      result = sdr_linear * k709toExpanded709;
    }
    else if(gamut == 2u)
    {
-      rec2020 = sdr_linear * kP3to2020;
+      result = sdr_linear * k709toP3;
    }
    else
    {
-      rec2020 = sdr_linear;
+      result = sdr_linear;
    }
 
-   rec2020 = max(rec2020, vec3(0.0f));
+   result = max(result, vec3(0.0f));
 
-   return rec2020;
+   return result;
 }
 
 vec4 To2020(const vec4 sdr_linear)
 {
-   vec3 rec2020;
-   
+   vec3 result;
+
    uint gamut = global.ExpandGamut;
 
    if(gamut == 0u)
    {
-      rec2020 = sdr_linear.rgb * k709to2020;
+      result = sdr_linear.rgb * k709to2020;
    }
    else if(gamut == 1u)
    {
-      rec2020 = sdr_linear.rgb * kExpanded709to2020;
+      result = sdr_linear.rgb * k709toExpanded709;
    }
    else if(gamut == 2u)
    {
-      rec2020 = sdr_linear.rgb * kP3to2020;
+      result = sdr_linear.rgb * k709toP3;
    }
    else
    {
-      rec2020 = sdr_linear.rgb;
+      result = sdr_linear.rgb;
    }
 
-   rec2020 = max(rec2020, vec3(0.0f));
+   result = max(result, vec3(0.0f));
 
-   return vec4(rec2020, sdr_linear.a);
+   return vec4(result, sdr_linear.a);
 }
 
 vec3 HDR(const vec3 sdr_linear)
@@ -233,8 +240,20 @@ float ScanlineColour(const uint channel,
    vec2 tex_coord_0                 = vec2(source_tex_coord_x, source_tex_coord_y);
    vec2 tex_coord_1                 = vec2(source_tex_coord_x + (1.0 / source_size.x), source_tex_coord_y);
 
-   float hdr_channel_0              = LinearToSignal(HDR(To2020(Sample(tex_coord_0))))[channel];
-   float hdr_channel_1              = LinearToSignal(HDR(To2020(Sample(tex_coord_1))))[channel];
+   float hdr_channel_0;
+   float hdr_channel_1;
+
+   if(global.HDRMode == 2u)
+   {
+      /* scRGB: no InverseTonemap — just colour convert and gamma encode for scanline sim */
+      hdr_channel_0              = LinearToSignal(To2020(Sample(tex_coord_0)))[channel];
+      hdr_channel_1              = LinearToSignal(To2020(Sample(tex_coord_1)))[channel];
+   }
+   else
+   {
+      hdr_channel_0              = LinearToSignal(HDR(To2020(Sample(tex_coord_0))))[channel];
+      hdr_channel_1              = LinearToSignal(HDR(To2020(Sample(tex_coord_1))))[channel];
+   }
 
    float horiz_interp               = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, hdr_channel_0 > hdr_channel_1));  
    float hdr_channel                = mix(hdr_channel_0, hdr_channel_1, horiz_interp);
@@ -355,16 +374,57 @@ vec3 Scanlines(vec2 texcoord)
 
    vec3 linear_colour = pow(max(scanline_colour, vec3(0.0f)), vec3(2.4f));
 
-   return HDR10(linear_colour);
+   return linear_colour;
 }
 
 void main()
 {
-   if((global.InverseTonemap > 0.0) && (global.HDR10 > 0.0))
+   if(global.HDRMode == 3u)
+   {
+      /* PQ HDR10 to scRGB conversion.
+       * Source is PQ-encoded Rec.2020 from the shader's output.
+       * Decode PQ to linear, convert gamut to Rec.709, scale for scRGB. */
+      vec4 pq = texture(Source, vTexCoord);
+      FragColor = vec4(HDR10ToscRGB(pq.rgb), pq.a);
+   }
+   else if(global.HDRMode == 2u)
+   {
+      /* scRGB mode: sRGB to linear for scRGB / HDR16 swapchain.
+       * Scale by MaxNits / kscRGBWhiteNits because scRGB 1.0 = 80 nits.
+       * Using MaxNits (not PaperWhiteNits) so the SDR UI fills the
+       * display's native range, preserving tonal balance uniformly. */
+      if((global.Scanlines > 0.0) && (global.OutputSize.y > 240.0 * 4.0))
+      {
+         /* Scanlines() works in Rec.2020 (To2020 with ExpandGamut applied inside).
+          * scRGB units: 1.0 = 80 nits.
+          * Always convert back to Rec.709 for scRGB output.
+          * For Super (gamut 3), To2020 passed through Rec.709 data —
+          * k2020to709 then "interprets" it as Rec.2020, giving maximum boost. */
+         vec3 linear = Scanlines(vTexCoord);
+
+         linear = linear * k2020to709;
+
+         FragColor = vec4(linear * (global.PaperWhiteNits / kscRGBWhiteNits), 1.0);
+      }
+      else
+      {
+         /* Convert to Rec.2020 with ExpandGamut colour boost,
+          * then always back to Rec.709 for scRGB output.
+          * For Super (gamut 3), To2020 passes through Rec.709 data —
+          * k2020to709 then "interprets" it as Rec.2020, giving maximum boost. */
+         vec4 linear = To2020(Sample(kDefaultColor, vTexCoord));
+
+         linear.rgb = linear.rgb * k2020to709;
+
+         linear.rgb *= global.MaxNits / kscRGBWhiteNits;
+         FragColor = linear;
+      }
+   }
+   else if((global.InverseTonemap > 0.0) && (global.HDR10 > 0.0))
    {
       if((global.Scanlines > 0.0) && (global.OutputSize.y > 240.0 * 4.0))
       {
-         FragColor = vec4(Scanlines(vTexCoord), 1.0);
+         FragColor = vec4(HDR10(Scanlines(vTexCoord)), 1.0);
       }
       else
       {
@@ -381,6 +441,6 @@ void main()
    }
    else
    {
-      FragColor = Sample(kDefaultColor, vTexCoord);
+      FragColor = texture(Source, vTexCoord);
    }
 }

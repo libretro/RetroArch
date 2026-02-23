@@ -10,10 +10,12 @@ layout(std140, set = 0, binding = 0) uniform UBO
    uint ExpandGamut;
    float InverseTonemap;
    float HDR10;
+   uint HDRMode;
 } global;
 
 /* Tonemapping: conversion from HDR to SDR (and vice-versa) */
 const float kMaxNitsFor2084   = 10000.0;
+const float kscRGBWhiteNits   = 80.0;
 const float kEpsilon          = 0.0001;
 
 /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
@@ -75,6 +77,12 @@ const mat3 k2020toP3 = mat3 (
    -0.065297f,  1.075788f, -0.010490f,
     0.002822f, -0.019598f,  1.016777f);
 
+/* Color rotation matrix to rotate Rec.709 color primaries into DCI-P3 (= k709to2020 * k2020toP3) */
+const mat3 k709toP3 = mat3 (
+    0.8215873f,  0.1763479f,  0.0020641f,
+    0.0328261f,  0.9695096f, -0.0023367f,
+    0.0188038f,  0.0725063f,  0.9086907f);
+
 /* START Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 /* Rotation matrix describing a custom color space which is bigger than Rec.709, but a little smaller than P3-D65.
  * This enhances colors, especially in the SDR range, by being a little more saturated. This can be used instead
@@ -90,6 +98,12 @@ const mat3 k2020toExpanded709 = mat3 (
     1.63535f,    -0.57057f, -0.0647755f,
    -0.0794803f,   1.0898f,  -0.0103244f,
     0.00343516f, -0.020207f, 1.01677f);
+
+/* Color rotation matrix to rotate Rec.709 color primaries into the expanded Rec.709 colorspace (= k709to2020 * k2020toExpanded709) */
+const mat3 k709toExpanded709 = mat3 (
+    1.0000025f, -0.0000016f, -0.0000001f,
+    0.0399515f,  0.9624604f, -0.0024178f,
+    0.0228872f,  0.0684669f,  0.9086437f);
 
 vec3 LinearToST2084(vec3 normalizedLinearValue)
 {
@@ -131,4 +145,14 @@ vec3 HDR10ToLinear(vec3 hdr10)
    }
 
    return hdr;
+}
+
+/* Converts a non-linear HDR10 PQ value in the BT. 2020 colorspace to scRGB linear.
+ * scRGB uses Rec.709 primaries with 1.0 = 80 nits.
+ * HDR10 PQ: 1.0 normalised linear = 10,000 nits, so scalar = 10000/80 = 125. */
+vec3 HDR10ToscRGB(vec3 hdr10Color)
+{
+   vec3 linear10k = ST2084ToLinear(hdr10Color);
+   vec3 linear709 = linear10k * k2020to709;
+   return linear709 * (kMaxNitsFor2084 / kscRGBWhiteNits);
 }

@@ -382,6 +382,7 @@ typedef struct settings
       unsigned video_bfi_dark_frames;
       unsigned video_shader_subframes;
       unsigned video_autoswitch_refresh_rate;
+      unsigned video_hdr_mode;
       unsigned video_hdr_subpixel_layout;
       unsigned video_hdr_expand_gamut;
 
@@ -690,7 +691,6 @@ typedef struct settings
 #endif
       bool video_wiiu_prefer_drc;
       bool video_notch_write_over_enable;
-      bool video_hdr_enable;
       bool video_hdr_scanlines;
       bool video_use_metal_arg_buffers;
 

@@ -163,7 +163,7 @@ static bool slang_process_reflection(
             "OriginalAspectRotated",
             "TotalSubFrames",
             "CurrentSubFrame",
-            "EnableHDR"
+            "HDRMode",
             "PaperWhiteNits",
             "MaxNits",
             "Scanlines",
