@@ -3358,7 +3358,14 @@ static bool d3d11_gfx_frame(
    bool d3d11_hdr_enable          = (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) ? true : false;
    bool video_hdr_enable          = video_info->hdr_mode > 0;
    DXGI_FORMAT back_buffer_format = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : d3d11->chain_formats[d3d11->chain_bit_depth];
-   bool use_back_buffer           = back_buffer_format != d3d11->chain_formats[d3d11->chain_bit_depth];     /* this is used when presets use scale_type in their last pass */
+   /* Only use a back buffer when the shader's final pass format has LOWER
+    * precision than the swapchain. Higher precision (e.g. RGBA16F shader
+    * writing to a 10-bit HDR10 swapchain) is just a precision downsize
+    * that the hardware handles — no hidden HDR pass needed. */
+   DXGI_FORMAT swapchain_format   = d3d11->chain_formats[d3d11->chain_bit_depth];
+   bool use_back_buffer           = back_buffer_format != swapchain_format
+      && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
+           && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM);
 #endif
 
    if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)

@@ -315,6 +315,7 @@ typedef struct
       enum dxgi_swapchain_bit_depth bit_depth;
       DXGI_COLOR_SPACE_TYPE       color_space;
       DXGI_FORMAT                 formats[DXGI_SWAPCHAIN_BIT_DEPTH_COUNT];
+      DXGI_FORMAT                 hdr_pipe_format;
 #endif
    } chain;
 
@@ -2472,19 +2473,20 @@ error:
    return false;
 }
 
-static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
-{
-   D3DBlob                            vs_code = NULL;
-   D3DBlob                            ps_code = NULL;
-   D3DBlob                            gs_code = NULL;
-   D3DBlob                            cs_code = NULL;
-   settings_t                  *     settings = config_get_ptr();
-   D3D12_GRAPHICS_PIPELINE_STATE_DESC desc    = { d3d12->desc.rootSignature };
-
-   desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
 #ifdef HAVE_DXGI_HDR
-   desc.RTVFormats[0]              = DXGI_FORMAT_R10G10B10A2_UNORM;
+/* (Re)create HDR pipeline state objects to match the given render target
+ * format.  Called once during init and again whenever the swapchain format
+ * changes (e.g. switching between HDR10 10-bit and scRGB 16-bit float). */
+static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
+{
+   D3DBlob vs_code = NULL;
+   D3DBlob ps_code = NULL;
+   D3DBlob gs_code = NULL;
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = { d3d12->desc.rootSignature };
 
+   desc.RTVFormats[0] = format;
+
+   /* --- HDR stock shader pipes (VIDEO_SHADER_STOCK_HDR / NOBLEND) --- */
    {
       static const char shader[] =
 #include "d3d_shaders/hdr_sm5.hlsl.h"
@@ -2508,12 +2510,14 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       desc.InputLayout.pInputElementDescs = inputElementDesc;
       desc.InputLayout.NumElements        = countof(inputElementDesc);
 
+      desc.BlendState.RenderTarget[0]     = d3d12_blend_enable_desc;
+      Release(d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
       d3d12_init_pipeline(
                d3d12->device, vs_code, ps_code, NULL, &desc,
                &d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
 
-      desc.BlendState.RenderTarget[0] = d3d12_blend_disable_desc;
-
+      desc.BlendState.RenderTarget[0]     = d3d12_blend_disable_desc;
+      Release(d3d12->pipes[VIDEO_SHADER_STOCK_NOBLEND_HDR]);
       d3d12_init_pipeline(
                d3d12->device, vs_code, ps_code, NULL, &desc,
                &d3d12->pipes[VIDEO_SHADER_STOCK_NOBLEND_HDR]);
@@ -2523,6 +2527,85 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       vs_code = NULL;
       ps_code = NULL;
    }
+
+   /* --- Sprite HDR pipes (blend / noblend / font) --- */
+   {
+      static const char shader[] =
+#include "d3d_shaders/sprite_sm4.hlsl.h"
+            ;
+
+      D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_sprite_t, pos),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_sprite_t, coords),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d12_sprite_t, colors[0]),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 1, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d12_sprite_t, colors[1]),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 2, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d12_sprite_t, colors[2]),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 3, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d12_sprite_t, colors[3]),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "PARAMS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_sprite_t, params),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+
+      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8", "ps_5_0", &ps_code))
+         goto error;
+      if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
+         goto error;
+
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+      desc.InputLayout.pInputElementDescs = inputElementDesc;
+      desc.InputLayout.NumElements        = countof(inputElementDesc);
+
+      desc.BlendState.RenderTarget[0].BlendEnable = false;
+      Release(d3d12->sprites.pipe_noblend_hdr);
+      d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_noblend_hdr);
+
+      desc.BlendState.RenderTarget[0].BlendEnable = true;
+      Release(d3d12->sprites.pipe_blend_hdr);
+      d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_blend_hdr);
+
+      Release(d3d12->sprites.pipe_font_hdr);
+      d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_font_hdr);
+
+      Release(vs_code);
+      Release(ps_code);
+      Release(gs_code);
+   }
+
+   d3d12->chain.hdr_pipe_format = format;
+   return true;
+
+error:
+   Release(vs_code);
+   Release(ps_code);
+   Release(gs_code);
+   return false;
+}
+#endif
+
+static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
+{
+   D3DBlob                            vs_code = NULL;
+   D3DBlob                            ps_code = NULL;
+   D3DBlob                            gs_code = NULL;
+   D3DBlob                            cs_code = NULL;
+   settings_t                  *     settings = config_get_ptr();
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC desc    = { d3d12->desc.rootSignature };
+
+#ifdef HAVE_DXGI_HDR
+   /* Create HDR pipes with initial 10-bit format — will be recreated if
+    * the swapchain format changes (e.g. scRGB uses 16-bit float). */
+   if (!d3d12_gfx_init_hdr_pipes(d3d12, DXGI_FORMAT_R10G10B10A2_UNORM))
+      goto error;
 #endif
 
    desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
@@ -2616,20 +2699,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       d3d12_init_pipeline(
                 d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_font);
 
-#ifdef HAVE_DXGI_HDR
-      desc.RTVFormats[0]                          = DXGI_FORMAT_R10G10B10A2_UNORM;
-
-      desc.BlendState.RenderTarget[0].BlendEnable = false;
-      d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_noblend_hdr);
-
-      desc.BlendState.RenderTarget[0].BlendEnable = true;
-      d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_blend_hdr);
-
-      d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_font_hdr);
-#endif
+      /* Sprite HDR pipes are created by d3d12_gfx_init_hdr_pipes() above */
 
       Release(vs_code);
       Release(ps_code);
@@ -3555,6 +3625,16 @@ static void *d3d12_gfx_init(const video_info_t* video,
       goto error;
 #endif
 
+#ifdef HAVE_DXGI_HDR
+   /* Now that the swapchain exists, recreate HDR pipes if the actual
+    * swapchain format differs from the initial 10-bit assumption. */
+   {
+      DXGI_FORMAT sc_fmt = d3d12->chain.formats[d3d12->chain.bit_depth];
+      if (d3d12->chain.hdr_pipe_format != sc_fmt)
+         d3d12_gfx_init_hdr_pipes(d3d12, sc_fmt);
+   }
+#endif
+
    d3d12_init_samplers(d3d12);
    d3d12_set_filtering(d3d12, 0, video->smooth, video->ctx_scaling);
 
@@ -3946,7 +4026,14 @@ static bool d3d12_gfx_frame(
    bool d3d12_hdr_enable          = false;
    bool video_hdr_enable          = video_info->hdr_mode > 0;
    DXGI_FORMAT back_buffer_format = d3d12->shader_preset && d3d12->shader_preset->passes ? glslang_format_to_dxgi(d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format) : d3d12->chain.formats[d3d12->chain.bit_depth];
-   bool use_back_buffer           = back_buffer_format != d3d12->chain.formats[d3d12->chain.bit_depth];     /* this is used when presets use scale_type in their last pass */
+   /* Only use a back buffer when the shader's final pass format has LOWER
+    * precision than the swapchain. Higher precision (e.g. RGBA16F shader
+    * writing to a 10-bit HDR10 swapchain) is just a precision downsize
+    * that the hardware handles — no hidden HDR pass needed. */
+   DXGI_FORMAT swapchain_format   = d3d12->chain.formats[d3d12->chain.bit_depth];
+   bool use_back_buffer           = back_buffer_format != swapchain_format
+      && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
+           && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM);
 
    d3d12->chain.current_rt_format = back_buffer_format;
 #endif
@@ -4008,6 +4095,17 @@ static bool d3d12_gfx_frame(
             video_height,
             d3d12->chain.formats[d3d12->chain.bit_depth],
             swapchain_flags);
+
+      /* Recreate HDR pipeline state objects if the swapchain format changed
+       * (e.g. HDR10 10-bit ↔ scRGB 16-bit float). PSO RTVFormats must match
+       * the render target at draw time. */
+      {
+         DXGI_FORMAT new_hdr_format = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+            ? d3d12->chain.formats[d3d12->chain.bit_depth]
+            : DXGI_FORMAT_R10G10B10A2_UNORM;
+         if (d3d12->chain.hdr_pipe_format != new_hdr_format)
+            d3d12_gfx_init_hdr_pipes(d3d12, new_hdr_format);
+      }
 #else
       DXGIResizeBuffers(d3d12->chain.handle,
             0,
