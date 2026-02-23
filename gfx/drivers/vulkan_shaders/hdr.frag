@@ -102,60 +102,67 @@ vec4 Sample(vec4 colour, vec2 texcoord)
    return vec4(sdr_linear, sdr.a);
 }
 
+/* Convert Rec.709 input to the target colour space for ExpandGamut.
+ * Accurate (0): Rec.709 -> Rec.2020 (proper conversion, no boost)
+ * Expanded (1): Rec.709 -> Expanded709 (slightly wider than 709)
+ * Wide (2):     Rec.709 -> DCI-P3
+ * Super (3):    passthrough (stays Rec.709)
+ * k2020to709 is always applied after this for scRGB output — the mismatch
+ * between the target space and Rec.2020 creates the colour boost. */
 vec3 To2020(const vec3 sdr_linear)
 {
-   vec3 rec2020;
-   
+   vec3 result;
+
    uint gamut = global.ExpandGamut;
-   
+
    if(gamut == 0u)
    {
-      rec2020 = sdr_linear * k709to2020;
+      result = sdr_linear * k709to2020;
    }
    else if(gamut == 1u)
    {
-      rec2020 = sdr_linear * kExpanded709to2020;
+      result = sdr_linear * k709toExpanded709;
    }
    else if(gamut == 2u)
    {
-      rec2020 = sdr_linear * kP3to2020;
+      result = sdr_linear * k709toP3;
    }
    else
    {
-      rec2020 = sdr_linear;
+      result = sdr_linear;
    }
 
-   rec2020 = max(rec2020, vec3(0.0f));
+   result = max(result, vec3(0.0f));
 
-   return rec2020;
+   return result;
 }
 
 vec4 To2020(const vec4 sdr_linear)
 {
-   vec3 rec2020;
-   
+   vec3 result;
+
    uint gamut = global.ExpandGamut;
 
    if(gamut == 0u)
    {
-      rec2020 = sdr_linear.rgb * k709to2020;
+      result = sdr_linear.rgb * k709to2020;
    }
    else if(gamut == 1u)
    {
-      rec2020 = sdr_linear.rgb * kExpanded709to2020;
+      result = sdr_linear.rgb * k709toExpanded709;
    }
    else if(gamut == 2u)
    {
-      rec2020 = sdr_linear.rgb * kP3to2020;
+      result = sdr_linear.rgb * k709toP3;
    }
    else
    {
-      rec2020 = sdr_linear.rgb;
+      result = sdr_linear.rgb;
    }
 
-   rec2020 = max(rec2020, vec3(0.0f));
+   result = max(result, vec3(0.0f));
 
-   return vec4(rec2020, sdr_linear.a);
+   return vec4(result, sdr_linear.a);
 }
 
 vec3 HDR(const vec3 sdr_linear)
@@ -233,8 +240,20 @@ float ScanlineColour(const uint channel,
    vec2 tex_coord_0                 = vec2(source_tex_coord_x, source_tex_coord_y);
    vec2 tex_coord_1                 = vec2(source_tex_coord_x + (1.0 / source_size.x), source_tex_coord_y);
 
-   float hdr_channel_0              = LinearToSignal(HDR(To2020(Sample(tex_coord_0))))[channel];
-   float hdr_channel_1              = LinearToSignal(HDR(To2020(Sample(tex_coord_1))))[channel];
+   float hdr_channel_0;
+   float hdr_channel_1;
+
+   if(global.HDRMode == 2u)
+   {
+      /* scRGB: no InverseTonemap — just colour convert and gamma encode for scanline sim */
+      hdr_channel_0              = LinearToSignal(To2020(Sample(tex_coord_0)))[channel];
+      hdr_channel_1              = LinearToSignal(To2020(Sample(tex_coord_1)))[channel];
+   }
+   else
+   {
+      hdr_channel_0              = LinearToSignal(HDR(To2020(Sample(tex_coord_0))))[channel];
+      hdr_channel_1              = LinearToSignal(HDR(To2020(Sample(tex_coord_1))))[channel];
+   }
 
    float horiz_interp               = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, hdr_channel_0 > hdr_channel_1));  
    float hdr_channel                = mix(hdr_channel_0, hdr_channel_1, horiz_interp);
@@ -376,28 +395,26 @@ void main()
        * display's native range, preserving tonal balance uniformly. */
       if((global.Scanlines > 0.0) && (global.OutputSize.y > 240.0 * 4.0))
       {
-         /* Scanlines() returns linear Rec.2020 after InverseTonemap.
-          * InverseTonemap output units: 1.0 = PaperWhiteNits.
+         /* Scanlines() works in Rec.2020 (To2020 with ExpandGamut applied inside).
           * scRGB units: 1.0 = 80 nits.
-          * Convert Rec.2020 back to Rec.709 and scale for scRGB. */
-         vec3 linear_2020 = Scanlines(vTexCoord);
-         vec3 linear_709  = linear_2020 * k2020to709;
-         FragColor = vec4(linear_709 * (global.PaperWhiteNits / kscRGBWhiteNits), 1.0);
+          * Always convert back to Rec.709 for scRGB output.
+          * For Super (gamut 3), To2020 passed through Rec.709 data —
+          * k2020to709 then "interprets" it as Rec.2020, giving maximum boost. */
+         vec3 linear = Scanlines(vTexCoord);
+
+         linear = linear * k2020to709;
+
+         FragColor = vec4(linear * (global.PaperWhiteNits / kscRGBWhiteNits), 1.0);
       }
       else
       {
-         vec4 linear = Sample(kDefaultColor, vTexCoord);
+         /* Convert to Rec.2020 with ExpandGamut colour boost,
+          * then always back to Rec.709 for scRGB output.
+          * For Super (gamut 3), To2020 passes through Rec.709 data —
+          * k2020to709 then "interprets" it as Rec.2020, giving maximum boost. */
+         vec4 linear = To2020(Sample(kDefaultColor, vTexCoord));
 
-         /* Colour boost in scRGB: always convert back to Rec.709 via k2020to709,
-          * with the forward matrix controlling saturation boost.
-          * 0=Accurate (just k2020to709), 1=Expanded, 2=Wide, 3=Super (passthrough) */
-         uint gamut = global.ExpandGamut;
-         if(gamut == 0u)
-            linear.rgb = linear.rgb * k2020to709;
-         else if(gamut == 1u)
-            linear.rgb = (linear.rgb * kExpanded709to2020) * k2020to709;
-         else if(gamut == 2u)
-            linear.rgb = (linear.rgb * kP3to2020) * k2020to709;
+         linear.rgb = linear.rgb * k2020to709;
 
          linear.rgb *= global.MaxNits / kscRGBWhiteNits;
          FragColor = linear;

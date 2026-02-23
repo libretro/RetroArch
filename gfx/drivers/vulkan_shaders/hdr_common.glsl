@@ -77,6 +77,12 @@ const mat3 k2020toP3 = mat3 (
    -0.065297f,  1.075788f, -0.010490f,
     0.002822f, -0.019598f,  1.016777f);
 
+/* Color rotation matrix to rotate Rec.709 color primaries into DCI-P3 (= k709to2020 * k2020toP3) */
+const mat3 k709toP3 = mat3 (
+    0.8215873f,  0.1763479f,  0.0020641f,
+    0.0328261f,  0.9695096f, -0.0023367f,
+    0.0188038f,  0.0725063f,  0.9086907f);
+
 /* START Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 /* Rotation matrix describing a custom color space which is bigger than Rec.709, but a little smaller than P3-D65.
  * This enhances colors, especially in the SDR range, by being a little more saturated. This can be used instead
@@ -92,6 +98,12 @@ const mat3 k2020toExpanded709 = mat3 (
     1.63535f,    -0.57057f, -0.0647755f,
    -0.0794803f,   1.0898f,  -0.0103244f,
     0.00343516f, -0.020207f, 1.01677f);
+
+/* Color rotation matrix to rotate Rec.709 color primaries into the expanded Rec.709 colorspace (= k709to2020 * k2020toExpanded709) */
+const mat3 k709toExpanded709 = mat3 (
+    1.0000025f, -0.0000016f, -0.0000001f,
+    0.0399515f,  0.9624604f, -0.0024178f,
+    0.0228872f,  0.0684669f,  0.9086437f);
 
 vec3 LinearToST2084(vec3 normalizedLinearValue)
 {

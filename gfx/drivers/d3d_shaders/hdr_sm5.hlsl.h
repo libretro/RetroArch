@@ -135,12 +135,28 @@ static const float4x4 kCubicBezier = float4x4( 1.0f,  0.0f,  0.0f,  0.0f,
                                                3.0f, -6.0f,  3.0f,  0.0f,
                                               -1.0f,  3.0f, -3.0f,  1.0f );
 
+/* Color rotation matrix to rotate Rec.709 color primaries into DCI-P3 (= k709to2020 * k2020toP3) */
+static const float3x3 k709toP3 =
+{
+   { 0.8215873f,  0.1763479f,  0.0020641f },
+   { 0.0328261f,  0.9695096f, -0.0023367f },
+   { 0.0188038f,  0.0725063f,  0.9086907f }
+};
+
 /* START Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 static const float3x3 kExpanded709to2020 =
 {
    { 0.6274040,  0.3292820, 0.0433136 },
    { 0.0457456,  0.941777,  0.0124772 },
    {-0.00121055, 0.0176041, 0.983607 }
+};
+
+/* Color rotation matrix to rotate Rec.709 color primaries into expanded Rec.709 (= k709to2020 * k2020toExpanded709) */
+static const float3x3 k709toExpanded709 =
+{
+   { 1.0000025f, -0.0000016f, -0.0000001f },
+   { 0.0399515f,  0.9624604f, -0.0024178f },
+   { 0.0228872f,  0.0684669f,  0.9086437f }
 };
 
 float3 LinearToST2084(float3 normalizedLinearValue)
@@ -209,56 +225,63 @@ float4 Sample(float4 colour, float2 texcoord)
    return float4(sdr_linear, sdr.a);
 }
 
+/* Convert Rec.709 input to the target colour space for ExpandGamut.
+ * Accurate (0): Rec.709 -> Rec.2020 (proper conversion, no boost)
+ * Expanded (1): Rec.709 -> Expanded709 (slightly wider than 709)
+ * Wide (2):     Rec.709 -> DCI-P3
+ * Super (3):    passthrough (stays Rec.709)
+ * k2020to709 is always applied after this for scRGB output — the mismatch
+ * between the target space and Rec.2020 creates the colour boost. */
 float3 To2020(const float3 sdr_linear)
 {
-   float3 rec2020;
-   
+   float3 result;
+
    if(global.expand_gamut == 0)
    {
-      rec2020 = mul(k709to2020, sdr_linear);
+      result = mul(k709to2020, sdr_linear);
    }
    else if(global.expand_gamut == 1)
    {
-      rec2020 = mul(kExpanded709to2020, sdr_linear);
+      result = mul(k709toExpanded709, sdr_linear);
    }
    else if(global.expand_gamut == 2)
    {
-      rec2020 = mul(kP3to2020, sdr_linear);
+      result = mul(k709toP3, sdr_linear);
    }
    else
    {
-      rec2020 = sdr_linear;
+      result = sdr_linear;
    }
 
-   rec2020 = max(rec2020, float3(0.0f, 0.0f, 0.0f));
+   result = max(result, float3(0.0f, 0.0f, 0.0f));
 
-   return rec2020;
+   return result;
 }
 
 float4 To2020(const float4 sdr_linear)
 {
-   float3 rec2020;
-   
+   float3 result;
+
    if(global.expand_gamut == 0)
    {
-      rec2020 = mul(k709to2020, sdr_linear.rgb);
+      result = mul(k709to2020, sdr_linear.rgb);
    }
    else if(global.expand_gamut == 1)
    {
-      rec2020 = mul(kExpanded709to2020, sdr_linear.rgb);
+      result = mul(k709toExpanded709, sdr_linear.rgb);
    }
    else if(global.expand_gamut == 2)
    {
-      rec2020 = mul(kP3to2020, sdr_linear.rgb);
+      result = mul(k709toP3, sdr_linear.rgb);
    }
    else
    {
-      rec2020 = sdr_linear.rgb;
+      result = sdr_linear.rgb;
    }
 
-   rec2020 = max(rec2020, float3(0.0f, 0.0f, 0.0f));
+   result = max(result, float3(0.0f, 0.0f, 0.0f));
 
-   return float4(rec2020, sdr_linear.a);
+   return float4(result, sdr_linear.a);
 }
 
 float3 HDR(const float3 sdr_linear)
@@ -339,8 +362,20 @@ float ScanlineColour(const uint channel,
    const float2 tex_coord_0               = float2(source_tex_coord_x, source_tex_coord_y);
    const float2 tex_coord_1               = float2(source_tex_coord_x + (1.0f / source_size.x), source_tex_coord_y);
 
-   const float hdr_channel_0              = LinearToSignal(HDR(To2020(Sample(tex_coord_0))))[channel];
-   const float hdr_channel_1              = LinearToSignal(HDR(To2020(Sample(tex_coord_1))))[channel];
+   float hdr_channel_0;
+   float hdr_channel_1;
+
+   if(global.hdr_mode == 2)
+   {
+      /* scRGB: no InverseTonemap — just colour convert and gamma encode for scanline sim */
+      hdr_channel_0              = LinearToSignal(To2020(Sample(tex_coord_0)))[channel];
+      hdr_channel_1              = LinearToSignal(To2020(Sample(tex_coord_1)))[channel];
+   }
+   else
+   {
+      hdr_channel_0              = LinearToSignal(HDR(To2020(Sample(tex_coord_0))))[channel];
+      hdr_channel_1              = LinearToSignal(HDR(To2020(Sample(tex_coord_1))))[channel];
+   }
 
    const float horiz_interp               = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, hdr_channel_0 > hdr_channel_1));  
    const float hdr_channel                = lerp(hdr_channel_0, hdr_channel_1, horiz_interp);
@@ -480,28 +515,27 @@ float4 PSMain(PSInput input) : SV_TARGET
        * Scale by MaxNits / kscRGBWhiteNits because scRGB 1.0 = 80 nits. */
       if((global.scanlines > 0.0f) && (global.OutputSize.y > 240.0f * 4.0f))
       {
-         /* Scanlines() returns linear Rec.2020 after InverseTonemap.
-          * InverseTonemap output units: 1.0 = PaperWhiteNits.
+         /* Scanlines() works in Rec.2020 (To2020 with ExpandGamut applied inside).
           * scRGB units: 1.0 = 80 nits.
-          * Convert Rec.2020 back to Rec.709 and scale for scRGB. */
-         float3 linear_2020 = Scanlines(input.texcoord);
-         float3 linear_709  = mul(k2020to709, linear_2020);
-         return float4(linear_709 * (global.paper_white_nits / kscRGBWhiteNits), 1.0f);
+          * Always convert back to Rec.709 for scRGB output.
+          * For Super (gamut 3), To2020 passed through Rec.709 data —
+          * k2020to709 then "interprets" it as Rec.2020, giving maximum boost. */
+         float3 linear_col = Scanlines(input.texcoord);
+
+         linear_col = mul(k2020to709, linear_col);
+
+         return float4(linear_col * (global.paper_white_nits / kscRGBWhiteNits), 1.0f);
       }
       else
       {
+         /* Convert to Rec.2020 with ExpandGamut colour boost,
+          * then always back to Rec.709 for scRGB output.
+          * For Super (gamut 3), To2020 passes through Rec.709 data —
+          * k2020to709 then "interprets" it as Rec.2020, giving maximum boost. */
          float4 sdr = input.color * t0.Sample(s0, input.texcoord);
-         float3 linear_col = pow(abs(sdr.rgb), 2.4f);
+         float3 linear_col = To2020(pow(abs(sdr.rgb), 2.4f));
 
-         /* Colour boost in scRGB: always convert back to Rec.709 via k2020to709,
-          * with the forward matrix controlling saturation boost.
-          * 0=Accurate (just k2020to709), 1=Expanded, 2=Wide, 3=Super (passthrough) */
-         if(global.expand_gamut == 0)
-            linear_col = mul(k2020to709, linear_col);
-         else if(global.expand_gamut == 1)
-            linear_col = mul(k2020to709, mul(kExpanded709to2020, linear_col));
-         else if(global.expand_gamut == 2)
-            linear_col = mul(k2020to709, mul(kP3to2020, linear_col));
+         linear_col = mul(k2020to709, linear_col);
 
          linear_col *= global.max_nits / kscRGBWhiteNits;
          return float4(linear_col, sdr.a);
