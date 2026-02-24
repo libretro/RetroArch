@@ -606,7 +606,9 @@ void state_manager_event_init(
 
    state_manager_push_where(rewind_st->state, &state);
 
+   rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE;
    content_serialize_state_rewind(state, rewind_st->size);
+   rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE;
 
    state_manager_push_do(rewind_st->state);
 }
@@ -783,7 +785,9 @@ bool state_manager_check_rewind(
          void *state = NULL;
          state_manager_push_where(rewind_st->state, &state);
 
+         rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE;
          content_serialize_state_rewind(state, rewind_st->size);
+         rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE;
 
          state_manager_push_do(rewind_st->state);
       }
