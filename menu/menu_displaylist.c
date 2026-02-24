@@ -6235,8 +6235,8 @@ static int menu_displaylist_parse_input_description_list(
       return 0;
 
    /* Determine user/button indices */
-   user_idx    = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx     = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   user_idx    = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
+   btn_idx     = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
    if (   (user_idx >= MAX_USERS)
        || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
@@ -12852,7 +12852,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            if (menu_entries_append(list, descriptor, name,
                                  MSG_UNKNOWN,
                                  MENU_SETTINGS_INPUT_DESC_BEGIN +
-                                 (port * (RARCH_FIRST_CUSTOM_BIND + 8)) + retro_id, 0, 0, NULL))
+                                 (port * RARCH_ANALOG_BIND_LIST_END) + retro_id, 0, 0, NULL))
                               count++;
                         }
                         else if (device == RETRO_DEVICE_KEYBOARD)

@@ -778,8 +778,8 @@ static size_t menu_action_setting_disp_set_label_input_desc(
 {
    unsigned remap_idx;
    settings_t *settings   = config_get_ptr();
-   unsigned user_idx      = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   unsigned btn_idx       = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   unsigned user_idx      = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
+   unsigned btn_idx       = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
    if (!settings)
       return 0;

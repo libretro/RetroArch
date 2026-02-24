@@ -137,8 +137,8 @@ static int action_right_input_desc(unsigned type, const char *label,
    if (settings && sys_info)
    {
       unsigned bind_idx;
-      unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-      unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+      unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
+      unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
       unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
       unsigned remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
 
