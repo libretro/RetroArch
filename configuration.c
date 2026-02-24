@@ -6262,7 +6262,7 @@ bool input_remapping_load_file(void *data, const char *path)
    config_file_t *conf                              = (config_file_t*)data;
    settings_t *settings                             = config_st;
    runloop_state_t *runloop_st                      = runloop_state_get_ptr();
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] =
+   char key_strings[RARCH_ANALOG_BIND_LIST_END][8] =
    {
       "b",      "y",      "select", "start",
       "up",     "down",   "left",   "right",
@@ -6299,7 +6299,7 @@ bool input_remapping_load_file(void *data, const char *path)
       _len       = strlcpy(s3, prefix, sizeof(s3));
       strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
 
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
+      for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
       {
          const char *key_string = key_strings[j];
 
@@ -6406,7 +6406,7 @@ bool input_remapping_save_file(const char *path)
    bool ret;
    unsigned i, j;
    char remap_file_dir[DIR_MAX_LENGTH];
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] =
+   char key_strings[RARCH_ANALOG_BIND_LIST_END][8] =
    {
       "b",      "y",      "select", "start",
       "up",     "down",   "left",   "right",
@@ -6521,7 +6521,7 @@ bool input_remapping_save_file(const char *path)
                   settings->uints.input_keymapper_ids[i][j]);
       }
 
-      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+      for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_ANALOG_BIND_LIST_END; j++)
       {
          char _ident[128];
          const char *key_string = key_strings[j];

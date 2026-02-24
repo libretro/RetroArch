@@ -163,7 +163,7 @@ static int action_scan_input_desc(const char *path,
 {
    const char *menu_label         = NULL;
    unsigned key                   = 0;
-   unsigned inp_desc_user         = 0;
+   unsigned user_idx              = 0;
    struct retro_keybind *target   = NULL;
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
@@ -172,39 +172,52 @@ static int action_scan_input_desc(const char *path,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST)))
    {
       settings_t *settings = config_get_ptr();
-      inp_desc_user        = atoi(label);
-      /* Skip 'Device Type', 'Analog to Digital Type' and 'Mapped Port' */
-      key                  = (unsigned)(idx - 3);
-      /* Select the reorderer bind */
-      key                  =
-            (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;
+      int type_begin       = (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+            ? MENU_SETTINGS_INPUT_DESC_KBD_BEGIN : MENU_SETTINGS_INPUT_DESC_BEGIN;
 
-      if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+      user_idx = (type - type_begin) / RARCH_ANALOG_BIND_LIST_END;
+      key      = (type - type_begin) - RARCH_ANALOG_BIND_LIST_END * user_idx;
+
+      if (     type >= MENU_SETTINGS_INPUT_DESC_BEGIN
             && type <= MENU_SETTINGS_INPUT_DESC_END)
-         settings->uints.input_remap_ids[inp_desc_user][key] = RARCH_UNMAPPED;
+         settings->uints.input_remap_ids[user_idx][key] = RARCH_UNMAPPED;
       else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
             && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
-         settings->uints.input_keymapper_ids[inp_desc_user][key] = RETROK_UNKNOWN;
+         settings->uints.input_keymapper_ids[user_idx][key] = RETROK_UNKNOWN;
 
       return 0;
    }
    else if (string_is_equal(menu_label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST)))
    {
-      unsigned char player_no_str = atoi(&label[1]);
+      size_t first_bind = 0;
+      char port_str     = atoi(&label[1]);
+      menu_entry_t entry;
 
-      inp_desc_user      = (unsigned)(player_no_str - 1);
-      /* This hardcoded value may cause issues if any entries are added on
-         top of the input binds */
-      key                = (unsigned)(idx - 8);
+      user_idx = (unsigned)(port_str - 1);
+
+      /* Skip non-bind menu elements */
+      MENU_ENTRY_INITIALIZE(entry);
+
+      while (first_bind < idx)
+      {
+         menu_entry_get(&entry, 0, first_bind, NULL, false);
+
+         if (entry.setting_type == ST_BIND)
+            break;
+
+         first_bind++;
+      }
+
+      key = (unsigned)(idx - first_bind);
+
       /* Select the reorderer bind */
-      key                =
-            (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;
+      key = (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;
    }
    else
       key = input_config_translate_str_to_bind_id(label);
 
-   target = &input_config_binds[inp_desc_user][key];
+   target = &input_config_binds[user_idx][key];
 
    if (target)
    {
@@ -335,7 +348,7 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
          break;
    }
 
-   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+   if (     type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_SCAN(cbs, action_scan_input_desc);

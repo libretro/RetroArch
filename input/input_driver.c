@@ -7076,7 +7076,7 @@ void input_remapping_set_defaults(bool clear_cache)
       }
 
       /* Analog stick remaps */
-      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+      for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_ANALOG_BIND_LIST_END; j++)
          configuration_set_uint(settings,
                settings->uints.input_remap_ids[i][j], j);
 
