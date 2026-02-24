@@ -40,7 +40,8 @@ startup:
 
 	@ System initialization
 	mov r0, r4
-	bl initSystem
+	ldr r2, =initSystem
+	blx r2
 
 	@ Set up argc/argv arguments for main()
 	ldr r0, =__system_argc
