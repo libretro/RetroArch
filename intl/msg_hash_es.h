@@ -2407,12 +2407,12 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
-   "Activar HDR"
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Establece el modo de salida HDR, si tu pantalla es compatible."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Activa el HDR si la pantalla es compatible con este sistema."
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
+   "Desactivar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
@@ -2436,23 +2436,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Utiliza el rango completo de colores de tu pantalla para crear una imagen más brillante y saturada. Si deseas ver colores más fieles a los del diseño original de los juegos, selecciona FIEL."
+   "Utiliza el rango completo de colores de tu pantalla para crear una imagen más brillante y saturada. Si deseas ver colores más fieles a los del diseño original de los juegos, selecciona «Preciso»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
-   "FIEL"
+   "Preciso"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
-   "EXPANDIDO"
+   "Expandido"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
-   "AMPLIO"
+   "Amplio"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
-   "SÚPER"
+   "Súper"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,

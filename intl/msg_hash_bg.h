@@ -782,6 +782,10 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Висок динамичен обхват (HDR)"
+   )
 
 
 /* Settings > Video > Synchronization */
