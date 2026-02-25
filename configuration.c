@@ -817,7 +817,8 @@ static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 enum config_bool_flags
 {
    CFG_BOOL_FLG_DEF_ENABLE = (1 << 0),
-   CFG_BOOL_FLG_HANDLE     = (1 << 1)
+   CFG_BOOL_FLG_HANDLE     = (1 << 1),
+   CFG_BOOL_FLG_SENSITIVE  = (1 << 2)
 };
 
 struct config_bool_setting
@@ -920,9 +921,21 @@ struct config_path_setting
 #define SETTING_OVERRIDE(override_setting) \
    tmp[count-1].override = override_setting
 
+#define SETTING_SENSITIVE() \
+   tmp[count-1].flags |= CFG_BOOL_FLG_SENSITIVE
+
+#define SETTING_ARRAY_SENSITIVE(key, configval, default_enable, default_setting, handle_setting) \
+   SETTING_ARRAY(key, configval, default_enable, default_setting, handle_setting) \
+   SETTING_SENSITIVE()
+
+#define SETTING_PATH_SENSITIVE(key, configval, default_enable, default_setting, handle_setting) \
+   SETTING_PATH(key, configval, default_enable, default_setting, handle_setting) \
+   SETTING_SENSITIVE()
+
 /* Forward declarations */
 #ifdef HAVE_CONFIGFILE
 static void config_parse_file(global_t *global);
+static size_t config_get_credentials_path(char *s, size_t len);
 #endif
 
 struct defaults g_defaults;
@@ -1654,41 +1667,41 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("cloud_sync_driver",            settings->arrays.cloud_sync_driver, false, NULL, true);
 
 #ifdef HAVE_CHEEVOS
-   SETTING_ARRAY("cheevos_custom_host",          settings->arrays.cheevos_custom_host, false, NULL, true);
-   SETTING_ARRAY("cheevos_username",             settings->arrays.cheevos_username, false, NULL, true);
-   SETTING_ARRAY("cheevos_password",             settings->arrays.cheevos_password, false, NULL, true);
-   SETTING_ARRAY("cheevos_token",                settings->arrays.cheevos_token, false, NULL, true);
-   SETTING_ARRAY("cheevos_leaderboards_enable",  settings->arrays.cheevos_leaderboards_enable, true, "", true); /* deprecated */
+   SETTING_ARRAY("cheevos_custom_host",                   settings->arrays.cheevos_custom_host, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("cheevos_username",            settings->arrays.cheevos_username, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("cheevos_password",            settings->arrays.cheevos_password, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("cheevos_token",               settings->arrays.cheevos_token, false, NULL, true);
+   SETTING_ARRAY("cheevos_leaderboards_enable",           settings->arrays.cheevos_leaderboards_enable, true, "", true); /* deprecated */
 #endif
 
 #ifdef HAVE_NETWORKING
-   SETTING_ARRAY("netplay_mitm_server",          settings->arrays.netplay_mitm_server, false, NULL, true);
+   SETTING_ARRAY("netplay_mitm_server",                   settings->arrays.netplay_mitm_server, false, NULL, true);
 #ifdef HAVE_CLOUDSYNC
-   SETTING_ARRAY("webdav_url",                   settings->arrays.webdav_url, false, NULL, true);
-   SETTING_ARRAY("webdav_username",              settings->arrays.webdav_username, false, NULL, true);
-   SETTING_ARRAY("webdav_password",              settings->arrays.webdav_password, false, NULL, true);
-   SETTING_ARRAY("google_drive_refresh_token",   settings->arrays.google_drive_refresh_token, false, NULL, true);
+   SETTING_ARRAY("webdav_url",                            settings->arrays.webdav_url, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("webdav_username",             settings->arrays.webdav_username, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("webdav_password",             settings->arrays.webdav_password, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("google_drive_refresh_token",  settings->arrays.google_drive_refresh_token, false, NULL, true);
 #ifdef HAVE_S3
-   SETTING_ARRAY("s3_url",                       settings->arrays.s3_url, false, NULL, true);
-   SETTING_ARRAY("access_key_id",                settings->arrays.access_key_id, false, NULL, true);
-   SETTING_ARRAY("secret_access_key",            settings->arrays.secret_access_key, false, NULL, true);
+   SETTING_ARRAY("s3_url",                                settings->arrays.s3_url, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("access_key_id",               settings->arrays.access_key_id, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("secret_access_key",           settings->arrays.secret_access_key, false, NULL, true);
 #endif
 #endif
-   SETTING_ARRAY("youtube_stream_key",           settings->arrays.youtube_stream_key, true, NULL, true);
-   SETTING_ARRAY("twitch_stream_key",            settings->arrays.twitch_stream_key, true, NULL, true);
-   SETTING_ARRAY("facebook_stream_key",          settings->arrays.facebook_stream_key, true, NULL, true);
-   SETTING_ARRAY("kick_stream_key",              settings->arrays.kick_stream_key, true, NULL, true);
-   SETTING_ARRAY("discord_app_id",               settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
-   SETTING_ARRAY("ai_service_url",               settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
+   SETTING_ARRAY_SENSITIVE("youtube_stream_key",          settings->arrays.youtube_stream_key, true, NULL, true);
+   SETTING_ARRAY_SENSITIVE("twitch_stream_key",           settings->arrays.twitch_stream_key, true, NULL, true);
+   SETTING_ARRAY_SENSITIVE("facebook_stream_key",         settings->arrays.facebook_stream_key, true, NULL, true);
+   SETTING_ARRAY_SENSITIVE("kick_stream_key",             settings->arrays.kick_stream_key, true, NULL, true);
+   SETTING_ARRAY("discord_app_id",                        settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
+   SETTING_ARRAY("ai_service_url",                        settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
 #endif
 
 #ifdef HAVE_SMBCLIENT
-   SETTING_ARRAY("smb_client_server_address", settings->arrays.smb_client_server_address, false, NULL, true);
-   SETTING_ARRAY("smb_client_share", settings->arrays.smb_client_share, false, NULL, true);
-   SETTING_ARRAY("smb_client_subdir", settings->arrays.smb_client_subdir, false, NULL, true);
-   SETTING_ARRAY("smb_client_username", settings->arrays.smb_client_username, false, NULL, true);
-   SETTING_ARRAY("smb_client_password", settings->arrays.smb_client_password, false, NULL, true);
-   SETTING_ARRAY("smb_client_workgroup", settings->arrays.smb_client_workgroup, false, NULL, true);
+   SETTING_ARRAY("smb_client_server_address",             settings->arrays.smb_client_server_address, false, NULL, true);
+   SETTING_ARRAY("smb_client_share",                      settings->arrays.smb_client_share, false, NULL, true);
+   SETTING_ARRAY("smb_client_subdir",                     settings->arrays.smb_client_subdir, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("smb_client_username",         settings->arrays.smb_client_username, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("smb_client_password",         settings->arrays.smb_client_password, false, NULL, true);
+   SETTING_ARRAY("smb_client_workgroup",                  settings->arrays.smb_client_workgroup, false, NULL, true);
 #endif
 
 #ifdef HAVE_LAKKA
@@ -1790,11 +1803,11 @@ static struct config_path_setting *populate_settings_path(
 #endif
 
 #ifdef HAVE_NETWORKING
-   SETTING_PATH("netplay_ip_address",            settings->paths.netplay_server, false, NULL, true);
-   SETTING_PATH("netplay_custom_mitm_server",    settings->paths.netplay_custom_mitm_server, false, NULL, true);
-   SETTING_PATH("netplay_nickname",              settings->paths.username, false, NULL, true);
-   SETTING_PATH("netplay_password",              settings->paths.netplay_password, false, NULL, true);
-   SETTING_PATH("netplay_spectate_password",     settings->paths.netplay_spectate_password, false, NULL, true);
+   SETTING_PATH("netplay_ip_address",                     settings->paths.netplay_server, false, NULL, true);
+   SETTING_PATH("netplay_custom_mitm_server",             settings->paths.netplay_custom_mitm_server, false, NULL, true);
+   SETTING_PATH("netplay_nickname",                       settings->paths.username, false, NULL, true);
+   SETTING_PATH_SENSITIVE("netplay_password",             settings->paths.netplay_password, false, NULL, true);
+   SETTING_PATH_SENSITIVE("netplay_spectate_password",    settings->paths.netplay_spectate_password, false, NULL, true);
 #endif
 
 #ifdef _3DS
@@ -6477,6 +6490,27 @@ static bool config_load_file(global_t *global,
 #endif
    }
 
+   /* Merge credentials from separate file.
+    * Credentials are stored in credentials.cfg alongside
+    * the main config to keep sensitive data (passwords,
+    * tokens, keys) out of retroarch.cfg. */
+   {
+      char credentials_path[PATH_MAX_LENGTH];
+      credentials_path[0] = '\0';
+      config_get_credentials_path(credentials_path,
+            sizeof(credentials_path));
+      if (!string_is_empty(credentials_path)
+            && path_is_valid(credentials_path))
+      {
+         bool result = config_append_file(conf, credentials_path);
+         RARCH_LOG("[Config] Merging credentials from \"%s\".\n",
+               credentials_path);
+         if (!result)
+            RARCH_ERR("[Config] Failed to merge credentials from \"%s\".\n",
+                  credentials_path);
+      }
+   }
+
    /* Special case for perfcnt_enable */
    {
       bool tmp = false;
@@ -8405,6 +8439,107 @@ static void config_path_strip_trailing_slash(char *s)
 }
 
 /**
+ * config_get_credentials_path:
+ *
+ * Builds the path to the credentials config file.
+ * Uses the same directory as the main config file.
+ *
+ * Returns: length of the string written to @s.
+ **/
+static size_t config_get_credentials_path(char *s, size_t len)
+{
+   char config_directory[DIR_MAX_LENGTH];
+   config_directory[0] = '\0';
+
+   if (path_is_empty(RARCH_PATH_CONFIG))
+   {
+      s[0] = '\0';
+      return 0;
+   }
+
+   fill_pathname_basedir(config_directory,
+         path_get(RARCH_PATH_CONFIG),
+         sizeof(config_directory));
+
+   return fill_pathname_join_special(s, config_directory,
+         "credentials.cfg", len);
+}
+
+/**
+ * config_save_credentials:
+ *
+ * Writes only sensitive settings (passwords, tokens, keys)
+ * to a separate credentials.cfg file.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+bool config_save_credentials(void)
+{
+   unsigned i;
+   bool ret                                          = false;
+   char credentials_path[PATH_MAX_LENGTH];
+   struct config_array_setting     *array_settings   = NULL;
+   struct config_path_setting      *path_settings    = NULL;
+   settings_t                      *settings         = config_st;
+   int array_settings_size                           = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
+   int path_settings_size                            = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
+   config_file_t                   *conf             = NULL;
+
+   credentials_path[0] = '\0';
+   config_get_credentials_path(credentials_path, sizeof(credentials_path));
+
+   if (string_is_empty(credentials_path))
+      return false;
+
+   conf = config_file_new_from_path_to_string(credentials_path);
+   if (!conf)
+      conf = config_file_new_alloc();
+   if (!conf)
+      return false;
+
+   array_settings = populate_settings_array(settings, &array_settings_size);
+   path_settings  = populate_settings_path(settings, &path_settings_size);
+
+   if (array_settings && (array_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)array_settings_size; i++)
+      {
+         if (!(array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
+            continue;
+         config_set_string(conf,
+               array_settings[i].ident,
+               array_settings[i].ptr);
+      }
+      free(array_settings);
+      array_settings = NULL;
+   }
+
+   if (path_settings && (path_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)path_settings_size; i++)
+      {
+         if (!(path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
+            continue;
+         config_set_path(conf,
+               path_settings[i].ident,
+               path_settings[i].ptr);
+      }
+      free(path_settings);
+      path_settings = NULL;
+   }
+
+   ret = config_file_write(conf, credentials_path, true);
+   config_file_free(conf);
+
+   if (ret)
+      RARCH_LOG("[Config] Saved credentials to \"%s\".\n", credentials_path);
+   else
+      RARCH_ERR("[Config] Failed to save credentials to \"%s\".\n", credentials_path);
+
+   return ret;
+}
+
+/**
  * config_save_file:
  * @path            : Path that shall be written to.
  *
@@ -8418,6 +8553,7 @@ bool config_save_file(const char *path)
    unsigned i                                        = 0;
    bool ret                                          = false;
    bool minimal                                      = false;
+   bool credentials_saved                            = false;
    settings_t                     *defaults          = NULL;
    retro_keybind_set              *defaults_binds    = NULL;
    struct config_bool_setting     *bool_settings     = NULL;
@@ -8581,6 +8717,14 @@ bool config_save_file(const char *path)
       }
    }
 
+   /* Save credentials to a separate file.
+    * Only strip sensitive fields from retroarch.cfg
+    * when credentials.cfg was written successfully. */
+   credentials_saved = config_save_credentials();
+   if (!credentials_saved)
+      RARCH_WARN("[Config] Credentials save failed, "
+            "keeping sensitive fields in main config.\n");
+
    /* Path settings */
    if (path_settings && (path_settings_size > 0))
    {
@@ -8590,6 +8734,16 @@ bool config_save_file(const char *path)
          char default_buf[PATH_MAX_LENGTH];
          const char *value         = path_settings[i].ptr;
          const char *default_value = path_defaults ? path_defaults[i].ptr : NULL;
+
+         /* Sensitive settings are stored in credentials.cfg.
+          * Unset removes stale values from existing configs.
+          * Only strip when credentials.cfg was written OK. */
+         if (   credentials_saved
+             && (path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
+         {
+            config_unset(conf, path_settings[i].ident);
+            continue;
+         }
 
          if (path_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
          {
@@ -8676,6 +8830,15 @@ bool config_save_file(const char *path)
    {
       for (i = 0; i < (unsigned)array_settings_size; i++)
       {
+         /* Sensitive settings are stored in credentials.cfg.
+          * Unset removes stale values from existing configs.
+          * Only strip when credentials.cfg was written OK. */
+         if (   credentials_saved
+             && (array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
+         {
+            config_unset(conf, array_settings[i].ident);
+            continue;
+         }
          if (   !array_settings[i].override
              || !retroarch_override_setting_is_set(array_settings[i].override, NULL))
          {
@@ -9334,22 +9497,14 @@ int8_t config_save_overrides(enum override_type type,
       {
          if (!string_is_equal(array_settings[i].ptr, array_overrides[i].ptr))
          {
-#ifdef HAVE_CHEEVOS
-            /* As authentication doesn't occur until after content is loaded,
-             * the achievement authentication token might only exist in the
-             * override set, and therefore differ from the master config set.
-             * Storing the achievement authentication token in an override
-             * is a recipe for disaster. If it expires and the user generates
-             * a new token, then the override will be out of date and the
-             * user will have to reauthenticate for each override (and also
-             * remember to update each override). Also exclude the username
-             * as it's directly tied to the token and password.
-             */
-            if (   string_is_equal(array_settings[i].ident, "cheevos_token")
-                || string_is_equal(array_settings[i].ident, "cheevos_password")
-                || string_is_equal(array_settings[i].ident, "cheevos_username"))
+            /* Authentication tokens stored in overrides become stale
+             * when they expire and get regenerated in the master
+             * config, forcing users to reauthenticate per override.
+             * Originally applied to cheevos credentials, now
+             * generalized to all sensitive settings via
+             * credentials.cfg. */
+            if (array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE)
                continue;
-#endif
             config_set_string(conf, array_overrides[i].ident,
                   array_overrides[i].ptr);
             RARCH_DBG("[Override] %s = \"%s\"\n",
@@ -9362,6 +9517,10 @@ int8_t config_save_overrides(enum override_type type,
          const char *cur  = path_overrides[i].ptr;
          const char *base = path_settings[i].ptr;
          char        cur_buf[PATH_MAX_LENGTH];
+
+         /* Sensitive settings are managed via credentials.cfg */
+         if (path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE)
+            continue;
 
          /* savefile_directory / savestate_directory alias a global
           * buffer, so path_settings[] and path_overrides[] point at the
