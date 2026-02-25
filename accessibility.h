@@ -32,6 +32,15 @@
 
 #include "configuration.h"
 
+
+enum accessibility_narrator_synthesizer
+{
+   ACCESSIBILITY_NARRATOR_SYNTHESIZER_NATIVE = 0,
+   ACCESSIBILITY_NARRATOR_SYNTHESIZER_SPEACH_DISPATCHER,
+   ACCESSIBILITY_NARRATOR_SYNTHESIZER_ESPEAK,
+   ACCESSIBILITY_NARRATOR_SYNTHESIZER_LAST
+};
+
 typedef struct
 {
    int ai_service_auto;

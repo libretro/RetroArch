@@ -6328,6 +6328,10 @@ MSG_HASH(
    "accessibility_enabled"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SYNTHESIZER,
+   "accessibility_narrator_synthesizer"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "accessibility_narrator_speech_speed"
    )
