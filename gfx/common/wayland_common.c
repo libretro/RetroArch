@@ -82,6 +82,24 @@ static const unsigned long retroarch_icon_data[] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
 };
 
+/* Detects a fullscreen sizing bug on some hardware and/or compositors */
+static bool gfx_ctx_wl_should_use_legacy_fullscreen_configure(
+      gfx_ctx_wayland_data_t *wl, int width, int height)
+{
+   if (!wl)
+      return false;
+
+   if (width <= 0 || height <= 0)
+      return false;
+
+   /* If the fullscreen menu appears the same size as the SPLASH_WINDOW
+    * (240x256), then fall back to the legacy fullscreen configure path */
+   if (width <= SPLASH_WINDOW_WIDTH && height <= SPLASH_WINDOW_HEIGHT)
+      return true;
+
+   return false;
+}
+
 void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       void *toplevel,
       int32_t width, int32_t height, struct wl_array *states)
@@ -122,6 +140,16 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
    {
       width  = wl->floating_width;
       height = wl->floating_height;
+   }
+
+   if (wl->fullscreen
+         && gfx_ctx_wl_should_use_legacy_fullscreen_configure(
+            wl, width, height))
+   {
+      /* Fullscreen matches SPLASH_WINDOW size: fall back to legacy path */
+      wl->ignore_configuration = true;
+      width                    = 0;
+      height                   = 0;
    }
 
    if (     (width  > 0)
@@ -194,6 +222,16 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    {
       width  = wl->floating_width;
       height = wl->floating_height;
+   }
+
+   if (wl->fullscreen
+         && gfx_ctx_wl_should_use_legacy_fullscreen_configure(
+            wl, width, height))
+   {
+      /* Fullscreen matches SPLASH_WINDOW size: fall back to legacy path */
+      wl->ignore_configuration = true;
+      width                    = 0;
+      height                   = 0;
    }
 
    if (     width  > 0
@@ -934,7 +972,7 @@ bool gfx_ctx_wl_init_common(
    }
 #endif
 
-   // Ignore configure events until splash screen has been replaced
+   /* Ignore configure events until splash screen has been replaced */
    wl->ignore_configuration = true;
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
