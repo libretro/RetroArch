@@ -11,8 +11,10 @@
 - APPLE: Add Apple on-device OCR / translation to AI service
 - COMMAND: Fix null pointer exception in COMMAND_GET_STATUS
 - COMMAND: Only allow pause when there is a core running
-- CHEEVOS: Update to rcheevos 12.2.1
+- CHEEVOS: Update to rcheevos 12.3
 - CHEEVOS: Download badges on demand only
+- CLOUDSYNC: Google Drive cloud sync driver
+- DOS: RetroArch for DOS can now start up and handle keyboard correctly
 - CLOUDSYNC: Conflict resolution options
 - EMSCRIPTEN: Added dice to core selection dropdown
 - EMSCRIPTEN: Numerous bugfixes
@@ -21,6 +23,7 @@
 - INPUT: Fix raw mouse position after window state changes
 - INPUT: New analog-to-digital types: both stick, twin-stick (for pressing face buttons with analog stick).
 - INPUT: Fix for setups which have Game Focus and Hotkey Enable on the same key
+- INPUT: Autoconf profile load/save rework: saved profiles have now higher priority, several QoL improvements for saving
 - INPUT/ANDROID: Default for input block timeout is now 1 instead of 0
 - INPUT/MFI: Controller disconnection fix
 - INPUT/SDL: Fix controller vid/pid detection on Windows
@@ -30,6 +33,7 @@
 - LAKKA: RetroFlag specific options for safe shutdown and reset
 - LIBRETRO: ROM memory type added
 - LIBRETRO: Sensor interface clarifications
+- LIBRETRO: RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO allows cores to disable frontend's save state undo feature to decrease memory usage
 - MACOS: Fix OpenGL color on wide gamut displays
 - MENU: Do hard reset when pushing RetroPad Start on Restart menu item
 - MENU: Remove "Missing firmware check" option
@@ -39,6 +43,11 @@
 - MENU: Fixes for building without menu
 - MENU: Widget default size adjusted
 - MENU: Use RetroPad Y inside shader menu to toggle background opacity or reset shader passes
+- MENU: Fast-forward notification control now acts as frame throttle notification control (including slowmotion and rewind)
+- MENU: Unused RetroRating and performance level indications removed
+- MENU: Evergarden theme for Ozone and RGUI
+- MENU: Saving menu is reorganized
+- MENU: Save state thumbnails are now saved in native resolution for HW rendered cores
 - MENU/GLUI: Add Dracula color theme
 - MENU/OZONE: Add dynamic header icon option
 - MENU/OZONE: Fix occasional left mouse click selection error
@@ -48,6 +57,7 @@
 - OVERLAY: Hold button function
 - OVERLAY: Allow interaction during next overlay swap
 - OVERLAY: Alternative 2-touch option
+- OVERLAY: Allow touch mouse/lightgun to still work when controller is connected
 - PS2: Improve driver usage
 - PS2: Fix booting from internal HDD
 - SCAN: Fix 3DS content scanning skipping all files
@@ -61,6 +71,7 @@
 - VIDEO/SDL2: Add shared context
 - VIDEO/D3D11/D3D12/VULKAN: Major HDR update. Inverse tone mapping uses RGB maxing instead of luminance, better full-spectrum remapping of SDR space to HDR, Contrast option remove. Performance improved. HDR menu settings exposed to shaders, fast HDR single-pass scanline simulation added.
 - VIDEO/D3D11/D3D12/VULKAN: multi-mode HDR Expand Gamut selection
+- VIDEO/D3D11/D3D12/VULKAN: scRGB (HDR16) support
 - VIDEO/VULKAN: VK_EXT_full_screen_exclusive is now optional
 - VIDEO/WAYLAND: Fix fullscreen window offset/incorrect sizing
 - VITA: Enable cloudsync feature
