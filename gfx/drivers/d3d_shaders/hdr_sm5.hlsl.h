@@ -242,11 +242,11 @@ float3 To2020(const float3 sdr_linear)
    }
    else if(global.expand_gamut == 1)
    {
-      result = mul(k709toExpanded709, sdr_linear);
+      result = mul(kExpanded709to2020, sdr_linear);
    }
    else if(global.expand_gamut == 2)
    {
-      result = mul(k709toP3, sdr_linear);
+      result = mul(kP3to2020, sdr_linear);
    }
    else
    {
@@ -268,11 +268,11 @@ float4 To2020(const float4 sdr_linear)
    }
    else if(global.expand_gamut == 1)
    {
-      result = mul(k709toExpanded709, sdr_linear.rgb);
+      result = mul(kExpanded709to2020, sdr_linear.rgb);
    }
    else if(global.expand_gamut == 2)
    {
-      result = mul(k709toP3, sdr_linear.rgb);
+      result = mul(kP3to2020, sdr_linear.rgb);
    }
    else
    {

@@ -121,11 +121,11 @@ vec3 To2020(const vec3 sdr_linear)
    }
    else if(gamut == 1u)
    {
-      result = sdr_linear * k709toExpanded709;
+      result = sdr_linear * kExpanded709to2020;
    }
    else if(gamut == 2u)
    {
-      result = sdr_linear * k709toP3;
+      result = sdr_linear * kP3to2020;
    }
    else
    {
@@ -149,11 +149,11 @@ vec4 To2020(const vec4 sdr_linear)
    }
    else if(gamut == 1u)
    {
-      result = sdr_linear.rgb * k709toExpanded709;
+      result = sdr_linear.rgb * kExpanded709to2020;
    }
    else if(gamut == 2u)
    {
-      result = sdr_linear.rgb * k709toP3;
+      result = sdr_linear.rgb * kP3to2020;
    }
    else
    {
