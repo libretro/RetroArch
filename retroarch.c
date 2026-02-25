@@ -2439,6 +2439,10 @@ char *path_get_ptr(enum rarch_path_type type)
          if (!path_is_empty(RARCH_PATH_CONFIG))
             return p_rarch->path_config_file;
          break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         if (!path_is_empty(RARCH_PATH_CONFIG_DEFAULT))
+            return p_rarch->path_config_default_file;
+         break;
       case RARCH_PATH_CONFIG_APPEND:
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
             return p_rarch->path_config_append_file;
@@ -2476,6 +2480,10 @@ const char *path_get(enum rarch_path_type type)
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
             return p_rarch->path_config_file;
+         break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         if (!path_is_empty(RARCH_PATH_CONFIG_DEFAULT))
+            return p_rarch->path_config_default_file;
          break;
       case RARCH_PATH_CONFIG_APPEND:
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
@@ -2515,6 +2523,8 @@ size_t path_get_realsize(enum rarch_path_type type)
          return sizeof(p_rarch->path_core_options_file);
       case RARCH_PATH_CONFIG:
          return sizeof(p_rarch->path_config_file);
+      case RARCH_PATH_CONFIG_DEFAULT:
+         return sizeof(p_rarch->path_config_default_file);
       case RARCH_PATH_CONFIG_APPEND:
          return sizeof(p_rarch->path_config_append_file);
       case RARCH_PATH_CONFIG_OVERRIDE:
@@ -2567,6 +2577,10 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_config_file, path,
                sizeof(p_rarch->path_config_file));
          break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         strlcpy(p_rarch->path_config_default_file, path,
+               sizeof(p_rarch->path_config_default_file));
+         break;
       case RARCH_PATH_CONFIG_APPEND:
          strlcpy(p_rarch->path_config_append_file, path,
                sizeof(p_rarch->path_config_append_file));
@@ -2612,6 +2626,10 @@ bool path_is_empty(enum rarch_path_type type)
          break;
       case RARCH_PATH_CONFIG:
          if (string_is_empty(p_rarch->path_config_file))
+            return true;
+         break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         if (string_is_empty(p_rarch->path_config_default_file))
             return true;
          break;
       case RARCH_PATH_CONFIG_APPEND:
@@ -2676,6 +2694,9 @@ void path_clear(enum rarch_path_type type)
       case RARCH_PATH_CONFIG:
          *p_rarch->path_config_file = '\0';
          break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         *p_rarch->path_config_default_file = '\0';
+         break;
       case RARCH_PATH_CONFIG_APPEND:
          *p_rarch->path_config_append_file = '\0';
          break;
@@ -2706,6 +2727,7 @@ static void path_clear_all(void)
    path_clear(RARCH_PATH_CORE_LAST);
    path_clear(RARCH_PATH_CORE_OPTIONS);
    path_clear(RARCH_PATH_CONFIG);
+   path_clear(RARCH_PATH_CONFIG_DEFAULT);
    path_clear(RARCH_PATH_CONFIG_APPEND);
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
    path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
@@ -4763,8 +4785,24 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_SAVE_MAIN_CONFIG:
          {
 #ifdef HAVE_CONFIGFILE
-            open_default_config_file();
+            char tmp_config[PATH_MAX_LENGTH];
+            tmp_config[0] = '\0';
+
+            /* Temporarily point RARCH_PATH_CONFIG at the
+             * startup config so the save goes to the right
+             * file, then restore the previous value. */
+            if (!path_is_empty(RARCH_PATH_CONFIG_DEFAULT))
+            {
+               strlcpy(tmp_config, path_get(RARCH_PATH_CONFIG),
+                     sizeof(tmp_config));
+               path_set(RARCH_PATH_CONFIG,
+                     path_get(RARCH_PATH_CONFIG_DEFAULT));
+            }
+
             command_event_save_current_config(OVERRIDE_NONE);
+
+            if (!string_is_empty(tmp_config))
+               path_set(RARCH_PATH_CONFIG, tmp_config);
 #endif
          }
          break;
@@ -7368,6 +7406,14 @@ static bool retroarch_parse_input_and_config(
       config_load_file_salamander();
 #endif
       config_load(global_get_ptr());
+
+      /* Remember the startup config path so "Save Main
+       * Configuration" can find it after config_replace()
+       * changes RARCH_PATH_CONFIG to a different file. */
+      if (  !path_is_empty(RARCH_PATH_CONFIG)
+          && path_is_empty(RARCH_PATH_CONFIG_DEFAULT))
+         path_set(RARCH_PATH_CONFIG_DEFAULT,
+               path_get(RARCH_PATH_CONFIG));
    }
 
    verbosity_enabled = verbosity_is_enabled();
