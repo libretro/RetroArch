@@ -2232,7 +2232,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          else
             vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
-         video_driver_unset_hdr_support();
+         /* VK_CTX_FLAG_HDR_SUPPORT means the swapchain colorspace
+          * extension is available — advertise HDR capability to
+          * the menu regardless of the currently selected mode. */
+         video_driver_set_hdr_support();
 
          if (video_hdr_mode == 2)
          {
@@ -2243,7 +2246,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
                   && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
                {
                   format = formats[i];
-                  video_driver_set_hdr_support();
                   RARCH_LOG("[Vulkan] Selecting R16G16B16A16_SFLOAT swapchain with scRGB colour space.\n");
                   break;
                }
@@ -2272,7 +2274,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
                      && (formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT))
                {
                   format = formats[i];
-                  video_driver_set_hdr_support();
                   break;
                }
             }
