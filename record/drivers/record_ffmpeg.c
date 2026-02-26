@@ -484,6 +484,16 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    param->out_width  = (float)param->out_width  * params->scale_factor;
    param->out_height = (float)param->out_height * params->scale_factor;
 
+   /* Ensure even dimensions for chroma-subsampled pixel formats.
+    * Odd dimensions cause encoder init failure with e.g. libx264.
+    * Round up (pad) rather than down so no source pixels are lost. */
+   if (     video->pix_fmt == AV_PIX_FMT_YUV420P
+         || video->pix_fmt == AV_PIX_FMT_YUV422P)
+   {
+      param->out_width  = (param->out_width  + 1) & ~1;
+      param->out_height = (param->out_height + 1) & ~1;
+   }
+
    video->codec->codec_type          = AVMEDIA_TYPE_VIDEO;
    video->codec->width               = param->out_width;
    video->codec->height              = param->out_height;
@@ -520,6 +530,9 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    size = av_image_get_buffer_size(video->pix_fmt, param->out_width,
          param->out_height, 1);
    video->conv_frame_buf   = (uint8_t*)av_malloc(size);
+   /* Zero the buffer so padding pixels (from rounding odd dimensions
+    * up to even) are black rather than uninitialized. */
+   memset(video->conv_frame_buf, 0, size);
    video->conv_frame       = av_frame_alloc();
 
    AVFrame* frame = video->conv_frame;
@@ -1253,9 +1266,16 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
 static void ffmpeg_scale_input(ffmpeg_t *handle,
       const struct record_video_data *vid)
 {
+   /* When output was padded to even dimensions, clamp the scaling
+    * destination to the source size. */
+   unsigned dst_w = (vid->width < handle->params.out_width)
+      ? vid->width : handle->params.out_width;
+   unsigned dst_h = (vid->height < handle->params.out_height)
+      ? vid->height : handle->params.out_height;
+
    /* Attempt to preserve more information if we scale down. */
-   bool shrunk = handle->params.out_width < vid->width
-      || handle->params.out_height < vid->height;
+   bool shrunk = dst_w < vid->width
+      || dst_h < vid->height;
 
    if (handle->video.use_sws)
    {
@@ -1263,7 +1283,7 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 
       handle->video.sws = sws_getCachedContext(handle->video.sws,
             vid->width, vid->height, handle->video.in_pix_fmt,
-            handle->params.out_width, handle->params.out_height,
+            dst_w, dst_h,
             handle->video.pix_fmt,
             shrunk ? SWS_BILINEAR : SWS_POINT, NULL, NULL, NULL);
 
@@ -1276,8 +1296,8 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
             &handle->video.scaler,
             handle->video.conv_frame->data[0],
             vid->data,
-            handle->params.out_width,
-            handle->params.out_height,
+            dst_w,
+            dst_h,
             handle->video.conv_frame->linesize[0],
             vid->width,
             vid->height,

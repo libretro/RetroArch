@@ -3370,6 +3370,24 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
+   /* Lazy init / reinit: (re)initialize PBO readback when recording
+    * starts after driver init, or when viewport dimensions change. */
+   if (  !(gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
+       || (unsigned)gl->pbo_readback_scaler.in_width  != gl->vp.width
+       || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+   {
+      recording_state_t *rec_st = recording_state_get_ptr();
+      if (rec_st && rec_st->enable)
+      {
+         /* Tear down old PBO resources before reinitializing */
+         if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
+            gl3_deinit_pbo_readback(gl);
+         gl->flags |= GL3_FLAG_PBO_READBACK_ENABLE;
+         if (gl3_init_pbo_readback(gl))
+            RARCH_LOG("[GLCore] (Re)initialized async PBO readback for recording.\n");
+      }
+   }
+
    num_pixels = gl->vp.width * gl->vp.height;
 
    if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
@@ -4176,11 +4194,20 @@ static bool gl3_frame(void *data, const void *frame,
    }
    else if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
    {
+      /* If recording has stopped, tear down PBO readback */
+      if (!recording_state_get_ptr()->enable)
+      {
+         gl3_deinit_pbo_readback(gl);
+         gl->flags &= ~GL3_FLAG_PBO_READBACK_ENABLE;
+      }
+      else
+      {
 #ifdef HAVE_MENU
-      /* Don't readback if we're in menu mode. */
-      if (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+         /* Don't readback if we're in menu mode. */
+         if (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
 #endif
-         gl3_pbo_async_readback(gl);
+            gl3_pbo_async_readback(gl);
+      }
    }
 
    if (gl->ctx_driver->swap_buffers)
