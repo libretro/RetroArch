@@ -627,6 +627,7 @@ static int seek_adjust(int target)
       case 360: return 390; /* strength without using */
       case 390: return  10; /* multiple variables. */
    }
+   return 0;
 }
 
 void CORE_PREFIX(retro_run)(void)
