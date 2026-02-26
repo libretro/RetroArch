@@ -626,11 +626,6 @@ static void frontend_switch_init(void *data)
 #endif /* HAVE_LIBNX (splash) */
 }
 
-static int frontend_switch_get_rating(void)
-{
-   return 11;
-}
-
 enum frontend_architecture frontend_switch_get_arch(void)
 {
    return FRONTEND_ARCH_ARMV8;
@@ -792,7 +787,6 @@ frontend_ctx_driver_t frontend_ctx_switch =
    frontend_switch_shutdown,
    frontend_switch_get_name,
    frontend_switch_get_os,
-   frontend_switch_get_rating,
    NULL,                               /* content_loaded */
    frontend_switch_get_arch,           /* get_architecture       */
    frontend_switch_get_powerstate,     /* get_powerstate         */

@@ -257,6 +257,7 @@ static int action_scan_video_ozone_font(const char *path,
 }
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_scan_video_shader_opacity_toggle(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -302,6 +303,14 @@ static int action_scan_video_shader_opacity_toggle(const char *path,
 
    return 0;
 }
+
+static int action_scan_shader_num_passes(
+      const char *path, const char *label,
+      unsigned type, size_t idx)
+{
+   return menu_shader_manager_clear_num_passes(menu_shader_get());
+}
+#endif
 
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
@@ -386,15 +395,19 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
-         case MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE:
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
-         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_SCAN(cbs, action_scan_shader_num_passes);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_SCAN(cbs, action_scan_video_shader_opacity_toggle);
+#endif
             break;
          default:
             break;

@@ -5,6 +5,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
 {
    float time;
    float yflip;
+   float alpha;
 } constants;
 
 layout(location = 0) in vec3 vEC;
@@ -19,5 +20,5 @@ void main()
    vec3 normal = normalize(cross(x, y));
    float c = 1.0 - dot(normal, up);
    c = (1.0 - cos(c * c)) / 3.0;
-   FragColor = vec4(c, c, c, 1.0);
+   FragColor = vec4(c, c, c, constants.alpha);
 }

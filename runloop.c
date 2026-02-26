@@ -1923,12 +1923,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
-         if (sys_info)
-         {
-            sys_info->performance_level = *(const unsigned*)data;
-            RARCH_LOG("[Environ] SET_PERFORMANCE_LEVEL: %u.\n",
-                  sys_info->performance_level);
-         }
+         RARCH_DBG("[Environ] SET_PERFORMANCE_LEVEL: %u (Deprecated).\n",
+               *(const unsigned*)data);
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
@@ -3387,6 +3383,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 
+      case RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO:
+         {
+            bool state = *(const bool*)data;
+
+            RARCH_LOG("[Environ] RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO: %s.\n", state ? "yes" : "no");
+
+            set_save_state_disable_undo(state);
+         }
+         break;
+
       case RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE:
          {
             const struct retro_system_content_info_override *overrides =
@@ -4049,7 +4055,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
 #if defined(HAVE_GFX_WIDGETS)
       if (      p_dispwidget->active
             && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-         video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+         video_st->flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
 #endif
    }
 
@@ -4449,7 +4455,7 @@ void runloop_set_frame_limit(
       float fastforward_ratio)
 {
    runloop_state_t *runloop_st  = &runloop_state;
-   if (fastforward_ratio < 1.0f)
+   if (fastforward_ratio < 0.1f)
       runloop_st->frame_limit_minimum_time = 0.0f;
    else
       runloop_st->frame_limit_minimum_time = (retro_time_t)
@@ -5536,7 +5542,6 @@ static bool display_menu_libretro(
    }
 
 static void runloop_pause_toggle(
-      bool *runloop_paused_hotkey,
       bool pause_pressed, bool old_pause_pressed,
       bool focused, bool old_focus)
 {
@@ -5548,7 +5553,7 @@ static void runloop_pause_toggle(
       {
          /* Keep track of hotkey triggered pause to
           * distinguish it from menu triggered pause */
-         *runloop_paused_hotkey = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+         runloop_st->paused_hotkey = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
          command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
       }
       else if (!old_focus)
@@ -5584,7 +5589,6 @@ static enum runloop_state_enum runloop_check_state(
    gfx_display_t            *p_disp    = disp_get_ptr();
    runloop_state_t *runloop_st         = &runloop_state;
    static bool old_focus               = true;
-   static bool runloop_paused_hotkey   = false;
    struct retro_callbacks *cbs         = &runloop_st->retro_ctx;
    bool is_focused                     = false;
    bool is_alive                       = false;
@@ -5666,10 +5670,10 @@ static enum runloop_state_enum runloop_check_state(
       {
          BIT256_CLEAR_ALL(current_bits);
          if (      runloop_paused
-               && !runloop_paused_hotkey
+               && !runloop_st->paused_hotkey
                &&  menu_pause_libretro)
             BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
-         else if (runloop_paused_hotkey)
+         else if (runloop_st->paused_hotkey)
          {
             /* Restore pause if pause is triggered with both hotkey and menu,
              * and restore cached video frame to continue properly to
@@ -5733,15 +5737,26 @@ static enum runloop_state_enum runloop_check_state(
          static bool last_controller_connected = false;
          bool controller_connected             = (input_config_get_device_name(0) != NULL);
 
-         if (controller_connected != last_controller_connected)
+         /* When pointer input is enabled, soft-hide instead of
+          * unloading so mouse/lightgun input remains functional.
+          * Level-triggered: enforce flag state every frame. */
+         if (   settings->bools.input_overlay_pointer_enable
+             && input_st->overlay_ptr)
+         {
+            if (controller_connected)
+               input_st->overlay_ptr->flags |=  INPUT_OVERLAY_GAMEPAD_HIDDEN;
+            else
+               input_st->overlay_ptr->flags &= ~INPUT_OVERLAY_GAMEPAD_HIDDEN;
+         }
+         else if (controller_connected != last_controller_connected)
          {
             if (controller_connected)
                input_overlay_unload();
             else
                input_overlay_init();
-
-            last_controller_connected = controller_connected;
          }
+
+         last_controller_connected = controller_connected;
       }
 
       /* Check next overlay hotkey */
@@ -5802,18 +5817,17 @@ static enum runloop_state_enum runloop_check_state(
    /* Check reset hotkey */
    if (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
    {
-      bool trig_reset_key, reset_press_twice;
       static bool reset_key     = false;
       static bool old_reset_key = false;
+      bool trig_reset_key;
+
       reset_key                 = BIT256_GET(current_bits, RARCH_RESET);
       trig_reset_key            = reset_key && !old_reset_key;
-
       old_reset_key             = reset_key;
-      reset_press_twice         = settings->bools.quit_press_twice;
 
       /* Check double press if enabled */
       if (     trig_reset_key
-            && reset_press_twice)
+            && settings->bools.confirm_reset)
       {
          static retro_time_t reset_key_time   = 0;
          retro_time_t cur_time                = current_time;
@@ -5840,18 +5854,17 @@ static enum runloop_state_enum runloop_check_state(
    /* Check close content hotkey */
    if (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
    {
-      bool trig_close_key, close_press_twice;
       static bool close_key     = false;
       static bool old_close_key = false;
+      bool trig_close_key;
+
       close_key                 = BIT256_GET(current_bits, RARCH_CLOSE_CONTENT_KEY);
       trig_close_key            = close_key && !old_close_key;
-
       old_close_key             = close_key;
-      close_press_twice         = settings->bools.quit_press_twice;
 
       /* Check double press if enabled */
       if (     trig_close_key
-            && close_press_twice)
+            && settings->bools.confirm_close)
       {
          static retro_time_t close_key_time   = 0;
          retro_time_t cur_time                = current_time;
@@ -5877,26 +5890,28 @@ static enum runloop_state_enum runloop_check_state(
 
    /* Check quit hotkey */
    {
-      bool trig_quit_key, quit_press_twice;
       static bool quit_key     = false;
       static bool old_quit_key = false;
       static bool runloop_exec = false;
+      bool trig_quit_key;
+
       quit_key                 = BIT256_GET(current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
+
       /* Check for quit gamepad combo */
-      if (    !trig_quit_key
-          && ((quit_gamepad_combo != INPUT_COMBO_NONE)
-          && input_driver_button_combo(
-             quit_gamepad_combo,
-             current_time,
-             &current_bits)))
-        trig_quit_key = true;
+      if (     !trig_quit_key
+            && quit_gamepad_combo != INPUT_COMBO_NONE
+            && input_driver_button_combo(
+                  quit_gamepad_combo,
+                  current_time,
+                  &current_bits))
+         trig_quit_key = true;
+
       old_quit_key             = quit_key;
-      quit_press_twice         = settings->bools.quit_press_twice;
 
       /* Check double press if enabled */
       if (     trig_quit_key
-            && quit_press_twice)
+            && settings->bools.confirm_quit)
       {
          static retro_time_t quit_key_time   = 0;
          retro_time_t cur_time               = current_time;
@@ -6473,7 +6488,7 @@ static enum runloop_state_enum runloop_check_state(
 #if defined(HAVE_GFX_WIDGETS)
          if (widgets_active)
          {
-            if (rewinding)
+            if (rewinding && settings->bools.notification_show_fast_forward)
                video_st->flags |=  VIDEO_FLAG_WIDGETS_REWINDING;
             else
                video_st->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
@@ -6481,7 +6496,7 @@ static enum runloop_state_enum runloop_check_state(
          else
 #endif
          {
-            if (rewinding)
+            if (rewinding && settings->bools.notification_show_fast_forward)
                runloop_msg_queue_push(s, strlen(s), 0, t, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
@@ -6515,7 +6530,7 @@ static enum runloop_state_enum runloop_check_state(
       bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
 
       /* Decide pause hotkey */
-      runloop_pause_toggle(&runloop_paused_hotkey,
+      runloop_pause_toggle(
             pause_pressed, old_pause_pressed,
             focused, old_focus);
 
@@ -6592,7 +6607,7 @@ static enum runloop_state_enum runloop_check_state(
       }
 
       /* Decide pause hotkey */
-      runloop_pause_toggle(&runloop_paused_hotkey,
+      runloop_pause_toggle(
             pause_pressed, old_pause_pressed,
             focused, old_focus);
 
@@ -6692,6 +6707,20 @@ static enum runloop_state_enum runloop_check_state(
       return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
 
+   /* Do delayed disk insert when disk is changed without ejecting */
+   if (runloop_st->pending_disk_control_insert)
+   {
+      runloop_st->pending_disk_control_insert--;
+
+      if (!runloop_st->pending_disk_control_insert)
+      {
+         rarch_system_info_t *sys_info = &runloop_st->system;
+
+         if (sys_info)
+            disk_control_set_eject_state(&sys_info->disk_control, false, true);
+      }
+   }
+
    /* Apply any pending fastmotion override parameters */
    if (runloop_st->fastmotion_override.pending)
    {
@@ -6780,12 +6809,12 @@ static enum runloop_state_enum runloop_check_state(
          if (settings->bools.notification_show_fast_forward)
          {
             if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-               video_st->flags |=  VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+               video_st->flags |=  VIDEO_FLAG_WIDGETS_FASTMOTION;
             else
-               video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+               video_st->flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
          }
          else
-            video_st->flags    &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+            video_st->flags    &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
       }
       else
 #endif
@@ -6803,7 +6832,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 #if defined(HAVE_GFX_WIDGETS)
    else
-      video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+      video_st->flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -6880,6 +6909,21 @@ static enum runloop_state_enum runloop_check_state(
          old_slowmotion_button_state                  = new_slowmotion_button_state;
          old_slowmotion_hold_button_state             = new_slowmotion_hold_button_state;
       }
+
+#if defined(HAVE_GFX_WIDGETS)
+      if (widgets_active)
+      {
+         if (settings->bools.notification_show_fast_forward)
+         {
+            if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+               video_st->flags |=  VIDEO_FLAG_WIDGETS_SLOWMOTION;
+            else
+               video_st->flags &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
+         }
+         else
+            video_st->flags    &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
+      }
+#endif
    }
 
    /* Check save state slot hotkeys */
@@ -7175,21 +7219,21 @@ int runloop_iterate(void)
    runloop_state_t *runloop_st            = &runloop_state;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    retro_time_t current_time              = cpu_features_get_time_usec();
-#ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
    bool netplay_is_enabled                = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
    bool netplay_allow_timeskip            = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL);
    bool netplay_allow_pause               = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
-   bool menu_pause_libretro               = settings->bools.menu_pause_libretro && netplay_allow_pause;
 #else
    bool netplay_allow_timeskip            = false;
    bool netplay_allow_pause               = false;
-   bool menu_pause_libretro               = settings->bools.menu_pause_libretro;
 #endif
+#ifdef HAVE_MENU
+   bool menu_pause_libretro               = settings->bools.menu_pause_libretro && netplay_allow_pause;
    bool core_paused                       =
             (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          || (menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #else
+   bool menu_pause_libretro               = settings->bools.menu_pause_libretro;
    bool core_paused                       = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
 #endif
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;

@@ -7,6 +7,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
 {
    float time;
    float yflip;
+   float alpha;
 } constants;
 
 float iqhash(float n)

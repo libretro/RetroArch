@@ -80,11 +80,13 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     String currentCore = currentIntent != null ? currentIntent.getStringExtra("LIBRETRO") : null;
     
     
-    // Check if we're trying to launch different content  
+    // Check if we're trying to launch different content
     if ((newRom != null && !newRom.equals(currentRom)) ||
         (newCore != null && !newCore.equals(currentCore))) {
-      // Different game content - exit cleanly and let launcher restart us
-      finish();
+      // Different game content - start fresh instance then exit
+      Intent restartIntent = new Intent(intent);
+      restartIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+      startActivity(restartIntent);
       System.exit(0);
     } else {
       // Same content, just update intent

@@ -267,6 +267,7 @@ struct runloop
 #endif
 
    uint32_t flags;
+   uint8_t pending_disk_control_insert;
    int8_t run_frames_and_pause;
 
    char runtime_content_path_basename[PATH_MAX_LENGTH];
@@ -300,6 +301,7 @@ struct runloop
    } name;
 
    bool perfcnt_enable;
+   bool paused_hotkey;
 };
 
 typedef struct runloop runloop_state_t;

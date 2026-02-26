@@ -1067,7 +1067,6 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                                /* shutdown */
    NULL,                                /* get_name */
    NULL,                                /* get_os */
-   NULL,                                /* get_rating */
    NULL,                                /* load_content */
    NULL,                                /* get_architecture */
    frontend_emscripten_get_powerstate,  /* get_powerstate */

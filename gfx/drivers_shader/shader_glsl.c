@@ -1229,6 +1229,17 @@ error:
    if (glsl)
       free(glsl);
 
+   {
+      size_t _len;
+      char msg[NAME_MAX_LENGTH];
+
+      _len = snprintf(msg, sizeof(msg), "Failed to compile shader: \"%s\".",
+            path_basename(path));
+
+      runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   }
+
    return NULL;
 }
 

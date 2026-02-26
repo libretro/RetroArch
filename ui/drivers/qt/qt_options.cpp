@@ -1419,8 +1419,7 @@ QWidget *VideoPage::widget()
       hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
       hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
       hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
-      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
-      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES);
 
       hdrLayout->addWidget(hdrGroup);
    }

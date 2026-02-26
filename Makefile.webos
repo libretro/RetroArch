@@ -51,6 +51,7 @@ HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_FILTERS_BUILTIN	= 1
 HAVE_BUILTINMBEDTLS = 1
 HAVE_BUILTINZLIB = 1
+HAVE_BUILTINSMBCLIENT := 1
 HAVE_C99 = 1
 HAVE_CC = 1
 HAVE_CC_RESAMPLER = 1
@@ -132,8 +133,10 @@ HAVE_UPDATE_ASSETS = 1
 HAVE_UPDATE_CORES = 1
 HAVE_UPDATE_CORE_INFO = 1
 HAVE_USERLAND ?= 0
+HAVE_WEBOS_EXTRA_PROTOS ?= 0
 HAVE_CORE_INFO_CACHE = 1
 HAVE_WAYLAND ?= 0
+HAVE_WAYLAND_BACKPORT ?= 1
 
 OS = Linux
 TARGET = retroarch
@@ -186,6 +189,9 @@ endif
 ifeq ($(HAVE_WAYLAND),1)
   DEFINES += -DHAVE_WAYLAND=1
   WAYLAND_LIBS = -lwayland-client -lwayland-cursor -lwayland-egl
+endif
+ifeq ($(HAVE_WEBOS_EXTRA_PROTOS),1)
+  DEFINES += -DHAVE_WEBOS_EXTRA_PROTOS=1
 endif
 ifeq ($(HAVE_USERLAND),1)
   DEFINES += -DHAVE_USERLAND
@@ -320,9 +326,13 @@ clean:
 
 sdl2: $(TARGET)
 ifeq ($(ADD_SDL2_LIB), 1)
-	@echo "Downloading SDL2 prebuilt"
-	mkdir -p SDL
-	wget -qO - $(SDL2_PREBUILT_ARCHIVE) | tar -C SDL -zxvf -
+	@if [ ! -f SDL/lib/libSDL2-2.0.so.0 ]; then \
+		echo "Downloading SDL2 prebuilt"; \
+		mkdir -p SDL; \
+		wget -qO - $(SDL2_PREBUILT_ARCHIVE) | tar -C SDL -zxvf -; \
+	else \
+		echo "SDL2 prebuilt already exists, skipping download"; \
+	fi
 endif
 
 ipk: prebuild $(TARGET) sdl2
@@ -331,6 +341,9 @@ ipk: prebuild $(TARGET) sdl2
 	echo "$$APPINFO" > webos/dist/appinfo.json
 	cp -t webos/dist -vf $(TARGET) webos/icon160.png
 	cp -t webos/dist/lib -vf $(WEBOS_USR_LIB_DIR)/libstdc++.so.6
+ifeq ($(HAVE_XKBCOMMON), 1)
+	cp -t webos/dist/lib -vf $(WEBOS_USR_LIB_DIR)/libxkbcommon.so.0
+endif
 	cp -t webos/dist/lib -vf $(WEBOS_LIB_DIR)/libatomic.so.1
 ifeq ($(ADD_SDL2_LIB), 1)
 	cp -t webos/dist/lib -vf SDL/lib/libSDL2-2.0.so.0

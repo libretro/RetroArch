@@ -2118,7 +2118,7 @@ static core_info_list_t *core_info_list_new(const char *path,
       info->core_file_id.str  = strdup(core_file_id);
       info->core_file_id.hash = core_info_hash_string(core_file_id);
 
-      strlcpy(core_file_id + _len, ".info", sizeof(core_file_id) - _len);
+      strlcpy(core_file_id + _len, FILE_PATH_CORE_INFO_EXTENSION, sizeof(core_file_id) - _len);
 
       /* Parse core info file */
       if ((conf = core_info_get_config_file(core_file_id, info_dir)))

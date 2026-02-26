@@ -569,7 +569,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
          {
             settings_t*    settings           = config_get_ptr();
             settings->flags                  |= SETTINGS_FLG_MODIFIED;
-            settings->bools.video_hdr_enable  = false;
+            settings->uints.video_hdr_mode    = 0;
 
             video_driver_unset_hdr_support();
          }

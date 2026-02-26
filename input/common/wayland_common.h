@@ -20,6 +20,11 @@
 #include <boolean.h>
 
 #include <linux/input.h>
+
+#ifdef HAVE_WAYLAND_BACKPORT
+#include "../../gfx/common/wayland_common_backport.h"
+#endif
+
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 
@@ -49,6 +54,8 @@
 #ifdef WEBOS
 #include "wayland_common_webos.h"
 #endif
+
+#define WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION 3
 
 #define FRACTIONAL_SCALE_V1_DEN 120
 #define FRACTIONAL_SCALE_MULT(v, scale_num) \
@@ -180,9 +187,11 @@ typedef struct gfx_ctx_wayland_data
    struct wl_shell_surface *shell_surface;
    struct wl_webos_shell *webos_shell;
    struct wl_webos_shell_surface *webos_shell_surface;
+#ifdef HAVE_WEBOS_EXTRA_PROTOS
    struct wl_webos_foreign *webos_foreign;
    struct wl_webos_surface_group_compositor *webos_surface_group_compositor;
    struct wl_webos_input_manager *webos_input_manager;
+#endif
 #endif
    data_offer_ctx *current_drag_offer;
 #ifdef HAVE_LIBDECOR_H

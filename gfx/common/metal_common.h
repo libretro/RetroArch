@@ -59,6 +59,7 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 - (void)setFilteringIndex:(int)index smooth:(bool)smooth;
 - (BOOL)setShaderFromPath:(NSString *)path;
+- (void)clearShader;
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch;
 - (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle;
 

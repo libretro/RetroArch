@@ -3062,13 +3062,11 @@ bool video_shader_apply_shader(
 #endif
 
    /* Display error message */
-   _len = fill_pathname_join_delim(msg,
+   _len = snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
-         preset_file ? preset_file : "null",
-         ' ',
-         sizeof(msg));
+         preset_file ? preset_file : "null");
 
-   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    return false;
 }
@@ -3125,7 +3123,7 @@ const char *video_shader_get_current_shader_preset(void)
                      runloop_st->runtime_shader_preset_path,
                      sizeof(runloop_st->runtime_shader_preset_path)))
             {
-               RARCH_LOG("[Shaders] Specific shader preset found at \"%s\".\n",
+               RARCH_LOG("[Shaders] Shader preset found at \"%s\".\n",
                      runloop_st->runtime_shader_preset_path);
             }
          }

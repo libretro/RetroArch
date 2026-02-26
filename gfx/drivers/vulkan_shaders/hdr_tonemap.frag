@@ -12,13 +12,13 @@ void main()
    vec4 source = texture(Source, vTexCoord);
    vec3 hdr = source.rgb;
    vec3 linear = hdr;
-   if (settings.hdr10 == 0.0f)
+   if (global.HDR10 > 0.0f)
    {
       /* Backbuffer is in HDR10, need to convert to linear */
-      linear = ConvertHDR10ToLinear(hdr);
+      linear = HDR10ToLinear(hdr);
    }
    vec3 sdr = hdr;
-   if (settings.inverse_tonemap == 0.0f)
+   if (global.InverseTonemap > 0.0f)
    {
       /* Backbuffer is inverse tonemapped, need to tonemap back */
       sdr = Tonemap(linear);

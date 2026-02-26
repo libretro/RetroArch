@@ -235,7 +235,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_icon_size_y;
    unsigned msg_queue_icon_offset_y;
    unsigned msg_queue_scissor_start_x;
-   unsigned msg_queue_default_rect_width_menu_alive;
    unsigned msg_queue_default_rect_width;
    unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;
@@ -310,6 +309,11 @@ struct gfx_widget
     * -- userdata is a dispgfx_widget_t
     * -> draw the widget here */
    void (*frame)(void* data, void *userdata);
+
+   /* called to check if the widget is currently
+    * drawing anything on screen
+    * -> return true if the widget is active */
+   bool (*visible)(void);
 };
 
 float gfx_widgets_get_thumbnail_scale_factor(
@@ -417,6 +421,8 @@ bool gfx_widget_start_load_content_animation(void);
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
 void gfx_widgets_frame(void *data);
+
+bool gfx_widgets_visible(void *data);
 
 bool gfx_widgets_ready(void);
 

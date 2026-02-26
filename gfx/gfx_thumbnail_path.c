@@ -625,7 +625,7 @@ bool gfx_thumbnail_update_path(
           || string_is_equal(path_data->system, "favorites"))
       {
          if (gfx_thumbnail_get_content_dir(
-                  path_data, content_dir, sizeof(content_dir)) == 0)
+               path_data, content_dir, sizeof(content_dir)) == 0)
             return false;
 
          system_name = content_dir;
@@ -644,7 +644,7 @@ bool gfx_thumbnail_update_path(
       /* imageviewer content is identical for left and right thumbnails */
       if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
          strlcpy(thumbnail_path,
-            path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
+               path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
    }
    else
    {
@@ -663,60 +663,70 @@ bool gfx_thumbnail_update_path(
       fill_pathname_join_special(tmp_buf, thumbnail_path, type, sizeof(tmp_buf));
 
       thumbnail_path[0] = '\0';
-      /* >> Add content image - first try with full file name */
-      if (path_data->content_img_full[0] != '\0')
-         fill_pathname_join_special(thumbnail_path, tmp_buf,
-               path_data->content_img_full, PATH_MAX_LENGTH * sizeof(char));
-      thumbnail_found = path_is_valid(thumbnail_path);
 
-      /* Try alternative file extensions in turn, if wanted */
-      for (i = 1;
-               playlist_allow_non_png
-           && !thumbnail_found
-           && thumbnail_path[0]!='\0'
-           && i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS; i++ )
+      /* >> Add content image - first try with label (database name) */
+      if (!string_is_empty(path_data->content_img))
       {
-         strlcpy(path_get_extension_mutable(thumbnail_path),
-               SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
-         thumbnail_found = path_is_valid(thumbnail_path);
-      }
-
-      /* >> Add content image - second try with label (database name) */
-      if (!thumbnail_found && path_data->content_img[0] != '\0')
-      {
-         thumbnail_path[0] = '\0';
          fill_pathname_join_special(thumbnail_path, tmp_buf,
                path_data->content_img, PATH_MAX_LENGTH * sizeof(char));
          thumbnail_found = path_is_valid(thumbnail_path);
+
+         if (playlist_allow_non_png && !string_is_empty(thumbnail_path))
+         {
+            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            {
+               if (!path_get_extension_mutable(thumbnail_path))
+                  continue;
+
+               strlcpy(path_get_extension_mutable(thumbnail_path),
+                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+               thumbnail_found = path_is_valid(thumbnail_path);
+            }
+         }
       }
 
-      for (i = 1;
-               playlist_allow_non_png
-           && !thumbnail_found
-           && i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
+      /* >> Add content image - second try with full file name */
+      if (!thumbnail_found && !string_is_empty(path_data->content_img_full))
       {
-         strlcpy(path_get_extension_mutable(thumbnail_path),
-               SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+         thumbnail_path[0] = '\0';
+         fill_pathname_join_special(thumbnail_path, tmp_buf,
+               path_data->content_img_full, PATH_MAX_LENGTH * sizeof(char));
          thumbnail_found = path_is_valid(thumbnail_path);
+
+         if (playlist_allow_non_png && !string_is_empty(thumbnail_path))
+         {
+            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            {
+               if (!path_get_extension_mutable(thumbnail_path))
+                  continue;
+
+               strlcpy(path_get_extension_mutable(thumbnail_path),
+                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+               thumbnail_found = path_is_valid(thumbnail_path);
+            }
+         }
       }
 
       /* >> Add content image - third try with shortened name (title only) */
-      if (!thumbnail_found && path_data->content_img_short[0] != '\0')
+      if (!thumbnail_found && !string_is_empty(path_data->content_img_short))
       {
          thumbnail_path[0] = '\0';
          fill_pathname_join_special(thumbnail_path, tmp_buf,
                path_data->content_img_short, PATH_MAX_LENGTH * sizeof(char));
          thumbnail_found = path_is_valid(thumbnail_path);
-      }
 
-      for( i = 1 ;
-               playlist_allow_non_png
-           && !thumbnail_found
-           && i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
-      {
-         strlcpy(path_get_extension_mutable(thumbnail_path),
-               SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
-         thumbnail_found = path_is_valid(thumbnail_path);
+         if (playlist_allow_non_png && !string_is_empty(thumbnail_path))
+         {
+            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            {
+               if (!path_get_extension_mutable(thumbnail_path))
+                  continue;
+
+               strlcpy(path_get_extension_mutable(thumbnail_path),
+                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+               thumbnail_found = path_is_valid(thumbnail_path);
+            }
+         }
       }
       /* This logic is valid for locally stored thumbnails. For optional downloads,
        * gfx_thumbnail_get_img_name() is used */

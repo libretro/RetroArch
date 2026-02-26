@@ -1012,6 +1012,13 @@ static bool gfx_widget_load_content_animation_init(
 }
 /* Widget definition */
 
+static bool gfx_widget_load_content_animation_visible(void)
+{
+   gfx_widget_load_content_animation_state_t *state =
+      &p_w_load_content_animation_st;
+   return state->status != GFX_WIDGET_LOAD_CONTENT_IDLE;
+}
+
 const gfx_widget_t gfx_widget_load_content_animation = {
    gfx_widget_load_content_animation_init,
    gfx_widget_load_content_animation_free,
@@ -1019,5 +1026,6 @@ const gfx_widget_t gfx_widget_load_content_animation = {
    gfx_widget_load_content_animation_context_destroy,
    gfx_widget_load_content_animation_layout,
    gfx_widget_load_content_animation_iterate,
-   gfx_widget_load_content_animation_frame
+   gfx_widget_load_content_animation_frame,
+   gfx_widget_load_content_animation_visible
 };

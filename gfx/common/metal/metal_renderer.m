@@ -178,6 +178,9 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       _layer.framebufferOnly     = NO;
       _layer.displaySyncEnabled  = YES;
 #endif
+      /* Configure drawable pool for triple-buffering */
+      if (@available(iOS 13.0, macOS 10.15.4, tvOS 13.0, *))
+         _layer.maximumDrawableCount = MAX_INFLIGHT;
       _library                   = l;
       _commandQueue              = [_device newCommandQueue];
       _clearColor                = MTLClearColorMake(0, 0, 0, 1);
@@ -319,6 +322,12 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    psd.vertexFunction   = [_library newFunctionWithName:@"stock_vertex"];
    psd.fragmentFunction = [_library newFunctionWithName:@"stock_fragment_color"];
 
+   if (!psd.vertexFunction || !psd.fragmentFunction)
+   {
+      RARCH_ERR("[Metal] Failed to load clear state shader functions.\n");
+      return NO;
+   }
+
    _clearState = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
@@ -348,6 +357,12 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    psd.vertexDescriptor = vd;
    psd.vertexFunction   = [_library newFunctionWithName:@"stock_vertex"];
    psd.fragmentFunction = [_library newFunctionWithName:@"stock_fragment"];
+
+   if (!psd.vertexFunction || !psd.fragmentFunction)
+   {
+      RARCH_ERR("[Metal] Failed to load stock shader functions.\n");
+      return NO;
+   }
 
    _states[VIDEO_SHADER_STOCK_BLEND][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
@@ -572,10 +587,22 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
 - (void)convertFormat:(RPixelFormat)fmt from:(id<MTLTexture>)src to:(id<MTLTexture>)dst
 {
-   assert(src.width == dst.width && src.height == dst.height);
-   assert(fmt >= 0 && fmt < RPixelFormatCount);
+   if (src.width != dst.width || src.height != dst.height)
+   {
+      RARCH_ERR("[Metal] convertFormat: texture dimensions mismatch\n");
+      return;
+   }
+   if (fmt < 0 || fmt >= RPixelFormatCount)
+   {
+      RARCH_ERR("[Metal] convertFormat: invalid pixel format %u\n", (unsigned)fmt);
+      return;
+   }
    Filter *conv = _filters[fmt];
-   assert(conv != nil);
+   if (!conv)
+   {
+      RARCH_ERR("[Metal] convertFormat: no filter for format %u\n", (unsigned)fmt);
+      return;
+   }
    [conv apply:self.blitCommandBuffer in:src out:dst];
 }
 
@@ -656,8 +683,19 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
 - (void)begin
 {
-   assert(_commandBuffer == nil);
-   dispatch_semaphore_wait(_inflightSemaphore, DISPATCH_TIME_FOREVER);
+   if (_commandBuffer != nil)
+   {
+      RARCH_WARN("[Metal] begin called with active command buffer - resetting\n");
+      _commandBuffer = nil;
+   }
+
+   /* Don't use semaphore for frame pacing - let nextDrawable handle it.
+    * CAMetalLayer.nextDrawable will block if no drawable is available,
+    * which naturally paces us to the display refresh rate.
+    * Using a semaphore on top of this causes timing mismatches because
+    * the semaphore signals on presentation but the drawable isn't
+    * released until the NEXT vsync. */
+
    _commandBuffer = [_commandQueue commandBuffer];
    _commandBuffer.label = @"Frame command buffer";
    _backBuffer = nil;
@@ -665,15 +703,26 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
 - (id<MTLRenderCommandEncoder>)rce
 {
-   assert(_commandBuffer != nil);
+   if (_commandBuffer == nil)
+   {
+      RARCH_ERR("[Metal] rce called without active command buffer\n");
+      return nil;
+   }
    if (_rce == nil)
    {
+      id<CAMetalDrawable> drawable = self.nextDrawable;
+      if (!drawable || !drawable.texture)
+      {
+         RARCH_WARN("[Metal] Failed to acquire drawable - frame dropped\n");
+         return nil;
+      }
+
       MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
       rpd.colorAttachments[0].clearColor = _clearColor;
       rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
-      rpd.colorAttachments[0].texture = self.nextDrawable.texture;
+      rpd.colorAttachments[0].texture = drawable.texture;
       if (_captureEnabled)
-         _backBuffer = self.nextDrawable.texture;
+         _backBuffer = drawable.texture;
       _rce       = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
       _rce.label = @"Frame command encoder";
    }
@@ -729,7 +778,11 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
 - (void)end
 {
-   assert(_commandBuffer != nil);
+   if (_commandBuffer == nil)
+   {
+      RARCH_WARN("[Metal] end called without active command buffer\n");
+      return;
+   }
 
    [_chain[_currentChain] commitRanges];
 
@@ -743,9 +796,10 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
          [bce endEncoding];
       }
 #endif
-      /* Pending blits for mipmaps or render passes for slang shaders */
+      /* Pending blits for mipmaps or render passes for slang shaders.
+       * Metal command queues guarantee commit-order execution, so we don't
+       * need to block the CPU waiting for completion. */
       [_blitCommandBuffer commit];
-      [_blitCommandBuffer waitUntilCompleted];
       _blitCommandBuffer = nil;
    }
 
@@ -755,21 +809,38 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       _rce = nil;
    }
 
-   __block dispatch_semaphore_t inflight = _inflightSemaphore;
-   [_commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> _) {
-      dispatch_semaphore_signal(inflight);
-   }];
+   id<CAMetalDrawable> drawable = self.nextDrawable;
 
-   if (self.nextDrawable)
+   if (drawable)
    {
-      [_commandBuffer presentDrawable:self.nextDrawable];
+      /* Use addScheduledHandler to present, following Apple's recommendation.
+       * According to Apple (and used by MoltenVK), it is more performant to call
+       * [drawable present] from within a scheduled-handler than to use
+       * [commandBuffer presentDrawable:]. This provides better frame pacing
+       * because presentation is queued when the command buffer is scheduled
+       * (added to GPU queue), not when it completes. */
+      [_commandBuffer addScheduledHandler:^(id<MTLCommandBuffer> _Nonnull buffer) {
+         [drawable present];
+      }];
    }
 
    [_commandBuffer commit];
 
    _commandBuffer = nil;
-   _drawable = nil;
    [self _nextChain];
+}
+
+- (void)swapBuffers
+{
+   /* Acquire the next drawable after presentation, matching Vulkan's
+    * swap_buffers timing where acquisition happens AFTER presenting.
+    *
+    * We explicitly clear _drawable first to force a fresh acquisition.
+    * nextDrawable will block if no drawable is available (all 3 are
+    * in-flight), which naturally paces us to the display refresh rate.
+    * This blocking behavior is intentional for proper frame pacing. */
+   _drawable = nil;
+   _drawable = _layer.nextDrawable;
 }
 
 - (bool)allocRange:(BufferRange *)range length:(NSUInteger)length
@@ -981,7 +1052,7 @@ static const NSUInteger kConstantAlignment = 4;
    [self.delegate configure:ce];
 
    MTLSize size  = MTLSizeMake(32, 1, 1);
-   MTLSize count = MTLSizeMake((tin.length + 00) / 32, 1, 1);
+   MTLSize count = MTLSizeMake((tin.length + 31) / 32, 1, 1);
 
    [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
    [ce endEncoding];

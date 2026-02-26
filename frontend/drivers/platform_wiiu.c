@@ -166,8 +166,6 @@ static void frontend_wiiu_init(void *data)
    DEBUG_LINE();
 }
 
-static int frontend_wiiu_get_rating(void) { return 10; }
-
 enum frontend_architecture frontend_wiiu_get_arch(void)
 {
    return FRONTEND_ARCH_PPC;
@@ -338,7 +336,6 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    frontend_wiiu_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_wiiu_get_rating,
    NULL,                         /* content_loaded */
    frontend_wiiu_get_arch,       /* get_architecture */
    NULL,                         /* get_powerstate */

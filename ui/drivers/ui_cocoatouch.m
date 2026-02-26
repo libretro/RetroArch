@@ -51,11 +51,17 @@
 #include "../../menu/menu_setting.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay_private.h"
+#endif
+
 #import <AVFoundation/AVFoundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 
 #import <MetricKit/MetricKit.h>
 #import <MetricKit/MXMetricManager.h>
+
+#import "../../pkg/apple/WebServer/WebServer.h"
 
 #ifdef HAVE_MFI
 #import <GameController/GameController.h>
@@ -529,6 +535,7 @@ enum
 @property (nonatomic, copy) void(^keyboardCompletionCallback)(const char *);
 @property (nonatomic, assign) char **keyboardBufferPtr;
 @property (nonatomic, assign) size_t *keyboardSizePtr;
+@property (nonatomic, assign) size_t *keyboardPtrPtr;
 @property (nonatomic, assign) char *keyboardAllocatedBuffer;
 @end
 
@@ -931,11 +938,24 @@ enum
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
+   RARCH_LOG("[Lifecycle] applicationDidEnterBackground - stopping services\n");
 #if TARGET_OS_TV
    update_topshelf();
 #endif
    rarch_stop_draw_observer();
    command_event(CMD_EVENT_SAVE_FILES, NULL);
+
+   /* Stop Bonjour services to prevent XPC crashes when connections are
+    * invalidated while the app is suspended. Web servers will be restarted
+    * when the app becomes active again. Netplay discovery must be
+    * re-initiated by the user. */
+#if !TARGET_OS_SIMULATOR
+   RARCH_LOG("[Lifecycle] Stopping web servers (Bonjour)\n");
+   [[WebServer sharedInstance] stopServers];
+#endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) && defined(HAVE_NETPLAYDISCOVERY_NSNET)
+   netplay_mdns_suspend();
+#endif
 
    /* Clear any stuck or stale touches when backgrounding */
    cocoa_input_data_t *apple = (cocoa_input_data_t*)input_state_get_ptr()->current_data;
@@ -946,6 +966,11 @@ enum
    }
 }
 
+- (void)applicationDidReceiveMemoryWarning:(UIApplication *)application
+{
+    RARCH_LOG("[Lifecycle] applicationDidReceiveMemoryWarning - XPC connections may be invalidated\n");
+}
+
 - (void)applicationWillTerminate:(UIApplication *)application
 {
    rarch_stop_draw_observer();
@@ -954,6 +979,7 @@ enum
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
+   RARCH_LOG("[Lifecycle] applicationWillResignActive\n");
    self.bgDate = [NSDate date];
    rarch_stop_draw_observer();
 
@@ -968,14 +994,23 @@ enum
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   NSError *error;
+   NSError *error = nil;
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
 
+   RARCH_LOG("[Lifecycle] applicationDidBecomeActive - configuring AVAudioSession\n");
    if (settings->bools.audio_respect_silent_mode)
        [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
    else
        [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&error];
+   if (error)
+       RARCH_ERR("[Lifecycle] AVAudioSession setCategory error: %s\n", [[error localizedDescription] UTF8String]);
+
+   /* Restart Bonjour services that were stopped when backgrounding */
+#if !TARGET_OS_SIMULATOR
+   RARCH_LOG("[Lifecycle] Restarting web servers (Bonjour)\n");
+   [[WebServer sharedInstance] startServers];
+#endif
 
    if (!ui_companion_start_on_boot)
       [self showGameView];
@@ -1177,8 +1212,13 @@ enum
    const char *utf8Text = [newText UTF8String];
    if (utf8Text)
    {
+      size_t newLen;
       strlcpy(self.keyboardAllocatedBuffer, utf8Text, 512);
-      *self.keyboardSizePtr = strlen(self.keyboardAllocatedBuffer);
+      newLen = strlen(self.keyboardAllocatedBuffer);
+      *self.keyboardSizePtr = newLen;
+      /* Keep ptr in sync with size to prevent buffer overrun when appending */
+      if (self.keyboardPtrPtr)
+         *self.keyboardPtrPtr = newLen;
    }
 
    return YES;
@@ -1194,8 +1234,12 @@ enum
          const char *finalText = [textField.text UTF8String];
          if (finalText)
          {
+            size_t finalLen;
             strlcpy(self.keyboardAllocatedBuffer, finalText, 512);
-            *self.keyboardSizePtr = strlen(self.keyboardAllocatedBuffer);
+            finalLen = strlen(self.keyboardAllocatedBuffer);
+            *self.keyboardSizePtr = finalLen;
+            if (self.keyboardPtrPtr)
+               *self.keyboardPtrPtr = finalLen;
          }
       }
 
@@ -1217,6 +1261,7 @@ enum
       /* Clear our references after callback completes */
       self.keyboardBufferPtr = NULL;
       self.keyboardSizePtr = NULL;
+      self.keyboardPtrPtr = NULL;
       self.keyboardAllocatedBuffer = NULL;
 
       return NO;  /* Return NO to prevent UIKit from processing the return key event further */
@@ -1245,6 +1290,7 @@ enum
          /* Clear our references after callback completes */
          self.keyboardBufferPtr = NULL;
          self.keyboardSizePtr = NULL;
+         self.keyboardPtrPtr = NULL;
          self.keyboardAllocatedBuffer = NULL;
       }
    }
@@ -1274,9 +1320,11 @@ ui_companion_driver_t ui_companion_cocoatouch = {
 };
 
 /* C interface for iOS/tvOS native keyboard support */
-bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, const char *label,
+bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
+                       const char *label,
                        input_keyboard_line_complete_t callback, void *userdata)
 {
+   size_t len;
    RetroArch_iOS *app = [RetroArch_iOS get];
    if (!app || !app.keyboardTextField || !buffer_ptr || !size_ptr)
       return false;
@@ -1294,11 +1342,15 @@ bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, const char *label,
 
    /* Update the keyboard_line buffer pointer to point to our allocated buffer */
    *buffer_ptr = allocated_buffer;
-   *size_ptr = strlen(allocated_buffer);
+   len = strlen(allocated_buffer);
+   *size_ptr = len;
+   if (ptr_ptr)
+      *ptr_ptr = len;
 
    /* Store pointers so we can update them as user types */
    app.keyboardBufferPtr = buffer_ptr;
    app.keyboardSizePtr = size_ptr;
+   app.keyboardPtrPtr = ptr_ptr;
    app.keyboardAllocatedBuffer = allocated_buffer;
 
    /* Set up the text field with initial text from the buffer */

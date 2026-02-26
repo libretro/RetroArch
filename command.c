@@ -1035,39 +1035,71 @@ bool command_get_status(command_t *cmd, const char* arg)
 {
    size_t _len;
    char reply[4096];
-   uint8_t flags                  = content_get_flags();
+   uint8_t flags;
+
+   if (!cmd)
+      return false;
+
+   if (!cmd->replier)
+      return false;
+
+   flags = content_get_flags();
 
    if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
       /* add some content info */
       core_info_t *core_info      = NULL;
       runloop_state_t *runloop_st = runloop_state_get_ptr();
+      const char *basename_path   = NULL;
+
+      if (!runloop_st)
+      {
+         _len = strlcpy(reply, "GET_STATUS ERROR", sizeof(reply));
+         cmd->replier(cmd, reply, _len);
+         return false;
+      }
 
       core_info_get_current_core(&core_info);
 
-      _len     = strlcpy(reply, "GET_STATUS ", sizeof(reply));
+      _len = strlcpy(reply, "GET_STATUS ", sizeof(reply));
+
       if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          _len += strlcpy(reply + _len, "PAUSED", sizeof(reply) - _len);
       else
          _len += strlcpy(reply + _len, "PLAYING", sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len, " ", sizeof(reply) - _len);
-      if (core_info)
+
+      _len += strlcpy(reply + _len, " ", sizeof(reply) - _len);
+
+      if (core_info && core_info->system_id)
          _len += strlcpy(reply + _len, core_info->system_id,
                sizeof(reply) - _len);
-      else
+      else if (runloop_st->system.info.library_name)
          _len += strlcpy(reply + _len, runloop_st->system.info.library_name,
                sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len, ",", sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len,
-            path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(reply) - _len);
-      _len    += snprintf(reply + _len, sizeof(reply) - _len,
+      else
+         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+
+      _len += strlcpy(reply + _len, ",", sizeof(reply) - _len);
+
+      basename_path = path_get(RARCH_PATH_BASENAME);
+      if (basename_path)
+      {
+         const char *basename = path_basename(basename_path);
+         if (basename)
+            _len += strlcpy(reply + _len, basename, sizeof(reply) - _len);
+         else
+            _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+      }
+      else
+         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+
+      _len += snprintf(reply + _len, sizeof(reply) - _len,
             ",crc32=%lx\n", (unsigned long)content_get_crc());
    }
    else
-       _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
+      _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, _len);
-
    return true;
 }
 
@@ -1319,8 +1351,12 @@ static size_t command_event_save_config(const char *config_path,
 static size_t command_event_undo_save_state(char *s, size_t len)
 {
    if (content_undo_save_buf_is_empty())
-      return strlcpy(s,
-         msg_hash_to_str(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET), len);
+   {
+      enum msg_hash_enums msg = content_undo_save_disabled()
+         ? MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO
+         : MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET;
+      return strlcpy(s, msg_hash_to_str(msg), len);
+   }
    if (!content_undo_save_state())
       return strlcpy(s,
          msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE), len);
@@ -1331,9 +1367,12 @@ static size_t command_event_undo_save_state(char *s, size_t len)
 static size_t command_event_undo_load_state(char *s, size_t len)
 {
    if (content_undo_load_buf_is_empty())
-      return strlcpy(s,
-         msg_hash_to_str(MSG_NO_STATE_HAS_BEEN_LOADED_YET),
-         len);
+   {
+      enum msg_hash_enums msg = content_undo_save_disabled()
+         ? MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO
+         : MSG_NO_STATE_HAS_BEEN_LOADED_YET;
+      return strlcpy(s, msg_hash_to_str(msg), len);
+   }
    if (!content_undo_load_state())
       return snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
@@ -2088,7 +2127,7 @@ void command_event_save_current_config(enum override_type type)
 
             /* command_event_save_config() does its own logging */
             if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
-               RARCH_ERR("[Overrides] %s\n", msg);
+               RARCH_ERR("[Override] %s\n", msg);
 
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
@@ -2127,14 +2166,14 @@ void command_event_save_current_config(enum override_type type)
             switch (msg_cat)
             {
                case MESSAGE_QUEUE_CATEGORY_ERROR:
-                  RARCH_ERR("[Overrides] %s\n", msg);
+                  RARCH_ERR("[Override] %s\n", msg);
                   break;
                case MESSAGE_QUEUE_CATEGORY_WARNING:
-                  RARCH_WARN("[Overrides] %s\n", msg);
+                  RARCH_WARN("[Override] %s\n", msg);
                   break;
                case MESSAGE_QUEUE_CATEGORY_SUCCESS:
                default:
-                  RARCH_LOG("[Overrides] %s\n", msg);
+                  RARCH_LOG("[Override] %s\n", msg);
                   break;
             }
 
@@ -2182,9 +2221,9 @@ void command_event_remove_current_config(enum override_type type)
             }
 
             if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
-               RARCH_ERR("[Overrides] %s\n", msg);
+               RARCH_ERR("[Override] %s\n", msg);
             else
-               RARCH_LOG("[Overrides] %s\n", msg);
+               RARCH_LOG("[Override] %s\n", msg);
 
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
@@ -2336,17 +2375,6 @@ bool command_event_disk_control_append_image(
    if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
       autosave_deinit();
 #endif
-
-   /* TODO/FIXME: Need to figure out what to do with subsystems case. */
-   if (path_is_empty(RARCH_PATH_SUBSYSTEM))
-   {
-      /* Update paths for our new image.
-       * If we actually use append_image, we assume that we
-       * started out in a single disk case, and that this way
-       * of doing it makes the most sense. */
-      path_set(RARCH_PATH_NAMES, path);
-      runloop_path_fill_names();
-   }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 

@@ -134,6 +134,7 @@ static struct save_state_buf undo_load_buf;
 static struct ram_save_state_buf ram_buf;
 
 static bool save_state_in_background       = false;
+static bool save_state_disable_undo        = false;
 
 typedef struct rastate_size_info
 {
@@ -1012,19 +1013,12 @@ static void content_load_state_cb(retro_task_t *task,
    {
       /* If we were previously backing up a file, let go of it first */
       if (undo_save_buf.data)
-      {
          free(undo_save_buf.data);
-         undo_save_buf.data = NULL;
-      }
 
-      if (!(undo_save_buf.data = malloc(_len)))
-         goto error;
-
-      memcpy(undo_save_buf.data, buf, _len);
+      undo_save_buf.data = buf;
       undo_save_buf.size = _len;
       strlcpy(undo_save_buf.path, load_data->path, sizeof(undo_save_buf.path));
 
-      free(buf);
       free(load_data);
       return;
    }
@@ -1403,6 +1397,9 @@ bool content_save_state(const char *path, bool save_to_disk)
    size_t _len;
    void *data  = NULL;
 
+   if (!save_to_disk && save_state_disable_undo)
+      return false;
+
    if (!core_info_current_supports_savestate())
    {
       RARCH_LOG("[State] %s\n",
@@ -1433,7 +1430,7 @@ bool content_save_state(const char *path, bool save_to_disk)
 
    if (save_to_disk)
    {
-      if (path_is_valid(path))
+      if (!save_state_disable_undo && path_is_valid(path))
       {
          /* Before overwriting the savestate file, load it into a buffer
          to allow undo_save_state() to work */
@@ -1463,19 +1460,9 @@ bool content_save_state(const char *path, bool save_to_disk)
 
       /* If we were holding onto an old state already, clean it up first */
       if (undo_load_buf.data)
-      {
          free(undo_load_buf.data);
-         undo_load_buf.data = NULL;
-      }
 
-      if (!(undo_load_buf.data = malloc(_len)))
-      {
-         free(data);
-         return false;
-      }
-
-      memcpy(undo_load_buf.data, data, _len);
-      free(data);
+      undo_load_buf.data = data;
       undo_load_buf.size = _len;
       strlcpy(undo_load_buf.path, path, sizeof(undo_load_buf.path));
    }
@@ -1664,6 +1651,11 @@ bool content_undo_save_buf_is_empty(void)
    return undo_save_buf.data == NULL || undo_save_buf.size == 0;
 }
 
+bool content_undo_save_disabled(void)
+{
+   return save_state_disable_undo;
+}
+
 /**
  * content_load_state_from_ram:
  * Load a state from RAM.
@@ -1672,9 +1664,7 @@ bool content_undo_save_buf_is_empty(void)
  **/
 bool content_load_state_from_ram(void)
 {
-   size_t temp_data_size;
    bool ret        = false;
-   void* temp_data = NULL;
 
    if (!core_info_current_supports_savestate())
    {
@@ -1691,21 +1681,10 @@ bool content_load_state_from_ram(void)
          (unsigned)ram_buf.state_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
-   /* We need to make a temporary copy of the buffer, to allow the swap below */
-   temp_data       = malloc(ram_buf.state_buf.size);
-   temp_data_size  = ram_buf.state_buf.size;
-   memcpy(temp_data, ram_buf.state_buf.data, ram_buf.state_buf.size);
-
-   /* Swap the current state with the backup state. This way, we can undo
-   what we're undoing */
+   /* Backup the current state so we can undo this load */
    content_save_state("RAM", false);
 
-   ret             = content_deserialize_state(temp_data, temp_data_size);
-
-   /* Clean up the temporary copy */
-   free(temp_data);
-   temp_data       = NULL;
-
+   ret = content_deserialize_state(ram_buf.state_buf.data, ram_buf.state_buf.size);
    if (!ret)
    {
       RARCH_ERR("[State] %s.\n",
@@ -1735,50 +1714,32 @@ bool content_save_state_to_ram(void)
    }
 
    _len = core_serialize_size();
-
    if (_len == 0)
       return false;
 
-   if (!save_state_in_background)
-   {
-      if (!(data = content_get_serialized_data(&_len)))
-      {
-         RARCH_ERR("[State] %s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
-         return false;
-      }
+   RARCH_LOG("[State] %s, %u %s.\n",
+         msg_hash_to_str(MSG_SAVING_STATE),
+         (unsigned)_len,
+         msg_hash_to_str(MSG_BYTES));
 
-      RARCH_LOG("[State] %s, %u %s.\n",
-            msg_hash_to_str(MSG_SAVING_STATE),
-            (unsigned)_len,
-            msg_hash_to_str(MSG_BYTES));
-   }
-
-   if (!data)
+   if (save_state_disable_undo && ram_buf.state_buf.data)
    {
-      if (!(data = content_get_serialized_data(&_len)))
-      {
-         RARCH_ERR("[State] %s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
-         return false;
-      }
-   }
-
-   /* If we were holding onto an old state already, clean it up first */
-   if (ram_buf.state_buf.data)
-   {
+      /* Undo off means lack of memory, free before we alloc the new one */
       free(ram_buf.state_buf.data);
       ram_buf.state_buf.data = NULL;
    }
 
-   if (!(ram_buf.state_buf.data = malloc(_len)))
+   if (!(data = content_get_serialized_data(&_len)))
    {
-      free(data);
+      RARCH_ERR("[State] %s.\n",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
       return false;
    }
 
-   memcpy(ram_buf.state_buf.data, data, _len);
-   free(data);
+   if (ram_buf.state_buf.data)
+      free(ram_buf.state_buf.data);
+
+   ram_buf.state_buf.data = data;
    ram_buf.state_buf.size = _len;
    ram_buf.to_write_file  = true;
 
@@ -1826,4 +1787,9 @@ success:
 void set_save_state_in_background(bool state)
 {
    save_state_in_background = state;
+}
+
+void set_save_state_disable_undo(bool disable)
+{
+   save_state_disable_undo = disable;
 }

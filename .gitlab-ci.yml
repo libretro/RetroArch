@@ -899,6 +899,19 @@ build-static-retroarch-djgpp:
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
+#build-static-retroarch-dummy-djgpp:
+#  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-djgpp-build-container:latest
+#  stage: build
+#  before_script:
+#    - export NUMPROC=$(($(nproc)/3))
+#  artifacts:
+#    paths:
+#    -  retrodos.exe
+#    expire_in: 10 min
+#  dependencies: []
+#  script:
+#    - "make -f Makefile.dos.salamander -j$NUMPROC release"
+
 build-static-retroarch-ctr:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
   stage: prepare-for-static-cores

@@ -1178,7 +1178,7 @@ void video_display_server_destroy(void)
    if (initial_screen_orientation != current_screen_orientation)
       video_display_server_set_screen_orientation(initial_screen_orientation);
 
-   if (current_display_server)
+   if (current_display_server && (current_display_server != &dispserv_null))
       if (video_st->current_display_server_data)
          current_display_server->destroy(video_st->current_display_server_data);
 }
@@ -3056,7 +3056,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->scale_height                = video_st->scale_height;
 
    video_info->shader_active               = !(menu_shdr_flags & SHDR_FLAG_DISABLED) ? true : false;
-   video_info->hdr_enable                  = settings->bools.video_hdr_enable;
+   video_info->hdr_mode                    = settings->uints.video_hdr_mode;
 
    video_info->libretro_running            = false;
    video_info->msg_bgcolor_enable          = settings->bools.video_msg_bgcolor_enable;

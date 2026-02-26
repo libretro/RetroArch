@@ -501,15 +501,6 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
 }
 #endif
 
-static int frontend_gx_get_rating(void)
-{
-#ifdef HW_RVL
-   return 8;
-#else
-   return 6;
-#endif
-}
-
 static enum frontend_architecture frontend_gx_get_arch(void)
 {
    return FRONTEND_ARCH_PPC;
@@ -589,7 +580,6 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_shutdown,            /* shutdown */
    NULL,                            /* get_name */
    NULL,                            /* get_os */
-   frontend_gx_get_rating,          /* get_rating */
    NULL,                            /* load_content */
    frontend_gx_get_arch,            /* get_architecture */
    NULL,                            /* get_powerstate */

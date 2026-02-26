@@ -854,5 +854,6 @@ void netplay_mdns_publish(netplay_t *netplay);
 void netplay_mdns_unpublish(void);
 void netplay_mdns_start_discovery(void);
 void netplay_mdns_finish_discovery(net_driver_state_t *net_st);
+void netplay_mdns_suspend(void);
 
 #endif

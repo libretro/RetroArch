@@ -35,6 +35,7 @@
 
 #include "file_path_special.h"
 #include "paths.h"
+#include "runloop.h"
 #include "core_info.h"
 #include "verbosity.h"
 #include "msg_hash.h"

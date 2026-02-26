@@ -26,6 +26,7 @@
 #include "../../command.h"
 #include "../../defaults.h"
 #include "../../paths.h"
+#include "../../file_path_special.h"
 #include "../../verbosity.h"
 
 static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
@@ -39,7 +40,6 @@ static void frontend_dos_init(void *data)
 
 /* TODO/FIXME - implement */
 static void frontend_dos_shutdown(bool unused) { }
-static int frontend_dos_get_rating(void) { return -1; }
 
 enum frontend_architecture frontend_dos_get_arch(void)
 {
@@ -52,13 +52,11 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
    char *slash;
    char base_path[PATH_MAX];
 
-   retro_main_log_file_init("retrodos.txt", false);
-
    strlcpy(base_path, argv[0], sizeof(base_path));
    if ((slash = strrchr(base_path, '/')))
       *slash = '\0';
    slash = strrchr(base_path, '/');
-   if (slash && strcasecmp(slash, "/cores"))
+   if (slash && strcasecmp(slash, "/cores") == 0)
       *slash = '\0';
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
@@ -73,6 +71,8 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], base_path,
          "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+         FILE_PATH_MAIN_CONFIG,  sizeof(g_defaults.path_config));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
          g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
          "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
@@ -106,11 +106,21 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 
 static void frontend_dos_exec(const char *path, bool should_load_game)
 {
-	char *newargv[]    = { NULL, NULL };
-	size_t _len        = strlen(path);
+	char *newargv[]    = { NULL, NULL, NULL };
+	size_t _len        = strlen(path) + 1;
+
+#ifndef IS_SALAMANDER
+   char game_path[FILENAME_MAX];
+   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   {
+      const char *content = path_get(RARCH_PATH_CONTENT);
+      strlcpy(game_path, content, sizeof(game_path));
+      newargv[1] = game_path;
+      printf("Attempt to load executable: [%s], with game [%s]\n", path, game_path);
+   }
+#endif
 
 	newargv[0] = (char*)malloc(_len);
-
 	strlcpy(newargv[0], path, _len);
 
 	execv(path, newargv);
@@ -120,11 +130,12 @@ static void frontend_dos_exitspawn(char *s, size_t len, char *args)
 {
 	bool should_load_content = false;
 
+#ifndef IS_SALAMANDER
 	if (dos_fork_mode == FRONTEND_FORK_NONE)
 		return;
 	if (dos_fork_mode == FRONTEND_FORK_CORE_WITH_ARGS)
       should_load_content = true;
-
+#endif
 	frontend_dos_exec(s, should_load_content);
 }
 
@@ -140,7 +151,7 @@ static bool frontend_dos_set_fork(enum frontend_fork fork_mode)
          break;
       case FRONTEND_FORK_RESTART:
          dos_fork_mode  = FRONTEND_FORK_CORE;
-
+#ifndef IS_SALAMANDER
          {
             char executable_path[PATH_MAX_LENGTH] = {0};
             fill_pathname_application_path(executable_path,
@@ -148,6 +159,7 @@ static bool frontend_dos_set_fork(enum frontend_fork fork_mode)
             path_set(RARCH_PATH_CORE, executable_path);
          }
          command_event(CMD_EVENT_QUIT, NULL);
+#endif
          break;
       case FRONTEND_FORK_NONE:
       default:
@@ -168,7 +180,6 @@ frontend_ctx_driver_t frontend_ctx_dos = {
 	frontend_dos_shutdown,        /* shutdown */
 	NULL,                         /* get_name */
 	NULL,                         /* get_os */
-	frontend_dos_get_rating,      /* get_rating */
 	NULL,                         /* content_loaded   */
 	frontend_dos_get_arch,        /* get_architecture */
 	NULL,                         /* get_powerstate */

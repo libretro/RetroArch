@@ -163,6 +163,14 @@ static bool slang_process_reflection(
             "OriginalAspectRotated",
             "TotalSubFrames",
             "CurrentSubFrame",
+            "HDRMode",
+            "PaperWhiteNits",
+            "MaxNits",
+            "Scanlines",
+            "SubpixelLayout",
+            "ExpandGamut",
+            "InverseTonemap",
+            "HDR10"
          };
          int size = sizeof(names) / sizeof(*names);
          if (semantic < size)

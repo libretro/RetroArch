@@ -1,5 +1,4 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2024 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -34,9 +33,12 @@
 #include "../input_keymaps.h"
 
 #include "../../gfx/common/wayland/webos-shell.h"
+
+#ifdef HAVE_WEBOS_EXTRA_PROTOS
 #include "../../gfx/common/wayland/webos-foreign.h"
 #include "../../gfx/common/wayland/webos-surface-group.h"
 #include "../../gfx/common/wayland/webos-input-manager.h"
+#endif
 
 #ifdef HAVE_USERLAND
 #include <webos-helpers/libhelpers.h>
@@ -260,6 +262,7 @@ static void wl_registry_handle_global_webos(void *data,
       wl->webos_shell = (struct wl_webos_shell*)wl_registry_bind(reg,
          id, &wl_webos_shell_interface, 1);
    }
+#ifdef HAVE_WEBOS_EXTRA_PROTOS
    else if (string_is_equal(interface, "wl_webos_foreign"))
    {
       wl->webos_foreign = (struct wl_webos_foreign*)wl_registry_bind(reg,
@@ -276,6 +279,7 @@ static void wl_registry_handle_global_webos(void *data,
       wl->webos_input_manager = (struct wl_webos_input_manager*)wl_registry_bind(reg,
          id, &wl_webos_input_manager_interface, 1);
    }
+#endif
 }
 
 static void wl_registry_handle_global_remove_webos(void *data,
@@ -385,12 +389,14 @@ void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
    if (wl->surface)
       wl_surface_destroy(wl->surface);
 
+#ifdef HAVE_WEBOS_EXTRA_PROTOS
    if (wl->webos_input_manager)
       wl_webos_input_manager_destroy(wl->webos_input_manager);
    if (wl->webos_surface_group_compositor)
       wl_webos_surface_group_compositor_destroy(wl->webos_surface_group_compositor);
    if (wl->webos_foreign)
       wl_webos_foreign_destroy(wl->webos_foreign);
+#endif
    if (wl->seat)
       wl_seat_destroy(wl->seat);
    if (wl->webos_shell)
@@ -802,6 +808,7 @@ void wl_keyboard_handle_key_webos(void *data,
    int value = (state == WL_KEYBOARD_KEY_STATE_PRESSED) ? 1 : 0;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    uint32_t keysym            = key;
+   input_driver_state_t *input_st = input_state_get_ptr();
 
    /* Handle 'duplicate' inputs that correspond
     * to the same RETROK_* key */
@@ -822,6 +829,12 @@ void wl_keyboard_handle_key_webos(void *data,
          break;
       case KEY_WAYLAND_WEBOS_BLUE:
          keysym = KEY_A;
+         break;
+      case KEY_ENTER:
+         /* When in menu and in virtual keyboard entry,
+          * map magic remote wheel button click to LCTRL for character selection */
+         if (input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+            keysym = KEY_LEFTCTRL;
          break;
       case KEY_OK:
       case KEY_SELECT:
