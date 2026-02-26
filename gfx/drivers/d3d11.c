@@ -2249,6 +2249,8 @@ static void d3d11_gfx_free(void* data)
 
 #ifdef HAVE_DXGI_HDR
    video_driver_unset_hdr_support();
+   video_driver_unset_hdr10_support();
+   video_driver_unset_scrgb_support();
 #endif
 
 #ifdef HAVE_MONITOR

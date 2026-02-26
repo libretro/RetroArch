@@ -166,7 +166,9 @@ enum video_driver_state_flags
    VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE           = (1 << 15),
    VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD          = (1 << 16),
    VIDEO_FLAG_CLI_SHADER_DISABLE                  = (1 << 17),
-   VIDEO_FLAG_RUNAHEAD_IS_ACTIVE                  = (1 << 18)
+   VIDEO_FLAG_RUNAHEAD_IS_ACTIVE                  = (1 << 18),
+   VIDEO_FLAG_HDR10_SUPPORT                       = (1 << 19),
+   VIDEO_FLAG_SCRGB_SUPPORT                       = (1 << 20)
 };
 
 struct LinkInfo
@@ -950,6 +952,20 @@ void video_driver_set_hdr_support(void);
 void video_driver_unset_hdr_support(void);
 
 bool video_driver_supports_hdr(void);
+
+void video_driver_set_hdr10_support(void);
+
+void video_driver_unset_hdr10_support(void);
+
+bool video_driver_supports_hdr10(void);
+
+void video_driver_set_scrgb_support(void);
+
+void video_driver_unset_scrgb_support(void);
+
+bool video_driver_supports_scrgb(void);
+
+unsigned video_driver_hdr_max_mode(void);
 
 bool video_driver_get_next_video_out(void);
 

@@ -564,7 +564,15 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
          supported = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
 
          if (supported)
+         {
             video_driver_set_hdr_support();
+            video_driver_set_hdr10_support();
+            /* When Windows reports HDR support (PQ/ST.2084),
+             * scRGB (R16G16B16A16_FLOAT + G10_NONE_P709) is
+             * always available — the Windows HDR compositor
+             * guarantees both paths. */
+            video_driver_set_scrgb_support();
+         }
          else
          {
             settings_t*    settings           = config_get_ptr();
@@ -572,6 +580,8 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
             settings->uints.video_hdr_mode    = 0;
 
             video_driver_unset_hdr_support();
+            video_driver_unset_hdr10_support();
+            video_driver_unset_scrgb_support();
          }
       }
       else
