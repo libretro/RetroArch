@@ -2026,6 +2026,68 @@ bool video_driver_supports_hdr(void)
    return tmp;
 }
 
+void video_driver_set_hdr10_support(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   VIDEO_DRIVER_LOCK(video_st);
+   video_st->flags                |= VIDEO_FLAG_HDR10_SUPPORT;
+   VIDEO_DRIVER_UNLOCK(video_st);
+}
+
+void video_driver_unset_hdr10_support(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   VIDEO_DRIVER_LOCK(video_st);
+   video_st->flags                &= ~VIDEO_FLAG_HDR10_SUPPORT;
+   VIDEO_DRIVER_UNLOCK(video_st);
+}
+
+bool video_driver_supports_hdr10(void)
+{
+   bool tmp;
+   video_driver_state_t *video_st       = &video_driver_st;
+   VIDEO_DRIVER_LOCK(video_st);
+   tmp = (video_st->flags & VIDEO_FLAG_HDR10_SUPPORT) ? true : false;
+   VIDEO_DRIVER_UNLOCK(video_st);
+   return tmp;
+}
+
+void video_driver_set_scrgb_support(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   VIDEO_DRIVER_LOCK(video_st);
+   video_st->flags                |= VIDEO_FLAG_SCRGB_SUPPORT;
+   VIDEO_DRIVER_UNLOCK(video_st);
+}
+
+void video_driver_unset_scrgb_support(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   VIDEO_DRIVER_LOCK(video_st);
+   video_st->flags                &= ~VIDEO_FLAG_SCRGB_SUPPORT;
+   VIDEO_DRIVER_UNLOCK(video_st);
+}
+
+bool video_driver_supports_scrgb(void)
+{
+   bool tmp;
+   video_driver_state_t *video_st       = &video_driver_st;
+   VIDEO_DRIVER_LOCK(video_st);
+   tmp = (video_st->flags & VIDEO_FLAG_SCRGB_SUPPORT) ? true : false;
+   VIDEO_DRIVER_UNLOCK(video_st);
+   return tmp;
+}
+
+unsigned video_driver_hdr_max_mode(void)
+{
+   /* 0 = Off, 1 = HDR10, 2 = scRGB */
+   if (video_driver_supports_scrgb())
+      return 2;
+   if (video_driver_supports_hdr10())
+      return 1;
+   return 0;
+}
+
 bool video_driver_get_next_video_out(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;

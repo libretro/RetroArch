@@ -14057,7 +14057,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
                (*list)[list_info->index - 1].get_string_representation =
                      &setting_get_string_representation_video_hdr_mode;
-               menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+               menu_settings_list_current_add_range(list, list_info, 0, video_driver_hdr_max_mode(), 1, true, true);
                MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
                      list,
                      list_info,

@@ -2227,15 +2227,42 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       {
          unsigned video_hdr_mode = settings->uints.video_hdr_mode;
 
+         /* Advertise HDR capabilities to the menu based on which
+          * surface formats the driver actually enumerates.
+          * The colorspace extension alone is not enough — some
+          * drivers expose the extension without any HDR surface
+          * formats. */
+         video_driver_unset_hdr_support();
+         video_driver_unset_hdr10_support();
+         video_driver_unset_scrgb_support();
+         for (i = 0; i < format_count; i++)
+         {
+            if (  vulkan_is_hdr10_format(formats[i].format)
+               && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+               video_driver_set_hdr10_support();
+            if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+               && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
+               video_driver_set_scrgb_support();
+         }
+         if (video_driver_supports_hdr10() || video_driver_supports_scrgb())
+            video_driver_set_hdr_support();
+
+         /* Clamp the selected mode if the surface doesn't support it */
+         if (video_hdr_mode == 2 && !video_driver_supports_scrgb())
+         {
+            RARCH_WARN("[Vulkan] scRGB not available on this surface, falling back.\n");
+            video_hdr_mode = video_driver_supports_hdr10() ? 1 : 0;
+         }
+         if (video_hdr_mode == 1 && !video_driver_supports_hdr10())
+         {
+            RARCH_WARN("[Vulkan] HDR10 not available on this surface, falling back.\n");
+            video_hdr_mode = 0;
+         }
+
          if (video_hdr_mode > 0)
             vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
          else
             vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
-
-         /* VK_CTX_FLAG_HDR_SUPPORT means the swapchain colorspace
-          * extension is available — advertise HDR capability to
-          * the menu regardless of the currently selected mode. */
-         video_driver_set_hdr_support();
 
          if (video_hdr_mode == 2)
          {

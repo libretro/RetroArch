@@ -3555,6 +3555,8 @@ static void vulkan_free(void *data)
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
          vulkan_deinit_hdr_readback_render_pass(vk);
          video_driver_unset_hdr_support();
+         video_driver_unset_hdr10_support();
+         video_driver_unset_scrgb_support();
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
