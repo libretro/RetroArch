@@ -3175,6 +3175,22 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_NETPLAY_CLIENT_INDEX:
+      {
+#ifdef HAVE_NETWORKING
+         if (data)
+         {
+            uint32_t self_client_num = 0;
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_SELF_CLIENT_NUM, &self_client_num))
+            {
+               *(unsigned*)data = self_client_num;
+               break;
+            }
+         }
+#endif
+         return false;
+      }
+
       case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE:
       {
          struct retro_midi_interface *midi_interface =

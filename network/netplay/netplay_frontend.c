@@ -9567,6 +9567,16 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          ret = ((net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_ENABLED) > 0);
          break;
 
+      case RARCH_NETPLAY_CTL_GET_SELF_CLIENT_NUM:
+         if (data && netplay)
+         {
+            *(uint32_t*)data = netplay->self_client_num;
+            ret = true;
+         }
+         else
+            ret = false;
+         break;
+
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
          ret = (netplay != NULL);
          break;
