@@ -134,6 +134,9 @@ typedef struct __GLsync *GLsync;
 #endif
 #endif
 
+/* Forward declaration for lazy init in read_viewport */
+static bool gl2_init_pbo_readback(gl2_t *gl);
+
 #if defined(HAVE_PSGL)
 #define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DOES(a, b, c, d, e)
 #define gl2_check_fb_status(target) glCheckFramebufferStatusOES(target)
@@ -2143,6 +2146,29 @@ static bool gl2_renderchain_read_viewport(
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
+#ifdef HAVE_GL_ASYNC_READBACK
+   /* Lazy init / reinit: (re)initialize PBO readback when recording
+    * starts after driver init, or when viewport dimensions change. */
+   if (  !(gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
+       || (unsigned)gl->pbo_readback_scaler.in_width  != gl->vp.width
+       || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+   {
+      recording_state_t *rec_st = recording_state_get_ptr();
+      if (rec_st && rec_st->enable)
+      {
+         /* Tear down old PBO resources before reinitializing */
+         if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
+         {
+            glDeleteBuffers(4, gl->pbo_readback);
+            scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+         }
+         gl->flags |= GL2_FLAG_PBO_READBACK_ENABLE;
+         if (gl2_init_pbo_readback(gl))
+            RARCH_LOG("[GL] (Re)initialized async PBO readback for recording.\n");
+      }
+   }
+#endif
+
    num_pixels             = gl->vp.width * gl->vp.height;
 
 #ifdef HAVE_GL_ASYNC_READBACK
@@ -3668,13 +3694,24 @@ static bool gl2_frame(void *data, const void *frame,
             4, GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
 
-   /* Don't readback if we're in menu mode. */
    else if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
+   {
+      /* If recording has stopped, tear down PBO readback */
+      if (!recording_state_get_ptr()->enable)
+      {
+         glDeleteBuffers(4, gl->pbo_readback);
+         scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+         gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
+      }
+      else
+      {
 #ifdef HAVE_MENU
          /* Don't readback if we're in menu mode. */
          if (!(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
 #endif
             gl2_pbo_async_readback(gl);
+      }
+   }
 
     if (gl->ctx_driver->swap_buffers)
         gl->ctx_driver->swap_buffers(gl->ctx_data);

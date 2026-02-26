@@ -7513,8 +7513,7 @@ static bool retroarch_parse_input_and_config(
 
             case 'r':
                strlcpy(rec_st->path, optarg, sizeof(rec_st->path));
-               if (rec_st->enable)
-                  rec_st->enable = true;
+               rec_st->enable = true;
                break;
 
             case RA_OPT_SET_SHADER:
