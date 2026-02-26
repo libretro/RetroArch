@@ -3346,8 +3346,16 @@ MSG_HASH(
    "Обхідний шлях для відключення та повторного підключення контролерів. Заважає 2 гравцям з однаковими контролерами."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Вимагати подвійного натискання гарячої клавіші для Виходу."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
    "Підтвердіть закриття вмісту"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Підтвердіть Скидання Вмісту"
    )
 
 
