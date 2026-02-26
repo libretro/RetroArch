@@ -783,7 +783,7 @@ static void gdrive_folder_search_cb(retro_task_t *task, void *task_data,
 
 static void gdrive_folder_walk_next(gdrive_folder_walk_t *walk)
 {
-   char url[2048];
+   char url[PATH_MAX_LENGTH + 512];
    char segment[256];
    char encoded_segment[PATH_MAX_LENGTH];
    char *headers;
@@ -878,7 +878,7 @@ static void gdrive_search_file(const char *name,
       const char *parent_id,
       retro_task_callback_t cb, void *user_data)
 {
-   char url[2048];
+   char url[PATH_MAX_LENGTH + 512];
    char encoded_name[PATH_MAX_LENGTH];
    char *headers;
 
@@ -1425,7 +1425,7 @@ static void gdrive_update_search_cb(retro_task_t *task, void *task_data,
    else
    {
       /* File doesn't exist - create metadata first, then upload */
-      char json[1024];
+      char json[PATH_MAX_LENGTH + 512];
       char escaped_name[PATH_MAX_LENGTH];
       char *headers;
       gdrive_json_escape(escaped_name, sizeof(escaped_name),
