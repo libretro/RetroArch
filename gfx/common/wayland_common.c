@@ -698,7 +698,6 @@ static void shm_buffer_paint_checkerboard(
       }
    }
 }
-
 static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 {
    if (wl->single_pixel_manager)

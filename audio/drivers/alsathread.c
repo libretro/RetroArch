@@ -216,7 +216,7 @@ static int alsa_thread_microphone_read(void *driver_context, void *mic_context, 
 {
    snd_pcm_state_t state;
    size_t _len = 0;
-   uint8_t *s  = (uint8_t*)sv;
+   uint8_t *s = (uint8_t *)sv;
    alsa_thread_microphone_t       *alsa = (alsa_thread_microphone_t*)driver_context;
    alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t*)mic_context;
 

@@ -505,8 +505,8 @@ static void reallocate_port_if_needed(
                || string_is_equal(device_display_name, settings_value_device_name);
          }
          else
-            device_has_reserved_slot = (  vendor_id  == settings_value_vendor_id
-                                       && product_id == settings_value_product_id);
+            device_has_reserved_slot = (  vendor_id  == (int)settings_value_vendor_id
+                                       && product_id == (int)settings_value_product_id);
 
          if (device_has_reserved_slot)
          {
