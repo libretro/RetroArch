@@ -1314,11 +1314,20 @@ int generic_action_ok_displaylist_push(
          dl_type            = DISPLAYLIST_FILE_BROWSER_SCAN_DIR;
          break;
       case ACTION_OK_DL_MANUAL_SCAN_DIR_LIST:
-         filebrowser_set_type(FILEBROWSER_MANUAL_SCAN_DIR);
-         info.type          = FILE_TYPE_DIRECTORY;
+         if (*(manual_content_scan_get_scan_single_file_ptr()) == true)
+         {
+            filebrowser_set_type(FILEBROWSER_SCAN_FILE);
+            info.type          = FILE_TYPE_PLAIN;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
+         else
+         {
+            filebrowser_set_type(FILEBROWSER_MANUAL_SCAN_DIR);
+            info.type          = FILE_TYPE_DIRECTORY;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_DIR;
+         }
          info.directory_ptr = idx;
          info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_DIR;
 
          action_ok_get_file_browser_start_path(
                manual_content_scan_get_content_dir_ptr(),
@@ -4196,6 +4205,9 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_path_manual_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#if IOS
+   char dir_path[DIR_MAX_LENGTH];
+#endif
    char content_dir[DIR_MAX_LENGTH];
    const char *flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST);
    unsigned flush_type    = 0;
@@ -4203,15 +4215,29 @@ static int action_ok_path_manual_scan_directory(const char *path,
 
    content_dir[0]         = '\0';
 
+   if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+   {
+      menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+#if IOS
+      fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
+      menu_path = dir_path;
+#endif
+
+      fill_pathname_join_special(content_dir, menu_path, path, sizeof(content_dir));
+   }
+   else
+   {
+      /* Get user-selected scan directory */
+      menu_entries_get_last_stack(&menu_path,
+            NULL, NULL, NULL, NULL);
+
+      if (!string_is_empty(menu_path))
+         strlcpy(content_dir, menu_path, sizeof(content_dir));
+   }
    /* 'Reset' file browser */
    filebrowser_clear_type();
 
-   /* Get user-selected scan directory */
-   menu_entries_get_last_stack(&menu_path,
-         NULL, NULL, NULL, NULL);
-
-   if (!string_is_empty(menu_path))
-      strlcpy(content_dir, menu_path, sizeof(content_dir));
 
 #ifdef HAVE_COCOATOUCH
    {
@@ -7511,6 +7537,7 @@ static int action_ok_push_dropdown_item_manual_content_scan_system_name(
    {
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR:
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
+      case MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO:
          system_name_type = (enum manual_content_scan_system_name_type)idx;
          break;
       default:
@@ -9826,9 +9853,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_CARCHIVE:
             if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
             {
-#ifdef HAVE_LIBRETRODB
-               BIND_ACTION_OK(cbs, action_ok_scan_file);
-#endif
+               BIND_ACTION_OK(cbs, action_ok_path_manual_scan_directory);
             }
             else
             {
@@ -9976,9 +10001,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_PLAIN:
             if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
             {
-#ifdef HAVE_LIBRETRODB
-               BIND_ACTION_OK(cbs, action_ok_scan_file);
-#endif
+               BIND_ACTION_OK(cbs, action_ok_path_manual_scan_directory);
             }
             else if (cbs->enum_idx != MSG_UNKNOWN)
             {
