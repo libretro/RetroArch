@@ -614,9 +614,30 @@ static void rcheevos_client_download_achievement_badge(const char* badge_name, b
    }
 }
 
+static void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_file_size, const char* badge, bool locked)
+{
+   size_t _len = strlcpy(badge_file, badge, badge_file_size);
+   if (locked)
+      _len += strlcpy(badge_file + _len, "_lock", badge_file_size - _len);
+   strlcpy(badge_file + _len, FILE_PATH_PNG_EXTENSION, badge_file_size - _len);
+}
+
+bool rcheevos_is_badge_available(const char* badge, bool locked)
+{
+   char badge_file[24];
+   char fullpath[PATH_MAX_LENGTH];
+
+   rcheevos_get_local_badge_filename(badge_file, sizeof(badge_file), badge, locked);
+
+   fill_pathname_application_special(fullpath, sizeof(fullpath),
+      APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+   fill_pathname_join(fullpath, fullpath, badge_file, sizeof(fullpath));
+
+   return path_is_valid(fullpath);
+}
+
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
 {
-   size_t _len;
    char badge_file[24];
    char fullpath[PATH_MAX_LENGTH];
    uintptr_t tex = 0;
@@ -634,9 +655,7 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
       return 0;
 #endif
 
-   _len  = strlcpy(badge_file, badge, sizeof(badge_file));
-   _len += strlcpy(badge_file + _len, locked ? "_lock" : "", sizeof(badge_file) - _len);
-   strlcpy(badge_file + _len, FILE_PATH_PNG_EXTENSION, sizeof(badge_file) - _len);
+   rcheevos_get_local_badge_filename(badge_file, sizeof(badge_file), badge, locked);
 
    fill_pathname_application_special(fullpath, sizeof(fullpath),
       APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
