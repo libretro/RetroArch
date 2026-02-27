@@ -2472,7 +2472,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Set HDR output mode if the display supports it."
+   "Set HDR output mode if the display supports it. Note: scRGB may soften strict CRT shader masks because the OS compositor converts to HDR10 after the mask is applied."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
