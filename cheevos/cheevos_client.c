@@ -478,9 +478,9 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    return true;
 }
 
-void rcheevos_client_download_badge_from_url(const char* url, const char* badge_name)
+bool rcheevos_client_download_badge_from_url(const char* url, const char* badge_name)
 {
-   rcheevos_client_download_badge(NULL, url, badge_name);
+   return rcheevos_client_download_badge(NULL, url, badge_name);
 }
 
 static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
