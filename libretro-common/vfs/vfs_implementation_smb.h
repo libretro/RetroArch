@@ -60,7 +60,7 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh);
 int                 retro_vfs_closedir_smb(smb_dir_handle* dh);
 
 /* Stat */
-int retro_vfs_stat_smb(const char *path, int32_t *size);
+int retro_vfs_stat_smb(const char *path, int64_t *size);
 
 /* Errors */
 int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream);

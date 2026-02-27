@@ -662,7 +662,7 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
    return stream->orig_path;
 }
 
-int retro_vfs_stat_impl(const char *path, int32_t *size)
+int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 {
    wchar_t *path_wide;
    _WIN32_FILE_ATTRIBUTE_DATA attribdata;
@@ -697,6 +697,21 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    }
    free(path_wide);
    return 0;
+}
+
+int retro_vfs_stat_impl(const char *path, int32_t *size)
+{
+   int64_t size64 = 0;
+   int ret = retro_vfs_stat_64_impl(path, size ? &size64 : NULL);
+
+   /* if a file is larger than 2 GB, size64 will hold the correct value
+    * but the cast to int32_t will truncate it.
+    * new code should migrate to retro_vfs_stat_64_t
+   */
+   if (size)
+      *size = (int32_t)size64;
+
+   return ret;
 }
 
 #ifdef VFS_FRONTEND
@@ -832,7 +847,7 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir* rdir)
           return false;
 
        fill_pathname_join_special(full, rdir->orig_path, name, sizeof(full));
-       int32_t sz = 0;
+       int64_t sz = 0;
        int st = retro_vfs_stat_smb(full, &sz);
 
        return (st & RETRO_VFS_STAT_IS_DIRECTORY) != 0;

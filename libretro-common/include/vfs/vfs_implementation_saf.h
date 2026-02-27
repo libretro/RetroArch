@@ -84,7 +84,7 @@ int retro_vfs_file_remove_saf(const char *tree, const char *path);
 
 int retro_vfs_file_rename_saf(const char *old_tree, const char *old_path, const char *new_tree, const char *new_path);
 
-int retro_vfs_stat_saf(const char *tree, const char *path, int32_t *size);
+int retro_vfs_stat_saf(const char *tree, const char *path, int64_t *size);
 
 int retro_vfs_mkdir_saf(const char *tree, const char *dir);
 

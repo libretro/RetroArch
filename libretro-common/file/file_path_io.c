@@ -43,7 +43,8 @@
 #endif
 
 /* TODO/FIXME - globals */
-static retro_vfs_stat_t path_stat_cb   = retro_vfs_stat_impl;
+static retro_vfs_stat_t path_stat32_cb = retro_vfs_stat_impl;
+static retro_vfs_stat_64_t path_stat64_cb = retro_vfs_stat_64_impl;
 static retro_vfs_mkdir_t path_mkdir_cb = retro_vfs_mkdir_impl;
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
@@ -51,19 +52,26 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    const struct retro_vfs_interface* 
       vfs_iface           = vfs_info->iface;
 
-   path_stat_cb           = retro_vfs_stat_impl;
+   path_stat32_cb         = retro_vfs_stat_impl;
+   path_stat64_cb         = retro_vfs_stat_64_impl;
    path_mkdir_cb          = retro_vfs_mkdir_impl;
 
    if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
       return;
 
-   path_stat_cb           = vfs_iface->stat;
+   path_stat32_cb         = vfs_iface->stat;
    path_mkdir_cb          = vfs_iface->mkdir;
+
+   if (vfs_info->required_interface_version >= STAT64_REQUIRED_VFS_VERSION)
+      path_stat64_cb = vfs_iface->stat_64;
+   else
+      path_stat64_cb = NULL;
 }
 
 int path_stat(const char *path)
 {
-   return path_stat_cb(path, NULL);
+   /* Use 64‑bit stat if available, else fallback */
+   return path_stat64_cb ? path_stat64_cb(path, NULL) : path_stat32_cb(path, NULL);
 }
 
 /**
@@ -76,24 +84,36 @@ int path_stat(const char *path)
  */
 bool path_is_directory(const char *path)
 {
-   return (path_stat_cb(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
+   if (path_stat64_cb)
+      return (path_stat64_cb(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
+   return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
 }
 
 bool path_is_character_special(const char *path)
 {
-   return (path_stat_cb(path, NULL) & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) != 0;
+   if (path_stat64_cb)
+      return (path_stat64_cb(path, NULL) & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) != 0;
+   return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) != 0;
 }
 
 bool path_is_valid(const char *path)
 {
-   return (path_stat_cb(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
+   if (path_stat64_cb)
+      return (path_stat64_cb(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
+   return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
 }
 
-int32_t path_get_size(const char *path)
+int64_t path_get_size(const char *path)
 {
-   int32_t filesize = 0;
-   if (path_stat_cb(path, &filesize) != 0)
+   int64_t filesize = 0;
+   int32_t filesize32 = 0;
+
+   if (path_stat64_cb && path_stat64_cb(path, &filesize) != 0)
       return filesize;
+
+   /* Fallback: 32-bit stat */
+   if (path_stat32_cb && path_stat32_cb(path, &filesize32) != 0)
+      return (int64_t)filesize32;
 
    return -1;
 }
