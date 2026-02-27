@@ -1506,6 +1506,60 @@ static void rcheevos_client_login_callback(int result,
    }
 }
 
+#ifdef HAVE_THREADS
+
+void rcheevos_download_next_badge(retro_task_t* task)
+{
+   /* progress: 0 = unlocked images for achievements player hasn't earned
+    *           1 = locked images for achievements player hasn't earned
+    *           2 = unlocked images for achievements player has earned
+    */
+   const int bucket = (task->progress == 2) ? RC_CLIENT_ACHIEVEMENT_BUCKET_UNLOCKED : RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED;
+   const rc_client_achievement_t* first_locked_achievement =
+      rc_client_get_next_achievement_info(rcheevos_locals.client, task->user_data, bucket);
+
+   while (first_locked_achievement)
+   {
+      bool result;
+
+      if (task->progress == 1)
+      {
+         char locked_name[24];
+         snprintf(locked_name, sizeof(locked_name), "%s_lock", first_locked_achievement->badge_name);
+         result = rcheevos_client_download_badge_from_url(first_locked_achievement->badge_locked_url, locked_name);
+      }
+      else
+      {
+         result = rcheevos_client_download_badge_from_url(first_locked_achievement->badge_url, first_locked_achievement->badge_name);
+      }
+
+      if (result)
+         break;
+
+      first_locked_achievement =
+         rc_client_get_next_achievement_info(rcheevos_locals.client, first_locked_achievement, bucket);
+   }
+
+   if (!first_locked_achievement)
+   {
+      if (task->progress == 2 || !rcheevos_is_game_loaded())
+      {
+         /* mark task as complete so it will get cleaned up */
+         task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+         return;
+      }
+
+      task->user_data = NULL; /* restart list */
+      task->progress++;
+   }
+
+   /* wait 10 seconds, then download the next badge */
+   task->user_data = (void*)first_locked_achievement;
+   task->when = cpu_features_get_time_usec() + 10 * 1000000;
+}
+
+#endif
+
 static void rcheevos_finalize_game_load(rc_client_t* client)
 {
    settings_t* settings = config_get_ptr();
@@ -1522,6 +1576,9 @@ static void rcheevos_finalize_game_load(rc_client_t* client)
       const rc_client_achievement_t* first_locked_achievement = NULL;
       const rc_client_game_t* game = rc_client_get_game_info(client);
       char badge[32];
+#ifdef HAVE_THREADS
+      retro_task_t* task;
+#endif
 
       badge[0] = 'i';
       strlcpy(&badge[1], game->badge_name, sizeof(badge) - 1);
@@ -1531,6 +1588,17 @@ static void rcheevos_finalize_game_load(rc_client_t* client)
       first_locked_achievement = rc_client_get_next_achievement_info(client, NULL, RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED);
       if (first_locked_achievement)
          rcheevos_client_download_badge_from_url(first_locked_achievement->badge_url, first_locked_achievement->badge_name);
+
+#ifdef HAVE_THREADS
+      task = task_init();
+      if (task)
+      {
+         task->handler = rcheevos_download_next_badge;
+         task->user_data = (void*)first_locked_achievement;
+         task->when = cpu_features_get_time_usec() + 5*60*1000000; /* five minutes */
+         task_queue_push(task);
+      }
+#endif
    }
 
    if (!rc_client_is_processing_required(client))

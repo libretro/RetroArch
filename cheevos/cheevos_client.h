@@ -22,7 +22,7 @@ RETRO_BEGIN_DECLS
 
 void rcheevos_client_download_placeholder_badge(void);
 void rcheevos_client_download_achievement_badges(rc_client_t* client);
-void rcheevos_client_download_badge_from_url(const char* url, const char* badge_name);
+bool rcheevos_client_download_badge_from_url(const char* url, const char* badge_name);
 
 void rcheevos_client_server_call(const rc_api_request_t* request,
    rc_client_server_callback_t callback, void* callback_data, rc_client_t* client);
