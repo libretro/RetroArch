@@ -100,11 +100,28 @@ enum slang_semantic
    SLANG_SEMANTIC_INVERSE_TONEMAP  = 18,
    /* float, Enable HDR10 conversion */
    SLANG_SEMANTIC_HDR10            = 19,
-   /* float, OriginalAspectRotated */
-   SLANG_NUM_BASE_SEMANTICS        = 20,
+   /* float, gyroscope X axis */
+   SLANG_SEMANTIC_GYROSCOPE_X      = 20,
+   /* float, gyroscope Y axis */
+   SLANG_SEMANTIC_GYROSCOPE_Y      = 21,
+   /* float, gyroscope Z axis */
+   SLANG_SEMANTIC_GYROSCOPE_Z      = 22,
+   /* float, accelerometer X axis */
+   SLANG_SEMANTIC_ACCELEROMETER_X  = 23,
+   /* float, accelerometer Y axis */
+   SLANG_SEMANTIC_ACCELEROMETER_Y  = 24,
+   /* float, accelerometer Z axis */
+   SLANG_SEMANTIC_ACCELEROMETER_Z  = 25,
+   /* float, accelerometer rest position X axis */
+   SLANG_SEMANTIC_ACCELEROMETER_REST_X = 26,
+   /* float, accelerometer rest position Y axis */
+   SLANG_SEMANTIC_ACCELEROMETER_REST_Y = 27,
+   /* float, accelerometer rest position Z axis */
+   SLANG_SEMANTIC_ACCELEROMETER_REST_Z = 28,
+   SLANG_NUM_BASE_SEMANTICS        = 29,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 21,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 30,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1

@@ -647,6 +647,23 @@ typedef struct
    bool analog_requested[MAX_USERS];
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
+
+   /* Cached sensor values — written once per frame in input_driver_poll()
+    * on the main thread, read by shader backends on the video thread.
+    * Not formally synchronized; relies on single-writer/single-reader
+    * float stores being practically atomic on ARM/x86. Worst case is
+    * a single stale frame of sensor data. */
+   float sensor_gyroscope_cache[3];
+   float sensor_accelerometer_cache[3];
+
+   /* Accelerometer rest position capture state.
+    * Same thread-safety model as the caches above:
+    * written on the main thread, read by shader backends
+    * on the video thread. */
+   float sensor_accelerometer_rest[3];
+   float rest_accum[3];
+   unsigned rest_sample_count;
+   bool rest_capturing;
 } input_driver_state_t;
 
 
@@ -1072,6 +1089,8 @@ bool input_set_rumble_state(unsigned port,
 bool input_set_rumble_gain(unsigned gain);
 
 float input_get_sensor_state(unsigned port, unsigned id);
+
+void input_sensor_start_rest_capture(void);
 
 bool input_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate);

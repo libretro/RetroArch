@@ -38,6 +38,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
+#include "../../input/input_driver.h"
 
 static const uint32_t opaque_vert[] =
 #include "../drivers/vulkan_shaders/opaque.vert.inc"
@@ -2549,6 +2550,32 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_float(buffer, SLANG_SEMANTIC_HDR10,
                       hdr10);
 #endif /* VULKAN_HDR_SWAPCHAIN */
+
+   /* Gyroscope and accelerometer — per-frame snapshot cached
+    * by input_driver_poll() on the main thread */
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      build_semantic_float(buffer, SLANG_SEMANTIC_GYROSCOPE_X,
+                        input_st->sensor_gyroscope_cache[0]);
+      build_semantic_float(buffer, SLANG_SEMANTIC_GYROSCOPE_Y,
+                        input_st->sensor_gyroscope_cache[1]);
+      build_semantic_float(buffer, SLANG_SEMANTIC_GYROSCOPE_Z,
+                        input_st->sensor_gyroscope_cache[2]);
+      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_X,
+                        input_st->sensor_accelerometer_cache[0]);
+      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_Y,
+                        input_st->sensor_accelerometer_cache[1]);
+      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_Z,
+                        input_st->sensor_accelerometer_cache[2]);
+
+      /* Accelerometer rest position */
+      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST_X,
+                        input_st->sensor_accelerometer_rest[0]);
+      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST_Y,
+                        input_st->sensor_accelerometer_rest[1]);
+      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST_Z,
+                        input_st->sensor_accelerometer_rest[2]);
+   }
 
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);

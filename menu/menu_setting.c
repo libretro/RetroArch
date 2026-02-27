@@ -7307,6 +7307,28 @@ static size_t setting_get_string_representation_uint_libretro_log_level(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_sensor_orientation(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO), len);
+         case 1:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_0), len);
+         case 2:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_90), len);
+         case 3:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_180), len);
+         case 4:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_270), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_quit_on_close_content(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -9145,22 +9167,35 @@ static void general_write_handler(rarch_setting_t *setting)
 #endif
          break;
       case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
-         /* When toggling sensor input off, ensure
-          * that all sensors are actually disabled */
          if (!*setting->value.target.boolean)
          {
+            /* Toggled OFF: disable all sensors at hardware level */
             unsigned i;
 
             for (i = 0; i < DEFAULT_MAX_PADS; i++)
             {
-               /* Event rate does not matter when disabling
-                * sensors - set to zero */
                input_set_sensor_state(i,
                      RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
                input_set_sensor_state(i,
                      RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
                input_set_sensor_state(i,
                      RETRO_SENSOR_ILLUMINANCE_DISABLE, 0);
+            }
+         }
+         else
+         {
+            /* Toggled ON: re-enable sensors at hardware level */
+            unsigned i;
+            unsigned event_rate = 60; /* Default rate */
+
+            for (i = 0; i < DEFAULT_MAX_PADS; i++)
+            {
+               input_set_sensor_state(i,
+                     RETRO_SENSOR_ACCELEROMETER_ENABLE, event_rate);
+               input_set_sensor_state(i,
+                     RETRO_SENSOR_GYROSCOPE_ENABLE, event_rate);
+               input_set_sensor_state(i,
+                     RETRO_SENSOR_ILLUMINANCE_ENABLE, event_rate);
             }
          }
          break;
@@ -14057,7 +14092,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
                (*list)[list_info->index - 1].get_string_representation =
                      &setting_get_string_representation_video_hdr_mode;
-               menu_settings_list_current_add_range(list, list_info, 0, video_driver_hdr_max_mode(), 1, true, true);
+               menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
                MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
                      list,
                      list_info,
@@ -16167,22 +16202,6 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.input_sensors_enable,
-                  MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
-                  DEFAULT_INPUT_SENSORS_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-
-            CONFIG_BOOL(
-                  list, list_info,
                   &settings->bools.input_auto_mouse_grab,
                   MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
                   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
@@ -16314,6 +16333,51 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_sensors_enable,
+                  MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+                  DEFAULT_INPUT_SENSORS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            {
+               /* Auto (0) uses gravity detection, only available on Android.
+                * Non-Android defaults to 1 (0° neutral). */
+#ifdef ANDROID
+               unsigned orientation_default = 0;
+#else
+               unsigned orientation_default = 1;
+#endif
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.input_sensor_orientation,
+                     MENU_ENUM_LABEL_INPUT_SENSOR_ORIENTATION,
+                     MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+                     orientation_default,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+            }
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+#ifdef ANDROID
+            menu_settings_list_current_add_range(list, list_info, 0, 4, 1.0, true, true);
+#else
+            menu_settings_list_current_add_range(list, list_info, 1, 4, 1.0, true, true);
+#endif
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_sensor_orientation;
+
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.input_sensor_accelerometer_sensitivity,
@@ -16375,6 +16439,14 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].offset_by = 0;
             menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
 
             CONFIG_ACTION(
                   list, list_info,
