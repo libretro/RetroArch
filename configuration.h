@@ -1363,6 +1363,16 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user);
 bool config_save_file(const char *path);
 
 /**
+ * config_save_credentials:
+ *
+ * Writes only sensitive settings (passwords, tokens, keys)
+ * to a separate credentials.cfg file.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+bool config_save_credentials(void);
+
+/**
  * config_save_overrides:
  * @path            : Path that shall be written to.
  *
