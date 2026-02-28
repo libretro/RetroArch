@@ -689,6 +689,10 @@ MSG_HASH(
    "config_save_on_exit"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CONFIG_SAVE_MINIMAL,
+   "config_save_minimal"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,
    "remap_save_on_exit"
    )
