@@ -330,6 +330,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_INPUT_TURBO_FIRE_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST;
+      case ACTION_OK_DL_INPUT_SENSOR_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_INPUT_SENSOR_SETTINGS_LIST;
       case ACTION_OK_DL_LATENCY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST;
       case ACTION_OK_DL_DRIVER_SETTINGS_LIST:
@@ -1781,6 +1783,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
+      case ACTION_OK_DL_INPUT_SENSOR_SETTINGS_LIST:
       case ACTION_OK_DL_LATENCY_SETTINGS_LIST:
       case ACTION_OK_DL_DRIVER_SETTINGS_LIST:
       case ACTION_OK_DL_CORE_SETTINGS_LIST:
@@ -6652,6 +6655,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_settings_list, ACTION_OK_DL_I
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_menu_settings_list, ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_turbo_fire_settings_list, ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_haptic_feedback_settings_list, ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_sensor_settings_list, ACTION_OK_DL_INPUT_SENSOR_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_latency_settings_list, ACTION_OK_DL_LATENCY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_recording_settings_list, ACTION_OK_DL_RECORDING_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_playlist_settings_list, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST)
@@ -9234,6 +9238,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,                 action_ok_push_input_menu_settings_list},
          {MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,           action_ok_push_input_turbo_fire_settings_list},
          {MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,      action_ok_push_input_haptic_feedback_settings_list},
+         {MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS,              action_ok_push_input_sensor_settings_list},
          {MENU_ENUM_LABEL_DRIVER_SETTINGS,                     action_ok_push_driver_settings_list},
          {MENU_ENUM_LABEL_VIDEO_SETTINGS,                      action_ok_push_video_settings_list},
          {MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,      action_ok_push_video_synchronization_settings_list},

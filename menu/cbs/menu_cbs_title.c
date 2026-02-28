@@ -632,6 +632,7 @@ DEFAULT_TITLE_MACRO(action_get_video_synchronization_settings_list, MENU_ENUM_LA
 DEFAULT_TITLE_MACRO(action_get_input_menu_settings_list,            MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_input_turbo_fire_settings_list,      MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_input_haptic_feedback_settings_list, MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_input_sensor_settings_list,          MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS)
 
 DEFAULT_TITLE_MACRO(action_get_crt_switchres_settings_list,     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_configuration_settings_list,     MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS)
@@ -1090,6 +1091,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST,             action_get_input_menu_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_TURBO_FIRE_SETTINGS_LIST,       action_get_input_turbo_fire_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST,  action_get_input_haptic_feedback_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_SENSOR_SETTINGS_LIST,          action_get_input_sensor_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_WINDOWED_MODE_SETTINGS_LIST,    action_get_video_windowed_mode_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST,  action_get_video_fullscreen_mode_settings_list},
       {MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,                            action_get_sideload_core_list},

@@ -170,7 +170,19 @@ static bool slang_process_reflection(
             "SubpixelLayout",
             "ExpandGamut",
             "InverseTonemap",
-            "HDR10"
+            "HDR10",
+            /* Sensor uniforms: populated by GL3, GLSL, and Vulkan
+             * backends only. D3D/Metal/GX2 backends will see zero
+             * values (no hardware sensor support on those platforms). */
+            "GyroscopeX",
+            "GyroscopeY",
+            "GyroscopeZ",
+            "AccelerometerX",
+            "AccelerometerY",
+            "AccelerometerZ",
+            "AccelerometerRestX",
+            "AccelerometerRestY",
+            "AccelerometerRestZ",
          };
          int size = sizeof(names) / sizeof(*names);
          if (semantic < size)
