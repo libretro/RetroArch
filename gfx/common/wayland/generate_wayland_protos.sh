@@ -82,6 +82,7 @@ generate_source 'unstable/tablet' 'tablet-unstable-v2'
 generate_source 'staging/content-type' 'content-type-v1'
 generate_source 'staging/single-pixel-buffer' 'single-pixel-buffer-v1'
 generate_source 'staging/xdg-toplevel-icon' 'xdg-toplevel-icon-v1'
+generate_source 'staging/xdg-toplevel-tag' 'xdg-toplevel-tag-v1'
 
 if [ -n "${CROSS_COMPILE:-}" ] && echo "${CROSS_COMPILE:-}" | grep -q "webos"; then
    if [ -z "${SDK_PATH:-}" ]; then
