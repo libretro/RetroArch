@@ -929,7 +929,7 @@ bool run_translation_service(settings_t *settings, bool paused)
          width, height,
          (int)-pitch,
          width, height,
-         (int)pitch);
+         width * 3);
    }
    scaler_ctx_gen_reset(scaler);
 
