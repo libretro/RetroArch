@@ -876,6 +876,8 @@ private:
          slang_semantic semantic, int32_t value);
    void build_semantic_float(uint8_t *data,
          slang_semantic semantic, float value);
+   void build_semantic_vec3(uint8_t *data,
+         slang_semantic semantic, const float *values);
    void build_semantic_parameter(uint8_t *data, unsigned index, float value);
    void build_semantic_texture_vec4(uint8_t *data,
          slang_texture_semantic semantic,
@@ -1111,15 +1113,9 @@ bool Pass::init_pipeline()
    reflect_parameter("OriginalAspectRotated", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
    reflect_parameter("TotalSubFrames", reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
    reflect_parameter("CurrentSubFrame", reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
-   reflect_parameter("GyroscopeX", reflection.semantics[SLANG_SEMANTIC_GYROSCOPE_X]);
-   reflect_parameter("GyroscopeY", reflection.semantics[SLANG_SEMANTIC_GYROSCOPE_Y]);
-   reflect_parameter("GyroscopeZ", reflection.semantics[SLANG_SEMANTIC_GYROSCOPE_Z]);
-   reflect_parameter("AccelerometerX", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_X]);
-   reflect_parameter("AccelerometerY", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_Y]);
-   reflect_parameter("AccelerometerZ", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_Z]);
-   reflect_parameter("AccelerometerRestX", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST_X]);
-   reflect_parameter("AccelerometerRestY", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST_Y]);
-   reflect_parameter("AccelerometerRestZ", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST_Z]);
+   reflect_parameter("Gyroscope", reflection.semantics[SLANG_SEMANTIC_GYROSCOPE]);
+   reflect_parameter("Accelerometer", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER]);
+   reflect_parameter("AccelerometerRest", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST]);
 
    reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL][0]);
    reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE][0]);
@@ -1389,6 +1385,38 @@ void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
    }
 }
 
+void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
+                              const float *values)
+{
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
+   {
+      if (refl.location.ubo_vertex >= 0 || refl.location.ubo_fragment >= 0)
+      {
+         if (refl.location.ubo_vertex >= 0)
+            glUniform3fv(refl.location.ubo_vertex, 1, values);
+         if (refl.location.ubo_fragment >= 0)
+            glUniform3fv(refl.location.ubo_fragment, 1, values);
+      }
+      else
+         memcpy(data + refl.ubo_offset, values, 3 * sizeof(float));
+   }
+
+   if (refl.push_constant)
+   {
+      if (refl.location.push_vertex >= 0 || refl.location.push_fragment >= 0)
+      {
+         if (refl.location.push_vertex >= 0)
+            glUniform3fv(refl.location.push_vertex, 1, values);
+         if (refl.location.push_fragment >= 0)
+            glUniform3fv(refl.location.push_fragment, 1, values);
+      }
+      else
+         memcpy(push_constant_buffer.data() + refl.push_constant_offset, values, 3 * sizeof(float));
+   }
+}
+
 void Pass::build_semantic_texture(uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -1602,30 +1630,16 @@ void Pass::build_semantics(uint8_t *buffer,
    build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
                       current_subframe);
 
-   /* Gyroscope and accelerometer — per-frame snapshot cached
+   /* Sensor uniforms — per-frame snapshot cached
     * by input_driver_poll() on the main thread */
    {
       input_driver_state_t *input_st = input_state_get_ptr();
-      build_semantic_float(buffer, SLANG_SEMANTIC_GYROSCOPE_X,
-                        input_st->sensor_gyroscope_cache[0]);
-      build_semantic_float(buffer, SLANG_SEMANTIC_GYROSCOPE_Y,
-                        input_st->sensor_gyroscope_cache[1]);
-      build_semantic_float(buffer, SLANG_SEMANTIC_GYROSCOPE_Z,
-                        input_st->sensor_gyroscope_cache[2]);
-      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_X,
-                        input_st->sensor_accelerometer_cache[0]);
-      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_Y,
-                        input_st->sensor_accelerometer_cache[1]);
-      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_Z,
-                        input_st->sensor_accelerometer_cache[2]);
-
-      /* Accelerometer rest position */
-      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST_X,
-                        input_st->sensor_accelerometer_rest[0]);
-      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST_Y,
-                        input_st->sensor_accelerometer_rest[1]);
-      build_semantic_float(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST_Z,
-                        input_st->sensor_accelerometer_rest[2]);
+      build_semantic_vec3(buffer, SLANG_SEMANTIC_GYROSCOPE,
+                        input_st->sensor_gyroscope_cache);
+      build_semantic_vec3(buffer, SLANG_SEMANTIC_ACCELEROMETER,
+                        input_st->sensor_accelerometer_cache);
+      build_semantic_vec3(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
+                        input_st->sensor_accelerometer_rest);
    }
 
    /* Standard inputs */

@@ -65,15 +65,9 @@ static const char *semantic_uniform_names[] = {
    "ExpandGamut",
    "InverseTonemap",
    "HDR10",
-   "GyroscopeX",
-   "GyroscopeY",
-   "GyroscopeZ",
-   "AccelerometerX",
-   "AccelerometerY",
-   "AccelerometerZ",
-   "AccelerometerRestX",
-   "AccelerometerRestY",
-   "AccelerometerRestZ"
+   "Gyroscope",
+   "Accelerometer",
+   "AccelerometerRest"
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic(
@@ -309,26 +303,12 @@ static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_
          return type.basetype == spirv_cross::SPIRType::Float
             &&  type.vecsize  == 1
             &&  type.columns  == 1;
-         /* float - gyroscope axes */
-      case SLANG_SEMANTIC_GYROSCOPE_X:
-      case SLANG_SEMANTIC_GYROSCOPE_Y:
-      case SLANG_SEMANTIC_GYROSCOPE_Z:
+         /* vec3 - sensor uniforms */
+      case SLANG_SEMANTIC_GYROSCOPE:
+      case SLANG_SEMANTIC_ACCELEROMETER:
+      case SLANG_SEMANTIC_ACCELEROMETER_REST:
          return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
-         /* float - accelerometer axes */
-      case SLANG_SEMANTIC_ACCELEROMETER_X:
-      case SLANG_SEMANTIC_ACCELEROMETER_Y:
-      case SLANG_SEMANTIC_ACCELEROMETER_Z:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
-         /* float - accelerometer rest position axes */
-      case SLANG_SEMANTIC_ACCELEROMETER_REST_X:
-      case SLANG_SEMANTIC_ACCELEROMETER_REST_Y:
-      case SLANG_SEMANTIC_ACCELEROMETER_REST_Z:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
+            &&  type.vecsize  == 3
             &&  type.columns  == 1;
          /* float */
       case SLANG_SEMANTIC_FLOAT_PARAMETER:

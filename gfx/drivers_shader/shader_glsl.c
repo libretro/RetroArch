@@ -112,15 +112,9 @@ struct shader_uniforms
    float core_aspect;
    float core_aspect_rot;
 
-   int gyroscope_x;
-   int gyroscope_y;
-   int gyroscope_z;
-   int accelerometer_x;
-   int accelerometer_y;
-   int accelerometer_z;
-   int accelerometer_rest_x;
-   int accelerometer_rest_y;
-   int accelerometer_rest_z;
+   int gyroscope;
+   int accelerometer;
+   int accelerometer_rest;
 
    int lut_texture[GFX_MAX_TEXTURES];
    unsigned frame_count_mod;
@@ -496,7 +490,7 @@ static bool gl_glsl_compile_program(
       if (!gl_glsl_compile_shader(
                glsl,
                program->vprg,
-               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n",
+               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n",
                program_info->vertex))
       {
          RARCH_ERR("[GLSL] Failed to compile vertex shader #%u.\n", idx);
@@ -511,7 +505,7 @@ static bool gl_glsl_compile_program(
       RARCH_LOG("[GLSL] Found GLSL fragment shader.\n");
       program->fprg = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, program->fprg,
-               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n",
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n",
                program_info->fragment))
       {
          RARCH_ERR("[GLSL] Failed to compile fragment shader #%u.\n", idx);
@@ -767,15 +761,9 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->core_aspect      = gl_glsl_get_uniform(glsl, prog, "OriginalAspect");
    uni->core_aspect_rot  = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRotated");
 
-   uni->gyroscope_x      = gl_glsl_get_uniform(glsl, prog, "GyroscopeX");
-   uni->gyroscope_y      = gl_glsl_get_uniform(glsl, prog, "GyroscopeY");
-   uni->gyroscope_z      = gl_glsl_get_uniform(glsl, prog, "GyroscopeZ");
-   uni->accelerometer_x  = gl_glsl_get_uniform(glsl, prog, "AccelerometerX");
-   uni->accelerometer_y  = gl_glsl_get_uniform(glsl, prog, "AccelerometerY");
-   uni->accelerometer_z  = gl_glsl_get_uniform(glsl, prog, "AccelerometerZ");
-   uni->accelerometer_rest_x = gl_glsl_get_uniform(glsl, prog, "AccelerometerRestX");
-   uni->accelerometer_rest_y = gl_glsl_get_uniform(glsl, prog, "AccelerometerRestY");
-   uni->accelerometer_rest_z = gl_glsl_get_uniform(glsl, prog, "AccelerometerRestZ");
+   uni->gyroscope             = gl_glsl_get_uniform(glsl, prog, "Gyroscope");
+   uni->accelerometer         = gl_glsl_get_uniform(glsl, prog, "Accelerometer");
+   uni->accelerometer_rest    = gl_glsl_get_uniform(glsl, prog, "AccelerometerRest");
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
@@ -1599,43 +1587,22 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       glUniform1f(location, glsl->shader->parameters[i].current);
    }
 
-   /* Gyroscope and accelerometer. */
-   /* Values are 0.0 if sensors disabled or not available */
+   /* Sensor uniforms — values are 0.0 if sensors disabled or not available */
    {
       const struct shader_uniforms *uni = &glsl->uniforms[glsl->active_idx];
       /* Per-frame snapshot cached by input_driver_poll()
        * on the main thread */
       input_driver_state_t *input_st   = input_state_get_ptr();
 
-      if (uni->gyroscope_x >= 0)
-         glUniform1f(uni->gyroscope_x,
-               input_st->sensor_gyroscope_cache[0]);
-      if (uni->gyroscope_y >= 0)
-         glUniform1f(uni->gyroscope_y,
-               input_st->sensor_gyroscope_cache[1]);
-      if (uni->gyroscope_z >= 0)
-         glUniform1f(uni->gyroscope_z,
-               input_st->sensor_gyroscope_cache[2]);
-      if (uni->accelerometer_x >= 0)
-         glUniform1f(uni->accelerometer_x,
-               input_st->sensor_accelerometer_cache[0]);
-      if (uni->accelerometer_y >= 0)
-         glUniform1f(uni->accelerometer_y,
-               input_st->sensor_accelerometer_cache[1]);
-      if (uni->accelerometer_z >= 0)
-         glUniform1f(uni->accelerometer_z,
-               input_st->sensor_accelerometer_cache[2]);
-
-      /* Accelerometer rest position */
-      if (uni->accelerometer_rest_x >= 0)
-         glUniform1f(uni->accelerometer_rest_x,
-               input_st->sensor_accelerometer_rest[0]);
-      if (uni->accelerometer_rest_y >= 0)
-         glUniform1f(uni->accelerometer_rest_y,
-               input_st->sensor_accelerometer_rest[1]);
-      if (uni->accelerometer_rest_z >= 0)
-         glUniform1f(uni->accelerometer_rest_z,
-               input_st->sensor_accelerometer_rest[2]);
+      if (uni->gyroscope >= 0)
+         glUniform3fv(uni->gyroscope, 1,
+               input_st->sensor_gyroscope_cache);
+      if (uni->accelerometer >= 0)
+         glUniform3fv(uni->accelerometer, 1,
+               input_st->sensor_accelerometer_cache);
+      if (uni->accelerometer_rest >= 0)
+         glUniform3fv(uni->accelerometer_rest, 1,
+               input_st->sensor_accelerometer_rest);
    }
 }
 
