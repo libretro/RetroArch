@@ -2408,7 +2408,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Establece el modo de salida HDR, si tu pantalla es compatible."
+   "Establece el modo de salida HDR, si tu pantalla es compatible. Nota: el modo scRGB podría aclarar las máscaras de shaders CRT porque el compositor del SO convierte la imagen a HDR10 una vez se ha aplicado la máscara."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,

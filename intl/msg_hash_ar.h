@@ -248,7 +248,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "تنزيل محاكي"
+   "تنزيل نواة"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
@@ -479,7 +479,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   "اسم المحاكي"
+   "اسم النواة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
@@ -487,7 +487,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   "النسخة المحاكي"
+   "نسخة النواة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
@@ -2858,12 +2858,12 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
-   "تثبيت محاكي"
+   "تثبيت النواة"
 )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
-   "إلغاء تثبيت محاكي"
+   "إلغاء تثبيت النواة"
 )
 
 MSG_HASH(

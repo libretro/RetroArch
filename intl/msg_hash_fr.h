@@ -2392,7 +2392,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Régler le mode de sortie HDR si l'affichage le supporte."
+   "Régler le mode de sortie HDR si l'écran le prend en charge. Remarque : scRVB peut adoucir les masques de shader CRT stricts car le compositeur de l'OS convertit en HDR10 après que le masque soit appliqué."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
