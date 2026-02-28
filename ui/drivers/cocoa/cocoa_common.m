@@ -59,6 +59,10 @@
 #include "steam/steam.h"
 #endif
 
+#ifdef HAVE_MCP
+#include "network/mcp/mcp_server.h"
+#endif
+
 #if IOS
 #import <UIKit/UIAccessibility.h>
 extern bool RAIsVoiceOverRunning(void)
@@ -117,6 +121,10 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
 #ifdef HAVE_MIST
    steam_poll();
+#endif
+
+#ifdef HAVE_MCP
+   mcp_server_poll();
 #endif
 
    runloop_flags = runloop_get_flags();

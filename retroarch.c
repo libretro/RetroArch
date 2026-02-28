@@ -173,6 +173,9 @@
 #ifdef HAVE_CLOUDSYNC
 #include "network/cloud_sync_driver.h"
 #endif
+#ifdef HAVE_MCP
+#include "network/mcp/mcp_server.h"
+#endif
 #endif
 
 #ifdef HAVE_THREADS
@@ -5941,6 +5944,11 @@ void main_exit(void *args)
    if (menu_st)
       menu_st->flags &= ~MENU_ST_FLAG_DATA_OWN;
 #endif
+
+#ifdef HAVE_MCP
+   mcp_server_deinit();
+#endif
+
    retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
    if (runloop_st->perfcnt_enable)
@@ -6200,6 +6208,10 @@ int rarch_main(int argc, char *argv[], void *data)
 
 #ifdef HAVE_MIST
    steam_poll();
+#endif
+
+#ifdef HAVE_MCP
+      mcp_server_poll();
 #endif
 
 #ifdef HAVE_QT

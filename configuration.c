@@ -1602,6 +1602,10 @@ static struct config_array_setting *populate_settings_array(
 
 #ifdef HAVE_NETWORKING
    SETTING_ARRAY("netplay_mitm_server",          settings->arrays.netplay_mitm_server, false, NULL, true);
+#ifdef HAVE_MCP
+   SETTING_ARRAY("mcp_server_address",           settings->arrays.mcp_server_address, true, DEFAULT_MCP_SERVER_ADDRESS, false);
+   SETTING_ARRAY("mcp_server_password",          settings->arrays.mcp_server_password, false, NULL, true);
+#endif
    SETTING_ARRAY("webdav_url",                   settings->arrays.webdav_url, false, NULL, true);
    SETTING_ARRAY("webdav_username",              settings->arrays.webdav_username, false, NULL, true);
    SETTING_ARRAY("webdav_password",              settings->arrays.webdav_password, false, NULL, true);
@@ -2225,6 +2229,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("stdin_cmd_enable",              &settings->bools.stdin_cmd_enable, true, DEFAULT_STDIN_CMD_ENABLE, false);
 #endif
 
+#ifdef HAVE_MCP
+   SETTING_BOOL("mcp_server_enable",             &settings->bools.mcp_server_enable, true, DEFAULT_MCP_SERVER_ENABLE, false);
+#endif
+
 #ifdef HAVE_NETWORKING
    SETTING_BOOL("netplay_show_only_connectable", &settings->bools.netplay_show_only_connectable, true, DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE, false);
    SETTING_BOOL("netplay_show_only_installed_cores", &settings->bools.netplay_show_only_installed_cores, true, DEFAULT_NETPLAY_SHOW_ONLY_INSTALLED_CORES, false);
@@ -2623,6 +2631,9 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",              &settings->uints.network_cmd_port,    true, DEFAULT_NETWORK_CMD_PORT, false);
+#endif
+#ifdef HAVE_MCP
+   SETTING_UINT("mcp_server_port",               &settings->uints.mcp_server_port,     true, DEFAULT_MCP_SERVER_PORT, false);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_UINT("network_remote_base_port",      &settings->uints.network_remote_base_port, true, DEFAULT_NETWORK_REMOTE_BASE_PORT, false);

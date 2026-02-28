@@ -2507,6 +2507,22 @@ MSG_HASH(
    "network_cmd_port"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MCP_SERVER_ENABLE,
+   "mcp_server_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MCP_SERVER_ADDRESS,
+   "mcp_server_address"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MCP_SERVER_PORT,
+   "mcp_server_port"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MCP_SERVER_PASSWORD,
+   "mcp_server_password"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETWORK_INFORMATION,
    "network_information"
    )

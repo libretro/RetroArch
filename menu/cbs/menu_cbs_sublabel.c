@@ -944,6 +944,12 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_require_slaves,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_check_frames,          MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_nat_traversal,         MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_stdin_cmd_enable,              MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE)
+#ifdef HAVE_MCP
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_mcp_server_enable,             MENU_ENUM_SUBLABEL_MCP_SERVER_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_mcp_server_address,            MENU_ENUM_SUBLABEL_MCP_SERVER_ADDRESS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_mcp_server_port,               MENU_ENUM_SUBLABEL_MCP_SERVER_PORT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_mcp_server_password,           MENU_ENUM_SUBLABEL_MCP_SERVER_PASSWORD)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_mouse_enable,                  MENU_ENUM_SUBLABEL_MOUSE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pointer_enable,                MENU_ENUM_SUBLABEL_POINTER_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_icon_thumbnails,               MENU_ENUM_SUBLABEL_ICON_THUMBNAILS)
@@ -3769,6 +3775,20 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_stdin_cmd_enable);
             break;
+#ifdef HAVE_MCP
+         case MENU_ENUM_LABEL_MCP_SERVER_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mcp_server_enable);
+            break;
+         case MENU_ENUM_LABEL_MCP_SERVER_ADDRESS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mcp_server_address);
+            break;
+         case MENU_ENUM_LABEL_MCP_SERVER_PORT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mcp_server_port);
+            break;
+         case MENU_ENUM_LABEL_MCP_SERVER_PASSWORD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mcp_server_password);
+            break;
+#endif
          case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_public_announce);
             break;

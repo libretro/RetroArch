@@ -9474,6 +9474,29 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)
                count++;
+
+#ifdef HAVE_MCP
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MCP_SERVER_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+               count++;
+
+            if (settings->bools.mcp_server_enable)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_MCP_SERVER_ADDRESS,
+                     PARSE_ONLY_STRING, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_MCP_SERVER_PORT,
+                     PARSE_ONLY_UINT, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_MCP_SERVER_PASSWORD,
+                     PARSE_ONLY_STRING, false) == 0)
+                  count++;
+            }
+#endif
          }
          break;
       case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
