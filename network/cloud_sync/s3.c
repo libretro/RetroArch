@@ -29,11 +29,21 @@
 
 #define S3_PFX "[S3] "
 
-/* S3-specific constants */
-#define S3_MAX_PART_SIZE (5 * 1024 * 1024) /* 5MB per part for multipart upload */
+/* S3 multipart constants (AWS): 5 MiB min part size, 5 GiB max part size.
+ * The nominal multipart threshold below is a local policy trigger, not an S3 limit. */
+#define S3_MULTIPART_MIN_PART_SIZE_BYTES (5ULL * 1024ULL * 1024ULL)
+#define S3_MULTIPART_MAX_PART_SIZE_BYTES (5ULL * 1024ULL * 1024ULL * 1024ULL)
 #define S3_MAX_PARTS 10000
 #define S3_SIGNATURE_VERSION "AWS4-HMAC-SHA256"
 #define S3_SERVICE "s3"
+
+#if defined(_3DS) || defined(VITA) || defined(PSP) || defined(PS2) || defined(WIIU) || defined(GEKKO)
+#define S3_MULTIPART_NOMINAL_THRESHOLD_BYTES (16ULL * 1024ULL * 1024ULL)
+#elif defined(HAVE_LIBNX)
+#define S3_MULTIPART_NOMINAL_THRESHOLD_BYTES (32ULL * 1024ULL * 1024ULL)
+#else
+#define S3_MULTIPART_NOMINAL_THRESHOLD_BYTES (64ULL * 1024ULL * 1024ULL)
+#endif
 
 typedef struct
 {
@@ -62,8 +72,18 @@ s3_state_t *s3_state_get_ptr(void)
    return &s3_driver_st;
 }
 
+static size_t s3_get_multipart_nominal_threshold_bytes(void)
+{
+   if (S3_MULTIPART_NOMINAL_THRESHOLD_BYTES < S3_MULTIPART_MIN_PART_SIZE_BYTES)
+      return (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES;
+   if (S3_MULTIPART_NOMINAL_THRESHOLD_BYTES > S3_MULTIPART_MAX_PART_SIZE_BYTES)
+      return (size_t)S3_MULTIPART_MAX_PART_SIZE_BYTES;
+   return (size_t)S3_MULTIPART_NOMINAL_THRESHOLD_BYTES;
+}
+
 /* Parse S3 URL to extract bucket, region, and host */
-static bool s3_parse_url(const char *url, char *bucket, char *region, char *host)
+static bool s3_parse_url(const char *url, char *bucket,  char *region,
+                         char *host, char *service)
 {
    char *bucket_start = NULL;
    char *region_start = NULL;
@@ -74,7 +94,7 @@ static bool s3_parse_url(const char *url, char *bucket, char *region, char *host
    if (!url || !bucket || !region || !host)
       return false;
 
-   RARCH_LOG(S3_PFX "Parsing S3 URL: %s\n", url);
+   RARCH_DBG(S3_PFX "Parsing S3 URL: %s\n", url);
 
    /* Initialize output buffers */
    bucket[0] = '\0';
@@ -96,24 +116,26 @@ static bool s3_parse_url(const char *url, char *bucket, char *region, char *host
    if (bucket_start)
    {
       bucket_start += 3; /* Skip "://" */
-      RARCH_LOG(S3_PFX "Found protocol separator, bucket_start: %s\n", bucket_start);
+      RARCH_DBG(S3_PFX "Found protocol separator, bucket_start: %s\n", bucket_start);
 
       dot_pos = strchr(bucket_start, '.');
       if (dot_pos)
       {
          size_t bucket_len = dot_pos - bucket_start;
-         RARCH_LOG(S3_PFX "Found first dot at position %zu, bucket length: %zu\n",
+         RARCH_DBG(S3_PFX "Found first dot at position %zu, bucket length: %zu\n",
                    (size_t)(dot_pos - bucket_start), bucket_len);
 
          if (bucket_len > 0 && bucket_len < NAME_MAX_LENGTH)
          {
+            char *host_start = NULL;
+            char *host_end = NULL;
             strlcpy(bucket, bucket_start, bucket_len + 1);
             bucket_found = true;
             RARCH_LOG(S3_PFX "Extracted bucket: %s\n", bucket);
 
             /* Extract host from URL */
-            char *host_start = bucket_start;
-            char *host_end = strchr(host_start, '/');
+            host_start = bucket_start;
+            host_end = strchr(host_start, '/');
             if (host_end)
             {
                size_t host_len = host_end - host_start;
@@ -297,16 +319,22 @@ static char* s3_sha256_hash(const char *data, size_t len)
 /* URL encode a string according to RFC 3986 */
 static char* s3_url_encode(const char *input)
 {
+   size_t input_len = strlen(input);
+   size_t output_pos = 0;
+
+   /* Worst case: every char needs encoding */
+   char *output = malloc(input_len * 3 + 1); 
+   
+   size_t i;
+   
+   if (!output)
+      return NULL;
+   
    if (!input)
       return NULL;
 
-   size_t input_len = strlen(input);
-   char *output = malloc(input_len * 3 + 1); /* Worst case: every char needs encoding */
-   if (!output)
-      return NULL;
 
-   size_t output_pos = 0;
-   for (size_t i = 0; i < input_len; i++)
+   for (i = 0; i < input_len; i++)
    {
       unsigned char c = (unsigned char)input[i];
 
@@ -314,8 +342,8 @@ static char* s3_url_encode(const char *input)
       /* Path delimiters that should not be encoded: / */
       /* Query parameter delimiters that should not be encoded: &, =, ? */
       if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
-          (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || c == '~' ||
-          c == '/' || c == '&' || c == '=' || c == '?')
+          (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || 
+          c == '~' || c == '/' || c == '&' || c == '=' || c == '?')
       {
          output[output_pos++] = c;
       }
@@ -334,12 +362,14 @@ static char* s3_url_encode(const char *input)
 /* Trim whitespace from string */
 static char* s3_trim_string(const char *input)
 {
-   if (!input)
-      return NULL;
-
    size_t len = strlen(input);
    size_t start = 0;
    size_t end = len;
+   size_t trimmed_len = 0;
+   char *trimmed = NULL;
+
+   if (!input)
+      return NULL;
 
    /* Find start of non-whitespace */
    while (start < len && (input[start] == ' ' || input[start] == '\t'))
@@ -350,8 +380,8 @@ static char* s3_trim_string(const char *input)
       end--;
 
    /* Create trimmed string */
-   size_t trimmed_len = end - start;
-   char *trimmed = malloc(trimmed_len + 1);
+   trimmed_len = end - start;
+   trimmed = malloc(trimmed_len + 1);
    if (!trimmed)
       return NULL;
 
@@ -367,8 +397,9 @@ static char* s3_canonicalize_query_string(const char *query_string)
    if (!query_string || !*query_string)
       return strdup("");
 
-   /* For now, return the query string as-is since most S3 operations don't use query parameters */
-   /* A full implementation would:
+   /* For now, return the query string as-is since most S3 operations don't use
+    * query parameters
+    * A full implementation would:
     * 1. Split parameters by '&'
     * 2. URL encode each parameter name and value
     * 3. Sort parameters alphabetically by name
@@ -380,25 +411,30 @@ static char* s3_canonicalize_query_string(const char *query_string)
 /* Calculate HMAC-SHA256 and return binary result */
 static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const char *data, uint8_t *output)
 {
+   unsigned i       = 0;
+   char *inner_data = NULL;
+   size_t data_len  = strlen(data);
+
    char inner_pad[64];
    char outer_pad[64];
    uint8_t key_hash[32];
-   char *inner_data = NULL;
-   size_t data_len = strlen(data);
+
+   char inner_hash_hex[65];
+   uint8_t inner_hash_bin[32];
+   char final_hash_hex[65];
 
    /* Debug: Show input parameters */
-   RARCH_LOG(S3_PFX "HMAC input: key_len=%zu, data='%s'\n", key_len, data);
+   RARCH_DBG(S3_PFX "HMAC input: key_len=%zu, data='%s'\n", key_len, data);
 
    /* Hash the key if it's longer than 64 bytes */
    if (key_len > 64)
    {
-      RARCH_LOG(S3_PFX "HMAC: Key too long (%zu), hashing first\n", key_len);
-      /* Use a temporary buffer for the hash */
-      char temp_hash[65];
+      char temp_hash[65];/* Use a temporary buffer for the hash */
+      RARCH_DBG(S3_PFX "HMAC: Key too long (%zu), hashing first\n", key_len);
       sha256_hash(temp_hash, (const uint8_t*)key, key_len);
 
       /* Convert hex to binary */
-      for (int i = 0; i < 32; i++)
+      for (i = 0; i < 32; i++)
       {
          char hex_byte[3] = {temp_hash[i*2], temp_hash[i*2+1], 0};
          key_hash[i] = (uint8_t)strtol(hex_byte, NULL, 16);
@@ -407,9 +443,7 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
       key_len = 32;
    }
    else
-   {
-      RARCH_LOG(S3_PFX "HMAC: Key length OK (%zu), using directly\n", key_len);
-   }
+      RARCH_DBG(S3_PFX "HMAC: Key length OK (%zu), using directly\n", key_len);
 
    /* Pad the key to 64 bytes */
    memset(outer_pad, 0, 64);
@@ -427,7 +461,7 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
    }
 
    /* XOR with constants */
-   for (int i = 0; i < 64; i++)
+   for (i = 0; i < 64; i++)
    {
       outer_pad[i] ^= 0x5c;
       inner_pad[i] ^= 0x36;
@@ -442,18 +476,16 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
    memcpy(inner_data + 64, data, data_len);
 
    /* Hash and convert to binary */
-   char inner_hash_hex[65];
    sha256_hash(inner_hash_hex, (const uint8_t*)inner_data, 64 + data_len);
 
-   uint8_t inner_hash_bin[32];
-   for (int i = 0; i < 32; i++)
+   for (i = 0; i < 32; i++)
    {
       char hex_byte[3] = {inner_hash_hex[i*2], inner_hash_hex[i*2+1], 0};
       inner_hash_bin[i] = (uint8_t)strtol(hex_byte, NULL, 16);
    }
 
    /* Outer hash: H(K XOR 0x5c, inner_hash_bin) */
-   /* We need to ensure we have enough space for outer hash (64 + 32 = 96 bytes) */
+   /* Ensure we have enough space for outer hash (64 + 32 = 96 bytes) */
    if (64 + data_len < 96)
    {
       /* Reallocate if needed */
@@ -469,11 +501,10 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
    memcpy(inner_data, outer_pad, 64);
    memcpy(inner_data + 64, inner_hash_bin, 32);
 
-   char final_hash_hex[65];
    sha256_hash(final_hash_hex, (const uint8_t*)inner_data, 64 + 32);
 
    /* Convert final result to binary */
-   for (int i = 0; i < 32; i++)
+   for (i = 0; i < 32; i++)
    {
       char hex_byte[3] = {final_hash_hex[i*2], final_hash_hex[i*2+1], 0};
       output[i] = (uint8_t)strtol(hex_byte, NULL, 16);
@@ -488,6 +519,7 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
 /* Calculate HMAC-SHA256 (legacy function for compatibility) */
 static char* s3_hmac_sha256(const char *key, const char *data, char *output)
 {
+   unsigned i;
    char *hmac_hex = malloc(65);
    if (!hmac_hex)
       return NULL;
@@ -506,7 +538,7 @@ static char* s3_hmac_sha256(const char *key, const char *data, char *output)
       /* Hash the key if it's longer than 64 bytes */
       char temp_hash[65];
       sha256_hash(temp_hash, (const uint8_t*)key, key_len);
-      for (int i = 0; i < 32; i++)
+      for (i = 0; i < 32; i++)
       {
          char hex_byte[3] = {temp_hash[i*2], temp_hash[i*2+1], 0};
          binary_key[i] = (uint8_t)strtol(hex_byte, NULL, 16);
@@ -522,7 +554,7 @@ static char* s3_hmac_sha256(const char *key, const char *data, char *output)
    }
 
    /* Convert binary result to hex */
-   for (int i = 0; i < 32; i++)
+   for (i = 0; i < 32; i++)
       snprintf(hmac_hex + 2 * i, 3, "%02x", (unsigned)result[i]);
 
    hmac_hex[64] = '\0';
@@ -534,6 +566,7 @@ static char* s3_calculate_aws4_signature(const char *secret_key, const char *dat
                                         const char *region, const char *service,
                                         const char *string_to_sign)
 {
+   unsigned i;
    char *signature = malloc(65);
    if (!signature)
       return NULL;
@@ -545,87 +578,94 @@ static char* s3_calculate_aws4_signature(const char *secret_key, const char *dat
    uint8_t k_signing[32];
    uint8_t final_signature[32];
 
+   char k_date_hex[65];
+   char k_region_hex[65];
+   char *k_region_hex_result = NULL;
+   char k_service_hex[65];
+   char k_signing_sample[9];
+   char k_signing_full[65];
+
    /* Build AWS4 key string */
    snprintf(aws4_key, sizeof(aws4_key), "AWS4%s", secret_key);
 
-   RARCH_LOG(S3_PFX "AWS4 key: %s\n", aws4_key);
-   RARCH_LOG(S3_PFX "Date: %s, Region: %s, Service: %s\n", date, region, service);
+   RARCH_DBG(S3_PFX "AWS4 key: %s\n", aws4_key);
+   RARCH_DBG(S3_PFX "Date: %s, Region: %s, Service: %s\n", date, region, service);
 
    /* Derive keys step by step using binary HMAC throughout */
    /* Step 1: DateKey = HMAC-SHA256("AWS4" + SecretAccessKey, Date) */
    /* Note: aws4_key is a string, but HMAC treats it as byte data */
-   RARCH_LOG(S3_PFX "Step 1: HMAC-SHA256(key_len=%zu, data='%s')\n", strlen(aws4_key), date);
+   RARCH_DBG(S3_PFX "Step 1: HMAC-SHA256(key_len=%zu, data='%s')\n", strlen(aws4_key), date);
    if (!s3_hmac_sha256_bin((uint8_t*)aws4_key, strlen(aws4_key), date, k_date))
       goto error;
 
    /* Debug: Show k_date */
-   char k_date_hex[65];
-   for (int i = 0; i < 32; i++)
+   for (i = 0; i < 32; i++)
       snprintf(k_date_hex + 2 * i, 3, "%02x", (unsigned)k_date[i]);
    k_date_hex[64] = '\0';
-   RARCH_LOG(S3_PFX "k_date: %s\n", k_date_hex);
+   RARCH_DBG(S3_PFX "k_date: %s\n", k_date_hex);
 
    /* Step 2: DateRegionKey = HMAC-SHA256(DateKey, Region) */
-   RARCH_LOG(S3_PFX "Step 2: HMAC-SHA256(binary_key, data='%s')\n", region);
+   RARCH_DBG(S3_PFX "Step 2: HMAC-SHA256(binary_key, data='%s')\n", region);
    if (!s3_hmac_sha256_bin(k_date, 32, region, k_region))
       goto error;
 
    /* Debug: Show k_region */
-   char k_region_hex[65];
-   for (int i = 0; i < 32; i++)
+   for (i = 0; i < 32; i++)
       snprintf(k_region_hex + 2 * i, 3, "%02x", (unsigned)k_region[i]);
    k_region_hex[64] = '\0';
-   RARCH_LOG(S3_PFX "k_region: %s\n", k_region_hex);
+   RARCH_DBG(S3_PFX "k_region: %s\n", k_region_hex);
 
 
 
    /* Step 2: DateRegionKey = HMAC-SHA256(DateKey, Region) */
-   RARCH_LOG(S3_PFX "Step 2: HMAC-SHA256(binary_key, data='%s')\n", region);
-   char *k_region_hex_result = s3_hmac_sha256(k_date_hex, region, NULL);
-   RARCH_LOG(S3_PFX "k_region: %s\n", k_region_hex_result);
+   RARCH_DBG(S3_PFX "Step 2: HMAC-SHA256(binary_key, data='%s')\n", region);
+   k_region_hex_result = s3_hmac_sha256(k_date_hex, region, NULL);
+   RARCH_DBG(S3_PFX "k_region: %s\n", k_region_hex_result);
    free(k_region_hex_result);
 
 
 
 
    /* Step 3: DateRegionServiceKey = HMAC-SHA256(DateRegionKey, Service) */
-   RARCH_LOG(S3_PFX "Step 3: HMAC-SHA256(binary_key, data='%s')\n", service);
+   RARCH_DBG(S3_PFX "Step 3: HMAC-SHA256(binary_key, data='%s')\n", service);
    if (!s3_hmac_sha256_bin(k_region, 32, service, k_service))
       goto error;
 
    /* Debug: Show k_service */
-   char k_service_hex[65];
-   for (int i = 0; i < 32; i++)
+   for (i = 0; i < 32; i++)
       snprintf(k_service_hex + 2 * i, 3, "%02x", (unsigned)k_service[i]);
    k_service_hex[64] = '\0';
-   RARCH_LOG(S3_PFX "k_service: %s\n", k_service_hex);
+   RARCH_DBG(S3_PFX "k_service: %s\n", k_service_hex);
 
    /* Step 4: SigningKey = HMAC-SHA256(DateRegionServiceKey, "aws4_request") */
-   RARCH_LOG(S3_PFX "Step 4: HMAC-SHA256(binary_key, data='aws4_request')\n");
+   RARCH_DBG(S3_PFX "Step 4: HMAC-SHA256(binary_key, data='aws4_request')\n");
    if (!s3_hmac_sha256_bin(k_service, 32, "aws4_request", k_signing))
       goto error;
 
-   RARCH_LOG(S3_PFX "Key derivation completed successfully\n");
+   RARCH_DBG(S3_PFX "Key derivation completed successfully\n");
 
    /* Debug: Show first few bytes of signing key */
-   char k_signing_sample[9];
    snprintf(k_signing_sample, sizeof(k_signing_sample), "%02x%02x%02x%02x", k_signing[0], k_signing[1], k_signing[2], k_signing[3]);
 
-   RARCH_LOG(S3_PFX "Signing key sample: %s...\n", k_signing_sample);
+   RARCH_DBG(S3_PFX "Signing key sample: %s...\n", k_signing_sample);
 
    /* Debug: Show complete signing key */
-   char k_signing_full[65];
-   for (int i = 0; i < 32; i++)
+   for (i = 0; i < 32; i++)
       snprintf(k_signing_full + 2 * i, 3, "%02x", (unsigned)k_signing[i]);
    k_signing_full[64] = '\0';
-   RARCH_LOG(S3_PFX "Complete signing key: %s\n", k_signing_full);
+   RARCH_DBG(S3_PFX "Complete signing key: %s\n", k_signing_full);
 
-   /* Calculate final signature using the derived signing key in binary format */
+   /* Calculate final signature using the derived signing key in binary
+   * format
+   */
    if (!s3_hmac_sha256_bin(k_signing, 32, string_to_sign, final_signature))
+   {
+      RARCH_ERR(S3_PFX "Failed to calculate final signature\n");
       goto error;
+   }
 
    /* Convert final signature to hex string */
-   for (int i = 0; i < 32; i++)
+   for (i = 0; i < 32; i++)
       snprintf(signature + 2 * i, 3, "%02x", (unsigned)final_signature[i]);
 
    signature[64] = '\0';
@@ -659,28 +699,32 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
    strftime(date, sizeof(date), "%Y%m%d", tm_info);
    strftime(datetime, sizeof(datetime), "%Y%m%dT%H%M%SZ", tm_info);
 
-   RARCH_LOG(S3_PFX "Date: %s, DateTime: %s\n", date, datetime);
+   RARCH_DBG(S3_PFX "Date: %s, DateTime: %s\n", date, datetime);
 
    /* Build credential scope */
    snprintf(credential_scope, sizeof(credential_scope), "%s/%s/%s/aws4_request",
             date, region, service);
 
-   RARCH_LOG(S3_PFX "Credential scope: %s\n", credential_scope);
+   RARCH_DBG(S3_PFX "Credential scope: %s\n", credential_scope);
 
    /* Build canonical headers */
    if (headers)
    {
-      /* Format headers for canonical request - must be sorted alphabetically and lowercase */
-      /* Each header must be trimmed and end with a newline */
+      /* Format headers for canonical request - must be sorted alphabetically
+       * and lowercase. Each header must be trimmed and end with a newline.
+       * Each header must be in the following order:
+       * host
+       * x-amz-content-sha256
+       * x-amz-date
+       */
       canonical_headers = malloc(512);
       if (canonical_headers)
       {
-         /* Headers must be in alphabetical order: host, x-amz-content-sha256, x-amz-date */
          snprintf(canonical_headers, 512, "host:%s\nx-amz-content-sha256:%s\nx-amz-date:%s\n",
                   host, payload_hash, datetime);
       }
 
-      RARCH_LOG(S3_PFX "Canonical headers:\n%s", canonical_headers ? canonical_headers : "NULL");
+      RARCH_DBG(S3_PFX "Canonical headers:\n%s", canonical_headers ? canonical_headers : "NULL");
    }
 
    /* Build signed headers list */
@@ -702,19 +746,15 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
             signed_headers,
             payload_hash);
 
-   RARCH_LOG(S3_PFX "Canonical request:\n%s\n", canonical_request);
-   RARCH_LOG(S3_PFX "Host: %s\n", host);
-   RARCH_LOG(S3_PFX "Canonical URI: %s\n", canonical_uri);
-   RARCH_LOG(S3_PFX "Method: %s\n", method);
+   RARCH_DBG(S3_PFX "Canonical request:\n%s\n", canonical_request);
+   RARCH_DBG(S3_PFX "Host: %s\n", host);
+   RARCH_DBG(S3_PFX "Canonical URI: %s\n", canonical_uri);
+   RARCH_DBG(S3_PFX "Method: %s\n", method);
 
    /* Calculate SHA256 hash of canonical request */
    canonical_request_hash = s3_sha256_hash(canonical_request, strlen(canonical_request));
    if (!canonical_request_hash)
-   {
-      if (canonical_headers) free(canonical_headers);
-      if (canonical_query_string) free(canonical_query_string);
-      return NULL;
-   }
+      goto cleanup;
 
    /* Build string to sign */
    snprintf(string_to_sign, sizeof(string_to_sign),
@@ -724,14 +764,14 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
             credential_scope,
             canonical_request_hash);
 
-   RARCH_LOG(S3_PFX "String to sign:\n%s\n", string_to_sign);
+   RARCH_DBG(S3_PFX "String to sign:\n%s\n", string_to_sign);
 
    /* Calculate signature using AWS Signature Version 4 key derivation */
    signature = s3_calculate_aws4_signature(secret_key, date, region, service, string_to_sign);
 
    if (signature)
    {
-      RARCH_LOG(S3_PFX "Calculated signature: %s\n", signature);
+      RARCH_DBG(S3_PFX "Calculated signature: %s\n", signature);
    }
    else
    {
@@ -739,9 +779,13 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
    }
 
    /* Cleanup */
-   if (canonical_headers) free(canonical_headers);
-   if (canonical_query_string) free(canonical_query_string);
-   if (canonical_request_hash) free(canonical_request_hash);
+   cleanup:
+   if (canonical_headers)
+      free(canonical_headers);
+   if (canonical_query_string)
+      free(canonical_query_string);
+   if (canonical_request_hash)
+      free(canonical_request_hash);
 
    return signature;
 }
@@ -798,23 +842,28 @@ static bool s3_http_operation_async(const char *method, const char *url, const c
 {
    struct http_connection_t *conn = NULL;
    struct http_t *http = NULL;
-   size_t progress = 0, total = 0;
+   int status = 0;
+   size_t progress = 0, total = 0, response_size = 0;
+   const uint8_t *response_data = NULL;
+   bool success = false;
 
    /* Debug: Show complete HTTP request details */
-   RARCH_LOG(S3_PFX "=== HTTP REQUEST DEBUG ===\n");
-   RARCH_LOG(S3_PFX "Method: %s\n", method);
-   RARCH_LOG(S3_PFX "URL: %s\n", url);
-   RARCH_LOG(S3_PFX "Headers: %s\n", headers ? headers : "(none)");
-   RARCH_LOG(S3_PFX "Data length: %zu\n", data_len);
+   RARCH_DBG(S3_PFX "=== HTTP REQUEST DEBUG ===\n");
+   RARCH_DBG(S3_PFX "Method: %s\n", method);
+   RARCH_DBG(S3_PFX "URL: %s\n", url);
+   RARCH_DBG(S3_PFX "Headers: %s\n", headers ? headers : "(none)");
+   RARCH_DBG(S3_PFX "Data length: %zu\n", data_len);
    if (data && data_len > 0)
    {
-      RARCH_LOG(S3_PFX "Data preview: ");
-      size_t preview_len = data_len > 64 ? 64 : data_len;
-      for (size_t i = 0; i < preview_len; i++)
-         RARCH_LOG(S3_PFX "%02x", (unsigned char)data[i]);
-      RARCH_LOG(S3_PFX "%s\n", data_len > 64 ? "..." : "");
+      size_t i;
+      size_t preview_len;
+      RARCH_DBG(S3_PFX "Data preview: ");
+      preview_len = data_len > 64 ? 64 : data_len;
+      for (i = 0; i < preview_len; i++)
+         RARCH_DBG(S3_PFX "%02x", (unsigned char)data[i]);
+      RARCH_DBG(S3_PFX "%s\n", data_len > 64 ? "..." : "");
    }
-   RARCH_LOG(S3_PFX "========================\n");
+   RARCH_DBG(S3_PFX "========================\n");
 
    /* Create HTTP connection */
    conn = net_http_connection_new(url, method, data);
@@ -827,7 +876,7 @@ static bool s3_http_operation_async(const char *method, const char *url, const c
    /* Set headers */
    if (headers)
    {
-      RARCH_LOG(S3_PFX "Setting headers:\n%s\n", headers);
+      RARCH_DBG(S3_PFX "Setting headers:\n%s\n", headers);
       net_http_connection_set_headers(conn, headers);
    }
 
@@ -866,23 +915,21 @@ static bool s3_http_operation_async(const char *method, const char *url, const c
    }
 
    /* Check result and call callback */
-   int status = net_http_status(http);
+   status = net_http_status(http);
 
    /* Debug: Show HTTP response details */
-   RARCH_LOG(S3_PFX "=== HTTP RESPONSE DEBUG ===\n");
-   RARCH_LOG(S3_PFX "Status: %d\n", status);
+   RARCH_DBG(S3_PFX "=== HTTP RESPONSE DEBUG ===\n");
+   RARCH_DBG(S3_PFX "Status: %d\n", status);
 
    /* Get response data if available */
-   size_t response_size = 0;
-
-   const uint8_t *response_data = net_http_data(http, &response_size, true);
+   response_data = net_http_data(http, &response_size, true);
    if (response_data)
    {
-      RARCH_LOG(S3_PFX "Response data: %s\n", (const char*)response_data);
+      RARCH_DBG(S3_PFX "Response data: %s\n", (const char*)response_data);
    }
-   RARCH_LOG(S3_PFX "===========================\n");
+   RARCH_DBG(S3_PFX "===========================\n");
 
-   bool success = ((status >= 200 && status < 300) || status == 404);
+   success = ((status >= 200 && status < 300) || status == 404);
    if (!success)
    {
       RARCH_ERR(S3_PFX "HTTP error: %d\n", net_http_status(http));
@@ -895,12 +942,13 @@ static bool s3_http_operation_async(const char *method, const char *url, const c
 
       if (status >= 200 && status < 300)
       {
+         size_t response_size = 0;
+         const uint8_t *response_data = NULL;
          /* Success - file exists, read it */
-         RARCH_LOG(S3_PFX "HTTP %s successful: %d\n", method, status);
+         RARCH_DBG(S3_PFX "HTTP %s %s successful: %d\n", method, cb_state->path, status);
 
          /* Read the response data */
-         size_t response_size = 0;
-         const uint8_t *response_data = net_http_data(http, &response_size, false);
+         response_data = net_http_data(http, &response_size, false);
 
          if (response_data && response_size > 0)
          {
@@ -917,7 +965,7 @@ static bool s3_http_operation_async(const char *method, const char *url, const c
       else if (status == 404 || status == 400)
       {
          /* File not found - this is success for cloud sync */
-         RARCH_LOG(S3_PFX "HTTP %s: File not found (status %d) - treating as success\n", method, status);
+         RARCH_WARN(S3_PFX "HTTP %s: File not found (status %d) - treating as success\n", method, status);
          /* Call callback with success but no file */
          cb_state->cb(cb_state->user_data, cb_state->path, true, NULL);
       }
@@ -999,9 +1047,7 @@ static bool s3_http_operation(const char *method, const char *url, const char *h
 
    /* Check result */
    if (net_http_error(http))
-   {
       RARCH_ERR(S3_PFX "HTTP error: %d\n", net_http_status(http));
-   }
    else
    {
       int status = net_http_status(http);
@@ -1037,11 +1083,11 @@ static bool s3_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    strlcpy(s3_st->access_key_id, settings->arrays.access_key_id, sizeof(settings->arrays.access_key_id));
    strlcpy(s3_st->secret_access_key, settings->arrays.secret_access_key, sizeof(settings->arrays.secret_access_key));
 
-   RARCH_LOG(S3_PFX "S3 configuration - URL: '%s', Access Key ID: '%s', Secret Access Key(size): '%d'\n",
+   RARCH_DBG(S3_PFX "S3 configuration - URL: '%s', Access Key ID: '%s', Secret Access Key(size): '%d'\n",
              s3_st->url, s3_st->access_key_id, sizeof(s3_st->secret_access_key));
 
    /* Parse URL to extract bucket, region, and host */
-   if (!s3_parse_url(s3_st->url, s3_st->bucket, s3_st->region, s3_st->host))
+   if (!s3_parse_url(s3_st->url, s3_st->bucket, s3_st->region, s3_st->host, S3_SERVICE))
    {
       RARCH_WARN(S3_PFX "Could not parse bucket/region from URL, using defaults\n");
    }
@@ -1131,10 +1177,10 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
       return false;
    }
 
-   RARCH_LOG(S3_PFX "Request URL: %s\n", url);
-   RARCH_LOG(S3_PFX "Canonical URI: %s\n", canonical_uri);
-   RARCH_LOG(S3_PFX "Authorization header:\n%s\n", auth_header);
-   RARCH_LOG(S3_PFX "Complete headers being sent:\n%s\n", auth_header);
+   RARCH_DBG(S3_PFX "Request URL: %s\n", url);
+   RARCH_DBG(S3_PFX "Canonical URI: %s\n", canonical_uri);
+   RARCH_DBG(S3_PFX "Authorization header:\n%s\n", auth_header);
+   RARCH_DBG(S3_PFX "Complete headers being sent:\n%s\n", auth_header);
 
    /* Perform HTTP GET request asynchronously */
    if (!s3_http_operation_async("GET", url, auth_header, NULL, 0, s3_cb_st))
@@ -1161,6 +1207,7 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
    char *file_data = NULL;
    size_t file_size = 0;
    char *payload_hash = NULL;
+   size_t multipart_threshold = s3_get_multipart_nominal_threshold_bytes();
    bool success = false;
 
    if (!s3_cb_st)
@@ -1208,6 +1255,9 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
       strlcpy(canonical_uri, "/", sizeof(canonical_uri));
    }
 
+   RARCH_DBG(S3_PFX "Request URL: %s\n", url);
+   RARCH_DBG(S3_PFX "Canonical URI: %s\n", canonical_uri);
+
    /* Calculate payload hash */
    if (file_data && file_size > 0)
       payload_hash = s3_sha256_hash(file_data, file_size);
@@ -1215,10 +1265,11 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
       payload_hash = strdup("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"); /* Empty file hash */
 
    /* For large files, use multipart upload */
-   if (file_size > S3_MAX_PART_SIZE)
+   if (file_size > multipart_threshold)
    {
-      RARCH_LOG(S3_PFX "Large file detected (%zu bytes), using multipart upload\n", file_size);
-      // TODO: Implement multipart upload
+      RARCH_LOG(S3_PFX "Large file detected (%zu bytes, nominal multipart threshold: %zu bytes), using multipart upload\n",
+            file_size, multipart_threshold);
+      /* TODO: Implement multipart upload */
       success = false;
    }
    else
@@ -1227,11 +1278,16 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
       auth_header = s3_build_auth_header("PUT", canonical_uri, "", "host;x-amz-content-sha256;x-amz-date",
                                         payload_hash, s3_st);
 
+      RARCH_DBG(S3_PFX "Authorization header:\n%s\n", auth_header);
+      RARCH_DBG(S3_PFX "Complete headers being sent:\n%s\n", auth_header);
+
       if (!auth_header)
       {
          RARCH_ERR(S3_PFX "Failed to build authorization header\n");
-         if (file_data) free(file_data);
-         if (payload_hash) free(payload_hash);
+         if (file_data)
+            free(file_data);
+         if (payload_hash)
+            free(payload_hash);
          free(s3_cb_st);
          return false;
       }
@@ -1243,8 +1299,10 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
    }
 
    /* Cleanup */
-   if (file_data) free(file_data);
-   if (payload_hash) free(payload_hash);
+   if (file_data)
+      free(file_data);
+   if (payload_hash)
+      free(payload_hash);
    free(s3_cb_st);
 
    /* Call completion handler */
