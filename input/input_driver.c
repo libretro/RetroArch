@@ -5923,7 +5923,8 @@ static void input_keys_pressed(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      bool input_hotkey_device_merge)
+      bool input_hotkey_device_merge,
+      bool input_menu_toggle_ignore_enable_hotkey)
 {
    unsigned i;
    /* Autoconf binds are indexed by joy_idx, not frontend port */
@@ -6222,6 +6223,10 @@ static void input_keys_pressed(
       /* Never block Game Focus toggle hotkey */
       block_hotkey[RARCH_GAME_FOCUS_TOGGLE] = false;
    }
+
+   /* Never block Menu Toggle if setting is enabled */
+   if (input_menu_toggle_ignore_enable_hotkey)
+      block_hotkey[RARCH_MENU_TOGGLE] = false;
 
    for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
    {
@@ -7243,7 +7248,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             joypad,
             sec_joypad,
             &joypad_info,
-            settings->bools.input_hotkey_device_merge);
+            settings->bools.input_hotkey_device_merge,
+            settings->bools.input_menu_toggle_ignore_enable_hotkey);
 
 #ifdef HAVE_MENU
       if (menu_is_alive)

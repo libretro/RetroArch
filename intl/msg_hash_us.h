@@ -3652,6 +3652,14 @@ MSG_HASH(
    "Hotkeys are bound to core port 1, even if core port 1 is remapped to a different user. Note: keyboard hotkeys will not work if core port 1 is remapped to any user > 1 (keyboard input is from user 1)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_TOGGLE_IGNORE_ENABLE_HOTKEY,
+   "Menu Toggle Without Hotkey Enable"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_TOGGLE_IGNORE_ENABLE_HOTKEY,
+   "Allow Menu Toggle hotkey to work without requiring 'Hotkey Enable' to be held. All other hotkeys still respect 'Hotkey Enable'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Menu Toggle (Controller Combo)"
    )
