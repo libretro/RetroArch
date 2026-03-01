@@ -14,13 +14,10 @@
 
 #include <encodings/base64.h>
 #include <lrc_hash.h>
-#include <net/net_http.h>
 #include <string/stdstring.h>
 #include <time/rtime.h>
 #include <formats/rjson.h>
 #include <retro_miscellaneous.h>
-#include <unistd.h>
-#include <retro_timers.h>
 
 #include "../cloud_sync_driver.h"
 #include "../../retroarch.h"
@@ -74,11 +71,12 @@ s3_state_t *s3_state_get_ptr(void)
 
 static size_t s3_get_multipart_nominal_threshold_bytes(void)
 {
-   if (S3_MULTIPART_NOMINAL_THRESHOLD_BYTES < S3_MULTIPART_MIN_PART_SIZE_BYTES)
-      return (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES;
-   if (S3_MULTIPART_NOMINAL_THRESHOLD_BYTES > S3_MULTIPART_MAX_PART_SIZE_BYTES)
-      return (size_t)S3_MULTIPART_MAX_PART_SIZE_BYTES;
-   return (size_t)S3_MULTIPART_NOMINAL_THRESHOLD_BYTES;
+   // if (S3_MULTIPART_NOMINAL_THRESHOLD_BYTES < S3_MULTIPART_MIN_PART_SIZE_BYTES)
+   //    return (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES;
+   // if (S3_MULTIPART_NOMINAL_THRESHOLD_BYTES > S3_MULTIPART_MAX_PART_SIZE_BYTES)
+   //    return (size_t)S3_MULTIPART_MAX_PART_SIZE_BYTES;
+   // return (size_t)S3_MULTIPART_NOMINAL_THRESHOLD_BYTES;
+   return (64ULL * 1024ULL);
 }
 
 /* Parse S3 URL to extract bucket, region, and host */
@@ -521,11 +519,14 @@ static char* s3_hmac_sha256(const char *key, const char *data, char *output)
 {
    unsigned i;
    char *hmac_hex = malloc(65);
+   uint8_t binary_key[64];
+   size_t key_len;
+   uint8_t result[32];
+
    if (!hmac_hex)
       return NULL;
 
-   uint8_t binary_key[64];
-   size_t key_len = strlen(key);
+   key_len = strlen(key);
 
    /* Convert key to binary */
    if (key_len <= 64)
@@ -546,7 +547,6 @@ static char* s3_hmac_sha256(const char *key, const char *data, char *output)
       key_len = 32;
    }
 
-   uint8_t result[32];
    if (!s3_hmac_sha256_bin(binary_key, key_len, data, result))
    {
       free(hmac_hex);
@@ -567,23 +567,23 @@ static char* s3_calculate_aws4_signature(const char *secret_key, const char *dat
                                         const char *string_to_sign)
 {
    unsigned i;
-   char *signature = malloc(65);
-   if (!signature)
-      return NULL;
-
+   char *signature;
    char aws4_key[128];
    uint8_t k_date[32];
    uint8_t k_region[32];
    uint8_t k_service[32];
    uint8_t k_signing[32];
    uint8_t final_signature[32];
-
    char k_date_hex[65];
    char k_region_hex[65];
    char *k_region_hex_result = NULL;
    char k_service_hex[65];
    char k_signing_sample[9];
    char k_signing_full[65];
+
+   signature = malloc(65);
+   if (!signature)
+      return NULL;
 
    /* Build AWS4 key string */
    snprintf(aws4_key, sizeof(aws4_key), "AWS4%s", secret_key);
@@ -732,9 +732,7 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
 
    /* Build canonical query string */
    if (query_string)
-   {
       canonical_query_string = s3_canonicalize_query_string(query_string);
-   }
 
    /* Build canonical request */
    snprintf(canonical_request, sizeof(canonical_request),
@@ -770,13 +768,9 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
    signature = s3_calculate_aws4_signature(secret_key, date, region, service, string_to_sign);
 
    if (signature)
-   {
       RARCH_DBG(S3_PFX "Calculated signature: %s\n", signature);
-   }
    else
-   {
       RARCH_ERR(S3_PFX "Failed to calculate signature\n");
-   }
 
    /* Cleanup */
    cleanup:
@@ -836,237 +830,122 @@ static char* s3_build_auth_header(const char *method, const char *canonical_uri,
    return auth_header;
 }
 
-/* Perform S3 HTTP operation asynchronously (for read operations) */
-static bool s3_http_operation_async(const char *method, const char *url, const char *headers,
-                                   const char *data, size_t data_len, s3_cb_state_t *cb_state)
+static void s3_log_http_failure(const char *path, http_transfer_data_t *data)
 {
-   struct http_connection_t *conn = NULL;
-   struct http_t *http = NULL;
-   int status = 0;
-   size_t progress = 0, total = 0, response_size = 0;
-   const uint8_t *response_data = NULL;
-   bool success = false;
-
-   /* Debug: Show complete HTTP request details */
-   RARCH_DBG(S3_PFX "=== HTTP REQUEST DEBUG ===\n");
-   RARCH_DBG(S3_PFX "Method: %s\n", method);
-   RARCH_DBG(S3_PFX "URL: %s\n", url);
-   RARCH_DBG(S3_PFX "Headers: %s\n", headers ? headers : "(none)");
-   RARCH_DBG(S3_PFX "Data length: %zu\n", data_len);
-   if (data && data_len > 0)
+   size_t i;
+   RARCH_WARN(S3_PFX "Failed: %s: HTTP %d\n", path ? path : "<unknown>", data->status);
+   for (i = 0; data->headers && i < data->headers->size; i++)
+      RARCH_WARN(S3_PFX "%s\n", data->headers->elems[i].data);
+   if (data->data)
    {
-      size_t i;
-      size_t preview_len;
-      RARCH_DBG(S3_PFX "Data preview: ");
-      preview_len = data_len > 64 ? 64 : data_len;
-      for (i = 0; i < preview_len; i++)
-         RARCH_DBG(S3_PFX "%02x", (unsigned char)data[i]);
-      RARCH_DBG(S3_PFX "%s\n", data_len > 64 ? "..." : "");
+      data->data[data->len] = '\0';
+      RARCH_WARN(S3_PFX "%s\n", data->data);
    }
-   RARCH_DBG(S3_PFX "========================\n");
-
-   /* Create HTTP connection */
-   conn = net_http_connection_new(url, method, data);
-   if (!conn)
-   {
-      RARCH_ERR(S3_PFX "Failed to create HTTP connection\n");
-      return false;
-   }
-
-   /* Set headers */
-   if (headers)
-   {
-      RARCH_DBG(S3_PFX "Setting headers:\n%s\n", headers);
-      net_http_connection_set_headers(conn, headers);
-   }
-
-   /* Parse the URL to set domain, port, and path */
-   if (!net_http_connection_iterate(conn))
-   {
-      RARCH_ERR(S3_PFX "Failed to iterate URL: %s\n", url);
-      net_http_connection_free(conn);
-      return false;
-   }
-
-   if (!net_http_connection_done(conn))
-   {
-      RARCH_ERR(S3_PFX "Failed to parse URL: %s\n", url);
-      net_http_connection_free(conn);
-      return false;
-   }
-
-   /* Set content if provided */
-   if (data && data_len > 0)
-      net_http_connection_set_content(conn, "application/octet-stream", data_len, data);
-   /* Create HTTP state */
-   http = net_http_new(conn);
-   if (!http)
-   {
-      RARCH_ERR(S3_PFX "Failed to create HTTP state\n");
-      net_http_connection_free(conn);
-      return false;
-   }
-
-   /* Perform HTTP operation */
-   while (!net_http_update(http, &progress, &total))
-   {
-      /* Wait for completion */
-      retro_sleep(10); /* 10ms delay */
-   }
-
-   /* Check result and call callback */
-   status = net_http_status(http);
-
-   /* Debug: Show HTTP response details */
-   RARCH_DBG(S3_PFX "=== HTTP RESPONSE DEBUG ===\n");
-   RARCH_DBG(S3_PFX "Status: %d\n", status);
-
-   /* Get response data if available */
-   response_data = net_http_data(http, &response_size, true);
-   if (response_data)
-   {
-      RARCH_DBG(S3_PFX "Response data: %s\n", (const char*)response_data);
-   }
-   RARCH_DBG(S3_PFX "===========================\n");
-
-   success = ((status >= 200 && status < 300) || status == 404);
-   if (!success)
-   {
-      RARCH_ERR(S3_PFX "HTTP error: %d\n", net_http_status(http));
-      /* Call callback with failure */
-      if (cb_state && cb_state->cb)
-         cb_state->cb(cb_state->user_data, cb_state->path, false, NULL);
-   }
-   else
-   {
-
-      if (status >= 200 && status < 300)
-      {
-         size_t response_size = 0;
-         const uint8_t *response_data = NULL;
-         /* Success - file exists, read it */
-         RARCH_DBG(S3_PFX "HTTP %s %s successful: %d\n", method, cb_state->path, status);
-
-         /* Read the response data */
-         response_data = net_http_data(http, &response_size, false);
-
-         if (response_data && response_size > 0)
-         {
-            /* For now, just call callback with success but no file */
-            /* TODO: Implement proper file creation from response data */
-            cb_state->cb(cb_state->user_data, cb_state->path, true, NULL);
-         }
-         else
-         {
-            /* Call callback with success but no file */
-            cb_state->cb(cb_state->user_data, cb_state->path, true, NULL);
-         }
-      }
-      else if (status == 404 || status == 400)
-      {
-         /* File not found - this is success for cloud sync */
-         RARCH_WARN(S3_PFX "HTTP %s: File not found (status %d) - treating as success\n", method, status);
-         /* Call callback with success but no file */
-         cb_state->cb(cb_state->user_data, cb_state->path, true, NULL);
-      }
-      else
-      {
-         /* Other error - treat as failure */
-         RARCH_ERR(S3_PFX "HTTP %s failed with status: %d\n", method, status);
-         /* Call callback with failure */
-         cb_state->cb(cb_state->user_data, cb_state->path, false, NULL);
-      }
-   }
-
-   /* Cleanup */
-   net_http_delete(http);
-   net_http_connection_free(conn);
-
-   /* Free the callback state */
-   if (cb_state)
-      free(cb_state);
-
-   return true;
 }
 
-/* Perform S3 HTTP operation synchronously (for PUT/DELETE operations) */
-static bool s3_http_operation(const char *method, const char *url, const char *headers,
-                             const char *data, size_t data_len, s3_cb_state_t *cb_state)
+static void s3_read_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
-   struct http_connection_t *conn = NULL;
-   struct http_t *http = NULL;
-   bool success = false;
-   size_t progress = 0, total = 0;
+   s3_cb_state_t *s3_cb_st       = (s3_cb_state_t*)user_data;
+   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
+   bool success                  = (data && ((data->status >= 200 && data->status < 300) || data->status == 404 || data->status == 400));
+   RFILE *file                   = NULL;
 
-   /* Create HTTP connection */
-   conn = net_http_connection_new(url, method, data);
-   if (!conn)
+   (void)task;
+   (void)err;
+
+   if (!s3_cb_st)
+      return;
+
+   if (!data)
+      RARCH_WARN(S3_PFX "Did not get HTTP data for read '%s'\n", s3_cb_st->path);
+   else if (!success)
+      s3_log_http_failure(s3_cb_st->path, data);
+
+   if (success && data && data->status >= 200 && data->status < 300)
    {
-      RARCH_ERR(S3_PFX "Failed to create HTTP connection\n");
-      return false;
-   }
-
-   /* Set headers */
-   if (headers)
-      net_http_connection_set_headers(conn, headers);
-
-   /* Parse the URL to set domain, port, and path */
-   if (!net_http_connection_iterate(conn))
-   {
-      RARCH_ERR(S3_PFX "Failed to iterate URL: %s\n", url);
-      net_http_connection_free(conn);
-      return false;
-   }
-
-   if (!net_http_connection_done(conn))
-   {
-      RARCH_ERR(S3_PFX "Failed to parse URL: %s\n", url);
-      net_http_connection_free(conn);
-      return false;
-   }
-
-   /* Set content if provided */
-   if (data && data_len > 0)
-      net_http_connection_set_content(conn, "application/octet-stream", data_len, data);
-
-   /* Create HTTP state */
-   http = net_http_new(conn);
-   if (!http)
-   {
-      RARCH_ERR(S3_PFX "Failed to create HTTP state\n");
-      net_http_connection_free(conn);
-      return false;
-   }
-
-   /* Perform HTTP operation */
-   while (!net_http_update(http, &progress, &total))
-   {
-      /* Wait for completion */
-      retro_sleep(10); /* 10ms delay */
-   }
-
-   /* Check result */
-   if (net_http_error(http))
-      RARCH_ERR(S3_PFX "HTTP error: %d\n", net_http_status(http));
-   else
-   {
-      int status = net_http_status(http);
-      if (status >= 200 && status < 300)
+      file = filestream_open(s3_cb_st->file,
+            RETRO_VFS_FILE_ACCESS_READ_WRITE,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (!file)
       {
-         success = true;
-         RARCH_LOG(S3_PFX "HTTP %s successful: %d\n", method, status);
+         RARCH_WARN(S3_PFX "Failed to open local file for read '%s'\n", s3_cb_st->file);
+         success = false;
       }
       else
       {
-         RARCH_ERR(S3_PFX "HTTP %s failed: %d\n", method, status);
+         if (data->data && data->len > 0)
+            filestream_write(file, data->data, data->len);
+         filestream_seek(file, 0, SEEK_SET);
       }
    }
 
-   /* Cleanup */
-   net_http_delete(http);
-   net_http_connection_free(conn);
+   if (s3_cb_st->cb)
+      s3_cb_st->cb(s3_cb_st->user_data, s3_cb_st->path, success, file);
+   free(s3_cb_st);
+}
 
-   return success;
+static void s3_update_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
+{
+   s3_cb_state_t *s3_cb_st       = (s3_cb_state_t*)user_data;
+   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
+   bool success                  = (data && data->status >= 200 && data->status < 300);
+
+   (void)task;
+   (void)err;
+
+   if (!s3_cb_st)
+      return;
+
+   if (!data)
+      RARCH_WARN(S3_PFX "Did not get HTTP data for update '%s'\n", s3_cb_st->path);
+   else if (!success)
+      s3_log_http_failure(s3_cb_st->path, data);
+
+   if (s3_cb_st->cb)
+      s3_cb_st->cb(s3_cb_st->user_data, s3_cb_st->path, success, s3_cb_st->rfile);
+   free(s3_cb_st);
+}
+
+static void s3_delete_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
+{
+   s3_cb_state_t *s3_cb_st       = (s3_cb_state_t*)user_data;
+   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
+   bool success                  = (data && data->status >= 200 && data->status < 300);
+
+   (void)task;
+   (void)err;
+
+   if (!s3_cb_st)
+      return;
+
+   if (!data)
+      RARCH_WARN(S3_PFX "Did not get HTTP data for delete '%s'\n", s3_cb_st->path);
+   else if (!success)
+      s3_log_http_failure(s3_cb_st->path, data);
+
+   if (s3_cb_st->cb)
+      s3_cb_st->cb(s3_cb_st->user_data, s3_cb_st->path, success, NULL);
+   free(s3_cb_st);
+}
+
+static bool s3_http_get_async(const char *url, const char *headers, s3_cb_state_t *cb_state)
+{
+   return task_push_http_transfer_with_headers(url, true, NULL,
+         headers, s3_read_cb, cb_state) != NULL;
+}
+
+static bool s3_http_put_async(const char *url, const char *headers,
+      const void *data, size_t data_len, s3_cb_state_t *cb_state)
+{
+   return task_push_http_transfer_with_content(url, "PUT",
+         data, data_len, "application/octet-stream", true,
+         headers, s3_update_cb, cb_state) != NULL;
+}
+
+static bool s3_http_delete_async(const char *url, const char *headers, s3_cb_state_t *cb_state)
+{
+   return task_push_http_transfer_with_headers(url, true, "DELETE",
+         headers, s3_delete_cb, cb_state) != NULL;
 }
 
 /* Initialize S3 connection */
@@ -1088,9 +967,7 @@ static bool s3_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 
    /* Parse URL to extract bucket, region, and host */
    if (!s3_parse_url(s3_st->url, s3_st->bucket, s3_st->region, s3_st->host, S3_SERVICE))
-   {
       RARCH_WARN(S3_PFX "Could not parse bucket/region from URL, using defaults\n");
-   }
 
    /* Validate configuration */
    if (string_is_empty(s3_st->url) || string_is_empty(s3_st->access_key_id) ||
@@ -1135,6 +1012,7 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
    char *auth_header = NULL;
    char url[PATH_MAX_LENGTH];
    char canonical_uri[PATH_MAX_LENGTH];
+   bool success = false;
 
    if (!s3_cb_st)
       return false;
@@ -1157,14 +1035,10 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
          free(encoded_path);
       }
       else
-      {
          strlcpy(canonical_uri, "/", sizeof(canonical_uri));
-      }
    }
    else
-   {
       strlcpy(canonical_uri, "/", sizeof(canonical_uri));
-   }
 
    /* Build authorization header */
    auth_header = s3_build_auth_header("GET", canonical_uri, "", "host;x-amz-content-sha256;x-amz-date",
@@ -1173,8 +1047,7 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
    if (!auth_header)
    {
       RARCH_ERR(S3_PFX "Failed to build authorization header\n");
-      free(s3_cb_st);
-      return false;
+      goto cleanup;
    }
 
    RARCH_DBG(S3_PFX "Request URL: %s\n", url);
@@ -1183,17 +1056,21 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
    RARCH_DBG(S3_PFX "Complete headers being sent:\n%s\n", auth_header);
 
    /* Perform HTTP GET request asynchronously */
-   if (!s3_http_operation_async("GET", url, auth_header, NULL, 0, s3_cb_st))
+   if (!s3_http_get_async(url, auth_header, s3_cb_st))
    {
       RARCH_ERR(S3_PFX "Failed to start HTTP GET request\n");
-      free(auth_header);
-      free(s3_cb_st);
-      return false;
+      goto cleanup;
    }
 
-   /* Don't free s3_cb_st here - it will be freed in the callback */
+   /* Ownership transferred to async callback */
+   s3_cb_st = NULL;
+   success = true;
+
+cleanup:
    free(auth_header);
-   return true;
+   free(s3_cb_st);
+
+   return success;
 }
 
 /* Update file to S3 */
@@ -1246,14 +1123,10 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
          free(encoded_path);
       }
       else
-      {
          strlcpy(canonical_uri, "/", sizeof(canonical_uri));
-      }
    }
    else
-   {
       strlcpy(canonical_uri, "/", sizeof(canonical_uri));
-   }
 
    RARCH_DBG(S3_PFX "Request URL: %s\n", url);
    RARCH_DBG(S3_PFX "Canonical URI: %s\n", canonical_uri);
@@ -1270,7 +1143,7 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
       RARCH_LOG(S3_PFX "Large file detected (%zu bytes, nominal multipart threshold: %zu bytes), using multipart upload\n",
             file_size, multipart_threshold);
       /* TODO: Implement multipart upload */
-      success = false;
+      goto cleanup;
    }
    else
    {
@@ -1284,30 +1157,25 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
       if (!auth_header)
       {
          RARCH_ERR(S3_PFX "Failed to build authorization header\n");
-         if (file_data)
-            free(file_data);
-         if (payload_hash)
-            free(payload_hash);
-         free(s3_cb_st);
-         return false;
+         goto cleanup;
       }
 
       /* Perform HTTP PUT request */
-      success = s3_http_operation("PUT", url, auth_header, file_data, file_size, s3_cb_st);
-
-      free(auth_header);
+      if (!s3_http_put_async(url, auth_header, file_data, file_size, s3_cb_st))
+      {
+         RARCH_ERR(S3_PFX "Failed to start HTTP PUT request\n");
+         goto cleanup;
+      }
+      /* Ownership transferred to async callback */
+      s3_cb_st = NULL;
+      success = true;
    }
 
-   /* Cleanup */
-   if (file_data)
-      free(file_data);
-   if (payload_hash)
-      free(payload_hash);
+cleanup:
+   free(auth_header);
+   free(file_data);
+   free(payload_hash);
    free(s3_cb_st);
-
-   /* Call completion handler */
-   if (cb)
-      cb(user_data, path, success, NULL);
 
    return success;
 }
@@ -1342,14 +1210,10 @@ static bool s3_free(const char *path, cloud_sync_complete_handler_t cb, void *us
          free(encoded_path);
       }
       else
-      {
          strlcpy(canonical_uri, "/", sizeof(canonical_uri));
-      }
    }
    else
-   {
       strlcpy(canonical_uri, "/", sizeof(canonical_uri));
-   }
 
    /* Build authorization header */
    auth_header = s3_build_auth_header("DELETE", canonical_uri, "", "host;x-amz-content-sha256;x-amz-date",
@@ -1358,19 +1222,22 @@ static bool s3_free(const char *path, cloud_sync_complete_handler_t cb, void *us
    if (!auth_header)
    {
       RARCH_ERR(S3_PFX "Failed to build authorization header\n");
-      free(s3_cb_st);
-      return false;
+      goto cleanup;
    }
 
    /* Perform HTTP DELETE request */
-   success = s3_http_operation("DELETE", url, auth_header, NULL, 0, s3_cb_st);
+   success = s3_http_delete_async(url, auth_header, s3_cb_st);
+   if (!success)
+   {
+      RARCH_ERR(S3_PFX "Failed to start HTTP DELETE request\n");
+      goto cleanup;
+   }
+   /* Ownership transferred to async callback */
+   s3_cb_st = NULL;
 
+cleanup:
    free(auth_header);
    free(s3_cb_st);
-
-   /* Call completion handler */
-   if (cb)
-      cb(user_data, path, success, NULL);
 
    return success;
 }
