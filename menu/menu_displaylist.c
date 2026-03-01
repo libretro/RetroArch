@@ -11356,9 +11356,11 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CLOUD_SYNC_URL,                PARSE_ONLY_STRING,         false},
                {MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,           PARSE_ONLY_STRING,         false},
                {MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,           PARSE_ONLY_STRING,         false},
+#ifdef HAVE_S3
                {MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL,             PARSE_ONLY_STRING,         false},
                {MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID,      PARSE_ONLY_STRING,         false},
                {MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,  PARSE_ONLY_STRING,         false},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -11387,6 +11389,8 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY:
                      if (string_is_equal(settings->arrays.cloud_sync_driver, "s3"))
                         build_list[i].checked = true;
+                     break;
+                  default:
                      break;
                   }
 

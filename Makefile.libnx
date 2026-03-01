@@ -59,6 +59,7 @@ HAVE_IBXM = 1
 HAVE_CORE_INFO_CACHE = 1
 HAVE_CLOUDSYNC = 1
 HAVE_SSL = 1
+HAVE_S3 = 1
 
 # RetroArch libnx useful flags
 HAVE_THREADS = 1
