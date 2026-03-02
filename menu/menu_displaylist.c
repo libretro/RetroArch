@@ -1340,6 +1340,23 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
          count++;
 #endif
 
+   {
+      /* MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM requires 'settings' */
+      settings_t *settings = config_get_ptr();
+#ifdef HAVE_IMAGEVIEWER
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+            MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER, PARSE_ONLY_BOOL,
+            false) == 0)
+         count++;
+#endif
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+            MENU_ENUM_LABEL_USE_BUILTIN_PLAYER, PARSE_ONLY_BOOL,
+            false) == 0)
+         count++;
+#endif
+   }
+
    return count;
 }
 
@@ -4086,9 +4103,9 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #if HAVE_GAME_AI
       if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
-                        PARSE_ONLY_BOOL, false) == 0)
-                  count++;
+            MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
+            PARSE_ONLY_BOOL, false) == 0)
+         count++;
 
       if (settings->bools.quick_menu_show_game_ai)
       {
@@ -4102,9 +4119,9 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
 #ifdef HAVE_SMBCLIENT
       if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-         MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
-                        PARSE_ONLY_BOOL, false) == 0)
-                  count++;
+            MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+            PARSE_ONLY_BOOL, false) == 0)
+         count++;
 
       if (settings->bools.smb_client_enable)
       {
@@ -10596,8 +10613,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,                                PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_USE_LAST_START_DIRECTORY,                              PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_SUGGEST_ALWAYS,                                   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_USE_BUILTIN_PLAYER,                                    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER,                              PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_USE_BUILTIN_PLAYER,                                    PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

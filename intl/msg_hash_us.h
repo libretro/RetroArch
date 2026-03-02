@@ -4970,8 +4970,16 @@ MSG_HASH(
    "Use Built-In Media Player"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Show Media Player supported files in File Browser."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Use Built-In Image Viewer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Show Image Viewer supported files in File Browser."
    )
 
 /* Settings > Frame Throttle */
