@@ -428,9 +428,9 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
       /* If a file does not exist at the location of the replaced path
        * then output the original path instead */
       RARCH_DBG("[Shaders] Filepath after wildcard replacement can't be found:\n");
-      RARCH_DBG("                \"%s\" \n", replaced_path);
-      RARCH_DBG("           Falling back to original Filepath\n");
-      RARCH_DBG("                \"%s\" \n\n", s);
+      RARCH_DBG("             \"%s\" \n", replaced_path);
+      RARCH_DBG("          Falling back to original Filepath\n");
+      RARCH_DBG("             \"%s\" \n", s);
    }
 }
 
@@ -2340,7 +2340,7 @@ bool video_shader_load_preset_into_shader(const char *path,
    }
 
 #ifdef DEBUG
-   RARCH_DBG("[Shaders] End apply overrides.\n\n");
+   RARCH_DBG("[Shaders] End apply overrides.\n");
 #endif
 
 end:

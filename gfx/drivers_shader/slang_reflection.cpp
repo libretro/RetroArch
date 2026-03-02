@@ -727,7 +727,6 @@ bool slang_reflect(
       }
    }
 
-   RARCH_LOG("[Slang]\n");
    RARCH_LOG("[Slang]   Uniforms (Vertex: %s, Fragment: %s):\n",
          reflection->ubo_stage_mask & SLANG_STAGE_VERTEX_MASK ? "yes": "no",
          reflection->ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK ? "yes": "no");
@@ -776,13 +775,7 @@ bool slang_reflect(
       }
    }
 
-   {
-      char buf[64];
-      size_t _len = strlcpy(buf, "[Slang]\n", sizeof(buf));
-      _len       += strlcpy(buf + _len, FILE_PATH_LOG_INFO, sizeof(buf) - _len);
-      strlcpy(buf + _len, "\n[Slang]   Parameters:\n", sizeof(buf) - _len);
-      RARCH_LOG(buf);
-   }
+   RARCH_LOG("[Slang]   Parameters:\n");
 
    for (i = 0; i < reflection->semantic_float_parameters.size(); i++)
    {
