@@ -298,7 +298,7 @@ void gfx_widgets_msg_queue_push(
                {
                   len                  -= wrap_length;
 
-                  if (len < wrap_length)
+                  if ((int)len < wrap_length)
                      len       = wrap_length;
 
                   text_width            = font_driver_get_message_width(
