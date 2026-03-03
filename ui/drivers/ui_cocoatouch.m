@@ -1029,6 +1029,18 @@ enum
       self.bgDate = nil;
    }
 #endif
+
+#if TARGET_OS_IOS
+   /* Enable CoreMotion and capture rest position for AccelerometerRest.
+    * CoreMotion must be active for reads to return non-zero values,
+    * so enable first, then start the 30-frame averaging capture. */
+   if (settings->bools.input_sensors_enable)
+   {
+      input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_ENABLE, 60);
+      input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_ENABLE, 60);
+      input_sensor_start_rest_capture();
+   }
+#endif
 }
 
 -(BOOL)openRetroArchURL:(NSURL *)url
