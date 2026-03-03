@@ -1,0 +1,29 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2025 - eadmaster
+ * 
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef __RARCH_LUA_MANAGER_H
+#define __RARCH_LUA_MANAGER_H
+
+#include <retro_common_api.h>
+
+void lua_init();
+
+void lua_loop(); 
+
+void lua_deinit(); 
+
+void lua_draw_gfxs_loop();
+
+#endif
