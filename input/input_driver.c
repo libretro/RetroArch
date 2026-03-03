@@ -4789,6 +4789,17 @@ float input_get_sensor_state(unsigned port, unsigned id)
    if (!input_sensors_enable)
       return 0.0f;
 
+   /* Apply sensor axis remap from autoconfig profile */
+   if (id <= RETRO_SENSOR_GYROSCOPE_Z)
+   {
+      const input_sensor_map_t *map = input_config_get_sensor_map(joy_idx);
+      if (map && map->axes[id].source >= 0)
+      {
+         fetch_id = (unsigned)map->axes[id].source;
+         sign     = (float)map->axes[id].sign;
+      }
+   }
+
    /* Get sensitivity for sensor type */
    if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z)
       sensitivity = settings->floats.input_sensor_accelerometer_sensitivity;
@@ -4836,17 +4847,17 @@ float input_get_sensor_state(unsigned port, unsigned id)
             else
             {
                fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_X : RETRO_SENSOR_ACCELEROMETER_X;
-               sign     = -1.0f;
+               sign    *= -1.0f;
             }
             break;
          case 2: /* 180°: X->-X, Y->-Y */
-            sign = -1.0f;
+            sign *= -1.0f;
             break;
          case 3: /* 270° CW: X->-Y, Y->X */
             if (is_x_axis)
             {
                fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_Y : RETRO_SENSOR_ACCELEROMETER_Y;
-               sign     = -1.0f;
+               sign    *= -1.0f;
             }
             else
                fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_X : RETRO_SENSOR_ACCELEROMETER_X;

@@ -6746,6 +6746,8 @@ uint8_t input_config_bind_map_get_retro_key(unsigned bind_index)
 void input_config_reset_autoconfig_binds(unsigned port)
 {
    size_t i;
+   input_driver_state_t *input_st;
+   input_sensor_map_t *map;
 
    if (port >= MAX_USERS)
       return;
@@ -6768,13 +6770,36 @@ void input_config_reset_autoconfig_binds(unsigned port)
          input_autoconf_binds[port][i].joyaxis_label = NULL;
       }
    }
+
+   /* Reset sensor axis map to default identity mapping */
+   input_st = input_state_get_ptr();
+   map      = &input_st->input_sensor_map[port];
+   for (i = 0; i < 6; i++)
+   {
+      map->axes[i].source = (int8_t)i;
+      map->axes[i].sign   = 1;
+   }
+}
+
+const input_sensor_map_t *input_config_get_sensor_map(unsigned port)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   if (port >= MAX_INPUT_DEVICES)
+      return NULL;
+   return &input_st->input_sensor_map[port];
 }
 
 void input_config_set_autoconfig_binds(unsigned port, void *data)
 {
+   static const char *sensor_keys[6] = {
+      "input_sensor_accel_x", "input_sensor_accel_y", "input_sensor_accel_z",
+      "input_sensor_gyro_x",  "input_sensor_gyro_y",  "input_sensor_gyro_z"
+   };
    size_t i;
    config_file_t *config       = (config_file_t*)data;
    struct retro_keybind *binds = NULL;
+   input_driver_state_t *input_st;
+   input_sensor_map_t *map;
 
    if ((port >= MAX_USERS) || !config)
       return;
@@ -6793,6 +6818,27 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
 
          input_config_parse_joy_button(str, config, "input", base, &binds[i]);
          input_config_parse_joy_axis  (str, config, "input", base, &binds[i]);
+      }
+   }
+
+   /* Parse sensor axis map overrides from autoconfig profile */
+   input_st = input_state_get_ptr();
+   map      = &input_st->input_sensor_map[port];
+   for (i = 0; i < 6; i++)
+   {
+      char tmp[16];
+      tmp[0] = '\0';
+      if (config_get_array(config, sensor_keys[i], tmp, sizeof(tmp)))
+      {
+         if (tmp[0] == '+' || tmp[0] == '-')
+         {
+            int code = (int)strtol(tmp + 1, NULL, 0);
+            if (code >= 0 && code <= 5)
+            {
+               map->axes[i].source = (int8_t)code;
+               map->axes[i].sign   = (tmp[0] == '-') ? -1 : 1;
+            }
+         }
       }
    }
 }

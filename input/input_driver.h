@@ -367,6 +367,18 @@ typedef struct
    char display_name[NAME_MAX_LENGTH];
 } input_mouse_info_t;
 
+typedef struct
+{
+   int8_t source; /* RETRO_SENSOR_* ID to read from (0-5), -1 = unmapped */
+   int8_t sign;   /* +1 or -1 */
+} input_sensor_axis_t;
+
+typedef struct
+{
+   /* indexed by RETRO_SENSOR_ACCELEROMETER_X..RETRO_SENSOR_GYROSCOPE_Z */
+   input_sensor_axis_t axes[6];
+} input_sensor_map_t;
+
 typedef struct input_remote input_remote_t;
 
 typedef struct input_remote_state
@@ -630,6 +642,7 @@ typedef struct
    input_remap_cache_t remapping_cache;
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
+   input_sensor_map_t input_sensor_map[MAX_INPUT_DEVICES];
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
    unsigned input_hotkey_block_counter;
@@ -1100,6 +1113,8 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name);
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
 
 void input_config_reset_autoconfig_binds(unsigned port);
+
+const input_sensor_map_t *input_config_get_sensor_map(unsigned port);
 
 void input_config_reset(void);
 
