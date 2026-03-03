@@ -406,6 +406,7 @@ typedef struct settings
       unsigned smb_client_num_contexts;
       unsigned smb_client_timeout;
 #endif
+      unsigned input_sensor_orientation;
    } uints;
 
    struct

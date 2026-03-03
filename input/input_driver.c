@@ -65,6 +65,10 @@
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
+#ifdef ANDROID
+#include "../frontend/drivers/platform_unix.h"
+#endif
+
 #include "../ai/game_ai.h"
 
 #define HOLD_BTN_DELAY_SEC 2
@@ -4712,8 +4716,13 @@ bool input_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
    settings_t *settings        = config_get_ptr();
-   bool input_sensors_enable   = settings->bools.input_sensors_enable;
-   unsigned joy_idx            = settings->uints.input_joypad_index[port];
+   /* Default to enabled if settings not loaded yet (matches config default) */
+   bool input_sensors_enable   = settings
+      ? settings->bools.input_sensors_enable
+      : true;
+   unsigned joy_idx            = settings
+      ? settings->uints.input_joypad_index[port]
+      : port;
    return input_driver_set_sensor(
       joy_idx, input_sensors_enable, action, rate);
 }
@@ -4759,14 +4768,131 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
 float input_get_sensor_state(unsigned port, unsigned id)
 {
    settings_t *settings      = config_get_ptr();
-   bool input_sensors_enable = settings->bools.input_sensors_enable;
-   unsigned joy_idx          = settings->uints.input_joypad_index[port];
+   bool input_sensors_enable;
+   unsigned joy_idx;
    float sensitivity         = 1.0f;
+   float raw_value;
+   unsigned fetch_id         = id;
+   float sign                = 1.0f;
+
+   /* Return 0 if settings unavailable (e.g., during driver transitions) */
+   if (!settings)
+      return 0.0f;
+
+   if (port >= MAX_USERS)
+      return 0.0f;
+
+   input_sensors_enable = settings->bools.input_sensors_enable;
+   joy_idx              = settings->uints.input_joypad_index[port];
+
+   /* Return 0 when sensors disabled */
+   if (!input_sensors_enable)
+      return 0.0f;
+
+   /* Get sensitivity for sensor type */
    if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z)
       sensitivity = settings->floats.input_sensor_accelerometer_sensitivity;
    else if (id >= RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
       sensitivity = settings->floats.input_sensor_gyroscope_sensitivity;
-   return input_driver_get_sensor(joy_idx, input_sensors_enable, id) * sensitivity;
+
+   /* Apply sensor orientation rotation for X and Y axes.
+    * Skip on iOS/tvOS — cocoa_input handles rotation at the driver level.
+    * Setting values: 0=Auto, 1=0°, 2=90°, 3=180°, 4=270°
+    * Rotation transforms (clockwise):
+    * 0°:   (x, y)   -> (x, y)
+    * 90°:  (x, y)   -> (y, -x)
+    * 180°: (x, y)   -> (-x, -y)
+    * 270°: (x, y)   -> (-y, x)
+    * Both accelerometer and gyroscope use the same orientation setting
+    * since they share the same physical sensor orientation */
+#ifndef HAVE_COCOATOUCH
+   if (id == RETRO_SENSOR_ACCELEROMETER_X || id == RETRO_SENSOR_ACCELEROMETER_Y ||
+       id == RETRO_SENSOR_GYROSCOPE_X || id == RETRO_SENSOR_GYROSCOPE_Y)
+   {
+      unsigned orientation_setting = settings->uints.input_sensor_orientation;
+      unsigned rotation = 0;
+      bool is_gyro = (id == RETRO_SENSOR_GYROSCOPE_X || id == RETRO_SENSOR_GYROSCOPE_Y);
+      bool is_x_axis = (id == RETRO_SENSOR_ACCELEROMETER_X || id == RETRO_SENSOR_GYROSCOPE_X);
+
+      if (orientation_setting == 0)
+      {
+         /* Auto: detect from platform */
+#ifdef ANDROID
+         if (g_android)
+            rotation = g_android->detected_screen_rotation;
+#endif
+      }
+      else
+      {
+         /* Manual: setting 1=0°, 2=90°, 3=180°, 4=270° */
+         rotation = orientation_setting - 1;
+      }
+
+      switch (rotation)
+      {
+         case 1: /* 90° CW: X->Y, Y->-X */
+            if (is_x_axis)
+               fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_Y : RETRO_SENSOR_ACCELEROMETER_Y;
+            else
+            {
+               fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_X : RETRO_SENSOR_ACCELEROMETER_X;
+               sign     = -1.0f;
+            }
+            break;
+         case 2: /* 180°: X->-X, Y->-Y */
+            sign = -1.0f;
+            break;
+         case 3: /* 270° CW: X->-Y, Y->X */
+            if (is_x_axis)
+            {
+               fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_Y : RETRO_SENSOR_ACCELEROMETER_Y;
+               sign     = -1.0f;
+            }
+            else
+               fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_X : RETRO_SENSOR_ACCELEROMETER_X;
+            break;
+         default: /* 0°: no change */
+            break;
+      }
+   }
+#endif /* HAVE_COCOATOUCH */
+
+   /* Get raw sensor value (use fetch_id for rotated axes) */
+   raw_value = input_driver_get_sensor(joy_idx, true, fetch_id);
+
+   /* Apply sensitivity and rotation sign */
+   return raw_value * sensitivity * sign;
+}
+
+void input_sensor_start_rest_capture(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_st->rest_accum[0]       = 0.0f;
+   input_st->rest_accum[1]       = 0.0f;
+   input_st->rest_accum[2]       = 0.0f;
+   input_st->rest_sample_count   = 0;
+   input_st->rest_capturing      = true;
+}
+
+static void input_sensor_update_rest_capture(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   if (!input_st->rest_capturing)
+      return;
+
+   input_st->rest_accum[0] += input_get_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_X);
+   input_st->rest_accum[1] += input_get_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_Y);
+   input_st->rest_accum[2] += input_get_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_Z);
+   input_st->rest_sample_count++;
+
+   if (input_st->rest_sample_count >= 30)
+   {
+      input_st->sensor_accelerometer_rest[0] = input_st->rest_accum[0] / 30.0f;
+      input_st->sensor_accelerometer_rest[1] = input_st->rest_accum[1] / 30.0f;
+      input_st->sensor_accelerometer_rest[2] = input_st->rest_accum[2] / 30.0f;
+      input_st->rest_capturing = false;
+   }
 }
 
 /**
@@ -6331,6 +6457,20 @@ void input_driver_poll(void)
    if (     input_st->current_driver
          && input_st->current_driver->poll)
       input_st->current_driver->poll(input_st->current_data);
+
+   /* Update accelerometer rest position capture (runs for ~30 frames
+    * after focus gain, then stops) */
+   input_sensor_update_rest_capture();
+
+   /* Cache sensor values so shader backends on the video thread
+    * read a consistent per-frame snapshot instead of calling into
+    * the input subsystem directly. */
+   input_st->sensor_gyroscope_cache[0]     = input_get_sensor_state(0, RETRO_SENSOR_GYROSCOPE_X);
+   input_st->sensor_gyroscope_cache[1]     = input_get_sensor_state(0, RETRO_SENSOR_GYROSCOPE_Y);
+   input_st->sensor_gyroscope_cache[2]     = input_get_sensor_state(0, RETRO_SENSOR_GYROSCOPE_Z);
+   input_st->sensor_accelerometer_cache[0] = input_get_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_X);
+   input_st->sensor_accelerometer_cache[1] = input_get_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_Y);
+   input_st->sensor_accelerometer_cache[2] = input_get_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_Z);
 
 #ifdef HAVE_OVERLAY
    if (      input_st->overlay_ptr

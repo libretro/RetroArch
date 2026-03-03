@@ -100,11 +100,16 @@ enum slang_semantic
    SLANG_SEMANTIC_INVERSE_TONEMAP  = 18,
    /* float, Enable HDR10 conversion */
    SLANG_SEMANTIC_HDR10            = 19,
-   /* float, OriginalAspectRotated */
-   SLANG_NUM_BASE_SEMANTICS        = 20,
+   /* vec3, gyroscope XYZ */
+   SLANG_SEMANTIC_GYROSCOPE             = 20,
+   /* vec3, accelerometer XYZ */
+   SLANG_SEMANTIC_ACCELEROMETER         = 21,
+   /* vec3, accelerometer rest position XYZ */
+   SLANG_SEMANTIC_ACCELEROMETER_REST    = 22,
+   SLANG_NUM_BASE_SEMANTICS        = 23,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 21,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 24,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1

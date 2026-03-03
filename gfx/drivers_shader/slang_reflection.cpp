@@ -64,7 +64,10 @@ static const char *semantic_uniform_names[] = {
    "SubpixelLayout",
    "ExpandGamut",
    "InverseTonemap",
-   "HDR10"
+   "HDR10",
+   "Gyroscope",
+   "Accelerometer",
+   "AccelerometerRest"
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic(
@@ -299,6 +302,13 @@ static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_
       case SLANG_SEMANTIC_CORE_ASPECT_ROT:
          return type.basetype == spirv_cross::SPIRType::Float
             &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+         /* vec3 - sensor uniforms */
+      case SLANG_SEMANTIC_GYROSCOPE:
+      case SLANG_SEMANTIC_ACCELEROMETER:
+      case SLANG_SEMANTIC_ACCELEROMETER_REST:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 3
             &&  type.columns  == 1;
          /* float */
       case SLANG_SEMANTIC_FLOAT_PARAMETER:
