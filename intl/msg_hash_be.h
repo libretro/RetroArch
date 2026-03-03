@@ -228,16 +228,16 @@ MSG_HASH(
    "Выйсці з праграмы RetroArch. Захаванне канфігурацыі пры выхадзе ўключана."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "Сінхранізаваць зараз"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Выйсці з праграмы RetroArch. Захаванне канфігурацыі пры выхадзе выключана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "Выхад з праграмы RetroArch. Закрыццё праграмы любым прымусовым спосабам (SIGKILL і г. д.) выгружае RetroArch без захавання канфігурацыі. На Unix-падобных сістэмах SIGINT/SIGTERM дазваляе выканаць чыстую дэініцыялізацыю з захаваннем канфігурацыі, калі дадзеная налада ўключаная."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Сінхранізаваць зараз"
    )
 
 /* Main Menu > Load Core */
@@ -5960,20 +5960,8 @@ MSG_HASH(
    "Паказваць опцыю працягвання змесціва."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Паказ 'Перазапусціць'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Паказваць опцыю перазапуску змесціва."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Паказ 'Закрыць змесціва'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Паказваць опцыю 'Закрыць змесціва'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8430,7 +8418,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Перазапусціць"
+   "Скінуць"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

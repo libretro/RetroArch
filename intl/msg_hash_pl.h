@@ -228,20 +228,20 @@ MSG_HASH(
    "Wyjdź z aplikacji RetroArch. Zapisywanie konfiguracji przy wyjściu jest włączone."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "Synchronizuj teraz"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "Ręcznie wyzwalaj synchronizację w chmurze."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Wyjdź z aplikacji RetroArch. Zapisywanie konfiguracji przy wyjściu jest wyłączone."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "Zamknij RetroArch. Zabicie programu w jakikolwiek twardy sposób (SIGKILL, itp.) zakończy RetroArch bez zapisywania konfiguracji w każdym przypadku. W systemach uniksowych, SIGINT/SIGTERM pozwala na czystą deinicjalizację, która zawiera zapis konfiguracji, jeśli jest włączona."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Synchronizuj teraz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Ręcznie wyzwalaj synchronizację w chmurze."
    )
 
 /* Main Menu > Load Core */
@@ -5212,20 +5212,8 @@ MSG_HASH(
    "Pokaż opcję wznowienia zawartości."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Pokaż 'Restart'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Pokaż opcję ponownego uruchomienia zawartości."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Pokaż 'Zamknij zawartość'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Pokaż opcję \"Zamknij zawartość\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -7395,14 +7383,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
    "Wznów zawartość"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Uruchom ponownie"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Uruchom ponownie zawartość od początku. RetroPad Start wyzwala twardy reset."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

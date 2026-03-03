@@ -224,20 +224,20 @@ MSG_HASH(
    "RetroArch uygulamasından çıkın. Çıkışta yapılandırma kaydetme etkin."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "Şimdi Eşitle"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "Bulut eşitlemesini el ile tetikle."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "RetroArch uygulamasından çıkın. Çıkışta yapılandırma kaydetme etkin değil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "RetroArch çıkış. Programın herhangi bir şekilde (SIGKILL vb.) sonlandırılması, her durumda yapılandırmayı kaydetmeden RetroArch uygulamasını sonlandıracaktır. Unix benzeri sistemlerde SIGINT/SIGTERM, eğer etkinleştirilirse yapılandırma kaydetmeyi de içeren temiz bir başlangıç ​​giderme işlemine izin verir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Şimdi Eşitle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Bulut eşitlemesini el ile tetikle."
    )
 
 /* Main Menu > Load Core */
@@ -6160,20 +6160,8 @@ MSG_HASH(
    "Devam et seçeneğini gösterin."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "'Yeniden Başlatı' Göster"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Yeniden başlat seçeneğini gösterin."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "'İçeriği Kapatı' Göster"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "İçeriği kapat seçeneğini gösterin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8634,11 +8622,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Yeniden Başlat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "İçeriği baştan başlatın. RetroPad Start sert sıfırlamayı tetikler."
+   "Sıfırla"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

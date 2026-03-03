@@ -232,6 +232,14 @@ MSG_HASH(
    "Abandona la aplicación RetroArch. La opción «Guardar configuración al salir» está activada."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Abandona la aplicación RetroArch. La opción «Guardar configuración al salir» está desactivada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Abandona RetroArch. Si cierras RetroArch de cualquier forma brusca (SIGKILL, etc.) no se guardará la configuración bajo ninguna circunstancia. En sistemas Unix, SIGINT/SIGTERM permite un cierre limpio, lo que guardará la configuración si la opción «Guardar configuración al salir» está activada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sincronizar ahora"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Resuelve todos los conflictos descargando los archivos del servidor, reemplazando las copias locales."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Abandona la aplicación RetroArch. La opción «Guardar configuración al salir» está desactivada."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Abandona RetroArch. Si cierras RetroArch de cualquier forma brusca (SIGKILL, etc.) no se guardará la configuración bajo ninguna circunstancia. En sistemas Unix, SIGINT/SIGTERM permite un cierre limpio, lo que guardará la configuración si la opción «Guardar configuración al salir» está activada."
    )
 
 /* Main Menu > Load Core */
@@ -4878,8 +4878,16 @@ MSG_HASH(
    "Usar visor de medios integrado"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Muestra en el explorador de archivos los archivos compatibles con el visor de medios."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Usar visor de imágenes integrado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Muestra en el explorador de archivos los archivos compatibles con el visor de imágenes."
    )
 
 /* Settings > Frame Throttle */
@@ -6437,7 +6445,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Muestra la opción «Cerrar contenido»."
+   "Muestra la opción que permite cerrar el contenido actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8954,7 +8962,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia el contenido desde el principio. Pulsa Start en el RetroPad para hacer un reinicio completo."
+   "Activa el reinicio por software. Pulsa Start en el RetroPad para activar el reinicio completo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

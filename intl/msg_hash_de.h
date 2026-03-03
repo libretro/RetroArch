@@ -228,6 +228,14 @@ MSG_HASH(
    "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist aktiviert."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist deaktiviert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "RetroArch beenden. Durch das harte Beenden (SIGKILL usw.) des Programms wird RetroArch beendet, ohne die Konfiguration zu speichern in jedem Fall. Auf Unix-ähnlichen Systemen ermöglicht SIGINT/SIGTERM eine saubere Deinitialisierung, welche das Speichern der Konfigurationsdatei mit einschließt, falls aktiviert."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Jetzt synchronisieren"
    )
@@ -250,14 +258,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Alle Konflikte durch Herunterladen von Serverdateien und das Ersetzen lokaler Kopien lösen."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist deaktiviert."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "RetroArch beenden. Durch das harte Beenden (SIGKILL usw.) des Programms wird RetroArch beendet, ohne die Konfiguration zu speichern in jedem Fall. Auf Unix-ähnlichen Systemen ermöglicht SIGINT/SIGTERM eine saubere Deinitialisierung, welche das Speichern der Konfigurationsdatei mit einschließt, falls aktiviert."
    )
 
 /* Main Menu > Load Core */
@@ -4766,8 +4766,16 @@ MSG_HASH(
    "Eingebauten Mediaplayer verwenden"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Medienplayer-unterstützte Dateien im Dateibrowser anzeigen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Integrierten Bildbetrachter verwenden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Bildbetrachter-unterstützte Dateien im Dateibrowser anzeigen."
    )
 
 /* Settings > Frame Throttle */
@@ -6305,11 +6313,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "\"Neu starten\" anzeigen"
+   "„Zurücksetzen“ anzeigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Die Option zum neu Starten des Inhalts anzeigen."
+   "Die Option zum Zurücksetzen des Inhalts anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -8770,11 +8778,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Neu starten"
+   "Zurücksetzen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Den Inhalt von vorne starten. RetroPad Start löst einen Hard-Reset aus."
+   "Softreset auslösen. RetroPad Start löst einen Hardreset aus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

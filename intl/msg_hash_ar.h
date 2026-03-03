@@ -232,16 +232,16 @@ MSG_HASH(
    "إنهاء تطبيق RetroArch. حفظ الإعدادات عند الخروج مفعل."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "قم بالمزامنة الآن"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "إنهاء تطبيق RetroArch. حفظ الإعدادات عند الخروج معطل."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "إنهاء RetroArch. إحباط البرنامج بأي طريقة صعبة (مثل SIGKILL، إلخ.) سيتم إنهاء RetroArch دون حفظ التكوين، إلخ. على أمثال يونكس، يسمح SIGINT/SIGTERM بإزالة التشكيلات النظيفة مما يتضمن حفظ الإعدادات عندما يكون مفعلاً."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "قم بالمزامنة الآن"
    )
 
 /* Main Menu > Load Core */
@@ -4670,7 +4670,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "إعادة التشغيل"
+   "إعادة تعيين"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

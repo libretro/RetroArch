@@ -5852,20 +5852,8 @@ MSG_HASH(
    "Zobrazit možnost obsahu životopisu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Zobrazit 'Restart'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Zobrazit možnost restartovat obsah."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Zobrazit 'Zavřít obsah'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Zobrazit možnost 'Zavřít obsah'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8298,7 +8286,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Restartovat"
+   "Resetovat"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

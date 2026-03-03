@@ -204,12 +204,12 @@ MSG_HASH(
    "Cola de l'aplicación Retroarch. El guardáu de la configuración al colar ta activáu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "Sincronizar agora"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Cola de l'aplicación Retroarch. El guardáu de la configuración al colar ta desactiváu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Sincronizar agora"
    )
 
 /* Main Menu > Load Core */
@@ -1944,10 +1944,6 @@ MSG_HASH(
    "Amosar «Siguir»"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Amosar «Reaniciar»"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Amosar «Zarrar el conteníu»"
    )
@@ -2747,10 +2743,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
    "Siguir"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Reaniciar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

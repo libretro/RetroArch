@@ -224,6 +224,14 @@ MSG_HASH(
    "Kilépés a RetroArch alkalmazásból. Konfiguráció mentése kilépéskor: engedélyezve."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Kilépés a RetroArch alkalmazásból. Konfiguráció mentése kilépéskor: letiltva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Kilépés a RetroArch-ból. A program kényszerített bezárása (SIGKILL, stb.) mindenképpen a konfiguráció mentése nélkül állítja le a RetroArch-ot. Unix-hoz hasonló környezetekben a SIGINT/SIGTERM is használható tiszta leállításra, beleértve a konfiguráció mentését, ha az engedélyezett."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Szinkronizálás most"
    )
@@ -246,14 +254,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Minden ütközés feloldása a fájlok letöltésével a szerverről, felülírva a helyi másolatokat."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Kilépés a RetroArch alkalmazásból. Konfiguráció mentése kilépéskor: letiltva."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Kilépés a RetroArch-ból. A program kényszerített bezárása (SIGKILL, stb.) mindenképpen a konfiguráció mentése nélkül állítja le a RetroArch-ot. Unix-hoz hasonló környezetekben a SIGINT/SIGTERM is használható tiszta leállításra, beleértve a konfiguráció mentését, ha az engedélyezett."
    )
 
 /* Main Menu > Load Core */
@@ -6388,20 +6388,8 @@ MSG_HASH(
    "A tartalom folytatásának lehetősége jelenjen meg."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "\"Újraindítás\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "A tartalom újraindításának lehetősége jelenjen meg."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "\"Tartalom bezárása\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "A tartalom bezárásának lehetősége jelenjen meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8918,11 +8906,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Újraindítás"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Tartalom újraindítása. A RetroPad Start gomb hidegindítást eredményez."
+   "Visszaállítás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

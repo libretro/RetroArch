@@ -228,6 +228,14 @@ MSG_HASH(
    "Quitter l'application RetroArch. L'enregistrement de la configuration à la sortie est activé."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Quitter l'application RetroArch. L'enregistrement de la configuration à la sortie est désactivé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Quitter RetroArch. Forcer à quitter le programme de toutes les manières matérielles (SIGKILL, etc.) mettra fin au processus de RetroArch sans enregistrer la configuration dans tous les cas. Sur les variantes d'Unix, SIGINT/SIGTERM permet une désinitialisation propre incluant la sauvegarde de la configuration si activée."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Synchroniser maintenant"
    )
@@ -250,14 +258,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Résoudre tous les conflits en téléchargeant les fichiers du serveur, remplaçant les copies locales."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Quitter l'application RetroArch. L'enregistrement de la configuration à la sortie est désactivé."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Quitter RetroArch. Forcer à quitter le programme de toutes les manières matérielles (SIGKILL, etc.) mettra fin au processus de RetroArch sans enregistrer la configuration dans tous les cas. Sur les variantes d'Unix, SIGINT/SIGTERM permet une désinitialisation propre incluant la sauvegarde de la configuration si activée."
    )
 
 /* Main Menu > Load Core */
@@ -4854,8 +4854,16 @@ MSG_HASH(
    "Utiliser le lecteur média intégré"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Afficher les fichiers pris en charge par le lecteur multimédia dans le navigateur de fichiers."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "Utiliser le lecteur d'images intégré"
+   "Utiliser la visionneuse d'images intégrée"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Afficher les fichiers pris en charge par la visionneuse d'images dans le navigateur de fichiers."
    )
 
 /* Settings > Frame Throttle */
@@ -6401,7 +6409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Afficher 'Redémarrer'"
+   "Afficher 'Réinitialiser'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
@@ -6413,7 +6421,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Afficher l'option 'Fermer le contenu'."
+   "Afficher l'option pour fermer le contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8918,11 +8926,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Redémarrer"
+   "Réinitialiser"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Redémarrer le contenu depuis le début. Start sur la RetroManette déclenche la réinitialisation matérielle."
+   "Déclencher la réinitialisation du logiciel. Start sur la RetroManette déclenche la réinitialisation matérielle."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

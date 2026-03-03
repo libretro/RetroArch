@@ -3561,10 +3561,6 @@ MSG_HASH(
    "Συνέχιση"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Επανεκκίνηση"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Κλείσιμο Περιεχομένου"
    )

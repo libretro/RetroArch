@@ -232,20 +232,20 @@ MSG_HASH(
    "退出RetroArch应用。[退出时配置保存] 已启用。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "立即同步"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "手动触发云同步。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "退出RetroArch应用。[退出时配置保存] 已禁用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "退出 RetroArch。以任何强制方式终止程序（如 SIGKILL 等）均不会保存配置。在类 Unix 系统上，使用 SIGINT 或 SIGTERM 信号可触发正常退出流程，若已启用配置自动保存，则会在退出时保存配置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "立即同步"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "手动触发云同步。"
    )
 
 /* Main Menu > Load Core */
@@ -6212,20 +6212,8 @@ MSG_HASH(
    "显示「恢复」选项。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "显示「重启」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "显示「重启」选项。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "显示「关闭」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "显示「关闭」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8694,7 +8682,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "重启"
+   "重置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

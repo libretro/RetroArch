@@ -212,16 +212,16 @@ MSG_HASH(
    "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dinyalakan."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dimatikan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sinkronkan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    "Manual mengaktifkan sinkronisasi awan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dimatikan."
    )
 
 /* Main Menu > Load Core */
@@ -2636,14 +2636,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Tampilkan 'Mulai Ulang'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Menampilkan opsi mulai ulang konten."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
    "Tampilkan 'Mulai Siar Alir'"
    )
@@ -3252,10 +3244,6 @@ MSG_HASH(
 
 /* Quick Menu */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Mulai Ulang"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Tutup Konten"

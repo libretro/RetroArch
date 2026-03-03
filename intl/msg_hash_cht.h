@@ -224,20 +224,20 @@ MSG_HASH(
    "結束復古電玩應用程式, 「結束時儲存設定檔」已開啟。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "現在同步"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "手動觸發雲端同步。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "結束復古電玩應用程式, 「結束時儲存設定檔」已關閉。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "結束復古電玩。\n以任何強制方式終止應用程式(SIGKILL等), 將會無法儲存設定檔的情況下結束復古電玩。\n在類Unix系統上有開啟儲存設定檔的情況下, 允許使用SIGINT/SIGTERM終止應用程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "現在同步"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "手動觸發雲端同步。"
    )
 
 /* Main Menu > Load Core */
@@ -5748,20 +5748,8 @@ MSG_HASH(
    "顯示「繼續」選項。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "顯示「重開」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "顯示「重開」選項。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "顯示「關閉」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "顯示「關閉」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8214,7 +8202,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "重開"
+   "重置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

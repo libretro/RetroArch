@@ -232,6 +232,14 @@ MSG_HASH(
    "Вихід з додатка RetroArch. Збереження конфігурації на виході увімкнено."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Вихід з додатка RetroArch. Збереження конфігурації на виході вимкнено."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Вихід з RetroArch. Завершення роботи програми будь-яким жорстким способом (SIGKILL тощо) призведе до завершення роботи RetroArch без збереження конфігурації у будь-якому випадку. На Unix-подібних системах SIGINT/SIGTERM дозволяє чисту деініціалізацію, яка включає збереження конфігурації, якщ[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Синхронізувати зараз"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Вирішити усі конфлікти, завантаживши файли сервера, замінивши локальні копії."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Вихід з додатка RetroArch. Збереження конфігурації на виході вимкнено."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Вихід з RetroArch. Завершення роботи програми будь-яким жорстким способом (SIGKILL тощо) призведе до завершення роботи RetroArch без збереження конфігурації у будь-якому випадку. На Unix-подібних системах SIGINT/SIGTERM дозволяє чисту деініціалізацію, яка включає збереження конфігурації, якщ[...]"
    )
 
 /* Main Menu > Load Core */
@@ -6212,20 +6212,8 @@ MSG_HASH(
    "Показувати опцію поновлення вмісту."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Показати 'Перезапуск'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Показувати опцію перезапуску вмісту."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Показати 'Закрити вміст'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Показувати опцію \"Закрити вміст\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8690,11 +8678,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Перезапустити"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Перезапуск вмісту з самого початку. Перезапуск програми RetroPad призведе до перезавантаження системи."
+   "Скинути"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

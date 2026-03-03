@@ -220,6 +220,14 @@ MSG_HASH(
    "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut är aktiverat."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut är inaktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Avsluta RetroArch. Döda programmet på ett hårt sätt (SIGKILL, etc.) kommer att terminera RetroArch utan att spara konfigurationen i något fall. På Unix-liknande system tillåter SIGINT/SIGTERM en ren deinitiering som inkluderar att konfigurationen sparas om aktiverad."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Synkronisera nu"
    )
@@ -242,14 +250,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Lös alla konflikter genom att ladda ner serverfiler, ersätter lokala kopior."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut är inaktiverat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Avsluta RetroArch. Döda programmet på ett hårt sätt (SIGKILL, etc.) kommer att terminera RetroArch utan att spara konfigurationen i något fall. På Unix-liknande system tillåter SIGINT/SIGTERM en ren deinitiering som inkluderar att konfigurationen sparas om aktiverad."
    )
 
 /* Main Menu > Load Core */
@@ -2298,6 +2298,10 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Ställ in HDR-utgångsläge om skärmen stöder det. Observera: scRGB kan mjuka upp strikta CRT-skuggmasker eftersom operativsystemets compositor konverterar till HDR10 efter att masken har tillämpats."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    "Av"
@@ -4710,8 +4714,16 @@ MSG_HASH(
    "Använd intern mediaspelare"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Visa filer som stöds av mediaspelaren i filbläddraren."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Använd inbyggd bildvisare"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Visa filer som stöds av bildvisaren i filbläddraren."
    )
 
 /* Settings > Frame Throttle */
@@ -6204,20 +6216,8 @@ MSG_HASH(
    "Visar alternativet att återuppta innehåll."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Visa 'Starta om'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Visa alternativet att starta om innehåll."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Visa 'Stäng Innehåll'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Visa alternativet att stänga innehåll."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8249,6 +8249,10 @@ MSG_HASH(
    "Spellista att uppdatera"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Resultaten läggs till i denna spellista. Vid inställningen Auto - Alla kan flera systemspellistor uppdateras. Anpassa utan databasreferens länkar inte posterna till någon databas i spellistan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    "Sök igenom en enda fil"
    )
@@ -8259,6 +8263,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    "Hoppa över databasreferenser från spellista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "Vid anpassade spellistnamn ska du alltid använda spellistnamnet för miniatyrbildssökning, även om det finns en matchning i databasen."
    )
 
 /* Import Content > Scan File */
@@ -8678,11 +8686,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Starta om"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Starta om innehållet från början. RetroPad Start aktiverar hård omstart."
+   "Återställ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -12802,6 +12806,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Kärnan har inget stöd för sparat tillstånd."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "Kärnan har inte stöd för att ångra sparade tillstånd."
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,

@@ -232,6 +232,14 @@ MSG_HASH(
    "Tanca el RetroArch. La configuració es desarà en sortir."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Tanca el RetroArch. La configuració no es desarà en sortir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Tanca el RetroArch. Matar el programa de manera forçada (amb SIGKILL, etc.) finalitzarà el RetroArch sense desar la configuració. En sistemes Unix, SIGINT/SIGTERM permet un tancament net, el que inclou que es desi la configuració si està activat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sincronitza ara"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Resol tots els conflictes descarregant els fitxers del servidor i reemplaça els fitxers locals."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Tanca el RetroArch. La configuració no es desarà en sortir."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Tanca el RetroArch. Matar el programa de manera forçada (amb SIGKILL, etc.) finalitzarà el RetroArch sense desar la configuració. En sistemes Unix, SIGINT/SIGTERM permet un tancament net, el que inclou que es desi la configuració si està activat."
    )
 
 /* Main Menu > Load Core */
@@ -6412,20 +6412,8 @@ MSG_HASH(
    "Mostra l’opció de reprendre el contingut."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Mostra “Reinicia”"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Mostra l’opció de reiniciar el contingut."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Mostra “Tanca el contingut”"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Mostra l’opció “Tanca el contingut”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8942,11 +8930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Reinicia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia el contingut des de l'inici."
+   "Reiniciar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

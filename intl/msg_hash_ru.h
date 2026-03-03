@@ -232,6 +232,14 @@ MSG_HASH(
    "Закрыть RetroArch. Сохранение конфигурации при выходе включено."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Закрыть RetroArch. Сохранение конфигурации при выходе отключено."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Выход из RetroArch. Закрытие программы любым принудительным способом (SIGKILL и т.д.) выгружает RetroArch без сохранения конфигурации. На Unix-подобных системах SIGINT/SIGTERM позволяет выполнить чистую деинициализацию с сохранением конфигурации, если данная настройка включена."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Синхронизировать сейчас"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Решить все конфликты путём скачивания файлов с сервера и замены локальных копий."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Закрыть RetroArch. Сохранение конфигурации при выходе отключено."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Выход из RetroArch. Закрытие программы любым принудительным способом (SIGKILL и т.д.) выгружает RetroArch без сохранения конфигурации. На Unix-подобных системах SIGINT/SIGTERM позволяет выполнить чистую деинициализацию с сохранением конфигурации, если данная настройка включена."
    )
 
 /* Main Menu > Load Core */
@@ -4898,8 +4898,16 @@ MSG_HASH(
    "Встроенный медиаплеер"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Показывать в браузере файлы, поддерживаемые медиаплеером."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Встроенный просмотр изображений"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Показывать в браузере файлы, поддерживаемые просмотрщиком изображений."
    )
 
 /* Settings > Frame Throttle */
@@ -6457,7 +6465,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Показывать опцию 'Перезапуск'."
+   "Показывать опцию сброса контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -6465,7 +6473,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Показывать опцию 'Закрыть контент'."
+   "Показывать опцию закрытия контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8982,11 +8990,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Перезапуск"
+   "Сброс"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Перезапустить загруженный контент. Для аппаратного сброса нажмите Start."
+   "Выполнить мягкую перезагрузку. Нажатие Start осуществляет жёсткий сброс."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
