@@ -62,6 +62,10 @@
    (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
 #define NBITS(x) ((((x) - 1) / (sizeof(long) * CHAR_BIT)) + 1)
 
+#ifndef INPUT_PROP_ACCELEROMETER
+#define INPUT_PROP_ACCELEROMETER 0x06
+#endif
+
 #define SENSOR_AXES 6 /* ABS_X..ABS_RZ on sensor node, maps 1:1 to RETRO_SENSOR_* 0-5 */
 #define DEG_TO_RAD_F 0.017453293f
 
