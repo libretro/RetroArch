@@ -363,14 +363,16 @@ int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
 
 int filestream_eof(RFILE *stream)
 {
-   return filestream_tell(stream) == filestream_get_size(stream) ? EOF : 0;
+   /* Cache tell result to avoid two separate VFS round-trips */
+   int64_t pos = filestream_tell(stream);
+   return (pos != -1 && pos == filestream_get_size(stream)) ? EOF : 0;
 }
 
 int64_t filestream_tell(RFILE *stream)
 {
    int64_t output;
 
-   if (filestream_size_cb)
+   if (filestream_tell_cb)
       output = filestream_tell_cb(stream->hfile);
    else
       output = retro_vfs_file_tell_impl(
@@ -440,7 +442,7 @@ int filestream_rename(const char *old_path, const char *new_path)
 
 int filestream_copy(const char *src, const char *dst)
 {
-   char buf[256] = {0};
+   char buf[65536]; /* 64KB buffer: reduces syscall count, improves throughput */
    int64_t n     = 0;
    int ret       = 0;
    char path_dst[PATH_MAX_LENGTH] = {0};
@@ -477,6 +479,7 @@ close:
 int filestream_cmp(const char *src, const char *dst)
 {
    int ret           = 0;
+   int64_t n_src     = 0;
    RFILE *fp_src     = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
    RFILE *fp_dst     = filestream_open(dst, RETRO_VFS_FILE_ACCESS_READ,
@@ -487,12 +490,19 @@ int filestream_cmp(const char *src, const char *dst)
 
    if (ret >= 0)
    {
-      char buf_src[256] = {0};
-      char buf_dst[256] = {0};
-      while ((filestream_read(fp_src, buf_src, sizeof(buf_src))) > 0 && ret == 0)
+      char buf_src[65536]; /* 64KB buffer: reduces I/O calls significantly */
+      char buf_dst[65536];
+      while ((n_src = filestream_read(fp_src, buf_src, sizeof(buf_src))) > 0 && ret == 0)
       {
-         filestream_read(fp_dst, buf_dst, sizeof(buf_dst));
-         ret = memcmp(buf_src, buf_dst, sizeof(buf_src));
+         /* Read exactly the same count from dst to keep buffers in sync */
+         int64_t n_dst = filestream_read(fp_dst, buf_dst, (int64_t)n_src);
+         if (n_dst != n_src)
+         {
+            ret = -1;
+            break;
+         }
+         /* Compare only the bytes actually read, not the full buffer size */
+         ret = memcmp(buf_src, buf_dst, (size_t)n_src);
       }
    }
 
@@ -546,9 +556,8 @@ int filestream_putc(RFILE *stream, int c)
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
-   static char buffer[8 * 1024];
-   int _len = vsnprintf(buffer, sizeof(buffer),
-         format, args);
+   char buffer[8 * 1024]; /* stack-allocated; avoids static state for re-entrancy */
+   int _len = vsnprintf(buffer, sizeof(buffer), format, args);
    if (_len < 0)
       return -1;
    else if (_len == 0)
@@ -657,10 +666,10 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
 char *filestream_getline(RFILE *stream)
 {
    char *newline_tmp  = NULL;
-   size_t cur_size    = 8;
+   size_t cur_size    = 63; /* one less than power-of-two to leave room for '\0' */
    size_t idx         = 0;
    int in             = 0;
-   char *newline      = (char*)malloc(9);
+   char *newline      = (char*)malloc(cur_size + 1);
 
    if (!stream || !newline)
    {
@@ -675,7 +684,7 @@ char *filestream_getline(RFILE *stream)
    {
       if (idx == cur_size)
       {
-         cur_size    *= 2;
+         cur_size    = (cur_size + 1) * 2 - 1; /* keep aligned to power-of-two minus 1 */
 
          if (!(newline_tmp = (char*)realloc(newline, cur_size + 1)))
          {
@@ -686,7 +695,7 @@ char *filestream_getline(RFILE *stream)
          newline     = newline_tmp;
       }
 
-      newline[idx++] = in;
+      newline[idx++] = (char)in;
       in             = filestream_getc(stream);
    }
 

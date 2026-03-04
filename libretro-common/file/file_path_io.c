@@ -43,22 +43,28 @@
 #endif
 
 /* TODO/FIXME - globals */
-static retro_vfs_stat_t path_stat_cb   = retro_vfs_stat_impl;
+static retro_vfs_stat_t  path_stat_cb  = retro_vfs_stat_impl;
 static retro_vfs_mkdir_t path_mkdir_cb = retro_vfs_mkdir_impl;
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
-   const struct retro_vfs_interface* 
-      vfs_iface           = vfs_info->iface;
+   const struct retro_vfs_interface *vfs_iface;
 
-   path_stat_cb           = retro_vfs_stat_impl;
-   path_mkdir_cb          = retro_vfs_mkdir_impl;
+   /* Reset to defaults unconditionally first */
+   path_stat_cb  = retro_vfs_stat_impl;
+   path_mkdir_cb = retro_vfs_mkdir_impl;
+
+   /* Single combined guard: reject unsupported version or null interface */
+   if (!vfs_info)
+      return;
+
+   vfs_iface = vfs_info->iface;
 
    if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
       return;
 
-   path_stat_cb           = vfs_iface->stat;
-   path_mkdir_cb          = vfs_iface->mkdir;
+   path_stat_cb  = vfs_iface->stat;
+   path_mkdir_cb = vfs_iface->mkdir;
 }
 
 int path_stat(const char *path)
@@ -94,7 +100,6 @@ int32_t path_get_size(const char *path)
    int32_t filesize = 0;
    if (path_stat_cb(path, &filesize) != 0)
       return filesize;
-
    return -1;
 }
 
@@ -102,48 +107,93 @@ int32_t path_get_size(const char *path)
  * path_mkdir:
  * @dir                : directory
  *
- * Create directory on filesystem.
- * 
- * Recursive function.
+ * Create directory on filesystem, creating intermediate parent
+ * directories as needed (iterative, not recursive).
  *
- * @return true if directory could be created, otherwise false.
+ * Converts the original tail-recursive design into an explicit
+ * iterative loop to avoid stack growth on deep paths, while
+ * keeping a single heap allocation for the working buffer.
+ *
+ * @return true if directory exists or was created, otherwise false.
  **/
 bool path_mkdir(const char *dir)
 {
-   bool norecurse     = false;
-   char     *basedir  = NULL;
+   size_t  len;
+   char   *buf;
+   char   *cur;
+   int     ret;
 
-   if (!(dir && *dir))
+   if (!dir || !*dir)
       return false;
 
-   /* Use heap. Real chance of stack 
-    * overflow if we recurse too hard. */
-   if (!(basedir = strdup(dir)))
+   len = strlen(dir);
+   buf = (char *)malloc(len + 1);
+   if (!buf)
       return false;
 
-   path_parent_dir(basedir, strlen(basedir));
+   memcpy(buf, dir, len + 1);
 
-   if (!*basedir || !strcmp(basedir, dir))
+   /* Walk up to find the highest missing ancestor, then
+    * create directories on the way back down — all without
+    * extra heap allocations or recursion. */
+   cur = buf + len;
+   for (;;)
    {
-      free(basedir);
-      return false;
+      /* Trim trailing separators to get the true parent */
+      path_parent_dir(buf, (size_t)(cur - buf));
+
+      /* parent_dir wrote a NUL; find it */
+      cur = buf + strlen(buf);
+
+      /* Reached filesystem root or an empty string */
+      if (cur == buf || !strcmp(buf, dir))
+      {
+         free(buf);
+         return false;
+      }
+
+      /* Stop as soon as we hit an existing directory */
+      if (path_is_directory(buf))
+         break;
    }
 
-   if (     path_is_directory(basedir)
-         || path_mkdir(basedir))
-      norecurse = true;
-
-   free(basedir);
-
-   if (norecurse)
+   /* Restore each component from the bottom up and mkdir it.
+    * We reconstruct the path by re-appending the segments we
+    * stripped during the upward walk. */
+   while ((size_t)(cur - buf) < len)
    {
-      int ret = path_mkdir_cb(dir);
+      /* Re-extend to next separator / end-of-original-path */
+      *cur = dir[(size_t)(cur - buf)]; /* restore separator */
+      while (       (size_t)(cur - buf)   < len
+             && dir[(size_t)(cur - buf)] != '\0'
+             && dir[(size_t)(cur - buf)] != '/'
+#ifdef _WIN32
+             && dir[(size_t)(cur - buf)] != '\\'
+#endif
+            )
+      {
+         cur++;
+         *cur = dir[(size_t)(cur - buf)];
+      }
+      *cur = '\0';
 
-      /* Don't treat this as an error. */
-      if (ret == -2 && path_is_directory(dir))
-         return true;
-      else if (ret == 0)
-         return true;
+      ret = path_mkdir_cb(buf);
+      /* -2 means "already exists"; verify it really is a dir */
+      if (ret == -2)
+      {
+         if (!path_is_directory(buf))
+         {
+            free(buf);
+            return false;
+         }
+      }
+      else if (ret != 0)
+      {
+         free(buf);
+         return false;
+      }
    }
-   return false;
+
+   free(buf);
+   return true;
 }
