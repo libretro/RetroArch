@@ -400,10 +400,14 @@ static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
 
    for (i = 0; i < width; i++)
    {
-      uint32_t r = *decoded; decoded += step;
-      uint32_t g = *decoded; decoded += step;
-      uint32_t b = *decoded; decoded += step;
-      data[i] = (0xffu << 24) | (r << 16) | (g << 8) | b;
+      uint32_t r, g, b;
+      r        = *decoded;
+      decoded += step;
+      g        = *decoded;
+      decoded += step;
+      b        = *decoded;
+      decoded += step;
+      data[i]  = (0xffu << 24) | (r << 16) | (g << 8) | b;
    }
 }
 
@@ -468,7 +472,7 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
          uint32_t g = *decoded++;
          uint32_t b = *decoded++;
          uint32_t a = *decoded++;
-         data[i] = (a << 24) | (r << 16) | (g << 8) | b;
+         data[i]    = (a << 24) | (r << 16) | (g << 8) | b;
       }
       return;
    }
@@ -532,11 +536,16 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
 
    for (i = 0; i < width; i++)
    {
-      uint32_t r = *decoded; decoded += step;
-      uint32_t g = *decoded; decoded += step;
-      uint32_t b = *decoded; decoded += step;
-      uint32_t a = *decoded; decoded += step;
-      data[i] = (a << 24) | (r << 16) | (g << 8) | b;
+      uint32_t r, g, b, a;
+      r           = *decoded;
+      decoded    += step;
+      g           = *decoded;
+      decoded    += step;
+      b           = *decoded;
+      decoded    += step;
+      a           = *decoded;
+      decoded    += step;
+      data[i]     = (a << 24) | (r << 16) | (g << 8) | b;
    }
 }
 
