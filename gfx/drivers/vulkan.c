@@ -383,11 +383,13 @@ static unsigned vulkan_num_miplevels(unsigned width, unsigned height)
 {
    unsigned size   = MAX(width, height);
    unsigned levels = 0;
-   while (size)
-   {
-      levels++;
-      size >>= 1;
-   }
+   /* Unrolled bit-counting: avoids branch-heavy loop for common texture sizes */
+   if (size >= 0x10000u) { levels += 16; size >>= 16; }
+   if (size >= 0x100u)   { levels +=  8; size >>=  8; }
+   if (size >= 0x10u)    { levels +=  4; size >>=  4; }
+   if (size >= 0x4u)     { levels +=  2; size >>=  2; }
+   if (size >= 0x2u)     { levels +=  1; size >>=  1; }
+   if (size)               levels +=  1;
    return levels;
 }
 
@@ -473,35 +475,20 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
    if (call->texture && call->texture->image)
       vulkan_transition_texture(vk, vk->cmd, call->texture);
 
-   if (call->pipeline != vk->tracker.pipeline)
+   if (   (call->pipeline != vk->tracker.pipeline)
+       || (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT))
    {
       VkRect2D sci;
-      vkCmdBindPipeline(vk->cmd,
-            VK_PIPELINE_BIND_POINT_GRAPHICS, call->pipeline);
-      vk->tracker.pipeline = call->pipeline;
 
-      /* Changing pipeline invalidates dynamic state. */
-      vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
-
-      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
-         sci               = vk->tracker.scissor;
-      else
+      if (call->pipeline != vk->tracker.pipeline)
       {
-         /* No scissor -> viewport */
-         sci.offset.x      = vk->vp.x;
-         sci.offset.y      = vk->vp.y;
-         sci.extent.width  = vk->vp.width;
-         sci.extent.height = vk->vp.height;
+         vkCmdBindPipeline(vk->cmd,
+               VK_PIPELINE_BIND_POINT_GRAPHICS, call->pipeline);
+         vk->tracker.pipeline = call->pipeline;
+         /* Changing pipeline invalidates dynamic state. */
+         vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
       }
 
-      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
-      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
-
-      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
-   }
-   else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
-   {
-      VkRect2D sci;
       if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
@@ -524,7 +511,6 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
       VkDescriptorSet set;
       /* Upload UBO */
       struct vk_buffer_range range;
-      float *mvp_data_ptr          = NULL;
 
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
                call->uniform_size, &range))
@@ -552,11 +538,7 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
 
       vk->tracker.view    = VK_NULL_HANDLE;
       vk->tracker.sampler = VK_NULL_HANDLE;
-      for (
-              mvp_data_ptr = &vk->tracker.mvp.data[0]
-            ; mvp_data_ptr < vk->tracker.mvp.data + 16
-            ; mvp_data_ptr++)
-         *mvp_data_ptr = 0.0f;
+      memset(&vk->tracker.mvp, 0, sizeof(vk->tracker.mvp));
    }
 
    /* VBO is already uploaded. */
@@ -2737,15 +2719,7 @@ static void vulkan_init_pipelines(vk_t *vk)
             break;
 
          case 2:
-            module_info.codeSize   = sizeof(alpha_blend_vert);
-            module_info.pCode      = alpha_blend_vert;
-            break;
-
          case 3:
-            module_info.codeSize   = sizeof(alpha_blend_vert);
-            module_info.pCode      = alpha_blend_vert;
-            break;
-
          case 4:
             module_info.codeSize   = sizeof(alpha_blend_vert);
             module_info.pCode      = alpha_blend_vert;
@@ -3456,6 +3430,7 @@ static void vulkan_init_static_resources(vk_t *vk)
 
    for (i = 0; i < 4 * 4; i++)
       blank[i] = -1u;
+   (void)i;
 
    vk->display.blank_texture = vulkan_create_texture(vk, NULL,
          4, 4, VK_FORMAT_B8G8R8A8_UNORM,
@@ -4870,6 +4845,14 @@ static bool vulkan_frame(void *data, const void *frame,
    VkRenderPassBeginInfo rp_info;
    VkCommandBufferBeginInfo begin_info;
    VkSemaphore signal_semaphores[2];
+   struct vk_per_frame *chain;
+   struct vk_image *backbuffer;
+   struct vk_descriptor_manager *manager;
+   struct vk_buffer_chain *buff_chain_vbo;
+   struct vk_buffer_chain *buff_chain_ubo;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   bool use_offscreen_buffer;
+#endif
    vk_t *vk                                      = (vk_t*)data;
    vulkan_filter_chain_t *filter_chain           = NULL;
    bool waits_for_semaphores                     = false;
@@ -4922,7 +4905,7 @@ static bool vulkan_frame(void *data, const void *frame,
     * The default filter chain already contains the internal HDR shader
     * (hdr_frag) so it renders directly to the swapchain — no offscreen needed.
     * Custom shader chains need offscreen unless they emit HDR natively. */
-   bool use_offscreen_buffer = false;
+   use_offscreen_buffer = false;
    if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       && filter_chain != vk->filter_chain_default)
    {
@@ -4944,11 +4927,11 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Bookkeeping on start of frame. */
-   struct vk_per_frame *chain                    = &vk->swapchain[frame_index];
-   struct vk_image *backbuffer                   = &vk->backbuffers[swapchain_index];
-   struct vk_descriptor_manager *manager         = &chain->descriptor_manager;
-   struct vk_buffer_chain *buff_chain_vbo        = &chain->vbo;
-   struct vk_buffer_chain *buff_chain_ubo        = &chain->ubo;
+   chain           = &vk->swapchain[frame_index];
+   backbuffer      = &vk->backbuffers[swapchain_index];
+   manager         = &chain->descriptor_manager;
+   buff_chain_vbo  = &chain->vbo;
+   buff_chain_ubo  = &chain->ubo;
 
    vk->chain                                     = chain;
    vk->backbuffer                                = backbuffer;
@@ -4980,8 +4963,7 @@ static bool vulkan_frame(void *data, const void *frame,
    vk->tracker.pipeline              = VK_NULL_HANDLE;
    vk->tracker.view                  = VK_NULL_HANDLE;
    vk->tracker.sampler               = VK_NULL_HANDLE;
-   for (i = 0; i < 16; i++)
-      vk->tracker.mvp.data[i]        = 0.0f;
+   memset(&vk->tracker.mvp, 0, sizeof(vk->tracker.mvp));
 
    waits_for_semaphores              =
           (vk->flags & VK_FLAG_HW_ENABLE)
@@ -5124,12 +5106,14 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)filter_chain, video_driver_get_core_aspect());
 
    /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-   uint32_t rot = retroarch_get_rotation();
-   float core_aspect_rot = video_driver_get_core_aspect();
-   if (rot == 1 || rot == 3)
-      core_aspect_rot = 1/core_aspect_rot;
-   vulkan_filter_chain_set_core_aspect_rot(
-         (vulkan_filter_chain_t*)filter_chain, core_aspect_rot);
+   {
+      uint32_t rot            = retroarch_get_rotation();
+      float core_aspect_rot   = video_driver_get_core_aspect();
+      if (rot == 1 || rot == 3)
+         core_aspect_rot = 1.0f / core_aspect_rot;
+      vulkan_filter_chain_set_core_aspect_rot(
+            (vulkan_filter_chain_t*)filter_chain, core_aspect_rot);
+   }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    {
@@ -5143,8 +5127,8 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* Render offscreen filter chain passes. */
    {
-      /* Set the source texture in the filter chain */
       struct vulkan_filter_chain_texture input;
+      memset(&input, 0, sizeof(input));
 
       if (vk->flags & VK_FLAG_HW_ENABLE)
       {
@@ -5253,6 +5237,10 @@ static bool vulkan_frame(void *data, const void *frame,
    if (     (backbuffer->image != VK_NULL_HANDLE)
          && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
    {
+#ifdef VULKAN_HDR_SWAPCHAIN
+      bool end_pass      = true;
+      bool end_main_pass = true;
+#endif
       rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp_info.pNext                    = NULL;
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -5282,9 +5270,6 @@ static bool vulkan_frame(void *data, const void *frame,
             &vk->vk_vp, vk->mvp.data);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-      bool end_pass = true;
-      bool end_main_pass = true;
-
       /* Copy over back buffer to swap chain render targets */
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
           use_offscreen_buffer)
@@ -5333,10 +5318,14 @@ static bool vulkan_frame(void *data, const void *frame,
          end_main_pass = false;
       }
 
-      const bool message_visible = !string_is_empty(msg);
-
+      {
+      bool message_visible = !string_is_empty(msg);
 #ifdef HAVE_GFX_WIDGETS
-      const bool widgets_visible = gfx_widgets_visible(video_info);
+      bool widgets_visible = gfx_widgets_visible(video_info);
+#else
+      /* suppress unused warning when widgets not enabled */
+      int widgets_visible = 0;
+      (void)widgets_visible;
 #endif
 
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
@@ -5472,6 +5461,7 @@ static bool vulkan_frame(void *data, const void *frame,
          }
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
+      } /* end message_visible / widgets_visible scope */
    }
 
    /* End the filter chain frame.
@@ -5677,6 +5667,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
 #ifdef VULKAN_HDR_SWAPCHAIN
+   {
    bool video_hdr_enable = video_driver_supports_hdr() && (video_info->hdr_mode > 0);
    if (       (vk->flags & VK_FLAG_SHOULD_RESIZE)
          || (((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) > 0)
@@ -5703,7 +5694,7 @@ static bool vulkan_frame(void *data, const void *frame,
          vk->context->flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
 #endif /* VULKAN_HDR_SWAPCHAIN */
-
+      {
       gfx_ctx_mode_t mode;
       mode.width  = width;
       mode.height = height;
@@ -5739,7 +5730,11 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
       vk->flags &= ~VK_FLAG_SHOULD_RESIZE;
+      } /* end mode block */
    }
+#ifdef VULKAN_HDR_SWAPCHAIN
+   } /* end video_hdr_enable block */
+#endif
 
    if (vk->context->flags & VK_CTX_FLAG_INVALID_SWAPCHAIN)
       vulkan_check_swapchain(vk);
@@ -6254,6 +6249,7 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
 
 static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
+   VkFormat format;
    struct vk_texture *staging       = NULL;
    vk_t *vk                         = (vk_t*)data;
 
@@ -6277,7 +6273,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    staging = &vk->readback.staging[vk->context->current_frame_index];
 
-   VkFormat format = vk->context->swapchain_format;
+   format = vk->context->swapchain_format;
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
@@ -6377,11 +6373,13 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
                      src += staging->stride, buffer -= 3 * vp_width)
                {
                   int x;
-                  for (x = 0; x < (int) vp_width; x++)
+                  const uint8_t *s = src;
+                  uint8_t       *d = buffer;
+                  for (x = 0; x < (int) vp_width; x++, s += 4, d += 3)
                   {
-                     buffer[3 * x + 0] = src[4 * x + 0];
-                     buffer[3 * x + 1] = src[4 * x + 1];
-                     buffer[3 * x + 2] = src[4 * x + 2];
+                     d[0] = s[0];
+                     d[1] = s[1];
+                     d[2] = s[2];
                   }
                }
                break;
@@ -6392,11 +6390,13 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
                      src += staging->stride, buffer -= 3 * vp_width)
                {
                   int x;
-                  for (x = 0; x < (int) vp_width; x++)
+                  const uint8_t *s = src;
+                  uint8_t       *d = buffer;
+                  for (x = 0; x < (int) vp_width; x++, s += 4, d += 3)
                   {
-                     buffer[3 * x + 2] = src[4 * x + 0];
-                     buffer[3 * x + 1] = src[4 * x + 1];
-                     buffer[3 * x + 0] = src[4 * x + 2];
+                     d[2] = s[0];
+                     d[1] = s[1];
+                     d[0] = s[2];
                   }
                }
                break;
