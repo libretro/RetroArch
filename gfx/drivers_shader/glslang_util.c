@@ -88,52 +88,14 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
    return SLANG_INVALID_TEXTURE_SEMANTIC;
 }
 
-static bool string_separate_noalloc(
-      struct string_list *list,
-      char *str, const char *delim, size_t delim_len)
-{
-   char *start = str;
-   char *match = NULL;
-
-   while ((match = strstr(start, delim)) != NULL)
-   {
-      union string_list_elem_attr attr;
-      bool ok;
-      attr.i = 0;
-
-      *match = '\0';
-      ok     = string_list_append(list, start, attr);
-      *match = delim[0];
-
-      if (!ok)
-         return false;
-
-      start = match + delim_len;
-   }
-
-   /* Append the final token (after the last delimiter) */
-   if (*start != '\0')
-   {
-      union string_list_elem_attr attr;
-      attr.i = 0;
-
-      if (!string_list_append(list, start, attr))
-         return false;
-   }
-
-   return true;
-}
-
 bool glslang_read_shader_file(const char *path,
       struct string_list *output, bool root_file, bool is_optional)
 {
-   size_t i;
    char tmp[PATH_MAX_LENGTH];
    union string_list_elem_attr attr;
    const char *basename      = NULL;
    uint8_t *buf              = NULL;
    int64_t buf_len           = 0;
-   struct string_list lines  = {0};
    bool    ret               = false;
 
    tmp[0] = '\0';
@@ -156,134 +118,214 @@ bool glslang_read_shader_file(const char *path,
       return false;
    }
 
-   if (buf_len > 0)
-   {
-      /* Remove Windows '\r' chars if we encounter them */
-      string_remove_all_chars((char*)buf, '\r');
+   if (buf_len <= 0)
+      goto cleanup;
 
-      /* Split into lines
-       * (Blank lines must be included) */
-      string_list_initialize(&lines);
-      ret = string_separate_noalloc(&lines, (char*)buf, "\n", sizeof("\n")-1);
+   /* Remove Windows '\r' chars if we encounter them */
+   string_remove_all_chars((char*)buf, '\r');
+
+   {
+      char *cursor     = (char*)buf;
+      size_t line_idx  = 0;
+      bool first_line  = true;
+
+      /* If this is the 'parent' shader file and a slang file,
+       * ensure that first line is a 'VERSION' string */
+      bool check_version = root_file
+            && string_is_equal(path_get_extension(path), "slang");
+
+      while (*cursor != '\0')
+      {
+         char saved;
+         char *line_start = cursor;
+         char *newline    = cursor;
+         while (*newline != '\n' && *newline != '\0')
+            newline++;
+         saved            = *newline;
+
+         /* Temporarily terminate the line */
+         *newline = '\0';
+
+         if (first_line)
+         {
+            first_line = false;
+
+            if (check_version)
+            {
+               if (strncmp("#version ", line_start, STRLEN_CONST("#version ")))
+               {
+                  RARCH_ERR("[Slang] First line of the shader must contain a valid "
+                        "#version string.\n");
+                  *newline = saved;
+                  goto cleanup;
+               }
+
+               if (!string_list_append(output, line_start, attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+
+               /* Allows us to use #line to make dealing with shader
+                * errors easier. */
+               if (!string_list_append(output,
+                     "#extension GL_GOOGLE_cpp_style_line_directive : require",
+                     attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+
+               /* Append feature defines */
+               if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr)
+                     || !string_list_append(output, "#define _HAS_FRAMETIME_UNIFORMS", attr)
+                     || !string_list_append(output, "#define _HAS_SENSOR_UNIFORMS", attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+
+               snprintf(tmp, sizeof(tmp), "#line 2 \"%s\"", basename);
+               if (!string_list_append(output, tmp, attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+
+               /* Advance to line 2 for processing below */
+               *newline = saved;
+               cursor   = (*newline == '\n') ? newline + 1 : newline;
+               line_idx++;
+               continue;
+            }
+
+            /* Non-root or non-slang: emit feature defines + #line once */
+            if (root_file)
+            {
+               if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr)
+                     || !string_list_append(output, "#define _HAS_FRAMETIME_UNIFORMS", attr)
+                     || !string_list_append(output, "#define _HAS_SENSOR_UNIFORMS", attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+
+               snprintf(tmp, sizeof(tmp), "#line 2 \"%s\"", basename);
+               if (!string_list_append(output, tmp, attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+            }
+            else
+            {
+               if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr)
+                     || !string_list_append(output, "#define _HAS_FRAMETIME_UNIFORMS", attr)
+                     || !string_list_append(output, "#define _HAS_SENSOR_UNIFORMS", attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+
+               snprintf(tmp, sizeof(tmp), "#line 1 \"%s\"", basename);
+               if (!string_list_append(output, tmp, attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+            }
+         }
+
+         /* Skip line 0 (the #version line) for root slang files —
+          * already handled above */
+         if (root_file && check_version && line_idx == 0)
+         {
+            *newline = saved;
+            cursor   = (*newline == '\n') ? newline + 1 : newline;
+            line_idx++;
+            continue;
+         }
+
+         /* Process the line */
+         {
+            bool include_optional = !strncmp("#pragma include_optional ",
+                  line_start, STRLEN_CONST("#pragma include_optional "));
+
+            if (  !strncmp("#include ", line_start, STRLEN_CONST("#include "))
+                  || include_optional)
+            {
+               char include_path[PATH_MAX_LENGTH];
+               char *include_file = slang_get_include_file(
+                     line_start, strlen(line_start));
+
+               if (string_is_empty(include_file))
+               {
+                  RARCH_ERR("[Slang] Invalid include statement \"%s\".\n",
+                        line_start);
+                  *newline = saved;
+                  goto cleanup;
+               }
+
+               include_path[0] = '\0';
+               fill_pathname_resolve_relative(
+                     include_path, path, include_file, sizeof(include_path));
+
+               *newline = saved;
+
+               if (!glslang_read_shader_file(include_path, output,
+                     false, include_optional))
+               {
+                  if (!include_optional)
+                     goto cleanup;
+                  RARCH_LOG("[Slang] Optional include not found \"%s\".\n",
+                        include_path);
+               }
+
+               snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+                     (unsigned)(line_idx + 1), basename);
+               if (!string_list_append(output, tmp, attr))
+                  goto cleanup;
+            }
+            else if (  !strncmp("#endif",  line_start, STRLEN_CONST("#endif"))
+                    || !strncmp("#pragma", line_start, STRLEN_CONST("#pragma")))
+            {
+               if (!string_list_append(output, line_start, attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+               snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+                     (unsigned)(line_idx + 2), basename);
+               *newline = saved;
+               if (!string_list_append(output, tmp, attr))
+                  goto cleanup;
+            }
+            else
+            {
+               if (!string_list_append(output, line_start, attr))
+               {
+                  *newline = saved;
+                  goto cleanup;
+               }
+               *newline = saved;
+            }
+
+            cursor = (*newline == '\n') ? newline + 1 : newline;
+            line_idx++;
+            continue;
+         }
+
+         *newline = saved;
+         goto cleanup;
+      }
    }
 
-   /* Buffer is no longer required - clean up */
+   ret = true;
+
+cleanup:
    if (buf)
       free(buf);
-
-   /* Sanity check */
-   if (!ret)
-      return false;
-
-   if (lines.size < 1)
-      goto error;
-
-    /* If this is the 'parent' shader file and a slang file,
-    * ensure that first line is a 'VERSION' string */
-   if (root_file && string_is_equal(path_get_extension(path), "slang"))
-   {
-      const char *line = lines.elems[0].data;
-
-      if (strncmp("#version ", line, STRLEN_CONST("#version ")))
-      {
-         RARCH_ERR("[Slang] First line of the shader must contain a valid "
-               "#version string.\n");
-         goto error;
-      }
-
-      if (!string_list_append(output, line, attr))
-         goto error;
-
-      /* Allows us to use #line to make dealing with shader
-       * errors easier.
-       * This is supported by glslang, but since we always
-       * use glslang statically, this is fine. */
-      if (!string_list_append(output,
-               "#extension GL_GOOGLE_cpp_style_line_directive : require",
-               attr))
-         goto error;
-   }
-
-   /* Add defines about supported retroarch features */
-   if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr))
-      goto error;
-
-   if (!string_list_append(output, "#define _HAS_FRAMETIME_UNIFORMS", attr))
-      goto error;
-
-   if (!string_list_append(output, "#define _HAS_SENSOR_UNIFORMS", attr))
-      goto error;
-
-   /* At least VIM treats the first line as line #1,
-    * so offset everything by one. */
-   snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", root_file ? 2 : 1, basename);
-   if (!string_list_append(output, tmp, attr))
-      goto error;
-
-   /* Loop through lines of file */
-   for (i = root_file ? 1 : 0; i < lines.size; i++)
-   {
-      char *line   = lines.elems[i].data;
-
-      /* Check for 'include' statements */
-      bool include_optional = !strncmp("#pragma include_optional ", line, STRLEN_CONST("#pragma include_optional "));
-      if ( !strncmp("#include ", line, STRLEN_CONST("#include ")) || include_optional )
-      {
-         char include_path[PATH_MAX_LENGTH];
-         char *include_file = slang_get_include_file(line, strlen(line));
-
-         if (string_is_empty(include_file))
-         {
-            RARCH_ERR("[Slang] Invalid include statement \"%s\".\n", line);
-            goto error;
-         }
-
-         include_path[0] = '\0';
-         fill_pathname_resolve_relative(
-               include_path, path, include_file, sizeof(include_path));
-
-         /* Parse include file */
-         if (!glslang_read_shader_file(include_path, output, false, include_optional))
-         {
-            if (!include_optional)
-               goto error;
-            RARCH_LOG("[Slang] Optional include not found \"%s\".\n", include_path);
-         }
-
-         /* After including a file, use line directive
-          * to pull it back to current file. */
-         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
-               (unsigned)(i + 1), basename);
-         if (!string_list_append(output, tmp, attr))
-            goto error;
-      }
-      else if (   !strncmp("#endif",  line, STRLEN_CONST("#endif"))
-               || !strncmp("#pragma", line, STRLEN_CONST("#pragma")))
-      {
-         /* #line seems to be ignored if preprocessor tests fail,
-          * so we should reapply #line after each #endif.
-          * Add extra offset here since we're setting #line
-          * for the line after this one.
-          */
-         if (!string_list_append(output, line, attr))
-            goto error;
-         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
-               (unsigned)(i + 2), basename);
-         if (!string_list_append(output, tmp, attr))
-            goto error;
-      }
-      else
-         if (!string_list_append(output, line, attr))
-            goto error;
-   }
-
-   string_list_deinitialize(&lines);
-
-   return true;
-
-error:
-   string_list_deinitialize(&lines);
-   return false;
+   return ret;
 }
 
 const char *glslang_format_to_string(enum glslang_format fmt)
