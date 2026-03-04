@@ -321,25 +321,14 @@ static bool win32_display_server_set_resolution(void *data,
 static int resolution_list_qsort_func(
       const video_display_config_t *a, const video_display_config_t *b)
 {
-   char str_a[64];
-   char str_b[64];
-
    if (!a || !b)
       return 0;
 
-   str_a[0] = str_b[0] = '\0';
-
-   snprintf(str_a, sizeof(str_a), "%04dx%04d (%d Hz)",
-         a->width,
-         a->height,
-         a->refreshrate);
-
-   snprintf(str_b, sizeof(str_b), "%04dx%04d (%d Hz)",
-         b->width,
-         b->height,
-         b->refreshrate);
-
-   return strcasecmp(str_a, str_b);
+   if (a->width != b->width)
+      return (int)a->width - (int)b->width;
+   if (a->height != b->height)
+      return (int)a->height - (int)b->height;
+   return (int)a->refreshrate - (int)b->refreshrate;
 }
 
 static void *win32_display_server_get_resolution_list(
@@ -347,8 +336,8 @@ static void *win32_display_server_get_resolution_list(
 {
    DEVMODE dm                        = {0};
    unsigned i                        = 0;
-   unsigned j                        = 0;
    unsigned count                    = 0;
+   unsigned capacity                 = 64; /* initial allocation */
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
    unsigned curr_bpp                 = 0;
@@ -358,6 +347,7 @@ static void *win32_display_server_get_resolution_list(
 #endif
    bool curr_interlaced              = false;
    struct video_display_config *conf = NULL;
+   struct video_display_config *tmp  = NULL;
 
    if (win32_get_video_output(&dm, -1, sizeof(dm)))
    {
@@ -371,6 +361,16 @@ static void *win32_display_server_get_resolution_list(
 #endif
    }
 
+   /* Single-pass enumeration: grow array as needed instead of
+    * iterating twice (once to count, once to fill). */
+   conf = (struct video_display_config*)
+      calloc(capacity, sizeof(struct video_display_config));
+   if (!conf)
+   {
+      *len = 0;
+      return NULL;
+   }
+
    for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
    {
       if (dm.dmBitsPerPel != curr_bpp)
@@ -382,50 +382,47 @@ static void *win32_display_server_get_resolution_list(
          continue;
 #endif
 
+      /* Grow buffer if needed */
+      if (count >= capacity)
+      {
+         capacity *= 2;
+         tmp = (struct video_display_config*)
+            realloc(conf, capacity * sizeof(struct video_display_config));
+         if (!tmp)
+         {
+            free(conf);
+            *len = 0;
+            return NULL;
+         }
+         conf = tmp;
+      }
+
+      conf[count].width       = dm.dmPelsWidth;
+      conf[count].height      = dm.dmPelsHeight;
+      conf[count].bpp         = dm.dmBitsPerPel;
+      conf[count].refreshrate = dm.dmDisplayFrequency;
+      conf[count].refreshrate_float = 0.0f;
+      conf[count].idx         = count;
+      conf[count].current     = false;
+#if _WIN32_WINNT >= 0x0500
+      conf[count].interlaced  = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
+#else
+      conf[count].interlaced  = false;
+#endif
+      conf[count].dblscan     = false;
+
+      if (     (conf[count].width       == curr_width)
+            && (conf[count].height      == curr_height)
+            && (conf[count].bpp         == curr_bpp)
+            && (conf[count].refreshrate == curr_refreshrate)
+            && (conf[count].interlaced  == curr_interlaced)
+         )
+         conf[count].current  = true;
+
       count++;
    }
 
    *len = count;
-   if (!(conf = (struct video_display_config*)
-      calloc(*len, sizeof(struct video_display_config))))
-      return NULL;
-
-   for (i = 0, j = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
-   {
-      if (dm.dmBitsPerPel != curr_bpp)
-         continue;
-#if _WIN32_WINNT >= 0x0500
-      if (dm.dmDisplayOrientation != curr_orientation)
-         continue;
-      if (dm.dmDisplayFixedOutput != DMDFO_DEFAULT)
-         continue;
-#endif
-
-      conf[j].width       = dm.dmPelsWidth;
-      conf[j].height      = dm.dmPelsHeight;
-      conf[j].bpp         = dm.dmBitsPerPel;
-      conf[j].refreshrate = dm.dmDisplayFrequency;
-      /* It may be possible to get exact refresh rate via different API - for now, it is integer only */
-      conf[j].refreshrate_float = 0.0f;
-      conf[j].idx         = j;
-      conf[j].current     = false;
-#if _WIN32_WINNT >= 0x0500
-      conf[j].interlaced  = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
-#else
-      conf[j].interlaced  = false;
-#endif
-      conf[j].dblscan     = false; /* no flag for doublescan on this platform */
-
-      if (     (conf[j].width       == curr_width)
-            && (conf[j].height      == curr_height)
-            && (conf[j].bpp         == curr_bpp)
-            && (conf[j].refreshrate == curr_refreshrate)
-            && (conf[j].interlaced  == curr_interlaced)
-         )
-         conf[j].current  = true;
-
-      j++;
-   }
 
    qsort(
          conf, count,
