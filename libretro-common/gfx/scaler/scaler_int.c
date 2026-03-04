@@ -154,7 +154,7 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
          }
 
          /* --- 1-tap remainder --- */
-         if (__builtin_expect(y < ctx->vert.filter_len, 0))
+         if (y < ctx->vert.filter_len) /* expected */
          {
             __m128i coeff = _mm_set_epi64x(0,
                   (int64_t)(filter_vert[y] * 0x0001000100010001LL));
@@ -269,7 +269,7 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
          }
 
          /* --- 1-tap remainder --- */
-         if (__builtin_expect(x < ctx->horiz.filter_len, 0))
+         if (x < ctx->horiz.filter_len) /* expected */
          {
             __m128i coeff = _mm_set_epi64x(0,
                   (int64_t)(filter_horiz[x] * 0x0001000100010001LL));
