@@ -1769,6 +1769,7 @@ void gfx_widgets_frame(void *data)
          || core_status_msg_show
          )
    {
+      int txt_width, total_width, status_txt_x;
       const char *txt      = *p_dispwidget->gfx_widgets_status_text == '\0'
          ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
          : p_dispwidget->gfx_widgets_status_text;
@@ -1786,11 +1787,10 @@ void gfx_widgets_frame(void *data)
                txt, txt_len, 1.0f);
          strlcpy(last_status_txt, txt, sizeof(last_status_txt));
       }
-      int txt_width        = cached_txt_width;
-      int total_width       = txt_width
+      txt_width        = cached_txt_width;
+      total_width      = txt_width
          + p_dispwidget->simple_widget_padding * 2;
-
-      int status_txt_x     = top_right_x_advance
+      status_txt_x     = top_right_x_advance
          - p_dispwidget->simple_widget_padding - txt_width;
       /* Ensure that left hand side of text does
        * not bleed off the edge of the screen */
