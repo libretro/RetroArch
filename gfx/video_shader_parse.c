@@ -913,7 +913,6 @@ void video_shader_resolve_parameters(struct video_shader *shader)
    }
 #else
    {
-      size_t j;
       struct video_shader_parameter *param = &shader->parameters[0];
       for (i = 0; i < shader->passes; i++)
       {
