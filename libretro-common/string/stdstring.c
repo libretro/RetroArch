@@ -443,39 +443,40 @@ size_t word_wrap_wideglyph(char *s, size_t len,
  *        token = NULL;
  *    }
  **/
-char* string_tokenize(char **str, const char *delim)
+char *string_tokenize(char **str, const char *delim)
 {
-   /* Taken from https://codereview.stackexchange.com/questions/216956/strtok-function-thread-safe-supports-empty-tokens-doesnt-change-string# */
-   char *str_ptr    = NULL;
-   char *delim_ptr  = NULL;
-   char *token      = NULL;
-   size_t token_len = 0;
+   char   *str_ptr   = NULL;
+   size_t  delim_len = 0;
+   size_t  token_len = 0;
+   char   *token     = NULL;
 
-   /* Sanity checks */
    if (!str || string_is_empty(delim))
       return NULL;
 
-   /* Note: we don't check string_is_empty() here,
-    * empty strings are valid */
    if (!(str_ptr = *str))
       return NULL;
 
-   /* Search for delimiter */
-   if ((delim_ptr = strstr(str_ptr, delim)))
-      token_len = delim_ptr - str_ptr;
-   else
-      token_len = strlen(str_ptr);
+   delim_len = strlen(delim);
+   token_len = 0;
 
-   /* Allocate token string */
+   /* Scan forward until we find the delimiter or end of string */
+   while (str_ptr[token_len] != '\0')
+   {
+      if (memcmp(str_ptr + token_len, delim, delim_len) == 0)
+         break;
+      token_len++;
+   }
+
    if (!(token = (char *)malloc((token_len + 1) * sizeof(char))))
       return NULL;
 
-   /* Copy token */
-   strlcpy(token, str_ptr, (token_len + 1) * sizeof(char));
+   memcpy(token, str_ptr, token_len);
    token[token_len] = '\0';
 
-   /* Update input string pointer */
-   *str = delim_ptr ? delim_ptr + strlen(delim) : NULL;
+   /* Advance past delimiter, or set to NULL if at end */
+   *str = (str_ptr[token_len] != '\0')
+      ? str_ptr + token_len + delim_len
+      : NULL;
 
    return token;
 }

@@ -28,15 +28,19 @@
 #include "glslang_util.h"
 #include "../../verbosity.h"
 
-static char *slang_get_include_file(const char *line, size_t len)
+static char *slang_get_include_file(char *line, size_t len)
 {
    char *end   = NULL;
-   char *start = (char*)memchr(line, '\"', len + 1);
+   char *start = (char*)memchr(line, '\"', len);
    if (!start)
       return NULL;
+
    start++;
-   if (!(end = (char*)memchr(start, '\"', len - (start - line))))
+   len -= (size_t)(start - line);
+
+   if (!(end = (char*)memchr(start, '\"', len)))
       return NULL;
+
    *end = '\0';
    return start;
 }
@@ -61,31 +65,25 @@ bool slang_texture_semantic_is_array(enum slang_texture_semantic sem)
 enum slang_texture_semantic slang_name_to_texture_semantic_array(
       const char *name, const char **names, unsigned *index)
 {
-   unsigned i = 0;
-   while (*names)
+   unsigned i;
+   for (i = 0; *names; i++, names++)
    {
-      const char                        *n = *names;
-      enum slang_texture_semantic semantic = (enum slang_texture_semantic)(i);
+      enum slang_texture_semantic semantic = (enum slang_texture_semantic)i;
 
       if (slang_texture_semantic_is_array(semantic))
       {
-         size_t _len = strlen(n);
-         int     cmp = strncmp(n, name, _len);
-
-         if (cmp == 0)
+         size_t _len = strlen(*names);
+         if (strncmp(*names, name, _len) == 0)
          {
-            *index = (unsigned)strtoul(name + _len, NULL, 0);
+            *index = (unsigned)strtoul(name + _len, NULL, 10);
             return semantic;
          }
       }
-      else if (string_is_equal(name, n))
+      else if (string_is_equal(name, *names))
       {
          *index = 0;
          return semantic;
       }
-
-      i++;
-      names++;
    }
    return SLANG_INVALID_TEXTURE_SEMANTIC;
 }
@@ -121,7 +119,6 @@ static bool string_separate_noalloc(
    }
    return true;
 }
-
 
 bool glslang_read_shader_file(const char *path,
       struct string_list *output, bool root_file, bool is_optional)
@@ -222,7 +219,7 @@ bool glslang_read_shader_file(const char *path,
    /* Loop through lines of file */
    for (i = root_file ? 1 : 0; i < lines.size; i++)
    {
-      const char *line   = lines.elems[i].data;
+      char *line   = lines.elems[i].data;
 
       /* Check for 'include' statements */
       bool include_optional = !strncmp("#pragma include_optional ", line, STRLEN_CONST("#pragma include_optional "));
