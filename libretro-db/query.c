@@ -339,17 +339,18 @@ struct registered_func registered_functions[100] = {
 };
 
 static void query_raise_unknown_function(
-      char *s, size_t _len,
+      char *s, size_t buf_len,
       ssize_t where, const char *name,
-      ssize_t len, const char **err)
+      ssize_t name_len, const char **err)
 {
-   int __len = snprintf(s, _len,
-         "%" PRIu64 "::Unknown function '",
-         (uint64_t)where
-         );
-   if (len < ((ssize_t)_len - __len - 3))
-      strncpy(s + __len, name, len);
-   strcpy(s + __len + len, "'");
+   int _len;
+   if (!s || buf_len == 0 || !name || name_len < 0)
+      return;
+   _len = snprintf(s, buf_len,
+         "%" PRIu64 "::Unknown function '%.*s'",
+         (uint64_t)where, (int)name_len, name);
+   if (_len < 0)
+      s[0] = '\0';  /* snprintf encoding error, ensure valid string */
    *err = s;
 }
 

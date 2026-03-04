@@ -340,7 +340,7 @@ struct string_list *string_list_clone(const struct string_list *src)
          char *ret        = (char*)malloc(len + 1);
          if (ret)
          {
-            strcpy(ret, _src);
+            strlcpy(ret, _src, len + 1);
             dest->elems[i].data = ret;
          }
       }
