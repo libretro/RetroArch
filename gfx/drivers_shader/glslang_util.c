@@ -92,21 +92,30 @@ static bool string_separate_noalloc(
       struct string_list *list,
       char *str, const char *delim)
 {
-   char *tok                = NULL;
-   char **str_ptr           = NULL;
+   char *start              = str;
+   char *match              = NULL;
+   size_t delim_len         = 0;
 
    /* Sanity check */
    if (!str || string_is_empty(delim) || !list)
       return false;
 
-   str_ptr = &str;
-   tok     = string_tokenize(str_ptr, delim);
+   delim_len = strlen(delim);
 
-   while (tok)
+   while ((match = strstr(start, delim)) != NULL)
    {
       union string_list_elem_attr attr;
+      char *tok      = NULL;
+      size_t tok_len = match - start;
 
       attr.i = 0;
+
+      tok = (char*)malloc(tok_len + 1);
+      if (!tok)
+         return false;
+
+      memcpy(tok, start, tok_len);
+      tok[tok_len] = '\0';
 
       if (!string_list_append(list, tok, attr))
       {
@@ -115,8 +124,19 @@ static bool string_separate_noalloc(
       }
 
       free(tok);
-      tok = string_tokenize(str_ptr, delim);
+      start = match + delim_len;
    }
+
+   /* Append the final token (after the last delimiter) */
+   if (*start != '\0')
+   {
+      union string_list_elem_attr attr;
+      attr.i = 0;
+
+      if (!string_list_append(list, start, attr))
+         return false;
+   }
+
    return true;
 }
 
