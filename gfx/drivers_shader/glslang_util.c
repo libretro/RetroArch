@@ -92,30 +92,22 @@ static bool string_separate_noalloc(
       struct string_list *list,
       char *str, const char *delim, size_t delim_len)
 {
-   char *start              = str;
-   char *match              = NULL;
+   char *start = str;
+   char *match = NULL;
 
    while ((match = strstr(start, delim)) != NULL)
    {
       union string_list_elem_attr attr;
-      char *tok      = NULL;
-      size_t tok_len = match - start;
-
+      bool ok;
       attr.i = 0;
 
-      if (!(tok = (char*)malloc(tok_len + 1)))
+      *match = '\0';
+      ok     = string_list_append(list, start, attr);
+      *match = delim[0];
+
+      if (!ok)
          return false;
 
-      memcpy(tok, start, tok_len);
-      tok[tok_len] = '\0';
-
-      if (!string_list_append(list, tok, attr))
-      {
-         free(tok);
-         return false;
-      }
-
-      free(tok);
       start = match + delim_len;
    }
 
