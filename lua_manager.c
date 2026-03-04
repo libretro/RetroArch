@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-#include <locale.h>
+#include <stdint.h>
 #include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <streams/stdin_stream.h>
@@ -52,7 +52,9 @@
 #endif
 
 
-/* LUA API based on Bizhawk https://tasvideos.org/Bizhawk/LuaFunctions */
+/* LUA API based on Bizhawk 
+ * https://tasvideos.org/Bizhawk/LuaFunctions
+ */
 
 
 static lua_State *co = NULL;
@@ -60,7 +62,7 @@ static lua_State *co = NULL;
 static unsigned int current_memory_domain = RETRO_MEMORY_SYSTEM_RAM;
 static const char* memory_domains_list_names[] = { "Battery RAM", "RTC", "RAM", "VRAM", "ROM" };
 
-static bool LUA_SCRIPTS_SANDBOXED=false;  /* TODO: turn into user setting */
+static bool LUA_SCRIPTS_SANDBOXED = true;  /* Enabled by default. TODO: add user setting */
 
 
 static void check_sandboxed_path(lua_State *L, const char* path)
@@ -2785,7 +2787,7 @@ typedef struct gui_shape
    uint32_t bg_color;
    unsigned width;
    unsigned height;
-   char *text;
+   char *text;  /* TODO: turn into a static buffer to reduce fragmentation? */
    /* font_data_t *font; */
    gfx_widget_font_data_t font;
    bool convert_coords;
@@ -2811,7 +2813,6 @@ int gui_clearGraphics(lua_State *L)
 static unsigned convert_to_screen_space(unsigned x, unsigned y,
                               unsigned width, unsigned height )
 {
-   
    struct video_viewport vp = {0};
    video_driver_get_viewport_info(&vp);
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -2821,7 +2822,7 @@ static unsigned convert_to_screen_space(unsigned x, unsigned y,
    /* RARCH_LOG("screen: %u %u \n", fb_w, fb_h ) ; */
    /* RARCH_LOG("viewport: %u %u %u %u %u %u \n", vp.x , vp.y, vp.width , vp.height,vp.full_width, vp.full_height ) ; */
 
-   gfx_display_t *p_disp     = disp_get_ptr();
+   /* gfx_display_t *p_disp     = disp_get_ptr(); */
    /* unsigned fb_w         = p_disp->framebuf_width; */
    /* unsigned fb_h         = p_disp->framebuf_height; */
            
@@ -3138,7 +3139,10 @@ uint32_t read_color_arg(lua_State *L, const int ARG_NO, const uint32_t DEFAULT_C
 }
 
 
-int gui_drawPixelText_impl(lua_State *L, bool convert_coords)
+/* void gui.pixelText(int x, int y, string message, [luacolor forecolor = nil], [luacolor backcolor = nil], [string fontfamily = nil], [string surfacename = nil]) */
+/* Draws the given message in the emulator screen space (like all draw functions) at the given x,y coordinates and the given color. The default color is white. Two font families are available, "fceux" and "gens" (or "0" and "1" respectively), both are monospace and have the same size as in the emulators they've been taken from. */
+/* NOTE: multiple strings can be onscreen at a time. */
+int gui_drawPixelText(lua_State *L)
 {   
    gui_shape_t* curr_shape = &gui_shapes[gui_shapes_curr_index];
    
@@ -3165,7 +3169,7 @@ int gui_drawPixelText_impl(lua_State *L, bool convert_coords)
    curr_shape->font.font = NULL;
    /* curr_shape->font.font = bitmapfont_get_lut();  // TODO: force using bitmap font */
    
-   curr_shape->convert_coords = convert_coords;
+   curr_shape->convert_coords = true;
    
    /* increase curr shape index */
    gui_shapes_curr_index += 1;
@@ -3175,20 +3179,25 @@ int gui_drawPixelText_impl(lua_State *L, bool convert_coords)
    return 0;
 }
 
-/* void gui.pixelText(int x, int y, string message, [luacolor forecolor = nil], [luacolor backcolor = nil], [string fontfamily = nil], [string surfacename = nil]) */
-/* Draws the given message in the emulator screen space (like all draw functions) at the given x,y coordinates and the given color. The default color is white. Two font families are available, "fceux" and "gens" (or "0" and "1" respectively), both are monospace and have the same size as in the emulators they've been taken from. */
-/* NOTE: multiple strings can be onscreen at a time. */
-int gui_drawPixelText(lua_State *L)
-{
-   return gui_drawPixelText_impl(L, true);
-}
+
 int gui_drawPixelTextO(lua_State *L)
 {
-   return gui_drawPixelText_impl(L, false);
+   gui_drawPixelText(L);
+   
+   /* change convert_coords field */   
+   if (gui_shapes_curr_index != 0) 
+      gui_shapes[gui_shapes_curr_index - 1].convert_coords = false;
+   else
+      gui_shapes[LUA_MAX_SHAPES_ONSCREEN - 1].convert_coords = false;
+   
+   return 0;
 }
 
 
-int gui_drawString_impl(lua_State *L, bool convert_coords)
+/* void gui.drawString(int x, int y, string message, [luacolor forecolor = nil], [luacolor backcolor = nil], [int? fontsize = nil], [string fontfamily = nil] */
+/* NOT SUPPORTED: , [string fontstyle = nil], [string horizalign = nil], [string vertalign = nil], [string surfacename = nil]) */
+/* Draws the given message in the emulator screen space (like all draw functions) at the given x,y coordinates and the given color. The default color is white. A fontfamily can be specified and is monospace generic if none is specified (font family options are the same as the .NET FontFamily class). The fontsize default is 12. The default font style is regular. Font style options are regular, bold, italic, strikethrough, underline. Horizontal alignment options are left (default), center, or right. Vertical alignment options are bottom (default), middle, or top. Alignment options specify which ends of the text will be drawn at the x and y coordinates. For pixel-perfect font look, make sure to disable aspect ratio correction. */
+int gui_drawString(lua_State *L)
 {  
    gui_shape_t* curr_shape = &gui_shapes[gui_shapes_curr_index];
    
@@ -3199,7 +3208,7 @@ int gui_drawString_impl(lua_State *L, bool convert_coords)
    
    if (curr_shape->text)
    {
-       /* free prev string */
+      /* free prev string */
       free(curr_shape->text);
       curr_shape->text = NULL;
    }
@@ -3219,7 +3228,7 @@ int gui_drawString_impl(lua_State *L, bool convert_coords)
    float font_size = luaL_optinteger(L, 6, CONFIG_FONT_SIZE);
    const char* font_face = luaL_optstring(L, 7, DEFAULT_FONT_FACE);
    /* char* font_face = luaL_optstring(L, 7, ""); */
-   
+      
    if (font_size <= 0)
       font_size = CONFIG_FONT_SIZE;  /* reset to default */
    
@@ -3275,19 +3284,13 @@ int gui_drawString_impl(lua_State *L, bool convert_coords)
       /* TODO: need to init other fields? */
    }
    
-   if (curr_shape->font.font == NULL)
-   {
-      /* fallback to the default font */
-      curr_shape->font = p_dispwidget->gfx_widget_fonts.regular;  /* copy all struct fields */
-   }
-
    /* adjust y coord padding? */
    /* unsigned widget_padding = dispwidget_get_ptr()->simple_widget_padding; */
    /* curr_shape->y += widget_padding; */
    /* curr_shape->y += (curr_shape->font_size); */
    /* curr_shape->y += CONFIG_FONT_SIZE; */
    
-   curr_shape->convert_coords = convert_coords;
+   curr_shape->convert_coords = true;
    
    /* increase curr shape index */
    gui_shapes_curr_index += 1;
@@ -3298,20 +3301,23 @@ int gui_drawString_impl(lua_State *L, bool convert_coords)
 }
 
 
-/* void gui.drawString(int x, int y, string message, [luacolor forecolor = nil], [luacolor backcolor = nil], [int? fontsize = nil], [string fontfamily = nil] */
-/* NOT SUPPORTED: , [string fontstyle = nil], [string horizalign = nil], [string vertalign = nil], [string surfacename = nil]) */
-/* Draws the given message in the emulator screen space (like all draw functions) at the given x,y coordinates and the given color. The default color is white. A fontfamily can be specified and is monospace generic if none is specified (font family options are the same as the .NET FontFamily class). The fontsize default is 12. The default font style is regular. Font style options are regular, bold, italic, strikethrough, underline. Horizontal alignment options are left (default), center, or right. Vertical alignment options are bottom (default), middle, or top. Alignment options specify which ends of the text will be drawn at the x and y coordinates. For pixel-perfect font look, make sure to disable aspect ratio correction. */
-int gui_drawString(lua_State *L)
-{
-   return gui_drawString_impl(L, true);
-}
 int gui_drawStringO(lua_State *L)
 {
-   return gui_drawString_impl(L, false);
+   gui_drawString(L);
+   
+   /* change convert_coords field */   
+   if (gui_shapes_curr_index != 0) 
+      gui_shapes[gui_shapes_curr_index - 1].convert_coords = false;
+   else
+      gui_shapes[LUA_MAX_SHAPES_ONSCREEN - 1].convert_coords = false;
+   
+   return 0;
 }
 
 
-int gui_drawRectangle_impl(lua_State *L, bool convert_coords)
+/* void gui.drawRectangle(int x, int y, int width, int height, [luacolor line = nil], [luacolor background = nil], [string surfacename = nil]) */
+/* Draws a rectangle at the given coordinate and the given width and height. Line is the color of the box. Background is the optional fill color */
+int gui_drawRectangle(lua_State *L)
 {     
    gui_shape_t* curr_shape = &gui_shapes[gui_shapes_curr_index];
    
@@ -3332,7 +3338,7 @@ int gui_drawRectangle_impl(lua_State *L, bool convert_coords)
    curr_shape->color = read_color_arg(L, 5, 0xFFFFFFFF); /* default white, fully opaque */
    curr_shape->bg_color = read_color_arg(L, 6, 0x000000FF); /* default black, fully opaque */
    
-   curr_shape->convert_coords = convert_coords;
+   curr_shape->convert_coords = true;
    
    /* increase curr shape index */
    gui_shapes_curr_index += 1;
@@ -3341,6 +3347,20 @@ int gui_drawRectangle_impl(lua_State *L, bool convert_coords)
 
    return 0;
 }
+
+int gui_drawRectangleO(lua_State *L)
+{
+   gui_drawRectangle(L);
+   
+   /* change convert_coords field */   
+   if (gui_shapes_curr_index != 0) 
+      gui_shapes[gui_shapes_curr_index - 1].convert_coords = false;
+   else
+      gui_shapes[LUA_MAX_SHAPES_ONSCREEN - 1].convert_coords = false;
+   
+   return 0;
+}
+
 
 /* void gui.drawBox(int x, int y, int x2, int y2, [luacolor line = nil], [luacolor background = nil], [string surfacename = nil]) */
 /* Draws a rectangle on screen from x1/y1 to x2/y2. Same as drawRectangle except it receives two points intead of a point and width/height */
@@ -3369,19 +3389,7 @@ int gui_drawBox(lua_State *L)
    lua_pushinteger(L, height);
    lua_replace(L, 4);
    
-   return gui_drawRectangle_impl(L, true);
-}
-
-/* void gui.drawRectangle(int x, int y, int width, int height, [luacolor line = nil], [luacolor background = nil], [string surfacename = nil]) */
-/* Draws a rectangle at the given coordinate and the given width and height. Line is the color of the box. Background is the optional fill color */
-int gui_drawRectangle(lua_State *L)
-{
-   return gui_drawRectangle_impl(L, true);
-}
-
-int gui_drawRectangleO(lua_State *L)
-{
-   return gui_drawRectangle_impl(L, false);
+   return gui_drawRectangle(L);
 }
 
 
@@ -3538,7 +3546,8 @@ static const struct luaL_Reg  guilib[] = {
    /* FCEUX-aliases */
    { "text", gui_drawString },
    { "drawtext", gui_drawString },
-   /* WIP: { "setpixel", gui_drawPixel }, */
+   /* TODO: { "setpixel", gui_drawPixel }, */
+   /* TODO: string gui.keyboardInput() // read user input */
 #endif
    { "getpixel", emu_getscreenpixel },
    /* TODO: gui.parsecolor(color) */
