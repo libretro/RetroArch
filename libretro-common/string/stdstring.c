@@ -51,29 +51,48 @@ const uint8_t lr_char_props[256] = {
 char *string_to_upper(char *s)
 {
    char *cs = (char *)s;
+   /* Use lr_char_props bit 0x01 (ISALPHA) + bit 0x04 (islower) to detect
+    * lowercase ASCII letters without a function call, then clear bit 5 (0x20)
+    * to convert a-z -> A-Z.  Non-ASCII bytes are untouched. */
    for ( ; *cs != '\0'; cs++)
-      *cs = toupper((unsigned char)*cs);
+   {
+      unsigned char uc = (unsigned char)*cs;
+      if ((lr_char_props[uc] & 0x05) == 0x05) /* lower alpha */
+         *cs = (char)(uc & ~0x20);
+   }
    return s;
 }
 
 char *string_to_lower(char *s)
 {
    char *cs = (char *)s;
+   /* bit 0x03 set means upper alpha (0x23 & 0x03 == 3, 0x25 & 0x03 == 1... use
+    * mask 0x02 to distinguish upper from lower: upper has bit 0x02, lower doesn't) */
    for ( ; *cs != '\0'; cs++)
-      *cs = tolower((unsigned char)*cs);
+   {
+      unsigned char uc = (unsigned char)*cs;
+      if ((lr_char_props[uc] & 0x06) == 0x02) /* upper alpha: bits 0x02 set, 0x04 clear */
+         *cs = (char)(uc | 0x20);
+   }
    return s;
 }
 
 char *string_ucwords(char *s)
 {
-   char *cs = (char *)s;
+   /* Single-pass: capitalise the first character of every word.
+    * 'cap' starts true so the very first non-space character is uppercased. */
+   char *cs  = (char *)s;
+   int   cap = 1;
    for ( ; *cs != '\0'; cs++)
    {
       if (*cs == ' ')
-         *(cs+1) = toupper((unsigned char)*(cs+1));
+         cap = 1;
+      else if (cap)
+      {
+         *cs = (char)toupper((unsigned char)*cs);
+         cap = 0;
+      }
    }
-
-   s[0] = toupper((unsigned char)s[0]);
    return s;
 }
 
@@ -82,63 +101,75 @@ char *string_replace_substring(
       const char *pattern,     size_t pattern_len,
       const char *replacement, size_t replacement_len)
 {
-   size_t outlen, tail_len;
-   size_t numhits     = 0;
-   const char *inat   = NULL;
-   const char *inprev = NULL;
-   char          *out = NULL;
-   char        *outat = NULL;
+   /* Single-pass implementation: build output in one scan rather than
+    * first counting hits and then copying.  We use a dynamically grown
+    * buffer so we never pay for a second full traversal of the input. */
+   size_t      out_cap  = 0;
+   size_t      out_len  = 0;
+   char       *out      = NULL;
+   char       *tmp      = NULL;
+   const char *inat     = NULL;
+   const char *inprev   = NULL;
+   size_t      seg_len  = 0;
+   size_t      need     = 0;
 
    /* Guard against NULL input string. */
    if (!in)
       return NULL;
 
-   /* If pattern or replacement is NULL, duplicate in
-    * and let the caller handle it. */
+   /* If pattern or replacement is NULL, duplicate in. */
    if (!pattern || !replacement)
       return strdup(in);
 
-   /* A zero-length pattern would cause an infinite loop
-    * in strstr since every position is a match. */
+   /* A zero-length pattern would cause an infinite loop. */
    if (pattern_len == 0)
       return strdup(in);
 
-   inat = in;
-
-   while ((inat = strstr(inat, pattern)))
-   {
-      inat += pattern_len;
-      numhits++;
-   }
-
-   /* Guard against size_t overflow when replacement is much
-    * larger than pattern and numhits is large. */
-   if (numhits > 0 &&
-       replacement_len > pattern_len &&
-       (replacement_len - pattern_len) > (SIZE_MAX - in_len) / numhits)
+   /* Initial capacity: same as input (common case: zero or few matches). */
+   out_cap = in_len + 1;
+   if (!(out = (char *)malloc(out_cap)))
       return NULL;
 
-   outlen = in_len - pattern_len * numhits + replacement_len * numhits;
-
-   if (!(out = (char *)malloc(outlen + 1)))
-      return NULL;
-
-   outat  = out;
    inat   = in;
    inprev = in;
 
    while ((inat = strstr(inat, pattern)))
    {
-      memcpy(outat, inprev, inat - inprev);
-      outat += inat - inprev;
-      memcpy(outat, replacement, replacement_len);
-      outat += replacement_len;
-      inat  += pattern_len;
-      inprev = inat;
+      seg_len = (size_t)(inat - inprev);
+      need    = out_len + seg_len + replacement_len;
+      if (need >= out_cap)
+      {
+         /* Grow: at least double, or exactly what we need. */
+         out_cap = (need * 2) + 1;
+         if (!(tmp = (char *)realloc(out, out_cap)))
+         {
+            free(out);
+            return NULL;
+         }
+         out = tmp;
+      }
+      memcpy(out + out_len, inprev, seg_len);
+      out_len += seg_len;
+      memcpy(out + out_len, replacement, replacement_len);
+      out_len += replacement_len;
+      inat   += pattern_len;
+      inprev  = inat;
    }
-   tail_len = in_len - (size_t)(inprev - in);
-   memcpy(outat, inprev, tail_len);
-   outat[tail_len] = '\0';
+
+   /* Append the tail after the last match. */
+   seg_len = in_len - (size_t)(inprev - in);
+   need    = out_len + seg_len + 1;
+   if (need > out_cap)
+   {
+      if (!(tmp = (char *)realloc(out, need)))
+      {
+         free(out);
+         return NULL;
+      }
+      out = tmp;
+   }
+   memcpy(out + out_len, inprev, seg_len);
+   out[out_len + seg_len] = '\0';
 
    return out;
 }
@@ -152,17 +183,19 @@ char *string_trim_whitespace_left(char *const s)
 {
    if (s && *s)
    {
-      size_t _len    = strlen(s);
-      char *current  = s;
+      char *current = s;
 
       while (*current && ISSPACE((unsigned char)*current))
-      {
          ++current;
-         --_len;
-      }
 
       if (s != current)
-         memmove(s, current, _len + 1);
+      {
+         /* Avoid strlen: scan to end while copying forward. */
+         char *dst = s;
+         while (*current)
+            *dst++ = *current++;
+         *dst = '\0';
+      }
    }
 
    return s;
@@ -479,23 +512,32 @@ char *string_tokenize(char **str, const char *delim)
       return NULL;
 
    delim_len = strlen(delim);
-   token_len = 0;
 
-   /* Scan forward until we find the delimiter or end of string */
-   while (str_ptr[token_len] != '\0')
+   if (delim_len == 1)
    {
-      if (memcmp(str_ptr + token_len, delim, delim_len) == 0)
-         break;
-      token_len++;
+      /* Fast path: single-character delimiter – use memchr. */
+      const char *found = (const char *)memchr(
+            str_ptr, (unsigned char)delim[0], strlen(str_ptr));
+      token_len = found ? (size_t)(found - str_ptr) : strlen(str_ptr);
+   }
+   else
+   {
+      /* Multi-character delimiter. */
+      while (str_ptr[token_len] != '\0')
+      {
+         if (memcmp(str_ptr + token_len, delim, delim_len) == 0)
+            break;
+         token_len++;
+      }
    }
 
-   if (!(token = (char *)malloc((token_len + 1) * sizeof(char))))
+   if (!(token = (char *)malloc(token_len + 1)))
       return NULL;
 
    memcpy(token, str_ptr, token_len);
    token[token_len] = '\0';
 
-   /* Advance past delimiter, or set to NULL if at end */
+   /* Advance past delimiter, or set to NULL if at end. */
    *str = (str_ptr[token_len] != '\0')
       ? str_ptr + token_len + delim_len
       : NULL;
@@ -617,13 +659,21 @@ unsigned string_hex_to_unsigned(const char *str)
  */
 int string_count_occurrences_single_character(const char *str, char c)
 {
-   int count = 0;
+   unsigned count = 0;
 
+   /* 4-way unrolled loop to exploit instruction-level parallelism. */
+   for (; str[0] && str[1] && str[2] && str[3]; str += 4)
+   {
+      count += (str[0] == c);
+      count += (str[1] == c);
+      count += (str[2] == c);
+      count += (str[3] == c);
+   }
+   /* Handle remaining bytes. */
    for (; *str; str++)
-      if (*str == c)
-         count++;
+      count += (*str == c);
 
-   return count;
+   return (int)count;
 }
 
 /**
@@ -649,19 +699,18 @@ void string_replace_whitespace_with_single_character(char *s, char c)
  **/
 void string_replace_multi_space_with_single_space(char *s)
 {
-   char *str_trimmed  = s;
-   bool prev_is_space = false;
-   bool curr_is_space = false;
+   char *dst        = s;
+   int   prev_space = 0;
+   int   curr_space;
 
    for (; *s; s++)
    {
-      curr_is_space  = ISSPACE(*s);
-      if (prev_is_space && curr_is_space)
-         continue;
-      *str_trimmed++ = *s;
-      prev_is_space  = curr_is_space;
+      curr_space = ISSPACE((unsigned char)*s);
+      if (!(prev_space && curr_space))
+         *dst++ = *s;
+      prev_space = curr_space;
    }
-   *str_trimmed = '\0';
+   *dst = '\0';
 }
 
 /**

@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(_WIN32) && defined(_XBOX)
 #include <xtl.h>
@@ -38,6 +39,17 @@
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
+/* Helper: compute the byte-length of the stem (filename without extension).
+ * Returns strlen(path) when there is no extension. */
+static size_t stem_length(const char *path)
+{
+   const char *ext = path_get_extension(path);
+   if (string_is_empty(ext))
+      return strlen(path);
+   /* ext points into path; step back over the '.' separator */
+   return (size_t)(ext - path - 1);
+}
+
 static int qstrcmp_plain(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_;
@@ -46,20 +58,45 @@ static int qstrcmp_plain(const void *a_, const void *b_)
    return strcasecmp(a->data, b->data);
 }
 
-static int qstrcmp_plain_noext(const void *a_, const void *b_)
+/* -------------------------------------------------------------------------
+ * No-extension comparator helpers.
+ *
+ * qsort calls the comparator O(n log n) times.  Recomputing the stem
+ * length inside the comparator means path_get_extension() + strlen() fire
+ * twice per call per side.  Instead we build a side-table of stem lengths
+ * once (O(n)) and hand a decorated array to qsort.
+ * ------------------------------------------------------------------------- */
+
+/* Decorated element used only during a no-ext sort. */
+typedef struct {
+   const struct string_list_elem *elem;
+   size_t stem_len;
+} noext_elem_t;
+
+/* Comparator that works on noext_elem_t pointers. */
+static int noext_cmp_plain(const void *a_, const void *b_)
 {
-   const struct string_list_elem *a = (const struct string_list_elem*)a_;
-   const struct string_list_elem *b = (const struct string_list_elem*)b_;
+   const noext_elem_t *a  = (const noext_elem_t*)a_;
+   const noext_elem_t *b  = (const noext_elem_t*)b_;
+   size_t min_len         = a->stem_len < b->stem_len ? a->stem_len : b->stem_len;
+   int rv                 = strncasecmp(a->elem->data, b->elem->data, min_len);
 
-   const char *ext_a = path_get_extension(a->data);
-   size_t l_a = string_is_empty(ext_a) ? strlen(a->data) : (size_t)(ext_a - a->data - 1);
-   const char *ext_b = path_get_extension(b->data);
-   size_t l_b = string_is_empty(ext_b) ? strlen(b->data) : (size_t)(ext_b - b->data - 1);
-
-   int rv = strncasecmp(a->data, b->data, MIN(l_a, l_b));
-   if (rv == 0 && l_a != l_b)
-       return (int)(l_a - l_b);
+   if (rv == 0 && a->stem_len != b->stem_len)
+      return (a->stem_len < b->stem_len) ? -1 : 1;
    return rv;
+}
+
+static int noext_cmp_dir(const void *a_, const void *b_)
+{
+   const noext_elem_t *a  = (const noext_elem_t*)a_;
+   const noext_elem_t *b  = (const noext_elem_t*)b_;
+   int ta                 = a->elem->attr.i;
+   int tb                 = b->elem->attr.i;
+
+   /* Sort directories before files. */
+   if (ta != tb)
+      return tb - ta;
+   return noext_cmp_plain(a_, b_);
 }
 
 static int qstrcmp_dir(const void *a_, const void *b_)
@@ -75,17 +112,63 @@ static int qstrcmp_dir(const void *a_, const void *b_)
    return strcasecmp(a->data, b->data);
 }
 
-static int qstrcmp_dir_noext(const void *a_, const void *b_)
+/* -------------------------------------------------------------------------
+ * Shared implementation for both dir_list_sort variants.
+ * Avoids duplicating the small-list early-out and the noext path.
+ * ------------------------------------------------------------------------- */
+static void dir_list_sort_impl(struct string_list *list,
+      bool dir_first, bool ignore_ext)
 {
-   const struct string_list_elem *a = (const struct string_list_elem*)a_;
-   const struct string_list_elem *b = (const struct string_list_elem*)b_;
-   int a_type = a->attr.i;
-   int b_type = b->attr.i;
+   size_t i;
+   noext_elem_t *decorated;
 
-   /* Sort directories before files. */
-   if (a_type != b_type)
-      return b_type - a_type;
-   return qstrcmp_plain_noext(a, b);
+   if (!list || list->size < 2)
+      return;
+
+   if (!ignore_ext)
+   {
+      qsort(list->elems, list->size, sizeof(struct string_list_elem),
+            dir_first ? qstrcmp_dir : qstrcmp_plain);
+      return;
+   }
+
+   /* Build a decorated array so stem_length() is called once per element
+    * (O(n)) rather than twice per comparator call (O(n log n)). */
+   decorated = (noext_elem_t*)malloc(list->size * sizeof(noext_elem_t));
+   if (!decorated)
+   {
+      /* Fallback: sort without the optimisation rather than silently skip. */
+      qsort(list->elems, list->size, sizeof(struct string_list_elem),
+            dir_first ? qstrcmp_dir : qstrcmp_plain);
+      return;
+   }
+
+   for (i = 0; i < list->size; i++)
+   {
+      decorated[i].elem     = &list->elems[i];
+      decorated[i].stem_len = stem_length(list->elems[i].data);
+   }
+
+   qsort(decorated, list->size, sizeof(noext_elem_t),
+         dir_first ? noext_cmp_dir : noext_cmp_plain);
+
+   /* Write the sorted order back into the original list in-place.
+    * We need a temporary copy of the elements since we are reordering. */
+   {
+      struct string_list_elem *tmp = (struct string_list_elem*)
+            malloc(list->size * sizeof(struct string_list_elem));
+      if (tmp)
+      {
+         for (i = 0; i < list->size; i++)
+            tmp[i] = *decorated[i].elem;
+         memcpy(list->elems, tmp, list->size * sizeof(struct string_list_elem));
+         free(tmp);
+      }
+      /* If tmp allocation fails the list keeps its original unsorted order,
+       * which is a graceful degradation. */
+   }
+
+   free(decorated);
 }
 
 /**
@@ -97,9 +180,7 @@ static int qstrcmp_dir_noext(const void *a_, const void *b_)
  **/
 void dir_list_sort(struct string_list *list, bool dir_first)
 {
-   if (list)
-      qsort(list->elems, list->size, sizeof(struct string_list_elem),
-            dir_first ? qstrcmp_dir : qstrcmp_plain);
+   dir_list_sort_impl(list, dir_first, false);
 }
 
 /**
@@ -111,9 +192,7 @@ void dir_list_sort(struct string_list *list, bool dir_first)
  **/
 void dir_list_sort_ignore_ext(struct string_list *list, bool dir_first)
 {
-   if (list)
-      qsort(list->elems, list->size, sizeof(struct string_list_elem),
-            dir_first ? qstrcmp_dir_noext : qstrcmp_plain_noext);
+   dir_list_sort_impl(list, dir_first, true);
 }
 
 /**
@@ -167,8 +246,13 @@ static int dir_list_read(const char *dir,
    {
       union string_list_elem_attr attr;
       char file_path[PATH_MAX_LENGTH];
-      const char *name                = retro_dirent_get_name(entry);
+      const char *name = retro_dirent_get_name(entry);
 
+      /* ----------------------------------------------------------------
+       * Dot / hidden-file filtering.
+       * All checks operate solely on `name`, before the more expensive
+       * fill_pathname_join_special() call below.
+       * ---------------------------------------------------------------- */
       if (name[0] == '.' || name[0] == '$')
       {
          /* Do not include hidden files and directories */
@@ -177,22 +261,26 @@ static int dir_list_read(const char *dir,
 
          /* char-wise comparisons to avoid string comparison */
 
-         /* Do not include current dir */
+         /* Do not include current dir  ('.')  */
          if (name[1] == '\0')
             continue;
-         /* Do not include parent dir */
+         /* Do not include parent dir   ('..') */
          if (name[1] == '.' && name[2] == '\0')
             continue;
       }
 
+      /* "System Volume Information" is a hidden directory on some
+       * platforms that do not expose a hidden file attribute.  Reject
+       * it by name before building the full path. */
+      if (!include_hidden && name[0] == 'S' &&
+            strcmp(name, "System Volume Information") == 0)
+         continue;
+
+      /* Build the full path only after all cheap name-based filters pass. */
       fill_pathname_join_special(file_path, dir, name, sizeof(file_path));
 
       if (retro_dirent_is_dir(entry, NULL))
       {
-         /* Exclude this frequent hidden dir on platforms which can not handle hidden attribute */
-         if (!include_hidden && strcmp(name, "System Volume Information") == 0)
-            continue;
-
 #if defined(IOS) || defined(OSX)
          if (string_ends_with(name, ".framework"))
          {
@@ -215,28 +303,28 @@ static int dir_list_read(const char *dir,
       }
       else
       {
-         const char *file_ext    = path_get_extension(name);
+         const char *file_ext      = path_get_extension(name);
+         bool is_compressed_file   = false;
 
-         attr.i                  = RARCH_FILETYPE_UNSET;
+         attr.i = RARCH_FILETYPE_UNSET;
 
          /*
-          * If the file format is explicitly supported by the libretro-core, we
-          * need to immediately load it and not designate it as a compressed file.
+          * If the file format is explicitly supported by the libretro-core,
+          * we need to immediately load it and not designate it as a
+          * compressed file.
           *
-          * Example: .zip could be supported as a image by the core and as a
-          * compressed_file. In that case, we have to interpret it as a image.
-          *
-          * */
+          * Example: .zip could be supported as an image by the core and as a
+          * compressed_file.  In that case, we have to interpret it as an image.
+          */
          if (string_list_find_elem_prefix(ext_list, ".", file_ext))
-            attr.i            = RARCH_PLAIN_FILE;
+            attr.i = RARCH_PLAIN_FILE;
          else
          {
-            bool is_compressed_file;
-            if ((is_compressed_file = path_is_compressed_file(file_path)))
-               attr.i               = RARCH_COMPRESSED_ARCHIVE;
+            is_compressed_file = path_is_compressed_file(file_path);
+            if (is_compressed_file)
+               attr.i = RARCH_COMPRESSED_ARCHIVE;
 
-            if (ext_list &&
-                  (!is_compressed_file || !include_compressed))
+            if (ext_list && (!is_compressed_file || !include_compressed))
                continue;
          }
       }
@@ -281,9 +369,9 @@ bool dir_list_append(struct string_list *list,
    {
       string_list_initialize(&ext_list);
       string_split_noalloc(&ext_list, ext, "|");
-      ext_list_ptr                  = &ext_list;
+      ext_list_ptr = &ext_list;
    }
-   ret                            = dir_list_read(dir, list, ext_list_ptr,
+   ret = dir_list_read(dir, list, ext_list_ptr,
          include_dirs, include_hidden, include_compressed, recursive) != -1;
    string_list_deinitialize(&ext_list);
    return ret;
@@ -308,7 +396,7 @@ struct string_list *dir_list_new(const char *dir,
       bool include_hidden, bool include_compressed,
       bool recursive)
 {
-   struct string_list *list       = string_list_new();
+   struct string_list *list = string_list_new();
 
    if (!list)
       return NULL;
@@ -326,7 +414,7 @@ struct string_list *dir_list_new(const char *dir,
 /**
  * dir_list_initialize:
  *
- * NOTE: @list must zero initialised before
+ * NOTE: @list must be zero-initialised before
  * calling this function, otherwise UB.
  **/
 bool dir_list_initialize(struct string_list *list,
