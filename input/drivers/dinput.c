@@ -226,17 +226,12 @@ static uint16_t dinput_get_active_keyboard_mods()
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
-   uint8_t *kb_state       = NULL;
 
    if (!di)
       return;
 
-   kb_state                = &di->state[0];
-
-   for (
-         ; kb_state < di->state + 256
-         ; kb_state++)
-      *kb_state = 0;
+   /* Clear keyboard state upfront; re-acquire path leaves it zeroed */
+   memset(di->state, 0, sizeof(di->state));
 
    if (di->keyboard)
    {
@@ -244,13 +239,12 @@ static void dinput_poll(void *data)
                   di->keyboard, sizeof(di->state), di->state)))
       {
          IDirectInputDevice8_Acquire(di->keyboard);
-         if (FAILED(IDirectInputDevice8_GetDeviceState(
+         /* On re-acquire failure state stays zeroed from memset above */
+         if (SUCCEEDED(IDirectInputDevice8_GetDeviceState(
                      di->keyboard, sizeof(di->state), di->state)))
          {
-            for (
-                  ; kb_state < di->state + 256
-                  ; kb_state++)
-               *kb_state = 0;
+            /* Ignore 'unknown/undefined' key */
+            di->state[RETROK_UNKNOWN] = 0;
          }
       }
       else
@@ -294,20 +288,12 @@ static void dinput_poll(void *data)
    {
       POINT point;
       DIMOUSESTATE2 mouse_state;
-      BYTE *rgb_buttons_ptr     = &mouse_state.rgbButtons[0];
       bool swap_mouse_buttons   = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
 
       point.x                   = 0;
       point.y                   = 0;
 
-      mouse_state.lX            = 0;
-      mouse_state.lY            = 0;
-      mouse_state.lZ            = 0;
-
-      for (
-            ; rgb_buttons_ptr < mouse_state.rgbButtons + 8
-            ; rgb_buttons_ptr++)
-         *rgb_buttons_ptr = 0;
+      memset(&mouse_state, 0, sizeof(mouse_state));
 
       if (FAILED(IDirectInputDevice8_GetDeviceState(
                   di->mouse, sizeof(mouse_state), &mouse_state)))
@@ -315,15 +301,7 @@ static void dinput_poll(void *data)
          IDirectInputDevice8_Acquire(di->mouse);
          if (FAILED(IDirectInputDevice8_GetDeviceState(
                      di->mouse, sizeof(mouse_state), &mouse_state)))
-         {
-            mouse_state.lX = 0;
-            mouse_state.lY = 0;
-            mouse_state.lZ = 0;
-            for (
-                  ; rgb_buttons_ptr < mouse_state.rgbButtons + 8
-                  ; rgb_buttons_ptr++)
-               *rgb_buttons_ptr = 0;
-         }
+            memset(&mouse_state, 0, sizeof(mouse_state));
       }
 
       di->mouse_rel_x = mouse_state.lX;
@@ -517,8 +495,8 @@ static int16_t dinput_input_state(
       unsigned idx,
       unsigned id)
 {
-   settings_t *settings;
-   struct dinput_input *di    = (struct dinput_input*)data;
+   settings_t *settings           = config_get_ptr();
+   struct dinput_input *di        = (struct dinput_input*)data;
 
    if (port < MAX_USERS)
    {
@@ -527,7 +505,6 @@ static int16_t dinput_input_state(
          case RETRO_DEVICE_JOYPAD:
             {
                int16_t ret = 0;
-               settings    = config_get_ptr();
 
                if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
                {
@@ -614,7 +591,6 @@ static int16_t dinput_input_state(
             }
             break;
          case RARCH_DEVICE_MOUSE_SCREEN:
-            settings                   = config_get_ptr();
             if (settings->uints.input_mouse_index[port] != 0)
                break;
 
@@ -629,7 +605,6 @@ static int16_t dinput_input_state(
             }
             /* fall-through */
          case RETRO_DEVICE_MOUSE:
-            settings                   = config_get_ptr();
             if (settings->uints.input_mouse_index[port] == 0)
             {
                switch (id)
@@ -648,7 +623,6 @@ static int16_t dinput_input_state(
                         di->flags &= ~DINP_FLAG_MOUSE_WU_BTN;
                         return 1;
                      }
-                     di->flags &= ~DINP_FLAG_MOUSE_WU_BTN;
                      break;
                   case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                      if (di->flags & DINP_FLAG_MOUSE_WD_BTN)
@@ -656,7 +630,6 @@ static int16_t dinput_input_state(
                         di->flags &= ~DINP_FLAG_MOUSE_WD_BTN;
                         return 1;
                      }
-                     di->flags &= ~DINP_FLAG_MOUSE_WD_BTN;
                      break;
                   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
                      if (di->flags & DINP_FLAG_MOUSE_HWU_BTN)
@@ -664,7 +637,6 @@ static int16_t dinput_input_state(
                         di->flags &= ~DINP_FLAG_MOUSE_HWU_BTN;
                         return 1;
                      }
-                     di->flags &= ~DINP_FLAG_MOUSE_HWU_BTN;
                      break;
                   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
                      if (di->flags & DINP_FLAG_MOUSE_HWD_BTN)
@@ -672,7 +644,6 @@ static int16_t dinput_input_state(
                         di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
                         return 1;
                      }
-                     di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
                      break;
                   case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                      return (di->flags & DINP_FLAG_MOUSE_M_BTN) > 0;
@@ -789,7 +760,6 @@ static int16_t dinput_input_state(
                            return 1;
                         else
                         {
-                           settings = config_get_ptr();
                            if (settings->uints.input_mouse_index[port] == 0)
                            {
                               if (dinput_mouse_button_pressed(di, port, binds[port][new_id].mbutton))
@@ -859,15 +829,18 @@ static void dinput_delete_pointer(struct dinput_input *di, int pointer_id)
 {
    struct dinput_pointer_status *check_pos  = &di->pointer_head;
 
-   while (check_pos && check_pos->next)
+   while (check_pos->next)
    {
       if (check_pos->next->pointer_id == pointer_id)
       {
          struct dinput_pointer_status *to_delete = check_pos->next;
-         check_pos->next                  = check_pos->next->next;
+         check_pos->next                         = to_delete->next;
          free(to_delete);
+         /* Do not advance check_pos: the new check_pos->next
+          * must still be examined (handles duplicate ids). */
       }
-      check_pos = check_pos->next;
+      else
+         check_pos = check_pos->next;
    }
 }
 
@@ -1048,14 +1021,18 @@ static void dinput_free(void *data)
 
 static void dinput_grab_mouse(void *data, bool state)
 {
+   DWORD coop_flags;
    struct dinput_input *di = (struct dinput_input*)data;
    if (!di->mouse)
       return;
 
+   coop_flags = state
+      ? (DISCL_EXCLUSIVE   | DISCL_FOREGROUND)
+      : (DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
+
    IDirectInputDevice8_Unacquire(di->mouse);
    IDirectInputDevice8_SetCooperativeLevel(di->mouse,
-      (HWND)video_driver_window_get(),
-      (DISCL_NONEXCLUSIVE | DISCL_FOREGROUND));
+      (HWND)video_driver_window_get(), coop_flags);
    IDirectInputDevice8_Acquire(di->mouse);
 
 #ifndef _XBOX
