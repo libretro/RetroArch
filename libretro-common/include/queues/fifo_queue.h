@@ -33,45 +33,62 @@
 
 RETRO_BEGIN_DECLS
 
-/**
- * Returns the available data in \c buffer for reading.
- *
- * @param buffer <tt>fifo_buffer_t *</tt>. The FIFO queue to check.
- * @return The number of bytes available for reading from \c buffer.
- */
-#define FIFO_READ_AVAIL(buffer) (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first)
+#ifdef __GNUC__
+/* GCC / Clang: use statement-expression to evaluate end_adj once. */
 
-/**
- * Returns the available space in \c buffer for writing.
- *
- * @param buffer <tt>fifo_buffer_t *</tt>. The FIFO queue to check.
- * @return The number of bytes that \c buffer can accept.
- */
-#define FIFO_WRITE_AVAIL(buffer) (((buffer)->size - 1) - (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first))
+#define FIFO_READ_AVAIL(buffer)                                             \
+   __extension__({                                                          \
+      const size_t _end_adj_ = (buffer)->end +                             \
+         (((buffer)->end < (buffer)->first) ? (buffer)->size : 0u);        \
+      _end_adj_ - (buffer)->first;                                         \
+   })
 
-/**
- * Returns the available data in \c buffer for reading.
- *
- * @param buffer \c fifo_buffer_t. The FIFO queue to check.
- * @return The number of bytes available for reading from \c buffer.
- */
-#define FIFO_READ_AVAIL_NONPTR(buffer) (((buffer).end + (((buffer).end < (buffer).first) ? (buffer).size : 0)) - (buffer).first)
+#define FIFO_WRITE_AVAIL(buffer)                                            \
+   __extension__({                                                          \
+      const size_t _end_adj_ = (buffer)->end +                             \
+         (((buffer)->end < (buffer)->first) ? (buffer)->size : 0u);        \
+      ((buffer)->size - 1u) - (_end_adj_ - (buffer)->first);               \
+   })
 
-/**
- * Returns the available space in \c buffer for writing.
- *
- * @param buffer \c fifo_buffer_t. The FIFO queue to check.
- * @return The number of bytes that \c buffer can accept.
- */
-#define FIFO_WRITE_AVAIL_NONPTR(buffer) (((buffer).size - 1) - (((buffer).end + (((buffer).end < (buffer).first) ? (buffer).size : 0)) - (buffer).first))
+#define FIFO_READ_AVAIL_NONPTR(buffer)                                      \
+   __extension__({                                                          \
+      const size_t _end_adj_ = (buffer).end +                              \
+         (((buffer).end < (buffer).first) ? (buffer).size : 0u);           \
+      _end_adj_ - (buffer).first;                                          \
+   })
+
+#define FIFO_WRITE_AVAIL_NONPTR(buffer)                                     \
+   __extension__({                                                          \
+      const size_t _end_adj_ = (buffer).end +                              \
+         (((buffer).end < (buffer).first) ? (buffer).size : 0u);           \
+      ((buffer).size - 1u) - (_end_adj_ - (buffer).first);                 \
+   })
+
+#else
+/* Strict C89 fallback: double-evaluation is safe because the macro
+ * arguments are plain struct-member accesses with no side effects. */
+
+#define FIFO_READ_AVAIL(buffer) \
+   (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first)
+
+#define FIFO_WRITE_AVAIL(buffer) \
+   (((buffer)->size - 1) - (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first))
+
+#define FIFO_READ_AVAIL_NONPTR(buffer) \
+   (((buffer).end + (((buffer).end < (buffer).first) ? (buffer).size : 0)) - (buffer).first)
+
+#define FIFO_WRITE_AVAIL_NONPTR(buffer) \
+   (((buffer).size - 1) - (((buffer).end + (((buffer).end < (buffer).first) ? (buffer).size : 0)) - (buffer).first))
+
+#endif /* __GNUC__ */
 
 /** @copydoc fifo_buffer_t */
 struct fifo_buffer
 {
    uint8_t *buffer;
-   size_t size;
-   size_t first;
-   size_t end;
+   size_t   size;
+   size_t   first;
+   size_t   end;
 };
 
 /**
@@ -108,12 +125,11 @@ fifo_buffer_t *fifo_new(size_t len);
 bool fifo_initialize(fifo_buffer_t *buf, size_t len);
 
 /**
- * Resets the bounds of \c buffer,
- * effectively clearing it.
+ * Resets the bounds of \c buffer, effectively clearing it.
  *
- * No memory will actually be freed,
- * but the contents of \c buffer will be overwritten
- * with the next call to \c fifo_write.
+ * No memory will actually be freed, but the contents of \c buffer
+ * will be overwritten with the next call to \c fifo_write.
+ *
  * @param buffer The FIFO queue to clear.
  * Behavior is undefined if \c NULL.
  */
@@ -153,8 +169,7 @@ void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t len);
 void fifo_free(fifo_buffer_t *buffer);
 
 /**
- * Deallocates the contents of \c buffer,
- * but not \c buffer itself.
+ * Deallocates the contents of \c buffer, but not \c buffer itself.
  *
  * Suitable for use with static or automatic \c fifo_buffer_t instances.
  *
@@ -164,7 +179,6 @@ void fifo_free(fifo_buffer_t *buffer);
  */
 bool fifo_deinitialize(fifo_buffer_t *buffer);
 
-
 RETRO_END_DECLS
 
-#endif
+#endif /* __LIBRETRO_SDK_FIFO_BUFFER_H */
