@@ -4695,7 +4695,7 @@ void input_mapper_reset(void *data)
       memset(handle->analog_value[i],    0, sizeof(handle->analog_value[i]));
       memset(handle->buttons[i].data,    0, 8 * sizeof(handle->buttons[i].data[0]));
       memset(handle->buttons[i].analogs, 0, 8 * sizeof(handle->buttons[i].analogs[0]));
-      memset(handle->buttons[i].analog_buttons, 0, 8 * sizeof(handle->buttons[i].analog_buttons[0]));
+      memset(handle->buttons[i].analog_buttons, 0, sizeof(handle->buttons[i].analog_buttons));
    }
    memset(handle->key_button, 0, sizeof(handle->key_button[0]) * RETROK_LAST);
    memset(handle->keys,       0, sizeof(handle->keys[0]) * (RETROK_LAST / 32 + 1));
