@@ -39,6 +39,13 @@
 
 #include "rpng_internal.h"
 
+#if defined(__SSE2__) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2) || defined(_M_X64)
+#include <emmintrin.h>
+#define RPNG_HAVE_SSE2 1
+#else
+#define RPNG_HAVE_SSE2 0
+#endif
+
 enum png_ihdr_color_type
 {
    PNG_IHDR_COLOR_GRAY       = 0,
@@ -148,7 +155,8 @@ static const struct adam7_pass rpng_passes[] = {
 
 static INLINE uint32_t rpng_dword_be(const uint8_t *buf)
 {
-   return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
+   return ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16)
+        | ((uint32_t)buf[2] <<  8) |  (uint32_t)buf[3];
 }
 
 #if defined(DEBUG) || defined(RPNG_TEST)
@@ -233,76 +241,261 @@ static bool rpng_process_ihdr(struct png_ihdr *ihdr)
 static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
-   int i;
+   unsigned i;
+   unsigned step = bpp / 8;
 
-   bpp /= 8;
-
-   for (i = 0; i < (int)width; i++)
+#if RPNG_HAVE_SSE2
+   /* Fast path: 8-bit-per-channel RGB only (step == 1).
+    * Process 4 pixels per iteration using SSE2 byte-shuffle.
+    *
+    * Source layout per 4 pixels: R0 G0 B0 R1 G1 B1 R2 G2 B2 R3 G3 B3
+    * Target: 0xFF_R0_G0_B0  0xFF_R1_G1_B1  0xFF_R2_G2_B2  0xFF_R3_G3_B3
+    */
+   if (step == 1 && width >= 4)
    {
-      uint32_t r, g, b;
+      /* Constant alpha mask: each 32-bit lane gets 0xFF000000 */
+      const __m128i alpha_mask = _mm_set1_epi32((int)0xFF000000u);
+      /* Zero vector for byte-unpacking */
+      const __m128i zero = _mm_setzero_si128();
+      unsigned w4 = width & ~3u; /* rounded down to multiple of 4 */
 
-      r        = *decoded;
-      decoded += bpp;
-      g        = *decoded;
-      decoded += bpp;
-      b        = *decoded;
-      decoded += bpp;
-      data[i]  = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
+      for (i = 0; i < w4; i += 4, decoded += 12)
+      {
+         /* Load 12 bytes (only lower 12 matter; upper 4 are don't-care) */
+         __m128i raw = _mm_loadu_si128((const __m128i *)decoded);
+
+         /* Separate channels.
+          * _mm_shuffle_epi32 / manual extraction in SSE2:
+          * We extract each byte by shifting and masking. */
+
+         /* raw bytes: [R0][G0][B0][R1][G1][B1][R2][G2][B2][R3][G3][B3][??][??][??][??] */
+
+         /* Unpack lo 8 bytes to 16-bit words (zero-extend) */
+         __m128i lo16 = _mm_unpacklo_epi8(raw, zero); /* 8x u16: R0 G0 B0 R1 G1 B1 R2 G2 */
+         __m128i hi16 = _mm_unpackhi_epi8(raw, zero); /* 8x u16: B2 R3 G3 B3 .. .. .. .. */
+
+         /* Pixels 0 and 1 live in lo16 words [0..5]:
+          *   lo16[0]=R0 lo16[1]=G0 lo16[2]=B0 lo16[3]=R1 lo16[4]=G1 lo16[5]=B1
+          * Pixels 2 and 3 in lo16[6]=R2 lo16[7]=G2 and hi16[0]=B2 hi16[1]=R3 hi16[2]=G3 hi16[3]=B3
+          */
+
+         /* Build pixel 0: 0x00RR 0x00GG 0x00BB -> shift-or to 32 bits */
+         {
+            uint32_t r0 = (uint32_t)_mm_extract_epi16(lo16, 0);
+            uint32_t g0 = (uint32_t)_mm_extract_epi16(lo16, 1);
+            uint32_t b0 = (uint32_t)_mm_extract_epi16(lo16, 2);
+            data[i + 0] = 0xFF000000u | (r0 << 16) | (g0 << 8) | b0;
+         }
+         {
+            uint32_t r1 = (uint32_t)_mm_extract_epi16(lo16, 3);
+            uint32_t g1 = (uint32_t)_mm_extract_epi16(lo16, 4);
+            uint32_t b1 = (uint32_t)_mm_extract_epi16(lo16, 5);
+            data[i + 1] = 0xFF000000u | (r1 << 16) | (g1 << 8) | b1;
+         }
+         {
+            uint32_t r2 = (uint32_t)_mm_extract_epi16(lo16, 6);
+            uint32_t g2 = (uint32_t)_mm_extract_epi16(lo16, 7);
+            uint32_t b2 = (uint32_t)_mm_extract_epi16(hi16, 0);
+            data[i + 2] = 0xFF000000u | (r2 << 16) | (g2 << 8) | b2;
+         }
+         {
+            uint32_t r3 = (uint32_t)_mm_extract_epi16(hi16, 1);
+            uint32_t g3 = (uint32_t)_mm_extract_epi16(hi16, 2);
+            uint32_t b3 = (uint32_t)_mm_extract_epi16(hi16, 3);
+            data[i + 3] = 0xFF000000u | (r3 << 16) | (g3 << 8) | b3;
+         }
+      }
+
+      /* Scalar tail */
+      for (; i < width; i++)
+      {
+         uint32_t r = *decoded++;
+         uint32_t g = *decoded++;
+         uint32_t b = *decoded++;
+         data[i] = 0xFF000000u | (r << 16) | (g << 8) | b;
+      }
+      return;
+   }
+#endif /* RPNG_HAVE_SSE2 */
+
+   for (i = 0; i < width; i++)
+   {
+      uint32_t r = *decoded; decoded += step;
+      uint32_t g = *decoded; decoded += step;
+      uint32_t b = *decoded; decoded += step;
+      data[i] = (0xffu << 24) | (r << 16) | (g << 8) | b;
    }
 }
 
 static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
-   int i;
+   unsigned i;
+   unsigned step = bpp / 8;
 
-   bpp /= 8;
-
-   for (i = 0; i < (int)width; i++)
+#if RPNG_HAVE_SSE2
+   /*
+    * Fast path: 8-bit RGBA (step == 1).
+    * Source: R0 G0 B0 A0  R1 G1 B1 A1  R2 G2 B2 A2  R3 G3 B3 A3
+    * Target: A0 R0 G0 B0  A1 R1 G1 B1  A2 R2 G2 B2  A3 R3 G3 B3  (ARGB32)
+    *
+    * Strategy: load 16 source bytes, unpack to u16, then shift/or.
+    * A is already the 4th byte (index 3,7,11,15) → shift left 24.
+    * R is byte 0,4,8,12 → shift left 16.
+    * G is byte 1,5,9,13 → shift left 8.
+    * B is byte 2,6,10,14 → keep in place.
+    *
+    * We use _mm_and_si128 + _mm_slli_epi32 on the packed dwords directly.
+    * Source dword layout: [R][G][B][A] (little-endian in register = A<<24|B<<16|G<<8|R)
+    * We need output:       [B][G][R][A] (little-endian = A<<24|R<<16|G<<8|B)
+    *
+    * Byte-swap within each 32-bit lane: we want bytes rotated:
+    *   in:  [0]=R [1]=G [2]=B [3]=A
+    *   out: [0]=B [1]=G [2]=R [3]=A
+    * That's just swapping bytes 0 and 2 within each dword.
+    * SSE2 has no byte-shuffle within dwords, so we use shift+mask+or.
+    */
+   if (step == 1 && width >= 4)
    {
-      uint32_t r, g, b, a;
-      r        = *decoded;
-      decoded += bpp;
-      g        = *decoded;
-      decoded += bpp;
-      b        = *decoded;
-      decoded += bpp;
-      a        = *decoded;
-      decoded += bpp;
-      data[i]  = (a << 24) | (r << 16) | (g << 8) | (b << 0);
+      const __m128i mask_rb   = _mm_set1_epi32((int)0x00FF00FFu); /* isolate R and B bytes */
+      const __m128i mask_ga   = _mm_set1_epi32((int)0xFF00FF00u); /* isolate G and A bytes */
+      unsigned w4 = width & ~3u;
+
+      for (i = 0; i < w4; i += 4, decoded += 16)
+      {
+         /* Load 16 bytes = 4 RGBA pixels */
+         __m128i src = _mm_loadu_si128((const __m128i *)decoded);
+         /* src dword[k] little-endian = A<<24 | B<<16 | G<<8 | R  (PNG is big-endian bytes) */
+         /* But in memory: decoded[0]=R decoded[1]=G decoded[2]=B decoded[3]=A
+          * In little-endian __m128i lane: bits 0-7=R, 8-15=G, 16-23=B, 24-31=A
+          * We want output ARGB32 stored as uint32_t = A<<24|R<<16|G<<8|B
+          * i.e. bits 0-7=B, 8-15=G, 16-23=R, 24-31=A
+          * So swap byte 0 (R) and byte 2 (B) within each dword.
+          */
+         __m128i rb  = _mm_and_si128(src, mask_rb);  /* keep bytes 0,2: [R][.][B][.] */
+         __m128i ga  = _mm_and_si128(src, mask_ga);  /* keep bytes 1,3: [.][G][.][A] */
+         /* Swap R (bits 0-7) into bits 16-23, and B (bits 16-23) into bits 0-7 */
+         __m128i r   = _mm_slli_epi32(rb, 16);       /* R now in bits 16-23, B gone up to 32 (lost) */
+         __m128i b   = _mm_srli_epi32(rb, 16);       /* B now in bits 0-7,  R gone to zero */
+         /* Recombine: b | r gives byte2=R byte0=B; ga stays as byte3=A byte1=G */
+         __m128i out = _mm_or_si128(_mm_or_si128(r, b), ga);
+         _mm_storeu_si128((__m128i *)(data + i), out);
+      }
+
+      for (; i < width; i++)
+      {
+         uint32_t r = *decoded++;
+         uint32_t g = *decoded++;
+         uint32_t b = *decoded++;
+         uint32_t a = *decoded++;
+         data[i] = (a << 24) | (r << 16) | (g << 8) | b;
+      }
+      return;
+   }
+#endif /* RPNG_HAVE_SSE2 */
+
+   for (i = 0; i < width; i++)
+   {
+      uint32_t r = *decoded; decoded += step;
+      uint32_t g = *decoded; decoded += step;
+      uint32_t b = *decoded; decoded += step;
+      uint32_t a = *decoded; decoded += step;
+      data[i] = (a << 24) | (r << 16) | (g << 8) | b;
    }
 }
 
 static void rpng_reverse_filter_copy_line_bw(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned depth)
 {
-   int i;
-   unsigned bit;
+   unsigned i;
    static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
-   unsigned mul, mask;
+   unsigned mul, mask, bit;
 
    if (depth == 16)
    {
-      for (i = 0; i < (int)width; i++)
+#if RPNG_HAVE_SSE2
+      /*
+       * Each gray16 pixel: high byte at decoded[2i], low byte at decoded[2i+1].
+       * We only need the high byte (top 8 bits), expanded to 0xFFgggggg.
+       * Source stride is 2 bytes per pixel; gather every other byte.
+       *
+       * Process 8 pixels per iteration:
+       * Load 16 bytes: G0_hi G0_lo G1_hi G1_lo ... G7_hi G7_lo
+       * Extract even bytes (indices 0,2,4,6,8,10,12,14) → 8 gray values.
+       * Expand each to 0xFF_gray_gray_gray using multiply trick.
+       */
+      if (width >= 8)
+      {
+         const __m128i zero      = _mm_setzero_si128();
+         const __m128i alpha_ff  = _mm_set1_epi32((int)0xFF000000u);
+         const __m128i mask_even = _mm_set1_epi16((short)0x00FFu); /* keep low byte of each u16 */
+         unsigned w8 = width & ~7u;
+
+         for (i = 0; i < w8; i += 8, decoded += 16)
+         {
+            /* Load 16 bytes = 8 gray16 pixels */
+            __m128i raw16 = _mm_loadu_si128((const __m128i *)decoded);
+            /* raw16 u16 lanes: [G0_lo | G0_hi<<8] [G1_lo | G1_hi<<8] ...
+             * (little-endian: byte at lower address is low bits)
+             * decoded[0]=G0_hi decoded[1]=G0_lo in memory, so in u16 lane:
+             *   bits 0-7  = decoded[0] = high byte of gray16
+             *   bits 8-15 = decoded[1] = low byte of gray16
+             * We want just the high byte (bits 0-7 of each u16 lane).
+             */
+            __m128i gray8_16 = _mm_and_si128(raw16, mask_even); /* 8x u16: gray value in bits 0-7 */
+
+            /* Unpack to two groups of 4 x u32 */
+            __m128i lo4 = _mm_unpacklo_epi16(gray8_16, zero); /* 4x u32 */
+            __m128i hi4 = _mm_unpackhi_epi16(gray8_16, zero); /* 4x u32 */
+
+            /* Expand gray byte to 0x00_gg_gg_gg via multiply by 0x010101.
+             * SSE2 has no 32-bit multiply in epi32 (that arrives in SSE4.1).
+             * Use the identity: g * 0x010101 = g | (g<<8) | (g<<16).
+             */
+            {
+               __m128i g0 = lo4;
+               __m128i g8  = _mm_slli_epi32(lo4,  8);
+               __m128i g16 = _mm_slli_epi32(lo4, 16);
+               __m128i rgb_lo = _mm_or_si128(_mm_or_si128(g0, g8), g16);
+               __m128i out_lo = _mm_or_si128(rgb_lo, alpha_ff);
+               _mm_storeu_si128((__m128i *)(data + i), out_lo);
+            }
+            {
+               __m128i g0 = hi4;
+               __m128i g8  = _mm_slli_epi32(hi4,  8);
+               __m128i g16 = _mm_slli_epi32(hi4, 16);
+               __m128i rgb_hi = _mm_or_si128(_mm_or_si128(g0, g8), g16);
+               __m128i out_hi = _mm_or_si128(rgb_hi, alpha_ff);
+               _mm_storeu_si128((__m128i *)(data + i + 4), out_hi);
+            }
+         }
+         for (; i < width; i++)
+         {
+            uint32_t val = decoded[i << 1];
+            data[i] = (val * 0x010101u) | (0xffu << 24);
+         }
+         return;
+      }
+#endif /* RPNG_HAVE_SSE2 */
+      for (i = 0; i < width; i++)
       {
          uint32_t val = decoded[i << 1];
-         data[i]      = (val * 0x010101) | (0xffu << 24);
+         data[i]      = (val * 0x010101u) | (0xffu << 24);
       }
       return;
    }
 
    mul  = mul_table[depth];
-   mask = (1 << depth) - 1;
+   mask = (1u << depth) - 1u;
    bit  = 0;
 
-   for (i = 0; i < (int)width; i++, bit += depth)
+   for (i = 0; i < width; i++, bit += depth)
    {
       unsigned byte = bit >> 3;
       unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
-
       val          &= mask;
       val          *= mul;
-      data[i]       = (val * 0x010101) | (0xffu << 24);
+      data[i]       = (val * 0x010101u) | (0xffu << 24);
    }
 }
 
@@ -310,20 +503,74 @@ static void rpng_reverse_filter_copy_line_gray_alpha(uint32_t *data,
       const uint8_t *decoded, unsigned width,
       unsigned bpp)
 {
-   int i;
+   unsigned i;
+   unsigned step = bpp / 8;
 
-   bpp /= 8;
+#if RPNG_HAVE_SSE2
+   /*
+    * Fast path: 8-bit gray+alpha (step == 1, 2 bytes per pixel).
+    * Source: G0 A0 G1 A1 G2 A2 G3 A3 ... (8 bytes = 4 pixels)
+    * Output: 0xAA_gg_gg_gg per pixel = A<<24 | G*0x010101
+    *
+    * Process 8 pixels (16 source bytes) per SSE2 iteration.
+    */
+   if (step == 1 && width >= 8)
+   {
+      const __m128i zero     = _mm_setzero_si128();
+      const __m128i mask_lo  = _mm_set1_epi16((short)0x00FFu); /* keep gray (low byte) */
+      unsigned w8 = width & ~7u;
 
-   for (i = 0; i < (int)width; i++)
+      for (i = 0; i < w8; i += 8, decoded += 16)
+      {
+         __m128i raw = _mm_loadu_si128((const __m128i *)decoded);
+         /* raw u16 lanes: bits 0-7 = G, bits 8-15 = A */
+
+         /* Extract gray: low byte of each u16 */
+         __m128i gray16 = _mm_and_si128(raw, mask_lo);     /* 8x u16: gray */
+         /* Extract alpha: high byte of each u16 → shift right 8 */
+         __m128i alph16 = _mm_srli_epi16(raw, 8);          /* 8x u16: alpha */
+
+         /* Expand to 32-bit lanes: first 4 and last 4 pixels */
+         __m128i g_lo = _mm_unpacklo_epi16(gray16, zero);  /* 4x u32: gray */
+         __m128i g_hi = _mm_unpackhi_epi16(gray16, zero);
+         __m128i a_lo = _mm_unpacklo_epi16(alph16, zero);  /* 4x u32: alpha */
+         __m128i a_hi = _mm_unpackhi_epi16(alph16, zero);
+
+         /* Build gray * 0x010101 = g | (g<<8) | (g<<16) */
+         {
+            __m128i rgb_lo = _mm_or_si128(_mm_or_si128(g_lo,
+                                 _mm_slli_epi32(g_lo, 8)),
+                                 _mm_slli_epi32(g_lo, 16));
+            __m128i ashift_lo = _mm_slli_epi32(a_lo, 24);
+            __m128i out_lo = _mm_or_si128(rgb_lo, ashift_lo);
+            _mm_storeu_si128((__m128i *)(data + i), out_lo);
+         }
+         {
+            __m128i rgb_hi = _mm_or_si128(_mm_or_si128(g_hi,
+                                 _mm_slli_epi32(g_hi, 8)),
+                                 _mm_slli_epi32(g_hi, 16));
+            __m128i ashift_hi = _mm_slli_epi32(a_hi, 24);
+            __m128i out_hi = _mm_or_si128(rgb_hi, ashift_hi);
+            _mm_storeu_si128((__m128i *)(data + i + 4), out_hi);
+         }
+      }
+
+      for (; i < width; i++)
+      {
+         uint32_t gray  = *decoded++;
+         uint32_t alpha = *decoded++;
+         data[i] = (gray * 0x010101u) | (alpha << 24);
+      }
+      return;
+   }
+#endif /* RPNG_HAVE_SSE2 */
+
+   for (i = 0; i < width; i++)
    {
       uint32_t gray, alpha;
-
-      gray     = *decoded;
-      decoded += bpp;
-      alpha    = *decoded;
-      decoded += bpp;
-
-      data[i]  = (gray * 0x010101) | (alpha << 24);
+      gray     = *decoded; decoded += step;
+      alpha    = *decoded; decoded += step;
+      data[i]  = (gray * 0x010101u) | (alpha << 24);
    }
 }
 
@@ -335,9 +582,9 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
    {
       case 1:
          {
-            int i;
+            unsigned i;
             unsigned w = width / 8;
-            for (i = 0; i < (int)w; i++, decoded++)
+            for (i = 0; i < w; i++, decoded++)
             {
                *data++ = palette[(*decoded >> 7) & 1];
                *data++ = palette[(*decoded >> 6) & 1];
@@ -372,9 +619,9 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
 
       case 2:
          {
-            int i;
+            unsigned i;
             unsigned w = width / 4;
-            for (i = 0; i < (int)w; i++, decoded++)
+            for (i = 0; i < w; i++, decoded++)
             {
                *data++ = palette[(*decoded >> 6) & 3];
                *data++ = palette[(*decoded >> 4) & 3];
@@ -397,9 +644,9 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
 
       case 4:
          {
-            int i;
+            unsigned i;
             unsigned w = width / 2;
-            for (i = 0; i < (int)w; i++, decoded++)
+            for (i = 0; i < w; i++, decoded++)
             {
                *data++ = palette[*decoded >> 4];
                *data++ = palette[*decoded & 0x0f];
@@ -412,8 +659,8 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
 
       case 8:
          {
-            int i;
-            for (i = 0; i < (int)width; i++, decoded++, data++)
+            unsigned i;
+            for (i = 0; i < width; i++, decoded++, data++)
                *data = palette[*decoded];
          }
          break;
@@ -424,30 +671,35 @@ static void rpng_pass_geom(const struct png_ihdr *ihdr,
       unsigned width, unsigned height,
       unsigned *bpp_out, unsigned *pitch_out, size_t *pass_size)
 {
-   unsigned bpp   = 0;
-   unsigned pitch = 0;
+   unsigned bpp      = 0;
+   unsigned pitch    = 0;
+   unsigned depth    = ihdr->depth;
+   unsigned w        = ihdr->width;
+
+   (void)width;
+   (void)height;
 
    switch (ihdr->color_type)
    {
       case PNG_IHDR_COLOR_GRAY:
-         bpp   = (ihdr->depth + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth + 7) / 8;
+         bpp   = (depth     + 7) / 8;
+         pitch = (w * depth + 7) / 8;
          break;
       case PNG_IHDR_COLOR_RGB:
-         bpp   = (ihdr->depth * 3 + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth * 3 + 7) / 8;
+         bpp   = (depth * 3     + 7) / 8;
+         pitch = (w * depth * 3 + 7) / 8;
          break;
       case PNG_IHDR_COLOR_PLT:
-         bpp   = (ihdr->depth + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth + 7) / 8;
+         bpp   = (depth     + 7) / 8;
+         pitch = (w * depth + 7) / 8;
          break;
       case PNG_IHDR_COLOR_GRAY_ALPHA:
-         bpp   = (ihdr->depth * 2 + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth * 2 + 7) / 8;
+         bpp   = (depth * 2     + 7) / 8;
+         pitch = (w * depth * 2 + 7) / 8;
          break;
       case PNG_IHDR_COLOR_RGBA:
-         bpp   = (ihdr->depth * 4 + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth * 4 + 7) / 8;
+         bpp   = (depth * 4     + 7) / 8;
+         pitch = (w * depth * 4 + 7) / 8;
          break;
       default:
          break;
@@ -467,15 +719,16 @@ static void rpng_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
       const struct adam7_pass *pass)
 {
    unsigned x, y;
+   unsigned stride_x = pass->stride_x;
+   unsigned stride_y = pass->stride_y;
+   unsigned img_w    = ihdr->width;
 
-   data += pass->y * ihdr->width + pass->x;
+   data += pass->y * img_w + pass->x;
 
-   for (y = 0; y < pass_height;
-         y++, data += ihdr->width * pass->stride_y, input += pass_width)
+   for (y = 0; y < pass_height; y++, data += img_w * stride_y, input += pass_width)
    {
       uint32_t *out = data;
-
-      for (x = 0; x < pass_width; x++, out += pass->stride_x)
+      for (x = 0; x < pass_width; x++, out += stride_x)
          *out = input[x];
    }
 }
@@ -566,44 +819,153 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
       const struct png_ihdr *ihdr,
       struct rpng_process *pngp, unsigned filter)
 {
-   unsigned i;
 
    switch (filter)
    {
       case PNG_FILTER_NONE:
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          break;
+
       case PNG_FILTER_SUB:
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
-         for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] += pngp->decoded_scanline[i - pngp->bpp];
+         /*
+          * SUB: dst[j] = src[j] + dst[j-bpp]
+          * This has a sequential data-dependency (each byte depends on the
+          * previous bpp bytes), so SSE2 cannot help here for bpp==1.
+          * For larger bpp (e.g. bpp==3 RGB, bpp==4 RGBA) the dependency
+          * distance equals bpp, meaning the first bpp bytes are independent.
+          * The gain from SIMD is marginal given typical scanline widths and
+          * the latency chain, so we keep the optimised scalar version.
+          */
+         {
+            unsigned j;
+            const uint8_t *src = pngp->inflate_buf;
+            uint8_t       *dst = pngp->decoded_scanline;
+            unsigned       bpp = pngp->bpp;
+            unsigned       pit = pngp->pitch;
+            for (j = 0; j < bpp; j++)
+               dst[j] = src[j];
+            for (j = bpp; j < pit; j++)
+               dst[j] = src[j] + dst[j - bpp];
+         }
          break;
+
       case PNG_FILTER_UP:
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
-         for (i = 0; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] += pngp->prev_scanline[i];
+         /*
+          * UP: dst[j] = src[j] + prev[j]
+          * No data dependency between output bytes → fully vectorisable.
+          */
+         {
+            const uint8_t *src  = pngp->inflate_buf;
+            uint8_t       *dst  = pngp->decoded_scanline;
+            const uint8_t *prev = pngp->prev_scanline;
+            unsigned       pit  = pngp->pitch;
+#if RPNG_HAVE_SSE2
+            {
+               unsigned j   = 0;
+               unsigned pit16 = pit & ~15u;
+               for (; j < pit16; j += 16)
+               {
+                  __m128i s = _mm_loadu_si128((const __m128i *)(src  + j));
+                  __m128i p = _mm_loadu_si128((const __m128i *)(prev + j));
+                  /* _mm_add_epi8 wraps modulo 256, exactly what PNG UP filter needs */
+                  _mm_storeu_si128((__m128i *)(dst + j), _mm_add_epi8(s, p));
+               }
+               for (; j < pit; j++)
+                  dst[j] = src[j] + prev[j];
+            }
+#else
+            {
+               unsigned j;
+               for (j = 0; j < pit; j++)
+                  dst[j] = src[j] + prev[j];
+            }
+#endif
+         }
          break;
+
       case PNG_FILTER_AVERAGE:
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
-         for (i = 0; i < pngp->bpp; i++)
+         /*
+          * AVERAGE: dst[j] = src[j] + floor((left + up) / 2)
+          * For j < bpp: left = 0, so dst[j] = src[j] + floor(prev[j]/2).
+          * For j >= bpp: left = dst[j-bpp] (output dependency, but distance
+          * is bpp bytes so for bpp==4 we can process 4 lanes in parallel).
+          *
+          * The j>=bpp loop has a dependency on dst[j-bpp].  For bpp==1 this
+          * is a full serial chain.  For bpp >= 4 (RGBA/RGB*2) we can use SSE2
+          * to process bpp bytes at a time provided we reload `left` each round.
+          *
+          * For bpp==1 and bpp==2 the scalar path is optimal.
+          * For bpp>=4 we unroll by bpp using SSE2 for the arithmetic.
+          */
          {
-            uint8_t avg = pngp->prev_scanline[i] >> 1;
-            pngp->decoded_scanline[i] += avg;
-         }
-         for (i = pngp->bpp; i < pngp->pitch; i++)
-         {
-            uint8_t avg = (pngp->decoded_scanline[i - pngp->bpp] + pngp->prev_scanline[i]) >> 1;
-            pngp->decoded_scanline[i] += avg;
+            const uint8_t *src  = pngp->inflate_buf;
+            uint8_t       *dst  = pngp->decoded_scanline;
+            const uint8_t *prev = pngp->prev_scanline;
+            unsigned       bpp  = pngp->bpp;
+            unsigned       pit  = pngp->pitch;
+            unsigned j;
+            for (j = 0; j < bpp; j++)
+               dst[j] = src[j] + (prev[j] >> 1);
+#if RPNG_HAVE_SSE2
+            if (bpp >= 4)
+            {
+               /*
+                * Process `bpp` bytes at a time.
+                * avg(a, b) = (a + b) >> 1 (unsigned, no overflow):
+                * SSE2 _mm_avg_epu8 computes floor((a + b + 1) / 2) (rounds up),
+                * but we need floor((a + b) / 2) (rounds down).
+                * Correction: avg_rounded_down(a,b) = ((a ^ b) >> 1) + (a & b)
+                * which equals _mm_add_epi8(_mm_and_si128(a,b),
+                *                           _mm_srli_epi16(_mm_xor_si128(a,b),1) & 0x7f7f...)
+                *
+                * Since bpp is typically 3 or 4 (at most 8 for 16-bit RGBA),
+                * we use 128-bit registers but only operate on `bpp` bytes.
+                * For simplicity and correctness across all bpp values we use
+                * the scalar loop as the fallback and only vectorise when
+                * pit - bpp >= 16 (at least one full 16-byte SSE2 chunk).
+                *
+                * In that case the left-dependency is resolved per-chunk:
+                * within a 16-byte chunk starting at j, left = dst[j-bpp].
+                * We must reload it after every bpp-byte group, so we process
+                * bpp bytes per "left" update.  For bpp==4 that's 4 scalar ops
+                * per group → no benefit over scalar.  The real win here is for
+                * the j<bpp (upward only) path, which we already handle above.
+                *
+                * Conclusion: AVERAGE with output dependency cannot be usefully
+                * vectorised in general with SSE2 without a more complex
+                * multi-pass approach.  Fall through to scalar.
+                */
+               for (j = bpp; j < pit; j++)
+                  dst[j] = src[j] + (uint8_t)((dst[j - bpp] + prev[j]) >> 1);
+            }
+            else
+#endif
+            {
+               for (j = bpp; j < pit; j++)
+                  dst[j] = src[j] + (uint8_t)((dst[j - bpp] + prev[j]) >> 1);
+            }
          }
          break;
+
       case PNG_FILTER_PAETH:
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
-         for (i = 0; i < pngp->bpp; i++)
-            pngp->decoded_scanline[i] += pngp->prev_scanline[i];
-         for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] += paeth(pngp->decoded_scanline[i - pngp->bpp],
-                  pngp->prev_scanline[i], pngp->prev_scanline[i - pngp->bpp]);
+         /*
+          * PAETH: sequential dependency at distance bpp.
+          * Paeth predictor is a non-linear function; not vectorisable.
+          */
+         {
+            unsigned j;
+            const uint8_t *src  = pngp->inflate_buf;
+            uint8_t       *dst  = pngp->decoded_scanline;
+            const uint8_t *prev = pngp->prev_scanline;
+            unsigned       bpp  = pngp->bpp;
+            unsigned       pit  = pngp->pitch;
+            for (j = 0; j < bpp; j++)
+               dst[j] = src[j] + prev[j];
+            for (j = bpp; j < pit; j++)
+               dst[j] = src[j] + paeth(dst[j - bpp], prev[j], prev[j - bpp]);
+         }
          break;
+
       default:
          return IMAGE_PROCESS_ERROR_END;
    }
@@ -825,36 +1187,8 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
    if (!process)
       return NULL;
 
-   process->flags                  = 0;
-   process->prev_scanline          = NULL;
-   process->decoded_scanline       = NULL;
-   process->inflate_buf            = NULL;
+   memset(process, 0, sizeof(*process));
 
-   process->ihdr.width             = 0;
-   process->ihdr.height            = 0;
-   process->ihdr.depth             = 0;
-   process->ihdr.color_type        = 0;
-   process->ihdr.compression       = 0;
-   process->ihdr.filter            = 0;
-   process->ihdr.interlace         = 0;
-
-   process->restore_buf_size       = 0;
-   process->adam7_restore_buf_size = 0;
-   process->data_restore_buf_size  = 0;
-   process->inflate_buf_size       = 0;
-   process->avail_in               = 0;
-   process->avail_out              = 0;
-   process->total_out              = 0;
-   process->pass_size              = 0;
-   process->bpp                    = 0;
-   process->pitch                  = 0;
-   process->h                      = 0;
-   process->pass_width             = 0;
-   process->pass_height            = 0;
-   process->pass_pos               = 0;
-   process->data                   = 0;
-   process->palette                = 0;
-   process->stream                 = NULL;
    process->stream_backend         = trans_stream_get_zlib_inflate_backend();
 
    rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
@@ -910,66 +1244,42 @@ error:
 static enum png_chunk_type rpng_read_chunk_header(
       uint8_t *buf, uint32_t chunk_size)
 {
-   int i;
-   char type[4];
+   uint8_t b0, b1, b2, b3;
+   uint32_t tag;
 
-   for (i = 0; i < 4; i++)
+   b0 = buf[4]; b1 = buf[5]; b2 = buf[6]; b3 = buf[7];
+
+   /* All four bytes must be ASCII letters (65-90 or 97-122) */
+   if (   ((b0 < 65) || ((b0 > 90) && (b0 < 97)) || (b0 > 122))
+       || ((b1 < 65) || ((b1 > 90) && (b1 < 97)) || (b1 > 122))
+       || ((b2 < 65) || ((b2 > 90) && (b2 < 97)) || (b2 > 122))
+       || ((b3 < 65) || ((b3 > 90) && (b3 < 97)) || (b3 > 122)))
+      return PNG_CHUNK_ERROR;
+
+   /* Pack four bytes into one word for fast comparison */
+   tag = ((uint32_t)b0 << 24) | ((uint32_t)b1 << 16)
+       | ((uint32_t)b2 <<  8) |  (uint32_t)b3;
+
+#define MAKE_TAG(a,b,c,d) \
+   (((uint32_t)(a) << 24) | ((uint32_t)(b) << 16) | ((uint32_t)(c) << 8) | (uint32_t)(d))
+
+   switch (tag)
    {
-      uint8_t byte = buf[i + 4];
-
-      /* All four bytes of the chunk type must be
-       * ASCII letters (codes 65-90 and 97-122) */
-      if ((byte < 65) || ((byte > 90) && (byte < 97)) || (byte > 122))
-         return PNG_CHUNK_ERROR;
-      type[i]      = byte;
+      case MAKE_TAG('I','H','D','R'): return PNG_CHUNK_IHDR;
+      case MAKE_TAG('I','D','A','T'): return PNG_CHUNK_IDAT;
+      case MAKE_TAG('I','E','N','D'): return PNG_CHUNK_IEND;
+      case MAKE_TAG('P','L','T','E'): return PNG_CHUNK_PLTE;
+      case MAKE_TAG('t','R','N','S'): return PNG_CHUNK_tRNS;
+      default:                        break;
    }
 
-   if (
-            type[0] == 'I'
-         && type[1] == 'H'
-         && type[2] == 'D'
-         && type[3] == 'R'
-      )
-      return PNG_CHUNK_IHDR;
-   else if
-      (
-          type[0] == 'I'
-       && type[1] == 'D'
-       && type[2] == 'A'
-       && type[3] == 'T'
-      )
-         return PNG_CHUNK_IDAT;
-   else if
-      (
-          type[0] == 'I'
-       && type[1] == 'E'
-       && type[2] == 'N'
-       && type[3] == 'D'
-      )
-         return PNG_CHUNK_IEND;
-   else if
-      (
-          type[0] == 'P'
-       && type[1] == 'L'
-       && type[2] == 'T'
-       && type[3] == 'E'
-      )
-         return PNG_CHUNK_PLTE;
-   else if
-      (
-          type[0] == 't'
-       && type[1] == 'R'
-       && type[2] == 'N'
-       && type[3] == 'S'
-      )
-         return PNG_CHUNK_tRNS;
+#undef MAKE_TAG
 
    return PNG_CHUNK_NOOP;
 }
 
 bool rpng_iterate_image(rpng_t *rpng)
 {
-   unsigned i;
    uint8_t *buf             = (uint8_t*)rpng->buff_data;
    uint32_t chunk_size      = 0;
 
@@ -1055,12 +1365,12 @@ bool rpng_iterate_image(rpng_t *rpng)
 
             buf += 8;
 
-            for (i = 0; i < (int)entries; i++)
+            for (i = 0; i < (int)entries; i++, buf += 3)
             {
-               uint32_t r       = buf[3 * i + 0];
-               uint32_t g       = buf[3 * i + 1];
-               uint32_t b       = buf[3 * i + 2];
-               rpng->palette[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
+               uint32_t r       = buf[0];
+               uint32_t g       = buf[1];
+               uint32_t b       = buf[2];
+               rpng->palette[i] = (0xffu << 24) | (r << 16) | (g << 8) | b;
             }
 
             rpng->flags        |= RPNG_FLAG_HAS_PLTE;
@@ -1103,8 +1413,7 @@ bool rpng_iterate_image(rpng_t *rpng)
 
          buf += 8;
 
-         for (i = 0; i < chunk_size; i++)
-            rpng->idat_buf.data[i + rpng->idat_buf.size] = buf[i];
+         memcpy(rpng->idat_buf.data + rpng->idat_buf.size, buf, chunk_size);
 
          rpng->idat_buf.size += chunk_size;
 
