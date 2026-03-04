@@ -525,7 +525,7 @@ static cdfs_track_t* cdfs_open_cue_track(
          if (found_track && index_number == 1)
          {
             if (     strchr(current_track_path, '/')
-                  || strstr(current_track_path, "\\"))
+                  || strchr(current_track_path, '\\'))
                strlcpy(track_path, current_track_path, sizeof(track_path));
             else
             {
