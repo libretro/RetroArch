@@ -39,11 +39,28 @@
 
 #include "rpng_internal.h"
 
+/* ---------------------------------------------------------------------------
+ * SSE2 acceleration
+ * Guarded so the file compiles cleanly on non-x86 targets as well.
+ * ---------------------------------------------------------------------------*/
 #if defined(__SSE2__) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2) || defined(_M_X64)
-#include <emmintrin.h>
-#define RPNG_HAVE_SSE2 1
+#  include <emmintrin.h>
+#  define RPNG_HAVE_SSE2 1
 #else
-#define RPNG_HAVE_SSE2 0
+#  define RPNG_HAVE_SSE2 0
+#endif
+
+/* ---------------------------------------------------------------------------
+ * ARM NEON acceleration
+ * Covers AArch64 (NEON always present) and AArch32 with __ARM_NEON defined.
+ * RPNG_HAVE_NEON is mutually exclusive with RPNG_HAVE_SSE2: on a given build
+ * exactly one SIMD back-end is active.
+ * ---------------------------------------------------------------------------*/
+#if !RPNG_HAVE_SSE2 && (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__aarch64__) || defined(HAVE_NEON))
+#  include <arm_neon.h>
+#  define RPNG_HAVE_NEON 1
+#else
+#  define RPNG_HAVE_NEON 0
 #endif
 
 enum png_ihdr_color_type
@@ -318,6 +335,69 @@ static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
    }
 #endif /* RPNG_HAVE_SSE2 */
 
+#if RPNG_HAVE_NEON
+   /*
+    * NEON fast path: 8-bit RGB → ARGB32, 8 pixels per iteration.
+    *
+    * vld3_u8 performs a de-interleave load: given source bytes
+    *   R0 G0 B0 R1 G1 B1 R2 G2 B2 R3 G3 B3 R4 G4 B4 R5 G5 B5 R6 G6 B6 R7 G7 B7
+    * it fills three 8-lane uint8x8 registers:
+    *   .val[0] = { R0..R7 }
+    *   .val[1] = { G0..G7 }
+    *   .val[2] = { B0..B7 }
+    * We then widen each to uint16x8, shift/combine into uint32x4 pairs,
+    * and store 8 ARGB32 dwords.
+    */
+   if (step == 1 && width >= 8)
+   {
+      const uint8x8_t  alpha8  = vdup_n_u8(0xFF);
+      unsigned w8 = width & ~7u;
+
+      for (i = 0; i < w8; i += 8, decoded += 24)
+      {
+         /* De-interleaved load: 3 channels × 8 pixels */
+         uint8x8x3_t rgb = vld3_u8(decoded);
+
+         /* Widen each channel to 16-bit */
+         uint16x8_t r16 = vmovl_u8(rgb.val[0]);
+         uint16x8_t g16 = vmovl_u8(rgb.val[1]);
+         uint16x8_t b16 = vmovl_u8(rgb.val[2]);
+         uint16x8_t a16 = vmovl_u8(alpha8);
+
+         /* Widen to 32-bit — process low 4 and high 4 pixels separately */
+         uint32x4_t r_lo = vmovl_u16(vget_low_u16(r16));
+         uint32x4_t r_hi = vmovl_u16(vget_high_u16(r16));
+         uint32x4_t g_lo = vmovl_u16(vget_low_u16(g16));
+         uint32x4_t g_hi = vmovl_u16(vget_high_u16(g16));
+         uint32x4_t b_lo = vmovl_u16(vget_low_u16(b16));
+         uint32x4_t b_hi = vmovl_u16(vget_high_u16(b16));
+         uint32x4_t a_lo = vmovl_u16(vget_low_u16(a16));
+         uint32x4_t a_hi = vmovl_u16(vget_high_u16(a16));
+
+         /* Assemble ARGB32: A<<24 | R<<16 | G<<8 | B */
+         uint32x4_t out_lo = vorrq_u32(
+               vorrq_u32(vshlq_n_u32(a_lo, 24), vshlq_n_u32(r_lo, 16)),
+               vorrq_u32(vshlq_n_u32(g_lo,  8), b_lo));
+         uint32x4_t out_hi = vorrq_u32(
+               vorrq_u32(vshlq_n_u32(a_hi, 24), vshlq_n_u32(r_hi, 16)),
+               vorrq_u32(vshlq_n_u32(g_hi,  8), b_hi));
+
+         vst1q_u32(data + i,     out_lo);
+         vst1q_u32(data + i + 4, out_hi);
+      }
+
+      /* Scalar tail */
+      for (; i < width; i++)
+      {
+         uint32_t r = *decoded++;
+         uint32_t g = *decoded++;
+         uint32_t b = *decoded++;
+         data[i] = 0xFF000000u | (r << 16) | (g << 8) | b;
+      }
+      return;
+   }
+#endif /* RPNG_HAVE_NEON */
+
    for (i = 0; i < width; i++)
    {
       uint32_t r = *decoded; decoded += step;
@@ -393,6 +473,62 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
       return;
    }
 #endif /* RPNG_HAVE_SSE2 */
+
+#if RPNG_HAVE_NEON
+   /*
+    * NEON fast path: 8-bit RGBA → ARGB32, 8 pixels per iteration.
+    *
+    * vld4_u8 de-interleaves 4 channels from 32 source bytes:
+    *   .val[0] = { R0..R7 }
+    *   .val[1] = { G0..G7 }
+    *   .val[2] = { B0..B7 }
+    *   .val[3] = { A0..A7 }
+    * Same widen-and-combine strategy as the RGB path.
+    */
+   if (step == 1 && width >= 8)
+   {
+      unsigned w8 = width & ~7u;
+
+      for (i = 0; i < w8; i += 8, decoded += 32)
+      {
+         uint8x8x4_t rgba = vld4_u8(decoded);
+
+         uint16x8_t r16 = vmovl_u8(rgba.val[0]);
+         uint16x8_t g16 = vmovl_u8(rgba.val[1]);
+         uint16x8_t b16 = vmovl_u8(rgba.val[2]);
+         uint16x8_t a16 = vmovl_u8(rgba.val[3]);
+
+         uint32x4_t r_lo = vmovl_u16(vget_low_u16(r16));
+         uint32x4_t r_hi = vmovl_u16(vget_high_u16(r16));
+         uint32x4_t g_lo = vmovl_u16(vget_low_u16(g16));
+         uint32x4_t g_hi = vmovl_u16(vget_high_u16(g16));
+         uint32x4_t b_lo = vmovl_u16(vget_low_u16(b16));
+         uint32x4_t b_hi = vmovl_u16(vget_high_u16(b16));
+         uint32x4_t a_lo = vmovl_u16(vget_low_u16(a16));
+         uint32x4_t a_hi = vmovl_u16(vget_high_u16(a16));
+
+         uint32x4_t out_lo = vorrq_u32(
+               vorrq_u32(vshlq_n_u32(a_lo, 24), vshlq_n_u32(r_lo, 16)),
+               vorrq_u32(vshlq_n_u32(g_lo,  8), b_lo));
+         uint32x4_t out_hi = vorrq_u32(
+               vorrq_u32(vshlq_n_u32(a_hi, 24), vshlq_n_u32(r_hi, 16)),
+               vorrq_u32(vshlq_n_u32(g_hi,  8), b_hi));
+
+         vst1q_u32(data + i,     out_lo);
+         vst1q_u32(data + i + 4, out_hi);
+      }
+
+      for (; i < width; i++)
+      {
+         uint32_t r = *decoded++;
+         uint32_t g = *decoded++;
+         uint32_t b = *decoded++;
+         uint32_t a = *decoded++;
+         data[i] = (a << 24) | (r << 16) | (g << 8) | b;
+      }
+      return;
+   }
+#endif /* RPNG_HAVE_NEON */
 
    for (i = 0; i < width; i++)
    {
@@ -477,6 +613,59 @@ static void rpng_reverse_filter_copy_line_bw(uint32_t *data,
          return;
       }
 #endif /* RPNG_HAVE_SSE2 */
+
+#if RPNG_HAVE_NEON
+      /*
+       * NEON fast path: gray16 → ARGB32, 8 pixels per iteration.
+       *
+       * Source: G0_hi G0_lo G1_hi G1_lo ... (2 bytes/pixel, big-endian).
+       * We need the high byte of each 16-bit sample: decoded[2*i].
+       * vld2_u8 de-interleaves pairs: .val[0] = high bytes, .val[1] = low bytes.
+       * Expand high byte to 0xFF_gg_gg_gg.
+       */
+      if (width >= 8)
+      {
+         const uint8x8_t  alpha8 = vdup_n_u8(0xFF);
+         unsigned w8 = width & ~7u;
+
+         for (i = 0; i < w8; i += 8, decoded += 16)
+         {
+            /* De-interleave: high bytes into val[0], low bytes into val[1] */
+            uint8x8x2_t pairs = vld2_u8(decoded);
+            uint8x8_t   gray8 = pairs.val[0]; /* high byte = 8-bit gray value */
+
+            /* Widen gray to 16 then 32 bits */
+            uint16x8_t g16 = vmovl_u8(gray8);
+            uint32x4_t g_lo = vmovl_u16(vget_low_u16(g16));
+            uint32x4_t g_hi = vmovl_u16(vget_high_u16(g16));
+
+            /* Expand gray * 0x010101 = g | (g<<8) | (g<<16) */
+            uint32x4_t rgb_lo = vorrq_u32(vorrq_u32(g_lo,
+                                    vshlq_n_u32(g_lo,  8)),
+                                    vshlq_n_u32(g_lo, 16));
+            uint32x4_t rgb_hi = vorrq_u32(vorrq_u32(g_hi,
+                                    vshlq_n_u32(g_hi,  8)),
+                                    vshlq_n_u32(g_hi, 16));
+
+            /* OR in alpha=0xFF000000 */
+            uint16x8_t a16   = vmovl_u8(alpha8);
+            uint32x4_t a_lo  = vmovl_u16(vget_low_u16(a16));
+            uint32x4_t a_hi  = vmovl_u16(vget_high_u16(a16));
+            uint32x4_t out_lo = vorrq_u32(rgb_lo, vshlq_n_u32(a_lo, 24));
+            uint32x4_t out_hi = vorrq_u32(rgb_hi, vshlq_n_u32(a_hi, 24));
+
+            vst1q_u32(data + i,     out_lo);
+            vst1q_u32(data + i + 4, out_hi);
+         }
+
+         for (; i < width; i++)
+         {
+            uint32_t val = decoded[i << 1];
+            data[i] = (val * 0x010101u) | (0xffu << 24);
+         }
+         return;
+      }
+#endif /* RPNG_HAVE_NEON */
       for (i = 0; i < width; i++)
       {
          uint32_t val = decoded[i << 1];
@@ -564,6 +753,57 @@ static void rpng_reverse_filter_copy_line_gray_alpha(uint32_t *data,
       return;
    }
 #endif /* RPNG_HAVE_SSE2 */
+
+#if RPNG_HAVE_NEON
+   /*
+    * NEON fast path: 8-bit gray+alpha → ARGB32, 8 pixels per iteration.
+    *
+    * Source: G0 A0 G1 A1 ... (2 bytes/pixel).
+    * vld2_u8 de-interleaves: .val[0] = grays, .val[1] = alphas.
+    * Expand gray to 0xAA_gg_gg_gg.
+    */
+   if (step == 1 && width >= 8)
+   {
+      unsigned w8 = width & ~7u;
+
+      for (i = 0; i < w8; i += 8, decoded += 16)
+      {
+         uint8x8x2_t ga   = vld2_u8(decoded);
+         uint8x8_t   gray8 = ga.val[0];
+         uint8x8_t   alph8 = ga.val[1];
+
+         uint16x8_t g16 = vmovl_u8(gray8);
+         uint16x8_t a16 = vmovl_u8(alph8);
+
+         uint32x4_t g_lo = vmovl_u16(vget_low_u16(g16));
+         uint32x4_t g_hi = vmovl_u16(vget_high_u16(g16));
+         uint32x4_t a_lo = vmovl_u16(vget_low_u16(a16));
+         uint32x4_t a_hi = vmovl_u16(vget_high_u16(a16));
+
+         /* gray * 0x010101 */
+         uint32x4_t rgb_lo = vorrq_u32(vorrq_u32(g_lo,
+                                 vshlq_n_u32(g_lo,  8)),
+                                 vshlq_n_u32(g_lo, 16));
+         uint32x4_t rgb_hi = vorrq_u32(vorrq_u32(g_hi,
+                                 vshlq_n_u32(g_hi,  8)),
+                                 vshlq_n_u32(g_hi, 16));
+
+         uint32x4_t out_lo = vorrq_u32(rgb_lo, vshlq_n_u32(a_lo, 24));
+         uint32x4_t out_hi = vorrq_u32(rgb_hi, vshlq_n_u32(a_hi, 24));
+
+         vst1q_u32(data + i,     out_lo);
+         vst1q_u32(data + i + 4, out_hi);
+      }
+
+      for (; i < width; i++)
+      {
+         uint32_t gray  = *decoded++;
+         uint32_t alpha = *decoded++;
+         data[i] = (gray * 0x010101u) | (alpha << 24);
+      }
+      return;
+   }
+#endif /* RPNG_HAVE_NEON */
 
    for (i = 0; i < width; i++)
    {
@@ -829,12 +1069,7 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
       case PNG_FILTER_SUB:
          /*
           * SUB: dst[j] = src[j] + dst[j-bpp]
-          * This has a sequential data-dependency (each byte depends on the
-          * previous bpp bytes), so SSE2 cannot help here for bpp==1.
-          * For larger bpp (e.g. bpp==3 RGB, bpp==4 RGBA) the dependency
-          * distance equals bpp, meaning the first bpp bytes are independent.
-          * The gain from SIMD is marginal given typical scanline widths and
-          * the latency chain, so we keep the optimised scalar version.
+          * Sequential data-dependency — not vectorisable with SSE2 or NEON.
           */
          {
             unsigned j;
@@ -852,7 +1087,7 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
       case PNG_FILTER_UP:
          /*
           * UP: dst[j] = src[j] + prev[j]
-          * No data dependency between output bytes → fully vectorisable.
+          * No data dependency → fully vectorisable on both SSE2 and NEON.
           */
          {
             const uint8_t *src  = pngp->inflate_buf;
@@ -873,6 +1108,32 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
                for (; j < pit; j++)
                   dst[j] = src[j] + prev[j];
             }
+#elif RPNG_HAVE_NEON
+            /*
+             * NEON: vaddq_u8 on 16-byte (128-bit) vectors.
+             * Identical semantics to SSE2 _mm_add_epi8: wraps mod 256.
+             * Process 16 bytes per iteration; scalar tail for remainder.
+             */
+            {
+               unsigned j     = 0;
+               unsigned pit16 = pit & ~15u;
+               for (; j < pit16; j += 16)
+               {
+                  uint8x16_t s = vld1q_u8(src  + j);
+                  uint8x16_t p = vld1q_u8(prev + j);
+                  vst1q_u8(dst + j, vaddq_u8(s, p));
+               }
+               /* Handle 8-byte chunk if remaining >= 8 */
+               if (j + 8 <= pit)
+               {
+                  uint8x8_t s8 = vld1_u8(src  + j);
+                  uint8x8_t p8 = vld1_u8(prev + j);
+                  vst1_u8(dst + j, vadd_u8(s8, p8));
+                  j += 8;
+               }
+               for (; j < pit; j++)
+                  dst[j] = src[j] + prev[j];
+            }
 #else
             {
                unsigned j;
@@ -885,17 +1146,8 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
 
       case PNG_FILTER_AVERAGE:
          /*
-          * AVERAGE: dst[j] = src[j] + floor((left + up) / 2)
-          * For j < bpp: left = 0, so dst[j] = src[j] + floor(prev[j]/2).
-          * For j >= bpp: left = dst[j-bpp] (output dependency, but distance
-          * is bpp bytes so for bpp==4 we can process 4 lanes in parallel).
-          *
-          * The j>=bpp loop has a dependency on dst[j-bpp].  For bpp==1 this
-          * is a full serial chain.  For bpp >= 4 (RGBA/RGB*2) we can use SSE2
-          * to process bpp bytes at a time provided we reload `left` each round.
-          *
-          * For bpp==1 and bpp==2 the scalar path is optimal.
-          * For bpp>=4 we unroll by bpp using SSE2 for the arithmetic.
+          * AVERAGE: sequential output dependency — not vectorisable
+          * with SSE2 or NEON in the general case.
           */
          {
             const uint8_t *src  = pngp->inflate_buf;
@@ -906,44 +1158,8 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
             unsigned j;
             for (j = 0; j < bpp; j++)
                dst[j] = src[j] + (prev[j] >> 1);
-#if RPNG_HAVE_SSE2
-            if (bpp >= 4)
-            {
-               /*
-                * Process `bpp` bytes at a time.
-                * avg(a, b) = (a + b) >> 1 (unsigned, no overflow):
-                * SSE2 _mm_avg_epu8 computes floor((a + b + 1) / 2) (rounds up),
-                * but we need floor((a + b) / 2) (rounds down).
-                * Correction: avg_rounded_down(a,b) = ((a ^ b) >> 1) + (a & b)
-                * which equals _mm_add_epi8(_mm_and_si128(a,b),
-                *                           _mm_srli_epi16(_mm_xor_si128(a,b),1) & 0x7f7f...)
-                *
-                * Since bpp is typically 3 or 4 (at most 8 for 16-bit RGBA),
-                * we use 128-bit registers but only operate on `bpp` bytes.
-                * For simplicity and correctness across all bpp values we use
-                * the scalar loop as the fallback and only vectorise when
-                * pit - bpp >= 16 (at least one full 16-byte SSE2 chunk).
-                *
-                * In that case the left-dependency is resolved per-chunk:
-                * within a 16-byte chunk starting at j, left = dst[j-bpp].
-                * We must reload it after every bpp-byte group, so we process
-                * bpp bytes per "left" update.  For bpp==4 that's 4 scalar ops
-                * per group → no benefit over scalar.  The real win here is for
-                * the j<bpp (upward only) path, which we already handle above.
-                *
-                * Conclusion: AVERAGE with output dependency cannot be usefully
-                * vectorised in general with SSE2 without a more complex
-                * multi-pass approach.  Fall through to scalar.
-                */
-               for (j = bpp; j < pit; j++)
-                  dst[j] = src[j] + (uint8_t)((dst[j - bpp] + prev[j]) >> 1);
-            }
-            else
-#endif
-            {
-               for (j = bpp; j < pit; j++)
-                  dst[j] = src[j] + (uint8_t)((dst[j - bpp] + prev[j]) >> 1);
-            }
+            for (j = bpp; j < pit; j++)
+               dst[j] = src[j] + (uint8_t)((dst[j - bpp] + prev[j]) >> 1);
          }
          break;
 
