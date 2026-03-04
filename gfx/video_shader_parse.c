@@ -913,80 +913,81 @@ void video_shader_resolve_parameters(struct video_shader *shader)
    }
 #else
    {
+      size_t j;
       struct video_shader_parameter *param = &shader->parameters[0];
       for (i = 0; i < shader->passes; i++)
       {
-         const char *path             = shader->pass[i].source.path;
-         uint8_t *buf                 = NULL;
-         int64_t buf_len              = 0;
+         const char *path  = shader->pass[i].source.path;
+         uint8_t    *buf   = NULL;
+         int64_t     buf_len = 0;
+         uint8_t    *ptr;
+         uint8_t    *end;
 
          if (string_is_empty(path) || !path_is_valid(path))
             continue;
 
-         /* Read file contents */
-         if (filestream_read_file(path, (void**)&buf, &buf_len))
+         if (!filestream_read_file(path, (void**)&buf, &buf_len) || buf_len <= 0)
          {
-            size_t line_index         = 0;
-            struct string_list lines  = {0};
-            bool lines_inited         = false;
+            free(buf);
+            continue;
+         }
 
-            /* Split into lines */
-            if (buf_len > 0)
+         ptr = buf;
+         end = buf + buf_len;
+
+         while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
+               && ptr < end)
+         {
+            int   ret;
+            char  line[512];
+            uint8_t *nl      = (uint8_t*)memchr(ptr, '\n', (size_t)(end - ptr));
+            size_t line_len  = nl ? (size_t)(nl - ptr) : (size_t)(end - ptr);
+
+            if (line_len >= sizeof(line))
             {
-               string_list_initialize(&lines);
-               lines_inited = string_split_noalloc(&lines, (const char*)buf, "\n");
+               ptr = nl ? nl + 1 : end;
+               continue;
             }
 
-            /* Buffer is no longer required - clean up */
-            if ((void*)buf)
-               free((void*)buf);
+            memcpy(line, ptr, line_len);
+            line[line_len] = '\0';
+            ptr = nl ? nl + 1 : end;
 
-            if (!lines_inited)
+            /* Strip trailing CR for Windows-style line endings */
+            if (line_len > 0 && line[line_len - 1] == '\r')
+               line[--line_len] = '\0';
+
+            if (strncmp("#pragma parameter", line,
+                     STRLEN_CONST("#pragma parameter")) != 0)
                continue;
 
-            /* Even though the pass is set in the loop too,
-             * not all passes have parameters */
-            param->pass = (int)i;
+            ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
+                        param->id,       param->desc,    &param->initial,
+                        &param->minimum, &param->maximum, &param->step);
 
-            while ((shader->num_parameters < ARRAY_SIZE(shader->parameters))
-                  && (line_index < lines.size))
-            {
-               int ret;
-               const char *line = lines.elems[line_index].data;
-               line_index++;
+            if (ret < 5)
+               continue;
 
-               /* Check if this is a '#pragma parameter' line */
-               if (strncmp("#pragma parameter", line,
-                        STRLEN_CONST("#pragma parameter")))
-                  continue;
+            param->id[63]   = '\0';
+            param->desc[63] = '\0';
 
-               /* Parse line */
-               if ((ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
-                           param->id,        param->desc,    &param->initial,
-                           &param->minimum, &param->maximum, &param->step)) < 5)
-                  continue;
+            if (ret == 5)
+               param->step = 0.1f * (param->maximum - param->minimum);
 
-               param->id[63]   = '\0';
-               param->desc[63] = '\0';
-
-               if (ret == 5)
-                  param->step  = 0.1f * (param->maximum - param->minimum);
-
-               param->pass     = (int)i;
+            param->pass    = (int)i;
 
 #ifdef DEBUG
-               RARCH_DBG("[Shaders] Found #pragma parameter %s (%s) %f %f %f %f in pass %d.\n",
-                     param->desc,    param->id,      param->initial,
-                     param->minimum, param->maximum, param->step, param->pass);
+            RARCH_DBG("[Shaders] Found #pragma parameter %s (%s) %f %f %f %f in pass %d.\n",
+                  param->desc,    param->id,      param->initial,
+                  param->minimum, param->maximum, param->step, param->pass);
 #endif
-               param->current  = param->initial;
 
-               shader->num_parameters++;
-               param++;
-            }
-
-            string_list_deinitialize(&lines);
+            param->current = param->initial;
+            shader->num_parameters++;
+            param++;
          }
+
+         free(buf);
       }
    }
 #endif
