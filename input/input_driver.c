@@ -498,13 +498,13 @@ bool input_driver_set_rumble_gain(
          unsigned gain,
          unsigned input_max_users)
 {
+   const input_device_driver_t *joypad = input_driver_st.primary_joypad;
    int i;
 
-   if (  input_driver_st.primary_joypad
-      && input_driver_st.primary_joypad->set_rumble_gain)
+   if (joypad && joypad->set_rumble_gain)
    {
       for (i = 0; i < (int)input_max_users; i++)
-         input_driver_st.primary_joypad->set_rumble_gain(i, gain);
+         joypad->set_rumble_gain(i, gain);
       return true;
    }
    return false;
@@ -661,46 +661,37 @@ static bool input_driver_button_combo_hold(
 
 bool input_driver_pointer_is_offscreen(int16_t x, int16_t y)
 {
-   const int edge_detect = 32700;
-   if (   (x >= -edge_detect)
-       && (y >= -edge_detect)
-       && (x <=  edge_detect)
-       && (y <=  edge_detect))
-      return false;
-   return true;
+   /* Use unsigned cast: values outside [-32700, 32700] will wrap
+    * beyond 32700*2 = 65400 when biased by 32700 */
+   return ((uint16_t)(x + 32700) > 65400u) || ((uint16_t)(y + 32700) > 65400u);
 }
 
 unsigned input_driver_lightgun_id_convert(unsigned id)
 {
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-         return RARCH_LIGHTGUN_DPAD_RIGHT;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-         return RARCH_LIGHTGUN_DPAD_LEFT;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-         return RARCH_LIGHTGUN_DPAD_UP;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-         return RARCH_LIGHTGUN_DPAD_DOWN;
-      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-         return RARCH_LIGHTGUN_SELECT;
-      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return RARCH_LIGHTGUN_START;
-      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-         return RARCH_LIGHTGUN_RELOAD;
-      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return RARCH_LIGHTGUN_TRIGGER;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-         return RARCH_LIGHTGUN_AUX_A;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-         return RARCH_LIGHTGUN_AUX_B;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-         return RARCH_LIGHTGUN_AUX_C;
-      case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return RARCH_LIGHTGUN_START;
-      default:
-         break;
-   }
+   /* Direct lookup table for lightgun ID conversion.
+    * RETRO_DEVICE_ID_LIGHTGUN_* values used as indices.
+    * Returns RARCH_LIGHTGUN_* equivalents, 0 for unmapped. */
+   static const unsigned lightgun_id_lut[] = {
+      0,                        /* 0: unused */
+      RARCH_LIGHTGUN_TRIGGER,   /* RETRO_DEVICE_ID_LIGHTGUN_TRIGGER=1 */
+      RARCH_LIGHTGUN_RELOAD,    /* RETRO_DEVICE_ID_LIGHTGUN_RELOAD=2 */
+      RARCH_LIGHTGUN_AUX_A,     /* RETRO_DEVICE_ID_LIGHTGUN_AUX_A=3 */
+      RARCH_LIGHTGUN_AUX_B,     /* RETRO_DEVICE_ID_LIGHTGUN_AUX_B=4 */
+      RARCH_LIGHTGUN_AUX_C,     /* RETRO_DEVICE_ID_LIGHTGUN_AUX_C=5 */
+      RARCH_LIGHTGUN_START,     /* RETRO_DEVICE_ID_LIGHTGUN_START=6 */
+      RARCH_LIGHTGUN_SELECT,    /* RETRO_DEVICE_ID_LIGHTGUN_SELECT=7 */
+      RARCH_LIGHTGUN_DPAD_UP,   /* RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP=8 */
+      RARCH_LIGHTGUN_DPAD_DOWN, /* RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN=9 */
+      RARCH_LIGHTGUN_DPAD_LEFT, /* RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT=10 */
+      RARCH_LIGHTGUN_DPAD_RIGHT /* RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT=11 */
+   };
+   /* RETRO_DEVICE_ID_LIGHTGUN_PAUSE maps to RARCH_LIGHTGUN_START same as START */
+
+   if (id == RETRO_DEVICE_ID_LIGHTGUN_PAUSE)
+      return RARCH_LIGHTGUN_START;
+
+   if (id < (sizeof(lightgun_id_lut) / sizeof(lightgun_id_lut[0])))
+      return lightgun_id_lut[id];
 
    return 0;
 }
@@ -713,56 +704,41 @@ bool input_driver_button_combo(
 {
    switch (mode)
    {
-      case INPUT_COMBO_DOWN_Y_L_R:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return true;
-         break;
-      case INPUT_COMBO_L3_R3:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
-            return true;
-         break;
-      case INPUT_COMBO_L1_R1_START_SELECT:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return true;
-         break;
-      case INPUT_COMBO_START_SELECT:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return true;
-         break;
-      case INPUT_COMBO_L3_R:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return true;
-         break;
-      case INPUT_COMBO_L_R:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return true;
-         break;
-      case INPUT_COMBO_DOWN_SELECT:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return true;
-         break;
-      case INPUT_COMBO_L2_R2:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L2)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R2))
-            return true;
-         break;
+      /* Most common combos first */
       case INPUT_COMBO_HOLD_START:
          return input_driver_button_combo_hold(
                INPUT_COMBO_HOLD_START, RETRO_DEVICE_ID_JOYPAD_START, current_time, p_input);
       case INPUT_COMBO_HOLD_SELECT:
          return input_driver_button_combo_hold(
                INPUT_COMBO_HOLD_SELECT, RETRO_DEVICE_ID_JOYPAD_SELECT, current_time, p_input);
+      case INPUT_COMBO_L3_R3:
+         return BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3);
+      case INPUT_COMBO_START_SELECT:
+         return BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT);
+      case INPUT_COMBO_L1_R1_START_SELECT:
+         return BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT);
+      case INPUT_COMBO_DOWN_Y_L_R:
+         return BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R);
+      case INPUT_COMBO_L3_R:
+         return BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R);
+      case INPUT_COMBO_L_R:
+         return BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R);
+      case INPUT_COMBO_DOWN_SELECT:
+         return BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT);
+      case INPUT_COMBO_L2_R2:
+         return BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L2)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R2);
       default:
       case INPUT_COMBO_NONE:
          break;
@@ -874,29 +850,22 @@ static int16_t input_joypad_axis(
 
    if (input_analog_deadzone)
    {
-      /* if analog value is below the deadzone, ignore it
-       * normal magnitude is calculated radially for analog sticks
-       * and linearly for analog buttons */
       if (normal_mag <= input_analog_deadzone)
          return 0;
 
-      /* due to the way normal_mag is calculated differently for buttons and
-       * sticks, this results in either a radial scaled deadzone for sticks
-       * or linear scaled deadzone for analog buttons */
-      val = val * MAX(1.0f,(1.0f / normal_mag)) * MIN(1.0f,
+      val = (int16_t)(val * MAX(1.0f, (1.0f / normal_mag)) * MIN(1.0f,
             ((normal_mag - input_analog_deadzone)
-          / (1.0f - input_analog_deadzone)));
+          / (1.0f - input_analog_deadzone))));
    }
 
    if (input_analog_sensitivity != 1.0f)
    {
-      float normalized = (1.0f / 0x7fff) * val;
-      int      new_val = 0x7fff * normalized * input_analog_sensitivity;
+      int new_val = (int)(val * input_analog_sensitivity);
       if (new_val > 0x7fff)
          return 0x7fff;
-      else if (new_val < -0x7fff)
+      if (new_val < -0x7fff)
          return -0x7fff;
-      return new_val;
+      return (int16_t)new_val;
    }
 
    return val;
@@ -931,33 +900,30 @@ static int16_t input_joypad_analog_button(
 {
    int16_t res      = 0;
    float normal_mag = 0.0f;
+   uint16_t joy_idx = joypad_info->joy_idx;
    uint32_t axis    = (bind->joyaxis == AXIS_NONE)
       ? joypad_info->auto_binds[ident].joyaxis
       : bind->joyaxis;
 
-   /* Analog button. */
    if (input_analog_deadzone)
    {
       int16_t mult = 0;
-      if (axis != AXIS_NONE)
-         if ((mult = drv->axis(
-                     joypad_info->joy_idx, axis)) != 0)
-            normal_mag   = fabs((1.0f / 0x7fff) * mult);
+      if (axis != AXIS_NONE && drv->axis)
+         if ((mult = drv->axis(joy_idx, axis)) != 0)
+            normal_mag = (float)fabs((1.0f / 0x7fff) * mult);
    }
 
-   /* If the result is zero, it's got a digital button
-    * attached to it instead */
    if ((res = abs(input_joypad_axis(
             input_analog_deadzone,
             input_analog_sensitivity,
             drv,
-            joypad_info->joy_idx, axis, normal_mag))) == 0)
+            joy_idx, axis, normal_mag))) == 0)
    {
       uint16_t key = (bind->joykey == NO_BTN)
          ? joypad_info->auto_binds[ident].joykey
          : bind->joykey;
 
-      if (drv->button(joypad_info->joy_idx, key))
+      if (drv->button(joy_idx, key))
          return 0x7fff;
       return 0;
    }
@@ -976,8 +942,6 @@ static int16_t input_joypad_analog_axis(
       const struct retro_keybind *binds)
 {
    int16_t res                              = 0;
-   /* Analog sticks. Either RETRO_DEVICE_INDEX_ANALOG_LEFT
-    * or RETRO_DEVICE_INDEX_ANALOG_RIGHT */
    unsigned ident_minus                     = 0;
    unsigned ident_plus                      = 0;
    unsigned ident_x_minus                   = 0;
@@ -990,8 +954,10 @@ static int16_t input_joypad_analog_axis(
    const struct retro_keybind *bind_x_plus  = NULL;
    const struct retro_keybind *bind_y_minus = NULL;
    const struct retro_keybind *bind_y_plus  = NULL;
+   /* Cache frequently accessed fields */
+   uint16_t joy_idx                         = joypad_info->joy_idx;
+   const struct retro_keybind *auto_binds   = joypad_info->auto_binds;
 
-   /* Skip analog input with analog_dpad_mode */
    switch (input_analog_dpad_mode)
    {
       case ANALOG_DPAD_LSTICK:
@@ -1038,11 +1004,11 @@ static int16_t input_joypad_analog_axis(
    if (!bind_y_minus->valid || !bind_y_plus->valid)
       return 0;
 
-   /* Keyboard bind priority */
    if (     bind_plus->key  != RETROK_UNKNOWN
          || bind_minus->key != RETROK_UNKNOWN)
    {
       input_driver_state_t *input_st = &input_driver_st;
+      bool kb_blocked = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false;
 
       if (bind_plus->key && input_state_wrap(
             input_st->current_driver,
@@ -1051,7 +1017,7 @@ static int16_t input_joypad_analog_axis(
             NULL,
             joypad_info,
             (*input_st->libretro_input_binds),
-            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
             bind_plus->key))
          res  = 0x7fff;
@@ -1062,7 +1028,7 @@ static int16_t input_joypad_analog_axis(
             NULL,
             joypad_info,
             (*input_st->libretro_input_binds),
-            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
             bind_minus->key))
          res += -0x7fff;
@@ -1073,72 +1039,65 @@ static int16_t input_joypad_analog_axis(
 
    {
       uint32_t axis_minus            = (bind_minus->joyaxis   == AXIS_NONE)
-         ? joypad_info->auto_binds[ident_minus].joyaxis
+         ? auto_binds[ident_minus].joyaxis
          : bind_minus->joyaxis;
       uint32_t axis_plus             = (bind_plus->joyaxis    == AXIS_NONE)
-         ? joypad_info->auto_binds[ident_plus].joyaxis
+         ? auto_binds[ident_plus].joyaxis
          : bind_plus->joyaxis;
       float normal_mag               = 0.0f;
 
-      /* normalized magnitude of stick actuation, needed for scaled
-       * radial deadzone */
       if (input_analog_deadzone)
       {
          float x                  = 0.0f;
          float y                  = 0.0f;
          uint32_t x_axis_minus    = (bind_x_minus->joyaxis == AXIS_NONE)
-            ? joypad_info->auto_binds[ident_x_minus].joyaxis
+            ? auto_binds[ident_x_minus].joyaxis
             : bind_x_minus->joyaxis;
          uint32_t x_axis_plus     = (bind_x_plus->joyaxis  == AXIS_NONE)
-            ? joypad_info->auto_binds[ident_x_plus].joyaxis
+            ? auto_binds[ident_x_plus].joyaxis
             : bind_x_plus->joyaxis;
          uint32_t y_axis_minus    = (bind_y_minus->joyaxis == AXIS_NONE)
-            ? joypad_info->auto_binds[ident_y_minus].joyaxis
+            ? auto_binds[ident_y_minus].joyaxis
             : bind_y_minus->joyaxis;
          uint32_t y_axis_plus     = (bind_y_plus->joyaxis  == AXIS_NONE)
-            ? joypad_info->auto_binds[ident_y_plus].joyaxis
+            ? auto_binds[ident_y_plus].joyaxis
             : bind_y_plus->joyaxis;
-         /* normalized magnitude for radial scaled analog deadzone */
          if (x_axis_plus != AXIS_NONE && drv->axis)
-            x                     = drv->axis(
-                  joypad_info->joy_idx, x_axis_plus);
+            x                     = drv->axis(joy_idx, x_axis_plus);
          if (x_axis_minus != AXIS_NONE && drv->axis)
-            x                    += drv->axis(joypad_info->joy_idx,
-                  x_axis_minus);
+            x                    += drv->axis(joy_idx, x_axis_minus);
          if (y_axis_plus != AXIS_NONE && drv->axis)
-            y                     = drv->axis(
-                  joypad_info->joy_idx, y_axis_plus);
+            y                     = drv->axis(joy_idx, y_axis_plus);
          if (y_axis_minus != AXIS_NONE && drv->axis)
-            y                    += drv->axis(
-                  joypad_info->joy_idx, y_axis_minus);
-         normal_mag               = (1.0f / 0x7fff) * sqrt(x * x + y * y);
+            y                    += drv->axis(joy_idx, y_axis_minus);
+         normal_mag               = (1.0f / 0x7fff) * (float)sqrt(x * x + y * y);
       }
 
       res           = abs(
             input_joypad_axis(
                input_analog_deadzone,
                input_analog_sensitivity,
-               drv, joypad_info->joy_idx,
+               drv, joy_idx,
                axis_plus, normal_mag));
       res          -= abs(
             input_joypad_axis(
                input_analog_deadzone,
                input_analog_sensitivity,
-               drv, joypad_info->joy_idx,
+               drv, joy_idx,
                axis_minus, normal_mag));
    }
 
    if (res == 0)
    {
       uint16_t key_minus    = (bind_minus->joykey == NO_BTN)
-         ? joypad_info->auto_binds[ident_minus].joykey
+         ? auto_binds[ident_minus].joykey
          : bind_minus->joykey;
       uint16_t key_plus     = (bind_plus->joykey  == NO_BTN)
-         ? joypad_info->auto_binds[ident_plus].joykey
+         ? auto_binds[ident_plus].joykey
          : bind_plus->joykey;
-      if (drv->button && drv->button(joypad_info->joy_idx, key_plus))
+      if (drv->button && drv->button(joy_idx, key_plus))
          res  = 0x7fff;
-      if (drv->button && drv->button(joypad_info->joy_idx, key_minus))
+      if (drv->button && drv->button(joy_idx, key_minus))
          res += -0x7fff;
    }
 
@@ -1150,27 +1109,28 @@ void input_keyboard_line_append(
       const char *word, size_t len)
 {
    size_t i;
-   char *newbuf = (char*)realloc(keyboard_line->buffer,
-         keyboard_line->size + len * 2);
+   size_t new_size = keyboard_line->size + len;
+   char *newbuf    = (char*)realloc(keyboard_line->buffer, new_size + len + 1);
 
    if (!newbuf)
       return;
 
+   /* Shift existing content after cursor to make room */
    memmove(
          newbuf + keyboard_line->ptr + len,
          newbuf + keyboard_line->ptr,
-         keyboard_line->size - keyboard_line->ptr + len);
+         keyboard_line->size - keyboard_line->ptr + 1);
 
    for (i = 0; i < len; i++)
    {
-      newbuf[keyboard_line->ptr]= word[i];
+      newbuf[keyboard_line->ptr] = word[i];
       keyboard_line->ptr++;
-      keyboard_line->size++;
    }
+   keyboard_line->size += len;
 
-   newbuf[keyboard_line->size]  = '\0';
+   newbuf[keyboard_line->size] = '\0';
 
-   keyboard_line->buffer        = newbuf;
+   keyboard_line->buffer = newbuf;
 }
 
 void input_keyboard_line_clear(input_driver_state_t *input_st)
@@ -4732,19 +4692,13 @@ void input_mapper_reset(void *data)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      unsigned j;
-      for (j = 0; j < 8; j++)
-      {
-         handle->analog_value[i][j]           = 0;
-         handle->buttons[i].data[j]           = 0;
-         handle->buttons[i].analogs[j]        = 0;
-         handle->buttons[i].analog_buttons[j] = 0;
-      }
+      memset(handle->analog_value[i],    0, sizeof(handle->analog_value[i]));
+      memset(handle->buttons[i].data,    0, 8 * sizeof(handle->buttons[i].data[0]));
+      memset(handle->buttons[i].analogs, 0, 8 * sizeof(handle->buttons[i].analogs[0]));
+      memset(handle->buttons[i].analog_buttons, 0, 8 * sizeof(handle->buttons[i].analog_buttons[0]));
    }
-   for (i = 0; i < RETROK_LAST; i++)
-      handle->key_button[i]         = 0;
-   for (i = 0; i < (RETROK_LAST / 32 + 1); i++)
-      handle->keys[i]               = 0;
+   memset(handle->key_button, 0, sizeof(handle->key_button[0]) * RETROK_LAST);
+   memset(handle->keys,       0, sizeof(handle->keys[0]) * (RETROK_LAST / 32 + 1));
 }
 
 /**
@@ -5135,18 +5089,15 @@ void input_config_reset(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      /* Note: Don't use input_config_clear_device_name()
-       * here, since this will re-index devices each time
-       * (not required - we are setting all 'name indices'
-       * to zero manually) */
-      input_st->input_device_info[i].name[0]          = '\0';
-      input_st->input_device_info[i].display_name[0]  = '\0';
-      input_st->input_device_info[i].config_name[0]   = '\0';
-      input_st->input_device_info[i].joypad_driver[0] = '\0';
-      input_st->input_device_info[i].vid              = 0;
-      input_st->input_device_info[i].pid              = 0;
-      input_st->input_device_info[i].autoconfigured   = false;
-      input_st->input_device_info[i].name_index       = 0;
+      input_device_info_t *dev = &input_st->input_device_info[i];
+      dev->name[0]          = '\0';
+      dev->display_name[0]  = '\0';
+      dev->config_name[0]   = '\0';
+      dev->joypad_driver[0] = '\0';
+      dev->vid              = 0;
+      dev->pid              = 0;
+      dev->autoconfigured   = false;
+      dev->name_index       = 0;
 
       input_config_reset_autoconfig_binds(i);
 
@@ -5198,50 +5149,32 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
    unsigned j;
    unsigned name_index;
 
-   /* Reset device name indices */
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
-      input_st->input_device_info[i].name_index       = 0;
+      input_st->input_device_info[i].name_index = 0;
 
-   /* Scan device names */
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
-      const char *device_name = input_config_get_device_name(i);
+      const char *device_name = input_st->input_device_info[i].name;
 
-      /* If current device name is empty, or a non-zero
-       * name index has already been assigned, continue
-       * to the next device */
-      if (
-               string_is_empty(device_name)
-            || input_st->input_device_info[i].name_index != 0)
+      if (    !device_name[0]
+           || input_st->input_device_info[i].name_index != 0)
          continue;
 
-      /* > Uniquely named devices have a name index
-       *   of 0
-       * > Devices with the same name have a name
-       *   index starting from 1 */
       name_index = 1;
 
-      /* Loop over all devices following the current
-       * selection */
       for (j = i + 1; j < MAX_INPUT_DEVICES; j++)
       {
-         const char *next_device_name = input_config_get_device_name(j);
+         const char *next_device_name = input_st->input_device_info[j].name;
 
-         if (string_is_empty(next_device_name))
+         if (!next_device_name[0])
             continue;
 
-         /* Check if names match */
          if (string_is_equal(device_name, next_device_name))
          {
-            /* If this is the first match, set a starting
-             * index for the current device selection */
             if (input_st->input_device_info[i].name_index == 0)
-               input_st->input_device_info[i].name_index       = name_index++;
+               input_st->input_device_info[i].name_index = name_index++;
 
-            /* Set name index for the next device
-             * (will keep incrementing as more matches
-             *  are found) */
-            input_st->input_device_info[j].name_index          = name_index++;
+            input_st->input_device_info[j].name_index    = name_index++;
          }
       }
    }
