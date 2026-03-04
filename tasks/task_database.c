@@ -255,9 +255,12 @@ static void task_database_scan_console_output(const char *label, const char *db_
 {
    /* Cache NO_COLOR lookup: -1 = unchecked, 0 = color on, 1 = color off */
    static int no_color_cached = -1;
+   bool color;
    char string[32];
    const char *prefix = (add) ? "++" : (db_name) ? "==" : "??";
-   bool color;
+#ifdef _WIN32
+   HANDLE con;
+#endif
 
    if (no_color_cached < 0)
    {
@@ -268,7 +271,7 @@ static void task_database_scan_console_output(const char *label, const char *db_
 
    /* Colorize prefix (add = green, dupe = yellow, not found = red) */
 #ifdef _WIN32
-   HANDLE con      = GetStdHandle(STD_OUTPUT_HANDLE);
+   con = GetStdHandle(STD_OUTPUT_HANDLE);
    if (color && con != INVALID_HANDLE_VALUE)
    {
       unsigned red    = FOREGROUND_RED;
