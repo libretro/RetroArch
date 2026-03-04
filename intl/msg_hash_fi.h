@@ -2737,6 +2737,10 @@ MSG_HASH(
    "Säädä analogisten sauvojen herkkyyttä."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automaattinen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    "Määrityksen aikakatkaisu"
    )

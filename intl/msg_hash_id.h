@@ -2093,6 +2093,10 @@ MSG_HASH(
    "Sesuaikan daya tanggapan stik analok."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Otomatis"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Atur berapa detik yang dibutuhkan untuk melakukan binding selanjutnya."
    )

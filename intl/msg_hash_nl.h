@@ -2385,6 +2385,10 @@ MSG_HASH(
    "Pas de gevoeligheid van analoge sticks aan."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automatisch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    "Binding-Timeout"
    )

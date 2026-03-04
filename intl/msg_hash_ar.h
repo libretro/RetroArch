@@ -888,7 +888,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
-   "احفظ الإعدادات الحالية كملف إعدادات مخصص."
+   "حفظ الإعدادات الحالية كملف إعدادات مخصص."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
@@ -896,7 +896,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
-   "احفظ الإعدادات الحالية كإعدادات رئيسية."
+   "حفظ الإعدادات الحالية كإعدادات رئيسية."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
@@ -2325,6 +2325,10 @@ MSG_HASH(
    "حد محاور زر الإدخال"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "تلقائي"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "مقدار الثواني للانتظار حتى الانتقال إلى الارتباط التالي."
    )
@@ -2368,6 +2372,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "مفاتيح الإختصار"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "ربط وحدة التحكم"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,

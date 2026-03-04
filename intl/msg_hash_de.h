@@ -3090,7 +3090,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Die Empfindlichkeit für das Gyroskop anpassen."
+   "Die Empfindlichkeit für das Gyroskop anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,

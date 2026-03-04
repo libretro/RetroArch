@@ -2005,6 +2005,10 @@ MSG_HASH(
    "تنظیم حساسیت اهرمک‌های آنالوگ."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "خودکار"
+   )
+MSG_HASH(
    MSG_INPUT_BIND_TIMEOUT,
    "اتمام مهلت"
    )

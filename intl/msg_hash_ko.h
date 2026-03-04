@@ -3221,8 +3221,12 @@ MSG_HASH(
    "가속도계의 감도를 조정합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "자동"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "자이로스코프의 감도를 조정합니다."
+   "자이로스코프의 감도를 조정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,

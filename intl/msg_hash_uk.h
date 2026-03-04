@@ -3185,8 +3185,12 @@ MSG_HASH(
    "Налаштуйте чутливість акселерометра."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Автоматично"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Налаштуйте чутливість гіроскопа."
+   "Налаштуйте чутливість гіроскопа."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,

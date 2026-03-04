@@ -3161,8 +3161,12 @@ MSG_HASH(
    "A gyorsulásmérő érzékenységének állítása."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automatikus"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "A giroszkóp érzékenységének állítása."
+   "A giroszkóp érzékenységének állítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,

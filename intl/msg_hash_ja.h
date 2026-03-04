@@ -2921,6 +2921,10 @@ MSG_HASH(
    "加速度センサの感度を調整。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "自動"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    "割り当て時のタイムアウト時間"
    )

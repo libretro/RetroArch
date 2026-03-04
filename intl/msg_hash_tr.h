@@ -3105,8 +3105,12 @@ MSG_HASH(
    "İvmeölçerin hassasiyetini ayarlayın."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Otomatik"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Jiroskopun hassasiyetini ayarlayın."
+   "Jiroskopun hassasiyetini ayarlayın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,

@@ -3213,8 +3213,20 @@ MSG_HASH(
    "Điều chỉnh độ nhạy của cảm biến gia tốc."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Hướng cảm biến"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Xoay trục gia tốc kế và con quay hồi chuyển để khớp với hướng thiết bị."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Tự động"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Điều chỉnh độ nhạy của con quay hồi chuyển."
+   "Điều chỉnh độ nhạy của con quay hồi chuyển."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3356,6 +3368,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Thay đổi cài đặt phản hồi xúc giác và rung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Cảm biến Chuyển động/Ánh sáng"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Thay đổi cài đặt gia tốc kế, con quay hồi chuyển và cảm biến độ sáng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,

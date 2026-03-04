@@ -3033,6 +3033,10 @@ MSG_HASH(
    "Настройка адчувальнасці аналагавых стыкаў."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Аўта"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    "Тайм-аўт прызначэння"
    )
