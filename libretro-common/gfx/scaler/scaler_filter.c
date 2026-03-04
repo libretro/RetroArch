@@ -58,19 +58,23 @@ static INLINE void gen_filter_sinc_sub(struct scaler_filter *filter,
       int len, int pos, int step, double phase_mul)
 {
    int i, j;
-   const int sinc_size = filter->filter_len;
+   const int sinc_size      = filter->filter_len;
+   const int half_sinc      = sinc_size >> 1;
+   const double inv_0x10000 = 1.0 / 0x10000;
+   const double inv_half    = 1.0 / half_sinc;
+   const double unity_mul   = FILTER_UNITY * phase_mul;
 
    for (i = 0; i < len; i++, pos += step)
    {
+      const double base     = (double)((sinc_size << 15) + (pos & 0xffff)) * inv_0x10000;
+      int16_t * const row   = filter->filter + i * sinc_size;
       filter->filter_pos[i] = pos >> 16;
 
       for (j = 0; j < sinc_size; j++)
       {
-         double sinc_phase    = M_PI * ((double)((sinc_size << 15) + (pos & 0xffff)) / 0x10000 - j);
-         double lanczos_phase = sinc_phase / ((sinc_size >> 1));
-         int16_t sinc_val     = FILTER_UNITY * sinc(sinc_phase * phase_mul) * sinc(lanczos_phase) * phase_mul;
-
-         filter->filter[i * sinc_size + j] = sinc_val;
+         double sinc_phase    = M_PI * (base - j);
+         double lanczos_phase = sinc_phase * inv_half;
+         row[j] = (int16_t)(unity_mul * sinc(sinc_phase * phase_mul) * sinc(lanczos_phase));
       }
    }
 }
@@ -102,46 +106,40 @@ static void fixup_filter_sub(struct scaler_filter *filter,
       int out_len, int in_len)
 {
    int i;
-   int max_pos = in_len - filter->filter_len;
+   const int max_pos    = in_len - (int)filter->filter_len;
+   const int flen       = (int)filter->filter_len;
+   const int fstride    = (int)filter->filter_stride;
 
    for (i = 0; i < out_len; i++)
    {
-      int postsample =  filter->filter_pos[i] - max_pos;
-      int presample  = -filter->filter_pos[i];
+      int pos              = filter->filter_pos[i];
+      int postsample       = pos - max_pos;
+      int presample        = -pos;
+      int16_t *base_filter = filter->filter + i * fstride;
 
       if (postsample > 0)
       {
-         int16_t *base_filter   = NULL;
-
-         filter->filter_pos[i] -= postsample;
-
-         base_filter            = filter->filter + i * filter->filter_stride;
-
-         if (postsample > (int)filter->filter_len)
-            memset(base_filter, 0, filter->filter_len * sizeof(int16_t));
+         filter->filter_pos[i] = pos - postsample;  /* = max_pos */
+         if (postsample >= flen)
+            memset(base_filter, 0, flen * sizeof(int16_t));
          else
          {
             memmove(base_filter + postsample, base_filter,
-                  (filter->filter_len - postsample) * sizeof(int16_t));
+                  (flen - postsample) * sizeof(int16_t));
             memset(base_filter, 0, postsample * sizeof(int16_t));
          }
       }
-
-      if (presample > 0)
+      else if (presample > 0)   /* note: mutually exclusive with postsample > 0 */
       {
-         int16_t *base_filter   = NULL;
-
-         filter->filter_pos[i] += presample;
-         base_filter            = filter->filter + i * filter->filter_stride;
-
-         if (presample > (int)filter->filter_len)
-            memset(base_filter, 0, filter->filter_len * sizeof(int16_t));
+         filter->filter_pos[i] = pos + presample;   /* = 0 */
+         if (presample >= flen)
+            memset(base_filter, 0, flen * sizeof(int16_t));
          else
          {
             memmove(base_filter, base_filter + presample,
-                  (filter->filter_len - presample) * sizeof(int16_t));
-            memset(base_filter + (filter->filter_len - presample),
-                  0, presample * sizeof(int16_t));
+                  (flen - presample) * sizeof(int16_t));
+            memset(base_filter + (flen - presample), 0,
+                  presample * sizeof(int16_t));
          }
       }
    }
@@ -190,8 +188,8 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
 
    x_step = (1 << 16) * ctx->in_width  / ctx->out_width;
    y_step = (1 << 16) * ctx->in_height / ctx->out_height;
-   x_pos  = (1 << 15) * ctx->in_width  / ctx->out_width  - (1 << 15);
-   y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
+   x_pos  = x_step / 2 - (1 << 15);
+   y_pos  = y_step / 2 - (1 << 15);
 
    switch (ctx->scaler_type)
    {
