@@ -88,38 +88,33 @@ int config_userdata_get_float_array(void *userdata, const char *key_str,
       float **values, unsigned *out_num_values,
       const float *default_values, unsigned num_default_values)
 {
-   char key0[CFG_KEY_SIZE];
-   char key1[CFG_KEY_SIZE];
+   char key[2][256];
    char *str = NULL;
-   const struct config_file_userdata *usr =
-         (const struct config_file_userdata *)userdata;
+   struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
 
-   fill_pathname_join_delim(key0, usr->prefix[0], key_str, '_', sizeof(key0));
-   fill_pathname_join_delim(key1, usr->prefix[1], key_str, '_', sizeof(key1));
+   fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
+   fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
 
-   if (     config_get_string(usr->conf, key0, &str)
-         || config_get_string(usr->conf, key1, &str))
+   if (     config_get_string(usr->conf, key[0], &str)
+         || config_get_string(usr->conf, key[1], &str))
    {
       unsigned i;
-      struct string_list list;
+      struct string_list list = {0};
       string_list_initialize(&list);
       string_split_noalloc(&list, str, " ");
-
-      *values         = (float *)calloc(list.size, sizeof(float));
-      *out_num_values = (unsigned)list.size;
-
+      *values = (float*)calloc(list.size, sizeof(float));
       for (i = 0; i < list.size; i++)
-         (*values)[i] = (float)strtof(list.elems[i].data, NULL);
-
+         (*values)[i] = (float)strtod(list.elems[i].data, NULL);
+      *out_num_values = (unsigned)list.size;
       string_list_deinitialize(&list);
       free(str);
-      return 1;
+      return true;
    }
 
-   *values = (float *)calloc(num_default_values, sizeof(float));
+   *values = (float*)calloc(num_default_values, sizeof(float));
    memcpy(*values, default_values, sizeof(float) * num_default_values);
    *out_num_values = num_default_values;
-   return 0;
+   return false;
 }
 
 int config_userdata_get_int_array(void *userdata, const char *key_str,
