@@ -318,6 +318,7 @@ struct input_keyboard_line
    input_keyboard_line_complete_t cb;
    size_t ptr;
    size_t size;
+   size_t   capacity;
    bool enabled;
 };
 

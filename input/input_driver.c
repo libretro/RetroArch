@@ -1180,6 +1180,7 @@ void input_keyboard_line_clear(input_driver_state_t *input_st)
    input_st->keyboard_line.buffer       = NULL;
    input_st->keyboard_line.ptr          = 0;
    input_st->keyboard_line.size         = 0;
+   input_st->keyboard_line.capacity     = 0;
 }
 
 void input_keyboard_line_free(input_driver_state_t *input_st)
@@ -1189,6 +1190,7 @@ void input_keyboard_line_free(input_driver_state_t *input_st)
    input_st->keyboard_line.buffer       = NULL;
    input_st->keyboard_line.ptr          = 0;
    input_st->keyboard_line.size         = 0;
+   input_st->keyboard_line.capacity     = 0;
    input_st->keyboard_line.cb           = NULL;
    input_st->keyboard_line.userdata     = NULL;
    input_st->keyboard_line.enabled      = false;
@@ -1202,6 +1204,7 @@ const char **input_keyboard_start_line(
    keyboard_line->buffer    = NULL;
    keyboard_line->ptr       = 0;
    keyboard_line->size      = 0;
+   keyboard_line->capacity  = 0;
    keyboard_line->cb        = cb;
    keyboard_line->userdata  = userdata;
    keyboard_line->enabled   = true;
@@ -4439,117 +4442,158 @@ static unsigned get_kr_composition(char* pcur, char* padd)
 
 /**
  * input_keyboard_line_event:
- * @state                    : Input keyboard line handle.
- * @character                : Inputted character.
+ * @input_st   : Input driver state handle.
+ * @state      : Input keyboard line handle.
+ * @character  : Inputted UTF-32 codepoint.
  *
  * Called on every keyboard character event.
  *
- * Returns: true (1) on success, otherwise false (0).
+ * Returns: true (1) on submit (Enter), otherwise false (0).
  **/
 static bool input_keyboard_line_event(
       input_driver_state_t *input_st,
-      input_keyboard_line_t *state, uint32_t character)
+      input_keyboard_line_t *state,
+      uint32_t character)
 {
    char array[2];
-   bool            ret         = false;
-   const char            *word = NULL;
-   char            c           = (character >= 128) ? '?' : character;
+   bool        ret  = false;
+   const char *word = NULL;
+
+   /* Clamp extended chars — Unicode is handled via HAVE_LANGEXTRA only */
+   char c = (character >= 128) ? '?' : (char)character;
+
 #ifdef HAVE_LANGEXTRA
    static uint32_t composition = 0;
-   /* reset composition, when edit box is opened. */
+
+   /* Reset composition when the edit box is freshly opened */
    if (state->size == 0)
       composition = 0;
-   /* reset composition, when 1 byte(=english) input */
-   if (character && character < 0xff)
+
+   /* Reset composition on plain ASCII input */
+   if (character && character < 0xFF)
       composition = 0;
+
    if (IS_COMPOSITION(character) || IS_END_COMPOSITION(character))
    {
-      size_t _len = strlen((char*)&composition);
-      if (composition && state->buffer && state->size >= _len && state->ptr >= _len)
+      if (composition && state->buffer)
       {
-         memmove(state->buffer + state->ptr - _len, state->buffer + state->ptr, _len + 1);
-         state->ptr  -= _len;
-         state->size -= _len;
+         /* Length of the previously composed codepoint in the buffer */
+         size_t comp_len = strlen((const char *)&composition);
+
+         if (state->size >= comp_len && state->ptr >= comp_len)
+         {
+            /* Remove the previous composed character before re-inserting */
+            memmove(
+               state->buffer + state->ptr - comp_len,
+               state->buffer + state->ptr,
+               state->size - state->ptr + 1);
+            state->ptr  -= comp_len;
+            state->size -= comp_len;
+         }
       }
+
       if (IS_COMPOSITION_KR(character) && composition)
       {
-         unsigned new_comp;
-         character   = character & 0xffffff;
-         new_comp    = get_kr_composition((char*)&composition, (char*)&character);
+         uint32_t new_comp;
+         uint32_t ch_stripped = character & 0xFFFFFF;
+
+         new_comp = get_kr_composition(
+               (char *)&composition,
+               (char *)&ch_stripped);
+
          if (new_comp)
-            input_keyboard_line_append(state, (char*)&new_comp, 3);
-         composition = character;
+            input_keyboard_line_append(state, (char *)&new_comp, 3);
+
+         composition = ch_stripped;
       }
       else
       {
-         if (IS_END_COMPOSITION(character))
-            composition = 0;
-         else
-            composition = character & 0xffffff;
-         character     &= 0xffffff;
+         composition = IS_END_COMPOSITION(character)
+               ? 0
+               : (character & 0xFFFFFF);
+         character  &= 0xFFFFFF;
       }
+
       if (character)
-         input_keyboard_line_append(state, (char*)&character, strlen((char*)&character));
+         input_keyboard_line_append(
+               state,
+               (const char *)&character,
+               strlen((const char *)&character));
+
       word = state->buffer;
    }
    else
-#endif
+#endif /* HAVE_LANGEXTRA */
 
-   /* Treat extended chars as ? as we cannot support
-    * printable characters for unicode stuff. */
    if (c == '\r' || c == '\n')
    {
+      /* Submit the current buffer */
       state->cb(state->userdata, state->buffer);
 
       array[0] = c;
-      array[1] = 0;
-
-      ret      = true;
+      array[1] = '\0';
       word     = array;
+      ret      = true;
    }
-   else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
+   else if (c == '\b' || c == '\x7f') /* \x7f = DEL */
    {
-      if (state->ptr)
+      /* Backspace: erase the last codepoint (may be multi-byte) */
+      if (state->ptr && state->ptr >= input_st->osk_last_codepoint_len)
       {
-         unsigned i;
+         size_t erase_len = input_st->osk_last_codepoint_len;
 
-         for (i = 0; i < input_st->osk_last_codepoint_len; i++)
-         {
-            memmove(state->buffer + state->ptr - 1,
-                  state->buffer + state->ptr,
-                  state->size - state->ptr + 1);
-            state->ptr--;
-            state->size--;
-         }
+         memmove(
+            state->buffer + state->ptr - erase_len,
+            state->buffer + state->ptr,
+            state->size - state->ptr + 1);
 
-         word     = state->buffer;
+         state->ptr  -= erase_len;
+         state->size -= erase_len;
+
+         word = state->buffer;
       }
    }
    else if (ISPRINT(c))
    {
-      /* Handle left/right here when suitable */
-      char *newbuf = (char*)
-         realloc(state->buffer, state->size + 2);
-      if (!newbuf)
-         return false;
+      /* Insert printable ASCII at the current cursor position */
+      size_t   new_size = state->size + 2;
+      char    *newbuf;
 
-      memmove(newbuf + state->ptr + 1,
-            newbuf + state->ptr,
-            state->size - state->ptr + 1);
+      /*
+       * Grow by at least KEYBOARD_LINE_ALLOC_STEP bytes at a time to avoid
+       * O(n) reallocs while typing.  We track capacity separately so the
+       * public `size` field still reflects the number of used bytes.
+       */
+#define KEYBOARD_LINE_ALLOC_STEP 64u
+      if (new_size > state->capacity)
+      {
+         size_t  new_cap = state->capacity + KEYBOARD_LINE_ALLOC_STEP;
+         char   *grown   = (char *)realloc(state->buffer, new_cap);
+
+         if (!grown)
+            return false;
+
+         state->buffer   = grown;
+         state->capacity = new_cap;
+      }
+
+      newbuf = state->buffer;
+      memmove(
+         newbuf + state->ptr + 1,
+         newbuf + state->ptr,
+         state->size - state->ptr + 1);
+
       newbuf[state->ptr] = c;
       state->ptr++;
       state->size++;
       newbuf[state->size] = '\0';
 
-      state->buffer = newbuf;
-
       array[0] = c;
-      array[1] = 0;
-
+      array[1] = '\0';
       word     = array;
    }
 
-   /* OSK - update last character */
+   /* OSK — keep last-codepoint metadata in sync */
    if (word)
       osk_update_last_codepoint(
             &input_st->osk_last_codepoint,
