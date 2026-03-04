@@ -107,7 +107,6 @@ static bool winraw_sync_mouse_to_cursor(winraw_input_t *wr)
 {
    HWND wnd;
    POINT p;
-   LONG px, py;
    unsigned i;
 
    if (!wr || !wr->mouse_cnt)
@@ -118,13 +117,11 @@ static bool winraw_sync_mouse_to_cursor(winraw_input_t *wr)
       return false;
 
    ScreenToClient(wnd, &p);
-   px = (LONG)p.x;
-   py = (LONG)p.y;
 
    for (i = 0; i < wr->mouse_cnt; ++i)
    {
-      g_mice[i].x = px;
-      g_mice[i].y = py;
+      g_mice[i].x = (LONG)p.x;
+      g_mice[i].y = (LONG)p.y;
    }
 
    return true;
@@ -216,11 +213,10 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
       goto error;
 
    for (i = 0; i < dev_cnt; ++i)
-      mouse_cnt_r += (devs[i].dwType == RIM_TYPEMOUSE) ? 1 : 0;
+      mouse_cnt_r += devs[i].dwType == RIM_TYPEMOUSE ? 1 : 0;
 
    if (mouse_cnt_r)
    {
-      UINT m = 0;
       if (!(mice_r = (winraw_mouse_t*)calloc(
             1, mouse_cnt_r * sizeof(winraw_mouse_t))))
          goto error;
@@ -228,20 +224,25 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
       if (!GetCursorPos(&crs_pos))
          goto error;
 
-      /* Single pass: initialise positions and assign handles together */
-      for (i = 0; i < dev_cnt; ++i)
+      for (i = 0; i < mouse_cnt_r; ++i)
       {
-         if (devs[i].dwType == RIM_TYPEMOUSE)
-         {
-            mice_r[m].x   = crs_pos.x;
-            mice_r[m].y   = crs_pos.y;
-            mice_r[m].hnd = devs[i].hDevice;
-            m++;
-         }
+         mice_r[i].x = crs_pos.x;
+         mice_r[i].y = crs_pos.y;
       }
    }
 
    *mouse_cnt = mouse_cnt_r;
+
+   /* count is already checked, so this is safe */
+   for (i = mouse_cnt_r = 0; i < dev_cnt; ++i)
+   {
+      if (devs[i].dwType == RIM_TYPEMOUSE)
+      {
+         mouse_cnt_r++;
+         mice_r[*mouse_cnt - mouse_cnt_r].hnd = devs[i].hDevice;
+      }
+   }
+
    *mice      = mice_r;
 
    winraw_log_mice_info(mice_r, mouse_cnt_r);
@@ -287,34 +288,29 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
    return 0;
 }
 
-/* Lookup table: mouse button ID -> flags bitmask (0 = use wheel field) */
-static const uint8_t winraw_btn_flag_lut[8] = {
-   WRAW_MOUSE_FLG_BTN_L,  /* RETRO_DEVICE_ID_MOUSE_LEFT   = 0 */
-   WRAW_MOUSE_FLG_BTN_R,  /* RETRO_DEVICE_ID_MOUSE_RIGHT  = 1 */
-   0,                     /* RETRO_DEVICE_ID_MOUSE_WHEELUP   = 2 */
-   0,                     /* RETRO_DEVICE_ID_MOUSE_WHEELDOWN = 3 */
-   WRAW_MOUSE_FLG_BTN_M,  /* RETRO_DEVICE_ID_MOUSE_MIDDLE = 4 */
-   WRAW_MOUSE_FLG_BTN_B4, /* RETRO_DEVICE_ID_MOUSE_BUTTON_4 = 5 */
-   WRAW_MOUSE_FLG_BTN_B5, /* RETRO_DEVICE_ID_MOUSE_BUTTON_5 = 6 */
-   0                      /* padding */
-};
-
 static bool winraw_mouse_button_pressed(
       winraw_input_t *wr,
       winraw_mouse_t *mouse,
       unsigned port, unsigned key)
 {
-   if (key < 7)
+   switch (key)
    {
-      uint8_t mask = winraw_btn_flag_lut[key];
-      if (mask)
-         return (mouse->flags & mask) != 0;
-      /* Wheel keys (2, 3) */
-      if (key == RETRO_DEVICE_ID_MOUSE_WHEELUP)
-         return mouse->whl_u != 0;
-      if (key == RETRO_DEVICE_ID_MOUSE_WHEELDOWN)
-         return mouse->whl_d != 0;
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_L) > 0);
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_R) > 0);
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_M) > 0);
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_B4) > 0);
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_B5) > 0);
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         return mouse->whl_u;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         return mouse->whl_d;
    }
+
    return false;
 }
 
@@ -448,46 +444,52 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       mouse->y = crs_pos.y;
    }
 
-   /* --- Button state update ---
-    * Accumulate set/clear masks in one pass to avoid repeated
-    * read-modify-write on mouse->flags and eliminate else-if chains.
-    */
+   if (swap_mouse_buttons)
    {
-      USHORT bf        = state->usButtonFlags;
-      uint8_t set_bits   = 0;
-      uint8_t clear_bits = 0;
+      if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+         mouse->flags |=  (WRAW_MOUSE_FLG_BTN_R);
+      else if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)
+         mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_R);
 
-      if (swap_mouse_buttons)
-      {
-         if (bf & RI_MOUSE_LEFT_BUTTON_DOWN)  set_bits   |= WRAW_MOUSE_FLG_BTN_R;
-         if (bf & RI_MOUSE_LEFT_BUTTON_UP)    clear_bits |= WRAW_MOUSE_FLG_BTN_R;
-         if (bf & RI_MOUSE_RIGHT_BUTTON_DOWN) set_bits   |= WRAW_MOUSE_FLG_BTN_L;
-         if (bf & RI_MOUSE_RIGHT_BUTTON_UP)   clear_bits |= WRAW_MOUSE_FLG_BTN_L;
-      }
-      else
-      {
-         if (bf & RI_MOUSE_LEFT_BUTTON_DOWN)  set_bits   |= WRAW_MOUSE_FLG_BTN_L;
-         if (bf & RI_MOUSE_LEFT_BUTTON_UP)    clear_bits |= WRAW_MOUSE_FLG_BTN_L;
-         if (bf & RI_MOUSE_RIGHT_BUTTON_DOWN) set_bits   |= WRAW_MOUSE_FLG_BTN_R;
-         if (bf & RI_MOUSE_RIGHT_BUTTON_UP)   clear_bits |= WRAW_MOUSE_FLG_BTN_R;
-      }
+      if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+         mouse->flags |=  (WRAW_MOUSE_FLG_BTN_L);
+      else if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
+         mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_L);
+   }
+   else
+   {
+      if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+         mouse->flags |=  (WRAW_MOUSE_FLG_BTN_L);
+      else if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)
+         mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_L);
 
-      if (bf & RI_MOUSE_MIDDLE_BUTTON_DOWN) set_bits   |= WRAW_MOUSE_FLG_BTN_M;
-      if (bf & RI_MOUSE_MIDDLE_BUTTON_UP)   clear_bits |= WRAW_MOUSE_FLG_BTN_M;
-      if (bf & RI_MOUSE_BUTTON_4_DOWN)      set_bits   |= WRAW_MOUSE_FLG_BTN_B4;
-      if (bf & RI_MOUSE_BUTTON_4_UP)        clear_bits |= WRAW_MOUSE_FLG_BTN_B4;
-      if (bf & RI_MOUSE_BUTTON_5_DOWN)      set_bits   |= WRAW_MOUSE_FLG_BTN_B5;
-      if (bf & RI_MOUSE_BUTTON_5_UP)        clear_bits |= WRAW_MOUSE_FLG_BTN_B5;
+      if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+         mouse->flags |=  (WRAW_MOUSE_FLG_BTN_R);
+      else if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
+         mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_R);
+   }
 
-      mouse->flags = (uint8_t)((mouse->flags | set_bits) & ~clear_bits);
+   if (state->usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
+      mouse->flags |=  (WRAW_MOUSE_FLG_BTN_M);
+   else if (state->usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
+      mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_M);
 
-      if (bf & RI_MOUSE_WHEEL)
-      {
-         if ((SHORT)state->usButtonData > 0)
-            InterlockedExchange(&mouse->whl_u, 1);
-         else if ((SHORT)state->usButtonData < 0)
-            InterlockedExchange(&mouse->whl_d, 1);
-      }
+   if (state->usButtonFlags & RI_MOUSE_BUTTON_4_DOWN)
+      mouse->flags |=  (WRAW_MOUSE_FLG_BTN_B4);
+   else if (state->usButtonFlags & RI_MOUSE_BUTTON_4_UP)
+      mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_B4);
+
+   if (state->usButtonFlags & RI_MOUSE_BUTTON_5_DOWN)
+      mouse->flags |=  (WRAW_MOUSE_FLG_BTN_B5);
+   else if (state->usButtonFlags & RI_MOUSE_BUTTON_5_UP)
+      mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_B5);
+
+   if (state->usButtonFlags & RI_MOUSE_WHEEL)
+   {
+      if ((SHORT)state->usButtonData > 0)
+         InterlockedExchange(&mouse->whl_u, 1);
+      else if ((SHORT)state->usButtonData < 0)
+         InterlockedExchange(&mouse->whl_d, 1);
    }
 }
 
@@ -569,16 +571,13 @@ static LRESULT CALLBACK winraw_callback(
                   0, mod, RETRO_DEVICE_KEYBOARD);
             break;
          case RIM_TYPEMOUSE:
+            for (i = 0; i < wr->mouse_cnt; ++i)
             {
-               HANDLE hdev = ri->header.hDevice;
-               for (i = 0; i < wr->mouse_cnt; ++i)
+               if (g_mice[i].hnd == ri->header.hDevice)
                {
-                  if (g_mice[i].hnd == hdev)
-                  {
-                     winraw_update_mouse_state(wr,
-                           &g_mice[i], &ri->data.mouse);
-                     break;
-                  }
+                  winraw_update_mouse_state(wr,
+                        &g_mice[i], &ri->data.mouse);
+                  break;
                }
             }
             break;
@@ -669,30 +668,26 @@ static void winraw_poll(void *data)
 {
    unsigned i;
    winraw_input_t *wr     = (winraw_input_t*)data;
-   bool focused           = winraw_focus;
 
    /* Sync coordinates when window regains focus */
-   if (focused && !wr->last_focus)
+   if (winraw_focus && !wr->last_focus)
       winraw_sync_mouse_to_cursor(wr);
 
-   wr->last_focus = focused;
+   wr->last_focus = winraw_focus;
 
    for (i = 0; i < wr->mouse_cnt; ++i)
    {
-      winraw_mouse_t *src = &g_mice[i];
-      winraw_mouse_t *dst = &wr->mice[i];
-
       /* Clear buttons when not focused */
-      if (!focused)
-         src->flags = 0;
+      if (!winraw_focus)
+         g_mice[i].flags = 0;
 
-      dst->x     = src->x;
-      dst->y     = src->y;
-      dst->dlt_x = InterlockedExchange(&src->dlt_x, 0);
-      dst->dlt_y = InterlockedExchange(&src->dlt_y, 0);
-      dst->whl_u = InterlockedExchange(&src->whl_u, 0);
-      dst->whl_d = InterlockedExchange(&src->whl_d, 0);
-      dst->flags = src->flags;
+      wr->mice[i].x       = g_mice[i].x;
+      wr->mice[i].y       = g_mice[i].y;
+      wr->mice[i].dlt_x   = InterlockedExchange(&g_mice[i].dlt_x, 0);
+      wr->mice[i].dlt_y   = InterlockedExchange(&g_mice[i].dlt_y, 0);
+      wr->mice[i].whl_u   = InterlockedExchange(&g_mice[i].whl_u, 0);
+      wr->mice[i].whl_d   = InterlockedExchange(&g_mice[i].whl_d, 0);
+      wr->mice[i].flags   = g_mice[i].flags;
    }
 
    /* Prevent LAlt sticky after unfocusing with Alt-Tab */
@@ -739,27 +734,15 @@ static int16_t winraw_input_state(
       if (process_mouse)
       {
          unsigned i;
-         unsigned mouse_idx;
          settings_t *settings = config_get_ptr();
-         mouse_idx = settings->uints.input_mouse_index[port];
-         if (mouse_idx < wr->mouse_cnt)
+         for (i = 0; i < wr->mouse_cnt; ++i)
          {
-            mouse = &wr->mice[mouse_idx];
-            if (device > RETRO_DEVICE_JOYPAD)
-               g_mice[mouse_idx].device = device;
-         }
-         else
-         {
-            /* Fallback: linear search (legacy path) */
-            for (i = 0; i < wr->mouse_cnt; ++i)
+            if (i == settings->uints.input_mouse_index[port])
             {
-               if (i == mouse_idx)
-               {
-                  mouse = &wr->mice[i];
-                  if (mouse && device > RETRO_DEVICE_JOYPAD)
-                     g_mice[i].device = device;
-                  break;
-               }
+               mouse = &wr->mice[i];
+               if (mouse && device > RETRO_DEVICE_JOYPAD)
+                  g_mice[i].device = device;
+               break;
             }
          }
       }

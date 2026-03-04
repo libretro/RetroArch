@@ -37,21 +37,18 @@ static int file_decompressed_target_file(const char *name,
 static int file_decompressed_subdir(const char *name,
       const char *valid_exts,
       const uint8_t *cdata,
-      unsigned cmode, uint32_t csize, uint32_t size,
+      unsigned cmode, uint32_t csize,uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    char path_dir[DIR_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
-   /* Cache the pipe check once — used twice below */
-   const char *pipe_pos  = strchr(userdata->dec->subdir, '|');
-   size_t _len           = strlen(name);
+   size_t _len        = strlen(name);
 
    /* Look at last character. Ignore directories, go to next file. */
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
-
    /* Loop multiple subdirs */
-   if (pipe_pos)
+   if (strstr(userdata->dec->subdir, "|"))
    {
       const char *subdir = NULL;
       char *save         = NULL;
@@ -64,6 +61,7 @@ static int file_decompressed_subdir(const char *name,
       {
          if (strstr(name, subdir) == name)
             break;
+
          subdir = strtok_r(NULL, "|", &save);
       }
 
@@ -74,9 +72,8 @@ static int file_decompressed_subdir(const char *name,
       return 1;
 
    /* Remove desired subdir from the file path
-    * if not extracting multiple subdirs.
-    * Re-use cached pipe_pos instead of calling strchr again. */
-   if (!pipe_pos)
+    * if not extracting multiple subdirs */
+   if (!strstr(userdata->dec->subdir, "|"))
       name += strlen(userdata->dec->subdir) + 1;
 
    fill_pathname_join_special(path,
@@ -94,8 +91,8 @@ static int file_decompressed_subdir(const char *name,
          "Failed to deflate ",
          CALLBACK_ERROR_SIZE);
    _len += strlcpy(
-         userdata->dec->callback_error + _len,
-         path,
+		   userdata->dec->callback_error + _len,
+		   path,
          CALLBACK_ERROR_SIZE - _len);
    userdata->dec->callback_error[  _len] = '.';
    userdata->dec->callback_error[++_len] = '\n';
@@ -108,26 +105,20 @@ static int file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
    uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   /* Two path buffers: one for the directory, one for the full file path.
-    * Previously the full path was built twice (once for basedir stripping,
-    * once again after path_mkdir). Now we build each form once. */
-   char path_dir[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
    decompress_state_t *dec = userdata->dec;
    size_t _len             = strlen(name);
-
    /* Look at last character. Ignore directories, go to next file. */
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
-
-   /* Build the full destination path once, then derive the directory
-    * from it — avoiding the second fill_pathname_join_special call
-    * that the original code required after path_basedir_wrapper. */
+   /* Make directory */
    fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
-   fill_pathname_basedir(path_dir, path, sizeof(path_dir));
+   path_basedir_wrapper(path);
 
-   if (path_mkdir(path_dir))
+   if (path_mkdir(path))
    {
+      fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
+
       if (file_archive_perform_mode(path, valid_exts,
                cdata, cmode, csize, size, crc32, userdata))
          return 1;
@@ -135,9 +126,9 @@ static int file_decompressed(const char *name, const char *valid_exts,
 
    dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
    _len  = strlcpy(dec->callback_error, "Failed to deflate ",
-         CALLBACK_ERROR_SIZE);
+		   CALLBACK_ERROR_SIZE);
    _len += strlcpy(dec->callback_error + _len,
-         path, CALLBACK_ERROR_SIZE - _len);
+		   path, CALLBACK_ERROR_SIZE     - _len);
    dec->callback_error[  _len] = '.';
    dec->callback_error[++_len] = '\n';
    dec->callback_error[++_len] = '\0';
@@ -162,14 +153,8 @@ static void task_decompress_handler_finished(retro_task_t *task,
       decompress_task_data_t *data =
          (decompress_task_data_t*)calloc(1, sizeof(*data));
 
-      /* Guard against allocation failure before writing through pointer */
-      if (data)
-      {
-         data->source_file = dec->source_file;
-         task_set_data(task, data);
-      }
-      else
-         free(dec->source_file);
+      data->source_file = dec->source_file;
+      task_set_data(task, data);
    }
 
    if (dec->subdir)
@@ -186,13 +171,14 @@ static void task_decompress_handler(retro_task_t *task)
 {
    int ret;
    uint8_t flg;
-   bool retdec             = false;
-   decompress_state_t *dec = (decompress_state_t*)task->state;
+   bool retdec                   = false;
+   decompress_state_t *dec       = (decompress_state_t*)task->state;
 
-   /* dec->userdata->dec and archive_path are invariant across iterations;
-    * they are now set once at push time in task_push_decompress. */
+   dec->userdata->dec            = dec;
+   strlcpy(dec->userdata->archive_path,
+         dec->source_file, sizeof(dec->userdata->archive_path));
 
-   ret = file_archive_parse_file_iterate(
+   ret                     = file_archive_parse_file_iterate(
          &dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed, dec->userdata);
@@ -206,6 +192,7 @@ static void task_decompress_handler(retro_task_t *task)
    {
       task_set_error(task, dec->callback_error);
       file_archive_parse_file_iterate_stop(&dec->archive);
+
       task_decompress_handler_finished(task, dec);
    }
 }
@@ -215,7 +202,10 @@ static void task_decompress_handler_target_file(retro_task_t *task)
    int ret;
    uint8_t flg;
    bool retdec;
-   decompress_state_t *dec = (decompress_state_t*)task->state;
+   decompress_state_t *dec    = (decompress_state_t*)task->state;
+
+   strlcpy(dec->userdata->archive_path,
+         dec->source_file, sizeof(dec->userdata->archive_path));
 
    ret = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
@@ -230,6 +220,7 @@ static void task_decompress_handler_target_file(retro_task_t *task)
    {
       task_set_error(task, dec->callback_error);
       file_archive_parse_file_iterate_stop(&dec->archive);
+
       task_decompress_handler_finished(task, dec);
    }
 }
@@ -241,7 +232,12 @@ static void task_decompress_handler_subdir(retro_task_t *task)
    bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
 
-   ret = file_archive_parse_file_iterate(
+   dec->userdata->dec      = dec;
+   strlcpy(dec->userdata->archive_path,
+         dec->source_file,
+         sizeof(dec->userdata->archive_path));
+
+   ret                     = file_archive_parse_file_iterate(
          &dec->archive, &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_subdir, dec->userdata);
 
@@ -254,21 +250,17 @@ static void task_decompress_handler_subdir(retro_task_t *task)
    {
       task_set_error(task, dec->callback_error);
       file_archive_parse_file_iterate_stop(&dec->archive);
+
       task_decompress_handler_finished(task, dec);
    }
 }
 
-/* Match any decompress task variant for a given source file,
- * not just the plain handler — prevents duplicate tasks being
- * pushed while a subdir or target-file extraction is running. */
 static bool task_decompress_finder(
       retro_task_t *task, void *user_data)
 {
    decompress_state_t *dec = (decompress_state_t*)task->state;
 
-   if (   task->handler != task_decompress_handler
-       && task->handler != task_decompress_handler_subdir
-       && task->handler != task_decompress_handler_target_file)
+   if (task->handler != task_decompress_handler)
       return false;
 
    return string_is_equal(dec->source_file, (const char*)user_data);
@@ -278,9 +270,11 @@ bool task_check_decompress(const char *source_file)
 {
    task_finder_data_t find_data;
 
+   /* Prepare find parameters */
    find_data.func     = task_decompress_finder;
    find_data.userdata = (void *)source_file;
 
+   /* Return whether decompressing is in progress or not */
    return task_queue_find(&find_data);
 }
 
@@ -297,9 +291,11 @@ void *task_push_decompress(
 {
    size_t _len;
    char tmp[PATH_MAX_LENGTH];
-   const char *ext       = NULL;
-   decompress_state_t *s = NULL;
-   retro_task_t *t       = NULL;
+   const char *ext            = NULL;
+   decompress_state_t *s      = NULL;
+   retro_task_t *t            = NULL;
+
+   tmp[0] = '\0';
 
    if (string_is_empty(target_dir) || string_is_empty(source_file))
       return NULL;
@@ -320,7 +316,7 @@ void *task_push_decompress(
       return NULL;
 
    if (!valid_ext || !valid_ext[0])
-      valid_ext = NULL;
+      valid_ext   = NULL;
 
    if (task_check_decompress(source_file))
       return NULL;
@@ -334,52 +330,49 @@ void *task_push_decompress(
       return NULL;
    }
 
-   s->source_file  = strdup(source_file);
-   s->target_dir   = strdup(target_dir);
-   s->valid_ext    = valid_ext ? strdup(valid_ext) : NULL;
-   s->archive.type = ARCHIVE_TRANSFER_INIT;
-   s->userdata     = (struct archive_extract_userdata*)
+   s->source_file      = strdup(source_file);
+   s->target_dir       = strdup(target_dir);
+
+   s->valid_ext        = valid_ext ? strdup(valid_ext) : NULL;
+   s->archive.type     = ARCHIVE_TRANSFER_INIT;
+   s->userdata         = (struct archive_extract_userdata*)
       calloc(1, sizeof(*s->userdata));
 
-   /* Initialise the invariant fields that the handlers previously
-    * re-wrote on every iteration tick. */
-   s->userdata->dec = s;
-   strlcpy(s->userdata->archive_path,
-         source_file, sizeof(s->userdata->archive_path));
+   t->frontend_userdata= frontend_userdata;
 
-   t->frontend_userdata = frontend_userdata;
-   t->state             = s;
-   t->handler           = task_decompress_handler;
+   t->state            = s;
+   t->handler          = task_decompress_handler;
 
    if (!string_is_empty(subdir))
    {
-      s->subdir    = strdup(subdir);
-      t->handler   = task_decompress_handler_subdir;
+      s->subdir        = strdup(subdir);
+      t->handler       = task_decompress_handler_subdir;
    }
    else if (!string_is_empty(target_file))
    {
-      s->target_file = strdup(target_file);
-      t->handler     = task_decompress_handler_target_file;
+      s->target_file   = strdup(target_file);
+      t->handler       = task_decompress_handler_target_file;
    }
 
-   t->callback  = cb;
-   t->user_data = user_data;
+   t->callback         = cb;
+   t->user_data        = user_data;
 
-   /* Build task title: "<Extracting>: <basename>" */
-   _len         = strlcpy(tmp,
-         msg_hash_to_str(MSG_EXTRACTING), sizeof(tmp));
-   tmp[  _len]  = ':';
-   tmp[++_len]  = ' ';
-   tmp[++_len]  = '\0';
-   _len        += strlcpy(tmp + _len,
-         path_basename(source_file), sizeof(tmp) - _len);
+   _len                = strlcpy(tmp,
+		   msg_hash_to_str(MSG_EXTRACTING), sizeof(tmp));
+   tmp[  _len]         = ':';
+   tmp[++_len]         = ' ';
+   tmp[++_len]         = '\0';
+   _len               += strlcpy(tmp + _len,
+         path_basename(source_file),
+                         sizeof(tmp) - _len);
+   tmp[++_len]         = '\0';
 
-   t->title  = strdup(tmp);
-   t->flags |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   t->title            = strdup(tmp);
+   t->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
-      t->flags |=  RETRO_TASK_FLG_MUTE;
+      t->flags        |=  RETRO_TASK_FLG_MUTE;
    else
-      t->flags &= ~RETRO_TASK_FLG_MUTE;
+      t->flags        &= ~RETRO_TASK_FLG_MUTE;
 
    task_queue_push(t);
 

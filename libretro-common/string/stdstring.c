@@ -51,48 +51,29 @@ const uint8_t lr_char_props[256] = {
 char *string_to_upper(char *s)
 {
    char *cs = (char *)s;
-   /* Use lr_char_props bit 0x01 (ISALPHA) + bit 0x04 (islower) to detect
-    * lowercase ASCII letters without a function call, then clear bit 5 (0x20)
-    * to convert a-z -> A-Z.  Non-ASCII bytes are untouched. */
    for ( ; *cs != '\0'; cs++)
-   {
-      unsigned char uc = (unsigned char)*cs;
-      if ((lr_char_props[uc] & 0x05) == 0x05) /* lower alpha */
-         *cs = (char)(uc & ~0x20);
-   }
+      *cs = toupper((unsigned char)*cs);
    return s;
 }
 
 char *string_to_lower(char *s)
 {
    char *cs = (char *)s;
-   /* bit 0x03 set means upper alpha (0x23 & 0x03 == 3, 0x25 & 0x03 == 1... use
-    * mask 0x02 to distinguish upper from lower: upper has bit 0x02, lower doesn't) */
    for ( ; *cs != '\0'; cs++)
-   {
-      unsigned char uc = (unsigned char)*cs;
-      if ((lr_char_props[uc] & 0x06) == 0x02) /* upper alpha: bits 0x02 set, 0x04 clear */
-         *cs = (char)(uc | 0x20);
-   }
+      *cs = tolower((unsigned char)*cs);
    return s;
 }
 
 char *string_ucwords(char *s)
 {
-   /* Single-pass: capitalise the first character of every word.
-    * 'cap' starts true so the very first non-space character is uppercased. */
-   char *cs  = (char *)s;
-   int   cap = 1;
+   char *cs = (char *)s;
    for ( ; *cs != '\0'; cs++)
    {
       if (*cs == ' ')
-         cap = 1;
-      else if (cap)
-      {
-         *cs = (char)toupper((unsigned char)*cs);
-         cap = 0;
-      }
+         *(cs+1) = toupper((unsigned char)*(cs+1));
    }
+
+   s[0] = toupper((unsigned char)s[0]);
    return s;
 }
 
@@ -101,75 +82,45 @@ char *string_replace_substring(
       const char *pattern,     size_t pattern_len,
       const char *replacement, size_t replacement_len)
 {
-   /* Single-pass implementation: build output in one scan rather than
-    * first counting hits and then copying.  We use a dynamically grown
-    * buffer so we never pay for a second full traversal of the input. */
-   size_t      out_cap  = 0;
-   size_t      out_len  = 0;
-   char       *out      = NULL;
-   char       *tmp      = NULL;
-   const char *inat     = NULL;
-   const char *inprev   = NULL;
-   size_t      seg_len  = 0;
-   size_t      need     = 0;
+   size_t outlen;
+   size_t numhits     = 0;
+   const char *inat   = NULL;
+   const char *inprev = NULL;
+   char          *out = NULL;
+   char        *outat = NULL;
 
-   /* Guard against NULL input string. */
-   if (!in)
-      return NULL;
-
-   /* If pattern or replacement is NULL, duplicate in. */
+   /* if either pattern or replacement is NULL,
+    * duplicate in and let caller handle it. */
    if (!pattern || !replacement)
       return strdup(in);
 
-   /* A zero-length pattern would cause an infinite loop. */
-   if (pattern_len == 0)
-      return strdup(in);
-
-   /* Initial capacity: same as input (common case: zero or few matches). */
-   out_cap = in_len + 1;
-   if (!(out = (char *)malloc(out_cap)))
-      return NULL;
-
-   inat   = in;
-   inprev = in;
+   inat            = in;
 
    while ((inat = strstr(inat, pattern)))
    {
-      seg_len = (size_t)(inat - inprev);
-      need    = out_len + seg_len + replacement_len;
-      if (need >= out_cap)
-      {
-         /* Grow: at least double, or exactly what we need. */
-         out_cap = (need * 2) + 1;
-         if (!(tmp = (char *)realloc(out, out_cap)))
-         {
-            free(out);
-            return NULL;
-         }
-         out = tmp;
-      }
-      memcpy(out + out_len, inprev, seg_len);
-      out_len += seg_len;
-      memcpy(out + out_len, replacement, replacement_len);
-      out_len += replacement_len;
-      inat   += pattern_len;
-      inprev  = inat;
+      inat += pattern_len;
+      numhits++;
    }
 
-   /* Append the tail after the last match. */
-   seg_len = in_len - (size_t)(inprev - in);
-   need    = out_len + seg_len + 1;
-   if (need > out_cap)
+   outlen = in_len - pattern_len * numhits + replacement_len*numhits;
+
+   if (!(out = (char *)malloc(outlen+1)))
+      return NULL;
+
+   outat           = out;
+   inat            = in;
+   inprev          = in;
+
+   while ((inat = strstr(inat, pattern)))
    {
-      if (!(tmp = (char *)realloc(out, need)))
-      {
-         free(out);
-         return NULL;
-      }
-      out = tmp;
+      memcpy(outat, inprev, inat-inprev);
+      outat += inat-inprev;
+      memcpy(outat, replacement, replacement_len);
+      outat += replacement_len;
+      inat  += pattern_len;
+      inprev = inat;
    }
-   memcpy(out + out_len, inprev, seg_len);
-   out[out_len + seg_len] = '\0';
+   strcpy(outat, inprev);
 
    return out;
 }
@@ -183,19 +134,17 @@ char *string_trim_whitespace_left(char *const s)
 {
    if (s && *s)
    {
-      char *current = s;
+      size_t _len    = strlen(s);
+      char *current  = s;
 
       while (*current && ISSPACE((unsigned char)*current))
+      {
          ++current;
+         --_len;
+      }
 
       if (s != current)
-      {
-         /* Avoid strlen: scan to end while copying forward. */
-         char *dst = s;
-         while (*current)
-            *dst++ = *current++;
-         *dst = '\0';
-      }
+         memmove(s, current, _len + 1);
    }
 
    return s;
@@ -363,118 +312,114 @@ size_t word_wrap_wideglyph(char *s, size_t len,
       const char *src, size_t src_len, int line_width,
       int wideglyph_width, unsigned max_lines)
 {
-   char         *dst            = s;
-   char         *lastspace      = NULL;
-   /* Points to the byte immediately AFTER the last wide glyph in dst.
-    * A '\n' is written there when we break on a wide glyph. */
-   char         *lastwideglyph  = NULL;
-   const char   *lastwg_src     = NULL;  /* matching position in src */
+   char *lastspace                   = NULL;
+   char *lastwideglyph               = NULL;
+   const char *src_end               = src + src_len;
+   unsigned lines                    = 1;
+   /* 'line_width' means max numbers of characters per line,
+    * but this metric is only meaningful when dealing with
+    * 'regular' glyphs that have an on-screen pixel width
+    * similar to that of regular Latin characters.
+    * When handing so-called 'wide' Unicode glyphs, it is
+    * necessary to consider the actual on-screen pixel width
+    * of each character.
+    * In order to do this, we create a distinction between
+    * regular Latin 'non-wide' glyphs and 'wide' glyphs, and
+    * normalise all values relative to the on-screen pixel
+    * width of regular Latin characters:
+    * - Regular 'non-wide' glyphs have a normalised width of 100
+    * - 'line_width' is therefore normalised to 100 * (width_in_characters)
+    * - 'wide' glyphs have a normalised width of
+    *   100 * (wide_character_pixel_width / latin_character_pixel_width)
+    * - When a character is detected, the position in the current
+    *   line is incremented by the regular normalised width of 100
+    * - If that character is then determined to be a 'wide'
+    *   glyph, the position in the current line is further incremented
+    *   by the difference between the normalised 'wide' and 'non-wide'
+    *   width values */
+   unsigned counter_normalized       = 0;
+   int line_width_normalized         = line_width * 100;
+   int additional_counter_normalized = wideglyph_width - 100;
 
-   const char   *src_end        = src + src_len;
-   unsigned      lines          = 1;
-   unsigned      counter_norm   = 0;
-
-   /* Pre-compute normalised thresholds once */
-   const unsigned line_norm     = (unsigned)line_width * 100;
-   const unsigned wide_extra    = (wideglyph_width > 100)
-                                ? (unsigned)(wideglyph_width - 100) : 0;
-
-   /* ── Fast-path: entire string fits on one line ── */
-   if (src_len < (size_t)line_width)
+   /* Early return if src string length is less
+    * than line width */
+   if (src_end - src < line_width)
       return strlcpy(s, src, len);
 
-   while (src < src_end)
+   while (*src != '\0')
    {
-      /* ── Decode one UTF-8 codepoint ── */
-      const char *next     = utf8skip(src, 1);
-      unsigned    char_len = (unsigned)(next - src);
+      unsigned char_len   = (unsigned)(utf8skip(src, 1) - src);
+      counter_normalized += 100;
 
-      /* Bounds guard – before any mutation */
+      /* Prevent buffer overflow */
       if (char_len >= len)
          break;
 
-      /* ── NUL terminator ── */
-      if (*src == '\0')
-         break;
-
-      /* ── Classify character ── */
-      if (*src == '\n')
-      {
-         /* Embedded newline: copy, reset line state */
-         *dst = '\n';
-         dst++;
-         src++;
-         len--;
-         lines++;
-         counter_norm  = 0;
-         lastspace     = NULL;
-         lastwideglyph = NULL;
-         lastwg_src    = NULL;
-
-         if ((size_t)(src_end - src) < (size_t)line_width)
-            return strlcpy(dst, src, len);
-         continue;
-      }
-
       if (*src == ' ')
-         lastspace = dst;
+         lastspace          = s; /* Remember the location of the whitespace */
+      else if (*src == '\n')
+      {
+         /* If newlines embedded in the input,
+          * reset the index */
+         lines++;
+         counter_normalized = 0;
+
+         /* Early return if remaining src string
+          * length is less than line width */
+         if (src_end - src <= line_width)
+            return strlcpy(s, src, len);
+      }
       else if (char_len >= 3)
       {
-         /* Record wrap point AFTER the glyph */
-         lastwideglyph = dst + char_len;
-         lastwg_src    = next;                /* == src + char_len */
+         /* Remember the location of the first byte
+          * whose length as UTF-8 >= 3*/
+         lastwideglyph       = s;
+         counter_normalized += additional_counter_normalized;
       }
 
-      /* ── Accumulate normalised width ──
-       * Branchless: (char_len >= 3) is 0 or 1; multiply by wide_extra. */
-      counter_norm += 100 + ((char_len >= 3) ? wide_extra : 0);
-
-      memcpy(dst, src, char_len);
-      dst += char_len;
-      src  = next;
       len -= char_len;
+      while (char_len--)
+         *s++ = *src++;
 
-      /* ── Hot path: no wrap needed ── */
-      if (counter_norm < line_norm)
-         continue;
-
-      /* ── Line overflow ── */
-      counter_norm = 0;
-
-      if (max_lines != 0 && lines >= max_lines)
-         break;   /* Truncate: hard line limit reached */
-
-      if (lastwideglyph && (!lastspace || lastwideglyph > lastspace))
+      if (counter_normalized >= (unsigned)line_width_normalized)
       {
-         /* Insert '\n' after the wide glyph; rewind src to just past it */
-         *lastwideglyph = '\n';
-         lines++;
-         src           = lastwg_src;
-         dst           = lastwideglyph + 1;
-         lastwideglyph = NULL;
-         lastwg_src    = NULL;
-         lastspace     = NULL;
+         counter_normalized = 0;
 
-         if ((size_t)(src_end - src) < (size_t)line_width)
-            return strlcpy(dst, src, len);
-      }
-      else if (lastspace)
-      {
-         /* Replace the space with '\n'; rewind src to the char after it */
-         unsigned rewind = (unsigned)(dst - lastspace) - 1;
-         *lastspace = '\n';
-         lines++;
-         src       -= rewind;
-         dst        = lastspace + 1;
-         lastspace  = NULL;
+         if (max_lines != 0 && lines >= max_lines)
+            continue;
+         else if (lastwideglyph && (!lastspace || lastwideglyph > lastspace))
+         {
+            /* Insert newline character */
+            *lastwideglyph = '\n';
+            lines++;
+            src           -= s - lastwideglyph;
+            s              = lastwideglyph + 1;
+            lastwideglyph  = NULL;
 
-         if ((size_t)(src_end - src) < (size_t)line_width)
-            return strlcpy(dst, src, len);
+            /* Early return if remaining src string
+             * length is less than line width */
+            if (src_end - src <= line_width)
+               return strlcpy(s, src, len);
+         }
+         else if (lastspace)
+         {
+            /* Replace nearest (previous) whitespace
+             * with newline character */
+            *lastspace = '\n';
+            lines++;
+            src       -= s - lastspace - 1;
+            s          = lastspace + 1;
+            lastspace  = NULL;
+
+            /* Early return if remaining src string
+             * length is less than line width */
+            if (src_end - src < line_width)
+               return strlcpy(s, src, len);
+         }
       }
-      /* No break point found: continue filling current line */
    }
 
-   *dst = '\0';
+   *s = '\0';
    return 0;
 }
 
@@ -498,49 +443,39 @@ size_t word_wrap_wideglyph(char *s, size_t len,
  *        token = NULL;
  *    }
  **/
-char *string_tokenize(char **str, const char *delim)
+char* string_tokenize(char **str, const char *delim)
 {
-   char   *str_ptr   = NULL;
-   size_t  delim_len = 0;
-   size_t  token_len = 0;
-   char   *token     = NULL;
+   /* Taken from https://codereview.stackexchange.com/questions/216956/strtok-function-thread-safe-supports-empty-tokens-doesnt-change-string# */
+   char *str_ptr    = NULL;
+   char *delim_ptr  = NULL;
+   char *token      = NULL;
+   size_t token_len = 0;
 
+   /* Sanity checks */
    if (!str || string_is_empty(delim))
       return NULL;
 
+   /* Note: we don't check string_is_empty() here,
+    * empty strings are valid */
    if (!(str_ptr = *str))
       return NULL;
 
-   delim_len = strlen(delim);
-
-   if (delim_len == 1)
-   {
-      /* Fast path: single-character delimiter – use memchr. */
-      const char *found = (const char *)memchr(
-            str_ptr, (unsigned char)delim[0], strlen(str_ptr));
-      token_len = found ? (size_t)(found - str_ptr) : strlen(str_ptr);
-   }
+   /* Search for delimiter */
+   if ((delim_ptr = strstr(str_ptr, delim)))
+      token_len = delim_ptr - str_ptr;
    else
-   {
-      /* Multi-character delimiter. */
-      while (str_ptr[token_len] != '\0')
-      {
-         if (memcmp(str_ptr + token_len, delim, delim_len) == 0)
-            break;
-         token_len++;
-      }
-   }
+      token_len = strlen(str_ptr);
 
-   if (!(token = (char *)malloc(token_len + 1)))
+   /* Allocate token string */
+   if (!(token = (char *)malloc((token_len + 1) * sizeof(char))))
       return NULL;
 
-   memcpy(token, str_ptr, token_len);
+   /* Copy token */
+   strlcpy(token, str_ptr, (token_len + 1) * sizeof(char));
    token[token_len] = '\0';
 
-   /* Advance past delimiter, or set to NULL if at end. */
-   *str = (str_ptr[token_len] != '\0')
-      ? str_ptr + token_len + delim_len
-      : NULL;
+   /* Update input string pointer */
+   *str = delim_ptr ? delim_ptr + strlen(delim) : NULL;
 
    return token;
 }
@@ -659,21 +594,13 @@ unsigned string_hex_to_unsigned(const char *str)
  */
 int string_count_occurrences_single_character(const char *str, char c)
 {
-   unsigned count = 0;
+   int count = 0;
 
-   /* 4-way unrolled loop to exploit instruction-level parallelism. */
-   for (; str[0] && str[1] && str[2] && str[3]; str += 4)
-   {
-      count += (str[0] == c);
-      count += (str[1] == c);
-      count += (str[2] == c);
-      count += (str[3] == c);
-   }
-   /* Handle remaining bytes. */
    for (; *str; str++)
-      count += (*str == c);
+      if (*str == c)
+         count++;
 
-   return (int)count;
+   return count;
 }
 
 /**
@@ -699,18 +626,19 @@ void string_replace_whitespace_with_single_character(char *s, char c)
  **/
 void string_replace_multi_space_with_single_space(char *s)
 {
-   char *dst        = s;
-   int   prev_space = 0;
-   int   curr_space;
+   char *str_trimmed  = s;
+   bool prev_is_space = false;
+   bool curr_is_space = false;
 
    for (; *s; s++)
    {
-      curr_space = ISSPACE((unsigned char)*s);
-      if (!(prev_space && curr_space))
-         *dst++ = *s;
-      prev_space = curr_space;
+      curr_is_space  = ISSPACE(*s);
+      if (prev_is_space && curr_is_space)
+         continue;
+      *str_trimmed++ = *s;
+      prev_is_space  = curr_is_space;
    }
-   *dst = '\0';
+   *str_trimmed = '\0';
 }
 
 /**

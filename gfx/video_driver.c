@@ -1036,7 +1036,6 @@ void recording_dump_frame(
 {
    struct record_video_data ffemu_data;
    video_driver_state_t *video_st   = &video_driver_st;
-   const video_driver_t *vid        = video_st->current_video;
    recording_state_t *record_st     = recording_state_get_ptr();
 
    ffemu_data.data     = data;
@@ -1056,8 +1055,8 @@ void recording_dump_frame(
       vp.full_width               = 0;
       vp.full_height              = 0;
 
-      if (vid && vid->viewport_info)
-         vid->viewport_info(video_st->data, &vp);
+      if (video_st->current_video && video_st->current_video->viewport_info)
+         video_st->current_video->viewport_info(video_st->data, &vp);
 
       if (!vp.width || !vp.height)
       {
@@ -1086,9 +1085,9 @@ void recording_dump_frame(
       /* Big bottleneck.
        * Since we might need to do read-backs asynchronously,
        * it might take 3-4 times before this returns true. */
-      if (!(      vid->read_viewport
-               && vid->read_viewport(video_st->data,
-                  video_st->record_gpu_buffer, is_idle)))
+      if (!(      video_st->current_video->read_viewport
+               && video_st->current_video->read_viewport(
+                  video_st->data, video_st->record_gpu_buffer, is_idle)))
          return;
 
       ffemu_data.pitch  = (int)(record_st->gpu_width * 3);
@@ -1446,9 +1445,8 @@ void video_driver_set_threaded(bool val)
 
 const char *video_driver_get_ident(void)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-   const video_driver_t *vid      = video_st->current_video;
-   if (!vid)
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (!video_st->current_video)
       return NULL;
 #ifdef HAVE_THREADS
    if (VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
@@ -1459,7 +1457,8 @@ const char *video_driver_get_ident(void)
       return thr->driver->ident;
    }
 #endif
-   return vid->ident;
+
+   return video_st->current_video->ident;
 }
 
 void video_context_driver_reset(void)
@@ -1743,11 +1742,10 @@ void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom)
 
 bool video_driver_set_rotation(unsigned rotation)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-   const video_driver_t *vid      = video_st->current_video;
-   if (!vid || !vid->set_rotation)
+   video_driver_state_t *video_st         = &video_driver_st;
+   if (!video_st->current_video || !video_st->current_video->set_rotation)
       return false;
-   vid->set_rotation(video_st->data, rotation);
+   video_st->current_video->set_rotation(video_st->data, rotation);
    return true;
 }
 
@@ -1779,9 +1777,10 @@ void *video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   const video_driver_t *vid      = video_st->current_video;
-   if (vid && vid->read_frame_raw)
-      return vid->read_frame_raw(video_st->data, width,
+   if (      video_st->current_video
+         &&  video_st->current_video->read_frame_raw)
+      return video_st->current_video->read_frame_raw(
+            video_st->data, width,
             height, pitch);
    return NULL;
 }
@@ -1915,17 +1914,15 @@ void video_driver_lock_new(void)
 void video_driver_set_stub_frame(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   video_driver_t *vid            = video_st->current_video;
-   video_st->frame_bak            = vid->frame;
-   vid->frame                     = video_null.frame;
+   video_st->frame_bak            = video_st->current_video->frame;
+   video_st->current_video->frame = video_null.frame;
 }
 
 void video_driver_unset_stub_frame(void)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-   video_driver_t *vid            = video_st->current_video;
+   video_driver_state_t *video_st    = &video_driver_st;
    if (video_st->frame_bak)
-      vid->frame = video_st->frame_bak;
+      video_st->current_video->frame = video_st->frame_bak;
 
    video_st->frame_bak               = NULL;
 }
@@ -2525,10 +2522,9 @@ bool video_driver_is_hw_context(void)
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
 {
    video_driver_state_t *video_st  = &video_driver_st;
-   const video_driver_t *vid       = video_st->current_video;
-   if (!vid || !vid->viewport_info)
+   if (!video_st->current_video || !video_st->current_video->viewport_info)
       return false;
-   vid->viewport_info(video_st->data, viewport);
+   video_st->current_video->viewport_info(video_st->data, viewport);
    return true;
 }
 
@@ -3447,10 +3443,9 @@ enum gfx_ctx_api video_context_driver_get_api(void)
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
 bool video_driver_has_windowed(void)
 {
-   video_driver_state_t *video_st  = &video_driver_st;
-   const video_driver_t *vid       = video_st->current_video;
-   if (video_st->data && vid->has_windowed)
-      return vid->has_windowed(video_st->data);
+   video_driver_state_t *video_st   = &video_driver_st;
+   if (video_st->data && video_st->current_video->has_windowed)
+      return video_st->current_video->has_windowed(video_st->data);
    return false;
 }
 #endif
@@ -3789,8 +3784,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       video_st->current_video->poke_interface(
             video_st->data, &video_st->poke);
 
-   if (video_st->current_video->viewport_info
-         && (!custom_vp->width || !custom_vp->height))
+   if (video_st->current_video->viewport_info &&
+         (!custom_vp->width  ||
+          !custom_vp->height))
    {
       /* Force custom viewport to have sane parameters. */
       custom_vp->width = width;
@@ -3894,7 +3890,6 @@ void video_driver_frame(const void *data, unsigned width,
    bool widgets_active            = p_dispwidget->active;
 #endif
    recording_state_t *recording_st= recording_state_get_ptr();
-   const video_driver_t *vid      = video_st->current_video;
 
    status_text[0]                 = '\0';
    video_driver_msg[0]            = '\0';
@@ -4391,7 +4386,7 @@ void video_driver_frame(const void *data, unsigned width,
                av_info->geometry.aspect_ratio,
                av_info->timing.fps,
                av_info->timing.sample_rate,
-               vid->ident,
+               video_st->current_video->ident,
                video_info.width,
                video_info.height,
                video_info.scale_width,
@@ -4453,10 +4448,12 @@ void video_driver_frame(const void *data, unsigned width,
       }
    }
 
-   if (render_frame && vid && vid->frame)
+   if (render_frame
+         && video_st->current_video
+         && video_st->current_video->frame)
    {
       video_info.current_subframe = 0;
-      if (vid->frame(
+      if (video_st->current_video->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,
 #if HAVE_MENU

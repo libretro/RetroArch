@@ -34,23 +34,6 @@
 /* Max time to wait before continuing */
 #define WASAPI_TIMEOUT 256
 
-/**
- * Releases a COM object and nulls the pointer, handling both C and C++ builds.
- * Identical #ifdef __cplusplus blocks appeared throughout the original code;
- * this macro consolidates them.
- */
-#ifdef __cplusplus
-#define RELEASE_COM(ptr) do { if (ptr) { (ptr)->Release(); (ptr) = NULL; } } while (0)
-#else
-#define RELEASE_COM(ptr) do { if (ptr) { (ptr)->lpVtbl->Release(ptr); (ptr) = NULL; } } while (0)
-#endif
-
-/**
- * Waits on a Win32 event handle. Evaluates to true if signalled, false on
- * timeout or error. Intended for use at the top of write/read loops.
- */
-#define WASAPI_WAIT(event, ms) (WaitForSingleObject((event), (ms)) == WAIT_OBJECT_0)
-
 enum wasapi_flags
 {
    WASAPI_FLG_EXCLUSIVE = (1 << 0),
@@ -320,7 +303,13 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          goto error;
       }
 
-      RELEASE_COM(client);
+      if (client)
+#ifdef __cplusplus
+         client->Release();
+#else
+         client->lpVtbl->Release(client);
+#endif
+      client = NULL;
       hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
@@ -338,7 +327,13 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    }
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
    {
-      RELEASE_COM(client);
+      if (client)
+#ifdef __cplusplus
+         client->Release();
+#else
+         client->lpVtbl->Release(client);
+#endif
+      client = NULL;
       hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
@@ -353,13 +348,14 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
             buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
    }
-   /* AUDCLNT_E_UNSUPPORTED_FORMAT means the format negotiation inside
-    * wasapi_select_device_format already exhausted all options, so there
-    * is nothing more we can do — fall through to the FAILED check below.
-    * For DEVICE_IN_USE and EXCLUSIVE_MODE_NOT_ALLOWED we bail immediately
-    * because retrying with a different format won't help. */
-   if (hr == AUDCLNT_E_DEVICE_IN_USE || hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
-      goto error;
+   if (hr != AUDCLNT_E_UNSUPPORTED_FORMAT)
+   {
+      if (hr == AUDCLNT_E_DEVICE_IN_USE)
+         goto error;
+
+      if (hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
+         goto error;
+   }
 
    if (FAILED(hr))
    {
@@ -374,7 +370,13 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    return client;
 
 error:
-   RELEASE_COM(client);
+   if (client)
+#ifdef __cplusplus
+      client->Release();
+#else
+      client->lpVtbl->Release(client);
+#endif
+   client = NULL;
 
    return NULL;
 }
@@ -436,7 +438,13 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
    {
-      RELEASE_COM(client);
+      if (client)
+#ifdef __cplusplus
+         client->Release();
+#else
+         client->lpVtbl->Release(client);
+#endif
+      client = NULL;
       hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
@@ -465,7 +473,13 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    return client;
 
 error:
-   RELEASE_COM(client);
+   if (client)
+#ifdef __cplusplus
+      client->Release();
+#else
+      client->lpVtbl->Release(client);
+#endif
+   client = NULL;
 
    return NULL;
 }
@@ -615,15 +629,29 @@ static void wasapi_microphone_close_mic(void *driver_context, void *mic_context)
 
    write_event = mic->read_event;
 
-   RELEASE_COM(mic->capture);
+   if (mic->capture)
+#ifdef __cplusplus
+      mic->capture->Release();
+#else
+      mic->capture->lpVtbl->Release(mic->capture);
+#endif
+   mic->capture = NULL;
    if (mic->client)
    {
       _IAudioClient_Stop(mic->client);
-RELEASE_COM(mic->client);
+#ifdef __cplusplus
+      mic->client->Release();
+#else
+      mic->client->lpVtbl->Release(mic->client);
+#endif
    }
    if (mic->device)
    {
-RELEASE_COM(mic->device);
+#ifdef __cplusplus
+      mic->device->Release();
+#else
+      mic->device->lpVtbl->Release(mic->device);
+#endif
    }
    mic->client = NULL;
    mic->device = NULL;
@@ -640,8 +668,9 @@ RELEASE_COM(mic->device);
             wasapi_error(GetLastError()));
    }
 
-   /* Always close the handle (see wasapi_free for the same fix). */
-   CloseHandle(write_event);
+   /* If event isn't signaled log and leak */
+   if (ir == WAIT_OBJECT_0)
+      CloseHandle(write_event);
 }
 
 static void *wasapi_microphone_init(void)
@@ -826,22 +855,18 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
 
    if (mic->exclusive)
    {
-      /* Exclusive-mode: read one full engine-buffer worth at a time,
-       * blocking indefinitely until complete. */
       for (; (size_t)bytes_read < len; bytes_read += read)
       {
          read = wasapi_microphone_read_buffered(mic,
                (char *)s   + bytes_read,
                len         - bytes_read,
-               WASAPI_TIMEOUT);
+               INFINITE);
          if (read == -1)
             return -1;
       }
    }
    else
    {
-      /* Shared-mode: the device period is much shorter, so block with a
-       * tighter timeout to avoid starving the audio thread. */
       for (; (size_t)bytes_read < len; bytes_read += read)
       {
          read = wasapi_microphone_read_buffered(mic,
@@ -1004,14 +1029,28 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    return mic;
 
 error:
-   RELEASE_COM(mic->capture);
+   if (mic->capture)
+#ifdef __cplusplus
+      mic->capture->Release();
+#else
+      mic->capture->lpVtbl->Release(mic->capture);
+#endif
+   mic->capture = NULL;
    if (mic->client)
    {
-RELEASE_COM(mic->client);
+#ifdef __cplusplus
+      mic->client->Release();
+#else
+      mic->client->lpVtbl->Release(mic->client);
+#endif
    }
    if (mic->device)
    {
-RELEASE_COM(mic->device);
+#ifdef __cplusplus
+      mic->device->Release();
+#else
+      mic->device->lpVtbl->Release(mic->device);
+#endif
    }
    mic->client = NULL;
    mic->device = NULL;
@@ -1207,14 +1246,28 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    return w;
 
 error:
-   RELEASE_COM(w->renderer);
+   if (w->renderer)
+#ifdef __cplusplus
+      w->renderer->Release();
+#else
+      w->renderer->lpVtbl->Release(w->renderer);
+#endif
+   w->renderer = NULL;
    if (w->client)
    {
-RELEASE_COM(w->client);
+#ifdef __cplusplus
+      w->client->Release();
+#else
+      w->client->lpVtbl->Release(w->client);
+#endif
    }
    if (w->device)
    {
-RELEASE_COM(w->device);
+#ifdef __cplusplus
+      w->device->Release();
+#else
+      w->device->lpVtbl->Release(w->device);
+#endif
    }
    w->client = NULL;
    w->device = NULL;
@@ -1270,11 +1323,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
             size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
             if (!write_avail)
             {
-               /* Bug fix: on timeout, the original code fell through with
-                * write_avail still 0, so ir=0 and _len never advanced —
-                * causing an infinite loop. Now we return -1 on timeout. */
-               if (!WASAPI_WAIT(w->write_event, WASAPI_TIMEOUT))
-                  return -1;
+               if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0)
                {
                   BYTE *dest = NULL;
                   UINT32 frame_count = w->engine_buffer_size / w->frame_size;
@@ -1474,15 +1523,29 @@ static void wasapi_free(void *wh)
    wasapi_t *w        = (wasapi_t*)wh;
    HANDLE write_event = w->write_event;
 
-   RELEASE_COM(w->renderer);
+   if (w->renderer)
+#ifdef __cplusplus
+      w->renderer->Release();
+#else
+      w->renderer->lpVtbl->Release(w->renderer);
+#endif
+   w->renderer = NULL;
    if (w->client)
    {
       _IAudioClient_Stop(w->client);
-RELEASE_COM(w->client);
+#ifdef __cplusplus
+      w->client->Release();
+#else
+      w->client->lpVtbl->Release(w->client);
+#endif
    }
    if (w->device)
    {
-RELEASE_COM(w->device);
+#ifdef __cplusplus
+      w->device->Release();
+#else
+      w->device->lpVtbl->Release(w->device);
+#endif
    }
    w->client = NULL;
    w->device = NULL;
@@ -1494,8 +1557,9 @@ RELEASE_COM(w->device);
    if (ir == WAIT_FAILED)
       RARCH_ERR("[WASAPI] WaitForSingleObject failed with error %d.\n", GetLastError());
 
-   /* Always close the handle: leaking it on timeout wastes a kernel object.
-    * The original code skipped CloseHandle on timeout, which was a handle leak. */
+   if (!(ir == WAIT_OBJECT_0))
+      return;
+
    CloseHandle(write_event);
 }
 
@@ -1523,7 +1587,7 @@ static size_t wasapi_write_avail(void *wh)
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
    if (w->buffer) /* Exaggerate available size for best results.. */
-      return FIFO_WRITE_AVAIL(w->buffer) + padding * w->frame_size;
+      return FIFO_WRITE_AVAIL(w->buffer) + padding;
    return w->engine_buffer_size - padding * w->frame_size;
 }
 

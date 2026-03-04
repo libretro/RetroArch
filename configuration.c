@@ -5145,11 +5145,11 @@ static void save_keybind_joykey_label(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   _len += strlcpy(key + _len, "_btn", sizeof(key) - _len);
+   strlcpy(key + _len, "_btn", sizeof(key) - _len);
 
    if (!string_is_empty(bind->joykey_label))
    {
-      strlcpy(key + _len, "_label", sizeof(key) - _len);
+      strlcat(key, "_label", sizeof(key));
       config_set_string(conf, key, bind->joykey_label);
    }
 }
@@ -5191,12 +5191,13 @@ static void save_keybind_axis_label(config_file_t *conf,
       const struct retro_keybind *bind)
 {
    char key[64];
+   char config[16];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   _len += strlcpy(key + _len, "_axis", sizeof(key) - _len);
+   strlcpy(key + _len, "_axis", sizeof(key) - _len);
 
    if (!string_is_empty(bind->joyaxis_label))
    {
-      strlcpy(key + _len, "_label", sizeof(key) - _len);
+      strlcat(key, "_label", sizeof(key));
       config_set_string(conf, key, bind->joyaxis_label);
    }
 }

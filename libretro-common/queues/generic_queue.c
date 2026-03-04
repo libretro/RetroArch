@@ -54,21 +54,19 @@ generic_queue_t *generic_queue_new(void)
 
 void generic_queue_free(generic_queue_t *queue, void (*free_value)(void *value))
 {
-   struct generic_queue_item_t *item;
    struct generic_queue_item_t *next_item;
 
    if (!queue)
       return;
 
-   item = queue->first_item;
-   while (item)
+   while (queue->first_item)
    {
       if (free_value)
-         free_value(item->value);
+         free_value(queue->first_item->value);
 
-      next_item = item->next;
-      free(item);
-      item = next_item;
+      next_item = queue->first_item->next;
+      free(queue->first_item);
+      queue->first_item = next_item;
    }
 
    free(queue);
@@ -78,21 +76,18 @@ void generic_queue_push(generic_queue_t *queue, void *value)
 {
    struct generic_queue_item_t *new_item;
 
-   if (!queue)
-      return;
-
    new_item = (struct generic_queue_item_t *)calloc(1, sizeof(struct generic_queue_item_t));
-   new_item->value    = value;
+   new_item->value = value;
    new_item->previous = queue->last_item;
-   new_item->next     = NULL;
-
-   if (queue->last_item)
-      queue->last_item->next = new_item;
-   else
-      queue->first_item = new_item;
+   new_item->next = NULL;
 
    queue->last_item = new_item;
    queue->length++;
+
+   if (!queue->first_item)
+      queue->first_item = new_item;
+   else
+      new_item->previous->next = new_item;
 }
 
 void *generic_queue_pop(generic_queue_t *queue)
@@ -103,13 +98,11 @@ void *generic_queue_pop(generic_queue_t *queue)
    if (!queue || !queue->last_item)
       return NULL;
 
-   item             = queue->last_item;
-   queue->last_item = item->previous;
+   item = queue->last_item;
+   queue->last_item = queue->last_item->previous;
    queue->length--;
 
-   if (queue->last_item)
-      queue->last_item->next = NULL;
-   else
+   if (queue->length == 0)
       queue->first_item = NULL;
 
    value = item->value;
@@ -142,17 +135,17 @@ void generic_queue_shift(generic_queue_t *queue, void *value)
       return;
 
    new_item = (struct generic_queue_item_t *)calloc(1, sizeof(struct generic_queue_item_t));
-   new_item->value    = value;
+   new_item->value = value;
    new_item->previous = NULL;
-   new_item->next     = queue->first_item;
-
-   if (queue->first_item)
-      queue->first_item->previous = new_item;
-   else
-      queue->last_item = new_item;
+   new_item->next = queue->first_item;
 
    queue->first_item = new_item;
    queue->length++;
+
+   if (!queue->last_item)
+      queue->last_item = new_item;
+   else
+      new_item->next->previous = new_item;
 }
 
 void *generic_queue_unshift(generic_queue_t *queue)
@@ -163,13 +156,11 @@ void *generic_queue_unshift(generic_queue_t *queue)
    if (!queue || !queue->first_item)
       return NULL;
 
-   item              = queue->first_item;
-   queue->first_item = item->next;
+   item = queue->first_item;
+   queue->first_item = queue->first_item->next;
    queue->length--;
 
-   if (queue->first_item)
-      queue->first_item->previous = NULL;
-   else
+   if (queue->length == 0)
       queue->last_item = NULL;
 
    value = item->value;
@@ -195,23 +186,23 @@ void *generic_queue_remove(generic_queue_t *queue, void *value)
 
    for (item = queue->first_item; item; item = item->next)
    {
-      if (item->value != value)
-         continue;
+      if (item->value == value)
+      {
+         if (item->previous)
+            item->previous->next = item->next;
+         else
+            queue->first_item = item->next;
 
-      if (item->previous)
-         item->previous->next = item->next;
-      else
-         queue->first_item = item->next;
+         if (item->next)
+            item->next->previous = item->previous;
+         else
+            queue->last_item = item->previous;
 
-      if (item->next)
-         item->next->previous = item->previous;
-      else
-         queue->last_item = item->previous;
+         free(item);
+         queue->length--;
 
-      free(item);
-      queue->length--;
-
-      return value;
+         return value;
+      }
    }
 
    return NULL;
@@ -219,34 +210,39 @@ void *generic_queue_remove(generic_queue_t *queue, void *value)
 
 generic_queue_iterator_t *generic_queue_iterator(generic_queue_t *queue, bool forward)
 {
-   generic_queue_iterator_t *iterator;
+   if (queue && queue->first_item)
+   {
+      generic_queue_iterator_t *iterator;
 
-   if (!queue || !queue->first_item)
-      return NULL;
+      iterator = (generic_queue_iterator_t *)malloc(sizeof(generic_queue_iterator_t));
+      iterator->queue = queue;
+      iterator->item = forward ? queue->first_item : queue->last_item;
+      iterator->forward = forward;
 
-   iterator          = (generic_queue_iterator_t *)malloc(sizeof(generic_queue_iterator_t));
-   iterator->queue   = queue;
-   iterator->item    = forward ? queue->first_item : queue->last_item;
-   iterator->forward = forward;
+      return iterator;
+   }
 
-   return iterator;
+   return NULL;
 }
 
 generic_queue_iterator_t *generic_queue_iterator_next(generic_queue_iterator_t *iterator)
 {
-   struct generic_queue_item_t *item;
-
-   if (!iterator)
-      return NULL;
-
-   item = iterator->forward ? iterator->item->next : iterator->item->previous;
-   if (item)
+   if (iterator)
    {
-      iterator->item = item;
-      return iterator;
+      struct generic_queue_item_t *item;
+
+      item = iterator->forward ? iterator->item->next : iterator->item->previous;
+      if (item)
+      {
+         iterator->item = item;
+         return iterator;
+      } else
+      {
+         free(iterator);
+         return NULL;
+      }
    }
 
-   free(iterator);
    return NULL;
 }
 
@@ -265,29 +261,35 @@ generic_queue_iterator_t *generic_queue_iterator_remove(generic_queue_iterator_t
    if (!iterator)
       return NULL;
 
-   /* item is already known — no need to re-traverse the queue */
-   item = iterator->item;
+   item = iterator->forward ? iterator->queue->first_item : iterator->queue->last_item;
+   while (item)
+   {
+      if (iterator->item == item)
+      {
+         if (iterator->queue->first_item == item)
+            iterator->queue->first_item = item->next;
+         else
+            item->previous->next = item->next;
 
-   if (item->previous)
-      item->previous->next = item->next;
-   else
-      iterator->queue->first_item = item->next;
+         if (iterator->queue->last_item == item)
+            iterator->queue->last_item = item->previous;
+         else
+            item->next->previous = item->previous;
 
-   if (item->next)
-      item->next->previous = item->previous;
-   else
-      iterator->queue->last_item = item->previous;
+         iterator->queue->length--;
 
-   iterator->queue->length--;
+         iterator->item = iterator->forward ? item->next : item->previous;
+         free(item);
+         if (iterator->item)
+            return iterator;
+         free(iterator);
+         return NULL;
+      }
 
-   iterator->item = iterator->forward ? item->next : item->previous;
-   free(item);
+      item = iterator->forward ? item->next : item->previous;
+   }
 
-   if (iterator->item)
-      return iterator;
-
-   free(iterator);
-   return NULL;
+   return iterator;
 }
 
 void generic_queue_iterator_free(generic_queue_iterator_t *iterator)

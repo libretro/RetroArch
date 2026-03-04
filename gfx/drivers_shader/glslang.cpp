@@ -390,7 +390,7 @@ SlangProcess::SlangProcess()
 bool glslang::compile_spirv(const std::string &source, Stage stage,
       std::vector<uint32_t> *spirv)
 {
-   std::string msg;
+	std::string msg;
    static SlangProcess process;
    SlangProcessHolder process_holder;
    TProgram program;

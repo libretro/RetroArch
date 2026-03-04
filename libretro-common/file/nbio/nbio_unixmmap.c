@@ -40,140 +40,120 @@
 #include <sys/mman.h>
 
 #ifdef __APPLE__
-#  ifndef O_CLOEXEC
-#    define O_CLOEXEC 0x1000000
-#  endif
-#else
-#  ifndef O_CLOEXEC
-#    define O_CLOEXEC 0
-#  endif
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0x1000000
 #endif
 
-/* Sentinel for a zero-length file: mmap requires len > 0, so we skip
- * the mmap call entirely and return this non-NULL marker instead.
- * get_ptr() converts it back to NULL for callers. */
-#define NBIO_EMPTY_PTR ((void*)1)
+#else
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
+#endif
 
 struct nbio_mmap_unix_t
 {
-   void  *ptr;
+   void* ptr;
    size_t len;
-   int    fd;
-   int    map_flags;
+   int fd;
+   int map_flags;
 };
 
-static void *nbio_mmap_unix_open(const char *filename, unsigned mode)
+static void *nbio_mmap_unix_open(const char * filename, unsigned mode)
 {
-   static const int o_flags[] = {
-      O_RDONLY,
-      O_RDWR | O_CREAT | O_TRUNC,
-      O_RDWR,
-      O_RDONLY,
-      O_RDWR | O_CREAT | O_TRUNC
-   };
-   static const int map_flags[] = {
-      PROT_READ,
-      PROT_WRITE | PROT_READ,
-      PROT_WRITE | PROT_READ,
-      PROT_READ,
-      PROT_WRITE | PROT_READ
-   };
+   static const int o_flags[] =   { O_RDONLY,  O_RDWR|O_CREAT|O_TRUNC, O_RDWR,               O_RDONLY,  O_RDWR|O_CREAT|O_TRUNC };
+   static const int map_flags[] = { PROT_READ, PROT_WRITE|PROT_READ,   PROT_WRITE|PROT_READ, PROT_READ, PROT_WRITE|PROT_READ   };
 
-   struct nbio_mmap_unix_t *handle;
-   void  *ptr;
-   size_t len;
-   int    fd = open(filename, o_flags[mode] | O_CLOEXEC, 0644);
-
+   size_t _len;
+   void* ptr                       = NULL;
+   struct nbio_mmap_unix_t* handle = NULL;
+   int fd                          = open(filename, o_flags[mode]|O_CLOEXEC, 0644);
    if (fd < 0)
       return NULL;
 
-   len = (size_t)lseek(fd, 0, SEEK_END);
+   _len = lseek(fd, 0, SEEK_END);
+   if (_len != 0)
+      ptr = mmap(NULL, _len, map_flags[mode], MAP_SHARED, fd, 0);
 
-   /* Zero-length file: skip mmap, use sentinel */
-   if (len == 0)
-      ptr = NBIO_EMPTY_PTR;
-   else
+   if (ptr == MAP_FAILED)
    {
-      ptr = mmap(NULL, len, map_flags[mode], MAP_SHARED, fd, 0);
-      if (ptr == MAP_FAILED)
-      {
-         close(fd);
-         return NULL;
-      }
-   }
-
-   handle = (struct nbio_mmap_unix_t*)malloc(sizeof(*handle));
-   if (!handle)
-   {
-      if (ptr != NBIO_EMPTY_PTR)
-         munmap(ptr, len);
       close(fd);
       return NULL;
    }
 
+   handle            = malloc(sizeof(struct nbio_mmap_unix_t));
    handle->fd        = fd;
    handle->map_flags = map_flags[mode];
-   handle->len       = len;
+   handle->len       = _len;
    handle->ptr       = ptr;
    return handle;
 }
 
-static void nbio_mmap_unix_begin_read(void *data)  { (void)data; }
-static void nbio_mmap_unix_begin_write(void *data) { (void)data; }
-static void nbio_mmap_unix_cancel(void *data)      { (void)data; }
-static bool nbio_mmap_unix_iterate(void *data)     { return true; }
+static void nbio_mmap_unix_begin_read(void *data)
+{
+   /* not needed */
+}
+
+static void nbio_mmap_unix_begin_write(void *data)
+{
+   /* not needed */
+}
+
+static bool nbio_mmap_unix_iterate(void *data)
+{
+   return true; /* not needed */
+}
 
 static void nbio_mmap_unix_resize(void *data, size_t len)
 {
-   void *ptr;
-   struct nbio_mmap_unix_t *handle = (struct nbio_mmap_unix_t*)data;
-
+   struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
    if (!handle)
       return;
-
-   /* Shrinking is blocked to stay compatible with other nbio backends */
    if (len < handle->len)
+   {
+      /* this works perfectly fine if this check is removed, but it
+       * won't work on other nbio implementations */
+      /* therefore, it's blocked so nobody accidentally relies on it */
       abort();
+   }
 
-   if (ftruncate(handle->fd, (off_t)len) != 0)
-      abort();
+   if (ftruncate(handle->fd, len) != 0)
+      abort(); /* this one returns void and I can't find any other
+                  way for it to report failure */
 
-   /* Unmap old region only after ftruncate succeeds */
-   if (handle->ptr != NBIO_EMPTY_PTR)
-      munmap(handle->ptr, handle->len);
+   munmap(handle->ptr, handle->len);
 
-   ptr = mmap(NULL, len, handle->map_flags, MAP_SHARED, handle->fd, 0);
-   if (ptr == MAP_FAILED)
-      abort();
-
-   handle->ptr = ptr;
+   handle->ptr = mmap(NULL, len, handle->map_flags, MAP_SHARED, handle->fd, 0);
    handle->len = len;
+
+   if (handle->ptr == MAP_FAILED)
+      abort();
 }
 
 static void *nbio_mmap_unix_get_ptr(void *data, size_t *len)
 {
-   struct nbio_mmap_unix_t *handle = (struct nbio_mmap_unix_t*)data;
-
+   struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
    if (!handle)
       return NULL;
    if (len)
       *len = handle->len;
+   return handle->ptr;
+}
 
-   /* Hide the sentinel from callers; a zero-length file has no data */
-   return (handle->ptr == NBIO_EMPTY_PTR) ? NULL : handle->ptr;
+static void nbio_mmap_unix_cancel(void *data)
+{
+   /* not needed */
 }
 
 static void nbio_mmap_unix_free(void *data)
 {
-   struct nbio_mmap_unix_t *handle = (struct nbio_mmap_unix_t*)data;
-
+   struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
    if (!handle)
       return;
-
-   if (handle->ptr != NBIO_EMPTY_PTR)
-      munmap(handle->ptr, handle->len);
-
    close(handle->fd);
+   munmap(handle->ptr, handle->len);
    free(handle);
 }
 
@@ -188,11 +168,16 @@ nbio_intf_t nbio_mmap_unix = {
    nbio_mmap_unix_free,
    "nbio_mmap_unix",
 };
-
 #else
-
 nbio_intf_t nbio_mmap_unix = {
-   NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    "nbio_mmap_unix",
 };
 

@@ -133,13 +133,14 @@ static void scan_results_free(scan_results_t *sr)
    size_t i;
    for (i = 0; i < sr->count; i++)
    {
-      if (sr->results[i].entry_path)  free(sr->results[i].entry_path);
+      if (sr->results[i].entry_path) free(sr->results[i].entry_path);
       if (sr->results[i].entry_label) free(sr->results[i].entry_label);
-      if (sr->results[i].db_crc)      free(sr->results[i].db_crc);
-      if (sr->results[i].db_name)     free(sr->results[i].db_name);
-      if (sr->results[i].archive_name)free(sr->results[i].archive_name);
+      if (sr->results[i].db_crc) free(sr->results[i].db_crc);
+      if (sr->results[i].db_name) free(sr->results[i].db_name);
+      if (sr->results[i].archive_name) free(sr->results[i].archive_name);
    }
-   free(sr->results);
+   if (sr->results)
+      free(sr->results);
    sr->results = NULL;
    sr->count = 0;
    sr->capacity = 0;
@@ -253,25 +254,14 @@ static const char *database_info_get_current_element_name(
 
 static void task_database_scan_console_output(const char *label, const char *db_name, bool add)
 {
-   /* Cache NO_COLOR lookup: -1 = unchecked, 0 = color on, 1 = color off */
-   static int no_color_cached = -1;
-   bool color;
    char string[32];
-   const char *prefix = (add) ? "++" : (db_name) ? "==" : "??";
-#ifdef _WIN32
-   HANDLE con;
-#endif
-
-   if (no_color_cached < 0)
-   {
-      const char *no_color = getenv("NO_COLOR");
-      no_color_cached      = (no_color && no_color[0] != '0') ? 1 : 0;
-   }
-   color = (no_color_cached == 0);
+   const char *prefix   = (add) ? "++" : (db_name) ? "==" : "??";
+   const char *no_color = getenv("NO_COLOR");
+   bool color           = (no_color && no_color[0] != '0') ? false : true;
 
    /* Colorize prefix (add = green, dupe = yellow, not found = red) */
 #ifdef _WIN32
-   con = GetStdHandle(STD_OUTPUT_HANDLE);
+   HANDLE con      = GetStdHandle(STD_OUTPUT_HANDLE);
    if (color && con != INVALID_HANDLE_VALUE)
    {
       unsigned red    = FOREGROUND_RED;
@@ -448,22 +438,12 @@ static bool is_valid_disc_indicator(const char *str, size_t len)
    /* Valid Roman numeral chars: I, V, X (we'll be conservative) */
    if (len >= 1 && len <= 4)
    {
-      /* Lookup table: 1 for valid Roman chars I (0x49), V (0x56), X (0x58) */
-      static const unsigned char roman_lut[256] = {
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0, 0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-      };
       bool all_roman = true;
       const char *roman_p = str;
       while (roman_p < end)
       {
-         if (!roman_lut[(unsigned char)*roman_p])
+         char c = *roman_p;
+         if (c != 'I' && c != 'V' && c != 'X')
          {
             all_roman = false;
             break;
@@ -669,60 +649,48 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
 static enum msg_file_type extension_to_file_type(const char *ext)
 {
    char ext_lower[6];
-   char c0;
    /* Copy and convert to lower case */
    strlcpy(ext_lower, ext, sizeof(ext_lower));
    string_to_lower(ext_lower);
 
-   /* Use first character to narrow candidates before full compare */
-   c0 = ext_lower[0];
-   switch (c0)
-   {
-      case '7':
-         if (string_is_equal(ext_lower, "7z"))
-            return FILE_TYPE_COMPRESSED;
-         break;
-      case 'a':
-         if (string_is_equal(ext_lower, "apk"))
-            return FILE_TYPE_COMPRESSED;
-         break;
-      case 'c':
-         if (string_is_equal(ext_lower, "cue"))
-            return FILE_TYPE_CUE;
-         if (string_is_equal(ext_lower, "chd"))
-            return FILE_TYPE_CHD;
-         break;
-      case 'g':
-         if (string_is_equal(ext_lower, "gdi"))
-            return FILE_TYPE_GDI;
-         break;
-      case 'i':
-         if (string_is_equal(ext_lower, "iso"))
-            return FILE_TYPE_ISO;
-         break;
-      case 'l':
-         if (string_is_equal(ext_lower, "lutro"))
-            return FILE_TYPE_LUTRO;
-         break;
-      case 'r':
-         if (string_is_equal(ext_lower, "rvz"))
-            return FILE_TYPE_RVZ;
-         break;
-      case 'w':
-         if (string_is_equal(ext_lower, "wbfs"))
-            return FILE_TYPE_WBFS;
-         if (string_is_equal(ext_lower, "wia"))
-            return FILE_TYPE_WIA;
-         if (string_is_equal(ext_lower, "zip"))
-            return FILE_TYPE_COMPRESSED;
-         break;
-      case 'z':
-         if (string_is_equal(ext_lower, "zip"))
-            return FILE_TYPE_COMPRESSED;
-         break;
-      default:
-         break;
-   }
+   if (
+            string_is_equal(ext_lower, "7z")
+         || string_is_equal(ext_lower, "zip")
+         || string_is_equal(ext_lower, "apk")
+      )
+      return FILE_TYPE_COMPRESSED;
+   if (
+         string_is_equal(ext_lower, "cue")
+      )
+      return FILE_TYPE_CUE;
+   if (
+         string_is_equal(ext_lower, "gdi")
+      )
+      return FILE_TYPE_GDI;
+   if (
+         string_is_equal(ext_lower, "iso")
+      )
+      return FILE_TYPE_ISO;
+   if (
+         string_is_equal(ext_lower, "chd")
+      )
+      return FILE_TYPE_CHD;
+   if (
+         string_is_equal(ext_lower, "wbfs")
+      )
+      return FILE_TYPE_WBFS;
+   if (
+         string_is_equal(ext_lower, "rvz")
+      )
+      return FILE_TYPE_RVZ;
+   if (
+         string_is_equal(ext_lower, "wia")
+      )
+      return FILE_TYPE_WIA;
+   if (
+         string_is_equal(ext_lower, "lutro")
+      )
+      return FILE_TYPE_LUTRO;
    return FILE_TYPE_NONE;
 }
 
@@ -860,8 +828,12 @@ static int database_info_list_iterate_end_no_match(
    db_state->size         = 0;
    db_state->archive_size = 0;
    db_state->serial[0]    = '\0';
-   db_state->crc          = 0;
-   db_state->archive_crc  = 0;
+
+   if (db_state->crc != 0)
+      db_state->crc = 0;
+
+   if (db_state->archive_crc != 0)
+      db_state->archive_crc = 0;
 
    return 0;
 }
@@ -894,12 +866,13 @@ static int database_info_list_iterate_found_match(
 {
    char entry_lbl[128];
    char db_playlist_base_str[NAME_MAX_LENGTH];
-   /* Use fixed-size stack buffers for path temporaries.
-    * These do not escape the function, so heap allocation is unnecessary.
-    * PATH_MAX_LENGTH stack usage is acceptable here; the original comment
-    * about limited stacks referred to the old pattern of many such locals. */
-   char db_crc[PATH_MAX_LENGTH];
-   char entry_path_str[PATH_MAX_LENGTH];
+   /* TODO/FIXME - heap allocations are done here to avoid
+    * running out of stack space on systems with a limited stack size.
+    * We should use less fullsize paths in the future so that we don't
+    * need to have all these big char arrays here */
+   size_t str_len                 = PATH_MAX_LENGTH * sizeof(char);
+   char* db_crc                   = (char*)malloc(str_len);
+   char* entry_path_str           = (char*)malloc(str_len);
    char *hash                     = NULL;
    const char         *db_path    =
       database_info_get_current_name(db_state);
@@ -916,16 +889,16 @@ static int database_info_list_iterate_found_match(
 
    if (!string_is_empty(db_state->serial))
    {
-      size_t _len = strlcpy(db_crc, db_state->serial, sizeof(db_crc));
+      size_t _len = strlcpy(db_crc, db_state->serial, str_len);
       strlcpy(db_crc  + _len,
             "|serial",
-            sizeof(db_crc) - _len);
+            str_len   - _len);
    }
    else
-      snprintf(db_crc, sizeof(db_crc), "%08lX|crc", (unsigned long)db_info_entry->crc32);
+      snprintf(db_crc, str_len, "%08lX|crc", (unsigned long)db_info_entry->crc32);
 
    if (entry_path)
-      strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
+      strlcpy(entry_path_str, entry_path, str_len);
 
    /* Use database name for label if found,
     * otherwise use filename without extension */
@@ -955,7 +928,7 @@ static int database_info_list_iterate_found_match(
 
    if (!string_is_empty(archive_name))
       fill_pathname_join_delim(entry_path_str,
-            entry_path_str, archive_name, '#', sizeof(entry_path_str));
+            entry_path_str, archive_name, '#', str_len);
 
    if (core_info_database_match_archive_member(
          db_state->list->elems[db_state->list_index].data)
@@ -1016,6 +989,8 @@ static int database_info_list_iterate_found_match(
       db_state->flags[0] |= DB_STATE_FLAG_MATCHED;
    }
 
+   free(db_crc);
+   free(entry_path_str);
    return 0;
 }
 
@@ -1055,7 +1030,7 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
          db_state->flags[db_state->list_index] |= DB_STATE_FLAG_HAS_SIZE;
          for(i=0 ; i < db_state->info->count; i++)
          {
-            if (db_state->info->list[i].serial && db_state->info->list[i].serial[0] != '\0')
+            if (db_state->info->list[i].serial && strlen(db_state->info->list[i].serial)>0)
             {
                db_state->flags[db_state->list_index] |= DB_STATE_FLAG_HAS_SERIAL;
             }
@@ -1510,6 +1485,9 @@ static void scan_results_batch_update_playlists(scan_results_t *sr, db_handle_t 
       scan_result_t *result = &sr->results[i];
       char db_name_noext[PATH_MAX_LENGTH];
 
+      strlcpy(db_name_noext, result->db_name, sizeof(db_name_noext));
+      path_remove_extension(db_name_noext);
+
       /* Check if we need to switch to a different playlist */
       if (!current_playlist || !string_is_equal(current_playlist, result->db_name))
       {
@@ -1542,10 +1520,6 @@ static void scan_results_batch_update_playlists(scan_results_t *sr, db_handle_t 
 
          RARCH_LOG("[Scanner] Processing playlist: \"%s\".\n", result->db_name);
       }
-
-      /* Compute db_name without extension for display/logging */
-      strlcpy(db_name_noext, result->db_name, sizeof(db_name_noext));
-      path_remove_extension(db_name_noext);
 
       /* Add entry to playlist if it doesn't already exist */
       if (playlist && !playlist_entry_exists(playlist, result->entry_path))

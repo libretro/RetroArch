@@ -29,30 +29,17 @@
 
 #include <queues/fifo_queue.h>
 
-/* Branchless wrap: equivalent to (pos + delta) % size, but avoids
- * integer division. Valid only when pos + delta < 2 * size, which
- * is guaranteed here because callers limit delta to available space. */
-static INLINE size_t fifo_wrap(size_t pos, size_t delta, size_t size)
-{
-   pos += delta;
-   if (pos >= size)
-      pos -= size;
-   return pos;
-}
-
 static bool fifo_initialize_internal(fifo_buffer_t *buf, size_t len)
 {
-   /* malloc instead of calloc: first/end are set explicitly below,
-    * so zero-initialising every byte is unnecessary work. */
-   uint8_t *buffer = (uint8_t*)malloc(len + 1);
+   uint8_t *buffer    = (uint8_t*)calloc(1, len + 1);
 
    if (!buffer)
       return false;
 
-   buf->buffer = buffer;
-   buf->size   = len + 1;
-   buf->first  = 0;
-   buf->end    = 0;
+   buf->buffer        = buffer;
+   buf->size          = len + 1;
+   buf->first         = 0;
+   buf->end           = 0;
 
    return true;
 }
@@ -76,10 +63,8 @@ bool fifo_deinitialize(fifo_buffer_t *buffer)
    if (!buffer)
       return false;
 
-   /* buffer->buffer may legitimately be NULL if a previous
-    * deinitialize already ran; free(NULL) is defined by C89 §4.10.3.2
-    * to be a no-op, so the explicit NULL guard is unnecessary. */
-   free(buffer->buffer);
+   if (buffer->buffer)
+      free(buffer->buffer);
    buffer->buffer = NULL;
    buffer->size   = 0;
    buffer->first  = 0;
@@ -106,47 +91,36 @@ fifo_buffer_t *fifo_new(size_t len)
 
 void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t len)
 {
-   /* Cache to avoid repeated pointer dereferences in the hot path. */
-   const size_t  size       = buffer->size;
-   const size_t  end        = buffer->end;
-   const uint8_t *src       = (const uint8_t*)in_buf;
+   size_t first_write = len;
+   size_t rest_write  = 0;
 
-   if (end + len <= size)
+   if (buffer->end + len > buffer->size)
    {
-      /* Common case: data fits without wrapping. Single copy. */
-      memcpy(buffer->buffer + end, src, len);
-   }
-   else
-   {
-      /* Wrap-around case: split into two copies. */
-      const size_t first_write = size - end;
-      memcpy(buffer->buffer + end, src,                first_write);
-      memcpy(buffer->buffer,       src + first_write,  len - first_write);
+      first_write = buffer->size - buffer->end;
+      rest_write  = len - first_write;
    }
 
-   /* Subtract instead of modulo: end + len < 2 * size is guaranteed
-    * by the caller honouring FIFO_WRITE_AVAIL. */
-   buffer->end = fifo_wrap(end, len, size);
+   memcpy(buffer->buffer + buffer->end, in_buf, first_write);
+   if (rest_write > 0)
+      memcpy(buffer->buffer, (const uint8_t*)in_buf + first_write, rest_write);
+
+   buffer->end = (buffer->end + len) % buffer->size;
 }
 
 void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t len)
 {
-   /* Cache to avoid repeated pointer dereferences in the hot path. */
-   const size_t size    = buffer->size;
-   const size_t first   = buffer->first;
-   uint8_t      *dst    = (uint8_t*)in_buf;
+   size_t first_read = len;
+   size_t rest_read  = 0;
 
-   /* Common case: data is contiguous. Single copy. */
-   if (first + len <= size)
-      memcpy(dst, buffer->buffer + first, len);
-   else
+   if (buffer->first + len > buffer->size)
    {
-      /* Wrap-around case: split into two copies. */
-      const size_t first_read = size - first;
-      memcpy(dst,              buffer->buffer + first, first_read);
-      memcpy(dst + first_read, buffer->buffer,         len - first_read);
+      first_read = buffer->size - buffer->first;
+      rest_read  = len - first_read;
    }
 
-   /* Same wrap optimisation as fifo_write. */
-   buffer->first = fifo_wrap(first, len, size);
+   memcpy(in_buf, (const uint8_t*)buffer->buffer + buffer->first, first_read);
+   if (rest_read > 0)
+      memcpy((uint8_t*)in_buf + first_read, buffer->buffer, rest_read);
+
+   buffer->first = (buffer->first + len) % buffer->size;
 }

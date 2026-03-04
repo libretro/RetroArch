@@ -31,9 +31,11 @@
 
 /* Assume W-functions do not work below Win2K and Xbox platforms */
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
+
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
 #endif
+
 #endif
 
 #if defined(_WIN32)
@@ -42,23 +44,16 @@
 #endif
 #endif
 
-#if (defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE - 0) >= 200112) \
- || (defined(__POSIX_VISIBLE) && __POSIX_VISIBLE >= 200112)       \
- || (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112)         \
- || __USE_LARGEFILE                                                \
- || (defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64)
+#if (defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE - 0) >= 200112) || (defined(__POSIX_VISIBLE) && __POSIX_VISIBLE >= 200112) || (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112) || __USE_LARGEFILE || (defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64)
 #ifndef HAVE_64BIT_OFFSETS
 #define HAVE_64BIT_OFFSETS
 #endif
 #endif
 
-/* Chunk size aligned to common OS page/block boundaries for efficient I/O */
-#define NBIO_CHUNK_SIZE 65536
-
 struct nbio_stdio_t
 {
-   FILE*  f;
-   void*  data;
+   FILE* f;
+   void* data;
    size_t progress;
    size_t len;
    /*
@@ -80,6 +75,7 @@ static const wchar_t *stdio_modes[] = { L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+
 static int64_t fseek_wrap(FILE *f, int64_t offset, int origin)
 {
 #ifdef ATLEAST_VC2005
+   /* VC2005 and up have a special 64-bit fseek */
    return _fseeki64(f, offset, origin);
 #elif defined(HAVE_64BIT_OFFSETS)
    return fseeko(f, (off_t)offset, origin);
@@ -91,6 +87,7 @@ static int64_t fseek_wrap(FILE *f, int64_t offset, int origin)
 static int64_t ftell_wrap(FILE *f)
 {
 #ifdef ATLEAST_VC2005
+   /* VC2005 and up have a special 64-bit ftell */
    return _ftelli64(f);
 #elif defined(HAVE_64BIT_OFFSETS)
    return ftello(f);
@@ -99,67 +96,66 @@ static int64_t ftell_wrap(FILE *f)
 #endif
 }
 
-static void *nbio_stdio_open(const char *filename, unsigned mode)
+static void *nbio_stdio_open(const char * filename, unsigned mode)
 {
-   void               *buf    = NULL;
-   struct nbio_stdio_t *handle = NULL;
-   int64_t             len    = 0;
+   void *buf                   = NULL;
+   struct nbio_stdio_t* handle = NULL;
+   int64_t len                 = 0;
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
-   FILE *f = fopen(filename, stdio_modes[mode]);
+   FILE* f                     = fopen(filename, stdio_modes[mode]);
 #else
-   wchar_t *filename_wide = utf8_to_utf16_string_alloc(filename);
-   FILE    *f             = _wfopen(filename_wide, stdio_modes[mode]);
+   wchar_t *filename_wide      = utf8_to_utf16_string_alloc(filename);
+   FILE* f                     = _wfopen(filename_wide, stdio_modes[mode]);
 
    if (filename_wide)
       free(filename_wide);
 #endif
-
    if (!f)
       return NULL;
 
-   /* Determine file size only when reading/updating — skip for pure writes */
-   switch (mode)
-   {
-      case NBIO_WRITE:
-      case BIO_WRITE:
-         break;
-      default:
-         fseek_wrap(f, 0, SEEK_END);
-         len = ftell_wrap(f);
-         /* Rewind now so begin_read's SEEK_SET is a no-op on small files */
-         fseek_wrap(f, 0, SEEK_SET);
-         break;
-   }
-
    handle = (struct nbio_stdio_t*)malloc(sizeof(struct nbio_stdio_t));
+
    if (!handle)
    {
       fclose(f);
       return NULL;
    }
 
-   if (len)
+   handle->f = f;
+
+   switch (mode)
    {
-#if defined(WIIU)
-      /* Hit the aligned-buffer fast path on Wii U */
-      buf = memalign(0x40, (size_t)len);
-#else
-      buf = malloc((size_t)len);
-#endif
-      if (!buf)
-      {
-         free(handle);
-         fclose(f);
-         return NULL;
-      }
+      case NBIO_WRITE:
+      case BIO_WRITE:
+         break;
+      default:
+         fseek_wrap(handle->f, 0, SEEK_END);
+         len = ftell_wrap(handle->f);
+         break;
    }
 
-   handle->f        = f;
-   handle->data     = buf;
-   handle->len      = (size_t)len;
-   handle->progress = (size_t)len;
-   handle->op       = -2;
-   handle->mode     = (signed char)mode;
+   handle->mode          = mode;
+
+#if defined(WIIU)
+   /* hit the aligned-buffer fast path on Wii U */
+   if (len)
+      buf                = memalign(0x40, (size_t)len);
+#else
+   if (len)
+      buf                = malloc((size_t)len);
+#endif
+
+   if (len && !buf)
+   {
+      free(handle);
+      fclose(f);
+      return NULL;
+   }
+
+   handle->data          = buf;
+   handle->len           = len;
+   handle->progress      = handle->len;
+   handle->op            = -2;
 
    return handle;
 }
@@ -174,6 +170,7 @@ static void nbio_stdio_begin_read(void *data)
       abort();
 
    fseek_wrap(handle->f, 0, SEEK_SET);
+
    handle->op       = NBIO_READ;
    handle->progress = 0;
 }
@@ -188,100 +185,85 @@ static void nbio_stdio_begin_write(void *data)
       abort();
 
    fseek_wrap(handle->f, 0, SEEK_SET);
-   handle->op       = NBIO_WRITE;
+   handle->op = NBIO_WRITE;
    handle->progress = 0;
 }
 
 static bool nbio_stdio_iterate(void *data)
 {
-   size_t               amount;
+   size_t amount               = 65536;
    struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
 
    if (!handle)
       return false;
+
+   if (amount > handle->len - handle->progress)
+      amount = handle->len - handle->progress;
 
    switch (handle->op)
    {
       case NBIO_READ:
          if (handle->mode == BIO_READ)
          {
-            /* Blocking read: transfer entire buffer in one call */
-            fread(handle->data, 1, handle->len, handle->f);
-            handle->progress = handle->len;
+            amount = handle->len;
+            fread((char*)handle->data, 1, amount, handle->f);
          }
          else
-         {
-            amount = handle->len - handle->progress;
-            if (amount > NBIO_CHUNK_SIZE)
-               amount = NBIO_CHUNK_SIZE;
             fread((char*)handle->data + handle->progress, 1, amount, handle->f);
-            handle->progress += amount;
-         }
          break;
-
       case NBIO_WRITE:
          if (handle->mode == BIO_WRITE)
          {
-            /* Blocking write: transfer entire buffer in one call */
-            if (fwrite(handle->data, 1, handle->len, handle->f) != handle->len)
+            size_t written = 0;
+            amount = handle->len;
+            written = fwrite((char*)handle->data, 1, amount, handle->f);
+            if (written != amount)
                return false;
-            handle->progress = handle->len;
          }
          else
-         {
-            amount = handle->len - handle->progress;
-            if (amount > NBIO_CHUNK_SIZE)
-               amount = NBIO_CHUNK_SIZE;
             fwrite((char*)handle->data + handle->progress, 1, amount, handle->f);
-            handle->progress += amount;
-         }
-         break;
-
-      default:
          break;
    }
 
-   if (handle->progress >= handle->len)
-      handle->op = -1;
+   handle->progress += amount;
 
+   if (handle->progress == handle->len)
+      handle->op = -1;
    return (handle->op < 0);
 }
 
 static void nbio_stdio_resize(void *data, size_t len)
 {
-   void               *new_data;
+   void *new_data              = NULL;
    struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
-
    if (!handle)
       return;
+
    if (handle->op >= 0)
       abort();
    if (len < handle->len)
       abort();
 
-   new_data = realloc(handle->data, len);
-   /* Abort on allocation failure: len already changing would corrupt state */
-   if (!new_data)
-      abort();
-
-   handle->data     = new_data;
    handle->len      = len;
    handle->progress = len;
    handle->op       = -1;
+
+   new_data         = realloc(handle->data, handle->len);
+
+   if (new_data)
+      handle->data  = new_data;
 }
 
-static void *nbio_stdio_get_ptr(void *data, size_t *len)
+static void *nbio_stdio_get_ptr(void *data, size_t* len)
 {
    struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
-
    if (!handle)
       return NULL;
-   if (handle->op != -1)
-      return NULL;
-
    if (len)
       *len = handle->len;
-   return handle->data;
+   if (handle->op == -1)
+      return handle->data;
+   return NULL;
 }
 
 static void nbio_stdio_cancel(void *data)
@@ -290,7 +272,7 @@ static void nbio_stdio_cancel(void *data)
    if (!handle)
       return;
 
-   handle->op       = -1;
+   handle->op = -1;
    handle->progress = handle->len;
 }
 
@@ -301,9 +283,11 @@ static void nbio_stdio_free(void *data)
       return;
    if (handle->op >= 0)
       abort();
-
    fclose(handle->f);
    free(handle->data);
+
+   handle->f    = NULL;
+   handle->data = NULL;
    free(handle);
 }
 

@@ -29,18 +29,6 @@
 #include <string/stdstring.h>
 #include <compat/strcasestr.h>
 
-/* Minimum capacity to avoid repeated small reallocations */
-#define FILE_LIST_MIN_CAPACITY 8
-
-/* Free a single item's heap-allocated string fields in-place.
- * Does NOT free userdata/actiondata — callers handle those separately. */
-static INLINE void item_file_free_strings(struct item_file *item)
-{
-   if (item->path)  { free(item->path);  item->path  = NULL; }
-   if (item->label) { free(item->label); item->label = NULL; }
-   if (item->alt)   { free(item->alt);   item->alt   = NULL; }
-}
-
 static bool file_list_deinitialize_internal(file_list_t *list)
 {
    size_t i;
@@ -48,7 +36,18 @@ static bool file_list_deinitialize_internal(file_list_t *list)
    {
       file_list_free_userdata(list, i);
       file_list_free_actiondata(list, i);
-      item_file_free_strings(&list->list[i]);
+
+      if (list->list[i].path)
+         free(list->list[i].path);
+      list->list[i].path = NULL;
+
+      if (list->list[i].label)
+         free(list->list[i].label);
+      list->list[i].label = NULL;
+
+      if (list->list[i].alt)
+         free(list->list[i].alt);
+      list->list[i].alt = NULL;
    }
    if (list->list)
       free(list->list);
@@ -61,7 +60,7 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
    const size_t item_size = sizeof(struct item_file);
    struct item_file *new_data;
 
-   if (nitems < list->capacity || nitems > (size_t)-1 / item_size)
+   if (nitems < list->capacity || nitems > (size_t)-1/item_size)
       return false;
 
    if (!(new_data = (struct item_file*)realloc(list->list, nitems * item_size)))
@@ -75,33 +74,19 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
    return true;
 }
 
-/* Ensure the list has room for at least one more element.
- * Grows by doubling from a minimum of FILE_LIST_MIN_CAPACITY.
- * Returns false on allocation failure. */
-static INLINE bool file_list_ensure_capacity(file_list_t *list)
+/* Helper function to initialize item_file structure */
+static INLINE void init_item_file(struct item_file *item,
+    const char *path, const char *label, unsigned type,
+    size_t directory_ptr, size_t entry_idx)
 {
-   size_t new_capacity;
-   if (list->size < list->capacity)
-      return true;
-   new_capacity = list->capacity >= FILE_LIST_MIN_CAPACITY
-         ? list->capacity * 2
-         : FILE_LIST_MIN_CAPACITY;
-   return file_list_reserve(list, new_capacity);
-}
-
-/* Populate an already-zeroed item_file slot. Both path and label may be NULL. */
-static INLINE void item_file_init(struct item_file *item,
-      const char *path, const char *label,
-      unsigned type, size_t directory_ptr, size_t entry_idx)
-{
-   item->path          = path  ? strdup(path)  : NULL;
-   item->label         = label ? strdup(label) : NULL;
-   item->alt           = NULL;
-   item->type          = type;
-   item->directory_ptr = directory_ptr;
-   item->entry_idx     = entry_idx;
-   item->userdata      = NULL;
-   item->actiondata    = NULL;
+    item->path          = strdup(path);
+    item->label         = strdup(label);
+    item->alt           = NULL;
+    item->type          = type;
+    item->directory_ptr = directory_ptr;
+    item->entry_idx     = entry_idx;
+    item->userdata      = NULL;
+    item->actiondata    = NULL;
 }
 
 bool file_list_insert(file_list_t *list,
@@ -110,15 +95,20 @@ bool file_list_insert(file_list_t *list,
       size_t entry_idx,
       size_t idx)
 {
-   if (!file_list_ensure_capacity(list))
-      return false;
+   /* Expand file list if needed */
+   if (list->size >= list->capacity)
+   {
+      size_t new_capacity = list->capacity > 0 ? list->capacity * 2 : 1;
+      if (!file_list_reserve(list, new_capacity))
+         return false;
+   }
 
-   /* Shift elements right to open slot at idx */
+   /* Shift elements to the right using memmove */
    if (idx < list->size)
       memmove(&list->list[idx + 1], &list->list[idx],
             (list->size - idx) * sizeof(struct item_file));
 
-   item_file_init(&list->list[idx], path, label, type, directory_ptr, entry_idx);
+   init_item_file(&list->list[idx], path, label, type, directory_ptr, entry_idx);
    list->size++;
 
    return true;
@@ -129,13 +119,26 @@ bool file_list_append(file_list_t *list,
       unsigned type, size_t directory_ptr,
       size_t entry_idx)
 {
-   size_t idx;
+   unsigned idx = (unsigned)list->size;
+   /* Expand file list if needed */
+   if (idx >= list->capacity)
+      if (!file_list_reserve(list, list->capacity * 2 + 1))
+         return false;
 
-   if (!file_list_ensure_capacity(list))
-      return false;
+   list->list[idx].path          = NULL;
+   list->list[idx].label         = NULL;
+   list->list[idx].alt           = NULL;
+   list->list[idx].type          = type;
+   list->list[idx].directory_ptr = directory_ptr;
+   list->list[idx].entry_idx     = entry_idx;
+   list->list[idx].userdata      = NULL;
+   list->list[idx].actiondata    = NULL;
 
-   idx = list->size;
-   item_file_init(&list->list[idx], path, label, type, directory_ptr, entry_idx);
+   if (label)
+      list->list[idx].label      = strdup(label);
+   if (path)
+      list->list[idx].path       = strdup(path);
+
    list->size++;
 
    return true;
@@ -143,17 +146,23 @@ bool file_list_append(file_list_t *list,
 
 void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
-   if (!list || list->size == 0)
+   if (!list)
       return;
 
-   list->size--;
+   if (list->size != 0)
+   {
+      --list->size;
+      if (list->list[list->size].path)
+         free(list->list[list->size].path);
+      list->list[list->size].path = NULL;
 
-   /* Capture directory_ptr before freeing the slot */
+      if (list->list[list->size].label)
+         free(list->list[list->size].label);
+      list->list[list->size].label = NULL;
+   }
+
    if (directory_ptr)
       *directory_ptr = list->list[list->size].directory_ptr;
-
-   /* Only free the strings; userdata/actiondata are the caller's concern */
-   item_file_free_strings(&list->list[list->size]);
 }
 
 void file_list_free(file_list_t *list)
@@ -183,8 +192,19 @@ void file_list_clear(file_list_t *list)
       return;
 
    for (i = 0; i < list->size; i++)
-      item_file_free_strings(&list->list[i]);
-   /* userdata/actiondata intentionally left to the caller, matching original */
+   {
+      if (list->list[i].path)
+         free(list->list[i].path);
+      list->list[i].path = NULL;
+
+      if (list->list[i].label)
+         free(list->list[i].label);
+      list->list[i].label = NULL;
+
+      if (list->list[i].alt)
+         free(list->list[i].alt);
+      list->list[i].alt = NULL;
+   }
 
    list->size = 0;
 }
@@ -195,10 +215,9 @@ static void file_list_get_label_at_offset(const file_list_t *list, size_t idx,
    if (!label || !list)
       return;
 
-   /* Prefer explicit label, fall back to path */
-   *label = list->list[idx].label
-         ? list->list[idx].label
-         : list->list[idx].path;
+   *label = list->list[idx].path;
+   if (list->list[idx].label)
+      *label = list->list[idx].label;
 }
 
 void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
@@ -208,7 +227,7 @@ void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
       return;
    if (list->list[idx].alt)
       free(list->list[idx].alt);
-   list->list[idx].alt = strdup(alt);
+   list->list[idx].alt   = strdup(alt);
 }
 
 static int file_list_alt_cmp(const void *a_, const void *b_)
@@ -224,21 +243,22 @@ static int file_list_type_cmp(const void *a_, const void *b_)
 {
    const struct item_file *a = (const struct item_file*)a_;
    const struct item_file *b = (const struct item_file*)b_;
-   if (a->type < b->type) return -1;
-   if (a->type > b->type) return  1;
-   return 0;
+   if (a->type < b->type)
+      return -1;
+   if (a->type == b->type)
+      return 0;
+
+   return 1;
 }
 
 void file_list_sort_on_alt(file_list_t *list)
 {
-   if (list && list->size > 1)
-      qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
+   qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
 }
 
 void file_list_sort_on_type(file_list_t *list)
 {
-   if (list && list->size > 1)
-      qsort(list->list, list->size, sizeof(list->list[0]), file_list_type_cmp);
+   qsort(list->list, list->size, sizeof(list->list[0]), file_list_type_cmp);
 }
 
 void *file_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
@@ -260,7 +280,7 @@ void file_list_free_actiondata(const file_list_t *list, size_t idx)
    if (!list)
       return;
    if (list->list[idx].actiondata)
-      free(list->list[idx].actiondata);
+       free(list->list[idx].actiondata);
    list->list[idx].actiondata = NULL;
 }
 
@@ -269,26 +289,25 @@ void file_list_free_userdata(const file_list_t *list, size_t idx)
    if (!list)
       return;
    if (list->list[idx].userdata)
-      free(list->list[idx].userdata);
+       free(list->list[idx].userdata);
    list->list[idx].userdata = NULL;
 }
 
 bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
 {
    size_t i;
-   bool ret = false;
+   bool ret        = false;
 
-   if (!list || !needle)
+   if (!list)
       return false;
 
    for (i = 0; i < list->size; i++)
    {
+      const char *str = NULL;
       const char *alt = list->list[i].alt
             ? list->list[i].alt
             : list->list[i].path;
-      const char *str;
 
-      /* Fall back to label/path via helper only when both alt and path are NULL */
       if (!alt)
       {
          file_list_get_label_at_offset(list, i, &alt);
@@ -296,20 +315,17 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
             continue;
       }
 
-      str = (const char *)strcasestr(alt, needle);
-      if (!str)
-         continue;
-
-      if (str == alt)
+      if ((str = (const char *)strcasestr(alt, needle)) == alt)
       {
-         /* Prefix match - best possible result, stop immediately */
+         /* Found match with first chars, best possible match. */
          *idx = i;
-         return true;
+         ret  = true;
+         break;
       }
-
-      if (!ret)
+      else if (str && !ret)
       {
-         /* Mid-string match - record but keep searching for a prefix match */
+         /* Found mid-string match, but try to find a match with
+          * first characters before we settle. */
          *idx = i;
          ret  = true;
       }

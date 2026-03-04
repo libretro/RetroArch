@@ -134,10 +134,6 @@ static struct config_entry_list* config_file_merge_sort_linked_list(
       tail          = next;
    }
 
-   /* Null-terminate the merged list */
-   if (tail)
-      tail->next = NULL;
-
    return result;
 }
 
@@ -212,40 +208,59 @@ static char *config_file_strip_comment(char *str)
 static char *config_file_extract_value(char *line)
 {
    char *dst = NULL;
-   size_t idx = 0;
-
    while (ISSPACE((int)*line))
       line++;
 
-   /* Note: an empty value string is valid; we return a
-    * heap-allocated "" so callers can track value changes.
-    * If we returned NULL the entry would be silently ignored. */
+   /* Note: From this point on, an empty value
+    * string is valid - and in this case, strldup("", sizeof(""))
+    * will be returned (see Note 2)
+    * > If we instead return NULL, the the entry
+    *   is ignored completely - which means we cannot
+    *   track *changes* in entry value */
 
+   /* If first character is ("), we have a full string
+    * literal */
    if (*line == '"')
    {
-      /* Quoted string literal: scan to closing '"' */
+      size_t idx  = 0;
+      char *value = NULL;
+      /* Skip to next character */
       line++;
-      while (line[idx] && line[idx] != '"')
-         idx++;
-      line[idx] = '\0';
-      /* Fall through to strdup below (handles empty "" too) */
+
+      /* If this a ("), then value string is empty */
+      if (*line != '"')
+      {
+         /* Find the next (") character */
+         while (line[idx] && (line[idx] != '\"'))
+            idx++;
+
+         line[idx] = '\0';
+         if ((value = line) && *value)
+            return strdup(value);
+      }
    }
+   /* This is not a string literal - just read
+    * until the next space is found
+    * > Note: Skip this if line is empty */
    else if (*line != '\0')
    {
-      /* Bare token: scan to first non-graph character */
+      size_t idx  = 0;
+      char *value = NULL;
+      /* Find next space character */
       while (line[idx] && isgraph((int)line[idx]))
          idx++;
+
       line[idx] = '\0';
-      /* Fall through to strdup below */
+      if ((value = line) && *value)
+         return strdup(value);
    }
 
-   if (idx > 0)
-      return strdup(line);
-
-   /* Return an allocated empty string */
-   dst = (char*)malloc(1);
-   if (dst)
-      dst[0] = '\0';
+   /* Note 2: This is an unrolled strldup call
+    * to avoid an unnecessary dependency -
+    * call is strldup("", sizeof(""))
+    **/
+   dst = (char*)malloc(sizeof(char) * 2);
+   strlcpy(dst, "", 1);
    return dst;
 }
 
@@ -254,39 +269,46 @@ static void config_file_add_child_list(config_file_t *parent,
       config_file_t *child)
 {
    struct config_entry_list *list = child->entries;
-   struct config_entry_list *child_tail = NULL;
    bool merge_hash_map            = false;
-
-   /* Mark all child entries readonly, and find child's tail in one pass */
-   while (list)
-   {
-      list->readonly = true;
-      child_tail     = list;
-      list           = list->next;
-   }
 
    if (parent->entries)
    {
-      /* Append child list after parent's current tail */
-      if (parent->tail)
-         parent->tail->next = child->entries;
-      else
+      struct config_entry_list *head = parent->entries;
+      while (head->next)
+         head = head->next;
+
+      /* set list readonly */
+      while (list)
       {
-         /* parent->tail not set yet; walk to find it */
-         struct config_entry_list *head = parent->entries;
-         while (head->next)
-            head = head->next;
-         head->next = child->entries;
+         list->readonly = true;
+         list           = list->next;
       }
-      merge_hash_map = true;
+      head->next        = child->entries;
+
+      merge_hash_map    = true;
    }
    else
-      parent->entries = child->entries;
+   {
+      /* set list readonly */
+      while (list)
+      {
+         list->readonly = true;
+         list           = list->next;
+      }
+      parent->entries   = child->entries;
+   }
 
-   /* Update tail pointer directly from the walk above */
-   if (child_tail)
-      parent->tail = child_tail;
-   else if (!parent->entries)
+   /* Rebase tail. */
+   if (parent->entries)
+   {
+      struct config_entry_list *head =
+         (struct config_entry_list*)parent->entries;
+
+      while (head->next)
+         head = head->next;
+      parent->tail = head;
+   }
+   else
       parent->tail = NULL;
 
    /* Update hash map */
@@ -469,14 +491,11 @@ static int config_file_load_internal(
                   cb->config_file_new_entry_cb(list->key, list->value);
             }
          }
-         /* list was consumed; allocate fresh node next iteration */
-         list = NULL;
       }
 
       free(line);
 
-      /* Free node only if it was not consumed into the list */
-      if (list)
+      if (list != conf->tail)
          free(list);
    }
 
@@ -488,9 +507,10 @@ static int config_file_load_internal(
 static bool config_file_parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line, config_file_cb_t *cb)
 {
+   size_t cur_size       = 32;
    size_t idx            = 0;
    char *key             = NULL;
-   char *key_start       = NULL;
+   char *key_tmp         = NULL;
    /* Remove any comment text */
    char *comment         = config_file_strip_comment(line);
 
@@ -576,23 +596,34 @@ static bool config_file_parse_line(config_file_t *conf,
    while (ISSPACE((int)*line))
       line++;
 
-   /* Measure the key in one pass, then allocate exactly once */
-   key_start = line;
-   while (isgraph((int)line[idx]))
-      idx++;
-
-   if (idx == 0)
+   /* Allocate storage for key */
+   if (!(key = (char*)malloc(cur_size + 1)))
       return false;
 
-   if (!(key = (char*)malloc(idx + 1)))
-      return false;
+   /* Copy line contents into key until we
+    * reach the next space character */
+   while (isgraph((int)*line))
+   {
+      /* If current key storage is too small,
+       * double its size */
+      if (idx == cur_size)
+      {
+         cur_size *= 2;
+         if (!(key_tmp   = (char*)realloc(key, cur_size + 1)))
+         {
+            free(key);
+            return false;
+         }
 
-   memcpy(key, key_start, idx);
-   key[idx] = '\0';
-   line    += idx;
+         key     = key_tmp;
+      }
+
+      key[idx++] = *line++;
+   }
+   key[idx]      = '\0';
 
    /* Add key and value entries to list */
-   list->key = key;
+   list->key     = key;
 
    /* An entry without a value is invalid */
    while (ISSPACE((int)*line))
@@ -695,24 +726,39 @@ bool config_file_deinitialize(config_file_t *conf)
    tmp = conf->entries;
    while (tmp)
    {
-      struct config_entry_list *hold = tmp;
-      free(tmp->key);
-      free(tmp->value);
-      tmp = tmp->next;
-      free(hold);
+      struct config_entry_list *hold = NULL;
+      if (tmp->key)
+         free(tmp->key);
+      if (tmp->value)
+         free(tmp->value);
+
+      tmp->value = NULL;
+      tmp->key   = NULL;
+
+      hold       = tmp;
+      tmp        = tmp->next;
+
+      if (hold)
+         free(hold);
    }
 
-   inc_tmp = conf->includes;
+   inc_tmp = (struct config_include_list*)conf->includes;
    while (inc_tmp)
    {
-      struct config_include_list *hold = inc_tmp;
-      free(inc_tmp->path);
+      struct config_include_list *hold = NULL;
+      if (inc_tmp->path)
+         free(inc_tmp->path);
+      hold    = (struct config_include_list*)inc_tmp;
       inc_tmp = inc_tmp->next;
-      free(hold);
+      if (hold)
+         free(hold);
    }
 
    path_linked_list_free(conf->references);
-   free(conf->path);
+
+   if (conf->path)
+      free(conf->path);
+
    RHMAP_FREE(conf->entries_map);
 
    return true;
@@ -916,10 +962,14 @@ static struct config_entry_list *config_get_entry_internal(
    if (entry)
       return entry;
 
-   /* Entry not found; update *prev to the last node so callers
-    * can append a new entry without walking the list again. */
    if (prev)
-      *prev = conf->last ? conf->last : *prev;
+   {
+      struct config_entry_list *previous = *prev;
+      for (entry = conf->entries; entry; entry = entry->next)
+         previous = entry;
+
+      *prev = previous;
+   }
 
    return NULL;
 }
