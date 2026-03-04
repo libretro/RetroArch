@@ -447,20 +447,24 @@ static void handle_translation_response(
              * image, so we have to change that to RGB first.  This should
              * probably be replaced with a scaler call.*/
             {
-               unsigned ui;
-               int tw, th, tc;
-               int d          = 0;
-               raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
-               for (ui = 0; ui < image_width * image_height * 4; ui++)
+               unsigned row, col;
+               raw_image_data = (void*)malloc(image_width * image_height * 3 * sizeof(uint8_t));
+               if (raw_image_data)
                {
-                  if (ui % 4 != 3)
+                  for (row = 0; row < image_height; row++)
                   {
-                     tc = d % 3;
-                     th = image_height-d / (image_width * 3) - 1;
-                     tw = (d % (image_width * 3)) / 3;
-                     ((uint8_t*) raw_image_data)[tw * 3 + th * 3 * image_width + tc] =
-                        ((uint8_t *)raw_image_data_alpha)[ui];
-                     d += 1;
+                     /* Read rows bottom-to-top (flip vertically) */
+                     const uint8_t *src = (const uint8_t*)raw_image_data_alpha
+                           + (image_height - 1 - row) * image_width * 4;
+                     uint8_t       *dst = (uint8_t*)raw_image_data
+                           + row * image_width * 3;
+                     for (col = 0; col < image_width; col++, src += 4, dst += 3)
+                     {
+                        dst[0] = src[0];
+                        dst[1] = src[1];
+                        dst[2] = src[2];
+                        /* src[3] is alpha - discarded */
+                     }
                   }
                }
             }
@@ -566,50 +570,32 @@ static void handle_translation_response(
                continue;
             }
 
-            strncpy(key, response->key_presses + start, i-start);
+            strlcpy(key, response->key_presses + start, i - start + 1);
             key[i-start] = '\0';
 
 #ifdef HAVE_ACCESSIBILITY
-            if (string_is_equal(key, "b"))
-               input_st->ai_gamepad_state[0]  = 2;
-            if (string_is_equal(key, "y"))
-               input_st->ai_gamepad_state[1]  = 2;
-            if (string_is_equal(key, "select"))
-               input_st->ai_gamepad_state[2]  = 2;
-            if (string_is_equal(key, "start"))
-               input_st->ai_gamepad_state[3]  = 2;
-
-            if (string_is_equal(key, "up"))
-               input_st->ai_gamepad_state[4]  = 2;
-            if (string_is_equal(key, "down"))
-               input_st->ai_gamepad_state[5]  = 2;
-            if (string_is_equal(key, "left"))
-               input_st->ai_gamepad_state[6]  = 2;
-            if (string_is_equal(key, "right"))
-               input_st->ai_gamepad_state[7]  = 2;
-
-            if (string_is_equal(key, "a"))
-               input_st->ai_gamepad_state[8]  = 2;
-            if (string_is_equal(key, "x"))
-               input_st->ai_gamepad_state[9]  = 2;
-            if (string_is_equal(key, "l"))
-               input_st->ai_gamepad_state[10] = 2;
-            if (string_is_equal(key, "r"))
-               input_st->ai_gamepad_state[11] = 2;
-
-            if (string_is_equal(key, "l2"))
-               input_st->ai_gamepad_state[12] = 2;
-            if (string_is_equal(key, "r2"))
-               input_st->ai_gamepad_state[13] = 2;
-            if (string_is_equal(key, "l3"))
-               input_st->ai_gamepad_state[14] = 2;
-            if (string_is_equal(key, "r3"))
-               input_st->ai_gamepad_state[15] = 2;
+            {
+               static const struct { const char *name; int idx; } key_map[] = {
+                  { "b",      0  }, { "y",     1  }, { "select", 2  }, { "start", 3  },
+                  { "up",     4  }, { "down",  5  }, { "left",   6  }, { "right", 7  },
+                  { "a",      8  }, { "x",     9  }, { "l",      10 }, { "r",     11 },
+                  { "l2",     12 }, { "r2",    13 }, { "l3",     14 }, { "r3",    15 }
+               };
+               int ki;
+               for (ki = 0; ki < (int)ARRAY_SIZE(key_map); ki++)
+               {
+                  if (string_is_equal(key, key_map[ki].name))
+                  {
+                     input_st->ai_gamepad_state[key_map[ki].idx] = 2;
+                     break;
+                  }
+               }
+            }
 #endif
 
             if (string_is_equal(key, "pause"))
                command_event(CMD_EVENT_PAUSE, NULL);
-            if (string_is_equal(key, "unpause"))
+            else if (string_is_equal(key, "unpause"))
                command_event(CMD_EVENT_UNPAUSE, NULL);
 
             start = i+1;

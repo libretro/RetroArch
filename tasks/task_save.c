@@ -105,6 +105,15 @@ enum save_task_state_flags
    SAVE_TASK_FLAG_COMPRESS_FILES        = (1 << 7)
 };
 
+/* Helper: apply mute flag to task based on state flags */
+#define TASK_SET_MUTE_FROM_STATE(task, state) \
+   do { \
+      if ((state)->flags & SAVE_TASK_FLAG_MUTE) \
+         (task)->flags |=  RETRO_TASK_FLG_MUTE; \
+      else \
+         (task)->flags &= ~RETRO_TASK_FLG_MUTE; \
+   } while (0)
+
 typedef struct
 {
    intfstream_t *file;
@@ -149,6 +158,65 @@ typedef struct rastate_size_info
 } rastate_size_info_t;
 
 
+/* Allocate and back up all SRAM blocks into 'blocks'.
+ * Returns the number of blocks allocated (0 on failure or nothing to back up). */
+static unsigned sram_blocks_backup(struct string_list *savefile_list,
+      struct sram_block **blocks_out)
+{
+   unsigned i;
+   unsigned num_blocks = 0;
+   struct sram_block *blocks = NULL;
+
+   if (     savefile_list
+         && savefile_list->size
+         && config_get_ptr()->bools.block_sram_overwrite)
+   {
+      if ((blocks = (struct sram_block*)
+            calloc(savefile_list->size, sizeof(*blocks))))
+      {
+         num_blocks = (unsigned)savefile_list->size;
+         for (i = 0; i < num_blocks; i++)
+            blocks[i].type = savefile_list->elems[i].attr.i;
+      }
+   }
+
+   for (i = 0; i < num_blocks; i++)
+   {
+      retro_ctx_memory_info_t mem_info;
+      mem_info.id = blocks[i].type;
+      core_get_memory(&mem_info);
+      blocks[i].size = mem_info.size;
+      if (mem_info.size && mem_info.data)
+      {
+         if ((blocks[i].data = malloc(mem_info.size)))
+            memcpy(blocks[i].data, mem_info.data, mem_info.size);
+      }
+   }
+
+   *blocks_out = blocks;
+   return num_blocks;
+}
+
+/* Flush backed-up SRAM blocks back to core memory, then free them. */
+static void sram_blocks_restore_and_free(struct sram_block *blocks,
+      unsigned num_blocks)
+{
+   unsigned i;
+   for (i = 0; i < num_blocks; i++)
+   {
+      if (blocks[i].data)
+      {
+         retro_ctx_memory_info_t mem_info;
+         mem_info.id = blocks[i].type;
+         core_get_memory(&mem_info);
+         if (mem_info.data)
+            memcpy(mem_info.data, blocks[i].data, blocks[i].size);
+         free(blocks[i].data);
+      }
+   }
+   free(blocks);
+}
+
 /**
  * undo_load_state:
  * Revert to the state before a state was loaded.
@@ -157,11 +225,10 @@ typedef struct rastate_size_info
  **/
 bool content_undo_load_state(void)
 {
-   unsigned i;
-   size_t temp_data_size;
-   bool ret                  = false;
    unsigned num_blocks       = 0;
+   bool ret                  = false;
    void *temp_data           = NULL;
+   size_t temp_data_size;
    struct sram_block *blocks = NULL;
    struct string_list *savefile_list = (struct string_list*)savefile_ptr_get();
 
@@ -178,61 +245,23 @@ bool content_undo_load_state(void)
          (unsigned)undo_load_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
-   /* TODO/FIXME - This checking of SRAM overwrite,
-    * the backing up of it and
-    * its flushing could all be in their
-    * own functions... */
-   if (     savefile_list
-         && savefile_list->size
+   if (savefile_list && savefile_list->size
          && config_get_ptr()->bools.block_sram_overwrite)
    {
       RARCH_LOG("[SRAM] %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
-
-      if ((blocks = (struct sram_block*)
-         calloc(savefile_list->size, sizeof(*blocks))))
-      {
-         num_blocks = (unsigned)savefile_list->size;
-         for (i = 0; i < num_blocks; i++)
-            blocks[i].type = savefile_list->elems[i].attr.i;
-      }
-   }
-
-   for (i = 0; i < num_blocks; i++)
-   {
-      retro_ctx_memory_info_t    mem_info;
-
-      mem_info.id = blocks[i].type;
-      core_get_memory(&mem_info);
-
-      blocks[i].size = mem_info.size;
-   }
-
-   for (i = 0; i < num_blocks; i++)
-      if (blocks[i].size)
-         blocks[i].data = malloc(blocks[i].size);
-
-   /* Backup current SRAM which is overwritten by unserialize. */
-   for (i = 0; i < num_blocks; i++)
-   {
-      if (blocks[i].data)
-      {
-         retro_ctx_memory_info_t    mem_info;
-         const void *ptr = NULL;
-
-         mem_info.id = blocks[i].type;
-
-         core_get_memory(&mem_info);
-
-         if ((ptr = mem_info.data))
-            memcpy(blocks[i].data, ptr, blocks[i].size);
-      }
+      num_blocks = sram_blocks_backup(savefile_list, &blocks);
    }
 
    /* We need to make a temporary copy of the buffer, to allow the swap below */
-   temp_data              = malloc(undo_load_buf.size);
-   temp_data_size         = undo_load_buf.size;
-   memcpy(temp_data, undo_load_buf.data, undo_load_buf.size);
+   temp_data_size = undo_load_buf.size;
+   temp_data      = malloc(temp_data_size);
+   if (!temp_data)
+   {
+      sram_blocks_restore_and_free(blocks, num_blocks);
+      return false;
+   }
+   memcpy(temp_data, undo_load_buf.data, temp_data_size);
 
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
@@ -242,31 +271,9 @@ bool content_undo_load_state(void)
 
    /* Clean up the temporary copy */
    free(temp_data);
-   temp_data              = NULL;
 
-    /* Flush back. */
-   for (i = 0; i < num_blocks; i++)
-   {
-      if (blocks[i].data)
-      {
-         retro_ctx_memory_info_t    mem_info;
-         void *ptr   = NULL;
-
-         mem_info.id = blocks[i].type;
-
-         core_get_memory(&mem_info);
-
-         if ((ptr = mem_info.data))
-            memcpy(ptr, blocks[i].data, blocks[i].size);
-      }
-   }
-
-   for (i = 0; i < num_blocks; i++)
-   {
-      free(blocks[i].data);
-      blocks[i].data = NULL;
-   }
-   free(blocks);
+   /* Flush back. */
+   sram_blocks_restore_and_free(blocks, num_blocks);
 
    if (!ret)
    {
@@ -320,8 +327,9 @@ static void task_save_handler_finished(retro_task_t *task,
    if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
 
-   task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
-   memcpy(task_data, state, sizeof(*state));
+   task_data = (save_task_state_t*)malloc(sizeof(*task_data));
+   if (task_data)
+      memcpy(task_data, state, sizeof(*state));
 
    task_set_data(task, task_data);
 
@@ -381,11 +389,9 @@ size_t content_get_serialized_size_rewind(void)
 
 static void content_write_block_header(unsigned char* output, const char* header, size_t len)
 {
+   uint32_t le_len = (uint32_t)len;
    memcpy(output, header, 4);
-   output[4] = ((len) & 0xFF);
-   output[5] = ((len >> 8) & 0xFF);
-   output[6] = ((len >> 16) & 0xFF);
-   output[7] = ((len >> 24) & 0xFF);
+   memcpy(output + 4, &le_len, 4);
 }
 
 static bool content_write_serialized_state(void* buffer,
@@ -842,9 +848,12 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
 
    while (input < stop)
    {
-      size_t     block_size = ( input[7] << 24
-            | input[6] << 16 |  input[5] << 8 | input[4]);
+      uint32_t   block_size_u32;
+      size_t     block_size;
       unsigned char *marker = input;
+
+      memcpy(&block_size_u32, input + 4, 4);
+      block_size = (size_t)block_size_u32;
 
       input += 8;
 
@@ -983,7 +992,6 @@ static void content_load_state_cb(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-   unsigned i;
    bool ret;
    load_task_data_t *load_data = (load_task_data_t*)task_data;
    ssize_t _len                = load_data->size;
@@ -1023,52 +1031,12 @@ static void content_load_state_cb(retro_task_t *task,
       return;
    }
 
-   if (     savefile_list
-         && savefile_list->size
-         && config_get_ptr()->bools.block_sram_overwrite
-      )
+   if (savefile_list && savefile_list->size
+         && config_get_ptr()->bools.block_sram_overwrite)
    {
       RARCH_LOG("[SRAM] %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
-
-      if ((blocks = (struct sram_block*)
-         calloc(savefile_list->size, sizeof(*blocks))))
-      {
-         num_blocks = (unsigned)savefile_list->size;
-         for (i = 0; i < num_blocks; i++)
-            blocks[i].type = savefile_list->elems[i].attr.i;
-      }
-   }
-
-   for (i = 0; i < num_blocks; i++)
-   {
-      retro_ctx_memory_info_t mem_info;
-
-      mem_info.id    = blocks[i].type;
-      core_get_memory(&mem_info);
-
-      blocks[i].size = mem_info.size;
-   }
-
-   for (i = 0; i < num_blocks; i++)
-      if (blocks[i].size)
-         blocks[i].data = malloc(blocks[i].size);
-
-   /* Backup current SRAM which is overwritten by unserialize. */
-   for (i = 0; i < num_blocks; i++)
-   {
-      if (blocks[i].data)
-      {
-         retro_ctx_memory_info_t mem_info;
-         const void *ptr = NULL;
-
-         mem_info.id     = blocks[i].type;
-
-         core_get_memory(&mem_info);
-
-         if ((ptr = mem_info.data))
-            memcpy(blocks[i].data, ptr, blocks[i].size);
-      }
+      num_blocks = sram_blocks_backup(savefile_list, &blocks);
    }
 
    /* Backup the current state so we can undo this load */
@@ -1077,25 +1045,7 @@ static void content_load_state_cb(retro_task_t *task,
    ret = content_deserialize_state(buf, _len);
 
    /* Flush back. */
-   for (i = 0; i < num_blocks; i++)
-   {
-      if (blocks[i].data)
-      {
-         retro_ctx_memory_info_t    mem_info;
-         void *ptr   = NULL;
-
-         mem_info.id = blocks[i].type;
-
-         core_get_memory(&mem_info);
-
-         if ((ptr = mem_info.data))
-            memcpy(ptr, blocks[i].data, blocks[i].size);
-      }
-   }
-
-   for (i = 0; i < num_blocks; i++)
-      free(blocks[i].data);
-   free(blocks);
+   sram_blocks_restore_and_free(blocks, num_blocks);
 
    if (!ret)
       goto error;
@@ -1394,7 +1344,7 @@ bool content_auto_save_state(const char *path)
  **/
 bool content_save_state(const char *path, bool save_to_disk)
 {
-   size_t _len;
+   size_t _len = 0;
    void *data  = NULL;
 
    if (!save_to_disk && save_state_disable_undo)
@@ -1407,11 +1357,10 @@ bool content_save_state(const char *path, bool save_to_disk)
       return false;
    }
 
-   _len = core_serialize_size();
-   if (_len == 0)
+   if (core_serialize_size() == 0)
       return false;
 
-   if (!save_state_in_background)
+   if (!save_state_in_background || !save_to_disk)
    {
       if (!(data = content_get_serialized_data(&_len)))
       {
@@ -1421,11 +1370,12 @@ bool content_save_state(const char *path, bool save_to_disk)
          return false;
       }
 
-      RARCH_LOG("[State] %s \"%s\", %u %s.\n",
-            msg_hash_to_str(MSG_SAVING_STATE),
-            path,
-            (unsigned)_len,
-            msg_hash_to_str(MSG_BYTES));
+      if (!save_state_in_background)
+         RARCH_LOG("[State] %s \"%s\", %u %s.\n",
+               msg_hash_to_str(MSG_SAVING_STATE),
+               path,
+               (unsigned)_len,
+               msg_hash_to_str(MSG_BYTES));
    }
 
    if (save_to_disk)
@@ -1444,17 +1394,6 @@ bool content_save_state(const char *path, bool save_to_disk)
    }
    else
    {
-      if (!data)
-      {
-         if (!(data = content_get_serialized_data(&_len)))
-         {
-            RARCH_ERR("[State] %s \"%s\".\n",
-                  msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
-                  path);
-            return false;
-         }
-      }
-
       /* save_to_disk is false, which means we are saving the state
       in undo_load_buf to allow content_undo_load_state() to restore it */
 

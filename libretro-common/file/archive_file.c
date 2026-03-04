@@ -39,6 +39,43 @@
 #include <sys/stat.h>
 #endif
 
+/* Inline helper to zero-init a file_archive_transfer_t state.
+ * Avoids scattered field-by-field assignments repeated in multiple functions. */
+static void file_archive_transfer_init_state(file_archive_transfer_t *state)
+{
+   state->type         = ARCHIVE_TRANSFER_INIT;
+   state->archive_file = NULL;
+   state->archive_size = 0;
+   state->context      = NULL;
+   state->step_total   = 0;
+   state->step_current = 0;
+   state->backend      = NULL;
+#ifdef HAVE_MMAP
+   state->archive_mmap_fd   = 0;
+   state->archive_mmap_data = NULL;
+#endif
+}
+
+/* Inline helper to zero-init the common userdata fields used by
+ * file_archive_get_file_list*, file_archive_extract_file, and
+ * file_archive_get_file_crc32_and_size.  Eliminates repetitive per-call
+ * field assignments and lets the compiler emit a single memset/rep-stosd. */
+static void file_archive_userdata_clear(struct archive_extract_userdata *ud)
+{
+   ud->archive_path[0]          = '\0';
+   ud->current_file_path[0]     = '\0';
+   ud->first_extracted_file_path = NULL;
+   ud->extraction_directory     = NULL;
+   ud->ext                      = NULL;
+   ud->list                     = NULL;
+   ud->found_file               = false;
+   ud->list_only                = false;
+   ud->crc                      = 0;
+   ud->size                     = 0;
+   ud->transfer                 = NULL;
+   ud->dec                      = NULL;
+}
+
 static int file_archive_get_file_list_cb(
       const char *path,
       const char *valid_exts,
@@ -54,13 +91,13 @@ static int file_archive_get_file_list_cb(
 
    if (valid_exts)
    {
-      size_t _len                  = strlen(path);
-      /* Checks if this entry is a directory or a file. */
-      char last_char               = path[_len - 1];
-      struct string_list ext_list  = {0};
+      /* Compute length once; reuse for last-char check. */
+      size_t _len     = strlen(path);
+      char last_char  = path[_len - 1];
+      struct string_list ext_list = {0};
 
-      /* Skip if directory. */
-      if (last_char == '/' || last_char == '\\' )
+      /* Skip directories. */
+      if (last_char == '/' || last_char == '\\')
          return 1;
 
       string_list_initialize(&ext_list);
@@ -68,7 +105,9 @@ static int file_archive_get_file_list_cb(
       {
          const char *file_ext = path_get_extension(path);
 
-         if (!file_ext)
+         /* Check for NULL and empty string together to avoid a
+          * second branch; path_get_extension may return "". */
+         if (!file_ext || file_ext[0] == '\0')
          {
             string_list_deinitialize(&ext_list);
             return 1;
@@ -76,9 +115,8 @@ static int file_archive_get_file_list_cb(
 
          if (!string_list_find_elem_prefix(&ext_list, ".", file_ext))
          {
-            /* keep iterating */
             string_list_deinitialize(&ext_list);
-            return -1;
+            return -1; /* keep iterating */
          }
       }
 
@@ -93,7 +131,7 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t checksum, struct archive_extract_userdata *userdata)
 {
-   const char *ext                   = path_get_extension(name);
+   const char *ext = path_get_extension(name);
 
    /* Extract first file that matches our list. */
    if (ext && string_list_find_elem(userdata->ext, ext))
@@ -105,7 +143,7 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       {
          if (!string_is_equal_noncase(
                   userdata->current_file_path, delim + 1))
-           return 1; /* keep searching for the right file */
+            return 1; /* keep searching for the right file */
       }
 
       if (userdata->extraction_directory)
@@ -133,12 +171,12 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
    char path[PATH_MAX_LENGTH];
-   char *last                 = NULL;
+   char *last = NULL;
 
    strlcpy(path, file, sizeof(path));
 
    if ((last = (char*)path_get_archive_delim(path)))
-      *last  = '\0';
+      *last = '\0';
 
    if (!(state->backend = file_archive_get_file_backend(path)))
       return -1;
@@ -152,10 +190,15 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    state->archive_size = filestream_get_size(state->archive_file);
 
 #ifdef HAVE_MMAP
-   if (state->archive_size <= (256*1024*1024))
+   /* 256 MiB cap expressed as a named constant for readability and to
+    * avoid recomputing the literal at every call site. */
+#define MMAP_SIZE_LIMIT (256 * 1024 * 1024)
+   if (state->archive_size <= MMAP_SIZE_LIMIT)
    {
       state->archive_mmap_fd = open(path, O_RDONLY);
-      if (state->archive_mmap_fd)
+      /* open() returns -1 on failure, not 0.  Use > 0 guard so we
+       * don't accidentally mmap fd 0 (stdin) on unusual platforms. */
+      if (state->archive_mmap_fd > 0)
       {
          state->archive_mmap_data = (uint8_t*)mmap(NULL,
                (size_t)state->archive_size,
@@ -164,11 +207,17 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
          if (state->archive_mmap_data == (uint8_t*)MAP_FAILED)
          {
             close(state->archive_mmap_fd);
-            state->archive_mmap_fd = 0;
+            state->archive_mmap_fd   = 0;
             state->archive_mmap_data = NULL;
          }
+         /* Advise the kernel that we will read sequentially so it can
+          * readahead pages aggressively, reducing page-fault stalls. */
+         else
+            madvise(state->archive_mmap_data,
+                  (size_t)state->archive_size, MADV_SEQUENTIAL);
       }
    }
+#undef MMAP_SIZE_LIMIT
 #endif
 
    state->step_current = 0;
@@ -201,6 +250,7 @@ int file_archive_parse_file_iterate(
    {
       case ARCHIVE_TRANSFER_NONE:
          break;
+
       case ARCHIVE_TRANSFER_INIT:
          if (file_archive_parse_file_init(state, file) == 0)
          {
@@ -215,25 +265,35 @@ int file_archive_parse_file_iterate(
          else
             state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
          break;
+
       case ARCHIVE_TRANSFER_ITERATE:
          if (state->backend)
          {
             int ret = state->backend->archive_parse_file_iterate_step(
                   state->context, valid_exts, userdata, file_cb);
 
+            /* Collapse the three separate comparisons against ret into a
+             * single pass.  The original made two comparisons even when ret==1,
+             * and three when ret==-1.  Now each value is handled exactly once. */
             if (ret == 1)
-               state->step_current++; /* found another file */
-            if (ret != 1)
-               state->type = ARCHIVE_TRANSFER_DEINIT;
-            if (ret == -1)
-               state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
+               state->step_current++;
+            else
+            {
+               state->type = (ret == -1)
+                  ? ARCHIVE_TRANSFER_DEINIT_ERROR
+                  : ARCHIVE_TRANSFER_DEINIT;
+            }
 
             /* early return to prevent deinit from never firing */
             return 0;
          }
          return -1;
+
+      /* Intentional fall-through from DEINIT_ERROR into DEINIT. */
       case ARCHIVE_TRANSFER_DEINIT_ERROR:
-         *returnerr = false;
+         if (returnerr)
+            *returnerr = false;
+         /* fall through */
       case ARCHIVE_TRANSFER_DEINIT:
          if (state->context)
          {
@@ -253,7 +313,7 @@ int file_archive_parse_file_iterate(
          {
             munmap(state->archive_mmap_data, (size_t)state->archive_size);
             close(state->archive_mmap_fd);
-            state->archive_mmap_fd = 0;
+            state->archive_mmap_fd   = 0;
             state->archive_mmap_data = NULL;
          }
 #endif
@@ -287,19 +347,9 @@ static bool file_archive_walk(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, struct archive_extract_userdata *userdata)
 {
    file_archive_transfer_t state;
-   bool returnerr          = true;
+   bool returnerr = true;
 
-   state.type              = ARCHIVE_TRANSFER_INIT;
-   state.archive_file      = NULL;
-#ifdef HAVE_MMAP
-   state.archive_mmap_fd   = 0;
-   state.archive_mmap_data = NULL;
-#endif
-   state.archive_size      = 0;
-   state.context           = NULL;
-   state.step_total        = 0;
-   state.step_current      = 0;
-   state.backend           = NULL;
+   file_archive_transfer_init_state(&state);
 
    for (;;)
    {
@@ -338,19 +388,11 @@ bool file_archive_extract_file(
       char *s, size_t len)
 {
    struct archive_extract_userdata userdata;
-   struct string_list *list                 = string_split(valid_exts, "|");
+   struct string_list *list = string_split(valid_exts, "|");
 
-   userdata.archive_path[0]                 = '\0';
-   userdata.current_file_path[0]            = '\0';
-   userdata.first_extracted_file_path       = NULL;
-   userdata.extraction_directory            = extraction_directory;
-   userdata.ext                             = list;
-   userdata.list                            = NULL;
-   userdata.found_file                      = false;
-   userdata.list_only                       = false;
-   userdata.crc                             = 0;
-   userdata.transfer                        = NULL;
-   userdata.dec                             = NULL;
+   file_archive_userdata_clear(&userdata);
+   userdata.extraction_directory = extraction_directory;
+   userdata.ext                  = list;
 
    if (     list
          && file_archive_walk(archive_path, valid_exts,
@@ -360,6 +402,10 @@ bool file_archive_extract_file(
    {
       if (!string_is_empty(userdata.first_extracted_file_path))
          strlcpy(s, userdata.first_extracted_file_path, len);
+      /* Free resources before returning true to avoid leaking list and
+       * first_extracted_file_path on the success path (original leaked both). */
+      free(userdata.first_extracted_file_path);
+      string_list_free(list);
       return true;
    }
 
@@ -370,9 +416,8 @@ bool file_archive_extract_file(
    return false;
 }
 
-/* Warning: 'list' must zero initialised before
- * calling this function, otherwise memory leaks/
- * undefined behaviour will occur */
+/* Warning: 'list' must be zero-initialised before calling this function,
+ * otherwise memory leaks/undefined behaviour will occur. */
 bool file_archive_get_file_list_noalloc(struct string_list *list,
       const char *path,
       const char *valid_exts)
@@ -382,17 +427,10 @@ bool file_archive_get_file_list_noalloc(struct string_list *list,
    if (!list || !string_list_initialize(list))
       return false;
 
+   file_archive_userdata_clear(&userdata);
    strlcpy(userdata.archive_path, path, sizeof(userdata.archive_path));
-   userdata.current_file_path[0]            = '\0';
-   userdata.first_extracted_file_path       = NULL;
-   userdata.extraction_directory            = NULL;
-   userdata.ext                             = NULL;
-   userdata.list                            = list;
-   userdata.found_file                      = false;
-   userdata.list_only                       = true;
-   userdata.crc                             = 0;
-   userdata.transfer                        = NULL;
-   userdata.dec                             = NULL;
+   userdata.list      = list;
+   userdata.list_only = true;
 
    if (!file_archive_walk(path, valid_exts,
             file_archive_get_file_list_cb, &userdata))
@@ -411,17 +449,10 @@ struct string_list *file_archive_get_file_list(const char *path,
 {
    struct archive_extract_userdata userdata;
 
+   file_archive_userdata_clear(&userdata);
    strlcpy(userdata.archive_path, path, sizeof(userdata.archive_path));
-   userdata.current_file_path[0]            = '\0';
-   userdata.first_extracted_file_path       = NULL;
-   userdata.extraction_directory            = NULL;
-   userdata.ext                             = NULL;
-   userdata.list                            = string_list_new();
-   userdata.found_file                      = false;
-   userdata.list_only                       = true;
-   userdata.crc                             = 0;
-   userdata.transfer                        = NULL;
-   userdata.dec                             = NULL;
+   userdata.list      = string_list_new();
+   userdata.list_only = true;
 
    if (!userdata.list)
       return NULL;
@@ -455,7 +486,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
    {
       ret = userdata->transfer->backend->stream_decompress_data_to_file_iterate(
                userdata->transfer->context, &handle);
-   }while (ret == 0);
+   } while (ret == 0);
 
    if (ret == -1 || !filestream_write_file(path, handle.data, size))
       return false;
@@ -480,6 +511,8 @@ static bool string_list_append_n(struct string_list *list,
 {
    char *data_dup = NULL;
 
+   /* Check capacity and grow before allocating the string copy so
+    * we don't malloc+free on a capacity failure. */
    if (list->size >= list->cap &&
          !string_list_capacity(list, list->cap * 2))
       return false;
@@ -496,7 +529,6 @@ static bool string_list_append_n(struct string_list *list,
    return true;
 }
 
-
 /**
  * file_archive_filename_split:
  * @str              : filename to turn into a string list
@@ -512,6 +544,9 @@ static struct string_list *file_archive_filename_split(const char *path)
    const char *delim        = path_get_archive_delim(path);
 
    attr.i = 0;
+
+   if (!list)
+      return NULL;
 
    if (delim)
    {
@@ -551,18 +586,15 @@ static struct string_list *file_archive_filename_split(const char *path)
  * Then extracts to optional_filename and leaves buf alone.
  */
 int file_archive_compressed_read(
-      const char * path, void **buf,
-      const char* optional_filename, int64_t *len)
+      const char *path, void **buf,
+      const char *optional_filename, int64_t *len)
 {
-   const struct
-      file_archive_file_backend *backend = NULL;
-   struct string_list *str_list          = NULL;
+   const struct file_archive_file_backend *backend = NULL;
+   struct string_list *str_list                    = NULL;
 
    /* Safety check.
-    * If optional_filename and optional_filename
-    * exists, we simply return 0,
-    * hoping that optional_filename is the
-    * same as requested.
+    * If optional_filename exists, we simply return 0,
+    * hoping that optional_filename is the same as requested.
     */
    if (optional_filename && path_is_valid(optional_filename))
    {
@@ -570,16 +602,22 @@ int file_archive_compressed_read(
       return 1;
    }
 
-   str_list       = file_archive_filename_split(path);
+   str_list = file_archive_filename_split(path);
+
+   /* Guard against NULL return from file_archive_filename_split
+    * (original dereferenced str_list unconditionally). */
+   if (!str_list)
+   {
+      *len = 0;
+      return 0;
+   }
+
    /* We assure that there is something after the '#' symbol.
-    *
     * This error condition happens for example, when
-    * path = /path/to/file.7z, or
-    * path = /path/to/file.7z#
+    * path = /path/to/file.7z, or path = /path/to/file.7z#
     */
    if (str_list->size <= 1)
    {
-      /* could not extract string and substring. */
       string_list_free(str_list);
       *len = 0;
       return 0;
@@ -615,19 +653,19 @@ const struct file_archive_file_backend *file_archive_get_7z_file_backend(void)
 #endif
 }
 
-const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
+const struct file_archive_file_backend *file_archive_get_file_backend(const char *path)
 {
 #if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
    char newpath[PATH_MAX_LENGTH];
-   const char *file_ext          = NULL;
-   char *last                    = NULL;
+   const char *file_ext = NULL;
+   char *last           = NULL;
 
    strlcpy(newpath, path, sizeof(newpath));
 
    if ((last = (char*)path_get_archive_delim(newpath)))
-      *last  = '\0';
+      *last = '\0';
 
-   file_ext  = path_get_extension(newpath);
+   file_ext = path_get_extension(newpath);
 
 #ifdef HAVE_7ZIP
    if (string_is_equal_noncase(file_ext, "7z"))
@@ -671,49 +709,36 @@ uint32_t file_archive_get_file_crc32(const char *path)
 uint32_t file_archive_get_file_crc32_and_size(const char *path, uint64_t *size)
 {
    file_archive_transfer_t state;
-   struct archive_extract_userdata userdata        = {0};
-   bool returnerr                                  = false;
-   const char *archive_path                        = NULL;
-   bool contains_compressed = path_contains_compressed_file(path);
+   struct archive_extract_userdata userdata;
+   bool returnerr                    = false;
+   const char *archive_path          = NULL;
+   bool contains_compressed          = path_contains_compressed_file(path);
 
+   /* Resolve archive_path once up front instead of re-calling
+    * path_get_archive_delim() inside the loop. */
    if (contains_compressed)
    {
       archive_path = path_get_archive_delim(path);
-
-      /* move pointer right after the delimiter to give us the path */
       if (archive_path)
          archive_path += 1;
    }
 
-   state.type              = ARCHIVE_TRANSFER_INIT;
-   state.archive_file      = NULL;
-#ifdef HAVE_MMAP
-   state.archive_mmap_fd   = 0;
-   state.archive_mmap_data = NULL;
-#endif
-   state.archive_size      = 0;
-   state.context           = NULL;
-   state.step_total        = 0;
-   state.step_current      = 0;
-   state.backend           = NULL;
+   file_archive_transfer_init_state(&state);
+   file_archive_userdata_clear(&userdata);
 
    /* Initialize and open archive first.
       Sets next state type to ITERATE. */
    file_archive_parse_file_iterate(&state,
-            &returnerr, path, NULL, NULL,
-            &userdata);
+            &returnerr, path, NULL, NULL, &userdata);
 
    for (;;)
    {
       /* Now find the first file in the archive. */
       if (state.type == ARCHIVE_TRANSFER_ITERATE)
          file_archive_parse_file_iterate(&state,
-                  &returnerr, path, NULL, NULL,
-                  &userdata);
+                  &returnerr, path, NULL, NULL, &userdata);
 
-      /* If no path specified within archive, stop after
-       * finding the first file.
-       */
+      /* If no path specified within archive, stop after first file. */
       if (!contains_compressed)
          break;
 

@@ -23,7 +23,6 @@
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <retro_endianness.h>
 #include <streams/file_stream.h>
 #include <streams/interface_stream.h>
 #include <string/stdstring.h>
@@ -207,10 +206,10 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
    for (pos = 0; pos < DISC_DATA_SIZE_PS1; pos++)
    {
-      strncpy(raw_game_id, &disc_data[pos], 12);
+      memcpy(raw_game_id, &disc_data[pos], 12);
       raw_game_id[12] = '\0';
-      if (     memcmp(raw_game_id, "S", STRLEN_CONST("S"))  == 0
-            || memcmp(raw_game_id, "E", STRLEN_CONST("E"))  == 0
+      if (     disc_data[pos] == 'S'
+            || disc_data[pos] == 'E'
          )
       {
          if (  memcmp(raw_game_id, "SCUS_", STRLEN_CONST("SCUS_")) == 0
@@ -270,16 +269,7 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       }
    }
 
-   s[0 ] = 'X';
-   s[1 ] = 'X';
-   s[2 ] = 'X';
-   s[3 ] = 'X';
-   s[4 ] = 'X';
-   s[5 ] = 'X';
-   s[6 ] = 'X';
-   s[7 ] = 'X';
-   s[8 ] = 'X';
-   s[9 ] = 'X';
+   memset(s, 'X', 10);
    s[10] = '\0';
    cue_append_multi_disc_suffix(s, filename);
    free(disc_data);
@@ -309,23 +299,23 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
    for (pos = 0; pos < DISC_DATA_SIZE_PS2; pos++)
    {
-      strncpy(raw_game_id, &disc_data[pos], 12);
+      memcpy(raw_game_id, &disc_data[pos], 12);
       raw_game_id[12] = '\0';
-      if (     memcmp(raw_game_id, "S", STRLEN_CONST("S")) == 0
-            || memcmp(raw_game_id, "P", STRLEN_CONST("P")) == 0
-            || memcmp(raw_game_id, "T", STRLEN_CONST("T")) == 0
-            || memcmp(raw_game_id, "C", STRLEN_CONST("C")) == 0
-            || memcmp(raw_game_id, "H", STRLEN_CONST("H")) == 0
-            || memcmp(raw_game_id, "A", STRLEN_CONST("A")) == 0
-            || memcmp(raw_game_id, "V", STRLEN_CONST("A")) == 0
-            || memcmp(raw_game_id, "L", STRLEN_CONST("A")) == 0
-            || memcmp(raw_game_id, "M", STRLEN_CONST("A")) == 0
-            || memcmp(raw_game_id, "N", STRLEN_CONST("A")) == 0
-            || memcmp(raw_game_id, "U", STRLEN_CONST("A")) == 0
-            || memcmp(raw_game_id, "W", STRLEN_CONST("A")) == 0
-            || memcmp(raw_game_id, "G", STRLEN_CONST("A")) == 0
-            || memcmp(raw_game_id, "K", STRLEN_CONST("A")) == 0
-            || memcmp(raw_game_id, "R", STRLEN_CONST("A")) == 0
+      if (     disc_data[pos] == 'S'
+            || disc_data[pos] == 'P'
+            || disc_data[pos] == 'T'
+            || disc_data[pos] == 'C'
+            || disc_data[pos] == 'H'
+            || disc_data[pos] == 'A'
+            || disc_data[pos] == 'V'
+            || disc_data[pos] == 'L'
+            || disc_data[pos] == 'M'
+            || disc_data[pos] == 'N'
+            || disc_data[pos] == 'U'
+            || disc_data[pos] == 'W'
+            || disc_data[pos] == 'G'
+            || disc_data[pos] == 'K'
+            || disc_data[pos] == 'R'
          )
       {
          if (  memcmp(raw_game_id, "SLPM_", STRLEN_CONST("SLUS_")) == 0
@@ -401,16 +391,7 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       }
    }
 
-   s[0 ] = 'X';
-   s[1 ] = 'X';
-   s[2 ] = 'X';
-   s[3 ] = 'X';
-   s[4 ] = 'X';
-   s[5 ] = 'X';
-   s[6 ] = 'X';
-   s[7 ] = 'X';
-   s[8 ] = 'X';
-   s[9 ] = 'X';
+   memset(s, 'X', 10);
    s[10] = '\0';
    cue_append_multi_disc_suffix(s, filename);
    free(disc_data);
@@ -438,10 +419,10 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
    for (pos = 0; pos < DISC_DATA_SIZE_PSP; pos++)
    {
-      strncpy(s, &disc_data[pos], 10);
+      memcpy(s, &disc_data[pos], 10);
       s[10] = '\0';
-      if (     memcmp(s, "U", STRLEN_CONST("U")) == 0
-            || memcmp(s, "N", STRLEN_CONST("N")) == 0
+      if (     disc_data[pos] == 'U'
+            || disc_data[pos] == 'N'
          )
       {
          if (
@@ -622,8 +603,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    /** Force minimum serial length since it is assumed **/
    __len              = (__len < 2) ? 2 : __len;
    ___len             = __len - 2;
-   strncpy(check_suffix_50, &pre_game_id[___len], __len - 2 + 1);
-   check_suffix_50[2] = '\0';
+   strlcpy(check_suffix_50, &pre_game_id[___len], sizeof(check_suffix_50));
 
    /** redump serials are built differently for each prefix **/
    if (     pre_game_id[0] == 'T'
@@ -633,16 +613,14 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       {
          if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
             return false;
-         strncpy(s, pre_game_id, index);
-         s[index] = '\0';
+         strlcpy(s, pre_game_id, (size_t)index + 1);
          cue_append_multi_disc_suffix(s, filename);
          return true;
       }
       if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
          return false;
-      strncpy(lgame_id, pre_game_id, index);
-      lgame_id[index] = '\0';
-      _len            = strlcat(s, lgame_id, len);
+      strlcpy(lgame_id, pre_game_id, (size_t)index + 1);
+      _len            = strlcpy(s, lgame_id, len);
       s[  _len]       = '-';
       s[++_len]       = '5';
       s[++_len]       = '0';
@@ -655,8 +633,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
          return false;
-      strncpy(s, pre_game_id, index);
-      s[index] = '\0';
+      strlcpy(s, pre_game_id, (size_t)index + 1);
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
@@ -667,19 +644,15 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       if (     check_suffix_50[0] == '5'
             && check_suffix_50[1] == '0')
       {
-         strncpy(lgame_id, &pre_game_id[3], 4);
-         lgame_id[4]     = '\0';
-         _len            = strlcat(s, lgame_id, len);
+         strlcpy(lgame_id, &pre_game_id[3], 5);
+         _len            = strlcpy(s, lgame_id, len);
          s[  _len]       = '-';
          s[++_len]       = '5';
          s[++_len]       = '0';
          s[++_len]       = '\0';
       }
       else
-      {
-         strncpy(s, &pre_game_id[3], 4);
-         s[4]            = '\0';
-      }
+         strlcpy(s, &pre_game_id[3], 5);
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
@@ -736,10 +709,8 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
    /** Dissect this raw serial into parts **/
    __len              = strlen(raw_game_id);
-   strncpy(check_suffix_5,  &raw_game_id[__len - 2], 2);
-   check_suffix_5[2]  = '\0';
-   strncpy(check_suffix_50, &raw_game_id[__len - 2], 2);
-   check_suffix_50[2] = '\0';
+   strlcpy(check_suffix_5,  &raw_game_id[__len - 2], 3);
+   strlcpy(check_suffix_50, &raw_game_id[__len - 2], 3);
 
    /** redump serials are built differently for each region **/
    switch (region_id)
@@ -764,20 +735,17 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          cue_append_multi_disc_suffix(s, filename);
          return true;
       case 'E':
-         strncpy(lgame_id, &raw_game_id[0], 2);
-         lgame_id[2] = '\0';
+         strlcpy(lgame_id, &raw_game_id[0], 3);
          if (     !strcmp(check_suffix_5, "-5")
                || !strcmp(check_suffix_50, "50"))
          {
-            strncpy(rgame_id, &raw_game_id[2], __len - 4);
-            rgame_id[__len - 4] = '\0';
+            strlcpy(rgame_id, &raw_game_id[2], __len - 4 + 1);
          }
          else
          {
-            strncpy(rgame_id, &raw_game_id[2], __len - 1);
-            rgame_id[__len - 1] = '\0';
+            strlcpy(rgame_id, &raw_game_id[2], __len - 1);
          }
-         _len      = strlcat(s, lgame_id, len);
+         _len      = strlcpy(s, lgame_id, len);
          _len     += strlcpy(s + _len, rgame_id, len - _len);
          s[  _len] = '-';
          s[++_len] = '5';
@@ -842,27 +810,20 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          index               = string_index_last_occurance(raw_game_id, '-');
          if (index < 0)
             return false;
-         strncpy(lgame_id, &raw_game_id[0], (size_t)index);
-         lgame_id[index]     = '\0';
-         strncpy(rgame_id, &raw_game_id[index + 1], __len - 1);
-         rgame_id[__len - 1] = '\0';
-         _len                = strlcat(s, lgame_id, len);
+         strlcpy(lgame_id, &raw_game_id[0], (size_t)index + 1);
+         strlcpy(rgame_id, &raw_game_id[index + 1], sizeof(rgame_id));
+         _len                = strlcpy(s, lgame_id, len);
          s[  _len]           = '-';
          s[++_len]           = '\0';
          strlcpy(s + _len, rgame_id, len - _len);
       }
       else if (__len <= 7)
-      {
-         strncpy(s, raw_game_id, 7);
-         s[7] = '\0';
-      }
+         strlcpy(s, raw_game_id, 8);
       else
       {
-         strncpy(lgame_id, raw_game_id, 7);
-         lgame_id[7]          = '\0';
-         strncpy(rgame_id, &raw_game_id[__len - 2], __len - 1);
-         rgame_id[__len - 1]  = '\0';
-         _len                 = strlcat(s, lgame_id, len);
+         strlcpy(lgame_id, raw_game_id, 8);
+         strlcpy(rgame_id, &raw_game_id[__len - 2], sizeof(rgame_id));
+         _len                 = strlcpy(s, lgame_id, len);
          s[  _len]            = '-';
          s[++_len]            = '\0';
          strlcpy(s + _len, rgame_id, len - _len);
@@ -872,10 +833,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    }
    else if (raw_game_id[0] == 'T')
    {
-      strncpy(lgame_id, raw_game_id, 1);
-      lgame_id[1]          = '\0';
-      strncpy(rgame_id, &raw_game_id[1], __len - 1);
-      rgame_id[__len - 1]  = '\0';
+      strlcpy(lgame_id, raw_game_id, 2);
+      strlcpy(rgame_id, &raw_game_id[1], sizeof(rgame_id));
       _len                 = strlcpy(pre_game_id, lgame_id, sizeof(pre_game_id) - 2);
       pre_game_id[  _len]  = '-';
       pre_game_id[++_len]  = '\0';
@@ -887,8 +846,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          index             = string_index_last_occurance(pre_game_id, '-');
          if (index < 0)
             return false;
-         strncpy(lgame_id, pre_game_id, (size_t)index);
-         lgame_id[index]   = '\0';
+         strlcpy(lgame_id, pre_game_id, (size_t)index + 1);
          ___len            = strlen(pre_game_id);
       }
       else
@@ -896,17 +854,14 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          ___len = strlen(pre_game_id) - 1;
          if (___len <= 8)
          {
-            strncpy(s, pre_game_id, 8);
-            s[8] = '\0';
+            strlcpy(s, pre_game_id, 9);
             cue_append_multi_disc_suffix(s, filename);
             return true;
          }
-         strncpy(lgame_id, pre_game_id, 7);
-         lgame_id[7] = '\0';
+         strlcpy(lgame_id, pre_game_id, 8);
       }
-      strncpy(rgame_id, &pre_game_id[___len - 2], ___len - 1);
-      rgame_id[___len - 1] = '\0';
-      _len                        = strlcat(s, lgame_id, len);
+      strlcpy(rgame_id, &pre_game_id[___len - 2], sizeof(rgame_id));
+      _len                        = strlcpy(s, lgame_id, len);
       s[  _len]                   = '-';
       s[++_len]                   = '\0';
       strlcpy(s + _len, rgame_id, len - _len);
@@ -923,11 +878,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          index = string_index_last_occurance(raw_game_id, '-');
          if (index < 0)
             return false;
-         strncpy(lgame_id, raw_game_id, index - 1);
-         lgame_id[index - 1]  = '\0';
-         strncpy(rgame_id, &raw_game_id[__len - 4], __len - 3);
-         rgame_id[__len - 3]  = '\0';
-         _len                 = strlcat(s, lgame_id, len);
+         strlcpy(lgame_id, raw_game_id, (size_t)(index - 1) + 1);
+         strlcpy(rgame_id, &raw_game_id[__len - 4], sizeof(rgame_id));
+         _len                 = strlcpy(s, lgame_id, len);
          s[  _len]            = '-';
          s[++_len]            = '\0';
          strlcpy(s + _len, rgame_id, len - _len);
@@ -946,23 +899,15 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          /* For 8 chars serials in 'MK-xxxxx' format, we need to remove 'MK-' to match Redump database
           * Sega GT being the only exception (MK-51053), we have to check if it's not that game first */
          if (memcmp(raw_game_id, "MK-51053", STRLEN_CONST("MK-51053")) != 0)
-         {
-            strncpy(s, raw_game_id + 3, 5);
-            s[5] = '\0';
-         }
+            strlcpy(s, raw_game_id + 3, 6);
          else
-         {
-            strncpy(s, raw_game_id, 8);
-            s[8] = '\0';
-         }
+            strlcpy(s, raw_game_id, 9);
       }
       else
       {
-         strncpy(lgame_id, raw_game_id, 8);
-         lgame_id[8]          = '\0';
-         strncpy(rgame_id, &raw_game_id[__len - 2], __len - 1);
-         rgame_id[__len - 1]  = '\0';
-         _len                 = strlcat(s, lgame_id, len);
+         strlcpy(lgame_id, raw_game_id, 9);
+         strlcpy(rgame_id, &raw_game_id[__len - 2], sizeof(rgame_id));
+         _len                 = strlcpy(s, lgame_id, len);
          s[  _len]            = '-';
          s[++_len]            = '\0';
          strlcpy(s + _len, rgame_id, len - _len);
