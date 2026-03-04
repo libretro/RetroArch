@@ -90,17 +90,10 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 
 static bool string_separate_noalloc(
       struct string_list *list,
-      char *str, const char *delim)
+      char *str, const char *delim, size_t delim_len)
 {
    char *start              = str;
    char *match              = NULL;
-   size_t delim_len         = 0;
-
-   /* Sanity check */
-   if (!str || string_is_empty(delim) || !list)
-      return false;
-
-   delim_len = strlen(delim);
 
    while ((match = strstr(start, delim)) != NULL)
    {
@@ -110,8 +103,7 @@ static bool string_separate_noalloc(
 
       attr.i = 0;
 
-      tok = (char*)malloc(tok_len + 1);
-      if (!tok)
+      if (!(tok = (char*)malloc(tok_len + 1)))
          return false;
 
       memcpy(tok, start, tok_len);
@@ -180,7 +172,7 @@ bool glslang_read_shader_file(const char *path,
       /* Split into lines
        * (Blank lines must be included) */
       string_list_initialize(&lines);
-      ret = string_separate_noalloc(&lines, (char*)buf, "\n");
+      ret = string_separate_noalloc(&lines, (char*)buf, "\n", sizeof("\n")-1);
    }
 
    /* Buffer is no longer required - clean up */
