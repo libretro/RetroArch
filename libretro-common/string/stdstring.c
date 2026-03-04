@@ -82,19 +82,28 @@ char *string_replace_substring(
       const char *pattern,     size_t pattern_len,
       const char *replacement, size_t replacement_len)
 {
-   size_t outlen;
+   size_t outlen, tail_len;
    size_t numhits     = 0;
    const char *inat   = NULL;
    const char *inprev = NULL;
    char          *out = NULL;
    char        *outat = NULL;
 
-   /* if either pattern or replacement is NULL,
-    * duplicate in and let caller handle it. */
+   /* Guard against NULL input string. */
+   if (!in)
+      return NULL;
+
+   /* If pattern or replacement is NULL, duplicate in
+    * and let the caller handle it. */
    if (!pattern || !replacement)
       return strdup(in);
 
-   inat            = in;
+   /* A zero-length pattern would cause an infinite loop
+    * in strstr since every position is a match. */
+   if (pattern_len == 0)
+      return strdup(in);
+
+   inat = in;
 
    while ((inat = strstr(inat, pattern)))
    {
@@ -102,25 +111,34 @@ char *string_replace_substring(
       numhits++;
    }
 
-   outlen = in_len - pattern_len * numhits + replacement_len*numhits;
-
-   if (!(out = (char *)malloc(outlen+1)))
+   /* Guard against size_t overflow when replacement is much
+    * larger than pattern and numhits is large. */
+   if (numhits > 0 &&
+       replacement_len > pattern_len &&
+       (replacement_len - pattern_len) > (SIZE_MAX - in_len) / numhits)
       return NULL;
 
-   outat           = out;
-   inat            = in;
-   inprev          = in;
+   outlen = in_len - pattern_len * numhits + replacement_len * numhits;
+
+   if (!(out = (char *)malloc(outlen + 1)))
+      return NULL;
+
+   outat  = out;
+   inat   = in;
+   inprev = in;
 
    while ((inat = strstr(inat, pattern)))
    {
-      memcpy(outat, inprev, inat-inprev);
-      outat += inat-inprev;
+      memcpy(outat, inprev, inat - inprev);
+      outat += inat - inprev;
       memcpy(outat, replacement, replacement_len);
       outat += replacement_len;
       inat  += pattern_len;
       inprev = inat;
    }
-   strcpy(outat, inprev);
+   tail_len = in_len - (size_t)(inprev - in);
+   memcpy(outat, inprev, tail_len);
+   outat[tail_len] = '\0';
 
    return out;
 }
@@ -312,114 +330,118 @@ size_t word_wrap_wideglyph(char *s, size_t len,
       const char *src, size_t src_len, int line_width,
       int wideglyph_width, unsigned max_lines)
 {
-   char *lastspace                   = NULL;
-   char *lastwideglyph               = NULL;
-   const char *src_end               = src + src_len;
-   unsigned lines                    = 1;
-   /* 'line_width' means max numbers of characters per line,
-    * but this metric is only meaningful when dealing with
-    * 'regular' glyphs that have an on-screen pixel width
-    * similar to that of regular Latin characters.
-    * When handing so-called 'wide' Unicode glyphs, it is
-    * necessary to consider the actual on-screen pixel width
-    * of each character.
-    * In order to do this, we create a distinction between
-    * regular Latin 'non-wide' glyphs and 'wide' glyphs, and
-    * normalise all values relative to the on-screen pixel
-    * width of regular Latin characters:
-    * - Regular 'non-wide' glyphs have a normalised width of 100
-    * - 'line_width' is therefore normalised to 100 * (width_in_characters)
-    * - 'wide' glyphs have a normalised width of
-    *   100 * (wide_character_pixel_width / latin_character_pixel_width)
-    * - When a character is detected, the position in the current
-    *   line is incremented by the regular normalised width of 100
-    * - If that character is then determined to be a 'wide'
-    *   glyph, the position in the current line is further incremented
-    *   by the difference between the normalised 'wide' and 'non-wide'
-    *   width values */
-   unsigned counter_normalized       = 0;
-   int line_width_normalized         = line_width * 100;
-   int additional_counter_normalized = wideglyph_width - 100;
+   char         *dst            = s;
+   char         *lastspace      = NULL;
+   /* Points to the byte immediately AFTER the last wide glyph in dst.
+    * A '\n' is written there when we break on a wide glyph. */
+   char         *lastwideglyph  = NULL;
+   const char   *lastwg_src     = NULL;  /* matching position in src */
 
-   /* Early return if src string length is less
-    * than line width */
-   if (src_end - src < line_width)
+   const char   *src_end        = src + src_len;
+   unsigned      lines          = 1;
+   unsigned      counter_norm   = 0;
+
+   /* Pre-compute normalised thresholds once */
+   const unsigned line_norm     = (unsigned)line_width * 100;
+   const unsigned wide_extra    = (wideglyph_width > 100)
+                                ? (unsigned)(wideglyph_width - 100) : 0;
+
+   /* ── Fast-path: entire string fits on one line ── */
+   if (src_len < (size_t)line_width)
       return strlcpy(s, src, len);
 
-   while (*src != '\0')
+   while (src < src_end)
    {
-      unsigned char_len   = (unsigned)(utf8skip(src, 1) - src);
-      counter_normalized += 100;
+      /* ── Decode one UTF-8 codepoint ── */
+      const char *next     = utf8skip(src, 1);
+      unsigned    char_len = (unsigned)(next - src);
 
-      /* Prevent buffer overflow */
+      /* Bounds guard – before any mutation */
       if (char_len >= len)
          break;
 
-      if (*src == ' ')
-         lastspace          = s; /* Remember the location of the whitespace */
-      else if (*src == '\n')
-      {
-         /* If newlines embedded in the input,
-          * reset the index */
-         lines++;
-         counter_normalized = 0;
+      /* ── NUL terminator ── */
+      if (*src == '\0')
+         break;
 
-         /* Early return if remaining src string
-          * length is less than line width */
-         if (src_end - src <= line_width)
-            return strlcpy(s, src, len);
+      /* ── Classify character ── */
+      if (*src == '\n')
+      {
+         /* Embedded newline: copy, reset line state */
+         *dst = '\n';
+         dst++;
+         src++;
+         len--;
+         lines++;
+         counter_norm  = 0;
+         lastspace     = NULL;
+         lastwideglyph = NULL;
+         lastwg_src    = NULL;
+
+         if ((size_t)(src_end - src) < (size_t)line_width)
+            return strlcpy(dst, src, len);
+         continue;
       }
+
+      if (*src == ' ')
+         lastspace = dst;
       else if (char_len >= 3)
       {
-         /* Remember the location of the first byte
-          * whose length as UTF-8 >= 3*/
-         lastwideglyph       = s;
-         counter_normalized += additional_counter_normalized;
+         /* Record wrap point AFTER the glyph */
+         lastwideglyph = dst + char_len;
+         lastwg_src    = next;                /* == src + char_len */
       }
 
+      /* ── Accumulate normalised width ──
+       * Branchless: (char_len >= 3) is 0 or 1; multiply by wide_extra. */
+      counter_norm += 100 + ((char_len >= 3) ? wide_extra : 0);
+
+      memcpy(dst, src, char_len);
+      dst += char_len;
+      src  = next;
       len -= char_len;
-      while (char_len--)
-         *s++ = *src++;
 
-      if (counter_normalized >= (unsigned)line_width_normalized)
+      /* ── Hot path: no wrap needed ── */
+      if (counter_norm < line_norm)
+         continue;
+
+      /* ── Line overflow ── */
+      counter_norm = 0;
+
+      if (max_lines != 0 && lines >= max_lines)
+         break;   /* Truncate: hard line limit reached */
+
+      if (lastwideglyph && (!lastspace || lastwideglyph > lastspace))
       {
-         counter_normalized = 0;
+         /* Insert '\n' after the wide glyph; rewind src to just past it */
+         *lastwideglyph = '\n';
+         lines++;
+         src           = lastwg_src;
+         dst           = lastwideglyph + 1;
+         lastwideglyph = NULL;
+         lastwg_src    = NULL;
+         lastspace     = NULL;
 
-         if (max_lines != 0 && lines >= max_lines)
-            continue;
-         else if (lastwideglyph && (!lastspace || lastwideglyph > lastspace))
-         {
-            /* Insert newline character */
-            *lastwideglyph = '\n';
-            lines++;
-            src           -= s - lastwideglyph;
-            s              = lastwideglyph + 1;
-            lastwideglyph  = NULL;
-
-            /* Early return if remaining src string
-             * length is less than line width */
-            if (src_end - src <= line_width)
-               return strlcpy(s, src, len);
-         }
-         else if (lastspace)
-         {
-            /* Replace nearest (previous) whitespace
-             * with newline character */
-            *lastspace = '\n';
-            lines++;
-            src       -= s - lastspace - 1;
-            s          = lastspace + 1;
-            lastspace  = NULL;
-
-            /* Early return if remaining src string
-             * length is less than line width */
-            if (src_end - src < line_width)
-               return strlcpy(s, src, len);
-         }
+         if ((size_t)(src_end - src) < (size_t)line_width)
+            return strlcpy(dst, src, len);
       }
+      else if (lastspace)
+      {
+         /* Replace the space with '\n'; rewind src to the char after it */
+         unsigned rewind = (unsigned)(dst - lastspace) - 1;
+         *lastspace = '\n';
+         lines++;
+         src       -= rewind;
+         dst        = lastspace + 1;
+         lastspace  = NULL;
+
+         if ((size_t)(src_end - src) < (size_t)line_width)
+            return strlcpy(dst, src, len);
+      }
+      /* No break point found: continue filling current line */
    }
 
-   *s = '\0';
+   *dst = '\0';
    return 0;
 }
 
