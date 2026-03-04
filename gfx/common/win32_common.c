@@ -112,7 +112,7 @@ extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 #endif
 
-#if !defined(_XBOX)
+#ifndef _XBOX
 extern bool winraw_handle_message(UINT message,
       WPARAM wParam, LPARAM lParam);
 #endif
@@ -1317,6 +1317,9 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
    bool keydown                  = true;
    bool quit                     = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+#ifndef _XBOX
+   void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+#endif
 
    switch (message)
    {
@@ -1383,7 +1386,6 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                      || keysym == 0x38/*DIK_LMENU*/
                      || keysym == 0xB8/*DIK_RMENU*/)
             {
-               void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
                if (input_data && dinput_handle_message(input_data,
                         message, wparam, lparam))
                   return 0; /* key up already handled by the driver */
@@ -1432,13 +1434,10 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
             g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
-#if !defined(_XBOX)
-         {
-            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
-            if (input_data && dinput_handle_message(input_data,
-                     message, wparam, lparam))
-               return 0;
-         }
+#ifndef _XBOX
+         if (input_data && dinput_handle_message(input_data,
+             message, wparam, lparam))
+            return 0;
 #endif
          break;
       case WM_DROPFILES:
@@ -1464,13 +1463,10 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
 #endif
-#if !defined(_XBOX)
-         {
-            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
-            if (input_data && dinput_handle_message(input_data,
-                     message, wparam, lparam))
-               return 0;
-         }
+#ifndef _XBOX
+         if (input_data && dinput_handle_message(input_data,
+             message, wparam, lparam))
+            return 0;
 #endif
          break;
       case WM_KILLFOCUS:
@@ -1478,13 +1474,10 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
 #endif
-#if !defined(_XBOX)
-         {
-            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
-            if (input_data && dinput_handle_message(input_data,
-                     message, wparam, lparam))
-               return 0;
-         }
+#ifndef _XBOX
+         if (input_data && dinput_handle_message(input_data,
+             message, wparam, lparam))
+            return 0;
 #endif
          break;
       case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
@@ -1948,7 +1941,7 @@ bool win32_get_metrics(void *data,
 
 void win32_monitor_init(void)
 {
-#if !defined(_XBOX)
+#ifndef _XBOX
    win32_common_state_t
       *g_win32            = (win32_common_state_t*)&win32_st;
    g_win32->monitor_count = 0;
@@ -1958,7 +1951,7 @@ void win32_monitor_init(void)
    g_win32_flags         &= ~WIN32_CMN_FLAG_QUIT;
 }
 
-#if !defined(_XBOX)
+#ifndef _XBOX
 void win32_show_cursor(void *data, bool state)
 {
    if (state)
