@@ -325,7 +325,7 @@ void gfx_widgets_msg_queue_push(
          }
 
          /* Use big size only when needed */
-         if (strstr(msg_widget->msg, "\n"))
+         if (strchr(msg_widget->msg, '\n'))
          {
             msg_widget->flags &= ~DISPWIDG_FLAG_SMALL;
             if (msg_widget->text_height == p_dispwidget->gfx_widget_fonts.msg_queue.line_height)

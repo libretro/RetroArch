@@ -234,7 +234,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
    if (!string_is_empty(track_path))
    {
       size_t _len;
-      if (strstr(track_path, "/") || strstr(track_path, "\\"))
+      if (strchr(track_path, '/') || strchr(track_path, '\\'))
       {
 #ifdef MEDIA_CUE_PARSE_DEBUG
          printf("using path %s\n", track_path);

@@ -425,7 +425,7 @@ bool gfx_widget_start_load_content_animation(void)
 
    /* Check whether system name has been set or if the name
     * is a copy of info file database with multiple entries */
-   if (!has_system || strstr(state->system_name, "|"))
+   if (!has_system || strchr(state->system_name, '|'))
    {
       /* Use core display name, if available */
       if (!string_is_empty(core_info->display_name))

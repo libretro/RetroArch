@@ -878,7 +878,7 @@ static void platform_emscripten_mount_filesystems(void)
                }
                wasmfs_create_directory(fetch_base_dir, 0777, fetch);
             }
-            char *realfs_path = strstr(line, " "), *url = line;
+            char *realfs_path = strchr(line, ' '), *url = line;
             int fd;
             if (len <= 2 || !realfs_path)
             {
