@@ -277,12 +277,13 @@ bool audio_driver_is_ai_service_speech_running(void)
 static bool audio_driver_free_devices_list(void)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
+   const audio_driver_t *audio    = audio_st->current_audio;
    if (
-            !audio_st->current_audio
-         || !audio_st->current_audio->device_list_free
+            !audio
+         || !audio->device_list_free
          || !audio_st->context_audio_data)
       return false;
-   audio_st->current_audio->device_list_free(
+   audio->device_list_free(
          audio_st->context_audio_data,
          audio_st->devices_list);
    audio_st->devices_list = NULL;
@@ -327,11 +328,11 @@ static void audio_driver_deinit_resampler(void)
 static bool audio_driver_deinit_internal(bool audio_enable)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
-   if (     audio_st->current_audio
-         && audio_st->current_audio->free)
+   const audio_driver_t *audio    = audio_st->current_audio;
+   if (audio && audio->free)
    {
       if (audio_st->context_audio_data)
-         audio_st->current_audio->free(audio_st->context_audio_data);
+         audio->free(audio_st->context_audio_data);
       audio_st->context_audio_data = NULL;
    }
 
@@ -452,14 +453,15 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       bool is_slowmotion, bool is_fastforward)
 {
    struct resampler_data src_data;
-   float audio_volume_gain           =
+   const audio_driver_t *audio    = audio_st->current_audio;
+   float audio_volume_gain        =
          (audio_st->mute_enable || audio_st->flags & AUDIO_FLAG_MUTED)
                ? 0.0f
                : audio_st->volume_gain;
 
    /* Fast path: if driver handles resampling and no DSP/mixer is active,
     * bypass software resampling entirely. */
-   if (audio_st->current_audio->write_raw
+   if (audio->write_raw
 #ifdef HAVE_DSP_FILTER
          && !audio_st->dsp
 #endif
@@ -477,7 +479,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       {
          unsigned write_idx          =
                audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-         int avail                   = (int)audio_st->current_audio->write_avail(
+         int avail                   = (int)audio->write_avail(
                audio_st->context_audio_data);
          int half_size               = (int)(audio_st->buffer_size / 2);
          int delta_mid               = avail - half_size;
@@ -491,7 +493,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          rate_adjust                *= slowmotion_ratio;
 
       /* Note: mute/volume is not applied here - driver must handle or ignore */
-      audio_st->current_audio->write_raw(audio_st->context_audio_data,
+      audio->write_raw(audio_st->context_audio_data,
             data, frames, input_rate, rate_adjust, audio_volume_gain);
       return;
    }
@@ -552,7 +554,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       /* Readjust the audio input rate. */
       if (audio_st->flags & AUDIO_FLAG_CONTROL)
       {
-         int avail                   = (int)audio_st->current_audio->write_avail(
+         int avail                   = (int)audio->write_avail(
                audio_st->context_audio_data);
          int half_size               = (int)(audio_st->buffer_size / 2);
          int delta_mid               = avail - half_size;
@@ -657,7 +659,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          output_frames       *= sizeof(int16_t);  /* Unit: bytes */
       }
 
-      audio_st->current_audio->write(audio_st->context_audio_data,
+      audio->write(audio_st->context_audio_data,
             output_data, output_frames * 2);
    }
 }
@@ -1752,28 +1754,26 @@ bool audio_driver_has_callback(void)
 static INLINE bool audio_driver_alive(void)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
-   if (     audio_st->current_audio
-         && audio_st->current_audio->alive
-         && audio_st->context_audio_data)
-      return audio_st->current_audio->alive(audio_st->context_audio_data);
+   const audio_driver_t *audio    = audio_st->current_audio;
+   if (audio && audio->alive && audio_st->context_audio_data)
+      return audio->alive(audio_st->context_audio_data);
    return false;
 }
 
 bool audio_driver_start(bool is_shutdown)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
+   const audio_driver_t *audio    = audio_st->current_audio;
    if (
-            !audio_st->current_audio
-         || !audio_st->current_audio->start
+            !audio
+         || !audio->start
          || !audio_st->context_audio_data)
       goto error;
-   if (!audio_st->current_audio->start(
-            audio_st->context_audio_data, is_shutdown))
+   if (!audio->start(audio_st->context_audio_data, is_shutdown))
       goto error;
 
    RARCH_DBG("[Audio] Started audio driver \"%s\" (is_shutdown=%s)\n",
-         audio_st->current_audio->ident,
-         is_shutdown ? "true" : "false");
+         audio->ident, is_shutdown ? "true" : "false");
 
    return true;
 
@@ -1786,26 +1786,28 @@ error:
 
 const char *audio_driver_get_ident(void)
 {
-   audio_driver_state_t *audio_st  = &audio_driver_st;
-   if (!audio_st->current_audio)
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   const audio_driver_t *audio    = audio_st->current_audio;
+   if (!audio)
       return NULL;
-   return audio_st->current_audio->ident;
+   return audio->ident;
 }
 
 bool audio_driver_stop(void)
 {
    bool stopped;
-   if (     !audio_driver_st.current_audio
-         || !audio_driver_st.current_audio->stop
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   const audio_driver_t *audio    = audio_st->current_audio;
+   if (     !audio
+         || !audio->stop
          || !audio_driver_st.context_audio_data
          || !audio_driver_alive()
       )
       return false;
-   stopped = audio_driver_st.current_audio->stop(
-         audio_driver_st.context_audio_data);
+   stopped = audio->stop(audio_driver_st.context_audio_data);
 
    if (stopped)
-      RARCH_DBG("[Audio] Stopped audio driver \"%s\".\n", audio_driver_st.current_audio->ident);
+      RARCH_DBG("[Audio] Stopped audio driver \"%s\".\n", audio->ident);
 
    return stopped;
 }
@@ -2740,14 +2742,15 @@ error:
 static bool microphone_driver_free_devices_list(void)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
+   const microphone_driver_t *mic    = mic_st->driver;
    if (
-            !mic_st->driver
-         || !mic_st->driver->device_list_free
+            !mic
+         || !mic->device_list_free
          || !mic_st->driver_context
          || !mic_st->devices_list)
       return false;
 
-   mic_st->driver->device_list_free(mic_st->driver_context, mic_st->devices_list);
+   mic->device_list_free(mic_st->driver_context, mic_st->devices_list);
    mic_st->devices_list = NULL;
    return true;
 }
@@ -2755,15 +2758,15 @@ static bool microphone_driver_free_devices_list(void)
 bool microphone_driver_deinit(bool is_reset)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
-   const microphone_driver_t *driver = mic_st->driver;
+   const microphone_driver_t *mic    = mic_st->driver;
 
    microphone_driver_free_devices_list();
    microphone_driver_close_mic_internal(&mic_st->microphone, is_reset);
 
-   if (driver && driver->free)
+   if (mic && mic->free)
    {
       if (mic_st->driver_context)
-         driver->free(mic_st->driver_context);
+         mic->free(mic_st->driver_context);
 
       mic_st->driver_context = NULL;
    }
