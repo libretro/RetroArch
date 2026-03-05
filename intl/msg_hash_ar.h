@@ -401,7 +401,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "تحديث ملفات الغش"
+   "تحديث الغش"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
@@ -413,7 +413,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   "تحديث GLSL SHADERS"
+   "تحديث تظليلات GLSL"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
@@ -845,7 +845,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   "الدعم العادي"
+   "دعم الأنالوج"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
@@ -2325,6 +2325,14 @@ MSG_HASH(
    "حد محاور زر الإدخال"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+   "منطقة الأنالوج الميتة"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   "حساسة الأنالوج"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
    "تلقائي"
    )
@@ -2336,10 +2344,18 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    "مقدار الثواني للاحتفاظ بمدخلات لربطها."
    )
+MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "اضغط على لوحة المفاتيح أو الفأرة أو وحدة التحكم"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "المهلة"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "وضع توربو"
+   "نار التوربو"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
@@ -2347,11 +2363,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   "وضع توربو"
+   "وضع التوربو"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "وضع توربو"
+   "نار التوربو"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "تغيير إعدادات النار التوربو."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2374,12 +2394,24 @@ MSG_HASH(
    "مفاتيح الإختصار"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   "تغيير الإعدادات وتعيينات مفاتيح الاختصار، مثل تبديل القائمة أثناء اللعب."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    "ربط وحدة التحكم"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "غيّر طريقة ربط وحدة التحكم الافتراضية بجهاز إدخال فعلي. إذا تم التعرف على جهاز الإدخال وتهيئته تلقائيًا بشكل صحيح، فربما لا يحتاج المستخدمون إلى استخدام هذه القائمة.\nملاحظة: لإجراء تغييرات خاصة بالإدخال في النواة، استخدم القائمة الفرعية \"التحكم\" في القائمة السريعة."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-   "منفذ %u ربط"
+   "منفذ التحكم %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "تغيير كيفية ربط وحدة التحكم الافتراضية بجهاز الإدخال الفعلي الخاص بك لهذا المنفذ الافتراضي."
    )
 
 
@@ -2681,15 +2713,51 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   "تناظري إلى النوع الرقمي"
+   "الأنالوج إلى النوع الرقمي"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "فهرس الجهاز"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "وحدة التحكم المادية التي تعرف عليها RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "الجهاز المحجوز لهذا اللاعب"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "سيتم تخصيص وحدة التحكم هذه لهذا اللاعب، وفقًا لوضع الحجز."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "بدون حجز"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   "مفضل"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   "محجوز"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "نوع حجز الجهاز"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "مفضل: إذا كان الجهاز المحدد موجود، فسيتم تخصيصه لهذا اللاعب. محجوز: لن يتم تخصيص أي وحدة تحكم أخرى لهذا اللاعب."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
-   "ربط الكل Bind All"
+   "ضبط جميع عناصر التحكم"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "تعيين جميع الاتجاهات والأزرار، واحداً تلو الآخر، بالترتيب الذي تظهر به في هذه القائمة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
@@ -2697,23 +2765,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-   "حفظ التكوين التلقائي"
+   "حفظ ملف تعريف وحدة التحكم"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
    "فهرس الماوس"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "الفأرة المادية التي تعرف عليها RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
-   "زر B (للأسفل)"
+   "زر B (أسفل)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
-   "زر Y (اليسار)"
+   "زر Y (يسار)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
-   "حدد الزر"
+   "زر التحديد"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
@@ -2721,23 +2793,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
-   "أعلى D-Pad"
+   "لوحة الاتجاهات لأعلى"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
-   "أسفل D-Pad"
+   "لوحة الاتجاهات لأسفل"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
-   "يسار D-Pad"
+   "لوحة الاتجاهات لليسار"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
-   "يمين D-Pad"
+   "لوحة الاتجاهات لليمين"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
-   "زر (يمين)"
+   "زر A (يمين)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
@@ -2745,63 +2817,111 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
-   "زر L"
+   "زر L (الكتف)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
-   "زر R"
+   "زر R (الكتف)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
-   "زر L2"
+   "زر L2 (الزناد)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
-   "زر R2"
+   "زر R2 (الزناد)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
-   "زر L3"
+   "زر L3 (الإبهام)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
-   "زر R3"
+   "زر R3 (الإبهام)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-   "تناظري يسار X+ (اليمين)"
+   "الأنالوج الأيسر X+ (يمين)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-   "التناظري الأيسر X- (اليسار)"
+   "الأنالوج الأيسر X- (يسار)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-   "تناظري يسار Y+ (للأسفل)"
+   "الأنالوج الأيسر Y+ (أسفل)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-   "تناظري يسار Y- (أعلى)"
+   "الأنالوج الأيسر Y- (أعلى)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-   "التناظري الأيمن X+ (اليمين)"
+   "الأنالوج الأيمن X+ (يمين)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-   "التناظري الأيمن X- (اليسار)"
+   "الأنالوج الأيمن X- (يسار)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-   "تناظري تناظري Y+ (للأسفل)"
+   "الأنالوج الأيمن Y+ (أسفل)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-   "تناظري الأيمن Y-(أعلى)"
+   "الأنالوج الأيمن Y-(أعلى)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+   "زناد السلاح"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   "إعادة تعبئة السلاح"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
+   "مساعد السلاح A"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
+   "مساعد السلاح B"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
+   "مساعد السلاح C"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
+   "ابدأ السلاح"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
+   "التحديد السلاح"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
+   "لوحة اتجاهات السلاح لأعلي"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
+   "لوحة اتجاهات السلاح لأسفل"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
+   "لوحة اتجاهات السلاح لليسار"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
+   "لوحة اتجاهات السلاح لليمين"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
-   "وضع توربو"
+   "نار التوربو"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "ثبت"
    )
 
 /* Settings > Latency */
@@ -3269,6 +3389,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
    "إذا كانت مدعومة بالتراكب الحالي، تدوير التخطيط تلقائيًا لمطابقة نسبة توجُّه الشاشة / النسبة."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "منطقة تسجيل الأنالوج"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
@@ -4390,7 +4514,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_FILE,
-   "يقوم بمسح ملف للمحتوى الذي يتطابق مع قاعدة البيانات."
+   "فحص الملف بحثًا عن محتوى يطابق قاعدة البيانات."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
@@ -4398,7 +4522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "المسح الضوئي القابل للتكوين بناء على أسماء ملفات المحتوى. لا يتطلب المحتوى لمطابقة قاعدة البيانات."
+   "فحص قابل للتكوين يعتمد على أسماء ملفات المحتوى. لا يتطلب تطابق المحتوى مع قاعدة البيانات."
    )
 
 /* Import Content > Scan File */
@@ -4417,6 +4541,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
    "مسار المحتوى"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+   "حدد مسار لفحصه بحثًا عن المحتوى."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
@@ -5393,7 +5521,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
-   "مشاركة المدخلات التناظرية"
+   "مشاركة مدخلات الأنالوج"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
@@ -5498,6 +5626,10 @@ MSG_HASH( /* FIXME Unused? */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD,
    "ريترو pad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
+   "وحدة التحكم مع أنالوج"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NONE,
@@ -5725,7 +5857,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
-   "غير متاح"
+   "غير متوفر"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
@@ -5746,6 +5878,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
    "غير مدعوم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DONT_CARE,
+   "الافتراضي"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LINEAR,
@@ -5785,11 +5921,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Analog الأيسر"
+   "الأنالوج الأيسر"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Analog الأيمن"
+   "الأنالوج الأيمن"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
@@ -9316,11 +9452,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_ENABLED,
-   "الماوس الفأرة مفعل"
+   "الفأرة الذي تعمل باللمس مفعلة"
    )
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
-   "الماوس الفأرة معطل"
+   "الفأرة الذي تعمل باللمس معطلة"
    )
 #ifdef HAVE_GAME_AI
 

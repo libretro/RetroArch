@@ -3161,6 +3161,14 @@ MSG_HASH(
    "Ajuste la sensibilité de l'accéléromètre."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Orientation des capteurs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Faire pivoter les axes de l'accéléromètre et du gyroscope pour correspondre à l'orientation de l'appareil."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
    "Ajuste la sensibilité du gyroscope."
    )
@@ -3304,6 +3312,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Modifier les réglages du retour haptique et de la vibration."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Détecteurs de mouvement/lumière"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Modifier les réglages de l'accéléromètre, du gyroscope et de l'éclairement."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,

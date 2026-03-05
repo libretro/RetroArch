@@ -3189,6 +3189,14 @@ MSG_HASH(
    "Coigeartaigh íogaireacht an Luasmhéadair."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Treoshuíomh an Braiteora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Rothlaigh aiseanna an luasghéaraitheora agus an ghiroscóip chun treoshuíomh an ghléis a mheaitseáil."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
    "Uathoibríoch"
    )
@@ -3336,6 +3344,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Athraigh socruithe aiseolais haptic agus creatha."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Braiteoirí Gluaiseachta/Solais"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Athraigh socruithe an luasghéaraitheora, an ghiroscóip agus an tsoilsithe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
