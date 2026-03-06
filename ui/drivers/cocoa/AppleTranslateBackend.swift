@@ -125,6 +125,9 @@ private class TranslationManager {
             return
         }
 
+        pendingText = nil
+        pendingCompletion = nil
+
         do {
             let response = try await session.translate(text)
             completion(response.targetText, nil)
@@ -132,9 +135,6 @@ private class TranslationManager {
             logTranslation("[Translation] Translation error: \(error.localizedDescription)")
             completion(nil, error.localizedDescription)
         }
-
-        pendingText = nil
-        pendingCompletion = nil
     }
 }
 
