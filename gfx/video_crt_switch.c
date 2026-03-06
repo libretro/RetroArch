@@ -183,6 +183,7 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
       void (*dbgp)(const char *, ...) = &RARCH_DBG;
       void (*errp)(const char *, ...) = &RARCH_ERR;
       sr_init();
+
       sr_set_log_callback_info(*(void **)(&logp));
       sr_set_log_callback_debug(*(void **)(&dbgp));
       sr_set_log_callback_error(*(void **)(&errp));
