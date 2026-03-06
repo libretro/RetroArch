@@ -139,6 +139,13 @@ void cocoa_gl_gfx_ctx_update(void)
 #if defined(HAVE_COCOATOUCH)
 void *glkitview_init(void)
 {
+   /* Delete the old view's framebuffer while we may still have a valid
+    * GL context.  Without this, the subsequent release of the old GLKView
+    * triggers _deleteFramebuffer during dealloc, which calls
+    * glPushGroupMarkerEXT with no current context and crashes. */
+   if (glk_view)
+      [glk_view deleteDrawable];
+
    glk_view                      = [GLKView new];
 #if TARGET_OS_IOS
    glk_view.multipleTouchEnabled = YES;
