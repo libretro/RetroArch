@@ -1212,7 +1212,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "تغيير إعدادات إعادة الريح، السريع إلى الأمام، وبطيء الحركة."
+   "تغيير إعدادات الإرجاع والتقديم السريع والحركة البطيئة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -2024,8 +2024,12 @@ MSG_HASH(
    "كتم صوت المزيج."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "كتم صوت التقديم السريع"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   "كتم الصوت تلقائياً عند استخدام السرعة إلى الأمام."
+   "كتم الصوت تلقائيًا عند استخدام التقديم السريع."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -3191,6 +3195,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    "الحد الأقصى للمعدل الذي سيتم تشغيل المحتوى به عند استخدام سرعة التقدم (على سبيل المثال، 5. x لمحتوى 60 fps = 300 fps كحد أقصى). إذا تم تعيينه إلى 0.0x، فإن النسبة السريعة إلى الأمام غير محدودة (لا حد أقصى)."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "تخطي الإطارات وفقًا لمعدل التقديم السريع. هذا يوفر الطاقة ويسمح باستخدام برامج تحديد الإطارات الخارجية."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -5561,7 +5569,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
-   "المحفوظات والمفضلة"
+   "السجل والمفضلة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
@@ -5573,7 +5581,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
-   "المحفوظات والمفضلة"
+   "السجل والمفضلة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
@@ -7482,7 +7490,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "مؤخرًا"
+   "السجل"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
@@ -8337,7 +8345,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_HISTORY_FILE,
-   "تحميل ملف المحفوظات"
+   "تحميل ملف السجل"
    )
 MSG_HASH(
    MSG_LOADING_FAVORITES_FILE,

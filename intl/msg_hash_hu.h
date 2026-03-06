@@ -2399,6 +2399,14 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "HDR kimeneti mód, ha a kijelző támogatja. Figyelem: az scRGB tompíthatja a CRT shader maszkokat mivel az operációs rendszer HDR10-re konvertál, miután a maszkot alkalmazta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
+   "Ki"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    "Csúcs-luminancia"
    )
@@ -2425,6 +2433,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    "Pontos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "Kiterjesztett"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "Széles"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
+   "Szuper"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
@@ -3161,6 +3181,14 @@ MSG_HASH(
    "A gyorsulásmérő érzékenységének állítása."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Érzékelő tájolása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "A gyorsulásmérő és giroszkóp tengelyeinek elforgatása, hogy az eszköz állásához illeszkedjen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
    "Automatikus"
    )
@@ -3308,6 +3336,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "A tapintható visszajelzés és rezgés beállításai."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Mozgás és fény érzékelők"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "A gyorsulásmérő, giroszkóp, és megvilágításmérő beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -4050,6 +4086,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    "A RetroArch által felismert tényleges kontroller."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "A játékos számára fenntartott eszköz"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
@@ -4850,8 +4890,16 @@ MSG_HASH(
    "A beépített médialejátszó használata"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "A médialejátszó által támogatott fájlok megjelenítése a fájlböngészőben."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "A beépített képnézegető használata"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "A képnézegető által támogatott fájlok megjelenítése a fájlböngészőben."
    )
 
 /* Settings > Frame Throttle */
@@ -6392,8 +6440,20 @@ MSG_HASH(
    "A tartalom folytatásának lehetősége jelenjen meg."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "\"Újraindítás\" látható"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "A tartalom újraindításának lehetősége jelenjen meg."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "\"Tartalom bezárása\" látható"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "A tartalom bezárásának lehetősége jelenjen meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8911,6 +8971,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Visszaállítás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+   "Újraindítás előidézése. A RetroPad Start hidegindítást eredményez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -13122,6 +13186,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "A mag nem támogatja a játékállás elmentését."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "A mag nem támogatja a játékállás elmentésének visszavonását."
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,

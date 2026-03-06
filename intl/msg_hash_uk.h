@@ -2466,6 +2466,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
    ""
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Субпіксельна схема"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Виберіть субпіксельну розмітку вашого дисплея, це вплине тільки на лінії розгортки. Якщо ви поняття не маєте, яка субпіксельна розмітка вашого дисплея, див. Rtings.com \"субпіксельну розмітку\" вашого дисплея"
+   )
 
 
 /* Settings > Video > Synchronization */
@@ -3185,6 +3193,14 @@ MSG_HASH(
    "Налаштуйте чутливість акселерометра."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Орієнтація датчика"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Поверніть осі акселерометра і гіроскопа у відповідності з орієнтацією пристрою."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
    "Автоматично"
    )
@@ -3374,6 +3390,10 @@ MSG_HASH(
    "Обхідний шлях для відключення та повторного підключення контролерів. Заважає 2 гравцям з однаковими контролерами."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Підтвердіть Вихід"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
    "Вимагати подвійного натискання гарячої клавіші для Виходу."
    )
@@ -3382,8 +3402,16 @@ MSG_HASH(
    "Підтвердіть закриття вмісту"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Вимагати подвійного натискання гарячої клавіші Закриття Вмісту."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
    "Підтвердіть Скидання Вмісту"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Вимагати подвійного натискання гарячої клавіші Скидання Вмісту."
    )
 
 
@@ -3612,6 +3640,10 @@ MSG_HASH(
    "Перемотати назад"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   "Перемотує поточний вміст, поки утримується клавіша. 'Підтримка перемотування' має бути увімкнена."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Пауза"
    )
@@ -3697,6 +3729,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
    "Наступний диск"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "Збільшує поточний індекс вибраного диска і виконує відкладену вставку, якщо лоток для віртуальних дисків закритий."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
