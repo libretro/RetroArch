@@ -852,6 +852,7 @@ static int manual_content_scan_system_name_right(unsigned type, const char *labe
    unsigned current_index                                          = 0;
    unsigned next_index                                             = 0;
    unsigned i;
+   struct menu_state *menu_st = menu_state_get_ptr();
 
    if (!system_name_list)
       return -1;
@@ -886,12 +887,15 @@ static int manual_content_scan_system_name_right(unsigned type, const char *labe
       next_system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
    else if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM)
       next_system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM;
+   else if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO)
+      next_system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO;
 
    next_system_name = system_name_list->elems[next_index].data;
 
    /* Set system name */
    manual_content_scan_set_menu_system_name(
          next_system_name_type, next_system_name);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
    /* Clean up */
    string_list_free(system_name_list);

@@ -567,9 +567,11 @@ static int action_start_manual_content_scan_system_name(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+   struct menu_state *menu_st = menu_state_get_ptr();
    /* Reset system name */
    manual_content_scan_set_menu_system_name(
-         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, "");
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO, "");
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
