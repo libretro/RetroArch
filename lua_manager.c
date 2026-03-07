@@ -62,7 +62,7 @@ static lua_State *co = NULL;
 static unsigned int current_memory_domain = RETRO_MEMORY_SYSTEM_RAM;
 static const char* memory_domains_list_names[] = { "Battery RAM", "RTC", "RAM", "VRAM", "ROM" };
 
-static bool LUA_SCRIPTS_SANDBOXED = true;  /* Enabled by default. TODO: add user setting */
+static bool LUA_SCRIPTS_SANDBOXED = true;  /* Enabled by default. */
 
 
 static void check_sandboxed_path(lua_State *L, const char* path)
@@ -78,6 +78,8 @@ static void check_sandboxed_path(lua_State *L, const char* path)
       path_basedir(content_parent_dir);
       if (!string_starts_with(path, content_parent_dir))
          luaL_error(L, "Access denied: file path is does not match current content. Disable sandboxing to bypass.");
+         /*RARCH_ERR("Access denied: file path is does not match current content. Disable sandboxing to bypass.\n")*/
+      
       /* TODO: also allow subdirs of */
       /* const char* retroarch_system_dir = path_get(RARCH_PATH_CONFIG);  // /system */
    }
@@ -3735,6 +3737,9 @@ void lua_init()
    
    /* Load full stdlib */
    luaL_openlibs(L);
+   
+   /* apply sandboxing if enabled */
+   LUA_SCRIPTS_SANDBOXED = config_get_ptr()->bools.lua_scripts_sandboxed;
 
    if (LUA_SCRIPTS_SANDBOXED)
    {

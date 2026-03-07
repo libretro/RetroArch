@@ -383,6 +383,7 @@ ifeq ($(HAVE_ICONV), 1)
 endif
 
 ifeq ($(HAVE_LUA), 1)
+   #CFLAGS += -std=gnu99
    DEFINES += -DHAVE_LUA -DLUA_32BITS
    INCLUDE_DIRS += -Ideps/lua/src
    OBJ += deps/lua/src/lapi.o \
@@ -419,7 +420,7 @@ ifeq ($(HAVE_LUA), 1)
              deps/lua/src/loadlib.o \
              deps/lua/src/linit.o \
              lua_manager.o
-   LIBS += -llua
+   LIBS += -lm
 else
    DEFINES += -DRC_DISABLE_LUA
 endif    
