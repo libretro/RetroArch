@@ -1212,7 +1212,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "تغيير إعدادات الإرجاع والتقديم السريع والحركة البطيئة."
+   "تغيير إعدادات الإرجاع والتقدم السريع والحركة البطيئة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -1240,11 +1240,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   "خدمة AI"
+   "خدمة الذكاء الاصطناعي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "تغيير إعدادات خدمة AI (الترجمة/TTS/Misc)."
+   "تغيير إعدادات خدمة الذكاء الاصطناعي (الترجمة/تحويل النص إلى كلام/متفرقات)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
@@ -1602,7 +1602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
-   "تمكين المعالجة المتعددة للفيديو قد يرفع الأداء، لكن فيه احتمال يصير فيه تأخير أو تقطيع بسيط."
+   "استخدم برنامج تشغيل فيديو متعدد الخيوط. قد يؤدي استخدام هذا إلى تحسين الأداء، ولكن على حساب زيادة زمن الاستجابة وتقطع الفيديو."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -2032,6 +2032,14 @@ MSG_HASH(
    "كتم الصوت تلقائيًا عند استخدام التقديم السريع."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "تسريع صوت التقديم السريع"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "تسريع الصوت عند التقديم السريع. يمنع التشويش ولكنه يغير درجة الصوت."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "زيادة حجم الصوت (dB)"
    )
@@ -2096,7 +2104,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   "تمكين إخراج الصوت."
+   "تفعيل إخراج الصوت."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -2271,19 +2279,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   "تمكين صوت OK"
+   "تفعيل صوت 'الموافقة'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-   "تمكين إلغاء الصوت"
+   "تفعيل صوت 'الإلغاء'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   "تمكين إشعار الصوت"
+   "تفعيل صوت 'التنبيه'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-   "تمكين صوت BGM"
+   "تفعيل صوت 'الخلفية'"
    )
 
 /* Settings > Input */
@@ -2306,7 +2314,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "إذا تم تمكين محاولات التهيئة التلقائية لوحدات التحكم ، نمط الإضافة واللعب."
+   "يقوم تلقائيًا بتهيئة وحدات التحكم التي تحتوي على ملف تعريف، بنمط التوصيل والتشغيل."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
@@ -2427,7 +2435,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   "تمكين اهتزاز الجهاز (للنواة المدعومة)"
+   "تفعيل اهتزاز الجهاز (للأنوية المدعومة)"
    )
 
 /* Settings > Input > Menu Controls */
@@ -2489,19 +2497,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
-   "تبديل سريع للأمام"
+   "التقديم السريع (تبديل)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
-   "التبديل بين السرعة للأمام والسرعة العادية."
+   "التبديل بين التقديم السريع والسرعة العادية."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "تعليق سريع إلى الأمام"
+   "التقديم السريع (الضغط باستمرار)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "تمكين التقدم السريع عند الاحتفاظ بالمحتوى. المحتوى يعمل بسرعة عادية عند تحرير المفتاح."
+   "تفعل التقديم السريع عند الضغط باستمرار. ويعمل المحتوى بالسرعة العادية عند ترك الزر."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
@@ -3190,11 +3198,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-   "الحد الأقصى لسرعة التشغيل"
+   "معدل التقديم السريع"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "الحد الأقصى للمعدل الذي سيتم تشغيل المحتوى به عند استخدام سرعة التقدم (على سبيل المثال، 5. x لمحتوى 60 fps = 300 fps كحد أقصى). إذا تم تعيينه إلى 0.0x، فإن النسبة السريعة إلى الأمام غير محدودة (لا حد أقصى)."
+   "الحد الأقصى لمعدل تشغيل المحتوى عند استخدام خاصية التقديم السريع (على سبيل المثال، 5.0x لمحتوى 60 إطارًا في الثانية = حد أقصى 300 إطار في الثانية). إذا تم ضبطه على 0.0x، فإن نسبة التسريع غير محدودة (بدون حد أقصى للإطارات في الثانية)."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
@@ -3243,8 +3251,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "إعادة تعيين بعد التقديم السريع"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "إعادة تعيين عداد الوقت للإطار بعد الشحن السريع."
+   "إعادة تعيين عداد الوقت للإطار بعد التقديم السريع."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
@@ -3529,6 +3541,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "عرض رسالة على الشاشة عند التشغيل تلقائياً آخر قرص مستعمل من محتوى الأقراص المتعددة المحملة عبر قوائم تشغيل M3U"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "اعرض مؤشرًا على الشاشة عند تفعيل خاصية التقديم السريع أو الحركة البطيئة أو الإرجاع."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -8517,7 +8533,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAST_FORWARD,
-   "تقدم سريع."
+   "التقديم السريع. "
    )
 MSG_HASH(
    MSG_SLOW_MOTION_REWIND,
@@ -9362,6 +9378,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
    "يحدد بين أوضاع العرض ثلاثية الأبعاد و ثنائية الأبعاد. في وضع \"3D\"، يتم مربع البكسل ويتم تطبيق تأثير العمق عند عرض القائمة السريعة. وضع '2D' يوفر أفضل الأداء."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D,
+   "ثلاثي الأبعاد"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D,
+   "ثنائي الأبعاد"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,

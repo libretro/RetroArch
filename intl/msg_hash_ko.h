@@ -3221,6 +3221,14 @@ MSG_HASH(
    "가속도계의 감도를 조정합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "센서 방향"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "가속도계와 자이로스코프의 축을 회전시켜 장치의 방향과 일치시킵니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
    "자동"
    )
@@ -3368,6 +3376,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "햅틱 피드백 및 진동 설정을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "움직임/빛 센서"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "가속도계, 자이로스코프, 빛 감지 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -4918,8 +4934,16 @@ MSG_HASH(
    "내장 미디어 플레이어 사용"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "지원되는 형식의 미디어 파일들을 파일 탐색기에 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "내장 이미지 뷰어 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "지원되는 형식의 이미지 파일들을 파일 탐색기에 표시합니다."
    )
 
 /* Settings > Frame Throttle */
@@ -6472,8 +6496,20 @@ MSG_HASH(
    "콘텐츠 이어하기 옵션을 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "'초기화' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "콘텐츠 초기화 옵션을 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "'콘텐츠 종료' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "콘텐츠 종료 옵션을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8987,6 +9023,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "초기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+   "소프트 리셋을 수행합니다. RetroPad 시작을 누르면 하드 리셋을 수행합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
