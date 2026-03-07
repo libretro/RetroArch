@@ -105,8 +105,9 @@ struct udev_joypad
    float sensor_data[SENSOR_AXES]; /* indexed by RETRO_SENSOR_* ID */
    bool sensor_accel_enabled;
    bool sensor_gyro_enabled;
-   bool sensor_has_accel; /* sensor node has ABS_X/Y/Z */
+   bool sensor_has_accel; /* sensor node has ABS_X/Y/Z or ABS_RX/RY/RZ */
    bool sensor_has_gyro;  /* sensor node has ABS_RX/RY/RZ */
+   bool sensor_accel_on_rxyz_codes; /* wiimote: accel is reported on ABS_RX/RY/RZ instead of ABS_X/Y/Z. */
 };
 
 struct joypad_udev_entry
@@ -208,36 +209,71 @@ static void udev_open_sensor_node(struct udev_joypad *pad,
    if (fd < 0)
       return;
 
-   if (  ioctl(fd, EVIOCGPROP(sizeof(propbit)), propbit) < 0
-      || !test_bit(INPUT_PROP_ACCELEROMETER, propbit))
-   {
-      close(fd);
-      return;
-   }
+   ioctl(fd, EVIOCGPROP(sizeof(propbit)), propbit);
 
    if (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) >= 0)
    {
       int a;
-      pad->sensor_has_accel = test_bit(ABS_X, absbit)
-                           && test_bit(ABS_Y, absbit)
-                           && test_bit(ABS_Z, absbit);
-      pad->sensor_has_gyro  = test_bit(ABS_RX, absbit)
-                           && test_bit(ABS_RY, absbit)
-                           && test_bit(ABS_RZ, absbit);
+      bool has_xyz  = test_bit(ABS_X,  absbit)
+                   && test_bit(ABS_Y,  absbit)
+                   && test_bit(ABS_Z,  absbit);
+      bool has_rxyz = test_bit(ABS_RX, absbit)
+                   && test_bit(ABS_RY, absbit)
+                   && test_bit(ABS_RZ, absbit);
 
-      for (a = 0; a < SENSOR_AXES; a++)
+      if (!has_xyz && !has_rxyz)
       {
-         if (test_bit(a, absbit))
-            ioctl(fd, EVIOCGABS(a), &pad->sensor_absinfo[a]);
+         /* Node has no usable sensor axes at all — skip it. */
+         close(fd);
+         return;
       }
+
+      /* Standard layout: ABS_X/Y/Z = accel, ABS_RX/Y/Z = gyro.
+       * Wiimote layout:  ABS_RX/Y/Z = accel only (no gyro, no ABS_X/Y/Z). */
+      if (!has_xyz && has_rxyz)
+      {
+         /* Rotational-axis accelerometer (Wiimote).
+          * Read absinfo from ABS_RX/Y/Z into sensor_absinfo 0/1/2 */
+         pad->sensor_accel_on_rxyz_codes = true;
+         pad->sensor_has_accel           = true;
+         pad->sensor_has_gyro            = false;
+
+         if (ioctl(fd, EVIOCGABS(ABS_RX), &pad->sensor_absinfo[0]) < 0)
+            memset(&pad->sensor_absinfo[0], 0, sizeof(pad->sensor_absinfo[0]));
+         if (ioctl(fd, EVIOCGABS(ABS_RY), &pad->sensor_absinfo[1]) < 0)
+            memset(&pad->sensor_absinfo[1], 0, sizeof(pad->sensor_absinfo[1]));
+         if (ioctl(fd, EVIOCGABS(ABS_RZ), &pad->sensor_absinfo[2]) < 0)
+            memset(&pad->sensor_absinfo[2], 0, sizeof(pad->sensor_absinfo[2]));
+      }
+      else
+      {
+         /* Standard layout. */
+         pad->sensor_accel_on_rxyz_codes = false;
+         pad->sensor_has_accel           = has_xyz;
+         pad->sensor_has_gyro            = has_rxyz;
+
+         for (a = 0; a < SENSOR_AXES; a++)
+         {
+            if (test_bit(a, absbit))
+               ioctl(fd, EVIOCGABS(a), &pad->sensor_absinfo[a]);
+         }
+      }
+   }
+   else
+   {
+      /* Could not read ABS capabilities — not a sensor. */
+      close(fd);
+      return;
    }
 
    pad->sensor_fd   = fd;
    pad->sensor_path = strdup(devnode);
 
-   RARCH_LOG("[udev] Pad #%u: found sensor at %s (accel=%s, gyro=%s).\n",
+   RARCH_LOG("[udev] Pad #%u: found sensor at %s "
+         "(accel=%s%s, gyro=%s).\n",
          p, devnode,
          pad->sensor_has_accel ? "yes" : "no",
+         pad->sensor_accel_on_rxyz_codes ? "[RX/RY/RZ]" : "",
          pad->sensor_has_gyro  ? "yes" : "no");
 }
 
@@ -318,6 +354,82 @@ static void udev_find_sensor_sibling(struct udev_device *gamepad_dev,
       udev_open_sensor_node(pad, devnode, p);
       udev_device_unref(dev);
       break;
+   }
+
+   udev_enumerate_unref(enumerate);
+
+   /* Fallback for devices like hid-wiimote whose accelerometer input node
+    * is not tagged with ID_INPUT_ACCELEROMETER=1 by udev */
+   if (pad->sensor_fd >= 0)
+      return; /* primary scan already found it */
+
+   RARCH_DBG("[udev] Pad #%u: no ID_INPUT_ACCELEROMETER device found, "
+         "trying fallback scan under %s\n", p, parent_syspath);
+
+   enumerate = udev_enumerate_new(udev_joypad_fd);
+   if (!enumerate)
+      return;
+
+   udev_enumerate_add_match_subsystem(enumerate, "input");
+   udev_enumerate_scan_devices(enumerate);
+   devs = udev_enumerate_get_list_entry(enumerate);
+
+   udev_list_entry_foreach(item, devs)
+   {
+      const char *name         = udev_list_entry_get_name(item);
+      struct udev_device *dev;
+      const char *devnode;
+      struct udev_device *candidate_parent;
+      const char *candidate_syspath;
+
+      /* Only look at eventNN nodes, not jsNN or the input parent itself */
+      if (!strstr(name, "/event"))
+         continue;
+
+      dev = udev_device_new_from_syspath(udev_joypad_fd, name);
+      if (!dev)
+         continue;
+
+      devnode = udev_device_get_devnode(dev);
+      if (!devnode)
+      {
+         udev_device_unref(dev);
+         continue;
+      }
+
+      /* Must share the same HID parent as the joypad */
+      candidate_parent = udev_device_get_parent_with_subsystem_devtype(
+            dev, "hid", NULL);
+      if (!candidate_parent)
+      {
+         udev_device_unref(dev);
+         continue;
+      }
+
+      candidate_syspath = udev_device_get_syspath(candidate_parent);
+      if (  !candidate_syspath
+         || !string_is_equal(parent_syspath, candidate_syspath))
+      {
+         udev_device_unref(dev);
+         continue;
+      }
+
+      /* Skip the joypad's own event node */
+      {
+         struct stat st;
+         if (stat(devnode, &st) == 0 && st.st_rdev == pad->device)
+         {
+            udev_device_unref(dev);
+            continue;
+         }
+      }
+
+      /* udev_open_sensor_node rejects nodes with no usable ABS axes */
+      udev_open_sensor_node(pad, devnode, p);
+      udev_device_unref(dev);
+
+      if (pad->sensor_fd >= 0)
+         break;
    }
 
    udev_enumerate_unref(enumerate);
@@ -603,6 +715,7 @@ static void udev_hotplug_sensor_remove(const char *path)
          pad->sensor_gyro_enabled  = false;
          pad->sensor_has_accel     = false;
          pad->sensor_has_gyro      = false;
+         pad->sensor_accel_on_rxyz_codes = false;
          RARCH_LOG("[udev] Pad #%u: sensor removed.\n", i);
          break;
       }
@@ -836,16 +949,42 @@ static void udev_joypad_poll(void)
             slen /= sizeof(*sevents);
             for (si = 0; si < slen; si++)
             {
-               if (  sevents[si].type == EV_ABS
-                  && sevents[si].code < SENSOR_AXES)
+               uint16_t code;
+               int res;
+
+               if (sevents[si].type != EV_ABS)
+                  continue;
+
+               code = sevents[si].code;
+
+               /* Wiimote / rotational-axis accel:
+                * ABS_RX(3)->ACCEL_X(0), ABS_RY(4)->ACCEL_Y(1), ABS_RZ(5)->ACCEL_Z(2).
+                * Remap so sensor_data is indexed by RETRO_SENSOR_* IDs. */
+               if (pad->sensor_accel_on_rxyz_codes)
                {
-                  /* ABS_X..ABS_RZ map 1:1 to RETRO_SENSOR_* 0-5.
-                   * Divide by absinfo resolution to get SI units
-                   * (m/s^2 for accel, rad/s for gyro). */
-                  int res = pad->sensor_absinfo[sevents[si].code].resolution;
-                  if (res > 0)
-                     pad->sensor_data[sevents[si].code] =
-                           (float)sevents[si].value / (float)res;
+                  if (code == ABS_RX)      code = 0;
+                  else if (code == ABS_RY) code = 1;
+                  else if (code == ABS_RZ) code = 2;
+                  else continue; /* no other axes expected on this node */
+               }
+               else if (code >= SENSOR_AXES)
+                  continue;
+
+               /* Normalise raw value to SI units.
+                * resolution field = units per g (accel) or units per deg/s (gyro).
+                * When resolution == 0 (hid-wiimote doesn't set it), fall back to
+                * using absinfo.maximum as the full-scale value so that
+                * sensor_data ends up in g (± 1.0 at maximum deflection). */
+               res = pad->sensor_absinfo[code].resolution;
+               if (res > 0)
+                  pad->sensor_data[code] =
+                        (float)sevents[si].value / (float)res;
+               else
+               {
+                  int maxval = pad->sensor_absinfo[code].maximum;
+                  if (maxval > 0)
+                     pad->sensor_data[code] =
+                           (float)sevents[si].value / (float)maxval;
                   else
                      pad->sensor_data[sevents[si].code] =
                            (float)sevents[si].value;
