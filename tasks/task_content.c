@@ -78,6 +78,10 @@
 #include "../cheevos/cheevos.h"
 #endif
 
+#if defined(ANDROID) && defined(HAVE_SAF)
+#include <vfs/vfs_implementation_saf.h>
+#endif
+
 #include "task_content.h"
 #include "tasks_internal.h"
 
@@ -808,6 +812,27 @@ static void content_file_get_path(
 
    if (string_is_empty(content_path))
       return;
+
+#if defined(ANDROID) && defined(HAVE_SAF)
+   /* Convert content:// URIs to the path format used by the VFS */
+   if (strncmp(content_path, "content://", sizeof "content://" - 1) == 0)
+   {
+      struct libretro_vfs_implementation_saf_path_split_result result;
+      if (retro_vfs_path_split_content_saf(&result, content_path))
+      {
+         static char *previous_serialized_path = NULL;
+         char *serialized_path = retro_vfs_path_join_saf(result.tree, result.path);
+         free(result.path);
+         free(result.tree);
+         if (serialized_path != NULL)
+         {
+            if (previous_serialized_path != NULL)
+               free(previous_serialized_path);
+            previous_serialized_path = content_path = serialized_path;
+         }
+      }
+   }
+#endif
 
 #ifdef HAVE_COMPRESSION
    /* Check whether we are dealing with a
