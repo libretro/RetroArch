@@ -2309,6 +2309,16 @@ bool Pass::build()
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
 
+   {
+      auto &g = reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
+      auto &a = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
+      auto &r = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
+      if (g.uniform || g.push_constant ||
+          a.uniform || a.push_constant ||
+          r.uniform || r.push_constant)
+         input_state_get_ptr()->shader_uses_sensors = true;
+   }
+
    /* Filter out parameters which we will never use anyways. */
    filtered_parameters.clear();
 
@@ -3356,6 +3366,7 @@ void vulkan_filter_chain_free(
       vulkan_filter_chain_t *chain)
 {
    delete chain;
+   input_state_get_ptr()->shader_uses_sensors = false;
 }
 
 void vulkan_filter_chain_set_shader(
