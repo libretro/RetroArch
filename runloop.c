@@ -2533,8 +2533,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (!input_sensors_enable)
             return false;
 
-         iface->set_sensor_state = input_set_sensor_state;
-         iface->get_sensor_input = input_get_sensor_state;
+         iface->set_sensor_state = input_core_set_sensor_state;
+         iface->get_sensor_input = input_core_get_sensor_state;
          break;
       }
       case RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE:
@@ -4094,6 +4094,13 @@ void runloop_event_deinit_core(void)
    settings_t        *settings = config_get_ptr();
 
    core_unload_game();
+
+   /* Reset core sensor tracking — the core is going away */
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      input_st->core_accel_rate      = 0;
+      input_st->core_gyro_rate       = 0;
+   }
 
    video_st->frame_cache_data  = NULL;
 

@@ -4717,6 +4717,62 @@ bool input_set_sensor_state(unsigned port,
       joy_idx, input_sensors_enable, action, rate);
 }
 
+/* Core-facing wrappers that track which sensors the core has enabled.
+ * Used as the retro_sensor_interface callbacks so the frontend knows
+ * what the core requested independently of shader/platform enables. */
+bool input_core_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         input_st->core_accel_rate = rate;
+         break;
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         input_st->core_accel_rate = 0;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         input_st->core_gyro_rate = rate;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         input_st->core_gyro_rate = 0;
+         break;
+      default:
+         break;
+   }
+
+   /* For accel/gyro, the poll loop reconciles core/shader/frontend
+    * state and manages driver enable/disable. For other sensor types,
+    * pass through to the driver directly. */
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         return true;
+      default:
+         return input_set_sensor_state(port, action, rate);
+   }
+}
+
+float input_core_get_sensor_state(unsigned port, unsigned id)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   /* Only return data for sensor types the core has enabled */
+   if (id <= RETRO_SENSOR_ACCELEROMETER_Z && !input_st->core_accel_rate)
+      return 0.0f;
+   if (  id >= RETRO_SENSOR_GYROSCOPE_X
+      && id <= RETRO_SENSOR_GYROSCOPE_Z
+      && !input_st->core_gyro_rate)
+      return 0.0f;
+
+   return input_get_sensor_state(port, id);
+}
+
 const char *joypad_driver_name(unsigned i)
 {
    if (!input_driver_st.primary_joypad || !input_driver_st.primary_joypad->name)
@@ -6455,6 +6511,37 @@ void input_driver_poll(void)
       sec_joypad->poll();
    if (input && input->poll)
       input->poll(input_st->current_data);
+
+   /* Enable/disable sensors at the driver level based on demand
+    * from shaders and/or core. Setting gates everything. */
+   if (settings->bools.input_sensors_enable)
+   {
+      bool want = input_st->shader_uses_sensors
+         || input_st->core_accel_rate
+         || input_st->core_gyro_rate;
+
+      if (want && !input_st->frontend_sensors_enabled)
+      {
+         input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
+               input_st->core_accel_rate ? input_st->core_accel_rate : 60);
+         input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_ENABLE,
+               input_st->core_gyro_rate ? input_st->core_gyro_rate : 60);
+         input_st->frontend_sensors_enabled = true;
+         input_sensor_start_rest_capture();
+      }
+      else if (!want && input_st->frontend_sensors_enabled)
+      {
+         input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
+         input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
+         input_st->frontend_sensors_enabled = false;
+      }
+   }
+   else if (input_st->frontend_sensors_enabled)
+   {
+      input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
+      input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
+      input_st->frontend_sensors_enabled = false;
+   }
 
    /* Update accelerometer rest position capture (runs for ~30 frames
     * after focus gain, then stops) */

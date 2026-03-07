@@ -677,6 +677,10 @@ typedef struct
    float rest_accum[3];
    unsigned rest_sample_count;
    bool rest_capturing;
+   bool shader_uses_sensors;
+   bool frontend_sensors_enabled;
+   unsigned core_accel_rate; /* >0 means core wants accel at this rate */
+   unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
 } input_driver_state_t;
 
 
@@ -1107,6 +1111,11 @@ void input_sensor_start_rest_capture(void);
 
 bool input_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate);
+
+/* Core-facing sensor callbacks that track core enable/disable state */
+bool input_core_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
+float input_core_get_sensor_state(unsigned port, unsigned id);
 
 void *input_driver_init_wrap(input_driver_t *input, const char *name);
 

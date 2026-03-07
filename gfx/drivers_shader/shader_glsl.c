@@ -765,6 +765,11 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->accelerometer         = gl_glsl_get_uniform(glsl, prog, "Accelerometer");
    uni->accelerometer_rest    = gl_glsl_get_uniform(glsl, prog, "AccelerometerRest");
 
+   if (  uni->gyroscope >= 0
+      || uni->accelerometer >= 0
+      || uni->accelerometer_rest >= 0)
+      input_state_get_ptr()->shader_uses_sensors = true;
+
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
 
@@ -874,6 +879,7 @@ static void gl_glsl_deinit(void *data)
       return;
 
    gl_glsl_destroy_resources(glsl);
+   input_state_get_ptr()->shader_uses_sensors = false;
 
    free(glsl);
 }

@@ -1117,6 +1117,16 @@ bool Pass::init_pipeline()
    reflect_parameter("Accelerometer", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER]);
    reflect_parameter("AccelerometerRest", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST]);
 
+   {
+      auto &g = reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
+      auto &a = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
+      auto &r = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
+      if (g.uniform || g.push_constant ||
+          a.uniform || a.push_constant ||
+          r.uniform || r.push_constant)
+         input_state_get_ptr()->shader_uses_sensors = true;
+   }
+
    reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL][0]);
    reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE][0]);
    reflect_parameter_array("OriginalHistorySize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY]);
@@ -2804,7 +2814,11 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
 struct video_shader *gl3_filter_chain_get_preset(
       gl3_filter_chain_t *chain) { return chain->get_shader_preset(); }
-void gl3_filter_chain_free(gl3_filter_chain_t *chain) { delete chain; }
+void gl3_filter_chain_free(gl3_filter_chain_t *chain)
+{
+   delete chain;
+   input_state_get_ptr()->shader_uses_sensors = false;
+}
 
 void gl3_filter_chain_set_shader(
       gl3_filter_chain_t *chain,
