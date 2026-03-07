@@ -1709,6 +1709,16 @@ STEAM INTEGRATION USING MIST
 #endif
 
 /*============================================================
+MCP SERVER
+============================================================ */
+#ifdef HAVE_MCP
+#include "../network/mcp/mcp_server.c"
+#include "../network/mcp/mcp_http_transport.c"
+#include "../network/mcp/mcp_adapter.c"
+#include "../network/mcp/mcp_adapter_tool_list.c"
+#endif
+
+/*============================================================
 CLOUD SYNC
 ============================================================ */
 #ifdef HAVE_CLOUDSYNC
