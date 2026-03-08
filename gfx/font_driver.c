@@ -884,12 +884,13 @@ void font_driver_free(font_data_t *font)
 {
    if (font)
    {
+      const font_renderer_t *renderer;
       bool is_threaded        = false;
 #ifdef HAVE_THREADS
       bool *is_threaded_tmp   = video_driver_get_threaded();
       is_threaded             = *is_threaded_tmp;
 #endif
-      const font_renderer_t *renderer = font ? font->renderer : NULL;
+      renderer                = font ? font->renderer : NULL;
 
       if (renderer && renderer->free)
          renderer->free(font->renderer_data, is_threaded);
