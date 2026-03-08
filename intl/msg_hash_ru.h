@@ -4919,7 +4919,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
-   "Показывать в браузере файлы, поддерживаемые медиаплеером."
+   "Показывать файлы, поддерживаемые медиаплеером."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
@@ -4927,7 +4927,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
-   "Показывать в браузере файлы, поддерживаемые просмотрщиком изображений."
+   "Показывать файлы, поддерживаемые средством просмотра изображений."
    )
 
 /* Settings > Frame Throttle */
