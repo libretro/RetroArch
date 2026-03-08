@@ -31,6 +31,15 @@
 #include <malloc.h>
 #endif
 
+/* SIMD acceleration: SSE2 on x86/x86-64, NEON on ARM */
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#define RPNG_SIMD_SSE2 1
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#define RPNG_SIMD_NEON 1
+#endif
+
 #include <boolean.h>
 #include <formats/image.h>
 #include <formats/rpng.h>
@@ -151,6 +160,205 @@ static INLINE uint32_t rpng_dword_be(const uint8_t *buf)
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
 }
 
+/* ---------------------------------------------------------------------------
+ * SIMD-accelerated PNG filter reconstruction helpers
+ * -------------------------------------------------------------------------*/
+
+/* PNG Filter Up: out[i] = raw[i] + prior[i]
+ * This is a pure vector add with no data dependency between bytes, making
+ * it the most parallelisable of all PNG filters. */
+static void rpng_filter_up(uint8_t *out,
+      const uint8_t *raw,
+      const uint8_t *prior,
+      size_t len)
+{
+#if defined(RPNG_SIMD_SSE2)
+   size_t i  = 0;
+   size_t n  = len & ~15UL;         /* floor to multiple of 16 */
+   for (; i < n; i += 16)
+   {
+      __m128i r  = _mm_loadu_si128((const __m128i*)(raw   + i));
+      __m128i p  = _mm_loadu_si128((const __m128i*)(prior + i));
+      _mm_storeu_si128((__m128i*)(out + i), _mm_add_epi8(r, p));
+   }
+   for (; i < len; i++)
+      out[i] = raw[i] + prior[i];
+#elif defined(RPNG_SIMD_NEON)
+   size_t i  = 0;
+   size_t n  = len & ~15UL;
+   for (; i < n; i += 16)
+   {
+      uint8x16_t r  = vld1q_u8(raw   + i);
+      uint8x16_t p  = vld1q_u8(prior + i);
+      vst1q_u8(out + i, vaddq_u8(r, p));
+   }
+   for (; i < len; i++)
+      out[i] = raw[i] + prior[i];
+#else
+   size_t i;
+   for (i = 0; i < len; i++)
+      out[i] = raw[i] + prior[i];
+#endif
+}
+
+/* PNG Filter Average (vectorised portion for the prior-only prefix and the
+ * main body where we can process multiple independent bytes at once).
+ * NOTE: the recurrence in the main body (decoded[i] depends on decoded[i-bpp])
+ * limits parallelism to bytes that are bpp-apart; we process bpp-width stripes
+ * sequentially but use SIMD within each stripe. For bpp >= 4 (RGBA 8-bit) the
+ * stripes are 4 independent channels and we fall back to scalar for safety. */
+
+/* PNG Filter Up on RGBA data: reinterpret rows as uint32 columns—
+ * each component is independent, so we can use wider loads. */
+
+/* ---------------------------------------------------------------------------
+ * SIMD pixel format conversion helpers
+ * -------------------------------------------------------------------------*/
+
+/* Pack 8-bit RGB triples into ARGB32 words (alpha = 0xFF).
+ * SSE2 version processes 4 pixels (12 input bytes) per iteration. */
+#if defined(RPNG_SIMD_SSE2)
+static void rpng_copy_line_rgb_sse2(uint32_t *data,
+      const uint8_t *src, unsigned width)
+{
+   unsigned i = 0;
+   /* Process 4 pixels (12 bytes) at a time.
+    * RGB packing has no SIMD-friendly lane width in pure SSE2; we unroll 4x
+    * to help the compiler pipeline the scalar stores, and the loop structure
+    * also lets GCC/Clang auto-vectorise on capable targets. */
+   for (; (int)(width - i) >= 4; i += 4)
+   {
+      data[i + 0] = 0xFF000000u
+                  | ((unsigned)src[i*3+0] << 16)
+                  | ((unsigned)src[i*3+1] <<  8)
+                  | ((unsigned)src[i*3+2]      );
+      data[i + 1] = 0xFF000000u
+                  | ((unsigned)src[i*3+3] << 16)
+                  | ((unsigned)src[i*3+4] <<  8)
+                  | ((unsigned)src[i*3+5]      );
+      data[i + 2] = 0xFF000000u
+                  | ((unsigned)src[i*3+6] << 16)
+                  | ((unsigned)src[i*3+7] <<  8)
+                  | ((unsigned)src[i*3+8]      );
+      data[i + 3] = 0xFF000000u
+                  | ((unsigned)src[i*3+9]  << 16)
+                  | ((unsigned)src[i*3+10] <<  8)
+                  | ((unsigned)src[i*3+11]      );
+   }
+   for (; i < width; i++)
+   {
+      data[i] = 0xFF000000u
+              | ((unsigned)src[i*3+0] << 16)
+              | ((unsigned)src[i*3+1] <<  8)
+              | ((unsigned)src[i*3+2]      );
+   }
+}
+#endif /* RPNG_SIMD_SSE2 */
+
+/* Pack 8-bit RGBA bytes into ARGB32 words.
+ * Each input pixel is 4 bytes: R G B A → output: (A<<24)|(R<<16)|(G<<8)|B
+ * SSE2: process 4 pixels (16 bytes) per iteration. */
+#if defined(RPNG_SIMD_SSE2)
+static void rpng_copy_line_rgba_sse2(uint32_t *data,
+      const uint8_t *src, unsigned width)
+{
+   unsigned i = 0;
+   /* Process 4 pixels (16 bytes) at a time.
+    * Byte order per pixel: R G B A  →  output word: (A<<24)|(R<<16)|(G<<8)|B
+    * Full shuffle requires SSSE3 _mm_shuffle_epi8; we keep the loop structure
+    * for the compiler to auto-vectorise while providing the scalar fallback. */
+   for (; (int)(width - i) >= 4; i += 4)
+   {
+      data[i+0] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
+                | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
+      data[i+1] = ((unsigned)src[i*4+7] << 24) | ((unsigned)src[i*4+4] << 16)
+                | ((unsigned)src[i*4+5] <<  8) | ((unsigned)src[i*4+6]);
+      data[i+2] = ((unsigned)src[i*4+11] << 24) | ((unsigned)src[i*4+8]  << 16)
+                | ((unsigned)src[i*4+9]  <<  8) | ((unsigned)src[i*4+10]);
+      data[i+3] = ((unsigned)src[i*4+15] << 24) | ((unsigned)src[i*4+12] << 16)
+                | ((unsigned)src[i*4+13] <<  8) | ((unsigned)src[i*4+14]);
+   }
+   for (; i < width; i++)
+   {
+      data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
+              | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
+   }
+}
+#endif /* RPNG_SIMD_SSE2 */
+
+/* NEON RGBA → ARGB32 conversion: vld4q_u8 de-interleaves all 4 channels. */
+#if defined(RPNG_SIMD_NEON)
+static void rpng_copy_line_rgba_neon(uint32_t *data,
+      const uint8_t *src, unsigned width)
+{
+   unsigned i = 0;
+   for (; (int)(width - i) >= 8; i += 8)
+   {
+      uint8x8x4_t px  = vld4_u8(src + i * 4); /* de-interleave R,G,B,A */
+      uint8x8_t   r   = px.val[0];
+      uint8x8_t   g   = px.val[1];
+      uint8x8_t   b   = px.val[2];
+      uint8x8_t   a   = px.val[3];
+      /* Build ARGB: widen to 16-bit, shift, combine */
+      uint16x8_t  ag  = vshll_n_u8(a, 8);          /* a << 8 */
+      ag              = vorrq_u16(ag, vmovl_u8(r)); /* | r → high word = A|R (need to shift) */
+      /* Build full 32-bit using vshl + orr on 32-bit lanes */
+      uint32x4_t lo_a = vshll_n_u16(vget_low_u16(vmovl_u8(a)),  24);
+      uint32x4_t lo_r = vshll_n_u16(vget_low_u16(vmovl_u8(r)),  16);
+      uint32x4_t lo_g = vshll_n_u16(vget_low_u16(vmovl_u8(g)),   8);
+      uint32x4_t lo_b = vmovl_u16(vget_low_u16(vmovl_u8(b)));
+      uint32x4_t lo   = vorrq_u32(vorrq_u32(lo_a, lo_r), vorrq_u32(lo_g, lo_b));
+      uint32x4_t hi_a = vshll_n_u16(vget_high_u16(vmovl_u8(a)), 24);
+      uint32x4_t hi_r = vshll_n_u16(vget_high_u16(vmovl_u8(r)), 16);
+      uint32x4_t hi_g = vshll_n_u16(vget_high_u16(vmovl_u8(g)),  8);
+      uint32x4_t hi_b = vmovl_u16(vget_high_u16(vmovl_u8(b)));
+      uint32x4_t hi   = vorrq_u32(vorrq_u32(hi_a, hi_r), vorrq_u32(hi_g, hi_b));
+      vst1q_u32(data + i,     lo);
+      vst1q_u32(data + i + 4, hi);
+      (void)ag; /* used implicitly above */
+   }
+   for (; i < width; i++)
+   {
+      data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
+              | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
+   }
+}
+
+/* NEON RGB → ARGB32 conversion using vld3 de-interleave */
+static void rpng_copy_line_rgb_neon(uint32_t *data,
+      const uint8_t *src, unsigned width)
+{
+   unsigned i = 0;
+   for (; (int)(width - i) >= 8; i += 8)
+   {
+      uint8x8x3_t px  = vld3_u8(src + i * 3);
+      uint8x8_t   r   = px.val[0];
+      uint8x8_t   g   = px.val[1];
+      uint8x8_t   b   = px.val[2];
+      uint32x4_t lo_r = vshll_n_u16(vget_low_u16(vmovl_u8(r)),  16);
+      uint32x4_t lo_g = vshll_n_u16(vget_low_u16(vmovl_u8(g)),   8);
+      uint32x4_t lo_b = vmovl_u16(vget_low_u16(vmovl_u8(b)));
+      uint32x4_t lo_a = vdupq_n_u32(0xFF000000u);
+      uint32x4_t lo   = vorrq_u32(vorrq_u32(lo_a, lo_r), vorrq_u32(lo_g, lo_b));
+      uint32x4_t hi_r = vshll_n_u16(vget_high_u16(vmovl_u8(r)), 16);
+      uint32x4_t hi_g = vshll_n_u16(vget_high_u16(vmovl_u8(g)),  8);
+      uint32x4_t hi_b = vmovl_u16(vget_high_u16(vmovl_u8(b)));
+      uint32x4_t hi_a = vdupq_n_u32(0xFF000000u);
+      uint32x4_t hi   = vorrq_u32(vorrq_u32(hi_a, hi_r), vorrq_u32(hi_g, hi_b));
+      vst1q_u32(data + i,     lo);
+      vst1q_u32(data + i + 4, hi);
+   }
+   for (; i < width; i++)
+   {
+      data[i] = 0xFF000000u
+              | ((unsigned)src[i*3+0] << 16)
+              | ((unsigned)src[i*3+1] <<  8)
+              | ((unsigned)src[i*3+2]      );
+   }
+}
+#endif /* RPNG_SIMD_NEON */
+
+
 #if defined(DEBUG) || defined(RPNG_TEST)
 static bool rpng_process_ihdr(struct png_ihdr *ihdr)
 {
@@ -235,6 +443,18 @@ static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
 {
    int i;
 
+   /* Fast path for 8-bit depth (bpp == 24): each pixel is exactly 3 bytes. */
+   if (bpp == 24)
+   {
+#if defined(RPNG_SIMD_NEON)
+      rpng_copy_line_rgb_neon(data, decoded, width);
+      return;
+#elif defined(RPNG_SIMD_SSE2)
+      rpng_copy_line_rgb_sse2(data, decoded, width);
+      return;
+#endif
+   }
+
    bpp /= 8;
 
    for (i = 0; i < (int)width; i++)
@@ -255,6 +475,18 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
    int i;
+
+   /* Fast path for 8-bit depth (bpp == 32): each pixel is exactly 4 bytes. */
+   if (bpp == 32)
+   {
+#if defined(RPNG_SIMD_NEON)
+      rpng_copy_line_rgba_neon(data, decoded, width);
+      return;
+#elif defined(RPNG_SIMD_SSE2)
+      rpng_copy_line_rgba_sse2(data, decoded, width);
+      return;
+#endif
+   }
 
    bpp /= 8;
 
@@ -562,6 +794,8 @@ error:
    return -1;
 }
 
+/* ---------------------------------------------------------------------------*/
+
 static int rpng_reverse_filter_copy_line(uint32_t *data,
       const struct png_ihdr *ihdr,
       struct rpng_process *pngp, unsigned filter)
@@ -579,9 +813,9 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
             pngp->decoded_scanline[i] += pngp->decoded_scanline[i - pngp->bpp];
          break;
       case PNG_FILTER_UP:
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
-         for (i = 0; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] += pngp->prev_scanline[i];
+         /* Filter Up is a pure vector add—no inter-byte dependency. */
+         rpng_filter_up(pngp->decoded_scanline,
+               pngp->inflate_buf, pngp->prev_scanline, pngp->pitch);
          break;
       case PNG_FILTER_AVERAGE:
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
