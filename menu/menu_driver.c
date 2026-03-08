@@ -5603,6 +5603,14 @@ unsigned menu_event(
          menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
          setting_type   = entry.setting_type;
 
+#ifdef HAVE_CHEATS
+         /* Treat cheat left/right toggle as bools */
+         if (     !setting_type
+               && entry.type >= MENU_SETTINGS_CHEAT_BEGIN
+               && entry.type <= MENU_SETTINGS_CHEAT_END)
+            setting_type = ST_BOOL;
+#endif
+
          if (setting_type == ST_BOOL)
          {
             char value[8];

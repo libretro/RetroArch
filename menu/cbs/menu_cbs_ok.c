@@ -2444,7 +2444,7 @@ static int generic_action_ok(const char *path,
          flush_char = msg_hash_to_str(flush_id);
          cheat_manager_state_free();
 
-         if (!cheat_manager_load(action_path,false))
+         if (!cheat_manager_load(action_path, false))
             return -1;
 #endif
          break;
@@ -2452,7 +2452,7 @@ static int generic_action_ok(const char *path,
 #ifdef HAVE_CHEATS
          flush_char = msg_hash_to_str(flush_id);
 
-         if (!cheat_manager_load(action_path,true))
+         if (!cheat_manager_load(action_path, true))
             return -1;
 #endif
          break;
@@ -4487,6 +4487,8 @@ push_dropdown_list:
 static int action_ok_cheat_reload_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
+   char msg[128];
    struct menu_state *menu_st      = menu_state_get_ptr();
    settings_t           *settings  = config_get_ptr();
    const char *path_cheat_database = settings->paths.path_cheat_database;
@@ -4498,6 +4500,13 @@ static int action_ok_cheat_reload_cheats(const char *path,
 
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;
+
+   _len = strlcpy(msg,
+         msg_hash_to_str(MSG_CHEAT_RELOAD_ALL_SUCCESS), sizeof(msg));
+
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+
    return 0;
 }
 #endif
@@ -4563,7 +4572,7 @@ static int action_ok_cheat_add_top(const char *path,
    _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
 
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
 
    return 0;
 }
@@ -4584,7 +4593,7 @@ static int action_ok_cheat_add_bottom(const char *path,
          msg_hash_to_str(MSG_CHEAT_ADD_BOTTOM_SUCCESS), sizeof(msg));
 
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
 
    return 0;
 }
@@ -4596,7 +4605,6 @@ static int action_ok_cheat_delete_all(const char *path,
    char msg[128];
    struct menu_state *menu_st       = menu_state_get_ptr();
 
-   cheat_manager_state.delete_state = 0;
    cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
@@ -4769,26 +4777,23 @@ static int action_ok_cheat_delete(const char *path,
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned int new_size      = cheat_manager_get_size() - 1;
 
-   if (new_size >0)
+   if (new_size > 0)
    {
       unsigned i;
 
-      if (cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code)
-         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code);
-      if (cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc)
-         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc);
-
-      for (i = cheat_manager_state.working_cheat.idx; i <cheat_manager_state.size-1; i++)
+      for (i = cheat_manager_state.working_cheat.idx; i < cheat_manager_state.size - 1; i++)
       {
-         memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i+1], sizeof(struct item_cheat ));
-         cheat_manager_state.cheats[i].idx--;
+         memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i + 1], sizeof(struct item_cheat));
+
+         if (cheat_manager_state.cheats[i + 1].code)
+            cheat_manager_state.cheats[i].code = strdup(cheat_manager_state.cheats[i + 1].code);
+
+         if (cheat_manager_state.cheats[i + 1].desc)
+            cheat_manager_state.cheats[i].desc = strdup(cheat_manager_state.cheats[i + 1].desc);
+
+         if (cheat_manager_state.cheats[i].idx)
+            cheat_manager_state.cheats[i].idx--;
       }
-
-      cheat_manager_state.cheats[cheat_manager_state.size-1].code            = NULL;
-      cheat_manager_state.cheats[cheat_manager_state.size-1].desc            = NULL;
-      cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc = NULL;
-      cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code = NULL;
-
    }
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);

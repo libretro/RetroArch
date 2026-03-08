@@ -862,30 +862,16 @@ static size_t menu_action_setting_disp_set_label_cheat(
       const char *path,
       char *s2, size_t len2)
 {
-   size_t _len = 0;
+   size_t _len          = 0;
    unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
 
    if (cheat_index < cheat_manager_get_buf_size())
-   {
-      _len =
-         snprintf(s, len, "(%s) : ",
-                 cheat_manager_get_code_state(cheat_index)
+      _len = strlcpy(s,
+            cheat_manager_get_code_state(cheat_index)
                ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)
-               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+            len);
 
-      if (cheat_manager_state.cheats[cheat_index].handler == CHEAT_HANDLER_TYPE_EMU)
-      {
-         const char *code = cheat_manager_get_code(cheat_index);
-         _len += strlcpy(s + _len,
-                 code
-               ? code
-               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               len - _len);
-      }
-      else
-         _len += snprintf(s + _len, len - _len, "%08X",
-               cheat_manager_state.cheats[cheat_index].address);
-   }
    *w = 19;
 
    if (!string_is_empty(path))
