@@ -828,7 +828,8 @@ static void content_file_get_path(
          {
             if (previous_serialized_path != NULL)
                free(previous_serialized_path);
-            previous_serialized_path = content_path = serialized_path;
+            previous_serialized_path = (char*)serialized_path;
+            content_path             = (char*)serialized_path;
          }
       }
    }
