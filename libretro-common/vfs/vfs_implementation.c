@@ -623,7 +623,10 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 
          if ((stream->mapped = (uint8_t*)mmap((void*)0,
                stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0)) == MAP_FAILED)
+         {
+            stream->mapped = NULL;
             stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
+         }
       }
 #endif
    }
