@@ -8682,12 +8682,6 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
                if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS),
-                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS),
-                        MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-               if (menu_entries_append(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
                         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS),
                         MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
@@ -8709,6 +8703,12 @@ unsigned menu_displaylist_build_list(
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL),
                         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
                         MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS),
+                        MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
             }
@@ -9561,28 +9561,6 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
 
-            cheat_label[0] = '\0';
-            snprintf(cheat_label, sizeof(cheat_label),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES),
-                  cheat_manager_state.num_matches);
-
-            if (menu_entries_append(list,
-                     cheat_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_MATCHES),
-                     MENU_ENUM_LABEL_CHEAT_ADD_MATCHES,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_CHEAT_DELETE_MATCH,
-                     PARSE_ONLY_UINT, false) != -1)
-               count++;
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_CHEAT_COPY_MATCH,
-                     PARSE_ONLY_UINT, false) != -1)
-               count++;
-
             {
                unsigned int address_mask = 0;
                unsigned int address      = 0;
@@ -9593,7 +9571,7 @@ unsigned menu_displaylist_build_list(
 
                cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW,
                      cheat_manager_state.match_idx,
-                     &address, &address_mask, &prev_val, &curr_val) ;
+                     &address, &address_mask, &prev_val, &curr_val);
                snprintf(cheat_label, sizeof(cheat_label),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_MATCH),
                      address, address_mask);
@@ -9609,14 +9587,38 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false) != -1)
                count++;
 
+            cheat_label[0] = '\0';
+
+            snprintf(cheat_label, sizeof(cheat_label),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES),
+                  cheat_manager_state.num_matches);
+
+            if (menu_entries_append(list,
+                     cheat_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_MATCHES),
+                     MENU_ENUM_LABEL_CHEAT_ADD_MATCHES,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CHEAT_COPY_MATCH,
+                     PARSE_ONLY_UINT, false) != -1)
+               count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CHEAT_DELETE_MATCH,
+                     PARSE_ONLY_UINT, false) != -1)
+               count++;
+
             {
                rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH);
                if (setting)
-                  setting->max          = cheat_manager_state.num_matches-1;
+                  setting->max          = cheat_manager_state.num_matches - 1;
                if ((setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_COPY_MATCH)))
-                  setting->max          = cheat_manager_state.num_matches-1;
+                  setting->max          = cheat_manager_state.num_matches - 1;
                if ((setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY)))
-                  setting->max          = cheat_manager_state.total_memory_size>0?cheat_manager_state.total_memory_size-1:0 ;
+                  setting->max          = (cheat_manager_state.total_memory_size > 0)
+                        ? cheat_manager_state.total_memory_size - 1 : 0;
             }
          }
 #endif
@@ -9629,16 +9631,19 @@ unsigned menu_displaylist_build_list(
 
             {
                rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS);
-               if (setting )
-                  setting->max = cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1;
+               if (setting)
+                  setting->max = (cheat_manager_state.total_memory_size == 0)
+                        ? 0 : cheat_manager_state.total_memory_size - 1;
 
                setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
-               if (setting )
-                  setting->max = (cheat_manager_state.working_cheat.memory_search_size < 3) ? 255 : 0 ;
+               if (setting)
+                  setting->max = (cheat_manager_state.working_cheat.memory_search_size < 3)
+                        ? 255 : 0;
 
                setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY);
-               if (setting )
-                  setting->max = cheat_manager_state.total_memory_size>0?cheat_manager_state.total_memory_size-1:0 ;
+               if (setting)
+                  setting->max = (cheat_manager_state.total_memory_size > 0)
+                        ? cheat_manager_state.total_memory_size - 1 : 0;
             }
 
             {
