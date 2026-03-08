@@ -244,6 +244,13 @@ static void udev_open_sensor_node(struct udev_joypad *pad,
             memset(&pad->sensor_absinfo[1], 0, sizeof(pad->sensor_absinfo[1]));
          if (ioctl(fd, EVIOCGABS(ABS_RZ), &pad->sensor_absinfo[2]) < 0)
             memset(&pad->sensor_absinfo[2], 0, sizeof(pad->sensor_absinfo[2]));
+
+         if (pad->sensor_absinfo[0].resolution == 0)
+            pad->sensor_absinfo[0].resolution = 88;
+         if (pad->sensor_absinfo[1].resolution == 0)
+            pad->sensor_absinfo[1].resolution = 88;
+         if (pad->sensor_absinfo[2].resolution == 0)
+            pad->sensor_absinfo[2].resolution = 88;
       }
       else
       {
