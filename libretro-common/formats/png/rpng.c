@@ -246,12 +246,10 @@ static void rpng_copy_line_rgb_sse2(uint32_t *data,
                   | ((unsigned)src[i*3+11]      );
    }
    for (; i < width; i++)
-   {
       data[i] = 0xFF000000u
               | ((unsigned)src[i*3+0] << 16)
               | ((unsigned)src[i*3+1] <<  8)
               | ((unsigned)src[i*3+2]      );
-   }
 }
 #endif /* RPNG_SIMD_SSE2 */
 
@@ -279,10 +277,8 @@ static void rpng_copy_line_rgba_sse2(uint32_t *data,
                 | ((unsigned)src[i*4+13] <<  8) | ((unsigned)src[i*4+14]);
    }
    for (; i < width; i++)
-   {
       data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
               | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
-   }
 }
 #endif /* RPNG_SIMD_SSE2 */
 
@@ -318,10 +314,8 @@ static void rpng_copy_line_rgba_neon(uint32_t *data,
       (void)ag; /* used implicitly above */
    }
    for (; i < width; i++)
-   {
       data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
               | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
-   }
 }
 
 /* NEON RGB → ARGB32 conversion using vld3 de-interleave */
@@ -349,15 +343,12 @@ static void rpng_copy_line_rgb_neon(uint32_t *data,
       vst1q_u32(data + i + 4, hi);
    }
    for (; i < width; i++)
-   {
       data[i] = 0xFF000000u
               | ((unsigned)src[i*3+0] << 16)
               | ((unsigned)src[i*3+1] <<  8)
               | ((unsigned)src[i*3+2]      );
-   }
 }
 #endif /* RPNG_SIMD_NEON */
-
 
 #if defined(DEBUG) || defined(RPNG_TEST)
 static bool rpng_process_ihdr(struct png_ihdr *ihdr)
@@ -443,7 +434,8 @@ static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
 {
    int i;
 
-   /* Fast path for 8-bit depth (bpp == 24): each pixel is exactly 3 bytes. */
+   /* Fast path for 8-bit depth (bpp == 24): 
+    * each pixel is exactly 3 bytes. */
    if (bpp == 24)
    {
 #if defined(RPNG_SIMD_NEON)
@@ -476,7 +468,8 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
 {
    int i;
 
-   /* Fast path for 8-bit depth (bpp == 32): each pixel is exactly 4 bytes. */
+   /* Fast path for 8-bit depth (bpp == 32): 
+    * each pixel is exactly 4 bytes. */
    if (bpp == 32)
    {
 #if defined(RPNG_SIMD_NEON)
@@ -835,8 +828,10 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
          for (i = 0; i < pngp->bpp; i++)
             pngp->decoded_scanline[i] += pngp->prev_scanline[i];
          for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] += paeth(pngp->decoded_scanline[i - pngp->bpp],
-                  pngp->prev_scanline[i], pngp->prev_scanline[i - pngp->bpp]);
+            pngp->decoded_scanline[i] += paeth(
+                  pngp->decoded_scanline[i - pngp->bpp],
+                  pngp->prev_scanline[i],
+                  pngp->prev_scanline[i - pngp->bpp]);
          break;
       default:
          return IMAGE_PROCESS_ERROR_END;
@@ -856,11 +851,13 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
                ihdr->depth, pngp->palette);
          break;
       case PNG_IHDR_COLOR_GRAY_ALPHA:
-         rpng_reverse_filter_copy_line_gray_alpha(data, pngp->decoded_scanline, ihdr->width,
+         rpng_reverse_filter_copy_line_gray_alpha(
+               data, pngp->decoded_scanline, ihdr->width,
                ihdr->depth);
          break;
       case PNG_IHDR_COLOR_RGBA:
-         rpng_reverse_filter_copy_line_rgba(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+         rpng_reverse_filter_copy_line_rgba(
+               data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
          break;
    }
 
@@ -990,13 +987,14 @@ static int rpng_load_image_argb_process_inflate_init(
    enum trans_stream_error err;
    uint32_t rd, wn;
    struct rpng_process *process = (struct rpng_process*)rpng->process;
-   bool to_continue        = (process->avail_in > 0
-         && process->avail_out > 0);
+   bool to_continue             = (process->avail_in  > 0
+                                && process->avail_out > 0);
 
    if (!to_continue)
       goto end;
 
-   zstatus = process->stream_backend->trans(process->stream, false, &rd, &wn, &err);
+   zstatus = process->stream_backend->trans(
+      process->stream, false, &rd, &wn, &err);
 
    if (!zstatus && err != TRANS_STREAM_ERROR_BUFFER_FULL)
       goto error;
@@ -1013,7 +1011,8 @@ end:
    process->stream = NULL;
 
 #ifdef GEKKO
-   /* we often use these in textures, make sure they're 32-byte aligned */
+   /* We often use these in textures, make sure 
+    * they're 32-byte aligned */
    *data = (uint32_t*)memalign(32, rpng->ihdr.width *
          rpng->ihdr.height * sizeof(uint32_t));
 #else
@@ -1031,12 +1030,12 @@ end:
       if (rpng_reverse_filter_init(&rpng->ihdr, process) == -1)
          goto false_end;
 
-   process->flags              |=  RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
+   process->flags |=  RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
    return 1;
 
 error:
 false_end:
-   process->flags              &= ~RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
+   process->flags &= ~RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
    return -1;
 }
 
@@ -1252,7 +1251,8 @@ bool rpng_iterate_image(rpng_t *rpng)
 
          if (     rpng->ihdr.width  == 0
                || rpng->ihdr.height == 0
-               /* ensure multiplications don't overflow and wrap around, that'd give buffer overflow crashes */
+               /* Ensure multiplications don't overflow and wrap around, 
+                * that'd give buffer overflow crashes */
                || (uint64_t)rpng->ihdr.width*rpng->ihdr.height*sizeof(uint32_t) >= 0x80000000)
             return false;
 
@@ -1390,7 +1390,8 @@ int rpng_process_image(rpng_t *rpng,
 
    if (rpng->ihdr.interlace && rpng->process)
       return rpng_reverse_filter_adam7(data, &rpng->ihdr, rpng->process);
-   return rpng_reverse_filter_regular_iterate(data, &rpng->ihdr, rpng->process);
+   return rpng_reverse_filter_regular_iterate(data,
+      &rpng->ihdr, rpng->process);
 
 error:
    if (rpng->process)
@@ -1418,7 +1419,8 @@ void rpng_free(rpng_t *rpng)
          free(rpng->process->inflate_buf);
       if (rpng->process->stream)
       {
-         if (rpng->process->stream_backend && rpng->process->stream_backend->stream_free)
+         if (   rpng->process->stream_backend 
+             && rpng->process->stream_backend->stream_free)
             rpng->process->stream_backend->stream_free(rpng->process->stream);
          else
             free(rpng->process->stream);
