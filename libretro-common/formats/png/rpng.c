@@ -36,8 +36,10 @@
 #include <emmintrin.h>
 #define RPNG_SIMD_SSE2 1
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#if !defined(VITA) && !defined(WEBOS) && !defined(HAVE_LIBNX)
 #include <arm_neon.h>
 #define RPNG_SIMD_NEON 1
+#endif
 #endif
 
 #include <boolean.h>
