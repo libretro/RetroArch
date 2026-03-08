@@ -51,19 +51,22 @@ static const char *gfx_thumbnail_get_type(
       switch (thumbnail_id)
       {
          case GFX_THUMBNAIL_RIGHT:
-            if (path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            if (   path_data->playlist_right_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
                type = (unsigned)path_data->playlist_right_mode - 1;
             else
                type = gfx_thumbnails;
             break;
          case GFX_THUMBNAIL_LEFT:
-            if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            if (   path_data->playlist_left_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
                type = (unsigned)path_data->playlist_left_mode - 1;
             else
                type = left_thumbnails;
             break;
          case GFX_THUMBNAIL_ICON:
-            if (path_data->playlist_icon_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            if (   path_data->playlist_icon_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
                type = (unsigned)path_data->playlist_icon_mode - 1;
             else
                type = icon_thumbnails;
@@ -94,7 +97,8 @@ end:
 
 /* Fills content_img field of path_data using existing
  * content_label field (for internal use only) */
-void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src, bool shorten)
+void gfx_thumbnail_fill_content_img(char *s,
+   size_t len, const char *src, bool shorten)
 {
    char *scrub_char_ptr = NULL;
    /* Copy source label string */
@@ -184,15 +188,18 @@ bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data,
       switch (thumbnail_id)
       {
          case GFX_THUMBNAIL_RIGHT:
-            if (path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            if (   path_data->playlist_right_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
                return path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
             return gfx_thumbnails != 0;
          case GFX_THUMBNAIL_LEFT:
-            if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            if (   path_data->playlist_left_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
                return path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
             return menu_left_thumbnails != 0;
          case GFX_THUMBNAIL_ICON:
-            if (path_data->playlist_icon_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+            if (   path_data->playlist_icon_mode 
+                != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
                 return path_data->playlist_icon_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
             return menu_icon_thumbnails != 0;
          default:
@@ -327,9 +334,11 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
 
    /* Determine content image name */
    gfx_thumbnail_fill_content_img(path_data->content_img,
-         sizeof(path_data->content_img), path_data->content_label, false);
+         sizeof(path_data->content_img),
+         path_data->content_label, false);
    gfx_thumbnail_fill_content_img(path_data->content_img_short,
-         sizeof(path_data->content_img_short), path_data->content_label, true);
+         sizeof(path_data->content_img_short),
+         path_data->content_label, true);
 
    /* Have to set content path to *something*...
     * Just use label value (it doesn't matter) */
@@ -493,8 +502,10 @@ bool gfx_thumbnail_set_content_playlist(
       gfx_thumbnail_fill_content_img(path_data->content_img,
          sizeof(path_data->content_img), path_data->content_label, false);
 
-      /* Explicit zero if full name is same as standard name - saves some queries later. */
-      if (string_is_equal(path_data->content_img, path_data->content_img_full))
+      /* Explicit zero if full name is same as standard name 
+         - saves some queries later. */
+      if (string_is_equal(path_data->content_img,
+          path_data->content_img_full))
          path_data->content_img_full[0] = '\0';
 
       gfx_thumbnail_fill_content_img(path_data->content_img_short,

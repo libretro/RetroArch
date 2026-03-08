@@ -1091,7 +1091,8 @@ bool gfx_display_reset_textures_list_buffer(
       if (height)
          *height    = ti.height;
 
-      /* if the poke interface doesn't support texture load then return false */
+      /* If the poke interface doesn't support 
+         texture load then return false */
       if (video_driver_texture_load(&ti, filter_type, item))
       {
          image_texture_free(&ti);
