@@ -8109,7 +8109,11 @@ static bool ozone_scan_available(ozone_handle_t *ozone, size_t current_selection
 
 static bool ozone_manage_available(ozone_handle_t *ozone, size_t current_selection)
 {
+   settings_t *settings = config_get_ptr();
    menu_entry_t last_entry;
+
+   if (settings->bools.kiosk_mode_enable)
+      return false;
 
    if (     (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          && (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
@@ -8411,9 +8415,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone->flags2 |=  OZONE_FLAG2_PENDING_CURSOR_IN_SIDEBAR;
 
             ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
-            if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
-               ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag,
-                     settings->uints.menu_remember_selection);
+            ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag, settings->uints.menu_remember_selection);
 
             menu_st->selection_ptr = 0;
             ozone_selection_changed(ozone, false);
