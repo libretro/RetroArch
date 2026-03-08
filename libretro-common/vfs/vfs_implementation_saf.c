@@ -400,8 +400,30 @@ bool retro_vfs_path_split_content_saf(struct libretro_vfs_implementation_saf_pat
    }
    else
    {
+      size_t tree_size;
+
       /* Advance ptr to the next forward slash after /tree/ */
-      for (ptr += sizeof "/tree/" - 1; *ptr != 0 && *ptr != '/'; ++ptr);
+      for (tree_size = 0, ptr += sizeof "/tree/" - 1; *ptr != 0 && *ptr != '/'; ++tree_size)
+      {
+         if (
+            *ptr == '%'
+               && (
+                  (ptr[1] >= '0' && ptr[1] <= '9')
+                     || (ptr[1] >= 'A' && ptr[1] <= 'F')
+                     || (ptr[1] >= 'a' && ptr[1] <= 'f')
+               ) && (
+                  (ptr[2] >= '0' && ptr[2] <= '9')
+                     || (ptr[2] >= 'A' && ptr[2] <= 'F')
+                     || (ptr[2] >= 'a' && ptr[2] <= 'f')
+               ) && (
+                  ptr[1] != '0'
+                     || ptr[2] != '0'
+               )
+         )
+            ptr += 3;
+         else
+            ++ptr;
+      }
 
       /* If the content URI does not also contain a document component, consider the entire content URI to be the tree and the path to be the root */
       if (*ptr == 0 || strncmp(ptr, "/document/", sizeof "/document/" - 1) != 0)
@@ -418,7 +440,7 @@ bool retro_vfs_path_split_content_saf(struct libretro_vfs_implementation_saf_pat
       else
       {
          char *path_ptr;
-         size_t size;
+         size_t path_size;
 
          if ((tree = (char *)malloc(ptr - content_uri + 1)) == NULL)
             return false;
@@ -426,7 +448,7 @@ bool retro_vfs_path_split_content_saf(struct libretro_vfs_implementation_saf_pat
          tree[ptr - content_uri] = 0;
 
          content_uri = ptr + (sizeof "/document/" - 1);
-         for (size = 0, ptr = content_uri; *ptr != 0 && *ptr != '/'; ++size)
+         for (path_size = 0, ptr = content_uri; *ptr != 0 && *ptr != '/'; ++path_size)
          {
             if (
                *ptr == '%'
@@ -443,13 +465,25 @@ bool retro_vfs_path_split_content_saf(struct libretro_vfs_implementation_saf_pat
                         || ptr[2] != '0'
                   )
             )
+            {
                ptr += 3;
+               if (path_size < tree_size)
+                  content_uri += 3;
+            }
             else
+            {
                ++ptr;
+               if (path_size < tree_size)
+                  ++content_uri;
+            }
          }
+         if (path_size <= tree_size)
+            path_size = 0;
+         else
+            path_size -= tree_size;
          if (*content_uri != '%' || content_uri[1] != '2' || (content_uri[2] != 'F' && content_uri[2] != 'f'))
-            ++size;
-         if ((path_ptr = path = (char *)malloc(size + 1)) == NULL)
+            ++path_size;
+         if ((path_ptr = path = (char *)malloc(path_size + 1)) == NULL)
          {
             free(tree);
             return false;
