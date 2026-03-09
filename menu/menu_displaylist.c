@@ -209,8 +209,8 @@ static int filebrowser_parse(
    enum menu_displaylist_ctl_state type         = (enum menu_displaylist_ctl_state)type_data;
    enum filebrowser_enums filebrowser_type      = filebrowser_get_type();
    bool allow_parent_directory                  = true;
-   bool path_is_compressed                      = !string_is_empty(path) ?
-         path_is_compressed_file(path) : false;
+   bool path_is_compressed                      = !string_is_empty(path)
+         && path_is_compressed_file(path);
    menu_search_terms_t *search_terms            = menu_entries_search_get_terms();
 #ifdef IOS
    char full_path[PATH_MAX_LENGTH];
@@ -219,18 +219,21 @@ static int filebrowser_parse(
    const char *full_path = path;
 #endif
 
+#define RESOLVE_SUBSYSTEM(runloop_st, sys_info)                              \
+   do {                                                                      \
+      (sys_info) = &(runloop_st)->system;                                    \
+      subsystem  = (sys_info)->subsystem.data                                \
+            ? (sys_info)->subsystem.data + content_get_subsystem()           \
+            : (runloop_st)->subsystem_data + content_get_subsystem();        \
+   } while (0)
+
    if (path_is_compressed)
    {
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         runloop_state_t *runloop_st          = runloop_state_get_ptr();
-         rarch_system_info_t *sys_info        = &runloop_st->system;
-         /* Core fully loaded, use the subsystem data */
-         if (sys_info->subsystem.data)
-            subsystem = sys_info->subsystem.data + content_get_subsystem();
-         /* Core not loaded completely, use the data we peeked on load core */
-         else
-            subsystem = runloop_st->subsystem_data + content_get_subsystem();
+         runloop_state_t    *runloop_st = runloop_state_get_ptr();
+         rarch_system_info_t *sys_info;
+         RESOLVE_SUBSYSTEM(runloop_st, sys_info);
 
          if (subsystem && runloop_st->subsystem_current_count > 0)
             ret = file_archive_get_file_list_noalloc(&str_list,
@@ -255,7 +258,7 @@ static int filebrowser_parse(
          filter_ext = false;
 
       if (   string_is_equal(label, "database_manager_list")
-#if IOS
+#ifdef IOS
           || string_is_equal(label, "video_filter")
           || string_is_equal(label, "audio_dsp_plugin")
 #endif
@@ -264,14 +267,9 @@ static int filebrowser_parse(
 
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         runloop_state_t *runloop_st   = runloop_state_get_ptr();
-         rarch_system_info_t *sys_info = &runloop_st->system;
-         /* Core fully loaded, use the subsystem data */
-         if (sys_info->subsystem.data)
-            subsystem = sys_info->subsystem.data + content_get_subsystem();
-         /* Core not loaded completely, use the data we peeked on load core */
-         else
-            subsystem = runloop_st->subsystem_data + content_get_subsystem();
+         runloop_state_t    *runloop_st = runloop_state_get_ptr();
+         rarch_system_info_t *sys_info;
+         RESOLVE_SUBSYSTEM(runloop_st, sys_info);
 
          if (     subsystem
                && (runloop_st->subsystem_current_count > 0)
@@ -281,8 +279,8 @@ static int filebrowser_parse(
                   filter_ext ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, show_hidden_files, true, false);
       }
-      else if ((type_default == FILE_TYPE_MANUAL_SCAN_DAT)
-            || (type_default == FILE_TYPE_SIDELOAD_CORE))
+      else if (   type_default == FILE_TYPE_MANUAL_SCAN_DAT
+               || type_default == FILE_TYPE_SIDELOAD_CORE)
          ret = dir_list_initialize(&str_list, full_path,
                exts, true, show_hidden_files, false, false);
       else
@@ -317,8 +315,6 @@ static int filebrowser_parse(
                FILE_TYPE_USE_DIRECTORY, 0, 0);
          break;
       default:
-         /* if a core has / in its list of supported extensions, the core
-            supports loading of directories on the host file system */
          if (exts && memchr(exts, '/', strlen(exts) + 1))
             menu_entries_prepend(info_list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
@@ -343,151 +339,137 @@ static int filebrowser_parse(
 
    list_size = str_list.size;
 
-   if (list_size > 0)
+   for (i = 0; i < list_size; i++)
    {
-      for (i = 0; i < list_size; i++)
-      {
-         enum msg_hash_enums enum_idx      = MSG_UNKNOWN;
-         enum rarch_content_type path_type = RARCH_CONTENT_NONE;
-         enum msg_file_type file_type      = FILE_TYPE_NONE;
-         const char *file_path             = str_list.elems[i].data;
+      enum msg_hash_enums enum_idx      = MSG_UNKNOWN;
+      enum rarch_content_type path_type = RARCH_CONTENT_NONE;
+      enum msg_file_type file_type      = FILE_TYPE_NONE;
+      const char *file_path             = str_list.elems[i].data;
+      int attr                          = str_list.elems[i].attr.i; /* [8] cache attr — read twice below */
 
+      if (string_is_empty(file_path))
+         continue;
+
+      bool dir_only_mode = (   filebrowser_type == FILEBROWSER_SELECT_DIR
+                            || filebrowser_type == FILEBROWSER_SCAN_DIR
+                            || filebrowser_type == FILEBROWSER_MANUAL_SCAN_DIR);
+
+      if (dir_only_mode && attr != RARCH_DIRECTORY)
+         continue;
+
+      if (!path_is_compressed)
+      {
+         file_path = path_basename_nocompression(file_path);
          if (string_is_empty(file_path))
             continue;
+      }
 
-         if (    (str_list.elems[i].attr.i != RARCH_DIRECTORY)
-             && ((filebrowser_type == FILEBROWSER_SELECT_DIR)
-             ||  (filebrowser_type == FILEBROWSER_SCAN_DIR)
-             ||  (filebrowser_type == FILEBROWSER_MANUAL_SCAN_DIR)))
+      if (search_terms)
+      {
+         size_t j;
+         bool skip_entry = false;
+
+         for (j = 0; j < search_terms->size; j++)
+         {
+            const char *search_term = search_terms->terms[j];
+            if (!string_is_empty(search_term) && !strcasestr(file_path, search_term))
+            {
+               skip_entry = true;
+               break;
+            }
+         }
+
+         if (skip_entry)
             continue;
+      }
 
-         if (!path_is_compressed)
-         {
-            file_path = path_basename_nocompression(file_path);
-            if (string_is_empty(file_path))
-               continue;
-         }
-
-         /* Check whether entry matches search terms,
-          * if required */
-         if (search_terms)
-         {
-            size_t j;
-            bool skip_entry = false;
-
-            for (j = 0; j < search_terms->size; j++)
-            {
-               const char *search_term = search_terms->terms[j];
-
-               if (   !string_is_empty(search_term)
-                   && !strcasestr(file_path, search_term))
-               {
-                  skip_entry = true;
-                  break;
-               }
-            }
-
-            if (skip_entry)
-               continue;
-         }
-
-         switch (str_list.elems[i].attr.i)
-         {
-            case RARCH_DIRECTORY:
-               file_type = FILE_TYPE_DIRECTORY;
-               count++;
-               menu_entries_append(info_list, file_path, "",
-                     MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
-                     file_type, 0, 0, NULL);
-               continue;
-            case RARCH_COMPRESSED_ARCHIVE:
-               file_type = FILE_TYPE_CARCHIVE;
-               break;
-            case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
-               file_type = FILE_TYPE_IN_CARCHIVE;
-               break;
-            case RARCH_PLAIN_FILE:
-            default:
-               if (filebrowser_type == FILEBROWSER_SELECT_VIDEO_FONT)
-                  file_type = FILE_TYPE_VIDEO_FONT;
-               else
-                  file_type = (enum msg_file_type)type_default;
-               switch (type)
-               {
-                  /* in case of deferred_core_list we have to interpret
-                   * every archive as an archive to disallow instant loading
-                   */
-                  case DISPLAYLIST_CORES_DETECTED:
-                     if (path_is_compressed_file(file_path))
-                        file_type = FILE_TYPE_CARCHIVE;
-                     break;
-                  default:
-                     break;
-               }
-               break;
-         }
-
-         path_type = path_is_media_type(file_path);
-
-         if (filebrowser_type == FILEBROWSER_SELECT_COLLECTION)
-            file_type = FILE_TYPE_PLAYLIST_COLLECTION;
-
-         if (        builtin_mediaplayer_enable
-                  || builtin_imageviewer_enable)
-         {
-            switch (path_type)
-            {
-               case RARCH_CONTENT_MUSIC:
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
-                  if (builtin_mediaplayer_enable)
-                     file_type = FILE_TYPE_MUSIC;
-#endif
-                  break;
-               case RARCH_CONTENT_MOVIE:
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-                  if (builtin_mediaplayer_enable)
-                     file_type = FILE_TYPE_MOVIE;
-#endif
-                  break;
-               case RARCH_CONTENT_IMAGE:
-#ifdef HAVE_IMAGEVIEWER
-                  if (     builtin_imageviewer_enable
-                        && (type != DISPLAYLIST_IMAGES))
-                     file_type = FILE_TYPE_IMAGEVIEWER;
-                  else
-                     file_type = FILE_TYPE_IMAGE;
-#endif
-                  if (filebrowser_type == FILEBROWSER_SELECT_IMAGE)
-                     file_type = FILE_TYPE_IMAGE;
-                  break;
-               default:
-                  break;
-            }
-         }
-
-         switch (file_type)
-         {
-            case FILE_TYPE_MOVIE:
-               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN;
-               break;
-            case FILE_TYPE_MUSIC:
-               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN;
-               break;
-            case FILE_TYPE_IMAGE:
-               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE;
-               break;
-            case FILE_TYPE_IMAGEVIEWER:
-               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER;
-               break;
-            case FILE_TYPE_PLAIN:
-            default:
-               break;
-         }
-
+      if (attr == RARCH_DIRECTORY)
+      {
          count++;
          menu_entries_append(info_list, file_path, "",
-               enum_idx, file_type, 0, 0, NULL);
+               MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
+         continue;
       }
+
+      /* Resolve base file type */
+      switch (attr)
+      {
+         case RARCH_COMPRESSED_ARCHIVE:
+            file_type = FILE_TYPE_CARCHIVE;
+            break;
+         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
+            file_type = FILE_TYPE_IN_CARCHIVE;
+            break;
+         case RARCH_PLAIN_FILE:
+         default:
+            file_type = (filebrowser_type == FILEBROWSER_SELECT_VIDEO_FONT)
+                  ? FILE_TYPE_VIDEO_FONT
+                  : (enum msg_file_type)type_default;
+
+            if (   type == DISPLAYLIST_CORES_DETECTED 
+                && path_is_compressed_file(file_path))
+               file_type = FILE_TYPE_CARCHIVE;
+            break;
+      }
+
+      path_type = path_is_media_type(file_path);
+
+      if (filebrowser_type == FILEBROWSER_SELECT_COLLECTION)
+         file_type = FILE_TYPE_PLAYLIST_COLLECTION;
+
+      if (builtin_mediaplayer_enable || builtin_imageviewer_enable)
+      {
+         switch (path_type)
+         {
+            case RARCH_CONTENT_MUSIC:
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
+               if (builtin_mediaplayer_enable)
+                  file_type = FILE_TYPE_MUSIC;
+#endif
+               break;
+            case RARCH_CONTENT_MOVIE:
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+               if (builtin_mediaplayer_enable)
+                  file_type = FILE_TYPE_MOVIE;
+#endif
+               break;
+            case RARCH_CONTENT_IMAGE:
+#ifdef HAVE_IMAGEVIEWER
+               if (builtin_imageviewer_enable && type != DISPLAYLIST_IMAGES)
+                  file_type = FILE_TYPE_IMAGEVIEWER;
+               else
+                  file_type = FILE_TYPE_IMAGE;
+#endif
+               if (filebrowser_type == FILEBROWSER_SELECT_IMAGE)
+                  file_type = FILE_TYPE_IMAGE;
+               break;
+            default:
+               break;
+         }
+      }
+
+      switch (file_type)
+      {
+         case FILE_TYPE_MOVIE:
+            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN;
+            break;
+         case FILE_TYPE_MUSIC:
+            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN;
+            break;
+         case FILE_TYPE_IMAGE:
+            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE;
+            break;
+         case FILE_TYPE_IMAGEVIEWER:
+            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER;
+            break;
+         default:
+            break;
+      }
+
+      count++;
+      menu_entries_append(info_list, file_path, "",
+            enum_idx, file_type, 0, 0, NULL);
    }
 
    dir_list_deinitialize(&str_list);
@@ -501,10 +483,9 @@ static int filebrowser_parse(
 
 #if defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
    {
-      /* Check if we're allowed to escape our sandbox */
-      struct string_list *str_list = string_list_new();
-      dir_list_append(str_list, "/private/var", NULL, true, false, false, false);
-      if (str_list->size <= 0)
+      struct string_list *sandbox_list = string_list_new();
+      dir_list_append(sandbox_list, "/private/var", NULL, true, false, false, false);
+      if (sandbox_list->size <= 0)
       {
          char dir[DIR_MAX_LENGTH];
          size_t _len = fill_pathname_application_dir(dir, sizeof(dir));
@@ -514,17 +495,18 @@ static int filebrowser_parse(
             allow_parent_directory = false;
          else
          {
-            size_t _len = fill_pathname_home_dir(dir, sizeof(dir));
-            if (      string_ends_with(full_path, "/")
-                  && !string_ends_with(dir, "/"))
+            _len = fill_pathname_home_dir(dir, sizeof(dir));
+            if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
                strlcpy(dir + _len, "/", sizeof(dir) - _len);
             if (string_is_equal(dir, full_path))
                allow_parent_directory = false;
          }
       }
-      string_list_free(str_list);
+      string_list_free(sandbox_list);
    }
 #endif
+
+#undef RESOLVE_SUBSYSTEM
 
 end:
    if (!path_is_compressed && allow_parent_directory)
