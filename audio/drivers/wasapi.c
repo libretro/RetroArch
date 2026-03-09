@@ -1580,7 +1580,7 @@ static size_t wasapi_write_avail(void *wh)
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
    if (w->buffer) /* Exaggerate available size for best results.. */
-      return FIFO_WRITE_AVAIL(w->buffer) + padding * w->frame_size;
+      return FIFO_WRITE_AVAIL(w->buffer) + padding;
    return w->engine_buffer_size - padding * w->frame_size;
 }
 
