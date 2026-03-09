@@ -4947,9 +4947,8 @@ bool config_load_remap(const char *directory_input_remapping,
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    enum msg_hash_enums msg_remap_loaded   = MSG_GAME_REMAP_FILE_LOADED;
    settings_t *settings                   = config_st;
-   bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
    unsigned joypad_port                   = settings->uints.input_joypad_index[0];
-   const char *inp_dev_name               = input_config_get_device_display_name(joypad_port);
+   bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
 
    /* > Cannot load remaps if we have no core
@@ -4958,28 +4957,24 @@ bool config_load_remap(const char *directory_input_remapping,
        || string_is_empty(directory_input_remapping))
       return false;
 
-   game_path[0]        = '\0';
-   content_path[0]     = '\0';
+   core_path[0]    = '\0';
+   game_path[0]    = '\0';
+   content_path[0] = '\0';
 
-   if (   sort_remaps_by_controller
-       && !string_is_empty(inp_dev_name)
-       )
+   strlcpy(remap_path, core_name, sizeof(remap_path));
+
+   if (sort_remaps_by_controller)
    {
-      /* Ensure directory does not contain special chars */
-      const char *inp_dev_dir = sanitize_path_part(
-            inp_dev_name, strlen(inp_dev_name));
-      /*  Build the new path with the controller name */
-      size_t _len = strlcpy(remap_path, core_name, sizeof(remap_path));
-      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(),
-            sizeof(remap_path) - _len);
-      strlcpy(remap_path + _len, inp_dev_dir,
-            sizeof(remap_path) - _len);
-      /* Deallocate as we no longer need this */
-      free((char*)inp_dev_dir);
-      inp_dev_dir = NULL;
+      const char *input_device_name = input_config_get_device_display_name(joypad_port);
+
+      if (!string_is_empty(input_device_name))
+      {
+         /* Ensure directory does not contain special chars */
+         const char *input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
+
+         fill_pathname_join_special(remap_path, core_name, input_device_dir, sizeof(remap_path));
+      }
    }
-   else /* We're not using controller path, just use core name */
-      strlcpy(remap_path, core_name, sizeof(remap_path));
 
    if (!string_is_empty(rarch_path_basename))
    {

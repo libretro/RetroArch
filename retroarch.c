@@ -8272,10 +8272,12 @@ bool retroarch_main_init(int argc, char *argv[])
             settings->uints.input_max_users);
 #endif
    input_mapper_reset(&input_st->mapper);
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+
 #ifdef HAVE_REWIND
    command_event(CMD_EVENT_REWIND_INIT, NULL);
 #endif
-   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+
    if (!string_is_empty(rec_st->path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 

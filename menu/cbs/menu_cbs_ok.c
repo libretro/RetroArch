@@ -3771,39 +3771,31 @@ static int generic_action_ok_remap_file_operation(const char *path,
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    bool has_content                       = !string_is_empty(rarch_path_basename);
    settings_t *settings                   = config_get_ptr();
-   const char *directory_input_remapping  = settings->paths.directory_input_remapping;
    unsigned joypad_port                   = settings->uints.input_joypad_index[0];
-   const char *input_device_name          = input_config_get_device_display_name(joypad_port);
-   const char *input_device_dir           = NULL;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
-   size_t _len                            = 0;
+   const char *directory_input_remapping  = settings->paths.directory_input_remapping;
 
-   remap_file_path[0]  = '\0';
+   remap_file_path[0] = '\0';
 
    /* Cannot perform remap file operation if we
     * have no core */
    if (string_is_empty(core_name))
       return -1;
 
-   if (   sort_remaps_by_controller
-       && (input_device_name != NULL)
-       && !string_is_empty(input_device_name))
+   strlcpy(remap_path, core_name, sizeof(remap_path));
+
+   if (sort_remaps_by_controller)
    {
-      /* Ensure directory does not contain special chars */
-      input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
+      const char *input_device_name = input_config_get_device_display_name(joypad_port);
 
-      /* Allocate memory for the new path */
-      /* Build the new path with the controller name */
-      _len  = strlcpy(remap_path, core_name, sizeof(remap_path));
-      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), sizeof(remap_path) - _len);
-      strlcpy(remap_path + _len, input_device_dir,     sizeof(remap_path) - _len);
+      if (!string_is_empty(input_device_name))
+      {
+         /* Ensure directory does not contain special chars */
+         const char *input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
 
-      /* Deallocate as we no longer this */
-      free((char*)input_device_dir);
-      input_device_dir = NULL;
+         fill_pathname_join_special(remap_path, core_name, input_device_dir, sizeof(remap_path));
+      }
    }
-   else /* We're not using controller path, just use core name */
-      strlcpy(remap_path, core_name, sizeof(remap_path));
 
    switch (action_type)
    {
