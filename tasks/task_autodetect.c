@@ -662,6 +662,24 @@ static void cb_input_autoconfigure_connect(
       input_config_set_autoconfig_binds(port,
             autoconfig_handle->autoconfig_file);
 
+#ifdef HAVE_CONFIGFILE
+   /* 'Sort Remaps by Gamepad' must reload remaps after
+    * controller detection, because controller name
+    * does not exist yet at core init when launched from CLI */
+   if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   {
+      settings_t *settings = config_get_ptr();
+
+      if (     settings->bools.auto_remaps_enable
+            && settings->bools.input_remap_sort_by_controller_enable)
+      {
+         runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+         config_load_remap(settings->paths.directory_input_remapping, &runloop_st->system);
+      }
+   }
+#endif
+
    reallocate_port_if_needed(port,autoconfig_handle->device_info.vid,
          autoconfig_handle->device_info.pid,
          autoconfig_handle->device_info.name,
