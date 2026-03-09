@@ -329,7 +329,7 @@ runloop_state_t *runloop_state_get_ptr(void)
 bool state_manager_frame_is_reversed(void)
 {
 #ifdef HAVE_REWIND
-   return (runloop_state.rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED) > 0;
+   return !!(runloop_state.rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED);
 #else
    return false;
 #endif
@@ -364,28 +364,26 @@ unsigned retro_get_perf_count_libretro(void)
 
 void runloop_performance_counter_register(struct retro_perf_counter *perf)
 {
-   if (     perf->registered
-         || runloop_state.perf_ptr_libretro >= MAX_COUNTERS)
+   unsigned ptr = runloop_state.perf_ptr_libretro;
+   if (perf->registered || ptr >= MAX_COUNTERS)
       return;
-
-   runloop_state.perf_counters_libretro[runloop_state.perf_ptr_libretro++] = perf;
-   perf->registered = true;
+   runloop_state.perf_counters_libretro[ptr] = perf;
+   runloop_state.perf_ptr_libretro           = ptr + 1;
+   perf->registered                          = true;
 }
 
 void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num)
 {
-   int i;
-   for (i = 0; i < (int)num; i++)
+   unsigned i;
+   for (i = 0; i < num; i++)
    {
-      if (counters[i]->call_cnt)
-      {
+      const struct retro_perf_counter *c = counters[i];
+      if (c->call_cnt)
          RARCH_LOG(PERF_LOG_FMT,
-               counters[i]->ident,
-               (uint64_t)counters[i]->total /
-               (uint64_t)counters[i]->call_cnt,
-               (uint64_t)counters[i]->call_cnt);
-      }
+               c->ident,
+               (uint64_t)c->total / (uint64_t)c->call_cnt,
+               (uint64_t)c->call_cnt);
    }
 }
 
@@ -415,6 +413,7 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
          const struct retro_subsystem_info *info =
             (const struct retro_subsystem_info*)data;
          unsigned log_level      = config_get_ptr()->uints.libretro_log_level;
+         bool do_debug_log       = (log_level == RETRO_LOG_DEBUG);
 
          runloop_st->subsystem_current_count = 0;
 
@@ -422,7 +421,7 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
 
          for (i = 0; info[i].ident; i++)
          {
-            if (log_level != RETRO_LOG_DEBUG)
+            if (!do_debug_log)
                continue;
 
             RARCH_DBG("Subsystem ID: %d\nSpecial game type: %s\n  Ident: %s\n  ID: %u\n  Content:\n",
@@ -441,7 +440,7 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
 
          size = i;
 
-         if (log_level == RETRO_LOG_DEBUG)
+         if (do_debug_log)
          {
             RARCH_DBG("Subsystems: %d\n", i);
             if (size > SUBSYSTEM_MAX_SUBSYSTEMS)
@@ -466,7 +465,7 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
                subsys_info->id       = info[i].id;
                subsys_info->num_roms = info[i].num_roms;
 
-               if (log_level == RETRO_LOG_DEBUG)
+               if (do_debug_log)
                   if (subsys_info->num_roms > SUBSYSTEM_MAX_SUBSYSTEM_ROMS)
                      RARCH_WARN("Subsystems exceed subsystem max roms, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEM_ROMS);
 
@@ -928,18 +927,16 @@ static size_t mmap_add_bits_down(size_t n)
    n |= n >>  4;
    n |= n >>  8;
    n |= n >> 16;
-
-   /* double shift to avoid warnings on 32bit (it's dead code,
-    * but compilers suck) */
-   if (sizeof(size_t) > 4)
-      n |= n >> 16 >> 16;
-
+   /* Only compiled on 64-bit targets; avoids a runtime branch per call */
+#if SIZE_MAX > 0xFFFFFFFFUL
+   n |= n >> 32;
+#endif
    return n;
 }
 
 static size_t mmap_inflate(size_t addr, size_t mask)
 {
-    while (mask)
+   while (mask)
    {
       size_t tmp = (mask - 1) & ~mask;
 
@@ -962,7 +959,6 @@ static size_t mmap_reduce(size_t addr, size_t mask)
 
    return addr;
 }
-
 
 static size_t mmap_highest_bit(size_t n)
 {
@@ -1326,22 +1322,16 @@ static void runloop_core_msg_queue_push(
 static void core_performance_counter_start(
       struct retro_perf_counter *perf)
 {
-   runloop_state_t *runloop_st = &runloop_state;
-   bool runloop_perfcnt_enable = runloop_st->perfcnt_enable;
-
-   if (runloop_perfcnt_enable)
+   if (runloop_state.perfcnt_enable)
    {
       perf->call_cnt++;
-      perf->start              = cpu_features_get_perf_counter();
+      perf->start = cpu_features_get_perf_counter();
    }
 }
 
 static void core_performance_counter_stop(struct retro_perf_counter *perf)
 {
-   runloop_state_t *runloop_st = &runloop_state;
-   bool runloop_perfcnt_enable = runloop_st->perfcnt_enable;
-
-   if (runloop_perfcnt_enable)
+   if (runloop_state.perfcnt_enable)
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
@@ -1350,13 +1340,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
    runloop_state_t *runloop_st            = &runloop_state;
-   settings_t         *settings           = config_get_ptr();
-   rarch_system_info_t *sys_info          = &runloop_st->system;
-   bool ignore_environment_cb             = (runloop_st->flags &
-      RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB) ? true : false;
+   settings_t         *settings;
+   rarch_system_info_t *sys_info;
 
-   if (ignore_environment_cb)
+   if (runloop_st->flags & RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB)
       return false;
+
+   settings  = config_get_ptr();
+   sys_info  = &runloop_st->system;
 
    /* RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE gets called
     * by every core on every frame. Handle it first,
@@ -3239,9 +3230,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                           = (struct retro_throttle_state *)data;
 
          bool menu_opened = false;
-         bool core_paused = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
-         bool no_audio    = ((audio_st->flags & AUDIO_FLAG_SUSPENDED)
-                         || !(audio_st->flags & AUDIO_FLAG_ACTIVE));
+         bool core_paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+         bool no_audio    = !!(audio_st->flags & AUDIO_FLAG_SUSPENDED)
+                         || !(audio_st->flags & AUDIO_FLAG_ACTIVE);
          float core_fps   = (float)video_st->av_info.timing.fps;
 
 #ifdef HAVE_REWIND
@@ -3801,8 +3792,7 @@ bool runloop_init_libretro_symbols(
 
 uint32_t runloop_get_flags(void)
 {
-   runloop_state_t *runloop_st = &runloop_state;
-   return runloop_st->flags;
+   return runloop_state.flags;
 }
 
 void runloop_system_info_free(void)
@@ -3946,41 +3936,42 @@ static void uninit_libretro_symbols(
          sizeof(runloop_st->perf_counters_libretro));
 }
 
-
 static retro_time_t runloop_core_runtime_tick(
       runloop_state_t *runloop_st,
       float slowmotion_ratio,
       retro_time_t current_time)
 {
-   video_driver_state_t *video_st       = video_state_get_ptr();
-   retro_time_t frame_time              =
-      (1.0 / video_st->av_info.timing.fps) * 1000000;
-   bool runloop_slowmotion              = (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
-   bool runloop_fastmotion              = (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION) ? true : false;
+   uint32_t flags = runloop_st->flags;
 
-   /* Account for slow motion */
-   if (runloop_slowmotion)
-      return (retro_time_t)((double)frame_time * slowmotion_ratio);
+   /* Account for slow motion — no need to touch video state */
+   if (flags & RUNLOOP_FLAG_SLOWMOTION)
+   {
+      video_driver_state_t *video_st = video_state_get_ptr();
+      retro_time_t frame_time        =
+         (retro_time_t)((1.0 / video_st->av_info.timing.fps) * 1000000.0);
+      return (retro_time_t)(frame_time * slowmotion_ratio);
+   }
 
    /* Account for fast forward */
-   if (runloop_fastmotion)
+   if (flags & RUNLOOP_FLAG_FASTMOTION)
    {
-      /* Doing it this way means we miss the first frame after
-       * turning fast forward on, but it saves the overhead of
-       * having to do:
-       *    retro_time_t current_usec = cpu_features_get_time_usec();
-       *    core_runtime_last         = current_usec;
-       * every frame when fast forward is off. */
-      retro_time_t current_usec              = current_time;
-      retro_time_t potential_frame_time      = current_usec -
-         runloop_st->core_runtime_last;
-      runloop_st->core_runtime_last          = current_usec;
+      video_driver_state_t *video_st = video_state_get_ptr();
+      retro_time_t frame_time        =
+         (retro_time_t)((1.0 / video_st->av_info.timing.fps) * 1000000.0);
+      retro_time_t potential_frame_time = current_time
+         - runloop_st->core_runtime_last;
+      runloop_st->core_runtime_last     = current_time;
 
       if (potential_frame_time < frame_time)
          return potential_frame_time;
+
+      return frame_time;
    }
 
-   return frame_time;
+   {
+      video_driver_state_t *video_st = video_state_get_ptr();
+      return (retro_time_t)((1.0 / video_st->av_info.timing.fps) * 1000000.0);
+   }
 }
 
 static bool core_unload_game(void)
@@ -4477,13 +4468,15 @@ void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio)
 {
-   runloop_state_t *runloop_st  = &runloop_state;
    if (fastforward_ratio < 0.1f)
-      runloop_st->frame_limit_minimum_time = 0.0f;
+      runloop_state.frame_limit_minimum_time = 0;
    else
-      runloop_st->frame_limit_minimum_time = (retro_time_t)
-         roundf(1000000.0f /
-               (av_info->timing.fps * fastforward_ratio));
+   {
+      float fps = av_info->timing.fps;
+      runloop_state.frame_limit_minimum_time = (fps > 0.0f)
+         ? (retro_time_t)roundf(1000000.0f / (fps * fastforward_ratio))
+         : 0;
+   }
 }
 
 float runloop_get_fastforward_ratio(
@@ -4567,9 +4560,9 @@ unsigned runloop_get_video_swap_interval(
       unsigned swap_interval_config)
 {
    runloop_state_t *runloop_st = &runloop_state;
-   return (swap_interval_config == 0) ?
-         runloop_st->video_swap_interval_auto :
-         swap_interval_config;
+   return (swap_interval_config != 0)
+         ? swap_interval_config
+         : runloop_st->video_swap_interval_auto;
 }
 
 /*
@@ -4612,35 +4605,31 @@ static bool core_verify_api_version(runloop_state_t *runloop_st)
 static int16_t core_input_state_poll_late(unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   runloop_state_t     *runloop_st       = &runloop_state;
-   if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_INPUT_POLLED))
+   if (!(runloop_state.current_core.flags & RETRO_CORE_FLAG_INPUT_POLLED))
       input_driver_poll();
-   runloop_st->current_core.flags       |= RETRO_CORE_FLAG_INPUT_POLLED;
+   runloop_state.current_core.flags |= RETRO_CORE_FLAG_INPUT_POLLED;
 
    return input_driver_state_wrapper(port, device, idx, id);
 }
 
 static void core_input_state_poll_maybe(void)
 {
-   runloop_state_t *runloop_st = &runloop_state;
    const enum poll_type_override_t
-      core_poll_type_override  = runloop_st->core_poll_type_override;
-   enum poll_type new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
+      core_poll_type_override  = runloop_state.core_poll_type_override;
+   enum poll_type new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (enum poll_type)(core_poll_type_override - 1)
-      : (enum poll_type)(runloop_st->current_core.poll_type);
+      : (enum poll_type)(runloop_state.current_core.poll_type);
    if (new_poll_type == POLL_TYPE_NORMAL)
       input_driver_poll();
 }
 
-
 static retro_input_state_t core_input_state_poll_return_cb(void)
 {
-   runloop_state_t *runloop_st = &runloop_state;
    const enum poll_type_override_t
-      core_poll_type_override  = runloop_st->core_poll_type_override;
-   enum poll_type new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
+      core_poll_type_override  = runloop_state.core_poll_type_override;
+   enum poll_type new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (enum poll_type)(core_poll_type_override - 1)
-      : (enum poll_type)(runloop_st->current_core.poll_type);
+      : (enum poll_type)(runloop_state.current_core.poll_type);
    if (new_poll_type == POLL_TYPE_LATE)
       return core_input_state_poll_late;
    return input_driver_state_wrapper;
@@ -4868,8 +4857,8 @@ void runloop_pause_checks(void)
    float video_refresh_rate       = settings->floats.video_refresh_rate;
    float fastforward_ratio        = settings->floats.fastforward_ratio;
    runloop_state_t *runloop_st    = &runloop_state;
-   bool is_paused                 = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
-   bool is_idle                   = (runloop_st->flags & RUNLOOP_FLAG_IDLE)   ? true : false;
+   bool is_paused                 = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+   bool is_idle                   = !!(runloop_st->flags & RUNLOOP_FLAG_IDLE);
 #if defined(HAVE_GFX_WIDGETS)
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
@@ -5500,7 +5489,7 @@ static bool display_menu_libretro(
       bool libretro_running,
       retro_time_t current_time)
 {
-   bool runloop_idle             = (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false;
+   bool runloop_idle             = !!(runloop_st->flags & RUNLOOP_FLAG_IDLE);
    video_driver_state_t*video_st = video_state_get_ptr();
 
    if (     video_st->poke
@@ -5617,8 +5606,8 @@ static enum runloop_state_enum runloop_check_state(
    bool is_alive                       = false;
    uint64_t frame_count                = 0;
    bool focused                        = true;
-   bool rarch_is_initialized           = (runloop_st->flags & RUNLOOP_FLAG_IS_INITED) ? true : false;
-   bool runloop_paused                 = (runloop_st->flags & RUNLOOP_FLAG_PAUSED)    ? true : false;
+   bool rarch_is_initialized           = !!(runloop_st->flags & RUNLOOP_FLAG_IS_INITED);
+   bool runloop_paused                 = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
    bool pause_nonactive                = settings->bools.pause_nonactive;
    unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
    bool menu_pause_libretro            = settings->bools.menu_pause_libretro;
@@ -5626,8 +5615,8 @@ static enum runloop_state_enum runloop_check_state(
    struct menu_state *menu_st          = menu_state_get_ptr();
    menu_handle_t *menu                 = menu_st->driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
-   bool menu_driver_binding_state      = (menu_st->flags & MENU_ST_FLAG_IS_BINDING) ? true : false;
-   bool menu_was_alive                 = (menu_st->flags & MENU_ST_FLAG_ALIVE)      ? true : false;
+   bool menu_driver_binding_state      = !!(menu_st->flags & MENU_ST_FLAG_IS_BINDING);
+   bool menu_was_alive                 = !!(menu_st->flags & MENU_ST_FLAG_ALIVE);
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 #if defined(HAVE_GFX_WIDGETS)
@@ -7253,11 +7242,11 @@ int runloop_iterate(void)
 #ifdef HAVE_MENU
    bool menu_pause_libretro               = settings->bools.menu_pause_libretro && netplay_allow_pause;
    bool core_paused                       =
-            (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+            !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          || (menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #else
    bool menu_pause_libretro               = settings->bools.menu_pause_libretro;
-   bool core_paused                       = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
+   bool core_paused                       = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
 #endif
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
 #ifdef HAVE_CHEEVOS
@@ -7546,7 +7535,9 @@ end:
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
-   if (   (runloop_st->frame_limit_minimum_time)
+   {
+      retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
+      if (   (frame_limit_min)
           && (   (vrr_runloop_enable)
               || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
 #ifdef HAVE_MENU
@@ -7554,37 +7545,37 @@ end:
                   && !(settings->bools.video_vsync))
 #endif
               || (runloop_st->flags & RUNLOOP_FLAG_PAUSED)))
-   {
-      const retro_time_t end_frame_time  = cpu_features_get_time_usec();
-      const retro_time_t to_sleep_ms     = (
-            (  runloop_st->frame_limit_last_time
-             + runloop_st->frame_limit_minimum_time)
-            - end_frame_time) / 1000;
-
-      if (to_sleep_ms > 0)
       {
-         unsigned               sleep_ms = (unsigned)to_sleep_ms;
+         const retro_time_t end_frame_time  = cpu_features_get_time_usec();
+         const retro_time_t to_sleep_ms     = (
+               (  runloop_st->frame_limit_last_time
+                + frame_limit_min)
+               - end_frame_time) / 1000;
 
-         /* Combat jitter a bit. */
-         runloop_st->frame_limit_last_time +=
-            runloop_st->frame_limit_minimum_time;
-
-         if (sleep_ms > 0)
+         if (to_sleep_ms > 0)
          {
+            unsigned               sleep_ms = (unsigned)to_sleep_ms;
+
+            /* Combat jitter a bit. */
+            runloop_st->frame_limit_last_time += frame_limit_min;
+
+            if (sleep_ms > 0)
+            {
 #if defined(EMSCRIPTEN) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
-            platform_emscripten_deferred_sleep(sleep_ms);
+               platform_emscripten_deferred_sleep(sleep_ms);
 #else
 #if defined(HAVE_COCOATOUCH)
-            if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
+               if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
-               retro_sleep(sleep_ms);
+                  retro_sleep(sleep_ms);
 #endif
+            }
+
+            return 1;
          }
 
-         return 1;
+         runloop_st->frame_limit_last_time = end_frame_time;
       }
-
-      runloop_st->frame_limit_last_time = end_frame_time;
    }
 
    /* Frame delay */
@@ -8115,8 +8106,8 @@ void core_run(void)
    enum poll_type new_poll_type= (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
       ? (enum poll_type)(core_poll_type_override - 1)
       : (enum poll_type)(current_core->poll_type);
-   bool early_polling          = new_poll_type == POLL_TYPE_EARLY;
-   bool late_polling           = new_poll_type == POLL_TYPE_LATE;
+   bool early_polling          = (new_poll_type == POLL_TYPE_EARLY);
+   bool late_polling           = (new_poll_type == POLL_TYPE_LATE);
 #ifdef HAVE_NETWORKING
    bool netplay_preframe       = netplay_driver_ctl(
          RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
