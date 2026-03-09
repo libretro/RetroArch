@@ -77,13 +77,26 @@ static const char *wasapi_wave_format_name(const WAVEFORMATEXTENSIBLE *format)
 
 static const char* wasapi_error(DWORD error)
 {
+   /* One buffer per thread via __declspec(thread) would be ideal,
+    * but that requires MSVC or GCC extensions beyond C89.
+    * Use a single static buffer protected by the knowledge that
+    * all callers are on the audio thread; document the limitation. */
    static char s[256];
-   FormatMessage(
+   DWORD ret = FormatMessageA(
            FORMAT_MESSAGE_IGNORE_INSERTS
          | FORMAT_MESSAGE_FROM_SYSTEM,
          NULL, error,
          MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-         s, sizeof(s) - 1, NULL);
+         s, (DWORD)(sizeof(s) - 1), NULL);
+   if (!ret)
+      s[0] = '\0';
+   /* Strip trailing CR/LF that FormatMessage appends */
+   else
+   {
+      char *p = s + ret - 1;
+      while (p >= s && (*p == '\r' || *p == '\n' || *p == ' '))
+         *p-- = '\0';
+   }
    return s;
 }
 
@@ -136,7 +149,7 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
             return false;
          break;
       case WAVE_FORMAT_EXTENSIBLE:
-         if (!(!memcmp(&format->SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, sizeof(GUID))))
+         if (memcmp(&format->SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, sizeof(GUID)) != 0)
             /* RetroArch doesn't support any other subformat */
             return false;
 
@@ -348,14 +361,9 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
             buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
    }
-   if (hr != AUDCLNT_E_UNSUPPORTED_FORMAT)
-   {
-      if (hr == AUDCLNT_E_DEVICE_IN_USE)
-         goto error;
-
-      if (hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
-         goto error;
-   }
+   if (hr == AUDCLNT_E_DEVICE_IN_USE          ||
+       hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
+      goto error;
 
    if (FAILED(hr))
    {
@@ -853,29 +861,16 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
    if (wasapi->nonblock)
       return wasapi_microphone_read_buffered(mic, s, len, 0);
 
-   if (mic->exclusive)
+   /* Both exclusive and shared modes use the same blocking read loop;
+    * the distinction is handled inside wasapi_microphone_read_buffered. */
+   for (; (size_t)bytes_read < len; bytes_read += read)
    {
-      for (; (size_t)bytes_read < len; bytes_read += read)
-      {
-         read = wasapi_microphone_read_buffered(mic,
-               (char *)s   + bytes_read,
-               len         - bytes_read,
-               INFINITE);
-         if (read == -1)
-            return -1;
-      }
-   }
-   else
-   {
-      for (; (size_t)bytes_read < len; bytes_read += read)
-      {
-         read = wasapi_microphone_read_buffered(mic,
-               (char *)s   + bytes_read,
-               len         - bytes_read,
-               INFINITE);
-         if (read == -1)
-            return -1;
-      }
+      read = wasapi_microphone_read_buffered(mic,
+            (char *)s   + bytes_read,
+            len         - bytes_read,
+            INFINITE);
+      if (read == -1)
+         return -1;
    }
 
    return bytes_read;
@@ -1179,7 +1174,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    w->frame_size             = float_format ? 8 : 4;
    w->engine_buffer_size     = frame_count * w->frame_size;
 
-   if ((w->flags & WASAPI_FLG_EXCLUSIVE) > 0)
+   if (w->flags & WASAPI_FLG_EXCLUSIVE)
    {
       if (!(w->buffer = fifo_new(w->engine_buffer_size)))
          goto error;
@@ -1236,7 +1231,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
    w->flags    |=   WASAPI_FLG_RUNNING;
    if (audio_sync)
-      w->flags &= ~(WASAPI_FLG_NONBLOCK);
+      w->flags &= ~WASAPI_FLG_NONBLOCK;
    else
       w->flags |=  (WASAPI_FLG_NONBLOCK);
 
@@ -1286,12 +1281,12 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
    wasapi_t *w = (wasapi_t*)wh;
    uint8_t flg = w->flags;
 
-   if (!((flg & WASAPI_FLG_RUNNING) > 0))
+   if (!(flg & WASAPI_FLG_RUNNING))
       return -1;
 
-   if ((flg & WASAPI_FLG_EXCLUSIVE) > 0)
+   if (flg & WASAPI_FLG_EXCLUSIVE)
    {
-      if ((flg & WASAPI_FLG_NONBLOCK) > 0)
+      if (flg & WASAPI_FLG_NONBLOCK)
       {
          size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
          if (!write_avail)
@@ -1345,7 +1340,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
    }
    else
    {
-      if ((flg & WASAPI_FLG_NONBLOCK) > 0)
+      if (flg & WASAPI_FLG_NONBLOCK)
       {
          size_t write_avail = 0;
          UINT32 padding     = 0;
@@ -1483,7 +1478,7 @@ static bool wasapi_stop(void *wh)
    if (FAILED(_IAudioClient_Stop(w->client)))
       return (!(w->flags & WASAPI_FLG_RUNNING));
 
-   w->flags  &= ~(WASAPI_FLG_RUNNING);
+   w->flags &= ~WASAPI_FLG_RUNNING;
 
    return true;
 }
@@ -1495,8 +1490,8 @@ static bool wasapi_start(void *wh, bool u)
    if (hr != AUDCLNT_E_NOT_STOPPED)
    {
       if (FAILED(hr))
-         return ((w->flags & WASAPI_FLG_RUNNING) > 0);
-      w->flags  |= (WASAPI_FLG_RUNNING);
+         return (w->flags & WASAPI_FLG_RUNNING) != 0;
+      w->flags  |= WASAPI_FLG_RUNNING;
    }
    return true;
 }
@@ -1504,7 +1499,7 @@ static bool wasapi_start(void *wh, bool u)
 static bool wasapi_alive(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
-   return ((w->flags & WASAPI_FLG_RUNNING) > 0);
+   return (w->flags & WASAPI_FLG_RUNNING) != 0;
 }
 
 static void wasapi_set_nonblock_state(void *wh, bool nonblock)
@@ -1538,6 +1533,7 @@ static void wasapi_free(void *wh)
 #else
       w->client->lpVtbl->Release(w->client);
 #endif
+      w->client = NULL;
    }
    if (w->device)
    {
@@ -1546,9 +1542,8 @@ static void wasapi_free(void *wh)
 #else
       w->device->lpVtbl->Release(w->device);
 #endif
+      w->device = NULL;
    }
-   w->client = NULL;
-   w->device = NULL;
    if (w->buffer)
       fifo_free(w->buffer);
    free(w);
@@ -1557,10 +1552,8 @@ static void wasapi_free(void *wh)
    if (ir == WAIT_FAILED)
       RARCH_ERR("[WASAPI] WaitForSingleObject failed with error %d.\n", GetLastError());
 
-   if (!(ir == WAIT_OBJECT_0))
-      return;
-
-   CloseHandle(write_event);
+   if (ir == WAIT_OBJECT_0)
+      CloseHandle(write_event);
 }
 
 static bool wasapi_use_float(void *wh)
@@ -1587,7 +1580,7 @@ static size_t wasapi_write_avail(void *wh)
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
    if (w->buffer) /* Exaggerate available size for best results.. */
-      return FIFO_WRITE_AVAIL(w->buffer) + padding;
+      return FIFO_WRITE_AVAIL(w->buffer) + padding * w->frame_size;
    return w->engine_buffer_size - padding * w->frame_size;
 }
 
