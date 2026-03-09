@@ -294,13 +294,14 @@ typedef struct win32_common_state
    unsigned monitor_count;
 } win32_common_state_t;
 
-/* TODO/FIXME - globals */
+/* Module-level state: resize dimensions, refresh rate, and main window handle.
+ * These are written from the window message loop and read by the video driver. */
 unsigned g_win32_resize_width       = 0;
 unsigned g_win32_resize_height      = 0;
-float g_win32_refresh_rate          = 0;
+float g_win32_refresh_rate          = 0.0f;
 ui_window_win32_t main_window;
 
-/* TODO/FIXME - static globals */
+/* Module-level flags byte (WIN32_CMN_FLAG_*). */
 uint8_t g_win32_flags               = 0;
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
@@ -334,11 +335,10 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
    {
       case WM_INITDIALOG:
          {
-            const core_info_t *info = NULL;
             HWND hwndList;
             unsigned i;
 
-            /* Add items to list.  */
+            /* Add items to list. */
             core_info_get_list(&core_info_list);
             core_info_list_get_supported_cores(core_info_list,
                   path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
@@ -346,16 +346,12 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
             hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
 
             for (i = 0; i < list_size; i++)
-            {
-               const core_info_t *info = (const core_info_t*)&core_info[i];
                SendMessage(hwndList, LB_ADDSTRING, 0,
-                     (LPARAM)info->display_name);
-            }
+                     (LPARAM)core_info[i].display_name);
 
             /* Select the first item in the list */
             SendMessage(hwndList, LB_SETCURSEL, 0, 0);
-            info = (const core_info_t*)&core_info[0];
-            path_set(RARCH_PATH_CORE, info->path);
+            path_set(RARCH_PATH_CORE, core_info[0].path);
 
             SetFocus(hwndList);
             return TRUE;
@@ -373,17 +369,14 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
                {
                   case LBN_SELCHANGE:
                      {
-                        const core_info_t *info = NULL;
-                        HWND hwndList           = GetDlgItem(
-                              hDlg, ID_CORELISTBOX);
-                        int lbItem              = (int)
+                        HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
+                        int lbItem    = (int)
                            SendMessage(hwndList, LB_GETCURSEL, 0, 0);
 
                         core_info_get_list(&core_info_list);
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
-                        info = (const core_info_t*)&core_info[lbItem];
-                        path_set(RARCH_PATH_CORE, info->path);
+                        path_set(RARCH_PATH_CORE, core_info[lbItem].path);
                      }
                      break;
                }
@@ -572,37 +565,24 @@ static bool win32_load_content_from_gui(const char *szFilename)
             settings_t *settings              = config_get_ptr();
             bool video_is_fs                  = settings->bools.video_fullscreen;
             video_driver_state_t *video_st    = video_state_get_ptr();
+            bool needs_cursor                 =    video_is_fs
+                                               && video_st->poke
+                                               && video_st->poke->show_mouse;
 
-            if (   video_is_fs
-                && video_st->poke
-                && video_st->poke->show_mouse)
-            {
-               /* Show mouse cursor for dialog */
+            if (needs_cursor)
                video_st->poke->show_mouse(video_st->data, true);
 
-               /* Pick one core that could be compatible, ew */
-               if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
-                        main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
-               {
-                  task_push_load_content_with_current_core_from_companion_ui(
-                        NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-                  okay = true;
-               }
-
-               /* Hide mouse cursor after dialog */
-               video_st->poke->show_mouse(video_st->data, false);
-            }
-            else
+            /* Pick one core that could be compatible. */
+            if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
+                     main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
             {
-               /* Pick one core that could be compatible, ew */
-               if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
-                        main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
-               {
-                  task_push_load_content_with_current_core_from_companion_ui(
-                        NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-                  okay = true;
-               }
+               task_push_load_content_with_current_core_from_companion_ui(
+                     NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+               okay = true;
             }
+
+            if (needs_cursor)
+               video_st->poke->show_mouse(video_st->data, false);
 
             return okay;
          }
@@ -633,7 +613,8 @@ static bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
       char *szFilename = NULL;
       wszFilename[0]   = L'\0';
 
-      DragQueryFileW((HDROP)wparam, 0, wszFilename, sizeof(wszFilename));
+      DragQueryFileW((HDROP)wparam, 0, wszFilename,
+            sizeof(wszFilename) / sizeof(wszFilename[0]));
       szFilename = utf16_to_utf8_string_alloc(wszFilename);
       ret        = win32_load_content_from_gui(szFilename);
       if (szFilename)
@@ -652,8 +633,8 @@ static void win32_resize_after_display_change(HWND hwnd, HMONITOR monitor)
    info.cbSize = sizeof(info);
    if (GetMonitorInfo(monitor, &info))
       SetWindowPos(hwnd, 0, 0, 0,
-            abs(info.rcMonitor.right - info.rcMonitor.left),
-            abs(info.rcMonitor.bottom - info.rcMonitor.top),
+            info.rcMonitor.right  - info.rcMonitor.left,
+            info.rcMonitor.bottom - info.rcMonitor.top,
             SWP_NOMOVE);
 }
 
@@ -674,11 +655,9 @@ static bool win32_browser(
       ui_browser_window_state_t browser_state;
 
       /* These need to be big enough to hold the
-       * path/name of any file the user may select.
-       * FIXME: We should really handle the
-       * error case when this isn't big enough. */
+       * path/name of any file the user may select. */
       char new_title[PATH_MAX];
-      char new_file[32768]; /* TODO/FIXME - is this not way too big? */
+      char new_file[PATH_MAX_LENGTH]; /* MAX_PATH-length path buffer */
 
       new_title[0] = '\0';
       new_file[0]  = '\0';
@@ -699,9 +678,8 @@ static bool win32_browser(
 
       result = browser->open(&browser_state);
 
-      /* TODO/FIXME - this is weird - why is this called
-       * after the browser->open call? Seems to have no effect
-       * anymore here */
+      /* browser->open() may update browser_state.path in-place;
+       * copy the final path back to the caller's buffer. */
       if (filename && browser_state.path)
          strlcpy(filename, browser_state.path, filename_size);
 
@@ -1897,52 +1875,54 @@ bool win32_window_create(void *data, unsigned style,
 bool win32_get_metrics(void *data,
    enum display_metric_types type, float *value)
 {
+   HDC monitor;
+   bool ret = true;
+
+   if (type == DISPLAY_METRIC_NONE)
+   {
+      *value = 0;
+      return false;
+   }
+
+   monitor = GetDC(NULL);
+   if (!monitor)
+   {
+      *value = 0;
+      return false;
+   }
+
    switch (type)
    {
       case DISPLAY_METRIC_PIXEL_WIDTH:
-         {
-            HDC monitor        = GetDC(NULL);
-            *value             = GetDeviceCaps(monitor, HORZRES);
-            ReleaseDC(NULL, monitor);
-         }
-         return true;
+         *value = (float)GetDeviceCaps(monitor, HORZRES);
+         break;
       case DISPLAY_METRIC_PIXEL_HEIGHT:
-         {
-            HDC monitor        = GetDC(NULL);
-            *value             = GetDeviceCaps(monitor, VERTRES);
-            ReleaseDC(NULL, monitor);
-         }
-         return true;
+         *value = (float)GetDeviceCaps(monitor, VERTRES);
+         break;
       case DISPLAY_METRIC_MM_WIDTH:
-         {
-            HDC monitor        = GetDC(NULL);
-            *value             = GetDeviceCaps(monitor, HORZSIZE);
-            ReleaseDC(NULL, monitor);
-         }
-         return true;
+         *value = (float)GetDeviceCaps(monitor, HORZSIZE);
+         break;
       case DISPLAY_METRIC_MM_HEIGHT:
-         {
-            HDC monitor        = GetDC(NULL);
-            *value             = GetDeviceCaps(monitor, VERTSIZE);
-            ReleaseDC(NULL, monitor);
-         }
-         return true;
+         *value = (float)GetDeviceCaps(monitor, VERTSIZE);
+         break;
       case DISPLAY_METRIC_DPI:
          /* 25.4 mm in an inch. */
          {
-            HDC monitor        = GetDC(NULL);
             int pixels_x       = GetDeviceCaps(monitor, HORZRES);
             int physical_width = GetDeviceCaps(monitor, HORZSIZE);
-            *value = 254 * pixels_x / physical_width / 10;
-            ReleaseDC(NULL, monitor);
+            *value = (physical_width > 0)
+               ? (float)(254 * pixels_x) / (float)(physical_width * 10)
+               : 0.0f;
          }
-         return true;
-      case DISPLAY_METRIC_NONE:
+         break;
       default:
          *value = 0;
+         ret    = false;
          break;
    }
-   return false;
+
+   ReleaseDC(NULL, monitor);
+   return ret;
 }
 #endif
 
@@ -1993,19 +1973,11 @@ void win32_clip_window(bool state)
 
    if (state && main_window.hwnd)
    {
-      PWINDOWINFO info;
-      info         = (PWINDOWINFO)malloc(sizeof(*info));
+      WINDOWINFO info;
+      info.cbSize = sizeof(WINDOWINFO);
 
-      if (info)
-      {
-         info->cbSize = sizeof(PWINDOWINFO);
-
-         if (GetWindowInfo(main_window.hwnd, info))
-            clip_rect = info->rcClient;
-
-         free(info);
-      }
-      info = NULL;
+      if (GetWindowInfo(main_window.hwnd, &info))
+         clip_rect = info.rcClient;
 
       ClipCursor(&clip_rect);
    }
@@ -2192,7 +2164,7 @@ static void win32_localize_menu(HMENU menu)
          else if (meta_key != 0)
          {
             meta_key_name = win32_meta_key_to_name(meta_key);
-            __len        = strlen(meta_key_name);
+            __len         = meta_key_name ? strlen(meta_key_name) : 0;
          }
 
          /* Append localized name, tab character, and Shortcut Key */
@@ -2666,32 +2638,32 @@ float win32_get_refresh_rate(void *data)
 {
    float refresh_rate                      = 0.0f;
 #if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
-   OSVERSIONINFO version_info;
    UINT32 TopologyID;
    unsigned int NumPathArrayElements       = 0;
    unsigned int NumModeInfoArrayElements   = 0;
    DISPLAYCONFIG_PATH_INFO_CUSTOM *PathInfoArray  = NULL;
    DISPLAYCONFIG_MODE_INFO_CUSTOM *ModeInfoArray  = NULL;
 #ifdef HAVE_DYLIB
-    static QUERYDISPLAYCONFIG pQueryDisplayConfig;
-    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
-    if (!pQueryDisplayConfig)
-        pQueryDisplayConfig = (QUERYDISPLAYCONFIG)GetProcAddress(GetModuleHandle("user32.dll"), "QueryDisplayConfig");
-
-    if (!pGetDisplayConfigBufferSizes)
-        pGetDisplayConfigBufferSizes = (GETDISPLAYCONFIGBUFFERSIZES)GetProcAddress(GetModuleHandle("user32.dll"), "GetDisplayConfigBufferSizes");
+   static QUERYDISPLAYCONFIG pQueryDisplayConfig;
+   static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
+   if (!pQueryDisplayConfig || !pGetDisplayConfigBufferSizes)
+   {
+      HMODULE user32 = GetModuleHandle("user32.dll");
+      if (!pQueryDisplayConfig)
+         pQueryDisplayConfig        = (QUERYDISPLAYCONFIG)GetProcAddress(
+               user32, "QueryDisplayConfig");
+      if (!pGetDisplayConfigBufferSizes)
+         pGetDisplayConfigBufferSizes = (GETDISPLAYCONFIGBUFFERSIZES)GetProcAddress(
+               user32, "GetDisplayConfigBufferSizes");
+   }
 #else
-    static QUERYDISPLAYCONFIG pQueryDisplayConfig                   = QueryDisplayConfig;
-    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
+   static QUERYDISPLAYCONFIG pQueryDisplayConfig                   = QueryDisplayConfig;
+   static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
 #endif
 
-   version_info.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-   if (!GetVersionEx(&version_info))
+   /* Both function pointers must be valid before proceeding. */
+   if (!pQueryDisplayConfig || !pGetDisplayConfigBufferSizes)
       return refresh_rate;
-
-   if (version_info.dwMajorVersion < 6 ||
-       (version_info.dwMajorVersion == 6 && version_info.dwMinorVersion < 1))
-       return refresh_rate;
 
    if (pGetDisplayConfigBufferSizes(
             QDC_DATABASE_CURRENT,
@@ -2704,15 +2676,19 @@ float win32_get_refresh_rate(void *data)
    ModeInfoArray = (DISPLAYCONFIG_MODE_INFO_CUSTOM *)
       malloc(sizeof(DISPLAYCONFIG_MODE_INFO_CUSTOM) * NumModeInfoArrayElements);
 
-   if (pQueryDisplayConfig(QDC_DATABASE_CURRENT,
-                               &NumPathArrayElements,
-                               PathInfoArray,
-                               &NumModeInfoArrayElements,
-                               ModeInfoArray,
-                               &TopologyID) == ERROR_SUCCESS
-         && NumPathArrayElements >= 1)
-      refresh_rate = (float) PathInfoArray[0].targetInfo.refreshRate.Numerator /
-                             PathInfoArray[0].targetInfo.refreshRate.Denominator;
+   if (PathInfoArray && ModeInfoArray)
+   {
+      if (pQueryDisplayConfig(QDC_DATABASE_CURRENT,
+                                 &NumPathArrayElements,
+                                 PathInfoArray,
+                                 &NumModeInfoArrayElements,
+                                 ModeInfoArray,
+                                 &TopologyID) == ERROR_SUCCESS
+            && NumPathArrayElements >= 1
+            && PathInfoArray[0].targetInfo.refreshRate.Denominator != 0)
+         refresh_rate = (float)PathInfoArray[0].targetInfo.refreshRate.Numerator /
+                               PathInfoArray[0].targetInfo.refreshRate.Denominator;
+   }
 
    free(ModeInfoArray);
    free(PathInfoArray);
