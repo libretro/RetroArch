@@ -219,24 +219,30 @@ void retro_main_log_file_deinit(void)
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-#if defined(_XBOX1) || defined (__WINRT__)
-   /* FIXME: Using arbitrary string as fmt argument is unsafe. */
-   char msg_new[256];
+#if defined(_XBOX1) || defined(__WINRT__)
    char buffer[256];
+   int prefix_len;
    const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
+   buffer[0]  = '\0';
+   prefix_len = snprintf(buffer, sizeof(buffer),
+         "%s: %s ", FILE_PATH_PROGRAM_NAME, tag_v);
 
-   msg_new[0]        = buffer[0] = '\0';
-   snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
-         FILE_PATH_PROGRAM_NAME, tag_v, fmt);
+   if (prefix_len > 0 && prefix_len < (int)sizeof(buffer))
+   {
 #if defined(__WINRT__)
-   vsnprintf(buffer, sizeof(buffer), msg_new, ap);
+      vsnprintf(buffer + prefix_len,
+                sizeof(buffer) - (size_t)prefix_len, fmt, ap);
 #else
-   wvsprintf(buffer, msg_new, ap);
+      wvsprintf(buffer + prefix_len, fmt, ap);
 #endif
+   }
+
    OutputDebugStringA(buffer);
+
 #elif defined(ANDROID)
    verbosity_state_t *g_verbosity = &main_verbosity_st;
-   int prio = ANDROID_LOG_INFO;
+   int prio                       = ANDROID_LOG_INFO;
+
    if (tag)
    {
       if (string_is_equal(FILE_PATH_LOG_WARN, tag))
@@ -252,105 +258,148 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    }
    else
       __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
-#else
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-   FILE                       *fp = (FILE*)g_verbosity->fp;
-   const char              *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
-#if defined(HAVE_QT) || defined(__WINRT__)
-   char buffer[1024];
-   buffer[0]         = '\0';
-   /* Ensure NULL termination and line break in error case */
-   if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
-   {
-      size_t end;
-      buffer[sizeof(buffer) - 1]  = '\0';
-      end = strlen(buffer) - 1;
-      if (end >= 0)
-         buffer[end] = '\n';
-      else
-      {
-         buffer[0]   = '\n';
-         buffer[1]   = '\0';
-      }
-   }
 
-   if (fp)
+#else
    {
-      fprintf(fp, "%s %s", tag_v, buffer);
-      fflush(fp);
-   }
+      verbosity_state_t *g_verbosity;
+      FILE              *fp;
+      const char        *tag_v;
+
+      g_verbosity = &main_verbosity_st;
+      fp          = (FILE*)g_verbosity->fp;
+      tag_v       = tag ? tag : FILE_PATH_LOG_INFO;
+
+#if defined(HAVE_QT) || defined(__WINRT__)
+      {
+         char buffer[1024];
+         buffer[0] = '\0';
+
+         if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
+         {
+            size_t len;
+            buffer[sizeof(buffer) - 1] = '\0';
+            len = strlen(buffer);
+            if (len > 0)
+               buffer[len - 1] = '\n';
+            else
+            {
+               buffer[0] = '\n';
+               buffer[1] = '\0';
+            }
+         }
+
+         if (fp)
+         {
+            fprintf(fp, "%s %s", tag_v, buffer);
+            fflush(fp);
+         }
 
 #if defined(HAVE_QT)
-   ui_companion_driver_log_msg(buffer);
+         ui_companion_driver_log_msg(buffer);
 #endif
 
 #if defined(__WINRT__)
-   OutputDebugStringA(buffer);
+         OutputDebugStringA(buffer);
 #endif
-#else /* !HAVE_QT && !__WINRT__ */
-#if TARGET_OS_MAC /* any apple variant: macOS, iOS, tvOS, ... */
-   char *buffer = NULL;
-   va_list ap_cp;
-   va_copy(ap_cp, ap);
-   int r = vasprintf(&buffer, fmt, ap_cp);
-   va_end(ap_cp);
-   if (r < 0 || !buffer)
-   {
-      /* Fallback to a minimal newline to keep output formatting sensible */
-      buffer = (char*)malloc(2);
-      if (buffer)
-      {
-         buffer[0] = '\n';
-         buffer[1] = '\0';
       }
-   }
 
-#if TARGET_OS_OSX /* really macOS */
-   /* macOS: output to stdout for developer convenience */
-   printf("%s %s", tag_v, buffer);
-#else /* iOS, tvOS, ... */
-#if TARGET_OS_SIMULATOR
-   /* iOS Simulator: output to stderr for Xcode console */
-   fprintf(stderr, "%s %s", tag_v, buffer);
-#elif defined(__IPHONE_10_0) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0)
-   /* iOS 10+ and tvOS 10+: use os_log for unified logging */
-   os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
-#elif defined(__TV_OS_VERSION_MIN_REQUIRED) && defined(__TVOS_10_0) && (__TV_OS_VERSION_MIN_REQUIRED >= __TVOS_10_0)
-   /* tvOS 10+: use os_log for unified logging */
-   os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
 #else
-   /* iOS 9 and earlier: use ASL (Apple System Logger) */
-   static aslclient asl_client;
-   static int asl_initialized = 0;
-   if (!asl_initialized)
-   {
-      asl_client      = asl_open(FILE_PATH_PROGRAM_NAME,
-                                 "com.apple.console",
-                                 ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
-      asl_initialized = 1;
-   }
-   aslmsg msg = asl_new(ASL_TYPE_MSG);
-   asl_set(msg, ASL_KEY_READ_UID, "-1");
-   asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s %s", tag_v, buffer);
-   asl_free(msg);
-#endif
-#endif /* TARGET_OS_OSX */
-   free(buffer);
-#endif /* TARGET_OS_MAC */
-#if defined(HAVE_LIBNX)
-   mutexLock(&g_verbosity->mtx);
-#endif
-   if (fp)
-   {
-      fprintf(fp, "%s ", tag_v);
-      vfprintf(fp, fmt, ap);
-      fflush(fp);
-   }
-#if defined(HAVE_LIBNX)
-   mutexUnlock(&g_verbosity->mtx);
+
+#if TARGET_OS_MAC
+      {
+         int     r;
+         va_list ap_cp;
+         char *buffer = NULL;
+         va_copy(ap_cp, ap);
+         r = vasprintf(&buffer, fmt, ap_cp);
+         va_end(ap_cp);
+
+         if (r < 0 || !buffer)
+         {
+            free(buffer);
+            buffer = (char*)malloc(2);
+            if (!buffer)
+               goto apple_log_done;
+            buffer[0] = '\n';
+            buffer[1] = '\0';
+         }
+
+#if TARGET_OS_OSX
+         printf("%s %s", tag_v, buffer);
+         if (fp)
+         {
+            fprintf(fp, "%s %s", tag_v, buffer);
+            fflush(fp);
+         }
+
+#else
+         {
+#  if TARGET_OS_SIMULATOR
+            fprintf(stderr, "%s %s", tag_v, buffer);
+#  elif defined(__IPHONE_10_0) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0)
+            os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+#  elif defined(__TV_OS_VERSION_MIN_REQUIRED) && defined(__TVOS_10_0) \
+         && (__TV_OS_VERSION_MIN_REQUIRED >= __TVOS_10_0)
+            os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+#  else
+            {
+               static aslclient asl_client      = NULL;
+               static int       asl_initialized = 0;
+               aslmsg           msg;
+
+#  if defined(HAVE_LIBNX)
+               mutexLock(&g_verbosity->mtx);
+#  endif
+               if (!asl_initialized)
+               {
+                  asl_client      = asl_open(FILE_PATH_PROGRAM_NAME,
+                                             "com.apple.console",
+                                             ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+                  asl_initialized = 1;
+               }
+#  if defined(HAVE_LIBNX)
+               mutexUnlock(&g_verbosity->mtx);
+#  endif
+               msg = asl_new(ASL_TYPE_MSG);
+               asl_set(msg, ASL_KEY_READ_UID, "-1");
+               asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s %s", tag_v, buffer);
+               asl_free(msg);
+            }
+#  endif
+
+            if (fp)
+            {
+               fprintf(fp, "%s %s", tag_v, buffer);
+               fflush(fp);
+            }
+         }
 #endif
 
+         free(buffer);
+      }
+
+apple_log_done:;
+
+#else
+      {
+#  if defined(HAVE_LIBNX)
+         mutexLock(&g_verbosity->mtx);
+#  endif
+
+         if (fp)
+         {
+            fprintf(fp, "%s ", tag_v);
+            vfprintf(fp, fmt, ap);
+            fflush(fp);
+         }
+
+#  if defined(HAVE_LIBNX)
+         mutexUnlock(&g_verbosity->mtx);
+#  endif
+      }
 #endif
+#endif
+   }
 #endif
 }
 
