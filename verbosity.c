@@ -221,19 +221,19 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
 #if defined(_XBOX1) || defined(__WINRT__)
    char buffer[256];
-   int prefix_len;
+   int _len;
    const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
    buffer[0]  = '\0';
-   prefix_len = snprintf(buffer, sizeof(buffer),
+   _len = snprintf(buffer, sizeof(buffer),
          "%s: %s ", FILE_PATH_PROGRAM_NAME, tag_v);
 
-   if (prefix_len > 0 && prefix_len < (int)sizeof(buffer))
+   if (_len > 0 && _len < (int)sizeof(buffer))
    {
 #if defined(__WINRT__)
-      vsnprintf(buffer + prefix_len,
-                sizeof(buffer) - (size_t)prefix_len, fmt, ap);
+      vsnprintf(buffer + _len,
+                sizeof(buffer) - (size_t)_len, fmt, ap);
 #else
-      wvsprintf(buffer + prefix_len, fmt, ap);
+      wvsprintf(buffer + _len, fmt, ap);
 #endif
    }
 
@@ -261,13 +261,9 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
 #else
    {
-      verbosity_state_t *g_verbosity;
-      FILE              *fp;
-      const char        *tag_v;
-
-      g_verbosity = &main_verbosity_st;
-      fp          = (FILE*)g_verbosity->fp;
-      tag_v       = tag ? tag : FILE_PATH_LOG_INFO;
+      verbosity_state_t *g_verbosity = &main_verbosity_st;
+      FILE *fp          = (FILE*)g_verbosity->fp;
+      const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 
 #if defined(HAVE_QT) || defined(__WINRT__)
       {
@@ -276,11 +272,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
          if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
          {
-            size_t len;
+            size_t _len;
             buffer[sizeof(buffer) - 1] = '\0';
-            len = strlen(buffer);
-            if (len > 0)
-               buffer[len - 1] = '\n';
+            _len = strlen(buffer);
+            if (_len > 0)
+               buffer[_len - 1] = '\n';
             else
             {
                buffer[0] = '\n';
@@ -334,38 +330,39 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
 #else
          {
-#  if TARGET_OS_SIMULATOR
+#if TARGET_OS_SIMULATOR
             fprintf(stderr, "%s %s", tag_v, buffer);
-#  elif defined(__IPHONE_10_0) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0)
+#elif defined(__IPHONE_10_0) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0)
             os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
-#  elif defined(__TV_OS_VERSION_MIN_REQUIRED) && defined(__TVOS_10_0) \
+#elif defined(__TV_OS_VERSION_MIN_REQUIRED) && defined(__TVOS_10_0) \
          && (__TV_OS_VERSION_MIN_REQUIRED >= __TVOS_10_0)
             os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
-#  else
+#else
             {
                static aslclient asl_client      = NULL;
                static int       asl_initialized = 0;
                aslmsg           msg;
 
-#  if defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
                mutexLock(&g_verbosity->mtx);
-#  endif
+#endif
                if (!asl_initialized)
                {
                   asl_client      = asl_open(FILE_PATH_PROGRAM_NAME,
-                                             "com.apple.console",
-                                             ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+                                    "com.apple.console",
+                                    ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
                   asl_initialized = 1;
                }
-#  if defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
                mutexUnlock(&g_verbosity->mtx);
-#  endif
+#endif
                msg = asl_new(ASL_TYPE_MSG);
                asl_set(msg, ASL_KEY_READ_UID, "-1");
-               asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s %s", tag_v, buffer);
+               asl_log(asl_client, msg, ASL_LEVEL_NOTICE,
+               "%s %s", tag_v, buffer);
                asl_free(msg);
             }
-#  endif
+#endif
 
             if (fp)
             {
