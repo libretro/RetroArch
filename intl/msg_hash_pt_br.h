@@ -9287,7 +9287,7 @@ MSG_HASH(
    "Iniciar ou continuar a pesquisa de trapaças"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
    "Escanear a memória para criar novas trapaças."
    )
 MSG_HASH(
@@ -9311,6 +9311,10 @@ MSG_HASH(
    "Recarregar Trapaças Específicas do Jogo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Recarregar todas as trapaças existentes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Salvar arquivo de trapaça como"
    )
@@ -9323,12 +9327,24 @@ MSG_HASH(
    "Adicionar nova trapaça no início"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Adicionar uma trapaça ao início da lista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Adicionar nova trapaça no final"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Adicionar uma trapaça ao final da lista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Excluir Todas as Trapaças"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Limpar a lista de trapaças."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9455,7 +9471,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Adicionar as %u coincidências para sua lista"
+   "Adicionar %u Correspondências à Lista"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14406,6 +14422,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Todas as trapaças foram excluídas."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Todas as trapaças foram recarregadas."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

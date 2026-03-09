@@ -9411,10 +9411,6 @@ MSG_HASH(
    "Bắt đầu hoặc Tiếp tục Tìm Cheat"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Quét bộ nhớ để tạo cheat mới."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Tải tệp Cheat (Thay thế)"
    )
@@ -9576,10 +9572,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Bằng trước đó -%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Thêm %u kết quả khớp vào danh sách của bạn"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

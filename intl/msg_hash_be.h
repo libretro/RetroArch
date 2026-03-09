@@ -8803,10 +8803,6 @@ MSG_HASH(
    "Пачаць або працягнуць пошук чыт-кода"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Сканаваць памяць для стварэння новых чыт-кодаў."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Загрузіць файл з чыт-кодамі (замяніць)"
    )
@@ -8968,10 +8964,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Роўных да -%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Дадаць %u супадзенняў у спіс"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

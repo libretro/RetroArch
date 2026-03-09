@@ -8602,10 +8602,6 @@ MSG_HASH(
    "Równy jak przed-%u (%X)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Dodaj %u dopasowań do Twojej listy"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
    "Usuń mecz #"
    )

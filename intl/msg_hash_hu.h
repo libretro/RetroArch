@@ -9363,10 +9363,6 @@ MSG_HASH(
    "Csalás keresés indítása vagy folytatása"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "A memória átfésülése új csalások létrehozásához."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Csalás fájl betöltése (lecserélés)"
    )
@@ -9528,10 +9524,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Annyi, mint előzőleg - %u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "A %u egyezés hozzáadása a listához"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

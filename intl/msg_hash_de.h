@@ -9171,10 +9171,6 @@ MSG_HASH(
    "Cheatsuche starten oder fortsetzen"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Speicher durchsuchen, um neue Cheats zu erstellen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Cheat-Datei laden (ersetzen)"
    )
@@ -9332,10 +9328,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Gleich zu vorher +%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Die %u Treffer zu Deiner Liste hinzufügen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

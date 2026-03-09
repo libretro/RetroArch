@@ -48,7 +48,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "الفيديو"
+   "فيديوهات"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
@@ -1562,7 +1562,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   "تحجيم"
+   "القياس"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
@@ -1658,11 +1658,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   "تأخير التقاط تلقائي"
+   "تأخير التظليل التلقائي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "تأخير التحميل التلقائي للتظليلات (بالمللي ثانية). يمكنها إصلاح الخلل الناتج في الرسومات عند استخدام برنامج \"تسجيل الشاشة\"."
+   "تأخير تحميل التظليلات تلقائيًا (بالمللي ثانية). يمكن أن يحل المشكلة الرسومية عند استخدام برامج 'التقاط الشاشة'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -1670,7 +1670,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "يقوم بتطبيق فلتر فيديو يعمل على قوة المعالج. ملاحظة: يمكن أن يأتي بكلفة عالية على عاتق الأداء. قد تعمل بعض فلاتر الفيديو فقط للنواة التي تستخدم ألوان 32 بت أو 16 بت."
+   "تطبيق فلتر فيديو يعتمد على قوة المعالج. قد يكون ذلك على حساب الأداء. بعض فلاتر الفيديو قد تعمل فقط مع الأنوية التي تستخدم ألوان 32 بت أو 16 بت."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -1680,6 +1680,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "إلغاء تحميل أي فلتر فيديو نشط يعمل على المعالج."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "تفعيل ملء الشاشة فوق النوتش في أجهزة Android و iOS"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -5116,10 +5120,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "يساوي السابق - %u أي %X"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "أضف %u نتيجة بحث لقائمتك"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

@@ -9327,8 +9327,8 @@ MSG_HASH(
    "Lancer/continuer la recherche de cheats"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Recherchez dans la mémoire pour créer de nouveaux cheats."
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "Rechercher dans la mémoire pour créer de nouveaux cheats."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -9351,6 +9351,10 @@ MSG_HASH(
    "Recharger les cheats du jeu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Recharger tous les cheats existants."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Enregistrer les cheats sous"
    )
@@ -9363,12 +9367,24 @@ MSG_HASH(
    "Ajouter un nouveau cheat (en haut)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Ajouter un cheat au début de la liste."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Ajouter un nouveau cheat (en bas)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Ajouter un cheat à la fin de la liste."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Supprimer tous les cheats"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Effacer la liste de cheats."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9499,7 +9515,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Ajouter les %u correspondances à votre liste"
+   "Ajouter %u correspondances à la liste"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14546,6 +14562,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Tous les cheats ont été supprimés."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Tous les cheats ont été rechargés."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

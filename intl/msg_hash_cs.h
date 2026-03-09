@@ -82,6 +82,14 @@ MSG_HASH(
    "Vyberte, které jádro chcete použít."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Vypustit jádro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Uvolněte nahrané jádro."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Projděte si implementaci jádra libretro. Místo, kde se prohlížeč spustí, závisí na cestě k adresáři Adresář jádra. Pokud je prázdný, začne v kořenovém adresáři.\nJe-li to adresář jádra, nabídka jej použije jako přednostní složku. Pokud je k Adresáři jádra úplná cesta, začne ve složce, kde je soubor."
    )
@@ -146,6 +154,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
    "Otevře tradiční menu plochy."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Zakázat režim Prodejna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -222,6 +234,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "Ukončit RetroArch. Ukončení programu tvrdým způsobem (SIGKILL, atd.) ukončí RetroArch bez uložení nastavení v každém případě. Na systémech odvezené od Unixu se možné SIGINT/SIGTERM, což povolí čistou deinicializaci, která zahrnuje uložení nastavení, pokud je povoleno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Synchronizovat nyní"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Ruční spuštění synchronizace s cloudem."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Vyřešit konflikty: ponechat lokální"
    )
 
 /* Main Menu > Load Core */
@@ -8659,10 +8683,6 @@ MSG_HASH(
    "Spustit nebo pokračovat v hledání cheatu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Prohledejte paměť a vytvořte nové cheaty."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Načíst soubor cheatu (nahradit)"
    )
@@ -8820,10 +8840,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Rovno před -%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Přidání shody %u do seznamu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

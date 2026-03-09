@@ -9367,7 +9367,7 @@ MSG_HASH(
    "Iniciar o continuar búsqueda de trucos"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
    "Busca dentro de la memoria para crear trucos nuevos."
    )
 MSG_HASH(
@@ -9391,6 +9391,10 @@ MSG_HASH(
    "Recargar trucos específicos del juego"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Vuelve a cargar todos los trucos existentes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Guardar archivo de trucos como..."
    )
@@ -9403,12 +9407,24 @@ MSG_HASH(
    "Agregar truco nuevo al principio"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Antepone un truco en la lista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Agregar truco nuevo al final"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Añade un truco a la lista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Eliminar todos los trucos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Borra la lista de trucos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9535,7 +9551,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Agregar %u coincidencias a tu lista"
+   "Agregar %u coincidencias a lista"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14562,6 +14578,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Se han eliminado todos los trucos."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Se han recargado todos los trucos."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

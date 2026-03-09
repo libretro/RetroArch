@@ -9383,10 +9383,6 @@ MSG_HASH(
    "Tosaigh nó Lean ar aghaidh le Cuardach Mealltóireachta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Scanadh cuimhne chun cleasanna nua a chruthú."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Luchtaigh Comhad Cheat (Athsholáthar)"
    )
@@ -9556,10 +9552,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Cothrom le Roimh -%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Cuir na %u Meaitseálacha le do Liosta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

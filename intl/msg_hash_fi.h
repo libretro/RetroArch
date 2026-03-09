@@ -7958,10 +7958,6 @@ MSG_HASH(
    "Yhtä kuin ennen -%u (%X)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Lisää %u osumaa listaasi"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
    "Poista vastaavuus #"
    )

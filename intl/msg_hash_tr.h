@@ -9015,10 +9015,6 @@ MSG_HASH(
    "Hile Aramaya Başla veya Devam Et"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Yeni hileler oluşturmak için belleği tarayın."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Hile Dosyası Yükle (Değiştir)"
    )
@@ -9184,10 +9180,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Öncekine Eşittir -%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "%u Eşleşmeyi Listene Ekle"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
