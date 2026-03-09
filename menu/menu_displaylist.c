@@ -341,6 +341,7 @@ static int filebrowser_parse(
 
    for (i = 0; i < list_size; i++)
    {
+      bool dir_only_mode;
       enum msg_hash_enums enum_idx      = MSG_UNKNOWN;
       enum rarch_content_type path_type = RARCH_CONTENT_NONE;
       enum msg_file_type file_type      = FILE_TYPE_NONE;
@@ -350,7 +351,7 @@ static int filebrowser_parse(
       if (string_is_empty(file_path))
          continue;
 
-      bool dir_only_mode = (   filebrowser_type == FILEBROWSER_SELECT_DIR
+      dir_only_mode      = (   filebrowser_type == FILEBROWSER_SELECT_DIR
                             || filebrowser_type == FILEBROWSER_SCAN_DIR
                             || filebrowser_type == FILEBROWSER_MANUAL_SCAN_DIR);
 
