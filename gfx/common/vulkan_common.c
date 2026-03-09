@@ -1344,9 +1344,7 @@ static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
       {
          struct vulkan_context *ctx = &vk->context;
          VkSemaphore sem            = vk->context.swapchain_wait_semaphores[i];
-#ifdef DEBUG
-         retro_assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
-#endif
+         assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
          ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
       }
       vk->context.swapchain_wait_semaphores[i] = VK_NULL_HANDLE;
@@ -1408,9 +1406,7 @@ static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
    {
       struct vulkan_context *ctx = &vk->context;
       VkSemaphore sem            = vk->context.swapchain_wait_semaphores[index];
-#ifdef DEBUG
-      retro_assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
-#endif
+      assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
       ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
    }
    vk->context.swapchain_wait_semaphores[index] = VK_NULL_HANDLE;
@@ -1473,10 +1469,8 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
 
       chain->current = chain->current->next;
       chain->offset  = 0;
-#ifdef DEBUG
       /* This cannot possibly fail. */
       retro_assert(vulkan_buffer_chain_suballoc(chain, len, range));
-#endif
    }
    return true;
 }
@@ -1603,15 +1597,14 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(
       }
 
       manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
-#ifdef DEBUG
       retro_assert(manager->current->next);
-#endif
 
       manager->current = manager->current->next;
       manager->count   = 0;
    }
    return manager->current->sets[manager->count++];
 }
+
 
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
@@ -1879,9 +1872,7 @@ retry:
       }
    }
 
-#ifdef DEBUG
    retro_assert(!(vk->context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN));
-#endif
 
    if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
    {
@@ -1912,16 +1903,16 @@ retry:
          vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
       vk->context.flags |= VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
 
-      /* Recycle the previous acquire semaphore rather than stalling the device.
-       * vkDeviceWaitIdle here was a significant hot-path bottleneck. */
-      if (vk->context.swapchain_acquire_semaphore != VK_NULL_HANDLE)
+      if (vk->context.swapchain_acquire_semaphore)
       {
-         struct vulkan_context *ctx = &vk->context;
-#ifdef DEBUG
-         retro_assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
+#ifdef HAVE_THREADS
+         slock_lock(vk->context.queue_lock);
 #endif
-         ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] =
-            vk->context.swapchain_acquire_semaphore;
+         vkDeviceWaitIdle(vk->context.device);
+         vkDestroySemaphore(vk->context.device, vk->context.swapchain_acquire_semaphore, NULL);
+#ifdef HAVE_THREADS
+         slock_unlock(vk->context.queue_lock);
+#endif
       }
       vk->context.swapchain_acquire_semaphore = semaphore;
    }
@@ -1932,9 +1923,7 @@ retry:
       {
          struct vulkan_context *ctx = &vk->context;
          VkSemaphore sem            = semaphore;
-#ifdef DEBUG
-         retro_assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
-#endif
+         assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
          ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
       }
    }
