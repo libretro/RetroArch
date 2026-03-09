@@ -5775,6 +5775,7 @@ static void ozone_draw_entries(
    uint32_t alpha_uint32;
    float bottom_boundary;
    unsigned video_info_height, video_info_width;
+   float last_border_alpha           = -1.0f;
    bool menu_show_sublabels          = settings->bools.menu_show_sublabels;
    bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
    unsigned show_history_icons       = settings->uints.playlist_show_history_icons;
@@ -5832,7 +5833,6 @@ static void ozone_draw_entries(
 
    /* Borders layer */
    /* Cache alpha to avoid redundant set_alpha calls each entry */
-   float last_border_alpha = -1.0f;
    for (i = 0; i < entries_end; i++)
    {
       bool entry_selected     = selection == i;
