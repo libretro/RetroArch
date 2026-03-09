@@ -3702,10 +3702,23 @@ static void ozone_draw_sidebar(
 
       for (i = 0; i < horizontal_list_size; i++)
       {
+         float tab_y_screen;
          ozone_node_t *node   = (ozone_node_t*)ozone->horizontal_list.list[i].userdata;
          float *col           = NULL;
          bool selected        = (ozone->categories_selection_ptr == ozone->system_tab_end + 1 + i);
          uint32_t text_color  = 0;
+
+         /* Cull off-screen sidebar entries */
+         tab_y_screen = y + ozone->animations.scroll_y_sidebar;
+         if (tab_y_screen + ozone->dimensions.sidebar_entry_height < ozone->dimensions.header_height)
+            goto console_iterate;
+         if (tab_y_screen > (int)video_height - (int)ozone->dimensions.footer_height)
+         {
+            /* All remaining entries are also below visible area */
+            y += (horizontal_list_size - i) * (ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical);
+            break;
+         }
+
          if (ozone->theme)
             text_color        = COLOR_TEXT_ALPHA((selected
                ? ozone->theme->text_selected_rgba
@@ -5662,17 +5675,25 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
       menu_entry_t entry;
       ozone_node_t *node       = NULL;
 
-      MENU_ENTRY_INITIALIZE(entry);
-      entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
-      menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
+      /* Cache node first - if missing, skip without expensive menu_entry_get */
+      if (!(node = (ozone_node_t*)selection_buf->list[i].userdata))
+         continue;
 
-      /* Empty playlist detection:
-         only one item which icon is
-         OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO */
+      node->height             = ozone->dimensions.entry_height;
+      node->wrap               = false;
+      node->sublabel_lines     = 0;
+
+      /* Empty playlist detection only needed when there is exactly one entry
+       * in a playlist - avoid the full entry fetch otherwise */
       if (     (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
             && (entries_end == 1))
       {
-         uintptr_t         tex = ozone_entries_icon_get_texture(ozone,
+         uintptr_t tex;
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
+         menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
+
+         tex = ozone_entries_icon_get_texture(ozone,
                entry.enum_idx, entry.path, entry.label, entry.type, false);
          if (tex == ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO])
             ozone->flags      |=  OZONE_FLAG_EMPTY_PLAYLIST;
@@ -5680,15 +5701,23 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
             ozone->flags      &= ~OZONE_FLAG_EMPTY_PLAYLIST;
       }
       else
+      {
          ozone->flags         &= ~OZONE_FLAG_EMPTY_PLAYLIST;
 
-      /* Cache node */
-      if (!(node = (ozone_node_t*)selection_buf->list[i].userdata))
-         continue;
+         if (menu_show_sublabels)
+         {
+            MENU_ENTRY_INITIALIZE(entry);
+            entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
+            menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
+            goto compute_sublabel;
+         }
 
-      node->height             = ozone->dimensions.entry_height;
-      node->wrap               = false;
-      node->sublabel_lines     = 0;
+         node->position_y       = ozone->entries_height;
+         ozone->entries_height += node->height;
+         continue;
+      }
+
+compute_sublabel:
 
       if (menu_show_sublabels)
       {
@@ -5802,6 +5831,8 @@ static void ozone_draw_entries(
    alpha_uint32    = (uint32_t)(alpha * 255.0f);
 
    /* Borders layer */
+   /* Cache alpha to avoid redundant set_alpha calls each entry */
+   float last_border_alpha = -1.0f;
    for (i = 0; i < entries_end; i++)
    {
       bool entry_selected     = selection == i;
@@ -5825,13 +5856,22 @@ static void ozone_draw_entries(
       if (y + scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
          goto border_iterate;
       else if (y + scroll_y - node->height - 20 * scale_factor > bottom_boundary)
-         goto border_iterate;
+      {
+         /* All remaining entries are also below the boundary - stop iterating */
+         if (node)
+            y += node->height;
+         break;
+      }
 
       border_start_x = (unsigned)ozone->dimensions_sidebar_width + x_offset + entry_padding;
       border_start_y = y + scroll_y;
 
-      gfx_display_set_alpha(ozone->theme_dynamic.entries_border, alpha);
-      gfx_display_set_alpha(ozone->theme_dynamic.entries_checkmark, alpha);
+      if (alpha != last_border_alpha)
+      {
+         gfx_display_set_alpha(ozone->theme_dynamic.entries_border, alpha);
+         gfx_display_set_alpha(ozone->theme_dynamic.entries_checkmark, alpha);
+         last_border_alpha = alpha;
+      }
 
       /* Borders */
       gfx_display_draw_quad(
@@ -5956,8 +5996,8 @@ border_iterate:
       }
       else if (y + scroll_y - node->height - 20 * scale_factor > bottom_boundary)
       {
-         y += node->height;
-         continue;
+         /* All remaining entries are also below the boundary - stop iterating */
+         break;
       }
 
       entry_selected                 = selection == i;
