@@ -809,6 +809,7 @@ static int32_t input_state_wrap(
             const uint64_t autobind_joyaxis= joypad_info->auto_binds[id].joyaxis;
             uint16_t port                  = joypad_info->joy_idx;
             float axis_threshold           = joypad_info->axis_threshold;
+            float inv_0x8000               = 1.0f / 0x8000;
             const uint64_t joykey          = (bind_joykey != NO_BTN)
                ? bind_joykey  : autobind_joykey;
             const uint64_t joyaxis         = (bind_joyaxis != AXIS_NONE)
@@ -821,7 +822,7 @@ static int32_t input_state_wrap(
                   return 1;
                if (joyaxis != AXIS_NONE &&
                      ((float)abs(joypad->axis(port, (uint32_t)joyaxis))
-                      / 0x8000) > axis_threshold)
+                      * inv_0x8000) > axis_threshold)
                   return 1;
             }
             if (sec_joypad)
@@ -831,7 +832,7 @@ static int32_t input_state_wrap(
                   return 1;
                if (joyaxis != AXIS_NONE &&
                      ((float)abs(sec_joypad->axis(port, (uint32_t)joyaxis))
-                      / 0x8000) > axis_threshold)
+                      * inv_0x8000) > axis_threshold)
                   return 1;
             }
          }
@@ -866,35 +867,36 @@ static int16_t input_joypad_axis(
       const input_device_driver_t *drv,
       unsigned port, uint32_t joyaxis, float normal_mag)
 {
-   int16_t val = ((joyaxis != AXIS_NONE) && drv && drv->axis) 
-   ? drv->axis(port, joyaxis) : 0;
+   int16_t val = ((joyaxis != AXIS_NONE) && drv && drv->axis)
+      ? drv->axis(port, joyaxis) : 0;
 
    if (input_analog_deadzone)
    {
-      /* if analog value is below the deadzone, ignore it
-       * normal magnitude is calculated radially for analog sticks
-       * and linearly for analog buttons */
+      /* If below deadzone, short-circuit immediately */
       if (normal_mag <= input_analog_deadzone)
          return 0;
 
-      /* Due to the way normal_mag is calculated differently 
-       * for buttons and sticks, this results in either a 
-       * radial scaled deadzone for sticks or linear scaled 
-       * deadzone for analog buttons */
-      val = val * MAX(1.0f,(1.0f / normal_mag)) * MIN(1.0f,
-            ((normal_mag - input_analog_deadzone)
-          / (1.0f - input_analog_deadzone)));
+      /* Radial/linear scaled deadzone rescale.
+       * Precompute 1/normal_mag once; clamp implicitly via MIN/MAX. */
+      {
+         float inv_mag   = (normal_mag > 1.0f) ? (1.0f / normal_mag) : 1.0f;
+         float dz_scale  = (normal_mag - input_analog_deadzone)
+                         / (1.0f - input_analog_deadzone);
+         if (dz_scale > 1.0f) dz_scale = 1.0f;
+         val = (int16_t)((float)val * inv_mag * dz_scale);
+      }
    }
 
    if (input_analog_sensitivity != 1.0f)
    {
-      float normalized = (1.0f / 0x7fff) * val;
-      int      new_val = 0x7fff * normalized * input_analog_sensitivity;
+      /* Fused: scale = sensitivity / 0x7fff; new_val = val * scale * 0x7fff
+       * reduces to val * sensitivity, with clamp */
+      int new_val = (int)((float)val * input_analog_sensitivity);
       if (new_val > 0x7fff)
          return 0x7fff;
-      else if (new_val < -0x7fff)
+      if (new_val < -0x7fff)
          return -0x7fff;
-      return new_val;
+      return (int16_t)new_val;
    }
 
    return val;
@@ -929,30 +931,32 @@ static int16_t input_joypad_analog_button(
 {
    int16_t res      = 0;
    float normal_mag = 0.0f;
+   uint16_t joy_idx = joypad_info->joy_idx;
    uint32_t axis    = (bind->joyaxis == AXIS_NONE)
       ? joypad_info->auto_binds[ident].joyaxis
       : bind->joyaxis;
 
-   /* Analog button. */
-   if (input_analog_deadzone)
+   /* Analog button - call drv->axis at most once */
+   if (input_analog_deadzone && axis != AXIS_NONE)
    {
-      int16_t mult = 0;
-      if (axis != AXIS_NONE)
-         if ((mult = drv->axis(joypad_info->joy_idx, axis)) != 0)
-            normal_mag   = fabs((1.0f / 0x7fff) * mult);
+      int16_t mult = drv->axis(joy_idx, axis);
+      if (mult != 0)
+      {
+         /* Manual abs avoids fabs() float-to-int rounding ambiguity */
+         normal_mag = (float)(mult < 0 ? -mult : mult) * (1.0f / 0x7fff);
+      }
    }
 
-   /* If the result is zero, it's got a digital button
-    * attached to it instead */
+   /* If the result is zero, it's got a digital button attached to it instead */
    if ((res = abs(input_joypad_axis(input_analog_deadzone,
             input_analog_sensitivity, drv,
-            joypad_info->joy_idx, axis, normal_mag))) == 0)
+            joy_idx, axis, normal_mag))) == 0)
    {
       uint16_t key = (bind->joykey == NO_BTN)
          ? joypad_info->auto_binds[ident].joykey
          : bind->joykey;
 
-      if (drv->button(joypad_info->joy_idx, key))
+      if (drv->button(joy_idx, key))
          return 0x7fff;
       return 0;
    }
@@ -1906,6 +1910,10 @@ static int16_t input_state_internal(
                                              && (id == RETRO_DEVICE_ID_JOYPAD_MASK);
    joypad_info.axis_threshold              = settings->floats.input_axis_threshold;
 
+   /* Cache once; flag does not change during this function */
+   {
+      bool kb_mapping_blocked = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false;
+
    /* Loop over all 'physical' ports mapped to specified
     * 'virtual' port index */
    while ((mapped_port = *(input_remap_port_map++)) < MAX_USERS)
@@ -1959,7 +1967,7 @@ static int16_t input_state_internal(
             sec_joypad,
             &joypad_info,
             (*input_st->libretro_input_binds),
-            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            kb_mapping_blocked,
             mapped_port, device, idx, id);
 
       /* Ignore analog sticks when using Analog to Digital */
@@ -2060,6 +2068,8 @@ static int16_t input_state_internal(
             int16_t ret_axis;
             uint8_t s;
             uint8_t a;
+            float axis_thr     = joypad_info.axis_threshold;
+            float inv_0x7fff   = 1.0f / 0x7fff;
 
             for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
             {
@@ -2081,16 +2091,17 @@ static int16_t input_state_internal(
 
                   if (ret_axis)
                   {
-                     int bit = -1;
+                     float norm  = (float)ret_axis * inv_0x7fff;
+                     int bit     = -1;
 
-                     if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret_axis / 0x7fff < -joypad_info.axis_threshold)
+                     if (a == RETRO_DEVICE_ID_ANALOG_Y && norm < -axis_thr)
                      {
                         if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                            bit = RETRO_DEVICE_ID_JOYPAD_X;
                         else
                            bit = RETRO_DEVICE_ID_JOYPAD_UP;
                      }
-                     else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret_axis / 0x7fff > joypad_info.axis_threshold)
+                     else if (a == RETRO_DEVICE_ID_ANALOG_Y && norm > axis_thr)
                      {
                         if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                            bit = RETRO_DEVICE_ID_JOYPAD_B;
@@ -2098,14 +2109,14 @@ static int16_t input_state_internal(
                            bit = RETRO_DEVICE_ID_JOYPAD_DOWN;
                      }
 
-                     if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret_axis / 0x7fff < -joypad_info.axis_threshold)
+                     if (a == RETRO_DEVICE_ID_ANALOG_X && norm < -axis_thr)
                      {
                         if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                            bit = RETRO_DEVICE_ID_JOYPAD_Y;
                         else
                            bit = RETRO_DEVICE_ID_JOYPAD_LEFT;
                      }
-                     else if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret_axis / 0x7fff > joypad_info.axis_threshold)
+                     else if (a == RETRO_DEVICE_ID_ANALOG_X && norm > axis_thr)
                      {
                         if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                            bit = RETRO_DEVICE_ID_JOYPAD_A;
@@ -2154,6 +2165,7 @@ static int16_t input_state_internal(
       else
          result |= port_result;
    }
+   } /* kb_mapping_blocked scope */
 
    return result;
 }
@@ -6127,6 +6139,10 @@ static void input_keys_pressed(
          && (libretro_hotkey_set || keyboard_hotkey_set))
       libretro_hotkey_set = keyboard_hotkey_set = true;
 
+   /* Cache once - flag does not change during a single poll */
+   {
+      bool kb_blocked = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false;
+
    if (     (port == hotkey_port)
          && (binds_norm->valid || binds_auto->valid)
          && CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
@@ -6138,7 +6154,7 @@ static void input_keys_pressed(
             sec_joypad,
             joypad_info,
             binds,
-            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            kb_blocked,
             port, RETRO_DEVICE_JOYPAD, 0,
             RARCH_ENABLE_HOTKEY))
       {
@@ -6170,7 +6186,7 @@ static void input_keys_pressed(
             sec_joypad,
             joypad_info,
             binds,
-            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            kb_blocked,
             port, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
 
@@ -6413,7 +6429,7 @@ static void input_keys_pressed(
                   sec_joypad,
                   joypad_info,
                   binds,
-                  (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                  kb_blocked,
                   port, RETRO_DEVICE_JOYPAD, 0,
                   i);
 
@@ -6482,6 +6498,8 @@ static void input_keys_pressed(
 
    if (input_st->flags & INP_FLAG_BLOCK_HOTKEY && !enable_hotkey_pressed)
       input_st->input_hotkey_block_counter = 0;
+
+   } /* kb_blocked scope */
 }
 
 void input_driver_poll(void)
@@ -7747,32 +7765,27 @@ void input_keyboard_event(bool down, unsigned code,
    {
       if (code != 303 && code != 0)
       {
-         char* say_char = (char*)malloc(sizeof(char)+1);
+         char say_char[2];
+         char c      = (char)character;
+         say_char[0] = c;
+         say_char[1] = '\0';
 
-         if (say_char)
+         if (character == 127 || character == 8)
+            accessibility_speak_priority(accessibility_enable,
+                  accessibility_narrator_speech_speed, "backspace", 10);
+         else
          {
-            char c      = (char)character;
-            *say_char   = c;
-            say_char[1] = '\0';
-
-            if (character == 127 || character == 8)
-               accessibility_speak_priority(accessibility_enable,
-                     accessibility_narrator_speech_speed, "backspace", 10);
-            else
-            {
-               const char *lut_name = accessibility_lut_name(c);
-               if (lut_name)
-                  accessibility_speak_priority(
-                        accessibility_enable,
-                        accessibility_narrator_speech_speed,
-                        lut_name, 10);
-               else if (character != 0)
-                  accessibility_speak_priority(
-                        accessibility_enable,
-                        accessibility_narrator_speech_speed,
-                        say_char, 10);
-            }
-            free(say_char);
+            const char *lut_name = accessibility_lut_name(c);
+            if (lut_name)
+               accessibility_speak_priority(
+                     accessibility_enable,
+                     accessibility_narrator_speech_speed,
+                     lut_name, 10);
+            else if (character != 0)
+               accessibility_speak_priority(
+                     accessibility_enable,
+                     accessibility_narrator_speech_speed,
+                     say_char, 10);
          }
       }
    }
