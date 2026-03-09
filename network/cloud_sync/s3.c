@@ -14,6 +14,7 @@
 
 #include <encodings/base64.h>
 #include <lrc_hash.h>
+// #include <net/net_http.h>
 #include <string/stdstring.h>
 #include <time/rtime.h>
 #include <formats/rjson.h>
@@ -31,6 +32,7 @@
 #define S3_MULTIPART_MIN_PART_SIZE_BYTES (5ULL * 1024ULL * 1024ULL)
 #define S3_MULTIPART_MAX_PART_SIZE_BYTES (5ULL * 1024ULL * 1024ULL * 1024ULL)
 #define S3_MAX_PARTS 10000
+#define S3_EMPTY_PAYLOAD_SHA256 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 #define S3_SIGNATURE_VERSION "AWS4-HMAC-SHA256"
 #define S3_SERVICE "s3"
 
@@ -62,6 +64,21 @@ typedef struct
    bool connected;
 } s3_state_t;
 
+typedef struct
+{
+   s3_cb_state_t *cb_state;
+   char url[PATH_MAX_LENGTH];
+   char canonical_uri[PATH_MAX_LENGTH];
+   char *file_data;
+   size_t file_size;
+   size_t part_size;
+   size_t part_count;
+   size_t current_part;
+   char *upload_id;
+   char **part_etags;
+   bool aborting;
+} s3_multipart_state_t;
+
 static s3_state_t s3_driver_st = {0};
 
 s3_state_t *s3_state_get_ptr(void)
@@ -71,12 +88,45 @@ s3_state_t *s3_state_get_ptr(void)
 
 static size_t s3_get_multipart_nominal_threshold_bytes(void)
 {
-   // if (S3_MULTIPART_NOMINAL_THRESHOLD_BYTES < S3_MULTIPART_MIN_PART_SIZE_BYTES)
-   //    return (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES;
-   // if (S3_MULTIPART_NOMINAL_THRESHOLD_BYTES > S3_MULTIPART_MAX_PART_SIZE_BYTES)
-   //    return (size_t)S3_MULTIPART_MAX_PART_SIZE_BYTES;
-   // return (size_t)S3_MULTIPART_NOMINAL_THRESHOLD_BYTES;
-   return (64ULL * 1024ULL);
+   size_t threshold = (size_t)S3_MULTIPART_NOMINAL_THRESHOLD_BYTES;
+   if (threshold < (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES)
+      threshold = (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES;
+   if (threshold > (size_t)S3_MULTIPART_MAX_PART_SIZE_BYTES)
+      threshold = (size_t)S3_MULTIPART_MAX_PART_SIZE_BYTES;
+   return threshold;
+}
+
+static bool s3_calculate_multipart_plan(size_t file_size, size_t *out_part_size, size_t *out_part_count)
+{
+   size_t part_size  = s3_get_multipart_nominal_threshold_bytes();
+   size_t part_count = 0;
+
+   if (!out_part_size || !out_part_count || file_size == 0)
+      return false;
+
+   if (part_size < (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES)
+      part_size = (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES;
+   if (part_size > (size_t)S3_MULTIPART_MAX_PART_SIZE_BYTES)
+      part_size = (size_t)S3_MULTIPART_MAX_PART_SIZE_BYTES;
+
+   part_count = (file_size + part_size - 1) / part_size;
+
+   if (part_count > S3_MAX_PARTS)
+   {
+      part_size = (file_size + S3_MAX_PARTS - 1) / S3_MAX_PARTS;
+      if (part_size < (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES)
+         part_size = (size_t)S3_MULTIPART_MIN_PART_SIZE_BYTES;
+      if (part_size > (size_t)S3_MULTIPART_MAX_PART_SIZE_BYTES)
+         return false;
+
+      part_count = (file_size + part_size - 1) / part_size;
+      if (part_count > S3_MAX_PARTS)
+         return false;
+   }
+
+   *out_part_size  = part_size;
+   *out_part_count = part_count;
+   return true;
 }
 
 /* Parse S3 URL to extract bucket, region, and host */
@@ -421,14 +471,10 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
    uint8_t inner_hash_bin[32];
    char final_hash_hex[65];
 
-   /* Debug: Show input parameters */
-   RARCH_DBG(S3_PFX "HMAC input: key_len=%zu, data='%s'\n", key_len, data);
-
    /* Hash the key if it's longer than 64 bytes */
    if (key_len > 64)
    {
       char temp_hash[65];/* Use a temporary buffer for the hash */
-      RARCH_DBG(S3_PFX "HMAC: Key too long (%zu), hashing first\n", key_len);
       sha256_hash(temp_hash, (const uint8_t*)key, key_len);
 
       /* Convert hex to binary */
@@ -441,7 +487,8 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
       key_len = 32;
    }
    else
-      RARCH_DBG(S3_PFX "HMAC: Key length OK (%zu), using directly\n", key_len);
+   {
+   }
 
    /* Pad the key to 64 bytes */
    memset(outer_pad, 0, 64);
@@ -576,10 +623,7 @@ static char* s3_calculate_aws4_signature(const char *secret_key, const char *dat
    uint8_t final_signature[32];
    char k_date_hex[65];
    char k_region_hex[65];
-   char *k_region_hex_result = NULL;
    char k_service_hex[65];
-   char k_signing_sample[9];
-   char k_signing_full[65];
 
    signature = malloc(65);
    if (!signature)
@@ -588,13 +632,9 @@ static char* s3_calculate_aws4_signature(const char *secret_key, const char *dat
    /* Build AWS4 key string */
    snprintf(aws4_key, sizeof(aws4_key), "AWS4%s", secret_key);
 
-   RARCH_DBG(S3_PFX "AWS4 key: %s\n", aws4_key);
-   RARCH_DBG(S3_PFX "Date: %s, Region: %s, Service: %s\n", date, region, service);
-
    /* Derive keys step by step using binary HMAC throughout */
    /* Step 1: DateKey = HMAC-SHA256("AWS4" + SecretAccessKey, Date) */
    /* Note: aws4_key is a string, but HMAC treats it as byte data */
-   RARCH_DBG(S3_PFX "Step 1: HMAC-SHA256(key_len=%zu, data='%s')\n", strlen(aws4_key), date);
    if (!s3_hmac_sha256_bin((uint8_t*)aws4_key, strlen(aws4_key), date, k_date))
       goto error;
 
@@ -602,10 +642,7 @@ static char* s3_calculate_aws4_signature(const char *secret_key, const char *dat
    for (i = 0; i < 32; i++)
       snprintf(k_date_hex + 2 * i, 3, "%02x", (unsigned)k_date[i]);
    k_date_hex[64] = '\0';
-   RARCH_DBG(S3_PFX "k_date: %s\n", k_date_hex);
-
    /* Step 2: DateRegionKey = HMAC-SHA256(DateKey, Region) */
-   RARCH_DBG(S3_PFX "Step 2: HMAC-SHA256(binary_key, data='%s')\n", region);
    if (!s3_hmac_sha256_bin(k_date, 32, region, k_region))
       goto error;
 
@@ -613,21 +650,7 @@ static char* s3_calculate_aws4_signature(const char *secret_key, const char *dat
    for (i = 0; i < 32; i++)
       snprintf(k_region_hex + 2 * i, 3, "%02x", (unsigned)k_region[i]);
    k_region_hex[64] = '\0';
-   RARCH_DBG(S3_PFX "k_region: %s\n", k_region_hex);
-
-
-
-   /* Step 2: DateRegionKey = HMAC-SHA256(DateKey, Region) */
-   RARCH_DBG(S3_PFX "Step 2: HMAC-SHA256(binary_key, data='%s')\n", region);
-   k_region_hex_result = s3_hmac_sha256(k_date_hex, region, NULL);
-   RARCH_DBG(S3_PFX "k_region: %s\n", k_region_hex_result);
-   free(k_region_hex_result);
-
-
-
-
    /* Step 3: DateRegionServiceKey = HMAC-SHA256(DateRegionKey, Service) */
-   RARCH_DBG(S3_PFX "Step 3: HMAC-SHA256(binary_key, data='%s')\n", service);
    if (!s3_hmac_sha256_bin(k_region, 32, service, k_service))
       goto error;
 
@@ -635,25 +658,9 @@ static char* s3_calculate_aws4_signature(const char *secret_key, const char *dat
    for (i = 0; i < 32; i++)
       snprintf(k_service_hex + 2 * i, 3, "%02x", (unsigned)k_service[i]);
    k_service_hex[64] = '\0';
-   RARCH_DBG(S3_PFX "k_service: %s\n", k_service_hex);
-
    /* Step 4: SigningKey = HMAC-SHA256(DateRegionServiceKey, "aws4_request") */
-   RARCH_DBG(S3_PFX "Step 4: HMAC-SHA256(binary_key, data='aws4_request')\n");
    if (!s3_hmac_sha256_bin(k_service, 32, "aws4_request", k_signing))
       goto error;
-
-   RARCH_DBG(S3_PFX "Key derivation completed successfully\n");
-
-   /* Debug: Show first few bytes of signing key */
-   snprintf(k_signing_sample, sizeof(k_signing_sample), "%02x%02x%02x%02x", k_signing[0], k_signing[1], k_signing[2], k_signing[3]);
-
-   RARCH_DBG(S3_PFX "Signing key sample: %s...\n", k_signing_sample);
-
-   /* Debug: Show complete signing key */
-   for (i = 0; i < 32; i++)
-      snprintf(k_signing_full + 2 * i, 3, "%02x", (unsigned)k_signing[i]);
-   k_signing_full[64] = '\0';
-   RARCH_DBG(S3_PFX "Complete signing key: %s\n", k_signing_full);
 
    /* Calculate final signature using the derived signing key in binary
    * format
@@ -699,13 +706,9 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
    strftime(date, sizeof(date), "%Y%m%d", tm_info);
    strftime(datetime, sizeof(datetime), "%Y%m%dT%H%M%SZ", tm_info);
 
-   RARCH_DBG(S3_PFX "Date: %s, DateTime: %s\n", date, datetime);
-
    /* Build credential scope */
    snprintf(credential_scope, sizeof(credential_scope), "%s/%s/%s/aws4_request",
             date, region, service);
-
-   RARCH_DBG(S3_PFX "Credential scope: %s\n", credential_scope);
 
    /* Build canonical headers */
    if (headers)
@@ -724,7 +727,6 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
                   host, payload_hash, datetime);
       }
 
-      RARCH_DBG(S3_PFX "Canonical headers:\n%s", canonical_headers ? canonical_headers : "NULL");
    }
 
    /* Build signed headers list */
@@ -744,11 +746,6 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
             signed_headers,
             payload_hash);
 
-   RARCH_DBG(S3_PFX "Canonical request:\n%s\n", canonical_request);
-   RARCH_DBG(S3_PFX "Host: %s\n", host);
-   RARCH_DBG(S3_PFX "Canonical URI: %s\n", canonical_uri);
-   RARCH_DBG(S3_PFX "Method: %s\n", method);
-
    /* Calculate SHA256 hash of canonical request */
    canonical_request_hash = s3_sha256_hash(canonical_request, strlen(canonical_request));
    if (!canonical_request_hash)
@@ -762,14 +759,9 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
             credential_scope,
             canonical_request_hash);
 
-   RARCH_DBG(S3_PFX "String to sign:\n%s\n", string_to_sign);
-
    /* Calculate signature using AWS Signature Version 4 key derivation */
    signature = s3_calculate_aws4_signature(secret_key, date, region, service, string_to_sign);
-
-   if (signature)
-      RARCH_DBG(S3_PFX "Calculated signature: %s\n", signature);
-   else
+   if (!signature)
       RARCH_ERR(S3_PFX "Failed to calculate signature\n");
 
    /* Cleanup */
@@ -948,6 +940,692 @@ static bool s3_http_delete_async(const char *url, const char *headers, s3_cb_sta
          headers, s3_delete_cb, cb_state) != NULL;
 }
 
+static bool s3_build_request_url(char *url, size_t url_size, s3_state_t *s3_st, const char *path)
+{
+   char *encoded_path = NULL;
+
+   if (!url || !s3_st || string_is_empty(s3_st->url))
+      return false;
+
+   if (string_is_empty(path))
+   {
+      strlcpy(url, s3_st->url, url_size);
+      return true;
+   }
+
+   encoded_path = s3_url_encode(path);
+   if (!encoded_path)
+      return false;
+
+   snprintf(url, url_size, "%s/%s", s3_st->url, encoded_path);
+   free(encoded_path);
+   return true;
+}
+
+static char* s3_url_encode_query_value(const char *input)
+{
+   size_t input_len = 0;
+   size_t output_pos = 0;
+   size_t i = 0;
+   char *output = NULL;
+
+   if (!input)
+      return NULL;
+
+   input_len = strlen(input);
+   output = (char*)malloc(input_len * 3 + 1);
+   if (!output)
+      return NULL;
+
+   for (i = 0; i < input_len; i++)
+   {
+      unsigned char c = (unsigned char)input[i];
+      if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+          (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || c == '~')
+      {
+         output[output_pos++] = (char)c;
+      }
+      else
+      {
+         output[output_pos++] = '%';
+         output[output_pos++] = "0123456789ABCDEF"[c >> 4];
+         output[output_pos++] = "0123456789ABCDEF"[c & 0x0F];
+      }
+   }
+
+   output[output_pos] = '\0';
+   return output;
+}
+
+static char* s3_build_url_with_query(const char *url, const char *query)
+{
+   size_t total = 0;
+   char *result = NULL;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   total = strlen(url) + (query ? strlen(query) : 0) + 2;
+   result = (char*)malloc(total);
+   if (!result)
+      return NULL;
+
+   if (query && *query)
+      snprintf(result, total, "%s?%s", url, query);
+   else
+      strlcpy(result, url, total);
+
+   return result;
+}
+
+static char* s3_extract_xml_tag_value(const char *xml, const char *tag_name)
+{
+   char open_tag[64];
+   char close_tag[64];
+   const char *start = NULL;
+   const char *end = NULL;
+   size_t len = 0;
+   char *value = NULL;
+
+   if (string_is_empty(xml) || string_is_empty(tag_name))
+      return NULL;
+
+   snprintf(open_tag, sizeof(open_tag), "<%s>", tag_name);
+   snprintf(close_tag, sizeof(close_tag), "</%s>", tag_name);
+
+   start = strstr(xml, open_tag);
+   if (!start)
+      return NULL;
+   start += strlen(open_tag);
+
+   end = strstr(start, close_tag);
+   if (!end || end <= start)
+      return NULL;
+
+   len = (size_t)(end - start);
+   value = (char*)malloc(len + 1);
+   if (!value)
+      return NULL;
+
+   memcpy(value, start, len);
+   value[len] = '\0';
+   return value;
+}
+
+static char* s3_extract_header_value(http_transfer_data_t *data, const char *header_name)
+{
+   size_t i;
+   char prefix[64];
+
+   if (!data || !data->headers || string_is_empty(header_name))
+      return NULL;
+
+   snprintf(prefix, sizeof(prefix), "%s:", header_name);
+
+   for (i = 0; i < data->headers->size; i++)
+   {
+      const char *line = data->headers->elems[i].data;
+      const char *start = NULL;
+      const char *end = NULL;
+      size_t len = 0;
+      char *out = NULL;
+
+      if (string_is_empty(line))
+         continue;
+      if (!string_starts_with_case_insensitive(line, prefix))
+         continue;
+
+      start = line + strlen(prefix);
+      while (*start == ' ' || *start == '\t')
+         start++;
+
+      end = start + strlen(start);
+      while (end > start && (end[-1] == '\r' || end[-1] == '\n' || end[-1] == ' ' || end[-1] == '\t'))
+         end--;
+
+      len = (size_t)(end - start);
+      out = (char*)malloc(len + 1);
+      if (!out)
+         return NULL;
+      memcpy(out, start, len);
+      out[len] = '\0';
+      return out;
+   }
+
+   return NULL;
+}
+
+static void s3_multipart_free(s3_multipart_state_t *mp_st)
+{
+   size_t i;
+   if (!mp_st)
+      return;
+
+   if (mp_st->part_etags)
+   {
+      for (i = 0; i < mp_st->part_count; i++)
+         free(mp_st->part_etags[i]);
+      free(mp_st->part_etags);
+   }
+
+   free(mp_st->upload_id);
+   free(mp_st->file_data);
+   free(mp_st->cb_state);
+   free(mp_st);
+}
+
+static void s3_multipart_finish(s3_multipart_state_t *mp_st, bool success)
+{
+   if (mp_st && mp_st->cb_state && mp_st->cb_state->cb)
+      mp_st->cb_state->cb(mp_st->cb_state->user_data, mp_st->cb_state->path, success, mp_st->cb_state->rfile);
+   s3_multipart_free(mp_st);
+}
+
+static void s3_multipart_upload_next_part(s3_multipart_state_t *mp_st);
+static void s3_multipart_abort(s3_multipart_state_t *mp_st);
+static bool s3_multipart_start(s3_multipart_state_t *mp_st);
+
+static bool s3_multipart_part_bounds(const s3_multipart_state_t *mp_st,
+      size_t part_index, size_t *out_offset, size_t *out_content_len)
+{
+   size_t offset;
+   size_t remaining;
+   size_t content_len;
+
+   if (!mp_st || !out_offset || !out_content_len)
+      return false;
+   if (part_index >= mp_st->part_count)
+      return false;
+   if (!mp_st->part_size)
+      return false;
+   if (part_index > (mp_st->file_size / mp_st->part_size))
+      return false;
+
+   offset = part_index * mp_st->part_size;
+   if (offset >= mp_st->file_size)
+      return false;
+
+   remaining   = mp_st->file_size - offset;
+   content_len = remaining < mp_st->part_size ? remaining : mp_st->part_size;
+   if (!content_len)
+      return false;
+   if (content_len > (mp_st->file_size - offset))
+      return false;
+
+   *out_offset      = offset;
+   *out_content_len = content_len;
+   return true;
+}
+
+static void s3_log_multipart_initiate_failure(
+      s3_multipart_state_t *mp_st, http_transfer_data_t *data, const char *err)
+{
+   size_t i;
+
+   if (!mp_st)
+      return;
+
+   RARCH_WARN(S3_PFX "Multipart initiate diagnostic: path='%s' url_query='uploads=' canonical_query='uploads=' data=%s status=%d len=%zu headers=%zu err='%s'\n",
+         mp_st->cb_state ? mp_st->cb_state->path : "<unknown>",
+         data ? "present" : "missing",
+         data ? data->status : -1,
+         data ? data->len : 0,
+         (data && data->headers) ? data->headers->size : 0,
+         (err && *err) ? err : "<none>");
+
+   if (data && data->headers)
+      for (i = 0; i < data->headers->size; i++)
+         RARCH_WARN(S3_PFX "Multipart initiate header[%zu]: %s\n", i, data->headers->elems[i].data);
+
+   if (data && data->data && data->len > 0)
+   {
+      data->data[data->len] = '\0';
+      RARCH_WARN(S3_PFX "Multipart initiate body: %s\n", data->data);
+   }
+}
+
+static bool s3_multipart_fallback_single_put(s3_multipart_state_t *mp_st)
+{
+   s3_state_t *s3_st = s3_state_get_ptr();
+   char *payload_hash = NULL;
+   char *auth_header = NULL;
+
+   if (!mp_st || !mp_st->cb_state)
+      return false;
+
+   if (mp_st->file_data && mp_st->file_size > 0)
+      payload_hash = s3_sha256_hash(mp_st->file_data, mp_st->file_size);
+   else
+      payload_hash = strdup(S3_EMPTY_PAYLOAD_SHA256);
+
+   if (!payload_hash)
+      return false;
+
+   auth_header = s3_build_auth_header("PUT", mp_st->canonical_uri, "",
+         "host;x-amz-content-sha256;x-amz-date", payload_hash, s3_st);
+   if (!auth_header)
+   {
+      free(payload_hash);
+      return false;
+   }
+
+   if (!s3_http_put_async(mp_st->url, auth_header,
+            mp_st->file_data, mp_st->file_size, mp_st->cb_state))
+   {
+      free(payload_hash);
+      free(auth_header);
+      return false;
+   }
+
+   /* Callback ownership transferred to the HTTP task. */
+   mp_st->cb_state = NULL;
+
+   free(payload_hash);
+   free(auth_header);
+   return true;
+}
+
+static void s3_multipart_fail(s3_multipart_state_t *mp_st, http_transfer_data_t *data, const char *phase)
+{
+   if (!mp_st)
+      return;
+
+   if (data)
+      s3_log_http_failure(mp_st->cb_state ? mp_st->cb_state->path : phase, data);
+   else
+      RARCH_WARN(S3_PFX "Multipart upload failed during %s\n", phase ? phase : "unknown phase");
+
+   if (!string_is_empty(mp_st->upload_id) && !mp_st->aborting)
+      s3_multipart_abort(mp_st);
+   else
+      s3_multipart_finish(mp_st, false);
+}
+
+static void s3_multipart_abort_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
+{
+   s3_multipart_state_t *mp_st   = (s3_multipart_state_t*)user_data;
+   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
+   bool success                  = (data && data->status >= 200 && data->status < 300);
+
+   (void)task;
+   (void)err;
+
+   if (!mp_st)
+      return;
+
+   if (!success)
+      RARCH_WARN(S3_PFX "Multipart abort request was not successful\n");
+
+   s3_multipart_finish(mp_st, false);
+}
+
+static void s3_multipart_abort(s3_multipart_state_t *mp_st)
+{
+   s3_state_t *s3_st = s3_state_get_ptr();
+   char *encoded_upload_id = NULL;
+   char *query = NULL;
+   char *url_with_query = NULL;
+   char *auth_header = NULL;
+
+   if (!mp_st || string_is_empty(mp_st->upload_id))
+   {
+      s3_multipart_finish(mp_st, false);
+      return;
+   }
+
+   mp_st->aborting = true;
+   encoded_upload_id = s3_url_encode_query_value(mp_st->upload_id);
+   if (!encoded_upload_id)
+   {
+      s3_multipart_finish(mp_st, false);
+      return;
+   }
+
+   query = (char*)malloc(strlen(encoded_upload_id) + 16);
+   if (!query)
+   {
+      free(encoded_upload_id);
+      s3_multipart_finish(mp_st, false);
+      return;
+   }
+   snprintf(query, strlen(encoded_upload_id) + 16, "uploadId=%s", encoded_upload_id);
+
+   url_with_query = s3_build_url_with_query(mp_st->url, query);
+   auth_header = s3_build_auth_header("DELETE", mp_st->canonical_uri, query,
+         "host;x-amz-content-sha256;x-amz-date", S3_EMPTY_PAYLOAD_SHA256, s3_st);
+
+   if (!url_with_query || !auth_header)
+      goto fail;
+
+   if (!task_push_http_transfer_with_headers(url_with_query, true, "DELETE",
+            auth_header, s3_multipart_abort_cb, mp_st))
+      goto fail;
+
+   free(encoded_upload_id);
+   free(query);
+   free(url_with_query);
+   free(auth_header);
+   return;
+
+fail:
+   free(encoded_upload_id);
+   free(query);
+   free(url_with_query);
+   free(auth_header);
+   s3_multipart_finish(mp_st, false);
+}
+
+static void s3_multipart_complete_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
+{
+   s3_multipart_state_t *mp_st   = (s3_multipart_state_t*)user_data;
+   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
+   bool success                  = (data && data->status >= 200 && data->status < 300);
+
+   (void)task;
+   (void)err;
+
+   if (!mp_st)
+      return;
+
+   if (!success)
+   {
+      s3_multipart_fail(mp_st, data, "complete");
+      return;
+   }
+
+   RARCH_LOG(S3_PFX "Multipart upload complete: %s (%zu parts)\n",
+         mp_st->cb_state ? mp_st->cb_state->path : "<unknown>",
+         mp_st->part_count);
+   s3_multipart_finish(mp_st, true);
+}
+
+static void s3_multipart_complete(s3_multipart_state_t *mp_st)
+{
+   s3_state_t *s3_st = s3_state_get_ptr();
+   char *encoded_upload_id = NULL;
+   char *query = NULL;
+   char *url_with_query = NULL;
+   char *payload_hash = NULL;
+   char *auth_header = NULL;
+   char *xml_body = NULL;
+   size_t i;
+   size_t xml_len = 0;
+   size_t xml_cap = 128;
+
+   if (!mp_st || string_is_empty(mp_st->upload_id))
+   {
+      s3_multipart_finish(mp_st, false);
+      return;
+   }
+
+   for (i = 0; i < mp_st->part_count; i++)
+   {
+      if (string_is_empty(mp_st->part_etags[i]))
+      {
+         s3_multipart_fail(mp_st, NULL, "complete missing ETag");
+         return;
+      }
+      xml_cap += strlen(mp_st->part_etags[i]) + 96;
+   }
+
+   xml_body = (char*)malloc(xml_cap);
+   if (!xml_body)
+   {
+      s3_multipart_fail(mp_st, NULL, "complete allocation");
+      return;
+   }
+
+   xml_len += (size_t)snprintf(xml_body + xml_len, xml_cap - xml_len,
+         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CompleteMultipartUpload>\n");
+   for (i = 0; i < mp_st->part_count; i++)
+      xml_len += (size_t)snprintf(xml_body + xml_len, xml_cap - xml_len,
+            "  <Part><PartNumber>%u</PartNumber><ETag>%s</ETag></Part>\n",
+            (unsigned)(i + 1), mp_st->part_etags[i]);
+   xml_len += (size_t)snprintf(xml_body + xml_len, xml_cap - xml_len, "</CompleteMultipartUpload>");
+
+   encoded_upload_id = s3_url_encode_query_value(mp_st->upload_id);
+   if (!encoded_upload_id)
+      goto fail;
+
+   query = (char*)malloc(strlen(encoded_upload_id) + 16);
+   if (!query)
+      goto fail;
+   snprintf(query, strlen(encoded_upload_id) + 16, "uploadId=%s", encoded_upload_id);
+
+   payload_hash = s3_sha256_hash(xml_body, xml_len);
+   url_with_query = s3_build_url_with_query(mp_st->url, query);
+   auth_header = s3_build_auth_header("POST", mp_st->canonical_uri, query,
+         "host;x-amz-content-sha256;x-amz-date", payload_hash, s3_st);
+   if (!payload_hash || !url_with_query || !auth_header)
+      goto fail;
+
+   if (!task_push_http_transfer_with_content(url_with_query, "POST",
+            xml_body, xml_len, "application/xml", true,
+            auth_header, s3_multipart_complete_cb, mp_st))
+      goto fail;
+
+   free(encoded_upload_id);
+   free(query);
+   free(url_with_query);
+   free(payload_hash);
+   free(auth_header);
+   free(xml_body);
+   return;
+
+fail:
+   free(encoded_upload_id);
+   free(query);
+   free(url_with_query);
+   free(payload_hash);
+   free(auth_header);
+   free(xml_body);
+   s3_multipart_fail(mp_st, NULL, "complete start");
+}
+
+static void s3_multipart_upload_part_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
+{
+   s3_multipart_state_t *mp_st   = (s3_multipart_state_t*)user_data;
+   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
+   bool success                  = (data && data->status >= 200 && data->status < 300);
+   char *etag = NULL;
+
+   (void)task;
+   (void)err;
+
+   if (!mp_st)
+      return;
+
+   if (!success)
+   {
+      s3_multipart_fail(mp_st, data, "upload part");
+      return;
+   }
+
+   etag = s3_extract_header_value(data, "ETag");
+   if (!etag)
+   {
+      RARCH_WARN(S3_PFX "Missing ETag for multipart part %u\n", (unsigned)(mp_st->current_part + 1));
+      s3_multipart_fail(mp_st, data, "upload part missing etag");
+      return;
+   }
+
+   mp_st->part_etags[mp_st->current_part] = etag;
+   mp_st->current_part++;
+
+   if (mp_st->current_part >= mp_st->part_count)
+      s3_multipart_complete(mp_st);
+   else
+      s3_multipart_upload_next_part(mp_st);
+}
+
+static void s3_multipart_upload_next_part(s3_multipart_state_t *mp_st)
+{
+   s3_state_t *s3_st = s3_state_get_ptr();
+   size_t offset = 0;
+   size_t content_len = 0;
+   unsigned part_number;
+   char *payload_hash = NULL;
+   char *encoded_upload_id = NULL;
+   char *query = NULL;
+   char *url_with_query = NULL;
+   char *auth_header = NULL;
+
+   if (!mp_st || mp_st->current_part >= mp_st->part_count)
+      return;
+
+   if (!s3_multipart_part_bounds(mp_st, mp_st->current_part, &offset, &content_len))
+   {
+      RARCH_WARN(S3_PFX "Multipart upload part bounds check failed for part %u (parts=%zu file_size=%zu part_size=%zu)\n",
+            (unsigned)(mp_st->current_part + 1),
+            mp_st->part_count,
+            mp_st->file_size,
+            mp_st->part_size);
+      goto fail;
+   }
+   part_number = (unsigned)(mp_st->current_part + 1);
+
+   payload_hash = s3_sha256_hash(mp_st->file_data + offset, content_len);
+   encoded_upload_id = s3_url_encode_query_value(mp_st->upload_id);
+   if (!payload_hash || !encoded_upload_id)
+      goto fail;
+
+   query = (char*)malloc(strlen(encoded_upload_id) + 48);
+   if (!query)
+      goto fail;
+   snprintf(query, strlen(encoded_upload_id) + 48,
+         "partNumber=%u&uploadId=%s", part_number, encoded_upload_id);
+
+   url_with_query = s3_build_url_with_query(mp_st->url, query);
+   auth_header = s3_build_auth_header("PUT", mp_st->canonical_uri, query,
+         "host;x-amz-content-sha256;x-amz-date", payload_hash, s3_st);
+   if (!url_with_query || !auth_header)
+      goto fail;
+
+   if (!task_push_http_transfer_with_content_ex(url_with_query, "PUT",
+            mp_st->file_data + offset, content_len, "application/octet-stream", true, true,
+            auth_header, s3_multipart_upload_part_cb, mp_st))
+      goto fail;
+
+   free(payload_hash);
+   free(encoded_upload_id);
+   free(query);
+   free(url_with_query);
+   free(auth_header);
+   return;
+
+fail:
+   free(payload_hash);
+   free(encoded_upload_id);
+   free(query);
+   free(url_with_query);
+   free(auth_header);
+   s3_multipart_fail(mp_st, NULL, "upload part start");
+}
+
+static void s3_multipart_initiate_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
+{
+   s3_multipart_state_t *mp_st   = (s3_multipart_state_t*)user_data;
+   http_transfer_data_t *data    = (http_transfer_data_t*)task_data;
+   bool success                  = (data && data->status >= 200 && data->status < 300);
+   char *response_xml            = NULL;
+
+   (void)task;
+   (void)err;
+
+   if (!mp_st)
+      return;
+
+   if (!success)
+   {
+      s3_log_multipart_initiate_failure(mp_st, data, err);
+
+      if (!data || data->status < 0)
+      {
+         RARCH_WARN(S3_PFX "Multipart initiation transport failed (data=%s, status=%d); falling back to single PUT for '%s'\n",
+               data ? "present" : "missing",
+               data ? data->status : -1,
+               mp_st->cb_state ? mp_st->cb_state->path : "<unknown>");
+         if (s3_multipart_fallback_single_put(mp_st))
+         {
+            s3_multipart_free(mp_st);
+            return;
+         }
+      }
+
+      if (err && *err)
+         RARCH_WARN(S3_PFX "Multipart initiate transport error: %s\n", err);
+      s3_multipart_fail(mp_st, data, "initiate");
+      return;
+   }
+
+   if (!data || string_is_empty(data->data))
+   {
+      s3_multipart_fail(mp_st, data, "initiate empty response");
+      return;
+   }
+
+   response_xml = (char*)malloc(data->len + 1);
+   if (!response_xml)
+   {
+      s3_multipart_fail(mp_st, data, "initiate allocation");
+      return;
+   }
+   memcpy(response_xml, data->data, data->len);
+   response_xml[data->len] = '\0';
+
+   mp_st->upload_id = s3_extract_xml_tag_value(response_xml, "UploadId");
+   free(response_xml);
+   if (string_is_empty(mp_st->upload_id))
+   {
+      RARCH_WARN(S3_PFX "Multipart initiation response missing UploadId\n");
+      s3_multipart_fail(mp_st, data, "initiate missing upload id");
+      return;
+   }
+
+   RARCH_LOG(S3_PFX "Started multipart upload for %s (uploadId=%s, parts=%zu)\n",
+         mp_st->cb_state ? mp_st->cb_state->path : "<unknown>", mp_st->upload_id, mp_st->part_count);
+   s3_multipart_upload_next_part(mp_st);
+}
+
+static bool s3_multipart_start(s3_multipart_state_t *mp_st)
+{
+   s3_state_t *s3_st = s3_state_get_ptr();
+   char *url_with_query = NULL;
+   char *auth_header = NULL;
+   const char *url_query = "uploads=";
+   const char *canonical_query = "uploads=";
+
+   if (!mp_st)
+      return false;
+
+   url_with_query = s3_build_url_with_query(mp_st->url, url_query);
+   auth_header = s3_build_auth_header("POST", mp_st->canonical_uri, canonical_query,
+         "host;x-amz-content-sha256;x-amz-date", S3_EMPTY_PAYLOAD_SHA256, s3_st);
+         // "host;x-amz-content-sha256;x-amz-date", "UNSIGNED-PAYLOAD", s3_st);
+   if (!url_with_query || !auth_header)
+   {
+      free(url_with_query);
+      free(auth_header);
+      return false;
+   }
+
+   RARCH_DBG(S3_PFX "Multipart initiate URL: %s\n", url_with_query);
+   RARCH_DBG(S3_PFX "Multipart initiate headers:\n%s\n", auth_header);
+
+   if (!task_push_http_post_transfer_with_headers(url_with_query, "",
+            true, "POST", auth_header,
+            s3_multipart_initiate_cb, mp_st))
+   {
+      free(url_with_query);
+      free(auth_header);
+      return false;
+   }
+
+   free(url_with_query);
+   free(auth_header);
+   return true;
+}
+
 /* Initialize S3 connection */
 static bool s3_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 {
@@ -962,8 +1640,7 @@ static bool s3_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    strlcpy(s3_st->access_key_id, settings->arrays.access_key_id, sizeof(settings->arrays.access_key_id));
    strlcpy(s3_st->secret_access_key, settings->arrays.secret_access_key, sizeof(settings->arrays.secret_access_key));
 
-   RARCH_DBG(S3_PFX "S3 configuration - URL: '%s', Access Key ID: '%s', Secret Access Key(size): '%d'\n",
-             s3_st->url, s3_st->access_key_id, sizeof(s3_st->secret_access_key));
+   RARCH_DBG(S3_PFX "S3 configuration - URL: '%s'\n", s3_st->url);
 
    /* Parse URL to extract bucket, region, and host */
    if (!s3_parse_url(s3_st->url, s3_st->bucket, s3_st->region, s3_st->host, S3_SERVICE))
@@ -1023,7 +1700,8 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
    strlcpy(s3_cb_st->file, file, sizeof(s3_cb_st->file));
 
    /* Build S3 URL - all supported formats are virtual-hosted style */
-   snprintf(url, sizeof(url), "%s/%s", s3_st->url, path);
+   if (!s3_build_request_url(url, sizeof(url), s3_st, path))
+      goto cleanup;
 
    /* Build canonical URI - must be URL encoded */
    if (path && *path)
@@ -1052,8 +1730,6 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
 
    RARCH_DBG(S3_PFX "Request URL: %s\n", url);
    RARCH_DBG(S3_PFX "Canonical URI: %s\n", canonical_uri);
-   RARCH_DBG(S3_PFX "Authorization header:\n%s\n", auth_header);
-   RARCH_DBG(S3_PFX "Complete headers being sent:\n%s\n", auth_header);
 
    /* Perform HTTP GET request asynchronously */
    if (!s3_http_get_async(url, auth_header, s3_cb_st))
@@ -1077,6 +1753,7 @@ cleanup:
 static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler_t cb, void *user_data)
 {
    s3_cb_state_t *s3_cb_st = (s3_cb_state_t*)calloc(1, sizeof(s3_cb_state_t));
+   s3_multipart_state_t *mp_st = NULL;
    s3_state_t *s3_st = s3_state_get_ptr();
    char *auth_header = NULL;
    char url[PATH_MAX_LENGTH];
@@ -1107,11 +1784,17 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
          file_data = malloc(file_size);
          if (file_data)
             filestream_read(file, file_data, file_size);
+         else
+         {
+            RARCH_ERR(S3_PFX "Failed to allocate memory for upload (%zu bytes)\n", file_size);
+            goto cleanup;
+         }
       }
    }
 
    /* Build S3 URL - all supported formats are virtual-hosted style */
-   snprintf(url, sizeof(url), "%s/%s", s3_st->url, path);
+   if (!s3_build_request_url(url, sizeof(url), s3_st, path))
+      goto cleanup;
 
    /* Build canonical URI - must be URL encoded */
    if (path && *path)
@@ -1131,28 +1814,69 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
    RARCH_DBG(S3_PFX "Request URL: %s\n", url);
    RARCH_DBG(S3_PFX "Canonical URI: %s\n", canonical_uri);
 
-   /* Calculate payload hash */
-   if (file_data && file_size > 0)
-      payload_hash = s3_sha256_hash(file_data, file_size);
-   else
-      payload_hash = strdup("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"); /* Empty file hash */
-
    /* For large files, use multipart upload */
    if (file_size > multipart_threshold)
    {
+      size_t part_size = 0;
+      size_t part_count = 0;
+
       RARCH_LOG(S3_PFX "Large file detected (%zu bytes, nominal multipart threshold: %zu bytes), using multipart upload\n",
             file_size, multipart_threshold);
-      /* TODO: Implement multipart upload */
-      goto cleanup;
+
+      if (!s3_calculate_multipart_plan(file_size, &part_size, &part_count))
+      {
+         RARCH_ERR(S3_PFX "Could not build multipart plan for %zu-byte upload\n", file_size);
+         goto cleanup;
+      }
+
+      mp_st = (s3_multipart_state_t*)calloc(1, sizeof(*mp_st));
+      if (!mp_st)
+         goto cleanup;
+
+      mp_st->cb_state = s3_cb_st;
+      s3_cb_st = NULL;
+      mp_st->file_data = file_data;
+      file_data = NULL;
+      mp_st->file_size = file_size;
+      mp_st->part_size = part_size;
+      mp_st->part_count = part_count;
+      strlcpy(mp_st->url, url, sizeof(mp_st->url));
+      strlcpy(mp_st->canonical_uri, canonical_uri, sizeof(mp_st->canonical_uri));
+      mp_st->part_etags = (char**)calloc(part_count, sizeof(char*));
+      if (!mp_st->part_etags)
+         goto cleanup;
+
+      RARCH_LOG(S3_PFX "Multipart plan: %zu bytes in %zu parts (%zu bytes/part)\n",
+            file_size, part_count, part_size);
+
+      if (!s3_multipart_start(mp_st))
+      {
+         RARCH_ERR(S3_PFX "Failed to start multipart upload\n");
+         goto cleanup;
+      }
+
+      /* Ownership transferred to multipart callbacks */
+      s3_cb_st = NULL;
+      file_data = NULL;
+      mp_st = NULL;
+      success = true;
    }
    else
    {
       /* Single PUT request */
+      if (file_data && file_size > 0)
+         payload_hash = s3_sha256_hash(file_data, file_size);
+      else
+         payload_hash = strdup(S3_EMPTY_PAYLOAD_SHA256);
+
+      if (!payload_hash)
+      {
+         RARCH_ERR(S3_PFX "Failed to compute payload hash\n");
+         goto cleanup;
+      }
+
       auth_header = s3_build_auth_header("PUT", canonical_uri, "", "host;x-amz-content-sha256;x-amz-date",
                                         payload_hash, s3_st);
-
-      RARCH_DBG(S3_PFX "Authorization header:\n%s\n", auth_header);
-      RARCH_DBG(S3_PFX "Complete headers being sent:\n%s\n", auth_header);
 
       if (!auth_header)
       {
@@ -1172,6 +1896,7 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
    }
 
 cleanup:
+   s3_multipart_free(mp_st);
    free(auth_header);
    free(file_data);
    free(payload_hash);
@@ -1198,7 +1923,8 @@ static bool s3_free(const char *path, cloud_sync_complete_handler_t cb, void *us
    strlcpy(s3_cb_st->path, path, sizeof(s3_cb_st->path));
 
    /* Build S3 URL - all supported formats are virtual-hosted style */
-   snprintf(url, sizeof(url), "%s/%s", s3_st->url, path);
+   if (!s3_build_request_url(url, sizeof(url), s3_st, path))
+      goto cleanup;
 
    /* Build canonical URI - must be URL encoded */
    if (path && *path)

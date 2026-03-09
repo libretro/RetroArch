@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <net/net_http.h>
 #include <net/net_compat.h>
@@ -132,6 +133,54 @@ struct http_connection_t
    int port;
    bool ssl;
 };
+
+static void net_http_log_transport_state(
+      const struct http_t *state, const char *stage, ssize_t io_len)
+{
+#if defined(DEBUG)
+   const char *method = "GET";
+   const char *domain = "<null>";
+   const char *path   = "<null>";
+   int port           = 0;
+   int fd             = -1;
+   int connected      = 0;
+
+   if (state)
+   {
+      method = state->request.method ? state->request.method : "GET";
+      domain = state->request.domain ? state->request.domain : "<null>";
+      path   = state->request.path ? state->request.path : "<null>";
+      port   = state->request.port;
+
+      if (state->conn)
+      {
+         fd        = state->conn->fd;
+         connected = state->conn->connected ? 1 : 0;
+      }
+   }
+
+   fprintf(stderr,
+         "[net_http] %s: method=%s host=%s port=%d path=/%s ssl=%d fd=%d connected=%d request_sent=%d err=%d io_len=%ld errno=%d (%s)\n",
+         stage ? stage : "unknown",
+         method,
+         domain,
+         port,
+         path,
+         state ? (state->ssl ? 1 : 0) : 0,
+         fd,
+         connected,
+         state ? (state->request_sent ? 1 : 0) : 0,
+         state ? (state->err ? 1 : 0) : 0,
+         (long)io_len,
+         errno,
+         strerror(errno));
+   fflush(stderr);
+#else
+   (void)state;
+   (void)stage;
+   (void)io_len;
+#endif
+}
 
 struct dns_cache_entry
 {
@@ -920,6 +969,7 @@ static bool net_http_new_socket(struct http_t *state)
          int fd;
          if (!entry->addr)
          {
+            net_http_log_transport_state(state, "dns_lookup_failed", -1);
             UNLOCK_DNS_CACHE();
             return false;
          }
@@ -927,6 +977,8 @@ static bool net_http_new_socket(struct http_t *state)
          fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
          if (fd >= 0)
             state->conn = net_http_conn_pool_add(state->request.domain, state->request.port, fd, state->ssl);
+         else
+            net_http_log_transport_state(state, "socket_create_failed", -1);
          /* still waiting on thread */
          UNLOCK_DNS_CACHE();
          return (fd >= 0);
@@ -960,6 +1012,11 @@ static bool net_http_connect(struct http_t *state)
    struct conn_pool_entry *conn = state->conn;
    struct dns_cache_entry *dns_entry = net_http_dns_cache_find(state->request.domain, state->request.port);
    /* we just used/added this in _new_socket above, if it's not there it's a big bug */
+   if (!dns_entry || !dns_entry->addr || !conn)
+   {
+      net_http_log_transport_state(state, "connect_missing_dns_or_conn", -1);
+      return false;
+   }
    addr = dns_entry->addr;
 
 #ifndef HAVE_SSL
@@ -968,13 +1025,11 @@ static bool net_http_connect(struct http_t *state)
 #else
    if (state->ssl)
    {
-      if (!conn)
-         return false;
-
       for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
       {
          if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
          {
+            net_http_log_transport_state(state, "ssl_init_failed", -1);
             socket_close(conn->fd);
             break;
          }
@@ -992,6 +1047,7 @@ static bool net_http_connect(struct http_t *state)
 
          if (ssl_socket_connect(conn->ssl_ctx, next_addr, timeout, true) < 0)
          {
+            net_http_log_transport_state(state, "ssl_connect_failed", -1);
             ssl_socket_close(conn->ssl_ctx);
             ssl_socket_free(conn->ssl_ctx);
             conn->ssl_ctx = NULL;
@@ -1019,6 +1075,7 @@ static bool net_http_connect(struct http_t *state)
             return true;
          }
 
+         net_http_log_transport_state(state, "socket_connect_failed", -1);
          socket_close(conn->fd);
       }
       conn->fd    = -1; /* already closed */
@@ -1039,14 +1096,20 @@ static void net_http_send_str(
    {
       if (!ssl_socket_send_all_blocking(
                   state->conn->ssl_ctx, text, text_size, true))
+      {
          state->err = true;
+         net_http_log_transport_state(state, "ssl_send_failed", -1);
+      }
    }
    else
 #endif
    {
       if (!socket_send_all_blocking(
                   state->conn->fd, text, text_size, true))
+      {
          state->err = true;
+         net_http_log_transport_state(state, "socket_send_failed", -1);
+      }
    }
 }
 
@@ -1097,9 +1160,12 @@ static bool net_http_send_request(struct http_t *state)
       size_t _len, len;
       char *len_str = NULL;
 
-      if (!request->postdata && !string_is_equal(request->method, "PUT"))
+      if (!request->postdata &&
+            !string_is_equal(request->method, "PUT") &&
+            request->contentlength > 0)
       {
          state->err = true;
+         net_http_log_transport_state(state, "post_without_payload", -1);
          return true;
       }
 
@@ -1460,6 +1526,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    {
       if (_len < 0 || state->err)
       {
+         net_http_log_transport_state(state, "receive_header_failed", _len);
          net_http_conn_pool_remove(state->conn);
          state->conn      = NULL;
          state->err       = true;
@@ -1474,6 +1541,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    {
       if (!net_http_receive_body(state, _len))
       {
+         net_http_log_transport_state(state, "receive_body_failed", _len);
          net_http_conn_pool_remove(state->conn);
          state->conn      = NULL;
          state->err       = true;
@@ -1548,11 +1616,18 @@ int net_http_status(struct http_t *state)
  * caller of net_http_new; it is not freed by net_http_delete().
  * If the status is not 20x and accept_err is false, it returns NULL.
  **/
-struct string_list *net_http_headers(struct http_t *state)
+struct string_list *net_http_headers_ex(struct http_t *state, bool accept_err)
 {
-   if (!state || !state->err)
+   if (!state)
+      return NULL;
+   if (!accept_err && !state->err)
       return NULL;
    return state->response.headers;
+}
+
+struct string_list *net_http_headers(struct http_t *state)
+{
+   return net_http_headers_ex(state, false);
 }
 
 /**
