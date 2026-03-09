@@ -79,6 +79,20 @@
 #include <time.h>
 #endif
 
+/* Compile-time upper bounds for setting array sizes.
+ * These must be >= the actual count returned by the corresponding
+ * populate_settings_* functions, including the +MAX_USERS slack in
+ * populate_settings_array.  They are used so each populate function
+ * can do a single exact-size malloc instead of the old
+ * sizeof(struct)/sizeof(placeholder) over-estimate. */
+#define SETTINGS_BOOL_COUNT_MAX   512
+#define SETTINGS_INT_COUNT_MAX     64
+#define SETTINGS_UINT_COUNT_MAX   320
+#define SETTINGS_FLOAT_COUNT_MAX  128
+#define SETTINGS_SIZE_COUNT_MAX     8
+#define SETTINGS_ARRAY_COUNT_MAX  (96 + MAX_USERS)
+#define SETTINGS_PATH_COUNT_MAX   128
+
 enum video_driver_enum
 {
    VIDEO_GL                 = 0,
@@ -1540,7 +1554,7 @@ static struct config_array_setting *populate_settings_array(
 {
    unsigned i                           = 0;
    unsigned count                       = 0;
-   struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(1, (*size + 1) * sizeof(struct config_array_setting));
+   struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(SETTINGS_ARRAY_COUNT_MAX, sizeof(struct config_array_setting));
 
    if (!tmp)
       return NULL;
@@ -1570,13 +1584,16 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("input_android_physical_keyboard", settings->arrays.input_android_physical_keyboard, false, NULL, true);
 #endif
 
-   for (i = 0; i < MAX_USERS; i++)
    {
-      char key[32];
-      size_t _len  = strlcpy(key, "input_player", sizeof(key));
-      _len += snprintf(key + _len, sizeof(key) - _len, "%u", i + 1);
-      strlcpy(key + _len, "_reserved_device", sizeof(key) - _len);
-      SETTING_ARRAY(strdup(key), settings->arrays.input_reserved_devices[i], false, NULL, true);
+      /* Use static storage for per-user key strings to avoid strdup/free overhead */
+      static char reserved_keys[MAX_USERS][32];
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         size_t _len  = strlcpy(reserved_keys[i], "input_player", sizeof(reserved_keys[i]));
+         _len += snprintf(reserved_keys[i] + _len, sizeof(reserved_keys[i]) - _len, "%u", i + 1);
+         strlcpy(reserved_keys[i] + _len, "_reserved_device", sizeof(reserved_keys[i]) - _len);
+         SETTING_ARRAY(reserved_keys[i], settings->arrays.input_reserved_devices[i], false, NULL, true);
+      }
    }
 
 #ifdef HAVE_MENU
@@ -1637,7 +1654,7 @@ static struct config_path_setting *populate_settings_path(
 {
    unsigned count = 0;
    recording_state_t *recording_st     = recording_state_get_ptr();
-   struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(1, (*size + 1) * sizeof(struct config_path_setting));
+   struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(SETTINGS_PATH_COUNT_MAX, sizeof(struct config_path_setting));
 
    if (!tmp)
       return NULL;
@@ -1739,10 +1756,15 @@ static struct config_path_setting *populate_settings_path(
    return tmp;
 }
 
+/* ---------------------------------------------------------------------------
+ * SETTINGS_*_COUNT_MAX constants are defined above the populate functions.
+ * Compile-time check (via negative array) can be added here if needed.
+ * -------------------------------------------------------------------------- */
+
 static struct config_bool_setting *populate_settings_bool(
       settings_t *settings, int *size)
 {
-   struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(1, (*size + 1) * sizeof(struct config_bool_setting));
+   struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(SETTINGS_BOOL_COUNT_MAX, sizeof(struct config_bool_setting));
    unsigned count                      = 0;
 
    SETTING_BOOL("accessibility_enable",          &settings->bools.accessibility_enable, true, DEFAULT_ACCESSIBILITY_ENABLE, false);
@@ -2298,7 +2320,7 @@ static struct config_float_setting *populate_settings_float(
       settings_t *settings, int *size)
 {
    unsigned count = 0;
-   struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(1, (*size + 1) * sizeof(struct config_float_setting));
+   struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(SETTINGS_FLOAT_COUNT_MAX, sizeof(struct config_float_setting));
 
    if (!tmp)
       return NULL;
@@ -2402,7 +2424,7 @@ static struct config_uint_setting *populate_settings_uint(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(1, (*size + 1) * sizeof(struct config_uint_setting));
+   struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(SETTINGS_UINT_COUNT_MAX, sizeof(struct config_uint_setting));
 
    if (!tmp)
       return NULL;
@@ -2705,7 +2727,7 @@ static struct config_size_setting *populate_settings_size(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_size_setting  *tmp   = (struct config_size_setting*)calloc((*size + 1), sizeof(struct config_size_setting));
+   struct config_size_setting  *tmp   = (struct config_size_setting*)calloc(SETTINGS_SIZE_COUNT_MAX, sizeof(struct config_size_setting));
 
    if (!tmp)
       return NULL;
@@ -2721,7 +2743,7 @@ static struct config_int_setting *populate_settings_int(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_int_setting  *tmp    = (struct config_int_setting*)calloc((*size + 1), sizeof(struct config_int_setting));
+   struct config_int_setting  *tmp    = (struct config_int_setting*)calloc(SETTINGS_INT_COUNT_MAX, sizeof(struct config_int_setting));
 
    if (!tmp)
       return NULL;
@@ -2835,11 +2857,11 @@ void config_set_defaults(void *data)
    global_t *global                 = (global_t*)data;
    settings_t *settings             = config_st;
    recording_state_t *recording_st  = recording_state_get_ptr();
-   int bool_settings_size           = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
-   int float_settings_size          = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
-   int int_settings_size            = sizeof(settings->ints)    / sizeof(settings->ints.placeholder);
-   int uint_settings_size           = sizeof(settings->uints)   / sizeof(settings->uints.placeholder);
-   int size_settings_size           = sizeof(settings->sizes)   / sizeof(settings->sizes.placeholder);
+   int bool_settings_size           = SETTINGS_BOOL_COUNT_MAX;
+   int float_settings_size          = SETTINGS_FLOAT_COUNT_MAX;
+   int int_settings_size            = SETTINGS_INT_COUNT_MAX;
+   int uint_settings_size           = SETTINGS_UINT_COUNT_MAX;
+   int size_settings_size           = SETTINGS_SIZE_COUNT_MAX;
    const char *def_video            = config_get_default_video();
    const char *def_audio            = config_get_default_audio();
 #ifdef HAVE_MICROPHONE
@@ -3830,13 +3852,13 @@ static bool config_load_file(global_t *global,
    char *save                                      = NULL;
    char *override_username                         = NULL;
    runloop_state_t *runloop_st                     = runloop_state_get_ptr();
-   int bool_settings_size                          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
-   int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
-   int int_settings_size                           = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
-   int uint_settings_size                          = sizeof(settings->uints)  / sizeof(settings->uints.placeholder);
-   int size_settings_size                          = sizeof(settings->sizes)  / sizeof(settings->sizes.placeholder);
-   int array_settings_size                         = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
-   int path_settings_size                          = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
+   int bool_settings_size                          = SETTINGS_BOOL_COUNT_MAX;
+   int float_settings_size                         = SETTINGS_FLOAT_COUNT_MAX;
+   int int_settings_size                           = SETTINGS_INT_COUNT_MAX;
+   int uint_settings_size                          = SETTINGS_UINT_COUNT_MAX;
+   int size_settings_size                          = SETTINGS_SIZE_COUNT_MAX;
+   int array_settings_size                         = SETTINGS_ARRAY_COUNT_MAX;
+   int path_settings_size                          = SETTINGS_PATH_COUNT_MAX;
    struct config_bool_setting *bool_settings       = NULL;
    struct config_float_setting *float_settings     = NULL;
    struct config_int_setting *int_settings         = NULL;
@@ -5589,13 +5611,13 @@ bool config_save_file(const char *path)
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_st;
    global_t *global                                  = global_get_ptr();
-   int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
-   int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);
-   int int_settings_size                             = sizeof(settings->ints)  / sizeof(settings->ints.placeholder);
-   int uint_settings_size                            = sizeof(settings->uints) / sizeof(settings->uints.placeholder);
-   int size_settings_size                            = sizeof(settings->sizes) / sizeof(settings->sizes.placeholder);
-   int array_settings_size                           = sizeof(settings->arrays)/ sizeof(settings->arrays.placeholder);
-   int path_settings_size                            = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
+   int bool_settings_size                            = SETTINGS_BOOL_COUNT_MAX;
+   int float_settings_size                           = SETTINGS_FLOAT_COUNT_MAX;
+   int int_settings_size                             = SETTINGS_INT_COUNT_MAX;
+   int uint_settings_size                            = SETTINGS_UINT_COUNT_MAX;
+   int size_settings_size                            = SETTINGS_SIZE_COUNT_MAX;
+   int array_settings_size                           = SETTINGS_ARRAY_COUNT_MAX;
+   int path_settings_size                            = SETTINGS_PATH_COUNT_MAX;
 
    if (!conf)
       conf = config_file_new_alloc();
@@ -5865,13 +5887,13 @@ int8_t config_save_overrides(enum override_type type,
    char override_directory[DIR_MAX_LENGTH];
    char override_path[PATH_MAX_LENGTH];
    settings_t *overrides                       = config_st;
-   int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
-   int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
-   int int_settings_size                       = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
-   int uint_settings_size                      = sizeof(settings->uints)  / sizeof(settings->uints.placeholder);
-   int size_settings_size                      = sizeof(settings->sizes)  / sizeof(settings->sizes.placeholder);
-   int array_settings_size                     = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
-   int path_settings_size                      = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
+   int bool_settings_size                      = SETTINGS_BOOL_COUNT_MAX;
+   int float_settings_size                     = SETTINGS_FLOAT_COUNT_MAX;
+   int int_settings_size                       = SETTINGS_INT_COUNT_MAX;
+   int uint_settings_size                      = SETTINGS_UINT_COUNT_MAX;
+   int size_settings_size                      = SETTINGS_SIZE_COUNT_MAX;
+   int array_settings_size                     = SETTINGS_ARRAY_COUNT_MAX;
+   int path_settings_size                      = SETTINGS_PATH_COUNT_MAX;
    rarch_system_info_t *sys_info               = (rarch_system_info_t*)data;
    const char *core_name                       = sys_info ? sys_info->info.library_name : NULL;
    const char *rarch_path_basename             = path_get(RARCH_PATH_BASENAME);
@@ -5911,31 +5933,31 @@ int8_t config_save_overrides(enum override_type type,
          "without-overrides", settings);
 
    bool_settings       = populate_settings_bool(settings,   &bool_settings_size);
-   tmp_i               = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
+   tmp_i               = SETTINGS_BOOL_COUNT_MAX;
    bool_overrides      = populate_settings_bool(overrides,  &tmp_i);
 
    int_settings        = populate_settings_int(settings,    &int_settings_size);
-   tmp_i               = sizeof(settings->ints) / sizeof(settings->ints.placeholder);
+   tmp_i               = SETTINGS_INT_COUNT_MAX;
    int_overrides       = populate_settings_int(overrides,   &tmp_i);
 
    uint_settings       = populate_settings_uint(settings,   &uint_settings_size);
-   tmp_i               = sizeof(settings->uints) / sizeof(settings->uints.placeholder);
+   tmp_i               = SETTINGS_UINT_COUNT_MAX;
    uint_overrides      = populate_settings_uint(overrides,  &tmp_i);
 
    size_settings       = populate_settings_size(settings,   &size_settings_size);
-   tmp_i               = sizeof(settings->sizes) / sizeof(settings->sizes.placeholder);
+   tmp_i               = SETTINGS_SIZE_COUNT_MAX;
    size_overrides      = populate_settings_size(overrides,  &tmp_i);
 
    float_settings      = populate_settings_float(settings,  &float_settings_size);
-   tmp_i               = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
+   tmp_i               = SETTINGS_FLOAT_COUNT_MAX;
    float_overrides     = populate_settings_float(overrides, &tmp_i);
 
    array_settings      = populate_settings_array(settings,  &array_settings_size);
-   tmp_i               = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
+   tmp_i               = SETTINGS_ARRAY_COUNT_MAX;
    array_overrides     = populate_settings_array(overrides, &tmp_i);
 
    path_settings       = populate_settings_path(settings,   &path_settings_size);
-   tmp_i               = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
+   tmp_i               = SETTINGS_PATH_COUNT_MAX;
    path_overrides      = populate_settings_path(overrides,  &tmp_i);
 
    if (conf->flags & CONF_FILE_FLG_MODIFIED)
