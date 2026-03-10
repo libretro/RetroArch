@@ -466,7 +466,7 @@ static const char *content_file_list_append_temporary(
    return NULL;
 }
 
-/* Note: Takes ownership of supplied 'data' buffer */
+/* NOTE: Takes ownership of supplied 'data' buffer */
 static bool content_file_list_set_info(
       content_file_list_t *file_list,
       const char *path,
@@ -1287,8 +1287,8 @@ static void content_file_set_attributes(
       {
          if (  (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
              && content_ctx->flags
-             & CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE)
-            string_list_append(content, "", attr);
+             &  CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE)
+            string_list_append_n(content, "", STRLEN_CONST(""), attr);
       }
       else
          string_list_append(content, content_path, attr);

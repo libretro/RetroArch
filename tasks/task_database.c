@@ -2190,7 +2190,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                {
                   union string_list_elem_attr attr;
                   attr.i = 0;
-                  /* Note: If string_list_append() fails, there is
+                  /* NOTE: If string_list_append() fails, there is
                    * really nothing we can do. The M3U file will
                    * just be ignored... */
                   string_list_append(

@@ -168,8 +168,9 @@ bool glslang_read_shader_file(const char *path,
 
                /* Allows us to use #line to make dealing with shader
                 * errors easier. */
-               if (!string_list_append(output,
+               if (!string_list_append_n(output,
                      "#extension GL_GOOGLE_cpp_style_line_directive : require",
+                     STRLEN_CONST("#extension GL_GOOGLE_cpp_style_line_directive : require"),
                      attr))
                {
                   *newline = saved;
@@ -177,9 +178,9 @@ bool glslang_read_shader_file(const char *path,
                }
 
                /* Append feature defines */
-               if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr)
-                     || !string_list_append(output, "#define _HAS_FRAMETIME_UNIFORMS", attr)
-                     || !string_list_append(output, "#define _HAS_SENSOR_UNIFORMS", attr))
+               if (!string_list_append_n(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"), attr)
+                || !string_list_append_n(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"), attr)
+                || !string_list_append_n(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS"), attr))
                {
                   *newline = saved;
                   goto cleanup;
@@ -202,9 +203,9 @@ bool glslang_read_shader_file(const char *path,
             /* Non-root or non-slang: emit feature defines + #line once */
             if (root_file)
             {
-               if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr)
-                     || !string_list_append(output, "#define _HAS_FRAMETIME_UNIFORMS", attr)
-                     || !string_list_append(output, "#define _HAS_SENSOR_UNIFORMS", attr))
+               if (!string_list_append_n(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"), attr)
+                || !string_list_append_n(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"), attr)
+                || !string_list_append_n(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS"), attr))
                {
                   *newline = saved;
                   goto cleanup;
@@ -219,9 +220,9 @@ bool glslang_read_shader_file(const char *path,
             }
             else
             {
-               if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr)
-                     || !string_list_append(output, "#define _HAS_FRAMETIME_UNIFORMS", attr)
-                     || !string_list_append(output, "#define _HAS_SENSOR_UNIFORMS", attr))
+               if (!string_list_append_n(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"), attr)
+                || !string_list_append_n(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"), attr)
+                || !string_list_append_n(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS"), attr))
                {
                   *newline = saved;
                   goto cleanup;

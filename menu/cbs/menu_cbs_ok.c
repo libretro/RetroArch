@@ -6240,8 +6240,8 @@ static int action_ok_add_entry_to_playlist(const char *path,
       }
       else
       {
-         string_list_append(str_list, FILE_PATH_DETECT, attr);
-         string_list_append(str_list, FILE_PATH_DETECT, attr);
+         string_list_append_n(str_list, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT), attr);
+         string_list_append_n(str_list, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT), attr);
       }
 
       /* crc32 */
@@ -6415,7 +6415,8 @@ static int action_ok_add_to_favorites_playlist(const char *path,
           * (always use display name, if available) */
          if (core_info_find(core_path, &core_info))
             if (!string_is_empty(core_info->display_name))
-               strlcpy(core_display_name, core_info->display_name, sizeof(core_display_name));
+               strlcpy(core_display_name, core_info->display_name,
+               sizeof(core_display_name));
 
          if (!string_is_empty(core_display_name))
             string_list_append(str_list, core_display_name, attr);
@@ -6424,8 +6425,8 @@ static int action_ok_add_to_favorites_playlist(const char *path,
       }
       else
       {
-         string_list_append(str_list, FILE_PATH_DETECT, attr);
-         string_list_append(str_list, FILE_PATH_DETECT, attr);
+         string_list_append_n(str_list, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT), attr);
+         string_list_append_n(str_list, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT), attr);
       }
 
       /* crc32 */

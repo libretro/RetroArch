@@ -567,8 +567,8 @@ static bool rarch_midi_drv_output_pending;
 
 static void null_midi_free(void *p) { }
 static void *null_midi_init(const char *input, const char *output) { return (void*)-1; }
-static bool null_midi_get_avail_inputs(struct string_list *inputs) { union string_list_elem_attr attr = {0}; return string_list_append(inputs, "Null", attr); }
-static bool null_midi_get_avail_outputs(struct string_list *outputs) { union string_list_elem_attr attr = {0}; return string_list_append(outputs, "Null", attr); }
+static bool null_midi_get_avail_inputs(struct string_list *inputs) { union string_list_elem_attr attr = {0}; return string_list_append_n(inputs, "Null", STRLEN_CONST("Null"), attr); }
+static bool null_midi_get_avail_outputs(struct string_list *outputs) { union string_list_elem_attr attr = {0}; return string_list_append_n(outputs, "Null", STRLEN_CONST("Null"), attr); }
 static bool null_midi_set_input(void *p, const char *input) { return input == NULL || string_is_equal(input, "Null"); }
 static bool null_midi_set_output(void *p, const char *output) { return output == NULL || string_is_equal(output, "Null"); }
 static bool null_midi_read(void *p, midi_event_t *event) { return false; }
@@ -782,8 +782,8 @@ static bool midi_driver_init(void *data)
 
    if (!rarch_midi_drv_inputs || !rarch_midi_drv_outputs)
       ret = false;
-   else if (!string_list_append(rarch_midi_drv_inputs, MIDI_DRIVER_OFF, attr) ||
-            !string_list_append(rarch_midi_drv_outputs, MIDI_DRIVER_OFF, attr))
+   else if (!string_list_append_n(rarch_midi_drv_inputs, MIDI_DRIVER_OFF, STRLEN_CONST(MIDI_DRIVER_OFF), attr) ||
+            !string_list_append_n(rarch_midi_drv_outputs, MIDI_DRIVER_OFF, STRLEN_CONST(MIDI_DRIVER_OFF), attr))
       ret = false;
    else
    {
