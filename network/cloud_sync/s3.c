@@ -14,7 +14,6 @@
 
 #include <encodings/base64.h>
 #include <lrc_hash.h>
-// #include <net/net_http.h>
 #include <string/stdstring.h>
 #include <time/rtime.h>
 #include <formats/rjson.h>
@@ -1601,7 +1600,6 @@ static bool s3_multipart_start(s3_multipart_state_t *mp_st)
    url_with_query = s3_build_url_with_query(mp_st->url, url_query);
    auth_header = s3_build_auth_header("POST", mp_st->canonical_uri, canonical_query,
          "host;x-amz-content-sha256;x-amz-date", S3_EMPTY_PAYLOAD_SHA256, s3_st);
-         // "host;x-amz-content-sha256;x-amz-date", "UNSIGNED-PAYLOAD", s3_st);
    if (!url_with_query || !auth_header)
    {
       free(url_with_query);
