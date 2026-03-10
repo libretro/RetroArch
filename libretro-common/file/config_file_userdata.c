@@ -30,10 +30,12 @@ int config_userdata_get_float(void *userdata, const char *key_str,
 {
    char key[256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
+
+   *value = default_value;
+
    fill_pathname_join_delim(key, usr->prefix[0], key_str, '_', sizeof(key));
    if (config_get_float(usr->conf, key, value))
       return true;
-   *value = default_value;
    fill_pathname_join_delim(key, usr->prefix[1], key_str, '_', sizeof(key));
    if (config_get_float(usr->conf, key, value))
       return true;
@@ -45,10 +47,12 @@ int config_userdata_get_int(void *userdata, const char *key_str,
 {
    char key[256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
+
+   *value = default_value;
+
    fill_pathname_join_delim(key, usr->prefix[0], key_str, '_', sizeof(key));
    if (config_get_int(usr->conf, key, value))
       return true;
-   *value = default_value;
    fill_pathname_join_delim(key, usr->prefix[1], key_str, '_', sizeof(key));
    if (config_get_int(usr->conf, key, value))
       return true;
@@ -60,10 +64,12 @@ int config_userdata_get_hex(void *userdata, const char *key_str,
 {
    char key[256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
+
+   *value = default_value;
+
    fill_pathname_join_delim(key, usr->prefix[0], key_str, '_', sizeof(key));
    if (config_get_hex(usr->conf, key, value))
       return true;
-   *value = default_value;
    fill_pathname_join_delim(key, usr->prefix[1], key_str, '_', sizeof(key));
    if (config_get_hex(usr->conf, key, value))
       return true;
@@ -122,7 +128,7 @@ int config_userdata_get_int_array(void *userdata, const char *key_str,
       string_split_noalloc(&list, str, " ");
       *values = (int*)calloc(list.size, sizeof(int));
       for (i = 0; i < list.size; i++)
-         (*values)[i] = (int)strtod(list.elems[i].data, NULL);
+         (*values)[i] = (int)strtol(list.elems[i].data, NULL, 0);
       *out_num_values = (unsigned)list.size;
       string_list_deinitialize(&list);
       free(str);
