@@ -9411,6 +9411,10 @@ MSG_HASH(
    "Bắt đầu hoặc Tiếp tục Tìm Cheat"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "Quét bộ nhớ để tạo Cheat mới."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Tải tệp Cheat (Thay thế)"
    )
@@ -9431,6 +9435,10 @@ MSG_HASH(
    "Tải lại cheat riêng cho trò chơi"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Tải lại tất cả Cheat hiện có."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Lưu tập tin Cheat thành..."
    )
@@ -9443,12 +9451,24 @@ MSG_HASH(
    "Thêm cheat mới lên trên cùng"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Thêm một Cheat vào đầu danh sách."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Thêm cheat mới xuống cuối"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Thêm một Cheat vào cuối danh sách."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Xóa tất cả cheat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Xóa toàn bộ danh sách Cheat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9572,6 +9592,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Bằng trước đó -%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "Thêm %u kết quả khớp vào danh sách"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14638,6 +14662,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Tất cả Cheat đã bị xóa."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Tất cả Cheat đã được tải lại."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

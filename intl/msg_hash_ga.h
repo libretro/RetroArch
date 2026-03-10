@@ -3810,11 +3810,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
-   "Casann sé an cheat atá roghnaithe faoi láthair air/as."
+   "Casann sé an aicearra atá roghnaithe faoi láthair air/as."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
-   "Innéacs Cheat Eile"
+   "Innéacs Aicearra Eile"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS,
@@ -3822,11 +3822,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
-   "Innéacs Cheat Roimhe Seo"
+   "Innéacs Aicearra Roimhe Seo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS,
-   "Laghdaíonn sé an t-innéacs meabhlaireachta atá roghnaithe faoi láthair."
+   "Laghdaíonn sé an t-innéacs aicearra atá roghnaithe faoi láthair."
    )
 
 MSG_HASH(
@@ -5708,7 +5708,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Fógraí Cód Meallta"
+   "Fógraí Cód Aicearra"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -7079,7 +7079,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Díchumasaíonn sé seo cleasanna, athchasadh, gluaiseacht mhall, agus stáit sábhála luchtaithe. Tá marc uathúil ar éachtaí a thuilltear i mód crua ionas gur féidir leat a thaispeáint do dhaoine eile cad atá bainte amach agat gan ghnéithe cúnaimh aithriseora. Má athraíonn tú an socrú seo ag am rith, atosófar an cluiche."
+   "Díchumasaíonn sé seo aicearraí, athchasadh, gluaiseacht mhall, agus stáit sábhála luchtaithe. Tá marc uathúil ar éachtaí a thuilltear i mód crua ionas gur féidir leat a thaispeáint do dhaoine eile cad atá bainte amach agat gan ghnéithe cúnaimh aithriseora. Má athraíonn tú an socrú seo ag am rith, atosófar an cluiche."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -9380,11 +9380,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
-   "Tosaigh nó Lean ar aghaidh le Cuardach Mealltóireachta"
+   "Tosaigh nó Lean ar aghaidh le Cuardach Aicearraí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "Scanadh cuimhne chun aicearraí nua a chruthú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-   "Luchtaigh Comhad Cheat (Athsholáthar)"
+   "Luchtaigh Comhad Aicearra (Athsholáthar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
@@ -9403,6 +9407,10 @@ MSG_HASH(
    "Athlódáil Aicearraí Sainiúla Cluiche"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Athlódáil na aicearraí go léir atá ann cheana féin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Sábháil Comhad Aicearra Mar"
    )
@@ -9415,12 +9423,24 @@ MSG_HASH(
    "Cuir Aicearra Nua leis an mBarr"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Cuir aicearra leis an liosta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Cuir Aicearra Nua leis an mBun"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Cuir aicearra leis an liosta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Scrios Gach Aicearraí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Glan an liosta aicearraí."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9444,7 +9464,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-   "Tiocfaidh athruithe ar cheats i bhfeidhm láithreach."
+   "Tiocfaidh athruithe ar aicearraí i bhfeidhm láithreach."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -9552,6 +9572,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Cothrom le Roimh -%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "Cuir %u Meaitseálacha leis an Liosta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -10104,7 +10128,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Atosaigh mód croí crua don seisiún reatha. Díchumasóidh an gníomh seo cleasanna, athchasadh, gluaiseacht mhall, agus stáit sábhála luchtaithe agus athshocróidh sé an cluiche reatha."
+   "Atosaigh mód croí crua don seisiún reatha. Díchumasóidh an gníomh seo aicearraí, athchasadh, gluaiseacht mhall, agus stáit sábhála luchtaithe agus athshocróidh sé an cluiche reatha."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
@@ -10533,19 +10557,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-   "Rith an Chéad Cheat Eile Má Luach = Cuimhne"
+   "Rith an Chéad Aicearra Eile Má Luach = Cuimhne"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-   "Rith an Chéad Cheat Eile Má Luach != Cuimhne"
+   "Rith an Chéad Aicearra Eile Má Luach != Cuimhne"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-   "Rith an Chéad Cheat Eile Má Luach < Cuimhne"
+   "Rith an Chéad Aicearra Eile Má Luach < Cuimhne"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-   "Rith an Chéad Cheat Eile Má Luach> Cuimhne"
+   "Rith an Chéad Aicearra Eile Má Luach> Cuimhne"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
@@ -12870,7 +12894,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
-   "Tosaigh nó Lean ar aghaidh le Cuardach Mealltóireachta"
+   "Tosaigh nó Lean ar aghaidh le Cuardach Aicearraí"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -14593,11 +14617,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Cuireadh tús le cuardach meabhlaireachta go rathúil."
+   "Cuireadh tús le cuardach aicearra go rathúil."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "Theip ar chuardach meabhlaireachta a thosú."
+   "Theip ar chuardach aicearra a thosú."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
@@ -14629,19 +14653,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   "Níl dóthain spáis ann. Is é 100 an líon uasta meabhlaireachta comhuaineach."
+   "Níl dóthain spáis ann. Is é 100 an líon uasta aicearraí comhuaineach."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_TOP_SUCCESS,
-   "Cleas nua curtha le barr an liosta."
+   "Aicearra nua curtha le barr an liosta."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BOTTOM_SUCCESS,
-   "Cleas nua curtha le bun an liosta."
+   "Aicearra nua curtha le bun an liosta."
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Scriosadh gach aicearra."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Athlódáileadh gach aicearra."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,
@@ -14709,7 +14737,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
-   "Gníomhaíodh cleas. Mód Crua-Éachtaí díchumasaithe don seisiún reatha."
+   "Gníomhaíodh aicearra. Mód Crua-Éachtaí díchumasaithe don seisiún reatha."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,

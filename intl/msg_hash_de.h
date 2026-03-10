@@ -2335,6 +2335,10 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Aktiviert den HDR-Ausgabemodus, wenn der Bildschirm ihn unterstützt. Hinweis: scRGB kann strenge CRT-Shader-Masken abschwächen, da der Betriebssystem-Compositor nach Anwendung der Maske in HDR10 umwandelt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    "Aus"
    )
@@ -3093,6 +3097,10 @@ MSG_HASH(
    "Sensorausrichtung"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Die Achsen des Beschleunigungsmessers und des Gyroskops drehen, sodass sie der Geräteausrichtung entsprechen."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
    "Die Empfindlichkeit für das Gyroskop anpassen."
    )
@@ -3236,6 +3244,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Haptisches Feedback- und Vibrationseinstellungen ändern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Bewegungs-/Lichtsensoren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Ändert Beschleunigungsmesser, Gyroskop und Beleuchtungsstärke."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -9171,6 +9187,10 @@ MSG_HASH(
    "Cheatsuche starten oder fortsetzen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "Speicher scannen, um neue Cheats zu erstellen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Cheat-Datei laden (ersetzen)"
    )
@@ -9191,6 +9211,10 @@ MSG_HASH(
    "Spielspezifische Cheats neu laden"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Alle vorhandenen Cheats neu laden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Speichere Cheat-Datei unter ..."
    )
@@ -9203,12 +9227,24 @@ MSG_HASH(
    "Neuen Cheat oben hinzufügen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Cheat am Anfang der Liste einfügen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Neuen Cheat unten hinzufügen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Cheat am Ende der Liste einfügen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Alle Cheats löschen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Die Cheat-Liste löschen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9328,6 +9364,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Gleich zu vorher +%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "Füge %u Übereinstimmungen zu der Liste hinzu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14210,6 +14250,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Alle Cheats gelöscht."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Alle Cheats neu geladen."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,
