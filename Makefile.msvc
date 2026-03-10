@@ -59,7 +59,6 @@ HAVE_RTGA                := 1
 HAVE_7ZIP                := 1
 HAVE_NETWORKING          := 1
 HAVE_IFINFO              := 1
-HAVE_S3                  := 1
 HAVE_NETWORK_CMD         := 1
 HAVE_OVERLAY             := 1
 HAVE_LANGEXTRA           := 1
