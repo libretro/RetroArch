@@ -5208,7 +5208,6 @@ static void save_keybind_axis_label(config_file_t *conf,
       const struct retro_keybind *bind)
 {
    char key[64];
-   char config[16];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
    strlcpy(key + _len, "_axis", sizeof(key) - _len);
 

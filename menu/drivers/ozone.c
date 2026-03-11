@@ -12281,7 +12281,6 @@ static void ozone_set_header(ozone_handle_t *ozone)
       ozone->header_icon = ozone->textures[OZONE_TEXTURE_RETROARCH];
    else if (header_icon == OZONE_HEADER_ICON_DYNAMIC)
    {
-      int i;
       unsigned type                = FILE_TYPE_NONE;
       enum msg_hash_enums enum_idx = MSG_UNKNOWN;
       const char *path             = NULL;
