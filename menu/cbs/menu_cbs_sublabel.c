@@ -182,7 +182,10 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
                _len = strlcpy(tmp + _len + 1, entry->runtime.last_played_str, sizeof(tmp) - _len - 1);
             }
             if (!string_is_empty(tmp))
-               strlcpy(s + _len, tmp, len - _len);
+            {
+               size_t slen = strlen(s);
+               strlcpy(s + slen, tmp, len - slen);
+            }
          }
       }
    }
@@ -1848,7 +1851,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       buf[++_len] = ' ';
       buf[++_len] = '\0';
       strlcpy(buf + _len, status, sizeof(buf) - _len);
-      _len        = (int)strlen(buf);
+      _len = (int)strlen(buf);
       buf[  _len] = '\n';
       buf[++_len] = '\0';
       strlcpy(s, buf, len);
