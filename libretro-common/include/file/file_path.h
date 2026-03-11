@@ -334,9 +334,8 @@ size_t fill_str_dated_filename(char *s, const char *in_str, const char *ext, siz
  * Find last slash in path. Tries to find
  * a backslash on Windows too which takes precedence
  * over regular slash.
-
- * Hidden non-leaf function cost:
- * - calls strrchr
+ *
+ * Leaf function.
  *
  * @return pointer to last slash/backslash found in @str.
  **/
@@ -554,9 +553,10 @@ size_t fill_pathname_abbreviated_or_relative(char *s,
  * or directory, and removes any special chars that are
  * unavailable.
  *
- * @returns new string that has been sanitized
+ * @returns newly allocated string that has been sanitized.
+ * Caller is responsible for freeing the returned string.
  **/
-const char *sanitize_path_part(const char *path_part, size_t len);
+char *sanitize_path_part(const char *path_part, size_t len);
 
 /**
  * pathname_conform_slashes_to_os:
