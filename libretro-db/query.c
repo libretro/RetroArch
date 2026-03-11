@@ -788,7 +788,7 @@ static struct buffer query_parse_table(
                   _len + 1, sizeof(char));
             if (!args[argi].a.value.val.string.buff)
             {
-               strlcpy(s, "Out of memory.", len);
+               strlcpy(s, "OOM", len);
                *err = s;
                goto clean;
             }
