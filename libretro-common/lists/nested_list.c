@@ -553,6 +553,7 @@ bool nested_list_item_get_address(nested_list_item_t *list_item,
       do
       {
          const char *id = current_item->id;
+
          if (    string_is_empty(id)
              || !string_list_append(&id_list, id, attr))
          {
@@ -564,21 +565,43 @@ bool nested_list_item_get_address(nested_list_item_t *list_item,
       } while (current_item);
 
       /* Build address string */
-      for (i = id_list.size; i > 0; i--)
       {
-         size_t _len;
-         const char *id = id_list.elems[i - 1].data;
+         size_t _offset = 0;
 
-         if (string_is_empty(id))
+         for (i = id_list.size; i > 0; i--)
          {
-            string_list_deinitialize(&id_list);
-            return false;
-         }
+            size_t _len;
+            const char *id = id_list.elems[i - 1].data;
 
-         _len = strlcat(s, id, len);
-         if (i > 1)
-            strlcpy(s + _len, delim, len - _len);
+            if (string_is_empty(id))
+            {
+               string_list_deinitialize(&id_list);
+               return false;
+            }
+
+            _len    = strlcpy(s + _offset, id, len - _offset);
+            _offset += _len;
+
+            if (_offset >= len)
+            {
+               string_list_deinitialize(&id_list);
+               return false;
+            }
+
+            if (i > 1)
+            {
+               _len     = strlcpy(s + _offset, delim, len - _offset);
+               _offset += _len;
+
+               if (_offset >= len)
+               {
+                  string_list_deinitialize(&id_list);
+                  return false;
+               }
+            }
+         }
       }
+
       string_list_deinitialize(&id_list);
    }
    /* If this is an item of the top level

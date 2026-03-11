@@ -123,23 +123,18 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
 #if defined(HAVE_OZONE) || defined(HAVE_MATERIALUI)
    const char *menu_ident                     = menu_driver_ident();
 #endif
-
    if (playlist_show_sublabels)
    {
       /* Search for specified core */
       if (     !core_info_find(core_path, &core_info)
             || !core_info->supports_no_game)
          return 1;
-
       /* Get corresponding contentless core info entry */
       menu_contentless_cores_get_info(core_info->core_file_id.str,
             &entry);
-
       if (!entry)
          return 1;
-
       /* Determine which info we need to display */
-
       /* > Runtime info is always omitted when using Ozone
        * > Check if required runtime log is enabled */
       if (   ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE)
@@ -151,7 +146,6 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
 #endif
          )
          display_runtime = false;
-
 #ifdef HAVE_MATERIALUI
       /* > License info is always displayed unless
        *   we are using GLUI with runtime info enabled */
@@ -161,11 +155,10 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
 #endif
       {
          /* Display licenses */
-         strlcpy(s, entry->licenses_str, len);
+         size_t _len = strlcpy(s, entry->licenses_str, len);
          tmp[0  ] = '\n';
          tmp[1  ] = '\0';
       }
-
       if (display_runtime)
       {
          /* Check whether runtime info should be loaded
@@ -178,25 +171,24 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
                   (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
                   playlist_sublabel_last_played_style,
                   menu_timedate_date_separator);
-
          /* Check whether runtime info is valid */
          if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_VALID)
          {
-            size_t _len = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
-
+            size_t _len = strlcpy(tmp, entry->runtime.runtime_str, sizeof(tmp));
             if (_len < 64 - 1)
             {
                tmp[_len    ] = '\n';
                tmp[_len + 1] = '\0';
-               strlcat(tmp, entry->runtime.last_played_str, sizeof(tmp));
+               _len = strlcpy(tmp + _len + 1, entry->runtime.last_played_str, sizeof(tmp) - _len - 1);
             }
-
             if (!string_is_empty(tmp))
-               strlcat(s, tmp, len);
+            {
+               size_t slen = strlen(s);
+               strlcpy(s + slen, tmp, len - slen);
+            }
          }
       }
    }
-
    return 0;
 }
 
@@ -1619,20 +1611,17 @@ static int action_bind_sublabel_subsystem_load(
       char *s, size_t len)
 {
    unsigned j = 0;
+   size_t _len = 0;
    char buf[PATH_MAX_LENGTH];
-
    buf[0] = '\0';
-
    for (j = 0; j < content_get_subsystem_rom_id(); j++)
    {
-      size_t _len = strlcat(buf, path_basename(content_get_subsystem_rom(j)), sizeof(buf));
+      _len += strlcpy(buf + _len, path_basename(content_get_subsystem_rom(j)), sizeof(buf) - _len);
       if (j != content_get_subsystem_rom_id() - 1)
-         strlcpy(buf + _len, "\n", sizeof(buf) - _len);
+         _len += strlcpy(buf + _len, "\n", sizeof(buf) - _len);
    }
-
    if (!string_is_empty(buf))
       strlcpy(s, buf, len);
-
    return 0;
 }
 
@@ -1825,7 +1814,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       const char *label, const char *path,
       char *s, size_t len)
 {
-   size_t _len;
+   int _len;
    char buf[NAME_MAX_LENGTH];
    netplay_client_info_t *client;
    const char         *status = NULL;
@@ -1850,19 +1839,22 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
          break;
    }
 
-   *s = '\0';
+   s[0] = '\0';
 
    if (status)
    {
       _len        = strlcpy(buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
             sizeof(buf) - 3);
+      if (_len > (int)sizeof(buf) - 4)
+         _len = (int)sizeof(buf) - 4;
       buf[  _len] = ':';
       buf[++_len] = ' ';
       buf[++_len] = '\0';
-      _len       += strlcpy(buf + _len, status, sizeof(buf) - _len);
+      strlcpy(buf + _len, status, sizeof(buf) - _len);
+      _len = (int)strlen(buf);
       buf[  _len] = '\n';
       buf[++_len] = '\0';
-      strlcat(s, buf, len);
+      strlcpy(s, buf, len);
    }
 
    if (client->devices)
@@ -1870,7 +1862,6 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       _len = snprintf(buf, sizeof(buf), "%s:",
          msg_hash_to_str(MSG_NETPLAY_CLIENT_DEVICES));
 
-      /* Ensure that at least one device can be written. */
       if (_len > 0 && _len < (int)sizeof(buf) - (int)STRLEN_CONST(" 16\n"))
       {
          uint32_t device;
@@ -1880,35 +1871,34 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
          {
             if (client->devices & (1 << device))
             {
-               int __len = snprintf(buf_written,
+               int dev_len = snprintf(buf_written,
                      sizeof(buf) - _len,
                      " %u,", (unsigned)(device + 1));
 
-               /* Write nothing on error. */
-               if (__len <= 0)
+               if (dev_len <= 0)
                {
                   _len = -1;
                   break;
                }
 
-               _len += __len;
+               _len += dev_len;
                if (_len >= (int)sizeof(buf) - 1)
                   break;
 
-               buf_written += __len;
+               buf_written += dev_len;
             }
          }
 
          if (_len > 0)
          {
-            /* Now convert the last comma into a newline. */
             buf_written = strrchr(buf, ',');
             if (buf_written)
             {
                *buf_written++ = '\n';
                *buf_written   = '\0';
 
-               strlcat(s, buf, len);
+               _len = (int)strlen(s);
+               strlcpy(s + _len, buf, len - _len);
             }
          }
       }
@@ -1918,12 +1908,17 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       msg_hash_to_str(MSG_NETPLAY_CHAT_SUPPORTED),
       msg_hash_to_str((client->protocol >= 6) ?
          MENU_ENUM_LABEL_VALUE_YES : MENU_ENUM_LABEL_VALUE_NO));
-   _len  = strlcat(s, buf, len);
-   _len += snprintf(s + _len, len - _len, "%s: %lu",
-      msg_hash_to_str(MSG_NETPLAY_SLOWDOWNS_CAUSED),
-      (unsigned long)client->slowdowns);
+   _len = (int)strlen(s);
+   if (_len < (int)len - 1)
+      strlcpy(s + _len, buf, len - _len);
 
-   if (client->ping >= 0)
+   _len = (int)strlen(s);
+   if (_len < (int)len - 1)
+      _len += snprintf(s + _len, len - _len, "%s: %lu",
+         msg_hash_to_str(MSG_NETPLAY_SLOWDOWNS_CAUSED),
+         (unsigned long)client->slowdowns);
+
+   if (client->ping >= 0 && _len < (int)len - 1)
       snprintf(s + _len, len - _len,
             "\nPing: %u ms", (unsigned)client->ping);
 

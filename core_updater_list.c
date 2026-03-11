@@ -418,11 +418,6 @@ static bool core_updater_list_set_paths(
    char *last_underscore                  = NULL;
    char *tmp_url                          = NULL;
    bool is_archive                        = true;
-   /* Can't resolve symlinks when dealing with cores
-    * installed via play feature delivery, because the
-    * source files have non-standard file names (which
-    * will not be recognised by regular core handling
-    * routines) */
    char remote_core_path[PATH_MAX_LENGTH];
    char local_core_path[PATH_MAX_LENGTH];
    char local_info_path[PATH_MAX_LENGTH];
@@ -448,11 +443,11 @@ static bool core_updater_list_set_paths(
       free(entry->remote_filename);
       entry->remote_filename = NULL;
    }
-
    entry->remote_filename = strdup(filename_str);
 
    /* remote_core_path
     * > Leave blank if this is not a buildbot core */
+   remote_core_path[0] = '\0';
    if (list_type == CORE_UPDATER_LIST_TYPE_BUILDBOT)
    {
       fill_pathname_join_special(
@@ -462,7 +457,7 @@ static bool core_updater_list_set_paths(
             sizeof(remote_core_path));
 
       /* > Apply proper URL encoding (messy...) */
-      tmp_url             = strdup(remote_core_path);
+      tmp_url = strdup(remote_core_path);
       remote_core_path[0] = '\0';
       net_http_urlencode_full(
             remote_core_path, tmp_url, sizeof(remote_core_path));
@@ -475,9 +470,9 @@ static bool core_updater_list_set_paths(
       free(entry->remote_core_path);
       entry->remote_core_path = NULL;
    }
-
    entry->remote_core_path = strdup(remote_core_path);
 
+   /* local_core_path */
    fill_pathname_join_special(
          local_core_path,
          path_dir_libretro,
@@ -495,14 +490,15 @@ static bool core_updater_list_set_paths(
       free(entry->local_core_path);
       entry->local_core_path = NULL;
    }
-
    entry->local_core_path = strdup(local_core_path);
 
+   /* local_info_path */
    fill_pathname_join_special(
          local_info_path,
          path_libretro_info,
          filename_str,
          sizeof(local_info_path));
+
    path_remove_extension(local_info_path);
 
    if (is_archive)
@@ -512,25 +508,26 @@ static bool core_updater_list_set_paths(
     *   additions (i.e. info files end with
     *   '_libretro' but core files may have
     *   a platform specific addendum,
-    *   e.g. '_android')*/
+    *   e.g. '_android') */
    last_underscore = (char*)strrchr(local_info_path, '_');
-
    if (!string_is_empty(last_underscore))
       if (!string_is_equal(last_underscore, "_libretro"))
          *last_underscore = '\0';
 
    /* > Add proper file extension */
-   strlcat(
-         local_info_path,
-         FILE_PATH_CORE_INFO_EXTENSION,
-         sizeof(local_info_path));
+   {
+      size_t len = strlen(local_info_path);
+      strlcpy(
+            local_info_path + len,
+            FILE_PATH_CORE_INFO_EXTENSION,
+            sizeof(local_info_path) - len);
+   }
 
    if (entry->local_info_path)
    {
       free(entry->local_info_path);
       entry->local_info_path = NULL;
    }
-
    entry->local_info_path = strdup(local_info_path);
 
    return true;

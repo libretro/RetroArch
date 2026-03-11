@@ -930,10 +930,11 @@ static int menu_displaylist_parse_core_info(
                }
                else
                {
-                  strlcat(tmp_desc, "\n", sizeof(tmp_desc));
-                  strlcat(tmp_desc,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
-                        sizeof(tmp_desc));
+                  size_t ___len = strlen(tmp_desc);
+                  ___len += strlcpy(tmp_desc + ___len, "\n", sizeof(tmp_desc) - ___len);
+                  strlcpy(tmp_desc    + ___len,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
+                     sizeof(tmp_desc) - ___len);
                }
             }
 

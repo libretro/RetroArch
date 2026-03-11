@@ -5306,8 +5306,8 @@ void cb_generic_download(retro_task_t *task,
              * See: 'file_decompressed_subdir()' */
             if (!string_is_empty(subdir_options))
             {
-               strlcpy(buf, subdir_options, sizeof(buf));
-               strlcat(buf, "|", sizeof(buf));
+               size_t __len = strlcpy(buf, subdir_options, sizeof(buf));
+               strlcpy(buf + __len, "|", sizeof(buf) - __len);
                subdir = buf;
             }
          }
@@ -9005,6 +9005,9 @@ static int action_ok_smb_browse(const char *path,
 {
    settings_t *settings = config_get_ptr();
    char smb_path[PATH_MAX_LENGTH];
+   char *ptr       = smb_path;
+   size_t remaining = sizeof(smb_path);
+   size_t len;
 
    if (!settings->bools.smb_client_enable)
    {
@@ -9026,21 +9029,41 @@ static int action_ok_smb_browse(const char *path,
       return -1;
    }
 
-   /* Build base SMB path */
-   snprintf(smb_path, sizeof(smb_path), "smb://%s",
-            settings->arrays.smb_client_server_address);
+   /* Build base SMB path: smb://<server> */
+   len = snprintf(ptr, remaining, "smb://%s",
+         settings->arrays.smb_client_server_address);
+   if (len >= remaining)
+      len = remaining - 1;
+   ptr       += len;
+   remaining -= len;
 
-   if (!string_is_empty(settings->arrays.smb_client_share))
+   /* Append /<share> if set */
+   if (remaining > 1
+         && !string_is_empty(settings->arrays.smb_client_share))
    {
-      strlcat(smb_path, "/", sizeof(smb_path));
-      strlcat(smb_path, settings->arrays.smb_client_share, sizeof(smb_path));
+      *ptr++ = '/';
+      remaining--;
+      len = strlcpy(ptr, settings->arrays.smb_client_share, remaining);
+      if (len >= remaining)
+         len = remaining - 1;
+      ptr       += len;
+      remaining -= len;
    }
 
-   if (!string_is_empty(settings->arrays.smb_client_subdir))
+   /* Append /<subdir> if set */
+   if (remaining > 1
+         && !string_is_empty(settings->arrays.smb_client_subdir))
    {
       if (settings->arrays.smb_client_subdir[0] != '/')
-         strlcat(smb_path, "/", sizeof(smb_path));
-      strlcat(smb_path, settings->arrays.smb_client_subdir, sizeof(smb_path));
+      {
+         *ptr++ = '/';
+         remaining--;
+      }
+      len = strlcpy(ptr, settings->arrays.smb_client_subdir, remaining);
+      if (len >= remaining)
+         len = remaining - 1;
+      ptr       += len;
+      remaining -= len;
    }
 
    return generic_action_ok_displaylist_push(

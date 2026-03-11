@@ -7290,36 +7290,50 @@ static void rgui_action_switch_thumbnail(rgui_t *rgui)
 static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
 {
    menu_entry_t entry;
-
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
 
+   rgui->menu_sublabel[0] = '\0';
+
    if (!string_is_empty(entry.sublabel))
    {
       char *tok, *save         = NULL;
-      bool prev_line_empty     = true;
+      size_t offset            = 0;
       char *entry_sublabel_cpy = strdup(entry.sublabel);
-
       /* Sanitise sublabel
        * > Replace newline characters with standard delimiter
        * > Remove whitespace surrounding each sublabel line */
       tok = strtok_r(entry_sublabel_cpy, "\n", &save);
-
       while (tok)
       {
+         size_t len;
          string_trim_whitespace_right(tok);
          string_trim_whitespace_left(tok);
          if (!string_is_empty(tok))
          {
-            if (!prev_line_empty)
-               strlcat(rgui->menu_sublabel, RGUI_TICKER_SPACER, sizeof(rgui->menu_sublabel));
-            strlcat(rgui->menu_sublabel, tok, sizeof(rgui->menu_sublabel));
-            prev_line_empty = false;
+            if (offset > 0)
+            {
+               size_t spacer_len = strlcpy(
+                     rgui->menu_sublabel + offset,
+                     RGUI_TICKER_SPACER,
+                     sizeof(rgui->menu_sublabel) - offset);
+               if (offset + spacer_len < sizeof(rgui->menu_sublabel))
+                  offset += spacer_len;
+               else
+                  offset = sizeof(rgui->menu_sublabel) - 1;
+            }
+            len = strlcpy(
+                  rgui->menu_sublabel + offset,
+                  tok,
+                  sizeof(rgui->menu_sublabel) - offset);
+            if (offset + len < sizeof(rgui->menu_sublabel))
+               offset += len;
+            else
+               offset = sizeof(rgui->menu_sublabel) - 1;
          }
          tok = strtok_r(NULL, "\n", &save);
       }
-
       free(entry_sublabel_cpy);
    }
 }
