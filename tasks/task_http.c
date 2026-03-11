@@ -552,11 +552,10 @@ void* task_push_http_post_transfer_with_headers(const char *url,
    return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
-void *task_push_http_transfer_with_content_ex(const char *url,
+void *task_push_http_transfer_with_content(const char *url,
       const char *method, const void *content, size_t content_len,
       const char *content_type, bool mute, bool headers_accept_err,
-      const char *headers,
-      retro_task_callback_t cb, void *user_data)
+      const char *headers, retro_task_callback_t cb, void *user_data)
 {
    struct http_connection_t *conn;
 
@@ -575,14 +574,4 @@ void *task_push_http_transfer_with_content_ex(const char *url,
 
    return task_push_http_transfer_generic(conn, url, mute,
          headers_accept_err, cb, user_data);
-}
-
-void *task_push_http_transfer_with_content(const char *url,
-      const char *method, const void *content, size_t content_len,
-      const char *content_type, bool mute, const char *headers,
-      retro_task_callback_t cb, void *user_data)
-{
-   return task_push_http_transfer_with_content_ex(url, method, content,
-         content_len, content_type, mute, false,
-         headers, cb, user_data);
 }

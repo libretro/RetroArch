@@ -929,7 +929,7 @@ static bool s3_http_put_async(const char *url, const char *headers,
       const void *data, size_t data_len, s3_cb_state_t *cb_state)
 {
    return task_push_http_transfer_with_content(url, "PUT",
-         data, data_len, "application/octet-stream", true,
+         data, data_len, "application/octet-stream", true, false,
          headers, s3_update_cb, cb_state) != NULL;
 }
 
@@ -1399,7 +1399,7 @@ static void s3_multipart_complete(s3_multipart_state_t *mp_st)
       goto fail;
 
    if (!task_push_http_transfer_with_content(url_with_query, "POST",
-            xml_body, xml_len, "application/xml", true,
+            xml_body, xml_len, "application/xml", true, false,
             auth_header, s3_multipart_complete_cb, mp_st))
       goto fail;
 
@@ -1500,7 +1500,7 @@ static void s3_multipart_upload_next_part(s3_multipart_state_t *mp_st)
    if (!url_with_query || !auth_header)
       goto fail;
 
-   if (!task_push_http_transfer_with_content_ex(url_with_query, "PUT",
+   if (!task_push_http_transfer_with_content(url_with_query, "PUT",
             mp_st->file_data + offset, content_len, "application/octet-stream", true, true,
             auth_header, s3_multipart_upload_part_cb, mp_st))
       goto fail;

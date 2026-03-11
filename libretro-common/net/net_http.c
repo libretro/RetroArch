@@ -1012,11 +1012,6 @@ static bool net_http_connect(struct http_t *state)
    struct conn_pool_entry *conn = state->conn;
    struct dns_cache_entry *dns_entry = net_http_dns_cache_find(state->request.domain, state->request.port);
    /* we just used/added this in _new_socket above, if it's not there it's a big bug */
-   if (!dns_entry || !dns_entry->addr || !conn)
-   {
-      net_http_log_transport_state(state, "connect_missing_dns_or_conn", -1);
-      return false;
-   }
    addr = dns_entry->addr;
 
 #ifndef HAVE_SSL
@@ -1025,6 +1020,11 @@ static bool net_http_connect(struct http_t *state)
 #else
    if (state->ssl)
    {
+      if (!conn)
+      {
+         net_http_log_transport_state(state, "connect_missing_dns_or_conn", -1);
+         return false;
+      }
       for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
       {
          if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
