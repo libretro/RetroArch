@@ -566,8 +566,7 @@ static void handle_translation_response(
                continue;
             }
 
-            strncpy(key, response->key_presses + start, i-start);
-            key[i-start] = '\0';
+            strlcpy(key, response->key_presses + start, i-start+1);
 
 #ifdef HAVE_ACCESSIBILITY
             if (string_is_equal(key, "b"))
