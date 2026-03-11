@@ -6194,8 +6194,6 @@ static void xmb_layout_common(xmb_handle_t *xmb, float scale_factor, unsigned ne
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 {
    float scale_factor            = xmb->last_scale_factor;
-   float margins_title           = xmb->margins_title;
-   float margins_title_h_offset  = xmb->margins_title_horizontal_offset;
    unsigned new_font_size        = 32 * scale_factor;
 
    xmb->above_subitem_offset     =  1.5f;
@@ -6225,8 +6223,6 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
    float scale_factor            = xmb->last_scale_factor;
-   float margins_title           = xmb->margins_title;
-   float margins_title_h_offset  = xmb->margins_title_horizontal_offset;
    unsigned new_font_size        = 26 * scale_factor;
 
    xmb->above_subitem_offset     =  1.5f;

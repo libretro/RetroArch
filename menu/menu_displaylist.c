@@ -569,7 +569,6 @@ static int menu_displaylist_parse_core_info(
    core_info_t *core_info        = NULL;
    const char *core_path         = NULL;
    const char *savestate_support = NULL;
-   runloop_state_t *runloop_st   = runloop_state_get_ptr();
    bool kiosk_mode_enable        = settings->bools.kiosk_mode_enable;
    bool core_info_list_hide[64]  = {false};
 #if defined(HAVE_DYNAMIC)

@@ -661,9 +661,6 @@ static int scan_method_right(
       manual_content_scan_get_menu_scan_method_list();
 
    const char *current_scan_method                                 = NULL;
-   enum manual_content_scan_system_name_type next_system_name_type =
-         MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
-   const char *next_scan_method                                    = NULL;
    unsigned current_index                                          = 0;
    unsigned next_index                                             = 0;
    unsigned i;
@@ -714,7 +711,6 @@ static int scan_use_db_right(
       manual_content_scan_get_menu_scan_use_db_list();
 
    const char *current_scan_use_db                                 = NULL;
-   const char *next_scan_use_db                                    = NULL;
    unsigned current_index                                          = 0;
    unsigned next_index                                             = 0;
    unsigned i;
