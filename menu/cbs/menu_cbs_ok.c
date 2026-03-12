@@ -2674,45 +2674,29 @@ static int action_ok_file_load(const char *path,
 
 static bool playlist_entry_path_is_valid(const char *entry_path)
 {
-   char *archive_delim = NULL;
-   char *file_path     = NULL;
+   const char *archive_delim = NULL;
 
    if (string_is_empty(entry_path))
       return false;
 
-   file_path = strdup(entry_path);
+   archive_delim = path_get_archive_delim(entry_path);
 
-   /* We need to check whether the file referenced by the
-    * entry path actually exists. If it is a normal file,
-    * we can do this directly. If the path contains an
-    * archive delimiter, then we have to trim everything
-    * after the archive extension
-    * > Note: Have to do a nasty cast here, since
-    *   path_get_archive_delim() returns a const char *
-    *   (this cast is safe, though, and is done in many
-    *   places throughout the codebase...) */
-   if ((archive_delim = (char *)path_get_archive_delim(file_path)))
+   if (archive_delim)
    {
-      *archive_delim = '\0';
-      if (string_is_empty(file_path))
-         goto error;
+      /* Archive path: validate the portion before the delimiter */
+      size_t len = (size_t)(archive_delim - entry_path);
+      char buf[PATH_MAX_LENGTH];
+
+      if (len == 0 || len >= sizeof(buf))
+         return false;
+
+      memcpy(buf, entry_path, len);
+      buf[len] = '\0';
+
+      return path_is_valid(buf);
    }
 
-   /* Path is 'sanitised' - can now check if it exists */
-   if (!path_is_valid(file_path))
-      goto error;
-
-   /* File is valid */
-   free(file_path);
-   file_path = NULL;
-
-   return true;
-
-error:
-   free(file_path);
-   file_path = NULL;
-
-   return false;
+   return path_is_valid(entry_path);
 }
 
 static int action_ok_playlist_entry_collection(const char *path,
