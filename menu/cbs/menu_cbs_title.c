@@ -140,15 +140,6 @@ static void action_get_title_fill_path_search_filter_default(
    return 0; \
 }
 
-static int action_get_title_action_generic(
-      const char *path, const char *label,
-      unsigned menu_type, char *s, size_t len)
-{
-   if (s && !string_is_empty(label))
-      sanitize_to_string(s, label, len);
-   return 1;
-}
-
 static int action_get_title_remap_port(
       const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
