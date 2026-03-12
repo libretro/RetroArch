@@ -5477,11 +5477,12 @@ static int action_ok_download_generic(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          {
-            char *tok, *save     = NULL;
-            char *menu_label_cpy = strdup(menu_label);
-            if ((tok = strtok_r(menu_label_cpy, ";", &save)))
-               strlcpy(s, tok, sizeof(s));
-            free(menu_label_cpy);
+            const char *end = strchr(menu_label, ';');
+            if (end)
+               strlcpy(s, menu_label,
+               MIN((size_t)(end - menu_label + 1), sizeof(s)));
+            else
+               strlcpy(s, menu_label, sizeof(s));
          }
          break;
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
@@ -7186,22 +7187,25 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
       case ST_STRING_OPTIONS:
          if (setting->get_string_representation)
          {
-            char *tok, *save         = NULL;
-            unsigned tok_idx         = 0;
-            char *setting_values_cpy = strdup(setting->values);
+            const char *tok       = setting->values;
+            unsigned tok_idx      = 0;
 
-            for (tok = strtok_r(setting_values_cpy, "|", &save); tok != NULL;
-                 tok = strtok_r(NULL, "|", &save), tok_idx++)
+            while (tok)
             {
+               const char *next = strchr(tok, '|');
                if (idx == tok_idx)
                {
-                  strlcpy(setting->value.target.string, tok,
-                        setting->size);
+                  size_t len = next ? (size_t)(next - tok) : strlen(tok);
+                  if (len >= setting->size)
+                     len = setting->size - 1;
+                  memcpy(setting->value.target.string, tok, len);
+                  setting->value.target.string[len] = '\0';
                   break;
                }
-            }
 
-            free(setting_values_cpy);
+               tok = next ? next + 1 : NULL;
+               tok_idx++;
+            }
             break;
          }
          /* fallthrough */
