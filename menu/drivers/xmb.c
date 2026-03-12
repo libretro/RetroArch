@@ -307,6 +307,14 @@ typedef struct
    bool icon_hide;
 } xmb_node_t;
 
+enum xmb_drag_mode
+{
+   XMB_DRAG_NONE = 0,
+   XMB_DRAG_DETECTING,
+   XMB_DRAG_HORIZONTAL,
+   XMB_DRAG_VERTICAL
+};
+
 typedef struct xmb_handle
 {
    /* Keeps track of the last time tabs were switched
@@ -340,13 +348,7 @@ typedef struct xmb_handle
    menu_input_pointer_t pointer;
 
    /* Touch drag state for direction locking */
-   enum
-   {
-      XMB_DRAG_NONE,
-      XMB_DRAG_DETECTING,
-      XMB_DRAG_HORIZONTAL,
-      XMB_DRAG_VERTICAL
-   } drag_mode;
+   enum xmb_drag_mode drag_mode;
    float drag_start_x;
    float drag_start_y;
    float categories_drag_start_pos;
@@ -2253,7 +2255,7 @@ static enum msg_hash_enums xmb_search_enum(const char *label)
 
    for (i = 0; i < MSG_LAST && enum_idx == MSG_UNKNOWN; i++)
    {
-      if (string_is_equal(label, msg_hash_to_str(i)))
+      if (string_is_equal(label, msg_hash_to_str((enum msg_hash_enums)i)))
          enum_idx = (enum msg_hash_enums)i;
    }
 
@@ -2390,10 +2392,10 @@ static void xmb_set_title(xmb_handle_t *xmb)
          enum_idx = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
       }
       else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND)))
-         enum_idx = atoi(path);
+         enum_idx = (enum msg_hash_enums)atoi(path);
       else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
       {
-         enum_idx = atoi(path);
+         enum_idx = (enum msg_hash_enums)atoi(path);
          if (     enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
                && enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
             enum_idx = MENU_ENUM_LABEL_INPUT_DEVICE_INDEX;

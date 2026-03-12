@@ -7492,7 +7492,7 @@ static int action_ok_push_dropdown_item_scan_method(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   manual_content_scan_set_menu_scan_method(idx);
+   manual_content_scan_set_menu_scan_method((enum manual_content_scan_method)idx);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -7501,7 +7501,7 @@ static int action_ok_push_dropdown_item_scan_use_db(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   manual_content_scan_set_menu_scan_use_db(idx);
+   manual_content_scan_set_menu_scan_use_db((enum manual_content_scan_db_usage)idx);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -7510,7 +7510,7 @@ static int action_ok_push_dropdown_item_scan_db_select(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   manual_content_scan_set_menu_scan_db_select(idx, path);
+   manual_content_scan_set_menu_scan_db_select((enum manual_content_scan_db_selection)idx, path);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }

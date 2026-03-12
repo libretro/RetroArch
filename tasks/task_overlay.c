@@ -1051,7 +1051,7 @@ static void task_overlay_free(retro_task_t *task)
          free(loader->overlay_path);
 
       for (i = 0; i < loader->image_list->size; i++)
-         image_texture_free(loader->image_list->elems[i].attr.p);
+         image_texture_free((struct texture_image*)loader->image_list->elems[i].attr.p);
       string_list_free(loader->image_list);
 
       for (i = 0; i < loader->size; i++)

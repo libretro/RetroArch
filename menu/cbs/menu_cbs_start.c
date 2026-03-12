@@ -538,7 +538,7 @@ static int action_start_scan_method(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
-   manual_content_scan_set_menu_scan_method(0);
+   manual_content_scan_set_menu_scan_method(MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
    menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
@@ -548,7 +548,7 @@ static int action_start_scan_use_db(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
-   manual_content_scan_set_menu_scan_use_db(0);
+   manual_content_scan_set_menu_scan_use_db(MANUAL_CONTENT_SCAN_USE_DB_STRICT);
    menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
@@ -558,7 +558,7 @@ static int action_start_scan_db_select(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
-   manual_content_scan_set_menu_scan_db_select(0,"");
+   manual_content_scan_set_menu_scan_db_select(MANUAL_CONTENT_SCAN_SELECT_DB_AUTO, "");
    menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }

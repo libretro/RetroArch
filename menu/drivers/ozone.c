@@ -12228,7 +12228,7 @@ static void ozone_search_header_icon(ozone_handle_t *ozone,
 
    for (i = 0; i < MSG_LAST && *enum_idx == MSG_UNKNOWN; i++)
    {
-      if (string_is_equal(label, msg_hash_to_str(i)))
+      if (string_is_equal(label, msg_hash_to_str((enum msg_hash_enums)i)))
          *enum_idx = (enum msg_hash_enums)i;
    }
 

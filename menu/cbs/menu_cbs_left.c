@@ -567,7 +567,8 @@ static int scan_method_left(unsigned type, const char *label,
    }
 
    /* Set system name */
-   manual_content_scan_set_menu_scan_method(next_index);
+   manual_content_scan_set_menu_scan_method(
+      (enum manual_content_scan_method)next_index);
    menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    /* Clean up */
    string_list_free(scan_method_list);
@@ -611,7 +612,7 @@ static int scan_use_db_left(unsigned type, const char *label,
    }
 
    /* Set system name */
-   manual_content_scan_set_menu_scan_use_db(next_index);
+   manual_content_scan_set_menu_scan_use_db((enum manual_content_scan_db_usage)next_index);
    menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    /* Clean up */
    string_list_free(scan_use_db_list);

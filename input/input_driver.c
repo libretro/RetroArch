@@ -5794,12 +5794,12 @@ static void input_overlay_loaded_move_images(input_overlay_t *ol,
 {
    size_t i;
 
-   ol->images = malloc(ol->num_images * sizeof(struct texture_image *));
+   ol->images = (struct texture_image**)malloc(ol->num_images * sizeof(struct texture_image *));
 
    if (!ol->images)
    {
       for (i = 0; i < ol->num_images; i++)
-         image_texture_free(image_list->elems[i].attr.p);
+         image_texture_free((struct texture_image*)image_list->elems[i].attr.p);
       ol->num_images = 0;
       RARCH_ERR("[Overlay] Couldn't allocate images array.\n");
    }
