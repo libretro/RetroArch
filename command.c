@@ -690,49 +690,58 @@ static bool udp_send_packet(const char *host, uint16_t port, const char *msg)
 
 bool command_network_send(const char *cmd_)
 {
-   char *command        = NULL;
+   char buf[4096];
    char *save           = NULL;
    const char *cmd      = NULL;
+   const char *host     = NULL;
+   const char *port_str = NULL;
+   uint16_t port        = DEFAULT_NETWORK_CMD_PORT;
+   size_t len;
+
+   if (!cmd_ || !*cmd_)
+      return false;
+
+   len = strlen(cmd_);
+   if (len >= sizeof(buf))
+      return false;
 
    if (!network_init())
       return false;
 
-   if (!(command = strdup(cmd_)))
+   memcpy(buf, cmd_, len + 1);
+
+   cmd = strtok_r(buf, ";", &save);
+   if (!cmd)
       return false;
 
-   cmd                  = strtok_r(command, ";", &save);
-   if (cmd)
+   host     = strtok_r(NULL, ";", &save);
+   if (host)
+      port_str = strtok_r(NULL, ";", &save);
+
+   if (!host || !*host)
    {
-      uint16_t port     = DEFAULT_NETWORK_CMD_PORT;
-      const char *port_ = NULL;
-      const char *host  = strtok_r(NULL, ";", &save);
-      if (host)
-         port_          = strtok_r(NULL, ";", &save);
-      else
-      {
 #ifdef _WIN32
-         host = "127.0.0.1";
+      host = "127.0.0.1";
 #else
-         host = "localhost";
+      host = "localhost";
 #endif
-      }
-
-      if (port_)
-         port = strtoul(port_, NULL, 0);
-
-      RARCH_LOG("[NetCMD] %s: \"%s\" to %s:%hu.\n",
-            msg_hash_to_str(MSG_SENDING_COMMAND),
-            cmd, host, (unsigned short)port);
-
-      if (command_verify(cmd) && udp_send_packet(host, port, cmd))
-      {
-         free(command);
-         return true;
-      }
    }
 
-   free(command);
-   return false;
+   if (port_str && *port_str)
+   {
+      unsigned long val = strtoul(port_str, NULL, 0);
+      if (val > 0 && val <= 0xFFFF)
+         port = (uint16_t)val;
+   }
+
+   RARCH_LOG("[NetCMD] %s: \"%s\" to %s:%hu.\n",
+         msg_hash_to_str(MSG_SENDING_COMMAND),
+         cmd, host, (unsigned short)port);
+
+   if (!command_verify(cmd))
+      return false;
+
+   return udp_send_packet(host, port, cmd);
 }
 #endif
 
