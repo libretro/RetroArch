@@ -329,60 +329,32 @@ bool core_updater_list_get_core(
 static bool core_updater_list_set_date(
       core_updater_list_entry_t *entry, const char *date_str)
 {
-   char *tok, *save   = NULL;
-   char *elem0        = NULL;
-   char *elem1        = NULL;
-   char *elem2        = NULL;
-   unsigned list_size = 0;
-   char *date_str_cpy = NULL;
+   char *save      = NULL;
+   char *year_str, *month_str, *day_str;
+   char *date_str_cpy;
 
    if (!entry || string_is_empty(date_str))
       return false;
 
    date_str_cpy = strdup(date_str);
+   if (!date_str_cpy)
+      return false;
 
-   /* Split date string into component values */
-   if ((tok = strtok_r(date_str_cpy, "-", &save)))
-   {
-      elem0 = strdup(tok);
-      list_size++;
-   }
-   if ((tok = strtok_r(NULL, "-", &save)))
-   {
-      elem1 = strdup(tok);
-      list_size++;
-   }
-   if ((tok = strtok_r(NULL, "-", &save)))
-   {
-      elem2 = strdup(tok);
-      list_size++;
-   }
-   free(date_str_cpy);
+   year_str  = strtok_r(date_str_cpy, "-", &save);
+   month_str = strtok_r(NULL, "-", &save);
+   day_str   = strtok_r(NULL, "-", &save);
 
-   /* Date string must have 3 values:
-    * [year] [month] [day] */
-   if (list_size < 3)
+   if (!year_str || !month_str || !day_str)
    {
-      if (elem0)
-         free(elem0);
-      if (elem1)
-         free(elem1);
-      if (elem2)
-         free(elem2);
-
+      free(date_str_cpy);
       return false;
    }
 
-   /* Convert date string values */
-   entry->date.year  = string_to_unsigned(elem0);
-   entry->date.month = string_to_unsigned(elem1);
-   entry->date.day   = string_to_unsigned(elem2);
+   entry->date.year  = string_to_unsigned(year_str);
+   entry->date.month = string_to_unsigned(month_str);
+   entry->date.day   = string_to_unsigned(day_str);
 
-   /* Clean up */
-   free(elem0);
-   free(elem1);
-   free(elem2);
-
+   free(date_str_cpy);
    return true;
 }
 
@@ -771,7 +743,6 @@ bool core_updater_list_parse_network_data(
       const char *data, size_t len)
 {
    char *tok, *save   = NULL;
-   unsigned list_size = 0;
    char *data_buf     = NULL;
 
    /* Sanity check */
@@ -790,40 +761,30 @@ bool core_updater_list_parse_network_data(
    memcpy(data_buf, data, len * sizeof(char));
    data_buf[len] = '\0';
 
-   list_size     = string_count_occurrences_single_character(data_buf, '\n');
-
-   if (list_size < 1)
-   {
-      free(data_buf);
-      return false;
-   }
-
-   /* Split network listing request into lines */
-   /* Loop over lines */
+   /* Split network listing request into lines
+    * and loop over each line.
+    * The outer strtok_r replaces '\n' with '\0' in data_buf,
+    * so each tok is an isolated null-terminated string that
+    * can be safely tokenized in-place by the inner strtok_r
+    * without any extra allocations. */
    for (tok = strtok_r(data_buf, "\n", &save); tok;
         tok = strtok_r(NULL, "\n", &save))
    {
-      char *tok2, *save2 = NULL;
-      char *elem0        = NULL;
-      char *elem1        = NULL;
-      char *elem2        = NULL;
-      char *line_cpy     = NULL;
-      const char *line   = tok;
+      char *save2 = NULL;
+      char *elem0 = NULL; /* date     */
+      char *elem1 = NULL; /* crc      */
+      char *elem2 = NULL; /* filename */
 
-      if (string_is_empty(line))
+      if (string_is_empty(tok))
          continue;
 
-      line_cpy = strdup(line);
-
-      /* Split line into listings info components */
-      if ((tok2 = strtok_r(line_cpy, " ", &save2)))
-         elem0 = strdup(tok2); /* date */
-      if ((tok2 = strtok_r(NULL, " ", &save2)))
-         elem1 = strdup(tok2); /* crc  */
-      if ((tok2 = strtok_r(NULL, " ", &save2)))
-         elem2 = strdup(tok2); /* filename */
-
-      free(line_cpy);
+      /* Split line into listings info components
+       * directly in place - no strdup needed since
+       * strtok_r tracks state via save pointers,
+       * not the input string itself */
+      if ((elem0 = strtok_r(tok,  " ", &save2)) != NULL)
+      if ((elem1 = strtok_r(NULL, " ", &save2)) != NULL)
+            elem2 = strtok_r(NULL, " ", &save2);
 
       /* Parse listings info and add to core updater
        * list */
@@ -838,16 +799,10 @@ bool core_updater_list_parse_network_data(
                path_libretro_info,
                network_buildbot_url,
                elem0, elem1, elem2);
-
-      /* Clean up */
-      free(elem0);
-      free(elem1);
-      free(elem2);
    }
 
    /* Temporary data buffer is no longer required */
    free(data_buf);
-   data_buf = NULL;
 
    /* Sanity check */
    if (RBUF_LEN(core_list->entries) < 1)
