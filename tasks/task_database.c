@@ -76,7 +76,7 @@ static bool scan_results_init(scan_results_t *sr, size_t initial_capacity)
    sr->results = (scan_result_t*)malloc(initial_capacity * sizeof(scan_result_t));
    if (!sr->results)
       return false;
-   sr->count = 0;
+   sr->count    = 0;
    sr->capacity = initial_capacity;
    return true;
 }
@@ -90,7 +90,7 @@ static bool scan_results_ensure_capacity(scan_results_t *sr)
          sr->results, new_capacity * sizeof(scan_result_t));
       if (!new_results)
          return false;
-      sr->results = new_results;
+      sr->results  = new_results;
       sr->capacity = new_capacity;
    }
    return true;
@@ -105,22 +105,27 @@ static bool scan_results_add(scan_results_t *sr,
    if (!scan_results_ensure_capacity(sr))
       return false;
 
-   result = &sr->results[sr->count];
-   result->entry_path = strdup(entry_path);
-   result->entry_label = strdup(entry_label);
-   result->db_crc = strdup(db_crc);
-   result->db_name = strdup(db_name);
+   result               = &sr->results[sr->count];
+   result->entry_path   = strdup(entry_path);
+   result->entry_label  = strdup(entry_label);
+   result->db_crc       = strdup(db_crc);
+   result->db_name      = strdup(db_name);
    result->archive_name = archive_name ? strdup(archive_name) : NULL;
 
-   if (!result->entry_path || !result->entry_label ||
-       !result->db_crc || !result->db_name)
+   if (   !result->entry_path || !result->entry_label
+       || !result->db_crc     || !result->db_name)
    {
       /* Allocation failed, cleanup */
-      if (result->entry_path) free(result->entry_path);
-      if (result->entry_label) free(result->entry_label);
-      if (result->db_crc) free(result->db_crc);
-      if (result->db_name) free(result->db_name);
-      if (result->archive_name) free(result->archive_name);
+      if (result->entry_path)
+         free(result->entry_path);
+      if (result->entry_label)
+         free(result->entry_label);
+      if (result->db_crc)
+         free(result->db_crc);
+      if (result->db_name)
+         free(result->db_name);
+      if (result->archive_name)
+         free(result->archive_name);
       return false;
    }
 
@@ -133,11 +138,16 @@ static void scan_results_free(scan_results_t *sr)
    size_t i;
    for (i = 0; i < sr->count; i++)
    {
-      if (sr->results[i].entry_path) free(sr->results[i].entry_path);
-      if (sr->results[i].entry_label) free(sr->results[i].entry_label);
-      if (sr->results[i].db_crc) free(sr->results[i].db_crc);
-      if (sr->results[i].db_name) free(sr->results[i].db_name);
-      if (sr->results[i].archive_name) free(sr->results[i].archive_name);
+      if (sr->results[i].entry_path)
+         free(sr->results[i].entry_path);
+      if (sr->results[i].entry_label)
+         free(sr->results[i].entry_label);
+      if (sr->results[i].db_crc)
+         free(sr->results[i].db_crc);
+      if (sr->results[i].db_name)
+         free(sr->results[i].db_name);
+      if (sr->results[i].archive_name)
+         free(sr->results[i].archive_name);
    }
    if (sr->results)
       free(sr->results);
@@ -462,10 +472,10 @@ static void remove_disc_indicators(char *title, size_t len)
    char *disc_pos = NULL;
 
    /* Search for common disc patterns */
-   if ((disc_pos = strstr(title, " (Disc ")) ||
-       (disc_pos = strstr(title, " (disc ")) ||
-       (disc_pos = strstr(title, " (Disk ")) ||
-       (disc_pos = strstr(title, " (disk ")))
+   if (   (disc_pos = strstr(title, " (Disc "))
+       || (disc_pos = strstr(title, " (disc "))
+       || (disc_pos = strstr(title, " (Disk "))
+       || (disc_pos = strstr(title, " (disk ")))
    {
       /* Find the closing parenthesis */
       char *end_pos = strchr(disc_pos, ')');
@@ -659,37 +669,21 @@ static enum msg_file_type extension_to_file_type(const char *ext)
          || string_is_equal(ext_lower, "apk")
       )
       return FILE_TYPE_COMPRESSED;
-   if (
-         string_is_equal(ext_lower, "cue")
-      )
+   if (string_is_equal(ext_lower, "cue"))
       return FILE_TYPE_CUE;
-   if (
-         string_is_equal(ext_lower, "gdi")
-      )
+   if (string_is_equal(ext_lower, "gdi"))
       return FILE_TYPE_GDI;
-   if (
-         string_is_equal(ext_lower, "iso")
-      )
+   if (string_is_equal(ext_lower, "iso"))
       return FILE_TYPE_ISO;
-   if (
-         string_is_equal(ext_lower, "chd")
-      )
+   if (string_is_equal(ext_lower, "chd"))
       return FILE_TYPE_CHD;
-   if (
-         string_is_equal(ext_lower, "wbfs")
-      )
+   if (string_is_equal(ext_lower, "wbfs"))
       return FILE_TYPE_WBFS;
-   if (
-         string_is_equal(ext_lower, "rvz")
-      )
+   if (string_is_equal(ext_lower, "rvz"))
       return FILE_TYPE_RVZ;
-   if (
-         string_is_equal(ext_lower, "wia")
-      )
+   if (string_is_equal(ext_lower, "wia"))
       return FILE_TYPE_WIA;
-   if (
-         string_is_equal(ext_lower, "lutro")
-      )
+   if (string_is_equal(ext_lower, "lutro"))
       return FILE_TYPE_LUTRO;
    return FILE_TYPE_NONE;
 }
@@ -705,14 +699,16 @@ static int task_database_iterate_playlist(
          db->type = DATABASE_TYPE_CRC_LOOKUP;
          /* first check crc of archive itself */
          return intfstream_file_get_crc_and_size(name,
-               0, INT64_MAX, &db_state->archive_crc, &db_state->archive_size);
+               0, INT64_MAX, &db_state->archive_crc,
+               &db_state->archive_size);
 #else
          break;
 #endif
       case FILE_TYPE_CUE:
          task_database_cue_prune(db, name);
          db_state->serial[0] = '\0';
-         if (task_database_cue_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
+         if (task_database_cue_get_serial(name, db_state->serial,
+             sizeof(db_state->serial),&db_state->size))
             db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
@@ -725,7 +721,8 @@ static int task_database_iterate_playlist(
       case FILE_TYPE_GDI:
          gdi_prune(db, name);
          db_state->serial[0] = '\0';
-         if (task_database_gdi_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
+         if (task_database_gdi_get_serial(name, db_state->serial, 
+             sizeof(db_state->serial),&db_state->size))
             db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
@@ -780,7 +777,8 @@ static int database_info_list_iterate_end_no_match(
 {
    /* Reached end of database list,
     * CRC match probably didn't succeed. */
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+   if (retroarch_override_setting_is_set(
+       RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
       task_database_scan_console_output(path, NULL, false);
 
    /* If this was a compressed file and no match in the database
@@ -838,7 +836,8 @@ static int database_info_list_iterate_end_no_match(
    return 0;
 }
 
-static int database_info_list_iterate_new(database_state_handle_t *db_state,
+static int database_info_list_iterate_new(
+      database_state_handle_t *db_state,
       const char *query)
 {
    const char *new_database = database_info_get_current_name(db_state);
@@ -895,7 +894,8 @@ static int database_info_list_iterate_found_match(
             str_len   - _len);
    }
    else
-      snprintf(db_crc, str_len, "%08lX|crc", (unsigned long)db_info_entry->crc32);
+      snprintf(db_crc, str_len, "%08lX|crc",
+      (unsigned long)db_info_entry->crc32);
 
    if (entry_path)
       strlcpy(entry_path_str, entry_path, str_len);
@@ -983,10 +983,10 @@ static int database_info_list_iterate_found_match(
               sizeof(flag) * db_state->list_index);
 
       db_state->list->elems[0] = entry;
-      db_state->min_sizes[0] = min;
-      db_state->max_sizes[0] = max;
-      db_state->flags[0] = flag;
-      db_state->flags[0] |= DB_STATE_FLAG_MATCHED;
+      db_state->min_sizes[0]   = min;
+      db_state->max_sizes[0]   = max;
+      db_state->flags[0]       = flag;
+      db_state->flags[0]      |= DB_STATE_FLAG_MATCHED;
    }
 
    free(db_crc);
@@ -1030,14 +1030,11 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
          db_state->flags[db_state->list_index] |= DB_STATE_FLAG_HAS_SIZE;
          for(i=0 ; i < db_state->info->count; i++)
          {
-            if (db_state->info->list[i].serial && strlen(db_state->info->list[i].serial)>0)
-            {
+            if (   db_state->info->list[i].serial 
+                && strlen(db_state->info->list[i].serial)>0)
                db_state->flags[db_state->list_index] |= DB_STATE_FLAG_HAS_SERIAL;
-            }
             if (db_state->info->list[i].crc32 > 0)
-            {
                db_state->flags[db_state->list_index] |= DB_STATE_FLAG_HAS_CRC;
-            }
          }
       }
 #ifdef DEBUG
@@ -1286,11 +1283,11 @@ static int task_database_iterate_serial_lookup(
 #endif
 
    if (
-         !db_state->list ||
-         (unsigned)db_state->list_index == (unsigned)db_state->list->size ||
-         ( _db->flags & DB_HANDLE_FLAG_USE_FIRST_MATCH_ONLY &&
-           db_state->list_index > 0 &&
-           db_state->flags[0] & DB_STATE_FLAG_MATCHED)
+           !db_state->list
+         || (unsigned)db_state->list_index == (unsigned)db_state->list->size
+         || ( _db->flags & DB_HANDLE_FLAG_USE_FIRST_MATCH_ONLY
+         && db_state->list_index > 0 
+         && db_state->flags[0] & DB_STATE_FLAG_MATCHED)
       )
       return database_info_list_iterate_end_no_match(db, db_state, name,
             path_contains_compressed_file);
@@ -1309,12 +1306,17 @@ static int task_database_iterate_serial_lookup(
          return database_info_list_iterate_next(db_state);
       }
 
-      /* Size check is conditional - it is unreliable in case of multitrack formats *
-       * as serial is always in the first track, which may not be the actual game data.
-       * Same for those compressed image formats that are not supported by VFS. */
+      /* Size check is conditional - it is unreliable in 
+       * case of multitrack formats as serial is always 
+       * in the first track, which may not be the actual game data.
+       * Same for those compressed image formats that are not 
+       * supported by VFS. */
 
-      /* Examining zip file main entry (archive size filled, but no indication of compressed file) */
-      if ( size_hint_allowed && !path_contains_compressed_file && db_state->archive_size > 0)
+      /* Examining ZIP file main entry (archive size filled, but 
+         no indication of compressed file) */
+      if (     size_hint_allowed 
+           && !path_contains_compressed_file 
+           && db_state->archive_size > 0)
       {
          if (       ( db_state->min_sizes[db_state->list_index] > (int64_t) db_state->archive_size
                    && db_state->min_sizes[db_state->list_index] > (int64_t) db_state->size )
@@ -1351,11 +1353,11 @@ static int task_database_iterate_serial_lookup(
       if (!serial_buf)
          return 1;
 
-      _len  = strlcpy(query, "{'serial': b'", sizeof(query));
-      _len += strlcpy(query + _len, serial_buf, sizeof(query) - _len);
-      query[  _len] = '\'';
-      query[++_len] = '}';
-      query[++_len] = '\0';
+      _len           = strlcpy(query, "{'serial': b'", sizeof(query));
+      _len          += strlcpy(query + _len, serial_buf, sizeof(query) - _len);
+      query[  _len]  = '\'';
+      query[++_len]  = '}';
+      query[++_len]  = '\0';
 #ifdef DEBUG
       RARCH_DBG("[Scanner] Serial orig / decoded: \"%s\" / \"%s\".\n", db_state->serial, serial_buf);
 #endif
@@ -1449,8 +1451,7 @@ static int task_database_iterate(
    return 0;
 }
 
-static void task_database_cleanup_state(
-      database_state_handle_t *db_state)
+static void task_database_cleanup_state(database_state_handle_t *db_state)
 {
    if (!db_state)
       return;
@@ -1461,7 +1462,8 @@ static void task_database_cleanup_state(
 }
 
 /* Batch update playlists from accumulated scan results */
-static void scan_results_batch_update_playlists(scan_results_t *sr, db_handle_t *db)
+static void scan_results_batch_update_playlists(scan_results_t *sr,
+   db_handle_t *db)
 {
    size_t i;
    const char *current_playlist = NULL;
@@ -1489,7 +1491,8 @@ static void scan_results_batch_update_playlists(scan_results_t *sr, db_handle_t 
       path_remove_extension(db_name_noext);
 
       /* Check if we need to switch to a different playlist */
-      if (!current_playlist || !string_is_equal(current_playlist, result->db_name))
+      if (   !current_playlist 
+          || !string_is_equal(current_playlist, result->db_name))
       {
          /* Write and close previous playlist if any */
          if (playlist)

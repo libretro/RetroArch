@@ -1536,14 +1536,12 @@ int task_database_gdi_get_serial(const char *name, char *s, size_t len, uint64_t
  * to explicitly open track 1 for scanning */
 bool is_chd_file_cdi(const char *path)
 {
-   intfstream_t *fd;
    uint8_t magic[12];
-   bool is_cdi = false;
    const uint8_t cdi_magic[] = {0x00, 0xff, 0xff, 0xff, 0xff, 0xff,
-                                 0xff, 0xff, 0xff, 0xff, 0xff, 0x00};
-
+                                0xff, 0xff, 0xff, 0xff, 0xff, 0x00};
+   bool is_cdi      = false;
    /* Try to open track 1 explicitly */
-   fd = intfstream_open_chd_track(path,
+   intfstream_t *fd = intfstream_open_chd_track(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE,
          1);  /* Explicit track number, not CHDSTREAM_TRACK_FIRST_DATA */
@@ -1563,14 +1561,10 @@ bool is_chd_file_cdi(const char *path)
 int task_database_chd_get_serial(const char *name, char *serial, size_t len, uint64_t *filesize)
 {
    int result;
-   int32_t track;
-   intfstream_t *fd;
-
    /* CD-i discs store data in AUDIO-labeled tracks, so we must
     * explicitly open track 1 instead of using CHDSTREAM_TRACK_FIRST_DATA */
-   track = is_chd_file_cdi(name) ? 1 : CHDSTREAM_TRACK_FIRST_DATA;
-
-   fd = intfstream_open_chd_track(
+   int32_t track    = is_chd_file_cdi(name) ? 1 : CHDSTREAM_TRACK_FIRST_DATA;
+   intfstream_t *fd = intfstream_open_chd_track(
          name,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE,
@@ -1579,7 +1573,7 @@ int task_database_chd_get_serial(const char *name, char *serial, size_t len, uin
       return 0;
 
    *filesize = intfstream_get_size(fd); /* TODO: get the full CHD size instead */
-   result = intfstream_get_serial(fd, serial, len, name);
+   result    = intfstream_get_serial(fd, serial, len, name);
    intfstream_close(fd);
    free(fd);
    return result;
@@ -1686,14 +1680,10 @@ int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc, uint64_t
 bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc, uint64_t *size)
 {
    bool found_crc   = false;
-   int32_t track;
-   intfstream_t *fd;
-
    /* CD-i discs store data in AUDIO-labeled tracks, so we must
     * explicitly open track 1 instead of using CHDSTREAM_TRACK_PRIMARY */
-   track = is_chd_file_cdi(name) ? 1 : CHDSTREAM_TRACK_PRIMARY;
-
-   fd = intfstream_open_chd_track(
+   int32_t track    = is_chd_file_cdi(name) ? 1 : CHDSTREAM_TRACK_PRIMARY;
+   intfstream_t *fd = intfstream_open_chd_track(
          name,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE,
@@ -1710,4 +1700,3 @@ bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc, uint64_
    }
    return found_crc;
 }
-
