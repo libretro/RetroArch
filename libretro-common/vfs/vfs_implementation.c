@@ -1201,14 +1201,20 @@ int retro_vfs_mkdir_impl(const char *dir)
       int ret = -1;
       if (!string_is_empty(dir))
       {
-         char dir_buf[PATH_MAX_LENGTH];
-         size_t _len = strlcpy(dir_buf, dir, sizeof(dir_buf));
+         char *dir_buf = strdup(dir);
 
-         if (_len > 0 && dir_buf[_len - 1] == '/')
-             dir_buf[_len - 1] = '\0';
+         if (dir_buf)
+         {
+            size_t _len = strlen(dir_buf);
 
-         ret = mkdir(dir_buf, 0750);
-      }
+            if (_len > 0)
+               if (dir_buf[_len - 1] == '/')
+                   dir_buf[_len - 1] = '\0';
+
+            ret = mkdir(dir_buf, 0750);
+
+            free(dir_buf);
+         }
       }
 #else
       int ret = mkdir(dir, 0750);
