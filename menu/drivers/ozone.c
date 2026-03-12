@@ -4256,9 +4256,14 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
 
 static void linebreak_after_colon(char (*str)[NAME_MAX_LENGTH])
 {
-   char *delim = (char*)strchr(*str, ':');
-   if (delim)
-      *++delim = '\n';
+   for (char *p = *str; *p; p++)
+   {
+      if (*p == ':')
+      {
+         *++p = '\n';
+         break;
+      }
+   }
 }
 
 static void ozone_update_content_metadata(ozone_handle_t *ozone)

@@ -1718,19 +1718,14 @@ static bool gfx_thumbnail_set_icon_playlist(
       }
       else
       {
+         size_t i;
          char tmp_buf[NAME_MAX_LENGTH];
-         const char* pos      = strchr(db_name, '|');
-
-         /* If db_name comes from core info, and there are multiple
-          * databases mentioned separated by |, use only first one */
-         if (pos && (size_t) (pos - db_name)+1 < sizeof(tmp_buf))
-            strlcpy(tmp_buf, db_name, (size_t) (pos - db_name)+1);
-         else
-            strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
-
+         const size_t len = sizeof(tmp_buf) - 1;
+         for (i = 0; i < len && db_name[i] && db_name[i] != '|'; i++)
+            tmp_buf[i] = db_name[i];
+         tmp_buf[i] = '\0';
          fill_pathname(path_data->content_db_name,
-               tmp_buf, "",
-               sizeof(path_data->content_db_name));
+         tmp_buf, "", sizeof(path_data->content_db_name));
       }
    }
 

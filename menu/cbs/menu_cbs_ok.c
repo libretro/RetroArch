@@ -1422,7 +1422,9 @@ int generic_action_ok_displaylist_push(
                strlcpy(path_content, path_get(RARCH_PATH_CONTENT), sizeof(path_content));
                /* Remove archive browsed file from the path */
                {
-                  char *delim = (char*)strchr(path_content, '#');
+                  char *delim = path_content;
+                  while (*delim && *delim != '#')
+                     delim++;
                   if (delim)
                      *delim = '\0';
                }
