@@ -13229,34 +13229,38 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
                if (!string_is_empty(info->label))
                {
-                  char *tok, *save     = NULL;
-                  char *info_label_cpy = strdup(info->label);
-
-                  if ((tok = strtok_r(info_label_cpy, "|", &save)))
-                     elem0     = strdup(tok);
-                  if ((tok = strtok_r(NULL, "|", &save)))
-                     elem1     = strdup(tok);
-                  free(info_label_cpy);
-                  free(info->label);
-                  info->label  = NULL;
+                  char *delim = strchr(info->label, '|');
+                  if (delim)
+                  {
+                     *delim = '\0';
+                     if (*(delim + 1) != '\0')
+                        elem1 = delim + 1;
+                     if (info->label[0] != '\0')
+                        elem0 = info->label;
+                  }
                }
-
                if (!string_is_empty(info->path_b))
                {
                   free(info->path_b);
                   info->path_b = NULL;
                }
-
-               if (     !string_is_empty(elem0)
-                     && !string_is_empty(elem1))
+               if (elem0 && elem1)
                {
-                  info->path_b   = elem1;
-                  info->label    = elem0;
+                  info->path_b   = strdup(elem1);
+                  /* Trim label in place by null-terminating at the delimiter
+                   * (already done above). info->label still owns the buffer
+                   * and now only contains elem0. */
 #ifdef HAVE_LIBRETRODB
                   parse_database = true;
 #endif
                }
-
+               else
+               {
+                  /* Neither element needed; free label since the original
+                   * code path freed it unconditionally. */
+                  free(info->label);
+                  info->label = NULL;
+               }
 #ifdef HAVE_LIBRETRODB
                if (parse_database)
                   ret = menu_displaylist_parse_database_entry(menu, info,
@@ -15901,63 +15905,98 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         case ST_STRING_OPTIONS:
                            {
                               char val_d[16];
-                              char *tok, *save         = NULL;
-                              unsigned i               = 0;
-                              bool checked_found       = false;
-                              unsigned checked         = 0;
-                              char* orig_val           = setting->get_string_representation ?
-                                 strdup(setting->value.target.string) : setting->value.target.string;
-                              char *setting_values_cpy = strdup(setting->values);
+                              char val_s[NAME_MAX_LENGTH];
+                              char orig_val[NAME_MAX_LENGTH];
+                              const char *values        = setting->values;
+                              const char *p             = values;
+                              unsigned i                = 0;
+                              bool checked_found        = false;
+                              unsigned checked          = 0;
+                              int has_repr              = (setting->get_string_representation != NULL);
+
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              for (tok = strtok_r(setting_values_cpy, "|", &save); tok;
-                                    tok = strtok_r(NULL, "|", &save), i++)
+                              if (has_repr)
+                                 strlcpy(orig_val, setting->value.target.string, sizeof(orig_val));
+
+                              while (*p)
                               {
-                                    if (setting->get_string_representation)
+                                 const char *end = p;
+                                 size_t len;
+
+                                 while (*end && *end != '|')
+                                    end++;
+
+                                 len = (size_t)(end - p);
+
+                                 if (has_repr)
+                                 {
+                                    if (len < setting->size)
                                     {
-                                       char val_s[NAME_MAX_LENGTH];
-                                       strlcpy(setting->value.target.string, tok, setting->size);
-                                       setting->get_string_representation(setting,
-                                             val_s, sizeof(val_s));
-                                       if (menu_entries_append(info->list,
-                                                val_s,
-                                                val_d,
-                                                MENU_ENUM_LABEL_NO_ITEMS,
-                                                MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
-                                                i, 0, NULL))
-                                          count++;
+                                       memcpy(setting->value.target.string, p, len);
+                                       setting->value.target.string[len] = '\0';
+                                    }
+                                    else
+                                       strlcpy(setting->value.target.string, p, setting->size);
+
+                                    setting->get_string_representation(setting,
+                                          val_s, sizeof(val_s));
+
+                                    if (menu_entries_append(info->list,
+                                             val_s,
+                                             val_d,
+                                             MENU_ENUM_LABEL_NO_ITEMS,
+                                             MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
+                                             i, 0, NULL))
+                                       count++;
+                                 }
+                                 else
+                                 {
+                                    if (len < sizeof(val_s))
+                                    {
+                                       memcpy(val_s, p, len);
+                                       val_s[len] = '\0';
                                     }
                                     else
                                     {
-                                       if (menu_entries_append(info->list,
-                                                tok,
-                                                val_d,
-                                                MENU_ENUM_LABEL_NO_ITEMS,
-                                                MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
-                                                i, 0, NULL))
-                                          count++;
+                                       memcpy(val_s, p, sizeof(val_s) - 1);
+                                       val_s[sizeof(val_s) - 1] = '\0';
                                     }
 
-                                    if (!checked_found && string_is_equal(tok, orig_val))
+                                    if (menu_entries_append(info->list,
+                                             val_s,
+                                             val_d,
+                                             MENU_ENUM_LABEL_NO_ITEMS,
+                                             MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
+                                             i, 0, NULL))
+                                       count++;
+                                 }
+
+                                 if (!checked_found)
+                                 {
+                                    const char *cur = has_repr ? orig_val : setting->value.target.string;
+                                    size_t cur_len  = strlen(cur);
+                                    if (cur_len == len && memcmp(p, cur, len) == 0)
                                     {
                                        checked       = i;
                                        checked_found = true;
                                     }
-                              }
-                              free(setting_values_cpy);
+                                 }
 
-                              if (setting->get_string_representation)
-                              {
-                                 strlcpy(setting->value.target.string, orig_val, setting->size);
-                                 free(orig_val);
+                                 i++;
+                                 p = *end ? end + 1 : end;
                               }
+
+                              if (has_repr)
+                                 strlcpy(setting->value.target.string, orig_val, setting->size);
 
                               if (checked_found)
                               {
-                                 menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                                 menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+                                    info->list->list[checked].actiondata;
                                  if (cbs)
-                                    cbs->checked            = true;
-                                 menu_st->selection_ptr     = checked;
+                                    cbs->checked           = true;
+                                 menu_st->selection_ptr    = checked;
                               }
                            }
                            break;
@@ -16250,41 +16289,60 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      case ST_STRING_OPTIONS:
                         {
                            char val_d[16];
-                           char *tok, *save         = NULL;
-                           unsigned i               = 0;
-                           bool checked_found       = false;
-                           unsigned checked         = 0;
-                           char *setting_values_cpy = strdup(setting->values);
+                           const char *p       = setting->values;
+                           const char *tok;
+                           unsigned i          = 0;
+                           int checked_found   = 0;
+                           unsigned checked    = 0;
+                           size_t tok_len;
 
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                           sprintf(val_d, "%d", setting->enum_idx);
 
-                           for (tok = strtok_r(setting_values_cpy, "|", &save); tok;
-                                 tok = strtok_r(NULL, "|", &save), i++)
+                           while (p && *p)
                            {
+                              const char *delim = strchr(p, '|');
+                              char tmp[256];
+
+                              if (delim)
+                                 tok_len = (size_t)(delim - p);
+                              else
+                                 tok_len = strlen(p);
+
+                              if (tok_len >= sizeof(tmp))
+                                 tok_len = sizeof(tmp) - 1;
+
+                              memcpy(tmp, p, tok_len);
+                              tmp[tok_len] = '\0';
+
                               if (menu_entries_append(info->list,
-                                       tok,
+                                       tmp,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0, NULL))
                                  count++;
 
-                              if (    !checked_found
-                                    && string_is_equal(tok, setting->value.target.string))
+                              if (!checked_found
+                                    && tok_len == strlen(setting->value.target.string)
+                                    && memcmp(tmp, setting->value.target.string, tok_len) == 0)
                               {
                                  checked       = i;
-                                 checked_found = true;
+                                 checked_found = 1;
                               }
+
+                              i++;
+                              p = delim ? delim + 1 : NULL;
                            }
-                           free(setting_values_cpy);
 
                            if (checked_found)
                            {
-                              menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+                                 info->list->list[checked].actiondata;
                               if (cbs)
-                                 cbs->checked            = true;
-                              menu_st->selection_ptr     = checked;
+                                 cbs->checked        = 1;
+                              menu_st->selection_ptr  = checked;
                            }
                         }
+
                         break;
                      case ST_INT:
                         {
