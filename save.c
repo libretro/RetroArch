@@ -64,7 +64,8 @@ struct autosave_st
 enum autosave_flags
 {
    AUTOSAVE_FLAG_QUIT           = (1 << 0),
-   AUTOSAVE_FLAG_COMPRESS_FILES = (1 << 1)
+   AUTOSAVE_FLAG_COMPRESS_FILES = (1 << 1),
+   AUTOSAVE_FLAG_DIRTY          = (1 << 2)
 };
 
 struct autosave
@@ -89,6 +90,16 @@ static struct autosave_st autosave_state;
  * @data            : pointer to autosave object
  *
  * Callback function for (threaded) autosave.
+ *
+ * Performance notes:
+ *  - The dirty flag allows an early-out when the core
+ *    has not touched SRAM since last check, avoiding a
+ *    full memcmp on every wake-up.
+ *  - When a comparison is needed we scan word-at-a-time
+ *    to locate the first differing region, then only
+ *    memcmp/memcpy from that point onward.
+ *  - The file write happens entirely outside the lock,
+ *    so the core is never stalled on disk I/O.
  **/
 static void autosave_thread(void *data)
 {
@@ -96,20 +107,69 @@ static void autosave_thread(void *data)
 
    for (;;)
    {
-      bool differ;
+      bool differ = false;
 
       slock_lock(save->lock);
-      differ = memcmp(save->buffer, save->retro_buffer,
-            save->bufsize) != 0;
-      if (differ)
-         memcpy(save->buffer, save->retro_buffer, save->bufsize);
+
+      /* Fast path: if the core hasn't signalled a write
+       * since our last check, skip the expensive memcmp.
+       * Falls back to full comparison if the dirty flag
+       * was never set (conservative default). */
+      if (save->flags & AUTOSAVE_FLAG_DIRTY)
+      {
+         const size_t word_size = sizeof(size_t);
+         const size_t aligned   = save->bufsize / word_size;
+         const size_t remainder = save->bufsize % word_size;
+         const size_t *src_w    = (const size_t*)save->retro_buffer;
+         const size_t *dst_w    = (const size_t*)save->buffer;
+         size_t offset          = 0;
+         size_t i;
+
+         /* Word-at-a-time scan to find first difference.
+          * Avoids touching the entire buffer when only
+          * a small region changed (common for SRAM). */
+         for (i = 0; i < aligned; i++)
+         {
+            if (src_w[i] != dst_w[i])
+            {
+               differ = true;
+               offset = i * word_size;
+               break;
+            }
+         }
+
+         /* Check trailing bytes if no word-level diff found */
+         if (!differ && remainder > 0)
+         {
+            const unsigned char *src_b =
+               (const unsigned char*)save->retro_buffer + aligned * word_size;
+            const unsigned char *dst_b =
+               (const unsigned char*)save->buffer + aligned * word_size;
+            if (memcmp(dst_b, src_b, remainder) != 0)
+            {
+               differ = true;
+               offset = aligned * word_size;
+            }
+         }
+
+         if (differ)
+         {
+            /* Only copy from first difference onward */
+            memcpy((unsigned char*)save->buffer + offset,
+                   (const unsigned char*)save->retro_buffer + offset,
+                   save->bufsize - offset);
+         }
+
+         /* Clear dirty flag regardless — we've checked */
+         save->flags &= ~AUTOSAVE_FLAG_DIRTY;
+      }
+
       slock_unlock(save->lock);
 
       if (differ)
       {
          intfstream_t *file = NULL;
 
-         /* Should probably deal with this more elegantly. */
          if (save->flags & AUTOSAVE_FLAG_COMPRESS_FILES)
             file = intfstream_open_rzip_file(save->path,
                   RETRO_VFS_FILE_ACCESS_WRITE);
@@ -168,9 +228,15 @@ static autosave_t *autosave_new(const char *path,
    if (!handle)
       return NULL;
 
-   handle->flags                 = 0;
+   handle->flags                 = AUTOSAVE_FLAG_DIRTY;
    handle->bufsize               = len;
    handle->interval              = interval;
+   handle->buffer                = NULL;
+   handle->lock                  = NULL;
+   handle->cond_lock             = NULL;
+   handle->cond                  = NULL;
+   handle->thread                = NULL;
+
    if (compress)
       handle->flags             |= AUTOSAVE_FLAG_COMPRESS_FILES;
    handle->retro_buffer          = data;
@@ -189,7 +255,33 @@ static autosave_t *autosave_new(const char *path,
    handle->lock                  = slock_new();
    handle->cond_lock             = slock_new();
    handle->cond                  = scond_new();
+
+   if (!handle->lock || !handle->cond_lock || !handle->cond)
+   {
+      RARCH_ERR("[SRAM] Failed to initialize autosave synchronization primitives.\n");
+      if (handle->lock)
+         slock_free(handle->lock);
+      if (handle->cond_lock)
+         slock_free(handle->cond_lock);
+      if (handle->cond)
+         scond_free(handle->cond);
+      free(handle->buffer);
+      free(handle);
+      return NULL;
+   }
+
    handle->thread                = sthread_create(autosave_thread, handle);
+
+   if (!handle->thread)
+   {
+      RARCH_ERR("[SRAM] Failed to create autosave thread.\n");
+      slock_free(handle->lock);
+      slock_free(handle->cond_lock);
+      scond_free(handle->cond);
+      free(handle->buffer);
+      free(handle);
+      return NULL;
+   }
 
    return handle;
 }
@@ -198,7 +290,7 @@ static autosave_t *autosave_new(const char *path,
  * autosave_free:
  * @handle          : pointer to autosave object
  *
- * Frees autosave object.
+ * Frees autosave object and all associated resources.
  **/
 static void autosave_free(autosave_t *handle)
 {
@@ -215,6 +307,8 @@ static void autosave_free(autosave_t *handle)
    if (handle->buffer)
       free(handle->buffer);
    handle->buffer = NULL;
+
+   free(handle);
 }
 
 bool autosave_init(bool compress_files, unsigned autosave_interval)
@@ -244,7 +338,7 @@ bool autosave_init(bool compress_files, unsigned autosave_interval)
 
       core_get_memory(&mem_info);
 
-      if (mem_info.size <= 0)
+      if (mem_info.size == 0)
          continue;
 
       if (!(auto_st = autosave_new(path,
@@ -271,10 +365,7 @@ void autosave_deinit(void)
    {
       autosave_t *handle = autosave_state.list[i];
       if (handle)
-      {
          autosave_free(handle);
-         free(autosave_state.list[i]);
-      }
       autosave_state.list[i] = NULL;
    }
 
@@ -305,6 +396,8 @@ void autosave_lock(void)
  * autosave_unlock:
  *
  * Unlocks autosave.
+ * Also marks all buffers as dirty, since the core
+ * may have written to SRAM while holding the lock.
  **/
 void autosave_unlock(void)
 {
@@ -314,7 +407,34 @@ void autosave_unlock(void)
    {
       autosave_t *handle = autosave_state.list[i];
       if (handle)
+      {
+         handle->flags |= AUTOSAVE_FLAG_DIRTY;
          slock_unlock(handle->lock);
+      }
+   }
+}
+
+/**
+ * autosave_mark_dirty:
+ *
+ * Marks all autosave buffers as dirty so the
+ * autosave thread will compare and flush on
+ * next wake-up.  Call after any SRAM write
+ * that does not go through autosave_lock/unlock.
+ **/
+void autosave_mark_dirty(void)
+{
+   unsigned i;
+
+   for (i = 0; i < autosave_state.num; i++)
+   {
+      autosave_t *handle = autosave_state.list[i];
+      if (handle)
+      {
+         slock_lock(handle->lock);
+         handle->flags |= AUTOSAVE_FLAG_DIRTY;
+         slock_unlock(handle->lock);
+      }
    }
 }
 #endif
@@ -336,8 +456,7 @@ static bool content_get_memory(retro_ctx_memory_info_t *mem_info,
 
 /**
  * content_load_ram_file:
- * @path             : path of RAM state that will be loaded from.
- * @type             : type of memory
+ * @slot             : index into task_save_files
  *
  * Load a RAM state from disk to memory.
  */
@@ -347,6 +466,7 @@ static bool content_load_ram_file(unsigned slot)
    struct ram_type ram;
    retro_ctx_memory_info_t mem_info;
    void *buf        = NULL;
+   bool success     = false;
 
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
@@ -382,12 +502,13 @@ static bool content_load_ram_file(unsigned slot)
          rc = mem_info.size;
       }
       memcpy(mem_info.data, buf, (size_t)rc);
+      success = true;
    }
 
    if (buf)
       free(buf);
 
-   return true;
+   return success;
 }
 
 /**
@@ -415,7 +536,7 @@ static bool dump_to_file_desperate(const void *data,
       time(&time_);
       rtime_localtime(&time_, &tm_);
       _len += strlcpy(path  + _len, "/RetroArch-recovery-", sizeof(path) - _len);
-      _len += snprintf(path + _len, sizeof(path) - _len, "%u", type);
+      _len += snprintf(path + _len, sizeof(path) - _len, "%u-", type);
       strftime(path + _len, sizeof(path) - _len,
             "%Y-%m-%d-%H-%M-%S", &tm_);
 
@@ -440,19 +561,50 @@ static bool dump_to_file_desperate(const void *data,
 
 /**
  * content_save_ram_file:
- * @path             : path of RAM state that shall be written to.
- * @type             : type of memory
+ * @slot             : index into task_save_files
+ * @compress         : whether to use rzip compression
  *
  * Save a RAM state from memory to disk.
- *
+ * Skips the write if the on-disk content already
+ * matches memory (common when autosave has been active).
  */
 static bool content_save_ram_file(unsigned slot, bool compress)
 {
    struct ram_type ram;
    retro_ctx_memory_info_t mem_info;
+   int64_t disk_rc;
+   void *disk_buf = NULL;
 
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
+
+   /* Quick check: if the file already exists and matches
+    * current memory contents, skip the write entirely.
+    * This is the common case when autosave has been running. */
+   if (   !string_is_empty(ram.path)
+       &&  path_is_valid(ram.path))
+   {
+#if defined(HAVE_ZLIB)
+      bool read_ok = rzipstream_read_file(ram.path, &disk_buf, &disk_rc);
+#else
+      bool read_ok = filestream_read_file(ram.path, &disk_buf, &disk_rc);
+#endif
+      if (read_ok && disk_buf)
+      {
+         bool matches = (disk_rc == (int64_t)mem_info.size)
+            && (memcmp(disk_buf, mem_info.data, mem_info.size) == 0);
+         free(disk_buf);
+         if (matches)
+         {
+            RARCH_LOG("[SRAM] %s \"%s\" (unchanged, skipping write).\n",
+                  msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
+                  ram.path);
+            return true;
+         }
+      }
+      else if (disk_buf)
+         free(disk_buf);
+   }
 
    RARCH_LOG("[SRAM] %s #%u %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_RAM_TYPE),
