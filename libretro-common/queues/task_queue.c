@@ -911,13 +911,16 @@ void task_queue_cancel_task(void *task)
 
 void *task_queue_retriever_info_next(task_retriever_info_t **link)
 {
-   /* Grab data and move to next link */
+   void *data = NULL;
+
+   /* Grab data from current link, then advance */
    if (*link)
    {
+      data  = (*link)->data;
       *link = (*link)->next;
-      return (*link)->data;
    }
-   return NULL;
+
+   return data;
 }
 
 void task_queue_retriever_info_free(task_retriever_info_t *list)
