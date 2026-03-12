@@ -231,7 +231,14 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       wvsprintf(buffer + _len, fmt, ap);
 #endif
    }
+#ifdef _DEBUG
    OutputDebugStringA(buffer);
+#endif
+   if (main_verbosity_st.initialized && main_verbosity_st.fp)
+   {
+      fputs(buffer, main_verbosity_st.fp);
+      fflush(main_verbosity_st.fp);
+   }
 
 #elif defined(ANDROID)
    {
