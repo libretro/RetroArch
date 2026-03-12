@@ -20,6 +20,10 @@
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
+#ifdef HAVE_COMPRESSION
+#include <file/archive_file.h>
+#endif
+#include <formats/image.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <lrc_hash.h>
@@ -55,6 +59,44 @@ struct overlay_loader
    uint8_t flags;
 };
 
+/* Resolve a relative image path against the overlay config path.
+ * When the config is inside an archive (e.g. overlays.zip#dir/cfg),
+ * the image path is resolved within the same archive. */
+static void overlay_resolve_path(char *s,
+      const char *overlay_path,
+      const char *rel_path, size_t len)
+{
+#ifdef HAVE_COMPRESSION
+   const char *delim = path_get_archive_delim(overlay_path);
+   if (delim)
+   {
+      size_t archive_len = (size_t)(delim + 1 - overlay_path);
+      const char *inner  = delim + 1;
+      const char *slash  = strrchr(inner, '/');
+
+      /* Copy archive path including '#' */
+      strlcpy(s, overlay_path, len);
+      if (archive_len < len)
+      {
+         size_t _len = archive_len;
+         /* Copy inner directory if present */
+         if (slash)
+         {
+            size_t dir_len = (size_t)(slash - inner + 1);
+            if (_len + dir_len < len)
+            {
+               memcpy(s + _len, inner, dir_len);
+               _len += dir_len;
+            }
+         }
+         strlcpy(s + _len, rel_path, len - _len);
+      }
+      return;
+   }
+#endif
+   fill_pathname_resolve_relative(s, overlay_path, rel_path, len);
+}
+
 static void task_overlay_image_done(struct overlay *overlay)
 {
    overlay->pos           = 0;
@@ -80,6 +122,36 @@ static bool task_overlay_load_image_texture(
       image->supports_rgba =
             (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT) ? true : false;
 
+#ifdef HAVE_COMPRESSION
+      if (path_get_archive_delim(full_path))
+      {
+         void *buf       = NULL;
+         int64_t buf_len = 0;
+         enum image_type_enum img_type;
+         RARCH_LOG("[Overlay] Loading image from archive: \"%s\"\n",
+               full_path);
+         if (file_archive_compressed_read(
+                  full_path, &buf, NULL, &buf_len) != 1)
+         {
+            RARCH_ERR("[Overlay] Failed to read image from archive.\n");
+            return false;
+         }
+         RARCH_DBG("[Overlay] Read %lld bytes of image data.\n",
+               (long long)buf_len);
+         img_type = image_texture_get_type(full_path);
+         if (!image_texture_load_buffer(
+                  image, img_type, buf, (size_t)buf_len))
+         {
+            RARCH_ERR("[Overlay] Failed to decode image buffer.\n");
+            free(buf);
+            return false;
+         }
+         RARCH_DBG("[Overlay] Image decoded: %ux%u\n",
+               image->width, image->height);
+         free(buf);
+      }
+      else
+#endif
       if (!image_texture_load(image, full_path))
          return false;
 
@@ -114,7 +186,7 @@ static void task_overlay_load_desc_image(
             image_path, sizeof(image_path)))
    {
       char path[PATH_MAX_LENGTH];
-      fill_pathname_resolve_relative(path, loader->overlay_path,
+      overlay_resolve_path(path, loader->overlay_path,
             image_path, sizeof(path));
 
       if (task_overlay_load_image_texture(loader, overlay, &desc->image,
@@ -771,7 +843,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
          overlay_resolved_path[0] = '\0';
 
-         fill_pathname_resolve_relative(overlay_resolved_path,
+         overlay_resolve_path(overlay_resolved_path,
                loader->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
@@ -849,14 +921,14 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       /* Parse viewport override (optional) */
       strlcpy(conf_key + _len, "_viewport", sizeof(conf_key) - _len);
-      RARCH_LOG("[Overlay] Checking for viewport key: %s\n", conf_key);
+      RARCH_DBG("[Overlay] Checking for viewport key: %s\n", conf_key);
       if (config_get_array(conf, conf_key, tmp_str, sizeof(tmp_str)))
       {
          char cfg_vp_buf[256];
          char *elems[4]             = {NULL, NULL, NULL, NULL};
          unsigned list_size         = 0;
          char *tok, *save           = NULL;
-         RARCH_LOG("[Overlay] Found viewport value: %s\n", tmp_str);
+         RARCH_DBG("[Overlay] Found viewport value: %s\n", tmp_str);
 
          strlcpy(cfg_vp_buf, tmp_str, sizeof(cfg_vp_buf));
 
@@ -872,7 +944,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
             overlay->viewport.w  = (float)strtod(elems[2], NULL);
             overlay->viewport.h  = (float)strtod(elems[3], NULL);
             overlay->flags      |= OVERLAY_HAS_VIEWPORT;
-            RARCH_LOG("[Overlay] Parsed viewport: x=%.3f y=%.3f w=%.3f h=%.3f\n",
+            RARCH_DBG("[Overlay] Parsed viewport: x=%.3f y=%.3f w=%.3f h=%.3f\n",
                   overlay->viewport.x, overlay->viewport.y,
                   overlay->viewport.w, overlay->viewport.h);
          }
@@ -1025,6 +1097,7 @@ bool task_push_overlay_load_default(
       bool is_osk,
       void *user_data)
 {
+   char resolved_path[PATH_MAX_LENGTH];
    task_finder_data_t find_data;
    retro_task_t *t                = NULL;
    config_file_t *conf            = NULL;
@@ -1033,6 +1106,11 @@ bool task_push_overlay_load_default(
 
    if (string_is_empty(overlay_path))
       return false;
+
+   /* Expand ~ so archive reads get an absolute path */
+   fill_pathname_expand_special(resolved_path,
+         overlay_path, sizeof(resolved_path));
+   overlay_path = resolved_path;
 
    /* Prevent overlay from being loaded if it already is being loaded */
    find_data.func           = task_overlay_finder;
@@ -1054,7 +1132,46 @@ bool task_push_overlay_load_default(
       return false;
    }
 
-   if (!(conf = config_file_new_from_path_to_string(overlay_path)))
+#ifdef HAVE_COMPRESSION
+   if (path_get_archive_delim(overlay_path))
+   {
+      void *buf       = NULL;
+      int64_t buf_len = 0;
+      RARCH_LOG("[Overlay] Loading config from archive: \"%s\"\n",
+            overlay_path);
+      if (file_archive_compressed_read(
+               overlay_path, &buf, NULL, &buf_len) != 1)
+      {
+         RARCH_ERR("[Overlay] Failed to read config from archive.\n");
+         free(loader);
+         free(image_list);
+         return false;
+      }
+      RARCH_DBG("[Overlay] Read %lld bytes from archive.\n",
+            (long long)buf_len);
+      {
+         char *str = (char*)realloc(buf, (size_t)(buf_len + 1));
+         if (!str)
+         {
+            free(buf);
+            free(loader);
+            free(image_list);
+            return false;
+         }
+         str[buf_len] = '\0';
+         conf = config_file_new_from_string(str, overlay_path);
+         free(str);
+      }
+      if (conf)
+         RARCH_DBG("[Overlay] Config parsed successfully from archive.\n");
+      else
+         RARCH_ERR("[Overlay] Failed to parse config from archive.\n");
+   }
+   else
+#endif
+   conf = config_file_new_from_path_to_string(overlay_path);
+
+   if (!conf)
    {
       free(loader);
       free(image_list);
