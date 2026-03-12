@@ -107,8 +107,7 @@ static freetype_atlas_slot_t* font_renderer_get_slot(ft_font_renderer_t *handle)
    unsigned oldest = 0;
 
    for (i = 1; i < FT_ATLAS_SIZE; i++)
-      if ((handle->usage_counter - handle->atlas_slots[i].last_used) >
-         (handle->usage_counter - handle->atlas_slots[oldest].last_used))
+      if (handle->atlas_slots[i].last_used < handle->atlas_slots[oldest].last_used)
          oldest = i;
 
    /* remove from map */
@@ -130,6 +129,7 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
       void *data, uint32_t charcode)
 {
    unsigned map_id;
+   unsigned copy_width, copy_height;
    uint8_t *dst;
    FT_GlyphSlot slot;
    freetype_atlas_slot_t* atlas_slot;
@@ -151,10 +151,12 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
       atlas_slot = atlas_slot->next;
    }
 
-   if (FT_Load_Char(handle->face, charcode, FT_LOAD_RENDER))
+   if (FT_Load_Char(handle->face, charcode, FT_LOAD_DEFAULT))
       return NULL;
 
-   FT_Render_Glyph(handle->face->glyph, FT_RENDER_MODE_NORMAL);
+   if (FT_Render_Glyph(handle->face->glyph, FT_RENDER_MODE_NORMAL))
+      return NULL;
+
    slot = handle->face->glyph;
 
    atlas_slot                      = font_renderer_get_slot(handle);
@@ -162,9 +164,16 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    atlas_slot->next                = handle->uc_map[map_id];
    handle->uc_map[map_id]          = atlas_slot;
 
+   copy_width                      = slot->bitmap.width;
+   copy_height                     = slot->bitmap.rows;
+   if (copy_width  > handle->max_glyph_width)
+      copy_width  = handle->max_glyph_width;
+   if (copy_height > handle->max_glyph_height)
+      copy_height = handle->max_glyph_height;
+
    /* Some glyphs can be blank. */
-   atlas_slot->glyph.width         = slot->bitmap.width;
-   atlas_slot->glyph.height        = slot->bitmap.rows;
+   atlas_slot->glyph.width         = copy_width;
+   atlas_slot->glyph.height        = copy_height;
    atlas_slot->glyph.advance_x     = slot->advance.x >> 6;
    atlas_slot->glyph.advance_y     = slot->advance.y >> 6;
    atlas_slot->glyph.draw_offset_x = slot->bitmap_left;
@@ -177,8 +186,7 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    {
       unsigned y;
       const uint8_t *src    = (const uint8_t*)slot->bitmap.buffer;
-      unsigned delta_width  = (handle->max_glyph_width > atlas_slot->glyph.width) ?
-            (handle->max_glyph_width - atlas_slot->glyph.width) : 0;
+      unsigned delta_width  = handle->max_glyph_width - copy_width;
 
       /* When copying the glyph bitmap, it is
        * necessary to clear any unused regions of
@@ -187,22 +195,25 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
        * the edges of the glyph when rendering with
        * filtering enabled */
 
-      for (y = 0; y < atlas_slot->glyph.height; y++)
+      for (y = 0; y < copy_height; y++)
       {
          /* Copy bitmap row */
-         memcpy(dst, src, atlas_slot->glyph.width * sizeof(uint8_t));
+         memcpy(dst, src, copy_width * sizeof(uint8_t));
          /* Zero out remaining atlas row */
-         memset(dst + atlas_slot->glyph.width, 0, delta_width * sizeof(uint8_t));
+         if (delta_width > 0)
+            memset(dst + copy_width, 0, delta_width * sizeof(uint8_t));
 
          dst += handle->atlas.width;
          src += slot->bitmap.pitch;
       }
 
-      /* Zero out unused atlas rows */
-      for (y = atlas_slot->glyph.height; y < handle->max_glyph_height; y++)
+      if (copy_height < handle->max_glyph_height)
       {
-         memset(dst, 0, handle->max_glyph_width * sizeof(uint8_t));
-         dst += handle->atlas.width;
+         for (y = copy_height; y < handle->max_glyph_height; y++)
+         {
+            memset(dst, 0, handle->max_glyph_width * sizeof(uint8_t));
+            dst += handle->atlas.width;
+         }
       }
    }
 
@@ -214,17 +225,23 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
 static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_size)
 {
    unsigned i, x, y;
+   unsigned max_width, max_height;
+   unsigned atlas_width, atlas_height;
+   uint8_t *atlas_buffer;
    freetype_atlas_slot_t* slot = NULL;
-
-   unsigned max_width          = round((handle->face->bbox.xMax - handle->face->bbox.xMin)
+   int glyph_w = (int)round((handle->face->bbox.xMax - handle->face->bbox.xMin)
          * font_size / handle->face->units_per_EM);
-   unsigned max_height         = round((handle->face->bbox.yMax - handle->face->bbox.yMin)
+   int glyph_h = (int)round((handle->face->bbox.yMax - handle->face->bbox.yMin)
          * font_size / handle->face->units_per_EM);
 
-   unsigned atlas_width        = (max_width  + FT_ATLAS_PADDING) * FT_ATLAS_COLS;
-   unsigned atlas_height       = (max_height + FT_ATLAS_PADDING) * FT_ATLAS_ROWS;
+   if (glyph_w <= 0 || glyph_h <= 0)
+      return false;
 
-   uint8_t *atlas_buffer       = (uint8_t*)calloc(atlas_width * atlas_height, 1);
+   max_width    = (unsigned)glyph_w;
+   max_height   = (unsigned)glyph_h;
+   atlas_width  = (max_width  + FT_ATLAS_PADDING) * FT_ATLAS_COLS;
+   atlas_height = (max_height + FT_ATLAS_PADDING) * FT_ATLAS_ROWS;
+   atlas_buffer = (uint8_t*)calloc(atlas_width * atlas_height, 1);
 
    if (!atlas_buffer)
       return false;
@@ -246,12 +263,9 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
       }
    }
 
+   /* Pre-cache the first 256 code points. */
    for (i = 0; i < 256; i++)
       font_renderer_ft_get_glyph(handle, i);
-
-   for (i = 0; i < 256; i++)
-      if (ISALNUM(i))
-         font_renderer_ft_get_glyph(handle, i);
 
    return true;
 }
@@ -295,15 +309,29 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       uint8_t* font_data     = NULL;
       int64_t font_data_size = 0;
       FcPattern *found       = NULL;
-      FcConfig* config       = FcInitLoadConfigAndFonts();
+      FcConfig* config       = NULL;
       FcResult result        = FcResultNoMatch;
       FcChar8 *_font_path    = NULL;
       int face_index         = 0;
+      FcPattern* pattern     = NULL;
+      FcChar8* locale        = NULL;
+
+      config  = FcInitLoadConfigAndFonts();
+      if (!config)
+         goto error;
+
       /* select Sans fonts */
-      FcPattern* pattern     = FcNameParse((const FcChar8*)"Sans");
+      pattern = FcNameParse((const FcChar8*)"Sans");
+      if (!pattern)
+      {
+         FcConfigDestroy(config);
+         goto error;
+      }
+
       /* since fontconfig uses LL-TT style, we need to normalize
        * locale names */
-      FcChar8* locale        = FcLangNormalize((const FcChar8*)get_user_language_iso639_1(false));
+      locale  = FcLangNormalize((const FcChar8*)get_user_language_iso639_1(false));
+
       /* configure fontconfig substitute policies, this
        * will increase the search scope */
       FcConfigSubstitute(config, pattern, FcMatchPattern);
@@ -321,19 +349,18 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       /* Let's find the best matching font given our search criteria */
       found             = FcFontMatch(config, pattern, &result);
 
-      /* uh-oh, for some reason, we can't find any font */
       if (result != FcResultMatch)
-         goto error;
+         goto fc_cleanup;
       if (FcPatternGetString(found, FC_FILE, 0,
                &_font_path) != FcResultMatch)
-         goto error;
+         goto fc_cleanup;
       if (FcPatternGetInteger(found, FC_INDEX, 0,
                &face_index) != FcResultMatch)
-         goto error;
+         goto fc_cleanup;
       if (!filestream_read_file((const char*)_font_path,
                (void**)&font_data,
                &font_data_size))
-         goto error;
+         goto fc_cleanup;
 
       /* Initialize font renderer */
       err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
@@ -341,13 +368,33 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
 
       /* free up fontconfig internal structures */
       FcPatternDestroy(pattern);
-      FcPatternDestroy(found);
-      FcStrFree(locale);
+      if (found)
+         FcPatternDestroy(found);
+      if (locale)
+         FcStrFree(locale);
       FcConfigDestroy(config);
 
       if (err)
+      {
+         free(font_data);
          goto error;
+      }
       handle->file_data = font_data;
+      goto fc_done;
+
+fc_cleanup:
+      FcPatternDestroy(pattern);
+      if (found)
+         FcPatternDestroy(found);
+      if (locale)
+         FcStrFree(locale);
+      FcConfigDestroy(config);
+      if (font_data)
+         free(font_data);
+      goto error;
+
+fc_done:
+      ; /* fall through to charmap selection */
    }
    else
 #endif
@@ -361,7 +408,10 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
          goto error;
       if ((err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
             (FT_Long)font_data_size, (FT_Long)0, &handle->face)))
+      {
+         free(font_data);
          goto error;
+      }
       handle->file_data = font_data;
    }
 
