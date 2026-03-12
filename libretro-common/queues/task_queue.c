@@ -349,7 +349,7 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
 {
    retro_task_t     *t = NULL;
    retro_task_t *front = queue->front;
-
+ 
    /* Remove first element if needed */
    if (task == front)
    {
@@ -359,10 +359,10 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
       task->next       = NULL;
       return;
    }
-
+ 
    /* Parse queue */
    t = front;
-
+ 
    while (t && t->next)
    {
       /* Remove task and update queue */
@@ -370,16 +370,13 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
       {
          t->next    = task->next;
          task->next = NULL;
-
+ 
          /* When removing the tail of the queue, update the tail pointer */
          if (queue->back == task)
-         {
-            if (queue->back == task)
-               queue->back = t;
-         }
+            queue->back = t;
          break;
       }
-
+ 
       /* Update iterator */
       t = t->next;
    }
