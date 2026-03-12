@@ -155,7 +155,7 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
 #endif
       {
          /* Display licenses */
-         size_t _len = strlcpy(s, entry->licenses_str, len);
+         strlcpy(s, entry->licenses_str, len);
          tmp[0  ] = '\n';
          tmp[1  ] = '\0';
       }

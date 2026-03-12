@@ -3841,6 +3841,7 @@ static bool ozone_is_main_menu_playlist(void)
    return entry.type == FILE_TYPE_RPL_ENTRY;
 }
 
+#ifdef HAVE_LIBRETRODB
 static bool ozone_is_main_menu_explore(void)
 {
    menu_entry_t entry;
@@ -3848,6 +3849,7 @@ static bool ozone_is_main_menu_explore(void)
    menu_entry_get(&entry, 0, 0, NULL, true);
    return entry.type == FILE_TYPE_RDB;
 }
+#endif
 
 static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 {

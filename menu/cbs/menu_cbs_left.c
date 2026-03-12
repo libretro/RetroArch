@@ -531,19 +531,16 @@ static int playlist_sort_mode_left(unsigned type, const char *label,
    return 0;
 }
 
-static int scan_method_left(
-      unsigned type, const char *label,
-      bool wraparound)
+static int scan_method_left(unsigned type, const char *label,
+   bool wraparound)
 {
-   struct string_list *scan_method_list                            =
-      manual_content_scan_get_menu_scan_method_list();
-
-   const char *current_scan_method                                 = NULL;
-   const char *next_scan_method                                    = NULL;
-   unsigned current_index                                          = 0;
-   unsigned next_index                                             = 0;
    unsigned i;
-   struct menu_state *menu_st = menu_state_get_ptr();
+   struct string_list *scan_method_list =
+      manual_content_scan_get_menu_scan_method_list();
+   const char *current_scan_method      = NULL;
+   unsigned current_index               = 0;
+   unsigned next_index                  = 0;
+   struct menu_state *menu_st           = menu_state_get_ptr();
    
    if (!scan_method_list)
       return -1;
@@ -578,19 +575,16 @@ static int scan_method_left(
    return 0;
 }
 
-static int scan_use_db_left(
-      unsigned type, const char *label,
-      bool wraparound)
+static int scan_use_db_left(unsigned type, const char *label,
+   bool wraparound)
 {
-   struct string_list *scan_use_db_list                            =
-      manual_content_scan_get_menu_scan_use_db_list();
-
-   const char *current_scan_use_db                                 = NULL;
-   const char *next_scan_use_db                                    = NULL;
-   unsigned current_index                                          = 0;
-   unsigned next_index                                             = 0;
    unsigned i;
-   struct menu_state *menu_st = menu_state_get_ptr();
+   struct string_list *scan_use_db_list =
+      manual_content_scan_get_menu_scan_use_db_list();
+   const char *current_scan_use_db      = NULL;
+   unsigned current_index               = 0;
+   unsigned next_index                  = 0;
+   struct menu_state *menu_st           = menu_state_get_ptr();
 
    if (!scan_use_db_list)
       return -1;

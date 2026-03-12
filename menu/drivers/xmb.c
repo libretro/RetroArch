@@ -1200,6 +1200,7 @@ static void xmb_render_messagebox_internal(
    string_list_deinitialize(&list);
 }
 
+#ifdef HAVE_LIBRETRODB
 static bool xmb_is_main_menu_explore(void)
 {
    menu_entry_t entry;
@@ -1207,6 +1208,7 @@ static bool xmb_is_main_menu_explore(void)
    menu_entry_get(&entry, 0, 0, NULL, true);
    return entry.type == FILE_TYPE_RDB;
 }
+#endif
 
 static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
 {
