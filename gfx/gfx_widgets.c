@@ -1569,10 +1569,11 @@ bool gfx_widgets_visible(void *data)
    bool framecount_show           = video_info->framecount_show;
    bool memory_show               = video_info->memory_show;
    bool core_status_msg_show      = video_info->core_status_msg_show;
-   bool widgets_is_paused         = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_PAUSED) != 0;
-   bool widgets_is_fastmotion     = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_FASTMOTION) != 0;
-   bool widgets_is_slowmotion     = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_SLOWMOTION) != 0;
-   bool widgets_is_rewinding      = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_REWINDING) != 0;
+   uint32_t video_flags           = video_info->video_st_flags;
+   bool widgets_is_paused         = (video_flags & VIDEO_FLAG_WIDGETS_PAUSED) != 0;
+   bool widgets_is_fastmotion     = (video_flags & VIDEO_FLAG_WIDGETS_FASTMOTION) != 0;
+   bool widgets_is_slowmotion     = (video_flags & VIDEO_FLAG_WIDGETS_SLOWMOTION) != 0;
+   bool widgets_is_rewinding      = (video_flags & VIDEO_FLAG_WIDGETS_REWINDING) != 0;
    bool notifications_hidden      = video_info->notifications_hidden || video_info->msg_queue_delay;
 
 #ifdef HAVE_MENU
@@ -1625,10 +1626,11 @@ void gfx_widgets_frame(void *data)
    void *userdata                   = video_info->userdata;
    unsigned video_width             = video_info->width;
    unsigned video_height            = video_info->height;
-   bool widgets_is_paused           = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_PAUSED) != 0;
-   bool widgets_is_fastmotion       = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_FASTMOTION) != 0;
-   bool widgets_is_slowmotion       = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_SLOWMOTION) != 0;
-   bool widgets_is_rewinding        = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_REWINDING) != 0;
+   uint32_t video_flags             = video_info->video_st_flags;
+   bool widgets_is_paused           = (video_flags & VIDEO_FLAG_WIDGETS_PAUSED) != 0;
+   bool widgets_is_fastmotion       = (video_flags & VIDEO_FLAG_WIDGETS_FASTMOTION) != 0;
+   bool widgets_is_slowmotion       = (video_flags & VIDEO_FLAG_WIDGETS_SLOWMOTION) != 0;
+   bool widgets_is_rewinding        = (video_flags & VIDEO_FLAG_WIDGETS_REWINDING) != 0;
 #ifdef HAVE_MENU
    bool menu_screensaver_active     = (video_info->menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) != 0;
 #endif
