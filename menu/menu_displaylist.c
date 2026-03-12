@@ -13229,15 +13229,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
                if (!string_is_empty(info->label))
                {
-                  char *tok, *save     = NULL;
-                  char *info_label_cpy = strdup(info->label);
-
-                  if ((tok = strtok_r(info_label_cpy, "|", &save)))
-                     elem0     = strdup(tok);
-                  if ((tok = strtok_r(NULL, "|", &save)))
-                     elem1     = strdup(tok);
-                  free(info_label_cpy);
-                  free(info->label);
+                  char *delim = strchr(info->label, '|');
+                  if (delim)
+                  {
+                     *delim = '\0';
+                     elem1  = delim + 1;
+                  }
+                  elem0        = info->label;
                   info->label  = NULL;
                }
 
@@ -13461,18 +13459,25 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
 #ifdef HAVE_NETWORKING
                char new_label[NAME_MAX_LENGTH];
-               char *save                  = NULL;
-               char *info_path_cpy         = strdup(info->path);
-               const char *con             = strtok_r(info_path_cpy, ";", &save);
+               const char *sep = info->path ? strchr(info->path, ';') : NULL;
 
-               if (con)
-                  strlcpy(new_label, con, sizeof(new_label));
+               if (sep)
+               {
+                  size_t len = sep - info->path;
+                  if (len >= sizeof(new_label))
+                     len = sizeof(new_label) - 1;
+                  memcpy(new_label, info->path, len);
+                  new_label[len] = '\0';
+                  strlcpy(menu->core_buf, sep + 1, menu->core_len);
+               }
                else
-                  new_label[0] = '\0';
-
-               if ((con = strtok_r(NULL, ";", &save))) /* Get second parameter */
-                  strlcpy(menu->core_buf, con, menu->core_len);
-               free(info_path_cpy);
+               {
+                  if (info->path)
+                     strlcpy(new_label, info->path, sizeof(new_label));
+                  else
+                     new_label[0] = '\0';
+                  menu->core_buf[0] = '\0';
+               }
 
                if ((count = (unsigned)print_buf_lines(
                            info->list, new_label, menu->core_buf,
@@ -13485,10 +13490,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
                         MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                         FILE_TYPE_NONE, 0, 0, NULL);
-
                info->flags       |= MD_FLAG_NEED_REFRESH
-                                  | MD_FLAG_NEED_PUSH
-                                  | MD_FLAG_NEED_CLEAR;
+                  | MD_FLAG_NEED_PUSH
+                  | MD_FLAG_NEED_CLEAR;
 #endif
             }
             break;
