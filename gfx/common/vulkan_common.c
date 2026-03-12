@@ -2010,7 +2010,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
-   bool fse_supported;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
    HMONITOR hmonitor;

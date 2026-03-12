@@ -1032,7 +1032,7 @@ static void gl2_raster_font_render_msg(
       font->block->fullscreen  = full_screen;
    else
       gl2_raster_font_setup_viewport(gl, font, width, height, full_screen,
-            config_get_ptr()->bools.video_scale_integer);
+            video_scale_integer);
 
    if (    !string_is_empty(msg)
          && font->font_data

@@ -3766,9 +3766,6 @@ static void *vulkan_init(const video_info_t *video,
    bool force_fullscreen              = false;
    const gfx_ctx_driver_t *ctx_driver = NULL;
    settings_t *settings               = config_get_ptr();
-#ifdef VULKAN_HDR_SWAPCHAIN
-   vulkan_hdr_uniform_t* mapped_ubo   = NULL;
-#endif
    vk_t *vk                           = (vk_t*)calloc(1, sizeof(*vk));
    if (!vk)
       return NULL;

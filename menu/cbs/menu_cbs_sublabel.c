@@ -1814,7 +1814,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       const char *label, const char *path,
       char *s, size_t len)
 {
-   int _len;
+   size_t _len;
    char buf[NAME_MAX_LENGTH];
    netplay_client_info_t *client;
    const char         *status = NULL;
@@ -1845,13 +1845,13 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
    {
       _len        = strlcpy(buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
             sizeof(buf) - 3);
-      if (_len > (int)sizeof(buf) - 4)
-         _len = (int)sizeof(buf) - 4;
+      if (_len > sizeof(buf) - 4)
+         _len = sizeof(buf) - 4;
       buf[  _len] = ':';
       buf[++_len] = ' ';
       buf[++_len] = '\0';
       strlcpy(buf + _len, status, sizeof(buf) - _len);
-      _len = (int)strlen(buf);
+      _len        = strlen(buf);
       buf[  _len] = '\n';
       buf[++_len] = '\0';
       strlcpy(s, buf, len);
@@ -1862,7 +1862,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       _len = snprintf(buf, sizeof(buf), "%s:",
          msg_hash_to_str(MSG_NETPLAY_CLIENT_DEVICES));
 
-      if (_len > 0 && _len < (int)sizeof(buf) - (int)STRLEN_CONST(" 16\n"))
+      if (_len > 0 && _len < sizeof(buf) - STRLEN_CONST(" 16\n"))
       {
          uint32_t device;
          char *buf_written = buf + _len;
@@ -1882,7 +1882,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
                }
 
                _len += dev_len;
-               if (_len >= (int)sizeof(buf) - 1)
+               if (_len >= sizeof(buf) - 1)
                   break;
 
                buf_written += dev_len;
@@ -1897,7 +1897,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
                *buf_written++ = '\n';
                *buf_written   = '\0';
 
-               _len = (int)strlen(s);
+               _len = strlen(s);
                strlcpy(s + _len, buf, len - _len);
             }
          }
@@ -1908,17 +1908,17 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       msg_hash_to_str(MSG_NETPLAY_CHAT_SUPPORTED),
       msg_hash_to_str((client->protocol >= 6) ?
          MENU_ENUM_LABEL_VALUE_YES : MENU_ENUM_LABEL_VALUE_NO));
-   _len = (int)strlen(s);
-   if (_len < (int)len - 1)
+   _len = strlen(s);
+   if (_len < len - 1)
       strlcpy(s + _len, buf, len - _len);
 
-   _len = (int)strlen(s);
-   if (_len < (int)len - 1)
+   _len = strlen(s);
+   if (_len < len - 1)
       _len += snprintf(s + _len, len - _len, "%s: %lu",
          msg_hash_to_str(MSG_NETPLAY_SLOWDOWNS_CAUSED),
          (unsigned long)client->slowdowns);
 
-   if (client->ping >= 0 && _len < (int)len - 1)
+   if (client->ping >= 0 && _len < len - 1)
       snprintf(s + _len, len - _len,
             "\nPing: %u ms", (unsigned)client->ping);
 
