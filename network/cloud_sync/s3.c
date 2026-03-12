@@ -128,227 +128,241 @@ static bool s3_calculate_multipart_plan(size_t file_size, size_t *out_part_size,
    return true;
 }
 
-/* Parse S3 URL to extract bucket, region, and host */
+/* Parse S3 URL to extract bucket, region, and host. Supports both virtual-hosted
+ * and path-style layouts so providers can be normalized from one URL string. */
 static bool s3_parse_url(const char *url, char *bucket,  char *region,
                          char *host, char *service)
 {
-   char *bucket_start = NULL;
-   char *region_start = NULL;
-   char *dot_pos = NULL;
-   char *slash_pos = NULL;
-   bool bucket_found = false;
+   const char *scheme_sep    = NULL;
+   const char *authority     = NULL;
+   const char *authority_end = NULL;
+   const char *path_start    = NULL;
+   const char *first_dot     = NULL;
+   const char *second_dot    = NULL;
+   char first_label[NAME_MAX_LENGTH];
+   char first_path_seg[NAME_MAX_LENGTH];
+
+   (void)service;
 
    if (!url || !bucket || !region || !host)
       return false;
 
    RARCH_DBG(S3_PFX "Parsing S3 URL: %s\n", url);
 
-   /* Initialize output buffers */
    bucket[0] = '\0';
    region[0] = '\0';
-   host[0] = '\0';
+   host[0]   = '\0';
+   first_label[0]    = '\0';
+   first_path_seg[0] = '\0';
 
-   /* Handle virtual-hosted style S3 URL formats:
-    * - https://bucket.s3.region.amazonaws.com/ (AWS S3)
-    * - https://bucket.s3-region.amazonaws.com/ (AWS S3)
-    * - https://bucket.s3.region.backblazeb2.com/ (Backblaze B2)
-    * - https://bucket.region.digitaloceanspaces.com/ (DigitalOcean Spaces)
-    * - https://bucket.region.linodeobjects.com/ (Linode Object Storage)
-    * - https://bucket.region.cloudflarestorage.com/ (Cloudflare R2)
-    * - https://bucket.endpoint/ (MinIO, custom endpoints)
-    */
+   scheme_sep = strstr(url, "://");
+   authority  = scheme_sep ? scheme_sep + 3 : url;
+   if (string_is_empty(authority))
+      return false;
 
-   /* Extract bucket from virtual-hosted style URLs */
-   bucket_start = strstr(url, "://");
-   if (bucket_start)
+   authority_end = strchr(authority, '/');
+   if (!authority_end)
+      authority_end = authority + strlen(authority);
+
+   if (authority_end > authority)
    {
-      bucket_start += 3; /* Skip "://" */
-      RARCH_DBG(S3_PFX "Found protocol separator, bucket_start: %s\n", bucket_start);
+      size_t host_len = authority_end - authority;
+      if (host_len >= NAME_MAX_LENGTH)
+         host_len = NAME_MAX_LENGTH - 1;
+      strlcpy(host, authority, host_len + 1);
+   }
 
-      dot_pos = strchr(bucket_start, '.');
-      if (dot_pos)
+   if (string_is_empty(host))
+      return false;
+
+   if (*authority_end == '/')
+      path_start = authority_end + 1;
+
+   /* Capture first host label and first path segment for provider-specific rules. */
+   first_dot = strchr(host, '.');
+   if (first_dot)
+   {
+      size_t first_label_len = first_dot - host;
+      if (first_label_len > 0 && first_label_len < NAME_MAX_LENGTH)
+         strlcpy(first_label, host, first_label_len + 1);
+   }
+
+   if (path_start && *path_start)
+   {
+      const char *path_seg_end = strchr(path_start, '/');
+      size_t path_seg_len      = path_seg_end ? (size_t)(path_seg_end - path_start) : strlen(path_start);
+      if (path_seg_len > 0 && path_seg_len < NAME_MAX_LENGTH)
+         strlcpy(first_path_seg, path_start, path_seg_len + 1);
+   }
+
+   if (strstr(host, ".cloudflarestorage.com"))
+   {
+      const char *r2_suffix = ".r2.cloudflarestorage.com";
+      const char *r2_pos    = strstr(host, r2_suffix);
+
+      RARCH_LOG(S3_PFX "Detected Cloudflare R2 format\n");
+
+      if (r2_pos)
       {
-         size_t bucket_len = dot_pos - bucket_start;
-         RARCH_DBG(S3_PFX "Found first dot at position %zu, bucket length: %zu\n",
-                   (size_t)(dot_pos - bucket_start), bucket_len);
+         /* Cloudflare R2 supports both:
+          * - <bucket>.<accountid>.r2.cloudflarestorage.com
+          * - <accountid>.r2.cloudflarestorage.com/<bucket>/... */
+         const char *prefix_start = host;
+         size_t prefix_len         = (size_t)(r2_pos - prefix_start);
 
-         if (bucket_len > 0 && bucket_len < NAME_MAX_LENGTH)
+         if (prefix_len > 0)
          {
-            char *host_start = NULL;
-            char *host_end = NULL;
-            strlcpy(bucket, bucket_start, bucket_len + 1);
-            bucket_found = true;
-            RARCH_LOG(S3_PFX "Extracted bucket: %s\n", bucket);
+            const char *prefix_dot = strchr(prefix_start, '.');
 
-            /* Extract host from URL */
-            host_start = bucket_start;
-            host_end = strchr(host_start, '/');
-            if (host_end)
+            /* If there are two labels before ".r2..." then first label is bucket. */
+            if (prefix_dot && prefix_dot < r2_pos)
             {
-               size_t host_len = host_end - host_start;
-               if (host_len > 0 && host_len < NAME_MAX_LENGTH)
+               size_t bucket_len = (size_t)(prefix_dot - prefix_start);
+               if (bucket_len > 0 && bucket_len < NAME_MAX_LENGTH)
                {
-                  strlcpy(host, host_start, host_len + 1);
-                  RARCH_LOG(S3_PFX "Extracted host: %s\n", host);
-               }
-            }
-            else
-            {
-               /* No path, use entire authority as host */
-               strlcpy(host, host_start, NAME_MAX_LENGTH);
-               RARCH_LOG(S3_PFX "Extracted host: %s\n", host);
-            }
-
-            /* Extract region based on service type */
-            if (strstr(url, ".s3.") && strstr(url, ".amazonaws.com"))
-            {
-               RARCH_LOG(S3_PFX "Detected AWS S3 format (bucket.s3.region.amazonaws.com)\n");
-               /* AWS S3: bucket.s3.region.amazonaws.com */
-               if (strncmp(dot_pos, ".s3.", 4) == 0)
-               {
-                  region_start = dot_pos + 4;
-                  dot_pos = strchr(region_start, '.');
-                  if (dot_pos)
-                  {
-                     size_t region_len = dot_pos - region_start;
-                     if (region_len > 0 && region_len < NAME_MAX_LENGTH)
-                     {
-                        strlcpy(region, region_start, region_len + 1);
-                        RARCH_LOG(S3_PFX "Extracted AWS S3 region: %s\n", region);
-                        return true;
-                     }
-                  }
-               }
-            }
-            else if (strstr(url, ".s3-") && strstr(url, ".amazonaws.com"))
-            {
-               RARCH_LOG(S3_PFX "Detected AWS S3 format (bucket.s3-region.amazonaws.com)\n");
-               /* AWS S3: bucket.s3-region.amazonaws.com */
-               if (strncmp(dot_pos, ".s3-", 4) == 0)
-               {
-                  region_start = dot_pos + 4;
-                  dot_pos = strchr(region_start, '.');
-                  if (dot_pos)
-                  {
-                     size_t region_len = dot_pos - region_start;
-                     if (region_len > 0 && region_len < NAME_MAX_LENGTH)
-                     {
-                        strlcpy(region, region_start, region_len + 1);
-                        RARCH_LOG(S3_PFX "Extracted AWS S3 region: %s\n", region);
-                        return true;
-                     }
-                  }
-               }
-            }
-            else if (strstr(url, ".backblazeb2.com"))
-            {
-               RARCH_LOG(S3_PFX "Detected Backblaze B2 format\n");
-               /* Backblaze B2: bucket.s3.region.backblazeb2.com */
-               if (strncmp(dot_pos, ".s3.", 4) == 0)
-               {
-                  region_start = dot_pos + 4;
-                  dot_pos = strchr(region_start, '.');
-                  if (dot_pos)
-                  {
-                     size_t region_len = dot_pos - region_start;
-                     if (region_len > 0 && region_len < NAME_MAX_LENGTH)
-                     {
-                        strlcpy(region, region_start, region_len + 1);
-                        RARCH_LOG(S3_PFX "Extracted Backblaze B2 region: %s\n", region);
-                        return true;
-                     }
-                  }
-               }
-            }
-            else if (strstr(url, ".digitaloceanspaces.com"))
-            {
-               RARCH_LOG(S3_PFX "Detected DigitalOcean Spaces format\n");
-               /* DigitalOcean Spaces: bucket.region.digitaloceanspaces.com */
-               region_start = dot_pos + 1;
-               dot_pos = strchr(region_start, '.');
-               if (dot_pos)
-               {
-                  size_t region_len = dot_pos - region_start;
-                  if (region_len > 0 && region_len < NAME_MAX_LENGTH)
-                  {
-                     strlcpy(region, region_start, region_len + 1);
-                     RARCH_LOG(S3_PFX "Extracted DigitalOcean region: %s\n", region);
-                     return true;
-                  }
-               }
-            }
-            else if (strstr(url, ".linodeobjects.com"))
-            {
-               RARCH_LOG(S3_PFX "Detected Linode Object Storage format\n");
-               /* Linode Object Storage: bucket.region.linodeobjects.com */
-               region_start = dot_pos + 1;
-               dot_pos = strchr(region_start, '.');
-               if (dot_pos)
-               {
-                  size_t region_len = dot_pos - region_start;
-                  if (region_len > 0 && region_len < NAME_MAX_LENGTH)
-                  {
-                     strlcpy(region, region_start, region_len + 1);
-                     RARCH_LOG(S3_PFX "Extracted Linode region: %s\n", region);
-                     return true;
-                  }
-               }
-            }
-            else if (strstr(url, ".cloudflarestorage.com"))
-            {
-               RARCH_LOG(S3_PFX "Detected Cloudflare R2 format\n");
-               /* Cloudflare R2: bucket.region.cloudflarestorage.com */
-               region_start = dot_pos + 1;
-               dot_pos = strchr(region_start, '.');
-               if (dot_pos)
-               {
-                  size_t region_len = dot_pos - region_start;
-                  if (region_len > 0 && region_len < NAME_MAX_LENGTH)
-                  {
-                     strlcpy(region, region_start, region_len + 1);
-                     RARCH_LOG(S3_PFX "Extracted Cloudflare region: %s\n", region);
-                     return true;
-                  }
-               }
-            }
-            else
-            {
-               RARCH_LOG(S3_PFX "Detected custom endpoint format\n");
-               /* Custom endpoints (MinIO, etc.): bucket.endpoint */
-               /* Try to extract region from the endpoint */
-               region_start = dot_pos + 1;
-               slash_pos = strchr(region_start, '/');
-               if (slash_pos)
-               {
-                  size_t region_len = slash_pos - region_start;
-                  if (region_len > 0 && region_len < NAME_MAX_LENGTH)
-                  {
-                     strlcpy(region, region_start, region_len + 1);
-                     RARCH_LOG(S3_PFX "Extracted custom endpoint region: %s\n", region);
-                     return true;
-                  }
-               }
-               else
-               {
-                  /* No slash found, use the entire endpoint as region */
-                  strlcpy(region, region_start, NAME_MAX_LENGTH);
-                  RARCH_LOG(S3_PFX "Using entire endpoint as region: %s\n", region);
-                  return true;
+                  RARCH_LOG(S3_PFX "Cloudflare R2 style: virtual-hosted\n");
+                  strlcpy(bucket, prefix_start, bucket_len + 1);
                }
             }
          }
+
+         /* Path-style endpoint (accountid.r2...) carries bucket in first path segment. */
+         if (string_is_empty(bucket) && !string_is_empty(first_path_seg))
+         {
+            RARCH_LOG(S3_PFX "Cloudflare R2 style: path-style\n");
+            strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
+         }
+      }
+      else if (!string_is_empty(first_label))
+      {
+         /* Compatibility fallback for other cloudflarestorage host variants. */
+         RARCH_LOG(S3_PFX "Cloudflare R2 style: fallback-host-label\n");
+         strlcpy(bucket, first_label, NAME_MAX_LENGTH);
+      }
+
+      /* Cloudflare R2 uses region "auto" for AWS SigV4. */
+      strlcpy(region, "auto", NAME_MAX_LENGTH);
+   }
+   else if (strstr(host, ".amazonaws.com"))
+   {
+      const char *s3pos = strstr(host, ".s3.");
+      const char *s3dash = strstr(host, ".s3-");
+      const char *s3accelerate = strstr(host, ".s3-accelerate.");
+      const char *s3acceleration = strstr(host, ".s3-acceleration.");
+      const char *host_start = host;
+
+      RARCH_LOG(S3_PFX "Detected AWS S3 format\n");
+
+      if (s3accelerate || s3acceleration)
+      {
+         const char *accel_pos = s3accelerate ? s3accelerate : s3acceleration;
+         size_t bucket_len = accel_pos - host_start;
+         if (bucket_len > 0 && bucket_len < NAME_MAX_LENGTH)
+            strlcpy(bucket, host_start, bucket_len + 1);
+
+         /* Transfer acceleration endpoints do not encode bucket region in hostname.
+          * Keep fallback-compatible behavior by using us-east-1 here. */
+         strlcpy(region, "us-east-1", NAME_MAX_LENGTH);
+      }
+      else if (s3pos)
+      {
+         size_t bucket_len = s3pos - host_start;
+         if (bucket_len > 0 && bucket_len < NAME_MAX_LENGTH)
+            strlcpy(bucket, host_start, bucket_len + 1);
+         s3pos += 4; /* skip ".s3." */
+         second_dot = strchr(s3pos, '.');
+         if (second_dot)
+         {
+            size_t region_len = second_dot - s3pos;
+            if (region_len > 0 && region_len < NAME_MAX_LENGTH)
+               strlcpy(region, s3pos, region_len + 1);
+         }
+      }
+      else if (s3dash)
+      {
+         size_t bucket_len = s3dash - host_start;
+         if (bucket_len > 0 && bucket_len < NAME_MAX_LENGTH)
+            strlcpy(bucket, host_start, bucket_len + 1);
+         s3dash += 4; /* skip ".s3-" */
+         second_dot = strchr(s3dash, '.');
+         if (second_dot)
+         {
+            size_t region_len = second_dot - s3dash;
+            if (region_len > 0 && region_len < NAME_MAX_LENGTH)
+               strlcpy(region, s3dash, region_len + 1);
+         }
+      }
+      else
+      {
+         /* Path-style fallback: s3.<region>.amazonaws.com/<bucket>/... */
+         if (!string_is_empty(first_path_seg))
+            strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
       }
    }
-
-   /* If we found a bucket but no region, use default */
-   if (bucket_found)
+   else if (strstr(host, ".backblazeb2.com"))
    {
-      strlcpy(region, "us-east-1", NAME_MAX_LENGTH);
-      RARCH_LOG(S3_PFX "Using default region us-east-1 for bucket: %s\n", bucket);
-      return true;
+      const char *s3pos = strstr(host, ".s3.");
+
+      RARCH_LOG(S3_PFX "Detected Backblaze B2 format\n");
+
+      if (s3pos)
+      {
+         RARCH_LOG(S3_PFX "Backblaze B2 style: virtual-hosted\n");
+         size_t bucket_len = s3pos - host;
+         if (bucket_len > 0 && bucket_len < NAME_MAX_LENGTH)
+            strlcpy(bucket, host, bucket_len + 1);
+         s3pos += 4; /* skip ".s3." */
+         second_dot = strchr(s3pos, '.');
+         if (second_dot)
+         {
+            size_t region_len = second_dot - s3pos;
+            if (region_len > 0 && region_len < NAME_MAX_LENGTH)
+               strlcpy(region, s3pos, region_len + 1);
+         }
+      }
+      else if (!string_is_empty(first_path_seg))
+      {
+         RARCH_LOG(S3_PFX "Backblaze B2 style: path-style\n");
+         strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
+      }
+   }
+   else if (strstr(host, ".digitaloceanspaces.com") || strstr(host, ".linodeobjects.com"))
+   {
+      if (!string_is_empty(first_label))
+         strlcpy(bucket, first_label, NAME_MAX_LENGTH);
+      if (first_dot)
+      {
+         const char *region_start = first_dot + 1;
+         second_dot = strchr(region_start, '.');
+         if (second_dot)
+         {
+            size_t region_len = second_dot - region_start;
+            if (region_len > 0 && region_len < NAME_MAX_LENGTH)
+               strlcpy(region, region_start, region_len + 1);
+         }
+      }
+   }
+   else
+   {
+      /* Generic fallback:
+       * - virtual-host: bucket.endpoint
+       * - path-style: endpoint/bucket */
+      if (!string_is_empty(first_path_seg))
+         strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
+      else if (!string_is_empty(first_label))
+         strlcpy(bucket, first_label, NAME_MAX_LENGTH);
    }
 
-   return false;
+   if (string_is_empty(region))
+      strlcpy(region, "us-east-1", NAME_MAX_LENGTH);
+
+   if (string_is_empty(bucket))
+      RARCH_WARN(S3_PFX "Could not extract bucket from URL: %s\n", url);
+
+   RARCH_LOG(S3_PFX "Extracted bucket: %s, region: %s, host: %s\n",
+             string_is_empty(bucket) ? "(none)" : bucket, region, host);
+
+   return !string_is_empty(host) && !string_is_empty(bucket);
 }
 
 /* Calculate SHA256 hash */
@@ -939,9 +953,55 @@ static bool s3_http_delete_async(const char *url, const char *headers, s3_cb_sta
          headers, s3_delete_cb, cb_state) != NULL;
 }
 
+/* Normalize object key path to avoid malformed request URLs:
+ * - strip leading '/'
+ * - collapse repeated '/' inside key */
+static char* s3_normalize_object_key(const char *path)
+{
+   const char *src = path;
+   size_t src_len = 0;
+   char *normalized = NULL;
+   size_t out = 0;
+   bool prev_slash = false;
+
+   if (string_is_empty(path))
+      return strdup("");
+
+   while (*src == '/')
+      src++;
+
+   src_len = strlen(src);
+   normalized = (char*)malloc(src_len + 1);
+   if (!normalized)
+      return NULL;
+
+   while (*src)
+   {
+      if (*src == '/')
+      {
+         if (prev_slash)
+         {
+            src++;
+            continue;
+         }
+         prev_slash = true;
+      }
+      else
+         prev_slash = false;
+
+      normalized[out++] = *src++;
+   }
+
+   normalized[out] = '\0';
+   return normalized;
+}
+
 static bool s3_build_request_url(char *url, size_t url_size, s3_state_t *s3_st, const char *path)
 {
+   char base_url[PATH_MAX_LENGTH];
+   char *normalized_path = NULL;
    char *encoded_path = NULL;
+   size_t base_len = 0;
 
    if (!url || !s3_st || string_is_empty(s3_st->url))
       return false;
@@ -952,12 +1012,71 @@ static bool s3_build_request_url(char *url, size_t url_size, s3_state_t *s3_st, 
       return true;
    }
 
-   encoded_path = s3_url_encode(path);
-   if (!encoded_path)
+   normalized_path = s3_normalize_object_key(path);
+   if (!normalized_path)
       return false;
 
-   snprintf(url, url_size, "%s/%s", s3_st->url, encoded_path);
+   encoded_path = s3_url_encode(normalized_path);
+   if (!encoded_path)
+   {
+      free(normalized_path);
+      return false;
+   }
+
+   strlcpy(base_url, s3_st->url, sizeof(base_url));
+   base_len = strlen(base_url);
+   while (base_len > 0 && base_url[base_len - 1] == '/')
+      base_url[--base_len] = '\0';
+
+   if (string_is_empty(encoded_path))
+      strlcpy(url, base_url, url_size);
+   else
+      snprintf(url, url_size, "%s/%s", base_url, encoded_path);
+
+   free(normalized_path);
    free(encoded_path);
+   return true;
+}
+
+/* Build canonical URI from an already constructed request URL path component.
+ * This keeps signing aligned with the exact URL being requested, including any
+ * base path prefix (e.g. path-style bucket endpoints). */
+static bool s3_build_canonical_uri_from_url(const char *url, char *canonical_uri, size_t canonical_uri_size)
+{
+   const char *scheme_sep = NULL;
+   const char *authority = NULL;
+   const char *path_start = NULL;
+   const char *path_end = NULL;
+   size_t path_len = 0;
+
+   if (string_is_empty(url) || !canonical_uri || canonical_uri_size == 0)
+      return false;
+
+   scheme_sep = strstr(url, "://");
+   authority  = scheme_sep ? scheme_sep + 3 : url;
+   if (string_is_empty(authority))
+      return false;
+
+   path_start = strchr(authority, '/');
+   if (!path_start)
+   {
+      strlcpy(canonical_uri, "/", canonical_uri_size);
+      return true;
+   }
+
+   path_end = strpbrk(path_start, "?#");
+   path_len = path_end ? (size_t)(path_end - path_start) : strlen(path_start);
+
+   if (path_len == 0)
+   {
+      strlcpy(canonical_uri, "/", canonical_uri_size);
+      return true;
+   }
+
+   if (path_len >= canonical_uri_size)
+      return false;
+
+   strlcpy(canonical_uri, path_start, path_len + 1);
    return true;
 }
 
@@ -1701,20 +1820,8 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
    if (!s3_build_request_url(url, sizeof(url), s3_st, path))
       goto cleanup;
 
-   /* Build canonical URI - must be URL encoded */
-   if (path && *path)
-   {
-      char *encoded_path = s3_url_encode(path);
-      if (encoded_path)
-      {
-         snprintf(canonical_uri, sizeof(canonical_uri), "/%s", encoded_path);
-         free(encoded_path);
-      }
-      else
-         strlcpy(canonical_uri, "/", sizeof(canonical_uri));
-   }
-   else
-      strlcpy(canonical_uri, "/", sizeof(canonical_uri));
+   if (!s3_build_canonical_uri_from_url(url, canonical_uri, sizeof(canonical_uri)))
+      goto cleanup;
 
    /* Build authorization header */
    auth_header = s3_build_auth_header("GET", canonical_uri, "", "host;x-amz-content-sha256;x-amz-date",
@@ -1794,20 +1901,8 @@ static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler
    if (!s3_build_request_url(url, sizeof(url), s3_st, path))
       goto cleanup;
 
-   /* Build canonical URI - must be URL encoded */
-   if (path && *path)
-   {
-      char *encoded_path = s3_url_encode(path);
-      if (encoded_path)
-      {
-         snprintf(canonical_uri, sizeof(canonical_uri), "/%s", encoded_path);
-         free(encoded_path);
-      }
-      else
-         strlcpy(canonical_uri, "/", sizeof(canonical_uri));
-   }
-   else
-      strlcpy(canonical_uri, "/", sizeof(canonical_uri));
+   if (!s3_build_canonical_uri_from_url(url, canonical_uri, sizeof(canonical_uri)))
+      goto cleanup;
 
    RARCH_DBG(S3_PFX "Request URL: %s\n", url);
    RARCH_DBG(S3_PFX "Canonical URI: %s\n", canonical_uri);
@@ -1924,20 +2019,8 @@ static bool s3_free(const char *path, cloud_sync_complete_handler_t cb, void *us
    if (!s3_build_request_url(url, sizeof(url), s3_st, path))
       goto cleanup;
 
-   /* Build canonical URI - must be URL encoded */
-   if (path && *path)
-   {
-      char *encoded_path = s3_url_encode(path);
-      if (encoded_path)
-      {
-         snprintf(canonical_uri, sizeof(canonical_uri), "/%s", encoded_path);
-         free(encoded_path);
-      }
-      else
-         strlcpy(canonical_uri, "/", sizeof(canonical_uri));
-   }
-   else
-      strlcpy(canonical_uri, "/", sizeof(canonical_uri));
+   if (!s3_build_canonical_uri_from_url(url, canonical_uri, sizeof(canonical_uri)))
+      goto cleanup;
 
    /* Build authorization header */
    auth_header = s3_build_auth_header("DELETE", canonical_uri, "", "host;x-amz-content-sha256;x-amz-date",
