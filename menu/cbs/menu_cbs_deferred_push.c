@@ -23,6 +23,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../menu_displaylist.h"
 #include "../../msg_hash.h"
 
 #include "../../database_info.h"
@@ -366,6 +367,12 @@ static int general_push(menu_displaylist_info_t *info,
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN:
+         if (filebrowser_get_type() == FILEBROWSER_SELECT_OVERLAY)
+         {
+            CHECK_SIZE(3);
+            _len += strlcpy(newstr2 + _len, "cfg", size - _len);
+         }
+         else
          {
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;

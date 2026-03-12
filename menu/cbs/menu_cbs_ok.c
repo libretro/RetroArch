@@ -49,6 +49,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../menu_displaylist.h"
 #include "../menu_entries.h"
 #include "../menu_setting.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -1141,16 +1142,31 @@ int generic_action_ok_displaylist_push(
          info_path          = parent_dir;
          break;
       case ACTION_OK_DL_OVERLAY_PRESET:
-         filebrowser_clear_type();
+         filebrowser_set_type(FILEBROWSER_SELECT_OVERLAY);
          info.directory_ptr = idx;
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_PRESET);
          info.enum_idx      = MENU_ENUM_LABEL_OVERLAY_PRESET;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
-         action_ok_get_file_browser_start_path(
-               settings->paths.path_overlay,
-               settings->paths.directory_overlay,
-               parent_dir, sizeof(parent_dir), true);
+         {
+            char expanded[PATH_MAX_LENGTH];
+            /* Expand ~ so path_is_directory works on iOS */
+            fill_pathname_expand_special(expanded,
+                  settings->paths.path_overlay, sizeof(expanded));
+#ifdef HAVE_COMPRESSION
+            {
+               /* For archive paths (zip#inner/file.cfg), use just
+                * the zip path so the browser starts in the right dir */
+               char *delim = (char*)path_get_archive_delim(expanded);
+               if (delim)
+                  *delim = '\0';
+            }
+#endif
+            action_ok_get_file_browser_start_path(
+                  expanded,
+                  settings->paths.directory_overlay,
+                  parent_dir, sizeof(parent_dir), true);
+         }
 
          info_path          = parent_dir;
          break;
@@ -2565,6 +2581,102 @@ DEFAULT_ACTION_OK_SET(action_ok_set_path_audiofilter, ACTION_OK_SET_PATH_AUDIO_F
 DEFAULT_ACTION_OK_SET(action_ok_set_path_videofilter, ACTION_OK_SET_PATH_VIDEO_FILTER, MSG_UNKNOWN)
 DEFAULT_ACTION_OK_SET(action_ok_set_path_overlay,     ACTION_OK_SET_PATH_OVERLAY,      MSG_UNKNOWN)
 DEFAULT_ACTION_OK_SET(action_ok_set_path_osk_overlay, ACTION_OK_SET_PATH_OSK_OVERLAY,  MSG_UNKNOWN)
+
+#ifdef HAVE_COMPRESSION
+static int action_ok_compressed_archive_push_overlay(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_displaylist_info_t info;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_handle_t *menu        = menu_st->driver_data;
+   menu_list_t *menu_list     = menu_st->entries.list;
+   const char *menu_path      = NULL;
+   settings_t *settings       = config_get_ptr();
+
+   if (!menu)
+      return -1;
+
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+   /* Set scratch buffers so deferred_archive_open can build
+    * the full archive path (same as COMPRESSED_ARCHIVE_PUSH) */
+   if (!string_is_empty(path))
+      strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
+   if (!string_is_empty(menu_path))
+      strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
+
+   /* Build detect_content_path for later use by the
+    * in-archive file selection handler */
+   if (menu_path && path)
+      fill_pathname_join_special(menu->detect_content_path,
+            menu_path, path,
+            sizeof(menu->detect_content_path));
+
+   /* Go directly to browsing the archive contents */
+   menu_displaylist_info_init(&info);
+   info.list          = MENU_LIST_GET(menu_list, 0);
+   info.type          = type;
+   info.directory_ptr = idx;
+   info.label         = strdup(msg_hash_to_str(
+            MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN));
+   info.path          = strdup(path);
+   info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN;
+
+   if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info, settings))
+   {
+      if (menu_displaylist_process(&info))
+      {
+         menu_displaylist_info_free(&info);
+         return 0;
+      }
+   }
+
+   menu_displaylist_info_free(&info);
+   return -1;
+}
+
+static int action_ok_set_path_overlay_carchive(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char action_path[PATH_MAX_LENGTH];
+   const char *flush_char = msg_hash_to_str(
+         MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST);
+   menu_handle_t *menu    = menu_state_get_ptr()->driver_data;
+   rarch_setting_t *setting;
+
+   if (!menu)
+      return -1;
+
+   /* detect_content_path holds the path to the archive,
+    * set when "Open Archive" was selected */
+   if (!string_is_empty(path))
+      fill_pathname_join_delim(action_path,
+            menu->detect_content_path, path,
+            '#', sizeof(action_path));
+   else
+      strlcpy(action_path,
+            menu->detect_content_path, sizeof(action_path));
+
+   RARCH_LOG("[Overlay] Setting overlay from archive: \"%s\"\n",
+         action_path);
+
+   retroarch_override_setting_set(
+         RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
+
+   setting = menu_setting_find_enum(MENU_ENUM_LABEL_OVERLAY_PRESET);
+   if (setting)
+   {
+      if (setting->value.target.string)
+         strlcpy(setting->value.target.string,
+               action_path, setting->size);
+      if (setting->change_handler)
+         setting->change_handler(setting);
+   }
+
+   menu_entries_flush_stack(flush_char, 0);
+   return 0;
+}
+#endif
 DEFAULT_ACTION_OK_SET(action_ok_set_path_video_font,  ACTION_OK_SET_PATH_VIDEO_FONT,   MSG_UNKNOWN)
 DEFAULT_ACTION_OK_SET(action_ok_set_path,             ACTION_OK_SET_PATH,              MSG_UNKNOWN)
 DEFAULT_ACTION_OK_SET(action_ok_load_core,            ACTION_OK_LOAD_CORE,             MSG_UNKNOWN)
@@ -9853,6 +9965,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                BIND_ACTION_OK(cbs, action_ok_scan_file);
 #endif
             }
+#ifdef HAVE_COMPRESSION
+            else if (filebrowser_get_type() == FILEBROWSER_SELECT_OVERLAY)
+            {
+               BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_overlay);
+            }
+#endif
             else
             {
                if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
@@ -9996,6 +10114,14 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_set_path_audiofilter);
             break;
          case FILE_TYPE_IN_CARCHIVE:
+#ifdef HAVE_COMPRESSION
+            if (filebrowser_get_type() == FILEBROWSER_SELECT_OVERLAY)
+            {
+               BIND_ACTION_OK(cbs, action_ok_set_path_overlay_carchive);
+               break;
+            }
+#endif
+            /* fall through */
          case FILE_TYPE_PLAIN:
             if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
             {
