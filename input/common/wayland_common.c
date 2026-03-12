@@ -90,6 +90,7 @@ static void wl_keyboard_handle_leave(void *data,
    memset(wl->input.key_state, 0, sizeof(wl->input.key_state));
 }
 
+#ifndef WEBOS
 static void wl_keyboard_handle_key(void *data,
       struct wl_keyboard *keyboard,
       uint32_t serial,
@@ -133,6 +134,7 @@ static void wl_keyboard_handle_key(void *data,
          input_keymaps_translate_keysym_to_rk(keysym),
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
+#endif
 
 static void wl_keyboard_handle_modifiers(void *data,
       struct wl_keyboard *keyboard,
