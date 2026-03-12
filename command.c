@@ -589,12 +589,10 @@ command_t* command_uds_new(void)
    int           fd = socket(AF_UNIX, SOCK_STREAM, 0);
    if (fd < 0)
       return NULL;
-
    /* use an abstract socket for simplicity */
    memset(&addr, 0, sizeof(addr));
    addr.sun_family = AF_UNIX;
-   strcpy(&addr.sun_path[1], "retroarch/cmd");
-
+   strlcpy(&addr.sun_path[1], "retroarch/cmd", sizeof(addr.sun_path) - 1);
    if (   bind(fd, (struct sockaddr*)&addr, addrsz) < 0
        || listen(fd, MAX_USER_CONNECTIONS) < 0
        || !socket_nonblock(fd))
@@ -602,19 +600,27 @@ command_t* command_uds_new(void)
       socket_close(fd);
       return NULL;
    }
-
-   cmd             = (command_t*)calloc(1, sizeof(command_t));
-   subcmd          = (command_uds_t*)calloc(1, sizeof(command_uds_t));
-   subcmd->sfd     = fd;
-   subcmd->last_fd = -1;
+   cmd = (command_t*)calloc(1, sizeof(command_t));
+   if (!cmd)
+   {
+      socket_close(fd);
+      return NULL;
+   }
+   subcmd = (command_uds_t*)calloc(1, sizeof(command_uds_t));
+   if (!subcmd)
+   {
+      free(cmd);
+      socket_close(fd);
+      return NULL;
+   }
+   subcmd->sfd          = fd;
+   subcmd->last_fd      = -1;
    for (i = 0; i < MAX_USER_CONNECTIONS; i++)
       subcmd->userfd[i] = -1;
-
-   cmd->userptr = subcmd;
-   cmd->poll    = command_uds_poll;
-   cmd->replier = uds_command_reply;
-   cmd->destroy = uds_command_free;
-
+   cmd->userptr         = subcmd;
+   cmd->poll            = command_uds_poll;
+   cmd->replier         = uds_command_reply;
+   cmd->destroy         = uds_command_free;
    return cmd;
 }
 #endif
