@@ -74,9 +74,9 @@ static int deferred_push_database_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
    settings_t *settings = config_get_ptr();
-   if (!string_is_empty(info->path_b))
+   if (info->path_b)
       free(info->path_b);
-   if (!string_is_empty(info->path_c))
+   if (info->path_c)
       free(info->path_c);
 
    info->path_b    = strdup(info->path);
@@ -295,10 +295,12 @@ GENERIC_DEFERRED_PUSH(deferred_push_smb_client_options,             DISPLAYLIST_
 #define CHECK_SIZE(desired_size) \
     do { \
       char *reallocated; \
+      size_t grow; \
       size_t dsize = (desired_size); \
       if (_len + dsize < size) \
          break; \
-      reallocated = (char*)realloc(newstr2, size += dsize * 2); \
+      grow = (dsize > (size_t)-1 / 2) ? dsize : dsize * 2; \
+      reallocated = (char*)realloc(newstr2, size += grow); \
       if (!reallocated) \
       { \
          free(newstr2); \
@@ -455,10 +457,13 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
       libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-      CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
-      if (_len > 0)
-         newstr2[_len++] = '|';
-      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+      if (!string_is_empty(sysinfo.valid_extensions))
+      {
+         CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
+         if (_len > 0)
+            newstr2[_len++] = '|';
+         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+      }
    }
 #endif
 
@@ -467,10 +472,13 @@ static int general_push(menu_displaylist_info_t *info,
    {
       struct retro_system_info sysinfo = {0};
       libretro_imageviewer_retro_get_system_info(&sysinfo);
-      CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
-      if (_len > 0)
-         newstr2[_len++] = '|';
-      strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+      if (!string_is_empty(sysinfo.valid_extensions))
+      {
+         CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
+         if (_len > 0)
+            newstr2[_len++] = '|';
+         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+      }
    }
 #endif
 
@@ -790,29 +798,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #endif
    };
 
-   if (!string_is_equal(label, "null"))
-   {
-      for (i = 0; i < ARRAY_SIZE(info_list); i++)
-      {
-         if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
-         {
-            BIND_ACTION_DEFERRED_PUSH(cbs, info_list[i].cb);
-            return 0;
-         }
-      }
-
-      /* MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL requires special
-       * treatment, since the label has the format:
-       *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
-       * i.e. cannot use a normal string_is_equal() */
-      if (string_starts_with(label,
-         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
-      {
-         BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
-         return 0;
-      }
-   }
-
+   /* Fast path: try O(1) enum_idx switch first before O(n) string scan */
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -1203,10 +1189,35 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
 #endif
          default:
-            return -1;
+            break; /* Fall through to string-based lookup below */
       }
 
       return 0;
+   }
+
+   /* Slow path: fall back to O(n) string comparison for labels
+    * not matched by enum_idx (e.g. dynamically generated labels) */
+   if (!string_is_equal(label, "null"))
+   {
+      for (i = 0; i < ARRAY_SIZE(info_list); i++)
+      {
+         if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
+         {
+            BIND_ACTION_DEFERRED_PUSH(cbs, info_list[i].cb);
+            return 0;
+         }
+      }
+
+      /* MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL requires special
+       * treatment, since the label has the format:
+       *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
+       * i.e. cannot use a normal string_is_equal() */
+      if (string_starts_with(label,
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+      {
+         BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
+         return 0;
+      }
    }
 
    return -1;
@@ -1226,7 +1237,6 @@ static int menu_cbs_init_bind_deferred_push_compare_type(
    else if (type == MENU_SET_CDROM_INFO)
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cdrom_info_detail_list);
-      return 0;
    }
    else
       return -1;
