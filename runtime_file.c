@@ -319,7 +319,7 @@ runtime_log_t *runtime_log_init(
     * (e.g. see TyrQuake below) */
    if (core_info_find(core_path, &core_info))
    {
-      supports_no_game = core_info->supports_no_game;
+      supports_no_game = (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
       if (!string_is_empty(core_info->core_name))
          strlcpy(core_name, core_info->core_name, sizeof(core_name));
    }
@@ -1381,7 +1381,7 @@ void runtime_update_contentless_core(
    /* Sanity check */
    if (    string_is_empty(core_path)
        || !core_info_find(core_path, &core_info)
-       || !core_info->supports_no_game)
+       || !(core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
       return;
 
    /* Set fallback runtime status

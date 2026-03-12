@@ -116,8 +116,8 @@ static void contentless_cores_init_info_entries(
    {
       core_info_t *core_info = core_info_get(core_info_list, i);
 
-      if (   core_info
-          && core_info->supports_no_game)
+      if (    core_info
+          && (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
       {
          char licenses_str[MENU_LABEL_MAX_LENGTH];
          contentless_core_info_entry_t *entry =
@@ -319,7 +319,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
       /* Icon name is the first entry in the core
        * info database list */
       if (    core_info
-          &&  core_info->supports_no_game
+          && (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME)
           &&  core_info->databases_list
           && (core_info->databases_list->size > 0))
       {
@@ -427,17 +427,17 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list,
             switch (core_display_type)
             {
                case MENU_CONTENTLESS_CORES_DISPLAY_ALL:
-                  if (!(      core_info->supports_no_game))
+                  if (!(core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
                      continue;
                   break;
                case MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE:
-                  if (!(      core_info->supports_no_game
-                           && core_info->single_purpose))
+                  if (!(     (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME)
+                          && (core_info->flags & CORE_INFO_FLAG_SINGLE_PURPOSE)))
                      continue;
                   break;
                case MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM:
-                  if (!(       core_info->supports_no_game
-                           && !core_info->is_standalone_exempt))
+                  if (!(      (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME)
+                          && !(core_info->flags & CORE_INFO_FLAG_IS_STANDALONE_EXEMPT)))
                      continue;
                   break;
                default:

@@ -450,7 +450,7 @@ static size_t menu_action_setting_disp_set_label_core_updater_entry(
       if (core_info_find(entry->local_core_path, &core_info))
       {
          /* Highlight locked cores */
-         if (core_info->is_locked)
+         if ((core_info->flags & CORE_INFO_FLAG_IS_LOCKED))
          {
             *w   = (unsigned)STRLEN_CONST("[#!]");
             return strlcpy(s, "[#!]", len);
@@ -484,7 +484,7 @@ static size_t menu_action_setting_disp_set_label_core_manager_entry(
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
    if (   core_info_find(path, &core_info)
-       && core_info->is_locked)
+       && (core_info->flags & CORE_INFO_FLAG_IS_LOCKED))
    {
       *w   = (unsigned)STRLEN_CONST("[!]");
       return strlcpy(s, "[!]", len);
@@ -730,7 +730,7 @@ static size_t menu_action_setting_disp_set_label_core_lock(
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
    if (   core_info_find(path, &core_info)
-       && core_info->is_locked)
+       && (core_info->flags & CORE_INFO_FLAG_IS_LOCKED))
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -758,9 +758,9 @@ static size_t menu_action_setting_disp_set_label_core_set_standalone_exempt(
     *   calling core_info_get_core_standalone_exempt()
     *   since we don't want to perform disk access
     *   every frame */
-   if (   core_info_find(path, &core_info)
-       && core_info->supports_no_game
-       && core_info->is_standalone_exempt)
+   if (    core_info_find(path, &core_info)
+       && (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME)
+       && (core_info->flags & CORE_INFO_FLAG_IS_STANDALONE_EXEMPT))
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);

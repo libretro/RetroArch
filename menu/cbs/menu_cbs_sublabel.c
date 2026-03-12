@@ -127,7 +127,7 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
    {
       /* Search for specified core */
       if (     !core_info_find(core_path, &core_info)
-            || !core_info->supports_no_game)
+            || !(core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
          return 1;
       /* Get corresponding contentless core info entry */
       menu_contentless_cores_get_info(core_info->core_file_id.str,

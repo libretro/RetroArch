@@ -579,7 +579,7 @@ static bool core_updater_list_set_core_info(
     *    *installed* cores...) */
    if ((core_info = core_info_get_core_updater_info(local_info_path)))
    {
-      entry->is_experimental    = core_info->is_experimental;
+      entry->is_experimental    = (core_info->is_experimental);
 
       /* display name */
       if (!string_is_empty(core_info->display_name))

@@ -631,7 +631,8 @@ static int menu_displaylist_parse_core_info(
          core_info = core_info_menu;
    }
 
-   if (!core_info || !core_info->has_info)
+   if (   !core_info 
+       || !(core_info->flags & CORE_INFO_FLAG_HAS_INFO))
    {
       if (menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
@@ -1025,7 +1026,7 @@ end:
       if ((contentless_display_type ==
                MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM)
             && core_info
-            && core_info->supports_no_game
+            && (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME)
             && !string_is_empty(core_path))
       {
          /* Note: Have to set core_path as both the
@@ -4337,8 +4338,8 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
          &&  !string_is_equal(sysinfo->library_name,
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
          )
-         && core_info
-         && core_info->has_info
+         &&  core_info
+         && (core_info->flags & CORE_INFO_FLAG_HAS_INFO)
       )
       if (menu_entries_append(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
@@ -5339,8 +5340,8 @@ static unsigned menu_displaylist_parse_content_information(
 
       if (core_info_find(core_path, &core_info))
       {
-         core_supports_no_game = core_info->supports_no_game;
-
+         core_supports_no_game = (core_info->flags 
+                                & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
          if (!string_is_empty(core_info->display_name))
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
       }

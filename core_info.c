@@ -71,7 +71,8 @@ typedef struct
    char **current_string_val;
    struct string_list **current_string_list_val;
    uint32_t *current_entry_uint_val;
-   bool *current_entry_bool_val;
+   uint8_t current_entry_flag_mask; /* which CORE_INFO_FLAG_* to set */
+   bool *current_entry_bool_val;    /* for firmware optional */
    unsigned array_depth;
    unsigned object_depth;
    bool to_core_file_id;
@@ -123,6 +124,7 @@ static bool CCJSONObjectMemberHandler(void *context,
                pCtx->current_string_val      = NULL;
                pCtx->current_string_list_val = NULL;
                pCtx->current_entry_uint_val  = NULL;
+               pCtx->current_entry_flag_mask = 0;
                pCtx->current_entry_bool_val  = NULL;
                pCtx->to_core_file_id         = false;
                pCtx->to_firmware             = false;
@@ -160,7 +162,7 @@ static bool CCJSONObjectMemberHandler(void *context,
                      else if (string_is_equal(pValue, "description"))
                         pCtx->current_string_val      = &pCtx->core_info->description;
                      else if (string_is_equal(pValue, "database_match_archive_member"))
-                        pCtx->current_entry_bool_val  = &pCtx->core_info->database_match_archive_member;
+                        pCtx->current_entry_flag_mask = CORE_INFO_FLAG_DATABASE_MATCH_ARCHIVE_MEMBER;
                      break;
                   case 'f':
                      if (string_is_equal(pValue, "firmware"))
@@ -168,7 +170,7 @@ static bool CCJSONObjectMemberHandler(void *context,
                      break;
                   case 'h':
                      if (string_is_equal(pValue, "has_info"))
-                        pCtx->current_entry_bool_val  = &pCtx->core_info->has_info;
+                        pCtx->current_entry_flag_mask = CORE_INFO_FLAG_HAS_INFO;
                      break;
                   case 'l':
                      if (string_is_equal(pValue, "licenses"))
@@ -179,7 +181,7 @@ static bool CCJSONObjectMemberHandler(void *context,
                      break;
                   case 'i':
                      if (string_is_equal(pValue, "is_experimental"))
-                        pCtx->current_entry_bool_val  = &pCtx->core_info->is_experimental;
+                        pCtx->current_entry_flag_mask = CORE_INFO_FLAG_IS_EXPERIMENTAL;
                      break;
                   case 'n':
                      if (string_is_equal(pValue, "notes"))
@@ -215,9 +217,9 @@ static bool CCJSONObjectMemberHandler(void *context,
                         pCtx->current_string_list_val = &pCtx->core_info->supported_extensions_list;
                      }
                      else if (string_is_equal(pValue, "supports_no_game"))
-                        pCtx->current_entry_bool_val  = &pCtx->core_info->supports_no_game;
+                        pCtx->current_entry_flag_mask = CORE_INFO_FLAG_SUPPORTS_NO_GAME;
                      else if (string_is_equal(pValue, "single_purpose"))
-                        pCtx->current_entry_bool_val  = &pCtx->core_info->single_purpose;
+                        pCtx->current_entry_flag_mask = CORE_INFO_FLAG_SINGLE_PURPOSE;
                      else if (string_is_equal(pValue, "savestate_support_level"))
                         pCtx->current_entry_uint_val  = &pCtx->core_info->savestate_support_level;
                      break;
@@ -308,9 +310,18 @@ static bool CCJSONBoolHandler(void *context, bool value)
 {
    CCJSONContext *pCtx              = (CCJSONContext *)context;
 
+   if (pCtx->current_entry_flag_mask && pCtx->core_info)
+   {
+      if (value)
+         pCtx->core_info->flags |= pCtx->current_entry_flag_mask;
+      else
+         pCtx->core_info->flags &= ~pCtx->current_entry_flag_mask;
+   }
+
    if (pCtx->current_entry_bool_val)
       *pCtx->current_entry_bool_val = value;
 
+   pCtx->current_entry_flag_mask    = 0;
    pCtx->current_entry_bool_val     = NULL;
 
    return true;
@@ -489,14 +500,7 @@ static void core_info_copy(core_info_t *src, core_info_t *dst)
    dst->core_file_id.hash             = src->core_file_id.hash;
 
    dst->savestate_support_level       = src->savestate_support_level;
-   dst->has_info                      = src->has_info;
-   dst->supports_no_game              = src->supports_no_game;
-   dst->single_purpose                = src->single_purpose;
-   dst->database_match_archive_member = src->database_match_archive_member;
-   dst->is_experimental               = src->is_experimental;
-   dst->is_locked                     = src->is_locked;
-   dst->is_standalone_exempt          = src->is_standalone_exempt;
-   dst->is_installed                  = src->is_installed;
+   dst->flags                         = src->flags;
 }
 
 /* Like core_info_copy, but transfers 'ownership'
@@ -586,14 +590,7 @@ static void core_info_transfer(core_info_t *src, core_info_t *dst)
    dst->core_file_id.hash             = src->core_file_id.hash;
 
    dst->savestate_support_level       = src->savestate_support_level;
-   dst->has_info                      = src->has_info;
-   dst->supports_no_game              = src->supports_no_game;
-   dst->single_purpose                = src->single_purpose;
-   dst->database_match_archive_member = src->database_match_archive_member;
-   dst->is_experimental               = src->is_experimental;
-   dst->is_locked                     = src->is_locked;
-   dst->is_standalone_exempt          = src->is_standalone_exempt;
-   dst->is_installed                  = src->is_installed;
+   dst->flags                         = src->flags;
 }
 
 static void core_info_cache_list_free(
@@ -634,15 +631,12 @@ static core_info_t *core_info_cache_find(
 
    for (i = 0; i < list->length; i++)
    {
-      core_info_t *info = (core_info_t*)&list->items[i];
-
-      if (!info)
-         continue;
+      core_info_t *info = &list->items[i];
 
       if (  (info->core_file_id.hash == hash)
           && string_is_equal(info->core_file_id.str, core_file_id))
       {
-         info->is_installed = true;
+         info->flags |= CORE_INFO_FLAG_IS_INSTALLED;
          return info;
       }
    }
@@ -700,7 +694,7 @@ static core_info_cache_list_t *core_info_cache_list_new(void)
       calloc(CORE_INFO_CACHE_DEFAULT_CAPACITY,
             sizeof(core_info_t));
    core_info_cache_list->length   = 0;
-   core_info_cache_list->capacity = 0;
+   core_info_cache_list->capacity = CORE_INFO_CACHE_DEFAULT_CAPACITY;
    core_info_cache_list->version  = NULL;
    core_info_cache_list->refresh  = false;
 
@@ -708,13 +702,8 @@ static core_info_cache_list_t *core_info_cache_list_new(void)
    {
       core_info_cache_list_free(core_info_cache_list);
       free(core_info_cache_list);
-      core_info_cache_list = NULL;
       return NULL;
    }
-
-   core_info_cache_list->capacity = CORE_INFO_CACHE_DEFAULT_CAPACITY;
-   core_info_cache_list->refresh  = false;
-   core_info_cache_list->version  = NULL;
 
    return core_info_cache_list;
 }
@@ -885,158 +874,122 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    rjsonwriter_set_options(writer, RJSONWRITER_OPTION_SKIP_WHITESPACE);
 #endif
 
-   rjsonwriter_raw(writer, "{", 1);
-   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, "{\n", 2);
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "version");
-   rjsonwriter_raw(writer, ":", 1);
-   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_raw(writer, ": ", 2);
    rjsonwriter_add_string(writer, CORE_INFO_CACHE_VERSION);
-   rjsonwriter_raw(writer, ",", 1);
-   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, ",\n", 2);
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "items");
-   rjsonwriter_raw(writer, ":", 1);
-   rjsonwriter_raw(writer, " ", 1);
-   rjsonwriter_raw(writer, "[", 1);
-   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, ": [\n", 4);
 
-   for (i = 0; i < list->length; i++)
    {
-      core_info_t* info = &list->items[i];
+      bool first_written = true;
 
-      if (!info || !info->is_installed)
-         continue;
-
-      if (i > 0)
+      for (i = 0; i < list->length; i++)
       {
-         rjsonwriter_raw(writer, ",", 1);
-         rjsonwriter_raw(writer, "\n", 1);
-      }
+         core_info_t* info = &list->items[i];
+
+         if (!(info->flags & CORE_INFO_FLAG_IS_INSTALLED))
+            continue;
+
+         if (!first_written)
+            rjsonwriter_raw(writer, ",\n", 2);
+         first_written = false;
 
       rjsonwriter_add_spaces(writer, 4);
-      rjsonwriter_raw(writer, "{", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, "{\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "display_name");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->display_name);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "display_version");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->display_version);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "core_name");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->core_name);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "system_manufacturer");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->system_manufacturer);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "systemname");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->systemname);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "system_id");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->system_id);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "supported_extensions");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->supported_extensions);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "authors");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->authors);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "permissions");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->permissions);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "licenses");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->licenses);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "categories");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->categories);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "databases");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->databases);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "notes");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->notes);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "required_hw_api");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->required_hw_api);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "description");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->description);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       if (info->firmware_count > 0)
       {
@@ -1095,106 +1048,81 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
       rjsonwriter_raw(writer, ":", 1);
       rjsonwriter_raw(writer, "\n", 1);
       rjsonwriter_add_spaces(writer, 6);
-      rjsonwriter_raw(writer, "{", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, "{\n", 2);
       rjsonwriter_add_spaces(writer, 8);
       rjsonwriter_add_string(writer, "str");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_add_string(writer, info->core_file_id.str);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
       rjsonwriter_add_spaces(writer, 8);
       rjsonwriter_add_string(writer, "hash");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_rawf(writer, "%u", info->core_file_id.hash);
       rjsonwriter_raw(writer, "\n", 1);
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_raw(writer, "}", 1);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "firmware_count");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_rawf(writer, "%u", info->firmware_count);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "savestate_support_level");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_raw(writer, ": ", 2);
       rjsonwriter_rawf(writer, "%u", info->savestate_support_level);
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "has_info");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
-      {
-         bool value = info->has_info;
-         rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
-      }
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer,
+            (info->flags & CORE_INFO_FLAG_HAS_INFO) ? "true" : "false",
+            (info->flags & CORE_INFO_FLAG_HAS_INFO) ? 4 : 5);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "supports_no_game");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
-      {
-         bool value = info->supports_no_game;
-         rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
-      }
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer,
+            (info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME) ? "true" : "false",
+            (info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME) ? 4 : 5);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "single_purpose");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
-      {
-         bool value = info->single_purpose;
-         rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
-      }
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer,
+            (info->flags & CORE_INFO_FLAG_SINGLE_PURPOSE) ? "true" : "false",
+            (info->flags & CORE_INFO_FLAG_SINGLE_PURPOSE) ? 4 : 5);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "database_match_archive_member");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
-      {
-         bool value = info->database_match_archive_member;
-         rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
-      }
-      rjsonwriter_raw(writer, ",", 1);
-      rjsonwriter_raw(writer, "\n", 1);
+      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer,
+            (info->flags & CORE_INFO_FLAG_DATABASE_MATCH_ARCHIVE_MEMBER) ? "true" : "false",
+            (info->flags & CORE_INFO_FLAG_DATABASE_MATCH_ARCHIVE_MEMBER) ? 4 : 5);
+      rjsonwriter_raw(writer, ",\n", 2);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "is_experimental");
-      rjsonwriter_raw(writer, ":", 1);
-      rjsonwriter_raw(writer, " ", 1);
-      {
-         bool value = info->is_experimental;
-         rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
-      }
+      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer,
+            (info->flags & CORE_INFO_FLAG_IS_EXPERIMENTAL) ? "true" : "false",
+            (info->flags & CORE_INFO_FLAG_IS_EXPERIMENTAL) ? 4 : 5);
       rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 4);
       rjsonwriter_raw(writer, "}", 1);
+      }
    }
 
    rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_add_spaces(writer, 2);
-   rjsonwriter_raw(writer, "]", 1);
-   rjsonwriter_raw(writer, "\n", 1);
-   rjsonwriter_raw(writer, "}", 1);
-   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, "]\n}\n", 4);
    rjsonwriter_free(writer);
 
    RARCH_LOG("[Core info] Wrote to cache file: \"%s\".\n", file_path);
@@ -1229,12 +1157,9 @@ static void core_info_check_uninstalled(core_info_cache_list_t *list)
 
    for (i = 0; i < list->length; i++)
    {
-      core_info_t *info = (core_info_t *)&list->items[i];
+      core_info_t *info = &list->items[i];
 
-      if (!info)
-         continue;
-
-      if (!info->is_installed)
+      if (!(info->flags & CORE_INFO_FLAG_IS_INSTALLED))
       {
          list->refresh = true;
          return;
@@ -1833,19 +1758,39 @@ static void core_info_parse_config_file(
 
    if (config_get_bool(conf, "supports_no_game",
             &tmp_bool))
-      info->supports_no_game = tmp_bool;
+   {
+      if (tmp_bool)
+         info->flags |= CORE_INFO_FLAG_SUPPORTS_NO_GAME;
+      else
+         info->flags &= ~CORE_INFO_FLAG_SUPPORTS_NO_GAME;
+   }
 
    if (config_get_bool(conf, "single_purpose",
             &tmp_bool))
-      info->single_purpose = tmp_bool;
+   {
+      if (tmp_bool)
+         info->flags |= CORE_INFO_FLAG_SINGLE_PURPOSE;
+      else
+         info->flags &= ~CORE_INFO_FLAG_SINGLE_PURPOSE;
+   }
 
    if (config_get_bool(conf, "database_match_archive_member",
             &tmp_bool))
-      info->database_match_archive_member = tmp_bool;
+   {
+      if (tmp_bool)
+         info->flags |= CORE_INFO_FLAG_DATABASE_MATCH_ARCHIVE_MEMBER;
+      else
+         info->flags &= ~CORE_INFO_FLAG_DATABASE_MATCH_ARCHIVE_MEMBER;
+   }
 
    if (config_get_bool(conf, "is_experimental",
             &tmp_bool))
-      info->is_experimental = tmp_bool;
+   {
+      if (tmp_bool)
+         info->flags |= CORE_INFO_FLAG_IS_EXPERIMENTAL;
+      else
+         info->flags &= ~CORE_INFO_FLAG_IS_EXPERIMENTAL;
+   }
 
 
    /* Savestate support level is slightly more complex,
@@ -1883,7 +1828,7 @@ static void core_info_parse_config_file(
 
    core_info_resolve_firmware(info, conf);
 
-   info->has_info = true;
+   info->flags |= CORE_INFO_FLAG_HAS_INFO;
    list->info_count++;
 }
 
@@ -1982,18 +1927,14 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       size_t i;
       for (i = 0; i < core_info_list->count; i++)
       {
-         core_info_t *info = (core_info_t*)&core_info_list->list[i];
+         core_info_t *info = &core_info_list->list[i];
          core_info_free(info);
       }
+      free(core_info_list->list);
    }
 
-   if (core_info_list->all_ext)
-      free(core_info_list->all_ext);
-   core_info_list->all_ext = NULL;
-
-   if (core_info_list->list)
-      free(core_info_list->list);
-   core_info_list->list = NULL;
+   free(core_info_list->all_ext);
+   free(core_info_list);
 }
 
 static core_info_list_t *core_info_list_new(const char *path,
@@ -2029,9 +1970,6 @@ static core_info_list_t *core_info_list_new(const char *path,
    {
       core_info_list_free(core_info_list);
       core_info_path_list_free(path_list);
-      free(core_info_list);
-      core_info_list = NULL;
-      path_list      = NULL;
       return NULL;
    }
 
@@ -2044,9 +1982,6 @@ static core_info_list_t *core_info_list_new(const char *path,
    {
       core_info_list_free(core_info_list);
       core_info_path_list_free(path_list);
-      free(core_info_list);
-      core_info_list = NULL;
-      path_list      = NULL;
       return NULL;
    }
 #endif
@@ -2073,7 +2008,9 @@ static core_info_list_t *core_info_list_new(const char *path,
 
          if (info_cache)
          {
-            core_info_copy(info_cache, info);
+            /* MEM-3: Transfer ownership instead of deep-copy
+             * since cache entries are freed at end of init */
+            core_info_transfer(info_cache, info);
 
             /* Core path is 'dynamic', and cannot
              * be cached (i.e. core directory may
@@ -2084,23 +2021,29 @@ static core_info_list_t *core_info_list_new(const char *path,
 
             /* Core lock status is 'dynamic', and
              * cannot be cached */
-            info->is_locked = core_info_path_is_locked(
-                  path_list->lock_list, core_filename);
+            if (core_info_path_is_locked(
+                  path_list->lock_list, core_filename))
+               info->flags |= CORE_INFO_FLAG_IS_LOCKED;
+            else
+               info->flags &= ~CORE_INFO_FLAG_IS_LOCKED;
 
             /* Core 'standalone exempt' status is 'dynamic',
              * and cannot be cached
              * > It is also dependent upon whether the core
              *   supports contentless operation */
-            info->is_standalone_exempt = info->supports_no_game &&
+            if ((info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME) &&
                   core_info_path_is_standalone_exempt(
                         path_list->standalone_exempt_list,
-                        core_filename);
+                        core_filename))
+               info->flags |= CORE_INFO_FLAG_IS_STANDALONE_EXEMPT;
+            else
+               info->flags &= ~CORE_INFO_FLAG_IS_STANDALONE_EXEMPT;
 
             /* 'info_count' is normally incremented inside
              * core_info_parse_config_file(). If core entry
              * is cached, must instead increment the value
              * here */
-            if (info->has_info)
+            if (info->flags & CORE_INFO_FLAG_HAS_INFO)
                core_info_list->info_count++;
 
             continue;
@@ -2111,8 +2054,9 @@ static core_info_list_t *core_info_list_new(const char *path,
       info->path              = strdup(base_path);
 
       /* Get core lock status */
-      info->is_locked         = core_info_path_is_locked(
-            path_list->lock_list, core_filename);
+      if (core_info_path_is_locked(
+            path_list->lock_list, core_filename))
+         info->flags |= CORE_INFO_FLAG_IS_LOCKED;
 
       /* Cache core file 'id' */
       info->core_file_id.str  = strdup(core_file_id);
@@ -2137,12 +2081,13 @@ static core_info_list_t *core_info_list_new(const char *path,
          info->display_name = strdup(core_filename);
 
       /* Get core 'standalone exempt' status */
-      info->is_standalone_exempt = info->supports_no_game &&
+      if ((info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME) &&
             core_info_path_is_standalone_exempt(
                   path_list->standalone_exempt_list,
-                  core_filename);
+                  core_filename))
+         info->flags |= CORE_INFO_FLAG_IS_STANDALONE_EXEMPT;
 
-      info->is_installed = true;
+      info->flags |= CORE_INFO_FLAG_IS_INSTALLED;
 
       /* If info cache is enabled and we reach this
        * point, current core is uncached
@@ -2257,6 +2202,8 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 #endif
    if (support_a != support_b)
       return support_b - support_a;
+   if (!a->display_name || !b->display_name)
+      return 0;
    return strcasecmp(a->display_name, b->display_name);
 }
 
@@ -2300,47 +2247,17 @@ void core_info_free_current_core(void)
 bool core_info_init_current_core(void)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
-   core_info_t *current                   = (core_info_t*)
-      malloc(sizeof(*current));
+   core_info_t *current                   = NULL;
+
+   /* BUG-4: Free any previous allocation to prevent leaks */
+   if (p_coreinfo->current)
+      core_info_free_current_core();
+
+   /* MEM-4: Use calloc — only set the one non-zero field */
+   current = (core_info_t*)calloc(1, sizeof(*current));
    if (!current)
       return false;
-   current->has_info                      = false;
-   current->supports_no_game              = false;
-   current->single_purpose                = false;
-   current->database_match_archive_member = false;
-   current->is_experimental               = false;
-   current->is_locked                     = false;
-   current->is_standalone_exempt          = false;
-   current->is_installed                  = false;
-   current->firmware_count                = 0;
    current->savestate_support_level       = CORE_INFO_SAVESTATE_DETERMINISTIC;
-   current->path                          = NULL;
-   current->display_name                  = NULL;
-   current->display_version               = NULL;
-   current->core_name                     = NULL;
-   current->system_manufacturer           = NULL;
-   current->systemname                    = NULL;
-   current->system_id                     = NULL;
-   current->supported_extensions          = NULL;
-   current->authors                       = NULL;
-   current->permissions                   = NULL;
-   current->licenses                      = NULL;
-   current->categories                    = NULL;
-   current->databases                     = NULL;
-   current->notes                         = NULL;
-   current->required_hw_api               = NULL;
-   current->description                   = NULL;
-   current->categories_list               = NULL;
-   current->databases_list                = NULL;
-   current->note_list                     = NULL;
-   current->supported_extensions_list     = NULL;
-   current->authors_list                  = NULL;
-   current->permissions_list              = NULL;
-   current->licenses_list                 = NULL;
-   current->required_hw_api_list          = NULL;
-   current->firmware                      = NULL;
-   current->core_file_id.str              = NULL;
-   current->core_file_id.hash             = 0;
 
    p_coreinfo->current                    = current;
    return true;
@@ -2536,7 +2453,7 @@ bool core_info_core_file_id_is_equal(const char *core_path_a,
        || string_is_empty(core_path_b)
        || (core_info_get_file_id(
           path_basename_nocompression(core_path_a),
-            core_file_id_a, sizeof(core_file_id_a) == 0))
+            core_file_id_a, sizeof(core_file_id_a)) == 0)
        || (core_info_get_file_id(
           path_basename_nocompression(core_path_b),
             core_file_id_b, sizeof(core_file_id_b)) == 0))
@@ -2568,7 +2485,7 @@ bool core_info_database_match_archive_member(const char *database_path)
       {
          const core_info_t *info = &p_coreinfo->curr_list->list[i];
 
-         if (!info->database_match_archive_member)
+         if (!(info->flags & CORE_INFO_FLAG_DATABASE_MATCH_ARCHIVE_MEMBER))
              continue;
 
          if (!string_list_find_elem(info->databases_list, database))
@@ -2660,7 +2577,10 @@ core_updater_info_t *core_info_get_core_updater_info(
 
    /* Create info struct */
    if (!(info = (core_updater_info_t*)malloc(sizeof(*info))))
+   {
+      config_file_free(conf);
       return NULL;
+   }
 
    info->is_experimental     = false;
    info->display_name        = NULL;
@@ -2810,68 +2730,43 @@ void core_info_qsort(core_info_list_t *core_info_list,
    }
 }
 
-bool core_info_current_supports_savestate(void)
+/* PERF-1: Common helper for all savestate support level checks */
+static bool core_info_current_supports_savestate_level(uint32_t min_level)
 {
    core_info_state_t *p_coreinfo   = &core_info_st;
    settings_t        *settings     = config_get_ptr();
-   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
-   if (core_info_savestate_bypass)
+   if (settings->bools.core_info_savestate_bypass)
       return true;
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-   return p_coreinfo->current->savestate_support_level >=
-         CORE_INFO_SAVESTATE_BASIC;
+   return p_coreinfo->current->savestate_support_level >= min_level;
+}
+
+bool core_info_current_supports_savestate(void)
+{
+   return core_info_current_supports_savestate_level(
+         CORE_INFO_SAVESTATE_BASIC);
 }
 
 bool core_info_current_supports_rewind(void)
 {
-   core_info_state_t *p_coreinfo   = &core_info_st;
-   settings_t        *settings     = config_get_ptr();
-   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
-   if (core_info_savestate_bypass)
-      return true;
-   /* If no core is currently loaded, assume
-    * by default that all savestate functionality
-    * is supported */
-   if (!p_coreinfo->current)
-      return true;
-   return p_coreinfo->current->savestate_support_level >=
-         CORE_INFO_SAVESTATE_SERIALIZED;
+   return core_info_current_supports_savestate_level(
+         CORE_INFO_SAVESTATE_SERIALIZED);
 }
 
 bool core_info_current_supports_netplay(void)
 {
-   core_info_state_t *p_coreinfo   = &core_info_st;
-   settings_t        *settings     = config_get_ptr();
-   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
-   if (core_info_savestate_bypass)
-      return true;
-   /* If no core is currently loaded, assume
-    * by default that all savestate functionality
-    * is supported */
-   if (!p_coreinfo->current)
-      return true;
-   return p_coreinfo->current->savestate_support_level >=
-         CORE_INFO_SAVESTATE_DETERMINISTIC;
+   return core_info_current_supports_savestate_level(
+         CORE_INFO_SAVESTATE_DETERMINISTIC);
 }
 
 bool core_info_current_supports_runahead(void)
 {
-   core_info_state_t *p_coreinfo   = &core_info_st;
-   settings_t        *settings     = config_get_ptr();
-   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
-   if (core_info_savestate_bypass)
-      return true;
-   /* If no core is currently loaded, assume
-    * by default that all savestate functionality
-    * is supported */
-   if (!p_coreinfo->current)
-      return true;
-   return p_coreinfo->current->savestate_support_level >=
-         CORE_INFO_SAVESTATE_DETERMINISTIC;
+   return core_info_current_supports_savestate_level(
+         CORE_INFO_SAVESTATE_DETERMINISTIC);
 }
 
 static bool core_info_update_core_aux_file(const char *path, bool create)
@@ -2944,7 +2839,10 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
 
    /* File operations were successful - update
     * core info entry */
-   core_info->is_locked = lock;
+   if (lock)
+      core_info->flags |= CORE_INFO_FLAG_IS_LOCKED;
+   else
+      core_info->flags &= ~CORE_INFO_FLAG_IS_LOCKED;
 
    return true;
 }
@@ -3001,7 +2899,12 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
     * that core info 'is_locked' field is
     * up to date */
    if (validate_path && core_info)
-      core_info->is_locked = is_locked;
+   {
+      if (is_locked)
+         core_info->flags |= CORE_INFO_FLAG_IS_LOCKED;
+      else
+         core_info->flags &= ~CORE_INFO_FLAG_IS_LOCKED;
+   }
 
    return is_locked;
 }
@@ -3026,7 +2929,7 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
    if (    string_is_empty(core_path)
        || !core_info_find(core_path, &core_info)
        || string_is_empty(core_info->path)
-       || !core_info->supports_no_game)
+       || !(core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
       return false;
 
    /* Get 'standalone exempt' file path */
@@ -3038,7 +2941,10 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
    {
       /* File operations were successful - update
        * core info entry */
-      core_info->is_standalone_exempt = exempt;
+      if (exempt)
+         core_info->flags |= CORE_INFO_FLAG_IS_STANDALONE_EXEMPT;
+      else
+         core_info->flags &= ~CORE_INFO_FLAG_IS_STANDALONE_EXEMPT;
       return true;
    }
 #endif
@@ -3062,7 +2968,7 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
    if (    string_is_empty(core_path)
        || !core_info_find(core_path, &core_info)
        ||  string_is_empty(core_info->path)
-       || !core_info->supports_no_game)
+       || !(core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
       return false;
 
    /* Get 'standalone exempt' file path */
@@ -3072,11 +2978,11 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
    /* Check whether 'standalone exempt' file exists */
    if (path_is_valid(exempt_file_path))
    {
-      core_info->is_standalone_exempt = true;
+      core_info->flags |= CORE_INFO_FLAG_IS_STANDALONE_EXEMPT;
       return true;
    }
 
-   core_info->is_standalone_exempt    = false;
+   core_info->flags &= ~CORE_INFO_FLAG_IS_STANDALONE_EXEMPT;
 #endif
    return false;
 }
