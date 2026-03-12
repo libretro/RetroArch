@@ -128,8 +128,9 @@ static void cue_append_multi_disc_suffix(char * str1, const char *filename)
       int disc_number = cue_find_disc_number(filename, filename[result + 6]);
       if (disc_number > 0)
       {
-         char *dest = str1;
-         sprintf(dest + strlen(dest), "-%i", disc_number - 1);
+         char *dest   = str1;
+         size_t __len = strlen(dest);
+         snprintf(dest + __len, PATH_MAX - __len, "-%i", disc_number - 1);
       }
    }
 }

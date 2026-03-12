@@ -16301,7 +16301,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned checked    = 0;
                            size_t tok_len;
 
-                           sprintf(val_d, "%d", setting->enum_idx);
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                            while (p && *p)
                            {

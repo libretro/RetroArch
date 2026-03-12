@@ -138,17 +138,29 @@ static void reset_IOP()
  * newCWD = pfs:/retroarch/
  * return true
 */
-bool getMountInfo(char *path, char *mountPoint, char *partition, char *newCWD)
+bool getMountInfo(char *path, char *mountPoint, char *partition,
+                  char *newCWD, size_t mountPointSize,
+                  size_t partitionSize, size_t newCWDSize)
 {
+   bool result = false;
    struct string_list *str_list = string_split(path, ":");
+
    if (str_list->size < 3)
-      return false;
+      goto end;
 
-   sprintf(partition, "%s:%s", str_list->elems[0].data, str_list->elems[1].data);
-   sprintf(mountPoint, "%s:", str_list->elems[2].data);
-   sprintf(newCWD, "%s%s", mountPoint, str_list->size == 4 ? str_list->elems[3].data : "");
+   snprintf(partition, partitionSize, "%s:%s",
+            str_list->elems[0].data, str_list->elems[1].data);
+   snprintf(mountPoint, mountPointSize, "%s:",
+            str_list->elems[2].data);
+   snprintf(newCWD, newCWDSize, "%s%s",
+            mountPoint,
+            str_list->size >= 4 ? str_list->elems[3].data : "");
 
-   return true;
+   result = true;
+
+end:
+   string_list_free(str_list);
+   return result;
 }
 
 static void init_drivers(bool extra_drivers)
