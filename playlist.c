@@ -2755,32 +2755,27 @@ static bool playlist_read_file(playlist_t *playlist)
                      STRLEN_CONST("thumbnail_mode")) == 0)
             {
                char thumbnail_mode_str[8];
-
                if (playlist_get_old_format_metadata_value(
-                     line_buf[3], thumbnail_mode_str,
-                     sizeof(thumbnail_mode_str)) > 0)
+                        line_buf[3], thumbnail_mode_str,
+                        sizeof(thumbnail_mode_str)) > 0)
                {
-                  char *tok, *save             = NULL;
-                  char *thumbnail_mode_str_cpy = strdup(thumbnail_mode_str);
-
-                  if ((tok = strtok_r(thumbnail_mode_str_cpy, "|", &save)))
+                  char *save = NULL;
+                  char *tok  = strtok_r(thumbnail_mode_str, "|", &save);
+                  if (tok)
                   {
-                     char *elem0 = strdup(tok);
-                     if ((tok = strtok_r(NULL, "|", &save)))
+                     char *tok2 = strtok_r(NULL, "|", &save);
+                     if (tok2)
                      {
                         /* Right thumbnail mode */
-                        unsigned thumbnail_mode = string_to_unsigned(elem0);
+                        unsigned thumbnail_mode = string_to_unsigned(tok);
                         if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
                            playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
-
                         /* Left thumbnail mode */
-                        thumbnail_mode = string_to_unsigned(tok);
+                        thumbnail_mode = string_to_unsigned(tok2);
                         if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
                            playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
                      }
-                     free(elem0);
                   }
-                  free(thumbnail_mode_str_cpy);
                }
             }
 

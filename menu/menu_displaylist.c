@@ -13464,19 +13464,25 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR:
             {
 #ifdef HAVE_NETWORKING
+               size_t label_len;
                char new_label[NAME_MAX_LENGTH];
-               char *save                  = NULL;
-               char *info_path_cpy         = strdup(info->path);
-               const char *con             = strtok_r(info_path_cpy, ";", &save);
+               const char *con       = info->path;
+               const char *semi      = strchr(con, ';');
 
-               if (con)
-                  strlcpy(new_label, con, sizeof(new_label));
+               if (semi)
+               {
+                  label_len = (size_t)(semi - con);
+                  if (label_len >= sizeof(new_label))
+                     label_len = sizeof(new_label) - 1;
+                  memcpy(new_label, con, label_len);
+                  new_label[label_len] = '\0';
+                  strlcpy(menu->core_buf, semi + 1, menu->core_len);
+               }
                else
-                  new_label[0] = '\0';
-
-               if ((con = strtok_r(NULL, ";", &save))) /* Get second parameter */
-                  strlcpy(menu->core_buf, con, menu->core_len);
-               free(info_path_cpy);
+               {
+                  strlcpy(new_label, con, sizeof(new_label));
+                  menu->core_buf[0] = '\0';
+               }
 
                if ((count = (unsigned)print_buf_lines(
                            info->list, new_label, menu->core_buf,
@@ -13489,10 +13495,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
                         MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                         FILE_TYPE_NONE, 0, 0, NULL);
-
                info->flags       |= MD_FLAG_NEED_REFRESH
-                                  | MD_FLAG_NEED_PUSH
-                                  | MD_FLAG_NEED_CLEAR;
+                  | MD_FLAG_NEED_PUSH
+                  | MD_FLAG_NEED_CLEAR;
 #endif
             }
             break;

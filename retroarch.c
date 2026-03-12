@@ -7441,18 +7441,12 @@ static bool retroarch_parse_input_and_config(
          {
             case 'd':
                {
+                  char *sep;
                   unsigned new_port;
-                  char *save               = NULL;
-                  char *tok                = NULL;
-                  int    port              = 0;
-                  unsigned id              = 0;
-                  char *optarg_cpy         = strdup(optarg);
-
-                  if ((tok = strtok_r(optarg_cpy, ":", &save)))
-                     port = (int)strtol(tok, NULL, 0);
-                  if ((tok = strtok_r(NULL, ":", &save)))
-                     id   = (unsigned)strtoul(tok, NULL, 0);
-                  free(optarg_cpy);
+                  unsigned id = 0;
+                  int port    = (int)strtol(optarg, &sep, 0);
+                  if (sep && *sep == ':')
+                     id = (unsigned)strtoul(sep + 1, NULL, 0);
 
                   if (port < 1 || port > MAX_USERS)
                   {
@@ -7461,9 +7455,7 @@ static bool retroarch_parse_input_and_config(
                      retroarch_fail(1, "retroarch_parse_input()");
                   }
                   new_port = port - 1;
-
                   input_config_set_device(new_port, id);
-
                   retroarch_override_setting_set(
                         RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
                }
