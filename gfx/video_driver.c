@@ -841,22 +841,19 @@ void video_driver_force_fallback(const char *driver)
    {
       char text[128];
       ui_msg_window_state window_state;
-      char *title          = strdup(msg_hash_to_str(MSG_ERROR));
-
+      const char *title    = msg_hash_to_str(MSG_ERROR);
       text[0]              = '\0';
 
       snprintf(text, sizeof(text),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK),
-            driver);
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK),
+         driver);
 
       window_state.buttons = UI_MSG_WINDOW_OK;
-      window_state.text    = strdup(text);
-      window_state.title   = title;
+      window_state.text    = (char*)text;
+      window_state.title   = (char*)title;
       window_state.window  = NULL;
 
       msg_window->error(&window_state);
-
-      free(title);
    }
    exit(1);
 }

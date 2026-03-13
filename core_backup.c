@@ -329,12 +329,9 @@ enum core_backup_type core_backup_get_core_path(
       char *s, size_t len)
 {
    const char *backup_filename       = NULL;
-
    if (string_is_empty(backup_path) || string_is_empty(dir_libretro))
       return CORE_BACKUP_TYPE_INVALID;
-
    backup_filename = path_basename(backup_path);
-
    if (!string_is_empty(backup_filename))
    {
       /* Check backup type */
@@ -344,35 +341,27 @@ enum core_backup_type core_backup_get_core_path(
             {
                /* This is an archived backup with timestamp/crc
                 * metadata in the filename */
-               char *core_filename = strdup(backup_filename);
-               /* Find the location of the second period */
-               char *period        = strchr(core_filename, '.');
-               if (!period || (*(++period) == '\0'))
-               {
-                  free(core_filename);
+               size_t dir_len;
+               size_t core_len;
+               const char *period = strchr(backup_filename, '.');
+               if (!period || *(++period) == '\0')
                   break;
-               }
-
-               if (!(period = strchr(period, '.')))
-               {
-                  free(core_filename);
+               period = strchr(period, '.');
+               if (!period)
                   break;
-               }
-
-               /* Trim everything after (and including) the
-                * second period */
-               *period = '\0';
-
-               if (string_is_empty(core_filename))
-               {
-                  free(core_filename);
+               /* Length of the core filename up to (but not
+                * including) the second period */
+               core_len = (size_t)(period - backup_filename);
+               if (core_len == 0)
                   break;
-               }
-
-               /* All good - build core path */
-               fill_pathname_join_special(s, dir_libretro,
-                     core_filename, len);
-               free(core_filename);
+               /* Build core path: dir_libretro / core_filename */
+               dir_len = strlen(dir_libretro);
+               if (dir_len + core_len + 1 >= len)
+                  break;
+               memcpy(s, dir_libretro, dir_len);
+               s[dir_len]   = PATH_DEFAULT_SLASH_C();
+               memcpy(s + dir_len + 1, backup_filename, core_len);
+               s[dir_len + 1 + core_len] = '\0';
             }
             return CORE_BACKUP_TYPE_ARCHIVE;
          case CORE_BACKUP_TYPE_LIB:
@@ -385,7 +374,6 @@ enum core_backup_type core_backup_get_core_path(
             break;
       }
    }
-
    return CORE_BACKUP_TYPE_INVALID;
 }
 

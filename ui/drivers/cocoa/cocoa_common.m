@@ -1052,12 +1052,7 @@ config_file_t *open_userdefaults_config_file(void)
    NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
    if ([backup length] > 0)
    {
-      char *str = strdup(backup.UTF8String);
-      conf = config_file_new_from_string(str, path_get(RARCH_PATH_CONFIG));
-      free(str);
-      /* If we are falling back to the NSUserDefaults backup of the config file,
-       * it's likely because the OS has deleted all of our cache, including our
-       * extracted assets. This will cause re-extraction */
+      conf = config_file_new_from_string(backup.UTF8String, path_get(RARCH_PATH_CONFIG));
       config_set_int(conf, "bundle_assets_extract_last_version", 0);
    }
    return conf;
