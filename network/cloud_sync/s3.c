@@ -302,10 +302,27 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
    else if (strstr(host, ".backblazeb2.com"))
    {
       const char *s3pos = strstr(host, ".s3.");
+      bool b2_path_style_host = false;
 
       RARCH_LOG(S3_PFX "Detected Backblaze B2 format\n");
 
-      if (s3pos)
+      /* Backblaze B2 path-style host: s3.<region>.backblazeb2.com/<bucket>/... */
+      if (string_starts_with_case_insensitive(host, "s3."))
+      {
+         const char *region_start = host + 3; /* skip "s3." */
+         second_dot = strchr(region_start, '.');
+         if (second_dot)
+         {
+            size_t region_len = second_dot - region_start;
+            if (region_len > 0 && region_len < NAME_MAX_LENGTH)
+            {
+               strlcpy(region, region_start, region_len + 1);
+               b2_path_style_host = true;
+            }
+         }
+      }
+
+      if (s3pos && !b2_path_style_host)
       {
          RARCH_LOG(S3_PFX "Backblaze B2 style: virtual-hosted\n");
          size_t bucket_len = s3pos - host;
