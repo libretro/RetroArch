@@ -395,9 +395,10 @@ static bool playlist_path_equal(const char *real_path,
       if (delim)
       {
          char compressed_path_b[PATH_MAX_LENGTH];
-         size_t len = (1 + delim - full_path);
+         size_t _len = (1 + delim - full_path);
          strlcpy(compressed_path_b, full_path,
-               (len < PATH_MAX_LENGTH ? len : PATH_MAX_LENGTH) * sizeof(char));
+               (  _len < PATH_MAX_LENGTH 
+                ? _len : PATH_MAX_LENGTH) * sizeof(char));
 #ifdef _WIN32
          /* Handle case-insensitive operating systems*/
          if (string_is_equal_noncase(compressed_path_a, compressed_path_b))
@@ -733,7 +734,7 @@ void playlist_get_index_by_path(playlist_t *playlist,
       const struct playlist_entry **entry)
 {
    playlist_path_id_t *path_id = NULL;
-   size_t i, len;
+   size_t i, _len;
 
    if (!playlist || !entry || string_is_empty(search_path))
       return;
@@ -741,7 +742,7 @@ void playlist_get_index_by_path(playlist_t *playlist,
    if (!(path_id = playlist_path_id_init(search_path)))
       return;
 
-   for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
+   for (i = 0, _len = RBUF_LEN(playlist->entries); i < _len; i++)
    {
       if (!playlist_path_matches_entry(path_id,
             &playlist->entries[i], &playlist->config))
@@ -758,7 +759,7 @@ bool playlist_entry_exists(playlist_t *playlist,
       const char *path)
 {
    playlist_path_id_t *path_id = NULL;
-   size_t i, len;
+   size_t i, _len;
 
    if (!playlist || string_is_empty(path))
       return false;
@@ -766,7 +767,7 @@ bool playlist_entry_exists(playlist_t *playlist,
    if (!(path_id = playlist_path_id_init(path)))
       return false;
 
-   for (i = 0, len = RBUF_LEN(playlist->entries); i < len; i++)
+   for (i = 0, _len = RBUF_LEN(playlist->entries); i < _len; i++)
    {
       if (playlist_path_matches_entry(path_id,
             &playlist->entries[i], &playlist->config))
@@ -976,7 +977,7 @@ bool playlist_push_runtime(playlist_t *playlist,
       const struct playlist_entry *entry)
 {
    playlist_path_id_t *path_id = NULL;
-   size_t i, len;
+   size_t i, _len;
    char real_core_path[PATH_MAX_LENGTH];
 
    if (!playlist || !entry)
@@ -1005,8 +1006,8 @@ bool playlist_push_runtime(playlist_t *playlist,
       goto error;
    }
 
-   len = RBUF_LEN(playlist->entries);
-   for (i = 0; i < len; i++)
+   _len = RBUF_LEN(playlist->entries);
+   for (i = 0; i < _len; i++)
    {
       struct playlist_entry tmp;
       bool equal_path  = (string_is_empty(path_id->real_path)
@@ -1040,24 +1041,24 @@ bool playlist_push_runtime(playlist_t *playlist,
    if (playlist->config.capacity == 0)
       goto error;
 
-   if (len == playlist->config.capacity)
+   if (_len == playlist->config.capacity)
    {
-      struct playlist_entry *last_entry = &playlist->entries[len - 1];
+      struct playlist_entry *last_entry = &playlist->entries[_len - 1];
       playlist_free_entry(last_entry);
-      len--;
+      _len--;
    }
    else
    {
       /* Allocate memory to fit one more item and resize the buffer */
-      if (!RBUF_TRYFIT(playlist->entries, len + 1))
+      if (!RBUF_TRYFIT(playlist->entries, _len + 1))
          goto error; /* out of memory */
-      RBUF_RESIZE(playlist->entries, len + 1);
+      RBUF_RESIZE(playlist->entries, _len + 1);
    }
 
    if (playlist->entries)
    {
       memmove(playlist->entries + 1, playlist->entries,
-            len * sizeof(struct playlist_entry));
+            _len * sizeof(struct playlist_entry));
 
       /* Zero all fields to avoid stale data from shifted entries */
       memset(&playlist->entries[0], 0, sizeof(struct playlist_entry));
@@ -1165,20 +1166,17 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 #if IOS
    char tmp[PATH_MAX_LENGTH];
 
+   fill_pathname_expand_special(tmp, s, sizeof(tmp));
+   /* This is probably safe for all platforms, it should end up being just a
+    * lot of string copies without changing it */
    if (mode == PLAYLIST_LOAD)
-   {
-      /* This is probably safe for all platforms, it should end up being just a
-       * lot of string copies without changing it */
-      fill_pathname_expand_special(tmp, s, sizeof(tmp));
       strlcpy(s, tmp, len);
-   }
    else
    {
       /* Try to expand the path to ensure that it gets saved correctly. The path
        * can be abbreviated if saving to a playlist from another playlist (ex:
        * content history to favorites). This is probably safe for all
        * platforms */
-      fill_pathname_expand_special(tmp, s, sizeof(tmp));
       path_resolve_realpath(tmp, sizeof(tmp), resolve_symlinks);
       /* iOS requries this because the full path can change after app update;
        * it's probably safe for all platforms... */

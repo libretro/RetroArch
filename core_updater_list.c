@@ -389,7 +389,7 @@ static bool core_updater_list_set_paths(
       const char *filename_str,
       enum core_updater_list_type list_type)
 {
-   size_t len;
+   size_t _len;
    bool is_archive;
    bool resolve_symlinks;
    char remote_core_path[PATH_MAX_LENGTH];
@@ -407,25 +407,25 @@ static bool core_updater_list_set_paths(
        string_is_empty(network_buildbot_url))
       return false;
 
-   is_archive      = path_is_compressed_file(filename_str);
+   is_archive       = path_is_compressed_file(filename_str);
    resolve_symlinks = (list_type != CORE_UPDATER_LIST_TYPE_PFD);
 
    /* remote_filename - reuse buffer if large enough */
-   len = strlen(filename_str) + 1;
+   _len = strlen(filename_str) + 1;
    if (entry->remote_filename)
    {
-      char *tmp = realloc(entry->remote_filename, len);
+      char *tmp = realloc(entry->remote_filename, _len);
       if (!tmp)
          return false;
       entry->remote_filename = tmp;
    }
    else
    {
-      entry->remote_filename = (char*)malloc(len);
+      entry->remote_filename = (char*)malloc(_len);
       if (!entry->remote_filename)
          return false;
    }
-   memcpy(entry->remote_filename, filename_str, len);
+   memcpy(entry->remote_filename, filename_str, _len);
 
    /* remote_core_path */
    remote_core_path[0] = '\0';
@@ -443,21 +443,21 @@ static bool core_updater_list_set_paths(
             remote_core_path, local_core_path, sizeof(remote_core_path));
    }
 
-   len = strlen(remote_core_path) + 1;
+   _len = strlen(remote_core_path) + 1;
    if (entry->remote_core_path)
    {
-      char *tmp = realloc(entry->remote_core_path, len);
+      char *tmp = realloc(entry->remote_core_path, _len);
       if (!tmp)
          return false;
       entry->remote_core_path = tmp;
    }
    else
    {
-      entry->remote_core_path = (char*)malloc(len);
+      entry->remote_core_path = (char*)malloc(_len);
       if (!entry->remote_core_path)
          return false;
    }
-   memcpy(entry->remote_core_path, remote_core_path, len);
+   memcpy(entry->remote_core_path, remote_core_path, _len);
 
    /* local_core_path */
    fill_pathname_join_special(
@@ -472,21 +472,21 @@ static bool core_updater_list_set_paths(
    path_resolve_realpath(local_core_path, sizeof(local_core_path),
          resolve_symlinks);
 
-   len = strlen(local_core_path) + 1;
+   _len = strlen(local_core_path) + 1;
    if (entry->local_core_path)
    {
-      char *tmp = realloc(entry->local_core_path, len);
+      char *tmp = realloc(entry->local_core_path, _len);
       if (!tmp)
          return false;
       entry->local_core_path = tmp;
    }
    else
    {
-      entry->local_core_path = (char*)malloc(len);
+      entry->local_core_path = (char*)malloc(_len);
       if (!entry->local_core_path)
          return false;
    }
-   memcpy(entry->local_core_path, local_core_path, len);
+   memcpy(entry->local_core_path, local_core_path, _len);
 
    /* local_info_path */
    fill_pathname_join_special(
@@ -505,27 +505,27 @@ static bool core_updater_list_set_paths(
       if (!string_is_equal(last_underscore, "_libretro"))
          *last_underscore = '\0';
 
-   len = strlen(local_info_path);
+   _len = strlen(local_info_path);
    strlcpy(
-         local_info_path + len,
+         local_info_path         + _len,
          FILE_PATH_CORE_INFO_EXTENSION,
-         sizeof(local_info_path) - len);
+         sizeof(local_info_path) - _len);
 
-   len = strlen(local_info_path) + 1;
+   _len = strlen(local_info_path) + 1;
    if (entry->local_info_path)
    {
-      char *tmp = realloc(entry->local_info_path, len);
+      char *tmp = realloc(entry->local_info_path, _len);
       if (!tmp)
          return false;
       entry->local_info_path = tmp;
    }
    else
    {
-      entry->local_info_path = (char*)malloc(len);
+      entry->local_info_path = (char*)malloc(_len);
       if (!entry->local_info_path)
          return false;
    }
-   memcpy(entry->local_info_path, local_info_path, len);
+   memcpy(entry->local_info_path, local_info_path, _len);
 
    return true;
 }

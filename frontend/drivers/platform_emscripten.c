@@ -390,7 +390,8 @@ size_t platform_emscripten_command_read(char **into, size_t max_len)
    return MAIN_THREAD_EM_ASM_INT({
       var next_command = RPE.command_queue.shift();
       var length = lengthBytesUTF8(next_command);
-      if (length > $2) {
+      if (length > $2)
+      {
          err("[CMD] Command too long, skipping", next_command);
          return 0;
       }
@@ -621,9 +622,11 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 #ifndef HAVE_EXTRA_WASMFS
       /* can be removed when the new web player replaces the old one */
       _len = strlcpy(user_path, home, sizeof(user_path));
-      strlcpy(user_path + _len, "/retroarch/userdata", sizeof(user_path) - _len);
+      strlcpy(user_path + _len,
+         "/retroarch/userdata", sizeof(user_path) - _len);
       _len = strlcpy(bundle_path, home, sizeof(bundle_path));
-      strlcpy(bundle_path + _len, "/retroarch/bundle", sizeof(bundle_path) - _len);
+      strlcpy(bundle_path + _len,
+         "/retroarch/bundle", sizeof(bundle_path) - _len);
 #else
       _len = strlcpy(user_path, home, sizeof(user_path));
       strlcpy(user_path + _len, "/retroarch", sizeof(user_path) - _len);
@@ -842,6 +845,7 @@ static void platform_emscripten_mount_filesystems(void)
          Where URL may not contain spaces, but PATH may.
          URL segments are relative to BASEURL.
        */
+      size_t __len;
       int max_line_len = 1024;
       if (!(fetch_manifest && fetch_base_dir))
       {
@@ -856,31 +860,33 @@ static void platform_emscripten_mount_filesystems(void)
         abort();
       }
       char *line = calloc(sizeof(char), max_line_len);
-      size_t len = max_line_len;
-      if (getline(&line, &len, file) == -1 || len == 0)
+      __len = max_line_len;
+      if (getline(&line, &__len, file) == -1 || __len == 0)
          printf("[FetchFS] missing base URL suggest empty manifest, skipping fetch initialization\n");
       else
       {
-         char *base_url = strdup(line);
-         base_url[strcspn(base_url, "\r\n")] = '\0'; // drop newline
-         base_url[len-1] = '\0'; // drop newline
          backend_t fetch = NULL;
-         len = max_line_len;
-         // Don't create fetch backend unless manifest actually has entries
-         while (getline(&line, &len, file) != -1)
+         char *base_url  = strdup(line);
+         base_url[strcspn(base_url, "\r\n")] = '\0'; /* drop newline */
+         base_url[__len-1] = '\0'; /* drop newline */
+         __len = max_line_len;
+         /* Don't create fetch backend unless manifest actually has entries */
+         while (getline(&line, &__len, file) != -1)
          {
+            int fd; 
+            char fetchfs_path[PATH_MAX];
             if (!fetch)
             {
                fetch = wasmfs_create_fetch_backend(base_url, 16*1024*1024);
-               if(!fetch) {
+               if (!fetch)
+               {
                  printf("[FetchFS] couldn't create fetch backend for %s\n", base_url);
                  abort();
                }
                wasmfs_create_directory(fetch_base_dir, 0777, fetch);
             }
             char *realfs_path = strchr(line, ' '), *url = line;
-            int fd;
-            if (len <= 2 || !realfs_path)
+            if (__len <= 2 || !realfs_path)
             {
                printf("[FetchFS] Manifest file has invalid line %s\n",line);
                continue;
@@ -888,7 +894,6 @@ static void platform_emscripten_mount_filesystems(void)
             *realfs_path = '\0';
             realfs_path += 1;
             realfs_path[strcspn(realfs_path, "\r\n")] = '\0';
-            char fetchfs_path[PATH_MAX];
             fill_pathname_join(fetchfs_path, fetch_base_dir, url, sizeof(fetchfs_path));
             /* Make the directories for link path */
             {
@@ -924,7 +929,7 @@ static void platform_emscripten_mount_filesystems(void)
                printf("[FetchFS] couldn't create link %s to fetch file %s (errno %d)\n", realfs_path, fetchfs_path, errno);
                abort();
             }
-            len = max_line_len;
+            __len = max_line_len;
          }
          free(base_url);
       }

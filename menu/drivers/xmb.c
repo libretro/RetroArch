@@ -1722,8 +1722,8 @@ static bool gfx_thumbnail_set_icon_playlist(
       {
          size_t i;
          char tmp_buf[NAME_MAX_LENGTH];
-         const size_t len = sizeof(tmp_buf) - 1;
-         for (i = 0; i < len && db_name[i] && db_name[i] != '|'; i++)
+         const size_t __len = sizeof(tmp_buf) - 1;
+         for (i = 0; i < __len && db_name[i] && db_name[i] != '|'; i++)
             tmp_buf[i] = db_name[i];
          tmp_buf[i] = '\0';
          fill_pathname(path_data->content_db_name,
@@ -2430,7 +2430,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
           * removing prefix and then suffix if warranted. */
          if (string_starts_with(label, "deferred_"))
          {
-            strlcpy(label_temp, label + strlen("deferred_"), sizeof(label_temp));
+            strlcpy(label_temp, label + STRLEN_CONST("deferred_"), sizeof(label_temp));
             label = label_temp;
          }
 
@@ -2441,7 +2441,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
          {
             if (string_ends_with(label, "_list"))
             {
-               label_temp[strlen(label_temp) - strlen("_list")] = '\0';
+               label_temp[strlen(label_temp) - STRLEN_CONST("_list")] = '\0';
                label    = label_temp;
                enum_idx = xmb_search_enum(label);
             }

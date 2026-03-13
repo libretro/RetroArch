@@ -504,11 +504,10 @@ bool gfx_widget_start_load_content_animation(void)
    /* Truncate long system names */
    if (strlen(state->system_name) > 54)
    {
-      size_t len = 50;
-      state->system_name[++len] = '.';
-      state->system_name[++len] = '.';
-      state->system_name[++len] = '.';
-      state->system_name[++len] = '\0';
+      state->system_name[51] = '.';
+      state->system_name[52] = '.';
+      state->system_name[53] = '.';
+      state->system_name[54] = '\0';
    }
 
    /* All parameters are initialised

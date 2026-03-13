@@ -2683,16 +2683,13 @@ static bool playlist_entry_path_is_valid(const char *entry_path)
 
    if (archive_delim)
    {
-      /* Archive path: validate the portion before the delimiter */
-      size_t len = (size_t)(archive_delim - entry_path);
       char buf[PATH_MAX_LENGTH];
-
-      if (len == 0 || len >= sizeof(buf))
+      /* Archive path: validate the portion before the delimiter */
+      size_t __len = (size_t)(archive_delim - entry_path);
+      if (__len == 0 || __len >= sizeof(buf))
          return false;
-
-      memcpy(buf, entry_path, len);
-      buf[len] = '\0';
-
+      memcpy(buf, entry_path, __len);
+      buf[__len] = '\0';
       return path_is_valid(buf);
    }
 
@@ -7195,11 +7192,11 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
                const char *next = strchr(tok, '|');
                if (idx == tok_idx)
                {
-                  size_t len = next ? (size_t)(next - tok) : strlen(tok);
-                  if (len >= setting->size)
-                     len = setting->size - 1;
-                  memcpy(setting->value.target.string, tok, len);
-                  setting->value.target.string[len] = '\0';
+                  size_t __len = next ? (size_t)(next - tok) : strlen(tok);
+                  if (__len >= setting->size)
+                     __len = setting->size - 1;
+                  memcpy(setting->value.target.string, tok, __len);
+                  setting->value.target.string[__len] = '\0';
                   break;
                }
 
