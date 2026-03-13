@@ -256,24 +256,19 @@ static bool task_overlay_load_desc(
    char overlay_desc_key[32];
    char overlay_key[64];
    char overlay[256];
-   char *tok, *save                     = NULL;
-   unsigned list_size                   = 0;
-   char *elems[6]                       = {NULL, NULL, NULL, NULL, NULL, NULL};
-   char *overlay_cpy                    = NULL;
-   float tmp_float                      = 0.0f;
-   bool tmp_bool                        = false;
-   bool ret                             = true;
-   bool by_pixel                        = false;
-   const char *key                      = NULL;
-   const char *x                        = NULL;
-   const char *y                        = NULL;
-   const char *box                      = NULL;
-   config_file_t *conf                  = loader->conf;
+   unsigned list_size          = 0;
+   char *elems[6]              = {NULL, NULL, NULL, NULL, NULL, NULL};
+   char *tok, *save            = NULL;
+   float tmp_float             = 0.0f;
+   bool tmp_bool               = false;
+   bool by_pixel               = false;
+   const char *box             = NULL;
+   config_file_t *conf         = loader->conf;
 
-   overlay_desc_key[0]                  =
-      overlay_key[0]                    =
-      conf_key[0]                       =
-      overlay[0]                        = '\0';
+   overlay_desc_key[0]         =
+      overlay_key[0]           =
+      conf_key[0]              =
+      overlay[0]               = '\0';
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
          "overlay%u_desc%u", ol_idx, desc_idx);
@@ -297,13 +292,9 @@ static bool task_overlay_load_desc(
       return false;
    }
 
-   overlay_cpy = strdup(overlay);
-   if (!overlay_cpy)
-      return false;
-
-   /* Tokenize into elems array - pointers into 
-    * overlay_cpy, no extra allocs */
-   for (tok = strtok_r(overlay_cpy, ", ", &save);
+   /* Tokenize in-place — overlay[] is a local buffer,
+    * no heap allocation needed */
+   for (tok = strtok_r(overlay, ", ", &save);
         tok && list_size < 6;
         tok = strtok_r(NULL, ", ", &save))
       elems[list_size++] = tok;
@@ -311,39 +302,40 @@ static bool task_overlay_load_desc(
    if (list_size < 6)
    {
       RARCH_ERR("[Overlay] Overlay desc is invalid. Requires at least 6 tokens.\n");
-      free(overlay_cpy);
       return false;
    }
 
-   key                 = elems[0];
-   x                   = elems[1];
-   y                   = elems[2];
+   /* elems[0] (key) will be mutated by the button-parsing
+    * strtok_r below, so read x/y/box from their own pointers
+    * before that happens. They are separate tokens in the
+    * buffer and won't be touched. */
    box                 = elems[3];
 
    desc->retro_key_idx = 0;
    BIT256_CLEAR_ALL(desc->button_mask);
 
-   if (string_is_equal(key, "analog_left"))
+   if (string_is_equal(elems[0], "analog_left"))
       desc->type          = OVERLAY_TYPE_ANALOG_LEFT;
-   else if (string_is_equal(key, "analog_right"))
+   else if (string_is_equal(elems[0], "analog_right"))
       desc->type          = OVERLAY_TYPE_ANALOG_RIGHT;
-   else if (string_is_equal(key, "dpad_area"))
+   else if (string_is_equal(elems[0], "dpad_area"))
       desc->type          = OVERLAY_TYPE_DPAD_AREA;
-   else if (string_is_equal(key, "abxy_area"))
+   else if (string_is_equal(elems[0], "abxy_area"))
       desc->type          = OVERLAY_TYPE_ABXY_AREA;
-   else if (strstr(key, "retrok_") == key)
+   else if (strstr(elems[0], "retrok_") == elems[0])
    {
       desc->type          = OVERLAY_TYPE_KEYBOARD;
-      desc->retro_key_idx = input_config_translate_str_to_rk(key + 7, strlen(key + 7));
+      desc->retro_key_idx = input_config_translate_str_to_rk(
+            elems[0] + 7, strlen(elems[0] + 7));
    }
    else
    {
-      char      *save = NULL;
-      const char *tmp = strtok_r((char*)key, "|", &save);
+      char      *save2 = NULL;
+      const char *tmp   = strtok_r(elems[0], "|", &save2);
 
       desc->type = OVERLAY_TYPE_BUTTONS;
 
-      for (; tmp; tmp = strtok_r(NULL, "|", &save))
+      for (; tmp; tmp = strtok_r(NULL, "|", &save2))
       {
          if (!string_is_equal(tmp, "nul"))
          {
@@ -385,8 +377,8 @@ static bool task_overlay_load_desc(
       height_mod /= height;
    }
 
-   desc->x       = (float)strtod(x, NULL) * width_mod;
-   desc->y       = (float)strtod(y, NULL) * height_mod;
+   desc->x       = (float)strtod(elems[1], NULL) * width_mod;
+   desc->y       = (float)strtod(elems[2], NULL) * height_mod;
    desc->x_shift = desc->x;
    desc->y_shift = desc->y;
 
@@ -397,7 +389,6 @@ static bool task_overlay_load_desc(
    else
    {
       RARCH_ERR("[Overlay] Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
-      free(overlay_cpy);
       return false;
    }
 
@@ -408,7 +399,6 @@ static bool task_overlay_load_desc(
          if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
          {
             RARCH_ERR("[Overlay] Analog hitbox type must be \"radial\".\n");
-            free(overlay_cpy);
             return false;
          }
 
@@ -431,9 +421,6 @@ static bool task_overlay_load_desc(
 
    desc->range_x = (float)strtod(elems[4], NULL) * width_mod;
    desc->range_y = (float)strtod(elems[5], NULL) * height_mod;
-
-   /* Done with tokenized string */
-   free(overlay_cpy);
 
    _len = strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
 
@@ -828,24 +815,23 @@ static void task_overlay_deferred_load(retro_task_t *task)
       if (config_get_array(conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
       {
-         char *tok, *save              = NULL;
+         char cfg_rect_buf[256];
          char *elems[4]                = {NULL, NULL, NULL, NULL};
          unsigned list_size            = 0;
-         char *cfg_rect_array_cpy      = strdup(overlay->config.rect.array);
+         char *tok, *save              = NULL;
 
-         if (cfg_rect_array_cpy)
-         {
-            for (tok = strtok_r(cfg_rect_array_cpy, ", ", &save);
-                 tok && list_size < 4;
-                 tok = strtok_r(NULL, ", ", &save))
-               elems[list_size++] = tok;
-         }
+         strlcpy(cfg_rect_buf, overlay->config.rect.array,
+               sizeof(cfg_rect_buf));
+
+         for (tok = strtok_r(cfg_rect_buf, ", ", &save);
+              tok && list_size < 4;
+              tok = strtok_r(NULL, ", ", &save))
+            elems[list_size++] = tok;
 
          if (list_size < 4)
          {
             RARCH_ERR("[Overlay] Failed to split rect \"%s\" into at least four tokens.\n",
                   overlay->config.rect.array);
-            free(cfg_rect_array_cpy);
             goto error;
          }
 
@@ -853,7 +839,6 @@ static void task_overlay_deferred_load(retro_task_t *task)
          overlay->y = (float)strtod(elems[1], NULL);
          overlay->w = (float)strtod(elems[2], NULL);
          overlay->h = (float)strtod(elems[3], NULL);
-         free(cfg_rect_array_cpy);
       }
 
       /* Assume for now that scaling center is in the middle.
@@ -867,19 +852,18 @@ static void task_overlay_deferred_load(retro_task_t *task)
       RARCH_LOG("[Overlay] Checking for viewport key: %s\n", conf_key);
       if (config_get_array(conf, conf_key, tmp_str, sizeof(tmp_str)))
       {
-         char *tok, *save           = NULL;
+         char cfg_vp_buf[256];
          char *elems[4]             = {NULL, NULL, NULL, NULL};
          unsigned list_size         = 0;
-         char *cfg_vp_cpy           = strdup(tmp_str);
+         char *tok, *save           = NULL;
          RARCH_LOG("[Overlay] Found viewport value: %s\n", tmp_str);
 
-         if (cfg_vp_cpy)
-         {
-            for (tok = strtok_r(cfg_vp_cpy, ", ", &save);
-                 tok && list_size < 4;
-                 tok = strtok_r(NULL, ", ", &save))
-               elems[list_size++] = tok;
-         }
+         strlcpy(cfg_vp_buf, tmp_str, sizeof(cfg_vp_buf));
+
+         for (tok = strtok_r(cfg_vp_buf, ", ", &save);
+              tok && list_size < 4;
+              tok = strtok_r(NULL, ", ", &save))
+            elems[list_size++] = tok;
 
          if (list_size >= 4)
          {
@@ -894,8 +878,6 @@ static void task_overlay_deferred_load(retro_task_t *task)
          }
          else
             RARCH_WARN("[Overlay] viewport \"%s\" requires four tokens.\n", tmp_str);
-
-         free(cfg_vp_cpy);
       }
 
       /* Parse viewport_fill option (optional, default false) */
