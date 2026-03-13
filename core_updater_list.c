@@ -329,32 +329,34 @@ bool core_updater_list_get_core(
 static bool core_updater_list_set_date(
       core_updater_list_entry_t *entry, const char *date_str)
 {
-   char *save      = NULL;
-   char *year_str, *month_str, *day_str;
-   char *date_str_cpy;
+   unsigned year, month, day;
+   const char *p = date_str;
+   char *end;
 
    if (!entry || string_is_empty(date_str))
       return false;
 
-   date_str_cpy = strdup(date_str);
-   if (!date_str_cpy)
+   year = (unsigned)strtoul(p, &end, 10);
+   if (*end != '-')
+      return false;
+   p = end + 1;
+
+   month = (unsigned)strtoul(p, &end, 10);
+   if (*end != '-')
+      return false;
+   p = end + 1;
+
+   day = (unsigned)strtoul(p, &end, 10);
+   if (*end != '\0')
       return false;
 
-   year_str  = strtok_r(date_str_cpy, "-", &save);
-   month_str = strtok_r(NULL, "-", &save);
-   day_str   = strtok_r(NULL, "-", &save);
-
-   if (!year_str || !month_str || !day_str)
-   {
-      free(date_str_cpy);
+   if (month < 1 || month > 12 || day < 1 || day > 31)
       return false;
-   }
 
-   entry->date.year  = string_to_unsigned(year_str);
-   entry->date.month = string_to_unsigned(month_str);
-   entry->date.day   = string_to_unsigned(day_str);
+   entry->date.year  = year;
+   entry->date.month = month;
+   entry->date.day   = day;
 
-   free(date_str_cpy);
    return true;
 }
 
@@ -387,13 +389,13 @@ static bool core_updater_list_set_paths(
       const char *filename_str,
       enum core_updater_list_type list_type)
 {
-   char *last_underscore                  = NULL;
-   char *tmp_url                          = NULL;
-   bool is_archive                        = true;
+   size_t len;
+   bool is_archive;
+   bool resolve_symlinks;
    char remote_core_path[PATH_MAX_LENGTH];
    char local_core_path[PATH_MAX_LENGTH];
    char local_info_path[PATH_MAX_LENGTH];
-   bool resolve_symlinks = (list_type != CORE_UPDATER_LIST_TYPE_PFD);
+   char *last_underscore = NULL;
 
    if (  !entry
        || string_is_empty(filename_str)
@@ -401,24 +403,31 @@ static bool core_updater_list_set_paths(
        || string_is_empty(path_libretro_info))
       return false;
 
-   /* Only buildbot cores require the buildbot URL */
    if ((list_type == CORE_UPDATER_LIST_TYPE_BUILDBOT) &&
        string_is_empty(network_buildbot_url))
       return false;
 
-   /* Check whether remote file is an archive */
-   is_archive = path_is_compressed_file(filename_str);
+   is_archive      = path_is_compressed_file(filename_str);
+   resolve_symlinks = (list_type != CORE_UPDATER_LIST_TYPE_PFD);
 
-   /* remote_filename */
+   /* remote_filename - reuse buffer if large enough */
+   len = strlen(filename_str) + 1;
    if (entry->remote_filename)
    {
-      free(entry->remote_filename);
-      entry->remote_filename = NULL;
+      char *tmp = realloc(entry->remote_filename, len);
+      if (!tmp)
+         return false;
+      entry->remote_filename = tmp;
    }
-   entry->remote_filename = strdup(filename_str);
+   else
+   {
+      entry->remote_filename = (char*)malloc(len);
+      if (!entry->remote_filename)
+         return false;
+   }
+   memcpy(entry->remote_filename, filename_str, len);
 
-   /* remote_core_path
-    * > Leave blank if this is not a buildbot core */
+   /* remote_core_path */
    remote_core_path[0] = '\0';
    if (list_type == CORE_UPDATER_LIST_TYPE_BUILDBOT)
    {
@@ -427,22 +436,28 @@ static bool core_updater_list_set_paths(
             network_buildbot_url,
             filename_str,
             sizeof(remote_core_path));
-
-      /* > Apply proper URL encoding (messy...) */
-      tmp_url = strdup(remote_core_path);
+      /* URL-encode in place using local_core_path as temp buffer */
+      strlcpy(local_core_path, remote_core_path, sizeof(local_core_path));
       remote_core_path[0] = '\0';
       net_http_urlencode_full(
-            remote_core_path, tmp_url, sizeof(remote_core_path));
-      if (tmp_url)
-         free(tmp_url);
+            remote_core_path, local_core_path, sizeof(remote_core_path));
    }
 
+   len = strlen(remote_core_path) + 1;
    if (entry->remote_core_path)
    {
-      free(entry->remote_core_path);
-      entry->remote_core_path = NULL;
+      char *tmp = realloc(entry->remote_core_path, len);
+      if (!tmp)
+         return false;
+      entry->remote_core_path = tmp;
    }
-   entry->remote_core_path = strdup(remote_core_path);
+   else
+   {
+      entry->remote_core_path = (char*)malloc(len);
+      if (!entry->remote_core_path)
+         return false;
+   }
+   memcpy(entry->remote_core_path, remote_core_path, len);
 
    /* local_core_path */
    fill_pathname_join_special(
@@ -457,12 +472,21 @@ static bool core_updater_list_set_paths(
    path_resolve_realpath(local_core_path, sizeof(local_core_path),
          resolve_symlinks);
 
+   len = strlen(local_core_path) + 1;
    if (entry->local_core_path)
    {
-      free(entry->local_core_path);
-      entry->local_core_path = NULL;
+      char *tmp = realloc(entry->local_core_path, len);
+      if (!tmp)
+         return false;
+      entry->local_core_path = tmp;
    }
-   entry->local_core_path = strdup(local_core_path);
+   else
+   {
+      entry->local_core_path = (char*)malloc(len);
+      if (!entry->local_core_path)
+         return false;
+   }
+   memcpy(entry->local_core_path, local_core_path, len);
 
    /* local_info_path */
    fill_pathname_join_special(
@@ -476,31 +500,32 @@ static bool core_updater_list_set_paths(
    if (is_archive)
       path_remove_extension(local_info_path);
 
-   /* > Remove any non-standard core filename
-    *   additions (i.e. info files end with
-    *   '_libretro' but core files may have
-    *   a platform specific addendum,
-    *   e.g. '_android') */
    last_underscore = (char*)strrchr(local_info_path, '_');
    if (!string_is_empty(last_underscore))
       if (!string_is_equal(last_underscore, "_libretro"))
          *last_underscore = '\0';
 
-   /* > Add proper file extension */
-   {
-      size_t len = strlen(local_info_path);
-      strlcpy(
-            local_info_path + len,
-            FILE_PATH_CORE_INFO_EXTENSION,
-            sizeof(local_info_path) - len);
-   }
+   len = strlen(local_info_path);
+   strlcpy(
+         local_info_path + len,
+         FILE_PATH_CORE_INFO_EXTENSION,
+         sizeof(local_info_path) - len);
 
+   len = strlen(local_info_path) + 1;
    if (entry->local_info_path)
    {
-      free(entry->local_info_path);
-      entry->local_info_path = NULL;
+      char *tmp = realloc(entry->local_info_path, len);
+      if (!tmp)
+         return false;
+      entry->local_info_path = tmp;
    }
-   entry->local_info_path = strdup(local_info_path);
+   else
+   {
+      entry->local_info_path = (char*)malloc(len);
+      if (!entry->local_info_path)
+         return false;
+   }
+   memcpy(entry->local_info_path, local_info_path, len);
 
    return true;
 }
