@@ -518,7 +518,6 @@ static void task_save_handler(retro_task_t *task)
          state->file   = intfstream_open_file(
                state->path, RETRO_VFS_FILE_ACCESS_WRITE,
                RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
       if (!state->file)
          return;
    }
@@ -530,23 +529,34 @@ static void task_save_handler(retro_task_t *task)
       state->size = (ssize_t)_len;
    }
 
-   remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
-
-   if (state->data)
+   /* Nothing to write - finish immediately */
+   if (state->size <= 0 || !state->data)
    {
-      written         = (int)intfstream_write(state->file,
-         (uint8_t*)state->data + state->written, remaining);
-      state->written += written;
+      task_set_progress(task, 100);
+      task_save_handler_finished(task, state);
+      return;
    }
+
+   remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
+   written         = (int)intfstream_write(state->file,
+         (uint8_t*)state->data + state->written, remaining);
+   state->written += written;
 
    task_set_progress(task, (state->written / (float)state->size) * 100);
 
    flg = task_get_flags(task);
 
-   if (((flg & RETRO_TASK_FLG_CANCELLED) > 0) || written != remaining)
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
    {
-      char msg[128];
+      /* Cancellation - no error message, just clean up */
+      task_save_handler_finished(task, state);
+      return;
+   }
 
+   if (written != remaining)
+   {
+      /* Write failure */
+      char msg[128];
       if (state->flags & SAVE_TASK_FLAG_UNDO_SAVE)
       {
          const char *failed_undo_str = msg_hash_to_str(
@@ -564,39 +574,33 @@ static void task_save_handler(retro_task_t *task)
          msg[++_len] = '\0';
          strlcpy(msg + _len, state->path, sizeof(msg) - _len);
       }
-
       task_set_error(task, strdup(msg));
       task_save_handler_finished(task, state);
+      return;
    }
-   else if (state->written == state->size)
+
+   if (state->written == state->size)
    {
-      char       *msg      = NULL;
-
+      /* Save complete - set title directly, no intermediate allocation */
       task_free_title(task);
-
-      if (state->flags & SAVE_TASK_FLAG_UNDO_SAVE)
-         msg = strdup(msg_hash_to_str(MSG_RESTORED_OLD_SAVE_STATE));
-      else if (state->state_slot < 0)
-         msg = strdup(msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT_AUTO));
-      else
+      if (!((flg & RETRO_TASK_FLG_MUTE) > 0))
       {
-         char new_msg[128];
-         snprintf(new_msg, sizeof(new_msg),
-               msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
-               state->state_slot);
-         msg = strdup(new_msg);
+         if (state->flags & SAVE_TASK_FLAG_UNDO_SAVE)
+            task_set_title(task, strdup(msg_hash_to_str(
+                        MSG_RESTORED_OLD_SAVE_STATE)));
+         else if (state->state_slot < 0)
+            task_set_title(task, strdup(msg_hash_to_str(
+                        MSG_SAVED_STATE_TO_SLOT_AUTO)));
+         else
+         {
+            char msg[128];
+            snprintf(msg, sizeof(msg),
+                  msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
+                  state->state_slot);
+            task_set_title(task, strdup(msg));
+         }
       }
-
-      if (!((flg & RETRO_TASK_FLG_MUTE) > 0) && msg)
-      {
-         task_set_title(task, msg);
-         msg = NULL;
-      }
-
       task_save_handler_finished(task, state);
-
-      if (!string_is_empty(msg))
-         free(msg);
    }
 }
 
