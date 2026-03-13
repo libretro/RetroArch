@@ -9415,6 +9415,10 @@ MSG_HASH(
    "치트 검색 시작 또는 재개"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "새로운 치트를 만들기 위해 메모리를 스캔합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "치트 파일 불러오기 (교체)"
    )
@@ -9432,7 +9436,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
-   "게임 전용 치트 다시 불러오기"
+   "이 게임의 치트 불러오기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "이 게임에 대한 치트를 모두 불러옵니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
@@ -9447,12 +9455,24 @@ MSG_HASH(
    "새 치트를 가장 위에 추가"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "리스트의 맨 앞에 치트를 추가합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "새 치트를 가장 아래에 추가"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "리스트의 맨 뒤에 치트를 추가합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "전체 치트 삭제"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "치트 목록을 초기화합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9584,6 +9604,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "이전과 동일-%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "%u개 일치 항목을 목록에 추가"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14682,6 +14706,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "모든 치트가 삭제되었습니다."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "모든 치트를 다시 불러왔습니다."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,
