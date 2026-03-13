@@ -7234,24 +7234,24 @@ static int action_ok_push_dropdown_item(const char *path,
 int action_cb_push_dropdown_item_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char *save           = NULL;
-   char *tok            = NULL;
+   char *end            = NULL;
    unsigned width       = 0;
    unsigned height      = 0;
    float refreshrate    = 0.0f;
-   char *str            = path ? strdup(path) : NULL;
 
-   if (!str)
+   if (!path)
       return -1;
 
-   if ((tok = strtok_r(str, "x", &save)))
-      width       = (unsigned)strtoul(tok, NULL, 0);
-   if ((tok = strtok_r(NULL, " ", &save)))
-      height      = (unsigned)strtoul(tok, NULL, 0);
-   if ((tok = strtok_r(NULL, "(", &save)))
-      refreshrate = (float)strtod(tok, NULL);
+   width = (unsigned)strtoul(path, &end, 0);
+   if (end == path || *end != 'x')
+      return -1;
 
-   free(str);
+   ++end;
+   height = (unsigned)strtoul(end, &end, 0);
+   if (*end == ' ')
+      ++end;
+
+   refreshrate = (float)strtod(end, NULL);
 
    if (video_display_server_set_resolution(width, height,
          floor(refreshrate), refreshrate, 0, 0, 0, 0))
@@ -7265,7 +7265,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
 #endif
       float refresh_exact  = refreshrate;
 
-      /* 59 Hz is an inaccurate representation of the real value (59.94).
+      /* 59Hz is an inaccurate representation of the real value (59.94Hz)
        * In case at this point we only have the integer to work with,
        * the exact float needs to be calculated for 'video_refresh_rate' */
       if (refreshrate == (60.0f * refresh_mod) - 1)
