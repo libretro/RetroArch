@@ -130,7 +130,7 @@ static void cue_append_multi_disc_suffix(char * str1, const char *filename)
       {
          char *dest   = str1;
          size_t __len = strlen(dest);
-         snprintf(dest + __len, PATH_MAX - __len, "-%i", disc_number - 1);
+         snprintf(dest + __len, PATH_MAX_LENGTH - __len, "-%i", disc_number - 1);
       }
    }
 }
