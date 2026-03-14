@@ -7402,7 +7402,7 @@ int runloop_iterate(void)
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
          if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
             return 0;
-         else if (settings->bools.video_vsync)
+         else if (settings->bools.video_vsync && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
             goto end;
 
          /* Otherwise run menu in video refresh rate speed. */
@@ -7542,7 +7542,8 @@ end:
               || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
 #ifdef HAVE_MENU
               || (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE
-                  && !(settings->bools.video_vsync))
+                  && (!(settings->bools.video_vsync)
+                      || !(runloop_st->flags & RUNLOOP_FLAG_FOCUSED)))
 #endif
               || (runloop_st->flags & RUNLOOP_FLAG_PAUSED)))
       {
