@@ -189,6 +189,8 @@ task_finished:
          data->len     = _len;
          data->headers = net_http_headers_ex(http->handle, http->headers_accept_err);
          data->status  = net_http_status(http->handle);
+         data->has_http_debug_state =
+               net_http_get_debug_state(http->handle, &data->http_debug_state);
 
          task_set_data(task, data);
 
