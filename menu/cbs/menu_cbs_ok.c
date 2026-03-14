@@ -538,6 +538,9 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST;
       case ACTION_OK_DL_REMAP_FILE_MANAGER_LIST:
          return MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST;
+      case ACTION_OK_DL_PATCHES_LIST:
+      case ACTION_OK_DL_PATCHES_ACTIONS_LIST:
+         return MENU_ENUM_LABEL_PATCHES;
       case ACTION_OK_DL_ADD_TO_PLAYLIST:
          return MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST;
       case ACTION_OK_DL_ADD_TO_PLAYLIST_QUICKMENU:
@@ -1778,6 +1781,28 @@ int generic_action_ok_displaylist_push(
          ACTION_OK_DL_LBL(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          info.type          = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN + player_no;
       }
+         break;
+      case ACTION_OK_DL_PATCHES_LIST:
+         info.list          = MENU_LIST_GET_SELECTION(menu_list, 0);
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = "patches_list";
+         info_label         = "patches_list";
+         info.enum_idx      = MENU_ENUM_LABEL_PATCHES;
+         menu_entries_append(menu_stack, info_path, info_label,
+               MENU_ENUM_LABEL_PATCHES, 0, idx, 0, NULL);
+         dl_type            = DISPLAYLIST_OPTIONS_PATCHES;
+         break;
+      case ACTION_OK_DL_PATCHES_ACTIONS_LIST:
+         info.list          = MENU_LIST_GET_SELECTION(menu_list, 0);
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = "patches_actions_list";
+         info_label         = "patches_actions_list";
+         info.enum_idx      = MENU_ENUM_LABEL_PATCHES;
+         menu_entries_append(menu_stack, info_path, info_label,
+               MENU_ENUM_LABEL_PATCHES, 0, idx, 0, NULL);
+         dl_type            = DISPLAYLIST_OPTIONS_PATCHES_ACTIONS;
          break;
       case ACTION_OK_DL_ACCOUNTS_LIST:
       case ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST:
@@ -4515,6 +4540,115 @@ static int action_ok_stop_streaming(const char *path,
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
+
+#ifdef HAVE_PATCH
+#define MENU_LABEL_PATCHES_ADD_LIST "patches_add_list"
+#define MENU_LABEL_PATCHES_ACTIONS_LIST "patches_actions_list"
+
+static bool action_ok_patch_get_selected_idx(size_t *idx)
+{
+   unsigned menu_type = FILE_TYPE_NONE;
+
+   if (!idx)
+      return false;
+
+   menu_entries_get_last_stack(NULL, NULL, &menu_type, NULL, NULL);
+
+   if (menu_type < MENU_SETTINGS_PATCH_BEGIN || menu_type > MENU_SETTINGS_PATCH_END)
+      return false;
+
+   *idx = menu_type - MENU_SETTINGS_PATCH_BEGIN;
+   return true;
+}
+
+static int action_ok_patch_menu(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL,
+         label, type, idx, entry_idx, ACTION_OK_DL_PUSH_DEFAULT);
+}
+
+static int action_ok_patch_add_menu(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char start_dir[PATH_MAX_LENGTH];
+
+   start_dir[0] = '\0';
+   if (!patch_stack_resolve_selected_patches_dir(start_dir, sizeof(start_dir)))
+      return 0;
+
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
+   return generic_action_ok_displaylist_push(start_dir, start_dir,
+         MENU_LABEL_PATCHES_ADD_LIST, type, idx, entry_idx, ACTION_OK_DL_CONTENT_LIST);
+}
+
+static int action_ok_patch_entry(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL,
+         MENU_LABEL_PATCHES_ACTIONS_LIST, type, idx, entry_idx, ACTION_OK_DL_PUSH_DEFAULT);
+}
+
+static int action_ok_patch_add_candidate(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *menu_path = NULL;
+   char full_path[PATH_MAX_LENGTH];
+
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+   if (!string_is_empty(menu_path) && !path_is_absolute(path))
+      fill_pathname_join_special(full_path, menu_path, path, sizeof(full_path));
+   else
+      strlcpy(full_path, path, sizeof(full_path));
+
+   if (patch_stack_add(full_path))
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+
+   menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_PATCHES), 0);
+   return 0;
+}
+
+static int action_ok_patch_move_up(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t patch_idx           = 0;
+
+   if (!action_ok_patch_get_selected_idx(&patch_idx) || !patch_stack_move_up(patch_idx))
+      return 0;
+
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return action_cancel_pop_default(path, label, type, idx);
+}
+
+static int action_ok_patch_move_down(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t patch_idx           = 0;
+
+   if (!action_ok_patch_get_selected_idx(&patch_idx) || !patch_stack_move_down(patch_idx))
+      return 0;
+
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return action_cancel_pop_default(path, label, type, idx);
+}
+
+static int action_ok_patch_remove(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t patch_idx           = 0;
+
+   if (!action_ok_patch_get_selected_idx(&patch_idx) || !patch_stack_remove(patch_idx))
+      return 0;
+
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return action_cancel_pop_default(path, label, type, idx);
+}
+#endif
 
 #ifdef HAVE_CHEATS
 static int action_ok_cheat_add_top(const char *path,
@@ -9617,6 +9751,18 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_cheat);
    }
+#ifdef HAVE_PATCH
+   else if (type >= MENU_SETTINGS_PATCH_BEGIN
+         && type <= MENU_SETTINGS_PATCH_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_patch_entry);
+   }
+   else if (type >= MENU_SETTINGS_PATCH_CANDIDATE_BEGIN
+         && type <= MENU_SETTINGS_PATCH_CANDIDATE_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_patch_add_candidate);
+   }
+#endif
    else if (   (type >= MENU_SETTINGS_CORE_OPTION_START)
             && (type < MENU_SETTINGS_CHEEVOS_START))
    {
@@ -9997,6 +10143,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_IN_CARCHIVE:
          case FILE_TYPE_PLAIN:
+            if (string_is_equal(menu_label, MENU_LABEL_PATCHES_ADD_LIST))
+            {
+               BIND_ACTION_OK(cbs, action_ok_patch_add_candidate);
+               break;
+            }
+
             if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
             {
 #ifdef HAVE_LIBRETRODB
@@ -10130,6 +10282,23 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
             BIND_ACTION_OK(cbs, action_ok_contentless_core_run);
             break;
+#ifdef HAVE_PATCH
+         case MENU_SETTING_ACTION_PATCHES:
+            BIND_ACTION_OK(cbs, action_ok_patch_menu);
+            break;
+         case MENU_SETTING_ACTION_PATCH_ADD:
+            BIND_ACTION_OK(cbs, action_ok_patch_add_menu);
+            break;
+         case MENU_SETTING_ACTION_PATCH_MOVE_UP:
+            BIND_ACTION_OK(cbs, action_ok_patch_move_up);
+            break;
+         case MENU_SETTING_ACTION_PATCH_MOVE_DOWN:
+            BIND_ACTION_OK(cbs, action_ok_patch_move_down);
+            break;
+         case MENU_SETTING_ACTION_PATCH_REMOVE:
+            BIND_ACTION_OK(cbs, action_ok_patch_remove);
+            break;
+#endif
          default:
             return -1;
       }

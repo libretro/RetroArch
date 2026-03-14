@@ -24622,6 +24622,21 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
+               settings->paths.directory_patches,
+               sizeof(settings->paths.directory_patches),
+               MENU_ENUM_LABEL_PATCHES_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_PATCHES_DIRECTORY,
+               "",
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
                settings->paths.directory_menu_content,
                sizeof(settings->paths.directory_menu_content),
                MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,

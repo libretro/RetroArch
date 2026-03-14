@@ -28,6 +28,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <lists/string_list.h>
 
 #include <encodings/crc32.h>
 
@@ -35,6 +36,16 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../configuration.h"
+#include "../defaults.h"
+#include "../paths.h"
+#include "../playlist.h"
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
+#ifndef MAX_PATCH_COUNTERS
+#define MAX_PATCH_COUNTERS 8192
+#endif
 
 #ifdef HAVE_XDELTA
 #include "../deps/xdelta3/xdelta3.h"
@@ -862,6 +873,430 @@ static bool try_xdelta_patch(bool allow_xdelta,
     return false;
 }
 
+static bool patch_stack_get_selected_playlist_entry(
+      const struct playlist_entry **entry_out)
+{
+#ifdef HAVE_MENU
+   playlist_t *playlist               = playlist_get_cached();
+   struct menu_state *menu_st         = menu_state_get_ptr();
+   menu_handle_t *menu                = menu_st ? menu_st->driver_data : NULL;
+
+   if (!entry_out || !menu || !playlist)
+      return false;
+
+   playlist_get_index(playlist, menu->rpl_entry_selection_ptr, entry_out);
+   if (*entry_out && !string_is_empty((*entry_out)->path))
+      return true;
+#endif
+
+   return false;
+}
+
+static bool patch_stack_resolve_patches_root_dir(
+      char *patch_root, size_t patch_root_len)
+{
+   settings_t *settings     = config_get_ptr();
+   const char *dir_patches  = NULL;
+   const char *dir_port     = g_defaults.dirs[DEFAULT_DIR_PORT];
+
+   if (!patch_root || !patch_root_len || !settings)
+      return false;
+
+   dir_patches = settings->paths.directory_patches;
+   if (!string_is_empty(dir_patches))
+      strlcpy(patch_root, dir_patches, patch_root_len);
+   else if (!string_is_empty(dir_port))
+      fill_pathname_join_special(patch_root, dir_port, "patches", patch_root_len);
+   else
+      fill_pathname_expand_special(patch_root, ":/patches", patch_root_len);
+
+   return !string_is_empty(patch_root);
+}
+
+static bool patch_stack_resolve_selected_patches_file(
+      char *patch_file, size_t patch_file_len)
+{
+   settings_t *settings = config_get_ptr();
+   const char *content_path = NULL;
+   const char *config_dir = NULL;
+   const struct playlist_entry *entry = NULL;
+   char patch_dir[PATH_MAX_LENGTH];
+   char patch_path[PATH_MAX_LENGTH];
+   char rom_name[NAME_MAX_LENGTH];
+
+   if (!patch_file || !patch_file_len || !settings)
+      return false;
+
+   config_dir = settings->paths.directory_menu_config;
+   if (string_is_empty(config_dir))
+      config_dir = g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG];
+   if (string_is_empty(config_dir))
+      return false;
+
+   fill_pathname_join_special(patch_dir,
+         config_dir, "patches", sizeof(patch_dir));
+
+   if (patch_stack_get_selected_playlist_entry(&entry)
+         && !string_is_empty(entry->path))
+   {
+      char system_name[NAME_MAX_LENGTH];
+
+      strlcpy(rom_name, path_basename(entry->path), sizeof(rom_name));
+      path_remove_extension(rom_name);
+
+      if (!string_is_empty(entry->db_name))
+      {
+         strlcpy(system_name, entry->db_name, sizeof(system_name));
+         path_remove_extension(system_name);
+         fill_pathname_join_special(patch_dir,
+               patch_dir, system_name, sizeof(patch_dir));
+      }
+   }
+   else
+   {
+      content_path = path_get(RARCH_PATH_CONTENT);
+      if (string_is_empty(content_path))
+         return false;
+
+      strlcpy(rom_name, path_basename(content_path), sizeof(rom_name));
+      path_remove_extension(rom_name);
+   }
+
+   fill_pathname_join_special(patch_path,
+         patch_dir, rom_name, sizeof(patch_path));
+   fill_pathname(patch_file, patch_path, ".patches", patch_file_len);
+
+   return true;
+}
+
+bool patch_stack_load_selected_patches_list(
+      struct string_list **selected)
+{
+   char patch_file[PATH_MAX_LENGTH];
+   RFILE *file = NULL;
+   struct string_list *list;
+
+   if (!selected)
+      return false;
+   if (!patch_stack_resolve_selected_patches_file(patch_file, sizeof(patch_file)))
+      return false;
+
+   list = string_list_new();
+   if (!list)
+      return false;
+
+   if (!path_is_valid(patch_file))
+   {
+      *selected = list;
+      return true;
+   }
+
+   file = filestream_open(patch_file,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+   {
+      string_list_free(list);
+      return false;
+   }
+
+   while (!filestream_eof(file))
+   {
+      char *line = filestream_getline(file);
+      union string_list_elem_attr attr;
+
+      attr.i = 0;
+
+      if (!line)
+         break;
+
+      string_trim_whitespace(line);
+
+      if (   !string_is_empty(line)
+          && line[0] != '#'
+          && string_list_find_elem(list, line) == 0)
+         string_list_append(list, line, attr);
+
+      free(line);
+   }
+
+   filestream_close(file);
+   *selected = list;
+   return true;
+}
+
+static bool patch_stack_save_selected_file(const struct string_list *selected)
+{
+   size_t i;
+   RFILE *file = NULL;
+   char patch_file[PATH_MAX_LENGTH];
+   char patch_file_dir[PATH_MAX_LENGTH];
+
+   if (!selected)
+      return false;
+   if (!patch_stack_resolve_selected_patches_file(patch_file, sizeof(patch_file)))
+      return false;
+
+   fill_pathname_parent_dir(patch_file_dir, patch_file, sizeof(patch_file_dir));
+   if (   !string_is_empty(patch_file_dir)
+       && !path_is_directory(patch_file_dir)
+       && !path_mkdir(patch_file_dir))
+      return false;
+
+   file = filestream_open(patch_file,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+      return false;
+
+   for (i = 0; i < selected->size; i++)
+      filestream_printf(file, "%s\n", selected->elems[i].data);
+
+   filestream_close(file);
+   return true;
+}
+
+bool patch_stack_add(const char *candidate_path)
+{
+   struct string_list *selected   = NULL;
+   const char *candidate = candidate_path;
+   size_t root_len;
+   char patch_root[PATH_MAX_LENGTH];
+   char patch_path[PATH_MAX_LENGTH];
+   union string_list_elem_attr attr;
+
+   attr.i = 0;
+
+   if (string_is_empty(candidate_path))
+      return false;
+   if (!patch_stack_resolve_patches_root_dir(patch_root, sizeof(patch_root)))
+      return false;
+
+   if (path_is_absolute(candidate_path))
+   {
+      root_len = strlen(patch_root);
+      if (!string_starts_with_size(candidate_path, patch_root, root_len))
+         return false;
+
+      candidate = candidate_path + root_len;
+      if (PATH_CHAR_IS_SLASH(*candidate))
+         candidate++;
+   }
+
+   if (string_is_empty(candidate))
+      return false;
+
+   if (!patch_stack_load_selected_patches_list(&selected) || !selected)
+      return false;
+
+   fill_pathname_join_special(patch_path,
+         patch_root, candidate, sizeof(patch_path));
+   if (!path_is_valid(patch_path))
+   {
+      string_list_free(selected);
+      return false;
+   }
+   if (string_list_find_elem(selected, candidate) != 0)
+   {
+      string_list_free(selected);
+      return false;
+   }
+   if (!string_list_append(selected, candidate, attr))
+   {
+      string_list_free(selected);
+      return false;
+   }
+   if (!patch_stack_save_selected_file(selected))
+   {
+      string_list_free(selected);
+      return false;
+   }
+
+   string_list_free(selected);
+   return true;
+}
+
+bool patch_stack_resolve_selected_patches_dir(char *dir, size_t len)
+{
+   const struct playlist_entry *entry = NULL;
+   char patch_root[PATH_MAX_LENGTH];
+   char selected_dir[PATH_MAX_LENGTH];
+   char system_name[NAME_MAX_LENGTH];
+   char rom_name[NAME_MAX_LENGTH];
+
+   if (!dir || !len)
+      return false;
+   if (!patch_stack_resolve_patches_root_dir(patch_root, sizeof(patch_root)))
+      return false;
+
+   selected_dir[0] = '\0';
+
+   if (patch_stack_get_selected_playlist_entry(&entry)
+         && !string_is_empty(entry->db_name)
+         && !string_is_empty(entry->path))
+   {
+      strlcpy(rom_name, path_basename(entry->path), sizeof(rom_name));
+      path_remove_extension(rom_name);
+
+      strlcpy(system_name, entry->db_name, sizeof(system_name));
+      path_remove_extension(system_name);
+
+      fill_pathname_join_special(selected_dir,
+            patch_root, system_name, sizeof(selected_dir));
+      fill_pathname_join_special(selected_dir,
+            selected_dir, rom_name, sizeof(selected_dir));
+   }
+
+   if (!string_is_empty(selected_dir) && path_is_directory(selected_dir))
+      strlcpy(dir, selected_dir, len);
+   else
+      strlcpy(dir, patch_root, len);
+
+   return !string_is_empty(dir);
+}
+
+bool patch_stack_remove(size_t idx)
+{
+   size_t i;
+   struct string_list *selected = NULL;
+
+   if (!patch_stack_load_selected_patches_list(&selected) || !selected)
+      return false;
+   if (idx >= selected->size)
+   {
+      string_list_free(selected);
+      return false;
+   }
+
+   free(selected->elems[idx].data);
+   for (i = idx; i + 1 < selected->size; i++)
+      selected->elems[i] = selected->elems[i + 1];
+   selected->size--;
+
+   if (!patch_stack_save_selected_file(selected))
+   {
+      string_list_free(selected);
+      return false;
+   }
+
+   string_list_free(selected);
+   return true;
+}
+
+bool patch_stack_move_up(size_t idx)
+{
+   struct string_list_elem tmp;
+   struct string_list *selected = NULL;
+
+   if (idx == 0)
+      return false;
+   if (!patch_stack_load_selected_patches_list(&selected) || !selected)
+      return false;
+   if (idx >= selected->size)
+   {
+      string_list_free(selected);
+      return false;
+   }
+
+   tmp                   = selected->elems[idx - 1];
+   selected->elems[idx - 1] = selected->elems[idx];
+   selected->elems[idx]     = tmp;
+
+   if (!patch_stack_save_selected_file(selected))
+   {
+      string_list_free(selected);
+      return false;
+   }
+
+   string_list_free(selected);
+   return true;
+}
+
+bool patch_stack_move_down(size_t idx)
+{
+   struct string_list_elem tmp;
+   struct string_list *selected = NULL;
+
+   if (!patch_stack_load_selected_patches_list(&selected) || !selected)
+      return false;
+   if (idx + 1 >= selected->size)
+   {
+      string_list_free(selected);
+      return false;
+   }
+
+   tmp                   = selected->elems[idx + 1];
+   selected->elems[idx + 1] = selected->elems[idx];
+   selected->elems[idx]     = tmp;
+
+   if (!patch_stack_save_selected_file(selected))
+   {
+      string_list_free(selected);
+      return false;
+   }
+   string_list_free(selected);
+   return true;
+}
+
+static bool patch_stack_apply_explicit(uint8_t **buf, ssize_t *size)
+{
+   size_t i;
+   bool applied_any = false;
+   char patch_root[PATH_MAX_LENGTH];
+   struct string_list *selected = NULL;
+
+   if (!patch_stack_resolve_patches_root_dir(patch_root, sizeof(patch_root)))
+      return false;
+   if (!patch_stack_load_selected_patches_list(&selected)
+         || !selected)
+      return false;
+   if (selected->size == 0)
+   {
+      string_list_free(selected);
+      return false;
+   }
+
+   for (i = 0; i < selected->size; i++)
+   {
+      bool patch_ok            = false;
+      const char *patch_name   = selected->elems[i].data;
+      const char *ext          = path_get_extension(patch_name);
+      char patch_fullpath[PATH_MAX_LENGTH];
+
+      fill_pathname_join_special(patch_fullpath,
+            patch_root, patch_name, sizeof(patch_fullpath));
+
+      if (!path_is_valid(patch_fullpath))
+      {
+         RARCH_WARN("[Patch] Missing patch in stack: %s\n", patch_fullpath);
+         continue;
+      }
+
+      if (string_is_equal_case_insensitive(ext, "ips"))
+         patch_ok = try_ips_patch(true, patch_fullpath, buf, size);
+      else if (string_is_equal_case_insensitive(ext, "bps"))
+         patch_ok = try_bps_patch(true, patch_fullpath, buf, size);
+      else if (string_is_equal_case_insensitive(ext, "ups"))
+         patch_ok = try_ups_patch(true, patch_fullpath, buf, size);
+      else if (string_is_equal_case_insensitive(ext, "xdelta"))
+         patch_ok = try_xdelta_patch(true, patch_fullpath, buf, size);
+
+      if (!patch_ok)
+      {
+         RARCH_ERR("[Patch] Failed applying patch from stack: %s\n", patch_fullpath);
+         string_list_free(selected);
+         return applied_any;
+      }
+
+      applied_any = true;
+   }
+
+   string_list_free(selected);
+   return applied_any;
+}
+
 /**
  * patch_content:
  * @buf          : buffer of the content file.
@@ -887,6 +1322,9 @@ bool patch_content(
    bool allow_ips    = !is_ups_pref && !is_bps_pref && !is_xdelta_pref;
    bool allow_bps    = !is_ups_pref && !is_ips_pref && !is_xdelta_pref;
    bool allow_xdelta = !is_bps_pref && !is_ups_pref && !is_ips_pref;
+
+   if (patch_stack_apply_explicit(buf, size))
+      return true;
 
    if (    (unsigned)is_ips_pref
          + (unsigned)is_bps_pref

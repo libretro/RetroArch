@@ -215,6 +215,15 @@ bool patch_content(
       uint8_t **buf,
       void *data);
 
+struct string_list;
+
+bool patch_stack_load_selected_patches_list(struct string_list **selected);
+bool patch_stack_resolve_selected_patches_dir(char *dir, size_t len);
+bool patch_stack_add(const char *candidate_path);
+bool patch_stack_remove(size_t idx);
+bool patch_stack_move_up(size_t idx);
+bool patch_stack_move_down(size_t idx);
+
 bool task_check_decompress(const char *source_file);
 
 void *task_push_decompress(
