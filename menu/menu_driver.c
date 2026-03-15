@@ -120,12 +120,13 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_DOLLAR,        "$"},
    {RETROK_AMPERSAND,     "&"},
    {RETROK_QUOTE,         "\'"},
-   {RETROK_LEFTPAREN,     "("},
-   {RETROK_RIGHTPAREN,    ")"},
-   {RETROK_ASTERISK,      "*"},
-   {RETROK_PLUS,          "+"},
-   {RETROK_COMMA,         ","},
-   {RETROK_MINUS,         "-"},
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
+      return;
+
+   menu_driver_ctl(RARCH_MENU_CTL_CHECK_MEMORY_USAGE, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+}
+
    {RETROK_PERIOD,        "."},
    {RETROK_SLASH,         "/"},
    {RETROK_0,             "0"},
@@ -147,12 +148,18 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_AT,            "@"},
    {RETROK_LEFTBRACKET,   "["},
    {RETROK_BACKSLASH,     "\\"},
-   {RETROK_RIGHTBRACKET,  "]"},
-   {RETROK_CARET,         "^"},
-   {RETROK_UNDERSCORE,    "_"},
-   {RETROK_BACKQUOTE,     "`"},
-   {RETROK_a,             "A"},
-   {RETROK_b,             "B"},
+   case RARCH_MENU_CTL_FRAME:
+      menu_driver_frame_internal(data, userdata);
+      break;
+   case RARCH_MENU_CTL_CHECK_MEMORY_USAGE:
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_XMB, NULL))
+      {
+         menu_xmb_check_memory_usage();
+      }
+      break;
+   case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
+      menu_driver_set_prevent_populate(data);
+      break;
    {RETROK_c,             "C"},
    {RETROK_d,             "D"},
    {RETROK_e,             "E"},
