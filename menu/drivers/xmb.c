@@ -7150,57 +7150,101 @@ static void xmb_render(void *data,
    /* Handle any pending icon thumbnail load requests */
    if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
    {
-      /* Limit image loading per frame to prevent slowdowns,
-       * and hide the usual icon while pending */
-      uint8_t max_per_frame = 2;
-      uint8_t cur_per_frame = 0;
-
-      /* Based on height of screen calculate the available entries that are visible */
-      if (height)
-         xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &first, &last);
-
-      xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_NONE;
-
-      for (i = first; i <= last; i++)
+      /* LOW-MEMORY FIX: Detect rapid scrolling and defer thumbnail loading
+       * This prevents texture exhaustion on devices like Raspberry Pi and Switch */
+      static retro_time_t last_scroll_time = 0;
+      static unsigned scroll_count = 0;
+      retro_time_t current_time = cpu_features_get_time_usec();
+      
+      /* Count scrolls within 100ms window */
+      if (current_time - last_scroll_time < 100000)
+         scroll_count++;
+      else
+         scroll_count = 1;
+      
+      last_scroll_time = current_time;
+      
+      /* If scrolling rapidly (>5 scrolls in 100ms), skip thumbnail loading */
+      bool rapid_scroll = (scroll_count > 5);
+      
+      if (!rapid_scroll)
       {
-         xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
-         xmb_icons_t *thumbnail_icon;
+         /* Limit image loading per frame to prevent slowdowns,
+          * and hide the usual icon while pending */
+         uint8_t max_per_frame = 2;
+         uint8_t cur_per_frame = 0;
 
-         if (!node)
-            continue;
+         /* Based on height of screen calculate the available entries that are visible */
+         if (height)
+            xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &first, &last);
 
-         thumbnail_icon = &node->thumbnail_icon;
+         xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_NONE;
 
-         if (cur_per_frame >= max_per_frame)
+         for (i = first; i <= last; i++)
          {
-            node->icon_hide = true;
-            xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
-            continue;
-         }
+            xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
+            xmb_icons_t *thumbnail_icon;
 
-         if (     thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN
-               && !string_is_empty(thumbnail_icon->thumbnail_path_data.icon_path))
-         {
-            node->icon_hide = false;
-            if (!xmb_load_dynamic_icon(
-                     thumbnail_icon->thumbnail_path_data.icon_path,
-                     &thumbnail_icon->icon))
+            if (!node)
+               continue;
+
+            thumbnail_icon = &node->thumbnail_icon;
+
+            /* LOW-MEMORY FIX: Skip loading if already at max concurrent loads */
+            if (!gfx_thumbnail_can_start_load())
             {
-               gfx_thumbnail_request_stream(
-                     &thumbnail_icon->thumbnail_path_data,
-                     p_anim,
-                     GFX_THUMBNAIL_ICON,
-                     playlist, i,
-                     &thumbnail_icon->icon,
-                     gfx_thumbnail_upscale_threshold,
-                     network_on_demand_thumbnails);
+               xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
+               continue;
             }
-            else
-               cur_per_frame++;
-         }
 
-         if (thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
-            xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
+            if (cur_per_frame >= max_per_frame)
+            {
+               node->icon_hide = true;
+               xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
+               continue;
+            }
+
+            if (     thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN
+                  && !string_is_empty(thumbnail_icon->thumbnail_path_data.icon_path))
+            {
+               node->icon_hide = false;
+               if (!xmb_load_dynamic_icon(
+                        thumbnail_icon->thumbnail_path_data.icon_path,
+                        &thumbnail_icon->icon))
+               {
+                  gfx_thumbnail_request_stream(
+                        &thumbnail_icon->thumbnail_path_data,
+                        p_anim,
+                        GFX_THUMBNAIL_ICON,
+                        playlist, i,
+                        &thumbnail_icon->icon,
+                        gfx_thumbnail_upscale_threshold,
+                        network_on_demand_thumbnails);
+               }
+               else
+                  cur_per_frame++;
+            }
+
+            if (thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+               xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
+         }
+      }
+      else
+      {
+         /* During rapid scroll, reset off-screen thumbnails to free memory */
+         size_t sel = menu_st->selection_ptr;
+         for (i = first; i <= last; i++)
+         {
+            if (i != sel)
+            {
+               xmb_node_t *other_node = (xmb_node_t*)selection_buf->list[i].userdata;
+               if (other_node)
+                  gfx_thumbnail_reset(&other_node->thumbnail_icon.icon);
+            }
+         }
+         
+         /* Still need to retry later */
+         xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
       }
    }
    else if (xmb->thumbnails.icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN
@@ -9179,6 +9223,16 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    gfx_thumbnail_set_stream_delay(-1.0f);
    gfx_thumbnail_set_fade_duration(-1.0f);
    gfx_thumbnail_set_fade_missing(false);
+
+   /* LOW-MEMORY FIX: Set platform-appropriate concurrent load limits
+    * Prevents texture memory exhaustion on RPi, Switch, and other low-RAM devices */
+#if defined(HAVE_OPENGLES) || defined(__SWITCH__) || defined(ANDROID)
+   /* Low-memory platforms: limit to 2 concurrent loads */
+   gfx_thumbnail_set_max_concurrent_loads(2);
+#else
+   /* Desktop platforms: allow 4 concurrent loads */
+   gfx_thumbnail_set_max_concurrent_loads(4);
+#endif
 
    xmb->use_ps3_layout                        =
          xmb_use_ps3_layout(settings->uints.menu_xmb_layout, width, height);
