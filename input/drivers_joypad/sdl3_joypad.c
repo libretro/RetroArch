@@ -124,6 +124,7 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
       {
          SDL_CloseGamepad(pad->gamepad);
          pad->gamepad = NULL;
+         pad->joypad = NULL;
       }
       else if (pad->joypad)
       {
@@ -218,8 +219,8 @@ static void sdl3_joypad_destroy(void)
 
 static void *sdl3_joypad_init(void *data)
 {
-   int i, count                 = 0;
-   uint32_t sdl_subsystem_flags = SDL_WasInit(0);
+   int i, count = 0;
+   SDL_InitFlags sdl_subsystem_flags = SDL_WasInit(0);
 
    if (sdl_subsystem_flags == 0)
    {
@@ -412,16 +413,10 @@ static void sdl3_joypad_poll(void)
 static bool sdl3_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   sdl3_joypad_t *joypad;
    uint16_t low  = 0;
    uint16_t high = 0;
 
    if (pad >= MAX_USERS)
-      return false;
-
-   joypad = (sdl3_joypad_t*)&sdl3_joypads[pad];
-
-   if (!joypad->joypad)
       return false;
 
    switch (effect)
@@ -436,9 +431,12 @@ static bool sdl3_joypad_set_rumble(unsigned pad,
          return false;
    }
 
-   if (joypad->gamepad)
-      return SDL_RumbleGamepad(joypad->gamepad, low, high, 5000);
-   return SDL_RumbleJoystick(joypad->joypad, low, high, 5000);
+   if (sdl3_joypads[pad].gamepad)
+      return SDL_RumbleGamepad(sdl3_joypads[pad].gamepad, low, high, 5000);
+   else if (sdl3_joypads[pad].joypad)
+      return SDL_RumbleJoystick(sdl3_joypads[pad].joypad, low, high, 5000);
+
+   return false;
 }
 
 /**

@@ -32,11 +32,16 @@
 #include <wiiu/pad_strings.h>
 #endif
 
+#ifdef HAVE_SDL3
+#include <SDL3/SDL.h>
+#endif
+
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
 #define DECL_BTN_EX(btn, bind, name) "input_" #btn "_btn = " #bind "\ninput_" #btn "_btn_label = \"" name "\"\n"
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
 #define DECL_AXIS_EX(axis, bind, name) "input_" #axis "_axis = " #bind "\ninput_" #axis "_axis_label = \"" name "\"\n"
 #define DECL_MENU(btn) "input_menu_toggle_btn = " #btn "\n"
+#define DECL_MENU_EX(btn, name) "input_menu_toggle_btn = " #btn "\ninput_menu_toggle_btn_label = \"" name "\"\n"
 #define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" device "\"\ninput_driver = \"" driver "\"\n" binds
 #define DECL_AUTOCONF_PID(pid, vid, driver, binds) "input_product_id = " #pid "\ninput_vendor_id = " #vid "\ninput_driver = \"" driver "\"\n" binds
 
@@ -65,6 +70,33 @@ DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
+
+#define SDL3_DEFAULT_BINDS \
+DECL_BTN_EX(a,          SDL_GAMEPAD_BUTTON_EAST, "Right Face Button") \
+DECL_BTN_EX(b,          SDL_GAMEPAD_BUTTON_SOUTH, "Bottom Face Button") \
+DECL_BTN_EX(x,          SDL_GAMEPAD_BUTTON_NORTH, "Top Face Button") \
+DECL_BTN_EX(y,          SDL_GAMEPAD_BUTTON_WEST, "Left Face Button") \
+DECL_BTN_EX(select,     SDL_GAMEPAD_BUTTON_BACK, "Back") \
+DECL_BTN_EX(start,      SDL_GAMEPAD_BUTTON_START, "Start") \
+DECL_BTN_EX(up,         SDL_GAMEPAD_BUTTON_DPAD_UP, "D-Pad Up") \
+DECL_BTN_EX(down,       SDL_GAMEPAD_BUTTON_DPAD_DOWN, "D-Pad Down") \
+DECL_BTN_EX(left,       SDL_GAMEPAD_BUTTON_DPAD_LEFT, "D-Pad Left") \
+DECL_BTN_EX(right,      SDL_GAMEPAD_BUTTON_DPAD_RIGHT, "D-Pad Right") \
+DECL_BTN_EX(l,          SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, "Left Shoulder") \
+DECL_BTN_EX(r,          SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, "Right Shoulder") \
+DECL_AXIS_EX(l2,        +SDL_GAMEPAD_AXIS_LEFT_TRIGGER, "Left Trigger") \
+DECL_AXIS_EX(r2,        +SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, "Right Trigger") \
+DECL_BTN_EX(l3,         SDL_GAMEPAD_BUTTON_LEFT_STICK, "Left Stick") \
+DECL_BTN_EX(r3,         SDL_GAMEPAD_BUTTON_RIGHT_STICK, "Right Stick") \
+DECL_AXIS_EX(l_x_plus,  +SDL_GAMEPAD_AXIS_LEFTX, "Left Thumbstick X+") \
+DECL_AXIS_EX(l_x_minus, -SDL_GAMEPAD_AXIS_LEFTX, "Left Thumbstick X-") \
+DECL_AXIS_EX(l_y_plus,  +SDL_GAMEPAD_AXIS_LEFTY, "Left Thumbstick Y+") \
+DECL_AXIS_EX(l_y_minus, -SDL_GAMEPAD_AXIS_LEFTY, "Left Thumbstick Y-") \
+DECL_AXIS_EX(r_x_plus,  +SDL_GAMEPAD_AXIS_RIGHTX, "Right Thumbstick X+") \
+DECL_AXIS_EX(r_x_minus, -SDL_GAMEPAD_AXIS_RIGHTX, "Right Thumbstick X-") \
+DECL_AXIS_EX(r_y_plus,  -SDL_GAMEPAD_AXIS_RIGHTY, "Right Thumbstick Y+") \
+DECL_AXIS_EX(r_y_minus, +SDL_GAMEPAD_AXIS_RIGHTY, "Right Thumbstick Y-") \
+DECL_MENU_EX(SDL_GAMEPAD_BUTTON_GUIDE, "Guide")
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
 #define DINGUX_SDL_DEFAULT_BINDS \
@@ -721,7 +753,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("Standard Gamepad", "sdl2", SDL2_DEFAULT_BINDS),
 #endif
 #ifdef HAVE_SDL3
-   DECL_AUTOCONF_DEVICE("Standard Gamepad", "sdl3", SDL2_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Gamepad", "sdl3", SDL3_DEFAULT_BINDS),
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
    DECL_AUTOCONF_DEVICE("Dingux Gamepad", "sdl_dingux", DINGUX_SDL_DEFAULT_BINDS),
