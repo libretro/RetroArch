@@ -27,11 +27,12 @@
 
 #include "menu_setting.h"
 #include "menu_input.h"
-#include "menu_displaylist.h"
-
-RETRO_BEGIN_DECLS
-
-#define MENU_LABEL_MAX_LENGTH 1024
+   size_t size;
+   size_t capacity;
+   menu_handle_t *menu;
+   bool need_texture_reload;
+   menu_entry_t *list;
+} menu_entries_t;
 
 #define MENU_SEARCH_FILTER_MAX_TERMS  8
 #define MENU_SEARCH_FILTER_MAX_LENGTH 64
