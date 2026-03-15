@@ -720,6 +720,9 @@ const char* const input_builtin_autoconfs[] =
 #ifdef HAVE_SDL2
    DECL_AUTOCONF_DEVICE("Standard Gamepad", "sdl2", SDL2_DEFAULT_BINDS),
 #endif
+#ifdef HAVE_SDL3
+   DECL_AUTOCONF_DEVICE("Standard Gamepad", "sdl3", SDL2_DEFAULT_BINDS),
+#endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
    DECL_AUTOCONF_DEVICE("Dingux Gamepad", "sdl_dingux", DINGUX_SDL_DEFAULT_BINDS),
 #endif

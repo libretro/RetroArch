@@ -273,7 +273,13 @@ check_val '' PIPEWIRE -lpipewire-0.3 '' libpipewire-0.3 '' '' false
 check_val '' PIPEWIRE_STABLE -lpipewire-0.3 '' libpipewire-0.3 1.0.0 '' false
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' true
 check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' true
+check_val '' SDL3 -lSDL3 SDL3 sdl3 3.2.20 '' true
 
+if [ "$HAVE_SDL3" = 'yes' ] && { [ "$HAVE_SDL2" = 'yes' ] || [ "$HAVE_SDL" = 'yes' ]; }; then
+   die : 'Notice: SDL drivers will be replaced by SDL3 ones.'
+   HAVE_SDL=no
+   HAVE_SDL2=no
+fi
 if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
    HAVE_SDL=no

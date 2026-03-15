@@ -4284,7 +4284,7 @@ bool command_event(enum event_command cmd, void *data)
             video_driver_state_t
                *video_st                         = video_state_get_ptr();
             rarch_system_info_t *sys_info        = &runloop_st->system;
-            
+
             /* Restore unpaused state */
             runloop_st->paused_hotkey = false;
             command_event(CMD_EVENT_UNPAUSE, NULL);

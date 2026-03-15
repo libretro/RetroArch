@@ -894,7 +894,9 @@ AUDIO
 #include "../audio/drivers/xaudio.c"
 #endif
 
-#if defined(HAVE_SDL2)
+#if defined(HAVE_SDL3)
+#include "../input/drivers_joypad/sdl3_joypad.c"
+#elif defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
 #include "../input/drivers/sdl_input.c"
 #include "../input/drivers_joypad/sdl_joypad.c"
