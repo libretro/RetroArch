@@ -916,55 +916,26 @@ static bool patch_stack_resolve_patches_root_dir(
 static bool patch_stack_resolve_selected_patches_file(
       char *patch_file, size_t patch_file_len)
 {
-   settings_t *settings = config_get_ptr();
    const char *content_path = NULL;
-   const char *config_dir = NULL;
    const struct playlist_entry *entry = NULL;
-   char patch_dir[PATH_MAX_LENGTH];
-   char patch_path[PATH_MAX_LENGTH];
-   char rom_name[NAME_MAX_LENGTH];
+   char rom_path[PATH_MAX_LENGTH];
 
-   if (!patch_file || !patch_file_len || !settings)
+   if (!patch_file || !patch_file_len)
       return false;
-
-   config_dir = settings->paths.directory_menu_config;
-   if (string_is_empty(config_dir))
-      config_dir = g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG];
-   if (string_is_empty(config_dir))
-      return false;
-
-   fill_pathname_join_special(patch_dir,
-         config_dir, "patches", sizeof(patch_dir));
 
    if (patch_stack_get_selected_playlist_entry(&entry)
          && !string_is_empty(entry->path))
-   {
-      char system_name[NAME_MAX_LENGTH];
-
-      strlcpy(rom_name, path_basename(entry->path), sizeof(rom_name));
-      path_remove_extension(rom_name);
-
-      if (!string_is_empty(entry->db_name))
-      {
-         strlcpy(system_name, entry->db_name, sizeof(system_name));
-         path_remove_extension(system_name);
-         fill_pathname_join_special(patch_dir,
-               patch_dir, system_name, sizeof(patch_dir));
-      }
-   }
+      strlcpy(rom_path, entry->path, sizeof(rom_path));
    else
    {
       content_path = path_get(RARCH_PATH_CONTENT);
       if (string_is_empty(content_path))
          return false;
 
-      strlcpy(rom_name, path_basename(content_path), sizeof(rom_name));
-      path_remove_extension(rom_name);
+      strlcpy(rom_path, content_path, sizeof(rom_path));
    }
 
-   fill_pathname_join_special(patch_path,
-         patch_dir, rom_name, sizeof(patch_path));
-   fill_pathname(patch_file, patch_path, ".patches", patch_file_len);
+   fill_pathname(patch_file, rom_path, ".patches", patch_file_len);
 
    return true;
 }

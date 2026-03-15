@@ -10143,11 +10143,13 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_IN_CARCHIVE:
          case FILE_TYPE_PLAIN:
+#ifdef HAVE_PATCH
             if (string_is_equal(menu_label, MENU_LABEL_PATCHES_ADD_LIST))
             {
                BIND_ACTION_OK(cbs, action_ok_patch_add_candidate);
                break;
             }
+#endif
 
             if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
             {
