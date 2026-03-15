@@ -127,6 +127,10 @@ struct gfx_thumbnail_state
    /* When true, 'fade in' animation will also be
     * triggered for missing thumbnails */
    bool fade_missing;
+
+   /* LOW-MEMORY FIX: Maximum concurrent thumbnail loads */
+   unsigned max_concurrent_loads;
+   unsigned current_loads;
 };
 
 typedef struct gfx_thumbnail_state gfx_thumbnail_state_t;
@@ -150,6 +154,11 @@ void gfx_thumbnail_set_fade_duration(float duration);
  * > When 'true', allows menu driver to animate
  *   any 'thumbnail unavailable' notifications */
 void gfx_thumbnail_set_fade_missing(bool fade_missing);
+
+/* LOW-MEMORY FIX: Concurrent load limiting */
+void gfx_thumbnail_set_max_concurrent_loads(unsigned max_loads);
+unsigned gfx_thumbnail_get_concurrent_loads(void);
+bool gfx_thumbnail_can_start_load(void);
 
 /* Core interface */
 

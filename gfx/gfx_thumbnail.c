@@ -89,6 +89,29 @@ void gfx_thumbnail_set_fade_missing(bool fade_missing)
    p_gfx_thumb->fade_missing = fade_missing;
 }
 
+/* LOW-MEMORY FIX: Concurrent load limiting */
+void gfx_thumbnail_set_max_concurrent_loads(unsigned max_loads)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+   p_gfx_thumb->max_concurrent_loads = max_loads;
+}
+
+unsigned gfx_thumbnail_get_concurrent_loads(void)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+   return p_gfx_thumb->current_loads;
+}
+
+bool gfx_thumbnail_can_start_load(void)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+   
+   if (p_gfx_thumb->max_concurrent_loads == 0)
+      return true;
+   
+   return p_gfx_thumb->current_loads < p_gfx_thumb->max_concurrent_loads;
+}
+
 /* Callbacks */
 
 /* Fade animation callback - simply resets thumbnail
@@ -151,6 +174,10 @@ static void gfx_thumbnail_handle_upload(
    /* Sanity check */
    if (!thumbnail_tag)
       goto end;
+
+   /* LOW-MEMORY FIX: Decrement concurrent load counter */
+   if (p_gfx_thumb->current_loads > 0)
+      p_gfx_thumb->current_loads--;
 
    /* Ensure that we are operating on the correct
     * thumbnail... */
@@ -295,6 +322,13 @@ void gfx_thumbnail_request(
    if (!path_data || !thumbnail)
       return;
 
+   /* LOW-MEMORY FIX: Check if we can start a new load */
+   if (!gfx_thumbnail_can_start_load())
+   {
+      thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+      return;
+   }
+
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
    gfx_thumbnail_reset(thumbnail);
@@ -316,6 +350,9 @@ void gfx_thumbnail_request(
 
                if (!thumbnail_tag)
                   goto end;
+
+               /* LOW-MEMORY FIX: Increment concurrent load counter */
+               p_gfx_thumb->current_loads++;
 
                /* Configure user data */
                thumbnail_tag->thumbnail = thumbnail;
