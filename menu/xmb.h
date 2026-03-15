@@ -1,0 +1,13 @@
+   float scroll_y_old;
+   float scroll_y;
+   float scroll_x;
+   bool need_texture_reload;
+   int texture_count;
+   texture_image_t *textures;
+   menu_entries_t *entries;
+   menu_list_t *menu_list;
+void menu_xmb_frame(void *data, void *userdata);
+void menu_xmb_free(void *data);
+void menu_xmb_init(menu_handle_t *menu);
+void menu_xmb_clear_textures(menu_handle_t *menu);
+bool menu_xmb_check_memory_usage(void);
