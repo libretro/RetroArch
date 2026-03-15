@@ -15212,6 +15212,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            PARSE_ACTION, false) == 0)
                      count++;
 
+                  /* VFS Browser - File system browser using VFS layer */
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                           MENU_ENUM_LABEL_FILE_BROWSER_VFS,
+                           PARSE_ACTION, false) == 0)
+                     count++;
+
                   if (menu_displaylist_has_subsystems())
                   {
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
