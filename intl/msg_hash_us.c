@@ -124,6 +124,12 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN), len);
              break;
+          case MENU_ENUM_LABEL_FILE_BROWSER_VFS:
+             strlcpy(s, "VFS Browser - Browse files through Virtual File System layer", len);
+             break;
+          case MENU_ENUM_LABEL_HELP_FILE_BROWSER_VFS:
+             strlcpy(s, "Browse and manage files using the VFS (Virtual File System) interface. Supports local files, network shares (SMB), and other VFS backends.", len);
+             break;
           case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE), len);
              break;
