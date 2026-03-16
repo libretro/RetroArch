@@ -1416,6 +1416,9 @@ static void gfx_widgets_draw_regular_msg(
    unsigned rect_margin;
    unsigned text_color;
 
+   msg->flags             &= ~DISPWIDG_FLAG_UNFOLDING;
+   msg->flags             |=  DISPWIDG_FLAG_UNFOLDED;
+
    /* Tint icon yellow for warnings, red for errors,
     * green for success, and blue for info */
    if (msg->flags & DISPWIDG_FLAG_CATEGORY_WARNING)
