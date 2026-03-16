@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <boolean.h>
 
 #ifndef _XBOX
 #include <windows.h>
@@ -26,8 +27,6 @@
 #endif
 
 #include <dsound.h>
-
-#include <boolean.h>
 
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
@@ -38,6 +37,17 @@
 #include <lists/string_list.h>
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
+
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600 /*_WIN32_WINNT_VISTA */)
+#ifndef HAVE_MMDEVICE
+#define HAVE_MMDEVICE
+#endif
+#endif
+
+#ifdef HAVE_MMDEVICE
+#include "../common/mmdevice_common.h"
+#include "../common/mmdevice_common_inline.h"
+#endif
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -54,6 +64,7 @@
 #endif
 
 #define CHUNK_SIZE 256
+#define DSOUND_TIMEOUT 256
 
 typedef struct dsound
 {
@@ -68,6 +79,13 @@ typedef struct dsound
    sthread_t *thread;
 #else
    HANDLE thread;
+#endif
+#ifdef HAVE_MMDEVICE
+#ifdef HAVE_THREADS
+   sthread_t *imm_thread;
+#else
+   HANDLE imm_thread;
+#endif
 #endif
    size_t fifo_bufsize;
    unsigned buffer_size;
@@ -84,6 +102,41 @@ struct audio_lock
    DWORD size1;
    DWORD size2;
 };
+
+#ifdef HAVE_MMDEVICE
+static void dsound_imm_stop_thread(dsound_t *ds)
+{
+   if (!ds->imm_thread)
+      return;
+
+   PostThreadMessage(IMMNotificationThreadId, WM_QUIT, 0, 0);
+
+#ifdef HAVE_THREADS
+   sthread_join(ds->imm_thread);
+#else
+   WaitForSingleObject(ds->imm_thread, DSOUND_TIMEOUT);
+   CloseHandle(ds->imm_thread);
+#endif
+
+   IMMNotificationThreadId = 0;
+   ds->imm_thread = NULL;
+}
+
+static bool dsound_imm_start_thread(dsound_t *ds)
+{
+   if (!ds->imm_thread)
+   {
+#ifdef HAVE_THREADS
+      ds->imm_thread = sthread_create(mmdevice_thread, ds);
+#else
+      ds->imm_thread = CreateThread(NULL, 0, mmdevice_thread, ds, 0, NULL);
+#endif
+      if (!ds->imm_thread)
+         return false;
+   }
+   return true;
+}
+#endif
 
 static BOOL CALLBACK dsound_enumerate_cb(LPGUID guid,
       LPCSTR desc, LPCSTR module, LPVOID context)
@@ -116,7 +169,7 @@ static BOOL CALLBACK dsound_enumerate_cb(LPGUID guid,
    return TRUE;
 }
 
-static void *dsound_list_new(void *u)
+static void *dsound_device_list_new(void *u)
 {
    struct string_list *sl = string_list_new();
 
@@ -133,7 +186,6 @@ static void *dsound_list_new(void *u)
 
    return sl;
 }
-
 
 static INLINE unsigned _dsound_write_avail(unsigned read_ptr,
       unsigned write_ptr, unsigned buffer_size)
@@ -270,7 +322,7 @@ static void dsound_stop_thread(dsound_t *ds)
 #ifdef HAVE_THREADS
    sthread_join(ds->thread);
 #else
-   WaitForSingleObject(ds->thread, INFINITE);
+   WaitForSingleObject(ds->thread, DSOUND_TIMEOUT);
    CloseHandle(ds->thread);
 #endif
 
@@ -316,17 +368,10 @@ static void dsound_free(void *data)
    if (!ds)
       return;
 
-   if (ds->thread)
-   {
-      ds->thread_alive = false;
-#ifdef HAVE_THREADS
-      sthread_join(ds->thread);
-#else
-      WaitForSingleObject(ds->thread, INFINITE);
-      CloseHandle(ds->thread);
+#ifdef HAVE_MMDEVICE
+   dsound_imm_stop_thread(ds);
 #endif
-   }
-
+   dsound_stop_thread(ds);
    DeleteCriticalSection(&ds->crit);
 
    if (ds->dsb)
@@ -398,7 +443,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
 
    if (dev)
    {
-      struct string_list *list = (struct string_list*)dsound_list_new(NULL);
+      struct string_list *list = (struct string_list*)dsound_device_list_new(NULL);
 
        /* Search for device name first */
       if (list && list->elems)
@@ -462,8 +507,8 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    if (ds->buffer_size < 4 * CHUNK_SIZE)
       ds->buffer_size    = 4 * CHUNK_SIZE;
 
-   RARCH_LOG("[DirectSound] Setting buffer size of %u bytes.\n", ds->buffer_size);
-   RARCH_LOG("[DirectSound] Latency = %u ms.\n", (unsigned)((1000 * ds->buffer_size) / wf.nAvgBytesPerSec));
+   RARCH_LOG("[DirectSound] Setting buffer size of %u bytes, latency %u ms.\n",
+         ds->buffer_size, (unsigned)((1000 * ds->buffer_size) / wf.nAvgBytesPerSec));
 
    bufdesc.dwSize        = sizeof(DSBUFFERDESC);
    bufdesc.dwFlags       = 0;
@@ -489,6 +534,10 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
 
    dsound_clear_buffer(ds);
+
+#ifdef HAVE_MMDEVICE
+   dsound_imm_start_thread(ds);
+#endif
 
    if (IDirectSoundBuffer_Play(ds->dsb, 0, 0, DSBPLAY_LOOPING) == DS_OK)
       if (dsound_start_thread(ds))
@@ -582,7 +631,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
          if (!ds->thread_alive)
             break;
 
-         if (avail == 0 && !(WaitForSingleObject(ds->event, 50) == WAIT_OBJECT_0))
+         if (avail == 0 && !(WaitForSingleObject(ds->event, DSOUND_TIMEOUT) == WAIT_OBJECT_0))
             return -1;
       }
    }
@@ -628,7 +677,7 @@ audio_driver_t audio_dsound = {
    dsound_free,
    dsound_use_float,
    "dsound",
-   dsound_list_new,
+   dsound_device_list_new,
    dsound_device_list_free,
    dsound_write_avail,
    dsound_buffer_size,

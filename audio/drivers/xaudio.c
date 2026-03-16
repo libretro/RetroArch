@@ -43,6 +43,9 @@
 #ifdef HAVE_MMDEVICE
 #include "../common/mmdevice_common.h"
 #include "../common/mmdevice_common_inline.h"
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 #endif
 
 #include "../audio_driver.h"
@@ -51,14 +54,9 @@
 typedef struct xaudio2 xaudio2_t;
 
 #define MAX_BUFFERS      16
-
 #define MAX_BUFFERS_MASK (MAX_BUFFERS - 1)
-
-#ifndef COINIT_MULTITHREADED
-#define COINIT_MULTITHREADED 0x00
-#endif
-
 #define XAUDIO2_WRITE_AVAILABLE(handle) ((handle)->bufsize * (MAX_BUFFERS - (handle)->buffers - 1))
+#define XAUDIO_TIMEOUT   256
 
 enum xa_flags
 {
@@ -68,10 +66,56 @@ enum xa_flags
 
 typedef struct
 {
+#ifdef HAVE_MMDEVICE
+#ifdef HAVE_THREADS
+   sthread_t *imm_thread;
+#else
+   HANDLE imm_thread;
+#endif
+#endif
    xaudio2_t *xa;
    size_t bufsize;
    uint8_t flags;
 } xa_t;
+
+#ifdef HAVE_MMDEVICE
+static void xaudio_imm_stop_thread(xa_t *xa)
+{
+#if !defined(_XBOX) && !defined(__WINRT__)
+   if (!xa->imm_thread)
+      return;
+
+   PostThreadMessage(IMMNotificationThreadId, WM_QUIT, 0, 0);
+
+#ifdef HAVE_THREADS
+   sthread_join(xa->imm_thread);
+#else
+   WaitForSingleObject(xa->imm_thread, XAUDIO_TIMEOUT);
+   CloseHandle(xa->imm_thread);
+#endif
+
+   IMMNotificationThreadId = 0;
+   xa->imm_thread = NULL;
+#endif
+}
+
+static bool xaudio_imm_start_thread(xa_t *xa)
+{
+#if !defined(_XBOX) && !defined(__WINRT__)
+   if (!xa->imm_thread)
+   {
+#ifdef HAVE_THREADS
+      xa->imm_thread = sthread_create(mmdevice_thread, xa);
+#else
+      xa->imm_thread = CreateThread(NULL, 0, mmdevice_thread, xa, 0, NULL);
+#endif
+      if (!xa->imm_thread)
+         return false;
+   }
+#endif
+   return true;
+}
+#endif
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
 struct xaudio2 : public IXAudio2VoiceCallback
@@ -236,7 +280,7 @@ static size_t xa_device_get_samplerate(int id)
 #endif
 }
 
-static void *xa_list_new(void *u)
+static void *xa_device_list_new(void *u)
 {
 #if defined(_XBOX) || !defined(HAVE_MMDEVICE)
    unsigned i;
@@ -280,7 +324,6 @@ static void *xa_list_new(void *u)
 #endif
 }
 
-
 static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
       unsigned latency, size_t len, const char *dev_id)
 {
@@ -290,7 +333,7 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
    xaudio2_t *handle        = NULL;
 
 #if !defined(_XBOX) && !defined(__WINRT__)
-   if (FAILED(CoInitialize(NULL)))
+   if (FAILED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED)))
       return NULL;
 #endif
 
@@ -308,7 +351,7 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
       return NULL;
    }
 
-   list = (struct string_list*)xa_list_new(NULL);
+   list = (struct string_list*)xa_device_list_new(NULL);
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
    handle->lpVtbl = &xa_voice_vtable;
@@ -338,7 +381,7 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
             if (string_is_equal(dev_id, list->elems[i].data))
             {
                size_t new_rate = 0;
-               RARCH_DBG("[XAudio2] Found device #%d: \"%s\".\n", i,
+               RARCH_LOG("[XAudio2] Found device #%d: \"%s\".\n", i,
                      list->elems[i].data);
                idx_found = i;
                new_rate  = xa_device_get_samplerate(i);
@@ -382,6 +425,8 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
          free(temp);
    }
 #else
+   /* FIXME 2.7: idx_found order depends on OS default device,
+    * therefore index can be correct only by accident */
    if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2,
                &handle->pMasterVoice, channels, *rate, 0, idx_found, NULL)))
       goto error;
@@ -445,6 +490,10 @@ static void *xa_init(const char *dev_id, unsigned rate, unsigned latency,
    RARCH_LOG("[XAudio2] Requesting %u ms latency, using %d ms latency.\n",
          latency, (int)bufsize * 1000 / rate);
 
+#ifdef HAVE_MMDEVICE
+   xaudio_imm_start_thread(xa);
+#endif
+
    return xa;
 }
 
@@ -486,7 +535,7 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
          XAUDIO2_BUFFER xa2buffer;
 
          while (handle->buffers == MAX_BUFFERS - 1)
-            if (!(WaitForSingleObject(handle->hEvent, 50) == WAIT_OBJECT_0))
+            if (!(WaitForSingleObject(handle->hEvent, XAUDIO_TIMEOUT) == WAIT_OBJECT_0))
                return -1;
 
          xa2buffer.Flags      = 0;
@@ -566,6 +615,10 @@ static void xa_free(void *data)
    if (!xa)
       return;
 
+#ifdef HAVE_MMDEVICE
+   xaudio_imm_stop_thread(xa);
+#endif
+
    if (xa->xa)
       xaudio2_free(xa->xa);
    free(xa);
@@ -603,7 +656,7 @@ audio_driver_t audio_xa = {
    xa_free,
    xa_use_float,
    "xaudio",
-   xa_list_new,
+   xa_device_list_new,
    xa_device_list_free,
    xa_write_avail,
    xa_buffer_size,

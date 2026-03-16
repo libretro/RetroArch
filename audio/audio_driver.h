@@ -262,6 +262,7 @@ typedef struct
 
    char resampler_ident[64];
 
+   bool reinit_request;
    bool mute_enable;
 #ifdef HAVE_AUDIOMIXER
    bool mixer_mute_enable;
