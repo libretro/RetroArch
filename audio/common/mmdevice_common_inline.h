@@ -33,10 +33,80 @@
 
 #include <retro_common_api.h>
 
+#ifdef __cplusplus
+#define RELEASE(x) \
+   if (x) \
+      x->Release(); \
+   x = NULL;
+#else
+#define RELEASE(x) \
+   if (x) \
+      x->lpVtbl->Release(x); \
+   x = NULL;
+#endif
+
+#define WM_AUDIO_DEVICE_STATE_CHANGED (WM_USER + 1)
+#define WM_AUDIO_DEFAULT_CHANGED      (WM_USER + 2)
+
+extern DWORD IMMNotificationThreadId;
+
+#ifdef __cplusplus
+typedef struct IMMNotificationClientVtbl {
+    BEGIN_INTERFACE
+
+    /*** IUnknown methods ***/
+    HRESULT (STDMETHODCALLTYPE *IMM_QueryInterface)(
+        IMMNotificationClient *This,
+        REFIID riid,
+        void **ppvObject);
+
+    ULONG (STDMETHODCALLTYPE *IMM_AddRef)(
+        IMMNotificationClient *This);
+
+    ULONG (STDMETHODCALLTYPE *IMM_Release)(
+        IMMNotificationClient *This);
+
+    /*** IMMNotificationClient methods ***/
+    HRESULT (STDMETHODCALLTYPE *OnDeviceStateChanged)(
+        IMMNotificationClient *This,
+        LPCWSTR pwstrDeviceId,
+        DWORD dwNewState);
+
+    HRESULT (STDMETHODCALLTYPE *OnDeviceAdded)(
+        IMMNotificationClient *This,
+        LPCWSTR pwstrDeviceId);
+
+    HRESULT (STDMETHODCALLTYPE *OnDeviceRemoved)(
+        IMMNotificationClient *This,
+        LPCWSTR pwstrDeviceId);
+
+    HRESULT (STDMETHODCALLTYPE *OnDefaultDeviceChanged)(
+        IMMNotificationClient *This,
+        EDataFlow flow,
+        ERole role,
+        LPCWSTR pwstrDeviceId);
+
+    HRESULT (STDMETHODCALLTYPE *OnPropertyValueChanged)(
+        IMMNotificationClient *This,
+        LPCWSTR pwstrDeviceId,
+        const PROPERTYKEY key);
+
+    END_INTERFACE
+} IMMNotificationClientVtbl;
+#endif
+
+#if !defined(_XBOX) && !defined(__WINRT__)
+typedef struct MyNotificationClient {
+    IMMNotificationClientVtbl *lpVtbl;
+    LONG refCount;
+} MyNotificationClient;
+#endif
+
 #ifdef _MSC_VER
 DEFINE_GUID(IID_IAudioClient, 0x1CB9AD4C, 0xDBFA, 0x4C32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2);
 DEFINE_GUID(IID_IAudioRenderClient, 0xF294ACFC, 0x3146, 0x4483, 0xA7, 0xBF, 0xAD, 0xDC, 0xA7, 0xC2, 0x60, 0xE2);
 DEFINE_GUID(IID_IAudioCaptureClient, 0xC8ADBD64, 0xE71E, 0x48A0, 0xA4, 0xDE, 0x18, 0x5C, 0x39, 0x5C, 0xD3, 0x17);
+DEFINE_GUID(IID_IMMNotificationClient, 0x7991EEC9, 0x7E89, 0x4D85, 0x83, 0x90, 0x6C, 0x70, 0x3C, 0xEC, 0x60, 0xC0);
 DEFINE_GUID(IID_IMMDeviceEnumerator, 0xA95664D2, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
 DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
 #undef KSDATAFORMAT_SUBTYPE_IEEE_FLOAT
@@ -67,6 +137,8 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->Activate(iid,(dwClsCtx),pActivationParams,ppv))
 #define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices)
 #define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint)
+#define _IMMDeviceEnumerator_RegisterEndpointNotificationCallback(This,client) (This)->RegisterEndpointNotificationCallback(client)
+#define _IMMDeviceEnumerator_UnregisterEndpointNotificationCallback(This,client) (This)->UnregisterEndpointNotificationCallback(client)
 #define _IMMDevice_OpenPropertyStore(This,stgmAccess,ppProperties) (This)->OpenPropertyStore(stgmAccess,ppProperties)
 #define _IMMDevice_GetId(This,ppstrId) ((This)->GetId(ppstrId))
 #define _IPropertyStore_GetValue(This,key,pv) ( (This)->GetValue(key,pv) )
@@ -99,6 +171,8 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->lpVtbl->Activate(This,&(iid),dwClsCtx,pActivationParams,ppv))
 #define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->lpVtbl->EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices)
 #define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->lpVtbl->GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint)
+#define _IMMDeviceEnumerator_RegisterEndpointNotificationCallback(This,client) (This)->lpVtbl->RegisterEndpointNotificationCallback(This,client)
+#define _IMMDeviceEnumerator_UnregisterEndpointNotificationCallback(This,client) (This)->lpVtbl->UnregisterEndpointNotificationCallback(This,client)
 #define _IMMDevice_OpenPropertyStore(This,stgmAccess,ppProperties) (This)->lpVtbl->OpenPropertyStore(This,stgmAccess,ppProperties)
 #define _IMMDevice_GetId(This,ppstrId) (This)->lpVtbl->GetId(This,ppstrId)
 #define _IPropertyStore_GetValue(This,key,pv) ( (This)->lpVtbl -> GetValue(This,&(key),pv) )

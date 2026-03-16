@@ -459,6 +459,17 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                ? 0.0f
                : audio_st->volume_gain;
 
+   if (audio_st->reinit_request)
+   {
+      audio_st->reinit_request = false;
+      RARCH_LOG("[Audio] Driver reinit requested...\n");
+      command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+#ifdef HAVE_MICROPHONE
+      command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
+#endif
+      return;
+   }
+
    /* Fast path: if driver handles resampling and no DSP/mixer is active,
     * bypass software resampling entirely. */
    if (audio->write_raw

@@ -22,7 +22,182 @@
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
+#include "../audio_driver.h"
+
 #include "../../verbosity.h"
+
+DWORD IMMNotificationThreadId = 0;
+
+/* IUnknown methods */
+HRESULT STDMETHODCALLTYPE IMM_QueryInterface(IMMNotificationClient *This,
+      REFIID riid, void **ppvObject)
+{
+#ifdef __cplusplus
+   if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IMMNotificationClient))
+#else
+   if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IMMNotificationClient))
+#endif
+   {
+      *ppvObject = This;
+      InterlockedIncrement(&((MyNotificationClient*)This)->refCount);
+      return S_OK;
+   }
+   *ppvObject = NULL;
+   return E_NOINTERFACE;
+}
+
+ULONG STDMETHODCALLTYPE IMM_AddRef(IMMNotificationClient *This)
+{
+   return InterlockedIncrement(&((MyNotificationClient*)This)->refCount);
+}
+
+ULONG STDMETHODCALLTYPE IMM_Release(IMMNotificationClient *This)
+{
+   LONG ref = InterlockedDecrement(&((MyNotificationClient*)This)->refCount);
+   if (ref == 0)
+      free(This);
+   return ref;
+}
+
+/* IMMNotificationClient methods */
+HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(IMMNotificationClient *This,
+      EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
+{
+   BOOL result = PostThreadMessage(IMMNotificationThreadId,
+         WM_AUDIO_DEFAULT_CHANGED, 0, 0);
+
+   if (!result)
+      RARCH_ERR("[MMDevice] PostThreadMessage failed: %lu, threadId: %lu\n",
+            GetLastError(), IMMNotificationThreadId);
+
+   return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE OnDeviceAdded(IMMNotificationClient *This,
+      LPCWSTR pwstrDeviceId)
+{
+   return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE OnDeviceRemoved(IMMNotificationClient *This,
+      LPCWSTR pwstrDeviceId)
+{
+   return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE OnDeviceStateChanged(IMMNotificationClient *This,
+      LPCWSTR pwstrDeviceId, DWORD dwNewState)
+{
+   BOOL result = PostThreadMessage(IMMNotificationThreadId,
+         WM_AUDIO_DEVICE_STATE_CHANGED, 0, 0);
+
+   if (!result)
+      RARCH_ERR("[MMDevice] PostThreadMessage failed: %lu, threadId: %lu\n",
+            GetLastError(), IMMNotificationThreadId);
+
+   return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(IMMNotificationClient *This,
+      LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
+{
+   return S_OK;
+}
+
+/* IMMNotificationClient VTable */
+IMMNotificationClientVtbl notificationVtbl = {
+   IMM_QueryInterface,
+   IMM_AddRef,
+   IMM_Release,
+   OnDeviceStateChanged,
+   OnDeviceAdded,
+   OnDeviceRemoved,
+   OnDefaultDeviceChanged,
+   OnPropertyValueChanged
+};
+
+#ifdef HAVE_THREADS
+void mmdevice_thread(void *data)
+#else
+DWORD CALLBACK mmdevice_thread(PVOID data)
+#endif
+{
+#if !defined(_XBOX) && !defined(__WINRT__)
+   HRESULT hr;
+   IMMDeviceEnumerator *enumerator = NULL;
+   MyNotificationClient *client    = NULL;
+   audio_driver_state_t *audio_st  = audio_state_get_ptr();
+
+   hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+   if (FAILED(hr))
+      return;
+
+#ifdef __cplusplus
+   hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         IID_IMMDeviceEnumerator, (void **)&enumerator);
+#else
+   hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         &IID_IMMDeviceEnumerator, (void **)&enumerator);
+#endif
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[MMDevice] Failed to create device enumerator: %s.\n", mmdevice_hresult_name(hr));
+      goto cleanup;
+   }
+
+   client = (MyNotificationClient*)malloc(sizeof(MyNotificationClient));
+   if (!client)
+      goto cleanup;
+
+   client->lpVtbl   = &notificationVtbl;
+   client->refCount = 1;
+
+   _IMMDeviceEnumerator_RegisterEndpointNotificationCallback(enumerator,
+         (IMMNotificationClient*)client);
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[MMDevice] RegisterEndpointNotificationCallback failed: 0x%lx.\n", hr);
+      goto cleanup;
+   }
+
+   IMMNotificationThreadId = GetCurrentThreadId();
+
+   while (IMMNotificationThreadId)
+   {
+      DWORD result = MsgWaitForMultipleObjects(0, NULL, FALSE, 5000, QS_ALLPOSTMESSAGE);
+      if (result == WAIT_OBJECT_0)
+      {
+         MSG msg;
+         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+         {
+            switch (msg.message)
+            {
+               case WM_AUDIO_DEVICE_STATE_CHANGED:
+               case WM_AUDIO_DEFAULT_CHANGED:
+                  audio_st->reinit_request = true;
+                  goto done;
+               case WM_QUIT:
+                  goto done;
+            }
+         }
+      }
+   }
+
+done:
+   _IMMDeviceEnumerator_UnregisterEndpointNotificationCallback(enumerator,
+         (IMMNotificationClient*)client);
+
+cleanup:
+   free(client);
+   client = NULL;
+
+   RELEASE(enumerator);
+
+   IMMNotificationThreadId = 0;
+   CoUninitialize();
+   ExitThread(0);
+#endif
+}
 
 static const char *mmdevice_data_flow_name(unsigned data_flow)
 {
@@ -136,15 +311,7 @@ size_t mmdevice_samplerate(void *data)
    }
 
    PropVariantClear(&prop_var);
-   if (prop_store)
-   {
-#ifdef __cplusplus
-      prop_store->Release();
-#else
-      prop_store->lpVtbl->Release(prop_store);
-#endif
-      prop_store = NULL;
-   }
+   RELEASE(prop_store);
    return (size_t)result;
 }
 
@@ -172,15 +339,7 @@ char *mmdevice_name(void *data)
       result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
 
    PropVariantClear(&prop_var);
-   if (prop_store)
-   {
-#ifdef __cplusplus
-      prop_store->Release();
-#else
-      prop_store->lpVtbl->Release(prop_store);
-#endif
-      prop_store = NULL;
-   }
+   RELEASE(prop_store);
    return result;
 }
 
@@ -190,6 +349,7 @@ void *mmdevice_handle(int id, unsigned data_flow)
    IMMDeviceEnumerator *enumerator = NULL;
    IMMDevice *device               = NULL;
    IMMDeviceCollection *collection = NULL;
+
 #ifdef __cplusplus
    hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
          IID_IMMDeviceEnumerator, (void **)&enumerator);
@@ -199,8 +359,9 @@ void *mmdevice_handle(int id, unsigned data_flow)
 #endif
    if (FAILED(hr))
       return NULL;
+
    hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         data_flow, DEVICE_STATE_ACTIVE, &collection);
+         (EDataFlow)data_flow, DEVICE_STATE_ACTIVE, &collection);
    if (FAILED(hr))
    {
       RARCH_ERR("[MMDevice] Failed to enumerate audio endpoints: %s.\n", mmdevice_hresult_name(hr));
@@ -217,21 +378,8 @@ void *mmdevice_handle(int id, unsigned data_flow)
    return device;
 
 error:
-   if (collection)
-#ifdef __cplusplus
-      collection->Release();
-#else
-      collection->lpVtbl->Release(collection);
-#endif
-   if (enumerator)
-#ifdef __cplusplus
-      enumerator->Release();
-#else
-      enumerator->lpVtbl->Release(enumerator);
-#endif
-   collection = NULL;
-   enumerator = NULL;
-
+   RELEASE(collection);
+   RELEASE(enumerator);
    return NULL;
 }
 
@@ -241,11 +389,7 @@ size_t mmdevice_get_samplerate(int id)
    if (device)
    {
       size_t _len = mmdevice_samplerate(device);
-#ifdef __cplusplus
-      device->Release();
-#else
-      device->lpVtbl->Release(device);
-#endif
+      RELEASE(device);
       return _len;
    }
    return 0;
@@ -261,9 +405,9 @@ void *mmdevice_init_device(const char *id, unsigned data_flow)
    const char *data_flow_name      = mmdevice_data_flow_name(data_flow);
 
    if (id)
-      RARCH_DBG("[MMDevice] Initializing %s device \"%s\"...\n", data_flow_name, id);
+      RARCH_LOG("[MMDevice] Initializing %s device \"%s\"...\n", data_flow_name, id);
    else
-      RARCH_DBG("[MMDevice] Initializing default %s device...\n", data_flow_name);
+      RARCH_LOG("[MMDevice] Initializing default %s device...\n", data_flow_name);
 
 #ifdef __cplusplus
    hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
@@ -298,7 +442,7 @@ void *mmdevice_init_device(const char *id, unsigned data_flow)
          {
             if (string_is_equal(id, list->elems[d].data))
             {
-               RARCH_DBG("[MMDevice] Found device #%d: \"%s\".\n", d,
+               RARCH_LOG("[MMDevice] Found device #%d: \"%s\".\n", d,
                      list->elems[d].data);
                idx_found = d;
                break;
@@ -320,7 +464,7 @@ void *mmdevice_init_device(const char *id, unsigned data_flow)
          idx_found = 0;
 
       hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-            data_flow, DEVICE_STATE_ACTIVE, &collection);
+            (EDataFlow)data_flow, DEVICE_STATE_ACTIVE, &collection);
       if (FAILED(hr))
       {
          RARCH_ERR("[MMDevice] Failed to enumerate audio endpoints: %s.\n", mmdevice_hresult_name(hr));
@@ -346,19 +490,13 @@ void *mmdevice_init_device(const char *id, unsigned data_flow)
          if (i == (UINT32)idx_found)
             break;
 
-         if (device)
-#ifdef __cplusplus
-            device->Release();
-#else
-            device->lpVtbl->Release(device);
-#endif
-          device = NULL;
+         RELEASE(device);
       }
    }
    else
    {
       hr = _IMMDeviceEnumerator_GetDefaultAudioEndpoint(
-            enumerator, data_flow, eConsole, &device);
+            enumerator, (EDataFlow)data_flow, eConsole, &device);
       if (FAILED(hr))
       {
          RARCH_ERR("[MMDevice] Failed to get default audio endpoint: %s.\n", mmdevice_hresult_name(hr));
@@ -369,41 +507,16 @@ void *mmdevice_init_device(const char *id, unsigned data_flow)
    if (!device)
       goto error;
 
-   if (collection)
-#ifdef __cplusplus
-      collection->Release();
-#else
-      collection->lpVtbl->Release(collection);
-#endif
-   if (enumerator)
-#ifdef __cplusplus
-      enumerator->Release();
-#else
-      enumerator->lpVtbl->Release(enumerator);
-#endif
-   collection = NULL;
-   enumerator = NULL;
-
+   RELEASE(collection);
+   RELEASE(enumerator);
    return device;
 
 error:
-   if (collection)
-#ifdef __cplusplus
-      collection->Release();
-#else
-      collection->lpVtbl->Release(collection);
-#endif
-   if (enumerator)
-#ifdef __cplusplus
-      enumerator->Release();
-#else
-      enumerator->lpVtbl->Release(enumerator);
-#endif
-   collection = NULL;
-   enumerator = NULL;
+   RELEASE(collection);
+   RELEASE(enumerator);
 
    if (id)
-      RARCH_WARN("[MMDevice] Failed to initialize %s device \"%s\".\n", data_flow_name, id);
+      RARCH_ERR("[MMDevice] Failed to initialize %s device \"%s\".\n", data_flow_name, id);
    else
       RARCH_ERR("[MMDevice] Failed to initialize default %s device.\n", data_flow_name);
 
@@ -440,7 +553,7 @@ void *mmdevice_list_new(const void *u, unsigned data_flow)
       goto error;
 
    hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         data_flow, DEVICE_STATE_ACTIVE, &collection);
+         (EDataFlow)data_flow, DEVICE_STATE_ACTIVE, &collection);
    if (FAILED(hr))
       goto error;
 
@@ -472,79 +585,36 @@ void *mmdevice_list_new(const void *u, unsigned data_flow)
 
       if (dev_id_wstr)
          CoTaskMemFree(dev_id_wstr);
+      dev_id_wstr  = NULL;
+
       if (dev_name_str)
          free(dev_name_str);
       dev_name_str = NULL;
-      dev_id_wstr  = NULL;
-      if (device)
-      {
-#ifdef __cplusplus
-         device->Release();
-#else
-         device->lpVtbl->Release(device);
-#endif
-         device = NULL;
-      }
+
+      RELEASE(device);
    }
 
-   if (collection)
-   {
-#ifdef __cplusplus
-      collection->Release();
-#else
-      collection->lpVtbl->Release(collection);
-#endif
-      collection = NULL;
-   }
-   if (enumerator)
-   {
-#ifdef __cplusplus
-      enumerator->Release();
-#else
-      enumerator->lpVtbl->Release(enumerator);
-#endif
-      enumerator = NULL;
-   }
-
+   RELEASE(collection);
+   RELEASE(enumerator);
    return sl;
 
 error:
    if (dev_id_str)
       free(dev_id_str);
+   dev_id_str   = NULL;
+
    if (dev_name_str)
       free(dev_name_str);
-   dev_id_str   = NULL;
    dev_name_str = NULL;
+
    if (dev_id_wstr)
       CoTaskMemFree(dev_id_wstr);
    dev_id_wstr = NULL;
-   if (device)
-   {
-#ifdef __cplusplus
-      device->Release();
-#else
-      device->lpVtbl->Release(device);
-#endif
-      device = NULL;
-   }
-   if (collection)
-   {
-#ifdef __cplusplus
-      collection->Release();
-#else
-      collection->lpVtbl->Release(collection);
-#endif
-      collection = NULL;
-   }
-   if (enumerator)
-   {
-#ifdef __cplusplus
-      enumerator->Release();
-#else
-      enumerator->lpVtbl->Release(enumerator);
-#endif
-      enumerator = NULL;
-   }
+
+   RELEASE(device);
+   RELEASE(collection);
+   RELEASE(enumerator);
+
    if (sl)
       string_list_free(sl);
 

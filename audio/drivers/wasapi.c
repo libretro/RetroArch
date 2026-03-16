@@ -20,6 +20,10 @@
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
 #include "../common/mmdevice_common.h"
 #include "../common/mmdevice_common_inline.h"
 #include "../common/wasapi.h"
@@ -31,7 +35,6 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
-/* Max time to wait before continuing */
 #define WASAPI_TIMEOUT 256
 
 enum wasapi_flags
@@ -44,6 +47,11 @@ enum wasapi_flags
 typedef struct
 {
    HANDLE write_event;
+#ifdef HAVE_THREADS
+   sthread_t *imm_thread;
+#else
+   HANDLE imm_thread;
+#endif
    IMMDevice          *device;
    IAudioClient       *client;
    IAudioRenderClient *renderer;
@@ -52,6 +60,39 @@ typedef struct
    unsigned char frame_size;          /* 4 or 8 only */
    uint8_t flags;
 } wasapi_t;
+
+static void wasapi_imm_stop_thread(wasapi_t *w)
+{
+   if (!w->imm_thread)
+      return;
+
+   PostThreadMessage(IMMNotificationThreadId, WM_QUIT, 0, 0);
+
+#ifdef HAVE_THREADS
+   sthread_join(w->imm_thread);
+#else
+   WaitForSingleObject(w->imm_thread, WASAPI_TIMEOUT);
+   CloseHandle(w->imm_thread);
+#endif
+
+   IMMNotificationThreadId = 0;
+   w->imm_thread = NULL;
+}
+
+static bool wasapi_imm_start_thread(wasapi_t *w)
+{
+   if (!w->imm_thread)
+   {
+#ifdef HAVE_THREADS
+      w->imm_thread = sthread_create(mmdevice_thread, w);
+#else
+      w->imm_thread = CreateThread(NULL, 0, mmdevice_thread, w, 0, NULL);
+#endif
+      if (!w->imm_thread)
+         return false;
+   }
+   return true;
+}
 
 static const char *wasapi_wave_subtype_name(const GUID *guid)
 {
@@ -71,7 +112,6 @@ static const char *wasapi_wave_format_name(const WAVEFORMATEXTENSIBLE *format)
       default:
          break;
    }
-
    return "<unknown>";
 }
 
@@ -161,7 +201,6 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
          /* Other formats are unsupported */
          return false;
    }
-
    return true;
 }
 
@@ -181,11 +220,11 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
    /* Try the requested sample format first, then try the other one. */
    WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
    /* IAudioClient::IsFormatSupported allocates a format object. */
+   /* The Windows docs say that casting these arguments to WAVEFORMATEX* is okay. */
    HRESULT hr                              = _IAudioClient_IsFormatSupported(
          client, mode,
          (const WAVEFORMATEX *)format,
          (WAVEFORMATEX **)&suggested_format);
-   /* The Windows docs say that casting these arguments to WAVEFORMATEX* is okay. */
 
    switch (hr)
    {
@@ -274,11 +313,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
    hr = _IAudioClient_GetDevicePeriod(client, NULL, &minimum_period);
    if (FAILED(hr))
-   {
       RARCH_ERR("[WASAPI] Failed to get minimum device period of exclusive client: %s.\n",
             mmdevice_hresult_name(hr));
-      goto error;
-   }
 
    /* Buffer_duration is in 100ns units. */
    buffer_duration = latency * 10000.0;
@@ -316,13 +352,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          goto error;
       }
 
-      if (client)
-#ifdef __cplusplus
-         client->Release();
-#else
-         client->lpVtbl->Release(client);
-#endif
-      client = NULL;
+      RELEASE(client);
+
       hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
@@ -340,13 +371,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    }
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
    {
-      if (client)
-#ifdef __cplusplus
-         client->Release();
-#else
-         client->lpVtbl->Release(client);
-#endif
-      client = NULL;
+      RELEASE(client);
+
       hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
@@ -361,8 +387,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
             buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
    }
-   if (hr == AUDCLNT_E_DEVICE_IN_USE          ||
-       hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
+   if (     hr == AUDCLNT_E_DEVICE_IN_USE
+         || hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
       goto error;
 
    if (FAILED(hr))
@@ -374,18 +400,10 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
    *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
-
    return client;
 
 error:
-   if (client)
-#ifdef __cplusplus
-      client->Release();
-#else
-      client->lpVtbl->Release(client);
-#endif
-   client = NULL;
-
+   RELEASE(client);
    return NULL;
 }
 
@@ -410,11 +428,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    hr = _IAudioClient_GetDevicePeriod(client, &default_period, NULL);
    if (FAILED(hr))
-   {
       RARCH_ERR("[WASAPI] Failed to get default device period of shared client: %s.\n",
             mmdevice_hresult_name(hr));
-      goto error;
-   }
 
    /* Use audio latency setting for buffer size if allowed */
    if (     (sh_buffer_length < WASAPI_SH_BUFFER_DEVICE_PERIOD)
@@ -446,13 +461,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
    {
-      if (client)
-#ifdef __cplusplus
-         client->Release();
-#else
-         client->lpVtbl->Release(client);
-#endif
-      client = NULL;
+      RELEASE(client);
+
       hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
@@ -477,18 +487,10 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
-
    return client;
 
 error:
-   if (client)
-#ifdef __cplusplus
-      client->Release();
-#else
-      client->lpVtbl->Release(client);
-#endif
-   client = NULL;
-
+   RELEASE(client);
    return NULL;
 }
 
@@ -590,7 +592,6 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
          *exclusive ? "exclusive" : "shared",
          *float_fmt ? "FLOAT" : "PCM",
          *rate, latency_res);
-
    return client;
 }
 
@@ -637,39 +638,20 @@ static void wasapi_microphone_close_mic(void *driver_context, void *mic_context)
 
    write_event = mic->read_event;
 
-   if (mic->capture)
-#ifdef __cplusplus
-      mic->capture->Release();
-#else
-      mic->capture->lpVtbl->Release(mic->capture);
-#endif
-   mic->capture = NULL;
    if (mic->client)
-   {
       _IAudioClient_Stop(mic->client);
-#ifdef __cplusplus
-      mic->client->Release();
-#else
-      mic->client->lpVtbl->Release(mic->client);
-#endif
-   }
-   if (mic->device)
-   {
-#ifdef __cplusplus
-      mic->device->Release();
-#else
-      mic->device->lpVtbl->Release(mic->device);
-#endif
-   }
-   mic->client = NULL;
-   mic->device = NULL;
+
+   RELEASE(mic->capture);
+   RELEASE(mic->client);
+   RELEASE(mic->device);
+
    if (mic->buffer)
       fifo_free(mic->buffer);
    if (mic->device_name)
       free(mic->device_name);
    free(mic);
 
-   ir = WaitForSingleObject(write_event, 20);
+   ir = WaitForSingleObject(write_event, WASAPI_TIMEOUT);
    if (ir == WAIT_FAILED)
    {
       RARCH_ERR("[WASAPI mic] WaitForSingleObject failed: %s.\n",
@@ -690,7 +672,6 @@ static void *wasapi_microphone_init(void)
       return NULL;
    }
    wasapi->nonblock = !config_get_ptr()->bools.audio_sync;
-   RARCH_DBG("[WASAPI mic] Initialized microphone driver context.\n");
    return wasapi;
 }
 
@@ -771,7 +752,6 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
          next_packet_size = 0;
    }
    while (next_packet_size != 0);
-
    return FIFO_READ_AVAIL(mic->buffer);
 }
 
@@ -840,7 +820,6 @@ static int wasapi_microphone_read_buffered(
    }
 
    /* Now that we have samples available, let's give them to the core */
-
    bytes_read = MIN((int)len, bytes_available);
    fifo_read(mic->buffer, s, bytes_read);
    /* Read data from the sample queue and store it in the provided buffer */
@@ -872,7 +851,6 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
       if (read == -1)
          return -1;
    }
-
    return bytes_read;
 }
 
@@ -1024,31 +1002,10 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    return mic;
 
 error:
-   if (mic->capture)
-#ifdef __cplusplus
-      mic->capture->Release();
-#else
-      mic->capture->lpVtbl->Release(mic->capture);
-#endif
-   mic->capture = NULL;
-   if (mic->client)
-   {
-#ifdef __cplusplus
-      mic->client->Release();
-#else
-      mic->client->lpVtbl->Release(mic->client);
-#endif
-   }
-   if (mic->device)
-   {
-#ifdef __cplusplus
-      mic->device->Release();
-#else
-      mic->device->lpVtbl->Release(mic->device);
-#endif
-   }
-   mic->client = NULL;
-   mic->device = NULL;
+   RELEASE(mic->capture);
+   RELEASE(mic->client);
+   RELEASE(mic->device);
+
    if (mic->read_event)
       CloseHandle(mic->read_event);
    if (mic->buffer)
@@ -1157,7 +1114,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
    w->device                 = (IMMDevice*)mmdevice_init_device(dev_id, 0 /* eRender */);
    if (!w->device && dev_id)
-      w->device = (IMMDevice*)mmdevice_init_device(NULL, 0 /* eRender */);
+      w->device              = (IMMDevice*)mmdevice_init_device(NULL, 0 /* eRender */);
    if (!w->device)
       goto error;
 
@@ -1238,40 +1195,21 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (new_rate)
       *new_rate = rate;
 
+   if (!wasapi_imm_start_thread(w))
+      goto error;
+
    return w;
 
 error:
-   if (w->renderer)
-#ifdef __cplusplus
-      w->renderer->Release();
-#else
-      w->renderer->lpVtbl->Release(w->renderer);
-#endif
-   w->renderer = NULL;
-   if (w->client)
-   {
-#ifdef __cplusplus
-      w->client->Release();
-#else
-      w->client->lpVtbl->Release(w->client);
-#endif
-   }
-   if (w->device)
-   {
-#ifdef __cplusplus
-      w->device->Release();
-#else
-      w->device->lpVtbl->Release(w->device);
-#endif
-   }
-   w->client = NULL;
-   w->device = NULL;
+   RELEASE(w->renderer);
+   RELEASE(w->client);
+   RELEASE(w->device);
+
    if (w->write_event)
       CloseHandle(w->write_event);
    if (w->buffer)
       fifo_free(w->buffer);
    free(w);
-
    return NULL;
 }
 
@@ -1293,7 +1231,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
          {
             UINT32 frame_count;
             BYTE *dest         = NULL;
-            if (WaitForSingleObject(w->write_event, 0) != WAIT_OBJECT_0)
+            if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
                return 0;
             frame_count        = w->engine_buffer_size / w->frame_size;
             if (FAILED(_IAudioRenderClient_GetBuffer(
@@ -1467,7 +1405,6 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
          }
       }
    }
-
    return _len;
 }
 
@@ -1479,7 +1416,6 @@ static bool wasapi_stop(void *wh)
       return (!(w->flags & WASAPI_FLG_RUNNING));
 
    w->flags &= ~WASAPI_FLG_RUNNING;
-
    return true;
 }
 
@@ -1518,37 +1454,21 @@ static void wasapi_free(void *wh)
    wasapi_t *w        = (wasapi_t*)wh;
    HANDLE write_event = w->write_event;
 
-   if (w->renderer)
-#ifdef __cplusplus
-      w->renderer->Release();
-#else
-      w->renderer->lpVtbl->Release(w->renderer);
-#endif
-   w->renderer = NULL;
+   if (w)
+      wasapi_imm_stop_thread(w);
+
    if (w->client)
-   {
       _IAudioClient_Stop(w->client);
-#ifdef __cplusplus
-      w->client->Release();
-#else
-      w->client->lpVtbl->Release(w->client);
-#endif
-      w->client = NULL;
-   }
-   if (w->device)
-   {
-#ifdef __cplusplus
-      w->device->Release();
-#else
-      w->device->lpVtbl->Release(w->device);
-#endif
-      w->device = NULL;
-   }
+
+   RELEASE(w->renderer);
+   RELEASE(w->client);
+   RELEASE(w->device);
+
    if (w->buffer)
       fifo_free(w->buffer);
    free(w);
 
-   ir = WaitForSingleObject(write_event, 20);
+   ir = WaitForSingleObject(write_event, WASAPI_TIMEOUT);
    if (ir == WAIT_FAILED)
       RARCH_ERR("[WASAPI] WaitForSingleObject failed with error %d.\n", GetLastError());
 
@@ -1560,6 +1480,11 @@ static bool wasapi_use_float(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
    return (w->frame_size == 8);
+}
+
+static void *wasapi_device_list_new(void *u)
+{
+   return mmdevice_list_new(u, 0 /* eRender */);
 }
 
 static void wasapi_device_list_free(void *u, void *slp)
@@ -1590,13 +1515,7 @@ static size_t wasapi_buffer_size(void *wh)
 
    if (w->buffer)
       return w->buffer->size;
-
    return w->engine_buffer_size;
-}
-
-static void *wasapi_device_list_new(void *u)
-{
-   return mmdevice_list_new(u, 0 /* eRender */);
 }
 
 audio_driver_t audio_wasapi = {

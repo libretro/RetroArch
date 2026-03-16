@@ -5328,13 +5328,11 @@ static int menu_displaylist_parse_audio_device_list(file_list_t *info_list,
    if (!audio_driver_get_devices_list((void**)&ptr))
       return 0;
 
-   if (!ptr)
-      return 0;
-
    /* Get index in the string list */
-   audio_device_index = string_list_find_elem(ptr, setting->value.target.string) - 1;
+   if (ptr)
+      audio_device_index = string_list_find_elem(ptr, setting->value.target.string) - 1;
 
-   /* Add "Default" */
+   /* Add "Default" even if driver fails and device list is empty */
    if (i == -1)
    {
       bool add = false;
@@ -5364,7 +5362,7 @@ static int menu_displaylist_parse_audio_device_list(file_list_t *info_list,
       }
    }
 
-   for (i = 0; i < (int)ptr->size; i++)
+   for (i = 0; ptr && i < (int)ptr->size; i++)
    {
       bool add = false;
 
