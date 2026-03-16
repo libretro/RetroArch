@@ -4477,6 +4477,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET);
          drivers_init(settings, DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 #if defined(HAVE_AUDIOMIXER)
          audio_driver_load_system_sounds();
 #endif
@@ -4485,6 +4486,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MICROPHONE_REINIT:
          driver_uninit(DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET);
          drivers_init(settings, DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          break;
 #endif
       case CMD_EVENT_SHUTDOWN:

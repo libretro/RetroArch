@@ -44,8 +44,13 @@ size_t mmdevice_get_samplerate(int id);
 
 const char *mmdevice_hresult_name(int hr);
 
-
 void *mmdevice_init_device(const char *id, unsigned data_flow);
+
+#ifdef HAVE_THREADS
+void mmdevice_thread(void *data);
+#else
+DWORD CALLBACK mmdevice_thread(PVOID data);
+#endif
 
 RETRO_END_DECLS
 
