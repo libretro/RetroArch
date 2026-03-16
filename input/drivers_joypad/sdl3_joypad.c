@@ -30,7 +30,7 @@ typedef struct _sdl3_joypad
 {
    SDL_Joystick   *joypad;
    SDL_Gamepad    *gamepad;
-   SDL_JoystickID  jid;       /* 0 = Invalid ID */
+   SDL_JoystickID  jid; /* 0 = Invalid ID */
    unsigned        num_axes;
    unsigned        num_buttons;
    unsigned        num_hats;
@@ -78,73 +78,89 @@ static int16_t sdl3_joypad_get_axis(sdl3_joypad_t *pad, unsigned axis)
 static void sdl3_joypad_connect(SDL_JoystickID jid)
 {
    int i;
-   int slot             = -1;
-   int32_t vendor       = 0;
-   int32_t product      = 0;
-   sdl3_joypad_t *pad   = NULL;
-   bool success         = false;
+   int slot              = -1;
+   int32_t vendor        = 0;
+   int32_t product       = 0;
+   sdl3_joypad_t *pad    = NULL;
+   SDL_Gamepad  *gamepad = NULL;
+   SDL_Joystick *joypad  = NULL;
 
-   /* Find a free slot */
-   for (i = 0; i < MAX_USERS; i++)
+   /* Connect to the device. */
+   if (SDL_IsGamepad(jid))
    {
-      if (!sdl3_joypads[i].jid)
+      gamepad = SDL_OpenGamepad(jid);
+      if (gamepad)
+         joypad = SDL_GetGamepadJoystick(gamepad);
+
+      if (!gamepad || !joypad)
       {
-         slot = i;
-         break;
+         RARCH_ERR("[SDL3] Couldn't open gamepad %" SDL_PRIu32 ": %s.\n", jid, SDL_GetError());
+         if (gamepad)
+            SDL_CloseGamepad(gamepad);
+         return;
+      }
+   }
+   else
+   {
+      joypad = SDL_OpenJoystick(jid);
+      if (!joypad)
+      {
+         RARCH_ERR("[SDL3] Couldn't open joystick %" SDL_PRIu32 ": %s.\n", jid, SDL_GetError());
+         return;
       }
    }
 
+   /* Gamepads allow restoring the player index, so re-use that for the slot if possible. */
+   if (gamepad)
+   {
+      int player = SDL_GetGamepadPlayerIndex(gamepad);
+      if (player >= 0 && player < MAX_USERS && !sdl3_joypads[player].jid)
+         slot = player;
+   }
+
+   /* Fallback to the first free slot. */
+   if (slot < 0)
+   {
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         if (!sdl3_joypads[i].jid)
+         {
+            slot = i;
+            break;
+         }
+      }
+   }
+
+   /* Fail if a slot is still not found. */
    if (slot < 0)
    {
       RARCH_WARN("[SDL3] No free joypad slots for joystick %" SDL_PRIu32 ".\n", jid);
+      if (gamepad)
+         SDL_CloseGamepad(gamepad);
+      else
+         SDL_CloseJoystick(joypad);
       return;
    }
 
-   pad = &sdl3_joypads[slot];
-   pad->jid = jid;
+   pad          = &sdl3_joypads[slot];
+   pad->jid     = jid;
+   pad->gamepad = gamepad;
+   pad->joypad  = joypad;
 
-   if (SDL_IsGamepad(jid))
+   if (gamepad)
    {
-      pad->gamepad = SDL_OpenGamepad(jid);
-      if (pad->gamepad)
-         pad->joypad = SDL_GetGamepadJoystick(pad->gamepad);
-      success = pad->gamepad != NULL && pad->joypad != NULL;
+      vendor  = SDL_GetGamepadVendor(gamepad);
+      product = SDL_GetGamepadProduct(gamepad);
+
+      /* Ensure the player index matches the slot. */
+      if (SDL_GetGamepadPlayerIndex(gamepad) != slot) {
+         SDL_SetGamepadPlayerIndex(gamepad, (int)slot);
+      }
    }
    else
    {
-      pad->joypad = SDL_OpenJoystick(jid);
-      success     = pad->joypad != NULL;
-   }
-
-   if (!success)
-   {
-      RARCH_ERR("[SDL3] Couldn't open joystick #%d: %s.\n", slot, SDL_GetError());
-
-      if (pad->gamepad)
-      {
-         SDL_CloseGamepad(pad->gamepad);
-         pad->gamepad = NULL;
-         pad->joypad = NULL;
-      }
-      else if (pad->joypad)
-      {
-         SDL_CloseJoystick(pad->joypad);
-         pad->joypad = NULL;
-      }
-
-      pad->jid = 0;
-      return;
-   }
-
-   if (pad->gamepad)
-   {
-      vendor  = SDL_GetGamepadVendor(pad->gamepad);
-      product = SDL_GetGamepadProduct(pad->gamepad);
-   }
-   else
-   {
-      vendor  = SDL_GetJoystickVendor(pad->joypad);
-      product = SDL_GetJoystickProduct(pad->joypad);
+      vendor = SDL_GetJoystickVendor(joypad);
+      product = SDL_GetJoystickProduct(joypad);
    }
 
    input_autoconfigure_connect(
@@ -155,7 +171,7 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
          vendor,
          product);
 
-   if (pad->gamepad)
+   if (gamepad)
    {
       /* SDL_Gamepad internally supports all axis/button IDs, even if
        * the controller's mapping does not have a binding for it.
@@ -174,17 +190,15 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
    }
    else
    {
-      pad->num_axes    = SDL_GetNumJoystickAxes(pad->joypad);
-      pad->num_buttons = SDL_GetNumJoystickButtons(pad->joypad);
-      pad->num_hats    = SDL_GetNumJoystickHats(pad->joypad);
+      pad->num_axes    = SDL_GetNumJoystickAxes(joypad);
+      pad->num_buttons = SDL_GetNumJoystickButtons(joypad);
+      pad->num_hats    = SDL_GetNumJoystickHats(joypad);
    }
 }
 
 static void sdl3_joypad_disconnect(SDL_JoystickID jid)
 {
-   int i;
-
-   for (i = 0; i < MAX_USERS; i++)
+   for (int i = 0; i < MAX_USERS; i++)
    {
       if (sdl3_joypads[i].jid != jid)
          continue;
@@ -203,9 +217,7 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
 
 static void sdl3_joypad_destroy(void)
 {
-   int i;
-
-   for (i = 0; i < MAX_USERS; i++)
+   for (int i = 0; i < MAX_USERS; i++)
    {
       if (sdl3_joypads[i].gamepad)
          SDL_CloseGamepad(sdl3_joypads[i].gamepad);
@@ -235,28 +247,12 @@ static void *sdl3_joypad_init(void *data)
 
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
 
-   {
-      SDL_JoystickID *joysticks = SDL_GetJoysticks(&count);
-
-      if (joysticks)
-      {
-         int n = count;
-         if (n > MAX_USERS)
-            n = MAX_USERS;
-
-         for (i = 0; i < n; i++)
-            sdl3_joypad_connect(joysticks[i]);
-
-         SDL_free(joysticks);
-      }
-   }
+   /* Joystick connected events are triggered after load, so no need to initialize them here. */
 
    return (void*)-1;
 }
 
-static int32_t sdl3_joypad_button_state(
-      sdl3_joypad_t *pad,
-      unsigned port, uint16_t joykey)
+static int32_t sdl3_joypad_button_state(sdl3_joypad_t *pad, uint16_t joykey)
 {
    unsigned hat_dir = GET_HAT_DIR(joykey);
 
@@ -293,21 +289,16 @@ static int32_t sdl3_joypad_button_state(
 
 static int32_t sdl3_joypad_button(unsigned port, uint16_t joykey)
 {
-   sdl3_joypad_t *pad;
-
    if (port >= MAX_USERS)
       return 0;
 
-   pad = &sdl3_joypads[port];
-   if (!pad->joypad)
+   if (!sdl3_joypads[port].joypad)
       return 0;
 
-   return sdl3_joypad_button_state(pad, port, joykey);
+   return sdl3_joypad_button_state(&sdl3_joypads[port], joykey);
 }
 
-static int16_t sdl3_joypad_axis_state(
-      sdl3_joypad_t *pad,
-      unsigned port, uint32_t joyaxis)
+static int16_t sdl3_joypad_axis_state(sdl3_joypad_t *pad, uint32_t joyaxis)
 {
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
@@ -332,16 +323,13 @@ static int16_t sdl3_joypad_axis_state(
 
 static int16_t sdl3_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   sdl3_joypad_t *pad;
-
    if (port >= MAX_USERS)
       return 0;
 
-   pad = &sdl3_joypads[port];
-   if (!pad->joypad)
+   if (!sdl3_joypads[port].joypad)
       return 0;
 
-   return sdl3_joypad_axis_state(pad, port, joyaxis);
+   return sdl3_joypad_axis_state(&sdl3_joypads[port], joyaxis);
 }
 
 static int16_t sdl3_joypad_state(
@@ -371,11 +359,11 @@ static int16_t sdl3_joypad_state(
 
       if (
                (uint16_t)joykey != NO_BTN
-            && sdl3_joypad_button_state(pad, port_idx, (uint16_t)joykey)
+            && sdl3_joypad_button_state(pad, (uint16_t)joykey)
          )
          ret |= (1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(sdl3_joypad_axis_state(pad, port_idx, joyaxis))
+            ((float)abs(sdl3_joypad_axis_state(pad, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -450,29 +438,25 @@ static bool sdl3_joypad_set_rumble(unsigned pad,
 static bool sdl3_joypad_set_sensor_state(unsigned pad,
    enum retro_sensor_action action, unsigned rate)
 {
-   sdl3_joypad_t *joypad;
-
    if (pad >= MAX_USERS)
       return false;
 
-   joypad = (sdl3_joypad_t*)&sdl3_joypads[pad];
-
-   if (!joypad->gamepad)
+   if (!sdl3_joypads[pad].gamepad)
       return false;
 
    switch (action)
    {
       case RETRO_SENSOR_GYROSCOPE_ENABLE:
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
-         if (SDL_GamepadHasSensor(joypad->gamepad, SDL_SENSOR_GYRO))
-            return SDL_SetGamepadSensorEnabled(joypad->gamepad, SDL_SENSOR_GYRO,
+         if (SDL_GamepadHasSensor(sdl3_joypads[pad].gamepad, SDL_SENSOR_GYRO))
+            return SDL_SetGamepadSensorEnabled(sdl3_joypads[pad].gamepad, SDL_SENSOR_GYRO,
                   action == RETRO_SENSOR_GYROSCOPE_ENABLE);
          return false;
 
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-         if (SDL_GamepadHasSensor(joypad->gamepad, SDL_SENSOR_ACCEL))
-            return SDL_SetGamepadSensorEnabled(joypad->gamepad, SDL_SENSOR_ACCEL,
+         if (SDL_GamepadHasSensor(sdl3_joypads[pad].gamepad, SDL_SENSOR_ACCEL))
+            return SDL_SetGamepadSensorEnabled(sdl3_joypads[pad].gamepad, SDL_SENSOR_ACCEL,
                   action == RETRO_SENSOR_ACCELEROMETER_ENABLE);
          return false;
 
@@ -488,16 +472,13 @@ static bool sdl3_joypad_set_sensor_state(unsigned pad,
  */
 static bool sdl3_joypad_get_sensor_input(unsigned pad, unsigned id, float *value)
 {
-   sdl3_joypad_t *joypad;
    SDL_SensorType sensor_type;
    float sensor_data[3];
 
    if (pad >= MAX_USERS)
       return false;
 
-   joypad = (sdl3_joypad_t*)&sdl3_joypads[pad];
-
-   if (!joypad->gamepad)
+   if (!sdl3_joypads[pad].gamepad)
       return false;
 
    if ((id >= RETRO_SENSOR_ACCELEROMETER_X) && (id <= RETRO_SENSOR_ACCELEROMETER_Z))
@@ -507,7 +488,7 @@ static bool sdl3_joypad_get_sensor_input(unsigned pad, unsigned id, float *value
    else
       return false;
 
-   if (!SDL_GetGamepadSensorData(joypad->gamepad, sensor_type, sensor_data, 3))
+   if (!SDL_GetGamepadSensorData(sdl3_joypads[pad].gamepad, sensor_type, sensor_data, 3))
       return false;
 
    switch (id)
@@ -558,5 +539,5 @@ input_device_driver_t sdl_joypad = {
    sdl3_joypad_set_sensor_state,
    sdl3_joypad_get_sensor_input,
    sdl3_joypad_name,
-   "sdl3",
+   "sdl3", /* TODO: Rename all the SDL Controller Drivers to "sdl"? You can't use them at the same time anyway, and it will fix autoconfigs. */
 };
