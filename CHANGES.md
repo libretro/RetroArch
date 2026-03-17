@@ -4,16 +4,18 @@
 - ANDROID: Enable ZSTD compression usage
 - ANDROID: Preserve OpenGL context when app is paused
 - ANDROID: Fix double launch issue when changing games from external launcher
+- ANDROID: Allow launchers to pass content:// URIs to RetroArch
 - AUDIO/MICROPHONE: Fix resampling, apple drivers
 - APPLE: Use coreaudio3 resampling
 - APPLE: Add coreaudio3 driver to iOS/TVOS
-- APPLE: Add jollycv, skyemu, gearlynx, amiarcadia, o2em, uzem cores to App Store builds
+- APPLE: Add jollycv, skyemu, gearlynx, amiarcadia, o2em, uzem , applewin, azahar cores to App Store builds
 - APPLE: Add Apple on-device OCR / translation to AI service
 - COMMAND: Fix null pointer exception in COMMAND_GET_STATUS
 - COMMAND: Only allow pause when there is a core running
 - CHEEVOS: Update to rcheevos 12.3
 - CHEEVOS: Download badges on demand only
 - CLOUDSYNC: Google Drive cloud sync driver
+- CONFIG: Fix saving main configuration after load configuration
 - DOS: RetroArch for DOS can now start up and handle keyboard correctly
 - CLOUDSYNC: Conflict resolution options
 - EMSCRIPTEN: Added dice to core selection dropdown
@@ -24,16 +26,23 @@
 - INPUT: New analog-to-digital types: both stick, twin-stick (for pressing face buttons with analog stick).
 - INPUT: Fix for setups which have Game Focus and Hotkey Enable on the same key
 - INPUT: Autoconf profile load/save rework: saved profiles have now higher priority, several QoL improvements for saving
+- INPUT: Allow remap of gyro/accelerometer axes in autoconfig
+- INPUT: Fix "Sort Remaps by Gamepad" when launching from CLI
 - INPUT/ANDROID: Default for input block timeout is now 1 instead of 0
 - INPUT/MFI: Controller disconnection fix
 - INPUT/SDL: Fix controller vid/pid detection on Windows
+- INPUT/SDL: Add wiimote sensor capabilities
 - INPUT/UDEV: Fix multi-touch detection
+- INPUT/UDEV: Gyroscope and accelerometer sensor support
+- INPUT/UDEV: Add wiimote sensor capabilities
 - IOS: Fix external keyboards
 - IOS: Add pd777 core
 - LAKKA: RetroFlag specific options for safe shutdown and reset
 - LIBRETRO: ROM memory type added
 - LIBRETRO: Sensor interface clarifications
 - LIBRETRO: RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO allows cores to disable frontend's save state undo feature to decrease memory usage
+- LIBRETRO: Performance improvements for nbio and archive handling in libretro-common
+- LIBRETRO: Performance improvements for utf encoding in libretro-common
 - MACOS: Fix OpenGL color on wide gamut displays
 - MENU: Do hard reset when pushing RetroPad Start on Restart menu item
 - MENU: Remove "Missing firmware check" option
@@ -48,6 +57,11 @@
 - MENU: Evergarden theme for Ozone and RGUI
 - MENU: Saving menu is reorganized
 - MENU: Save state thumbnails are now saved in native resolution for HW rendered cores
+- MENU: Refactor of bind/remap menu
+- MENU: Rename Quick Menu Restart to Reset
+- MENU: Add sublabels for built-in cores and show them in core manager list
+- MENU: Cheat menu rework
+- MENU/EXPLORE: Improve merging metadata of similar items (mostly for NES db)
 - MENU/GLUI: Add Dracula color theme
 - MENU/OZONE: Add dynamic header icon option
 - MENU/OZONE: Fix occasional left mouse click selection error
@@ -60,6 +74,8 @@
 - OVERLAY: Allow touch mouse/lightgun to still work when controller is connected
 - PS2: Improve driver usage
 - PS2: Fix booting from internal HDD
+- RECORD: Fix GPU recording performance
+- RPNG: Add Neon and SSE2 optimized codepaths
 - SCAN: Fix 3DS content scanning skipping all files
 - SCAN: Fix CHD scanning skipping some files
 - SCAN: Improve Saturn content recognition
@@ -67,13 +83,16 @@
 - SCAN: Improve scan performance by caching playlist updates
 - SCAN: Interpret M3U files during scanning
 - SHADER: Display on-screen error when preset load fails
+- SHADER: Add gyroscope / accelerometer uniforms for shaders
 - VIDEO/GL: Fix some issues with GLSL shaders when using GLCore driver
 - VIDEO/SDL2: Add shared context
 - VIDEO/D3D11/D3D12/VULKAN: Major HDR update. Inverse tone mapping uses RGB maxing instead of luminance, better full-spectrum remapping of SDR space to HDR, Contrast option remove. Performance improved. HDR menu settings exposed to shaders, fast HDR single-pass scanline simulation added.
-- VIDEO/D3D11/D3D12/VULKAN: multi-mode HDR Expand Gamut selection
+- VIDEO/D3D11/D3D12/VULKAN: Multi-mode HDR Expand Gamut selection
 - VIDEO/D3D11/D3D12/VULKAN: scRGB (HDR16) support
+- VIDEO/D3D11/D3D12/VULKAN: Show only supported HDR modes in menu
 - VIDEO/VULKAN: VK_EXT_full_screen_exclusive is now optional
 - VIDEO/WAYLAND: Fix fullscreen window offset/incorrect sizing
+- VIDEO/WAYLAND: Fix issue with tiny menu in case of fullscreen
 - VITA: Enable cloudsync feature
 - VFS: Add Samba share browse and load content (Windows file shares)
 - WEBOS: Enable mouse use, include developer dir
@@ -82,6 +101,7 @@
 - WEBOS: Allow user to decide about the screensaver
 - WEBOS: WebOS 1 and 2 compatibility
 - WEBOS: Magic remote improvements
+- WEBOS: Enable ALSA sound driver
 - WIN32: Fix Windows version detection
 - XBOX: Fix menu and achievement sounds
 - XBOX: Update UWP Mesa
