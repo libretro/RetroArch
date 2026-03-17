@@ -51,6 +51,8 @@ private class TranslationManager {
     private var hostingController: UIHostingController<AnyView>?
     private weak var parentVC: UIViewController?
     private weak var containerView: UIView?
+    #elseif os(macOS)
+    private var hostingView: NSView?
     #endif
 
     func translate(text: String,
@@ -114,9 +116,36 @@ private class TranslationManager {
         }
 
         hostingController = controller
-        #else
-        // macOS fallback
-        completion(nil, "Translation not implemented for macOS")
+        #elseif os(macOS)
+        // Remove old hosting view if any
+        hostingView?.removeFromSuperview()
+        hostingView = nil
+
+        guard let cocoaView = CocoaView.get() else {
+            logTranslation("[Translation] ERROR: CocoaView.get() returned nil")
+            completion(nil, "CocoaView not available")
+            return
+        }
+
+        // Create configuration
+        let config = TranslationSession.Configuration(
+            source: sourceLanguage.map { Locale.Language(identifier: $0) },
+            target: Locale.Language(identifier: targetLanguage)
+        )
+
+        // Create a SwiftUI view with the configuration
+        let translationView = TranslationTaskView(
+            configuration: config,
+            onSession: { [weak self] session in
+                await self?.handleSession(session)
+            }
+        )
+
+        let hosting = NSHostingView(rootView: AnyView(translationView))
+        hosting.frame = NSRect(x: 0, y: 0, width: 10, height: 10)
+        hosting.alphaValue = 0
+        cocoaView.addSubview(hosting)
+        hostingView = hosting
         #endif
     }
 
