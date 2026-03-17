@@ -244,12 +244,12 @@ static int16_t dinput_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis  != AXIS_NONE)
          ? binds[i].joyaxis  : joypad_info->auto_binds[i].joyaxis;
 
-      if (  (uint16_t)joykey != NO_BTN
-         && dinput_joypad_button_state(pad, (uint16_t)joykey))
+      if (     (uint16_t)joykey != NO_BTN
+            && dinput_joypad_button_state(pad, (uint16_t)joykey))
          ret |= (1 << i);
       else if (joyaxis != AXIS_NONE
-         && ((float)abs(dinput_joypad_axis_state(pad, joyaxis))
-               / 0x8000f) > joypad_info->axis_threshold)
+            && ((float)abs(dinput_joypad_axis_state(pad, joyaxis))
+                  / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
 
