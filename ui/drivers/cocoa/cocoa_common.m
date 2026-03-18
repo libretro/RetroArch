@@ -205,28 +205,30 @@ void rarch_stop_draw_observer(void)
       nsview_set_ptr(view);
 #if defined(IOS)
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
+      {
+         float hz = (float)[UIScreen mainScreen].maximumFramesPerSecond;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
-      if (@available(iOS 15.0, tvOS 15.0, *))
-      {
-         /* Use a wide range by default to support ProMotion displays,
-          * the display server will set the exact rate when needed */
-         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
-      }
-      else
-      {
-         /* iOS 9-14: Use preferredFramesPerSecond as fallback */
-         view.displayLink.preferredFramesPerSecond = 120;
-      }
+         if (@available(iOS 15.0, tvOS 15.0, *))
+            [view.displayLink setPreferredFrameRateRange:
+               CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz)];
+         else
+            view.displayLink.preferredFramesPerSecond = hz;
 #else
-      /* Building with SDK < iOS 15: Use preferredFramesPerSecond */
-      view.displayLink.preferredFramesPerSecond = 120;
+         view.displayLink.preferredFramesPerSecond = hz;
 #endif
+      }
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 #elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
       if (@available(macOS 14.0, *))
       {
+         CGDirectDisplayID did = CGMainDisplayID();
+         CGDisplayModeRef mode = CGDisplayCopyDisplayMode(did);
+         float hz = (float)CGDisplayModeGetRefreshRate(mode);
+         CGDisplayModeRelease(mode);
+         if (hz <= 0.0f)
+            hz = 60.0f;
          view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
-         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
+         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
          [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
       }
 #endif
