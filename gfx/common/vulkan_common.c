@@ -546,7 +546,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
       vkGetPhysicalDeviceProperties(gpus[i],
             &gpu_properties);
 
-      RARCH_LOG("[Vulkan] Found GPU at index %d: \"%s\".\n", i, gpu_properties.deviceName);
+      RARCH_LOG("[Vulkan] Found GPU #%d: \"%s\".\n", i, gpu_properties.deviceName);
 
       string_list_append(vk->gpu_list, gpu_properties.deviceName, attr);
    }
@@ -555,7 +555,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
    if (0 <= gpu_index && gpu_index < (int)gpu_count)
    {
-      RARCH_LOG("[Vulkan] Using GPU index %d.\n", gpu_index);
+      RARCH_LOG("[Vulkan] Using GPU #%d: \"%s\".\n", gpu_index, vk->gpu_list->elems[gpu_index].data);
       vk->context.gpu = gpus[gpu_index];
    }
    else
@@ -774,8 +774,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          RARCH_LOG("[Vulkan] Using fences for WSI acquire.\n");
       }
    }
-
-   RARCH_LOG("[Vulkan] Using GPU: \"%s\".\n", vk->context.gpu_properties.deviceName);
 
    {
       char version_str[128];

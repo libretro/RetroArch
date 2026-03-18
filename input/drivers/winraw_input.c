@@ -186,7 +186,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
       input_config_set_mouse_display_name(i, name);
 
-      RARCH_LOG("[WinRaw] Mouse #%u: \"%s\".\n", i + 1, name);
+      RARCH_LOG("[WinRaw] Found mouse #%u: \"%s\".\n", i + 1, name);
    }
 }
 
