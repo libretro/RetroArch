@@ -3191,7 +3191,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 
          utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D12] Found GPU at index %d: \"%s\".\n", i, str);
+         RARCH_LOG("[D3D12] Found GPU #%d: \"%s\".\n", i, str);
 
          string_list_append(d3d12->gpu_list, str, attr);
 
@@ -3212,9 +3212,9 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 
       if (0 <= gpu_index && gpu_index <= i && gpu_index < D3D12_MAX_GPU_COUNT)
       {
+         RARCH_LOG("[D3D12] Using GPU #%d: \"%s\".\n", gpu_index, d3d12->gpu_list->elems[gpu_index].data);
          d3d12->adapter = d3d12->adapters[gpu_index];
          AddRef(d3d12->adapter);
-         RARCH_LOG("[D3D12] Using GPU index %d.\n", gpu_index);
       }
       else
       {
