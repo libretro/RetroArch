@@ -432,7 +432,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
    DXGIOutput best_output    = NULL;
    DXGIOutput current_output = NULL;
    DXGIAdapter dxgi_adapter  = NULL;
-   UINT i                    = 0;
+   UINT adapter_idx          = 0;
    bool supported            = false;
    float best_intersect_area = -1;
 
@@ -449,16 +449,6 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
          return false;
       }
    }
-
-#ifdef __cplusplus
-   if (FAILED(factory->EnumAdapters1(0, &dxgi_adapter)))
-#else
-   if (FAILED(factory->lpVtbl->EnumAdapters1(factory, 0, &dxgi_adapter)))
-#endif
-   {
-      RARCH_ERR("[DXGI] Failed to enumerate adapters.\n");
-      return false;
-   }
 #else
 #ifdef __cplusplus
    if (!factory->IsCurrent())
@@ -472,77 +462,110 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
          return false;
       }
    }
+#endif
 
+   /* Enumerate ALL adapters to find the output the window is on.
+    * On multi-GPU systems (e.g. Nvidia Optimus) the display may be
+    * connected to an adapter other than index 0. */
 #ifdef __cplusplus
-   if (FAILED(factory->EnumAdapters1(0, &dxgi_adapter)))
+   while (SUCCEEDED(factory->EnumAdapters1(adapter_idx, &dxgi_adapter)))
 #else
-   if (FAILED(factory->lpVtbl->EnumAdapters1(factory, 0, &dxgi_adapter)))
+   while (SUCCEEDED(factory->lpVtbl->EnumAdapters1(factory, adapter_idx, &dxgi_adapter)))
 #endif
    {
-      RARCH_ERR("[DXGI] Failed to enumerate adapters.\n");
-      return false;
+      UINT i = 0;
+#ifdef __cplusplus
+      while (  dxgi_adapter->EnumOutputs(i, &current_output)
+            != DXGI_ERROR_NOT_FOUND)
+#else
+      while (  dxgi_adapter->lpVtbl->EnumOutputs(dxgi_adapter, i, &current_output)
+            != DXGI_ERROR_NOT_FOUND)
+#endif
+      {
+         RECT r, rect;
+         DXGI_OUTPUT_DESC desc;
+         int intersect_area;
+         int bx1, by1, bx2, by2;
+         int ax1               = 0;
+         int ay1               = 0;
+         int ax2               = 0;
+         int ay2               = 0;
+
+         if (win32_get_client_rect(&rect))
+         {
+            ax1                = rect.left;
+            ay1                = rect.top;
+            ax2                = rect.right;
+            ay2                = rect.bottom;
+         }
+
+         /* Get the rectangle bounds of current output */
+#ifdef __cplusplus
+         if (FAILED(current_output->GetDesc(&desc)))
+#else
+         if (FAILED(current_output->lpVtbl->GetDesc(current_output, &desc)))
+#endif
+         {
+            RARCH_ERR("[DXGI] Failed to get DXGI output description.\n");
+            i++;
+            continue;
+         }
+
+         /* TODO/FIXME - DesktopCoordinates won't work for WinRT */
+         r                      = desc.DesktopCoordinates;
+         bx1                    = r.left;
+         by1                    = r.top;
+         bx2                    = r.right;
+         by2                    = r.bottom;
+
+         /* Compute the intersection */
+         intersect_area         = dxgi_compute_intersection_area(
+               ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
+
+         if (intersect_area > best_intersect_area)
+         {
+            if (best_output)
+            {
+#ifdef __cplusplus
+               best_output->Release();
+#else
+               Release(best_output);
+#endif
+            }
+            best_output         = current_output;
+#ifdef __cplusplus
+            best_output->AddRef();
+#else
+            AddRef(best_output);
+#endif
+            best_intersect_area = (float)intersect_area;
+         }
+
+         i++;
+      }
+
+      if (current_output)
+      {
+#ifdef __cplusplus
+         current_output->Release();
+#else
+         Release(current_output);
+#endif
+         current_output = NULL;
+      }
+#ifdef __cplusplus
+      dxgi_adapter->Release();
+#else
+      Release(dxgi_adapter);
+#endif
+      dxgi_adapter = NULL;
+      adapter_idx++;
    }
-#endif
 
-#ifdef __cplusplus
-   while (  dxgi_adapter->EnumOutputs(i, &current_output)
-         != DXGI_ERROR_NOT_FOUND)
-#else
-   while (  dxgi_adapter->lpVtbl->EnumOutputs(dxgi_adapter, i, &current_output)
-         != DXGI_ERROR_NOT_FOUND)
-#endif
+   if (!best_output)
    {
-      RECT r, rect;
-      DXGI_OUTPUT_DESC desc;
-      int intersect_area;
-      int bx1, by1, bx2, by2;
-      int ax1               = 0;
-      int ay1               = 0;
-      int ax2               = 0;
-      int ay2               = 0;
-
-      if (win32_get_client_rect(&rect))
-      {
-         ax1                = rect.left;
-         ay1                = rect.top;
-         ax2                = rect.right;
-         ay2                = rect.bottom;
-      }
-
-      /* Get the rectangle bounds of current output */
-#ifdef __cplusplus
-      if (FAILED(current_output->GetDesc(&desc)))
-#else
-      if (FAILED(current_output->lpVtbl->GetDesc(current_output, &desc)))
-#endif
-      {
-         RARCH_ERR("[DXGI] Failed to get DXGI output description.\n");
-         goto error;
-      }
-
-      /* TODO/FIXME - DesktopCoordinates won't work for WinRT */
-      r                      = desc.DesktopCoordinates;
-      bx1                    = r.left;
-      by1                    = r.top;
-      bx2                    = r.right;
-      by2                    = r.bottom;
-
-      /* Compute the intersection */
-      intersect_area         = dxgi_compute_intersection_area(
-            ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
-
-      if (intersect_area > best_intersect_area)
-      {
-         best_output         = current_output;
-#if defined(__cplusplus)
-         best_output->AddRef();
-#else
-         AddRef(best_output);
-#endif
-         best_intersect_area = (float)intersect_area;
-      }
-
-      i++;
+      RARCH_ERR("[DXGI] No output found for HDR check.\n");
+      return false;
    }
 
 #ifdef __cplusplus
@@ -599,15 +622,10 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
       RARCH_ERR("[DXGI] Failed to get DXGI Output 6 from best output.\n");
    }
 
-error:
 #ifdef __cplusplus
    best_output->Release();
-   current_output->Release();
-   dxgi_adapter->Release();
 #else
    Release(best_output);
-   Release(current_output);
-   Release(dxgi_adapter);
 #endif
 
    return supported;
@@ -736,9 +754,9 @@ void dxgi_set_hdr_metadata(
    hdr10_meta_data.WhitePoint[1]                =
       (UINT16)(chroma->white_y * 50000.0f);
    hdr10_meta_data.MaxMasteringLuminance        =
-      (UINT)(max_output_nits * 10000.0f);
+      (UINT)(max_output_nits);              /* Units: 1 nit */
    hdr10_meta_data.MinMasteringLuminance        =
-      (UINT)(min_output_nits * 10000.0f);
+      (UINT)(min_output_nits * 10000.0f);   /* Units: 0.0001 nits */
    hdr10_meta_data.MaxContentLightLevel         =
       (UINT16)(max_cll);
    hdr10_meta_data.MaxFrameAverageLightLevel    =
