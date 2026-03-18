@@ -2871,7 +2871,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       char tmp[NAME_MAX_LENGTH];
       char crc_str[20];
       database_info_t *db_info_entry = &db_info->list[i];
-      const char *val_str;
       size_t tmp_len;
 
       snprintf(crc_str, sizeof(crc_str), "%08lX", (unsigned long)db_info_entry->crc32);
@@ -16297,7 +16296,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            char val_d[16];
                            const char *p       = setting->values;
-                           const char *tok;
                            unsigned i          = 0;
                            int checked_found   = 0;
                            unsigned checked    = 0;

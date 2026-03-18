@@ -2303,7 +2303,7 @@ static void config_size(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler,
-	  get_string_representation_t string_representation_handler)
+      get_string_representation_t string_representation_handler)
 {
    (*list)[list_info->index++] = setting_size_setting(
          msg_hash_to_str(name_enum_idx),
@@ -2920,19 +2920,19 @@ static int setting_action_ok_libretro_device_type(
 
 #ifdef ANDROID
 static int setting_action_ok_select_physical_keyboard(
-        rarch_setting_t *setting, size_t idx, bool wraparound)
+      rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-    char enum_idx[16];
-    if (!setting)
-        return -1;
+   char enum_idx[16];
+   if (!setting)
+      return -1;
 
-    snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
 
-    generic_action_ok_displaylist_push(
-            enum_idx, /* we will pass the enumeration index of the string as a path */
-            NULL, NULL, 0, idx, 0,
-            ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD);
-    return 0;
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD);
+   return 0;
 }
 #endif
 
@@ -8410,9 +8410,9 @@ static void general_read_handler(rarch_setting_t *setting)
          *setting->value.target.fraction = settings->floats.video_refresh_rate;
          break;
 #ifdef ANDROID
-       case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
-           setting->value.target.string = settings->arrays.input_android_physical_keyboard;
-           break;
+      case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
+         setting->value.target.string = settings->arrays.input_android_physical_keyboard;
+         break;
 #endif
       default:
          break;
@@ -8807,12 +8807,12 @@ static void general_write_handler(rarch_setting_t *setting)
          command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
          break;
 #ifdef ANDROID
-       case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
-           settings->flags |= SETTINGS_FLG_MODIFIED;
-           strlcpy(settings->arrays.input_android_physical_keyboard,
-                 setting->value.target.string,
-                 sizeof(settings->arrays.input_android_physical_keyboard));
-           break;
+      case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
+         settings->flags |= SETTINGS_FLG_MODIFIED;
+         strlcpy(settings->arrays.input_android_physical_keyboard,
+               setting->value.target.string,
+               sizeof(settings->arrays.input_android_physical_keyboard));
+         break;
 #endif
       case MENU_ENUM_LABEL_LOG_TO_FILE:
          if (verbosity_is_enabled())
@@ -12379,13 +12379,8 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   &setting_get_string_representation_size_in_mb);
-            menu_settings_list_current_add_range(list,
-			    list_info,
-			    1024 * 1024,
-			    1024 * 1024 * 1024,
-			    settings->uints.rewind_buffer_size_step * 1024 * 1024,
-			    true,
-			    true);
+            menu_settings_list_current_add_range(list, list_info,
+                  1024 * 1024, 1024 * 1024 * 1024, settings->uints.rewind_buffer_size_step * 1024 * 1024, true, true);
 
             CONFIG_UINT(
                   list, list_info,
@@ -14619,7 +14614,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-			CONFIG_UINT(
+         CONFIG_UINT(
                list, list_info,
                &settings->uints.crt_switch_resolution,
                MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
@@ -14637,34 +14632,34 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_range(list, list_info, CRT_SWITCH_NONE, CRT_SWITCH_INI, 1.0, true, true);
 
-			CONFIG_UINT(
-				  list, list_info,
-				  &settings->uints.crt_switch_resolution_super,
-				  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-				  DEFAULT_CRT_SWITCH_RESOLUTION_SUPER,
-				  &group_info,
-				  &subgroup_info,
-				  parent_group,
-				  general_write_handler,
-				  general_read_handler);
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.crt_switch_resolution_super,
+               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+               DEFAULT_CRT_SWITCH_RESOLUTION_SUPER,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
          (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_crt_switch_resolution_super;
          (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_crt_switch_resolution_super;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_crt_switch_resolution_super;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
-			CONFIG_INT(
-				  list, list_info,
-				  &settings->ints.crt_switch_center_adjust,
-				  MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-				  DEFAULT_CRT_SWITCH_CENTER_ADJUST,
-				  &group_info,
-				  &subgroup_info,
-				  parent_group,
-				  general_write_handler,
-				  general_read_handler);
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.crt_switch_center_adjust,
+               MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+               DEFAULT_CRT_SWITCH_CENTER_ADJUST,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -50;
@@ -14672,16 +14667,16 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, -50, 50, 1.0, true, true);
 
          CONFIG_INT(
-				  list, list_info,
-				  &settings->ints.crt_switch_porch_adjust,
-				  MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-				  DEFAULT_CRT_SWITCH_PORCH_ADJUST,
-				  &group_info,
-				  &subgroup_info,
-				  parent_group,
-				  general_write_handler,
-				  general_read_handler);
+               list, list_info,
+               &settings->ints.crt_switch_porch_adjust,
+               MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+               DEFAULT_CRT_SWITCH_PORCH_ADJUST,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -50;
@@ -14689,16 +14684,16 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, -50, 100, 2.0, true, true);
 
          CONFIG_INT(
-				  list, list_info,
-				  &settings->ints.crt_switch_vertical_adjust,
-				  MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST,
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
-				  DEFAULT_CRT_SWITCH_VERTICAL_ADJUST,
-				  &group_info,
-				  &subgroup_info,
-				  parent_group,
-				  general_write_handler,
-				  general_read_handler);
+               list, list_info,
+               &settings->ints.crt_switch_vertical_adjust,
+               MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+               DEFAULT_CRT_SWITCH_VERTICAL_ADJUST,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -20;
@@ -16159,7 +16154,7 @@ static bool setting_append_list(
                   );
 
 #ifdef ANDROID
-	    CONFIG_BOOL(
+            CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.android_input_disconnect_workaround,
                   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -16175,23 +16170,23 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-        input_driver_state_t *st = input_state_get_ptr();
-        input_driver_t *current_input = st->current_driver;
-        if (string_is_equal(current_input->ident, "android"))
-        {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-                  MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-            (*list)[list_info->index - 1].action_ok                   = &setting_action_ok_select_physical_keyboard;
-            (*list)[list_info->index - 1].read_handler                = &general_read_handler;
-            (*list)[list_info->index - 1].change_handler               = &general_write_handler;
-            (*list)[list_info->index - 1].get_string_representation   = &setting_get_string_representation_android_physical_keyboard;
-            (*list)[list_info->index - 1].default_value.string        = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
-        }
+            input_driver_state_t *st = input_state_get_ptr();
+            input_driver_t *current_input = st->current_driver;
+            if (string_is_equal(current_input->ident, "android"))
+            {
+               CONFIG_ACTION(
+                     list, list_info,
+                     MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                     MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group);
+               (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_select_physical_keyboard;
+               (*list)[list_info->index - 1].read_handler              = &general_read_handler;
+               (*list)[list_info->index - 1].change_handler            = &general_write_handler;
+               (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_android_physical_keyboard;
+               (*list)[list_info->index - 1].default_value.string      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+            }
 #endif
 
             CONFIG_UINT(
