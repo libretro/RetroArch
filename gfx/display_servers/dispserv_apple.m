@@ -457,6 +457,43 @@ static void *apple_display_server_init(void)
    RARCH_LOG("[Video] Stored original display mode for restoration\n");
 #endif
 
+   /* Sync the display link to the configured refresh rate.
+    * The display link starts at the display's native rate before
+    * config is parsed, so apply the user's setting now. */
+   {
+      settings_t *settings = config_get_ptr();
+      if (  settings
+         && settings->floats.video_refresh_rate >= 10.0f
+         && settings->floats.video_refresh_rate <= 250.0f)
+      {
+         float hz = settings->floats.video_refresh_rate;
+         CocoaView *view = [CocoaView get];
+#if defined(IOS)
+         if (view && view.displayLink)
+         {
+            RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
+#if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
+            if (@available(iOS 15, tvOS 15, *))
+               view.displayLink.preferredFrameRateRange =
+                  CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+            else
+#endif
+               view.displayLink.preferredFramesPerSecond = hz;
+         }
+#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+         if (view)
+         {
+            if (@available(macOS 14, *))
+            {
+               RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
+               view.displayLink.preferredFrameRateRange =
+                  CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+            }
+         }
+#endif
+      }
+   }
+
    return apple;
 }
 
