@@ -207,18 +207,9 @@ void gfx_widgets_msg_queue_push(
          msg_widget->task_progress              = 0;
          msg_widget->task_ident                 = 0;
 
-         msg_widget->unfold                     = 0.0f;
-
          msg_widget->hourglass_rotation         = 0.0f;
          msg_widget->hourglass_timer            = 0.0f;
          msg_widget->flags                      = 0;
-
-         if (!(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS))
-         {
-            msg_widget->flags                  |=  DISPWIDG_FLAG_UNFOLDED;
-            msg_widget->flags                  &= ~DISPWIDG_FLAG_UNFOLDING;
-            msg_widget->unfold                  = 1.0f;
-         }
 
          if (category == MESSAGE_QUEUE_CATEGORY_WARNING)
             msg_widget->flags                  |=  DISPWIDG_FLAG_CATEGORY_WARNING;
@@ -246,8 +237,6 @@ void gfx_widgets_msg_queue_push(
             msg_widget->task_progress           = task->progress;
             msg_widget->task_ident              = task->ident;
             msg_widget->task_count              = 1;
-
-            msg_widget->flags                  |= DISPWIDG_FLAG_UNFOLDED;
 
             if (task->style == TASK_STYLE_POSITIVE)
                msg_widget->flags               |= DISPWIDG_FLAG_POSITIVE;
@@ -412,39 +401,11 @@ void gfx_widgets_msg_queue_push(
    }
 }
 
-static void gfx_widgets_unfold_end(void *userdata)
-{
-   disp_widget_msg_t *unfold        = (disp_widget_msg_t*)userdata;
-   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
-
-   unfold->flags                   &= ~DISPWIDG_FLAG_UNFOLDING;
-   p_dispwidget->flags             &= ~DISPGFX_WIDGET_FLAG_MOVING;
-}
-
 static void gfx_widgets_move_end(void *userdata)
 {
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
-   if (userdata)
-   {
-      gfx_animation_ctx_entry_t entry;
-      disp_widget_msg_t *unfold    = (disp_widget_msg_t*)userdata;
-
-      entry.cb                     = gfx_widgets_unfold_end;
-      entry.duration               = MSG_QUEUE_ANIMATION_DURATION;
-      entry.easing_enum            = EASING_OUT_QUAD;
-      entry.subject                = &unfold->unfold;
-      entry.tag                    = (uintptr_t)unfold;
-      entry.target_value           = 1.0f;
-      entry.userdata               = unfold;
-
-      gfx_animation_push(&entry);
-
-      unfold->flags               |= DISPWIDG_FLAG_UNFOLDED
-                                   | DISPWIDG_FLAG_UNFOLDING;
-   }
-   else
-      p_dispwidget->flags         &= ~DISPGFX_WIDGET_FLAG_MOVING;
+   p_dispwidget->flags         &= ~DISPGFX_WIDGET_FLAG_MOVING;
 }
 
 static void gfx_widgets_msg_queue_expired(void *userdata)
@@ -460,8 +421,6 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
    int i;
    float y = 0;
    bool size_small = false;
-   /* there should always be one and only one unfolded message */
-   disp_widget_msg_t *unfold        = NULL;
 
 #ifdef HAVE_THREADS
    slock_lock(p_dispwidget->current_msgs_lock);
@@ -483,9 +442,6 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
             + (p_dispwidget->msg_queue_spacing * (size_small ? 1.0f : 2.0f))
             + floor(p_dispwidget->divider_width_1px);
 
-      if (!(msg->flags & DISPWIDG_FLAG_UNFOLDED))
-         unfold = msg;
-
       if (msg->offset_y != y)
       {
          gfx_animation_ctx_entry_t entry;
@@ -496,7 +452,7 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
          entry.subject        = &msg->offset_y;
          entry.tag            = (uintptr_t)msg;
          entry.target_value   = ceilf(y);
-         entry.userdata       = unfold;
+         entry.userdata       = msg;
 
          gfx_animation_push(&entry);
 
@@ -1416,9 +1372,6 @@ static void gfx_widgets_draw_regular_msg(
    unsigned rect_margin;
    unsigned text_color;
 
-   msg->flags             &= ~DISPWIDG_FLAG_UNFOLDING;
-   msg->flags             |=  DISPWIDG_FLAG_UNFOLDED;
-
    /* Tint icon yellow for warnings, red for errors,
     * green for success, and blue for info */
    if (msg->flags & DISPWIDG_FLAG_CATEGORY_WARNING)
@@ -1433,25 +1386,6 @@ static void gfx_widgets_draw_regular_msg(
    gfx_display_set_alpha(msg_queue_info, msg->alpha);
    gfx_display_set_alpha(p_dispwidget->pure_white, msg->alpha);
    gfx_display_set_alpha(p_dispwidget->msg_queue_bg, msg->alpha);
-
-   if (    !(msg->flags & DISPWIDG_FLAG_UNFOLDED)
-         || (msg->flags & DISPWIDG_FLAG_UNFOLDING))
-   {
-      gfx_widgets_flush_text(video_width, video_height,
-            &p_dispwidget->gfx_widget_fonts.regular);
-      gfx_widgets_flush_text(video_width, video_height,
-            &p_dispwidget->gfx_widget_fonts.bold);
-      gfx_widgets_flush_text(video_width, video_height,
-            &p_dispwidget->gfx_widget_fonts.msg_queue);
-
-     gfx_display_scissor_begin(p_disp,
-           userdata,
-           video_width, video_height,
-           p_dispwidget->msg_queue_scissor_start_x, 0,
-           (p_dispwidget->msg_queue_scissor_start_x + msg->width -
-            p_dispwidget->simple_widget_padding * 2)
-           * msg->unfold, video_height);
-   }
 
    /* Background */
    rect_width  = p_dispwidget->simple_widget_padding + msg->width + p_dispwidget->msg_queue_icon_size_x;
@@ -1520,17 +1454,6 @@ static void gfx_widgets_draw_regular_msg(
       TEXT_ALIGN_LEFT,
       true);
 
-   if (    !(msg->flags & DISPWIDG_FLAG_UNFOLDED)
-         || (msg->flags & DISPWIDG_FLAG_UNFOLDING))
-   {
-      gfx_widgets_flush_text(video_width, video_height, &p_dispwidget->gfx_widget_fonts.regular);
-      gfx_widgets_flush_text(video_width, video_height, &p_dispwidget->gfx_widget_fonts.bold);
-      gfx_widgets_flush_text(video_width, video_height, &p_dispwidget->gfx_widget_fonts.msg_queue);
-
-      if (dispctx && dispctx->scissor_end)
-         dispctx->scissor_end(userdata, video_width, video_height);
-   }
-
    /* Icon */
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
    {
@@ -1551,7 +1474,7 @@ static void gfx_widgets_draw_regular_msg(
             icon_size,
             p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO],
             p_dispwidget->msg_queue_rect_start_x
-                  + (p_dispwidget->msg_queue_height / 9.0f),
+                  + (p_dispwidget->msg_queue_height / 10.0f),
             video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y,
             0.0f, /* rad                         */
             (invert_y ? -1.0f : 1.0f), /* cosine */
