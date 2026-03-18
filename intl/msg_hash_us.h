@@ -2496,11 +2496,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Paper White Luminance"
+   "Brightness"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Once peak luminance is set, use this as your standard brightness setting. Technically this sets the luminance at which paper white should be i.e. readable text or luminance at the top of the SDR (Standard Dynamic Range) range."
+   "Sets the HDR brightness level in nits. Use in combination with your display's physical brightness settings. For a starting point, set this to 80 and your display's brightness to full."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2508,7 +2508,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Uses your display's full colour range to create a brighter, more saturated image. For colours more faithful to the original game design, set this to ACCURATE."
+   "Uses your display's full colour range to create a brighter, more saturated image. For colours more faithful to the original game design, set this to Accurate."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

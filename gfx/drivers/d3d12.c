@@ -1888,19 +1888,20 @@ static void d3d12_render_overlay(d3d12_video_t *d3d12)
 static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 {
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
+   float old_nits                         = d3d12->hdr.max_output_nits;
+
+   RARCH_DBG("[D3D12] set_hdr_max_nits: %.1f -> %.1f%s\n",
+         old_nits, max_nits,
+         (old_nits >= 300.0f && max_nits < 300.0f) ? " *** CROSSING BELOW 300 ***" : "");
 
    d3d12->hdr.max_output_nits             = max_nits;
    d3d12->hdr.ubo_values.max_nits         = max_nits;
 
-   dxgi_set_hdr_metadata(
-         d3d12->chain.handle,
-         (d3d12->flags & D3D12_ST_FLAG_HDR_SUPPORT) ? true : false,
-         d3d12->chain.bit_depth,
-         d3d12->chain.color_space,
-         d3d12->hdr.max_output_nits,
-         d3d12->hdr.min_output_nits,
-         d3d12->hdr.max_cll,
-         d3d12->hdr.max_fall);
+   /* Do NOT update display HDR metadata here.  max_nits is an internal
+    * shader parameter (InverseTonemap target), not the actual mastering
+    * display luminance.  Sending it as MaxMasteringLuminance causes the
+    * display's tone mapper to switch modes every time the user moves the
+    * slider, producing color shifts and delays. */
 
    if(d3d12->shader_preset)
    {
@@ -1908,7 +1909,7 @@ static void d3d12_set_hdr_max_nits(void* data, float max_nits)
       {
          d3d12->pass[i].max_nits     = max_nits;
       }
-   }         
+   }
 }
 
 static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
@@ -4827,10 +4828,10 @@ static bool d3d12_gfx_frame(
                (back_buffer_format == DXGI_FORMAT_R10G10B10A2_UNORM)
                ? 3 : 2;
          }
-         else /* HDR10 */
+         else /* HDR10 — first pass already PQ-encoded, just passthrough */
          {
-            d3d12->hdr.ubo_values.inverse_tonemap  = 1.0f;
-            d3d12->hdr.ubo_values.hdr10            = 1.0f;
+            d3d12->hdr.ubo_values.inverse_tonemap  = 0.0f;
+            d3d12->hdr.ubo_values.hdr10            = 0.0f;
             d3d12->hdr.ubo_values.hdr_mode         = 0;
          }
 

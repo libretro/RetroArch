@@ -8748,6 +8748,7 @@ static void general_write_handler(rarch_setting_t *setting)
 
          rarch_cmd = CMD_EVENT_REINIT;
          break;
+#ifdef HDR_PEAK_LUMINANCE
       case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
          {
             video_driver_state_t *video_st       = video_state_get_ptr();
@@ -8759,6 +8760,7 @@ static void general_write_handler(rarch_setting_t *setting)
                      settings->floats.video_hdr_max_nits);
          }
          break;
+#endif
       case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
          {
             video_driver_state_t *video_st                = video_state_get_ptr();
@@ -14091,6 +14093,7 @@ static bool setting_append_list(
 
                /* if (settings->uints.video_hdr_mode > 0) */
                {
+#ifdef HDR_PEAK_LUMINANCE
                   CONFIG_FLOAT(
                         list, list_info,
                         &settings->floats.video_hdr_max_nits,
@@ -14105,6 +14108,7 @@ static bool setting_append_list(
                         general_read_handler);
                   (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                   menu_settings_list_current_add_range(list, list_info, 0.0, 10000.0, 10.0, true, true);
+#endif
 
                   CONFIG_FLOAT(
                         list, list_info,

@@ -2201,8 +2201,87 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, NULL);
+   if (format_count > ARRAY_SIZE(formats))
+      format_count = ARRAY_SIZE(formats);
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, formats);
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR) && defined(VULKAN_HDR_SWAPCHAIN)
+   /* Hybrid GPU workaround (e.g. Nvidia Optimus / AMD switchable).
+    * The display is often physically connected to the integrated GPU,
+    * so the discrete GPU may not report HDR surface formats even though
+    * the display supports HDR.  Query all other physical devices for
+    * HDR formats and merge them in — on Windows the DWM compositor
+    * handles presentation, so HDR formats reported by ANY device for
+    * this surface will work. */
+   if (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT)
+   {
+      bool have_hdr = false;
+      for (i = 0; i < format_count && !have_hdr; i++)
+      {
+         if (  (  vulkan_is_hdr10_format(formats[i].format)
+               && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+            || (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+               && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT))
+            have_hdr = true;
+      }
+
+      if (!have_hdr)
+      {
+         uint32_t gpu_count = 0;
+         VkPhysicalDevice gpus_all[8];
+
+         vkEnumeratePhysicalDevices(vk->context.instance, &gpu_count, NULL);
+         if (gpu_count > ARRAY_SIZE(gpus_all))
+            gpu_count = ARRAY_SIZE(gpus_all);
+         vkEnumeratePhysicalDevices(vk->context.instance, &gpu_count, gpus_all);
+
+         for (i = 0; i < gpu_count; i++)
+         {
+            uint32_t j, other_count = 0;
+            VkSurfaceFormatKHR other_formats[256];
+            VkPhysicalDeviceProperties props;
+
+            if (gpus_all[i] == vk->context.gpu)
+               continue;
+
+            vkGetPhysicalDeviceSurfaceFormatsKHR(
+                  gpus_all[i], vk->vk_surface, &other_count, NULL);
+            if (other_count == 0)
+               continue;
+            if (other_count > ARRAY_SIZE(other_formats))
+               other_count = ARRAY_SIZE(other_formats);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(
+                  gpus_all[i], vk->vk_surface, &other_count, other_formats);
+
+            vkGetPhysicalDeviceProperties(gpus_all[i], &props);
+
+            for (j = 0; j < other_count; j++)
+            {
+               bool is_hdr_fmt =
+                  (  vulkan_is_hdr10_format(other_formats[j].format)
+                  && other_formats[j].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+                  || (  other_formats[j].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+                     && other_formats[j].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT);
+
+               if (is_hdr_fmt && format_count < ARRAY_SIZE(formats))
+               {
+                  RARCH_LOG("[Vulkan] HDR format %u/colorspace %u found on GPU \"%s\", "
+                        "merging into surface format list.\n",
+                        other_formats[j].format,
+                        other_formats[j].colorSpace,
+                        props.deviceName);
+                  formats[format_count++] = other_formats[j];
+                  have_hdr = true;
+               }
+            }
+
+            if (have_hdr)
+               break; /* Found HDR formats from another GPU */
+         }
+      }
+   }
+#endif
 
    format.format = VK_FORMAT_UNDEFINED;
    if (     format_count == 1

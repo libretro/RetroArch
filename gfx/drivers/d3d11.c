@@ -1592,15 +1592,11 @@ static void d3d11_set_hdr_max_nits(void *data, float max_nits)
    }
    d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
 
-   dxgi_set_hdr_metadata(
-         d3d11->swapChain,
-         (d3d11->flags & D3D11_ST_FLAG_HDR_SUPPORT) ? true : false,
-         d3d11->chain_bit_depth,
-         d3d11->chain_color_space,
-         d3d11->hdr.max_output_nits,
-         d3d11->hdr.min_output_nits,
-         d3d11->hdr.max_cll,
-         d3d11->hdr.max_fall);
+   /* Do NOT update display HDR metadata here.  max_nits is an internal
+    * shader parameter (InverseTonemap target), not the actual mastering
+    * display luminance.  Sending it as MaxMasteringLuminance causes the
+    * display's tone mapper to switch modes every time the user moves the
+    * slider, producing color shifts and delays. */
 
    if(d3d11->shader_preset)
    {
