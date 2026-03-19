@@ -15,11 +15,9 @@ const float kPi                    = 3.1415926536;
 const float kEuler                 = 2.718281828459;
 const float kMax                   = 1.0;
 
-#define UNIFIED_SCANLINE_BLOOM
 
 const float kBeamWidth             = 0.5;
 
-const vec3 kLuminanceWeights       = vec3(0.2126, 0.7152, 0.0722);
 
 const uint kChannelMask           = 3u;
 const uint kFirstChannelShift     = 2u;
@@ -188,7 +186,7 @@ vec3 LinearToSignal(const vec3 linear_colour)
 
 vec3 HDR10(const vec3 hdr_linear)
 {
-   vec3 pq_input  = hdr_linear * vec3(global.PaperWhiteNits / kMaxNitsFor2084);
+   vec3 pq_input  = hdr_linear * vec3(global.BrightnessNits / kMaxNitsFor2084);
          
    vec3 hdr10 = LinearToST2084(max(pq_input, vec3(0.0f)));
 
@@ -197,7 +195,7 @@ vec3 HDR10(const vec3 hdr_linear)
 
 vec4 HDR10(const vec4 hdr_linear)
 {
-   vec3 pq_input  = hdr_linear.rgb * vec3(global.PaperWhiteNits / kMaxNitsFor2084);
+   vec3 pq_input  = hdr_linear.rgb * vec3(global.BrightnessNits / kMaxNitsFor2084);
          
    vec3 hdr10 = LinearToST2084(max(pq_input, vec3(0.0f)));
 
@@ -258,30 +256,6 @@ vec3 ScanlineColour(const vec2 tex_coord,
    float distance_adjusted          = max(0.0, raw_distance);
    float effective_distance         = distance_adjusted * 2.0;
 
-#ifdef UNIFIED_SCANLINE_BLOOM
-   /* Unified bloom: compute a single horizontal interpolation from luminance
-    * so the scanline envelope is shared across all channels in the phosphor
-    * triad, preventing colour shifts from per-channel bloom differences. */
-   float lum_0                      = dot(signal_0, kLuminanceWeights);
-   float lum_1                      = dot(signal_1, kLuminanceWeights);
-   float lum_horiz_interp           = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, lum_0 > lum_1));
-   float beam_intensity             = clamp(mix(lum_0, lum_1, lum_horiz_interp), 0.0, 1.0);
-
-   float beam_width                 = mix(scanline_min, scanline_max, beam_intensity);
-   float scanline_dist              = clamp(effective_distance / beam_width, 0.0, 1.0);
-   vec4 control_points              = vec4(1.0, 1.0, beam_intensity * scanline_attack, 0.0);
-   float envelope                   = Bezier(scanline_dist, control_points);
-
-   for(int ch = 0; ch < 3; ch++)
-   {
-      float horiz_interp            = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, signal_0[ch] > signal_1[ch]));
-      float signal_channel          = mix(signal_0[ch], signal_1[ch], horiz_interp);
-
-      result[ch] = envelope * signal_channel;
-   }
-#else
-   /* Per-channel bloom: each channel computes its own scanline envelope based on
-    * its individual brightness (models independent electron gun bloom). */
    for(int ch = 0; ch < 3; ch++)
    {
       float horiz_interp               = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, signal_0[ch] > signal_1[ch]));
@@ -298,7 +272,6 @@ vec3 ScanlineColour(const vec2 tex_coord,
 
       result[ch] = luminance * signal_channel;
    }
-#endif
 
    return result;
 }
@@ -418,7 +391,7 @@ void main()
    {
       /* scRGB mode: sRGB to linear for scRGB / HDR16 swapchain.
        * Scale by MaxNits / kscRGBWhiteNits because scRGB 1.0 = 80 nits.
-       * Using MaxNits (not PaperWhiteNits) so the SDR UI fills the
+       * Using MaxNits (not BrightnessNits) so the SDR UI fills the
        * display's native range, preserving tonal balance uniformly. */
       if((global.Scanlines > 0.0) && (global.OutputSize.y > 240.0 * 4.0))
       {
@@ -426,7 +399,7 @@ void main()
           * scRGB units: 1.0 = 80 nits. */
          vec3 linear = Scanlines(vTexCoord);
 
-         FragColor = vec4(linear * (global.PaperWhiteNits / kscRGBWhiteNits), 1.0);
+         FragColor = vec4(linear * (global.BrightnessNits / kscRGBWhiteNits), 1.0);
       }
       else
       {
