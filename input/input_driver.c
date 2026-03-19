@@ -272,7 +272,7 @@ input_device_driver_t *joypad_drivers[] = {
 #ifdef ANDROID
    &android_joypad,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+#if defined(HAVE_SDL3) || defined(HAVE_SDL) || defined(HAVE_SDL2)
    &sdl_joypad,
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
@@ -591,7 +591,7 @@ const input_device_driver_t *input_joypad_init_driver(
       }
    }
    /* Fall back to first available driver */
-   return input_joypad_init_first(data); 
+   return input_joypad_init_first(data);
 }
 
 static bool input_driver_button_combo_hold(
@@ -3006,7 +3006,7 @@ void input_overlay_load_active(
 /**
  * input_overlay_next_move_touch_masks
  * @ol : Overlay handle.
- * 
+ *
  * Finds similar descs in the next overlay (i.e. same location and type)
  * and moves touch masks from active overlay to next.
  */
@@ -6167,14 +6167,14 @@ static void input_keys_pressed(
       else
          input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
    }
-      
+
 #ifdef HAVE_MENU
    /* Prevent triggering menu actions after binding */
    if (     !(input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
          && menu_state_get_ptr()->input_driver_flushing_input)
       input_st->flags |= INP_FLAG_WAIT_INPUT_RELEASE;
 #endif
-   
+
    /* Check libretro input if emulated device type is active,
     * except device type must be always active in menu. */
    if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)

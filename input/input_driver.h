@@ -1253,7 +1253,7 @@ extern input_device_driver_t linuxraw_joypad;
 extern input_device_driver_t parport_joypad;
 extern input_device_driver_t udev_joypad;
 extern input_device_driver_t xinput_joypad;
-extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t sdl_joypad; /* SDL2 or SDL3. @see sdl_joypad.c, sdl3_joypad.c. */
 extern input_device_driver_t sdl_dingux_joypad;
 extern input_device_driver_t ps4_joypad;
 extern input_device_driver_t ps3_joypad;
