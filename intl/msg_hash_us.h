@@ -2500,7 +2500,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Sets the HDR brightness level in nits. Use in combination with your display's physical brightness settings. For a starting point, set this to 80 and your display's brightness to full."
+   "Sets the HDR brightness level in nits. Use in combination with your display's physical brightness settings. For a starting point, set this to 80 and your display's brightness to full. Alternatively, set this to the max nits of your display and turn your display's brightness down until it looks right."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,

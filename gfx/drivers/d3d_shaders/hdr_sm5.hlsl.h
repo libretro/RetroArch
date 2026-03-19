@@ -6,7 +6,7 @@ SRC(
    float4x4 modelViewProj;
    float2 SourceSize;
    float2 OutputSize;
-   float paper_white_nits;   /* 200.0f   */
+   float brightness_nits;    /* 200.0f   */
    float max_nits;           /* 1000.0f  */
    uint subpixel_layout;     /* 0        */
    float scanlines;          /* 1.0f     */
@@ -192,13 +192,13 @@ float3 HDR10ToscRGB(float3 hdr10Color)
 }
 /* END Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 
-float3 InverseTonemap(const float3 sdr_linear, const float max_nits, const float paper_white_nits)
+float3 InverseTonemap(const float3 sdr_linear, const float max_nits, const float brightness_nits)
 {
    const float input_val = max(sdr_linear.r, max(sdr_linear.g, sdr_linear.b));
 
    if (input_val < 0.0001f) return sdr_linear;
 
-   const float peak_ratio = max_nits / paper_white_nits;
+   const float peak_ratio = max_nits / brightness_nits;
 
    const float numerator = input_val;
    const float denominator = 1.0f - input_val * (1.0f - (1.0f / peak_ratio));
@@ -286,12 +286,12 @@ float4 To2020(const float4 sdr_linear)
 
 float3 HDR(const float3 sdr_linear)
 {
-   return InverseTonemap(sdr_linear, global.max_nits, global.paper_white_nits);
+   return InverseTonemap(sdr_linear, global.max_nits, global.brightness_nits);
 }
 
 float4 HDR(const float4 sdr_linear)
 {
-   const float3 hdr_linear = InverseTonemap(sdr_linear.rgb, global.max_nits, global.paper_white_nits);
+   const float3 hdr_linear = InverseTonemap(sdr_linear.rgb, global.max_nits, global.brightness_nits);
 
    return float4(hdr_linear, sdr_linear.a);
 }
@@ -304,7 +304,7 @@ float3 LinearToSignal(const float3 linear_colour)
 
 float3 HDR10(const float3 hdr_linear)
 {
-   const float3 pq_input  = hdr_linear * (global.paper_white_nits / kMaxNitsFor2084);
+   const float3 pq_input  = hdr_linear * (global.brightness_nits / kMaxNitsFor2084);
          
    const float3 hdr10 = LinearToST2084(max(pq_input, 0.0f));
 
@@ -313,7 +313,7 @@ float3 HDR10(const float3 hdr_linear)
 
 float4 HDR10(const float4 hdr_linear)
 {
-   const float3 pq_input  = hdr_linear.rgb * (global.paper_white_nits / kMaxNitsFor2084);
+   const float3 pq_input  = hdr_linear.rgb * (global.brightness_nits / kMaxNitsFor2084);
          
    const float3 hdr10 = LinearToST2084(max(pq_input, 0.0f));
 
@@ -516,7 +516,7 @@ float4 PSMain(PSInput input) : SV_TARGET
           * scRGB units: 1.0 = 80 nits. */
          float3 linear_col = Scanlines(input.texcoord);
 
-         return float4(linear_col * (global.paper_white_nits / kscRGBWhiteNits), 1.0f);
+         return float4(linear_col * (global.brightness_nits / kscRGBWhiteNits), 1.0f);
       }
       else
       {

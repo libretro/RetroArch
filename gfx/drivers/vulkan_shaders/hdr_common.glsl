@@ -3,7 +3,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
    mat4 MVP;
    vec4 SourceSize;
    vec4 OutputSize;
-   float PaperWhiteNits;
+   float BrightnessNits;
    float MaxNits;
    uint SubpixelLayout;
    float Scanlines;
@@ -29,7 +29,7 @@ vec3 InverseTonemap(const vec3 sdr_linear)
 
    if (input_val < kEpsilon) return sdr_linear;
 
-   float peak_ratio = global.MaxNits / global.PaperWhiteNits;
+   float peak_ratio = global.MaxNits / global.BrightnessNits;
 
    float numerator = input_val;
    float denominator = 1.0 - input_val * (1.0 - (1.0 / peak_ratio));
@@ -44,7 +44,7 @@ vec3 Tonemap(const vec3 hdr_linear)
 
     if (input_val < kEpsilon) return hdr_linear;
 
-    float peak_ratio = global.MaxNits / global.PaperWhiteNits;
+    float peak_ratio = global.MaxNits / global.BrightnessNits;
     
     float k = 1.0 - (1.0 / peak_ratio);
 
@@ -129,7 +129,7 @@ vec3 ST2084ToLinear(vec3 ST2084)
 /*  Calc the value that the HDR scene has to use to output a certain brightness */
 vec3 CalcHDRSceneValue(vec3 nits)
 {
-    return nits * kMaxNitsFor2084 / global.PaperWhiteNits;
+    return nits * kMaxNitsFor2084 / global.BrightnessNits;
 }
 
 /* Converts a non-linear HDR10 value in the BT. 2020 colorspace to a linear HDR value in the Rec. 709 colorspace */
