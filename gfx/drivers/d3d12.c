@@ -1888,12 +1888,6 @@ static void d3d12_render_overlay(d3d12_video_t *d3d12)
 static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 {
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
-   float old_nits                         = d3d12->hdr.max_output_nits;
-
-   RARCH_DBG("[D3D12] set_hdr_max_nits: %.1f -> %.1f%s\n",
-         old_nits, max_nits,
-         (old_nits >= 300.0f && max_nits < 300.0f) ? " *** CROSSING BELOW 300 ***" : "");
-
    d3d12->hdr.max_output_nits             = max_nits;
    d3d12->hdr.ubo_values.max_nits         = max_nits;
 
