@@ -2415,14 +2415,6 @@ MSG_HASH(
    "As"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Lonracht Bhuaice"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Socraigh an gile buaicphointe (i cd/m2) is féidir le do thaispeántas a atáirgeadh. Nuair atá sé socraithe, ná hathraigh é. Bain úsáid as Gile Pháipéir Bhán chun gile a shocrú. Féach RTings.com le haghaidh gile buaicphointe do thaispeántais. Ar roinnt taispeántais a bhfuil línte scanadh orthu (thíos), b’fhéidir go mbeidh ort é seo (agus bán páipéir) a ró-thiomáint chun an gile iomlán a ardú."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Lonrúlacht Bán Páipéir"
    )

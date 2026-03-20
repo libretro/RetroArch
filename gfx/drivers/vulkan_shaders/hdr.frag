@@ -169,12 +169,12 @@ vec4 To2020(const vec4 sdr_linear)
 
 vec3 HDR(const vec3 sdr_linear)
 {
-   return InverseTonemap(sdr_linear);
+   return InverseTonemap(sdr_linear, global.BrightnessNits, global.BrightnessNits);
 }
 
 vec4 HDR(const vec4 sdr_linear)
 {
-   vec3 hdr_linear = InverseTonemap(sdr_linear.rgb);
+   vec3 hdr_linear = InverseTonemap(sdr_linear.rgb, global.BrightnessNits, global.BrightnessNits);
    return vec4(hdr_linear, sdr_linear.a);
 }
 
@@ -411,7 +411,7 @@ void main()
 
          linear.rgb = linear.rgb * k2020to709;
 
-         linear.rgb *= global.MaxNits / kscRGBWhiteNits;
+         linear.rgb *= global.BrightnessNits / kscRGBWhiteNits;
          FragColor = linear;
       }
    }

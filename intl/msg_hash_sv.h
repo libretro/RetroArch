@@ -2307,14 +2307,6 @@ MSG_HASH(
    "Av"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Högsta ljusstyrka"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Ställ in den maximala luminansen (i cd/m2) som din skärm kan återge. När du har ställt in den ska du inte ändra den. Använd Paper White Luminance för att ställa in ljusstyrkan. Se RTings.com för din skärms maximala luminans. På vissa skärmar med skanningslinjer aktiverade (nedan) kan du behöva överdriva detta (och pappervit) för att höja den totala ljusstyrkan."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Pappersvitt ljusstyrka"
    )

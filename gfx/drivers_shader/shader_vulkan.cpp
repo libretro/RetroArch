@@ -270,7 +270,6 @@ class Pass
 #ifdef VULKAN_HDR_SWAPCHAIN
       void set_hdr_mode(unsigned hdr_mode_) { hdr_mode = hdr_mode_; }
       void set_paper_white_nits(float paper_white_nits_) { paper_white_nits = paper_white_nits_; }
-      void set_max_nits(float max_nits_) { max_nits = max_nits_; }
       void set_expand_gamut(unsigned expand_gamut_) { expand_gamut = expand_gamut_; }
       void set_scanlines(float scanlines_) { scanlines = scanlines_; }
       void set_subpixel_layout(unsigned subpixel_layout_ ) { subpixel_layout = subpixel_layout_; }
@@ -381,7 +380,6 @@ class Pass
 #ifdef VULKAN_HDR_SWAPCHAIN
       unsigned hdr_mode           = 0;
       float paper_white_nits      = 0.0f;
-      float max_nits              = 10000.0f;
       unsigned expand_gamut       = 0;
       float scanlines             = 0.0f;
       unsigned subpixel_layout    = 0;
@@ -459,7 +457,6 @@ struct vulkan_filter_chain
 #ifdef VULKAN_HDR_SWAPCHAIN
       void set_hdr_mode(unsigned hdr_mode);
       void set_paper_white_nits(float paper_white_nits);
-      void set_max_nits(float max_nits);
       void set_expand_gamut(unsigned expand_gamut);
       void set_scanlines(float scanlines);
       void set_subpixel_layout(unsigned subpixel_layout);
@@ -1554,12 +1551,7 @@ void vulkan_filter_chain::set_paper_white_nits(float paper_white_nits)
       passes[i]->set_paper_white_nits(paper_white_nits);
 }
 
-void vulkan_filter_chain::set_max_nits(float max_nits)
-{
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_max_nits(max_nits);
-}
+
 
 void vulkan_filter_chain::set_expand_gamut(unsigned expand_gamut)
 {
@@ -2555,9 +2547,6 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_float(buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
                       paper_white_nits);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_MAX_NITS,
-                      max_nits);
-
    build_semantic_float(buffer, SLANG_SEMANTIC_SCANLINES,
                       scanlines);
 
@@ -3515,12 +3504,6 @@ void vulkan_filter_chain_set_paper_white_nits(
    chain->set_paper_white_nits(paper_white_nits);
 }
 
-void vulkan_filter_chain_set_max_nits(
-      vulkan_filter_chain_t *chain,
-      float max_nits) 
-{
-   chain->set_max_nits(max_nits);
-}
 
 void vulkan_filter_chain_set_expand_gamut(
       vulkan_filter_chain_t *chain,
