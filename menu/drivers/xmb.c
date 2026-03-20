@@ -7337,7 +7337,7 @@ static void xmb_render(void *data,
             if (node)
             {
                /* Reset all other visible thumbnails to free memory */
-               for (i = menu_st->entries.begin; i < menu_st->entries.end; i++)
+               for (i = menu_st->entries.begin; i < end; i++)
                {
                   if (i != selection)
                   {
