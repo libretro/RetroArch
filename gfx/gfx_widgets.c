@@ -1916,7 +1916,7 @@ void gfx_widgets_frame(void *data)
    font_driver_bind_block(p_dispwidget->gfx_widget_fonts.bold.font, NULL);
    font_driver_bind_block(p_dispwidget->gfx_widget_fonts.msg_queue.font, NULL);
 
-#ifdef HAVE_LUA
+#if defined(HAVE_LUA) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
    lua_draw_gfxs_loop();
 #endif
 

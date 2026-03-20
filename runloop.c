@@ -4009,7 +4009,7 @@ static bool core_unload_game(void)
 #ifdef HAVE_MICROPHONE
    microphone_driver_stop();
 #endif
-#ifdef HAVE_LUA
+#if defined(HAVE_LUA) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
    lua_deinit();
 #endif
 
@@ -7587,7 +7587,7 @@ end:
       runloop_st->frame_limit_last_time = end_frame_time;
    }
 
-#ifdef HAVE_LUA
+#if defined(HAVE_LUA) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
    lua_loop();
 #endif
 
@@ -8002,7 +8002,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
       /* load models */
       game_ai_load(load_info->info->path, runloop_st->current_core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM), runloop_st->current_core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM), libretro_log_cb);
 #endif
-#ifdef HAVE_LUA
+#if defined(HAVE_LUA) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
    lua_init();
 #endif
       return true;

@@ -18,6 +18,8 @@
 
 #include <retro_common_api.h>
 
+#if defined(HAVE_LUA) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+
 void lua_init();
 
 void lua_loop(); 
@@ -25,5 +27,7 @@ void lua_loop();
 void lua_deinit(); 
 
 void lua_draw_gfxs_loop();
+
+#endif
 
 #endif

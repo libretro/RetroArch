@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,6 +57,8 @@
  * https://tasvideos.org/Bizhawk/LuaFunctions
  */
 
+
+#if defined(HAVE_LUA) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 
 static lua_State *co = NULL;
 
@@ -2038,7 +2041,8 @@ uint8_t* get_memory_ptr(lua_State *L, const unsigned int domain)
 
    /* try with retro_get_memory_data */
    data = (uint8_t *) runloop_state_get_ptr()->current_core.retro_get_memory_data(domain);
-   if (data) return data;
+   if (data)
+      return data;
    
    /* try using MEMORY_MAPS Memory Descriptors */
    struct retro_memory_descriptor* desc = find_memory_descriptor(domain);
@@ -2049,7 +2053,8 @@ uint8_t* get_memory_ptr(lua_State *L, const unsigned int domain)
    {
       /* fallback to frontend buffer (read-only) */
       data = ((uint8_t *) content_state_get_ptr()->content_list->entries[0].data);
-      if (data) return data;
+      if (data)
+         return data;
    }
 
    if (!data)
@@ -2886,8 +2891,9 @@ void lua_draw_gfxs_loop()
 {
    /* disable drawing when inside the menu */
 #ifdef HAVE_MENU
-     bool menu_open = menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
-     if (menu_open) return;
+   bool menu_open = menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
+   if (menu_open)
+      return;
 #endif
    
    /* dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr(); */
@@ -3441,7 +3447,8 @@ int comm_httpget(lua_State *L)
    check_sandboxed_url(L, url);
    /* TODO: allow passing headers: task_push_http_transfer_with_headers(...) */
    void* t = task_push_http_transfer(url, true, "GET", NULL, NULL);
-   if (!t) return luaL_error(L, "cannot send HTTP request");
+   if (!t)
+      return luaL_error(L, "cannot send HTTP request");
    /* TODO: blocking request, read the response body and return as a string, see in task_core_updater.c */
    lua_pushstring(L, "OK");
    return 1;
@@ -3455,7 +3462,8 @@ int comm_httppost(lua_State *L)
    check_sandboxed_url(L, url);
    const char *payload = luaL_checkstring(L,2);
    void* t = task_push_http_post_transfer(url, payload, true, "POST", NULL, NULL);
-   if (!t) return luaL_error(L, "cannot send HTTP request");
+   if (!t)
+      return luaL_error(L, "cannot send HTTP request");
    lua_pushstring(L, "OK");  /* TODO: return body to the caller? */
    return 1;
 }
@@ -3468,7 +3476,8 @@ int comm_httpput(lua_State *L)
    check_sandboxed_url(L, url);
    const char *payload = luaL_checkstring(L,2);
    void* t = task_push_http_post_transfer(url, payload, true, "PUT", NULL, NULL);
-   if (!t) return luaL_error(L, "cannot send HTTP request");
+   if (!t)
+      return luaL_error(L, "cannot send HTTP request");
    lua_pushstring(L, "OK");  /* TODO: return body to the caller? */
    return 1;
 }
@@ -3624,8 +3633,12 @@ static const struct luaL_Reg  memorylib [] = {
    /* FCEUX-aliases */
    { "readbyteunsigned" ,  memory_readbyte },
    { "readbytesigned" ,  memory_readbytesigned },
-   { "readwordsigned" ,  memory_read_s16_le },
-   { "readword" ,  memory_read_u16_le },
+   { "readwordsigned" ,  memory_read_s16_be },
+   { "readshort" ,  memory_read_u16_be },
+   { "readword" ,  memory_read_u16_be },
+   { "readlong" ,  memory_read_u32_be },
+   { "readdword" ,  memory_read_u32_be },
+   { "readdwordsigned" ,  memory_read_s32_be },
    { "readfloat" ,  memory_readfloat },
    { "writefloat" ,  memory_writefloat },
    /* new functions: */
@@ -3860,14 +3873,16 @@ void lua_loop()
    {
       /* An error occurred */
       const char *error_msg = lua_tostring(co, -1);
-      if (error_msg) RARCH_ERR("[Lua] %s\n", error_msg);
+      if (error_msg)
+         RARCH_ERR("[Lua] %s\n", error_msg);
    }
 } 
 
 
 void lua_deinit()
 {
-   if (!co) return;  /* init failed or no script file found */
+   if (!co)
+      return;  /* init failed or no script file found */
    
    /* clear all gfx shapes */
    gui_clearGraphics(NULL);
@@ -3875,3 +3890,5 @@ void lua_deinit()
    lua_close(co);
    co = NULL;
 }
+
+#endif
