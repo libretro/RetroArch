@@ -59,7 +59,6 @@ static const char *semantic_uniform_names[] = {
    "CurrentSubFrame",
    "HDRMode",
    "BrightnessNits",
-      "MaxNits",
    "Scanlines",
    "SubpixelLayout",
    "ExpandGamut",
@@ -321,10 +320,6 @@ static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_
             &&  type.vecsize  == 1
             &&  type.columns  == 1;
       case SLANG_SEMANTIC_PAPER_WHITE_NITS:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
-      case SLANG_SEMANTIC_MAX_NITS:
          return type.basetype == spirv_cross::SPIRType::Float
             &&  type.vecsize  == 1
             &&  type.columns  == 1;

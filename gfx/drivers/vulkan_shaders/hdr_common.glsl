@@ -4,7 +4,6 @@ layout(std140, set = 0, binding = 0) uniform UBO
    vec4 SourceSize;
    vec4 OutputSize;
    float BrightnessNits;
-   float MaxNits;
    uint SubpixelLayout;
    float Scanlines;
    uint ExpandGamut;
@@ -23,13 +22,13 @@ const vec3 k709LumaCoeff = vec3(0.2126f, 0.7152f, 0.0722f);
 /* Expanded Rec BT.709 luma coefficients - obtained by linear transformation + normalization */
 const vec3 kExpanded709LumaCoeff = vec3(0.215796f, 0.702694f, 0.120968f);
 
-vec3 InverseTonemap(const vec3 sdr_linear)
+vec3 InverseTonemap(const vec3 sdr_linear, const float max_nits, const float paper_white_nits)
 {
    float input_val = max(sdr_linear.r, max(sdr_linear.g, sdr_linear.b));
 
    if (input_val < kEpsilon) return sdr_linear;
 
-   float peak_ratio = global.MaxNits / global.BrightnessNits;
+   float peak_ratio = max_nits / paper_white_nits;
 
    float numerator = input_val;
    float denominator = 1.0 - input_val * (1.0 - (1.0 / peak_ratio));
@@ -38,14 +37,14 @@ vec3 InverseTonemap(const vec3 sdr_linear)
    return sdr_linear * (tonemapped_val / input_val);
 }
 
-vec3 Tonemap(const vec3 hdr_linear)
+vec3 Tonemap(const vec3 hdr_linear, const float max_nits, const float paper_white_nits)
 {
     float input_val = max(hdr_linear.r, max(hdr_linear.g, hdr_linear.b));
 
     if (input_val < kEpsilon) return hdr_linear;
 
-    float peak_ratio = global.MaxNits / global.BrightnessNits;
-    
+    float peak_ratio = max_nits / paper_white_nits;
+
     float k = 1.0 - (1.0 / peak_ratio);
 
     return hdr_linear / (1.0 + input_val * k);

@@ -696,7 +696,7 @@ typedef struct video_poke_interface
          const struct retro_hw_render_interface **iface);
 
    /* hdr settings */
-   void (*set_hdr_max_nits)(void *data, float max_nits);
+   void (*set_hdr_menu_nits)(void *data, float menu_nits);
    void (*set_hdr_paper_white_nits)(void *data, float paper_white_nits);
    void (*set_hdr_expand_gamut)(void *data, unsigned expand_gamut);
    void (*set_hdr_scanlines)(void *data, bool scanlines);
