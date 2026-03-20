@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <vfs/vfs_implementation.h>
 
 #include "menu_vfs_browser.h"
 #include "menu_driver.h"
@@ -316,7 +317,7 @@ bool menu_vfs_browser_operation(unsigned operation, const char *name, const char
          
       case 2: /* Delete */
          RARCH_LOG("[VFS Browser] Delete: %s\n", full_path);
-         if (retro_vfs_remove_impl(full_path) == 0)
+         if (retro_vfs_file_remove_impl(full_path) == 0)
          {
             vfs_browser_read_dir(); /* Refresh */
             return true;
@@ -326,10 +327,10 @@ bool menu_vfs_browser_operation(unsigned operation, const char *name, const char
       case 3: /* Rename */
          if (!new_name)
             return false;
-         fill_pathname_join(new_path, g_vfs_browser.current_path, new_name, 
+         fill_pathname_join(new_path, g_vfs_browser.current_path, new_name,
                            sizeof(new_path));
          RARCH_LOG("[VFS Browser] Rename: %s -> %s\n", full_path, new_path);
-         if (retro_vfs_rename_impl(full_path, new_path) == 0)
+         if (retro_vfs_file_rename_impl(full_path, new_path) == 0)
          {
             vfs_browser_read_dir(); /* Refresh */
             return true;
