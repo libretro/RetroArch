@@ -398,6 +398,13 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
+   {
+      /* Give the window a fullscreen hint before it is shown.
+       * This helps GNOME + X11 enter fullscreen properly */
+      x11_set_net_wm_fullscreen_hint(g_x11_dpy, g_x11_win);
+   }
+
+   if (fullscreen)
       x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
@@ -438,6 +445,15 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    }
 
    x11_event_queue_check(&event);
+
+   if (fullscreen)
+   {
+      /* Ask for fullscreen again after the window is visible. Some
+       * GNOME + X11 setups ignore the first request if it happens too
+       * early, which causes RetroArch to only maximise the window */
+      x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
+      XFlush(g_x11_dpy);
+   }
    x11_install_quit_atom();
 
 #ifdef HAVE_EGL
