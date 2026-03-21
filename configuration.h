@@ -102,6 +102,11 @@ enum settings_glob_flags
    SETTINGS_FLG_SKIP_WINDOW_POSITIONS = (1 << 1)
 };
 
+/* Co-pilot: sentinel value meaning "no co-pilot joypad assigned".
+ * Must not collide with valid physical joypad indices (0..MAX_INPUT_DEVICES-1).
+ * MAX_INPUT_DEVICES is typically 16, so 255 is safe. */
+#define COPILOT_PORT_DISABLED 255
+
 typedef struct settings
 {
    struct
@@ -163,6 +168,9 @@ typedef struct settings
 
       unsigned input_split_joycon[MAX_USERS];
       unsigned input_joypad_index[MAX_USERS];
+      /* Co-pilot: index of the assistant joypad for each port.
+       * COPILOT_PORT_DISABLED (255) means the feature is off for that port. */
+      unsigned input_copilot_port[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
 
