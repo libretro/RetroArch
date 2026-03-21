@@ -309,6 +309,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
    uint32_t cookie                          = (uint32_t)IOHIDElementGetCookie(element);
    apple_input_rec_t *tmp                   = NULL;
 
+   /* Prevent crash if hid driver is not initialized */
+   if (!hid || !adapter)
+      return;
+
    if (type != kIOHIDElementTypeInput_Misc)
       if (type != kIOHIDElementTypeInput_Button)
          if (type != kIOHIDElementTypeInput_Axis)
@@ -491,6 +495,10 @@ static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_h
    int i, slot;
    struct iohidmanager_hid_adapter *adapter = NULL;
 
+   /* Prevent crash if hid driver is not initialized */
+   if (!hid)
+      return;
+
    /*loop though the controller ports and find the device with a matching IOHINDeviceRef*/
    for (i=0; i<MAX_USERS; i++)
    {
@@ -641,6 +649,10 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
       kHIDUsage_Sim_Brake
    };
 
+   /* Prevent crash if hid driver is not initialized */
+   if (!hid)
+      return;
+
    /* check if pad was already registered previously when the application was
       started (by deterministic method). if so do not re-add the pad */
    uint32_t device_location_id = iohidmanager_hid_device_get_location_id(device);
@@ -661,8 +673,6 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
 
    if (!(adapter = (struct iohidmanager_hid_adapter*)calloc(1, sizeof(*adapter))))
       return;
-   if (!hid)
-      goto error;
 
    adapter->handle     = device;
    adapter->locationId = device_location_id;
