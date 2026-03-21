@@ -7171,6 +7171,13 @@ static void xmb_render(void *data,
 
          thumbnail_icon = &node->thumbnail_icon;
 
+         /* LOW-MEMORY FIX: Skip loading if already at max concurrent loads */
+         if (!gfx_thumbnail_can_start_load())
+         {
+            node->icon_hide = true;
+            continue;
+         }
+
          if (cur_per_frame >= max_per_frame)
          {
             node->icon_hide = true;
@@ -7303,12 +7310,58 @@ static void xmb_render(void *data,
          xmb->thumbnails_right_status_prev = xmb->thumbnails.right.status;
    }
 
+   /* LOW-MEMORY FIX: Detect rapid scrolling and defer thumbnail loading
+    * This prevents texture exhaustion on devices like Raspberry Pi and Switch */
+   {
+      static retro_time_t last_scroll_time = 0;
+      static unsigned scroll_count = 0;
+      retro_time_t current_time = cpu_features_get_time_usec();
+      
+      /* Count scrolls within 100ms window */
+      if (current_time - last_scroll_time < 100000)
+         scroll_count++;
+      else
+         scroll_count = 1;
+      
+      last_scroll_time = current_time;
+      
+      /* If scrolling rapidly (>5 scrolls in 100ms), skip thumbnail updates
+       * except for the currently selected item */
+      if (scroll_count > 5)
+      {
+         /* Only load thumbnail for selected item */
+         size_t selection = menu_st->selection_ptr;
+         if (selection < selection_buf->size)
+         {
+            xmb_node_t *node = (xmb_node_t*)selection_buf->list[selection].userdata;
+            if (node)
+            {
+               /* Reset all other visible thumbnails to free memory */
+               for (i = menu_st->entries.begin; i < menu_st->entries.end; i++)
+               {
+                  if (i != selection)
+                  {
+                     xmb_node_t *other_node = (xmb_node_t*)selection_buf->list[i].userdata;
+                     if (other_node && other_node != node)
+                        gfx_thumbnail_reset(&other_node->thumbnail_icon.icon);
+                  }
+               }
+            }
+         }
+         
+         /* Skip full thumbnail update - will retry when scrolling stops */
+         xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
+         goto end;
+      }
+   }
+
    i = menu_st->entries.begin;
 
    if (i >= end)
       menu_st->entries.begin = 0;
 
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
+end:;
 }
 
 static void xmb_draw_bg(
@@ -9179,6 +9232,14 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    gfx_thumbnail_set_stream_delay(-1.0f);
    gfx_thumbnail_set_fade_duration(-1.0f);
    gfx_thumbnail_set_fade_missing(false);
+   
+   /* LOW-MEMORY FIX: Set conservative concurrent load limit
+    * Lower values for low-memory platforms (RPi, Switch, etc.) */
+#if defined(HAVE_OPENGLES) || defined(__SWITCH__) || defined(ANDROID)
+   gfx_thumbnail_set_max_concurrent_loads(2);
+#else
+   gfx_thumbnail_set_max_concurrent_loads(4);
+#endif
 
    xmb->use_ps3_layout                        =
          xmb_use_ps3_layout(settings->uints.menu_xmb_layout, width, height);
