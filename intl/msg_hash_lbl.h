@@ -1895,6 +1895,10 @@ MSG_HASH(
    "input_hotkey_device_merge"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_MENU_TOGGLE_IGNORE_ENABLE_HOTKEY,
+   "input_menu_toggle_ignore_enable_hotkey"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
    "input_icade_enable"
    )
