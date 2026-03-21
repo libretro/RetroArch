@@ -3551,6 +3551,18 @@ MSG_HASH(
    "cloud_sync_password"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "cloud_sync_access_key_id"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "cloud_sync_secret_access_key"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL,
+   "cloud_sync_s3_url"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SCAN_DIRECTORY,
    "scan_directory"
    )

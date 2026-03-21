@@ -48,6 +48,7 @@ struct http_handle
    } connection;
    enum http_status_enum status;
    bool error;
+   bool headers_accept_err;
    char connection_url[NAME_MAX_LENGTH];
 };
 
@@ -186,8 +187,10 @@ task_finished:
          data          = (http_transfer_data_t*)malloc(sizeof(*data));
          data->data    = tmp;
          data->len     = _len;
-         data->headers = net_http_headers(http->handle);
+         data->headers = net_http_headers_ex(http->handle, http->headers_accept_err);
          data->status  = net_http_status(http->handle);
+         data->has_http_debug_state =
+               net_http_get_debug_state(http->handle, &data->http_debug_state);
 
          task_set_data(task, data);
 
@@ -238,7 +241,7 @@ static void http_transfer_progress_cb(retro_task_t *task)
 
 static void *task_push_http_transfer_generic(
       struct http_connection_t *conn,
-      const char *url, bool mute,
+      const char *url, bool mute, bool headers_accept_err,
       retro_task_callback_t cb, void *user_data)
 {
    retro_task_t  *t        = NULL;
@@ -277,6 +280,7 @@ static void *task_push_http_transfer_generic(
    http->connection.cb       = &cb_http_conn_default;
    http->status              = HTTP_STATUS_CONNECTION_TRANSFER;
    http->error               = false;
+   http->headers_accept_err = headers_accept_err;
    http->connection_url[0]   = '\0';
 
    strlcpy(http->connection_url, url, sizeof(http->connection_url));
@@ -317,7 +321,7 @@ void* task_push_http_transfer(const char *url, bool mute,
    if (!string_is_empty(url))
       return task_push_http_transfer_generic(
             net_http_connection_new(url, type ? type : "GET", NULL),
-            url, mute, cb, user_data);
+            url, mute, false, cb, user_data);
    return NULL;
 }
 
@@ -335,7 +339,7 @@ void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
    if (headers)
       net_http_connection_set_headers(conn, headers);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
 void* task_push_webdav_mkdir(const char *url, bool mute,
@@ -353,7 +357,7 @@ void* task_push_webdav_mkdir(const char *url, bool mute,
    if (headers)
       net_http_connection_set_headers(conn, headers);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
 void* task_push_webdav_put(const char *url,
@@ -380,7 +384,7 @@ void* task_push_webdav_put(const char *url,
    if (put_data)
       net_http_connection_set_content(conn, NULL, len, put_data);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
 void* task_push_webdav_delete(const char *url, bool mute,
@@ -398,7 +402,7 @@ void* task_push_webdav_delete(const char *url, bool mute,
    if (headers)
       net_http_connection_set_headers(conn, headers);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
 void *task_push_webdav_move(const char *url,
@@ -424,7 +428,7 @@ void *task_push_webdav_move(const char *url,
 
    net_http_connection_set_headers(conn, dest_header);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, userdata);
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, userdata);
 }
 
 void* task_push_http_transfer_file(const char* url, bool mute,
@@ -442,7 +446,7 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    if (!(t = (retro_task_t*)task_push_http_transfer_generic(
          /* should be using type but some callers now rely on type being ignored */
          net_http_connection_new(url, "GET", NULL),
-         url, mute, cb, transfer_data)))
+         url, mute, false, cb, transfer_data)))
       return NULL;
 
    if (transfer_data)
@@ -480,7 +484,7 @@ void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
    if (user_agent)
       net_http_connection_set_user_agent(conn, user_agent);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
 void* task_push_http_transfer_with_headers(const char *url, bool mute,
@@ -498,7 +502,7 @@ void* task_push_http_transfer_with_headers(const char *url, bool mute,
    if (headers)
       net_http_connection_set_headers(conn, headers);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
 void* task_push_http_post_transfer(const char *url,
@@ -508,7 +512,7 @@ void* task_push_http_post_transfer(const char *url,
    if (!string_is_empty(url))
       return task_push_http_transfer_generic(
             net_http_connection_new(url, type ? type : "POST", post_data),
-            url, mute, cb, user_data);
+            url, mute, false, cb, user_data);
    return NULL;
 }
 
@@ -528,7 +532,7 @@ void* task_push_http_post_transfer_with_user_agent(const char *url,
    if (user_agent)
       net_http_connection_set_user_agent(conn, user_agent);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
 void* task_push_http_post_transfer_with_headers(const char *url,
@@ -547,13 +551,13 @@ void* task_push_http_post_transfer_with_headers(const char *url,
    if (headers)
       net_http_connection_set_headers(conn, headers);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
 void *task_push_http_transfer_with_content(const char *url,
       const char *method, const void *content, size_t content_len,
-      const char *content_type, bool mute, const char *headers,
-      retro_task_callback_t cb, void *user_data)
+      const char *content_type, bool mute, bool headers_accept_err,
+      const char *headers, retro_task_callback_t cb, void *user_data)
 {
    struct http_connection_t *conn;
 
@@ -570,5 +574,6 @@ void *task_push_http_transfer_with_content(const char *url,
    if (headers)
       net_http_connection_set_headers(conn, headers);
 
-   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+   return task_push_http_transfer_generic(conn, url, mute,
+         headers_accept_err, cb, user_data);
 }

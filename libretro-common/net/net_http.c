@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <net/net_http.h>
 #include <net/net_compat.h>
@@ -115,6 +116,7 @@ struct http_t
 
    request_t request;
    response_t response;
+   net_http_debug_state_t debug_state;
 };
 
 struct http_connection_t
@@ -132,6 +134,58 @@ struct http_connection_t
    int port;
    bool ssl;
 };
+
+const char *net_http_phase_to_string(net_http_phase_t phase)
+{
+   switch (phase)
+   {
+      case NET_HTTP_PHASE_CONNECT:
+         return "connect";
+      case NET_HTTP_PHASE_SEND:
+         return "send";
+      case NET_HTTP_PHASE_RECV_HEADER:
+         return "recv_header";
+      case NET_HTTP_PHASE_RECV_BODY:
+         return "recv_body";
+      case NET_HTTP_PHASE_REDIRECT:
+         return "redirect";
+      case NET_HTTP_PHASE_DONE:
+         return "done";
+      case NET_HTTP_PHASE_ERROR:
+         return "error";
+      default:
+         return "unknown";
+   }
+}
+
+static void net_http_debug_sync(struct http_t *state)
+{
+   if (!state)
+      return;
+
+   state->debug_state.ssl          = state->ssl;
+   state->debug_state.request_sent = state->request_sent;
+   state->debug_state.err          = state->err;
+   state->debug_state.status       = state->response.status;
+   state->debug_state.connected    = state->conn ? state->conn->connected : false;
+   state->debug_state.fd           = state->conn ? state->conn->fd : -1;
+}
+
+static void net_http_debug_set_phase(struct http_t *state, net_http_phase_t phase)
+{
+   if (!state)
+      return;
+   state->debug_state.phase = phase;
+}
+
+static void net_http_debug_set_io(struct http_t *state, ssize_t io_len)
+{
+   if (!state)
+      return;
+
+   state->debug_state.last_io_len = (int64_t)io_len;
+   state->debug_state.last_errno  = errno;
+}
 
 struct dns_cache_entry
 {
@@ -849,6 +903,15 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
+   state->debug_state.fd         = -1;
+   state->debug_state.status     = -1;
+   state->debug_state.last_errno = 0;
+   state->debug_state.last_io_len = -1;
+   state->debug_state.progress   = 0;
+   state->debug_state.total      = 0;
+   state->debug_state.redirects  = 0;
+   state->debug_state.phase      = NET_HTTP_PHASE_CONNECT;
+   net_http_debug_sync(state);
 
    return state;
 }
@@ -920,13 +983,25 @@ static bool net_http_new_socket(struct http_t *state)
          int fd;
          if (!entry->addr)
          {
+            net_http_debug_set_io(state, -1);
+            net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+            net_http_debug_sync(state);
             UNLOCK_DNS_CACHE();
             return false;
          }
          addr = entry->addr;
          fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
          if (fd >= 0)
+         {
             state->conn = net_http_conn_pool_add(state->request.domain, state->request.port, fd, state->ssl);
+            net_http_debug_sync(state);
+         }
+         else
+         {
+            net_http_debug_set_io(state, -1);
+            net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+            net_http_debug_sync(state);
+         }
          /* still waiting on thread */
          UNLOCK_DNS_CACHE();
          return (fd >= 0);
@@ -969,12 +1044,19 @@ static bool net_http_connect(struct http_t *state)
    if (state->ssl)
    {
       if (!conn)
+      {
+         net_http_debug_set_io(state, -1);
+         net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+         net_http_debug_sync(state);
          return false;
-
+      }
       for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
       {
          if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
          {
+            net_http_debug_set_io(state, -1);
+            net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+            net_http_debug_sync(state);
             socket_close(conn->fd);
             break;
          }
@@ -992,6 +1074,9 @@ static bool net_http_connect(struct http_t *state)
 
          if (ssl_socket_connect(conn->ssl_ctx, next_addr, timeout, true) < 0)
          {
+            net_http_debug_set_io(state, -1);
+            net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+            net_http_debug_sync(state);
             ssl_socket_close(conn->ssl_ctx);
             ssl_socket_free(conn->ssl_ctx);
             conn->ssl_ctx = NULL;
@@ -999,6 +1084,8 @@ static bool net_http_connect(struct http_t *state)
          else
          {
             conn->connected = true;
+            net_http_debug_set_phase(state, NET_HTTP_PHASE_SEND);
+            net_http_debug_sync(state);
             return true;
          }
       }
@@ -1016,9 +1103,14 @@ static bool net_http_connect(struct http_t *state)
          if (socket_connect_with_timeout(conn->fd, next_addr, 5000))
          {
             conn->connected = true;
+            net_http_debug_set_phase(state, NET_HTTP_PHASE_SEND);
+            net_http_debug_sync(state);
             return true;
          }
 
+         net_http_debug_set_io(state, -1);
+         net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+         net_http_debug_sync(state);
          socket_close(conn->fd);
       }
       conn->fd    = -1; /* already closed */
@@ -1039,14 +1131,24 @@ static void net_http_send_str(
    {
       if (!ssl_socket_send_all_blocking(
                   state->conn->ssl_ctx, text, text_size, true))
+      {
          state->err = true;
+         net_http_debug_set_io(state, -1);
+         net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+         net_http_debug_sync(state);
+      }
    }
    else
 #endif
    {
       if (!socket_send_all_blocking(
                   state->conn->fd, text, text_size, true))
+      {
          state->err = true;
+         net_http_debug_set_io(state, -1);
+         net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+         net_http_debug_sync(state);
+      }
    }
 }
 
@@ -1097,9 +1199,14 @@ static bool net_http_send_request(struct http_t *state)
       size_t _len, len;
       char *len_str = NULL;
 
-      if (!request->postdata && !string_is_equal(request->method, "PUT"))
+      if (!request->postdata &&
+            !string_is_equal(request->method, "PUT") &&
+            request->contentlength > 0)
       {
          state->err = true;
+         net_http_debug_set_io(state, -1);
+         net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+         net_http_debug_sync(state);
          return true;
       }
 
@@ -1143,6 +1250,8 @@ static bool net_http_send_request(struct http_t *state)
             request->contentlength);
 
    state->request_sent = true;
+   net_http_debug_set_phase(state, NET_HTTP_PHASE_RECV_HEADER);
+   net_http_debug_sync(state);
    return state->err;
 }
 
@@ -1186,10 +1295,13 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
          {
             response->part = P_DONE;
             state->err     = true;
+         net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+         net_http_debug_sync(state);
             return -1;
          }
          response->status = (int)strtoul(response->data
                + STRLEN_CONST("HTTP/1.1 "), NULL, 10);
+      net_http_debug_sync(state);
          response->part   = P_HEADER;
       }
       else
@@ -1404,6 +1516,9 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    /* after this, assume location is invalid */
    string_list_deinitialize(state->response.headers);
    string_list_initialize(state->response.headers);
+   state->debug_state.redirects++;
+   net_http_debug_set_phase(state, NET_HTTP_PHASE_REDIRECT);
+   net_http_debug_sync(state);
    /* keep going */
    return false;
 }
@@ -1422,26 +1537,43 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    if (!state || state->err)
       return true;
 
+   net_http_debug_sync(state);
+
    if (!state->conn)
    {
+      net_http_debug_set_phase(state, NET_HTTP_PHASE_CONNECT);
       state->conn = net_http_conn_pool_find(state->request.domain, state->request.port);
       if (!state->conn)
       {
          if (!net_http_new_socket(state))
             state->err = true;
+         if (state->err)
+         {
+            net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+            net_http_debug_sync(state);
+         }
          return state->err;
       }
+      net_http_debug_sync(state);
    }
 
    if (!state->conn->connected)
    {
       if (!net_http_connect(state))
          state->err = true;
+      if (state->err)
+      {
+         net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
+         net_http_debug_sync(state);
+      }
       return state->err;
    }
 
    if (!state->request_sent)
+   {
+      net_http_debug_set_phase(state, NET_HTTP_PHASE_SEND);
       return net_http_send_request(state);
+   }
 
    response = (struct response*)&state->response;
 
@@ -1455,36 +1587,49 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       _len = socket_receive_all_nonblocking(state->conn->fd, &state->err,
             (uint8_t*)response->data + response->pos,
             response->buflen - response->pos);
+   net_http_debug_set_io(state, _len);
 
    if (response->part < P_BODY)
    {
+      net_http_debug_set_phase(state, NET_HTTP_PHASE_RECV_HEADER);
       if (_len < 0 || state->err)
       {
+         net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
          net_http_conn_pool_remove(state->conn);
          state->conn      = NULL;
          state->err       = true;
          response->part   = P_DONE;
          response->status = -1;
+         net_http_debug_sync(state);
          return true;
       }
       _len = net_http_receive_header(state, _len);
+      net_http_debug_set_io(state, _len);
    }
 
    if (response->part >= P_BODY && response->part < P_DONE)
    {
+      net_http_debug_set_phase(state, NET_HTTP_PHASE_RECV_BODY);
       if (!net_http_receive_body(state, _len))
       {
+         net_http_debug_set_phase(state, NET_HTTP_PHASE_ERROR);
          net_http_conn_pool_remove(state->conn);
          state->conn      = NULL;
          state->err       = true;
          response->part   = P_DONE;
          response->status = -1;
+         net_http_debug_sync(state);
          return true;
       }
    }
 
    if (progress)
+   {
       *progress = response->pos;
+      state->debug_state.progress = *progress;
+   }
+   else
+      state->debug_state.progress = response->pos;
 
    if (total)
    {
@@ -1492,10 +1637,16 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          *total = response->len;
       else
          *total = 0;
+      state->debug_state.total = *total;
    }
+   else
+      state->debug_state.total = (response->bodytype == T_LEN) ? response->len : 0;
 
    if (response->part != P_DONE)
+   {
+      net_http_debug_sync(state);
       return false;
+   }
 
    for (_len = 0; (size_t)_len < response->headers->size; _len++)
    {
@@ -1520,6 +1671,8 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       }
    }
 
+   net_http_debug_set_phase(state, NET_HTTP_PHASE_DONE);
+   net_http_debug_sync(state);
    return true;
 }
 
@@ -1548,11 +1701,18 @@ int net_http_status(struct http_t *state)
  * caller of net_http_new; it is not freed by net_http_delete().
  * If the status is not 20x and accept_err is false, it returns NULL.
  **/
-struct string_list *net_http_headers(struct http_t *state)
+struct string_list *net_http_headers_ex(struct http_t *state, bool accept_err)
 {
-   if (!state || !state->err)
+   if (!state)
+      return NULL;
+   if (!accept_err && !state->err)
       return NULL;
    return state->response.headers;
+}
+
+struct string_list *net_http_headers(struct http_t *state)
+{
+   return net_http_headers_ex(state, false);
 }
 
 /**
@@ -1580,6 +1740,16 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_err)
       *len    = state->response.len;
 
    return (uint8_t*)state->response.data;
+}
+
+bool net_http_get_debug_state(struct http_t *state, net_http_debug_state_t *out)
+{
+   if (!state || !out)
+      return false;
+
+   net_http_debug_sync(state);
+   *out = state->debug_state;
+   return true;
 }
 
 /**

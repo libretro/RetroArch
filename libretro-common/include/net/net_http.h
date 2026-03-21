@@ -34,6 +34,43 @@ RETRO_BEGIN_DECLS
 struct http_t;
 struct http_connection_t;
 
+typedef enum net_http_phase
+{
+   NET_HTTP_PHASE_CONNECT = 0,
+   NET_HTTP_PHASE_SEND,
+   NET_HTTP_PHASE_RECV_HEADER,
+   NET_HTTP_PHASE_RECV_BODY,
+   NET_HTTP_PHASE_REDIRECT,
+   NET_HTTP_PHASE_DONE,
+   NET_HTTP_PHASE_ERROR
+} net_http_phase_t;
+
+const char *net_http_phase_to_string(net_http_phase_t phase);
+
+/* Caller-facing, point-in-time HTTP transport snapshot.
+ *
+ * Notes:
+ * - Some fields intentionally mirror live http_t state (e.g. status/fd/err)
+ *   so callers can log a single self-contained payload without issuing
+ *   additional net_http_* calls.
+ * - Snapshot data is safe to copy and retain after transfer completion,
+ *   unlike the opaque internal state which may be freed. */
+typedef struct net_http_debug_state
+{
+   int fd;
+   int status;
+   int last_errno;
+   int64_t last_io_len;
+   size_t progress;
+   size_t total;
+   unsigned redirects;
+   bool ssl;
+   bool connected;
+   bool request_sent;
+   bool err;
+   net_http_phase_t phase;
+} net_http_debug_state_t;
+
 struct http_connection_t *net_http_connection_new(const char *url, const char *method, const char *data);
 
 /**
@@ -96,6 +133,12 @@ int net_http_status(struct http_t *state);
  **/
 bool net_http_error(struct http_t *state);
 
+/* Copies the current transport snapshot into @out.
+ *
+ * Returns false if inputs are invalid; true on success.
+ * The returned snapshot is independent from internal http_t lifetime. */
+bool net_http_get_debug_state(struct http_t *state, net_http_debug_state_t *out);
+
 /**
  * net_http_headers:
  *
@@ -106,6 +149,7 @@ bool net_http_error(struct http_t *state);
  * If the status is not 20x and accept_error is false, it returns NULL.
  **/
 struct string_list *net_http_headers(struct http_t *state);
+struct string_list *net_http_headers_ex(struct http_t *state, bool accept_error);
 
 /**
  * net_http_data:
