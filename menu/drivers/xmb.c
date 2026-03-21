@@ -7150,7 +7150,7 @@ static void xmb_render(void *data,
    /* Handle any pending icon thumbnail load requests */
    if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
    {
-      bool rapid_scroll = (scroll_count > 5);
+      bool rapid_scroll;
       /* LOW-MEMORY FIX: Detect rapid scrolling and defer thumbnail loading
        * This prevents texture exhaustion on devices like Raspberry Pi and Switch */
       static retro_time_t last_scroll_time = 0;
@@ -7162,6 +7162,8 @@ static void xmb_render(void *data,
          scroll_count++;
       else
          scroll_count = 1;
+
+      rapid_scroll = (scroll_count > 5);
       
       last_scroll_time = current_time;
       
