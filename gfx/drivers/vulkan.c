@@ -252,6 +252,7 @@ typedef struct vk
    {
       vulkan_hdr_uniform_t ubo_values;
       struct vk_buffer     ubo;
+      struct vk_buffer     ubo_menu;
       float                menu_nits;
       float                max_output_nits;
       float                min_output_nits;
@@ -3536,6 +3537,7 @@ static void vulkan_free(void *data)
       if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
          vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo);
+         vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo_menu);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->offscreen_buffer);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
          vulkan_deinit_hdr_readback_render_pass(vk);
@@ -3874,6 +3876,7 @@ static void *vulkan_init(const video_info_t *video,
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    vk->hdr.ubo                            = vulkan_create_buffer(vk->context, sizeof(vulkan_hdr_uniform_t), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+   vk->hdr.ubo_menu                       = vulkan_create_buffer(vk->context, sizeof(vulkan_hdr_uniform_t), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
    vk->hdr.ubo_values.mvp                 = vk->mvp_no_rot;
    vk->hdr.menu_nits           = settings->floats.video_hdr_menu_nits;
@@ -5456,7 +5459,7 @@ static bool vulkan_frame(void *data, const void *frame,
          {
             /* Menu/overlay composite: source is always SDR (B8G8R8A8_UNORM) */
             unsigned composite_hdr_mode = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
-            vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo, composite_hdr_mode, true);
+            vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo_menu, composite_hdr_mode, true);
          }
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
