@@ -8235,6 +8235,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    "Box art, screenshot, and title screen thumbnails are stored in this directory."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PATCHES_DIRECTORY,
+   "Patches"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PATCHES_DIRECTORY,
+   "Patch files are searched in this directory."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Start Directory"
@@ -9074,6 +9082,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
    "View more information about the content."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PATCHES,
+   "Patches"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PATCHES,
+   "Select and order patches to apply before content is loaded."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
