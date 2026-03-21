@@ -2403,12 +2403,16 @@ MSG_HASH(
    "scRVB"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Luminosité"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminance du \"papier blanc\""
+   "Luminosité"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Une fois le pic de luminance défini, utiliser ceci comme réglage de luminosité standard. Techniquement cela définit la luminosité à laquelle le papier blanc doit être comme le texte lisible ou la luminance en haut de la plage SDR (Standard Dynamic Range)."
+   "Définit le niveau de luminosité HDR en nits. À utiliser en combinaison avec les paramètres de luminosité physique de votre écran. Pour un point de départ, régler cette option à 80 et la luminosité de votre écran au maximum. Alternativement, régler cette option au niveau de nits max de votre écran et baisser la luminosité de votre écran jusqu'à ce que l'image ait l'air correct."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2416,7 +2420,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Utilise la gamme complète de couleurs de votre écran pour créer une image plus brillante et plus saturée. Pour les couleurs plus fidèles au design original du jeu, réglez cette option sur PRÉCISE."
+   "Utilise la gamme complète de couleurs de votre écran pour créer une image plus brillante et plus saturée. Pour les couleurs plus fidèles au design original du jeu, régler cette option sur Précise."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

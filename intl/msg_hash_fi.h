@@ -2151,10 +2151,6 @@ MSG_HASH(
    "Ei käytössä"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Valkoisen paperin luminanssi"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Värien tehostus"
    )

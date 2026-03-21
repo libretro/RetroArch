@@ -2415,12 +2415,16 @@ MSG_HASH(
    "As"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Gile"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Lonrúlacht Bán Páipéir"
+   "Gile"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Nuair a bheidh an gile buaic socraithe, bain úsáid as seo mar do shocrú gile caighdeánach. Go teicniúil, socraíonn sé seo an gile ag a mbeidh bán páipéir i.e. téacs inléite nó gile ag barr an raoin SDR (Raon Dinimiciúil Caighdeánach)."
+   "Socraíonn sé seo an leibhéal gile HDR i nits. Úsáid i gcomhar le socruithe gile fisiciúla do thaispeántais. Mar phointe tosaigh, socraigh seo go 80 agus gile do thaispeántais go dtí an leibhéal is airde. Nó is féidir é seo a shocrú go dtí na nits is airde de do thaispeántas agus gile do thaispeántais a ísliú go dtí go mbeidh cuma cheart air."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2428,7 +2432,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Úsáideann sé raon dathanna iomlán do thaispeántais chun íomhá níos gile, níos sáithithe a chruthú. Chun dathanna atá níos dílse don dearadh cluiche bunaidh a fháil, socraigh é seo go CRUINN."
+   "Úsáideann sé seo raon dathanna iomlán do thaispeántais chun íomhá níos gile, níos sáithithe a chruthú. Chun dathanna atá níos dílse don dearadh cluiche bunaidh a fháil, socraigh é seo go Cruinne."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

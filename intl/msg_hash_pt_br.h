@@ -2379,12 +2379,20 @@ MSG_HASH(
    "Desligado"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Brilho"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Definir o brilho do menu em cd/m² (nits) ao usar um monitor HDR. Visível apenas quando o HDR estiver ativado em Configurações > Vídeo > HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminância papel branco"
+   "Brilho"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Uma vez que a luminância máxima esteja configurada, use isto como sua configuração padrão de brilho. Tecnicamente, isso define a luminância na qual o branco papel deve estar, ou seja, texto legível ou a luminância no topo da faixa SDR (Standard Dynamic Range)."
+   "Definir o nível de brilho HDR em nits. Usar em conjunto com as configurações de brilho físico do seu monitor. Como ponto de partida, defina este valor para 80 e o brilho do seu monitor para o máximo. Alternativamente, defina para o máximo de nits do seu monitor e diminua o brilho do monitor até que a imagem pareça correta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2392,7 +2400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Usa a gama de cores completa da sua tela para criar uma imagem mais brilhante e saturada. Para cores mais fiéis ao design original do jogo, configure isto como PRECISO."
+   "Usar toda a gama de cores do seu monitor para criar uma imagem mais brilhante e saturada. Para cores mais fiéis ao design original do jogo, defina esta opção como Preciso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

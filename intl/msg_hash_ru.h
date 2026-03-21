@@ -2431,20 +2431,8 @@ MSG_HASH(
    "Откл."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Яркость белого листа"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "После установки пиковой яркости используйте данный параметр в качестве стандартной регулировки яркости. Фактически, это устанавливает яркость белой бумаги для читаемости текста или яркость в верхней части SDR (стандартного динамического диапазона)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Цветовой охват"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Использует полный цветовой диапазон дисплея для получения более светлого и насыщенного изображения. Установите 'Точный' режим для цветопередачи, приближенной к оригинальному изображению игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

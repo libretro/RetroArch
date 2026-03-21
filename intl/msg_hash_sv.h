@@ -2307,20 +2307,8 @@ MSG_HASH(
    "Av"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Pappersvitt ljusstyrka"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "När maximal luminans har ställts in använder du denna som standardinställning för ljusstyrka. Tekniskt sett ställer detta in den luminans som papperets vita yta ska ha, dvs. läsbar text eller luminans i toppen av SDR-intervallet (Standard Dynamic Range)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Färgförstärkning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Använder skärmens hela färgskala för att skapa en ljusare och mer mättad bild. För färger som är mer trogna den ursprungliga speldesignen, ange detta till NOGGRANN."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

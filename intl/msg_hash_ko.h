@@ -2443,20 +2443,8 @@ MSG_HASH(
    "끔"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "페이퍼 화이트 휘도"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "최대 휘도를 설정하고 나면, 이 값으로 일반적인 밝기를 조절합니다. 기술적으로 이 값은 흰 종이가 어느 정도의 휘도로 표시되어야 하는지, 또는 SDR (Standard Dynamic Range) 범위에서의 최대 휘도를 설정합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "색역 확장"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "디스플레이의 전체 색상 범위를 사용하여 더 밝고 선명한 이미지를 만듭니다. 원작 게임 디자인에 더 가까운 색상을 원하시면 이 설정을 '정확'으로 변경하세요."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

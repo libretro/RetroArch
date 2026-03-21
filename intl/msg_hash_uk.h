@@ -2435,10 +2435,6 @@ MSG_HASH(
    "Вимкнути"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Яскравість білого паперу"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Посилення кольору"
    )

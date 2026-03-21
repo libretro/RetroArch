@@ -2387,14 +2387,6 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminancia branca de papel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Unha vez configurada a luminancia máxima, úsaa como o teu axuste estándar de brillo. Tecnicamente, isto define a luminancia á que debería situarse o Branco Papel, é dicir, o brillo do texto lexible ou a luminancia no límite superior do rango SDR (Rango Dinámico Estándar)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Aumento de cor"
    )

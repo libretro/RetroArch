@@ -2343,12 +2343,16 @@ MSG_HASH(
    "Aus"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Helligkeit"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Papierweißleuchtdichte"
+   "Helligkeit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Sobald die maximale Leuchtdichte eingestellt ist, diese als Standardhelligkeitseinstellung verwenden. Technisch gesehen legt dies die Leuchtdichte fest, bei der Papierweiß gut lesbar sein sollte - also die Leuchtdichte am oberen Ende des SDR-Bereichs (Standard Dynamic Range)."
+   "Legt die HDR-Helligkeit in Nits fest. Diese in Kombination mit den physischen Helligkeitseinstellungen des Bildschirms verwenden. Als Ausgangspunkt sollte dieser Wert auf 80 und die Bildschirmhelligkeit auf die maximale Stufe eingestellt werden. Alternativ kann dieser Wert auf die maximale Nits-Zahl des Bildschirms einstellt und die Bildschirmhelligkeit so lange verringert werden, bis das Bild optimal aussieht."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2356,7 +2360,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Nutzt den gesamten Farbbereich Ihres Bildschirms, um ein helleres, satteres Bild zu erzeugen. Für Farben, die dem ursprünglichen Spieldesign besser entsprechen, diese Option auf „PRÄZISE” einstellen."
+   "Nutzt den gesamten Farbraum des Bildschirms, um ein helleres, satteres Bild zu erzeugen. Damit die Farben dem ursprünglichen Spieldesign getreuer entsprechen, diese Option auf „Genau“ eingestellen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

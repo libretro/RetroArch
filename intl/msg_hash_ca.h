@@ -2407,12 +2407,16 @@ MSG_HASH(
    "Apagat"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Brillantor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminància de blancs"
+   "Brillantor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Quan hagis fixat la luminància màxima, es farà aquest valor per configurar la brillantor estàndard. Tècnicament, estableix la luminància amb el blanc d'un full de paper amb text llegible, o la luminància màxima del rang SDR."
+   "Selecciona el nivell de brillantor de HDR en nits. Es fa servir en combinació de la configuració de brillantor del teu monitor. Pots començar per seleccionar un valor de 80 i posar la brillantor del teu monitor al màxim. O també pots posar el valor màxim i ajustar la brillantor del teu monitor fins que es vegi bé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,

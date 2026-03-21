@@ -2391,20 +2391,8 @@ MSG_HASH(
    "Wyłączony"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Lampa biała papierowa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Po ustawieniu szczytowej luminancji należy użyć tego jako standardowego ustawienia jasności. Technicznie ustawia to luminancję, przy której biały papier powinien być tj. czytelny tekst lub luminancja w górnej części zakresu SDR (standard dynamic range)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Wzmocnienie kolorów"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Używa pełnego zakresu kolorów twojego wyświetlacza do stworzenia jaśniejszego, bardziej nasyconego obrazu. Dla kolorów bardziej wiernych do oryginalnego projektu gry, ustaw to na DOKŁADNY."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

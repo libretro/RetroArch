@@ -2415,12 +2415,16 @@ MSG_HASH(
    "Desactivar"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Brillo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminosidad de blanco «papel»"
+   "Brillo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Una vez hayas configurado la luminancia máxima, utiliza esta opción como ajuste de brillo estándar. Técnicamente, establece la luminancia con la que el blanco de una hoja de papel tendría un texto legible, o la luminancia máxima del rango SDR (rango dinámico estándar)."
+   "Establece el nivel de brillo del HDR en nits. Debes combinar este valor con los ajustes físicos de brillo de tu pantalla. Un punto de partida sería elegir 80 aquí y poner el brillo de la pantalla al máximo. Por otro lado, puedes elegir aquí el número máximo de nits que admite tu pantalla y luego bajar el brillo de la misma hasta llegar al punto adecuado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
