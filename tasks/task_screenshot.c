@@ -323,12 +323,19 @@ static bool screenshot_dump(
       video_driver_state_t *video_st = video_state_get_ptr();
       if (video_st)
       {
-         state->out_width       = (video_st->frame_cache_width  <= 4)
+         state->out_width        = (video_st->frame_cache_width  <= 4)
                ? video_st->av_info.geometry.base_width
                : video_st->frame_cache_width;
-         state->out_height      = (video_st->frame_cache_height <= 4)
+         state->out_height       = (video_st->frame_cache_height <= 4)
                ? video_st->av_info.geometry.base_height
                : video_st->frame_cache_height;
+      }
+
+      /* Fallback to display size if smaller than core output */
+      if (state->out_width > width || state->out_height > height)
+      {
+         state->out_width        = width;
+         state->out_height       = height;
       }
 
       state->flags              |= SS_TASK_FLAG_SILENCE;
