@@ -424,17 +424,16 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
             if (!do_debug_log)
                continue;
 
-            RARCH_DBG("Subsystem ID: %d\nSpecial game type: %s\n  Ident: %s\n  ID: %u\n  Content:\n",
-                  i,
+            RARCH_DBG("Subsystem #%u \"%s\", Ident: \"%s\".\n",
+                  info[i].id,
                   info[i].desc,
-                  info[i].ident,
-                  info[i].id
-                  );
+                  info[i].ident);
+
             for (j = 0; j < info[i].num_roms; j++)
             {
-               RARCH_DBG("    %s (%s)\n",
-                     info[i].roms[j].desc, info[i].roms[j].required ?
-                     "required" : "optional");
+               RARCH_DBG("   \"%s\" (%s)\n",
+                     info[i].roms[j].desc,
+                     info[i].roms[j].required ? "required" : "optional");
             }
          }
 
@@ -442,9 +441,9 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
 
          if (do_debug_log)
          {
-            RARCH_DBG("Subsystems: %d\n", i);
+            RARCH_DBG("Subsystems: %u.\n", size);
             if (size > SUBSYSTEM_MAX_SUBSYSTEMS)
-               RARCH_WARN("Subsystems exceed subsystem max, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEMS);
+               RARCH_WARN("Subsystems exceed subsystem max, clamping to %d.\n", SUBSYSTEM_MAX_SUBSYSTEMS);
          }
 
          if (sys_info)
@@ -2113,7 +2112,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   {
                      unsigned mapped_port = settings->uints.input_remap_ports[p];
 
-                     RARCH_DBG("   %s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
+                     RARCH_DBG("%s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
 
                      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
                      {
@@ -2125,7 +2124,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                            continue;
 
                         _enum = (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + bind_index);
-                        RARCH_DBG("      \"%s\" => \"%s\"\n",
+                        RARCH_DBG("   \"%s\" => \"%s\"\n",
                               msg_hash_to_str(_enum), description);
                      }
 
@@ -2140,7 +2139,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
                         _enum = (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS
                               + bind_index - RARCH_FIRST_CUSTOM_BIND);
-                        RARCH_DBG("      \"%s\" => \"%s\"\n",
+                        RARCH_DBG("   \"%s\" => \"%s\"\n",
                               msg_hash_to_str(_enum), description);
                      }
                   }
@@ -2735,30 +2734,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          size_t i;
          const struct retro_subsystem_info *info =
                (const struct retro_subsystem_info*)data;
-         unsigned log_level   = settings->uints.libretro_log_level;
 
-         RARCH_LOG("[Environ] SET_SUBSYSTEM_INFO.\n");
-
-         for (i = 0; info[i].ident; i++)
-         {
-            unsigned j;
-
-            if (log_level != RETRO_LOG_DEBUG)
-               continue;
-
-            RARCH_DBG("Special game type: %s\n  Ident: %s\n  ID: %u\n  Content:\n",
-                  info[i].desc,
-                  info[i].ident,
-                  info[i].id
-                  );
-
-            for (j = 0; j < info[i].num_roms; j++)
-            {
-               RARCH_DBG("    %s (%s)\n",
-                     info[i].roms[j].desc, info[i].roms[j].required ?
-                     "required" : "optional");
-            }
-         }
+         for (i = 0; info[i].ident; i++) {}
 
          if (sys_info)
          {
@@ -2798,11 +2775,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (log_level != RETRO_LOG_DEBUG)
                continue;
 
-            RARCH_DBG("   %s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), i + 1);
+            RARCH_DBG("%s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), i + 1);
 
             for (j = 0; j < info[i].num_types; j++)
                if (info[i].types[j].desc)
-                  RARCH_DBG("      \"%s\" (%u)\n",
+                  RARCH_DBG("   \"%s\" (%u)\n",
                         info[i].types[j].desc,
                      info[i].types[j].id);
          }
