@@ -120,16 +120,13 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 #endif
 
    runloop_flags = runloop_get_flags();
-#if !TARGET_OS_TV
+#if !TARGET_OS_TV && !defined(OSX)
    if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
 #endif
       CFRunLoopWakeUp(CFRunLoopGetMain());
 #if TARGET_OS_IOS
    else
       rarch_stop_draw_observer();
-#elif defined(OSX)
-   else if (!(@available(macOS 15.0, *)))
-      CFRunLoopWakeUp(CFRunLoopGetMain());
 #endif
 }
 
