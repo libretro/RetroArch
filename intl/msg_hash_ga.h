@@ -2419,6 +2419,10 @@ MSG_HASH(
    "Gile"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Gile an roghchláir i cd/m2 (nits) agus taispeántas HDR in úsáid. Ní fheictear é ach amháin nuair atá HDR cumasaithe i Socruithe > Físeán > HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Gile"
    )

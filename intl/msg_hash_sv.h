@@ -2307,6 +2307,14 @@ MSG_HASH(
    "Av"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Ljusstyrka"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Ljusstyrka på menyn i cd/m2 (nits) vid användning av en HDR-skärm. Endast synlig när HDR är aktiverat i Inställningar > Video > HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Färgförstärkning"
    )

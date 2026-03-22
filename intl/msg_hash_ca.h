@@ -2411,6 +2411,10 @@ MSG_HASH(
    "Brillantor"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Brillantor del menú en cd/m2 (nits) quan es fa servir una pantalla HDR. Només està disponible si s'ha activat l'opció HDR en el menú Configuració > Vídeo > HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Brillantor"
    )

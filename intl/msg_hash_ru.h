@@ -2431,8 +2431,28 @@ MSG_HASH(
    "Откл."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Яркость"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Уровень яркости меню в кд/м2 (нит) при выводе изображения в HDR. Отображается только если HDR включен в Настройки > Видео > HDR."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Яркость"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Задаёт уровень яркости HDR в нитах. Используйте в комбинации с физической яркостью экрана. В качестве начальной точки установите значение на 80 и яркость дисплея на максимум. Альтернативно, установите значение согласно максимуму нит экрана и снижайте яркость экрана до полу[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Цветовой охват"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Использует полный цветовой диапазон экрана для получения более светлого и насыщенного изображения. Выберите 'Точный' режим для цветопередачи, приближенной к оригинальному изображению игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

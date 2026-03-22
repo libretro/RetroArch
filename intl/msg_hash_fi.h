@@ -2151,6 +2151,22 @@ MSG_HASH(
    "Ei käytössä"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Kirkkaus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Valikon kirkkaus, yksikkö cd/m2 (nitiä), käytettäessä HDR-näyttöä. Näkyy vain, kun HDR on käytössä Asetukset > Video > HDR."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Kirkkaus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Asettaa HDR-kirkkauden tason niteinä. Käytä yhdessä näyttösi fyysisten kirkkauden asetusten kanssa. Aseta aloituspisteeksi tämä 80:een ja näytön kirkkaus täyteen. Vaihtoehtoisesti aseta tämä näyttösi enimmäisniteihin ja säädä näyttösi kirkkautta alaspäin, kunnes kuva näyttää oikealta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Värien tehostus"
    )

@@ -2419,6 +2419,10 @@ MSG_HASH(
    "Brillo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Establece el brillo del menú en cd/m² (nits) al usar una pantalla compatible con HDR. Solo hará efecto si se activa el modo HDR en Ajustes > Vídeo > HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Brillo"
    )

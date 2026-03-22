@@ -2407,6 +2407,10 @@ MSG_HASH(
    "Luminosité"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Luminosité du menu en cd/m2 (nits) lors de l'utilisation d'un affichage HDR. Uniquement visible lorsque HDR est activé dans Réglages > Vidéo > HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminosité"
    )

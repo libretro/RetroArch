@@ -2347,6 +2347,10 @@ MSG_HASH(
    "Helligkeit"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Helligkeit des Menüs in cd/m² (Nits) bei Nutzung eines HDR-Displays. Nur sichtbar, wenn HDR unter „Einstellungen > Video > HDR“ aktiviert ist."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Helligkeit"
    )
