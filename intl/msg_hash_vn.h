@@ -2439,6 +2439,10 @@ MSG_HASH(
    "Độ sáng"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Độ sáng của menu (đơn vị cd/m2 - nits) khi sử dụng màn hình HDR. Chỉ hiển thị khi HDR được bật trong Cài đặt > Video > HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Độ sáng"
    )

@@ -2443,8 +2443,28 @@ MSG_HASH(
    "끔"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "밝기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "HDR 디스플레이 사용 시 메뉴의 밝기(cd/m2, 니트)입니다. 설정 > 비디오 > HDR에서 HDR을 활성화했을 경우에만 표시됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "밝기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "HDR 밝기 수준(니트)을 설정합니다. 디스플레이의 물리적 밝기 설정과 함께 설정되어야 합니다. 좋은 시작점으로는 이 설정을 80으로 설정하고, 디스플레이의 밝기를 최대로 설정해보는 것을 추천합니다. 아니면, 이 설정을 디스플레이의 최대 니트 값으로 설정하고, 디스플레이가 올바르게 보일 때까지 디스플레이의 밝기를 낮춰보는 것도 좋습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "색역 확장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "디스플레이의 전체 색상 범위를 사용하여 더 밝고 선명한 이미지를 만듭니다. 원작 게임 디자인에 더 가까운 색상을 원하시면 이 설정을 '정확'으로 변경하세요."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
