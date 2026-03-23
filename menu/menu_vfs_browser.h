@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(HAVE_VFS) && !defined(__3DS__) && !defined(GEKKO) && !defined(PS2) && !defined(WIIU) && !defined(__DJGPP__) && !defined(WEBOS)
+
 #ifndef __MENU_VFS_BROWSER_H
 #define __MENU_VFS_BROWSER_H
 
@@ -110,4 +112,6 @@ enum vfs_scheme menu_vfs_browser_get_scheme(void);
 RETRO_END_DECLS
 
 #endif /* __MENU_VFS_BROWSER_H */
+
+#endif /* HAVE_VFS guard */
 

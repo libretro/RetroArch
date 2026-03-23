@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(HAVE_VFS) && !defined(__3DS__) && !defined(GEKKO) && !defined(PS2) && !defined(WIIU) && !defined(__DJGPP__) && !defined(WEBOS)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -404,3 +406,5 @@ enum vfs_scheme menu_vfs_browser_get_scheme(void)
 {
    return g_vfs_browser.scheme;
 }
+
+#endif /* HAVE_VFS guard */
