@@ -35,6 +35,7 @@
 
 #include "file_path_special.h"
 #include "paths.h"
+#include "runloop.h"
 #include "core_info.h"
 #include "verbosity.h"
 #include "msg_hash.h"
@@ -165,6 +166,11 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
+
+      /* Free parser and bail out - do not process
+       * partial/corrupt data */
+      rjson_free(parser);
+      goto end;
    }
 
    /* Free parser */
@@ -219,7 +225,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    if (!string_is_empty(context.state_slot))
    {
       if (sscanf(context.state_slot,
-               "%04u",
+               "%u",
                &state_slot) != 1)
       {
          RARCH_ERR("[Runtime] Invalid \"state slot\" entry detected: \"%s\".\n", runtime_log->path);
@@ -313,7 +319,7 @@ runtime_log_t *runtime_log_init(
     * (e.g. see TyrQuake below) */
    if (core_info_find(core_path, &core_info))
    {
-      supports_no_game = core_info->supports_no_game;
+      supports_no_game = (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
       if (!string_is_empty(core_info->core_name))
          strlcpy(core_name, core_info->core_name, sizeof(core_name));
    }
@@ -569,7 +575,15 @@ void runtime_log_get_last_played(runtime_log_t *runtime_log,
       unsigned *hour, unsigned *minute, unsigned *second)
 {
    if (!runtime_log)
+   {
+      *year   = 0;
+      *month  = 0;
+      *day    = 0;
+      *hour   = 0;
+      *minute = 0;
+      *second = 0;
       return;
+   }
 
    *year   = runtime_log->last_played.year;
    *month  = runtime_log->last_played.month;
@@ -584,6 +598,9 @@ void runtime_log_get_last_played(runtime_log_t *runtime_log,
 static void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
       struct tm *time_info)
 {
+   if (!runtime_log)
+      return;
+
    /* Set tm values */
    time_info->tm_year  = (int)runtime_log->last_played.year  - 1900;
    time_info->tm_mon   = (int)runtime_log->last_played.month - 1;
@@ -633,14 +650,17 @@ static size_t runtime_last_played_human(runtime_log_t *runtime_log,
    if ((delta = current - last_played) <= 0)
       return 0;
 
-   for (i = 0; delta >= periods[i] && i < sizeof(periods) - 1; i++)
+   for (i = 0; i < ARRAY_SIZE(periods) - 1 && delta >= periods[i]; i++)
       delta /= periods[i];
 
    /* Generate string */
-   _len  = snprintf(s, len, "%u ", (int)delta);
+   _len  = snprintf(s, len, "%u ", (unsigned)delta);
    _len += strlcpy(s + _len,
          msg_hash_to_str((enum msg_hash_enums)units[i][(delta == 1) ? 0 : 1]),
          len - _len);
+
+   if (_len + 2 >= len)
+      return _len;
 
    s[  _len] = ' ';
    s[++_len] = '\0';
@@ -1361,7 +1381,7 @@ void runtime_update_contentless_core(
    /* Sanity check */
    if (    string_is_empty(core_path)
        || !core_info_find(core_path, &core_info)
-       || !core_info->supports_no_game)
+       || !(core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
       return;
 
    /* Set fallback runtime status

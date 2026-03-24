@@ -7,6 +7,7 @@ SRC(
          float4x4 modelViewProj;
          float2 Outputsize;
          float time;
+         float alpha;
       };
       uniform UBO global;
 
@@ -46,6 +47,6 @@ SRC(
 
       float4 PSMain() : SV_TARGET
       {
-         return float4(0.05, 0.05, 0.05, 1.0);
+         return float4(0.05, 0.05, 0.05, global.alpha);
       };
 )

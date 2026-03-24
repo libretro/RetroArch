@@ -673,5 +673,6 @@ audio_driver_t audio_alsathread = {
    alsa_device_list_new, /* Reusing these functions from alsa.c */
    alsa_device_list_free, /* because they don't use the driver context */
    alsa_thread_write_avail,
-   alsa_thread_buffer_size
+   alsa_thread_buffer_size,
+   NULL /* write_raw */
 };

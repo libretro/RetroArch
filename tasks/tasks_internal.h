@@ -79,6 +79,10 @@ void *task_push_http_post_transfer_with_user_agent(const char *url, const char *
 void *task_push_http_post_transfer_with_headers(const char *url, const char *post_data, bool mute,
    const char *type, const char *headers, retro_task_callback_t cb, void *user_data);
 
+void *task_push_http_transfer_with_content(const char *url, const char *method,
+   const void *content, size_t content_len, const char *content_type, bool mute,
+   const char *headers, retro_task_callback_t cb, void *user_data);
+
 void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_mkdir(const char *url, bool mute, const char *headers,
@@ -257,6 +261,7 @@ bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
 
 void set_save_state_in_background(bool state);
+void set_save_state_disable_undo(bool disable);
 
 #ifdef HAVE_CDROM
 void task_push_cdrom_dump(const char *drive);
@@ -275,6 +280,8 @@ extern const char* const input_builtin_autoconfs[];
 /* cloud sync tasks */
 void task_push_cloud_sync_update_driver(void);
 void task_push_cloud_sync(void);
+void task_push_cloud_sync_resolve_keep_local(void);
+void task_push_cloud_sync_resolve_keep_server(void);
 
 RETRO_END_DECLS
 

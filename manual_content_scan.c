@@ -101,6 +101,16 @@ char *manual_content_scan_get_content_dir_ptr(void)
    return scan_settings.content_dir;
 }
 
+unsigned manual_content_scan_get_scan_method_enum(void)
+{
+   return 0;
+}
+
+unsigned manual_content_scan_get_scan_use_db_enum(void)
+{
+   return 0;
+}
+
 /* Returns a pointer to the internal
  * 'system_name_custom' string */
 char *manual_content_scan_get_system_name_custom_ptr(void)
@@ -155,6 +165,16 @@ bool *manual_content_scan_get_search_recursively_ptr(void)
 bool *manual_content_scan_get_search_archives_ptr(void)
 {
    return &scan_settings.search_archives;
+}
+
+bool *manual_content_scan_get_scan_single_file_ptr(void)
+{
+   return NULL;
+}
+
+bool *manual_content_scan_get_omit_db_ref_ptr(void)
+{
+   return NULL;
 }
 
 /* Returns a pointer to the internal
@@ -331,6 +351,25 @@ error:
     * system name */
    scan_settings.content_dir[0]             = '\0';
    scan_settings.system_name_content_dir[0] = '\0';
+   return false;
+}
+
+bool manual_content_scan_set_menu_scan_method(
+      enum manual_content_scan_method method)
+{
+   return true;
+}
+
+bool manual_content_scan_set_menu_scan_use_db(
+      enum manual_content_scan_db_usage usage)
+{
+   return true;
+}
+
+bool manual_content_scan_set_menu_scan_db_select(
+      enum manual_content_scan_db_selection select,
+      const char *db_name)
+{
    return false;
 }
 
@@ -696,6 +735,26 @@ bool manual_content_scan_get_menu_content_dir(const char **content_dir)
    return true;
 }
 
+bool manual_content_scan_get_menu_scan_method(const char **scan_method)
+{
+   return false;
+}
+
+bool manual_content_scan_get_menu_scan_use_db(const char **scan_use_db)
+{
+   return false;
+}
+
+unsigned manual_content_scan_get_scan_db_select_enum(void)
+{
+   return 0;
+}
+
+bool manual_content_scan_get_menu_scan_db_select(const char **scan_db_select)
+{
+   return false;
+}
+
 /* Fetches system name for the next manual scan operation.
  * Returns true if system name is valid.
  * NOTE: This corresponds to the 'System Name' value
@@ -730,6 +789,10 @@ bool manual_content_scan_get_menu_system_name(const char **system_name)
    return false;
 }
 
+unsigned manual_content_scan_get_menu_system_name_type(void)
+{
+   return 0;
+}
 /* Fetches core name for the next manual scan operation.
  * Returns true if core name is valid. */
 bool manual_content_scan_get_menu_core_name(const char **core_name)
@@ -758,6 +821,128 @@ bool manual_content_scan_get_menu_core_name(const char **core_name)
 }
 
 /* Menu utility functions */
+
+
+struct string_list *manual_content_scan_get_menu_scan_method_list(void)
+{
+   return NULL;
+
+}
+
+struct string_list *manual_content_scan_get_menu_scan_use_db_list(void)
+{
+   union string_list_elem_attr attr;
+   struct string_list *name_list = string_list_new();
+
+   /* Sanity check */
+   if (!name_list)
+      return NULL;
+
+   attr.i = 0;
+
+   if (!string_list_append(name_list, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT), attr))
+      goto error;
+
+   if (!string_list_append(name_list, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE), attr))
+      goto error;
+
+   if (!string_list_append(name_list, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT), attr))
+      goto error;
+
+   if (!string_list_append(name_list, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE), attr))
+      goto error;
+
+   if (!string_list_append(name_list, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE), attr))
+      goto error;
+
+   return name_list;
+
+error:
+   if (name_list)
+      string_list_free(name_list);
+   return NULL;
+
+}
+
+
+struct string_list *manual_content_scan_get_menu_scan_db_select_list(
+               const char *path_content_database, bool show_hidden_files)
+{
+   union string_list_elem_attr attr;
+   struct string_list *name_list = string_list_new();
+
+   /* Sanity check */
+   if (!name_list)
+      return NULL;
+
+   attr.i = 0;
+
+   /* Add 'use content directory' entry */
+   if (!string_list_append(name_list, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY), attr))
+      goto error;
+
+   /* Add 'use custom' entry */
+   if (!string_list_append(name_list, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST), attr))
+      goto error;
+
+#ifdef HAVE_LIBRETRODB
+   /* If platform has database support, get names
+    * of all installed database files */
+   {
+      /* Note: dir_list_new_special() is well behaved - the
+       * returned string list will only include database
+       * files (i.e. don't have to check for directories,
+       * or verify file extensions) */
+      struct string_list *rdb_list = dir_list_new_special(
+            path_content_database,
+            DIR_LIST_DATABASES, NULL, show_hidden_files);
+
+      if (rdb_list && rdb_list->size)
+      {
+         unsigned i;
+
+         /* Ensure database list is in alphabetical order */
+         dir_list_sort(rdb_list, true);
+
+         /* Loop over database files */
+         for (i = 0; i < rdb_list->size; i++)
+         {
+            char rdb_name[NAME_MAX_LENGTH];
+            const char *rdb_path = rdb_list->elems[i].data;
+            /* Sanity check */
+            if (string_is_empty(rdb_path))
+               continue;
+            fill_pathname(rdb_name, path_basename(rdb_path), "",
+                  sizeof(rdb_name));
+            if (string_is_empty(rdb_name))
+               continue;
+            /* Add database name to list */
+            if (!string_list_append(name_list, rdb_name, attr))
+               goto error;
+         }
+      }
+
+      /* Clean up */
+      string_list_free(rdb_list);
+   }
+
+#endif
+
+   return name_list;
+
+error:
+   if (name_list)
+      string_list_free(name_list);
+   return NULL;
+}
+
 
 /* Creates a list of all possible 'system name' menu
  * strings, for use in 'menu_displaylist' drop-down
@@ -1125,7 +1310,7 @@ error:
  * file path for use in playlists - i.e. handles
  * identification of content *inside* archive files.
  * Returns false if specified content is invalid. */
-static bool manual_content_scan_get_playlist_content_path(
+bool manual_content_scan_get_playlist_content_path(
       manual_content_scan_task_config_t *task_config,
       const char *content_path, int content_type,
       char *s, size_t len)
@@ -1210,7 +1395,7 @@ error:
  *   of content file name in an attempt to find a
  *   valid 'description' string.
  * Returns false if specified content is invalid. */
-static bool manual_content_scan_get_playlist_content_label(
+bool manual_content_scan_get_playlist_content_label(
       const char *content_path, logiqx_dat_t *dat_file,
       bool filter_dat_content,
       char *s, size_t len)

@@ -468,7 +468,7 @@ font_renderer_t ps2_font = {
  */
 
 /* PRIVATE METHODS */
-static int vsync_handler(void)
+static int vsync_handler(int reason)
 {
    iSignalSema(vsync_sema_id);
 
@@ -1124,10 +1124,11 @@ static const video_poke_interface_t ps2_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    ps2_get_hw_render_interface,
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void ps2_get_poke_interface(void *data,

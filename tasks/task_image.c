@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include <file/nbio.h>
 #include <formats/image.h>
@@ -58,6 +59,8 @@ struct nbio_image_handle
    enum image_status_enum status;
    uint8_t flags;
 };
+
+#define UPSCALE_MAX_PIXELS (256u * 1024u * 1024u)
 
 static int cb_image_upload_generic(void *data, size_t len)
 {
@@ -168,10 +171,16 @@ static void task_image_cleanup(nbio_handle_t *nbio)
    {
       image_transfer_free(image->handle, image->type);
 
+      if (image->ti.pixels)
+      {
+         free(image->ti.pixels);
+         image->ti.pixels = NULL;
+      }
+
       image->handle  = NULL;
       image->cb      = NULL;
    }
-   if (!string_is_empty(nbio->path))
+   if (nbio->path)
       free(nbio->path);
    if (nbio->data)
       free(nbio->data);
@@ -243,6 +252,7 @@ static bool upscale_image(
 {
    uint32_t x_ratio, y_ratio;
    unsigned y_dst;
+   size_t total_pixels;
 
    /* Sanity check */
    if ((scale_factor < 1) || !image_src || !image_dst)
@@ -252,11 +262,15 @@ static bool upscale_image(
       return false;
 
    /* Get output dimensions */
-   image_dst->width  = image_src->width * scale_factor;
+   image_dst->width  = image_src->width  * scale_factor;
    image_dst->height = image_src->height * scale_factor;
 
+   total_pixels = (size_t)image_dst->width * (size_t)image_dst->height;
+   if (total_pixels == 0 || total_pixels > UPSCALE_MAX_PIXELS)
+      return false;
+
    /* Allocate pixel buffer */
-   if (!(image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t))))
+   if (!(image_dst->pixels = (uint32_t*)calloc(total_pixels, sizeof(uint32_t))))
       return false;
 
    /* Perform nearest neighbour resampling */
@@ -266,11 +280,14 @@ static bool upscale_image(
    for (y_dst = 0; y_dst < image_dst->height; y_dst++)
    {
       unsigned x_dst;
-      unsigned y_src = (y_dst * y_ratio) >> 16;
+      unsigned y_src      = (y_dst * y_ratio) >> 16;
+      uint32_t *dst_row   = image_dst->pixels + ((size_t)y_dst * image_dst->width);
+      uint32_t *src_row   = image_src->pixels + ((size_t)y_src * image_src->width);
+
       for (x_dst = 0; x_dst < image_dst->width; x_dst++)
       {
          unsigned x_src = (x_dst * x_ratio) >> 16;
-         image_dst->pixels[(y_dst * image_dst->width) + x_dst] = image_src->pixels[(y_src * image_src->width) + x_src];
+         dst_row[x_dst] = src_row[x_src];
       }
    }
 
@@ -280,8 +297,14 @@ static bool upscale_image(
 bool task_image_load_handler(retro_task_t *task)
 {
    uint8_t flg;
-   nbio_handle_t            *nbio  = (nbio_handle_t*)task->state;
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
+   nbio_handle_t            *nbio  = NULL;
+   struct nbio_image_handle *image = NULL;
+
+   if (!task || !task->state)
+      return false;
+
+   nbio  = (nbio_handle_t*)task->state;
+   image = (struct nbio_image_handle*)nbio->data;
 
    if (image)
    {
@@ -341,7 +364,6 @@ bool task_image_load_handler(retro_task_t *task)
 
       if (img)
       {
-         /* Upscale image, if required */
          if (image->upscale_threshold > 0)
          {
             if (   ((image->ti.width  > 0)
@@ -351,18 +373,14 @@ bool task_image_load_handler(retro_task_t *task)
             {
                unsigned min_size                  = (image->ti.width < image->ti.height)
                                                     ? image->ti.width : image->ti.height;
-               float scale_factor                 = (float)image->upscale_threshold
-                                                    / (float)min_size;
-               unsigned scale_factor_int          = (unsigned)scale_factor;
+               unsigned scale_factor_int          = ((image->upscale_threshold + min_size - 1)
+                                                    / min_size);
                struct texture_image img_resampled = {
                   NULL,
                   0,
                   0,
                   false
                };
-
-               if (scale_factor - (float)scale_factor_int > 0.0f)
-                  scale_factor_int += 1;
 
                if (upscale_image(scale_factor_int, &image->ti, &img_resampled))
                {
@@ -380,6 +398,10 @@ bool task_image_load_handler(retro_task_t *task)
          img->height        = image->ti.height;
          img->pixels        = image->ti.pixels;
          img->supports_rgba = image->ti.supports_rgba;
+
+         /* Transfer pixel ownership to the output image so
+          * cleanup does not double-free */
+         image->ti.pixels   = NULL;
       }
 
       task_set_data(task, img);
@@ -427,6 +449,13 @@ bool task_push_image_load(const char *fullpath,
    }
 
    nbio->path                        = strdup(fullpath);
+   if (!nbio->path)
+   {
+      free(image);
+      free(nbio);
+      free(t);
+      return false;
+   }
 
    image->type                       = image_texture_get_type(fullpath);
    image->status                     = IMAGE_STATUS_WAIT;
@@ -435,12 +464,15 @@ bool task_push_image_load(const char *fullpath,
    image->size                       = 0;
    image->upscale_threshold          = upscale_threshold;
    image->handle                     = NULL;
+   image->cb                         = NULL;
+
+   image->flags                      = 0;
 
    image->ti.width                   = 0;
    image->ti.height                  = 0;
    image->ti.pixels                  = NULL;
-   /* TODO/FIXME - shouldn't we set this ? */
-   image->ti.supports_rgba           = false;
+   /* NOTE: Come back to this if this causes problems */
+   image->ti.supports_rgba           = supports_rgba;
 
    switch (image->type)
    {

@@ -37,11 +37,11 @@
 #include "../../verbosity.h"
 #include "dinput_joypad.h"
 
-/* TODO/FIXME - globals referenced outside */
+/* TODO/FIXME - globals referenced outside; candidate for context-struct refactor */
 struct dinput_joypad_data g_pads[MAX_USERS];
 unsigned g_joypad_cnt;
 
-/* TODO/FIXME - forward declaration */
+/* Defined in dinput.c / dinput_input.c */
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
 #include "dinput_joypad_inl.h"

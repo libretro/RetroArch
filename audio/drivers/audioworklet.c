@@ -533,5 +533,6 @@ audio_driver_t audio_audioworklet = {
    NULL,
    NULL,
    audioworklet_write_avail,
-   audioworklet_buffer_size
+   audioworklet_buffer_size,
+   NULL /* write_raw */
 };

@@ -90,6 +90,7 @@ static void wl_keyboard_handle_leave(void *data,
    memset(wl->input.key_state, 0, sizeof(wl->input.key_state));
 }
 
+#ifndef WEBOS
 static void wl_keyboard_handle_key(void *data,
       struct wl_keyboard *keyboard,
       uint32_t serial,
@@ -133,6 +134,7 @@ static void wl_keyboard_handle_key(void *data,
          input_keymaps_translate_keysym_to_rk(keysym),
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
+#endif
 
 static void wl_keyboard_handle_modifiers(void *data,
       struct wl_keyboard *keyboard,
@@ -862,11 +864,11 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
       bool null_terminate)
 {
    char temp[PIPE_BUF];
-   void* output_buffer      = NULL;
-   size_t new_buffer_length = 0;
-   ssize_t bytes_read       = 0;
-   size_t pos               = 0;
-   int ready                = wl_ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
+   void* output_buffer = NULL;
+   size_t _len         = 0;
+   ssize_t bytes_read  = 0;
+   size_t pos          = 0;
+   int ready           = wl_ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
 
    if (ready == 0)     /* Pipe timeout? */
       bytes_read = -1;
@@ -876,25 +878,25 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
    {
       if ((bytes_read = read(fd, temp, sizeof(temp))) > 0)
       {
-         pos                   = *total_length;
-         *total_length        += bytes_read;
+         pos              = *total_length;
+         *total_length   += bytes_read;
 
          if (null_terminate)
-            new_buffer_length  = *total_length + 1;
+            _len          = *total_length + 1;
          else
-            new_buffer_length  = *total_length;
+            _len          = *total_length;
 
          if (*buffer == NULL)
-            output_buffer      = malloc(new_buffer_length);
+            output_buffer = malloc(_len);
          else
-            output_buffer      = realloc(*buffer, new_buffer_length);
+            output_buffer = realloc(*buffer, _len);
 
          if (output_buffer)
          {
             memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
 
             if (null_terminate)
-               memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
+               memset((uint8_t*)output_buffer + (_len - 1), 0, 1);
 
             *buffer = output_buffer;
          }
@@ -906,8 +908,7 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
 
 static void *wayland_data_offer_receive(
       struct wl_display *display, struct wl_data_offer *offer,
-      size_t *length,
-      const char* mime_type, bool null_terminate)
+      size_t *length, const char* mime_type, bool null_terminate)
 {
    int pipefd[2];
    void *buffer = NULL;
@@ -1120,7 +1121,11 @@ const struct wl_keyboard_listener keyboard_listener = {
    wl_keyboard_handle_keymap,
    wl_keyboard_handle_enter,
    wl_keyboard_handle_leave,
+#ifdef WEBOS
+   wl_keyboard_handle_key_webos,
+#else
    wl_keyboard_handle_key,
+#endif
    wl_keyboard_handle_modifiers,
    wl_keyboard_handle_repeat_info
 };

@@ -3209,7 +3209,11 @@ static int udev_input_add_device(udev_input_t *udev,
 
       if (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof (abscaps)), abscaps) != -1)
       {
+#ifdef UDEV_TOUCH_SUPPORT
+         if ( ( test_bit(abscaps, ABS_X) && test_bit(abscaps, ABS_Y) ) || ( test_bit(abscaps, ABS_MT_POSITION_X) && test_bit(abscaps, ABS_MT_POSITION_Y) ) )
+#else
          if ( (test_bit(abscaps, ABS_X)) && (test_bit(abscaps, ABS_Y)) )
+#endif
          {
             mouse = 1;
 

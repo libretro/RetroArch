@@ -37,6 +37,8 @@
 		07912FC22E22B3FF004AA331 /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07912FC12E22B3FF004AA331 /* AppIntents.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
 		07B9B97C2E499D34007E419E /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 076EAFD82E1F70D100C727AD /* RetroArchAppShortcuts.swift */; };
+		07ATRANS032025010700000003 /* AppleTranslateBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07ATRANS012025010700000001 /* AppleTranslateBackend.swift */; };
+		07ATRANS042025010700000004 /* AppleTranslateBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07ATRANS012025010700000001 /* AppleTranslateBackend.swift */; };
 		07C5C6402CD167470030FBEC /* GCDWebDAVServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
@@ -176,6 +178,8 @@
 		076A9EAF2C438E1D00504BDF /* RetroArchiOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; name = RetroArchiOS.entitlements; path = iOS/RetroArchiOS.entitlements; sourceTree = SOURCE_ROOT; };
 		076CA50C2B695C2C00840EA5 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		076EAFD82E1F70D100C727AD /* RetroArchAppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroArchAppShortcuts.swift; sourceTree = "<group>"; };
+		07ATRANS012025010700000001 /* AppleTranslateBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppleTranslateBackend.swift; path = ../../ui/drivers/cocoa/AppleTranslateBackend.swift; sourceTree = SOURCE_ROOT; };
+		07ATRANS022025010700000002 /* translation_driver_apple.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = translation_driver_apple.h; path = ../../ui/drivers/cocoa/translation_driver_apple.h; sourceTree = SOURCE_ROOT; };
 		077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = AppStore.xcconfig; path = iOS/AppStore.xcconfig; sourceTree = "<group>"; };
 		07912FC12E22B3FF004AA331 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
@@ -525,7 +529,9 @@
 		07649B662E1C47220003184B /* AppIntents */ = {
 			isa = PBXGroup;
 			children = (
+				07ATRANS012025010700000001 /* AppleTranslateBackend.swift */,
 				076EAFD82E1F70D100C727AD /* RetroArchAppShortcuts.swift */,
+				07ATRANS022025010700000002 /* translation_driver_apple.h */,
 			);
 			path = AppIntents;
 			sourceTree = "<group>";
@@ -1546,6 +1552,7 @@
 				92CC05B421FE3C1700FF79F0 /* GCDWebServerURLEncodedFormRequest.m in Sources */,
 				92CC05B021FE3C1700FF79F0 /* GCDWebServerDataResponse.m in Sources */,
 				92CC05C221FE3C6D00FF79F0 /* WebServer.m in Sources */,
+				07ATRANS032025010700000003 /* AppleTranslateBackend.swift in Sources */,
 				076EAFD92E1F70D100C727AD /* RetroArchAppShortcuts.swift in Sources */,
 				9210C2FC24B4CB4900E6FE7C /* menu_pipeline.metal in Sources */,
 				9210C2FE24B4CB4900E6FE7C /* Shaders.metal in Sources */,
@@ -1585,6 +1592,7 @@
 				073734A42A093A5700BF7397 /* JITSupport.m in Sources */,
 				92CC05B321FE3C1700FF79F0 /* GCDWebServerStreamedResponse.m in Sources */,
 				92CC05A321FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */,
+				07ATRANS042025010700000004 /* AppleTranslateBackend.swift in Sources */,
 				07B9B97C2E499D34007E419E /* RetroArchAppShortcuts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -77,6 +77,7 @@
 #endif
 
 #include "verbosity.h"
+#include "file_path_special.h"
 
 #ifdef HAVE_QT
 #include "ui/ui_companion_driver.h"
@@ -99,15 +100,18 @@ typedef struct verbosity_state
 #ifdef HAVE_LIBNX
    Mutex mtx;
 #endif
-   /* If this is non-NULL. RARCH_LOG and friends
+   /* If this is non-NULL, RARCH_LOG and friends
     * will write to this file. */
-   FILE *fp;
-   void *buf;
+   FILE *fp;   /* pointer-sized: keep near top */
+   void *buf;  /* pointer-sized: keep near top */
 
-   char override_path[PATH_MAX_LENGTH];
+   /* Booleans grouped together to avoid padding holes */
    bool verbosity;
    bool initialized;
    bool override_active;
+
+   /* Large array last: avoids padding before it */
+   char override_path[PATH_MAX_LENGTH];
 } verbosity_state_t;
 
 /* TODO/FIXME - static public global variables */
@@ -131,60 +135,55 @@ void verbosity_set_log_level(unsigned level)
 
 void verbosity_enable(void)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-
-   g_verbosity->verbosity         = true;
+   main_verbosity_st.verbosity = true;
 #ifdef RARCH_INTERNAL
-   if (!g_verbosity->initialized)
+   if (!main_verbosity_st.initialized)
       frontend_driver_attach_console();
 #endif
 }
 
 void verbosity_disable(void)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-
-   g_verbosity->verbosity         = false;
+   main_verbosity_st.verbosity = false;
 #ifdef RARCH_INTERNAL
-   if (!g_verbosity->initialized)
+   if (!main_verbosity_st.initialized)
       frontend_driver_detach_console();
 #endif
 }
 
 bool verbosity_is_enabled(void)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-   return g_verbosity->verbosity;
+   return main_verbosity_st.verbosity;
 }
 
 bool is_logging_to_file(void)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-   return g_verbosity->initialized;
+   return main_verbosity_st.initialized;
 }
 
 bool *verbosity_get_ptr(void)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-   return &g_verbosity->verbosity;
+   return &main_verbosity_st.verbosity;
 }
 
 void retro_main_log_file_init(const char *path, bool append)
 {
-   FILE *tmp                      = NULL;
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-   if (g_verbosity->initialized)
+   FILE *tmp;
+
+   if (main_verbosity_st.initialized)
       return;
 
 #ifdef HAVE_LIBNX
-   mutexInit(&g_verbosity->mtx);
+   mutexInit(&main_verbosity_st.mtx);
 #endif
 
-   g_verbosity->fp      = stderr;
+   /* Default to stderr; only override when a valid path is given */
+   main_verbosity_st.fp = stderr;
+
    if (!path)
       return;
 
-   tmp                  = (FILE*)fopen_utf8(path, append ? "ab" : "wb");
+   tmp = (FILE*)fopen_utf8(path, append ? "ab" : "wb");
 
    if (!tmp)
    {
@@ -192,212 +191,266 @@ void retro_main_log_file_init(const char *path, bool append)
       return;
    }
 
-   g_verbosity->fp          = tmp;
-   g_verbosity->initialized = true;
+   main_verbosity_st.fp          = tmp;
+   main_verbosity_st.initialized = true;
 
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
-   g_verbosity->buf         = calloc(1, 0x4000);
-   setvbuf(g_verbosity->fp, (char*)g_verbosity->buf, _IOFBF, 0x4000);
+   main_verbosity_st.buf = calloc(1, 0x4000);
+   setvbuf(main_verbosity_st.fp,
+           (char*)main_verbosity_st.buf, _IOFBF, 0x4000);
 }
 
 void retro_main_log_file_deinit(void)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-
-   if (g_verbosity->fp && g_verbosity->initialized)
+   if (main_verbosity_st.fp && main_verbosity_st.initialized)
    {
-      fclose(g_verbosity->fp);
-      g_verbosity->fp       = NULL;
+      fclose(main_verbosity_st.fp);
+      main_verbosity_st.fp = NULL;
    }
-   if (g_verbosity->buf)
-      free(g_verbosity->buf);
-   g_verbosity->buf         = NULL;
-   g_verbosity->initialized = false;
+   free(main_verbosity_st.buf);
+   main_verbosity_st.buf         = NULL;
+   main_verbosity_st.initialized = false;
 }
 
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-#if defined(_XBOX1) || defined (__WINRT__)
-   /* FIXME: Using arbitrary string as fmt argument is unsafe. */
-   char msg_new[256];
+#if defined(_XBOX1) || defined(__WINRT__)
    char buffer[256];
+   int _len;
    const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
+   buffer[0] = '\0';
+   _len = snprintf(buffer, sizeof(buffer),
+         "%s: %s ", FILE_PATH_PROGRAM_NAME, tag_v);
 
-   msg_new[0]        = buffer[0] = '\0';
-   snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
-         FILE_PATH_PROGRAM_NAME, tag_v, fmt);
+   if (_len > 0 && _len < (int)sizeof(buffer))
+   {
 #if defined(__WINRT__)
-   vsnprintf(buffer, sizeof(buffer), msg_new, ap);
+      vsnprintf(buffer + _len, sizeof(buffer) - (size_t)_len, fmt, ap);
 #else
-   wvsprintf(buffer, msg_new, ap);
+      wvsprintf(buffer + _len, fmt, ap);
 #endif
+   }
+#ifdef _DEBUG
    OutputDebugStringA(buffer);
-#elif defined(ANDROID)
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-   int prio = ANDROID_LOG_INFO;
-   if (tag)
+#endif
+   if (main_verbosity_st.initialized && main_verbosity_st.fp)
    {
-      if (string_is_equal(FILE_PATH_LOG_WARN, tag))
-         prio = ANDROID_LOG_WARN;
-      else if (string_is_equal(FILE_PATH_LOG_ERROR, tag))
-         prio = ANDROID_LOG_ERROR;
+      fputs(buffer, main_verbosity_st.fp);
+      fflush(main_verbosity_st.fp);
    }
 
-   if (g_verbosity->initialized)
+#elif defined(ANDROID)
    {
-      vfprintf(g_verbosity->fp, fmt, ap);
-      fflush(g_verbosity->fp);
-   }
-   else
-      __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
-#else
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-   FILE                       *fp = (FILE*)g_verbosity->fp;
-   const char              *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
-#if defined(HAVE_QT) || defined(__WINRT__)
-   char buffer[1024];
-   buffer[0]         = '\0';
-   /* Ensure NULL termination and line break in error case */
-   if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
-   {
-      size_t end;
-      buffer[sizeof(buffer) - 1]  = '\0';
-      end = strlen(buffer) - 1;
-      if (end >= 0)
-         buffer[end] = '\n';
+      FILE *fp = main_verbosity_st.fp;
+      if (main_verbosity_st.initialized && fp)
+      {
+         /* Already logging to file: single write path, no Android log overhead */
+         vfprintf(fp, fmt, ap);
+         fflush(fp);
+      }
       else
       {
-         buffer[0]   = '\n';
-         buffer[1]   = '\0';
+         int prio = ANDROID_LOG_INFO;
+         if (tag)
+         {
+            if (string_is_equal(FILE_PATH_LOG_WARN, tag))
+               prio = ANDROID_LOG_WARN;
+            else if (string_is_equal(FILE_PATH_LOG_ERROR, tag))
+               prio = ANDROID_LOG_ERROR;
+         }
+         __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
       }
    }
 
-   if (fp)
+#else
    {
-      fprintf(fp, "%s %s", tag_v, buffer);
-      fflush(fp);
-   }
+      FILE       *fp    = main_verbosity_st.fp;
+      const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
+
+#if defined(HAVE_QT) || defined(__WINRT__)
+      {
+         char buffer[1024];
+         int r;
+         buffer[0] = '\0';
+         r = vsnprintf(buffer, sizeof(buffer), fmt, ap);
+         if (r < 0)
+         {
+            size_t _len;
+            buffer[sizeof(buffer) - 1] = '\0';
+            _len = strlen(buffer);
+            if (_len > 0)
+               buffer[_len - 1] = '\n';
+            else
+            {
+               buffer[0] = '\n';
+               buffer[1] = '\0';
+            }
+         }
+
+         if (fp)
+         {
+            fprintf(fp, "%s %s", tag_v, buffer);
+            fflush(fp);
+         }
 
 #if defined(HAVE_QT)
-   ui_companion_driver_log_msg(buffer);
+         ui_companion_driver_log_msg(buffer);
 #endif
-
 #if defined(__WINRT__)
-   OutputDebugStringA(buffer);
+         OutputDebugStringA(buffer);
 #endif
-#else /* !HAVE_QT && !__WINRT__ */
-#if TARGET_OS_MAC /* any apple variant: macOS, iOS, tvOS, ... */
-   char *buffer = NULL;
-   va_list ap_cp;
-   va_copy(ap_cp, ap);
-   int r = vasprintf(&buffer, fmt, ap_cp);
-   va_end(ap_cp);
-   if (r < 0 || !buffer)
-   {
-      /* Fallback to a minimal newline to keep output formatting sensible */
-      buffer = (char*)malloc(2);
-      if (buffer)
-      {
-         buffer[0] = '\n';
-         buffer[1] = '\0';
       }
-   }
 
-#if TARGET_OS_OSX /* really macOS */
-   /* macOS: output to stdout for developer convenience */
-   printf("%s %s", tag_v, buffer);
-#else /* iOS, tvOS, ... */
-#if TARGET_OS_SIMULATOR
-   /* iOS Simulator: output to stderr for Xcode console */
-   fprintf(stderr, "%s %s", tag_v, buffer);
-#elif defined(__IPHONE_10_0) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0)
-   /* iOS 10+ and tvOS 10+: use os_log for unified logging */
-   os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
-#elif defined(__TV_OS_VERSION_MIN_REQUIRED) && defined(__TVOS_10_0) && (__TV_OS_VERSION_MIN_REQUIRED >= __TVOS_10_0)
-   /* tvOS 10+: use os_log for unified logging */
-   os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
 #else
-   /* iOS 9 and earlier: use ASL (Apple System Logger) */
-   static aslclient asl_client;
-   static int asl_initialized = 0;
-   if (!asl_initialized)
-   {
-      asl_client      = asl_open(FILE_PATH_PROGRAM_NAME,
-                                 "com.apple.console",
-                                 ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
-      asl_initialized = 1;
-   }
-   aslmsg msg = asl_new(ASL_TYPE_MSG);
-   asl_set(msg, ASL_KEY_READ_UID, "-1");
-   asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s %s", tag_v, buffer);
-   asl_free(msg);
-#endif
-#endif /* TARGET_OS_OSX */
-   free(buffer);
-#endif /* TARGET_OS_MAC */
+
+#if TARGET_OS_MAC
+      {
+         int     r;
+         va_list ap_cp;
+         char   *buffer = NULL;
+         va_copy(ap_cp, ap);
+         r = vasprintf(&buffer, fmt, ap_cp);
+         va_end(ap_cp);
+
+         if (r < 0 || !buffer)
+         {
+            free(buffer);
+            buffer = (char*)malloc(2);
+            if (!buffer)
+               goto apple_log_done;
+            buffer[0] = '\n';
+            buffer[1] = '\0';
+         }
+
+#if TARGET_OS_OSX
+         printf("%s %s", tag_v, buffer);
+         if (fp)
+         {
+            fprintf(fp, "%s %s", tag_v, buffer);
+            fflush(fp);
+         }
+
+#else
+         {
+#if TARGET_OS_SIMULATOR
+            fprintf(stderr, "%s %s", tag_v, buffer);
+#elif defined(__IPHONE_10_0) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0)
+            os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+#elif defined(__TV_OS_VERSION_MIN_REQUIRED) && defined(__TVOS_10_0) \
+         && (__TV_OS_VERSION_MIN_REQUIRED >= __TVOS_10_0)
+            os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+#else
+            {
+               static aslclient asl_client      = NULL;
+               static int       asl_initialized = 0;
+               aslmsg           msg;
+
 #if defined(HAVE_LIBNX)
-   mutexLock(&g_verbosity->mtx);
+               mutexLock(&g_verbosity->mtx);
 #endif
-   if (fp)
-   {
-      fprintf(fp, "%s ", tag_v);
-      vfprintf(fp, fmt, ap);
-      fflush(fp);
-   }
+               if (!asl_initialized)
+               {
+                  asl_client      = asl_open(FILE_PATH_PROGRAM_NAME,
+                                    "com.apple.console",
+                                    ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+                  asl_initialized = 1;
+               }
 #if defined(HAVE_LIBNX)
-   mutexUnlock(&g_verbosity->mtx);
+               mutexUnlock(&g_verbosity->mtx);
+#endif
+               msg = asl_new(ASL_TYPE_MSG);
+               asl_set(msg, ASL_KEY_READ_UID, "-1");
+               asl_log(asl_client, msg, ASL_LEVEL_NOTICE,
+               "%s %s", tag_v, buffer);
+               asl_free(msg);
+            }
 #endif
 
+            if (fp)
+            {
+               fprintf(fp, "%s %s", tag_v, buffer);
+               fflush(fp);
+            }
+         }
 #endif
+
+         free(buffer);
+      }
+
+apple_log_done:;
+
+#else
+      {
+#  if defined(HAVE_LIBNX)
+         mutexLock(&main_verbosity_st.mtx);
+#  endif
+
+         if (fp)
+         {
+            /* Write tag and message in one fprintf call to reduce
+             * write() syscall overhead vs. separate fprintf+vfprintf */
+            fprintf(fp, "%s ", tag_v);
+            vfprintf(fp, fmt, ap);
+            fflush(fp);
+         }
+
+#  if defined(HAVE_LIBNX)
+         mutexUnlock(&main_verbosity_st.mtx);
+#  endif
+      }
+#endif
+#endif
+   }
 #endif
 }
 
 void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
 {
    size_t i;
-   size_t offset;
-   int padding     = len % 16;
-   uint8_t buf[16] = {0};
+   size_t offset     = 0;
+   const uint8_t *end = data + len;
+   uint8_t buf[16];
 
    RARCH_LOG("== %d-byte buffer ==================\n", (int)len);
 
-   for (i = 0, offset = 0; i < len; i++)
-   {
-      buf[offset] = data[i];
-      offset++;
+   /* Zero-init once; tail padding written below */
+   for (i = 0; i < 16; i++)
+      buf[i] = 0;
 
+   for (i = 0; i < len; i++)
+   {
+      buf[offset++] = data[i];
       if (offset == 16)
       {
          offset = 0;
          RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
-            buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+            buf[0], buf[1], buf[2],  buf[3],  buf[4],  buf[5],  buf[6],  buf[7],
             buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
       }
    }
 
-   if (padding)
+   /* Flush partial last row (offset > 0 means leftover bytes) */
+   if (offset > 0)
    {
-      for (i = padding; i < 16; i++)
+      /* Pad remainder with 0xff to match original sentinel */
+      for (i = offset; i < 16; i++)
          buf[i] = 0xff;
       RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
-         buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+         buf[0], buf[1], buf[2],  buf[3],  buf[4],  buf[5],  buf[6],  buf[7],
          buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
    }
    RARCH_LOG("==================================\n");
+   (void)end; /* suppress unused-variable warning */
 }
 
 void RARCH_DBG(const char *fmt, ...)
 {
    va_list ap;
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
 #ifndef _DEBUG
-   if (!g_verbosity->verbosity)
-      return;
-   if (verbosity_log_level > 0)
+   if (!main_verbosity_st.verbosity || verbosity_log_level > 0)
       return;
 #endif
-
    va_start(ap, fmt);
    RARCH_LOG_V(FILE_PATH_LOG_DBG, fmt, ap);
    va_end(ap);
@@ -406,15 +459,10 @@ void RARCH_DBG(const char *fmt, ...)
 void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-
 #ifndef _DEBUG
-   if (!g_verbosity->verbosity)
-      return;
-   if (verbosity_log_level > 1)
+   if (!main_verbosity_st.verbosity || verbosity_log_level > 1)
       return;
 #endif
-
    va_start(ap, fmt);
    RARCH_LOG_V(FILE_PATH_LOG_INFO, fmt, ap);
    va_end(ap);
@@ -431,15 +479,10 @@ void RARCH_LOG_OUTPUT(const char *msg, ...)
 void RARCH_WARN(const char *fmt, ...)
 {
    va_list ap;
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-
 #ifndef _DEBUG
-   if (!g_verbosity->verbosity)
-      return;
-   if (verbosity_log_level > 2)
+   if (!main_verbosity_st.verbosity || verbosity_log_level > 2)
       return;
 #endif
-
    va_start(ap, fmt);
    RARCH_WARN_V(FILE_PATH_LOG_WARN, fmt, ap);
    va_end(ap);
@@ -448,13 +491,10 @@ void RARCH_WARN(const char *fmt, ...)
 void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-
 #ifndef _DEBUG
-   if (!g_verbosity->verbosity)
+   if (!main_verbosity_st.verbosity)
       return;
 #endif
-
    va_start(ap, fmt);
    RARCH_ERR_V(FILE_PATH_LOG_ERROR, fmt, ap);
    va_end(ap);
@@ -463,10 +503,9 @@ void RARCH_ERR(const char *fmt, ...)
 
 size_t rarch_log_file_set_override(const char *path)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-   g_verbosity->override_active   = true;
-   return strlcpy(g_verbosity->override_path, path,
-         sizeof(g_verbosity->override_path));
+   main_verbosity_st.override_active = true;
+   return strlcpy(main_verbosity_st.override_path, path,
+         sizeof(main_verbosity_st.override_path));
 }
 
 void rarch_log_file_init(
@@ -477,10 +516,9 @@ void rarch_log_file_init(
 {
    char log_directory[DIR_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
-   verbosity_state_t *g_verbosity            = &main_verbosity_st;
    static bool log_file_created              = false;
    static char timestamped_log_file_name[64] = {0};
-   bool logging_to_file                      = g_verbosity->initialized;
+   bool logging_to_file                      = main_verbosity_st.initialized;
 
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
@@ -491,14 +529,20 @@ void rarch_log_file_init(
       time_t cur_time = time(NULL);
 
       rtime_localtime(&cur_time, &tm_);
+#ifdef DJGPP
+      strftime(timestamped_log_file_name,
+            sizeof(timestamped_log_file_name),
+            "RA%d%H%M.log", &tm_);
+#else
       strftime(timestamped_log_file_name,
             sizeof(timestamped_log_file_name),
             "retroarch__%Y_%m_%d__%H_%M_%S.log", &tm_);
+#endif
    }
 
    /* If nothing has changed, do nothing */
-   if (  (!log_to_file && !logging_to_file)
-       || (log_to_file &&  logging_to_file))
+   if ((!log_to_file && !logging_to_file)
+       || (log_to_file && logging_to_file))
       return;
 
    /* If we are currently logging to file and wish to stop,
@@ -516,15 +560,15 @@ void rarch_log_file_init(
 
    /* > Check whether we are already logging to console */
    /* De-initialise existing logger */
-   if (g_verbosity->fp)
+   if (main_verbosity_st.fp)
       retro_main_log_file_deinit();
 
    /* > Get directory/file paths */
-   if (g_verbosity->override_active)
+   if (main_verbosity_st.override_active)
    {
       /* Get log directory */
-      const char *override_path        = g_verbosity->override_path;
-      const char *last_slash           = find_last_slash(override_path);
+      const char *override_path = main_verbosity_st.override_path;
+      const char *last_slash    = find_last_slash(override_path);
 
       if (last_slash)
       {
@@ -549,7 +593,7 @@ void rarch_log_file_init(
             log_dir,
             log_to_file_timestamp
             ? timestamped_log_file_name
-            : "retroarch.log",
+            : FILE_PATH_DEFAULT_EVENT_LOG,
             sizeof(log_file_path));
    }
    else
@@ -572,7 +616,7 @@ void rarch_log_file_init(
       /* When RetroArch is launched, log file is overwritten.
        * On subsequent calls within the same session, it is appended to. */
       retro_main_log_file_init(log_file_path, log_file_created);
-      if (g_verbosity->initialized)
+      if (main_verbosity_st.initialized)
          log_file_created = true;
       return;
    }
@@ -585,13 +629,11 @@ void rarch_log_file_init(
 
 void rarch_log_file_deinit(void)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
-
    /* De-initialise existing logger, if currently logging to file */
-   if (g_verbosity->initialized)
+   if (main_verbosity_st.initialized)
       retro_main_log_file_deinit();
 
    /* If logging is currently disabled... */
-   if (!g_verbosity->fp) /* ...initialise logging to console */
+   if (!main_verbosity_st.fp) /* ...initialise logging to console */
       retro_main_log_file_init(NULL, false);
 }

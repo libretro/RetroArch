@@ -207,7 +207,6 @@ static char *config_file_strip_comment(char *str)
 
 static char *config_file_extract_value(char *line)
 {
-   char *dst = NULL;
    while (ISSPACE((int)*line))
       line++;
 
@@ -255,13 +254,9 @@ static char *config_file_extract_value(char *line)
          return strdup(value);
    }
 
-   /* Note 2: This is an unrolled strldup call
-    * to avoid an unnecessary dependency -
-    * call is strldup("", sizeof(""))
-    **/
-   dst = (char*)malloc(sizeof(char) * 2);
-   strlcpy(dst, "", 1);
-   return dst;
+   /* Note 2: Return an empty string.
+    * calloc gives us a NUL-terminated empty string in one call. */
+   return (char*)calloc(1, 1);
 }
 
 /* Move semantics? */
@@ -271,32 +266,30 @@ static void config_file_add_child_list(config_file_t *parent,
    struct config_entry_list *list = child->entries;
    bool merge_hash_map            = false;
 
+   /* set list readonly */
+   while (list)
+   {
+      list->readonly = true;
+      list           = list->next;
+   }
+
    if (parent->entries)
    {
-      struct config_entry_list *head = parent->entries;
-      while (head->next)
-         head = head->next;
-
-      /* set list readonly */
-      while (list)
+      /* Use tracked tail instead of walking the list */
+      if (parent->tail)
+         parent->tail->next = child->entries;
+      else
       {
-         list->readonly = true;
-         list           = list->next;
+         struct config_entry_list *head = parent->entries;
+         while (head->next)
+            head = head->next;
+         head->next        = child->entries;
       }
-      head->next        = child->entries;
 
       merge_hash_map    = true;
    }
    else
-   {
-      /* set list readonly */
-      while (list)
-      {
-         list->readonly = true;
-         list           = list->next;
-      }
       parent->entries   = child->entries;
-   }
 
    /* Rebase tail. */
    if (parent->entries)
@@ -442,12 +435,21 @@ static int config_file_load_internal(
 
    while (!filestream_eof(file))
    {
-      char *line                     = NULL;
-      struct config_entry_list *list = (struct config_entry_list*)
-         malloc(sizeof(*list));
+      struct config_entry_list *list = NULL;
+      char *line                     = filestream_getline(file);
 
-      if (!list)
+      if (!line)
+         continue;
+
+      if (string_is_empty(line))
       {
+         free(line);
+         continue;
+      }
+
+      if (!(list = (struct config_entry_list*)malloc(sizeof(*list))))
+      {
+         free(line);
          filestream_close(file);
          return -1;
       }
@@ -457,17 +459,7 @@ static int config_file_load_internal(
       list->value     = NULL;
       list->next      = NULL;
 
-      line            = filestream_getline(file);
-
-      if (!line)
-      {
-         free(list);
-         continue;
-      }
-
-      if (
-              !string_is_empty(line)
-            && config_file_parse_line(conf, list, line, cb))
+      if (config_file_parse_line(conf, list, line, cb))
       {
          if (conf->entries)
             conf->tail->next = list;
@@ -492,11 +484,10 @@ static int config_file_load_internal(
             }
          }
       }
+      else
+         free(list);
 
       free(line);
-
-      if (list != conf->tail)
-         free(list);
    }
 
    filestream_close(file);
@@ -507,10 +498,8 @@ static int config_file_load_internal(
 static bool config_file_parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line, config_file_cb_t *cb)
 {
-   size_t cur_size       = 32;
    size_t idx            = 0;
    char *key             = NULL;
-   char *key_tmp         = NULL;
    /* Remove any comment text */
    char *comment         = config_file_strip_comment(line);
 
@@ -596,31 +585,23 @@ static bool config_file_parse_line(config_file_t *conf,
    while (ISSPACE((int)*line))
       line++;
 
-   /* Allocate storage for key */
-   if (!(key = (char*)malloc(cur_size + 1)))
-      return false;
-
-   /* Copy line contents into key until we
-    * reach the next space character */
-   while (isgraph((int)*line))
+   /* Measure key length first (up to next non-graph char),
+    * then copy once - avoids malloc+realloc growth pattern */
    {
-      /* If current key storage is too small,
-       * double its size */
-      if (idx == cur_size)
-      {
-         cur_size *= 2;
-         if (!(key_tmp   = (char*)realloc(key, cur_size + 1)))
-         {
-            free(key);
-            return false;
-         }
+      const char *key_start = line;
+      while (isgraph((int)*line))
+         line++;
+      idx = (size_t)(line - key_start);
 
-         key     = key_tmp;
-      }
+      if (idx == 0)
+         return false;
 
-      key[idx++] = *line++;
+      if (!(key = (char*)malloc(idx + 1)))
+         return false;
+
+      memcpy(key, key_start, idx);
+      key[idx] = '\0';
    }
-   key[idx]      = '\0';
 
    /* Add key and value entries to list */
    list->key     = key;
@@ -670,42 +651,44 @@ static int config_file_from_string_internal(
 
    while (line)
    {
-      struct config_entry_list *list = (struct config_entry_list*)
-            malloc(sizeof(*list));
-
-      if (!list)
-         return -1;
-
-      list->readonly  = false;
-      list->key       = NULL;
-      list->value     = NULL;
-      list->next      = NULL;
+      struct config_entry_list *list = NULL;
 
       /* Parse current line */
-      if (
-              !string_is_empty(line)
-            && config_file_parse_line(conf, list, line, NULL))
+      if (!string_is_empty(line))
       {
-         if (conf->entries)
-            conf->tail->next = list;
-         else
-            conf->entries    = list;
+         list = (struct config_entry_list*)
+               malloc(sizeof(*list));
 
-         conf->tail          = list;
+         if (!list)
+            return -1;
 
-         if (list->key)
+         list->readonly  = false;
+         list->key       = NULL;
+         list->value     = NULL;
+         list->next      = NULL;
+
+         if (config_file_parse_line(conf, list, line, NULL))
          {
-            /* Only add entry to the map if an entry
-             * with the specified value does not
-             * already exist */
-            uint32_t hash = rhmap_hash_string(list->key);
-            if (!RHMAP_HAS_FULL(conf->entries_map, hash, list->key))
-               RHMAP_SET_FULL(conf->entries_map, hash, list->key, list);
-         }
-      }
+            if (conf->entries)
+               conf->tail->next = list;
+            else
+               conf->entries    = list;
 
-      if (list != conf->tail)
-         free(list);
+            conf->tail          = list;
+
+            if (list->key)
+            {
+               /* Only add entry to the map if an entry
+                * with the specified value does not
+                * already exist */
+               uint32_t hash = rhmap_hash_string(list->key);
+               if (!RHMAP_HAS_FULL(conf->entries_map, hash, list->key))
+                  RHMAP_SET_FULL(conf->entries_map, hash, list->key, list);
+            }
+         }
+         else
+            free(list);
+      }
 
       /* Get next line of config file */
       line = strtok_r(NULL, "\n", &save_ptr);
@@ -1409,20 +1392,17 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
          config_file_dump(conf, stdout, sort);
       else
       {
-         void* buf  = NULL;
+         char buf[0x4000];
          FILE *file = (FILE*)fopen_utf8(path, "wb");
          if (!file)
             return false;
 
-         buf        = calloc(1, 0x4000);
-         setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+         setvbuf(file, buf, _IOFBF, sizeof(buf));
 
          config_file_dump(conf, file, sort);
 
          if (file != stdout)
             fclose(file);
-         if (buf)
-            free(buf);
 
          /* Only update modified flag if config file
           * is actually written to disk */

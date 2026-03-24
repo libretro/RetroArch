@@ -245,6 +245,26 @@ static uint32_t gfx_ctx_emscripten_get_flags(void *data)
 
 static void gfx_ctx_emscripten_set_flags(void *data, uint32_t flags) { }
 
+static bool gfx_ctx_emscripten_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
+   return egl_create_surface(&emscripten->egl, 0);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_emscripten_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
+   return egl_destroy_surface(&emscripten->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_init,
    gfx_ctx_emscripten_destroy,
@@ -280,5 +300,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_set_flags,
    gfx_ctx_emscripten_bind_hw_render,
    NULL, /* get_context_data */
-   NULL  /* make_current */
+   NULL, /* make_current */
+   gfx_ctx_emscripten_create_surface,
+   gfx_ctx_emscripten_destroy_surface
 };

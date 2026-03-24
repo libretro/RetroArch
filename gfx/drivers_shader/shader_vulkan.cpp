@@ -38,6 +38,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
+#include "../../input/input_driver.h"
 
 static const uint32_t opaque_vert[] =
 #include "../drivers/vulkan_shaders/opaque.vert.inc"
@@ -46,6 +47,12 @@ static const uint32_t opaque_vert[] =
 static const uint32_t opaque_frag[] =
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 ;
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+static const uint32_t hdr_frag[] =
+#include "../drivers/vulkan_shaders/hdr.frag.inc"
+;
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 struct Texture
 {
@@ -259,6 +266,17 @@ class Pass
       void set_rotation(uint32_t rot) { rotation = rot; }
       void set_core_aspect(float coreaspect) { core_aspect = coreaspect; }
       void set_core_aspect_rot(float coreaspectrot) { core_aspect_rot = coreaspectrot; }
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+      void set_hdr_mode(unsigned hdr_mode_) { hdr_mode = hdr_mode_; }
+      void set_paper_white_nits(float paper_white_nits_) { paper_white_nits = paper_white_nits_; }
+      void set_expand_gamut(unsigned expand_gamut_) { expand_gamut = expand_gamut_; }
+      void set_scanlines(float scanlines_) { scanlines = scanlines_; }
+      void set_subpixel_layout(unsigned subpixel_layout_ ) { subpixel_layout = subpixel_layout_; }
+      void set_inverse_tonemap(float inverse_tonemap_) { inverse_tonemap = inverse_tonemap_; }
+      void set_hdr10(float hdr10_) { hdr10 = hdr10_; }
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
       glslang_filter_chain_filter get_source_filter() const {
@@ -334,6 +352,7 @@ class Pass
       void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
       void build_semantic_int(uint8_t *data, slang_semantic semantic, int32_t value);
       void build_semantic_float(uint8_t *data,slang_semantic semantic, float value);
+      void build_semantic_vec3(uint8_t *data, slang_semantic semantic, const float *values);
       void build_semantic_parameter(uint8_t *data, unsigned index, float value);
       void build_semantic_texture_vec4(uint8_t *data,
             slang_texture_semantic semantic,
@@ -357,6 +376,16 @@ class Pass
       unsigned pass_number        = 0;
       uint32_t total_subframes    = 1;
       uint32_t current_subframe   = 1;
+      
+#ifdef VULKAN_HDR_SWAPCHAIN
+      unsigned hdr_mode           = 0;
+      float paper_white_nits      = 0.0f;
+      unsigned expand_gamut       = 0;
+      float scanlines             = 0.0f;
+      unsigned subpixel_layout    = 0;
+      float inverse_tonemap       = 0.0f;
+      float hdr10                 = 0.0f;
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
 
       size_t ubo_offset           = 0;
       std::string pass_name;
@@ -425,6 +454,16 @@ struct vulkan_filter_chain
       void set_rotation(uint32_t rot);
       void set_core_aspect(float coreaspect);
       void set_core_aspect_rot(float coreaspect);
+#ifdef VULKAN_HDR_SWAPCHAIN
+      void set_hdr_mode(unsigned hdr_mode);
+      void set_paper_white_nits(float paper_white_nits);
+      void set_expand_gamut(unsigned expand_gamut);
+      void set_scanlines(float scanlines);
+      void set_subpixel_layout(unsigned subpixel_layout);
+      void set_inverse_tonemap(float inverse_tonemap);
+      void set_hdr10(float hdr10);
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
       void set_pass_name(unsigned pass, const char *name);
 
       void add_static_texture(std::unique_ptr<StaticTexture> texture);
@@ -435,6 +474,9 @@ struct vulkan_filter_chain
 
       bool emits_hdr10() const;
       void set_hdr10();
+
+      bool emits_hdr16() const;
+      void set_hdr16();
 
    private:
       VkDevice device;
@@ -456,6 +498,7 @@ struct vulkan_filter_chain
       std::vector<std::unique_ptr<Framebuffer>> original_history;
       bool require_clear        = false;
       bool emits_hdr_colorspace = false;
+      bool emits_hdr16_output   = false;
 
       void flush();
 
@@ -1283,6 +1326,16 @@ void vulkan_filter_chain::set_hdr10()
    emits_hdr_colorspace = true;
 }
 
+bool vulkan_filter_chain::emits_hdr16() const
+{
+   return emits_hdr16_output;
+}
+
+void vulkan_filter_chain::set_hdr16()
+{
+   emits_hdr16_output = true;
+}
+
 void vulkan_filter_chain::set_num_passes(unsigned num_passes)
 {
    unsigned i;
@@ -1469,7 +1522,6 @@ void vulkan_filter_chain::set_rotation(uint32_t rot)
       passes[i]->set_rotation(rot);
 }
 
-
 void vulkan_filter_chain::set_core_aspect(float coreaspect)
 {
    unsigned i;
@@ -1483,6 +1535,60 @@ void vulkan_filter_chain::set_core_aspect_rot(float coreaspectrot)
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_core_aspect_rot(coreaspectrot);
 }
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+void vulkan_filter_chain::set_hdr_mode(unsigned hdr_mode)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_hdr_mode(hdr_mode);
+}
+
+void vulkan_filter_chain::set_paper_white_nits(float paper_white_nits)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_paper_white_nits(paper_white_nits);
+}
+
+
+
+void vulkan_filter_chain::set_expand_gamut(unsigned expand_gamut)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_expand_gamut(expand_gamut);
+}
+
+void vulkan_filter_chain::set_scanlines(float scanlines)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_scanlines(scanlines);
+}
+
+void vulkan_filter_chain::set_subpixel_layout(unsigned subpixel_layout )
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_subpixel_layout(subpixel_layout);
+}
+
+void vulkan_filter_chain::set_inverse_tonemap(float inverse_tonemap)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_inverse_tonemap(inverse_tonemap);
+}
+
+void vulkan_filter_chain::set_hdr10(float hdr10)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_hdr10(hdr10);
+}
+
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
@@ -2195,6 +2301,16 @@ bool Pass::build()
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
 
+   {
+      auto &g = reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
+      auto &a = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
+      auto &r = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
+      if (g.uniform || g.push_constant ||
+          a.uniform || a.push_constant ||
+          r.uniform || r.push_constant)
+         input_state_get_ptr()->shader_uses_sensors = true;
+   }
+
    /* Filter out parameters which we will never use anyways. */
    filtered_parameters.clear();
 
@@ -2334,6 +2450,18 @@ void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
       *reinterpret_cast<float*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
 }
 
+void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
+                              const float *values)
+{
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
+      memcpy(data + refl.ubo_offset, values, 3 * sizeof(float));
+
+   if (refl.push_constant)
+      memcpy(push.buffer.data() + (refl.push_constant_offset >> 2), values, 3 * sizeof(float));
+}
+
 
 void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
@@ -2411,6 +2539,41 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
 
    build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
                       core_aspect_rot);
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+   build_semantic_uint(buffer, SLANG_SEMANTIC_HDR,
+                      hdr_mode);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
+                      paper_white_nits);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_SCANLINES,
+                      scanlines);
+
+   build_semantic_uint(buffer, SLANG_SEMANTIC_SUBPIXEL_LAYOUT,
+                      subpixel_layout);
+
+   build_semantic_uint(buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
+                      expand_gamut);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_INVERSE_TONEMAP,
+                      inverse_tonemap);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_HDR10,
+                      hdr10);
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
+   /* Sensor uniforms — per-frame snapshot cached
+    * by input_driver_poll() on the main thread */
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      build_semantic_vec3(buffer, SLANG_SEMANTIC_GYROSCOPE,
+                        input_st->sensor_gyroscope_cache);
+      build_semantic_vec3(buffer, SLANG_SEMANTIC_ACCELEROMETER,
+                        input_st->sensor_accelerometer_cache);
+      build_semantic_vec3(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
+                        input_st->sensor_accelerometer_rest);
+   }
 
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
@@ -2857,9 +3020,21 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    chain->set_shader(0, VK_SHADER_STAGE_VERTEX_BIT,
          opaque_vert,
          sizeof(opaque_vert) / sizeof(uint32_t));
-   chain->set_shader(0, VK_SHADER_STAGE_FRAGMENT_BIT,
-         opaque_frag,
-         sizeof(opaque_frag) / sizeof(uint32_t));
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (info->hdr_enabled)
+   {
+      chain->set_shader(0, VK_SHADER_STAGE_FRAGMENT_BIT,
+            hdr_frag,
+            sizeof(hdr_frag) / sizeof(uint32_t));
+   }
+   else
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
+   {
+      chain->set_shader(0, VK_SHADER_STAGE_FRAGMENT_BIT,
+            opaque_frag,
+            sizeof(opaque_frag) / sizeof(uint32_t));
+   }
 
    if (!chain->init())
       return nullptr;
@@ -3024,18 +3199,30 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
             pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
 
-            /* Always inherit swapchain format. */
-            pass_info.rt_format  = tmpinfo.swapchain.format;
             VkFormat pass_format = glslang_format_to_vk(output.meta.rt_format);
 
             /* If final pass explicitly emits RGB10, consider it HDR color space. */
             if (explicit_format && vulkan_is_hdr10_format(pass_format))
                chain->set_hdr10();
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+            /* If the final pass explicitly requests RGBA16F, flag it so
+             * the driver knows this shader handles HDR conversion and
+             * can skip the internal HDR pipeline (passthrough mode).
+             * The final pass renders directly to the swapchain, so
+             * rt_format inherits the swapchain format — the hardware
+             * handles any quantisation (e.g. float → 10-bit for PQ). */
+            if (explicit_format && pass_format == VK_FORMAT_R16G16B16A16_SFLOAT)
+               chain->set_hdr16();
+#endif
+
+            /* Inherit swapchain format. */
+            pass_info.rt_format = tmpinfo.swapchain.format;
+
             if (explicit_format && pass_format != pass_info.rt_format)
             {
                RARCH_WARN("[Vulkan] Using explicit format for last pass in chain,"
-                     " but it is not rendered to framebuffer, using swapchain format instead.\n");
+                        " but it is not rendered to framebuffer, using swapchain format instead.\n");
             }
          }
          else
@@ -3059,6 +3246,21 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
          RARCH_LOG("[Vulkan] Using render target format %s for pass output #%u.\n",
                glslang_format_to_string(output.meta.rt_format), i);
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+         /* If the final pass explicitly emits an HDR10 or RGBA16F
+          * format via #pragma format, flag it so the driver skips its
+          * own inverse-tonemap / HDR10 conversion (passthrough mode).
+          * Without this, the hidden copy pass added for scale_type
+          * would re-apply HDR processing on already-HDR content. */
+         if (i + 1 == shader->passes)
+         {
+            if (explicit_format && vulkan_is_hdr10_format(pass_info.rt_format))
+               chain->set_hdr10();
+            else if (explicit_format && pass_info.rt_format == VK_FORMAT_R16G16B16A16_SFLOAT)
+               chain->set_hdr16();
+         }
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
          switch (pass->fbo.type_x)
          {
@@ -3124,6 +3326,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             opaque_vert,
             sizeof(opaque_vert) / sizeof(uint32_t));
 
+      /* The hidden copy/scale pass is always a plain blit.
+       * HDR conversion is handled by the HDR pipeline, not here. */
       chain->set_shader(shader->passes,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             opaque_frag,
@@ -3151,6 +3355,7 @@ void vulkan_filter_chain_free(
       vulkan_filter_chain_t *chain)
 {
    delete chain;
+   input_state_get_ptr()->shader_uses_sensors = false;
 }
 
 void vulkan_filter_chain_set_shader(
@@ -3284,6 +3489,58 @@ void vulkan_filter_chain_set_core_aspect_rot(
    chain->set_core_aspect_rot(coreaspectrot);
 }
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+void vulkan_filter_chain_set_hdr_mode(
+      vulkan_filter_chain_t *chain,
+      unsigned hdr_mode)
+{
+   chain->set_hdr_mode(hdr_mode);
+}
+
+void vulkan_filter_chain_set_paper_white_nits(
+      vulkan_filter_chain_t *chain,
+      float paper_white_nits)
+{
+   chain->set_paper_white_nits(paper_white_nits);
+}
+
+
+void vulkan_filter_chain_set_expand_gamut(
+      vulkan_filter_chain_t *chain,
+      unsigned expand_gamut)
+{
+   chain->set_expand_gamut(expand_gamut);
+}
+
+void vulkan_filter_chain_set_scanlines(
+      vulkan_filter_chain_t *chain,
+      float scanlines)
+{
+   chain->set_scanlines(scanlines);
+}
+
+void vulkan_filter_chain_set_subpixel_layout(
+      vulkan_filter_chain_t *chain,
+      unsigned subpixel_layout)
+{
+   chain->set_subpixel_layout(subpixel_layout);
+}
+
+void vulkan_filter_chain_set_inverse_tonemap(
+      vulkan_filter_chain_t *chain,
+      float inverse_tonemap)
+{
+   chain->set_inverse_tonemap(inverse_tonemap);
+}
+
+void vulkan_filter_chain_set_hdr10(
+      vulkan_filter_chain_t *chain,
+      float hdr10)
+{
+   chain->set_hdr10(hdr10);
+}
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
 void vulkan_filter_chain_set_pass_name(
       vulkan_filter_chain_t *chain,
       unsigned pass,
@@ -3316,4 +3573,9 @@ void vulkan_filter_chain_end_frame(
 bool vulkan_filter_chain_emits_hdr10(vulkan_filter_chain_t *chain)
 {
    return chain->emits_hdr10();
+}
+
+bool vulkan_filter_chain_emits_hdr16(vulkan_filter_chain_t *chain)
+{
+   return chain->emits_hdr16();
 }

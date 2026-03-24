@@ -789,12 +789,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             RBUF_CLEAR(split_buf);
          }
 
-         /* if all entries have found connections, we can leave early */
-         if (--rdb->count == 0)
-         {
-            rmsgpack_dom_value_free(&item);
-            break;
-         }
+         /* Do not leave early, even if all items have been found - merge all hits */
       }
 
       libretrodb_cursor_close(cur);

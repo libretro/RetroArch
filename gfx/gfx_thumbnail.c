@@ -559,41 +559,41 @@ void gfx_thumbnail_request_streams(
       unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
 {
-   bool process_right = false;
-   bool process_left  = false;
+   bool process_r = false;
+   bool process_l = false;
 
    if (!right_thumbnail || !left_thumbnail)
       return;
 
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
-   process_right = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
-   process_left  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
+   process_r = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
+   process_l = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
 
-   if (process_right || process_left)
+   if (process_r || process_l)
    {
       /* Check if stream delay timer has elapsed */
       gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
       float delta_time                   = p_anim->delta_time;
-      bool request_right                 = false;
-      bool request_left                  = false;
+      bool request_r                     = false;
+      bool request_l                     = false;
 
-      if (process_right)
+      if (process_r)
       {
          right_thumbnail->delay_timer += delta_time;
-         request_right                 =
+         request_r                     =
                (right_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
       }
 
-      if (process_left)
+      if (process_l)
       {
          left_thumbnail->delay_timer  += delta_time;
-         request_left                  =
+         request_l                     =
                (left_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
       }
 
       /* Check if one or more thumbnails should be requested */
-      if (request_right || request_left)
+      if (request_r || request_l)
       {
          /* Sanity check */
          if (!path_data)
@@ -601,14 +601,14 @@ void gfx_thumbnail_request_streams(
             /* No path information
              * > Reset thumbnail and set missing status
              *   to prevent repeated load attempts */
-            if (request_right)
+            if (request_r)
             {
                gfx_thumbnail_reset(right_thumbnail);
                right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
                right_thumbnail->alpha  = 1.0f;
             }
 
-            if (request_left)
+            if (request_l)
             {
                gfx_thumbnail_reset(left_thumbnail);
                left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
@@ -619,13 +619,13 @@ void gfx_thumbnail_request_streams(
          }
 
          /* Request image load */
-         if (request_right)
+         if (request_r)
             gfx_thumbnail_request(
                   path_data, GFX_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail,
                   gfx_thumbnail_upscale_threshold,
                   network_on_demand_thumbnails);
 
-         if (request_left)
+         if (request_l)
             gfx_thumbnail_request(
                   path_data, GFX_THUMBNAIL_LEFT, playlist, idx, left_thumbnail,
                   gfx_thumbnail_upscale_threshold,
@@ -738,33 +738,33 @@ void gfx_thumbnail_process_streams(
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
-      bool process_right = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
-      bool process_left  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      bool process_r = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      bool process_l = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
 
-      if (process_right || process_left)
+      if (process_r || process_l)
       {
          /* Check if stream delay timer has elapsed */
          gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
          float delta_time                   = p_anim->delta_time;
-         bool request_right                 = false;
-         bool request_left                  = false;
+         bool request_r                     = false;
+         bool request_l                     = false;
 
-         if (process_right)
+         if (process_r)
          {
             right_thumbnail->delay_timer += delta_time;
-            request_right                 =
+            request_r                     =
                   (right_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
          }
 
-         if (process_left)
+         if (process_l)
          {
             left_thumbnail->delay_timer  += delta_time;
-            request_left                  =
+            request_l                     =
                   (left_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
          }
 
          /* Check if one or more thumbnails should be requested */
-         if (request_right || request_left)
+         if (request_r || request_l)
          {
             /* Update thumbnail content */
             if (   !path_data
@@ -773,14 +773,14 @@ void gfx_thumbnail_process_streams(
             {
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
-               if (request_right)
+               if (request_r)
                {
                   gfx_thumbnail_reset(right_thumbnail);
                   right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
                   right_thumbnail->alpha  = 1.0f;
                }
 
-               if (request_left)
+               if (request_l)
                {
                   gfx_thumbnail_reset(left_thumbnail);
                   left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
@@ -791,13 +791,13 @@ void gfx_thumbnail_process_streams(
             }
 
             /* Request image load */
-            if (request_right)
+            if (request_r)
                gfx_thumbnail_request(
                      path_data, GFX_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail,
                      gfx_thumbnail_upscale_threshold,
                      network_on_demand_thumbnails);
 
-            if (request_left)
+            if (request_l)
                gfx_thumbnail_request(
                      path_data, GFX_THUMBNAIL_LEFT, playlist, idx, left_thumbnail,
                      gfx_thumbnail_upscale_threshold,

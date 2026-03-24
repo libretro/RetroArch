@@ -62,8 +62,10 @@ static int32_t rc_classify_conditions(rc_condset_t* self, const char* memaddr, c
   do {
     rc_parse_condition_internal(&condition, &memaddr, &parse);
 
-    if (parse.offset < 0)
+    if (parse.offset < 0) {
+      rc_destroy_parse_state(&parse);
       return parse.offset;
+    }
 
     ++index;
 
@@ -106,7 +108,9 @@ static int32_t rc_classify_conditions(rc_condset_t* self, const char* memaddr, c
    * logic in rc_find_next_classification */
   self->num_other_conditions += chain_length - 1;
 
-  return index;
+  rc_destroy_parse_state(&parse);
+
+  return (int32_t)index;
 }
 
 static int rc_find_next_classification(const char* memaddr) {
@@ -130,10 +134,12 @@ static int rc_find_next_classification(const char* memaddr) {
         break;
 
       default:
+        rc_destroy_parse_state(&parse);
         return classification;
     }
   } while (*memaddr++ == '_');
 
+  rc_destroy_parse_state(&parse);
   return RC_CONDITION_CLASSIFICATION_OTHER;
 }
 
@@ -256,6 +262,11 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
   }
 
   next = &self->conditions;
+
+  /* prevent bleedthrough of incomplete conditions from other groups */
+  parse->addsource_oper = RC_OPERATOR_NONE;
+  parse->addsource_parent.type = RC_OPERAND_NONE;
+  parse->indirect_parent.type = RC_OPERAND_NONE;
 
   /* each condition set has a functionally new recall accumulator */
   parse->remember.type = RC_OPERAND_NONE;

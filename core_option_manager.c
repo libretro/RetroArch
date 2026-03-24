@@ -930,7 +930,7 @@ static bool core_option_manager_parse_option(
     *   character */
    if (    opt->cats
        && !string_is_empty(category_key)
-       && !strstr(category_key, ":"))
+       && !strchr(category_key, ':'))
    {
       for (i = 0; i < opt->cats_size; i++)
       {
@@ -961,7 +961,7 @@ static bool core_option_manager_parse_option(
       /* If option has a category, option key
        * cannot contain a map delimiter character */
       if (  !string_is_empty(option->category_key)
-          && strstr(key, ":"))
+          && strchr(key, ':'))
          return false;
 
       option->key      = strdup(key);

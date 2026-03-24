@@ -372,4 +372,5 @@ audio_driver_t audio_jack = {
    NULL,
    ja_write_avail,
    ja_buffer_size,
+   NULL /* write_raw */
 };

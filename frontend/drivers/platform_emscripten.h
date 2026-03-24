@@ -119,7 +119,7 @@ bool platform_emscripten_is_window_hidden(void);
 
 /**
  * Whether the frame should be dropped.
- * Currently returns true if the window is hidden and vsync is on.
+ * Currently returns true if the window is hidden or the GL context is lost.
  *
  * @return True if the frame should be dropped.
  */
@@ -145,6 +145,13 @@ void platform_emscripten_enter_fake_block(int ms);
  * !PROXY_TO_PTHREAD only.
  */
 void platform_emscripten_exit_fake_block(void);
+
+/**
+ * Sleep before the next frame.
+ *
+ * @param ms Milliseconds to sleep.
+ */
+void platform_emscripten_deferred_sleep(int ms);
 
 /**
  * Set the vsync interval for the main loop.

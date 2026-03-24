@@ -25,9 +25,8 @@
 
 #include "../../gfx_display.h"
 
-/* TODO/FIXME: implement triple buffering */
-/*! @brief maximum inflight frames */
-#define MAX_INFLIGHT 1
+/*! @brief maximum inflight frames for triple buffering */
+#define MAX_INFLIGHT 3
 #define CHAIN_LENGTH 3
 
 /* macOS requires constants in a buffer to have a 256 byte alignment. */
@@ -138,6 +137,10 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 
 /*! @brief end commits the command buffer */
 - (void)end;
+
+/*! @brief swapBuffers acquires the next drawable, blocking if needed for vsync.
+ *  This should be called after end to match Vulkan's swap_buffers timing. */
+- (void)swapBuffers;
 
 - (void)setRotation:(unsigned)rotation;
 - (bool)readBackBuffer:(uint8_t *)buffer;

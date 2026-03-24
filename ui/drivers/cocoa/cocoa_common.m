@@ -120,7 +120,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 #endif
 
    runloop_flags = runloop_get_flags();
-#if !TARGET_OS_TV
+#if !TARGET_OS_TV && !defined(OSX)
    if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
 #endif
       CFRunLoopWakeUp(CFRunLoopGetMain());
@@ -202,28 +202,30 @@ void rarch_stop_draw_observer(void)
       nsview_set_ptr(view);
 #if defined(IOS)
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
+      {
+         float hz = (float)[UIScreen mainScreen].maximumFramesPerSecond;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
-      if (@available(iOS 15.0, tvOS 15.0, *))
-      {
-         /* Use a wide range by default to support ProMotion displays,
-          * the display server will set the exact rate when needed */
-         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
-      }
-      else
-      {
-         /* iOS 9-14: Use preferredFramesPerSecond as fallback */
-         view.displayLink.preferredFramesPerSecond = 120;
-      }
+         if (@available(iOS 15.0, tvOS 15.0, *))
+            [view.displayLink setPreferredFrameRateRange:
+               CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz)];
+         else
+            view.displayLink.preferredFramesPerSecond = hz;
 #else
-      /* Building with SDK < iOS 15: Use preferredFramesPerSecond */
-      view.displayLink.preferredFramesPerSecond = 120;
+         view.displayLink.preferredFramesPerSecond = hz;
 #endif
+      }
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 #elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
       if (@available(macOS 14.0, *))
       {
+         CGDirectDisplayID did = CGMainDisplayID();
+         CGDisplayModeRef mode = CGDisplayCopyDisplayMode(did);
+         float hz = (float)CGDisplayModeGetRefreshRate(mode);
+         CGDisplayModeRelease(mode);
+         if (hz <= 0.0f)
+            hz = 60.0f;
          view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
-         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
+         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
          [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
       }
 #endif
@@ -1049,12 +1051,7 @@ config_file_t *open_userdefaults_config_file(void)
    NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
    if ([backup length] > 0)
    {
-      char *str = strdup(backup.UTF8String);
-      conf = config_file_new_from_string(str, path_get(RARCH_PATH_CONFIG));
-      free(str);
-      /* If we are falling back to the NSUserDefaults backup of the config file,
-       * it's likely because the OS has deleted all of our cache, including our
-       * extracted assets. This will cause re-extraction */
+      conf = config_file_new_from_string(backup.UTF8String, path_get(RARCH_PATH_CONFIG));
       config_set_int(conf, "bundle_assets_extract_last_version", 0);
    }
    return conf;

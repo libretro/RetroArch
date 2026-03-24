@@ -274,6 +274,27 @@ static uint32_t android_gfx_ctx_get_flags(void *data)
 
 static void android_gfx_ctx_set_flags(void *data, uint32_t flags) { }
 
+static bool android_gfx_ctx_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   struct android_app *android_app = (struct android_app*)g_android;
+   android_ctx_data_t *and = (android_ctx_data_t*)data;
+   return egl_create_surface(&and->egl, android_app->window);
+#else
+   return false;
+#endif
+}
+
+static bool android_gfx_ctx_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   android_ctx_data_t *and = (android_ctx_data_t*)data;
+   return egl_destroy_surface(&and->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
    android_gfx_ctx_destroy,
@@ -309,5 +330,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_set_flags,
    android_gfx_ctx_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   android_gfx_ctx_create_surface,
+   android_gfx_ctx_destroy_surface
 };

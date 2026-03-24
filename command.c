@@ -589,12 +589,10 @@ command_t* command_uds_new(void)
    int           fd = socket(AF_UNIX, SOCK_STREAM, 0);
    if (fd < 0)
       return NULL;
-
    /* use an abstract socket for simplicity */
    memset(&addr, 0, sizeof(addr));
    addr.sun_family = AF_UNIX;
-   strcpy(&addr.sun_path[1], "retroarch/cmd");
-
+   strlcpy(&addr.sun_path[1], "retroarch/cmd", sizeof(addr.sun_path) - 1);
    if (   bind(fd, (struct sockaddr*)&addr, addrsz) < 0
        || listen(fd, MAX_USER_CONNECTIONS) < 0
        || !socket_nonblock(fd))
@@ -602,19 +600,27 @@ command_t* command_uds_new(void)
       socket_close(fd);
       return NULL;
    }
-
-   cmd             = (command_t*)calloc(1, sizeof(command_t));
-   subcmd          = (command_uds_t*)calloc(1, sizeof(command_uds_t));
-   subcmd->sfd     = fd;
-   subcmd->last_fd = -1;
+   cmd = (command_t*)calloc(1, sizeof(command_t));
+   if (!cmd)
+   {
+      socket_close(fd);
+      return NULL;
+   }
+   subcmd = (command_uds_t*)calloc(1, sizeof(command_uds_t));
+   if (!subcmd)
+   {
+      free(cmd);
+      socket_close(fd);
+      return NULL;
+   }
+   subcmd->sfd          = fd;
+   subcmd->last_fd      = -1;
    for (i = 0; i < MAX_USER_CONNECTIONS; i++)
       subcmd->userfd[i] = -1;
-
-   cmd->userptr = subcmd;
-   cmd->poll    = command_uds_poll;
-   cmd->replier = uds_command_reply;
-   cmd->destroy = uds_command_free;
-
+   cmd->userptr         = subcmd;
+   cmd->poll            = command_uds_poll;
+   cmd->replier         = uds_command_reply;
+   cmd->destroy         = uds_command_free;
    return cmd;
 }
 #endif
@@ -684,49 +690,58 @@ static bool udp_send_packet(const char *host, uint16_t port, const char *msg)
 
 bool command_network_send(const char *cmd_)
 {
-   char *command        = NULL;
+   char buf[4096];
    char *save           = NULL;
    const char *cmd      = NULL;
+   const char *host     = NULL;
+   const char *port_str = NULL;
+   uint16_t port        = DEFAULT_NETWORK_CMD_PORT;
+   size_t len;
+
+   if (!cmd_ || !*cmd_)
+      return false;
+
+   len = strlen(cmd_);
+   if (len >= sizeof(buf))
+      return false;
 
    if (!network_init())
       return false;
 
-   if (!(command = strdup(cmd_)))
+   memcpy(buf, cmd_, len + 1);
+
+   cmd = strtok_r(buf, ";", &save);
+   if (!cmd)
       return false;
 
-   cmd                  = strtok_r(command, ";", &save);
-   if (cmd)
+   host     = strtok_r(NULL, ";", &save);
+   if (host)
+      port_str = strtok_r(NULL, ";", &save);
+
+   if (!host || !*host)
    {
-      uint16_t port     = DEFAULT_NETWORK_CMD_PORT;
-      const char *port_ = NULL;
-      const char *host  = strtok_r(NULL, ";", &save);
-      if (host)
-         port_          = strtok_r(NULL, ";", &save);
-      else
-      {
 #ifdef _WIN32
-         host = "127.0.0.1";
+      host = "127.0.0.1";
 #else
-         host = "localhost";
+      host = "localhost";
 #endif
-      }
-
-      if (port_)
-         port = strtoul(port_, NULL, 0);
-
-      RARCH_LOG("[NetCMD] %s: \"%s\" to %s:%hu.\n",
-            msg_hash_to_str(MSG_SENDING_COMMAND),
-            cmd, host, (unsigned short)port);
-
-      if (command_verify(cmd) && udp_send_packet(host, port, cmd))
-      {
-         free(command);
-         return true;
-      }
    }
 
-   free(command);
-   return false;
+   if (port_str && *port_str)
+   {
+      unsigned long val = strtoul(port_str, NULL, 0);
+      if (val > 0 && val <= 0xFFFF)
+         port = (uint16_t)val;
+   }
+
+   RARCH_LOG("[NetCMD] %s: \"%s\" to %s:%hu.\n",
+         msg_hash_to_str(MSG_SENDING_COMMAND),
+         cmd, host, (unsigned short)port);
+
+   if (!command_verify(cmd))
+      return false;
+
+   return udp_send_packet(host, port, cmd);
 }
 #endif
 
@@ -1035,39 +1050,71 @@ bool command_get_status(command_t *cmd, const char* arg)
 {
    size_t _len;
    char reply[4096];
-   uint8_t flags                  = content_get_flags();
+   uint8_t flags;
+
+   if (!cmd)
+      return false;
+
+   if (!cmd->replier)
+      return false;
+
+   flags = content_get_flags();
 
    if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
       /* add some content info */
       core_info_t *core_info      = NULL;
       runloop_state_t *runloop_st = runloop_state_get_ptr();
+      const char *basename_path   = NULL;
+
+      if (!runloop_st)
+      {
+         _len = strlcpy(reply, "GET_STATUS ERROR", sizeof(reply));
+         cmd->replier(cmd, reply, _len);
+         return false;
+      }
 
       core_info_get_current_core(&core_info);
 
-      _len     = strlcpy(reply, "GET_STATUS ", sizeof(reply));
+      _len = strlcpy(reply, "GET_STATUS ", sizeof(reply));
+
       if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          _len += strlcpy(reply + _len, "PAUSED", sizeof(reply) - _len);
       else
          _len += strlcpy(reply + _len, "PLAYING", sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len, " ", sizeof(reply) - _len);
-      if (core_info)
+
+      _len += strlcpy(reply + _len, " ", sizeof(reply) - _len);
+
+      if (core_info && core_info->system_id)
          _len += strlcpy(reply + _len, core_info->system_id,
                sizeof(reply) - _len);
-      else
+      else if (runloop_st->system.info.library_name)
          _len += strlcpy(reply + _len, runloop_st->system.info.library_name,
                sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len, ",", sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len,
-            path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(reply) - _len);
-      _len    += snprintf(reply + _len, sizeof(reply) - _len,
+      else
+         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+
+      _len += strlcpy(reply + _len, ",", sizeof(reply) - _len);
+
+      basename_path = path_get(RARCH_PATH_BASENAME);
+      if (basename_path)
+      {
+         const char *basename = path_basename(basename_path);
+         if (basename)
+            _len += strlcpy(reply + _len, basename, sizeof(reply) - _len);
+         else
+            _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+      }
+      else
+         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+
+      _len += snprintf(reply + _len, sizeof(reply) - _len,
             ",crc32=%lx\n", (unsigned long)content_get_crc());
    }
    else
-       _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
+      _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, _len);
-
    return true;
 }
 
@@ -1319,8 +1366,12 @@ static size_t command_event_save_config(const char *config_path,
 static size_t command_event_undo_save_state(char *s, size_t len)
 {
    if (content_undo_save_buf_is_empty())
-      return strlcpy(s,
-         msg_hash_to_str(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET), len);
+   {
+      enum msg_hash_enums msg = content_undo_save_disabled()
+         ? MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO
+         : MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET;
+      return strlcpy(s, msg_hash_to_str(msg), len);
+   }
    if (!content_undo_save_state())
       return strlcpy(s,
          msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE), len);
@@ -1331,9 +1382,12 @@ static size_t command_event_undo_save_state(char *s, size_t len)
 static size_t command_event_undo_load_state(char *s, size_t len)
 {
    if (content_undo_load_buf_is_empty())
-      return strlcpy(s,
-         msg_hash_to_str(MSG_NO_STATE_HAS_BEEN_LOADED_YET),
-         len);
+   {
+      enum msg_hash_enums msg = content_undo_save_disabled()
+         ? MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO
+         : MSG_NO_STATE_HAS_BEEN_LOADED_YET;
+      return strlcpy(s, msg_hash_to_str(msg), len);
+   }
    if (!content_undo_load_state())
       return snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
@@ -1927,8 +1981,10 @@ bool command_set_shader(command_t *cmd, const char *arg)
 {
    enum  rarch_shader_type type = video_shader_parse_type(arg);
    settings_t  *settings        = config_get_ptr();
+   bool apply_new_shader        = !string_is_empty(arg);
 
-   if (!string_is_empty(arg))
+   configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
+   if (apply_new_shader)
    {
       gfx_ctx_flags_t flags;
       flags.flags     = 0;
@@ -2086,7 +2142,7 @@ void command_event_save_current_config(enum override_type type)
 
             /* command_event_save_config() does its own logging */
             if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
-               RARCH_ERR("[Overrides] %s\n", msg);
+               RARCH_ERR("[Override] %s\n", msg);
 
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
@@ -2125,14 +2181,14 @@ void command_event_save_current_config(enum override_type type)
             switch (msg_cat)
             {
                case MESSAGE_QUEUE_CATEGORY_ERROR:
-                  RARCH_ERR("[Overrides] %s\n", msg);
+                  RARCH_ERR("[Override] %s\n", msg);
                   break;
                case MESSAGE_QUEUE_CATEGORY_WARNING:
-                  RARCH_WARN("[Overrides] %s\n", msg);
+                  RARCH_WARN("[Override] %s\n", msg);
                   break;
                case MESSAGE_QUEUE_CATEGORY_SUCCESS:
                default:
-                  RARCH_LOG("[Overrides] %s\n", msg);
+                  RARCH_LOG("[Override] %s\n", msg);
                   break;
             }
 
@@ -2180,9 +2236,9 @@ void command_event_remove_current_config(enum override_type type)
             }
 
             if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
-               RARCH_ERR("[Overrides] %s\n", msg);
+               RARCH_ERR("[Override] %s\n", msg);
             else
-               RARCH_LOG("[Overrides] %s\n", msg);
+               RARCH_LOG("[Override] %s\n", msg);
 
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
@@ -2334,17 +2390,6 @@ bool command_event_disk_control_append_image(
    if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
       autosave_deinit();
 #endif
-
-   /* TODO/FIXME: Need to figure out what to do with subsystems case. */
-   if (path_is_empty(RARCH_PATH_SUBSYSTEM))
-   {
-      /* Update paths for our new image.
-       * If we actually use append_image, we assume that we
-       * started out in a single disk case, and that this way
-       * of doing it makes the most sense. */
-      path_set(RARCH_PATH_NAMES, path);
-      runloop_path_fill_names();
-   }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 

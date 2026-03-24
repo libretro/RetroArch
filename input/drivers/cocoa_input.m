@@ -839,6 +839,36 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
 #endif
 }
 
+#if TARGET_OS_IOS && defined(HAVE_COREMOTION)
+/* Rotate a 2D sensor vector from the device's hardware coordinate frame
+ * to the current screen coordinate frame.  Accelerometer and gyroscope
+ * X/Y axes are fixed to the hardware (portrait) orientation, so they need
+ * remapping when the interface is in landscape or upside-down. */
+static void cocoa_sensor_rotate_xy(float *x, float *y)
+{
+   float rawX = *x, rawY = *y;
+   UIInterfaceOrientation orient =
+         [[UIApplication sharedApplication] statusBarOrientation];
+   switch (orient)
+   {
+      case UIInterfaceOrientationLandscapeLeft:
+         *x =  rawY;
+         *y = -rawX;
+         break;
+      case UIInterfaceOrientationLandscapeRight:
+         *x = -rawY;
+         *y =  rawX;
+         break;
+      case UIInterfaceOrientationPortraitUpsideDown:
+         *x = -rawX;
+         *y = -rawY;
+         break;
+      default:
+         break;
+   }
+}
+#endif
+
 static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id)
 {
 #ifdef HAVE_MFI
@@ -875,15 +905,30 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
       switch (id)
       {
          case RETRO_SENSOR_ACCELEROMETER_X:
-            return motionManager.deviceMotion.gravity.x + motionManager.deviceMotion.userAcceleration.x;
          case RETRO_SENSOR_ACCELEROMETER_Y:
-            return motionManager.deviceMotion.gravity.y + motionManager.deviceMotion.userAcceleration.y;
+         {
+            float x = motionManager.deviceMotion.gravity.x
+                  + motionManager.deviceMotion.userAcceleration.x;
+            float y = motionManager.deviceMotion.gravity.y
+                  + motionManager.deviceMotion.userAcceleration.y;
+#if TARGET_OS_IOS
+            cocoa_sensor_rotate_xy(&x, &y);
+#endif
+            return (id == RETRO_SENSOR_ACCELEROMETER_X) ? x : y;
+         }
          case RETRO_SENSOR_ACCELEROMETER_Z:
-            return motionManager.deviceMotion.gravity.z + motionManager.deviceMotion.userAcceleration.z;
+            return motionManager.deviceMotion.gravity.z
+                  + motionManager.deviceMotion.userAcceleration.z;
          case RETRO_SENSOR_GYROSCOPE_X:
-            return motionManager.deviceMotion.rotationRate.x;
          case RETRO_SENSOR_GYROSCOPE_Y:
-            return motionManager.deviceMotion.rotationRate.y;
+         {
+            float x = motionManager.deviceMotion.rotationRate.x;
+            float y = motionManager.deviceMotion.rotationRate.y;
+#if TARGET_OS_IOS
+            cocoa_sensor_rotate_xy(&x, &y);
+#endif
+            return (id == RETRO_SENSOR_GYROSCOPE_X) ? x : y;
+         }
          case RETRO_SENSOR_GYROSCOPE_Z:
             return motionManager.deviceMotion.rotationRate.z;
       }

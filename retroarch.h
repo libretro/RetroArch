@@ -71,6 +71,11 @@
                                             * 3 - Late
                                             */
 
+#define RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO (5 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
+                                            /* bool * --
+                                            * If true, disables the save state save/load undo feature to conserve memory.
+                                            */
+
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO_MASK \
       | DRIVER_MICROPHONE_MASK \

@@ -549,3 +549,26 @@ void* task_push_http_post_transfer_with_headers(const char *url,
 
    return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
 }
+
+void *task_push_http_transfer_with_content(const char *url,
+      const char *method, const void *content, size_t content_len,
+      const char *content_type, bool mute, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   if (!(conn = net_http_connection_new(url, method, NULL)))
+      return NULL;
+
+   if (content && content_len)
+      net_http_connection_set_content(conn, content_type,
+            content_len, content);
+
+   if (headers)
+      net_http_connection_set_headers(conn, headers);
+
+   return task_push_http_transfer_generic(conn, url, mute, cb, user_data);
+}

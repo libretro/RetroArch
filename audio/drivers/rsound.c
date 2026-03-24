@@ -151,6 +151,7 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
       }
       return _len;
    }
+   return 0;
 }
 
 static bool rs_stop(void *data)
@@ -231,4 +232,5 @@ audio_driver_t audio_rsound = {
    NULL,
    rs_write_avail,
    rs_buffer_size,
+   NULL /* write_raw */
 };

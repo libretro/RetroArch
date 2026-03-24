@@ -43,8 +43,6 @@ static bool string_list_deinitialize_internal(struct string_list *list)
             free(list->elems[i].data);
          if (list->elems[i].userdata)
             free(list->elems[i].userdata);
-         list->elems[i].data     = NULL;
-         list->elems[i].userdata = NULL;
       }
 
       free(list->elems);
@@ -64,7 +62,8 @@ bool string_list_capacity(struct string_list *list, size_t cap)
       return false;
 
    if (cap > list->cap)
-      memset(&new_data[list->cap], 0, sizeof(*new_data) * (cap - list->cap));
+      memset(&new_data[list->cap], 0,
+            sizeof(*new_data) * (cap - list->cap));
 
    list->elems = new_data;
    list->cap   = cap;
@@ -87,53 +86,55 @@ bool string_list_deinitialize(struct string_list *list)
       return false;
    if (!string_list_deinitialize_internal(list))
       return false;
-   list->elems              = NULL;
-   list->size               = 0;
-   list->cap                = 0;
+   list->elems = NULL;
+   list->size  = 0;
+   list->cap   = 0;
    return true;
 }
 
 struct string_list *string_list_new(void)
 {
-   struct string_list_elem *
-      elems                 = NULL;
+   struct string_list_elem *elems = NULL;
    struct string_list *list = (struct string_list*)
       malloc(sizeof(*list));
    if (!list)
       return NULL;
 
-   list->cap                = 0;
-   list->size               = 0;
-   list->elems              = NULL;
+   list->cap  = 0;
+   list->size = 0;
+   list->elems = NULL;
 
-   if (!(elems = (struct string_list_elem*)
-      calloc(32, sizeof(*elems))))
+   elems = (struct string_list_elem*)
+      calloc(32, sizeof(*elems));
+   if (!elems)
    {
-      string_list_free(list);
+      free(list);
       return NULL;
    }
 
-   list->elems              = elems;
-   list->cap                = 32;
+   list->elems = elems;
+   list->cap   = 32;
 
    return list;
 }
 
 bool string_list_initialize(struct string_list *list)
 {
-   struct string_list_elem *
-      elems                 = NULL;
+   struct string_list_elem *elems = NULL;
    if (!list)
       return false;
-   if (!(elems = (struct string_list_elem*)
-      calloc(32, sizeof(*elems))))
+
+   elems = (struct string_list_elem*)
+      calloc(32, sizeof(*elems));
+   if (!elems)
    {
       string_list_deinitialize(list);
       return false;
    }
-   list->elems              = elems;
-   list->size               = 0;
-   list->cap                = 32;
+
+   list->elems = elems;
+   list->size  = 0;
+   list->cap   = 32;
    return true;
 }
 
@@ -141,24 +142,48 @@ bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr)
 {
    char *data_dup = NULL;
+   size_t elem_len;
 
-   /* Note: If 'list' is incorrectly initialised
-    * (i.e. if struct is zero initialised and
-    * string_list_initialize() is not called on
-    * it) capacity will be zero. This will cause
-    * a segfault. Handle this case by forcing the new
-    * capacity to a fixed size of 32 */
+   /* Grow first - if this fails we haven't wasted a strdup. */
    if (      list->size >= list->cap
          && !string_list_capacity(list,
                (list->cap > 0) ? (list->cap * 2) : 32))
       return false;
 
-   if (!(data_dup = strdup(elem)))
+   /* Manual strdup: single traversal of elem to get length,
+    * then malloc + memcpy (avoids the hidden strlen inside
+    * libc strdup on some platforms that do strlen+malloc+memcpy
+    * as two passes). */
+   elem_len = strlen(elem);
+   data_dup = (char*)malloc(elem_len + 1);
+   if (!data_dup)
       return false;
+   memcpy(data_dup, elem, elem_len + 1);
 
    list->elems[list->size].data = data_dup;
    list->elems[list->size].attr = attr;
+   list->size++;
+   return true;
+}
 
+bool string_list_append_n(struct string_list *list, const char *elem,
+      size_t len, union string_list_elem_attr attr)
+{
+   char *data_dup = NULL;
+
+   if (      list->size >= list->cap
+         && !string_list_capacity(list,
+               (list->cap > 0) ? (list->cap * 2) : 32))
+      return false;
+
+   data_dup = (char*)malloc(len + 1);
+   if (!data_dup)
+      return false;
+   memcpy(data_dup, elem, len);
+   data_dup[len] = '\0';
+
+   list->elems[list->size].data = data_dup;
+   list->elems[list->size].attr = attr;
    list->size++;
    return true;
 }
@@ -200,6 +225,31 @@ void string_list_join_concat_special(char *s, size_t len,
    }
 }
 
+/**
+ * Count delimited tokens in @str without modifying it.
+ * Treats any character in @delim as a separator (same as strtok).
+ * Returns the number of non-empty tokens.
+ */
+static size_t string_count_tokens(const char *str, const char *delim)
+{
+   size_t count   = 0;
+   bool   in_tok  = false;
+   const char *p  = str;
+
+   for (; *p != '\0'; p++)
+   {
+      if (strchr(delim, (unsigned char)*p))
+         in_tok = false;
+      else if (!in_tok)
+      {
+         in_tok = true;
+         count++;
+      }
+   }
+
+   return count;
+}
+
 struct string_list *string_split(const char *str, const char *delim)
 {
    char *save      = NULL;
@@ -213,14 +263,28 @@ struct string_list *string_split(const char *str, const char *delim)
    if (!(copy = strdup(str)))
       goto error;
 
+   /* Pre-size the element array to avoid repeated reallocs.
+    * We scan the original string (not the copy, since strtok
+    * mutates it) to count tokens. */
+   {
+      size_t token_count = string_count_tokens(str, delim);
+      if (token_count > list->cap)
+      {
+         if (!string_list_capacity(list, token_count))
+            goto error;
+      }
+   }
+
    tmp = strtok_r(copy, delim, &save);
    while (tmp)
    {
       union string_list_elem_attr attr;
+      size_t tok_len;
 
-      attr.i = 0;
+      attr.i  = 0;
+      tok_len = strlen(tmp);
 
-      if (!string_list_append(list, tmp, attr))
+      if (!string_list_append_n(list, tmp, tok_len, attr))
          goto error;
 
       tmp = strtok_r(NULL, delim, &save);
@@ -248,14 +312,29 @@ bool string_split_noalloc(struct string_list *list,
    if (!(copy = strdup(str)))
       return false;
 
-   tmp             = strtok_r(copy, delim, &save);
+   /* Pre-size to avoid repeated reallocs. */
+   {
+      size_t token_count = string_count_tokens(str, delim);
+      if (token_count > list->cap)
+      {
+         if (!string_list_capacity(list, token_count))
+         {
+            free(copy);
+            return false;
+         }
+      }
+   }
+
+   tmp = strtok_r(copy, delim, &save);
    while (tmp)
    {
       union string_list_elem_attr attr;
+      size_t tok_len;
 
-      attr.i = 0;
+      attr.i  = 0;
+      tok_len = strlen(tmp);
 
-      if (!string_list_append(list, tmp, attr))
+      if (!string_list_append_n(list, tmp, tok_len, attr))
       {
          free(copy);
          return false;
@@ -289,7 +368,7 @@ bool string_list_find_elem_prefix(const struct string_list *list,
    {
       size_t i;
       char prefixed[255];
-      size_t _len  = strlcpy(prefixed, prefix, sizeof(prefixed));
+      size_t _len = strlcpy(prefixed, prefix, sizeof(prefixed));
       strlcpy(prefixed + _len, elem, sizeof(prefixed) - _len);
       for (i = 0; i < list->size; i++)
       {
@@ -311,36 +390,34 @@ struct string_list *string_list_clone(const struct string_list *src)
    if (!dest)
       return NULL;
 
-   dest->elems               = NULL;
-   dest->size                = src->size;
-   if (src->cap < dest->size)
-      dest->cap              = dest->size;
-   else
-      dest->cap              = src->cap;
+   dest->elems = NULL;
+   dest->size  = src->size;
+   dest->cap   = (src->cap < dest->size) ? dest->size : src->cap;
 
-   if (!(elems = (struct string_list_elem*)
-      calloc(dest->cap, sizeof(struct string_list_elem))))
+   elems = (struct string_list_elem*)
+      calloc(dest->cap, sizeof(struct string_list_elem));
+   if (!elems)
    {
       free(dest);
       return NULL;
    }
 
-   dest->elems               = elems;
+   dest->elems = elems;
 
    for (i = 0; i < src->size; i++)
    {
-      const char *_src    = src->elems[i].data;
-      size_t      len     = _src ? strlen(_src) : 0;
+      const char *_src = src->elems[i].data;
+      size_t      slen = _src ? strlen(_src) : 0;
 
       dest->elems[i].data = NULL;
       dest->elems[i].attr = src->elems[i].attr;
 
-      if (len != 0)
+      if (slen != 0)
       {
-         char *ret        = (char*)malloc(len + 1);
+         char *ret = (char*)malloc(slen + 1);
          if (ret)
          {
-            strcpy(ret, _src);
+            memcpy(ret, _src, slen + 1);  /* memcpy > strcpy: no NUL scan */
             dest->elems[i].data = ret;
          }
       }

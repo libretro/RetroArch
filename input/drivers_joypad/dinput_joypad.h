@@ -27,18 +27,22 @@
 /* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
 #define ARRAY_SIZE_RGB_BUTTONS 128
 
+/* DirectInput POV value indicating the hat is centred (no direction pressed).
+ * rgdwPOV[] returns this sentinel when the hat is released. */
+#define DINPUT_POV_CENTERED 0xFFFFFFFFu
+
 RETRO_BEGIN_DECLS
 
 struct dinput_joypad_data
 {
    LPDIRECTINPUTDEVICE8 joypad;
-   DIJOYSTATE2 joy_state;
-   char* joy_name;
-   char* joy_friendly_name;
-   int32_t vid;
-   int32_t pid;
-   LPDIRECTINPUTEFFECT rumble_iface[2];
-   DIEFFECT rumble_props;
+   DIJOYSTATE2          joy_state;
+   char                *joy_name;
+   char                *joy_friendly_name;
+   int32_t              vid;
+   int32_t              pid;
+   LPDIRECTINPUTEFFECT  rumble_iface[2];
+   DIEFFECT             rumble_props;
 };
 
 RETRO_END_DECLS

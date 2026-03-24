@@ -25,152 +25,150 @@
 #include <dinput.h>
 #include <mmsystem.h>
 
-/* Forward declaration */
+/* Forward declarations */
 extern struct dinput_joypad_data g_pads[MAX_USERS];
 extern unsigned g_joypad_cnt;
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
-/* Function prototype forward declarations */
 void dinput_destroy_context(void);
 bool dinput_init_context(void);
 
 static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
 {
-   DIENVELOPE dienv;
-   DICONSTANTFORCE dicf;
-   LONG direction                            = 0;
-   DWORD axis                                = DIJOFS_X;
+   DIENVELOPE        dienv;
+   DICONSTANTFORCE   dicf;
+   LONG              direction  = 0;
+   DWORD             axis       = DIJOFS_X;
 
-   dicf.lMagnitude                           = 0;
+   dicf.lMagnitude              = 0;
 
-   dienv.dwSize                              = sizeof(DIENVELOPE);
-   dienv.dwAttackLevel                       = 5000;
-   dienv.dwAttackTime                        = 250000;
-   dienv.dwFadeLevel                         = 0;
-   dienv.dwFadeTime                          = 250000;
+   dienv.dwSize                 = sizeof(DIENVELOPE);
+   dienv.dwAttackLevel          = 5000;
+   dienv.dwAttackTime           = 250000;
+   dienv.dwFadeLevel            = 0;
+   dienv.dwFadeTime             = 250000;
 
-   pad->rumble_props.cAxes                   = 1;
+   pad->rumble_props.dwSize                  = sizeof(DIEFFECT);
+   pad->rumble_props.dwFlags                 = DIEFF_CARTESIAN | DIEFF_OBJECTOFFSETS;
+   pad->rumble_props.dwDuration              = INFINITE;
+   pad->rumble_props.dwStartDelay            = 0;
    pad->rumble_props.dwTriggerButton         = DIEB_NOTRIGGER;
    pad->rumble_props.dwTriggerRepeatInterval = 0;
-   pad->rumble_props.cbTypeSpecificParams    = sizeof(DICONSTANTFORCE);
-   pad->rumble_props.dwDuration              = INFINITE;
-   pad->rumble_props.dwFlags                 = DIEFF_CARTESIAN |
-      DIEFF_OBJECTOFFSETS;
-   pad->rumble_props.dwGain                  = 0;
-   pad->rumble_props.dwSize                  = sizeof(DIEFFECT);
-   pad->rumble_props.dwStartDelay            = 0;
-   pad->rumble_props.lpEnvelope              = &dienv;
-   pad->rumble_props.lpvTypeSpecificParams   = &dicf;
+   pad->rumble_props.cAxes                   = 1;
    pad->rumble_props.rgdwAxes                = &axis;
    pad->rumble_props.rglDirection            = &direction;
+   pad->rumble_props.lpEnvelope              = &dienv;
+   pad->rumble_props.cbTypeSpecificParams    = sizeof(DICONSTANTFORCE);
+   pad->rumble_props.lpvTypeSpecificParams   = &dicf;
+   pad->rumble_props.dwGain                  = 0;
 
-   axis                                      = DIJOFS_Y;
-
+   /* --- strong motor (X axis) --- */
 #ifdef __cplusplus
    if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
-      RARCH_WARN("[DInput] Strong rumble unavailable.\n");
-
-   if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
-         &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
-      RARCH_WARN("[DInput] Weak rumble unavailable.\n");
 #else
    if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
+#endif
       RARCH_WARN("[DInput] Strong rumble unavailable.\n");
 
+   /* --- weak motor (Y axis) --- */
+   axis = DIJOFS_Y;
+#ifdef __cplusplus
+   if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
+#else
    if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
-      RARCH_WARN("[DInput] Weak rumble unavailable.\n");
 #endif
+      RARCH_WARN("[DInput] Weak rumble unavailable.\n");
 }
 
 static BOOL CALLBACK enum_axes_cb(
       const DIDEVICEOBJECTINSTANCE *inst, void *p)
 {
-   DIPROPRANGE range;
+   DIPROPRANGE          range;
    LPDIRECTINPUTDEVICE8 joypad = (LPDIRECTINPUTDEVICE8)p;
 
-   range.diph.dwSize           = sizeof(DIPROPRANGE);
-   range.diph.dwHeaderSize     = sizeof(DIPROPHEADER);
-   range.diph.dwHow            = DIPH_BYID;
-   range.diph.dwObj            = inst->dwType;
-   range.lMin                  = -0x7fff;
-   range.lMax                  = 0x7fff;
+   range.diph.dwSize       = sizeof(DIPROPRANGE);
+   range.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+   range.diph.dwHow        = DIPH_BYID;
+   range.diph.dwObj        = inst->dwType;
+   range.lMin              = -0x7fff;
+   range.lMax              =  0x7fff;
 
    IDirectInputDevice8_SetProperty(joypad, DIPROP_RANGE, &range.diph);
-
    return DIENUM_CONTINUE;
+}
+
+static int16_t dinput_joypad_get_axis_val(
+      const struct dinput_joypad_data *pad, int axis)
+{
+   switch (axis)
+   {
+      case 0: return (int16_t)pad->joy_state.lX;
+      case 1: return (int16_t)pad->joy_state.lY;
+      case 2: return (int16_t)pad->joy_state.lZ;
+      case 3: return (int16_t)pad->joy_state.lRx;
+      case 4: return (int16_t)pad->joy_state.lRy;
+      case 5: return (int16_t)pad->joy_state.lRz;
+      case 6: return (int16_t)pad->joy_state.rglSlider[0];
+      case 7: return (int16_t)pad->joy_state.rglSlider[1];
+      default: break;
+   }
+   return 0;
 }
 
 static int32_t dinput_joypad_button_state(
       const struct dinput_joypad_data *pad,
       uint16_t joykey)
 {
-   unsigned hat_dir                  = GET_HAT_DIR(joykey);
+   unsigned hat_dir = GET_HAT_DIR(joykey);
 
    if (hat_dir)
    {
       unsigned h = GET_HAT(joykey);
 
-      /* 4 is number of hats */
       if (h < 4)
       {
+         /* 0xFFFFFFFF == centred, no direction active */
          unsigned pov = pad->joy_state.rgdwPOV[h];
+         if (pov == DINPUT_POV_CENTERED)
+            return 0;
+
          switch (hat_dir)
          {
             case HAT_UP_MASK:
-               {
-                  static const unsigned check1 = (JOY_POVRIGHT/2);
-                  static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
-                  return (
-                           (pov == JOY_POVFORWARD)
-                        || (pov == check1)
-                        || (pov == check2)
-                        );
-               }
-            case HAT_RIGHT_MASK:
-               {
-                  static const unsigned check1 = (JOY_POVRIGHT/2);
-                  static const unsigned check2 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
-                  return (
-                           (pov == JOY_POVRIGHT)
-                        || (pov == check1)
-                        || (pov == check2)
-                        );
-               }
-            case HAT_DOWN_MASK:
-               {
-                  static const unsigned check1 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
-                  static const unsigned check2 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
-                  return
-                     (
-                         (pov == JOY_POVBACKWARD)
-                      || (pov == check1)
-                      || (pov == check2)
-                     );
-               }
-            case HAT_LEFT_MASK:
-               {
-                  static const unsigned check1 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
-                  static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
+               return (pov == JOY_POVFORWARD)
+                   || (pov == JOY_POVRIGHT  / 2)
+                   || (pov == JOY_POVLEFT   + JOY_POVRIGHT / 2);
 
-                  return
-                     (
-                         (pov == JOY_POVLEFT)
-                      || (pov == check1)
-                      || (pov == check2)
-                     );
-               }
+            case HAT_RIGHT_MASK:
+               return (pov == JOY_POVRIGHT)
+                   || (pov == JOY_POVRIGHT / 2)
+                   || (pov == JOY_POVRIGHT + JOY_POVRIGHT / 2);
+
+            case HAT_DOWN_MASK:
+               return (pov == JOY_POVBACKWARD)
+                   || (pov == JOY_POVRIGHT   + JOY_POVRIGHT / 2)
+                   || (pov == JOY_POVBACKWARD + JOY_POVRIGHT / 2);
+
+            case HAT_LEFT_MASK:
+               return (pov == JOY_POVLEFT)
+                   || (pov == JOY_POVBACKWARD + JOY_POVRIGHT / 2)
+                   || (pov == JOY_POVLEFT     + JOY_POVRIGHT / 2);
+
             default:
                break;
          }
       }
-      /* hat requested and no hat button down */
+      /* hat requested but index out of range */
+      return 0;
    }
-   else if (joykey < ARRAY_SIZE_RGB_BUTTONS)
-      if (pad->joy_state.rgbButtons[joykey])
-         return 1;
+
+   if (joykey < ARRAY_SIZE_RGB_BUTTONS)
+      return pad->joy_state.rgbButtons[joykey] ? 1 : 0;
+
    return 0;
 }
 
@@ -178,87 +176,43 @@ static int16_t dinput_joypad_axis_state(
       const struct dinput_joypad_data *pad,
       uint32_t joyaxis)
 {
+   int     axis;
+   int16_t val;
+
    if (AXIS_NEG_GET(joyaxis) <= 7)
    {
-      int16_t val = 0;
-      int axis    = AXIS_NEG_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-            val = pad->joy_state.lX;
-            break;
-         case 1:
-            val = pad->joy_state.lY;
-            break;
-         case 2:
-            val = pad->joy_state.lZ;
-            break;
-         case 3:
-            val = pad->joy_state.lRx;
-            break;
-         case 4:
-            val = pad->joy_state.lRy;
-            break;
-         case 5:
-            val = pad->joy_state.lRz;
-            break;
-         case 6:
-         case 7:
-            val = pad->joy_state.rglSlider[axis - 6];
-            break;
-      }
+      axis = (int)AXIS_NEG_GET(joyaxis);
+      val  = dinput_joypad_get_axis_val(pad, axis);
       if (val < 0)
          return val;
    }
    else if (AXIS_POS_GET(joyaxis) <= 7)
    {
-      int16_t val = 0;
-      int axis    = AXIS_POS_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-            val = pad->joy_state.lX;
-            break;
-         case 1:
-            val = pad->joy_state.lY;
-            break;
-         case 2:
-            val = pad->joy_state.lZ;
-            break;
-         case 3:
-            val = pad->joy_state.lRx;
-            break;
-         case 4:
-            val = pad->joy_state.lRy;
-            break;
-         case 5:
-            val = pad->joy_state.lRz;
-            break;
-         case 6:
-         case 7:
-            val = pad->joy_state.rglSlider[axis - 6];
-            break;
-      }
+      axis = (int)AXIS_POS_GET(joyaxis);
+      val  = dinput_joypad_get_axis_val(pad, axis);
       if (val > 0)
          return val;
    }
+
    return 0;
 }
 
 static int32_t dinput_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct dinput_joypad_data *pad = &g_pads[port];
-   if (!pad || !pad->joypad)
+   if (port >= MAX_USERS)
       return 0;
-   return dinput_joypad_button_state(pad, joykey);
+   if (!g_pads[port].joypad)
+      return 0;
+   return dinput_joypad_button_state(&g_pads[port], joykey);
 }
 
 static int16_t dinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   const struct dinput_joypad_data *pad = &g_pads[port];
-   if (!pad || !pad->joypad)
+   if (port >= MAX_USERS)
       return 0;
-   return dinput_joypad_axis_state(pad, joyaxis);
+   if (!g_pads[port].joypad)
+      return 0;
+   return dinput_joypad_axis_state(&g_pads[port], joyaxis);
 }
 
 static int16_t dinput_joypad_state(
@@ -267,30 +221,35 @@ static int16_t dinput_joypad_state(
       unsigned port)
 {
    unsigned i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-   const struct dinput_joypad_data *pad = &g_pads[port_idx];
+   int16_t  ret;
+   uint16_t port_idx;
+   const struct dinput_joypad_data *pad;
 
-   if (!pad || !pad->joypad)
-      return 0;
+   (void)port; /* joy_idx from joypad_info is authoritative */
+
+   port_idx = joypad_info->joy_idx;
    if (port_idx >= MAX_USERS)
       return 0;
 
+   pad = &g_pads[port_idx];
+   if (!pad->joypad)
+      return 0;
+
+   ret = 0;
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if (
-               (uint16_t)joykey != NO_BTN
-            && dinput_joypad_button_state(
-               pad, (uint16_t)joykey))
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(dinput_joypad_axis_state(pad, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
+      const uint64_t joykey  = (binds[i].joykey  != NO_BTN)
+         ? binds[i].joykey   : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis  != AXIS_NONE)
+         ? binds[i].joyaxis  : joypad_info->auto_binds[i].joyaxis;
+
+      if (     (uint16_t)joykey != NO_BTN
+            && dinput_joypad_button_state(pad, (uint16_t)joykey))
+         ret |= (1 << i);
+      else if (joyaxis != AXIS_NONE
+            && ((float)abs(dinput_joypad_axis_state(pad, joyaxis))
+                  / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
 
@@ -305,28 +264,28 @@ static bool dinput_joypad_query_pad(unsigned port)
 static bool dinput_joypad_set_rumble(unsigned port,
       enum retro_rumble_effect type, uint16_t strength)
 {
-   int i = type == RETRO_RUMBLE_STRONG ? 1 : 0;
+   /* RETRO_RUMBLE_STRONG == 0, RETRO_RUMBLE_WEAK == 1 — map directly */
+   int iface_idx = (type == RETRO_RUMBLE_STRONG) ? 0 : 1;
 
-   if (port >= g_joypad_cnt || !g_pads[port].rumble_iface[i])
+   if (port >= g_joypad_cnt || !g_pads[port].rumble_iface[iface_idx])
       return false;
 
    if (strength)
    {
+      /* Integer approximation: avoids float/double entirely.
+       * strength in [0, 65535], DI_FFNOMINALMAX = 10000.
+       * Result fits in DWORD. */
       g_pads[port].rumble_props.dwGain =
-            (DWORD)((double)strength / 65535.0 * (double)DI_FFNOMINALMAX);
-      IDirectInputEffect_SetParameters(g_pads[port].rumble_iface[i],
+            (DWORD)(((unsigned)strength * (unsigned)DI_FFNOMINALMAX) / 65535u);
+      IDirectInputEffect_SetParameters(g_pads[port].rumble_iface[iface_idx],
             &g_pads[port].rumble_props, DIEP_GAIN | DIEP_START);
    }
    else
-      IDirectInputEffect_Stop(g_pads[port].rumble_iface[i]);
+      IDirectInputEffect_Stop(g_pads[port].rumble_iface[iface_idx]);
 
    return true;
 }
 
-/* Keep track of which pad indexes are 360 controllers.
- * Not static, will be read in xinput_joypad.c
- * -1 = not xbox pad, otherwise 0..3
- */
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
@@ -335,15 +294,14 @@ static void dinput_joypad_destroy(void)
    {
       if (g_pads[i].joypad)
       {
-         if (g_pads[i].rumble_iface[0])
+         unsigned r;
+         for (r = 0; r < 2; r++)
          {
-            IDirectInputEffect_Stop(g_pads[i].rumble_iface[0]);
-            IDirectInputEffect_Release(g_pads[i].rumble_iface[0]);
-         }
-         if (g_pads[i].rumble_iface[1])
-         {
-            IDirectInputEffect_Stop(g_pads[i].rumble_iface[1]);
-            IDirectInputEffect_Release(g_pads[i].rumble_iface[1]);
+            if (g_pads[i].rumble_iface[r])
+            {
+               IDirectInputEffect_Stop(g_pads[i].rumble_iface[r]);
+               IDirectInputEffect_Release(g_pads[i].rumble_iface[r]);
+            }
          }
 
          IDirectInputDevice8_Unacquire(g_pads[i].joypad);
@@ -361,7 +319,7 @@ static void dinput_joypad_destroy(void)
    g_joypad_cnt = 0;
    memset(g_pads, 0, sizeof(g_pads));
 
-   /* Can be blocked by global Dinput context. */
+   /* Can be blocked by global DInput context. */
    dinput_destroy_context();
 }
 
@@ -372,5 +330,4 @@ static const char *dinput_joypad_name(unsigned port)
    return NULL;
 }
 
-
-#endif
+#endif /* __DINPUT_JOYPAD_INL_H */

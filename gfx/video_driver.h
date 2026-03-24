@@ -51,17 +51,16 @@
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
-#define VIDEO_SHADER_STOCK_BLEND   (GFX_MAX_SHADERS - 1)
-#define VIDEO_SHADER_MENU          (GFX_MAX_SHADERS - 2)
-#define VIDEO_SHADER_MENU_2        (GFX_MAX_SHADERS - 3)
-#define VIDEO_SHADER_MENU_3        (GFX_MAX_SHADERS - 4)
-#define VIDEO_SHADER_MENU_4        (GFX_MAX_SHADERS - 5)
-#define VIDEO_SHADER_MENU_5        (GFX_MAX_SHADERS - 6)
-#define VIDEO_SHADER_MENU_6        (GFX_MAX_SHADERS - 7)
-#define VIDEO_SHADER_STOCK_HDR     (GFX_MAX_SHADERS - 8)
-#define VIDEO_SHADER_STOCK_NOBLEND (GFX_MAX_SHADERS - 9)
-
-#define VIDEO_HDR_MAX_CONTRAST 10.0f
+#define VIDEO_SHADER_STOCK_BLEND          (GFX_MAX_SHADERS - 1)
+#define VIDEO_SHADER_MENU                 (GFX_MAX_SHADERS - 2)
+#define VIDEO_SHADER_MENU_2               (GFX_MAX_SHADERS - 3)
+#define VIDEO_SHADER_MENU_3               (GFX_MAX_SHADERS - 4)
+#define VIDEO_SHADER_MENU_4               (GFX_MAX_SHADERS - 5)
+#define VIDEO_SHADER_MENU_5               (GFX_MAX_SHADERS - 6)
+#define VIDEO_SHADER_MENU_6               (GFX_MAX_SHADERS - 7)
+#define VIDEO_SHADER_STOCK_HDR            (GFX_MAX_SHADERS - 8)
+#define VIDEO_SHADER_STOCK_NOBLEND_HDR    (GFX_MAX_SHADERS - 9)
+#define VIDEO_SHADER_STOCK_NOBLEND        (GFX_MAX_SHADERS - 10)
 
 #if defined(_XBOX360)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
@@ -139,34 +138,37 @@ enum video_driver_state_flags
    VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS = (1 << 0 ),
    VIDEO_FLAG_WINDOW_TITLE_UPDATE                 = (1 << 1 ),
    VIDEO_FLAG_WIDGETS_PAUSED                      = (1 << 2 ),
-   VIDEO_FLAG_WIDGETS_FAST_FORWARD                = (1 << 3 ),
-   VIDEO_FLAG_WIDGETS_REWINDING                   = (1 << 4 ),
-   VIDEO_FLAG_STARTED_FULLSCREEN                  = (1 << 5 ),
+   VIDEO_FLAG_WIDGETS_FASTMOTION                  = (1 << 3 ),
+   VIDEO_FLAG_WIDGETS_SLOWMOTION                  = (1 << 4 ),
+   VIDEO_FLAG_WIDGETS_REWINDING                   = (1 << 5 ),
+   VIDEO_FLAG_STARTED_FULLSCREEN                  = (1 << 6 ),
    /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
     * for 32-bit.
     * This takes effect for overlay and shader cores that wants to load
     * data into graphics driver. Kinda hackish to place it here, it is only
     * used for GLES.
     * TODO: Refactor this better. */
-   VIDEO_FLAG_USE_RGBA                            = (1 << 6 ),
+   VIDEO_FLAG_USE_RGBA                            = (1 << 7 ),
    /* Graphics driver supports HDR displays
     * Currently only D3D11/D3D12/Vulkan supports HDR displays
     * on Windows and whether we've enabled it */
-   VIDEO_FLAG_HDR_SUPPORT                         = (1 << 7 ),
+   VIDEO_FLAG_HDR_SUPPORT                         = (1 << 8 ),
    /* If set during context deinit, the driver should keep
     * graphics context alive to avoid having to reset all
     * context state. */
-   VIDEO_FLAG_CACHE_CONTEXT                       = (1 << 8 ),
+   VIDEO_FLAG_CACHE_CONTEXT                       = (1 << 9 ),
    /* Set to true by driver if context caching succeeded. */
-   VIDEO_FLAG_CACHE_CONTEXT_ACK                   = (1 << 9 ),
-   VIDEO_FLAG_ACTIVE                              = (1 << 10),
-   VIDEO_FLAG_STATE_OUT_RGB32                     = (1 << 11),
-   VIDEO_FLAG_CRT_SWITCHING_ACTIVE                = (1 << 12),
-   VIDEO_FLAG_FORCE_FULLSCREEN                    = (1 << 13),
-   VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE           = (1 << 14),
-   VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD          = (1 << 15),
-   VIDEO_FLAG_CLI_SHADER_DISABLE                  = (1 << 16),
-   VIDEO_FLAG_RUNAHEAD_IS_ACTIVE                  = (1 << 17)
+   VIDEO_FLAG_CACHE_CONTEXT_ACK                   = (1 << 10),
+   VIDEO_FLAG_ACTIVE                              = (1 << 11),
+   VIDEO_FLAG_STATE_OUT_RGB32                     = (1 << 12),
+   VIDEO_FLAG_CRT_SWITCHING_ACTIVE                = (1 << 13),
+   VIDEO_FLAG_FORCE_FULLSCREEN                    = (1 << 14),
+   VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE           = (1 << 15),
+   VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD          = (1 << 16),
+   VIDEO_FLAG_CLI_SHADER_DISABLE                  = (1 << 17),
+   VIDEO_FLAG_RUNAHEAD_IS_ACTIVE                  = (1 << 18),
+   VIDEO_FLAG_HDR10_SUPPORT                       = (1 << 19),
+   VIDEO_FLAG_SCRGB_SUPPORT                       = (1 << 20)
 };
 
 struct LinkInfo
@@ -497,7 +499,7 @@ typedef struct video_frame_info
    bool fastforward_frameskip;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
-   bool hdr_enable;
+   unsigned hdr_mode;
    bool overlay_behind_menu;
    bool scan_subframes;
    bool shader_active;
@@ -618,6 +620,16 @@ typedef struct gfx_ctx_driver
    /* Optional. Makes driver context (only GL right now)
     * active for this thread. */
    void (*make_current)(bool release);
+
+   /* Optional. Creates and binds a new window surface, destroying the original
+    * window surface if applicable. Returns true on success and false on error.
+    * Currently only for OpenGL. */
+   bool (*create_surface)(void *data);
+
+   /* Optional. Destroys the current window surface. Returns true on success or
+    * or if there is no currently bound window surface and false on error.
+    * Currently only for OpenGL. */
+   bool (*destroy_surface)(void *data);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode
@@ -684,10 +696,11 @@ typedef struct video_poke_interface
          const struct retro_hw_render_interface **iface);
 
    /* hdr settings */
-   void (*set_hdr_max_nits)(void *data, float max_nits);
+   void (*set_hdr_menu_nits)(void *data, float menu_nits);
    void (*set_hdr_paper_white_nits)(void *data, float paper_white_nits);
-   void (*set_hdr_contrast)(void *data, float contrast);
-   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);
+   void (*set_hdr_expand_gamut)(void *data, unsigned expand_gamut);
+   void (*set_hdr_scanlines)(void *data, bool scanlines);
+   void (*set_hdr_subpixel_layout)(void *data, unsigned subpixel_layout);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen
@@ -940,6 +953,20 @@ void video_driver_unset_hdr_support(void);
 
 bool video_driver_supports_hdr(void);
 
+void video_driver_set_hdr10_support(void);
+
+void video_driver_unset_hdr10_support(void);
+
+bool video_driver_supports_hdr10(void);
+
+void video_driver_set_scrgb_support(void);
+
+void video_driver_unset_scrgb_support(void);
+
+bool video_driver_supports_scrgb(void);
+
+unsigned video_driver_hdr_max_mode(void);
+
 bool video_driver_get_next_video_out(void);
 
 bool video_driver_get_prev_video_out(void);
@@ -948,7 +975,8 @@ void video_driver_monitor_reset(void);
 
 void video_driver_set_aspect_ratio(void);
 
-void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect);
+void video_driver_update_viewport(struct video_viewport* vp,
+      bool force_full, bool keep_aspect, bool y_down);
 
 void video_driver_apply_state_changes(void);
 

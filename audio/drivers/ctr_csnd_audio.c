@@ -292,5 +292,6 @@ audio_driver_t audio_ctr_csnd = {
    NULL,
    NULL,
    ctr_csnd_audio_write_avail,
-   ctr_csnd_audio_buffer_size
+   ctr_csnd_audio_buffer_size,
+   NULL  /* write_raw */
 };

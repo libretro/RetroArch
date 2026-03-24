@@ -278,17 +278,19 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
       case CORE_UPDATER_LIST_BEGIN:
          {
             char buildbot_url[PATH_MAX_LENGTH];
-            settings_t *settings         = config_get_ptr();
-            file_transfer_t *transf      = NULL;
-            char *tmp_url                = NULL;
-            const char *net_buildbot_url =
-               settings->paths.network_buildbot_url;
+            settings_t *settings    = config_get_ptr();
+            file_transfer_t *transf = NULL;
+            const char *net_buildbot_url;
 
             /* Reset core updater list */
             core_updater_list_reset(list_handle->core_list);
-            /* Get core listing URL */
+
+            /* Get core listing URL - check settings first to
+             * avoid dereferencing NULL */
             if (!settings)
                goto task_finished;
+
+            net_buildbot_url = settings->paths.network_buildbot_url;
 
             if (string_is_empty(net_buildbot_url))
                goto task_finished;
@@ -299,12 +301,15 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                   ".index-extended",
                   sizeof(buildbot_url));
 
-            tmp_url = strdup(buildbot_url);
-            buildbot_url[0] = '\0';
-            net_http_urlencode_full(
-                  buildbot_url, tmp_url, sizeof(buildbot_url));
-            if (tmp_url)
-               free(tmp_url);
+            /* URL-encode in place using a stack buffer
+             * instead of heap-allocating a copy */
+            {
+               char tmp_url[PATH_MAX_LENGTH];
+               strlcpy(tmp_url, buildbot_url, sizeof(tmp_url));
+               buildbot_url[0] = '\0';
+               net_http_urlencode_full(
+                     buildbot_url, tmp_url, sizeof(buildbot_url));
+            }
 
             if (string_is_empty(buildbot_url))
                goto task_finished;
@@ -314,10 +319,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                         sizeof(file_transfer_t))))
                goto task_finished;
 
-            /* > Seems to be required - not sure why the
-             *   underlying code is implemented like this... */
             strlcpy(transf->path, buildbot_url, sizeof(transf->path));
-
             transf->user_data = (void*)list_handle;
 
             /* Push HTTP transfer task */
@@ -342,10 +344,8 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             {
                uint8_t _flg = task_get_flags(list_handle->http_task);
 
-               if ((_flg & (RETRO_TASK_FLG_FINISHED)) > 0)
-                  list_handle->http_task_finished = true;
-               else
-                  list_handle->http_task_finished = false;
+               list_handle->http_task_finished =
+                  ((_flg & RETRO_TASK_FLG_FINISHED) > 0);
 
                /* If HTTP task is running, copy current
                 * progress value to *this* task */
@@ -362,20 +362,22 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
          break;
       case CORE_UPDATER_LIST_END:
          {
-            settings_t *settings    = config_get_ptr();
-
             /* Check whether HTTP task was successful */
             if (list_handle->http_task_success)
             {
                /* Parse HTTP transfer data */
                if (list_handle->http_data)
-                  core_updater_list_parse_network_data(
-                        list_handle->core_list,
-                        settings->paths.directory_libretro,
-                        settings->paths.path_libretro_info,
-                        settings->paths.network_buildbot_url,
-                        list_handle->http_data->data,
-                        list_handle->http_data->len);
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings)
+                     core_updater_list_parse_network_data(
+                           list_handle->core_list,
+                           settings->paths.directory_libretro,
+                           settings->paths.path_libretro_info,
+                           settings->paths.network_buildbot_url,
+                           list_handle->http_data->data,
+                           list_handle->http_data->len);
+               }
             }
             else
             {
@@ -386,7 +388,6 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
 
             /* Enable menu refresh, if required */
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
-            if (list_handle->refresh_menu)
             {
                struct menu_state *menu_st = menu_state_get_ptr();
                if (list_handle->refresh_menu)

@@ -369,11 +369,11 @@ static bool video_thread_handle_packet(
           * thread sends command right after frame update. */
          break;
 
-      case CMD_POKE_SET_HDR_MAX_NITS:
-         if (thr->driver_data && thr->poke && thr->poke->set_hdr_max_nits)
-            thr->poke->set_hdr_max_nits(
+      case CMD_POKE_SET_HDR_MENU_NITS:
+         if (thr->driver_data && thr->poke && thr->poke->set_hdr_menu_nits)
+            thr->poke->set_hdr_menu_nits(
                thr->driver_data,
-               pkt.data.hdr.max_nits
+               pkt.data.hdr.menu_nits
             );
          video_thread_reply(thr, &pkt);
          break;
@@ -388,21 +388,29 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, &pkt);
          break;
 
-      case CMD_POKE_SET_HDR_CONTRAST:
-         if (thr->driver_data && thr->poke && thr->poke->set_hdr_contrast)
-            thr->poke->set_hdr_contrast(
-               thr->driver_data,
-               pkt.data.hdr.contrast
-            );
-         video_thread_reply(thr, &pkt);
-         break;
-
       case CMD_POKE_SET_HDR_EXPAND_GAMUT:
          if (thr->driver_data && thr->poke && thr->poke->set_hdr_expand_gamut)
             thr->poke->set_hdr_expand_gamut(
                thr->driver_data,
                pkt.data.hdr.expand_gamut
             );
+
+      case CMD_POKE_SET_HDR_SCANLINES:
+         if (thr->driver_data && thr->poke && thr->poke->set_hdr_scanlines)
+            thr->poke->set_hdr_scanlines(
+               thr->driver_data,
+               pkt.data.hdr.scanlines
+            );
+         video_thread_reply(thr, &pkt);
+         break;
+
+      case CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT:
+         if (thr->driver_data && thr->poke && thr->poke->set_hdr_subpixel_layout)
+            thr->poke->set_hdr_subpixel_layout(
+               thr->driver_data,
+               pkt.data.hdr.subpixel_layout
+            );
+
          video_thread_reply(thr, &pkt);
          break;
 
@@ -1023,15 +1031,15 @@ static void thread_set_filtering(void *data,
    }
 }
 
-static void thread_set_hdr_max_nits(void *data, float max_nits)
+static void thread_set_hdr_menu_nits(void *data, float menu_nits)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
    if (thr)
    {
       thread_packet_t pkt;
-      pkt.type              = CMD_POKE_SET_HDR_MAX_NITS;
-      pkt.data.hdr.max_nits = max_nits;
+      pkt.type               = CMD_POKE_SET_HDR_MENU_NITS;
+      pkt.data.hdr.menu_nits = menu_nits;
 
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
@@ -1051,21 +1059,7 @@ static void thread_set_hdr_paper_white_nits(void *data, float paper_white_nits)
    }
 }
 
-static void thread_set_hdr_contrast(void *data, float contrast)
-{
-   thread_video_t *thr = (thread_video_t*)data;
-
-   if (thr)
-   {
-      thread_packet_t pkt;
-      pkt.type              = CMD_POKE_SET_HDR_CONTRAST;
-      pkt.data.hdr.contrast = contrast;
-
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
-   }
-}
-
-static void thread_set_hdr_expand_gamut(void *data, bool expand_gamut)
+static void thread_set_hdr_expand_gamut(void *data, unsigned expand_gamut)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
@@ -1078,6 +1072,35 @@ static void thread_set_hdr_expand_gamut(void *data, bool expand_gamut)
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
+
+static void thread_set_hdr_scanlines(void *data, bool hdr_scanlines)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (thr)
+   {
+      thread_packet_t pkt;
+      pkt.type                = CMD_POKE_SET_HDR_SCANLINES;
+      pkt.data.hdr.scanlines  = hdr_scanlines;
+
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   }
+}
+
+static void thread_set_hdr_subpixel_layout(void *data, unsigned hdr_subpixel_layout)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (thr)
+   {
+      thread_packet_t pkt;
+      pkt.type                        = CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT;
+      pkt.data.hdr.subpixel_layout    = hdr_subpixel_layout;
+
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   }
+}
+
 
 static void thread_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
@@ -1287,10 +1310,11 @@ static const video_poke_interface_t thread_poke = {
    thread_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   thread_set_hdr_max_nits,
+   thread_set_hdr_menu_nits,
    thread_set_hdr_paper_white_nits,
-   thread_set_hdr_contrast,
-   thread_set_hdr_expand_gamut
+   thread_set_hdr_expand_gamut,
+   thread_set_hdr_scanlines,
+   thread_set_hdr_subpixel_layout
 };
 
 static void video_thread_get_poke_interface(void *data,

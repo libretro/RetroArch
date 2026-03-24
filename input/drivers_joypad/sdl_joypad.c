@@ -29,6 +29,7 @@
 
 #define SDL_SUPPORTS_RUMBLE  SDL_VERSION_ATLEAST(2, 0, 9)
 #define SDL_SUPPORTS_SENSORS SDL_VERSION_ATLEAST(2, 0, 14)
+#define SDL_SUPPORTS_HIDAPI_WII SDL_VERSION_ATLEAST(2, 26, 0)
 
 typedef struct _sdl_joypad
 {
@@ -135,13 +136,8 @@ static void sdl_pad_connect(unsigned id)
 #ifdef HAVE_SDL2
    guid       = SDL_JoystickGetGUID(pad->joypad);
    guid_ptr   = (uint16_t*)guid.data;
-#ifdef __linux
    vendor     = guid_ptr[2];
    product    = guid_ptr[4];
-#elif _WIN32
-   vendor     = guid_ptr[0];
-   product    = guid_ptr[1];
-#endif
 #ifdef WEBOS
    if (vendor == 0x9999 && product == 0x9999)
    {
@@ -305,6 +301,10 @@ static void *sdl_joypad_init(void *data)
 #if SDL_SUPPORTS_RUMBLE
    /* enable extended hid reports to support ps4/ps5 rumble over bluetooth */
    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
+#endif
+#if SDL_SUPPORTS_HIDAPI_WII
+   /* enable HIDAPI Wii driver for accelerometer/gyro support */
+   SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
 #endif
 #endif
 

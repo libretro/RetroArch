@@ -425,7 +425,7 @@ bool gfx_widget_start_load_content_animation(void)
 
    /* Check whether system name has been set or if the name
     * is a copy of info file database with multiple entries */
-   if (!has_system || strstr(state->system_name, "|"))
+   if (!has_system || strchr(state->system_name, '|'))
    {
       /* Use core display name, if available */
       if (!string_is_empty(core_info->display_name))
@@ -504,11 +504,10 @@ bool gfx_widget_start_load_content_animation(void)
    /* Truncate long system names */
    if (strlen(state->system_name) > 54)
    {
-      size_t len = 50;
-      state->system_name[++len] = '.';
-      state->system_name[++len] = '.';
-      state->system_name[++len] = '.';
-      state->system_name[++len] = '\0';
+      state->system_name[51] = '.';
+      state->system_name[52] = '.';
+      state->system_name[53] = '.';
+      state->system_name[54] = '\0';
    }
 
    /* All parameters are initialised
@@ -1012,6 +1011,13 @@ static bool gfx_widget_load_content_animation_init(
 }
 /* Widget definition */
 
+static bool gfx_widget_load_content_animation_visible(void)
+{
+   gfx_widget_load_content_animation_state_t *state =
+      &p_w_load_content_animation_st;
+   return state->status != GFX_WIDGET_LOAD_CONTENT_IDLE;
+}
+
 const gfx_widget_t gfx_widget_load_content_animation = {
    gfx_widget_load_content_animation_init,
    gfx_widget_load_content_animation_free,
@@ -1019,5 +1025,6 @@ const gfx_widget_t gfx_widget_load_content_animation = {
    gfx_widget_load_content_animation_context_destroy,
    gfx_widget_load_content_animation_layout,
    gfx_widget_load_content_animation_iterate,
-   gfx_widget_load_content_animation_frame
+   gfx_widget_load_content_animation_frame,
+   gfx_widget_load_content_animation_visible
 };

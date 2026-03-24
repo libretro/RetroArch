@@ -409,7 +409,7 @@ static void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
       width                    = texture->desc.Width  >> 5;
       height                   = texture->desc.Height >> 5;
 
-      while (width && height)
+      while ((width > 1) || (height > 1))
       {
          width  >>= 1;
          height >>= 1;
@@ -1453,7 +1453,7 @@ static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
 static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
 {
    video_driver_update_viewport(&d3d10->vp, force_full,
-         (d3d10->flags & D3D10_ST_FLAG_KEEP_ASPECT) ? true : false);
+         (d3d10->flags & D3D10_ST_FLAG_KEEP_ASPECT) ? true : false, true);
 
    d3d10->frame.viewport.TopLeftX  = d3d10->vp.x;
    d3d10->frame.viewport.TopLeftY  = d3d10->vp.y;
@@ -2252,7 +2252,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D10] Found GPU at index %d: \"%s\".\n", i, str);
+         RARCH_LOG("[D3D10] Found GPU #%d: \"%s\".\n", i, str);
 
          string_list_append(d3d10->gpu_list, str, attr);
 
@@ -2266,9 +2266,9 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
       if (0 <= gpu_index && gpu_index <= i && (gpu_index < D3D10_MAX_GPU_COUNT))
       {
+         RARCH_LOG("[D3D10] Using GPU #%d: \"%s\".\n", gpu_index, d3d10->gpu_list->elems[gpu_index].data);
          d3d10->current_adapter = d3d10->adapters[gpu_index];
          d3d10->adapter         = d3d10->current_adapter;
-         RARCH_LOG("[D3D10] Using GPU index %d.\n", gpu_index);
       }
       else
       {
@@ -3268,10 +3268,11 @@ static const video_poke_interface_t d3d10_poke_interface = {
 #else
    NULL, /* get_hw_render_interface */
 #endif
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

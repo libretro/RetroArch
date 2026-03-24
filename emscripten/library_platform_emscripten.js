@@ -8,8 +8,14 @@ var LibraryPlatformEmscripten = {
       observer: null,
       memoryUsageTimeout: null,
       sentinelPromise: null,
+      wakeLockRequested: 0,
       command_queue: [],
       command_reply_queue: []
+   },
+
+   PlatformEmscriptenKeepThreadAlive: function() {
+      // keeps the thread alive until exited explicitly
+      {{{ runtimeKeepalivePush() }}}
    },
 
    $PlatformEmscriptenOnWindowResize: function() {
@@ -26,24 +32,26 @@ var LibraryPlatformEmscripten = {
          return;
       }
       RPE.observer = new ResizeObserver(function(e) {
-         var width, height;
          var entry = e.find(i => i.target == Module.canvas);
          if (!entry) return;
          if (entry.devicePixelContentBoxSize) {
-            width = entry.devicePixelContentBoxSize[0].inlineSize;
-            height = entry.devicePixelContentBoxSize[0].blockSize;
+            RPE.canvasWidth = entry.devicePixelContentBoxSize[0].inlineSize;
+            RPE.canvasHeight = entry.devicePixelContentBoxSize[0].blockSize;
          } else {
-            width = Math.round(entry.contentRect.width * window.devicePixelRatio);
-            height = Math.round(entry.contentRect.height * window.devicePixelRatio);
+            RPE.canvasWidth = Math.round(entry.contentRect.width * window.devicePixelRatio);
+            RPE.canvasHeight = Math.round(entry.contentRect.height * window.devicePixelRatio);
          }
-         RPE.canvasWidth = width;
-         RPE.canvasHeight = height;
          // doubles are too big to pass as an argument to exported functions
          {{{ makeSetValue("dpr", "0", "window.devicePixelRatio", "double") }}};
-         _platform_emscripten_update_canvas_dimensions_cb(width, height, dpr);
+         _platform_emscripten_update_canvas_dimensions_cb(RPE.canvasWidth, RPE.canvasHeight, dpr);
       });
       RPE.observer.observe(Module.canvas);
       window.addEventListener("resize", PlatformEmscriptenOnWindowResize, false);
+      // first frame: this might be off by 1, but it will be corrected afterward
+      RPE.canvasWidth = Math.round(Module.canvas.clientWidth * window.devicePixelRatio);
+      RPE.canvasHeight = Math.round(Module.canvas.clientHeight * window.devicePixelRatio);
+      {{{ makeSetValue("dpr", "0", "window.devicePixelRatio", "double") }}};
+      _platform_emscripten_update_canvas_dimensions_cb(RPE.canvasWidth, RPE.canvasHeight, dpr);
    },
 
    $PlatformEmscriptenOnCanvasPointerDown: function() {
@@ -61,9 +69,10 @@ var LibraryPlatformEmscripten = {
       Module.canvas.addEventListener("contextmenu", PlatformEmscriptenOnCanvasContextMenu, false);
    },
 
-   $PlatformEmscriptenOnVisibilityChange__deps: ["platform_emscripten_update_window_hidden_cb"],
+   $PlatformEmscriptenOnVisibilityChange__deps: ["platform_emscripten_update_window_hidden_cb", "$PlatformEmscriptenRefreshWakeLock"],
    $PlatformEmscriptenOnVisibilityChange: function() {
       _platform_emscripten_update_window_hidden_cb(document.visibilityState == "hidden");
+      if (document.visibilityState != "hidden") PlatformEmscriptenRefreshWakeLock();
    },
 
    PlatformEmscriptenWatchWindowVisibility__deps: ["$PlatformEmscriptenOnVisibilityChange"],
@@ -125,7 +134,6 @@ var LibraryPlatformEmscripten = {
    },
 
    PlatformEmscriptenGLContextEventInit__deps: ["$PlatformEmscriptenOnGLContextLost", "$PlatformEmscriptenOnGLContextRestored"],
-   PlatformEmscriptenGLContextEventInit__proxy: "sync",
    PlatformEmscriptenGLContextEventInit: function() {
       Module.canvas.addEventListener("webglcontextlost", PlatformEmscriptenOnGLContextLost);
       Module.canvas.addEventListener("webglcontextrestored", PlatformEmscriptenOnGLContextRestored);
@@ -158,10 +166,32 @@ var LibraryPlatformEmscripten = {
       PlatformEmscriptenDoSetCanvasSize(width, height);
    },
 
-   $PlatformEmscriptenDoSetWakeLock: async function(state) {
-      if (state && !RPE.sentinelPromise && navigator?.wakeLock?.request) {
+   $PlatformEmscriptenRefreshWakeLock: async function() {
+      // wake lock is lost when the window is hidden, and must be requested again
+      if (RPE.wakeLockRequested && navigator?.wakeLock?.request) {
+         if (RPE.sentinelPromise) {
+            try {
+               var sentinel = await RPE.sentinelPromise;
+               if (!sentinel.released) return;
+            } catch (e) {}
+         }
          try {
             RPE.sentinelPromise = navigator.wakeLock.request("screen");
+            RPE.sentinelPromise.catch(function() {
+               RPE.sentinelPromise = null;
+            });
+         } catch (e) {}
+      }
+   },
+
+   $PlatformEmscriptenDoSetWakeLock: async function(state) {
+      RPE.wakeLockRequested = state;
+      if (state && !RPE.sentinelPromise && document.visibilityState != "hidden" && navigator?.wakeLock?.request) {
+         try {
+            RPE.sentinelPromise = navigator.wakeLock.request("screen");
+            RPE.sentinelPromise.catch(function() {
+               RPE.sentinelPromise = null;
+            });
          } catch (e) {}
       } else if (!state && RPE.sentinelPromise) {
          try {
@@ -178,12 +208,16 @@ var LibraryPlatformEmscripten = {
       PlatformEmscriptenDoSetWakeLock(state);
    },
 
-   PlatformEmscriptenGetSystemInfo: function() {
+   PlatformEmscriptenGetSystemInfo: function(browserPtr, osPtr) {
+      var browser = 0;
+      var os = 0;
       var userAgent = navigator?.userAgent?.toLowerCase?.();
-      if (!userAgent) return 0;
-      var browser = 1 + ["chrom", "firefox", "safari"].findIndex(i => userAgent.includes(i));
-      var os = 1 + [/windows/, /linux|cros|android/, /iphone|ipad/, /mac os/].findIndex(i => i.test(userAgent));
-      return browser | (os << 16);
+      if (userAgent) {
+         browser = 1 + ["chrom", "firefox", "safari"].findIndex(i => userAgent.includes(i));
+         os = 1 + [/windows/, /linux|cros|android/, /iphone|ipad/, /mac os/].findIndex(i => i.test(userAgent));
+      }
+      {{{ makeSetValue("browserPtr", "0", "browser", "u32") }}};
+      {{{ makeSetValue("osPtr", "0", "os", "u32") }}};
    },
 
    $EmscriptenSendCommand__deps: ["platform_emscripten_command_raise_flag"],

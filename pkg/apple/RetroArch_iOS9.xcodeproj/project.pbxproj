@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		07ACC0012026020100CB9D84 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07ACC0002026020100CB9D84 /* Accelerate.framework */; };
 		040A5A4922953F3300BD075F /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 040A5A2722953F3300BD075F /* GCDWebServerResponse.m */; };
 		040A5A4A22953F3300BD075F /* GCDWebServerRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 040A5A2A22953F3300BD075F /* GCDWebServerRequest.m */; };
 		040A5A4B22953F3300BD075F /* GCDWebServerFunctions.m in Sources */ = {isa = PBXBuildFile; fileRef = 040A5A2D22953F3300BD075F /* GCDWebServerFunctions.m */; };
@@ -54,6 +55,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		07ACC0002026020100CB9D84 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		040A5A2522953F3300BD075F /* GCDWebServerFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebServerFunctions.h; sourceTree = "<group>"; };
 		040A5A2622953F3300BD075F /* GCDWebServerPrivate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebServerPrivate.h; sourceTree = "<group>"; };
 		040A5A2722953F3300BD075F /* GCDWebServerResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebServerResponse.m; sourceTree = "<group>"; };
@@ -130,6 +132,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07ACC0012026020100CB9D84 /* Accelerate.framework in Frameworks */,
 				92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */,
 				92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */,
 				04306A8724A2C600002CAEFE /* libz.tbd in Frameworks */,
@@ -286,6 +289,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				07ACC0002026020100CB9D84 /* Accelerate.framework */,
 				0705A1DB2CD2522F0035A469 /* libxml2.tbd */,
 				075CBF3D2A548F0700F1864D /* MetricKit.framework */,
 				072DA116299B2F7800619B75 /* CoreHaptics.framework */,

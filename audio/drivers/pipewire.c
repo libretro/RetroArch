@@ -887,4 +887,5 @@ audio_driver_t audio_pipewire = {
       pwire_device_list_free,
       pwire_write_avail,
       pwire_buffer_size,
+      NULL /* write_raw */
 };

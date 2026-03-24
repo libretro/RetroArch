@@ -102,6 +102,8 @@
 #endif
 #endif
 #define RGUI_VITA_FB_HEIGHT      272
+#define RGUI_DOS_FB_HEIGHT       200
+#define RGUI_DOS_FB_WIDTH        320
 
 /* Maximum entry value length in characters
  * when using fixed with layouts
@@ -767,6 +769,30 @@ static const rgui_theme_t rgui_theme_opaque_dracula = {
    0xFF44475A, /* border_light_color */
    0xFF22212C, /* shadow_color */
    0xFF525F88  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_evergarden = {
+   0xFFCBE3B3, /* hover_color */
+   0xFFDDEEDD, /* normal_color */
+   0xFF96B4AA, /* title_color */
+   0xC0112222, /* bg_dark_color */
+   0xC0112222, /* bg_light_color */
+   0xC0374145, /* border_dark_color */
+   0xC0374145, /* border_light_color */
+   0xFF171C1F, /* shadow_color */
+   0xC06F8788  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_evergarden = {
+   0xFFCBE3B3, /* hover_color */
+   0xFFDDEEDD, /* normal_color */
+   0xFF96B4AA, /* title_color */
+   0xFF112222, /* bg_dark_color */
+   0xFF112222, /* bg_light_color */
+   0xFF374145, /* border_dark_color */
+   0xFF374145, /* border_light_color */
+   0xFF171C1F, /* shadow_color */
+   0xFF6F8788  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_fairyfloss = {
@@ -2970,6 +2996,10 @@ static const rgui_theme_t *rgui_get_theme(rgui_t *rgui)
          return transparent
                ? &rgui_theme_dracula
                : &rgui_theme_opaque_dracula;
+      case RGUI_THEME_EVERGARDEN:
+         return transparent
+               ? &rgui_theme_evergarden
+               : &rgui_theme_opaque_evergarden;
       case RGUI_THEME_FAIRYFLOSS:
          return transparent
                ? &rgui_theme_fairyfloss
@@ -6078,19 +6108,18 @@ static bool rgui_set_aspect_ratio(
 #elif defined(DINGUX)
    /* Dingux devices use a fixed framebuffer size */
    unsigned max_frame_buf_width = RGUI_DINGUX_FB_WIDTH;
+#elif defined(DJGPP)
+   unsigned max_frame_buf_width = RGUI_DOS_FB_WIDTH;
 #else
-   struct video_viewport vp;
    unsigned max_frame_buf_width = RGUI_MAX_FB_WIDTH;
 #endif
+   struct video_viewport vp;
 #if defined(DINGUX)
    unsigned aspect_ratio        = RGUI_DINGUX_ASPECT_RATIO;
    unsigned aspect_ratio_lock   = RGUI_ASPECT_RATIO_LOCK_NONE;
 #else
    unsigned aspect_ratio        = settings->uints.menu_rgui_aspect_ratio;
    unsigned aspect_ratio_lock   = settings->uints.menu_rgui_aspect_ratio_lock;
-#endif
-#ifdef DJGPP
-   const char *driver_ident    = video_driver_get_ident();
 #endif
 
    rgui_framebuffer_free(&rgui->frame_buf);
@@ -6116,6 +6145,9 @@ static bool rgui_set_aspect_ratio(
 #elif defined(VITA)
    /* Vita screen does not match 240 */
    rgui->frame_buf.height = RGUI_VITA_FB_HEIGHT;
+   video_driver_get_viewport_info(&vp);
+#elif defined(DJGPP)
+   rgui->frame_buf.height = RGUI_DOS_FB_HEIGHT;
    video_driver_get_viewport_info(&vp);
 #else
    /* If window height is less than RGUI default
@@ -6247,16 +6279,22 @@ static bool rgui_set_aspect_ratio(
             /* Use 4:3 as base, and adjust width according to core geometry */
             video_driver_state_t *video_st = video_state_get_ptr();
 
+#if defined(DJGPP)
+            rgui->frame_buf.width = RGUI_DOS_FB_WIDTH;
+#else
             if (rgui->frame_buf.height == 240)
                rgui->frame_buf.width = 320;
             else
                rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
                      (4.0f / 3.0f) * (float)rgui->frame_buf.height);
+#endif
             base_term_width = rgui->frame_buf.width;
 
+#if !defined(DJGPP)
             if (video_st && video_st->av_info.geometry.aspect_ratio > 0)
                rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
                      rgui->frame_buf.height * video_st->av_info.geometry.aspect_ratio);
+#endif
          }
          break;
       default:
@@ -6269,14 +6307,6 @@ static bool rgui_set_aspect_ratio(
          base_term_width = rgui->frame_buf.width;
          break;
    }
-
-#ifdef DJGPP
-   if (string_is_equal(driver_ident, "vga"))
-   {
-      rgui->frame_buf.width = 320;
-      rgui->frame_buf.height = 200;
-   }
-#endif
 
    /* Ensure frame buffer/terminal width is sane
     * - Must be less than max_frame_buf_width
@@ -6291,7 +6321,7 @@ static bool rgui_set_aspect_ratio(
    base_term_width = (base_term_width > rgui->frame_buf.width)
          ? rgui->frame_buf.width
          : base_term_width;
-#if !(defined(GEKKO) || defined(DINGUX))
+#if !(defined(GEKKO) || defined(DINGUX) || defined(DJGPP))
    if (vp.full_width < rgui->frame_buf.width)
    {
       rgui->frame_buf.width = (vp.full_width > RGUI_MIN_FB_WIDTH)
@@ -7260,37 +7290,67 @@ static void rgui_action_switch_thumbnail(rgui_t *rgui)
 static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
 {
    menu_entry_t entry;
-
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
-
+   rgui->menu_sublabel[0] = '\0';
    if (!string_is_empty(entry.sublabel))
    {
-      char *tok, *save         = NULL;
-      bool prev_line_empty     = true;
-      char *entry_sublabel_cpy = strdup(entry.sublabel);
+      const char *src          = entry.sublabel;
+      size_t offset            = 0;
+      size_t buf_size          = sizeof(rgui->menu_sublabel);
 
-      /* Sanitise sublabel
-       * > Replace newline characters with standard delimiter
-       * > Remove whitespace surrounding each sublabel line */
-      tok = strtok_r(entry_sublabel_cpy, "\n", &save);
-
-      while (tok)
+      while (*src)
       {
-         string_trim_whitespace_right(tok);
-         string_trim_whitespace_left(tok);
-         if (!string_is_empty(tok))
-         {
-            if (!prev_line_empty)
-               strlcat(rgui->menu_sublabel, RGUI_TICKER_SPACER, sizeof(rgui->menu_sublabel));
-            strlcat(rgui->menu_sublabel, tok, sizeof(rgui->menu_sublabel));
-            prev_line_empty = false;
-         }
-         tok = strtok_r(NULL, "\n", &save);
-      }
+         const char *line_start;
+         const char *line_end;
+         size_t len;
 
-      free(entry_sublabel_cpy);
+         /* Skip leading whitespace and newlines */
+         while (*src == ' ' || *src == '\t' || *src == '\n' || *src == '\r')
+            src++;
+
+         if (*src == '\0')
+            break;
+
+         /* Find end of this line */
+         line_start = src;
+         while (*src && *src != '\n' && *src != '\r')
+            src++;
+
+         /* Trim trailing whitespace */
+         line_end = src;
+         while (line_end > line_start
+               && (*(line_end - 1) == ' ' || *(line_end - 1) == '\t'))
+            line_end--;
+
+         len = (size_t)(line_end - line_start);
+         if (len == 0)
+            continue;
+
+         /* Insert spacer between lines */
+         if (offset > 0 && offset + 1 < buf_size)
+         {
+            size_t spacer_len = strlcpy(
+                  rgui->menu_sublabel + offset,
+                  RGUI_TICKER_SPACER,
+                  buf_size - offset);
+            if (offset + spacer_len < buf_size)
+               offset += spacer_len;
+            else
+               offset = buf_size - 1;
+         }
+
+         /* Append trimmed line */
+         if (offset + 1 < buf_size)
+         {
+            if (len > buf_size - offset - 1)
+               len = buf_size - offset - 1;
+            memcpy(rgui->menu_sublabel + offset, line_start, len);
+            offset += len;
+            rgui->menu_sublabel[offset] = '\0';
+         }
+      }
    }
 }
 

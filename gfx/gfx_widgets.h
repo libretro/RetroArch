@@ -116,17 +116,14 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_DYING                     = (1 << 4),
    /* Has the timer expired ? if so, should be set to dying */
    DISPWIDG_FLAG_EXPIRED                   = (1 << 5),
-   /* Unfold animation */
-   DISPWIDG_FLAG_UNFOLDED                  = (1 << 6),
-   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7),
    /* Color style */
-   DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
-   DISPWIDG_FLAG_NEGATIVE                  = (1 << 9),
-   DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 10),
-   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11),
-   DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 12),
+   DISPWIDG_FLAG_POSITIVE                  = (1 << 6),
+   DISPWIDG_FLAG_NEGATIVE                  = (1 << 7),
+   DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 8),
+   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 9),
+   DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 10),
    /* Size */
-   DISPWIDG_FLAG_SMALL                     = (1 << 13)
+   DISPWIDG_FLAG_SMALL                     = (1 << 11)
 };
 
 /* There can only be one message animation at a time to
@@ -230,12 +227,10 @@ typedef struct dispgfx_widget
    unsigned msg_queue_spacing;
    unsigned msg_queue_rect_start_x;
    unsigned msg_queue_internal_icon_size;
-   unsigned msg_queue_internal_icon_offset;
    unsigned msg_queue_icon_size_x;
    unsigned msg_queue_icon_size_y;
    unsigned msg_queue_icon_offset_y;
    unsigned msg_queue_scissor_start_x;
-   unsigned msg_queue_default_rect_width_menu_alive;
    unsigned msg_queue_default_rect_width;
    unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;
@@ -310,6 +305,11 @@ struct gfx_widget
     * -- userdata is a dispgfx_widget_t
     * -> draw the widget here */
    void (*frame)(void* data, void *userdata);
+
+   /* called to check if the widget is currently
+    * drawing anything on screen
+    * -> return true if the widget is active */
+   bool (*visible)(void);
 };
 
 float gfx_widgets_get_thumbnail_scale_factor(
@@ -417,6 +417,8 @@ bool gfx_widget_start_load_content_animation(void);
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
 void gfx_widgets_frame(void *data);
+
+bool gfx_widgets_visible(void *data);
 
 bool gfx_widgets_ready(void);
 

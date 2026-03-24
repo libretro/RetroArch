@@ -26,11 +26,13 @@ else
 STRIP                 = $(TOOLCHAIN_DIR)/usr/bin/arm-linux-strip
 endif
 
-GCW0_SDL_CONFIG      ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/bin/sdl-config
-GCW0_FREETYPE_CONFIG ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/bin/freetype-config
+SYSROOT              ?= $(shell $(CC) --print-sysroot)
 
-GCW0_INC_DIR         ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/include
-GCW0_LIB_DIR         ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/lib
+GCW0_SDL_CONFIG      ?= $(SYSROOT)/usr/bin/sdl-config
+GCW0_FREETYPE_CONFIG ?= $(SYSROOT)/usr/bin/freetype-config
+
+GCW0_INC_DIR         ?= $(SYSROOT)/usr/include
+GCW0_LIB_DIR         ?= $(SYSROOT)/usr/lib
 
 #########################
 #########################

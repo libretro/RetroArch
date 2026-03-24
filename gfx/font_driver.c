@@ -767,16 +767,19 @@ void font_driver_render_msg(void *data, const char *msg,
 {
    font_data_t                *font = (font_data_t*)(font_data
          ? font_data : video_font_driver);
+   const font_renderer_t *renderer  = (font && msg && *msg) 
+   ? font->renderer : NULL;
 
-   if (msg && *msg && font && font->renderer && font->renderer->render_msg)
+   if (renderer && renderer->render_msg)
    {
 #ifdef HAVE_LANGEXTRA
       unsigned char tmp_buffer[64];
-      char *new_msg = font_driver_reshape_msg(msg, tmp_buffer, sizeof(tmp_buffer));
+      char *new_msg = font_driver_reshape_msg(msg,
+      tmp_buffer, sizeof(tmp_buffer));
 #else
       char *new_msg = (char*)msg;
 #endif
-      font->renderer->render_msg(data,
+      renderer->render_msg(data,
             font->renderer_data, new_msg, params);
 #ifdef HAVE_LANGEXTRA
       if (new_msg != (char*)tmp_buffer)
@@ -788,9 +791,9 @@ void font_driver_render_msg(void *data, const char *msg,
 void font_driver_bind_block(void *font_data, void *block)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
-
-   if (font && font->renderer && font->renderer->bind_block)
-      font->renderer->bind_block(font->renderer_data, block);
+   const font_renderer_t *renderer = font ? font->renderer : NULL;
+   if (renderer && renderer->bind_block)
+      renderer->bind_block(font->renderer_data, block);
 }
 
 /* Flushing is slow - only do it if font has actually been used */
@@ -799,10 +802,11 @@ void font_flush(
       unsigned video_height,
       font_data_impl_t *font_data)
 {
+   const font_renderer_t *renderer = font_data->font ? font_data->font->renderer : NULL;
    if (font_data->raster_block.carr.coords.vertices == 0)
       return;
-   if (font_data->font && font_data->font->renderer && font_data->font->renderer->flush)
-      font_data->font->renderer->flush(video_width, video_height, font_data->font->renderer_data);
+   if (renderer && renderer->flush)
+      renderer->flush(video_width, video_height, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;
 }
 
@@ -810,19 +814,21 @@ int font_driver_get_message_width(void *font_data,
       const char *msg, size_t len, float scale)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
+   const font_renderer_t *renderer = font ? font->renderer : NULL;
    if (len == 0 && msg)
       len = strlen(msg);
-   if (font && font->renderer && font->renderer->get_message_width)
-      return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
+   if (renderer && renderer->get_message_width)
+      return renderer->get_message_width(font->renderer_data, msg, len, scale);
    return -1;
 }
 
 int font_driver_get_line_height(font_data_t *font, float scale)
 {
    struct font_line_metrics *metrics = NULL;
+   const font_renderer_t *renderer   = font ? font->renderer : NULL;
    /* First try the line metrics implementation */
-   if (font && font->renderer && font->renderer->get_line_metrics)
-      if ((font->renderer->get_line_metrics(
+   if (renderer && renderer->get_line_metrics)
+      if ((renderer->get_line_metrics(
                   font->renderer_data, &metrics)))
          return (int)roundf(metrics->height * scale);
    /* Else return an approximation
@@ -835,9 +841,10 @@ int font_driver_get_line_height(font_data_t *font, float scale)
 int font_driver_get_line_ascender(font_data_t *font, float scale)
 {
    struct font_line_metrics *metrics = NULL;
+   const font_renderer_t *renderer   = font ? font->renderer : NULL;
    /* First try the line metrics implementation */
-   if (font && font->renderer && font->renderer->get_line_metrics)
-      if ((font->renderer->get_line_metrics(font->renderer_data, &metrics)))
+   if (renderer && renderer->get_line_metrics)
+      if ((renderer->get_line_metrics(font->renderer_data, &metrics)))
          return (int)roundf(metrics->ascender * scale);
    /* Else return an approximation
     * (uses a fudge of standard font metrics - mostly garbage...)
@@ -849,9 +856,10 @@ int font_driver_get_line_ascender(font_data_t *font, float scale)
 int font_driver_get_line_descender(font_data_t *font, float scale)
 {
    struct font_line_metrics *metrics = NULL;
+   const font_renderer_t *renderer   = font ? font->renderer : NULL;
    /* First try the line metrics implementation */
-   if (font && font->renderer && font->renderer->get_line_metrics)
-      if ((font->renderer->get_line_metrics(font->renderer_data, &metrics)))
+   if (renderer && renderer->get_line_metrics)
+      if ((renderer->get_line_metrics(font->renderer_data, &metrics)))
          return (int)roundf(metrics->descender * scale);
    /* Else return an approximation
     * (uses a fudge of standard font metrics - mostly garbage...)
@@ -863,9 +871,10 @@ int font_driver_get_line_descender(font_data_t *font, float scale)
 int font_driver_get_line_centre_offset(font_data_t *font, float scale)
 {
    struct font_line_metrics *metrics = NULL;
+   const font_renderer_t *renderer   = font ? font->renderer : NULL;
    /* First try the line metrics implementation */
-   if (font && font->renderer && font->renderer->get_line_metrics)
-      if ((font->renderer->get_line_metrics(font->renderer_data, &metrics)))
+   if (renderer && renderer->get_line_metrics)
+      if ((renderer->get_line_metrics(font->renderer_data, &metrics)))
          return (int)roundf((metrics->ascender - metrics->descender) * 0.5f * scale);
    /* Else return an approximation... */
    return (int)roundf((1.58f * 0.5f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f) / 2.0f);
@@ -875,14 +884,16 @@ void font_driver_free(font_data_t *font)
 {
    if (font)
    {
+      const font_renderer_t *renderer;
       bool is_threaded        = false;
 #ifdef HAVE_THREADS
       bool *is_threaded_tmp   = video_driver_get_threaded();
       is_threaded             = *is_threaded_tmp;
 #endif
+      renderer                = font ? font->renderer : NULL;
 
-      if (font->renderer && font->renderer->free)
-         font->renderer->free(font->renderer_data, is_threaded);
+      if (renderer && renderer->free)
+         renderer->free(font->renderer_data, is_threaded);
 
       font->renderer      = NULL;
       font->renderer_data = NULL;

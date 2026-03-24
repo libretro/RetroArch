@@ -3,7 +3,7 @@
 If you are a developer who wishes to contribute to the development of _RetroArch_; or if you have
 found a bug and wish to submit a minor patch and/or bug report, please read this document.
 
-Active discussions happen on our [Discord](https://discordapp.com/invite/27Xxm2h), mostly within
+Active discussions happen on our [Discord](https://discord.gg/C4amCeV), mostly within
 the _Programming_ channel category. We value discussions that happen in real time around
 these contributions.
 
@@ -64,7 +64,7 @@ may be merged in when it is fully approved. The final approval of merge requests
 discretion of the project.
 
 If you want to develop a larger feature or make broad changes, please do join our
-[Discord](https://discordapp.com/invite/27Xxm2h) server to discuss. The discussion is
+[Discord](https://discord.gg/C4amCeV) server to discuss. The discussion is
 necessary to prevent the possibility of major work being done which will not be accepted at all.
 
 ## libretro API

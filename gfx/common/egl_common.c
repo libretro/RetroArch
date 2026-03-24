@@ -688,6 +688,9 @@ bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 	   EGL_NONE,
    };
 
+   if (!egl_destroy_surface(egl))
+      return false;
+
    egl->surf = _egl_create_window_surface(egl->dpy, egl->config, (NativeWindowType)native_window, window_attribs);
 
    if (egl->surf == EGL_NO_SURFACE)
@@ -695,9 +698,28 @@ bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 
    /* Connect the context to the surface. */
    if (!_egl_make_current(egl->dpy, egl->surf, egl->surf, egl->ctx))
+   {
+      _egl_destroy_surface(egl->dpy, egl->surf);
+      egl->surf = EGL_NO_SURFACE;
       return false;
+   }
 
    RARCH_LOG("[EGL] Current context: %p.\n", (void*)_egl_get_current_context());
 
+   return true;
+}
+
+bool egl_destroy_surface(egl_ctx_data_t *egl)
+{
+   if (egl->surf == EGL_NO_SURFACE)
+      return true;
+
+   if (!_egl_make_current(egl->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT))
+      return false;
+
+   if (!_egl_destroy_surface(egl->dpy, egl->surf))
+      return false;
+
+   egl->surf = EGL_NO_SURFACE;
    return true;
 }

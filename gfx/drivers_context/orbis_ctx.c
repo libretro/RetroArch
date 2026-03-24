@@ -333,6 +333,26 @@ static float orbis_ctx_get_refresh_rate(void *data)
    return ctx_orbis->refresh_rate;
 }
 
+static bool orbis_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t*)data;
+   return egl_create_surface(&ctx_orbis->egl, &ctx_orbis->native_window);
+#else
+   return false;
+#endif
+}
+
+static bool orbis_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t*)data;
+   return egl_destroy_surface(&ctx_orbis->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t orbis_ctx = {
     orbis_ctx_init,
     orbis_ctx_destroy,
@@ -368,4 +388,7 @@ const gfx_ctx_driver_t orbis_ctx = {
     orbis_ctx_set_flags,
     orbis_ctx_bind_hw_render,
     NULL,
-    NULL};
+    NULL,
+    orbis_create_surface,
+    orbis_destroy_surface
+};

@@ -23,69 +23,82 @@
 
 struct slang_semantic_location
 {
-   int ubo_vertex    = -1;
-   int push_vertex   = -1;
-   int ubo_fragment  = -1;
-   int push_fragment = -1;
+   int ubo_vertex;
+   int push_vertex;
+   int ubo_fragment;
+   int push_fragment;
+
+   slang_semantic_location()
+      : ubo_vertex(-1), push_vertex(-1),
+        ubo_fragment(-1), push_fragment(-1) {}
 };
 
 struct slang_texture_semantic_meta
 {
-   size_t ubo_offset           = 0;
-   size_t push_constant_offset = 0;
-   unsigned binding            = 0;
-   uint32_t stage_mask         = 0;
+   size_t   ubo_offset;
+   size_t   push_constant_offset;
+   unsigned binding;
+   uint32_t stage_mask;
 
-   bool texture                = false;
-   bool uniform                = false;
-   bool push_constant          = false;
+   bool texture;
+   bool uniform;
+   bool push_constant;
 
    /* For APIs which need location information ala legacy GL.
     * API user fills this struct in. */
    slang_semantic_location location;
+
+   slang_texture_semantic_meta()
+      : ubo_offset(0), push_constant_offset(0),
+        binding(0), stage_mask(0),
+        texture(false), uniform(false), push_constant(false) {}
 };
 
 struct slang_semantic_meta
 {
-   size_t ubo_offset           = 0;
-   size_t push_constant_offset = 0;
-   unsigned num_components     = 0;
-   bool uniform                = false;
-   bool push_constant          = false;
+   size_t   ubo_offset;
+   size_t   push_constant_offset;
+   unsigned num_components;
+   bool     uniform;
+   bool     push_constant;
 
    /* For APIs which need location information ala legacy GL. */
    slang_semantic_location location;
+
+   slang_semantic_meta()
+      : ubo_offset(0), push_constant_offset(0),
+        num_components(0), uniform(false), push_constant(false) {}
 };
 
 struct slang_reflection
 {
    slang_reflection();
 
-   size_t ubo_size                   = 0;
-   size_t push_constant_size         = 0;
+   size_t   ubo_size;
+   size_t   push_constant_size;
 
-   unsigned ubo_binding              = 0;
-   uint32_t ubo_stage_mask           = 0;
-   uint32_t push_constant_stage_mask = 0;
+   unsigned ubo_binding;
+   uint32_t ubo_stage_mask;
+   uint32_t push_constant_stage_mask;
 
    std::vector<slang_texture_semantic_meta>
       semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
    slang_semantic_meta semantics[SLANG_NUM_SEMANTICS];
    std::vector<slang_semantic_meta> semantic_float_parameters;
 
-   const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_map = nullptr;
-   const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_uniform_map = nullptr;
-   const std::unordered_map<std::string, slang_semantic_map> *semantic_map = nullptr;
-   unsigned pass_number = 0;
+   const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_map;
+   const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_uniform_map;
+   const std::unordered_map<std::string, slang_semantic_map>         *semantic_map;
+   unsigned pass_number;
 };
 
 template <typename P>
 static bool slang_set_unique_map(std::unordered_map<std::string, P> &m,
       const std::string &name, const P &p)
 {
-   auto itr = m.find(name);
+   typename std::unordered_map<std::string, P>::iterator itr = m.find(name);
    /* Alias already exists? */
-   if (itr != end(m))
+   if (itr != m.end())
       return false;
    m[name] = p;
    return true;

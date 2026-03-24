@@ -58,6 +58,7 @@ enum rarch_netplay_ctl_state
 #endif
    RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO,
    RARCH_NETPLAY_CTL_IS_ENABLED,
+   RARCH_NETPLAY_CTL_GET_SELF_CLIENT_NUM,
    RARCH_NETPLAY_CTL_IS_REPLAYING,
    RARCH_NETPLAY_CTL_IS_SERVER,
    RARCH_NETPLAY_CTL_IS_CONNECTED,
@@ -85,7 +86,7 @@ enum rarch_netplay_connection_mode
 {
    NETPLAY_CONNECTION_NONE = 0,
 
-   NETPLAY_CONNECTION_DELAYED_DISCONNECT, 
+   NETPLAY_CONNECTION_DELAYED_DISCONNECT,
    /* The connection is dead, but data
       is still waiting to be forwarded */
 

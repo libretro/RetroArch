@@ -101,8 +101,8 @@ static const char* IMAGE_CORE_PREFIX(valid_extensions) = image_formats + 1;
 
 void IMAGE_CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
 {
-   info->library_name     = "image display";
-   info->library_version  = "v0.1";
+   info->library_name     = "Image Viewer";
+   info->library_version  = "";
    info->need_fullpath    = true;
    info->block_extract    = false;
    info->valid_extensions = IMAGE_CORE_PREFIX(valid_extensions);

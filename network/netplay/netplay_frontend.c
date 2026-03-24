@@ -9567,6 +9567,16 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          ret = ((net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_ENABLED) > 0);
          break;
 
+      case RARCH_NETPLAY_CTL_GET_SELF_CLIENT_NUM:
+         if (data && netplay)
+         {
+            *(uint32_t*)data = netplay->self_client_num;
+            ret = true;
+         }
+         else
+            ret = false;
+         break;
+
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
          ret = (netplay != NULL);
          break;
@@ -10179,6 +10189,27 @@ static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
    }
 }
 
+static bool gfx_widget_netplay_chat_visible(void)
+{
+   size_t i;
+   net_driver_state_t         *net_st      = &networking_driver_st;
+   struct netplay_chat_buffer *chat_buffer = &net_st->chat_buffer;
+   for (i = 0; i < ARRAY_SIZE(chat_buffer->messages); i++)
+   {
+      if (chat_buffer->messages[i].alpha
+            && !string_is_empty(chat_buffer->messages[i].nick)
+            && !string_is_empty(chat_buffer->messages[i].msg))
+         return true;
+   }
+   return false;
+}
+
+static bool gfx_widget_netplay_ping_visible(void)
+{
+   net_driver_state_t *net_st = &networking_driver_st;
+   return net_st->latest_ping >= 0;
+}
+
 const gfx_widget_t gfx_widget_netplay_chat = {
    NULL,
    NULL,
@@ -10186,7 +10217,8 @@ const gfx_widget_t gfx_widget_netplay_chat = {
    NULL,
    NULL,
    &gfx_widget_netplay_chat_iterate,
-   &gfx_widget_netplay_chat_frame
+   &gfx_widget_netplay_chat_frame,
+   &gfx_widget_netplay_chat_visible
 };
 
 const gfx_widget_t gfx_widget_netplay_ping = {
@@ -10196,6 +10228,7 @@ const gfx_widget_t gfx_widget_netplay_ping = {
    NULL,
    NULL,
    &gfx_widget_netplay_ping_iterate,
-   &gfx_widget_netplay_ping_frame
+   &gfx_widget_netplay_ping_frame,
+   &gfx_widget_netplay_ping_visible
 };
 #endif

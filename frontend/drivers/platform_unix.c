@@ -97,6 +97,10 @@
 
 #include "platform_unix.h"
 
+#ifdef WEBOS
+#include <formats/rjson.h>
+#endif
+
 #ifdef ANDROID
 static void frontend_unix_set_sustained_performance_mode(bool on);
 
@@ -553,13 +557,13 @@ static void frontend_android_get_version_sdk(int32_t *sdk)
 static bool device_is_xperia_play(const char *name)
 {
    if (
-         strstr(name, "R800x") ||
-         strstr(name, "R800at") ||
-         strstr(name, "R800i") ||
-         strstr(name, "R800a") ||
-         strstr(name, "R800") ||
-         strstr(name, "Xperia Play") ||
-         strstr(name, "SO-01D")
+            strstr(name, "R800x")
+         || strstr(name, "R800at")
+         || strstr(name, "R800i")
+         || strstr(name, "R800a")
+         || strstr(name, "R800")
+         || strstr(name, "Xperia Play")
+         || strstr(name, "SO-01D")
       )
       return true;
 
@@ -570,14 +574,14 @@ static bool device_is_xperia_play(const char *name)
 static bool device_is_game_console(const char *name)
 {
    if (
-         strstr(name, "OUYA Console") ||
-         device_is_xperia_play(name) ||
-         strstr(name, "GAMEMID_BT") ||
-         strstr(name, "S7800") ||
-         strstr(name, "XD\n") ||
-         strstr(name, "ARCHOS GAMEPAD") ||
-         strstr(name, "SHIELD Android TV") ||
-         strstr(name, "SHIELD\n")
+            device_is_xperia_play(name)
+         || strstr(name, "OUYA Console")
+         || strstr(name, "GAMEMID_BT")
+         || strstr(name, "S7800")
+         || strstr(name, "XD\n")
+         || strstr(name, "ARCHOS GAMEPAD")
+         || strstr(name, "SHIELD Android TV")
+         || strstr(name, "SHIELD\n")
       )
       return true;
 
@@ -958,7 +962,7 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
-   if (strstr((char*)buf, "1"))
+   if (strchr((char*)buf, '1'))
       *have_ac = true;
 
    free(buf);
@@ -1188,21 +1192,6 @@ error:
 }
 #endif
 
-static int frontend_unix_get_rating(void)
-{
-#ifdef ANDROID
-   char device_model[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.product.model", device_model);
-   if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
-      return 6;
-   else if (strstr(device_model, "GT-I9505"))
-      return 12;
-   else if (strstr(device_model, "SHIELD"))
-      return 13;
-#endif
-   return -1;
-}
-
 static enum frontend_powerstate frontend_unix_get_powerstate(
       int *seconds, int *percent)
 {
@@ -1299,6 +1288,109 @@ static enum frontend_architecture frontend_unix_get_arch(void)
    return FRONTEND_ARCH_NONE;
 }
 
+#ifdef WEBOS
+const char *retroarch_get_webos_version(char *s, size_t len,
+                                       int *major, int *minor)
+{
+   static char pretty[128];
+
+   FILE *f = fopen("/usr/lib/os-release", "r");
+   if (!f)
+   {
+      /* fallback to nyx os_info.json */
+      f = fopen("/var/run/nyx/os_info.json", "r");
+      if (!f)
+         return strlcpy(s, "webOS (unknown)", len), "webOS (unknown)";
+
+      /* read whole file into buffer */
+      char buf[4096];
+      size_t n = fread(buf, 1, sizeof(buf)-1, f);
+      fclose(f);
+      buf[n] = '\0';
+
+      rjson_t *json = rjson_open_string(buf, n);
+      enum rjson_type t;
+      const char *key = NULL, *val = NULL;
+      const char *name_str = NULL, *release_str = NULL;
+
+      while ((t = rjson_next(json)) != RJSON_DONE && t != RJSON_ERROR)
+      {
+         if (t == RJSON_STRING)
+         {
+            key = rjson_get_string(json, NULL);
+            t = rjson_next(json);
+            if (t == RJSON_STRING)
+            {
+               val = rjson_get_string(json, NULL);
+               if (strcmp(key, "webos_name") == 0)
+                  name_str = val;
+               else if (strcmp(key, "webos_release") == 0)
+                  release_str = val;
+            }
+         }
+      }
+      rjson_free(json);
+
+      if (name_str && release_str)
+         snprintf(pretty, sizeof(pretty), "%s %s", name_str, release_str);
+      else if (name_str)
+         snprintf(pretty, sizeof(pretty), "%s", name_str);
+      else
+         snprintf(pretty, sizeof(pretty), "webOS (unknown)");
+
+      if (release_str) {
+         char *endptr = NULL;
+         long maj = strtol(release_str, &endptr, 10);
+         if (major) *major = (int)maj;
+         if (endptr && *endptr == '.' && minor)
+            *minor = (int)strtol(endptr+1, NULL, 10);
+         else if (minor)
+            *minor = 0;
+      }
+
+      return strlcpy(s, pretty, len), pretty;
+   }
+
+   char line[256];
+   while (fgets(line, sizeof(line), f))
+   {
+      if (strncmp(line, "PRETTY_NAME=", 12) == 0)
+      {
+         char *val = line + 12;
+         char *nl = strchr(val, '\n');
+         if (nl) *nl = '\0';
+         if ((val[0] == '"' || val[0] == '\'')) {
+            size_t l = strlen(val);
+            if (l > 1 && val[l-1] == val[0]) {
+               val[l-1] = '\0';
+               val++;
+            }
+         }
+         strlcpy(pretty, val, sizeof(pretty));
+      }
+      else if (strncmp(line, "VERSION_ID=", 11) == 0)
+      {
+         char *val = line + 11;
+         char *nl = strchr(val, '\n');
+         if (nl) *nl = '\0';
+         char *endptr = NULL;
+         long maj = strtol(val, &endptr, 10);
+         if (major) *major = (int)maj;
+         if (endptr && *endptr == '.' && minor)
+            *minor = (int)strtol(endptr+1, NULL, 10);
+         else if (minor)
+            *minor = 0;
+      }
+   }
+   fclose(f);
+
+   if (pretty[0] == '\0')
+      strlcpy(pretty, "webOS (unknown)", sizeof(pretty));
+
+   return strlcpy(s, pretty, len), pretty;
+}
+#endif
+
 static size_t frontend_unix_get_os(char *s,
       size_t len, int *major, int *minor)
 {
@@ -1326,6 +1418,8 @@ static size_t frontend_unix_get_os(char *s,
    _len = strlcpy(s, "BSD", len);
 #elif defined(__HAIKU__)
    _len = strlcpy(s, "Haiku", len);
+#elif defined(WEBOS)
+   _len = strlcpy(s, retroarch_get_webos_version(s, len, major, minor), len);
 #else
    _len = strlcpy(s, "Linux", len);
 #endif
@@ -2480,7 +2574,9 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                (*env)->ExceptionClear(env);
             }
             else
-               for (jsize i = 0; i < trees_length; ++i)
+            {
+               jsize i;
+               for (i = 0; i < trees_length; ++i)
                {
                   const char *tree_chars;
                   char *serialized_path;
@@ -2496,6 +2592,12 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   {
                      (*env)->ExceptionDescribe(env);
                      (*env)->ExceptionClear(env);
+                     (*env)->DeleteLocalRef(env, tree);
+                     if ((*env)->ExceptionOccurred(env))
+                     {
+                        (*env)->ExceptionDescribe(env);
+                        (*env)->ExceptionClear(env);
+                     }
                      continue;
                   }
                   if ((serialized_path = retro_vfs_path_join_saf(tree_chars, "")) != NULL)
@@ -2513,7 +2615,20 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                      (*env)->ExceptionDescribe(env);
                      (*env)->ExceptionClear(env);
                   }
+                  (*env)->DeleteLocalRef(env, tree);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                  }
                }
+            }
+            (*env)->DeleteLocalRef(env, trees);
+            if ((*env)->ExceptionOccurred(env))
+            {
+               (*env)->ExceptionDescribe(env);
+               (*env)->ExceptionClear(env);
+            }
          }
       }
 
@@ -3238,7 +3353,6 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    NULL,                         /* get_name */
 #endif
    frontend_unix_get_os,
-   frontend_unix_get_rating,           /* get_rating */
    NULL,                               /* content_loaded */
    frontend_unix_get_arch,             /* get_architecture */
    frontend_unix_get_powerstate,

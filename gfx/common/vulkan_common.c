@@ -47,6 +47,19 @@
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
 
+#ifdef __APPLE__
+#if VK_HEADER_VERSION < 216
+/* Portability enumeration extension for MoltenVK through Vulkan loader.
+ * These may not be defined in older Vulkan headers. */
+#ifndef VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
+#define VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME "VK_KHR_portability_enumeration"
+#endif
+#ifndef VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR
+#define VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR 0x00000001
+#endif
+#endif
+#endif
+
 #if defined(_WIN32) || defined(__APPLE__)
 #define VULKAN_EMULATE_MAILBOX
 #endif
@@ -396,6 +409,15 @@ static bool vulkan_find_instance_extensions(
    memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
    count += num_exts;
 
+
+   for (i = 0; i < num_exts; i++)
+   {
+      if (vulkan_find_extensions(&exts[i], 1, properties, property_count))
+         RARCH_DBG("[Vulkan] Instance extension supported: %s.\n", exts[i]);
+      else
+         RARCH_DBG("[Vulkan] Instance extension NOT supported: %s.\n", exts[i]);
+   }
+
    for (i = 0; i < num_optional_exts; i++)
       if (vulkan_find_extensions(&optional_exts[i], 1, properties, property_count))
          enabled[count++] = optional_exts[i];
@@ -443,9 +465,31 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
    memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
    count += num_exts;
 
+   for (i = 0; i < num_exts; i++)
+   {
+      if (vulkan_find_extensions(&exts[i], 1, properties, property_count))
+      {
+         RARCH_DBG("[Vulkan] Device extension supported: %s.\n", exts[i]);
+         enabled[count++] = exts[i];
+      }
+      else
+      {
+         RARCH_DBG("[Vulkan] Device extension NOT supported: %s.\n", exts[i]);
+      }
+   }
+
    for (i = 0; i < num_optional_exts; i++)
+   {
       if (vulkan_find_extensions(&optional_exts[i], 1, properties, property_count))
+      {
+         RARCH_DBG("[Vulkan] Optional device extension supported: %s.\n", optional_exts[i]);
          enabled[count++] = optional_exts[i];
+      }
+      else
+      {
+         RARCH_DBG("[Vulkan] Optional device extension NOT supported: %s.\n", optional_exts[i]);
+      }
+   }
 
 end:
    free(properties);
@@ -502,7 +546,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
       vkGetPhysicalDeviceProperties(gpus[i],
             &gpu_properties);
 
-      RARCH_LOG("[Vulkan] Found GPU at index %d: \"%s\".\n", i, gpu_properties.deviceName);
+      RARCH_LOG("[Vulkan] Found GPU #%d: \"%s\".\n", i, gpu_properties.deviceName);
 
       string_list_append(vk->gpu_list, gpu_properties.deviceName, attr);
    }
@@ -511,7 +555,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
    if (0 <= gpu_index && gpu_index < (int)gpu_count)
    {
-      RARCH_LOG("[Vulkan] Using GPU index %d.\n", gpu_index);
+      RARCH_LOG("[Vulkan] Using GPU #%d: \"%s\".\n", gpu_index, vk->gpu_list->elems[gpu_index].data);
       vk->context.gpu = gpus[gpu_index];
    }
    else
@@ -525,14 +569,13 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 }
 
 static const char *vulkan_device_extensions[]  = {
-   "VK_KHR_swapchain",
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-   "VK_EXT_full_screen_exclusive"
-#endif
+   "VK_KHR_swapchain"
 };
 
 static const char *vulkan_optional_device_extensions[] = {
    "VK_KHR_sampler_mirror_clamp_to_edge",
+   "VK_EXT_full_screen_exclusive",
+   "VK_KHR_portability_subset"
 };
 
 static VkDevice vulkan_context_create_device_wrapper(
@@ -732,8 +775,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
    }
 
-   RARCH_LOG("[Vulkan] Using GPU: \"%s\".\n", vk->context.gpu_properties.deviceName);
-
    {
       char version_str[128];
       size_t _len            = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
@@ -800,6 +841,16 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
           return false;
       }
 
+      vk->fse_supported = false;
+      for (unsigned i = 0; i < enabled_device_extension_count; i++)
+      {
+         if (!strcmp(enabled_device_extensions[i], "VK_EXT_full_screen_exclusive"))
+         {
+            vk->fse_supported = true;
+            break;
+         }
+      }
+
       queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
       queue_info.queueCount               = 1;
       queue_info.pQueuePriorities         = &one;
@@ -855,6 +906,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #endif
 
 static const char *vulkan_optional_instance_extensions[] = {
+#ifdef __APPLE__
+   VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+#endif
+#ifdef _WIN32
+   "VK_KHR_get_surface_capabilities2",
+#endif
 #ifdef VULKAN_HDR_SWAPCHAIN
    VULKAN_COLORSPACE_EXTENSION_NAME
 #endif
@@ -892,7 +949,6 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
          break;
       case VULKAN_WSI_WIN32:
          required_extensions[required_extension_count++] = "VK_KHR_win32_surface";
-         required_extensions[required_extension_count++] = "VK_KHR_get_surface_capabilities2";
          break;
       case VULKAN_WSI_XLIB:
          required_extensions[required_extension_count++] = "VK_KHR_xlib_surface";
@@ -941,6 +997,18 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       if (string_is_equal(instance_extensions[i], VULKAN_COLORSPACE_EXTENSION_NAME))
       {
          vk->context.flags |= VK_CTX_FLAG_HDR_SUPPORT;
+         break;
+      }
+   }
+#endif
+
+#ifdef __APPLE__
+   /* Check if portability enumeration was enabled (needed for Vulkan loader to find MoltenVK) */
+   for (i = 0; i < info.enabledExtensionCount; i++)
+   {
+      if (string_is_equal(instance_extensions[i], VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
+      {
+         info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
          break;
       }
    }
@@ -1942,19 +2010,18 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
-   HMONITOR fse_monitor;
-   VkSurfaceFullScreenExclusiveWin32InfoEXT fs_win32 = {
-       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
-       NULL,
-       NULL
+   HMONITOR hmonitor;
+   VkSurfaceFullScreenExclusiveInfoEXT fse_info = {
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
+      NULL,
+      video_windowed_fullscreen
+         ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
+         : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
    };
-   /* Allow or disallow exclusive fullscreen based on user setting. */
-   VkSurfaceFullScreenExclusiveInfoEXT fs_info       = {
-       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
-       NULL,
-       video_windowed_fullscreen
-           ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
-           : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
+   VkSurfaceFullScreenExclusiveWin32InfoEXT fse_win32_info = {
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
+      NULL,
+      NULL
    };
 #endif
 
@@ -2134,8 +2201,87 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, NULL);
+   if (format_count > ARRAY_SIZE(formats))
+      format_count = ARRAY_SIZE(formats);
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, formats);
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR) && defined(VULKAN_HDR_SWAPCHAIN)
+   /* Hybrid GPU workaround (e.g. Nvidia Optimus / AMD switchable).
+    * The display is often physically connected to the integrated GPU,
+    * so the discrete GPU may not report HDR surface formats even though
+    * the display supports HDR.  Query all other physical devices for
+    * HDR formats and merge them in — on Windows the DWM compositor
+    * handles presentation, so HDR formats reported by ANY device for
+    * this surface will work. */
+   if (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT)
+   {
+      bool have_hdr = false;
+      for (i = 0; i < format_count && !have_hdr; i++)
+      {
+         if (  (  vulkan_is_hdr10_format(formats[i].format)
+               && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+            || (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+               && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT))
+            have_hdr = true;
+      }
+
+      if (!have_hdr)
+      {
+         uint32_t gpu_count = 0;
+         VkPhysicalDevice gpus_all[8];
+
+         vkEnumeratePhysicalDevices(vk->context.instance, &gpu_count, NULL);
+         if (gpu_count > ARRAY_SIZE(gpus_all))
+            gpu_count = ARRAY_SIZE(gpus_all);
+         vkEnumeratePhysicalDevices(vk->context.instance, &gpu_count, gpus_all);
+
+         for (i = 0; i < gpu_count; i++)
+         {
+            uint32_t j, other_count = 0;
+            VkSurfaceFormatKHR other_formats[256];
+            VkPhysicalDeviceProperties props;
+
+            if (gpus_all[i] == vk->context.gpu)
+               continue;
+
+            vkGetPhysicalDeviceSurfaceFormatsKHR(
+                  gpus_all[i], vk->vk_surface, &other_count, NULL);
+            if (other_count == 0)
+               continue;
+            if (other_count > ARRAY_SIZE(other_formats))
+               other_count = ARRAY_SIZE(other_formats);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(
+                  gpus_all[i], vk->vk_surface, &other_count, other_formats);
+
+            vkGetPhysicalDeviceProperties(gpus_all[i], &props);
+
+            for (j = 0; j < other_count; j++)
+            {
+               bool is_hdr_fmt =
+                  (  vulkan_is_hdr10_format(other_formats[j].format)
+                  && other_formats[j].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+                  || (  other_formats[j].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+                     && other_formats[j].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT);
+
+               if (is_hdr_fmt && format_count < ARRAY_SIZE(formats))
+               {
+                  RARCH_LOG("[Vulkan] HDR format %u/colorspace %u found on GPU \"%s\", "
+                        "merging into surface format list.\n",
+                        other_formats[j].format,
+                        other_formats[j].colorSpace,
+                        props.deviceName);
+                  formats[format_count++] = other_formats[j];
+                  have_hdr = true;
+               }
+            }
+
+            if (have_hdr)
+               break; /* Found HDR formats from another GPU */
+         }
+      }
+   }
+#endif
 
    format.format = VK_FORMAT_UNDEFINED;
    if (     format_count == 1
@@ -2155,25 +2301,89 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
-         if (settings->bools.video_hdr_enable)
+         unsigned video_hdr_mode = settings->uints.video_hdr_mode;
+
+         /* Advertise HDR capabilities to the menu based on which
+          * surface formats the driver actually enumerates.
+          * The colorspace extension alone is not enough — some
+          * drivers expose the extension without any HDR surface
+          * formats. */
+         video_driver_unset_hdr_support();
+         video_driver_unset_hdr10_support();
+         video_driver_unset_scrgb_support();
+         for (i = 0; i < format_count; i++)
+         {
+            if (  vulkan_is_hdr10_format(formats[i].format)
+               && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+               video_driver_set_hdr10_support();
+            if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+               && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
+               video_driver_set_scrgb_support();
+         }
+         if (video_driver_supports_hdr10() || video_driver_supports_scrgb())
+            video_driver_set_hdr_support();
+
+         /* Clamp the selected mode if the surface doesn't support it */
+         if (video_hdr_mode == 2 && !video_driver_supports_scrgb())
+         {
+            RARCH_WARN("[Vulkan] scRGB not available on this surface, falling back.\n");
+            video_hdr_mode = video_driver_supports_hdr10() ? 1 : 0;
+         }
+         if (video_hdr_mode == 1 && !video_driver_supports_hdr10())
+         {
+            RARCH_WARN("[Vulkan] HDR10 not available on this surface, falling back.\n");
+            video_hdr_mode = 0;
+         }
+
+         if (video_hdr_mode > 0)
             vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
          else
             vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
-         video_driver_unset_hdr_support();
-
-         for (i = 0; i < format_count; i++)
+         if (video_hdr_mode == 2)
          {
-            if (     (vulkan_is_hdr10_format(formats[i].format))
-                  && (formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT))
+            /* scRGB mode: always use R16G16B16A16_SFLOAT + extended linear sRGB */
+            for (i = 0; i < format_count; i++)
             {
-               format = formats[i];
-               video_driver_set_hdr_support();
-               break;
+               if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+                  && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
+               {
+                  format = formats[i];
+                  RARCH_LOG("[Vulkan] Selecting R16G16B16A16_SFLOAT swapchain with scRGB colour space.\n");
+                  break;
+               }
+            }
+
+            if (format.format != VK_FORMAT_R16G16B16A16_SFLOAT)
+            {
+               RARCH_WARN("[Vulkan] R16G16B16A16_SFLOAT + scRGB not available, falling back to HDR10.\n");
+               vk->context.flags &= ~VK_CTX_FLAG_HDR_SCRGB;
+               /* Fall through to HDR10 format search below */
             }
          }
 
-         if (!vulkan_is_hdr10_format(format.format))
+         if (video_hdr_mode == 1
+            || (video_hdr_mode == 2 && format.format != VK_FORMAT_R16G16B16A16_SFLOAT))
+         {
+            /* HDR10 mode: always A2B10G10R10 + ST.2084 PQ.
+             * Shaders that output RGBA16F with PQ data get quantised
+             * to 10-bit by the swapchain — R16G16B16A16_SFLOAT is not
+             * paired with HDR10_ST2084 on any known implementation. */
+            vk->context.flags &= ~VK_CTX_FLAG_HDR_SCRGB;
+
+            for (i = 0; i < format_count; i++)
+            {
+               if (     (vulkan_is_hdr10_format(formats[i].format))
+                     && (formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT))
+               {
+                  format = formats[i];
+                  break;
+               }
+            }
+         }
+
+         if (  !vulkan_is_hdr10_format(format.format)
+            && format.format != VK_FORMAT_R16G16B16A16_SFLOAT)
             vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
       }
       else
@@ -2305,20 +2515,24 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-   /* Tie exclusive mode to the window's monitor. */
-   fse_monitor       = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
-   fs_win32.hmonitor = fse_monitor;
-   /* Allow or disallow exclusive fullscreen based on user setting. */
-   fs_info.pNext     = &fs_win32;
-   /* Attach fullscreen info to swapchain creation struct. */
-   info.pNext        = &fs_info;
+   if (vk->fse_supported)
+   {
+      hmonitor                = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
+      fse_win32_info.hmonitor = hmonitor;
+      fse_info.pNext          = &fse_win32_info;
+      info.pNext              = &fse_info;
+   }
 #endif
 
-   if (vkCreateSwapchainKHR(vk->context.device,
-            &info, NULL, &vk->swapchain) != VK_SUCCESS)
    {
-      RARCH_ERR("[Vulkan] Failed to create swapchain.\n");
-      return false;
+      VkResult res = vkCreateSwapchainKHR(vk->context.device,
+               &info, NULL, &vk->swapchain);
+      if (res != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan] Failed to create swapchain (err = %d).\n",
+               (int)res);
+         return false;
+      }
    }
 
    vk->context.swapchain_width        = swapchain_size.width;
@@ -2413,7 +2627,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          int use_mab                      = settings->bools.video_use_metal_arg_buffers;
          setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", use_mab ? "1" : "0", 1);
       }
-      if (__builtin_available(macOS 10.15, iOS 13, tvOS 12, *))
+      /* Try Vulkan loader first (enables validation layers if installed).
+       * Falls back to MoltenVK directly if loader not available. */
+      vulkan_library = dylib_load("libvulkan.dylib");
+      if (!vulkan_library && __builtin_available(macOS 10.15, iOS 13, tvOS 12, *))
          vulkan_library = dylib_load("MoltenVK");
       if (!vulkan_library)
          vulkan_library = dylib_load("MoltenVK-v1.2.7.framework");
@@ -2682,7 +2899,8 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 
    if (err != VK_SUCCESS || result != VK_SUCCESS)
    {
-      RARCH_LOG("[Vulkan] QueuePresent failed, destroying swapchain.\n");
+      RARCH_LOG("[Vulkan] QueuePresent failed (err = %d, result = %d), destroying swapchain.\n",
+            (int)err, (int)result);
       vulkan_destroy_swapchain(vk);
    }
 

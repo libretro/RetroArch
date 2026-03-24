@@ -1,6 +1,7 @@
 
 #ifdef WANT_GLSLANG
 
+/* Builtin glslang: compile RetroArch wrapper + vendored library sources */
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #ifdef strtoull
@@ -51,5 +52,10 @@
 #ifdef __APPLE__
 #include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
 #endif
+
+#elif defined(HAVE_GLSLANG)
+
+/* Prebuilt glslang: only compile RetroArch wrapper, link external library */
+#include "../gfx/drivers_shader/glslang.cpp"
 
 #endif

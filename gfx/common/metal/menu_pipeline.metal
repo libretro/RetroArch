@@ -111,9 +111,10 @@ fragment float4 ribbon_fragment(RibbonOutIn in [[ stage_in ]])
    const float3 up = float3(0.0, 0.0, 1.0);
    float3 x = dfdx(in.vEC);
    float3 y = dfdy(in.vEC);
+   y = -y; /* Flip Y derivative to match Vulkan's yflip */
    float3 normal = normalize(cross(x, y));
    float c = 1.0 - dot(normal, up);
-   c = (1.0 - cos(c * c)) / 13.0;
+   c = (1.0 - cos(c * c)) / 3.0;
    return float4(c, c, c, 1.0);
 }
 
@@ -195,6 +196,7 @@ fragment float4 bokeh_fragment(FontFragmentIn        in         [[ stage_in ]],
 {
     float speed = constants.time * 4.0;
     float2 uv = -1.0 + 2.0 * in.position.xy / constants.outputSize;
+    uv.y = -uv.y; /* Flip Y to match Vulkan's yflip */
     uv.x *= constants.outputSize.x / constants.outputSize.y;
     float3 color = float3(0.0);
 
@@ -270,7 +272,7 @@ fragment float4 snowflake_fragment(FontFragmentIn        in         [[ stage_in 
    uv = uv * 2.0 - 1.0;
    float2 p = uv;
    p.x *= constants.outputSize.x / constants.outputSize.y;
-   //p.y  = -p.y;
+   p.y = -p.y; /* Flip Y so snowflakes fall down */
 
    float c = snowflake::col(p, constants);
    return float4(c,c,c,c);
