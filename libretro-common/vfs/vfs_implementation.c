@@ -1066,10 +1066,32 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       if ((stat_buf.st_mode & S_IFMT) == S_IFDIR)
          ret  |= RETRO_VFS_STAT_IS_DIRECTORY;
 #elif defined(_WIN32)
-      /* Windows */
+      /* Windows
+       * Older MSVC _stat may fail on directory paths 
+       * with a trailing backslash */
       struct _stat stat_buf;
+      char path_buf[PATH_MAX_LENGTH];
+      const char *stat_path = path;
+      size_t _len = strlcpy(path_buf, path, sizeof(path_buf));
+
+      if (_len > 0 && _len < sizeof(path_buf))
+      {
+         while (_len > 0 && path_buf[_len - 1] == '\\')
+         {
+            /* Keep drive roots like "C:\" intact */
+            if (_len == 3 &&
+                  ((((path_buf[0] >= 'A') && (path_buf[0] <= 'Z')) ||
+                    ((path_buf[0] >= 'a') && (path_buf[0] <= 'z'))) &&
+                   path_buf[1] == ':' && path_buf[2] == '\\'))
+               break;
+
+            path_buf[--_len] = '\0';
+         }
+
+         stat_path = path_buf;
+      }
 #if defined(LEGACY_WIN32)
-      char *path_local          = utf8_to_local_string_alloc(path);
+      char *path_local          = utf8_to_local_string_alloc(stat_path);
       DWORD file_info;
 
       if (!path_local)
@@ -1086,7 +1108,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
       free(path_local);
 #else
-      wchar_t *path_wide        = utf8_to_utf16_string_alloc(path);
+      wchar_t *path_wide        = utf8_to_utf16_string_alloc(stat_path);
       DWORD file_info;
 
       if (!path_wide)
