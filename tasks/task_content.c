@@ -718,7 +718,12 @@ static void content_information_ctx_init(
       {
          const char *path_dir_cache = settings->paths.directory_cache;
          if (!string_is_empty(path_dir_cache))
+         {
             content_ctx->directory_cache = strdup(path_dir_cache);
+
+            if (!path_is_directory(path_dir_cache))
+               path_mkdir(path_dir_cache);
+         }
       }
 
       if (!string_is_empty(sysinfo->valid_extensions))

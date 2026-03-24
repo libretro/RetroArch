@@ -162,8 +162,6 @@ void vulkan_filter_chain_set_hdr_mode(vulkan_filter_chain_t *chain,
 void vulkan_filter_chain_set_paper_white_nits(vulkan_filter_chain_t *chain,
       float paper_white_nits);
 
-void vulkan_filter_chain_set_max_nits(vulkan_filter_chain_t *chain,
-      float max_nits) ;
 
 void vulkan_filter_chain_set_expand_gamut(vulkan_filter_chain_t *chain,
       unsigned expand_gamut);

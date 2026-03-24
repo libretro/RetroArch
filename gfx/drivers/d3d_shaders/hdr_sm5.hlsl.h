@@ -7,7 +7,10 @@ SRC(
    float2 SourceSize;
    float2 OutputSize;
    float brightness_nits;    /* 200.0f   */
+<<<<<<< HEAD
    float max_nits;           /* 1000.0f  */
+=======
+>>>>>>> upstream/master
    uint subpixel_layout;     /* 0        */
    float scanlines;          /* 1.0f     */
    uint  expand_gamut;       /* 0        */
@@ -286,12 +289,20 @@ float4 To2020(const float4 sdr_linear)
 
 float3 HDR(const float3 sdr_linear)
 {
+<<<<<<< HEAD
    return InverseTonemap(sdr_linear, global.max_nits, global.brightness_nits);
+=======
+   return InverseTonemap(sdr_linear, global.brightness_nits, global.brightness_nits);
+>>>>>>> upstream/master
 }
 
 float4 HDR(const float4 sdr_linear)
 {
+<<<<<<< HEAD
    const float3 hdr_linear = InverseTonemap(sdr_linear.rgb, global.max_nits, global.brightness_nits);
+=======
+   const float3 hdr_linear = InverseTonemap(sdr_linear.rgb, global.brightness_nits, global.brightness_nits);
+>>>>>>> upstream/master
 
    return float4(hdr_linear, sdr_linear.a);
 }
@@ -529,7 +540,7 @@ float4 PSMain(PSInput input) : SV_TARGET
 
          linear_col = mul(k2020to709, linear_col);
 
-         linear_col *= global.max_nits / kscRGBWhiteNits;
+         linear_col *= global.brightness_nits / kscRGBWhiteNits;
          return float4(linear_col, sdr.a);
       }
    }

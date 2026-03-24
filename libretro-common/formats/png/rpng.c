@@ -301,12 +301,12 @@ static void rpng_copy_line_rgba_neon(uint32_t *data,
       uint16x8_t  ag  = vshll_n_u8(a, 8);          /* a << 8 */
       ag              = vorrq_u16(ag, vmovl_u8(r)); /* | r → high word = A|R (need to shift) */
       /* Build full 32-bit using vshl + orr on 32-bit lanes */
-      uint32x4_t lo_a = vshll_n_u16(vget_low_u16(vmovl_u8(a)),  24);
+      uint32x4_t lo_a = vshlq_n_u32(vmovl_u16(vget_low_u16(vmovl_u8(a))),  24);
       uint32x4_t lo_r = vshll_n_u16(vget_low_u16(vmovl_u8(r)),  16);
       uint32x4_t lo_g = vshll_n_u16(vget_low_u16(vmovl_u8(g)),   8);
       uint32x4_t lo_b = vmovl_u16(vget_low_u16(vmovl_u8(b)));
       uint32x4_t lo   = vorrq_u32(vorrq_u32(lo_a, lo_r), vorrq_u32(lo_g, lo_b));
-      uint32x4_t hi_a = vshll_n_u16(vget_high_u16(vmovl_u8(a)), 24);
+      uint32x4_t hi_a = vshlq_n_u32(vmovl_u16(vget_high_u16(vmovl_u8(a))), 24);
       uint32x4_t hi_r = vshll_n_u16(vget_high_u16(vmovl_u8(r)), 16);
       uint32x4_t hi_g = vshll_n_u16(vget_high_u16(vmovl_u8(g)),  8);
       uint32x4_t hi_b = vmovl_u16(vget_high_u16(vmovl_u8(b)));

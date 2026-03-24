@@ -2443,20 +2443,20 @@ MSG_HASH(
    "끔"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "최대 휘도"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "밝기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "디스플레이가 표현할 수 있는 최대 휘도(cd/m2)를 설정합니다. 한 번 설정하고 나면 변경하지 마십시오. 화면의 밝기는 페이퍼 화이트 휘도를 통해 설정해야 합니다. RTings.com 등의 사이트에서 디스플레이의 최대 휘도를 찾을 수 있습니다. 일부 디스플레이에서 스캔라인을 사용하려면(아래 참조) 이 값(과 페이퍼 화이트 휘도)을 더 높게 설정하여 전체적인 밝기를 끌어올려야 할 [...]"
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "HDR 디스플레이 사용 시 메뉴의 밝기(cd/m2, 니트)입니다. 설정 > 비디오 > HDR에서 HDR을 활성화했을 경우에만 표시됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "페이퍼 화이트 휘도"
+   "밝기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "최대 휘도를 설정하고 나면, 이 값으로 일반적인 밝기를 조절합니다. 기술적으로 이 값은 흰 종이가 어느 정도의 휘도로 표시되어야 하는지, 또는 SDR (Standard Dynamic Range) 범위에서의 최대 휘도를 설정합니다."
+   "HDR 밝기 수준(니트)을 설정합니다. 디스플레이의 물리적 밝기 설정과 함께 설정되어야 합니다. 좋은 시작점으로는 이 설정을 80으로 설정하고, 디스플레이의 밝기를 최대로 설정해보는 것을 추천합니다. 아니면, 이 설정을 디스플레이의 최대 니트 값으로 설정하고, 디스플레이가 올바르게 보일 때까지 디스플레이의 밝기를 낮춰보는 것도 좋습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,

@@ -2407,28 +2407,8 @@ MSG_HASH(
    "Ki"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Csúcs-luminancia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "A csúcsfényerő (cd/m2 egységben), amit a kijelző meg tud jeleníteni. Egyszer kell beállítani, utána a Papírfehér fényerővel lehet a fényességet szabályozni. A csúcsfényerőt az RTings.com oldalról lehet megtudni. Néhány kijelzőn, ha a scanline-ok be vannak kapcsolva, ezt és a papírfehér fényerőt feljebb kell állítani az összfényerő felhúzásához."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Papírfehér luminancia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Miután a csúcsfényerő be van állítva, ez használható a szokásos fényerő beállításhoz. Műszakilag ez azt a fényerőt jelenti, amit egy fehér papír képvisel, pl. olvasható szöveghez vagy az SDR (Standard Dynamic Range) legnagyobb fényerejéhez."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Színfeltöltés"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "A kijelző teljes színskálájának használata egy fényesebb, telítetteb képhez. Az eredeti játékhoz hűbb színekhez a PONTOS beállítás javasolt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

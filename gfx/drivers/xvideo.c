@@ -603,6 +603,7 @@ static void *xv_init(const video_info_t *video,
 {
    unsigned i;
    int ret;
+   XEvent event;
    XWindowAttributes target;
    char title[128]                        = {0};
    XSetWindowAttributes attributes        = {0};
@@ -741,6 +742,13 @@ static void *xv_init(const video_info_t *video,
    XFree(visualinfo);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
+   if (video->fullscreen)
+   {
+      /* Give the window a fullscreen hint before it is shown.
+       * This helps GNOME + X11 enter fullscreen properly */
+      x11_set_net_wm_fullscreen_hint(g_x11_dpy, g_x11_win);
+   }
+
    if (video->fullscreen && video_disable_composition)
    {
       uint32_t value = 1;
@@ -765,7 +773,12 @@ static void *xv_init(const video_info_t *video,
 
    if (video->fullscreen)
    {
+      /* Ask for fullscreen again after the window is visible. Some
+       * GNOME + X11 setups ignore the first request if it happens too
+       * early, which causes RetroArch to only maximise the window */
+      x11_event_queue_check(&event);
       x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
+      XFlush(g_x11_dpy);
       x11_show_mouse(xv, false);
    }
 
@@ -1097,7 +1110,7 @@ static video_poke_interface_t xv_video_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */

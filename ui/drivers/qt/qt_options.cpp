@@ -1417,7 +1417,7 @@ QWidget *VideoPage::widget()
    if (video_driver_supports_hdr())
    {
       hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
-      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
+      hdrGroup->add(MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS);
       hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
       hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES);
 

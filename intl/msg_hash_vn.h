@@ -2435,20 +2435,20 @@ MSG_HASH(
    "Tắt"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Độ sáng tối đa"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Độ sáng"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Đặt độ sáng đỉnh (tính bằng cd/m²) mà màn hình của bạn có thể hiển thị. Khi đã đặt thì đừng thay đổi nữa. Hãy dùng Paper White Luminance để chỉnh độ sáng tổng thể. Xem RTings.com để biết độ sáng đỉnh của màn hình bạn. Với một số màn hình khi bật scanlines (bên dưới), bạn có thể cần tăng cao hơn mức này (và cả paper white) để làm hình ảnh tổng thể sáng hơn."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Độ sáng của menu (đơn vị cd/m2 - nits) khi sử dụng màn hình HDR. Chỉ hiển thị khi HDR được bật trong Cài đặt > Video > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Độ sáng trắng chuẩn"
+   "Độ sáng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Khi đã đặt độ sáng đỉnh, hãy dùng nó làm mức sáng tiêu chuẩn. Về mặt kỹ thuật, mục này đặt độ sáng tại mức “paper white”, tức là độ sáng của chữ dễ đọc hoặc mức sáng cao nhất trong dải SDR (Standard Dynamic Range)."
+   "Thiết lập mức độ sáng HDR (đơn vị nit). Sử dụng kết hợp với thiết lập độ sáng vật lý của màn hình. Để bắt đầu, hãy đặt giá trị này là 80 và chỉnh độ sáng màn hình lên tối đa. Hoặc, đặt giá trị này bằng mức nit tối đa của màn hình, sau đó giảm độ sáng màn hình xuống đến khi hình ảnh trông phù hợp."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2456,7 +2456,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Sử dụng dải màu đầy đủ của màn hình để tạo ra hình ảnh sáng hơn, bão hòa hơn. Để có màu sắc trung thực hơn với thiết kế trò chơi gốc, hãy đặt tùy chọn này thành CHÍNH XÁC."
+   "Sử dụng toàn bộ dải màu của màn hình để tạo hình ảnh sáng hơn và rực rỡ hơn. Để màu sắc trung thực hơn với thiết kế gốc của trò chơi, hãy đặt tùy chọn này thành “Chính xác”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,

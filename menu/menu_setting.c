@@ -8748,16 +8748,20 @@ static void general_write_handler(rarch_setting_t *setting)
 
          rarch_cmd = CMD_EVENT_REINIT;
          break;
+<<<<<<< HEAD
 #ifdef HDR_PEAK_LUMINANCE
       case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
+=======
+      case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
+>>>>>>> upstream/master
          {
             video_driver_state_t *video_st       = video_state_get_ptr();
             settings->flags                     |= SETTINGS_FLG_MODIFIED;
-            settings->floats.video_hdr_max_nits  = roundf(*setting->value.target.fraction);
+            settings->floats.video_hdr_menu_nits = roundf(*setting->value.target.fraction);
 
-            if (video_st && video_st->poke && video_st->poke->set_hdr_max_nits)
-               video_st->poke->set_hdr_max_nits(video_st->data,
-                     settings->floats.video_hdr_max_nits);
+            if (video_st && video_st->poke && video_st->poke->set_hdr_menu_nits)
+               video_st->poke->set_hdr_menu_nits(video_st->data,
+                     settings->floats.video_hdr_menu_nits);
          }
          break;
 #endif
@@ -14096,19 +14100,23 @@ static bool setting_append_list(
 #ifdef HDR_PEAK_LUMINANCE
                   CONFIG_FLOAT(
                         list, list_info,
-                        &settings->floats.video_hdr_max_nits,
-                        MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-                        DEFAULT_VIDEO_HDR_MAX_NITS,
-                        "%.1fx",
+                        &settings->floats.video_hdr_menu_nits,
+                        MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS,
+                        MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+                        DEFAULT_MENU_HDR_BRIGHTNESS_NITS,
+                        "%.0f",
                         &group_info,
                         &subgroup_info,
                         parent_group,
                         general_write_handler,
                         general_read_handler);
                   (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+<<<<<<< HEAD
                   menu_settings_list_current_add_range(list, list_info, 0.0, 10000.0, 10.0, true, true);
 #endif
+=======
+                  menu_settings_list_current_add_range(list, list_info, 40.0, 1000.0, 10.0, true, true);
+>>>>>>> upstream/master
 
                   CONFIG_FLOAT(
                         list, list_info,
@@ -14116,7 +14124,7 @@ static bool setting_append_list(
                         MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS,
                         MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
                         DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS,
-                        "%.1fx",
+                        "%.0f",
                         &group_info,
                         &subgroup_info,
                         parent_group,

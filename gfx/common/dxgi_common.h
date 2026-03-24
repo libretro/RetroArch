@@ -35,7 +35,6 @@ typedef struct ALIGN(16)
       float height;
    } output_size;
    float             paper_white_nits;    /* 200.0f  */
-   float             max_nits;            /* 1000.0f */
    unsigned          subpixel_layout;     /* 0       */
    float             scanlines;           /* 1.0f    */
    unsigned          expand_gamut;        /* 0       */
