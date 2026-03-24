@@ -10517,7 +10517,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabic - اَلْعَرَبِيَّةُ (Restart required)"
+   "Arabic - العربية (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
