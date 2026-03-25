@@ -181,6 +181,7 @@ static void gfx_widget_screenshot_end(void *userdata)
    settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)userdata;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
+   unsigned duration                    = settings->uints.notification_show_screenshot_duration;
 
    entry.cb             = gfx_widget_screenshot_dispose;
    entry.easing_enum    = EASING_OUT_QUAD;
@@ -190,9 +191,12 @@ static void gfx_widget_screenshot_end(void *userdata)
    entry.userdata       = NULL;
 
    if (state->state_slot)
+   {
       entry.target_value = (float)state->video_height;
+      duration           = NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST;
+   }
 
-   switch (settings->uints.notification_show_screenshot_duration)
+   switch (duration)
    {
       case NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST:
          entry.duration = MSG_QUEUE_ANIMATION_DURATION/1.25;
@@ -366,8 +370,9 @@ static void gfx_widget_screenshot_iterate(
    settings_t *settings = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
-   unsigned padding                     = p_dispwidget->simple_widget_padding;
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
+   unsigned padding                     = p_dispwidget->simple_widget_padding;
+   unsigned duration                    = settings->uints.notification_show_screenshot_duration;
 
    /* Load screenshot and start its animation */
    if (state->filename[0] != '\0')
@@ -398,6 +403,7 @@ static void gfx_widget_screenshot_iterate(
          state->height       *= 2;
          state->scale_factor *= 2;
          state->y             = height - state->height;
+         duration             = NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST;
       }
 
       state->thumbnail_width  = state->texture_width * state->scale_factor;
@@ -417,7 +423,7 @@ static void gfx_widget_screenshot_iterate(
       timer.cb                = gfx_widget_screenshot_end;
       timer.userdata          = p_dispwidget;
 
-      switch (settings->uints.notification_show_screenshot_duration)
+      switch (duration)
       {
          case NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST:
             timer.duration = 2000;
@@ -430,7 +436,7 @@ static void gfx_widget_screenshot_iterate(
             break;
          case NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL:
          default:
-            timer.duration = 6000;
+            timer.duration = 5000;
             break;
       }
 
