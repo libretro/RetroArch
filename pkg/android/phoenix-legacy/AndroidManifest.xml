@@ -22,7 +22,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="RetroArch"
         android:hasCode="true"
-        android:isGame="true"
+        android:appCategory="game"
         android:banner="@drawable/banner">
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>
