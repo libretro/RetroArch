@@ -1076,7 +1076,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
       if (_len > 0 && _len < sizeof(path_buf))
       {
-         while (_len > 0 && path_buf[_len - 1] == '\\')
+         while (_len > 0 && 
+               (path_buf[_len - 1] == '\\' || path_buf[_len - 1] == '/'))
          {
             /* Keep drive roots like "C:\" intact */
             if (_len == 3 &&
