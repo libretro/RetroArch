@@ -2405,6 +2405,15 @@ ifeq ($(HAVE_NETWORKING), 1)
 	  network/netplay/netplay_frontend.o \
 	  network/netplay/netplay_room_parse.o
 
+   # MCP Server
+   ifeq ($(HAVE_MCP), 1)
+      DEFINES += -DHAVE_MCP
+      OBJ += network/mcp/mcp_server.o \
+             network/mcp/mcp_http_transport.o \
+             network/mcp/mcp_adapter.o \
+             network/mcp/mcp_adapter_tool_list.o
+   endif
+
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
       DEFINES += -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH
