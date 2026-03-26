@@ -767,3 +767,26 @@ size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data,
    strlcpy(tmp_buf, path_data->content_path, _len * sizeof(char));
    return strlcpy(s, path_basename_nocompression(tmp_buf), len);
 }
+
+/* Gets the common savestate thumbnail path. */
+void gfx_savestate_thumbnail_get_path(
+      char *s, size_t len,
+      const char *state_name,
+      int state_slot)
+{
+   size_t _len;
+
+   s[0] = '\0';
+
+   if (string_is_empty(state_name))
+      return;
+
+   _len = strlcpy(s, state_name, len);
+
+   if (state_slot > 0)
+      _len += snprintf(s + _len, len - _len, "%d", state_slot);
+   else if (state_slot < 0)
+      _len  = fill_pathname_join_delim(s, state_name, "auto", '.', len);
+
+   strlcpy(s + _len, FILE_PATH_PNG_EXTENSION, len - _len);
+}

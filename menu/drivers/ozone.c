@@ -642,11 +642,7 @@ struct ozone_handle
    char icons_path[PATH_MAX_LENGTH];
    char icons_path_default[PATH_MAX_LENGTH];
    char tab_path[PATH_MAX_LENGTH];
-
-   /* These have to be huge, because runloop_st->name.savestate
-    * has a hard-coded size of (PATH_MAX_LENGTH * 2)... */
-   char savestate_thumbnail_file_path[(PATH_MAX_LENGTH * 2)];
-   char prev_savestate_thumbnail_file_path[(PATH_MAX_LENGTH * 2)];
+   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
 
    char thumbnails_left_status_prev;
    char thumbnails_right_status_prev;
@@ -3855,17 +3851,11 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings     = config_get_ptr();
    ozone_handle_t *ozone    = (ozone_handle_t*)data;
-   int state_slot           = settings->ints.state_slot;
    bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
+   const char *current_path = strdup(ozone->savestate_thumbnail_file_path);
 
    if (!ozone)
       return;
-
-   /* Cache previous savestate thumbnail path */
-   strlcpy(
-         ozone->prev_savestate_thumbnail_file_path,
-         ozone->savestate_thumbnail_file_path,
-         sizeof(ozone->prev_savestate_thumbnail_file_path));
 
    if (ozone->flags2 & OZONE_FLAG2_SELECTION_CORE_IS_VIEWER_REAL)
       ozone->flags2 |=  OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
@@ -3901,9 +3891,9 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
          {
-            size_t _len;
-            char path[PATH_MAX_LENGTH * 2];
+            char path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
+            int state_slot              = settings->ints.state_slot;
 
             /* State slot dropdown */
             if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
@@ -3912,24 +3902,14 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
                ozone->flags |= OZONE_FLAG_IS_STATE_SLOT;
             }
 
-            if (state_slot < 0)
-            {
-               path[0] = '\0';
-               _len    = fill_pathname_join_delim(path,
-                     runloop_st->name.savestate, "auto", '.', sizeof(path));
-            }
-            else
-            {
-               _len    = strlcpy(path, runloop_st->name.savestate, sizeof(path));
-               if (state_slot > 0)
-                  _len += snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
-            }
+            gfx_savestate_thumbnail_get_path(path, sizeof(path),
+                  runloop_st->name.savestate, state_slot);
 
-            strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
-
-            strlcpy(
-                  ozone->savestate_thumbnail_file_path, path,
+            strlcpy(ozone->savestate_thumbnail_file_path, path,
                   sizeof(ozone->savestate_thumbnail_file_path));
+
+            if (!string_is_equal(current_path, ozone->savestate_thumbnail_file_path))
+               gfx_thumbnail_reset(&ozone->thumbnails.savestate);
 
             ozone->flags |= OZONE_FLAG_WANT_THUMBNAIL_BAR
                           | OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
@@ -3960,21 +3940,11 @@ static void ozone_update_savestate_thumbnail_image(void *data)
    /* If path is empty, just reset thumbnail */
    if (string_is_empty(ozone->savestate_thumbnail_file_path))
       gfx_thumbnail_reset(&ozone->thumbnails.savestate);
-   else
-   {
-      /* Only request thumbnail if:
-       * > Thumbnail has never been loaded *OR*
-       * > Thumbnail path has changed */
-      if (     (ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
-            || !string_is_equal(ozone->savestate_thumbnail_file_path,
-                     ozone->prev_savestate_thumbnail_file_path))
-      {
-         gfx_thumbnail_request_file(
-               ozone->savestate_thumbnail_file_path,
-               &ozone->thumbnails.savestate,
-               thumbnail_upscale_threshold);
-      }
-   }
+   else if (ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      gfx_thumbnail_request_file(
+            ozone->savestate_thumbnail_file_path,
+            &ozone->thumbnails.savestate,
+            thumbnail_upscale_threshold);
 
    ozone->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
 }
@@ -9231,6 +9201,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    ozone->flags                                |= OZONE_FLAG_FIRST_FRAME;
 
+   ozone->animations.left_thumbnail_alpha       = 1.0f;
    ozone->animations.sidebar_text_alpha         = 1.0f;
    ozone->animations.thumbnail_bar_position     = 0.0f;
    ozone->dimensions_sidebar_width              = 0.0f;
@@ -9243,14 +9214,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    if (!(ozone->screensaver = menu_screensaver_init()))
       goto error;
 
-   ozone->savestate_thumbnail_file_path[0]      = '\0';
-   ozone->prev_savestate_thumbnail_file_path[0] = '\0';
-
    ozone->animations.fullscreen_thumbnail_alpha = 0.0f;
    ozone->fullscreen_thumbnail_selection        = 0;
    ozone->fullscreen_thumbnail_label[0]         = '\0';
-
-   ozone->animations.left_thumbnail_alpha       = 1.0f;
+   ozone->savestate_thumbnail_file_path[0]      = '\0';
 
    ozone->thumbnails.pending                    = OZONE_PENDING_THUMBNAIL_NONE;
    ozone->thumbnails.stream_delay               = OZONE_THUMBNAIL_STREAM_DELAY;

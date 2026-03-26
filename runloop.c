@@ -6954,18 +6954,10 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_SCREENSHOTS
          if (dispwidget_get_ptr()->active && settings->bools.savestate_thumbnail_enable)
          {
-            char path[PATH_MAX_LENGTH * 2];
-            size_t _len;
+            char path[PATH_MAX_LENGTH];
 
-            _len = strlcpy(path, runloop_st->name.savestate, sizeof(path));
-
-            if (state_slot > 0)
-               _len += snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
-            else if (state_slot < 0)
-               _len  = fill_pathname_join_delim(path,
-                     runloop_st->name.savestate, "auto", '.', sizeof(path));
-
-            strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
+            gfx_savestate_thumbnail_get_path(path, sizeof(path),
+                  runloop_st->name.savestate, state_slot);
 
             if (state_slot < 0)
                snprintf(msg, sizeof(msg), "%s", "Auto");
