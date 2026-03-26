@@ -6853,7 +6853,7 @@ static void xmb_render(void *data,
    menu_input_get_pointer_state(&xmb->pointer);
 
    /* Direction locking for horizontal category dragging */
-   if (xmb->pointer.type == MENU_POINTER_TOUCHSCREEN)
+   if (xmb->pointer.type != MENU_POINTER_DISABLED)
    {
       if (xmb->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
       {
@@ -9773,13 +9773,10 @@ static int xmb_pointer_up(void *userdata,
             return xmb_menu_entry_action(xmb, entry, selection, MENU_ACTION_SELECT);
          else if (ptr <= (end - 1))
          {
-            /* If pointer item is already 'active', perform 'select' action */
-            if (ptr == selection)
-               return xmb_menu_entry_action(xmb, entry, selection, MENU_ACTION_SELECT);
-
-            /* ...otherwise navigate to the current pointer item */
+            /* Perform 'select' on the pointed item */
             menu_st->selection_ptr = ptr;
             xmb_navigation_set(xmb, false);
+            return xmb_menu_entry_action(xmb, entry, ptr, MENU_ACTION_SELECT);
          }
          break;
       case MENU_INPUT_GESTURE_LONG_PRESS:

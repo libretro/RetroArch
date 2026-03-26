@@ -7692,15 +7692,11 @@ static int rgui_pointer_up(
                else if (ptr <= (end - 1))
                {
                   struct menu_state *menu_st = menu_state_get_ptr();
-                  /* If currently selected item matches 'pointer' value,
-                   * perform a MENU_ACTION_SELECT on it */
-                  if (ptr == selection)
-                     return rgui_menu_entry_action(rgui, entry, selection, MENU_ACTION_SELECT);
 
-                  /* Otherwise, just move the current selection to the
-                   * 'pointer' value */
+                  /* Perform 'select' on the pointed item */
                   menu_st->selection_ptr = ptr;
                   rgui_navigation_set(rgui, false);
+                  return rgui_menu_entry_action(rgui, entry, ptr, MENU_ACTION_SELECT);
                }
             }
          }
