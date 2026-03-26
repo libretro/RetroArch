@@ -2022,7 +2022,8 @@ ifeq ($(HAVE_ZSTD),1)
            $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress.o \
            $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress_block.o
 
-   OBJ +=  $(ZSOBJ)
+   OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_zstd.o \
+           $(ZSOBJ)
 endif
 
 ifeq ($(HAVE_IBXM), 1)

@@ -311,6 +311,9 @@ void *task_push_decompress(
 #ifdef HAVE_7ZIP
           && !string_is_equal_noncase(ext, "7z")
 #endif
+#ifdef HAVE_ZSTD
+          && !string_is_equal_noncase(ext, "zst")
+#endif
          )
       )
       return NULL;
