@@ -452,10 +452,7 @@ typedef struct xmb_handle
    char entry_index_str[32];
    char entry_index_offset;
 
-   /* These have to be huge, because runloop_st->name.savestate
-    * has a hard-coded size of (PATH_MAX_LENGTH * 2)... */
-   char savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
-   char prev_savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
+   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    char thumbnails_left_status_prev;
@@ -1287,17 +1284,11 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    settings_t *settings     = config_get_ptr();
-   int state_slot           = settings->ints.state_slot;
    bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
+   const char *current_path = strdup(xmb->savestate_thumbnail_file_path);
 
    if (!xmb)
       return;
-
-   /* Cache previous savestate thumbnail path */
-   strlcpy(
-         xmb->prev_savestate_thumbnail_file_path,
-         xmb->savestate_thumbnail_file_path,
-         sizeof(xmb->prev_savestate_thumbnail_file_path));
 
    if (xmb->skip_thumbnail_reset)
       return;
@@ -1326,9 +1317,9 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
          {
-            size_t _len;
-            char path[PATH_MAX_LENGTH * 2];
+            char path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
+            int state_slot              = settings->ints.state_slot;
 
             /* State slot dropdown */
             if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
@@ -1337,23 +1328,14 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                xmb->is_state_slot = true;
             }
 
-            if (state_slot < 0)
-            {
-               path[0] = '\0';
-               _len    = fill_pathname_join_delim(path,
-                     runloop_st->name.savestate, "auto", '.', sizeof(path));
-            }
-            else
-            {
-               _len    = strlcpy(path, runloop_st->name.savestate, sizeof(path));
-               if (state_slot > 0)
-                  _len += snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
-            }
-
-            strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
+            gfx_savestate_thumbnail_get_path(path, sizeof(path),
+                  runloop_st->name.savestate, state_slot);
 
             strlcpy(xmb->savestate_thumbnail_file_path, path,
                   sizeof(xmb->savestate_thumbnail_file_path));
+
+            if (!string_is_equal(current_path, xmb->savestate_thumbnail_file_path))
+               gfx_thumbnail_reset(&xmb->thumbnails.savestate);
 
             xmb->fullscreen_thumbnails_available = true;
 
@@ -1788,19 +1770,11 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    /* If path is empty, just reset thumbnail */
    if (string_is_empty(xmb->savestate_thumbnail_file_path))
       gfx_thumbnail_reset(&xmb->thumbnails.savestate);
-   else
-   {
-      /* Only request thumbnail if:
-       * > Thumbnail has never been loaded *OR*
-       * > Thumbnail path has changed */
-      if (     (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
-            || !string_is_equal(xmb->savestate_thumbnail_file_path,
-                xmb->prev_savestate_thumbnail_file_path))
-         gfx_thumbnail_request_file(
-               xmb->savestate_thumbnail_file_path,
-               &xmb->thumbnails.savestate,
-               upscale_threshold);
-   }
+   else if (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      gfx_thumbnail_request_file(
+            xmb->savestate_thumbnail_file_path,
+            &xmb->thumbnails.savestate,
+            upscale_threshold);
 
    xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
 }
@@ -9164,9 +9138,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (!(xmb->screensaver = menu_screensaver_init()))
       goto error;
 
-   xmb->savestate_thumbnail_file_path[0]      = '\0';
-   xmb->prev_savestate_thumbnail_file_path[0] = '\0';
-
    xmb->fullscreen_thumbnails_available       = false;
    xmb->show_fullscreen_thumbnails            = false;
    xmb->skip_thumbnail_reset                  = false;
@@ -9174,6 +9145,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->fullscreen_thumbnail_alpha            = 0.0f;
    xmb->fullscreen_thumbnail_selection        = 0;
    xmb->fullscreen_thumbnail_label[0]         = '\0';
+   xmb->savestate_thumbnail_file_path[0]      = '\0';
 
    xmb->thumbnails.pending                    = XMB_PENDING_THUMBNAIL_NONE;
    gfx_thumbnail_set_stream_delay(-1.0f);
