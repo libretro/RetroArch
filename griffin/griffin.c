@@ -134,6 +134,10 @@ ARCHIVE FILE
 #include "../libretro-common/file/archive_file_7z.c"
 #endif
 
+#ifdef HAVE_ZSTD
+#include "../libretro-common/file/archive_file_zstd.c"
+#endif
+
 /*============================================================
 COMPRESSION
 ============================================================ */

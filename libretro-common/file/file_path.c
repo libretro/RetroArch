@@ -208,6 +208,10 @@ const char *path_get_archive_delim(const char *path)
             /* Check ".apk" */
             if (c4 == '.' && c3 == 'a' && c2 == 'p' && c1 == 'k')
                return delim;
+
+            /* Check ".zst" */
+            if (c4 == '.' && c3 == 'z' && c2 == 's' && c1 == 't')
+               return delim;
          }
       }
 
@@ -294,7 +298,8 @@ bool path_is_compressed_file(const char* path)
    if (!string_is_empty(ext))
       return (   string_is_equal_noncase(ext, "zip")
               || string_is_equal_noncase(ext, "apk")
-              || string_is_equal_noncase(ext, "7z"));
+              || string_is_equal_noncase(ext, "7z")
+              || string_is_equal_noncase(ext, "zst"));
    return false;
 }
 
