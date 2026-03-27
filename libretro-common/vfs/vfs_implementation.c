@@ -1072,6 +1072,12 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       struct _stat stat_buf;
       char path_buf[PATH_MAX_LENGTH];
       const char *stat_path = path;
+      DWORD file_info;
+#if defined(LEGACY_WIN32)
+      char *path_local;
+#else
+      wchar_t *path_wide;
+#endif
       size_t _len = strlcpy(path_buf, path, sizeof(path_buf));
 
       if (_len > 0 && _len < sizeof(path_buf))
@@ -1092,8 +1098,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          stat_path = path_buf;
       }
 #if defined(LEGACY_WIN32)
-      char *path_local          = utf8_to_local_string_alloc(stat_path);
-      DWORD file_info;
+      path_local                = utf8_to_local_string_alloc(stat_path);
 
       if (!path_local)
          return 0;
@@ -1109,8 +1114,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
       free(path_local);
 #else
-      wchar_t *path_wide        = utf8_to_utf16_string_alloc(stat_path);
-      DWORD file_info;
+      path_wide                 = utf8_to_utf16_string_alloc(stat_path);
 
       if (!path_wide)
          return 0;
