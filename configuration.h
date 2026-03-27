@@ -773,6 +773,7 @@ typedef struct settings
       bool input_turbo_allow_dpad;
       bool input_hotkey_device_merge;
       bool input_hotkey_follows_player1;
+      bool input_menu_toggle_ignore_enable_hotkey;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
 #endif
