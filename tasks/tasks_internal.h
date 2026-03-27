@@ -32,6 +32,7 @@
 
 #if defined(HAVE_NETWORKING)
 #include "../core_updater_list.h"
+#include <net/net_http.h>
 #endif
 
 #include "../playlist.h"
@@ -59,6 +60,8 @@ typedef struct
    struct string_list *headers;
    size_t len;
    int status;
+   bool has_http_debug_state;
+   net_http_debug_state_t http_debug_state;
 } http_transfer_data_t;
 
 void *task_push_http_transfer(const char *url, bool mute, const char *type,

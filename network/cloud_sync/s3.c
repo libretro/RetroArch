@@ -852,10 +852,35 @@ static char* s3_build_auth_header(const char *method, const char *canonical_uri,
    return auth_header;
 }
 
+static void s3_log_http_snapshot(const http_transfer_data_t *data)
+{
+   const net_http_debug_state_t *dbg = NULL;
+
+   if (!data || !data->has_http_debug_state)
+      return;
+
+   dbg = &data->http_debug_state;
+   RARCH_LOG(S3_PFX
+         "HTTP snapshot: phase=%s status=%d err=%d last_errno=%d last_io_len=%lld fd=%d connected=%d request_sent=%d redirects=%u progress=%zu total=%zu ssl=%d\n",
+         net_http_phase_to_string(dbg->phase),
+         dbg->status,
+         dbg->err ? 1 : 0,
+         dbg->last_errno,
+         (long long)dbg->last_io_len,
+         dbg->fd,
+         dbg->connected ? 1 : 0,
+         dbg->request_sent ? 1 : 0,
+         dbg->redirects,
+         dbg->progress,
+         dbg->total,
+         dbg->ssl ? 1 : 0);
+}
+
 static void s3_log_http_failure(const char *path, http_transfer_data_t *data)
 {
    size_t i;
    RARCH_WARN(S3_PFX "Failed: %s: HTTP %d\n", path ? path : "<unknown>", data->status);
+   s3_log_http_snapshot(data);
    for (i = 0; data->headers && i < data->headers->size; i++)
       RARCH_WARN(S3_PFX "%s\n", data->headers->elems[i].data);
    if (data->data)
@@ -1307,6 +1332,7 @@ static void s3_log_multipart_initiate_failure(
          data ? data->len : 0,
          (data && data->headers) ? data->headers->size : 0,
          (err && *err) ? err : "<none>");
+   s3_log_http_snapshot(data);
 
    if (data && data->headers)
       for (i = 0; i < data->headers->size; i++)
