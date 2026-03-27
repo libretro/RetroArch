@@ -1721,6 +1721,9 @@ CLOUD SYNC
 #ifdef HAVE_SMBCLIENT
 #include "../network/cloud_sync/smb.c"
 #endif
+#ifdef HAVE_S3
+#include "../network/cloud_sync/s3.c"
+#endif
 #endif
 
 /*============================================================

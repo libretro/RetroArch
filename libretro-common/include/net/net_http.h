@@ -106,6 +106,7 @@ bool net_http_error(struct http_t *state);
  * If the status is not 20x and accept_error is false, it returns NULL.
  **/
 struct string_list *net_http_headers(struct http_t *state);
+struct string_list *net_http_headers_ex(struct http_t *state, bool accept_error);
 
 /**
  * net_http_data:

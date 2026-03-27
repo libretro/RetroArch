@@ -1619,10 +1619,17 @@ static struct config_array_setting *populate_settings_array(
 
 #ifdef HAVE_NETWORKING
    SETTING_ARRAY("netplay_mitm_server",          settings->arrays.netplay_mitm_server, false, NULL, true);
+#ifdef HAVE_CLOUDSYNC
    SETTING_ARRAY("webdav_url",                   settings->arrays.webdav_url, false, NULL, true);
    SETTING_ARRAY("webdav_username",              settings->arrays.webdav_username, false, NULL, true);
    SETTING_ARRAY("webdav_password",              settings->arrays.webdav_password, false, NULL, true);
    SETTING_ARRAY("google_drive_refresh_token",   settings->arrays.google_drive_refresh_token, false, NULL, true);
+#ifdef HAVE_S3
+   SETTING_ARRAY("s3_url",                       settings->arrays.s3_url, false, NULL, true);
+   SETTING_ARRAY("access_key_id",                settings->arrays.access_key_id, false, NULL, true);
+   SETTING_ARRAY("secret_access_key",            settings->arrays.secret_access_key, false, NULL, true);
+#endif
+#endif
    SETTING_ARRAY("youtube_stream_key",           settings->arrays.youtube_stream_key, true, NULL, true);
    SETTING_ARRAY("twitch_stream_key",            settings->arrays.twitch_stream_key, true, NULL, true);
    SETTING_ARRAY("facebook_stream_key",          settings->arrays.facebook_stream_key, true, NULL, true);
