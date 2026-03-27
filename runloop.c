@@ -163,6 +163,10 @@
 #include "cheevos/cheevos_menu.h"
 #endif
 
+#ifdef HAVE_LUA
+#include "lua_manager.h"
+#endif
+
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #include "network/netplay/netplay_private.h"
@@ -3973,6 +3977,9 @@ static bool core_unload_game(void)
 #ifdef HAVE_MICROPHONE
    microphone_driver_stop();
 #endif
+#if defined(HAVE_LUA) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+   lua_deinit();
+#endif
 
    return true;
 }
@@ -7548,6 +7555,10 @@ end:
       }
    }
 
+#if defined(HAVE_LUA) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+   lua_loop();
+#endif
+
    /* Frame delay */
    if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
          || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
@@ -7958,6 +7969,9 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 #ifdef HAVE_GAME_AI
       /* load models */
       game_ai_load(load_info->info->path, runloop_st->current_core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM), runloop_st->current_core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM), libretro_log_cb);
+#endif
+#if defined(HAVE_LUA) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+   lua_init();
 #endif
       return true;
    }

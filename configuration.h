@@ -1184,6 +1184,10 @@ typedef struct settings
       bool game_ai_show_debug;
 #endif
 
+#ifdef HAVE_LUA
+      bool lua_scripts_sandboxed;
+#endif
+
 #ifdef HAVE_SMBCLIENT
       bool smb_client_enable;
 #endif
