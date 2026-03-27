@@ -35,7 +35,10 @@ uint32s_index_t *uint32s_index_new(size_t object_size,
    uint32s_index_t *index  = (uint32s_index_t *)malloc(sizeof(uint32s_index_t));
    index->object_size      = object_size;
    index->index            = NULL;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtautological-compare"
    RHMAP_FIT(index->index, HASHMAP_CAP);
+#pragma GCC diagnostic pop
    index->objects          = NULL;
    index->counts           = NULL;
    index->hashes           = NULL;

@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <spa/utils/result.h>
 #include <spa/param/video/format-utils.h>
 #include <spa/param/tag-utils.h>
@@ -21,6 +23,7 @@
 #include <spa/debug/format.h>
 #include <spa/debug/pod.h>
 #include <pipewire/pipewire.h>
+#pragma GCC diagnostic pop
 
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
@@ -209,8 +212,10 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
    uint8_t params_buffer[1024];
    const struct spa_pod *params[5];
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    struct spa_pod_builder b = SPA_POD_BUILDER_INIT(params_buffer, sizeof(params_buffer));
-
+#pragma GCC diagnostic pop
    if (param && id == SPA_PARAM_Tag)
    {
       spa_debug_pod(0, NULL, param);
@@ -258,6 +263,8 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
       return;
    }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    struct spa_pod_frame frame;
    spa_pod_builder_push_object(&b, &frame, SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers);
    spa_pod_builder_add(&b,
@@ -270,7 +277,6 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
          0);
 
    params[0] = spa_pod_builder_pop(&b, &frame);
-
    params[1] = spa_pod_builder_add_object(&b,
          SPA_TYPE_OBJECT_ParamMeta,  SPA_PARAM_Meta,
          SPA_PARAM_META_type,        SPA_POD_Id(SPA_META_Header),
@@ -281,6 +287,7 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
          SPA_PARAM_META_type,        SPA_POD_Id(SPA_META_VideoTransform),
          SPA_PARAM_META_size,        SPA_POD_Int(sizeof(struct spa_meta_videotransform)));
 #endif
+#pragma GCC diagnostic pop
 
    camera->buffer_output = (uint32_t *)
          malloc(camera->size.width * camera->size.height * sizeof(uint32_t));
@@ -372,8 +379,11 @@ static void *pipewire_init(const char *device, uint64_t caps,
    struct     pw_properties *props;
    uint8_t            buffer[1024];
    pipewire_camera_t       *camera = (pipewire_camera_t*)calloc(1, sizeof(*camera));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    struct spa_pod_builder        b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
-
+#pragma GCC diagnostic pop
+   
    if (!camera)
       goto error;
 
@@ -420,7 +430,10 @@ static void *pipewire_init(const char *device, uint64_t caps,
 
    if (res < 0)
    {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
       RARCH_ERR("[Camera] [PipeWire] Can't connect: %s.\n", spa_strerror(res));
+#pragma GCC diagnostic pop
       goto error;
    }
 
