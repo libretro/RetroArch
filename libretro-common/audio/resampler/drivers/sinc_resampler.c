@@ -38,7 +38,6 @@
 #include <memalign.h>
 
 #include <audio/audio_resampler.h>
-/* BUG FIX: removed duplicate #include <filters.h> that was here */
 
 #ifdef __SSE__
 #include <xmmintrin.h>
@@ -712,9 +711,6 @@ static void resampler_sinc_free(void *data)
    free(resamp);
 }
 
-/* C89 FIX: changed 'bool calculate_delta' to 'int calculate_delta'
- * throughout table init functions. C89 has no bool type. */
-
 static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
       double cutoff,
       float *phase_table, int phases, int taps, int calculate_delta)
@@ -738,7 +734,7 @@ static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
          window_phase        = 2.0 * window_phase - 1.0;    /* [-1, 1) */
          sinc_phase          = sidelobes * window_phase;
 
-         /* BUG FIX: clamp argument to sqrt to avoid NaN from
+         /* clamp argument to sqrt to avoid NaN from
           * floating-point precision loss at boundaries where
           * 1 - window_phase^2 can go slightly negative.
           * Also use double-precision sqrt() instead of sqrtf()
@@ -779,7 +775,7 @@ static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
          window_phase        = 2.0 * window_phase - 1.0;    /* (-1, 1] */
          sinc_phase          = sidelobes * window_phase;
 
-         /* BUG FIX: same clamp + double-precision sqrt as above. */
+         /* Same clamp + double-precision sqrt as above. */
          arg                 = 1.0 - window_phase * window_phase;
          if (arg < 0.0)
             arg = 0.0;
