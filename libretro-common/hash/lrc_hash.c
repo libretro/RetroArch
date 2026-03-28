@@ -29,8 +29,12 @@
 #include <unistd.h>
 #endif
 
-#ifdef __SSE2__
+#if defined(__SSE2__) || (defined(_MSC_VER) && (defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
+#ifdef _MSC_VER
+#include <intrin.h>
+#else
 #include <emmintrin.h>
+#endif
 #endif
 
 #include <lrc_hash.h>
@@ -597,7 +601,7 @@ error:
    return -1;
 }
 
-#if defined(__SSE2__)
+#if defined(__SSE2__) || (defined(_MSC_VER) && (defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
 
 #if _MSC_VER
 #define DJB2_ALIGN(x) __declspec(align(x))
@@ -605,7 +609,7 @@ error:
 #define DJB2_ALIGN(x) __attribute__((aligned(x)))
 #endif
 
-static const uint32_t DJB2_W8[8] DJB2_ALIGN(16) = {
+static const DJB2_ALIGN(16) uint32_t DJB2_W8[8] = {
    0xEC41D4E1, /* 33^7 */
    0x4CFA3CC1, /* 33^6 */
    0x025528A1, /* 33^5 */
@@ -621,7 +625,7 @@ uint32_t djb2_calculate(const char *str)
 {
    uint32_t h = 5381;
    const unsigned char *p = (const unsigned char*)str;
-#if defined(__SSE2__)
+#if defined(__SSE2__) || (defined(_MSC_VER) && (defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
    __m128i w_lo = _mm_load_si128((const __m128i *)&DJB2_W8[0]);
    __m128i w_hi = _mm_load_si128((const __m128i *)&DJB2_W8[4]);
    size_t len   = strlen((const char*)p);
