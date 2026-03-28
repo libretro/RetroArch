@@ -11653,6 +11653,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PATCHES))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS))
                   )
             {

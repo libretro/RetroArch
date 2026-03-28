@@ -117,6 +117,10 @@ GENERIC_DEFERRED_PUSH(deferred_archive_action,                      DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_core_counters,                  DISPLAYLIST_PERFCOUNTERS_CORE)
 GENERIC_DEFERRED_PUSH(deferred_push_frontend_counters,              DISPLAYLIST_PERFCOUNTERS_FRONTEND)
 GENERIC_DEFERRED_PUSH(deferred_push_core_cheat_options,             DISPLAYLIST_OPTIONS_CHEATS)
+#ifdef HAVE_PATCH
+GENERIC_DEFERRED_PUSH(deferred_push_patches_list,                   DISPLAYLIST_OPTIONS_PATCHES)
+GENERIC_DEFERRED_PUSH(deferred_push_patches_actions_list,           DISPLAYLIST_OPTIONS_PATCHES_ACTIONS)
+#endif
 GENERIC_DEFERRED_PUSH(deferred_push_core_input_remapping_options,   DISPLAYLIST_OPTIONS_REMAPPINGS)
 GENERIC_DEFERRED_PUSH(deferred_push_remap_file_manager,             DISPLAYLIST_REMAP_FILE_MANAGER)
 GENERIC_DEFERRED_PUSH(deferred_push_savestate_list,                 DISPLAYLIST_SAVESTATE_LIST)
@@ -745,6 +749,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS, deferred_push_video_shader_preset_parameters},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS, deferred_push_video_shader_parameters},
       {MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS, deferred_push_core_cheat_options},
+#ifdef HAVE_PATCH
+      {MENU_ENUM_LABEL_PATCHES, deferred_push_patches_list},
+#endif
       {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS, deferred_push_core_input_remapping_options},
       {MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST, deferred_push_remap_file_manager},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET, deferred_push_video_shader_preset},
@@ -1245,6 +1252,19 @@ static int menu_cbs_init_bind_deferred_push_compare_type(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cdrom_info_detail_list);
    }
+#ifdef HAVE_PATCH
+   else if (type == MENU_SETTING_ACTION_PATCHES)
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_patches_list);
+      return 0;
+   }
+   else if (type >= MENU_SETTINGS_PATCH_BEGIN
+         && type <= MENU_SETTINGS_PATCH_END)
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_patches_actions_list);
+      return 0;
+   }
+#endif
    else
       return -1;
 

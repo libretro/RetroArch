@@ -3365,6 +3365,10 @@ MSG_HASH(
    "collection"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PATCHES,
+   "patches"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RUN_MUSIC,
    "collection_music"
    )
@@ -3840,6 +3844,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
    "thumbnails_directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PATCHES_DIRECTORY,
+   "patches_directory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,

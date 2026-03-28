@@ -2415,9 +2415,13 @@ static void xmb_set_title(xmb_handle_t *xmb)
          {
             if (string_ends_with(label, "_list"))
             {
-               label_temp[strlen(label_temp) - STRLEN_CONST("_list")] = '\0';
-               label    = label_temp;
-               enum_idx = xmb_search_enum(label);
+               size_t label_len = strlcpy(label_temp, label, sizeof(label_temp));
+               if (label_len > strlen("_list"))
+               {
+				   label_temp[strlen(label_temp) - STRLEN_CONST("_list")] = '\0';
+				   label    = label_temp;
+				   enum_idx = xmb_search_enum(label);
+			   }
             }
             else if (string_starts_with(label, "dropdown_box_list_"))
             {
@@ -3926,6 +3930,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE:
       case MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME:
       case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
+      case MENU_ENUM_LABEL_PATCHES:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES:
