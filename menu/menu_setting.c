@@ -8279,6 +8279,112 @@ static size_t get_string_representation_split_joycon(
 }
 #endif
 
+/* ── CO-PILOT ACCESSIBILITY ─────────────────────────────────────────────
+ * Callbacks for the "Co-pilot Joypad" setting in Port N Controls.
+ * The value stored is the physical joypad index (0-based) of the assistant
+ * controller, or COPILOT_PORT_DISABLED (255) when the feature is off.
+ * Navigation: left/right cycle through real devices + the Disabled sentinel.
+ * Display:    shows the device name (same format as Device Index) or "Disabled".
+ */
+
+static size_t get_string_representation_copilot_port(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   settings_t *settings  = config_get_ptr();
+   size_t _len           = 0;
+   unsigned map;
+
+   if (!setting || !settings)
+      return 0;
+
+   map = settings->uints.input_copilot_port[setting->index_offset];
+
+   if (map == COPILOT_PORT_DISABLED)
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+
+   if (map < MAX_INPUT_DEVICES)
+   {
+      const char *device_name = input_config_get_device_display_name(map)
+            ? input_config_get_device_display_name(map)
+            : input_config_get_device_name(map);
+
+      _len = snprintf(s, len, "#%u: %s",
+            map + 1,
+            !string_is_empty(device_name)
+                  ? device_name
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+
+      if (!string_is_empty(device_name))
+      {
+         unsigned idx = input_config_get_device_name_index(map);
+         if (idx > 0)
+            _len += snprintf(s + _len, len - _len, " (%u)", idx);
+      }
+   }
+
+   if (string_is_empty(s))
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+   return _len;
+}
+
+static int setting_action_start_copilot_port(rarch_setting_t *setting)
+{
+   settings_t *settings = config_get_ptr();
+   if (!setting || !settings)
+      return -1;
+   /* Default: disabled */
+   configuration_set_uint(settings,
+         settings->uints.input_copilot_port[setting->index_offset],
+         COPILOT_PORT_DISABLED);
+   return 0;
+}
+
+static int setting_action_left_copilot_port(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned *p;
+
+   if (!setting || !settings)
+      return -1;
+
+   p = &settings->uints.input_copilot_port[setting->index_offset];
+
+   /* Cycle order: DISABLED → (MAX_INPUT_DEVICES-1) → ... → 0 → DISABLED */
+   if (*p == COPILOT_PORT_DISABLED)
+      *p = MAX_INPUT_DEVICES - 1;
+   else if (*p == 0)
+      *p = COPILOT_PORT_DISABLED;
+   else
+      (*p)--;
+
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   return 0;
+}
+
+static int setting_action_right_copilot_port(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned *p;
+
+   if (!setting || !settings)
+      return -1;
+
+   p = &settings->uints.input_copilot_port[setting->index_offset];
+
+   /* Cycle order: DISABLED → 0 → 1 → ... → (MAX_INPUT_DEVICES-1) → DISABLED */
+   if (*p == COPILOT_PORT_DISABLED)
+      *p = 0;
+   else if (*p >= MAX_INPUT_DEVICES - 1)
+      *p = COPILOT_PORT_DISABLED;
+   else
+      (*p)++;
+
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   return 0;
+}
+
 static size_t get_string_representation_input_device_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -9827,6 +9933,46 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_DEVICE_INDEX + user));
+
+      /* ── CO-PILOT ACCESSIBILITY ────────────────────────────────────────
+       * "Co-pilot Joypad": a second physical controller that sends its
+       * input to the same logical port as this player. Intended to help
+       * users with disabilities by letting a caregiver or companion share
+       * control of a single player character.
+       * Value: physical joypad index (0-based), or COPILOT_PORT_DISABLED. */
+      {
+         char copilot_key[64];
+         char copilot_label[64];
+         snprintf(copilot_key, sizeof(copilot_key),
+               "input_copilot_port_p%u", user + 1);
+         snprintf(copilot_label, sizeof(copilot_label),
+               "Co-pilot Joypad (Player %u)", user + 1);
+
+         CONFIG_UINT_ALT(
+               list, list_info,
+               &settings->uints.input_copilot_port[user],
+               copilot_key,
+               copilot_label,
+               user,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].index        = user + 1;
+         (*list)[list_info->index - 1].index_offset = user;
+         (*list)[list_info->index - 1].action_start = &setting_action_start_copilot_port;
+         (*list)[list_info->index - 1].action_left  = &setting_action_left_copilot_port;
+         (*list)[list_info->index - 1].action_right = &setting_action_right_copilot_port;
+         (*list)[list_info->index - 1].action_select= &setting_action_right_copilot_port;
+         (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &get_string_representation_copilot_port;
+         /* Range: 0 .. MAX_INPUT_DEVICES-1 for real pads;
+          * COPILOT_PORT_DISABLED (255) is handled by the custom callbacks. */
+         menu_settings_list_current_add_range(list, list_info,
+               0, COPILOT_PORT_DISABLED, 1.0, true, true);
+      }
 
 #ifdef HAVE_LIBNX
       snprintf(split_joycon, sizeof(split_joycon),

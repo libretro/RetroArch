@@ -2167,6 +2167,73 @@ static int16_t input_state_internal(
    }
    } /* kb_mapping_blocked scope */
 
+   /* ── CO-PILOT ACCESSIBILITY: merge assistant joypad input ──────────────
+    * If a co-pilot joypad is configured for this port, read its raw state
+    * and merge it into the result.
+    *   - Digital buttons : logical OR  (either pad can press a button)
+    *   - Analog axes     : keep the value with the largest magnitude
+    *                       (whichever pad is pushed further wins)
+    * The co-pilot uses its own joy_idx so its autoconf profile is respected.
+    * No remapping is applied to the co-pilot — it mirrors the main player. */
+   {
+      unsigned copilot_joy = settings->uints.input_copilot_port[port];
+      if (     copilot_joy != COPILOT_PORT_DISABLED
+            && copilot_joy < MAX_INPUT_DEVICES)
+      {
+         rarch_joypad_info_t cp_info;
+         cp_info.joy_idx        = copilot_joy;
+         cp_info.auto_binds     = input_autoconf_binds[copilot_joy];
+         cp_info.axis_threshold = settings->floats.input_axis_threshold;
+
+         if (device == RETRO_DEVICE_ANALOG)
+         {
+            int16_t cp_result = 0;
+            if (sec_joypad)
+               cp_result = input_joypad_analog_axis(
+                     ANALOG_DPAD_NONE,
+                     input_analog_deadzone,
+                     input_analog_sensitivity,
+                     sec_joypad,
+                     &cp_info,
+                     idx, id,
+                     (*input_st->libretro_input_binds[port]));
+
+            if (joypad && (cp_result == 0))
+               cp_result = input_joypad_analog_axis(
+                     ANALOG_DPAD_NONE,
+                     input_analog_deadzone,
+                     input_analog_sensitivity,
+                     joypad,
+                     &cp_info,
+                     idx, id,
+                     (*input_st->libretro_input_binds[port]));
+
+            if (cp_result != 0)
+            {
+               int16_t cp_abs     = (cp_result >= 0) ? cp_result : -cp_result;
+               int16_t result_abs = (result    >= 0) ? result    : -result;
+               if (cp_abs > result_abs)
+                  result = cp_result;
+            }
+         }
+         else
+         {
+            /* Digital: OR the full button mask from the co-pilot joypad */
+            int16_t cp_result = input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &cp_info,
+                  (*input_st->libretro_input_binds),
+                  (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                  port, device, idx,
+                  bitmask_enabled ? RETRO_DEVICE_ID_JOYPAD_MASK : id);
+            result |= cp_result;
+         }
+      }
+   }
+
    return result;
 }
 
@@ -7489,6 +7556,48 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             sec_joypad,
             &joypad_info,
             settings->bools.input_hotkey_device_merge);
+
+      /* ── CO-PILOT ACCESSIBILITY: hotkeys from the assistant joypad ─────
+       * The co-pilot may be a different controller model with a different
+       * autoconf profile (e.g. different button layout or vendor mapping).
+       * We therefore call input_keys_pressed() a second time using the
+       * co-pilot's own joy_idx so its autoconf binds are correctly resolved.
+       * Both calls write into the same current_bits bitmask, so either pad
+       * can trigger any hotkey. */
+      {
+         unsigned copilot_joy = settings->uints.input_copilot_port[port];
+         if (     copilot_joy != COPILOT_PORT_DISABLED
+               && copilot_joy < MAX_INPUT_DEVICES)
+         {
+            rarch_joypad_info_t cp_joypad_info;
+            const struct retro_keybind *cp_binds_norm =
+                  &input_config_binds[port][RARCH_ENABLE_HOTKEY];
+            const struct retro_keybind *cp_binds_auto =
+                  &input_autoconf_binds[copilot_joy][RARCH_ENABLE_HOTKEY];
+
+            cp_joypad_info.joy_idx        = copilot_joy;
+            cp_joypad_info.auto_binds     = input_autoconf_binds[copilot_joy];
+            cp_joypad_info.axis_threshold = settings->floats.input_axis_threshold;
+
+            input_keys_pressed(
+                  port,
+                  hotkey_port,
+#ifdef HAVE_MENU
+                  menu_is_alive,
+#else
+                  false,
+#endif
+                  block_delay,
+                  current_bits,
+                  (const retro_keybind_set *)input_config_binds,
+                  cp_binds_norm,
+                  cp_binds_auto,
+                  joypad,
+                  sec_joypad,
+                  &cp_joypad_info,
+                  settings->bools.input_hotkey_device_merge);
+         }
+      }
 
 #ifdef HAVE_MENU
       if (menu_is_alive)
