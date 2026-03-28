@@ -1139,6 +1139,26 @@ MSG_HASH(
    "Mật khẩu tài khoản lưu trữ đám mây."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID khóa truy cập"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID khóa truy cập của bạn cho tài khoản lưu trữ đám mây."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Khóa truy cập bí mật"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Khóa truy cập bí mật của bạn cho tài khoản lưu trữ đám mây."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "URL điểm cuối S3 của bạn cho lưu trữ đám mây."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Ghi nhật ký"
    )
