@@ -597,10 +597,24 @@ error:
    return -1;
 }
 
-#ifdef _MSC_VER
+#if defined(__SSE2__)
+
+#if _MSC_VER
 #define DJB2_ALIGN(x) __declspec(align(x))
 #else
 #define DJB2_ALIGN(x) __attribute__((aligned(x)))
+#endif
+
+static const uint32_t DJB2_W8[8] DJB2_ALIGN(16) = {
+   0xEC41D4E1, /* 33^7 */
+   0x4CFA3CC1, /* 33^6 */
+   0x025528A1, /* 33^5 */
+   0x00121881, /* 33^4 */
+   0x00008C61, /* 33^3 */
+   0x00000441, /* 33^2 */
+   0x00000021, /* 33^1 */
+   0x00000001, /* 33^0 */
+};
 #endif
 
 uint32_t djb2_calculate(const char *str)
@@ -608,16 +622,6 @@ uint32_t djb2_calculate(const char *str)
    uint32_t h = 5381;
    const unsigned char *p = (const unsigned char*)str;
 #if defined(__SSE2__)
-   static const uint32_t DJB2_W8[8] DJB2_ALIGN(16) = {
-       0xEC41D4E1, /* 33^7 */
-       0x4CFA3CC1, /* 33^6 */
-       0x025528A1, /* 33^5 */
-       0x00121881, /* 33^4 */
-       0x00008C61, /* 33^3 */
-       0x00000441, /* 33^2 */
-       0x00000021, /* 33^1 */
-       0x00000001, /* 33^0 */
-   };
    __m128i w_lo = _mm_load_si128((const __m128i *)&DJB2_W8[0]);
    __m128i w_hi = _mm_load_si128((const __m128i *)&DJB2_W8[4]);
    size_t len   = strlen((const char*)p);
