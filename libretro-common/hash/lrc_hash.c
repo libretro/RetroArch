@@ -597,10 +597,16 @@ error:
    return -1;
 }
 
+#ifdef _MSC_VER
+#define DJB2_ALIGN(x) __declspec(
+#else
+#define DJB2_ALIGN(x) __attribute__((aligned(x)))
+#endif
+
 uint32_t djb2_calculate(const char *str)
 {
 #if defined(__SSE2__)
-   static const uint32_t DJB2_W8[8] __attribute__((aligned(16))) = {
+   static const uint32_t DJB2_W8[8] DJB2_ALIGN(16) = {
        0xEC41D4E1, /* 33^7 */
        0x4CFA3CC1, /* 33^6 */
        0x025528A1, /* 33^5 */
