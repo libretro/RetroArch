@@ -605,6 +605,8 @@ error:
 
 uint32_t djb2_calculate(const char *str)
 {
+   uint32_t h = 5381;
+   const unsigned char *p = (const unsigned char*)str;
 #if defined(__SSE2__)
    static const uint32_t DJB2_W8[8] DJB2_ALIGN(16) = {
        0xEC41D4E1, /* 33^7 */
@@ -616,8 +618,6 @@ uint32_t djb2_calculate(const char *str)
        0x00000021, /* 33^1 */
        0x00000001, /* 33^0 */
    };
-   const unsigned char *p = (const unsigned char *)str;
-   uint32_t h   = 5381;
    __m128i w_lo = _mm_load_si128((const __m128i *)&DJB2_W8[0]);
    __m128i w_hi = _mm_load_si128((const __m128i *)&DJB2_W8[4]);
    size_t len   = strlen((const char*)p);
@@ -652,9 +652,6 @@ uint32_t djb2_calculate(const char *str)
       h    = h * UINT32_C(0x747C7101) + sum;
       p   += 8;
     }
-#else
-    const unsigned char *p = (const unsigned char *)str;
-    uint32_t h = 5381;
 #endif
     while (*p)
         h = (h << 5) + h + *p++;
