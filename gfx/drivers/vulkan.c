@@ -4004,6 +4004,9 @@ static void *vulkan_init(const video_info_t *video,
 
 error:
    vulkan_free(vk);
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+   video_driver_force_fallback("gl");
+#endif
    return NULL;
 }
 
