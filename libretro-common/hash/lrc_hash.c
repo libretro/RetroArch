@@ -598,7 +598,7 @@ error:
 }
 
 #ifdef _MSC_VER
-#define DJB2_ALIGN(x) __declspec(
+#define DJB2_ALIGN(x) __declspec(align(x))
 #else
 #define DJB2_ALIGN(x) __attribute__((aligned(x)))
 #endif
