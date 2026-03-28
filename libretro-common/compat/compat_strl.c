@@ -27,7 +27,7 @@
 
 /* Implementation of strlcpy()/strlcat() based on OpenBSD. */
 
-#ifndef __MACH__
+#if !(defined(__MACH__) && defined(__APPLE__))
 size_t strlcpy(char *s, const char *source, size_t len)
 {
    size_t _len  = len;

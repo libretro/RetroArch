@@ -67,7 +67,7 @@
 #include <ps2sdkapi.h>
 #endif
 
-#ifdef __MACH__
+#if defined(__MACH__) && defined(__APPLE__)
 #include <mach/clock.h>
 #include <mach/mach.h>
 #endif
@@ -719,7 +719,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 #else
    int64_t seconds, remainder;
    struct timespec now;
-#ifdef __MACH__
+#if defined(__MACH__) && defined(__APPLE__)
    /* OSX doesn't have clock_gettime. */
    clock_serv_t cclock;
    mach_timespec_t mts;
