@@ -34,7 +34,8 @@
 
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 
-#define WINDOW_TITLE "RetroArch"
+#define DEFAULT_WINDOW_TITLE "RetroArch"
+#define MAIN_WINDOW_TAG "main window"
 
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
@@ -318,10 +319,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    if (wl->wl_touch)
       wl_touch_destroy(wl->wl_touch);
 
-   if (wl->cursor.theme)
-      wl_cursor_theme_destroy(wl->cursor.theme);
    if (wl->cursor.surface)
       wl_surface_destroy(wl->cursor.surface);
+   if (wl->cursor.theme)
+      wl_cursor_theme_destroy(wl->cursor.theme);
 
    if (wl->viewport)
       wp_viewport_destroy(wl->viewport);
@@ -331,12 +332,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
    if (wl->deco)
       zxdg_toplevel_decoration_v1_destroy(wl->deco);
-   if (wl->xdg_toplevel)
-      xdg_toplevel_destroy(wl->xdg_toplevel);
-   if (wl->xdg_toplevel_icon_manager)
-      xdg_toplevel_icon_manager_v1_destroy(wl->xdg_toplevel_icon_manager);
    if (wl->xdg_toplevel_icon)
       xdg_toplevel_icon_v1_destroy(wl->xdg_toplevel_icon);
+   if (wl->xdg_toplevel)
+      xdg_toplevel_destroy(wl->xdg_toplevel);
    if (wl->xdg_surface)
       xdg_surface_destroy(wl->xdg_surface);
    if (wl->surface)
@@ -344,6 +343,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 
    if (wl->deco_manager)
       zxdg_decoration_manager_v1_destroy(wl->deco_manager);
+   if (wl->xdg_toplevel_icon_manager)
+      xdg_toplevel_icon_manager_v1_destroy(wl->xdg_toplevel_icon_manager);
+   if (wl->xdg_toplevel_tag_manager)
+      xdg_toplevel_tag_manager_v1_destroy(wl->xdg_toplevel_tag_manager);
    if (wl->idle_inhibit_manager)
       zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
    else
@@ -426,6 +429,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->xdg_toplevel              = NULL;
    wl->xdg_toplevel_icon         = NULL;
    wl->xdg_toplevel_icon_manager = NULL;
+   wl->xdg_toplevel_tag_manager  = NULL;
    wl->deco                      = NULL;
    wl->idle_inhibitor            = NULL;
    wl->wl_touch                  = NULL;
@@ -871,6 +875,11 @@ bool gfx_ctx_wl_init_common(
       RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", xdg_toplevel_icon_manager_v1_interface.name);
    }
 
+   if (!wl->xdg_toplevel_tag_manager)
+   {
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", xdg_toplevel_tag_manager_v1_interface.name);
+   }
+
    wl->surface = wl_compositor_create_surface(wl->compositor);
    if (wl->viewporter)
       wl->viewport = wp_viewporter_get_viewport(wl->viewporter, wl->surface);
@@ -902,14 +911,23 @@ bool gfx_ctx_wl_init_common(
          return false;
       }
 
+      struct xdg_toplevel *xdg_toplevel = wl->libdecor_frame_get_xdg_toplevel(wl->libdecor_frame);
+
       if (wl->xdg_toplevel_icon_manager)
       {
-         struct xdg_toplevel *xdg_toplevel = wl->libdecor_frame_get_xdg_toplevel(wl->libdecor_frame);
          wl_create_toplevel_icon(wl, xdg_toplevel);
       }
 
+      if (wl->xdg_toplevel_tag_manager)
+      {
+         xdg_toplevel_tag_manager_v1_set_toplevel_tag(
+            wl->xdg_toplevel_tag_manager, xdg_toplevel, MAIN_WINDOW_TAG);
+         xdg_toplevel_tag_manager_v1_set_toplevel_description(
+            wl->xdg_toplevel_tag_manager, xdg_toplevel, DEFAULT_WINDOW_TITLE " " MAIN_WINDOW_TAG);
+      }
+
       wl->libdecor_frame_set_app_id(wl->libdecor_frame, WAYLAND_APP_ID);
-      wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
+      wl->libdecor_frame_set_title(wl->libdecor_frame, DEFAULT_WINDOW_TITLE);
       wl->libdecor_frame_map(wl->libdecor_frame);
 
       /* Waiting for libdecor to be configured before starting to draw */
@@ -935,7 +953,7 @@ bool gfx_ctx_wl_init_common(
       xdg_toplevel_add_listener(wl->xdg_toplevel, &toplevel_listener->xdg_toplevel_listener, wl);
 
       xdg_toplevel_set_app_id(wl->xdg_toplevel, WAYLAND_APP_ID);
-      xdg_toplevel_set_title(wl->xdg_toplevel, WINDOW_TITLE);
+      xdg_toplevel_set_title(wl->xdg_toplevel, DEFAULT_WINDOW_TITLE);
 
       if (wl->deco_manager)
          wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
@@ -943,6 +961,14 @@ bool gfx_ctx_wl_init_common(
 
       if (wl->xdg_toplevel_icon_manager)
          wl_create_toplevel_icon(wl, wl->xdg_toplevel);
+
+      if (wl->xdg_toplevel_tag_manager)
+      {
+         xdg_toplevel_tag_manager_v1_set_toplevel_tag(
+            wl->xdg_toplevel_tag_manager, wl->xdg_toplevel, MAIN_WINDOW_TAG);
+         xdg_toplevel_tag_manager_v1_set_toplevel_description(
+            wl->xdg_toplevel_tag_manager, wl->xdg_toplevel, DEFAULT_WINDOW_TITLE " " MAIN_WINDOW_TAG);
+      }
 
       /* Waiting for xdg_toplevel to be configured before starting to draw */
       wl_surface_commit(wl->surface);
