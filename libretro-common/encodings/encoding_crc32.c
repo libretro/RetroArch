@@ -148,8 +148,8 @@ static void crc32_slice8_init(void)
     * applied to the previous slice's entry. */
    for (i = 0; i < 256; i++)
    {
-      uint32_t c = crc32_slice8[0][i];
       unsigned s;
+      uint32_t c = crc32_slice8[0][i];
       for (s = 1; s < 8; s++)
       {
          c = crc32_slice8[0][c & 0xff] ^ (c >> 8);
@@ -170,20 +170,18 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
    /* Process 8 bytes at a time */
    while (len >= 8)
    {
-      uint32_t lo, hi;
-
       /* Read two 32-bit words (little-endian assumed on x86) */
-      lo  = *(const uint32_t *)(data + 0) ^ crc;
-      hi  = *(const uint32_t *)(data + 4);
+      uint32_t lo  = *(const uint32_t *)(data + 0) ^ crc;
+      uint32_t hi  = *(const uint32_t *)(data + 4);
 
       crc = crc32_slice8[7][ lo        & 0xff]
           ^ crc32_slice8[6][(lo >>  8) & 0xff]
           ^ crc32_slice8[5][(lo >> 16) & 0xff]
-          ^ crc32_slice8[4][(lo >> 24)        ]
+          ^ crc32_slice8[4][(lo >> 24)       ]
           ^ crc32_slice8[3][ hi        & 0xff]
           ^ crc32_slice8[2][(hi >>  8) & 0xff]
           ^ crc32_slice8[1][(hi >> 16) & 0xff]
-          ^ crc32_slice8[0][(hi >> 24)        ];
+          ^ crc32_slice8[0][(hi >> 24)       ];
 
       data += 8;
       len  -= 8;
