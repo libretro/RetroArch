@@ -1,17 +1,18 @@
-diff --git a/pkg/android/phoenix/AndroidManifest.xml b/pkg/android/phoenix/AndroidManifest.xml
-index ce2114c..12d8fbb 100644
---- a/pkg/android/phoenix/AndroidManifest.xml
-+++ b/pkg/android/phoenix/AndroidManifest.xml
-@@ -24,6 +24,7 @@
-         android:hasCode="true"
-         android:isGame="true"
-         android:banner="@drawable/banner"
-+        android:debuggable="true"
-         android:extractNativeLibs="true"
-         android:requestLegacyExternalStorage="true"
-         tools:ignore="UnusedAttribute">
-diff --git a/pkg/android/phoenix/build.xml b/pkg/android/phoenix/build.xml
-index 9698a04..6b2c101 100644
+diff --git a/pkg/android/phoenix-common/jni/Android.mk b/pkg/android/phoenix-common/jni/Android.mk
+index f8a9dbd7fe..aa5bae6abd 100644
+--- a/pkg/android/phoenix-common/jni/Android.mk
++++ b/pkg/android/phoenix-common/jni/Android.mk
+@@ -78,6 +78,8 @@ ifeq ($(HAVE_LOGGER), 1)
+ endif
+ LOGGER_LDLIBS := -llog
+ 
++APP_OPTIM := debug
++
+ ifeq ($(GLES),3)
+    GLES_LIB := -lGLESv3
+    DEFINES += -DHAVE_OPENGLES3
+diff --git a/pkg/android/phoenix-legacy/build.xml b/pkg/android/phoenix-legacy/build.xml
+index 9698a04abf..6b2c101922 100644
 --- a/pkg/android/phoenix-legacy/build.xml
 +++ b/pkg/android/phoenix-legacy/build.xml
 @@ -96,7 +96,7 @@
@@ -23,13 +24,55 @@ index 9698a04..6b2c101 100644
            </else>
         </if>
         <exec executable="${ndk.dir}/${ndk.cmd}" failonerror="true">
-diff --git a/pkg/android/phoenix/jni/Application.mk b/pkg/android/phoenix/jni/Application.mk
-index b179dbf..84ade89 100644
---- a/pkg/android/phoenix-common/jni/Application.mk
-+++ b/pkg/android/phoenix-common/jni/Application.mk
-@@ -1,3 +1,5 @@
-+APP_OPTIM := debug
-+
- ifeq ($(GLES),3)
-    ifndef NDK_GL_HEADER_VER
-       APP_PLATFORM := android-18
+diff --git a/pkg/android/phoenix/AndroidManifest.xml b/pkg/android/phoenix/AndroidManifest.xml
+index 5e6eda15c3..0aa2e420f7 100644
+--- a/pkg/android/phoenix/AndroidManifest.xml
++++ b/pkg/android/phoenix/AndroidManifest.xml
+@@ -24,6 +24,7 @@
+         android:hasCode="true"
+         android:appCategory="game"
+         android:banner="@drawable/banner"
++        android:debuggable="true"
+         android:extractNativeLibs="true"
+         android:requestLegacyExternalStorage="true"
+         tools:ignore="UnusedAttribute">
+diff --git a/retroarch-android-debug.diff b/retroarch-android-debug.diff
+index 340d10e1b7..e69de29bb2 100644
+--- a/retroarch-android-debug.diff
++++ b/retroarch-android-debug.diff
+@@ -1,35 +0,0 @@
+-diff --git a/pkg/android/phoenix/AndroidManifest.xml b/pkg/android/phoenix/AndroidManifest.xml
+-index ce2114c..12d8fbb 100644
+---- a/pkg/android/phoenix/AndroidManifest.xml
+-+++ b/pkg/android/phoenix/AndroidManifest.xml
+-@@ -24,6 +24,7 @@
+-         android:hasCode="true"
+-         android:isGame="true"
+-         android:banner="@drawable/banner"
+-+        android:debuggable="true"
+-         android:extractNativeLibs="true"
+-         android:requestLegacyExternalStorage="true"
+-         tools:ignore="UnusedAttribute">
+-diff --git a/pkg/android/phoenix/build.xml b/pkg/android/phoenix/build.xml
+-index 9698a04..6b2c101 100644
+---- a/pkg/android/phoenix-legacy/build.xml
+-+++ b/pkg/android/phoenix-legacy/build.xml
+-@@ -96,7 +96,7 @@
+-               <replaceregexp
+-                       file="AndroidManifest.xml"
+-                       match="(android:debuggable=&#34;).*(&#34;)"
+--                      replace="\1false\2"/>
+-+                      replace="\1true\2"/>
+-           </else>
+-        </if>
+-        <exec executable="${ndk.dir}/${ndk.cmd}" failonerror="true">
+-diff --git a/pkg/android/phoenix/jni/Application.mk b/pkg/android/phoenix/jni/Application.mk
+-index b179dbf..84ade89 100644
+---- a/pkg/android/phoenix-common/jni/Application.mk
+-+++ b/pkg/android/phoenix-common/jni/Application.mk
+-@@ -1,3 +1,5 @@
+-+APP_OPTIM := debug
+-+
+- ifeq ($(GLES),3)
+-    ifndef NDK_GL_HEADER_VER
+-       APP_PLATFORM := android-18

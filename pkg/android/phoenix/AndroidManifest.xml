@@ -22,7 +22,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:hasCode="true"
-        android:isGame="true"
+        android:appCategory="game"
         android:banner="@drawable/banner"
         android:extractNativeLibs="true"
         android:requestLegacyExternalStorage="true"
