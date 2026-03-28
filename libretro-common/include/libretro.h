@@ -4230,6 +4230,9 @@ struct retro_log_callback
 /** Indicates CPU support for the ASIMD instruction set. */
 #define RETRO_SIMD_ASIMD    (1 << 21)
 
+/** Indicates CPU support for the AVX512 instruction set. */
+#define RETRO_SIMD_AVX512   (1 << 22)
+
 /** @} */
 
 /**
