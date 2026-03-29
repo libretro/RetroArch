@@ -456,20 +456,19 @@ static void vita2d_font_render_message(
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / vita->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = (delim) ? (delim - msg) : strlen(msg);
-
+      size_t msg_len;
+      const char *delim = msg;
+      while (*delim && *delim != '\n')
+         delim++;
+      msg_len = delim - msg;
       /* Draw the line */
       vita2d_font_render_line(vita, font, glyph_q, msg, msg_len,
             scale, color, pos_x, pos_y - (float)lines * line_height,
             width, height, x, text_align);
-
-      if (!delim)
+      if (!*delim)
          break;
-
       msg += msg_len + 1;
       lines++;
    }

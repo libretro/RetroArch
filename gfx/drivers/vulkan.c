@@ -1790,15 +1790,13 @@ static void vulkan_font_render_message(vk_t *vk,
    float inv_win_height                   = 1.0f / vk->vp.height;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / vk->vp.height;
-
    for (;;)
    {
-      size_t _msg_len   = strlen(msg);
-      const char *delim = (const char*)memchr(msg, '\n', _msg_len + 1);
-      size_t msg_len    = delim ? (size_t)(delim - msg) : _msg_len;
-
+      const char *delim = msg;
+      while (*delim != '\n' && *delim != '\0')
+         delim++;
       /* Draw the line */
-      vulkan_font_render_line(vk, font, glyph_q, msg, msg_len,
+      vulkan_font_render_line(vk, font, glyph_q, msg, (size_t)(delim - msg),
             scale, color,
             pos_x,
             pos_y - (float)lines * line_height,
@@ -1808,11 +1806,9 @@ static void vulkan_font_render_message(vk_t *vk,
             inv_win_width,
             inv_win_height,
             text_align);
-
-      if (!delim)
+      if (*delim == '\0')
          break;
-
-      msg += msg_len + 1;
+      msg = delim + 1;
       lines++;
    }
 }

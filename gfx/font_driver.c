@@ -666,11 +666,11 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
 {
    const unsigned char *src        = (const unsigned char*)msg;
    bool                 reverse    = false;
-   size_t              msg_size    = (strlen(msg) * 2) + 1;
+   size_t                  _len    = (strlen(msg) * 2) + 1;
    /* Fallback to heap allocated buffer if the buffer is too small */
    /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
-   unsigned char*       dst_buffer = (buffer_size < msg_size)
-                                   ? (unsigned char*)malloc(msg_size)
+   unsigned char*       dst_buffer = (buffer_size < _len)
+                                   ? (unsigned char*)malloc(_len)
                                    : buffer;
    unsigned char *dst              = (unsigned char*)dst_buffer;
 

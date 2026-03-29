@@ -252,27 +252,27 @@ static void switch_font_render_message(
       unsigned text_align)
 {
    float line_height;
+   const char *start                      = msg;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = scale / line_metrics->height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
-
-      /* Draw the line */
-      if (msg_len <= AVG_GLPYH_LIMIT)
-         switch_font_render_line(sw, font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               text_align);
-
-      if (!delim)
-         break;
-
-      msg += msg_len + 1;
-      lines++;
+      if (*msg == '\n' || *msg == '\0')
+      {
+         size_t msg_len = (size_t)(msg - start);
+         if (msg_len <= AVG_GLPYH_LIMIT)
+            switch_font_render_line(sw, font, start, msg_len,
+                  scale, color, pos_x, pos_y - (float)lines * line_height,
+                  text_align);
+         if (*msg == '\0')
+            break;
+         start = ++msg;
+         lines++;
+      }
+      else
+         msg++;
    }
 }
 

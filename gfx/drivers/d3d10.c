@@ -1055,12 +1055,12 @@ static void d3d10_font_render_message(
    int x                                  = roundf(pos_x * width);
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)((delim - msg)) : strlen(msg);
-
+      const char *end = msg;
+      while (*end && *end != '\n')
+         end++;
+      size_t msg_len = (size_t)(end - msg);
       /* Draw the line */
       if (msg_len <= (unsigned)d3d10->sprites.capacity)
          d3d10_font_render_line(d3d10,
@@ -1069,11 +1069,9 @@ static void d3d10_font_render_message(
                pos_y - (float)lines * line_height,
                x,
                width, height, text_align);
-
-      if (!delim)
+      if (*end != '\n')
          break;
-
-      msg += msg_len + 1;
+      msg = end + 1;
       lines++;
    }
 }

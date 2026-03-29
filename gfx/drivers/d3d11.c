@@ -1194,15 +1194,15 @@ static void d3d11_font_render_message(
    int lines                              = 0;
    int x                                  = roundf(pos_x * width);
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
-
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
-
+      const char* delim = msg;
+      size_t msg_len;
+      while (*delim && *delim != '\n')
+         delim++;
+      msg_len = (size_t)(delim - msg);
       /* Draw the line */
       if (msg_len <= (unsigned)d3d11->sprites.capacity)
          d3d11_font_render_line(d3d11,
@@ -1210,11 +1210,9 @@ static void d3d11_font_render_message(
                pos_y - (float)lines * line_height,
                x,
                width, height, text_align);
-
-      if (!delim)
+      if (!*delim)
          break;
-
-      msg += msg_len + 1;
+      msg = delim + 1;
       lines++;
    }
 }

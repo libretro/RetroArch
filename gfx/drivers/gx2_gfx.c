@@ -857,15 +857,14 @@ static void gx2_font_render_message(
    int x                                  = roundf(pos_x * width);
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / wiiu->vp.height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
-
+      size_t msg_len = 0;
+      while (msg[msg_len] && msg[msg_len] != '\n')
+         msg_len++;
       /* Draw the line */
       if ((wiiu->vertex_cache.current + (msg_len * 4)
-		      <= wiiu->vertex_cache.size))
+              <= wiiu->vertex_cache.size))
          gx2_font_render_line(wiiu,
                font,
                glyph_q,
@@ -877,10 +876,8 @@ static void gx2_font_render_message(
                height,
                x,
                text_align);
-
-      if (!delim)
+      if (!msg[msg_len])
          break;
-
       msg += msg_len + 1;
       lines++;
    }

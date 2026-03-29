@@ -832,12 +832,12 @@ static void rsx_font_render_message(rsx_t *rsx,
    float inv_win_height                   = 1.0f / rsx->vp.height;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / rsx->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
-
+      const char *delim = msg;
+      while (*delim != '\n' && *delim != '\0')
+         delim++;
+      size_t msg_len = delim - msg;
       /* Draw the line */
       rsx_font_render_line(rsx, font, glyph_q,
             msg, msg_len, scale, color, pos_x,
@@ -848,11 +848,9 @@ static void rsx_font_render_message(rsx_t *rsx,
             inv_win_width,
             inv_win_height,
             text_align);
-
-      if (!delim)
+      if (*delim == '\0')
          break;
-
-      msg += msg_len + 1;
+      msg = delim + 1;
       lines++;
    }
 }

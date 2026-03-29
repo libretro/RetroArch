@@ -923,21 +923,18 @@ static void gl2_raster_font_render_message(gl2_t *gl,
    int lines                              = 0;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / gl->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
-
+      const char *end = msg;
+      while (*end && *end != '\n')
+         end++;
       /* Draw the line */
       gl2_raster_font_render_line(gl, font,
-            msg, msg_len, scale, color, pos_x,
+            msg, (size_t)(end - msg), scale, color, pos_x,
             pos_y - (float)lines*line_height, text_align);
-
-      if (!delim)
+      if (!*end)
          break;
-
-      msg += msg_len + 1;
+      msg = end + 1;
       lines++;
    }
 }

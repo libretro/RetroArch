@@ -1119,12 +1119,13 @@ static void gl3_raster_font_render_message(
    const struct font_glyph* glyph_q = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / gl->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
-
+      const char *delim = msg;
+      size_t msg_len;
+      while (*delim != '\n' && *delim != '\0')
+         delim++;
+      msg_len = delim - msg;
       /* Draw the line */
       gl3_raster_font_render_line(gl, font,
             glyph_q,
@@ -1137,10 +1138,8 @@ static void gl3_raster_font_render_message(
             inv_win_width,
             inv_win_height,
             text_align);
-
-      if (!delim)
+      if (*delim == '\0')
          break;
-
       msg += msg_len + 1;
       lines++;
    }

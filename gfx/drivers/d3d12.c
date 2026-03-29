@@ -1506,12 +1506,13 @@ static void d3d12_font_render_message(
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
-
+      const char *p;
+      size_t msg_len;
+      for (p = msg; *p && *p != '\n'; p++)
+         ;
+      msg_len = (size_t)(p - msg);
       /* Draw the line */
       if (msg_len <= (size_t)d3d12->sprites.capacity)
          d3d12_font_render_line(d3d12, cmd,
@@ -1519,10 +1520,8 @@ static void d3d12_font_render_message(
                pos_y - (float)lines * line_height,
                x,
                width, height, text_align);
-
-      if (!delim)
+      if (!*p)
          break;
-
       msg += msg_len + 1;
       lines++;
    }
