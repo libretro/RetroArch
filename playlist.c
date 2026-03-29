@@ -2760,9 +2760,10 @@ static bool playlist_read_file(playlist_t *playlist)
                   char *delim = strchr(thumbnail_mode_str, '|');
                   if (delim)
                   {
+                     unsigned thumbnail_mode;
                      *delim = '\0';
                      /* Right thumbnail mode */
-                     unsigned thumbnail_mode = string_to_unsigned(thumbnail_mode_str);
+                     thumbnail_mode = string_to_unsigned(thumbnail_mode_str);
                      if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
                         playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
                      /* Left thumbnail mode */
