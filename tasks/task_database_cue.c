@@ -590,14 +590,12 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       RARCH_LOG("[Scanner] Scrubbing: \"%s\".\n", filename);
 #endif
 
-   /** convert raw Sega - Mega-CD - Sega CD serial to redump serial. **/
+   /** Convert raw Sega - Mega-CD - Sega CD serial to redump serial. **/
    /** process raw serial to a pre serial without spaces **/
-   string_remove_all_whitespace(pre_game_id, raw_game_id);
-
-   /** Dissect this pre serial into parts **/
-   _len               = strlen(pre_game_id);
+   _len = string_remove_all_whitespace(pre_game_id, raw_game_id);
    /** Force minimum serial length since it is assumed **/
-   _len               = (_len < 2) ? 2 : _len;
+   if (_len < 2)
+      _len = 2;
    strlcpy(check_suffix_50, &pre_game_id[_len - 2], sizeof(check_suffix_50));
    check_suffix_50[2] = '\0';
 
