@@ -116,17 +116,14 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_DYING                     = (1 << 4),
    /* Has the timer expired ? if so, should be set to dying */
    DISPWIDG_FLAG_EXPIRED                   = (1 << 5),
-   /* Unfold animation */
-   DISPWIDG_FLAG_UNFOLDED                  = (1 << 6),
-   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7),
    /* Color style */
-   DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
-   DISPWIDG_FLAG_NEGATIVE                  = (1 << 9),
-   DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 10),
-   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11),
-   DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 12),
+   DISPWIDG_FLAG_POSITIVE                  = (1 << 6),
+   DISPWIDG_FLAG_NEGATIVE                  = (1 << 7),
+   DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 8),
+   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 9),
+   DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 10),
    /* Size */
-   DISPWIDG_FLAG_SMALL                     = (1 << 13)
+   DISPWIDG_FLAG_SMALL                     = (1 << 11)
 };
 
 /* There can only be one message animation at a time to
@@ -230,7 +227,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_spacing;
    unsigned msg_queue_rect_start_x;
    unsigned msg_queue_internal_icon_size;
-   unsigned msg_queue_internal_icon_offset;
    unsigned msg_queue_icon_size_x;
    unsigned msg_queue_icon_size_y;
    unsigned msg_queue_icon_offset_y;

@@ -134,6 +134,10 @@ ARCHIVE FILE
 #include "../libretro-common/file/archive_file_7z.c"
 #endif
 
+#ifdef HAVE_ZSTD
+#include "../libretro-common/file/archive_file_zstd.c"
+#endif
+
 /*============================================================
 COMPRESSION
 ============================================================ */
@@ -1720,6 +1724,9 @@ CLOUD SYNC
 #endif
 #ifdef HAVE_SMBCLIENT
 #include "../network/cloud_sync/smb.c"
+#endif
+#ifdef HAVE_S3
+#include "../network/cloud_sync/s3.c"
 #endif
 #endif
 

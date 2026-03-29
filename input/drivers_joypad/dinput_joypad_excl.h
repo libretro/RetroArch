@@ -30,57 +30,22 @@ static void dinput_joypad_poll(void)
    int i;
    for (i = 0; i < MAX_USERS; i++)
    {
-      int j;
       HRESULT ret;
-      struct dinput_joypad_data *pad  = &g_pads[i];
-      if (!pad || !pad->joypad)
+      struct dinput_joypad_data *pad = &g_pads[i];
+
+      if (!pad->joypad)
          continue;
 
-      pad->joy_state.lX               = 0;
-      pad->joy_state.lY               = 0;
-      pad->joy_state.lRx              = 0;
-      pad->joy_state.lRy              = 0;
-      pad->joy_state.lRz              = 0;
-      pad->joy_state.rglSlider[0]     = 0;
-      pad->joy_state.rglSlider[1]     = 0;
-      pad->joy_state.rgdwPOV[0]       = 0;
-      pad->joy_state.rgdwPOV[1]       = 0;
-      pad->joy_state.rgdwPOV[2]       = 0;
-      pad->joy_state.rgdwPOV[3]       = 0;
-      for (j = 0; j < 128; j++)
-         pad->joy_state.rgbButtons[j] = 0;
+      /* Zero the entire state structure before polling.
+       * This also correctly zeroes lZ, which the previous
+       * field-by-field implementation accidentally omitted. */
+      ZeroMemory(&pad->joy_state, sizeof(pad->joy_state));
 
-      pad->joy_state.lVX              = 0;
-      pad->joy_state.lVY              = 0;
-      pad->joy_state.lVZ              = 0;
-      pad->joy_state.lVRx             = 0;
-      pad->joy_state.lVRy             = 0;
-      pad->joy_state.lVRz             = 0;
-      pad->joy_state.rglVSlider[0]    = 0;
-      pad->joy_state.rglVSlider[1]    = 0;
-      pad->joy_state.lAX              = 0;
-      pad->joy_state.lAY              = 0;
-      pad->joy_state.lAZ              = 0;
-      pad->joy_state.lARx             = 0;
-      pad->joy_state.lARy             = 0;
-      pad->joy_state.lARz             = 0;
-      pad->joy_state.rglASlider[0]    = 0;
-      pad->joy_state.rglASlider[1]    = 0;
-      pad->joy_state.lFX              = 0;
-      pad->joy_state.lFY              = 0;
-      pad->joy_state.lFZ              = 0;
-      pad->joy_state.lFRx             = 0;
-      pad->joy_state.lFRy             = 0;
-      pad->joy_state.lFRz             = 0;
-      pad->joy_state.rglFSlider[0]    = 0;
-      pad->joy_state.rglFSlider[1]    = 0;
-
-      /* If this fails, something *really* bad must have happened. */
+      /* If Poll() fails, attempt to re-acquire and poll again.
+       * If that also fails, skip this pad for this frame. */
       if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
-         if (
-                  FAILED(IDirectInputDevice8_Acquire(pad->joypad))
-               || FAILED(IDirectInputDevice8_Poll(pad->joypad))
-            )
+         if (  FAILED(IDirectInputDevice8_Acquire(pad->joypad))
+            || FAILED(IDirectInputDevice8_Poll(pad->joypad)))
             continue;
 
       ret = IDirectInputDevice8_GetDeviceState(pad->joypad,
@@ -91,9 +56,52 @@ static void dinput_joypad_poll(void)
    }
 }
 
+/* ---------------------------------------------------------------------------
+ * dinput_joypad_tchar_to_str
+ *
+ * Helper: safely converts a TCHAR string to a heap-allocated char* that
+ * is valid in both ANSI and Unicode builds.
+ *
+ * Under ANSI builds (TCHAR == char) this is equivalent to strdup().
+ * Under Unicode builds (TCHAR == wchar_t) the original code cast the
+ * wide pointer directly to char*, silently producing garbage.  We use
+ * WideCharToMultiByte() instead.
+ *
+ * Returns NULL on allocation failure; the caller must free() the result.
+ * --------------------------------------------------------------------------*/
+static char *dinput_joypad_tchar_to_str(const TCHAR *src)
+{
+#ifdef UNICODE
+   int   len;
+   char *out;
+
+   if (!src)
+      return NULL;
+
+   /* Query required buffer size (includes NUL terminator). */
+   len = WideCharToMultiByte(CP_UTF8, 0, src, -1, NULL, 0, NULL, NULL);
+   if (len <= 0)
+      return NULL;
+
+   out = (char*)malloc((size_t)len);
+   if (!out)
+      return NULL;
+
+   WideCharToMultiByte(CP_UTF8, 0, src, -1, out, len, NULL, NULL);
+   return out;
+#else
+   if (!src)
+      return NULL;
+   return strdup(src);
+#endif
+}
+
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
    LPDIRECTINPUTDEVICE8 *pad = NULL;
+
+   (void)p; /* unused */
+
    if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
 
@@ -108,32 +116,19 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
       return DIENUM_CONTINUE;
 
+   /* Bug fixed: use the safe TCHAR helper instead of a raw cast that
+    * would produce garbage under Unicode builds. */
    g_pads[g_joypad_cnt].joy_name          =
-      strdup((const char*)inst->tszProductName);
+      dinput_joypad_tchar_to_str(inst->tszProductName);
    g_pads[g_joypad_cnt].joy_friendly_name =
-      strdup((const char*)inst->tszInstanceName);
+      dinput_joypad_tchar_to_str(inst->tszInstanceName);
 
-   /* there may be more useful info in the GUID,
-    * so leave this here for a while */
-#if 0
-   printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
-   inst->guidProduct.Data1,
-   inst->guidProduct.Data2,
-   inst->guidProduct.Data3,
-   inst->guidProduct.Data4[0],
-   inst->guidProduct.Data4[1],
-   inst->guidProduct.Data4[2],
-   inst->guidProduct.Data4[3],
-   inst->guidProduct.Data4[4],
-   inst->guidProduct.Data4[5],
-   inst->guidProduct.Data4[6],
-   inst->guidProduct.Data4[7]);
-#endif
+   /* VID is in the low 16 bits of guidProduct.Data1,
+    * PID is in the high 16 bits. */
+   g_pads[g_joypad_cnt].vid = (int32_t)(inst->guidProduct.Data1 & 0xFFFFu);
+   g_pads[g_joypad_cnt].pid = (int32_t)(inst->guidProduct.Data1 >> 16);
 
-   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
-   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
-
-   /* Set data format to simple joystick */
+   /* Set data format to extended joystick state */
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(*pad,
          (HWND)video_driver_window_get(),
@@ -159,21 +154,14 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
 static void *dinput_joypad_init(void *data)
 {
-   int i;
-
    if (!dinput_init_context())
       return NULL;
-
-   for (i = 0; i < MAX_USERS; ++i)
-   {
-      g_pads[i].joy_name          = NULL;
-      g_pads[i].joy_friendly_name = NULL;
-   }
-
+   /* Zero the pad array; dinput_joypad_destroy() uses memset() on the same
+    * region, so we stay consistent and avoid partial-initialisation bugs. */
+   ZeroMemory(g_pads, sizeof(g_pads));
    IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
          enum_joypad_cb, NULL, DIEDFL_ATTACHEDONLY);
-
    return (void*)-1;
 }
 
-#endif
+#endif /* __DINPUT_JOYPAD_EXCL_INL_H */

@@ -232,6 +232,14 @@ MSG_HASH(
    "Tanca el RetroArch. La configuració es desarà en sortir."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Tanca el RetroArch. La configuració no es desarà en sortir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Tanca el RetroArch. Matar el programa de manera forçada (amb SIGKILL, etc.) finalitzarà el RetroArch sense desar la configuració. En sistemes Unix, SIGINT/SIGTERM permet un tancament net, el que inclou que es desi la configuració si està activat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sincronitza ara"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Resol tots els conflictes descarregant els fitxers del servidor i reemplaça els fitxers locals."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Tanca el RetroArch. La configuració no es desarà en sortir."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Tanca el RetroArch. Matar el programa de manera forçada (amb SIGKILL, etc.) finalitzarà el RetroArch sense desar la configuració. En sistemes Unix, SIGINT/SIGTERM permet un tancament net, el que inclou que es desi la configuració si està activat."
    )
 
 /* Main Menu > Load Core */
@@ -1125,6 +1125,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
    "La contrasenya del teu compte d'emmagatzematge al núvol."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID de la clau d'accés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "La teva clau d'accés ID per l'emmagatzematge al núvol."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Codi de la clau d'accés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "El teu codi de la clau d'accés per l'emmagatzematge al núvol."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "El teu punt final d'adreça web S3 per emmagatzematge al núvol."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -2399,24 +2419,28 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Estableix el mode de sortida HDR si el teu monitor en té l'opció. Nota: el mode sRGB pot aclarir les màscares de shaders CRT perquè en compondre les imatges per part del sistema operatiu, es converteix la imatge a HDR10 després d'aplicar la màscara."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    "Apagat"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Pic de luminància"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Brillantor"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Configura la luminància màxima (en cd/m2) que el teu monitor pot reproduir. Un cop hagis escollit un valor, no el canviïs. Ajusta la brillantor mitjançant la lluminositat del blanc. Per saber el quina és la luminància màxima del teu monitor, visita RTings. En els monitors que tinguin activades les línies d'escombrat, cal que augmentis aquest valor, per augmentar la brillantor."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Brillantor del menú en cd/m2 (nits) quan es fa servir una pantalla HDR. Només està disponible si s'ha activat l'opció HDR en el menú Configuració > Vídeo > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminància de blancs"
+   "Brillantor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Quan hagis fixat la luminància màxima, es farà aquest valor per configurar la brillantor estàndard. Tècnicament, estableix la luminància amb el blanc d'un full de paper amb text llegible, o la luminància màxima del rang SDR."
+   "Selecciona el nivell de brillantor de HDR en nits. Es fa servir en combinació de la configuració de brillantor del teu monitor. Pots començar per seleccionar un valor de 80 i posar la brillantor del teu monitor al màxim. O també pots posar el valor màxim i ajustar la brillantor del teu monitor fins que es vegi bé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -3177,8 +3201,36 @@ MSG_HASH(
    "Ajusta la sensibilitat de l'acceleròmetre."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Sensor d'orientació"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Gira els eixos de l'acceleròmetre i el giroscòpi per coincidir amb l'orientació del dispositiu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automàtic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_0,
+   "0º"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_90,
+   "90º"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_180,
+   "180º"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_270,
+   "270º"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Ajusta la sensibilitat del giroscopi."
+   "Ajusta la sensibilitat del giroscopi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3320,6 +3372,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Canvia les opcions de vibració i resposta hàptica."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Sensors de moviment i llum"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Canvia la configuració de l'acceleròmetre, giroscopi i il·luminació."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -4062,6 +4122,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    "El controlador físic tal qual el reconeix RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Dispositiu reservat per aquest jugador"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
@@ -4862,8 +4926,16 @@ MSG_HASH(
    "Fes servir el reproductor integrat"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Mostra els fitxers que son compatibles amb el reproductor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Fes servir el visualitzador d’imatges integrat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Mostra les imatges que son compatibles amb l'explorador de fitxers."
    )
 
 /* Settings > Frame Throttle */
@@ -6405,11 +6477,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Mostra “Reinicia”"
+   "Mostra 'Reiniciar'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Mostra l’opció de reiniciar el contingut."
+   "Mostra l'opció de reiniciar el contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -6417,7 +6489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Mostra l’opció “Tanca el contingut”."
+   "Mostra l'opció de tancar el contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8934,11 +9006,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Reinicia"
+   "Reiniciar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia el contingut des de l'inici."
+   "Activa el reinici per programari. Clica el botó Start en el RetroPad per activar el reinici complet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9319,8 +9391,8 @@ MSG_HASH(
    "Comença o continua la cerca de trucs"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Escaneja la memòria per trobar nous trucs."
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "Escaneja la memòria cercant nous trucs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -9343,6 +9415,10 @@ MSG_HASH(
    "Torna a carregar els trucs específics del joc"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Recarrega tots els trucs existents."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Anomena i desa el fitxer de trucs"
    )
@@ -9355,12 +9431,24 @@ MSG_HASH(
    "Afegeix un nou truc a la part superior"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Sobreposa un truca a la llista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Afegeix un nou truc al final"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Afegeix un truc a la llista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Elimina tots els trucs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Buida la llista de trucs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -14438,6 +14526,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "S’han suprimit tots els trucs."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "S'han recarregat tots els trucs."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

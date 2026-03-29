@@ -2303,7 +2303,7 @@ static void config_size(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler,
-	  get_string_representation_t string_representation_handler)
+      get_string_representation_t string_representation_handler)
 {
    (*list)[list_info->index++] = setting_size_setting(
          msg_hash_to_str(name_enum_idx),
@@ -2920,19 +2920,19 @@ static int setting_action_ok_libretro_device_type(
 
 #ifdef ANDROID
 static int setting_action_ok_select_physical_keyboard(
-        rarch_setting_t *setting, size_t idx, bool wraparound)
+      rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-    char enum_idx[16];
-    if (!setting)
-        return -1;
+   char enum_idx[16];
+   if (!setting)
+      return -1;
 
-    snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
 
-    generic_action_ok_displaylist_push(
-            enum_idx, /* we will pass the enumeration index of the string as a path */
-            NULL, NULL, 0, idx, 0,
-            ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD);
-    return 0;
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD);
+   return 0;
 }
 #endif
 
@@ -7321,6 +7321,28 @@ static size_t setting_get_string_representation_uint_libretro_log_level(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_sensor_orientation(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO), len);
+         case 1:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_0), len);
+         case 2:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_90), len);
+         case 3:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_180), len);
+         case 4:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_270), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_quit_on_close_content(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -8359,26 +8381,6 @@ static size_t get_string_representation_input_mouse_index(
    return _len;
 }
 
-static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
-{
-   settings_t      *settings = config_get_ptr();
-
-   if (!setting || setting->enum_idx == MSG_UNKNOWN)
-      return;
-
-   *setting->value.target.fraction = *(audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA));
-   if (*setting->value.target.fraction < 0.0005)
-   {
-      configuration_set_bool(settings, settings->bools.audio_rate_control, false);
-      audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
-   }
-   else
-   {
-      configuration_set_bool(settings, settings->bools.audio_rate_control, true);
-      audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
-   }
-}
-
 static void general_read_handler(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
@@ -8391,13 +8393,26 @@ static void general_read_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
          *setting->value.target.fraction = settings->floats.audio_max_timing_skew;
          break;
+      case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         *setting->value.target.fraction = *(audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA));
+         if (*setting->value.target.fraction < 0.0005)
+         {
+            configuration_set_bool(settings, settings->bools.audio_rate_control, false);
+            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
+         }
+         else
+         {
+            configuration_set_bool(settings, settings->bools.audio_rate_control, true);
+            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
+         }
+         break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          *setting->value.target.fraction = settings->floats.video_refresh_rate;
          break;
 #ifdef ANDROID
-       case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
-           setting->value.target.string = settings->arrays.input_android_physical_keyboard;
-           break;
+      case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
+         setting->value.target.string = settings->arrays.input_android_physical_keyboard;
+         break;
 #endif
       default:
          break;
@@ -8418,31 +8433,6 @@ static enum event_command write_handler_get_cmd(rarch_setting_t *setting)
          return setting->cmd_trigger_idx;
    }
    return CMD_EVENT_NONE;
-}
-
-static void write_handler_audio_rate_control_delta(rarch_setting_t *setting)
-{
-   settings_t *settings         = config_get_ptr();
-   enum event_command rarch_cmd = CMD_EVENT_NONE;
-
-   if (!setting)
-      return;
-
-   rarch_cmd                    = write_handler_get_cmd(setting);
-
-   if (*setting->value.target.fraction < 0.0005)
-   {
-      configuration_set_bool(settings, settings->bools.audio_rate_control, false);
-      audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
-   }
-   else
-   {
-      configuration_set_bool(settings, settings->bools.audio_rate_control, true);
-      audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
-   }
-
-   if (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
-      command_event(rarch_cmd, NULL);
 }
 
 static void write_handler_logging_verbosity(rarch_setting_t *setting)
@@ -8588,11 +8578,6 @@ static void general_write_handler(rarch_setting_t *setting)
             if (setting->change_handler)
                setting->change_handler(setting);
          }
-         break;
-      case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
-         configuration_set_float(settings,
-               settings->floats.audio_max_timing_skew,
-               *setting->value.target.fraction);
          break;
       case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
          /* If enabling BFI, auto disable other sync settings
@@ -8763,15 +8748,15 @@ static void general_write_handler(rarch_setting_t *setting)
 
          rarch_cmd = CMD_EVENT_REINIT;
          break;
-      case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
+      case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
          {
             video_driver_state_t *video_st       = video_state_get_ptr();
             settings->flags                     |= SETTINGS_FLG_MODIFIED;
-            settings->floats.video_hdr_max_nits  = roundf(*setting->value.target.fraction);
+            settings->floats.video_hdr_menu_nits = roundf(*setting->value.target.fraction);
 
-            if (video_st && video_st->poke && video_st->poke->set_hdr_max_nits)
-               video_st->poke->set_hdr_max_nits(video_st->data,
-                     settings->floats.video_hdr_max_nits);
+            if (video_st && video_st->poke && video_st->poke->set_hdr_menu_nits)
+               video_st->poke->set_hdr_menu_nits(video_st->data,
+                     settings->floats.video_hdr_menu_nits);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
@@ -8822,12 +8807,12 @@ static void general_write_handler(rarch_setting_t *setting)
          command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
          break;
 #ifdef ANDROID
-       case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
-           settings->flags |= SETTINGS_FLG_MODIFIED;
-           strlcpy(settings->arrays.input_android_physical_keyboard,
-                 setting->value.target.string,
-                 sizeof(settings->arrays.input_android_physical_keyboard));
-           break;
+      case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
+         settings->flags |= SETTINGS_FLG_MODIFIED;
+         strlcpy(settings->arrays.input_android_physical_keyboard,
+               setting->value.target.string,
+               sizeof(settings->arrays.input_android_physical_keyboard));
+         break;
 #endif
       case MENU_ENUM_LABEL_LOG_TO_FILE:
          if (verbosity_is_enabled())
@@ -8941,8 +8926,12 @@ static void general_write_handler(rarch_setting_t *setting)
          audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, *setting->value.target.fraction);
 #endif
          break;
+      case MENU_ENUM_LABEL_AUDIO_ENABLE:
+      case MENU_ENUM_LABEL_AUDIO_SYNC:
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
+      case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
+      case MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY:
 #ifdef HAVE_WASAPI
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT:
@@ -8950,9 +8939,30 @@ static void general_write_handler(rarch_setting_t *setting)
 #endif
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
+      case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
+         configuration_set_float(settings,
+               settings->floats.audio_max_timing_skew,
+               *setting->value.target.fraction);
+         rarch_cmd = CMD_EVENT_AUDIO_REINIT;
+         break;
+      case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         if (*setting->value.target.fraction < 0.0005)
+         {
+            configuration_set_bool(settings, settings->bools.audio_rate_control, false);
+            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
+         }
+         else
+         {
+            configuration_set_bool(settings, settings->bools.audio_rate_control, true);
+            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
+         }
+         rarch_cmd = CMD_EVENT_AUDIO_REINIT;
+         break;
 #ifdef HAVE_MICROPHONE
       case MENU_ENUM_LABEL_MICROPHONE_LATENCY:
       case MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE:
+      case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER:
+      case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY:
          rarch_cmd = CMD_EVENT_MICROPHONE_REINIT;
          break;
 #endif
@@ -9159,22 +9169,35 @@ static void general_write_handler(rarch_setting_t *setting)
 #endif
          break;
       case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
-         /* When toggling sensor input off, ensure
-          * that all sensors are actually disabled */
          if (!*setting->value.target.boolean)
          {
+            /* Toggled OFF: disable all sensors at hardware level */
             unsigned i;
 
             for (i = 0; i < DEFAULT_MAX_PADS; i++)
             {
-               /* Event rate does not matter when disabling
-                * sensors - set to zero */
                input_set_sensor_state(i,
                      RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
                input_set_sensor_state(i,
                      RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
                input_set_sensor_state(i,
                      RETRO_SENSOR_ILLUMINANCE_DISABLE, 0);
+            }
+         }
+         else
+         {
+            /* Toggled ON: re-enable sensors at hardware level */
+            unsigned i;
+            unsigned event_rate = 60; /* Default rate */
+
+            for (i = 0; i < DEFAULT_MAX_PADS; i++)
+            {
+               input_set_sensor_state(i,
+                     RETRO_SENSOR_ACCELEROMETER_ENABLE, event_rate);
+               input_set_sensor_state(i,
+                     RETRO_SENSOR_GYROSCOPE_ENABLE, event_rate);
+               input_set_sensor_state(i,
+                     RETRO_SENSOR_ILLUMINANCE_ENABLE, event_rate);
             }
          }
          break;
@@ -9505,6 +9528,31 @@ static void cheevos_appearance_write_handler(rarch_setting_t* setting)
 static void update_streaming_url_write_handler(rarch_setting_t *setting)
 {
    recording_driver_update_streaming_url();
+}
+
+static void record_driver_write_handler(rarch_setting_t *setting)
+{
+   /* Force the recording settings page to rebuild so that
+    * driver-specific items are shown/hidden immediately. */
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                    | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+}
+
+static int setting_record_driver_action_left(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   int ret = setting_string_action_left_driver(setting, idx, wraparound);
+   record_driver_write_handler(setting);
+   return ret;
+}
+
+static int setting_record_driver_action_right(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   int ret = setting_string_action_right_driver(setting, idx, wraparound);
+   record_driver_write_handler(setting);
+   return ret;
 }
 
 #ifdef HAVE_LAKKA
@@ -11352,6 +11400,17 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
                (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
                (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+
+               /* Record driver needs refresh-aware handlers so that the
+                * recording settings page rebuilds when the driver changes. */
+               if (string_options_entries[i].name_enum_idx
+                     == MENU_ENUM_LABEL_RECORD_DRIVER)
+               {
+                  (*list)[list_info->index - 1].action_left
+                        = setting_record_driver_action_left;
+                  (*list)[list_info->index - 1].action_right
+                        = setting_record_driver_action_right;
+               }
             }
 
             END_SUB_GROUP(list, list_info, parent_group);
@@ -12247,6 +12306,58 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
          (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
+#ifdef HAVE_S3
+         /* AWS */
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.s3_url,
+               sizeof(settings->arrays.s3_url),
+               MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.access_key_id,
+               sizeof(settings->arrays.access_key_id),
+               MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.secret_access_key,
+               sizeof(settings->arrays.secret_access_key),
+               MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_password;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+#endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
 #endif
@@ -12356,13 +12467,8 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   &setting_get_string_representation_size_in_mb);
-            menu_settings_list_current_add_range(list,
-			    list_info,
-			    1024 * 1024,
-			    1024 * 1024 * 1024,
-			    settings->uints.rewind_buffer_size_step * 1024 * 1024,
-			    true,
-			    true);
+            menu_settings_list_current_add_range(list, list_info,
+                  1024 * 1024, 1024 * 1024 * 1024, settings->uints.rewind_buffer_size_step * 1024 * 1024, true, true);
 
             CONFIG_UINT(
                   list, list_info,
@@ -13409,14 +13515,7 @@ static bool setting_append_list(
                   list,
                   list_info,
                   CMD_EVENT_VIDEO_SET_ASPECT_RATIO);
-            menu_settings_list_current_add_range(
-                  list,
-                  list_info,
-                  0,
-                  LAST_ASPECT_RATIO,
-                  1,
-                  true,
-                  true);
+            menu_settings_list_current_add_range(list, list_info, 0, LAST_ASPECT_RATIO, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
@@ -14046,18 +14145,18 @@ static bool setting_append_list(
                {
                   CONFIG_FLOAT(
                         list, list_info,
-                        &settings->floats.video_hdr_max_nits,
-                        MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS,
-                        MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-                        DEFAULT_VIDEO_HDR_MAX_NITS,
-                        "%.1fx",
+                        &settings->floats.video_hdr_menu_nits,
+                        MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS,
+                        MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+                        DEFAULT_MENU_HDR_BRIGHTNESS_NITS,
+                        "%.0f",
                         &group_info,
                         &subgroup_info,
                         parent_group,
                         general_write_handler,
                         general_read_handler);
                   (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                  menu_settings_list_current_add_range(list, list_info, 0.0, 10000.0, 10.0, true, true);
+                  menu_settings_list_current_add_range(list, list_info, 40.0, 1000.0, 10.0, true, true);
 
                   CONFIG_FLOAT(
                         list, list_info,
@@ -14065,7 +14164,7 @@ static bool setting_append_list(
                         MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS,
                         MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
                         DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS,
-                        "%.1fx",
+                        "%.0f",
                         &group_info,
                         &subgroup_info,
                         parent_group,
@@ -14603,7 +14702,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-			CONFIG_UINT(
+         CONFIG_UINT(
                list, list_info,
                &settings->uints.crt_switch_resolution,
                MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
@@ -14621,34 +14720,34 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_range(list, list_info, CRT_SWITCH_NONE, CRT_SWITCH_INI, 1.0, true, true);
 
-			CONFIG_UINT(
-				  list, list_info,
-				  &settings->uints.crt_switch_resolution_super,
-				  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-				  DEFAULT_CRT_SWITCH_RESOLUTION_SUPER,
-				  &group_info,
-				  &subgroup_info,
-				  parent_group,
-				  general_write_handler,
-				  general_read_handler);
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.crt_switch_resolution_super,
+               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+               DEFAULT_CRT_SWITCH_RESOLUTION_SUPER,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
          (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_crt_switch_resolution_super;
          (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_crt_switch_resolution_super;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_crt_switch_resolution_super;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
-			CONFIG_INT(
-				  list, list_info,
-				  &settings->ints.crt_switch_center_adjust,
-				  MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-				  DEFAULT_CRT_SWITCH_CENTER_ADJUST,
-				  &group_info,
-				  &subgroup_info,
-				  parent_group,
-				  general_write_handler,
-				  general_read_handler);
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.crt_switch_center_adjust,
+               MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+               DEFAULT_CRT_SWITCH_CENTER_ADJUST,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -50;
@@ -14656,16 +14755,16 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, -50, 50, 1.0, true, true);
 
          CONFIG_INT(
-				  list, list_info,
-				  &settings->ints.crt_switch_porch_adjust,
-				  MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-				  DEFAULT_CRT_SWITCH_PORCH_ADJUST,
-				  &group_info,
-				  &subgroup_info,
-				  parent_group,
-				  general_write_handler,
-				  general_read_handler);
+               list, list_info,
+               &settings->ints.crt_switch_porch_adjust,
+               MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+               DEFAULT_CRT_SWITCH_PORCH_ADJUST,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -50;
@@ -14673,16 +14772,16 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, -50, 100, 2.0, true, true);
 
          CONFIG_INT(
-				  list, list_info,
-				  &settings->ints.crt_switch_vertical_adjust,
-				  MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST,
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
-				  DEFAULT_CRT_SWITCH_VERTICAL_ADJUST,
-				  &group_info,
-				  &subgroup_info,
-				  parent_group,
-				  general_write_handler,
-				  general_read_handler);
+               list, list_info,
+               &settings->ints.crt_switch_vertical_adjust,
+               MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+               DEFAULT_CRT_SWITCH_VERTICAL_ADJUST,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -20;
@@ -14855,7 +14954,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_AUDIO_REINIT);
 
          CONFIG_BOOL(
                list, list_info,
@@ -15018,7 +15116,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_AUDIO_REINIT);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_UINT(
@@ -15082,18 +15179,10 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               write_handler_audio_rate_control_delta,
-               read_handler_audio_rate_control_delta);
+               general_write_handler,
+               general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(
-               list,
-               list_info,
-               0.0,
-               0.020,
-               0.001,
-               true,
-               true);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_AUDIO_REINIT);
+         menu_settings_list_current_add_range(list, list_info, 0.0, 0.020, 0.001, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_FLOAT(
@@ -15109,15 +15198,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(
-               list,
-               list_info,
-               0.0,
-               0.5,
-               0.01,
-               true,
-               true);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_AUDIO_REINIT);
+         menu_settings_list_current_add_range(list, list_info, 0.0, 0.5, 0.01, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
 #ifdef RARCH_MOBILE
@@ -16146,22 +16227,6 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.input_sensors_enable,
-                  MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
-                  DEFAULT_INPUT_SENSORS_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-
-            CONFIG_BOOL(
-                  list, list_info,
                   &settings->bools.input_auto_mouse_grab,
                   MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
                   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
@@ -16177,7 +16242,7 @@ static bool setting_append_list(
                   );
 
 #ifdef ANDROID
-	    CONFIG_BOOL(
+            CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.android_input_disconnect_workaround,
                   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -16193,23 +16258,23 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-        input_driver_state_t *st = input_state_get_ptr();
-        input_driver_t *current_input = st->current_driver;
-        if (string_is_equal(current_input->ident, "android"))
-        {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-                  MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-            (*list)[list_info->index - 1].action_ok                   = &setting_action_ok_select_physical_keyboard;
-            (*list)[list_info->index - 1].read_handler                = &general_read_handler;
-            (*list)[list_info->index - 1].change_handler               = &general_write_handler;
-            (*list)[list_info->index - 1].get_string_representation   = &setting_get_string_representation_android_physical_keyboard;
-            (*list)[list_info->index - 1].default_value.string        = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
-        }
+            input_driver_state_t *st = input_state_get_ptr();
+            input_driver_t *current_input = st->current_driver;
+            if (string_is_equal(current_input->ident, "android"))
+            {
+               CONFIG_ACTION(
+                     list, list_info,
+                     MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                     MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group);
+               (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_select_physical_keyboard;
+               (*list)[list_info->index - 1].read_handler              = &general_read_handler;
+               (*list)[list_info->index - 1].change_handler            = &general_write_handler;
+               (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_android_physical_keyboard;
+               (*list)[list_info->index - 1].default_value.string      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+            }
 #endif
 
             CONFIG_UINT(
@@ -16293,6 +16358,51 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_sensors_enable,
+                  MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+                  DEFAULT_INPUT_SENSORS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            {
+               /* Auto (0) uses gravity detection, only available on Android.
+                * Non-Android defaults to 1 (0° neutral). */
+#ifdef ANDROID
+               unsigned orientation_default = 0;
+#else
+               unsigned orientation_default = 1;
+#endif
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.input_sensor_orientation,
+                     MENU_ENUM_LABEL_INPUT_SENSOR_ORIENTATION,
+                     MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+                     orientation_default,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+            }
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+#ifdef ANDROID
+            menu_settings_list_current_add_range(list, list_info, 0, 4, 1.0, true, true);
+#else
+            menu_settings_list_current_add_range(list, list_info, 1, 4, 1.0, true, true);
+#endif
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_sensor_orientation;
+
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.input_sensor_accelerometer_sensitivity,
@@ -16336,7 +16446,7 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].offset_by = 1;
-            menu_settings_list_current_add_range(list, list_info, 1, 5, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 1, 30, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
             CONFIG_UINT(
@@ -16354,6 +16464,14 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].offset_by = 0;
             menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
 
             CONFIG_ACTION(
                   list, list_info,

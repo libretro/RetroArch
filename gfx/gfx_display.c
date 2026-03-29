@@ -142,7 +142,7 @@ static float gfx_display_get_dpi_scale_internal(
 #endif
 
    /* Get pixel scale relative to baseline 1080p display */
-   pixel_scale   = diagonal_pixels / DIAGONAL_PIXELS_1080P;
+   pixel_scale   = diagonal_pixels / (float)DIAGONAL_PIXELS_1080P;
 
    /* Attempt to get display DPI */
    metrics.type  = DISPLAY_METRIC_DPI;
@@ -266,18 +266,18 @@ float gfx_display_get_dpi_scale(
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
 #if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
-#else
+#else /* !RARCH_CONSOLE && !RARCH_MOBILE */
    float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
    float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
    float menu_widget_scale_factor                      = fullscreen ?
          menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
-#endif
+#endif /* RARCH_CONSOLE || RARCH_MOBILE */
    float menu_scale_factor                             = is_widget
       ? menu_widget_scale_factor
       : settings->floats.menu_scale_factor;
-#else
+#else /* !HAVE_GFX_WIDGETS */
    float menu_scale_factor                             = settings->floats.menu_scale_factor;
-#endif
+#endif /* HAVE_GFX_WIDGETS */
 
 #ifdef HAVE_GFX_WIDGETS
    if (is_widget)
@@ -292,13 +292,11 @@ float gfx_display_get_dpi_scale(
          if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
             menu_scale_factor        = 1.0f;
          else
-#endif
-#ifdef HAVE_GFX_WIDGETS
+#endif /* HAVE_RGUI */
             menu_scale_factor        = settings->floats.menu_scale_factor;
-#endif
       }
    }
-#endif
+#endif /* HAVE_GFX_WIDGETS */
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
@@ -517,7 +515,7 @@ void gfx_display_draw_quad(
 
    if (w == 0 || h == 0)
       return;
-   if (!dispctx)
+   if (!dispctx || !color)
       return;
 
    coords.vertices      = 4;
@@ -532,7 +530,7 @@ void gfx_display_draw_quad(
    draw.height          = h;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
-   draw.texture         = (texture != 0)
+   draw.texture         = (texture && *texture)
       ? *texture
       : gfx_white_texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
@@ -565,83 +563,74 @@ void gfx_display_draw_texture_slice(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   gfx_display_ctx_driver_t
-      *dispctx              = p_disp->dispctx;
-   float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
-   /* To prevent visible seams between the corners and
-    * middle segments of the sliced texture, the texture
-    * must be scaled such that its effective size (before
-    * expansion of the middle segments) is no greater than
-    * the requested display size.
-    * > This is consequence of the way textures are rendered
-    *   in hardware...
-    * > Whenever an image is scaled, the colours at the
-    *   transparent edges get interpolated, which means
-    *   the colours of the transparent pixels themselves bleed
-    *   into the visible area.
-    * > This effectively 'blurs' anything that gets scaled
-    *   [SIDE NOTE: this causes additional issues if the transparent
-    *    pixels have the wrong colour - i.e. if they are black,
-    *    every edge gets a nasty dark border...]
-    * > This blurring is a problem because (by design) the corners
-    *   of the sliced texture are drawn at native resolution,
-    *   whereas the middle segments are stretched to fit the
-    *   requested dimensions. Consequently, the corners are sharp
-    *   while the middle segments are blurred.
-    * > When *upscaling* the middle segments (i.e. display size
-    *   greater than texture size), the visible effects of this
-    *   are mostly imperceptible.
-    * > When *downscaling* them, however, the interpolation effects
-    *   completely dominate the output image - creating an ugly
-    *   transition between the corners and middle parts.
-    * > Since this is a property of hardware rendering, it is not
-    *   practical to fix this 'properly'...
-    * > However: An effective workaround is to force downscaling of
-    *   the entire texture (including corners) whenever the
-    *   requested display size is less than the texture dimensions.
-    * > This blurs the corners enough that the corner/middle
-    *   transitions are essentially invisible. */
-   float max_scale_w = (float)new_w / (float)w;
-   float max_scale_h = (float)new_h / (float)h;
-   /* Find the minimum of scale_factor, max_scale_w, max_scale_h */
-   float slice_scale = (scale_factor < max_scale_w) ?
-         (scale_factor < max_scale_h) ? scale_factor : max_scale_h :
-         (max_scale_w  < max_scale_h) ? max_scale_w  : max_scale_h;
-
-   /* Need space for the coordinates of two triangles in a strip,
-    * so 8 vertices */
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   float V_BL[2], V_BR[2], V_TL[2], V_TR[2];
+   float T_BL[2], T_BR[2], T_TL[2], T_TR[2];
    float tex_coord[8];
    float vert_coord[8];
-   static float colors[16] = {
+   float max_scale_w, max_scale_h, slice_scale;
+   float vert_woff, vert_hoff, tex_woff, tex_hoff;
+   float vert_scaled_mid_width, vert_scaled_mid_height;
+   float tex_mid_width, tex_mid_height;
+   float norm_x, norm_y;
+   static const float colors[16] = {
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f
    };
 
-   /* normalized width/height of the amount to offset from the corners,
-    * for both the vertex and texture coordinates */
-   float vert_woff   = (offset * slice_scale) / (float)width;
-   float vert_hoff   = (offset * slice_scale) / (float)height;
-   float tex_woff    = offset / (float)w;
-   float tex_hoff    = offset / (float)h;
-
-   /* the width/height of the middle sections of both the scaled and original image */
-   float vert_scaled_mid_width  = (new_w - (offset * slice_scale * 2))
-      / (float)width;
-   float vert_scaled_mid_height = (new_h - (offset * slice_scale * 2))
-      / (float)height;
-   float tex_mid_width          = (w - (offset * 2)) / (float)w;
-   float tex_mid_height         = (h - (offset * 2)) / (float)h;
-
-   /* normalized coordinates for the start position of the image */
-   float norm_x                 = x / (float)width;
-   float norm_y                 = (height - y) / (float)height;
-
-   if (width == 0 || height == 0)
+   /* Early-out: guard against division by zero from
+    * zero display dimensions or zero texture dimensions */
+   if (width == 0 || height == 0 || w == 0 || h == 0)
       return;
    if (!dispctx || !dispctx->draw)
       return;
+
+   /* To prevent visible seams between the corners and
+    * middle segments of the sliced texture, the texture
+    * must be scaled such that its effective size (before
+    * expansion of the middle segments) is no greater than
+    * the requested display size.
+    * > Whenever an image is scaled, the colours at the
+    *   transparent edges get interpolated, which means
+    *   the colours of the transparent pixels bleed into
+    *   the visible area.
+    * > This is a problem because (by design) the corners
+    *   of the sliced texture are drawn at native resolution,
+    *   whereas the middle segments are stretched to fit.
+    * > When *downscaling*, the interpolation effects dominate
+    *   the output - creating an ugly corner/middle transition.
+    * > Workaround: force downscaling of the entire texture
+    *   (including corners) whenever the requested display size
+    *   is less than the texture dimensions. */
+   max_scale_w = (float)new_w / (float)w;
+   max_scale_h = (float)new_h / (float)h;
+
+   /* Find the minimum of scale_factor, max_scale_w, max_scale_h */
+   slice_scale = (scale_factor < max_scale_w)
+      ? ((scale_factor < max_scale_h) ? scale_factor : max_scale_h)
+      : ((max_scale_w  < max_scale_h) ? max_scale_w  : max_scale_h);
+
+   /* Normalized width/height of the amount to offset from the corners,
+    * for both the vertex and texture coordinates */
+   vert_woff   = (offset * slice_scale) / (float)width;
+   vert_hoff   = (offset * slice_scale) / (float)height;
+   tex_woff    = offset / (float)w;
+   tex_hoff    = offset / (float)h;
+
+   /* The width/height of the middle sections of both
+    * the scaled and original image */
+   vert_scaled_mid_width  = (new_w - (offset * slice_scale * 2))
+      / (float)width;
+   vert_scaled_mid_height = (new_h - (offset * slice_scale * 2))
+      / (float)height;
+   tex_mid_width          = (w - (offset * 2)) / (float)w;
+   tex_mid_height         = (h - (offset * 2)) / (float)h;
+
+   /* Normalized coordinates for the start position of the image */
+   norm_x = x / (float)width;
+   norm_y = (height - y) / (float)height;
 
    /* The four vertices of the top-left corner of the image,
     * used as a starting point for all the other sections
@@ -888,7 +877,7 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
       : NULL;
    if (b)
    {
-      static math_matrix_4x4 rot         = {
+      math_matrix_4x4 rot             = {
          {  0.0f,          0.0f,          0.0f,          0.0f ,
             0.0f,          0.0f,          0.0f,          0.0f ,
             0.0f,          0.0f,          1.0f,          0.0f ,
@@ -919,6 +908,10 @@ void gfx_display_draw_cursor(
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!dispctx)
+      return;
+
+   /* Bail out early if cursor should not be drawn */
+   if (!cursor_visible)
       return;
 
    coords.vertices      = 4;
@@ -960,9 +953,9 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
 
    for (i = 0; i < 44; i++)
    {
-      int line_y    = (i / 11)*height/10.0;
-      int ptr_x     = width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width;
-      int ptr_y     = height/2.0 + ptr_height*1.5 + line_y - ptr_height;
+      int line_y    = (int)((i / 11) * height / 10);
+      int ptr_x     = (int)(width / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width);
+      int ptr_y     = (int)(height / 2 + ptr_height * 3 / 2 + line_y - ptr_height);
 
       if (x > ptr_x && x < ptr_x + ptr_width
        && y > ptr_y && y < ptr_y + ptr_height)
@@ -986,17 +979,17 @@ void gfx_display_draw_keyboard(
    int ptr_width, ptr_height;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   static float white[16]    =  {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
+   static const float white[16]    =  {
+      1.00f, 1.00f, 1.00f, 1.00f,
+      1.00f, 1.00f, 1.00f, 1.00f,
+      1.00f, 1.00f, 1.00f, 1.00f,
+      1.00f, 1.00f, 1.00f, 1.00f,
    };
-   static float osk_dark[16] =  {
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
+   static const float osk_dark[16] =  {
+      0.00f, 0.00f, 0.00f, 0.85f,
+      0.00f, 0.00f, 0.00f, 0.85f,
+      0.00f, 0.00f, 0.00f, 0.85f,
+      0.00f, 0.00f, 0.00f, 0.85f,
    };
 
 #ifdef HAVE_MIST
@@ -1014,12 +1007,12 @@ void gfx_display_draw_keyboard(
          video_width,
          video_height,
          0,
-         video_height / 2.0,
+         (int)(video_height / 2),
          video_width,
-         video_height / 2.0,
+         video_height / 2,
          video_width,
          video_height,
-         &osk_dark[0],
+         (float*)osk_dark,
          NULL);
 
    ptr_width  = video_width  / 11;
@@ -1030,7 +1023,7 @@ void gfx_display_draw_keyboard(
 
    for (i = 0; i < 44; i++)
    {
-      int line_y     = (i / 11) * video_height / 10.0;
+      int line_y     = (int)((i / 11) * video_height / 10);
       unsigned color = 0xffffffff;
 
       if (i == id)
@@ -1043,12 +1036,12 @@ void gfx_display_draw_keyboard(
            userdata,
            video_width,
            video_height,
-           video_width / 2.0 - (11 * ptr_width) / 2.0 + (i % 11) * ptr_width,
-           video_height / 2.0 + ptr_height * 1.5 + line_y - ptr_height,
+           (int)(video_width / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width),
+           (int)(video_height / 2 + ptr_height * 3 / 2 + line_y - ptr_height),
            ptr_width, ptr_height,
            video_width,
            video_height,
-           &white[0],
+           (float*)white,
            &hover_texture);
 
          if (dispctx && dispctx->blend_end)
@@ -1058,9 +1051,10 @@ void gfx_display_draw_keyboard(
       }
 
       gfx_display_draw_text(font, grid[i],
-            video_width/2.0 - (11*ptr_width)/2.0 + (i % 11)
-            * ptr_width + ptr_width/2.0,
-            video_height / 2.0 + ptr_height + line_y + font->size / 3,
+            (float)(video_width / 2 - (11 * ptr_width) / 2
+               + (i % 11) * ptr_width + ptr_width / 2),
+            (float)(video_height / 2 + ptr_height + line_y)
+               + font->size / 3.0f,
             video_width,
             video_height,
             color,
@@ -1091,12 +1085,16 @@ bool gfx_display_reset_textures_list_buffer(
       if (height)
          *height    = ti.height;
 
-      /* if the poke interface doesn't support texture load then return false */
-      if (video_driver_texture_load(&ti, filter_type, item))
+      /* If the poke interface doesn't support 
+         texture load then free and return false */
+      if (!video_driver_texture_load(&ti, filter_type, item))
       {
          image_texture_free(&ti);
-         return true;
+         return false;
       }
+
+      image_texture_free(&ti);
+      return true;
    }
    return false;
 }
@@ -1130,8 +1128,13 @@ bool gfx_display_reset_textures_list(
    if (height)
       *height = ti.height;
 
-   video_driver_texture_load(&ti,
-         filter_type, item);
+   if (!video_driver_texture_load(&ti,
+         filter_type, item))
+   {
+      image_texture_free(&ti);
+      return false;
+   }
+
    image_texture_free(&ti);
 
    return true;
@@ -1159,7 +1162,12 @@ bool gfx_display_reset_icon_texture(
    if (height)
       *height = ti.height;
 
-   video_driver_texture_load(&ti, filter_type, item);
+   if (!video_driver_texture_load(&ti, filter_type, item))
+   {
+      image_texture_free(&ti);
+      return false;
+   }
+
    image_texture_free(&ti);
 
    return true;
@@ -1190,13 +1198,12 @@ void gfx_display_free(void)
    gfx_display_t *p_disp       = &dispgfx_st;
    video_coord_array_free(&p_disp->dispca);
 
-   p_disp->flags              &= ~(GFX_DISP_FLAG_MSG_FORCE
-                                 | GFX_DISP_FLAG_HAS_WINDOWED
-                                  );
+   p_disp->flags               = 0;
    p_disp->header_height       = 0;
    p_disp->framebuf_width      = 0;
    p_disp->framebuf_height     = 0;
    p_disp->framebuf_pitch      = 0;
+   p_disp->menu_driver_id      = MENU_DRIVER_ID_UNKNOWN;
    p_disp->dispctx             = NULL;
 }
 

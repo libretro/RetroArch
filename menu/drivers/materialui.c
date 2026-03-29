@@ -707,16 +707,12 @@ typedef struct materialui_handle
          last_landscape_layout_optimization;
    enum materialui_list_view_type list_view_type;
 
-   /* These have to be huge, because runloop_st->name.savestate
-    * has a hard-coded size of (PATH_MAX_LENGTH * 2)... */
-   char savestate_thumbnail_file_path[(PATH_MAX_LENGTH * 2)];
-   char prev_savestate_thumbnail_file_path[(PATH_MAX_LENGTH * 2)];
-
    char msgbox[1024];
    char menu_title[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
    char sysicons_path[PATH_MAX_LENGTH];
    char icons_path[PATH_MAX_LENGTH];
+   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
 } materialui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
@@ -2482,17 +2478,11 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)data;
-   int state_slot           = settings->ints.state_slot;
    bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
+   const char *current_path = strdup(mui->savestate_thumbnail_file_path);
 
    if (!mui)
       return;
-
-   /* Cache previous savestate thumbnail path */
-   strlcpy(
-         mui->prev_savestate_thumbnail_file_path,
-         mui->savestate_thumbnail_file_path,
-         sizeof(mui->prev_savestate_thumbnail_file_path));
 
    mui->savestate_thumbnail_file_path[0] = '\0';
 
@@ -2511,35 +2501,25 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
          {
-            size_t _len;
-            char path[PATH_MAX_LENGTH * 2];
+            char path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
+            int state_slot              = settings->ints.state_slot;
 
             /* State slot dropdown */
             if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
                state_slot    = i - 1;
 
-            if (state_slot < 0)
-            {
-               path[0]       = '\0';
-               _len          = fill_pathname_join_delim(path,
-                     runloop_st->name.savestate, "auto", '.', sizeof(path));
-            }
-            else
-            {
-               _len          = strlcpy(path, runloop_st->name.savestate, sizeof(path));
-               if (state_slot > 0)
-                  _len      += snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
-            }
-
-            strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
+            gfx_savestate_thumbnail_get_path(path, sizeof(path),
+                  runloop_st->name.savestate, state_slot);
 
             /* Must let invalid be empty here as opposed to other drivers
              * in order to see the missing image placeholder in normal list */
             if (path_is_valid(path))
-               strlcpy(
-                     mui->savestate_thumbnail_file_path, path,
+               strlcpy(mui->savestate_thumbnail_file_path, path,
                      sizeof(mui->savestate_thumbnail_file_path));
+
+            if (!string_is_equal(current_path, mui->savestate_thumbnail_file_path))
+               gfx_thumbnail_reset(&mui->thumbnails.savestate);
 
             materialui_update_fullscreen_thumbnail_label(mui);
          }
@@ -2562,22 +2542,11 @@ static void materialui_update_savestate_thumbnail_image(void *data)
       mui->thumbnails.savestate.status = GFX_THUMBNAIL_STATUS_MISSING;
       mui->thumbnails.savestate.alpha  = 1.0f;
    }
-   else
-   {
-      /* Only request thumbnail if:
-       * > Thumbnail has never been loaded *OR*
-       * > Thumbnail path has changed */
-      if (     (mui->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
-            || (mui->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)
-            || !string_is_equal(mui->savestate_thumbnail_file_path,
-                     mui->prev_savestate_thumbnail_file_path))
-      {
-         gfx_thumbnail_request_file(
-               mui->savestate_thumbnail_file_path,
-               &mui->thumbnails.savestate,
-               config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
-      }
-   }
+   else if (mui->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      gfx_thumbnail_request_file(
+            mui->savestate_thumbnail_file_path,
+            &mui->thumbnails.savestate,
+            config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
 
    mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
 }
@@ -9141,14 +9110,13 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    /* Enable fade in animation for missing thumbnails */
    gfx_thumbnail_set_fade_missing(true);
 
-   /* Savestate thumbnail empty */
-   mui->savestate_thumbnail_file_path[0]      = '\0';
-   mui->prev_savestate_thumbnail_file_path[0] = '\0';
-
    /* Ensure that fullscreen thumbnails are inactive */
    mui->fullscreen_thumbnail_selection         = 0;
    mui->fullscreen_thumbnail_alpha             = 0.0f;
    mui->fullscreen_thumbnail_label[0]          = '\0';
+
+   /* Savestate thumbnail empty */
+   mui->savestate_thumbnail_file_path[0]       = '\0';
 
    /* Ensure status bar has sane initial values */
    mui->status_bar.height                      = 0;
@@ -11845,6 +11813,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SOUNDS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MENU_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS))

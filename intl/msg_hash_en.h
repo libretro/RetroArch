@@ -44,12 +44,12 @@ MSG_HASH(
    "Join or host a net-play session."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "Manually trigger cloud synchronisation."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch without saving the configuration in any case. On Unix-likes, SIGINT/SIGTERM allows a clean deinitialisation which includes configuration save if enabled."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Manually trigger cloud synchronisation."
    )
 
 /* Main Menu > Load Core */

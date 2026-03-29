@@ -340,6 +340,7 @@ typedef struct
       D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_view;
       D3D12Resource                    ubo_post;
       D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_post_view;
+      float                            menu_nits;
       float                            max_output_nits;
       float                            min_output_nits;
       float                            max_cll;
@@ -406,7 +407,6 @@ typedef struct
 #ifdef HAVE_DXGI_HDR
       unsigned                        hdr_mode;
       float                           paper_white_nits;
-      float                           max_nits;
       float                           scanlines;
       unsigned                        subpixel_layout;
       unsigned                        expand_gamut;
@@ -1506,12 +1506,13 @@ static void d3d12_font_render_message(
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
-
+      const char *p;
+      size_t msg_len;
+      for (p = msg; *p && *p != '\n'; p++)
+         ;
+      msg_len = (size_t)(p - msg);
       /* Draw the line */
       if (msg_len <= (size_t)d3d12->sprites.capacity)
          d3d12_font_render_line(d3d12, cmd,
@@ -1519,10 +1520,8 @@ static void d3d12_font_render_message(
                pos_y - (float)lines * line_height,
                x,
                width, height, text_align);
-
-      if (!delim)
+      if (!*p)
          break;
-
       msg += msg_len + 1;
       lines++;
    }
@@ -1885,30 +1884,10 @@ static void d3d12_render_overlay(d3d12_video_t *d3d12)
 #endif
 
 #ifdef HAVE_DXGI_HDR
-static void d3d12_set_hdr_max_nits(void* data, float max_nits)
+static void d3d12_set_hdr_menu_nits(void* data, float menu_nits)
 {
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
-
-   d3d12->hdr.max_output_nits             = max_nits;
-   d3d12->hdr.ubo_values.max_nits         = max_nits;
-
-   dxgi_set_hdr_metadata(
-         d3d12->chain.handle,
-         (d3d12->flags & D3D12_ST_FLAG_HDR_SUPPORT) ? true : false,
-         d3d12->chain.bit_depth,
-         d3d12->chain.color_space,
-         d3d12->hdr.max_output_nits,
-         d3d12->hdr.min_output_nits,
-         d3d12->hdr.max_cll,
-         d3d12->hdr.max_fall);
-
-   if(d3d12->shader_preset)
-   {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
-      {
-         d3d12->pass[i].max_nits     = max_nits;
-      }
-   }         
+   d3d12->hdr.menu_nits        = menu_nits;
 }
 
 static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
@@ -2275,7 +2254,6 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 #ifdef HAVE_DXGI_HDR
             &d3d12->pass[i].hdr_mode,       /* HDRMode */
             &d3d12->pass[i].paper_white_nits,/* PaperWhiteNits */
-            &d3d12->pass[i].max_nits,        /* MaxNits */
             &d3d12->pass[i].scanlines,       /* Scanlines */
             &d3d12->pass[i].subpixel_layout, /* SubpixelLayout */
             &d3d12->pass[i].expand_gamut,    /* ExpandGamut */
@@ -3191,7 +3169,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 
          utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D12] Found GPU at index %d: \"%s\".\n", i, str);
+         RARCH_LOG("[D3D12] Found GPU #%d: \"%s\".\n", i, str);
 
          string_list_append(d3d12->gpu_list, str, attr);
 
@@ -3212,9 +3190,9 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 
       if (0 <= gpu_index && gpu_index <= i && gpu_index < D3D12_MAX_GPU_COUNT)
       {
+         RARCH_LOG("[D3D12] Using GPU #%d: \"%s\".\n", gpu_index, d3d12->gpu_list->elems[gpu_index].data);
          d3d12->adapter = d3d12->adapters[gpu_index];
          AddRef(d3d12->adapter);
-         RARCH_LOG("[D3D12] Using GPU index %d.\n", gpu_index);
       }
       else
       {
@@ -3597,7 +3575,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
       d3d12->flags                       |=  D3D12_ST_FLAG_HDR_ENABLE;
    else
       d3d12->flags                       &= ~D3D12_ST_FLAG_HDR_ENABLE;
-   d3d12->hdr.max_output_nits             = settings->floats.video_hdr_max_nits;
+   d3d12->hdr.max_output_nits             = 1000.0f;
    d3d12->hdr.min_output_nits             = 0.001f;
    d3d12->hdr.max_cll                     = 0.0f;
    d3d12->hdr.max_fall                    = 0.0f;
@@ -3683,7 +3661,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
          d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_post_view.SizeInBytes, &d3d12->hdr.ubo_post);
 
    d3d12->hdr.ubo_values.mvp                 = d3d12->mvp_no_rot;
-   d3d12->hdr.ubo_values.max_nits            = settings->floats.video_hdr_max_nits;
+   d3d12->hdr.menu_nits           = settings->floats.video_hdr_menu_nits;
    d3d12->hdr.ubo_values.paper_white_nits    = settings->floats.video_hdr_paper_white_nits;
    
    d3d12->hdr.ubo_values.source_size.width   = 0.0f;
@@ -4434,7 +4412,6 @@ static bool d3d12_gfx_frame(
          if(d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
          {
             d3d12->pass[i].paper_white_nits     = settings->floats.video_hdr_paper_white_nits;
-            d3d12->pass[i].max_nits             = settings->floats.video_hdr_max_nits;
             d3d12->pass[i].scanlines            = settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
             d3d12->pass[i].subpixel_layout      = settings->uints.video_hdr_subpixel_layout;
             d3d12->pass[i].expand_gamut         = settings->uints.video_hdr_expand_gamut;
@@ -4827,10 +4804,10 @@ static bool d3d12_gfx_frame(
                (back_buffer_format == DXGI_FORMAT_R10G10B10A2_UNORM)
                ? 3 : 2;
          }
-         else /* HDR10 */
+         else /* HDR10 — first pass already PQ-encoded, just passthrough */
          {
-            d3d12->hdr.ubo_values.inverse_tonemap  = 1.0f;
-            d3d12->hdr.ubo_values.hdr10            = 1.0f;
+            d3d12->hdr.ubo_values.inverse_tonemap  = 0.0f;
+            d3d12->hdr.ubo_values.hdr10            = 0.0f;
             d3d12->hdr.ubo_values.hdr_mode         = 0;
          }
 
@@ -5034,8 +5011,12 @@ static bool d3d12_gfx_frame(
          const float    prev_inverse_tonemap       = d3d12->hdr.ubo_values.inverse_tonemap;
          const float    prev_hdr10                 = d3d12->hdr.ubo_values.hdr10;
          const unsigned prev_hdr_mode              = d3d12->hdr.ubo_values.hdr_mode;
+         const float    prev_paper_white_nits      = d3d12->hdr.ubo_values.paper_white_nits;
 
          d3d12->hdr.ubo_values.scanlines           = 0.0f;
+
+         /* Menu/overlay composite: use menu_nits for SDR menu brightness */
+         d3d12->hdr.ubo_values.paper_white_nits    = d3d12->hdr.menu_nits;
 
          if (video_info->hdr_mode == 2) /* scRGB: menu source is SDR */
          {
@@ -5068,6 +5049,7 @@ static bool d3d12_gfx_frame(
          d3d12->hdr.ubo_values.inverse_tonemap     = prev_inverse_tonemap;
          d3d12->hdr.ubo_values.hdr10               = prev_hdr10;
          d3d12->hdr.ubo_values.hdr_mode            = prev_hdr_mode;
+         d3d12->hdr.ubo_values.paper_white_nits    = prev_paper_white_nits;
       }
 
       cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
@@ -5467,13 +5449,13 @@ static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* get_current_software_framebuffer */
    d3d12_get_hw_render_interface,
 #ifdef HAVE_DXGI_HDR
-   d3d12_set_hdr_max_nits,
+   d3d12_set_hdr_menu_nits,
    d3d12_set_hdr_paper_white_nits,
    d3d12_set_hdr_expand_gamut,
    d3d12_set_hdr_scanlines,
    d3d12_set_hdr_subpixel_layout
 #else
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */

@@ -170,17 +170,17 @@ static float easing_out_in_quint(float t, float b, float c, float d)
 
 static float easing_in_sine(float t, float b, float c, float d)
 {
-   return -c * cos(t / d * (M_PI / 2.0f)) + c + b;
+   return -c * cosf(t / d * ((float)M_PI / 2.0f)) + c + b;
 }
 
 static float easing_out_sine(float t, float b, float c, float d)
 {
-   return c * sin(t / d * (M_PI / 2.0f)) + b;
+   return c * sinf(t / d * ((float)M_PI / 2.0f)) + b;
 }
 
 static float easing_in_out_sine(float t, float b, float c, float d)
 {
-   return -c / 2.0f * (cos(M_PI * t / d) - 1.0f) + b;
+   return -c / 2.0f * (cosf((float)M_PI * t / d) - 1.0f) + b;
 }
 
 static float easing_out_in_sine(float t, float b, float c, float d)
@@ -194,26 +194,26 @@ static float easing_in_expo(float t, float b, float c, float d)
 {
    if (t == 0.0f)
       return b;
-   return c * powf(2, 10 * (t / d - 1)) + b - c * 0.001;
+   return c * powf(2.0f, 10.0f * (t / d - 1.0f)) + b - c * 0.001f;
 }
 
 static float easing_out_expo(float t, float b, float c, float d)
 {
    if (t == d)
       return b + c;
-   return c * 1.001 * (-powf(2, -10 * t / d) + 1) + b;
+   return c * 1.001f * (-powf(2.0f, -10.0f * t / d) + 1.0f) + b;
 }
 
 static float easing_in_out_expo(float t, float b, float c, float d)
 {
-   if (t == 0)
+   if (t == 0.0f)
       return b;
    if (t == d)
       return b + c;
    t = t / d * 2.0f;
    if (t < 1.0f)
-      return c / 2.0f * powf(2, 10 * (t - 1)) + b - c * 0.0005;
-   return c / 2.0f * 1.0005 * (-powf(2, -10 * (t - 1)) + 2) + b;
+      return c / 2.0f * powf(2.0f, 10.0f * (t - 1.0f)) + b - c * 0.0005f;
+   return c / 2.0f * 1.0005f * (-powf(2.0f, -10.0f * (t - 1.0f)) + 2.0f) + b;
 }
 
 static float easing_out_in_expo(float t, float b, float c, float d)
@@ -231,7 +231,7 @@ static float easing_in_circ(float t, float b, float c, float d)
 
 static float easing_out_circ(float t, float b, float c, float d)
 {
-   float base = t / d - 1;
+   float base = t / d - 1.0f;
    return(c * sqrtf(1.0f - (base * base)) + b);
 }
 
@@ -239,7 +239,7 @@ static float easing_in_out_circ(float t, float b, float c, float d)
 {
    t = t / d * 2.0f;
    if (t < 1.0f)
-      return -c / 2 * (sqrtf(1.0f - t * t) - 1.0f) + b;
+      return -c / 2.0f * (sqrtf(1.0f - t * t) - 1.0f) + b;
    t = t - 2.0f;
    return c / 2.0f * (sqrtf(1.0f - t * t) + 1.0f) + b;
 }
@@ -254,9 +254,9 @@ static float easing_out_in_circ(float t, float b, float c, float d)
 static float easing_out_bounce(float t, float b, float c, float d)
 {
    t = t / d;
-   if (t < 1 / 2.75f)
+   if (t < 1.0f / 2.75f)
       return c * (7.5625f * t * t) + b;
-   if (t < 2 / 2.75f)
+   if (t < 2.0f / 2.75f)
    {
       t = t - (1.5f / 2.75f);
       return c * (7.5625f * t * t + 0.75f) + b;
@@ -272,14 +272,14 @@ static float easing_out_bounce(float t, float b, float c, float d)
 
 static float easing_in_bounce(float t, float b, float c, float d)
 {
-   return c - easing_out_bounce(d - t, 0, c, d) + b;
+   return c - easing_out_bounce(d - t, 0.0f, c, d) + b;
 }
 
 static float easing_in_out_bounce(float t, float b, float c, float d)
 {
    if (t < d / 2.0f)
-      return easing_in_bounce(t * 2.0f,   0.0f, c, d) * 0.5f + b;
-   return easing_out_bounce(t * 2.0f - d, 0.0f, c, d) * 0.5f + c * .5f + b;
+      return easing_in_bounce(t * 2.0f, 0.0f, c, d) * 0.5f + b;
+   return easing_out_bounce(t * 2.0f - d, 0.0f, c, d) * 0.5f + c * 0.5f + b;
 }
 
 static float easing_out_in_bounce(float t, float b, float c, float d)
@@ -314,6 +314,8 @@ static void gfx_animation_ticker_loop(uint64_t idx,
       size_t *offset2, size_t *width2,
       size_t *offset3, size_t *width3)
 {
+   int offset;
+   int width;
    int ticker_period     = (int)(str_width + spacer_width);
    int phase             = idx % ticker_period;
 
@@ -333,8 +335,8 @@ static void gfx_animation_ticker_loop(uint64_t idx,
     */
 
    /* String 1 */
-   int offset = 0;
-   int width  = (int)(str_width - phase);
+   offset = 0;
+   width  = (int)(str_width - phase);
    if (width < 0)
       width   = 0;
    else if ((width > (int)max_width))
@@ -770,6 +772,9 @@ void gfx_animation_push_delayed(
    gfx_delayed_animation_t *delayed_animation  = (gfx_delayed_animation_t*)
       malloc(sizeof(gfx_delayed_animation_t));
 
+   if (!delayed_animation)
+      return;
+
    memcpy(&delayed_animation->entry, entry, sizeof(gfx_animation_ctx_entry_t));
 
    timer_entry.cb       = gfx_delayed_animation_cb;
@@ -778,6 +783,44 @@ void gfx_animation_push_delayed(
 
    gfx_animation_timer_start(&delayed_animation->timer, &timer_entry);
 }
+
+/* Easing function lookup table - indexed by enum gfx_animation_easing_type.
+ * Order MUST match the enum declaration in gfx_animation.h */
+static const easing_cb easing_table[EASING_LAST] = {
+   easing_linear,         /* EASING_LINEAR       */
+   easing_in_quad,        /* EASING_IN_QUAD      */
+   easing_out_quad,       /* EASING_OUT_QUAD     */
+   easing_in_out_quad,    /* EASING_IN_OUT_QUAD  */
+   easing_out_in_quad,    /* EASING_OUT_IN_QUAD  */
+   easing_in_cubic,       /* EASING_IN_CUBIC     */
+   easing_out_cubic,      /* EASING_OUT_CUBIC    */
+   easing_in_out_cubic,   /* EASING_IN_OUT_CUBIC */
+   easing_out_in_cubic,   /* EASING_OUT_IN_CUBIC */
+   easing_in_quart,       /* EASING_IN_QUART     */
+   easing_out_quart,      /* EASING_OUT_QUART    */
+   easing_in_out_quart,   /* EASING_IN_OUT_QUART */
+   easing_out_in_quart,   /* EASING_OUT_IN_QUART */
+   easing_in_quint,       /* EASING_IN_QUINT     */
+   easing_out_quint,      /* EASING_OUT_QUINT    */
+   easing_in_out_quint,   /* EASING_IN_OUT_QUINT */
+   easing_out_in_quint,   /* EASING_OUT_IN_QUINT */
+   easing_in_sine,        /* EASING_IN_SINE      */
+   easing_out_sine,       /* EASING_OUT_SINE     */
+   easing_in_out_sine,    /* EASING_IN_OUT_SINE  */
+   easing_out_in_sine,    /* EASING_OUT_IN_SINE  */
+   easing_in_expo,        /* EASING_IN_EXPO      */
+   easing_out_expo,       /* EASING_OUT_EXPO     */
+   easing_in_out_expo,    /* EASING_IN_OUT_EXPO  */
+   easing_out_in_expo,    /* EASING_OUT_IN_EXPO  */
+   easing_in_circ,        /* EASING_IN_CIRC      */
+   easing_out_circ,       /* EASING_OUT_CIRC     */
+   easing_in_out_circ,    /* EASING_IN_OUT_CIRC  */
+   easing_out_in_circ,    /* EASING_OUT_IN_CIRC  */
+   easing_in_bounce,      /* EASING_IN_BOUNCE    */
+   easing_out_bounce,     /* EASING_OUT_BOUNCE   */
+   easing_in_out_bounce,  /* EASING_IN_OUT_BOUNCE*/
+   easing_out_in_bounce   /* EASING_OUT_IN_BOUNCE*/
+};
 
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
 {
@@ -792,121 +835,13 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    t.tag                = entry->tag;
    t.cb                 = entry->cb;
    t.userdata           = entry->userdata;
-   t.easing             = NULL;
    t.deleted            = false;
 
-   switch (entry->easing_enum)
-   {
-      case EASING_LINEAR:
-         t.easing       = &easing_linear;
-         break;
-         /* Quad */
-      case EASING_IN_QUAD:
-         t.easing       = &easing_in_quad;
-         break;
-      case EASING_OUT_QUAD:
-         t.easing       = &easing_out_quad;
-         break;
-      case EASING_IN_OUT_QUAD:
-         t.easing       = &easing_in_out_quad;
-         break;
-      case EASING_OUT_IN_QUAD:
-         t.easing       = &easing_out_in_quad;
-         break;
-         /* Cubic */
-      case EASING_IN_CUBIC:
-         t.easing       = &easing_in_cubic;
-         break;
-      case EASING_OUT_CUBIC:
-         t.easing       = &easing_out_cubic;
-         break;
-      case EASING_IN_OUT_CUBIC:
-         t.easing       = &easing_in_out_cubic;
-         break;
-      case EASING_OUT_IN_CUBIC:
-         t.easing       = &easing_out_in_cubic;
-         break;
-         /* Quart */
-      case EASING_IN_QUART:
-         t.easing       = &easing_in_quart;
-         break;
-      case EASING_OUT_QUART:
-         t.easing       = &easing_out_quart;
-         break;
-      case EASING_IN_OUT_QUART:
-         t.easing       = &easing_in_out_quart;
-         break;
-      case EASING_OUT_IN_QUART:
-         t.easing       = &easing_out_in_quart;
-         break;
-         /* Quint */
-      case EASING_IN_QUINT:
-         t.easing       = &easing_in_quint;
-         break;
-      case EASING_OUT_QUINT:
-         t.easing       = &easing_out_quint;
-         break;
-      case EASING_IN_OUT_QUINT:
-         t.easing       = &easing_in_out_quint;
-         break;
-      case EASING_OUT_IN_QUINT:
-         t.easing       = &easing_out_in_quint;
-         break;
-         /* Sine */
-      case EASING_IN_SINE:
-         t.easing       = &easing_in_sine;
-         break;
-      case EASING_OUT_SINE:
-         t.easing       = &easing_out_sine;
-         break;
-      case EASING_IN_OUT_SINE:
-         t.easing       = &easing_in_out_sine;
-         break;
-      case EASING_OUT_IN_SINE:
-         t.easing       = &easing_out_in_sine;
-         break;
-         /* Expo */
-      case EASING_IN_EXPO:
-         t.easing       = &easing_in_expo;
-         break;
-      case EASING_OUT_EXPO:
-         t.easing       = &easing_out_expo;
-         break;
-      case EASING_IN_OUT_EXPO:
-         t.easing       = &easing_in_out_expo;
-         break;
-      case EASING_OUT_IN_EXPO:
-         t.easing       = &easing_out_in_expo;
-         break;
-         /* Circ */
-      case EASING_IN_CIRC:
-         t.easing       = &easing_in_circ;
-         break;
-      case EASING_OUT_CIRC:
-         t.easing       = &easing_out_circ;
-         break;
-      case EASING_IN_OUT_CIRC:
-         t.easing       = &easing_in_out_circ;
-         break;
-      case EASING_OUT_IN_CIRC:
-         t.easing       = &easing_out_in_circ;
-         break;
-         /* Bounce */
-      case EASING_IN_BOUNCE:
-         t.easing       = &easing_in_bounce;
-         break;
-      case EASING_OUT_BOUNCE:
-         t.easing       = &easing_out_bounce;
-         break;
-      case EASING_IN_OUT_BOUNCE:
-         t.easing       = &easing_in_out_bounce;
-         break;
-      case EASING_OUT_IN_BOUNCE:
-         t.easing       = &easing_out_in_bounce;
-         break;
-      default:
-         break;
-   }
+   /* Resolve easing via table lookup */
+   if (entry->easing_enum < EASING_LAST)
+      t.easing          = easing_table[entry->easing_enum];
+   else
+      t.easing          = NULL;
 
    /* ignore born dead tweens */
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
@@ -1026,7 +961,7 @@ bool gfx_animation_update(
          ticker_pixel_accumulator        -= (float)ticker_pixel_accumulator_uint;
       }
 
-      if (ticker_pixel_accumulator_uint > 0)
+      if (ticker_pixel_line_accumulator_uint > 0)
       {
          p_anim->ticker_pixel_line_idx   += ticker_pixel_line_accumulator_uint;
          ticker_pixel_line_accumulator   -= (float)ticker_pixel_line_accumulator_uint;
@@ -1058,11 +993,16 @@ bool gfx_animation_update(
          if (tween->cb)
             tween->cb(tween->userdata);
 
-         RBUF_REMOVE(p_anim->list, i);
-         i--;
+         /* Mark for deferred removal - do not RBUF_REMOVE here,
+          * since tween->cb may have modified the list via
+          * kill_by_tag or push */
+         tween->deleted              = true;
+         p_anim->flags              |= GFX_ANIM_FLAG_PENDING_DELETES;
       }
    }
 
+   /* Single cleanup pass: remove all tweens marked as deleted
+    * (both from completion above and from kill_by_tag callbacks) */
    if (p_anim->flags & GFX_ANIM_FLAG_PENDING_DELETES)
    {
       for (i = 0; i < RBUF_LEN(p_anim->list); i++)
@@ -1089,9 +1029,9 @@ bool gfx_animation_update(
 
    p_anim->flags              &= ~GFX_ANIM_FLAG_IN_UPDATE;
    if (RBUF_LEN(p_anim->list) > 0)
-	   p_anim->flags      |=  GFX_ANIM_FLAG_IS_ACTIVE;
+      p_anim->flags           |=  GFX_ANIM_FLAG_IS_ACTIVE;
    else
-	   p_anim->flags      &= ~GFX_ANIM_FLAG_IS_ACTIVE;
+      p_anim->flags           &= ~GFX_ANIM_FLAG_IS_ACTIVE;
 
    return ((p_anim->flags & GFX_ANIM_FLAG_IS_ACTIVE) > 0);
 }
@@ -1140,10 +1080,13 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
    {
       size_t _len = utf8cpy(ticker->s,
             PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      ticker->s[  _len] = '.';
-      ticker->s[++_len] = '.';
-      ticker->s[++_len] = '.';
-      ticker->s[++_len] = '\0';
+      if (_len + 4 <= PATH_MAX_LENGTH)
+      {
+         ticker->s[  _len] = '.';
+         ticker->s[++_len] = '.';
+         ticker->s[++_len] = '.';
+         ticker->s[++_len] = '\0';
+      }
       return false;
    }
 
@@ -1201,6 +1144,7 @@ static bool gfx_animation_ticker_smooth_fw(
       gfx_animation_t *p_anim,
       gfx_animation_ctx_ticker_smooth_t *ticker)
 {
+   size_t src_str_len;
    size_t spacer_len            = 0;
    unsigned glyph_width         = ticker->glyph_width;
    unsigned src_str_width       = 0;
@@ -1213,7 +1157,7 @@ static bool gfx_animation_ticker_smooth_fw(
     * repeat */
 
    /* Get length + width of src string */
-   size_t src_str_len           = utf8len(ticker->src_str);
+   src_str_len                  = utf8len(ticker->src_str);
    if (src_str_len < 1)
       goto end;
 
@@ -1249,10 +1193,15 @@ static bool gfx_animation_ticker_smooth_fw(
       num_chars = (ticker->field_width - suffix_width) / glyph_width;
       /* Copy string segment + add suffix */
       _len      = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-      ticker->dst_str[  _len] = '.';
-      ticker->dst_str[++_len] = '.';
-      ticker->dst_str[++_len] = '.';
-      ticker->dst_str[++_len] = '\0';
+      if (_len + 4 <= ticker->dst_str_len)
+      {
+         ticker->dst_str[  _len] = '.';
+         ticker->dst_str[++_len] = '.';
+         ticker->dst_str[++_len] = '.';
+         ticker->dst_str[++_len] = '\0';
+      }
+      else if (ticker->dst_str_len > 0)
+         ticker->dst_str[ticker->dst_str_len - 1] = '\0';
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = (num_chars * glyph_width) + suffix_width;
@@ -1458,10 +1407,15 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
       /* Copy string segment + add suffix */
       _len = utf8cpy(ticker->dst_str, ticker->dst_str_len,
             ticker->src_str, num_chars);
-      ticker->dst_str[  _len] = '.';
-      ticker->dst_str[++_len] = '.';
-      ticker->dst_str[++_len] = '.';
-      ticker->dst_str[++_len] = '\0';
+      if (_len + 4 <= ticker->dst_str_len)
+      {
+         ticker->dst_str[  _len] = '.';
+         ticker->dst_str[++_len] = '.';
+         ticker->dst_str[++_len] = '.';
+         ticker->dst_str[++_len] = '\0';
+      }
+      else if (ticker->dst_str_len > 0)
+         ticker->dst_str[ticker->dst_str_len - 1] = '\0';
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = current_width + (3 * period_width);
@@ -1643,12 +1597,8 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
 void gfx_animation_deinit(void)
 {
    gfx_animation_t *p_anim = &anim_st;
-   if (!p_anim)
-      return;
    RBUF_FREE(p_anim->list);
    RBUF_FREE(p_anim->pending);
-   if (p_anim->updatetime_cb)
-      p_anim->updatetime_cb = NULL;
    memset(p_anim, 0, sizeof(*p_anim));
 }
 

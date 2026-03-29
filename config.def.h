@@ -503,8 +503,8 @@
 /* HDR output mode: 0 = off, 1 = HDR10, 2 = scRGB */
 #define DEFAULT_VIDEO_HDR_MODE 0
 
-/* The maximum nunmber of nits the actual display can show - needs to be calibrated */
-#define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+/* Brightness of the SDR menu/overlay when composited into the HDR backbuffer */
+#define DEFAULT_MENU_HDR_BRIGHTNESS_NITS 200.0f
 
 /* The number of nits that paper white is at */
 #define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
@@ -1623,13 +1623,7 @@
 
 /* Enables accelerometer/gyroscope/illuminance
  * sensor input, if supported */
-#if defined(ANDROID)
-/* Hardware sensors cause substantial battery
- * drain on Android... */
-#define DEFAULT_INPUT_SENSORS_ENABLE false
-#else
 #define DEFAULT_INPUT_SENSORS_ENABLE true
-#endif
 
 /* Automatically enable game focus when running or
  * resuming content */

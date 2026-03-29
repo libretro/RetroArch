@@ -145,6 +145,11 @@ struct android_app
    const ASensor* accelerometerSensor;
    const ASensor* gyroscopeSensor;
    uint64_t sensor_state_mask;
+   unsigned detected_screen_rotation;
+   float    gravity_accum_x;
+   float    gravity_accum_y;
+   unsigned gravity_sample_count;
+   bool     gravity_calibrated;
    char current_ime[NAME_MAX_LENGTH];
    bool input_alive;
    int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];

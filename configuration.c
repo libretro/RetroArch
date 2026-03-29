@@ -79,6 +79,20 @@
 #include <time.h>
 #endif
 
+/* Compile-time upper bounds for setting array sizes.
+ * These must be >= the actual count returned by the corresponding
+ * populate_settings_* functions, including the +MAX_USERS slack in
+ * populate_settings_array.  They are used so each populate function
+ * can do a single exact-size malloc instead of the old
+ * sizeof(struct)/sizeof(placeholder) over-estimate. */
+#define SETTINGS_BOOL_COUNT_MAX   512
+#define SETTINGS_INT_COUNT_MAX     64
+#define SETTINGS_UINT_COUNT_MAX   320
+#define SETTINGS_FLOAT_COUNT_MAX  128
+#define SETTINGS_SIZE_COUNT_MAX     8
+#define SETTINGS_ARRAY_COUNT_MAX  (96 + MAX_USERS)
+#define SETTINGS_PATH_COUNT_MAX   128
+
 enum video_driver_enum
 {
    VIDEO_GL                 = 0,
@@ -1540,7 +1554,7 @@ static struct config_array_setting *populate_settings_array(
 {
    unsigned i                           = 0;
    unsigned count                       = 0;
-   struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(1, (*size + 1) * sizeof(struct config_array_setting));
+   struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(SETTINGS_ARRAY_COUNT_MAX, sizeof(struct config_array_setting));
 
    if (!tmp)
       return NULL;
@@ -1570,13 +1584,16 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("input_android_physical_keyboard", settings->arrays.input_android_physical_keyboard, false, NULL, true);
 #endif
 
-   for (i = 0; i < MAX_USERS; i++)
    {
-      char key[32];
-      size_t _len  = strlcpy(key, "input_player", sizeof(key));
-      _len += snprintf(key + _len, sizeof(key) - _len, "%u", i + 1);
-      strlcpy(key + _len, "_reserved_device", sizeof(key) - _len);
-      SETTING_ARRAY(strdup(key), settings->arrays.input_reserved_devices[i], false, NULL, true);
+      /* Use static storage for per-user key strings to avoid strdup/free overhead */
+      static char reserved_keys[MAX_USERS][32];
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         size_t _len  = strlcpy(reserved_keys[i], "input_player", sizeof(reserved_keys[i]));
+         _len += snprintf(reserved_keys[i] + _len, sizeof(reserved_keys[i]) - _len, "%u", i + 1);
+         strlcpy(reserved_keys[i] + _len, "_reserved_device", sizeof(reserved_keys[i]) - _len);
+         SETTING_ARRAY(reserved_keys[i], settings->arrays.input_reserved_devices[i], false, NULL, true);
+      }
    }
 
 #ifdef HAVE_MENU
@@ -1602,10 +1619,17 @@ static struct config_array_setting *populate_settings_array(
 
 #ifdef HAVE_NETWORKING
    SETTING_ARRAY("netplay_mitm_server",          settings->arrays.netplay_mitm_server, false, NULL, true);
+#ifdef HAVE_CLOUDSYNC
    SETTING_ARRAY("webdav_url",                   settings->arrays.webdav_url, false, NULL, true);
    SETTING_ARRAY("webdav_username",              settings->arrays.webdav_username, false, NULL, true);
    SETTING_ARRAY("webdav_password",              settings->arrays.webdav_password, false, NULL, true);
    SETTING_ARRAY("google_drive_refresh_token",   settings->arrays.google_drive_refresh_token, false, NULL, true);
+#ifdef HAVE_S3
+   SETTING_ARRAY("s3_url",                       settings->arrays.s3_url, false, NULL, true);
+   SETTING_ARRAY("access_key_id",                settings->arrays.access_key_id, false, NULL, true);
+   SETTING_ARRAY("secret_access_key",            settings->arrays.secret_access_key, false, NULL, true);
+#endif
+#endif
    SETTING_ARRAY("youtube_stream_key",           settings->arrays.youtube_stream_key, true, NULL, true);
    SETTING_ARRAY("twitch_stream_key",            settings->arrays.twitch_stream_key, true, NULL, true);
    SETTING_ARRAY("facebook_stream_key",          settings->arrays.facebook_stream_key, true, NULL, true);
@@ -1637,7 +1661,7 @@ static struct config_path_setting *populate_settings_path(
 {
    unsigned count = 0;
    recording_state_t *recording_st     = recording_state_get_ptr();
-   struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(1, (*size + 1) * sizeof(struct config_path_setting));
+   struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(SETTINGS_PATH_COUNT_MAX, sizeof(struct config_path_setting));
 
    if (!tmp)
       return NULL;
@@ -1739,10 +1763,15 @@ static struct config_path_setting *populate_settings_path(
    return tmp;
 }
 
+/* ---------------------------------------------------------------------------
+ * SETTINGS_*_COUNT_MAX constants are defined above the populate functions.
+ * Compile-time check (via negative array) can be added here if needed.
+ * -------------------------------------------------------------------------- */
+
 static struct config_bool_setting *populate_settings_bool(
       settings_t *settings, int *size)
 {
-   struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(1, (*size + 1) * sizeof(struct config_bool_setting));
+   struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(SETTINGS_BOOL_COUNT_MAX, sizeof(struct config_bool_setting));
    unsigned count                      = 0;
 
    SETTING_BOOL("accessibility_enable",          &settings->bools.accessibility_enable, true, DEFAULT_ACCESSIBILITY_ENABLE, false);
@@ -2298,7 +2327,7 @@ static struct config_float_setting *populate_settings_float(
       settings_t *settings, int *size)
 {
    unsigned count = 0;
-   struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(1, (*size + 1) * sizeof(struct config_float_setting));
+   struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(SETTINGS_FLOAT_COUNT_MAX, sizeof(struct config_float_setting));
 
    if (!tmp)
       return NULL;
@@ -2362,7 +2391,7 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("video_message_pos_y",          &settings->floats.video_msg_pos_y, true, DEFAULT_MESSAGE_POS_OFFSET_Y, false);
    SETTING_FLOAT("video_font_size",              &settings->floats.video_font_size, true, DEFAULT_FONT_SIZE, false);
    SETTING_FLOAT("video_msg_bgcolor_opacity",    &settings->floats.video_msg_bgcolor_opacity, true, DEFAULT_MESSAGE_BGCOLOR_OPACITY, false);
-   SETTING_FLOAT("video_hdr_max_nits",           &settings->floats.video_hdr_max_nits, true, DEFAULT_VIDEO_HDR_MAX_NITS, false);
+   SETTING_FLOAT("video_hdr_menu_nits",           &settings->floats.video_hdr_menu_nits, true, DEFAULT_MENU_HDR_BRIGHTNESS_NITS, false);
    SETTING_FLOAT("video_hdr_paper_white_nits",   &settings->floats.video_hdr_paper_white_nits, true, DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS, false);
 
    SETTING_FLOAT("input_axis_threshold",         &settings->floats.input_axis_threshold,     true, DEFAULT_AXIS_THRESHOLD, false);
@@ -2402,7 +2431,7 @@ static struct config_uint_setting *populate_settings_uint(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(1, (*size + 1) * sizeof(struct config_uint_setting));
+   struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(SETTINGS_UINT_COUNT_MAX, sizeof(struct config_uint_setting));
 
    if (!tmp)
       return NULL;
@@ -2581,6 +2610,11 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_rumble_gain",             &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
    SETTING_UINT("input_auto_game_focus",         &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
 #ifdef ANDROID
+   SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 0, false);
+#else
+   SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 1, false);
+#endif
+#ifdef ANDROID
    SETTING_UINT("input_block_timeout",           &settings->uints.input_block_timeout, true, DEFAULT_INPUT_BLOCK_TIMEOUT, false);
 #endif
    SETTING_UINT("keyboard_gamepad_mapping_type", &settings->uints.input_keyboard_gamepad_mapping_type, true, 1, false);
@@ -2700,7 +2734,7 @@ static struct config_size_setting *populate_settings_size(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_size_setting  *tmp   = (struct config_size_setting*)calloc((*size + 1), sizeof(struct config_size_setting));
+   struct config_size_setting  *tmp   = (struct config_size_setting*)calloc(SETTINGS_SIZE_COUNT_MAX, sizeof(struct config_size_setting));
 
    if (!tmp)
       return NULL;
@@ -2716,7 +2750,7 @@ static struct config_int_setting *populate_settings_int(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_int_setting  *tmp    = (struct config_int_setting*)calloc((*size + 1), sizeof(struct config_int_setting));
+   struct config_int_setting  *tmp    = (struct config_int_setting*)calloc(SETTINGS_INT_COUNT_MAX, sizeof(struct config_int_setting));
 
    if (!tmp)
       return NULL;
@@ -2830,11 +2864,11 @@ void config_set_defaults(void *data)
    global_t *global                 = (global_t*)data;
    settings_t *settings             = config_st;
    recording_state_t *recording_st  = recording_state_get_ptr();
-   int bool_settings_size           = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
-   int float_settings_size          = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
-   int int_settings_size            = sizeof(settings->ints)    / sizeof(settings->ints.placeholder);
-   int uint_settings_size           = sizeof(settings->uints)   / sizeof(settings->uints.placeholder);
-   int size_settings_size           = sizeof(settings->sizes)   / sizeof(settings->sizes.placeholder);
+   int bool_settings_size           = SETTINGS_BOOL_COUNT_MAX;
+   int float_settings_size          = SETTINGS_FLOAT_COUNT_MAX;
+   int int_settings_size            = SETTINGS_INT_COUNT_MAX;
+   int uint_settings_size           = SETTINGS_UINT_COUNT_MAX;
+   int size_settings_size           = SETTINGS_SIZE_COUNT_MAX;
    const char *def_video            = config_get_default_video();
    const char *def_audio            = config_get_default_audio();
 #ifdef HAVE_MICROPHONE
@@ -3825,13 +3859,13 @@ static bool config_load_file(global_t *global,
    char *save                                      = NULL;
    char *override_username                         = NULL;
    runloop_state_t *runloop_st                     = runloop_state_get_ptr();
-   int bool_settings_size                          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
-   int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
-   int int_settings_size                           = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
-   int uint_settings_size                          = sizeof(settings->uints)  / sizeof(settings->uints.placeholder);
-   int size_settings_size                          = sizeof(settings->sizes)  / sizeof(settings->sizes.placeholder);
-   int array_settings_size                         = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
-   int path_settings_size                          = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
+   int bool_settings_size                          = SETTINGS_BOOL_COUNT_MAX;
+   int float_settings_size                         = SETTINGS_FLOAT_COUNT_MAX;
+   int int_settings_size                           = SETTINGS_INT_COUNT_MAX;
+   int uint_settings_size                          = SETTINGS_UINT_COUNT_MAX;
+   int size_settings_size                          = SETTINGS_SIZE_COUNT_MAX;
+   int array_settings_size                         = SETTINGS_ARRAY_COUNT_MAX;
+   int path_settings_size                          = SETTINGS_PATH_COUNT_MAX;
    struct config_bool_setting *bool_settings       = NULL;
    struct config_float_setting *float_settings     = NULL;
    struct config_int_setting *int_settings         = NULL;
@@ -4920,9 +4954,8 @@ bool config_load_remap(const char *directory_input_remapping,
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    enum msg_hash_enums msg_remap_loaded   = MSG_GAME_REMAP_FILE_LOADED;
    settings_t *settings                   = config_st;
-   bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
    unsigned joypad_port                   = settings->uints.input_joypad_index[0];
-   const char *inp_dev_name               = input_config_get_device_display_name(joypad_port);
+   bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
 
    /* > Cannot load remaps if we have no core
@@ -4931,28 +4964,24 @@ bool config_load_remap(const char *directory_input_remapping,
        || string_is_empty(directory_input_remapping))
       return false;
 
-   game_path[0]        = '\0';
-   content_path[0]     = '\0';
+   core_path[0]    = '\0';
+   game_path[0]    = '\0';
+   content_path[0] = '\0';
 
-   if (   sort_remaps_by_controller
-       && !string_is_empty(inp_dev_name)
-       )
+   strlcpy(remap_path, core_name, sizeof(remap_path));
+
+   if (sort_remaps_by_controller)
    {
-      /* Ensure directory does not contain special chars */
-      const char *inp_dev_dir = sanitize_path_part(
-            inp_dev_name, strlen(inp_dev_name));
-      /*  Build the new path with the controller name */
-      size_t _len = strlcpy(remap_path, core_name, sizeof(remap_path));
-      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(),
-            sizeof(remap_path) - _len);
-      strlcpy(remap_path + _len, inp_dev_dir,
-            sizeof(remap_path) - _len);
-      /* Deallocate as we no longer need this */
-      free((char*)inp_dev_dir);
-      inp_dev_dir = NULL;
+      const char *input_device_name = input_config_get_device_display_name(joypad_port);
+
+      if (!string_is_empty(input_device_name))
+      {
+         /* Ensure directory does not contain special chars */
+         const char *input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
+
+         fill_pathname_join_special(remap_path, core_name, input_device_dir, sizeof(remap_path));
+      }
    }
-   else /* We're not using controller path, just use core name */
-      strlcpy(remap_path, core_name, sizeof(remap_path));
 
    if (!string_is_empty(rarch_path_basename))
    {
@@ -5140,11 +5169,10 @@ static void save_keybind_joykey_label(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   strlcpy(key + _len, "_btn", sizeof(key) - _len);
-
+   _len += strlcpy(key + _len, "_btn", sizeof(key) - _len);
    if (!string_is_empty(bind->joykey_label))
    {
-      strlcat(key, "_label", sizeof(key));
+      strlcpy(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, bind->joykey_label);
    }
 }
@@ -5186,13 +5214,11 @@ static void save_keybind_axis_label(config_file_t *conf,
       const struct retro_keybind *bind)
 {
    char key[64];
-   char config[16];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   strlcpy(key + _len, "_axis", sizeof(key) - _len);
-
+   _len += strlcpy(key + _len, "_axis", sizeof(key) - _len);
    if (!string_is_empty(bind->joyaxis_label))
    {
-      strlcat(key, "_label", sizeof(key));
+      strlcpy(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, bind->joyaxis_label);
    }
 }
@@ -5584,13 +5610,13 @@ bool config_save_file(const char *path)
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_st;
    global_t *global                                  = global_get_ptr();
-   int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
-   int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);
-   int int_settings_size                             = sizeof(settings->ints)  / sizeof(settings->ints.placeholder);
-   int uint_settings_size                            = sizeof(settings->uints) / sizeof(settings->uints.placeholder);
-   int size_settings_size                            = sizeof(settings->sizes) / sizeof(settings->sizes.placeholder);
-   int array_settings_size                           = sizeof(settings->arrays)/ sizeof(settings->arrays.placeholder);
-   int path_settings_size                            = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
+   int bool_settings_size                            = SETTINGS_BOOL_COUNT_MAX;
+   int float_settings_size                           = SETTINGS_FLOAT_COUNT_MAX;
+   int int_settings_size                             = SETTINGS_INT_COUNT_MAX;
+   int uint_settings_size                            = SETTINGS_UINT_COUNT_MAX;
+   int size_settings_size                            = SETTINGS_SIZE_COUNT_MAX;
+   int array_settings_size                           = SETTINGS_ARRAY_COUNT_MAX;
+   int path_settings_size                            = SETTINGS_PATH_COUNT_MAX;
 
    if (!conf)
       conf = config_file_new_alloc();
@@ -5860,13 +5886,13 @@ int8_t config_save_overrides(enum override_type type,
    char override_directory[DIR_MAX_LENGTH];
    char override_path[PATH_MAX_LENGTH];
    settings_t *overrides                       = config_st;
-   int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
-   int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
-   int int_settings_size                       = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
-   int uint_settings_size                      = sizeof(settings->uints)  / sizeof(settings->uints.placeholder);
-   int size_settings_size                      = sizeof(settings->sizes)  / sizeof(settings->sizes.placeholder);
-   int array_settings_size                     = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
-   int path_settings_size                      = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
+   int bool_settings_size                      = SETTINGS_BOOL_COUNT_MAX;
+   int float_settings_size                     = SETTINGS_FLOAT_COUNT_MAX;
+   int int_settings_size                       = SETTINGS_INT_COUNT_MAX;
+   int uint_settings_size                      = SETTINGS_UINT_COUNT_MAX;
+   int size_settings_size                      = SETTINGS_SIZE_COUNT_MAX;
+   int array_settings_size                     = SETTINGS_ARRAY_COUNT_MAX;
+   int path_settings_size                      = SETTINGS_PATH_COUNT_MAX;
    rarch_system_info_t *sys_info               = (rarch_system_info_t*)data;
    const char *core_name                       = sys_info ? sys_info->info.library_name : NULL;
    const char *rarch_path_basename             = path_get(RARCH_PATH_BASENAME);
@@ -5906,31 +5932,31 @@ int8_t config_save_overrides(enum override_type type,
          "without-overrides", settings);
 
    bool_settings       = populate_settings_bool(settings,   &bool_settings_size);
-   tmp_i               = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
+   tmp_i               = SETTINGS_BOOL_COUNT_MAX;
    bool_overrides      = populate_settings_bool(overrides,  &tmp_i);
 
    int_settings        = populate_settings_int(settings,    &int_settings_size);
-   tmp_i               = sizeof(settings->ints) / sizeof(settings->ints.placeholder);
+   tmp_i               = SETTINGS_INT_COUNT_MAX;
    int_overrides       = populate_settings_int(overrides,   &tmp_i);
 
    uint_settings       = populate_settings_uint(settings,   &uint_settings_size);
-   tmp_i               = sizeof(settings->uints) / sizeof(settings->uints.placeholder);
+   tmp_i               = SETTINGS_UINT_COUNT_MAX;
    uint_overrides      = populate_settings_uint(overrides,  &tmp_i);
 
    size_settings       = populate_settings_size(settings,   &size_settings_size);
-   tmp_i               = sizeof(settings->sizes) / sizeof(settings->sizes.placeholder);
+   tmp_i               = SETTINGS_SIZE_COUNT_MAX;
    size_overrides      = populate_settings_size(overrides,  &tmp_i);
 
    float_settings      = populate_settings_float(settings,  &float_settings_size);
-   tmp_i               = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
+   tmp_i               = SETTINGS_FLOAT_COUNT_MAX;
    float_overrides     = populate_settings_float(overrides, &tmp_i);
 
    array_settings      = populate_settings_array(settings,  &array_settings_size);
-   tmp_i               = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
+   tmp_i               = SETTINGS_ARRAY_COUNT_MAX;
    array_overrides     = populate_settings_array(overrides, &tmp_i);
 
    path_settings       = populate_settings_path(settings,   &path_settings_size);
-   tmp_i               = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
+   tmp_i               = SETTINGS_PATH_COUNT_MAX;
    path_overrides      = populate_settings_path(overrides,  &tmp_i);
 
    if (conf->flags & CONF_FILE_FLG_MODIFIED)
@@ -6741,6 +6767,8 @@ uint8_t input_config_bind_map_get_retro_key(unsigned bind_index)
 void input_config_reset_autoconfig_binds(unsigned port)
 {
    size_t i;
+   input_driver_state_t *input_st;
+   input_sensor_map_t *map;
 
    if (port >= MAX_USERS)
       return;
@@ -6763,13 +6791,36 @@ void input_config_reset_autoconfig_binds(unsigned port)
          input_autoconf_binds[port][i].joyaxis_label = NULL;
       }
    }
+
+   /* Reset sensor axis map to default identity mapping */
+   input_st = input_state_get_ptr();
+   map      = &input_st->input_sensor_map[port];
+   for (i = 0; i < 6; i++)
+   {
+      map->axes[i].source = (int8_t)i;
+      map->axes[i].sign   = 1;
+   }
+}
+
+const input_sensor_map_t *input_config_get_sensor_map(unsigned port)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   if (port >= MAX_INPUT_DEVICES)
+      return NULL;
+   return &input_st->input_sensor_map[port];
 }
 
 void input_config_set_autoconfig_binds(unsigned port, void *data)
 {
+   static const char *sensor_keys[6] = {
+      "input_sensor_accel_x", "input_sensor_accel_y", "input_sensor_accel_z",
+      "input_sensor_gyro_x",  "input_sensor_gyro_y",  "input_sensor_gyro_z"
+   };
    size_t i;
    config_file_t *config       = (config_file_t*)data;
    struct retro_keybind *binds = NULL;
+   input_driver_state_t *input_st;
+   input_sensor_map_t *map;
 
    if ((port >= MAX_USERS) || !config)
       return;
@@ -6788,6 +6839,27 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
 
          input_config_parse_joy_button(str, config, "input", base, &binds[i]);
          input_config_parse_joy_axis  (str, config, "input", base, &binds[i]);
+      }
+   }
+
+   /* Parse sensor axis map overrides from autoconfig profile */
+   input_st = input_state_get_ptr();
+   map      = &input_st->input_sensor_map[port];
+   for (i = 0; i < 6; i++)
+   {
+      char tmp[16];
+      tmp[0] = '\0';
+      if (config_get_array(config, sensor_keys[i], tmp, sizeof(tmp)))
+      {
+         if (tmp[0] == '+' || tmp[0] == '-')
+         {
+            int code = (int)strtol(tmp + 1, NULL, 0);
+            if (code >= 0 && code <= 5)
+            {
+               map->axes[i].source = (int8_t)code;
+               map->axes[i].sign   = (tmp[0] == '-') ? -1 : 1;
+            }
+         }
       }
    }
 }

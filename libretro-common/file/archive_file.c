@@ -464,40 +464,6 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
 }
 
 /**
- * string_list_append_n:
- * @list             : pointer to string list
- * @elem             : element to add to the string list
- * @length           : read at most this many bytes from elem
- * @attr             : attributes of new element.
- *
- * Appends a new element to the string list.
- *
- * @return true if successful, otherwise false.
- **/
-static bool string_list_append_n(struct string_list *list,
-      const char *elem, unsigned length,
-      union string_list_elem_attr attr)
-{
-   char *data_dup = NULL;
-
-   if (list->size >= list->cap &&
-         !string_list_capacity(list, list->cap * 2))
-      return false;
-
-   if (!(data_dup = (char*)malloc(length + 1)))
-      return false;
-
-   strlcpy(data_dup, elem, length + 1);
-
-   list->elems[list->size].data = data_dup;
-   list->elems[list->size].attr = attr;
-
-   list->size++;
-   return true;
-}
-
-
-/**
  * file_archive_filename_split:
  * @str              : filename to turn into a string list
  *
@@ -615,9 +581,18 @@ const struct file_archive_file_backend *file_archive_get_7z_file_backend(void)
 #endif
 }
 
+const struct file_archive_file_backend *file_archive_get_zstd_file_backend(void)
+{
+#ifdef HAVE_ZSTD
+   return &zstd_backend;
+#else
+   return NULL;
+#endif
+}
+
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
-#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB) || defined(HAVE_ZSTD)
    char newpath[PATH_MAX_LENGTH];
    const char *file_ext          = NULL;
    char *last                    = NULL;
@@ -639,6 +614,11 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
          || string_is_equal_noncase(file_ext, "apk")
       )
       return &zlib_backend;
+#endif
+
+#ifdef HAVE_ZSTD
+   if (string_is_equal_noncase(file_ext, "zst"))
+      return &zstd_backend;
 #endif
 #endif
 

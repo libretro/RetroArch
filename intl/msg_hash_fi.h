@@ -232,6 +232,14 @@ MSG_HASH(
    "Sulje RetroArch. Kokoonpanon tallennus suljettaessa on käytössä."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Sulje RetroArch. Kokoonpanon tallennus suljettaessa ei ole käytössä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Sulje RetroArch. Ohjelman väkisin lopettaminen (SIGKILL, jne.) sulkee RetroArchin tallentamatta asetuksia. Unix-pohjaisissa käyttöjärjestelmissä SIGINT/SIGTERM sulkee hallitusti."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Synkronoi nyt"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Ratkaise kaikki ristiriidat lataamalla tiedostot palvelimelta ja korvaamalla paikalliset kopiot."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Sulje RetroArch. Kokoonpanon tallennus suljettaessa ei ole käytössä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Sulje RetroArch. Ohjelman väkisin lopettaminen (SIGKILL, jne.) sulkee RetroArchin tallentamatta asetuksia. Unix-pohjaisissa käyttöjärjestelmissä SIGINT/SIGTERM sulkee hallitusti."
    )
 
 /* Main Menu > Load Core */
@@ -2151,12 +2151,20 @@ MSG_HASH(
    "Ei käytössä"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Luminanssin huippu"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Kirkkaus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Valikon kirkkaus, yksikkö cd/m2 (nitiä), käytettäessä HDR-näyttöä. Näkyy vain, kun HDR on käytössä Asetukset > Video > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Valkoisen paperin luminanssi"
+   "Kirkkaus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Asettaa HDR-kirkkauden tason niteinä. Käytä yhdessä näyttösi fyysisten kirkkauden asetusten kanssa. Aseta aloituspisteeksi tämä 80:een ja näytön kirkkaus täyteen. Vaihtoehtoisesti aseta tämä näyttösi enimmäisniteihin ja säädä näyttösi kirkkautta alaspäin, kunnes kuva näyttää oikealta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2735,6 +2743,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Säädä analogisten sauvojen herkkyyttä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automaattinen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3370,6 +3382,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Laitteen indeksi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Laite varattu tälle pelaajalle"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
@@ -5188,20 +5204,8 @@ MSG_HASH(
    "Näytä jatka sisältöä -valinta."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Näytä \"Käynnistä uudelleen\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Näytä käynnistä sisältö uudestaan -valinta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Näytä \"Sulje sisältö\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Näytä \"Sulje sisältö\"-valinta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -7470,7 +7474,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Käynnistä uudelleen"
+   "Palauta asetukset"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -7960,10 +7964,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Yhtä kuin ennen -%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Lisää %u osumaa listaasi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

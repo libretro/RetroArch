@@ -269,8 +269,8 @@ static bool gdrive_json_string(const char *json_data, size_t json_len,
             break;
          case RJSON_STRING:
          {
-            size_t len;
-            const char *str = rjson_get_string(json, &len);
+            size_t __len;
+            const char *str = rjson_get_string(json, &__len);
             if (depth == 1 && is_key)
             {
                matched = string_is_equal(str, key);
@@ -328,8 +328,8 @@ static bool gdrive_json_int(const char *json_data, size_t json_len,
             break;
          case RJSON_STRING:
          {
-            size_t len;
-            const char *str = rjson_get_string(json, &len);
+            size_t __len;
+            const char *str = rjson_get_string(json, &__len);
             if (depth == 1 && is_key)
             {
                matched = string_is_equal(str, key);
@@ -421,8 +421,8 @@ static bool gdrive_extract_first_id(const char *data, size_t len,
             break;
          case RJSON_STRING:
          {
-            size_t slen;
-            const char *str = rjson_get_string(json, &slen);
+            size_t __len;
+            const char *str = rjson_get_string(json, &__len);
             if (is_key)
             {
                strlcpy(key, str, sizeof(key));
@@ -625,12 +625,12 @@ static size_t gdrive_walk_segment(const gdrive_folder_walk_t *walk,
       char *seg, size_t seg_size)
 {
    const char *end = strchr(walk->remaining, '/');
-   size_t len = end
+   size_t _len     = end
       ? (size_t)(end - walk->remaining)
       : strlen(walk->remaining);
    strlcpy(seg, walk->remaining,
-         (len + 1 < seg_size) ? len + 1 : seg_size);
-   return len;
+         (_len + 1 < seg_size) ? _len + 1 : seg_size);
+   return _len;
 }
 
 /* Advance remaining past the current segment */
@@ -653,22 +653,22 @@ static void gdrive_walk_advance(gdrive_folder_walk_t *walk)
 static void gdrive_walk_cache_path(const gdrive_folder_walk_t *walk,
       char *out, size_t out_size)
 {
-   size_t len;
+   size_t _len;
    const char *end;
    if (!walk->remaining)
    {
       strlcpy(out, walk->dir_path, out_size);
       return;
    }
-   end = strchr(walk->remaining, '/');
-   len = end
+   end  = strchr(walk->remaining, '/');
+   _len = end
       ? (size_t)(end - walk->dir_path)
       : (size_t)(walk->remaining - walk->dir_path)
         + strlen(walk->remaining);
-   if (len > 0 && walk->dir_path[len - 1] == '/')
-      len--;
+   if (_len > 0 && walk->dir_path[_len - 1] == '/')
+      _len--;
    strlcpy(out, walk->dir_path,
-         (len + 1 < out_size) ? len + 1 : out_size);
+         (_len + 1 < out_size) ? _len + 1 : out_size);
 }
 
 /* Called after a folder is found or created: cache, advance, continue */
@@ -1356,7 +1356,7 @@ static void gdrive_do_patch(gdrive_cb_state_t *cb_st)
          cb_st->path, (long long)len);
    task_push_http_transfer_with_content(url, "PATCH",
          buf, (size_t)len, "application/octet-stream",
-         true, headers, gdrive_upload_cb, cb_st);
+         true, false, headers, gdrive_upload_cb, cb_st);
    free(buf);
    free(headers);
 }

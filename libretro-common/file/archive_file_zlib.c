@@ -31,6 +31,10 @@
 
 #include <zlib.h>
 
+#ifdef HAVE_ZSTD
+#include <zstd.h>
+#endif
+
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
 #define CENTRAL_FILE_HEADER_SIGNATURE 0x02014b50
 #endif
@@ -44,7 +48,8 @@
 enum file_archive_compression_mode
 {
    ZIP_MODE_STORED   = 0,
-   ZIP_MODE_DEFLATED = 8
+   ZIP_MODE_DEFLATED = 8,
+   ZIP_MODE_ZSTD     = 93
 };
 
 typedef struct
@@ -163,6 +168,19 @@ static bool zlib_stream_decompress_data_to_file_init(
          return false;
       }
    }
+#ifdef HAVE_ZSTD
+   else if (cmode == ZIP_MODE_ZSTD)
+   {
+      /* Allocate a buffer to read compressed data into;
+       * decompression is done in one shot during iterate */
+      zip_context->tmpbuf = (uint8_t*)malloc(csize);
+      if (!zip_context->tmpbuf)
+      {
+         zip_context_free_stream(zip_context, false);
+         return false;
+      }
+   }
+#endif
 
    return true;
 }
@@ -243,6 +261,45 @@ static int zlib_stream_decompress_data_to_file_iterate(
 
       return 0;   /* still more data to process */
    }
+#ifdef HAVE_ZSTD
+   else if (zip_context->cmode == ZIP_MODE_ZSTD)
+   {
+      size_t result;
+
+#ifdef HAVE_MMAP
+      if (state->archive_mmap_data)
+      {
+         result = ZSTD_decompress(
+               zip_context->decompressed_data, zip_context->usize,
+               state->archive_mmap_data + (size_t)zip_context->fdoffset,
+               zip_context->csize);
+      }
+      else
+#endif
+      {
+         /* Read all compressed data, then decompress */
+         filestream_seek(state->archive_file,
+               zip_context->fdoffset,
+               RETRO_VFS_SEEK_POSITION_START);
+         if (filestream_read(state->archive_file,
+                  zip_context->tmpbuf, zip_context->csize) < 0)
+            return -1;
+
+         result = ZSTD_decompress(
+               zip_context->decompressed_data, zip_context->usize,
+               zip_context->tmpbuf, zip_context->csize);
+      }
+
+      if (ZSTD_isError(result))
+         return -1;
+
+      free(zip_context->tmpbuf);
+      zip_context->tmpbuf = NULL;
+
+      handle->data = zip_context->decompressed_data;
+      return 1;
+   }
+#endif
 
    /* No idea what kind of compression this is */
    return -1;

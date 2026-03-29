@@ -212,16 +212,16 @@ MSG_HASH(
    "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dinyalakan."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dimatikan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sinkronkan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    "Manual mengaktifkan sinkronisasi awan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dimatikan."
    )
 
 /* Main Menu > Load Core */
@@ -1642,14 +1642,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Tingkat Serian Layar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Pancaran Cahaya Layar Layaknya Kertas Bacaan"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -2091,6 +2083,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Sesuaikan daya tanggapan stik analok."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Otomatis"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
@@ -2635,14 +2631,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Tampilkan 'Mulai Ulang'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Menampilkan opsi mulai ulang konten."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
    "Tampilkan 'Mulai Siar Alir'"
@@ -3252,10 +3240,6 @@ MSG_HASH(
 
 /* Quick Menu */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Mulai Ulang"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Tutup Konten"

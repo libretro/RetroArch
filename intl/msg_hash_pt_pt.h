@@ -2066,10 +2066,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminosidade de Papel Branco"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -2339,6 +2335,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    "LIGADO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automático"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3622,7 +3622,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Reiniciar"
+   "Reiniciar (reset)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

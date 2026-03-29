@@ -539,7 +539,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
 }
 
 - (void)renderMessage:(const char *)msg
-                height:(unsigned)height
+               height:(unsigned)height
                 scale:(float)scale
                 color:(vector_float4)color
                  posX:(float)posX
@@ -549,18 +549,16 @@ static INLINE void write_quad6(SpriteVertex *pv,
    int lines = 0;
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
-
    if (!_font_driver || !_font_data)
       return;
-
    _font_driver->get_line_metrics(_font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
-
    for (;;)
    {
-      const char *delim  = strchr(msg, '\n');
-      size_t     msg_len = delim ? (unsigned)(delim - msg) : strlen(msg);
-
+      const char *delim = msg;
+      while (*delim && *delim != '\n')
+         delim++;
+      size_t msg_len = (size_t)(delim - msg);
       /* Draw the line */
       [self _renderLine:msg
                  length:msg_len
@@ -569,10 +567,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
                    posX:posX
                    posY:posY - (float)lines * line_height
                 aligned:aligned];
-
-      if (!delim)
+      if (!*delim)
          break;
-
       msg += msg_len + 1;
       lines++;
    }
@@ -2767,7 +2763,7 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_contrast */
    NULL  /* set_hdr_expand_gamut */

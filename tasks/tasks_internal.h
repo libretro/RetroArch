@@ -81,7 +81,8 @@ void *task_push_http_post_transfer_with_headers(const char *url, const char *pos
 
 void *task_push_http_transfer_with_content(const char *url, const char *method,
    const void *content, size_t content_len, const char *content_type, bool mute,
-   const char *headers, retro_task_callback_t cb, void *user_data);
+   bool headers_accept_err, const char *headers,
+   retro_task_callback_t cb, void *user_data);
 
 void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);

@@ -76,6 +76,7 @@
 
 #ifdef HAVE_AVF
 #include "../camera/drivers/avfoundation.m"
+#include "../record/drivers/record_avfoundation.m"
 #endif
 
 #if defined(HAVE_DISCORD)

@@ -509,9 +509,9 @@ static int interpretAddr(struct nlmsghdr *p_hdr,
       }
    }
 
-   if (l_entry->ifa_addr &&
-         (   l_entry->ifa_addr->sa_family == AF_INET
-          || l_entry->ifa_addr->sa_family == AF_INET6))
+   if (          l_entry->ifa_addr
+          && (   l_entry->ifa_addr->sa_family == AF_INET
+          ||     l_entry->ifa_addr->sa_family == AF_INET6))
    {
       unsigned i;
       char l_mask[16];

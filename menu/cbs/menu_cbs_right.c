@@ -110,9 +110,9 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound)
 {
    settings_t           *settings = config_get_ptr();
-   bool apply_cheats_after_toggle = settings->bools.apply_cheats_after_toggle;
 
-   cheat_manager_toggle_index(apply_cheats_after_toggle,
+   cheat_manager_toggle_index(
+         settings->bools.apply_cheats_after_toggle,
          settings->bools.notification_show_cheats_applied,
          (unsigned)idx);
 
@@ -661,9 +661,6 @@ static int scan_method_right(
       manual_content_scan_get_menu_scan_method_list();
 
    const char *current_scan_method                                 = NULL;
-   enum manual_content_scan_system_name_type next_system_name_type =
-         MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
-   const char *next_scan_method                                    = NULL;
    unsigned current_index                                          = 0;
    unsigned next_index                                             = 0;
    unsigned i;
@@ -698,7 +695,8 @@ static int scan_method_right(
    }
 
    /* Set system name */
-   manual_content_scan_set_menu_scan_method(next_index);
+   manual_content_scan_set_menu_scan_method(
+      (enum manual_content_scan_method)next_index);
    menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    /* Clean up */
    string_list_free(scan_method_list);
@@ -714,7 +712,6 @@ static int scan_use_db_right(
       manual_content_scan_get_menu_scan_use_db_list();
 
    const char *current_scan_use_db                                 = NULL;
-   const char *next_scan_use_db                                    = NULL;
    unsigned current_index                                          = 0;
    unsigned next_index                                             = 0;
    unsigned i;
@@ -747,7 +744,8 @@ static int scan_use_db_right(
    }
 
    /* Set system name */
-   manual_content_scan_set_menu_scan_use_db(next_index);
+   manual_content_scan_set_menu_scan_use_db(
+      (enum manual_content_scan_db_usage)next_index);
    menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    /* Clean up */
    string_list_free(scan_use_db_list);

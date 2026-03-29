@@ -58,7 +58,7 @@ enum thread_cmd
    CMD_POKE_SHOW_MOUSE,
    CMD_POKE_GRAB_MOUSE_TOGGLE,
 
-   CMD_POKE_SET_HDR_MAX_NITS,
+   CMD_POKE_SET_HDR_MENU_NITS,
    CMD_POKE_SET_HDR_PAPER_WHITE_NITS,
    CMD_POKE_SET_HDR_EXPAND_GAMUT,
    CMD_POKE_SET_HDR_SCANLINES,
@@ -158,7 +158,7 @@ typedef struct thread_packet
 
       struct
       {
-         float max_nits;
+         float menu_nits;
          float paper_white_nits;
          unsigned expand_gamut;
          bool scanlines;

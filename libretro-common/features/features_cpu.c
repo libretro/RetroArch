@@ -639,6 +639,9 @@ uint64_t cpu_features_get(void)
    if (sysctlbyname("hw.optional.avx2_0", NULL, &_len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_AVX2;
    _len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.avx512f", NULL, &_len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_AVX512;
+   _len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.altivec", NULL, &_len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_VMX;
 #else
@@ -670,12 +673,13 @@ uint64_t cpu_features_get(void)
    /* printf("[CPUID]: Vendor: %s\n", vendor); */
 
    vendor_is_intel = (
-         flags[1] == VENDOR_INTEL_b &&
-         flags[2] == VENDOR_INTEL_c &&
-         flags[3] == VENDOR_INTEL_d);
+            flags[1] == VENDOR_INTEL_b 
+         && flags[2] == VENDOR_INTEL_c
+         && flags[3] == VENDOR_INTEL_d);
 
    max_flag = flags[0];
-   if (max_flag < 1) /* Does CPUID not support func = 1? (unlikely ...) */
+   /* Does CPUID not support func = 1? (unlikely ...) */
+   if (max_flag < 1) 
       return 0;
 
    x86_cpuid(1, flags);
@@ -789,7 +793,7 @@ void cpu_features_get_model_name(char *s, int len)
       uint8_t s[16];
    } flags;
    int i, j;
-   int pos = 0;
+   int pos    = 0;
    bool start = false;
 
    if (!s)
@@ -810,8 +814,8 @@ void cpu_features_get_model_name(char *s, int len)
       {
          if (!start && flags.s[j] == ' ')
             continue;
-         else
-            start = true;
+
+         start = true;
 
          if (pos == len - 1)
          {
@@ -878,9 +882,11 @@ end:
                   const char *p = strchr(buf, ':');
                   if (p)
                   {
+                     size_t len2;
                      p++; // skip ':'
-                     while (*p == ' ' || *p == '\t') p++;
-                     size_t len2 = strcspn(p, "\r\n");
+                     while (*p == ' ' || *p == '\t')
+                        p++;
+                     len2 = strcspn(p, "\r\n");
 
                      if (len2 > 0)
                      {
@@ -892,15 +898,15 @@ end:
 
                            if (s[0] != '\0')
                            {
-                              size_t oldlen = strlen(s);
-                              char *combined = malloc(oldlen + len2 + 4);
+                              size_t oldlen  = strlen(s);
+                              char *combined = (char*)malloc(oldlen + len2 + 4);
                               if (combined)
                               {
                                  memcpy(combined, s, oldlen);
-                                 combined[oldlen] = ' ';
+                                 combined[oldlen]     = ' ';
                                  combined[oldlen + 1] = '(';
                                  memcpy(combined + oldlen + 2, tmp, len2);
-                                 combined[oldlen + 2 + len2] = ')';
+                                 combined[oldlen + 2 + len2]     = ')';
                                  combined[oldlen + 2 + len2 + 1] = '\0';
 
                                  strlcpy(s, combined, len);
@@ -908,9 +914,7 @@ end:
                               }
                            }
                            else
-                           {
                               strlcpy(s, tmp, len);
-                           }
                            free(tmp);
                         }
                      }

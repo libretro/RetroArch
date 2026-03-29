@@ -232,6 +232,14 @@ MSG_HASH(
    "Quit RetroArch application. Configuration save on exit is enabled."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Quit RetroArch application. Configuration save on exit is disabled."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch without saving the configuration in any case. On Unix-likes, SIGINT/SIGTERM allows a clean deinitialization which includes configuration save if enabled."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sync Now"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Resolve all conflicts by downloading server files, replacing local copies."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Quit RetroArch application. Configuration save on exit is disabled."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch without saving the configuration in any case. On Unix-likes, SIGINT/SIGTERM allows a clean deinitialization which includes configuration save if enabled."
    )
 
 /* Main Menu > Load Core */
@@ -1157,6 +1157,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
    "Your password for your cloud storage account."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Access Key ID"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Your access key ID for your cloud storage account."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Secret Access Key"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Your secret access key for your cloud storage account."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   "S3 URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "Your S3 endpoint URL for cloud storage."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -2487,20 +2511,20 @@ MSG_HASH(
    "scRGB"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Peak Luminance"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Brightness"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Set the peak luminance (in cd/m2) your display can reproduce. Once set dont change it. Use Paper White Luminance to set brightness. See RTings.com for your display's peak luminance. On some displays with scanlines on (below) you may need to overdrive this (and paper white) to bring the overall brightness up."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Brightness of the menu in cd/m2 (nits) when using an HDR display. Only visible when HDR is enabled in Settings > Video > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Paper White Luminance"
+   "Brightness"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Once peak luminance is set, use this as your standard brightness setting. Technically this sets the luminance at which paper white should be i.e. readable text or luminance at the top of the SDR (Standard Dynamic Range) range."
+   "Sets the HDR brightness level in nits. Use in combination with your display's physical brightness settings. For a starting point, set this to 80 and your display's brightness to full. Alternatively, set this to the max nits of your display and turn your display's brightness down until it looks right."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2508,7 +2532,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Uses your display's full colour range to create a brighter, more saturated image. For colours more faithful to the original game design, set this to ACCURATE."
+   "Uses your display's full colour range to create a brighter, more saturated image. For colours more faithful to the original game design, set this to Accurate."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
@@ -3277,8 +3301,36 @@ MSG_HASH(
    "Adjust the sensitivity of the Accelerometer."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Sensor Orientation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Rotate accelerometer and gyroscope axes to match device orientation."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Auto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_0,
+   "0°"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_90,
+   "90°"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_180,
+   "180°"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_270,
+   "270°"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Adjust the sensitivity of the Gyroscope."
+   "Adjust the sensitivity of the Gyroscope."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3420,6 +3472,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Change haptic feedback and vibration settings."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Motion/Light Sensors"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Change accelerometer, gyroscope and illuminance settings."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -4970,8 +5030,16 @@ MSG_HASH(
    "Use Built-In Media Player"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Show Media Player supported files in File Browser."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Use Built-In Image Viewer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Show Image Viewer supported files in File Browser."
    )
 
 /* Settings > Frame Throttle */
@@ -6545,11 +6613,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Show 'Restart'"
+   "Show 'Reset'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Show the restart content option."
+   "Show the reset content option."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -6557,7 +6625,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Show the 'Close Content' option."
+   "Show the close content option."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -9090,11 +9158,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Restart"
+   "Reset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Restart the content from the beginning. RetroPad Start triggers hard reset."
+   "Trigger soft reset. RetroPad Start triggers hard reset."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9484,10 +9552,6 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
    "Scan memory to create new cheats."
    )
 MSG_HASH(
@@ -9512,7 +9576,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
-   ""
+   "Reload all existing cheats."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
@@ -9528,7 +9592,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
-   ""
+   "Prepend a cheat to the list."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
@@ -9536,7 +9600,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
-   ""
+   "Append a cheat to the list."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
@@ -9544,7 +9608,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
-   ""
+   "Clear the cheat list."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9703,7 +9767,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Add the %u Matches to Your List"
+   "Add %u Matches to the List"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES,
@@ -10477,7 +10541,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabic - اَلْعَرَبِيَّةُ (Restart required)"
+   "Arabic - العربية (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
@@ -15354,6 +15418,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "All cheats deleted."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "All cheats reloaded."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

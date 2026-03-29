@@ -557,13 +557,13 @@ static void frontend_android_get_version_sdk(int32_t *sdk)
 static bool device_is_xperia_play(const char *name)
 {
    if (
-         strstr(name, "R800x") ||
-         strstr(name, "R800at") ||
-         strstr(name, "R800i") ||
-         strstr(name, "R800a") ||
-         strstr(name, "R800") ||
-         strstr(name, "Xperia Play") ||
-         strstr(name, "SO-01D")
+            strstr(name, "R800x")
+         || strstr(name, "R800at")
+         || strstr(name, "R800i")
+         || strstr(name, "R800a")
+         || strstr(name, "R800")
+         || strstr(name, "Xperia Play")
+         || strstr(name, "SO-01D")
       )
       return true;
 
@@ -574,14 +574,14 @@ static bool device_is_xperia_play(const char *name)
 static bool device_is_game_console(const char *name)
 {
    if (
-         strstr(name, "OUYA Console") ||
-         device_is_xperia_play(name) ||
-         strstr(name, "GAMEMID_BT") ||
-         strstr(name, "S7800") ||
-         strstr(name, "XD\n") ||
-         strstr(name, "ARCHOS GAMEPAD") ||
-         strstr(name, "SHIELD Android TV") ||
-         strstr(name, "SHIELD\n")
+            device_is_xperia_play(name)
+         || strstr(name, "OUYA Console")
+         || strstr(name, "GAMEMID_BT")
+         || strstr(name, "S7800")
+         || strstr(name, "XD\n")
+         || strstr(name, "ARCHOS GAMEPAD")
+         || strstr(name, "SHIELD Android TV")
+         || strstr(name, "SHIELD\n")
       )
       return true;
 
@@ -962,7 +962,7 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
-   if (strstr((char*)buf, "1"))
+   if (strchr((char*)buf, '1'))
       *have_ac = true;
 
    free(buf);

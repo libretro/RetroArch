@@ -141,13 +141,22 @@ static void reset_IOP()
 bool getMountInfo(char *path, char *mountPoint, char *partition, char *newCWD)
 {
    struct string_list *str_list = string_split(path, ":");
+
    if (str_list->size < 3)
+   {
+      string_list_free(str_list);
       return false;
+   }
 
-   sprintf(partition, "%s:%s", str_list->elems[0].data, str_list->elems[1].data);
-   sprintf(mountPoint, "%s:", str_list->elems[2].data);
-   sprintf(newCWD, "%s%s", mountPoint, str_list->size == 4 ? str_list->elems[3].data : "");
+   sprintf(partition, "%s:%s",
+            str_list->elems[0].data, str_list->elems[1].data);
+   sprintf(mountPoint, "%s:",
+            str_list->elems[2].data);
+   sprintf(newCWD, "%s%s",
+            mountPoint,
+            str_list->size >= 4 ? str_list->elems[3].data : "");
 
+   string_list_free(str_list);
    return true;
 }
 

@@ -48,7 +48,7 @@ static int file_decompressed_subdir(const char *name,
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
    /* Loop multiple subdirs */
-   if (strstr(userdata->dec->subdir, "|"))
+   if (strchr(userdata->dec->subdir, '|'))
    {
       const char *subdir = NULL;
       char *save         = NULL;
@@ -73,7 +73,7 @@ static int file_decompressed_subdir(const char *name,
 
    /* Remove desired subdir from the file path
     * if not extracting multiple subdirs */
-   if (!strstr(userdata->dec->subdir, "|"))
+   if (!strchr(userdata->dec->subdir, '|'))
       name += strlen(userdata->dec->subdir) + 1;
 
    fill_pathname_join_special(path,
@@ -310,6 +310,9 @@ void *task_push_decompress(
           && !string_is_equal_noncase(ext, "apk")
 #ifdef HAVE_7ZIP
           && !string_is_equal_noncase(ext, "7z")
+#endif
+#ifdef HAVE_ZSTD
+          && !string_is_equal_noncase(ext, "zst")
 #endif
          )
       )

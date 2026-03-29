@@ -232,6 +232,14 @@ MSG_HASH(
    "Вихід з додатка RetroArch. Збереження конфігурації на виході увімкнено."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Вихід з додатка RetroArch. Збереження конфігурації на виході вимкнено."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Вихід з RetroArch. Завершення роботи програми будь-яким жорстким способом (SIGKILL тощо) призведе до завершення роботи RetroArch без збереження конфігурації у будь-якому випадку. На Unix-подібних системах SIGINT/SIGTERM дозволяє чисту деініціалізацію, яка включає збереження конфігурації, якщ[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Синхронізувати зараз"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Вирішити усі конфлікти, завантаживши файли сервера, замінивши локальні копії."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Вихід з додатка RetroArch. Збереження конфігурації на виході вимкнено."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Вихід з RetroArch. Завершення роботи програми будь-яким жорстким способом (SIGKILL тощо) призведе до завершення роботи RetroArch без збереження конфігурації у будь-якому випадку. На Unix-подібних системах SIGINT/SIGTERM дозволяє чисту деініціалізацію, яка включає збереження конфігурації, якщ[...]"
    )
 
 /* Main Menu > Load Core */
@@ -2427,12 +2427,12 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Пікова яскравість"
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Встановіть режим виводу HDR, якщо дисплей підтримує його. Примітка: scRGB може пом'якшувати суворі маски ЭЛТ-шейдерів, оскільки OS compositor перетворює в HDR10 після застосування маски."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Яскравість білого паперу"
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
+   "Вимкнути"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2441,6 +2441,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    "Точний"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "Розширений"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "Широкий"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
+   "Супер"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   ""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Субпіксельна схема"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Виберіть субпіксельну розмітку вашого дисплея, це вплине тільки на лінії розгортки. Якщо ви поняття не маєте, яка субпіксельна розмітка вашого дисплея, див. Rtings.com \"субпіксельну розмітку\" вашого дисплея"
    )
 
 
@@ -3161,8 +3185,20 @@ MSG_HASH(
    "Налаштуйте чутливість акселерометра."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Орієнтація датчика"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Поверніть осі акселерометра і гіроскопа у відповідності з орієнтацією пристрою."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Автоматично"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Налаштуйте чутливість гіроскопа."
+   "Налаштуйте чутливість гіроскопа."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3346,6 +3382,10 @@ MSG_HASH(
    "Обхідний шлях для відключення та повторного підключення контролерів. Заважає 2 гравцям з однаковими контролерами."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Підтвердіть Вихід"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
    "Вимагати подвійного натискання гарячої клавіші для Виходу."
    )
@@ -3354,8 +3394,16 @@ MSG_HASH(
    "Підтвердіть закриття вмісту"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Вимагати подвійного натискання гарячої клавіші Закриття Вмісту."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
    "Підтвердіть Скидання Вмісту"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Вимагати подвійного натискання гарячої клавіші Скидання Вмісту."
    )
 
 
@@ -3584,6 +3632,10 @@ MSG_HASH(
    "Перемотати назад"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   "Перемотує поточний вміст, поки утримується клавіша. 'Підтримка перемотування' має бути увімкнена."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Пауза"
    )
@@ -3669,6 +3721,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
    "Наступний диск"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "Збільшує поточний індекс вибраного диска і виконує відкладену вставку, якщо лоток для віртуальних дисків закритий."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -6188,20 +6244,8 @@ MSG_HASH(
    "Показувати опцію поновлення вмісту."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Показати 'Перезапуск'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Показувати опцію перезапуску вмісту."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Показати 'Закрити вміст'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Показувати опцію \"Закрити вміст\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8666,11 +8710,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Перезапустити"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Перезапуск вмісту з самого початку. Перезапуск програми RetroPad призведе до перезавантаження системи."
+   "Скинути"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9055,10 +9095,6 @@ MSG_HASH(
    "Почати або продовжити пошук"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Сканувати пам'ять на створення нових чітів."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Завантажити файл Cheat (замінити)"
    )
@@ -9224,10 +9260,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Дорівнює перед +%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Додати матчі %u до вашого списку"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

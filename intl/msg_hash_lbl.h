@@ -1215,6 +1215,10 @@ MSG_HASH(
    "deferred_input_haptic_feedback_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_INPUT_SENSOR_SETTINGS_LIST,
+   "deferred_input_sensor_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST,
    "deferred_input_menu_settings_list"
    )
@@ -1805,6 +1809,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
    "input_sensor_accelerometer_sensitivity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_ORIENTATION,
+   "input_sensor_orientation"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
@@ -3541,6 +3549,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,
    "cloud_sync_password"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "cloud_sync_access_key_id"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "cloud_sync_secret_access_key"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL,
+   "cloud_sync_s3_url"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SCAN_DIRECTORY,
@@ -6350,6 +6370,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "input_haptic_feedback_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS,
+   "input_sensor_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN,

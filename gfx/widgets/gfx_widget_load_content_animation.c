@@ -425,7 +425,7 @@ bool gfx_widget_start_load_content_animation(void)
 
    /* Check whether system name has been set or if the name
     * is a copy of info file database with multiple entries */
-   if (!has_system || strstr(state->system_name, "|"))
+   if (!has_system || strchr(state->system_name, '|'))
    {
       /* Use core display name, if available */
       if (!string_is_empty(core_info->display_name))
@@ -504,11 +504,10 @@ bool gfx_widget_start_load_content_animation(void)
    /* Truncate long system names */
    if (strlen(state->system_name) > 54)
    {
-      size_t len = 50;
-      state->system_name[++len] = '.';
-      state->system_name[++len] = '.';
-      state->system_name[++len] = '.';
-      state->system_name[++len] = '\0';
+      state->system_name[51] = '.';
+      state->system_name[52] = '.';
+      state->system_name[53] = '.';
+      state->system_name[54] = '\0';
    }
 
    /* All parameters are initialised

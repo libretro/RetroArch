@@ -74,6 +74,13 @@ bool retro_vfs_path_split_saf(struct libretro_vfs_implementation_saf_path_split_
 char *retro_vfs_path_join_saf(const char *tree, const char *path);
 
 /*
+ * Split a "content://" document URI returned by the Android Storage Access Framework into tree and path components for use with this backend.
+ * Returns true if successful or false if not.
+ * The results will be returned in `out` and must be freed by the caller.
+ */
+bool retro_vfs_path_split_content_saf(struct libretro_vfs_implementation_saf_path_split_result *out, const char *content_uri);
+
+/*
  * Open a file, returning its file descriptor if successful or -1 if not.
  * The file descriptor can be operated on using the POSIX file system API (`read()`, `write()`, `lseek()`, `close()`, etc).
  * You can also turn the file descriptor into a `FILE *` by calling `fdopen()` on it.

@@ -232,6 +232,14 @@ MSG_HASH(
    "Thoát RetroArch. Lưu thiết lập khi thoát được bật."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Thoát RetroArch. Lưu thiết lập khi thoát bị tắt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Thoát RetroArch. Nếu bạn cưỡng ép tắt ứng dụng theo bất kỳ cách nào (SIGKILL,...), RetroArch sẽ không kịp lưu bất kỳ cấu hình nào trong mọi trường hợp.Trên hệ Unix (Linux, macOS,...), các tín hiệu SIGINT/SIGTERM cho phép RetroArch tắt đúng cách, giải phóng bộ nhớ đầy đủ và lưu cấu hình nếu 'Lưu tự động' được bật."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Đồng bộ ngay"
    )
@@ -254,14 +262,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Giải quyết mọi xung đột bằng cách tải xuống các tệp trên máy chủ và thay thế các bản sao cục bộ."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Thoát RetroArch. Lưu thiết lập khi thoát bị tắt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Thoát RetroArch. Nếu bạn cưỡng ép tắt ứng dụng theo bất kỳ cách nào (SIGKILL,...), RetroArch sẽ không kịp lưu bất kỳ cấu hình nào trong mọi trường hợp.Trên hệ Unix (Linux, macOS,...), các tín hiệu SIGINT/SIGTERM cho phép RetroArch tắt đúng cách, giải phóng bộ nhớ đầy đủ và lưu cấu hình nếu 'Lưu tự động' được bật."
    )
 
 /* Main Menu > Load Core */
@@ -1137,6 +1137,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
    "Mật khẩu tài khoản lưu trữ đám mây."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID khóa truy cập"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID khóa truy cập của bạn cho tài khoản lưu trữ đám mây."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Khóa truy cập bí mật"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Khóa truy cập bí mật của bạn cho tài khoản lưu trữ đám mây."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "URL điểm cuối S3 của bạn cho lưu trữ đám mây."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -2435,20 +2455,20 @@ MSG_HASH(
    "Tắt"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Độ sáng tối đa"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Độ sáng"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Đặt độ sáng đỉnh (tính bằng cd/m²) mà màn hình của bạn có thể hiển thị. Khi đã đặt thì đừng thay đổi nữa. Hãy dùng Paper White Luminance để chỉnh độ sáng tổng thể. Xem RTings.com để biết độ sáng đỉnh của màn hình bạn. Với một số màn hình khi bật scanlines (bên dưới), bạn có thể cần tăng cao hơn mức này (và cả paper white) để làm hình ảnh tổng thể sáng hơn."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Độ sáng của menu (đơn vị cd/m2 - nits) khi sử dụng màn hình HDR. Chỉ hiển thị khi HDR được bật trong Cài đặt > Video > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Độ sáng trắng chuẩn"
+   "Độ sáng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Khi đã đặt độ sáng đỉnh, hãy dùng nó làm mức sáng tiêu chuẩn. Về mặt kỹ thuật, mục này đặt độ sáng tại mức “paper white”, tức là độ sáng của chữ dễ đọc hoặc mức sáng cao nhất trong dải SDR (Standard Dynamic Range)."
+   "Thiết lập mức độ sáng HDR (đơn vị nit). Sử dụng kết hợp với thiết lập độ sáng vật lý của màn hình. Để bắt đầu, hãy đặt giá trị này là 80 và chỉnh độ sáng màn hình lên tối đa. Hoặc, đặt giá trị này bằng mức nit tối đa của màn hình, sau đó giảm độ sáng màn hình xuống đến khi hình ảnh trông phù hợp."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2456,7 +2476,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Sử dụng dải màu đầy đủ của màn hình để tạo ra hình ảnh sáng hơn, bão hòa hơn. Để có màu sắc trung thực hơn với thiết kế trò chơi gốc, hãy đặt tùy chọn này thành CHÍNH XÁC."
+   "Sử dụng toàn bộ dải màu của màn hình để tạo hình ảnh sáng hơn và rực rỡ hơn. Để màu sắc trung thực hơn với thiết kế gốc của trò chơi, hãy đặt tùy chọn này thành “Chính xác”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
@@ -3213,8 +3233,20 @@ MSG_HASH(
    "Điều chỉnh độ nhạy của cảm biến gia tốc."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Hướng cảm biến"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Xoay trục gia tốc kế và con quay hồi chuyển để khớp với hướng thiết bị."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Tự động"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Điều chỉnh độ nhạy của con quay hồi chuyển."
+   "Điều chỉnh độ nhạy của con quay hồi chuyển."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3356,6 +3388,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Thay đổi cài đặt phản hồi xúc giác và rung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Cảm biến Chuyển động/Ánh sáng"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Thay đổi cài đặt gia tốc kế, con quay hồi chuyển và cảm biến độ sáng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -4906,8 +4946,16 @@ MSG_HASH(
    "Sử dụng Trình phát Media tích hợp sẵn"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Hiển thị tệp được Media Player hỗ trợ trong Trình duyệt tệp."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Sử dụng Trình xem Hình ảnh tích hợp sẵn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Hiển thị tệp được Image Viewer hỗ trợ trong Trình duyệt tệp."
    )
 
 /* Settings > Frame Throttle */
@@ -6465,11 +6513,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Hiển thị 'Chạy lại'"
+   "Hiển thị “Reset”"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Hiển thị tùy chọn chạy lại trò chơi."
+   "Hiển thị tùy chọn đặt lại trò chơi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -6477,7 +6525,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Hiển thị tùy chọn 'Đóng trò chơi'."
+   "Hiển thị tùy chọn đóng trò chơi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8990,11 +9038,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Khởi động lại"
+   "Đặt lại"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Khởi động lại nội dung từ đầu. Nhấn Start trên RetroPad để thực hiện reset cứng."
+   "Kích hoạt reset mềm. Nút Start trên RetroPad sẽ kích hoạt reset cứng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9383,8 +9431,8 @@ MSG_HASH(
    "Bắt đầu hoặc Tiếp tục Tìm Cheat"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Quét bộ nhớ để tạo cheat mới."
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "Quét bộ nhớ để tạo Cheat mới."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -9407,6 +9455,10 @@ MSG_HASH(
    "Tải lại cheat riêng cho trò chơi"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Tải lại tất cả Cheat hiện có."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Lưu tập tin Cheat thành..."
    )
@@ -9419,12 +9471,24 @@ MSG_HASH(
    "Thêm cheat mới lên trên cùng"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Thêm một Cheat vào đầu danh sách."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Thêm cheat mới xuống cuối"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Thêm một Cheat vào cuối danh sách."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Xóa tất cả cheat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Xóa toàn bộ danh sách Cheat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9551,7 +9615,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Thêm %u kết quả khớp vào danh sách của bạn"
+   "Thêm %u kết quả khớp vào danh sách"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14618,6 +14682,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Tất cả Cheat đã bị xóa."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Tất cả Cheat đã được tải lại."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

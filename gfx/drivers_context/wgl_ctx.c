@@ -180,28 +180,15 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
 static bool wgl_has_extension(const char *ext, const char *exts)
 {
-   const char *where = strchr(ext, ' ');
-
-   if (where || *ext == '\0')
+   size_t _len;
+   if (!exts || !ext || *ext == '\0' || strchr(ext, ' '))
       return false;
-
-   if (exts)
+   _len = strlen(ext);
+   for (const char *start = exts; (start = strstr(start, ext)); start += _len)
    {
-      const char *terminator = NULL;
-      const char *start      = exts;
-
-      for (;;)
-      {
-         if (!(where = strstr(start, ext)))
-            break;
-
-         terminator = where + strlen(ext);
-         if (where == start || *(where - 1) == ' ')
-            if (*terminator == ' ' || *terminator == '\0')
-               return true;
-
-         start = terminator;
-      }
+      if (   (start       == exts || start[-1]   == ' ')
+          && (start[_len] == ' '  || start[_len] == '\0'))
+         return true;
    }
    return false;
 }

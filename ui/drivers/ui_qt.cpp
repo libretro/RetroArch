@@ -2383,7 +2383,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 
    if (     currentCore["core_path"].isEmpty()
          || !core_info
-         || !core_info->has_info)
+         || !(core_info->flags & CORE_INFO_FLAG_HAS_INFO))
    {
       QHash<QString, QString> hash;
 

@@ -86,25 +86,28 @@ enum slang_semantic
    SLANG_SEMANTIC_CURRENT_SUBFRAME = 11,
    /* uint, HDR mode: 0=off, 1=HDR10, 2=scRGB */
    SLANG_SEMANTIC_HDR              = 12,
-   /* float, HDR Paper white luminace */
+   /* float, HDR Brightness in nits */
    SLANG_SEMANTIC_PAPER_WHITE_NITS = 13,
-   /* float, HDR Peak luminace */
-   SLANG_SEMANTIC_MAX_NITS         = 14,
    /* float, Enable HDR scanlines */
-   SLANG_SEMANTIC_SCANLINES        = 15,
+   SLANG_SEMANTIC_SCANLINES        = 14,
    /* uint, HDR Scanline Subpixel Layout */
-   SLANG_SEMANTIC_SUBPIXEL_LAYOUT  = 16,
+   SLANG_SEMANTIC_SUBPIXEL_LAYOUT  = 15,
    /* uint, Enable HDR colour boost */
-   SLANG_SEMANTIC_EXPAND_GAMUT     = 17,
+   SLANG_SEMANTIC_EXPAND_GAMUT     = 16,
    /* float, Enable HDR Inverse Tonemapper */
-   SLANG_SEMANTIC_INVERSE_TONEMAP  = 18,
+   SLANG_SEMANTIC_INVERSE_TONEMAP  = 17,
    /* float, Enable HDR10 conversion */
-   SLANG_SEMANTIC_HDR10            = 19,
-   /* float, OriginalAspectRotated */
-   SLANG_NUM_BASE_SEMANTICS        = 20,
+   SLANG_SEMANTIC_HDR10            = 18,
+   /* vec3, gyroscope XYZ */
+   SLANG_SEMANTIC_GYROSCOPE             = 19,
+   /* vec3, accelerometer XYZ */
+   SLANG_SEMANTIC_ACCELEROMETER         = 20,
+   /* vec3, accelerometer rest position XYZ */
+   SLANG_SEMANTIC_ACCELEROMETER_REST    = 21,
+   SLANG_NUM_BASE_SEMANTICS        = 22,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 21,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 23,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1

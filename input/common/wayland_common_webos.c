@@ -672,21 +672,22 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t *w
 #ifdef HAVE_USERLAND
 static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
 {
-   const char *msg = HLunaServiceMessage(reply);
-   size_t len = msg ? strlen(msg) : 0;
-   char state[32] = {0};
-   char timestamp[64] = {0};
+   enum rjson_type t;
+   rjson_t *json = NULL;
+   const char *key = NULL, *val = NULL;
+   const char *msg        = HLunaServiceMessage(reply);
+   size_t _len            = msg ? strlen(msg) : 0;
+   char state[32]         = {0};
+   char timestamp[64]     = {0};
    const char *clientName = (context && ((HContext*)context)->userdata)
                             ? (const char *)((HContext*)context)->userdata
                             : "";
 
    RARCH_DBG("[LunaRequest] screenSaverCallback: %s\n", msg ? msg : "(null)");
-   if (!msg || !len)
+   if (!msg || !_len)
       return true;
 
-   rjson_t *json = rjson_open_string(msg, len);
-   enum rjson_type t;
-   const char *key = NULL, *val = NULL;
+   json = rjson_open_string(msg, _len);
    while ((t = rjson_next(json)) != RJSON_DONE && t != RJSON_ERROR)
    {
       if (t == RJSON_STRING)
@@ -735,8 +736,9 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    response_ctx.pub = true;
    response_ctx.callback = NULL;
 
-   HLunaServiceCall("luna://com.webos.service.tvpower/power/responseScreenSaverRequest",
-                    resp, &response_ctx);
+   HLunaServiceCall(
+      "luna://com.webos.service.tvpower/power/responseScreenSaverRequest",
+      resp, &response_ctx);
 
    rjsonwriter_free(w);
    return true;

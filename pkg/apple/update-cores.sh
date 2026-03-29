@@ -178,8 +178,10 @@ appstore_cores=(
     a5200
     amiarcadia
     anarch
+    applewin
     ardens
     atari800
+    azahar
     b2
     #blastem
     bluemsx

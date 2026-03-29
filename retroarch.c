@@ -567,8 +567,8 @@ static bool rarch_midi_drv_output_pending;
 
 static void null_midi_free(void *p) { }
 static void *null_midi_init(const char *input, const char *output) { return (void*)-1; }
-static bool null_midi_get_avail_inputs(struct string_list *inputs) { union string_list_elem_attr attr = {0}; return string_list_append(inputs, "Null", attr); }
-static bool null_midi_get_avail_outputs(struct string_list *outputs) { union string_list_elem_attr attr = {0}; return string_list_append(outputs, "Null", attr); }
+static bool null_midi_get_avail_inputs(struct string_list *inputs) { union string_list_elem_attr attr = {0}; return string_list_append_n(inputs, "Null", STRLEN_CONST("Null"), attr); }
+static bool null_midi_get_avail_outputs(struct string_list *outputs) { union string_list_elem_attr attr = {0}; return string_list_append_n(outputs, "Null", STRLEN_CONST("Null"), attr); }
 static bool null_midi_set_input(void *p, const char *input) { return input == NULL || string_is_equal(input, "Null"); }
 static bool null_midi_set_output(void *p, const char *output) { return output == NULL || string_is_equal(output, "Null"); }
 static bool null_midi_read(void *p, midi_event_t *event) { return false; }
@@ -782,8 +782,8 @@ static bool midi_driver_init(void *data)
 
    if (!rarch_midi_drv_inputs || !rarch_midi_drv_outputs)
       ret = false;
-   else if (!string_list_append(rarch_midi_drv_inputs, MIDI_DRIVER_OFF, attr) ||
-            !string_list_append(rarch_midi_drv_outputs, MIDI_DRIVER_OFF, attr))
+   else if (!string_list_append_n(rarch_midi_drv_inputs, MIDI_DRIVER_OFF, STRLEN_CONST(MIDI_DRIVER_OFF), attr) ||
+            !string_list_append_n(rarch_midi_drv_outputs, MIDI_DRIVER_OFF, STRLEN_CONST(MIDI_DRIVER_OFF), attr))
       ret = false;
    else
    {
@@ -3564,7 +3564,7 @@ bool command_event(enum event_command cmd, void *data)
             configuration_set_int(settings, settings->ints.replay_slot, replay_slot);
          if (!res)
          {
-             const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
+            const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             RARCH_ERR("[Replay] %s.\n", _msg);
@@ -4477,6 +4477,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET);
          drivers_init(settings, DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 #if defined(HAVE_AUDIOMIXER)
          audio_driver_load_system_sounds();
 #endif
@@ -4485,6 +4486,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MICROPHONE_REINIT:
          driver_uninit(DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET);
          drivers_init(settings, DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          break;
 #endif
       case CMD_EVENT_SHUTDOWN:
@@ -6012,16 +6014,15 @@ void main_exit(void *args)
 static int mkdir_p(const char *path, mode_t mode)
 {
     char tmp[PATH_MAX_LENGTH];
-    char *p = NULL;
-    size_t len;
+    char *p     = NULL;
+    size_t _len = strlcpy(tmp, path, sizeof(tmp));
+    if (tmp[_len - 1] == '/')
+        tmp[_len - 1] = 0;
 
-    snprintf(tmp, sizeof(tmp), "%s", path);
-    len = strlen(tmp);
-    if (tmp[len - 1] == '/')
-        tmp[len - 1] = 0;
-
-    for (p = tmp + 1; *p; p++) {
-        if (*p == '/') {
+    for (p = tmp + 1; *p; p++)
+    {
+        if (*p == '/')
+        {
             *p = 0;
             mkdir(tmp, mode);
             *p = '/';
@@ -7441,18 +7442,12 @@ static bool retroarch_parse_input_and_config(
          {
             case 'd':
                {
+                  char *sep;
                   unsigned new_port;
-                  char *save               = NULL;
-                  char *tok                = NULL;
-                  int    port              = 0;
-                  unsigned id              = 0;
-                  char *optarg_cpy         = strdup(optarg);
-
-                  if ((tok = strtok_r(optarg_cpy, ":", &save)))
-                     port = (int)strtol(tok, NULL, 0);
-                  if ((tok = strtok_r(NULL, ":", &save)))
-                     id   = (unsigned)strtoul(tok, NULL, 0);
-                  free(optarg_cpy);
+                  unsigned id = 0;
+                  int port    = (int)strtol(optarg, &sep, 0);
+                  if (sep && *sep == ':')
+                     id = (unsigned)strtoul(sep + 1, NULL, 0);
 
                   if (port < 1 || port > MAX_USERS)
                   {
@@ -7461,9 +7456,7 @@ static bool retroarch_parse_input_and_config(
                      retroarch_fail(1, "retroarch_parse_input()");
                   }
                   new_port = port - 1;
-
                   input_config_set_device(new_port, id);
-
                   retroarch_override_setting_set(
                         RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
                }
@@ -8272,10 +8265,12 @@ bool retroarch_main_init(int argc, char *argv[])
             settings->uints.input_max_users);
 #endif
    input_mapper_reset(&input_st->mapper);
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+
 #ifdef HAVE_REWIND
    command_event(CMD_EVENT_REWIND_INIT, NULL);
 #endif
-   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+
    if (!string_is_empty(rec_st->path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 

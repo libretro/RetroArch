@@ -339,17 +339,30 @@ struct registered_func registered_functions[100] = {
 };
 
 static void query_raise_unknown_function(
-      char *s, size_t _len,
+      char *s, size_t len,
       ssize_t where, const char *name,
-      ssize_t len, const char **err)
+      ssize_t name_len, const char **err)
 {
-   int __len = snprintf(s, _len,
+   size_t off = snprintf(s, len,
          "%" PRIu64 "::Unknown function '",
-         (uint64_t)where
-         );
-   if (len < ((ssize_t)_len - __len - 3))
-      strncpy(s + __len, name, len);
-   strcpy(s + __len + len, "'");
+         (uint64_t)where);
+
+   if (off < len)
+   {
+      size_t remaining = len - off;
+      size_t copy_len  = (size_t)name_len < remaining ? (size_t)name_len : remaining - 1;
+      strlcpy(s + off, name, copy_len + 1);
+      off += copy_len;
+   }
+
+   if (off + 2 <= len)
+   {
+      s[off]     = '\'';
+      s[off + 1] = '\0';
+   }
+   else if (len > 0)
+      s[len - 1] = '\0';
+
    *err = s;
 }
 
@@ -750,15 +763,11 @@ static struct buffer query_parse_table(
    unsigned argi = 0;
    struct argument args[QUERY_MAX_ARGS];
    const char *ident_name = NULL;
-
    buff = query_chomp(buff);
    buff = query_expect_char(s, len, buff, '{', err);
-
    if (*err)
       return buff;
-
    buff = query_chomp(buff);
-
    while (!query_peek(buff, "}", STRLEN_CONST("}")))
    {
       if (argi >= QUERY_MAX_ARGS)
@@ -767,59 +776,51 @@ static struct buffer query_parse_table(
          *err = s;
          goto clean;
       }
-
       if (ISALPHA((int)buff.data[buff.offset]))
       {
          buff = query_get_ident(s, len,
                buff, &ident_name, &_len, err);
-
          if (!*err)
          {
             args[argi].a.value.type            = RDT_STRING;
             args[argi].a.value.val.string.len  = (uint32_t)_len;
             args[argi].a.value.val.string.buff = (char*)calloc(
                   _len + 1, sizeof(char));
-
             if (!args[argi].a.value.val.string.buff)
+            {
+               strlcpy(s, "OOM", len);
+               *err = s;
                goto clean;
-
-            strncpy(
+            }
+            strlcpy(
                   args[argi].a.value.val.string.buff,
-                  ident_name, _len);
+                  ident_name, _len + 1);
          }
       }
       else
          buff = query_parse_string(s, len,
                buff, &args[argi].a.value, err);
-
       if (*err)
          goto clean;
-
       args[argi].type = AT_VALUE;
       buff            = query_chomp(buff);
       argi++;
       buff            = query_expect_char(s, len, buff, ':', err);
-
       if (*err)
          goto clean;
-
       buff = query_chomp(buff);
-
       if (argi >= QUERY_MAX_ARGS)
       {
          strlcpy(s, "Too many arguments in function call.", len);
          *err = s;
          goto clean;
       }
-
       buff = query_parse_argument(s, len, buff, &args[argi], err);
-
       if (*err)
          goto clean;
       argi++;
       buff = query_chomp(buff);
       buff = query_expect_char(s, len, buff, ',', err);
-
       if (*err)
       {
          *err = NULL;
@@ -827,32 +828,22 @@ static struct buffer query_parse_table(
       }
       buff = query_chomp(buff);
    }
-
    buff = query_expect_char(s, len, buff, '}', err);
-
    if (*err)
       goto clean;
-
    invocation->func = query_func_all_map;
    invocation->argc = argi;
    invocation->argv = (struct argument*)
       malloc(sizeof(struct argument) * argi);
-
    if (!invocation->argv)
    {
-      s[0] = 'O';
-      s[1] = 'O';
-      s[2] = 'M';
-      s[3] = '\0';
+      strlcpy(s, "Out of memory.", len);
       *err = s;
       goto clean;
    }
-
    memcpy(invocation->argv, args,
          sizeof(struct argument) * argi);
-
    return buff;
-
 clean:
    for (i = 0; i < argi; i++)
       query_argument_free(&args[i]);

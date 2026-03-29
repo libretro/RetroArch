@@ -406,6 +406,7 @@ typedef struct settings
       unsigned smb_client_num_contexts;
       unsigned smb_client_timeout;
 #endif
+      unsigned input_sensor_orientation;
    } uints;
 
    struct
@@ -428,7 +429,7 @@ typedef struct settings
       float video_msg_color_g;
       float video_msg_color_b;
       float video_msg_bgcolor_opacity;
-      float video_hdr_max_nits;
+      float video_hdr_menu_nits;
       float video_hdr_paper_white_nits;
 
       float menu_scale_factor;
@@ -540,10 +541,19 @@ typedef struct settings
       char audio_device[NAME_MAX_LENGTH];
       char camera_device[NAME_MAX_LENGTH];
       char netplay_mitm_server[NAME_MAX_LENGTH];
+#ifdef HAVE_NETWORKING
+#ifdef HAVE_CLOUDSYNC
       char webdav_url[NAME_MAX_LENGTH];
       char webdav_username[NAME_MAX_LENGTH];
       char webdav_password[NAME_MAX_LENGTH];
       char google_drive_refresh_token[2048];
+#ifdef HAVE_S3
+      char s3_url[NAME_MAX_LENGTH];
+      char access_key_id[128];
+      char secret_access_key[186]; /* TODO/RESEARCH - check size, ex https://github.com/winscp/winscp/pull/15/files */
+#endif
+#endif
+#endif
 
       char crt_switch_timings[NAME_MAX_LENGTH];
       char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];

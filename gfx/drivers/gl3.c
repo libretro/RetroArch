@@ -1119,12 +1119,13 @@ static void gl3_raster_font_render_message(
    const struct font_glyph* glyph_q = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / gl->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
-
+      const char *delim = msg;
+      size_t msg_len;
+      while (*delim != '\n' && *delim != '\0')
+         delim++;
+      msg_len = delim - msg;
       /* Draw the line */
       gl3_raster_font_render_line(gl, font,
             glyph_q,
@@ -1137,10 +1138,8 @@ static void gl3_raster_font_render_message(
             inv_win_width,
             inv_win_height,
             text_align);
-
-      if (!delim)
+      if (*delim == '\0')
          break;
-
       msg += msg_len + 1;
       lines++;
    }
@@ -4595,7 +4594,7 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */

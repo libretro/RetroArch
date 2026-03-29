@@ -142,7 +142,24 @@ typedef struct translation_driver
 } translation_driver_t;
 
 /* Driver declarations */
-static translation_driver_t http_translation_driver;
+static bool http_translate(
+      const uint8_t *bit24_image,
+      unsigned width,
+      unsigned height,
+      const char *source_lang,
+      const char *target_lang,
+      unsigned mode,
+      const char *sys_lbl,
+      bool paused,
+      translation_response_cb_t callback,
+      void *userdata);
+static translation_driver_t http_translation_driver = {
+   "http",
+   NULL,  /* init */
+   NULL,  /* free */
+   http_translate
+};
+
 #ifdef HAVE_TRANSLATE_APPLE
 static translation_driver_t apple_translation_driver;
 #endif
@@ -566,8 +583,7 @@ static void handle_translation_response(
                continue;
             }
 
-            strncpy(key, response->key_presses + start, i-start);
-            key[i-start] = '\0';
+            strlcpy(key, response->key_presses + start, i-start+1);
 
 #ifdef HAVE_ACCESSIBILITY
             if (string_is_equal(key, "b"))
@@ -1376,13 +1392,6 @@ finish:
       rjsonwriter_free(jsonwriter);
    return success;
 }
-
-static translation_driver_t http_translation_driver = {
-   "http",
-   NULL,  /* init */
-   NULL,  /* free */
-   http_translate
-};
 
 /* ============================================================
  * APPLE TRANSLATION DRIVER (Vision OCR)

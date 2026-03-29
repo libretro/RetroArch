@@ -479,12 +479,12 @@ void crt_switch_res_core(
          crt_rpi_switch(p_switch, width, height, hz, 0, native_width);
 #else
 
-         sprintf(_hSize, "%lf", 1+
-            ((float)crt_switch_porch_adjust/100.0));
-         sprintf(_hShift, "%d",
-            crt_switch_center_adjust);
-         sprintf(_vShift, "%d",
-            crt_switch_vert_adjust);
+         snprintf(_hSize, sizeof(_hSize), "%lf", 1+
+               ((float)crt_switch_porch_adjust/100.0));
+         snprintf(_hShift, sizeof(_hShift), "%d",
+               crt_switch_center_adjust);
+         snprintf(_vShift, sizeof(_vShift), "%d",
+               crt_switch_vert_adjust);
          if (p_switch->hh_core)
          {
             int corrected_width  = 320;

@@ -164,7 +164,6 @@ struct cheat_manager
    uint8_t *matches;
    uint8_t **memory_buf_list;
    unsigned *memory_size_list;
-   unsigned int delete_state;
    unsigned int loading_cheat_size;
    unsigned int loading_cheat_offset;
    unsigned ptr;
@@ -183,9 +182,9 @@ struct cheat_manager
    unsigned browse_address;
    char working_desc[CHEAT_DESC_SCRATCH_SIZE];
    char working_code[CHEAT_CODE_SCRATCH_SIZE];
-   bool  big_endian;
-   bool  memory_initialized;
-   bool  memory_search_initialized;
+   bool big_endian;
+   bool memory_initialized;
+   bool memory_search_initialized;
 };
 
 typedef struct cheat_manager cheat_manager_t;

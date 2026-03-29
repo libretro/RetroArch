@@ -143,6 +143,9 @@ bool gfx_thumbnail_update_path(gfx_thumbnail_path_data_t *path_data, enum gfx_th
  * Returns true if content directory is valid. */
 size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data, char *s, size_t len);
 
+/* Gets the common savestate thumbnail path. */
+void gfx_savestate_thumbnail_get_path(char *s, size_t len, const char *state_name, int state_slot);
+
 RETRO_END_DECLS
 
 #endif

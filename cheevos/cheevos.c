@@ -1516,7 +1516,8 @@ void rcheevos_download_next_badge(retro_task_t* task)
     */
    const int bucket = (task->progress == 2) ? RC_CLIENT_ACHIEVEMENT_BUCKET_UNLOCKED : RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED;
    const rc_client_achievement_t* first_locked_achievement =
-      rc_client_get_next_achievement_info(rcheevos_locals.client, task->user_data, bucket);
+      rc_client_get_next_achievement_info(rcheevos_locals.client,
+      (const rc_client_achievement_t*)task->user_data, bucket);
 
    while (first_locked_achievement)
    {

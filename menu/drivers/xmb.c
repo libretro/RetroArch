@@ -307,6 +307,14 @@ typedef struct
    bool icon_hide;
 } xmb_node_t;
 
+enum xmb_drag_mode
+{
+   XMB_DRAG_NONE = 0,
+   XMB_DRAG_DETECTING,
+   XMB_DRAG_HORIZONTAL,
+   XMB_DRAG_VERTICAL
+};
+
 typedef struct xmb_handle
 {
    /* Keeps track of the last time tabs were switched
@@ -340,13 +348,7 @@ typedef struct xmb_handle
    menu_input_pointer_t pointer;
 
    /* Touch drag state for direction locking */
-   enum
-   {
-      XMB_DRAG_NONE,
-      XMB_DRAG_DETECTING,
-      XMB_DRAG_HORIZONTAL,
-      XMB_DRAG_VERTICAL
-   } drag_mode;
+   enum xmb_drag_mode drag_mode;
    float drag_start_x;
    float drag_start_y;
    float categories_drag_start_pos;
@@ -450,10 +452,7 @@ typedef struct xmb_handle
    char entry_index_str[32];
    char entry_index_offset;
 
-   /* These have to be huge, because runloop_st->name.savestate
-    * has a hard-coded size of (PATH_MAX_LENGTH * 2)... */
-   char savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
-   char prev_savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
+   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    char thumbnails_left_status_prev;
@@ -1200,6 +1199,7 @@ static void xmb_render_messagebox_internal(
    string_list_deinitialize(&list);
 }
 
+#ifdef HAVE_LIBRETRODB
 static bool xmb_is_main_menu_explore(void)
 {
    menu_entry_t entry;
@@ -1207,6 +1207,7 @@ static bool xmb_is_main_menu_explore(void)
    menu_entry_get(&entry, 0, 0, NULL, true);
    return entry.type == FILE_TYPE_RDB;
 }
+#endif
 
 static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
 {
@@ -1283,17 +1284,11 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    settings_t *settings     = config_get_ptr();
-   int state_slot           = settings->ints.state_slot;
    bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
+   const char *current_path = strdup(xmb->savestate_thumbnail_file_path);
 
    if (!xmb)
       return;
-
-   /* Cache previous savestate thumbnail path */
-   strlcpy(
-         xmb->prev_savestate_thumbnail_file_path,
-         xmb->savestate_thumbnail_file_path,
-         sizeof(xmb->prev_savestate_thumbnail_file_path));
 
    if (xmb->skip_thumbnail_reset)
       return;
@@ -1322,9 +1317,9 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
          {
-            size_t _len;
-            char path[PATH_MAX_LENGTH * 2];
+            char path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
+            int state_slot              = settings->ints.state_slot;
 
             /* State slot dropdown */
             if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
@@ -1333,23 +1328,14 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                xmb->is_state_slot = true;
             }
 
-            if (state_slot < 0)
-            {
-               path[0] = '\0';
-               _len    = fill_pathname_join_delim(path,
-                     runloop_st->name.savestate, "auto", '.', sizeof(path));
-            }
-            else
-            {
-               _len    = strlcpy(path, runloop_st->name.savestate, sizeof(path));
-               if (state_slot > 0)
-                  _len += snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
-            }
-
-            strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
+            gfx_savestate_thumbnail_get_path(path, sizeof(path),
+                  runloop_st->name.savestate, state_slot);
 
             strlcpy(xmb->savestate_thumbnail_file_path, path,
                   sizeof(xmb->savestate_thumbnail_file_path));
+
+            if (!string_is_equal(current_path, xmb->savestate_thumbnail_file_path))
+               gfx_thumbnail_reset(&xmb->thumbnails.savestate);
 
             xmb->fullscreen_thumbnails_available = true;
 
@@ -1716,19 +1702,14 @@ static bool gfx_thumbnail_set_icon_playlist(
       }
       else
       {
+         size_t i;
          char tmp_buf[NAME_MAX_LENGTH];
-         const char* pos      = strchr(db_name, '|');
-
-         /* If db_name comes from core info, and there are multiple
-          * databases mentioned separated by |, use only first one */
-         if (pos && (size_t) (pos - db_name)+1 < sizeof(tmp_buf))
-            strlcpy(tmp_buf, db_name, (size_t) (pos - db_name)+1);
-         else
-            strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
-
+         const size_t __len = sizeof(tmp_buf) - 1;
+         for (i = 0; i < __len && db_name[i] && db_name[i] != '|'; i++)
+            tmp_buf[i] = db_name[i];
+         tmp_buf[i] = '\0';
          fill_pathname(path_data->content_db_name,
-               tmp_buf, "",
-               sizeof(path_data->content_db_name));
+         tmp_buf, "", sizeof(path_data->content_db_name));
       }
    }
 
@@ -1789,19 +1770,11 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    /* If path is empty, just reset thumbnail */
    if (string_is_empty(xmb->savestate_thumbnail_file_path))
       gfx_thumbnail_reset(&xmb->thumbnails.savestate);
-   else
-   {
-      /* Only request thumbnail if:
-       * > Thumbnail has never been loaded *OR*
-       * > Thumbnail path has changed */
-      if (     (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
-            || !string_is_equal(xmb->savestate_thumbnail_file_path,
-                xmb->prev_savestate_thumbnail_file_path))
-         gfx_thumbnail_request_file(
-               xmb->savestate_thumbnail_file_path,
-               &xmb->thumbnails.savestate,
-               upscale_threshold);
-   }
+   else if (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      gfx_thumbnail_request_file(
+            xmb->savestate_thumbnail_file_path,
+            &xmb->thumbnails.savestate,
+            upscale_threshold);
 
    xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
 }
@@ -2256,7 +2229,7 @@ static enum msg_hash_enums xmb_search_enum(const char *label)
 
    for (i = 0; i < MSG_LAST && enum_idx == MSG_UNKNOWN; i++)
    {
-      if (string_is_equal(label, msg_hash_to_str(i)))
+      if (string_is_equal(label, msg_hash_to_str((enum msg_hash_enums)i)))
          enum_idx = (enum msg_hash_enums)i;
    }
 
@@ -2393,10 +2366,10 @@ static void xmb_set_title(xmb_handle_t *xmb)
          enum_idx = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
       }
       else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND)))
-         enum_idx = atoi(path);
+         enum_idx = (enum msg_hash_enums)atoi(path);
       else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
       {
-         enum_idx = atoi(path);
+         enum_idx = (enum msg_hash_enums)atoi(path);
          if (     enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
                && enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
             enum_idx = MENU_ENUM_LABEL_INPUT_DEVICE_INDEX;
@@ -2431,7 +2404,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
           * removing prefix and then suffix if warranted. */
          if (string_starts_with(label, "deferred_"))
          {
-            strlcpy(label_temp, label + strlen("deferred_"), sizeof(label_temp));
+            strlcpy(label_temp, label + STRLEN_CONST("deferred_"), sizeof(label_temp));
             label = label_temp;
          }
 
@@ -2442,7 +2415,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
          {
             if (string_ends_with(label, "_list"))
             {
-               label_temp[strlen(label_temp) - strlen("_list")] = '\0';
+               label_temp[strlen(label_temp) - STRLEN_CONST("_list")] = '\0';
                label    = label_temp;
                enum_idx = xmb_search_enum(label);
             }
@@ -3888,6 +3861,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
       case MENU_ENUM_LABEL_CHEAT_DELETE:
       case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
+      case MENU_ENUM_LABEL_CHEAT_DELETE_MATCH:
       case MENU_ENUM_LABEL_CORE_DELETE:
       case MENU_ENUM_LABEL_DELETE_PLAYLIST:
       case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST:
@@ -3992,6 +3966,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
       case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
          return xmb->textures.list[XMB_TEXTURE_CHECKMARK];
+      case MENU_ENUM_LABEL_CHEAT_COPY_MATCH:
+      case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
       case MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER:
       case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE:
       case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
@@ -6191,8 +6167,6 @@ static void xmb_layout_common(xmb_handle_t *xmb, float scale_factor, unsigned ne
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 {
    float scale_factor            = xmb->last_scale_factor;
-   float margins_title           = xmb->margins_title;
-   float margins_title_h_offset  = xmb->margins_title_horizontal_offset;
    unsigned new_font_size        = 32 * scale_factor;
 
    xmb->above_subitem_offset     =  1.5f;
@@ -6222,8 +6196,6 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
    float scale_factor            = xmb->last_scale_factor;
-   float margins_title           = xmb->margins_title;
-   float margins_title_h_offset  = xmb->margins_title_horizontal_offset;
    unsigned new_font_size        = 26 * scale_factor;
 
    xmb->above_subitem_offset     =  1.5f;
@@ -6881,7 +6853,7 @@ static void xmb_render(void *data,
    menu_input_get_pointer_state(&xmb->pointer);
 
    /* Direction locking for horizontal category dragging */
-   if (xmb->pointer.type == MENU_POINTER_TOUCHSCREEN)
+   if (xmb->pointer.type != MENU_POINTER_DISABLED)
    {
       if (xmb->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
       {
@@ -9166,9 +9138,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (!(xmb->screensaver = menu_screensaver_init()))
       goto error;
 
-   xmb->savestate_thumbnail_file_path[0]      = '\0';
-   xmb->prev_savestate_thumbnail_file_path[0] = '\0';
-
    xmb->fullscreen_thumbnails_available       = false;
    xmb->show_fullscreen_thumbnails            = false;
    xmb->skip_thumbnail_reset                  = false;
@@ -9176,6 +9145,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->fullscreen_thumbnail_alpha            = 0.0f;
    xmb->fullscreen_thumbnail_selection        = 0;
    xmb->fullscreen_thumbnail_label[0]         = '\0';
+   xmb->savestate_thumbnail_file_path[0]      = '\0';
 
    xmb->thumbnails.pending                    = XMB_PENDING_THUMBNAIL_NONE;
    gfx_thumbnail_set_stream_delay(-1.0f);
@@ -9787,6 +9757,49 @@ static int xmb_pointer_up(void *userdata,
    {
       case MENU_INPUT_GESTURE_TAP:
       case MENU_INPUT_GESTURE_SHORT_PRESS:
+         /* Switch tabs */
+         if (xmb->depth == 1)
+         {
+            if (     (int)y >= margin_top - (xmb->icon_size + xmb->icon_spacing_vertical) / 2
+                  && (int)y <= margin_top + (xmb->icon_size + xmb->icon_spacing_vertical) / 2)
+            {
+               int current_tab_x = margin_left + xmb->icon_spacing_horizontal;
+               int tab_delta     = floor(((int)x - current_tab_x + (xmb->icon_spacing_horizontal / 2)) / xmb->icon_spacing_horizontal);
+
+               if (tab_delta)
+               {
+                  int i          = 0;
+                  menu_entry_t entry;
+                  MENU_ENTRY_INITIALIZE(entry);
+                  menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+
+                  /* Icon animations get stuck if they happen too fast,
+                   * therefore allow it only on the last action */
+                  xmb->allow_horizontal_animation = false;
+                  /* Prevent dynamic wallpaper flashing during jump */
+                  xmb->allow_dynamic_wallpaper    = false;
+
+                  if (tab_delta < 0)
+                  {
+                     for (i = tab_delta; i < 0; i++)
+                        xmb_menu_entry_action(xmb,
+                              &entry, menu_st->selection_ptr, MENU_ACTION_LEFT);
+                  }
+                  else
+                  {
+                     for (i = 0; i < tab_delta; i++)
+                        xmb_menu_entry_action(xmb,
+                              &entry, menu_st->selection_ptr, MENU_ACTION_RIGHT);
+                  }
+
+                  xmb->allow_horizontal_animation = true;
+                  xmb->allow_dynamic_wallpaper    = true;
+               }
+
+               return MENU_ACTION_NOOP;
+            }
+         }
+
          /* - A touch in the left margin:
           *   > ...triggers a 'cancel' action beneath the top margin
           *   > ...triggers a 'search' action above the top margin
@@ -9803,13 +9816,10 @@ static int xmb_pointer_up(void *userdata,
             return xmb_menu_entry_action(xmb, entry, selection, MENU_ACTION_SELECT);
          else if (ptr <= (end - 1))
          {
-            /* If pointer item is already 'active', perform 'select' action */
-            if (ptr == selection)
-               return xmb_menu_entry_action(xmb, entry, selection, MENU_ACTION_SELECT);
-
-            /* ...otherwise navigate to the current pointer item */
+            /* Perform 'select' on the pointed item */
             menu_st->selection_ptr = ptr;
             xmb_navigation_set(xmb, false);
+            return xmb_menu_entry_action(xmb, entry, ptr, MENU_ACTION_SELECT);
          }
          break;
       case MENU_INPUT_GESTURE_LONG_PRESS:

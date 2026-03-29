@@ -220,6 +220,14 @@ MSG_HASH(
    "Fecha o RetroArch.\n\"Salvar configuração ao sair\" está ativado."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Fecha o RetroArch.\n\"Salvar configuração ao sair\" está desativado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Sair do RetroArch. Matar o programa de qualquer maneira difícil (SIGKILL, etc.) encerrará o RetroArch sem salvar a configuração. Em sistemas baseados em Unix, SIGINT/SIGTERM permite uma 'desinicialização' limpa que inclui salvamento de configuração se ativado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Sincronizar Agora"
    )
@@ -242,14 +250,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Resolver todos os conflitos baixando arquivos do servidor, substituindo as cópias locais."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Fecha o RetroArch.\n\"Salvar configuração ao sair\" está desativado."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Sair do RetroArch. Matar o programa de qualquer maneira difícil (SIGKILL, etc.) encerrará o RetroArch sem salvar a configuração. Em sistemas baseados em Unix, SIGINT/SIGTERM permite uma 'desinicialização' limpa que inclui salvamento de configuração se ativado."
    )
 
 /* Main Menu > Load Core */
@@ -2371,24 +2371,28 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Definir o modo de saída HDR se o monitor for compatível. Observe: o scRGB pode suavizar as máscaras de shader CRT mais rígidas, pois o compositor do SO converte para HDR10 após a aplicação da máscara."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    "Desligado"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Pico da luminância"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Brilho"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Configure a luminância máxima (em cd/m²) que sua tela consegue reproduzir. Uma vez configurada, não altere. Use a Luminância de Branco Papel para ajustar o brilho. Consulte o RTings.com para ver a luminância máxima da sua tela. Em algumas telas com scanlines ativadas (abaixo), pode ser necessário forçar o aumento disso (e do branco papel) para elevar o brilho geral."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Definir o brilho do menu em cd/m² (nits) ao usar um monitor HDR. Visível apenas quando o HDR estiver ativado em Configurações > Vídeo > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Luminância papel branco"
+   "Brilho"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Uma vez que a luminância máxima esteja configurada, use isto como sua configuração padrão de brilho. Tecnicamente, isso define a luminância na qual o branco papel deve estar, ou seja, texto legível ou a luminância no topo da faixa SDR (Standard Dynamic Range)."
+   "Definir o nível de brilho HDR em nits. Usar em conjunto com as configurações de brilho físico do seu monitor. Como ponto de partida, defina este valor para 80 e o brilho do seu monitor para o máximo. Alternativamente, defina para o máximo de nits do seu monitor e diminua o brilho do monitor até que a imagem pareça correta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2396,7 +2400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Usa a gama de cores completa da sua tela para criar uma imagem mais brilhante e saturada. Para cores mais fiéis ao design original do jogo, configure isto como PRECISO."
+   "Usar toda a gama de cores do seu monitor para criar uma imagem mais brilhante e saturada. Para cores mais fiéis ao design original do jogo, defina esta opção como Preciso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
@@ -3129,8 +3133,20 @@ MSG_HASH(
    "Ajustar a sensibilidade do Acelerômetro."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Orientação do Sensor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Girar os eixos do acelerômetro e do giroscópio para corresponder à orientação do dispositivo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Automático"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Ajustar a sensibilidade do Giroscópio."
+   "Ajustar a sensibilidade do Giroscópio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3272,6 +3288,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Altera as configurações da resposta háptica e a vibração."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Sensores de Movimento/Luz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Alterar as configurações de acelerômetro, giroscópio e iluminância."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -4818,8 +4842,16 @@ MSG_HASH(
    "Utilizar o reprodutor de mídia integrado"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Mostrar arquivos suportados pelo Player de Mídia no Navegador de Arquivos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Utilizar o visualizador de imagem integrado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Mostrar arquivos suportados pelo Visualizador de Imagens no Navegador de Arquivos."
    )
 
 /* Settings > Frame Throttle */
@@ -6365,11 +6397,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Mostrar \"Reiniciar\""
+   "Mostrar 'Reiniciar'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Mostra a opção de reiniciar o conteúdo."
+   "Mostrar a opção de reiniciar conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -6377,7 +6409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Mostra a opção \"Fechar conteúdo\"."
+   "Mostrar a opção de fechar conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -6896,6 +6928,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    "Exibe a tradução como sobreposição de texto (Modo Imagem), reproduzir como Texto para Fala (Fala) ou usar um narrador do sistema como NVDA (Narrador)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "Backend do Serviço de IA"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "Selecionar qual backend de tradução usar. O HTTP usa um servidor remoto na URL configurada. A Apple usa OCR e tradução no dispositivo (macOS/iOS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -8874,7 +8914,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia o conteúdo do início. O botão Start do RetroPad aciona um hard reset."
+   "Acionar reinicialização simples. O RetroPad Start aciona reinicialização completa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9263,7 +9303,7 @@ MSG_HASH(
    "Iniciar ou continuar a pesquisa de trapaças"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
    "Escanear a memória para criar novas trapaças."
    )
 MSG_HASH(
@@ -9287,6 +9327,10 @@ MSG_HASH(
    "Recarregar Trapaças Específicas do Jogo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Recarregar todas as trapaças existentes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Salvar arquivo de trapaça como"
    )
@@ -9299,12 +9343,24 @@ MSG_HASH(
    "Adicionar nova trapaça no início"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Adicionar uma trapaça ao início da lista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Adicionar nova trapaça no final"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Adicionar uma trapaça ao final da lista."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Excluir Todas as Trapaças"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Limpar a lista de trapaças."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9431,7 +9487,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Adicionar as %u coincidências para sua lista"
+   "Adicionar %u Correspondências à Lista"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14382,6 +14438,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Todas as trapaças foram excluídas."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Todas as trapaças foram recarregadas."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

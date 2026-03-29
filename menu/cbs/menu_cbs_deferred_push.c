@@ -23,6 +23,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../menu_displaylist.h"
 #include "../../msg_hash.h"
 
 #include "../../database_info.h"
@@ -74,9 +75,9 @@ static int deferred_push_database_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
    settings_t *settings = config_get_ptr();
-   if (!string_is_empty(info->path_b))
+   if (info->path_b)
       free(info->path_b);
-   if (!string_is_empty(info->path_c))
+   if (info->path_c)
       free(info->path_c);
 
    info->path_b    = strdup(info->path);
@@ -226,6 +227,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_input_settings_list,            DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_input_menu_settings_list,            DISPLAYLIST_INPUT_MENU_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_turbo_fire_settings_list,      DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_haptic_feedback_settings_list, DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_input_sensor_settings_list,         DISPLAYLIST_INPUT_SENSOR_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_ai_service_settings_list,            DISPLAYLIST_AI_SERVICE_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accessibility_settings_list,         DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
@@ -294,10 +296,12 @@ GENERIC_DEFERRED_PUSH(deferred_push_smb_client_options,             DISPLAYLIST_
 #define CHECK_SIZE(desired_size) \
     do { \
       char *reallocated; \
+      size_t grow; \
       size_t dsize = (desired_size); \
       if (_len + dsize < size) \
          break; \
-      reallocated = (char*)realloc(newstr2, size += dsize * 2); \
+      grow = (dsize > (size_t)-1 / 2) ? dsize : dsize * 2; \
+      reallocated = (char*)realloc(newstr2, size += grow); \
       if (!reallocated) \
       { \
          free(newstr2); \
@@ -315,8 +319,7 @@ static int general_push(menu_displaylist_info_t *info,
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
-   bool
-      multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
+   bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
 #endif
 #ifdef HAVE_IMAGEVIEWER
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
@@ -364,6 +367,12 @@ static int general_push(menu_displaylist_info_t *info,
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN:
+         if (filebrowser_get_type() == FILEBROWSER_SELECT_OVERLAY)
+         {
+            CHECK_SIZE(3);
+            _len += strlcpy(newstr2 + _len, "cfg", size - _len);
+         }
+         else
          {
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
@@ -455,10 +464,13 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
       libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-      CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
-      if (_len > 0)
-         newstr2[_len++] = '|';
-      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+      if (!string_is_empty(sysinfo.valid_extensions))
+      {
+         CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
+         if (_len > 0)
+            newstr2[_len++] = '|';
+         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+      }
    }
 #endif
 
@@ -467,10 +479,13 @@ static int general_push(menu_displaylist_info_t *info,
    {
       struct retro_system_info sysinfo = {0};
       libretro_imageviewer_retro_get_system_info(&sysinfo);
-      CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
-      if (_len > 0)
-         newstr2[_len++] = '|';
-      strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+      if (!string_is_empty(sysinfo.valid_extensions))
+      {
+         CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
+         if (_len > 0)
+            newstr2[_len++] = '|';
+         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+      }
    }
 #endif
 
@@ -657,6 +672,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST, deferred_push_input_menu_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_TURBO_FIRE_SETTINGS_LIST, deferred_push_input_turbo_fire_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST, deferred_push_input_haptic_feedback_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_SENSOR_SETTINGS_LIST, deferred_push_input_sensor_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST, deferred_push_ai_service_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST, deferred_push_accessibility_settings_list},
       {MENU_ENUM_LABEL_DISC_INFORMATION, deferred_push_disc_information},
@@ -789,29 +805,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #endif
    };
 
-   if (!string_is_equal(label, "null"))
-   {
-      for (i = 0; i < ARRAY_SIZE(info_list); i++)
-      {
-         if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
-         {
-            BIND_ACTION_DEFERRED_PUSH(cbs, info_list[i].cb);
-            return 0;
-         }
-      }
-
-      /* MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL requires special
-       * treatment, since the label has the format:
-       *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
-       * i.e. cannot use a normal string_is_equal() */
-      if (string_starts_with(label,
-         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
-      {
-         BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
-         return 0;
-      }
-   }
-
+   /* Fast path: try O(1) enum_idx switch first before O(n) string scan */
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -1202,10 +1196,35 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
 #endif
          default:
-            return -1;
+            break; /* Fall through to string-based lookup below */
       }
 
       return 0;
+   }
+
+   /* Slow path: fall back to O(n) string comparison for labels
+    * not matched by enum_idx (e.g. dynamically generated labels) */
+   if (!string_is_equal(label, "null"))
+   {
+      for (i = 0; i < ARRAY_SIZE(info_list); i++)
+      {
+         if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
+         {
+            BIND_ACTION_DEFERRED_PUSH(cbs, info_list[i].cb);
+            return 0;
+         }
+      }
+
+      /* MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL requires special
+       * treatment, since the label has the format:
+       *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
+       * i.e. cannot use a normal string_is_equal() */
+      if (string_starts_with(label,
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+      {
+         BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
+         return 0;
+      }
    }
 
    return -1;
@@ -1225,7 +1244,6 @@ static int menu_cbs_init_bind_deferred_push_compare_type(
    else if (type == MENU_SET_CDROM_INFO)
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cdrom_info_detail_list);
-      return 0;
    }
    else
       return -1;

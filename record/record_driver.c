@@ -33,6 +33,7 @@
 #include "record_driver.h"
 #include "drivers/record_ffmpeg.h"
 #include "drivers/record_wav.h"
+#include "drivers/record_avfoundation.h"
 
 static recording_state_t recording_state = {0};
 
@@ -46,6 +47,9 @@ static const record_driver_t record_null = {
 };
 
 const record_driver_t *record_drivers[] = {
+#ifdef HAVE_AVF
+   &record_avfoundation,
+#endif
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
 #endif
@@ -245,31 +249,26 @@ bool recording_init(void)
          if (string_is_empty(game_name))
             game_name          = runloop_st->system.info.library_name;
 
-         if (video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
          {
-            fill_str_dated_filename(buf, game_name,
-                     "mkv", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
-         }
-         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
-               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
-         {
-            fill_str_dated_filename(buf, game_name,
-                     "webm", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
-         }
-         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
-               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
-         {
-            fill_str_dated_filename(buf, game_name,
-                     "gif", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
-         }
-         else
-         {
-            fill_str_dated_filename(buf, game_name,
-                     "png", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
+            const char *ext = "mkv";
+#ifdef HAVE_AVF
+            if (string_is_equal(settings->arrays.record_driver,
+                     "avfoundation"))
+               ext = "mov";
+            else
+#endif
+            if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
+                  && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+               ext = "webm";
+            else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
+                  && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
+               ext = "gif";
+            else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_APNG)
+               ext = "png";
+
+            fill_str_dated_filename(buf, game_name, ext, sizeof(buf));
+            fill_pathname_join_special(output,
+                  recording_st->output_dir, buf, sizeof(output));
          }
 
          /* Cache path for playlist saving */

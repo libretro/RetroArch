@@ -204,12 +204,12 @@ MSG_HASH(
    "Cola de l'aplicación Retroarch. El guardáu de la configuración al colar ta activáu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "Sincronizar agora"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Cola de l'aplicación Retroarch. El guardáu de la configuración al colar ta desactiváu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Sincronizar agora"
    )
 
 /* Main Menu > Load Core */
@@ -1206,10 +1206,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Picu d'illuminación"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -1434,7 +1430,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Axusta la sensibilidá del xiroscopiu."
+   "Axusta la sensibilidá del xiroscopiu."
    )
 
 MSG_HASH(
@@ -1942,10 +1938,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
    "Amosar «Siguir»"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Amosar «Reaniciar»"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -2747,10 +2739,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
    "Siguir"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Reaniciar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

@@ -2133,6 +2133,10 @@ MSG_HASH(
    "Ρύθμιση Ευαισθησίας Αναλογικού Μοχλού"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Αυτόματο"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    "Λήξη Χρόνου Σύνδεσης"
    )
@@ -3559,10 +3563,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
    "Συνέχιση"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Επανεκκίνηση"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

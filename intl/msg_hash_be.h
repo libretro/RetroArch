@@ -228,16 +228,16 @@ MSG_HASH(
    "Выйсці з праграмы RetroArch. Захаванне канфігурацыі пры выхадзе ўключана."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "Сінхранізаваць зараз"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Выйсці з праграмы RetroArch. Захаванне канфігурацыі пры выхадзе выключана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    "Выхад з праграмы RetroArch. Закрыццё праграмы любым прымусовым спосабам (SIGKILL і г. д.) выгружае RetroArch без захавання канфігурацыі. На Unix-падобных сістэмах SIGINT/SIGTERM дазваляе выканаць чыстую дэініцыялізацыю з захаваннем канфігурацыі, калі дадзеная налада ўключаная."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Сінхранізаваць зараз"
    )
 
 /* Main Menu > Load Core */
@@ -2323,14 +2323,6 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Пікавая яркасць"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Яркасць белага аркушу"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    "Дакладны"
    )
@@ -3031,6 +3023,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Настройка адчувальнасці аналагавых стыкаў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "Аўта"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -5960,20 +5956,8 @@ MSG_HASH(
    "Паказваць опцыю працягвання змесціва."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Паказ 'Перазапусціць'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Паказваць опцыю перазапуску змесціва."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Паказ 'Закрыць змесціва'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Паказваць опцыю 'Закрыць змесціва'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -8430,7 +8414,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Перазапусціць"
+   "Скінуць"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -8811,10 +8795,6 @@ MSG_HASH(
    "Пачаць або працягнуць пошук чыт-кода"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Сканаваць памяць для стварэння новых чыт-кодаў."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Загрузіць файл з чыт-кодамі (замяніць)"
    )
@@ -8976,10 +8956,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Роўных да -%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Дадаць %u супадзенняў у спіс"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,

@@ -1674,14 +1674,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Maks luminans"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Papirhvit luminans"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -2580,16 +2572,8 @@ MSG_HASH(
    "Vis 'Fortsett'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Vis \"Omstart\""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Vis \"Lukk innhold\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Vis 'Lukk innhold' alternativet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -3467,6 +3451,10 @@ MSG_HASH( /* FIXME Unused? */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
    "Gjenoppta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   "Nullstill"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,

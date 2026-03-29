@@ -148,36 +148,39 @@ void runahead_set_load_content_info(void *data,
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static void strcat_alloc(char **dst, const char *s)
 {
-   size_t _len;
-   char *src    = *dst;
+   char *tmp;
+   size_t dst_len, s_len, new_len;
 
-   if (!src)
+   if (!dst)
+      return;
+
+   if (!*dst)
    {
       if (s)
       {
-         size_t __len = strlen(s);
-         if (__len != 0)
-            src = strldup(s, __len + 1);
-         else
-            src = NULL;
+         dst_len  = strlen(s);
+         tmp      = (char*)malloc(dst_len + 1);
+         if (tmp)
+            memcpy(tmp, s, dst_len + 1);
+         *dst = tmp;
       }
       else
-         src    = (char*)calloc(1,1);
-
-      *dst      = src;
+         *dst = (char*)calloc(1, 1);
       return;
    }
 
-   if (!s)
+   if (!s || !*s)
       return;
 
-   _len = strlen(src);
-
-   if (!(src = (char*)realloc(src, _len + strlen(s) + 1)))
+   dst_len = strlen(*dst);
+   s_len   = strlen(s);
+   new_len = dst_len + s_len + 1;
+   tmp     = (char*)realloc(*dst, new_len);
+   if (!tmp)
       return;
 
-   *dst = src;
-   strcpy(src + _len, s);
+   *dst = tmp;
+   strlcpy(tmp + dst_len, s, s_len + 1);
 }
 
 void runahead_secondary_core_destroy(void *data)

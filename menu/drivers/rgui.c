@@ -350,13 +350,9 @@ typedef struct
    struct scaler_ctx image_scaler;
    menu_input_pointer_t pointer;
 
-   /* These have to be huge, because runloop_st->name.savestate
-    * has a hard-coded size of (PATH_MAX_LENGTH * 2)... */
-   char savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
-   char prev_savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
-
    char menu_title[NAME_MAX_LENGTH];              /* Must be a fixed length array... */
    char msgbox[1024];
+   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
    char theme_preset_path[PATH_MAX_LENGTH];       /* Must be a fixed length array... */
    char theme_dynamic_path[PATH_MAX_LENGTH];      /* Must be a fixed length array... */
    char last_theme_dynamic_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
@@ -2842,6 +2838,23 @@ static void rgui_render_fs_thumbnail(
    }
 }
 
+static void rgui_blit_line_regular(
+      rgui_t *rgui,
+      unsigned fb_width,
+      int x,
+      int y,
+      const char *message,
+      uint16_t color,
+      uint16_t shadow_color);
+static void (*rgui_blit_line)(
+      rgui_t *rgui,
+      unsigned fb_width,
+      int x,
+      int y,
+      const char *message,
+      uint16_t color,
+      uint16_t shadow_color) = rgui_blit_line_regular;
+
 static INLINE unsigned rgui_get_mini_thumbnail_fullwidth(rgui_t *rgui)
 {
    unsigned width      = rgui->mini_thumbnail.is_valid ? rgui->mini_thumbnail.width : 0;
@@ -2858,7 +2871,8 @@ static void rgui_render_mini_thumbnail(
       unsigned fb_height,
       size_t fb_pitch,
       bool swap_thumbnails,
-      bool thumbnail_background)
+      bool thumbnail_background,
+      bool savestate)
 {
    if (thumbnail->is_valid && frame_buf_data && thumbnail->data)
    {
@@ -2918,6 +2932,41 @@ static void rgui_render_mini_thumbnail(
                fb_x_offset + 1, fb_y_offset + thumbnail->height,
                thumbnail->width, 1, rgui->colors.shadow_color);
       }
+   }
+   /* Draw "not available" placeholder for unused save state thumbnails */
+   else if (savestate && frame_buf_data)
+   {
+      int text_x, text_y;
+      unsigned fb_x_offset, fb_y_offset;
+      unsigned term_width  = rgui->term_layout.width * rgui->font_width_stride;
+      unsigned term_height = rgui->term_layout.height * rgui->font_height_stride;
+      const char *msg      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+
+      fb_x_offset    = (rgui->term_layout.start_x + term_width) - thumbnail->max_width;
+
+      if (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !swap_thumbnails)
+            || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  swap_thumbnails))
+         fb_y_offset = rgui->term_layout.start_y;
+      else
+         fb_y_offset = (rgui->term_layout.start_y + term_height) - thumbnail->max_height;
+
+      text_x         = (thumbnail->max_width  / 2) + fb_x_offset - (strlen(msg) * (rgui->font_width_stride / 2));
+      text_y         = (thumbnail->max_height / 2) + fb_y_offset - (rgui->font_height_stride / 3);
+
+      /* Draw background */
+      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+            rgui->term_layout.start_x + term_width - thumbnail->max_width,
+            fb_y_offset,
+            thumbnail->max_width, thumbnail->max_height,
+            rgui->colors.shadow_color,
+            rgui->colors.shadow_color,
+            false);
+
+      /* Draw "N/A" label */
+      rgui_blit_line(rgui, fb_width, text_x, text_y,
+            msg,
+            rgui->colors.normal_color,
+            rgui->colors.shadow_color);
    }
 }
 
@@ -4011,15 +4060,6 @@ static void rgui_blit_line_6x10_shadow(
    }
 }
 #endif
-
-static void (*rgui_blit_line)(
-      rgui_t *rgui,
-      unsigned fb_width,
-      int x,
-      int y,
-      const char *message,
-      uint16_t color,
-      uint16_t shadow_color) = rgui_blit_line_regular;
 
 /* rgui_blit_symbol() */
 
@@ -5769,7 +5809,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                   rgui->frame_buf.data,
                   (rgui_swap_thumbnails) ? GFX_THUMBNAIL_RIGHT : GFX_THUMBNAIL_LEFT,
                   fb_width, fb_height, fb_pitch,
-                  rgui_swap_thumbnails, thumbnail_background);
+                  rgui_swap_thumbnails, thumbnail_background, true);
       }
       else if (show_mini_thumbnails)
       {
@@ -5780,13 +5820,13 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                   rgui->frame_buf.data,
                   GFX_THUMBNAIL_RIGHT,
                   fb_width, fb_height, fb_pitch,
-                  rgui_swap_thumbnails, thumbnail_background);
+                  rgui_swap_thumbnails, thumbnail_background, false);
          if (show_left_thumbnail && thumbnail2)
             rgui_render_mini_thumbnail(rgui, thumbnail2,
                   rgui->frame_buf.data,
                   GFX_THUMBNAIL_LEFT,
                   fb_width, fb_height, fb_pitch,
-                  rgui_swap_thumbnails, thumbnail_background);
+                  rgui_swap_thumbnails, thumbnail_background, false);
       }
 
       /* Print menu sublabel/core name (if required) */
@@ -6643,7 +6683,6 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    memset(rgui->playlist_selection, 0, sizeof(rgui->playlist_selection));
 
    rgui->savestate_thumbnail_file_path[0]      = '\0';
-   rgui->prev_savestate_thumbnail_file_path[0] = '\0';
 
    /* Ensure that pointer device starts with well defined
     * values (should not be necessary, but some platforms may
@@ -6923,19 +6962,12 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
 
 static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
 {
-   settings_t *settings = config_get_ptr();
-   rgui_t *rgui         = (rgui_t*)data;
-   int state_slot       = settings->ints.state_slot;
-   bool savestate_thumbnail_enable
-                        = settings->bools.savestate_thumbnail_enable;
+   settings_t *settings     = config_get_ptr();
+   rgui_t *rgui             = (rgui_t*)data;
+   bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
+
    if (!rgui)
       return;
-
-   /* Cache previous savestate thumbnail path */
-   strlcpy(
-         rgui->prev_savestate_thumbnail_file_path,
-         rgui->savestate_thumbnail_file_path,
-         sizeof(rgui->prev_savestate_thumbnail_file_path));
 
    rgui->savestate_thumbnail_file_path[0] = '\0';
 
@@ -6945,7 +6977,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
          || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)))
       return;
 
-   if (savestate_thumbnail_enable)
+   if (savestate_thumbnail)
    {
       menu_entry_t entry;
 
@@ -6960,9 +6992,9 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
                || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
          {
-            size_t _len;
-            char path[PATH_MAX_LENGTH * 2];
+            char path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
+            int state_slot              = settings->ints.state_slot;
 
             /* State slot dropdown */
             if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
@@ -6971,22 +7003,8 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
                rgui->flags        |= RGUI_FLAG_IS_STATE_SLOT;
             }
 
-            if (state_slot < 0)
-            {
-               path[0] = '\0';
-               _len    = fill_pathname_join_delim(path,
-                     runloop_st->name.savestate, "auto", '.', sizeof(path));
-            }
-            else
-            {
-               _len = strlcpy(path,
-                     runloop_st->name.savestate, sizeof(path));
-               if (state_slot > 0)
-                  _len += snprintf(path + _len, sizeof(path) - _len, "%d",
-                        state_slot);
-            }
-
-            strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
+            gfx_savestate_thumbnail_get_path(path, sizeof(path),
+                  runloop_st->name.savestate, state_slot);
 
             strlcpy(rgui->savestate_thumbnail_file_path,
                   path,
@@ -7290,37 +7308,67 @@ static void rgui_action_switch_thumbnail(rgui_t *rgui)
 static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
 {
    menu_entry_t entry;
-
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
-
+   rgui->menu_sublabel[0] = '\0';
    if (!string_is_empty(entry.sublabel))
    {
-      char *tok, *save         = NULL;
-      bool prev_line_empty     = true;
-      char *entry_sublabel_cpy = strdup(entry.sublabel);
+      const char *src          = entry.sublabel;
+      size_t offset            = 0;
+      size_t buf_size          = sizeof(rgui->menu_sublabel);
 
-      /* Sanitise sublabel
-       * > Replace newline characters with standard delimiter
-       * > Remove whitespace surrounding each sublabel line */
-      tok = strtok_r(entry_sublabel_cpy, "\n", &save);
-
-      while (tok)
+      while (*src)
       {
-         string_trim_whitespace_right(tok);
-         string_trim_whitespace_left(tok);
-         if (!string_is_empty(tok))
-         {
-            if (!prev_line_empty)
-               strlcat(rgui->menu_sublabel, RGUI_TICKER_SPACER, sizeof(rgui->menu_sublabel));
-            strlcat(rgui->menu_sublabel, tok, sizeof(rgui->menu_sublabel));
-            prev_line_empty = false;
-         }
-         tok = strtok_r(NULL, "\n", &save);
-      }
+         const char *line_start;
+         const char *line_end;
+         size_t len;
 
-      free(entry_sublabel_cpy);
+         /* Skip leading whitespace and newlines */
+         while (*src == ' ' || *src == '\t' || *src == '\n' || *src == '\r')
+            src++;
+
+         if (*src == '\0')
+            break;
+
+         /* Find end of this line */
+         line_start = src;
+         while (*src && *src != '\n' && *src != '\r')
+            src++;
+
+         /* Trim trailing whitespace */
+         line_end = src;
+         while (line_end > line_start
+               && (*(line_end - 1) == ' ' || *(line_end - 1) == '\t'))
+            line_end--;
+
+         len = (size_t)(line_end - line_start);
+         if (len == 0)
+            continue;
+
+         /* Insert spacer between lines */
+         if (offset > 0 && offset + 1 < buf_size)
+         {
+            size_t spacer_len = strlcpy(
+                  rgui->menu_sublabel + offset,
+                  RGUI_TICKER_SPACER,
+                  buf_size - offset);
+            if (offset + spacer_len < buf_size)
+               offset += spacer_len;
+            else
+               offset = buf_size - 1;
+         }
+
+         /* Append trimmed line */
+         if (offset + 1 < buf_size)
+         {
+            if (len > buf_size - offset - 1)
+               len = buf_size - offset - 1;
+            memcpy(rgui->menu_sublabel + offset, line_start, len);
+            offset += len;
+            rgui->menu_sublabel[offset] = '\0';
+         }
+      }
    }
 }
 
@@ -7642,15 +7690,11 @@ static int rgui_pointer_up(
                else if (ptr <= (end - 1))
                {
                   struct menu_state *menu_st = menu_state_get_ptr();
-                  /* If currently selected item matches 'pointer' value,
-                   * perform a MENU_ACTION_SELECT on it */
-                  if (ptr == selection)
-                     return rgui_menu_entry_action(rgui, entry, selection, MENU_ACTION_SELECT);
 
-                  /* Otherwise, just move the current selection to the
-                   * 'pointer' value */
+                  /* Perform 'select' on the pointed item */
                   menu_st->selection_ptr = ptr;
                   rgui_navigation_set(rgui, false);
+                  return rgui_menu_entry_action(rgui, entry, ptr, MENU_ACTION_SELECT);
                }
             }
          }

@@ -350,6 +350,7 @@ typedef struct
    {
       dxgi_hdr_uniform_t               ubo_values;
       D3D11Buffer                      ubo;
+      float                            menu_nits;
       float                            max_output_nits;
       float                            min_output_nits;
       float                            max_cll;
@@ -411,7 +412,6 @@ typedef struct
 #ifdef HAVE_DXGI_HDR
       unsigned                   hdr_mode;
       float                      paper_white_nits;
-      float                      max_nits;
       unsigned                   expand_gamut;
       float                      scanlines;
       unsigned                   subpixel_layout;
@@ -1194,15 +1194,15 @@ static void d3d11_font_render_message(
    int lines                              = 0;
    int x                                  = roundf(pos_x * width);
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
-
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
-
+      const char* delim = msg;
+      size_t msg_len;
+      while (*delim && *delim != '\n')
+         delim++;
+      msg_len = (size_t)(delim - msg);
       /* Draw the line */
       if (msg_len <= (unsigned)d3d11->sprites.capacity)
          d3d11_font_render_line(d3d11,
@@ -1210,11 +1210,9 @@ static void d3d11_font_render_message(
                pos_y - (float)lines * line_height,
                x,
                width, height, text_align);
-
-      if (!delim)
+      if (!*delim)
          break;
-
-      msg += msg_len + 1;
+      msg = delim + 1;
       lines++;
    }
 }
@@ -1576,13 +1574,12 @@ static void d3d11_render_overlay(d3d11_video_t *d3d11)
 #endif
 
 #ifdef HAVE_DXGI_HDR
-static void d3d11_set_hdr_max_nits(void *data, float max_nits)
+static void d3d11_set_hdr_menu_nits(void *data, float menu_nits)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_ubo;
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
-   d3d11->hdr.max_output_nits             = max_nits;
-   d3d11->hdr.ubo_values.max_nits         = max_nits;
+   d3d11->hdr.menu_nits        = menu_nits;
 
    d3d11->context->lpVtbl->Map(
          d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_ubo);
@@ -1591,24 +1588,6 @@ static void d3d11_set_hdr_max_nits(void *data, float max_nits)
       *ubo                    = d3d11->hdr.ubo_values;
    }
    d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
-
-   dxgi_set_hdr_metadata(
-         d3d11->swapChain,
-         (d3d11->flags & D3D11_ST_FLAG_HDR_SUPPORT) ? true : false,
-         d3d11->chain_bit_depth,
-         d3d11->chain_color_space,
-         d3d11->hdr.max_output_nits,
-         d3d11->hdr.min_output_nits,
-         d3d11->hdr.max_cll,
-         d3d11->hdr.max_fall);
-
-   if(d3d11->shader_preset)
-   {
-      for (unsigned i = 0; i < d3d11->shader_preset->passes; i++)
-      {
-         d3d11->pass[i].max_nits     = max_nits;
-      }
-   }
 }
 
 static void d3d11_set_hdr_paper_white_nits(void* data, float paper_white_nits)
@@ -1993,7 +1972,6 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 #ifdef HAVE_DXGI_HDR
             &d3d11->pass[i].hdr_mode,        /* HDRMode */
             &d3d11->pass[i].paper_white_nits,/* PaperWhiteNits */
-            &d3d11->pass[i].max_nits,        /* MaxNits */
             &d3d11->pass[i].scanlines,       /* Scanlines */
             &d3d11->pass[i].subpixel_layout, /* SubpixelLayout */
             &d3d11->pass[i].expand_gamut,    /* ExpandGamut */
@@ -2636,7 +2614,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
    DXGICreateFactory1(&d3d11->factory);
 #endif
 #ifdef HAVE_DXGI_HDR
-   d3d11->hdr.max_output_nits             = settings->floats.video_hdr_max_nits;
+   d3d11->hdr.max_output_nits             = 1000.0f;
    d3d11->hdr.min_output_nits             = 0.001f;
    d3d11->hdr.max_cll                     = 0.0f;
    d3d11->hdr.max_fall                    = 0.0f;
@@ -2742,8 +2720,8 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11->hdr.ubo_values.source_size.height  = 0.0f;
       d3d11->hdr.ubo_values.output_size.width   = d3d11->frame.output_size.x;
       d3d11->hdr.ubo_values.output_size.height  = d3d11->frame.output_size.y;
-      d3d11->hdr.ubo_values.max_nits         =
-         settings->floats.video_hdr_max_nits;
+      d3d11->hdr.menu_nits        =
+         settings->floats.video_hdr_menu_nits;
       d3d11->hdr.ubo_values.paper_white_nits =
          settings->floats.video_hdr_paper_white_nits;
       d3d11->hdr.ubo_values.scanlines    =
@@ -3153,7 +3131,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D11] Found GPU at index %d: \"%s\".\n", i, str);
+         RARCH_LOG("[D3D11] Found GPU #%d: \"%s\".\n", i, str);
 
          string_list_append(d3d11->gpu_list, str, attr);
 
@@ -3167,9 +3145,9 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
       if (0 <= gpu_index && gpu_index <= i && gpu_index < D3D11_MAX_GPU_COUNT)
       {
+         RARCH_LOG("[D3D11] Using GPU #%d: \"%s\".\n", gpu_index, d3d11->gpu_list->elems[gpu_index].data);
          d3d11->current_adapter = d3d11->adapters[gpu_index];
          d3d11->adapter         = d3d11->current_adapter;
-         RARCH_LOG("[D3D11] Using GPU index %d.\n", gpu_index);
       }
       else
       {
@@ -3692,7 +3670,6 @@ static bool d3d11_gfx_frame(
             if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
             {
                d3d11->pass[i].paper_white_nits  = settings->floats.video_hdr_paper_white_nits;
-               d3d11->pass[i].max_nits          = settings->floats.video_hdr_max_nits;
                d3d11->pass[i].scanlines         = settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
                d3d11->pass[i].subpixel_layout   = settings->uints.video_hdr_subpixel_layout;
                d3d11->pass[i].expand_gamut      = settings->uints.video_hdr_expand_gamut;
@@ -4175,8 +4152,12 @@ static bool d3d11_gfx_frame(
          const float    prev_inverse_tonemap       = d3d11->hdr.ubo_values.inverse_tonemap;
          const float    prev_hdr10                 = d3d11->hdr.ubo_values.hdr10;
          const unsigned prev_hdr_mode              = d3d11->hdr.ubo_values.hdr_mode;
+         const float    prev_paper_white_nits      = d3d11->hdr.ubo_values.paper_white_nits;
 
          d3d11->hdr.ubo_values.scanlines           = 0.0f;
+
+         /* Menu/overlay composite: use menu_nits for SDR menu brightness */
+         d3d11->hdr.ubo_values.paper_white_nits    = d3d11->hdr.menu_nits;
 
          if (video_info->hdr_mode == 2) /* scRGB: menu source is SDR */
          {
@@ -4207,6 +4188,7 @@ static bool d3d11_gfx_frame(
          d3d11->hdr.ubo_values.inverse_tonemap  = prev_inverse_tonemap;
          d3d11->hdr.ubo_values.hdr10            = prev_hdr10;
          d3d11->hdr.ubo_values.hdr_mode         = prev_hdr_mode;
+         d3d11->hdr.ubo_values.paper_white_nits = prev_paper_white_nits;
       }
 
       context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->hdr.ubo);
@@ -4702,13 +4684,13 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* get_current_software_framebuffer */
    d3d11_get_hw_render_interface,
 #ifdef HAVE_DXGI_HDR
-   d3d11_set_hdr_max_nits,
+   d3d11_set_hdr_menu_nits,
    d3d11_set_hdr_paper_white_nits,
    d3d11_set_hdr_expand_gamut,
    d3d11_set_hdr_scanlines,
    d3d11_set_hdr_subpixel_layout
 #else
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */

@@ -151,6 +151,7 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
       }
       return _len;
    }
+   return 0;
 }
 
 static bool rs_stop(void *data)

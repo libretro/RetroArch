@@ -228,6 +228,14 @@ MSG_HASH(
    "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist aktiviert."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist deaktiviert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "RetroArch beenden. Durch das harte Beenden (SIGKILL usw.) des Programms wird RetroArch beendet, ohne die Konfiguration zu speichern in jedem Fall. Auf Unix-ähnlichen Systemen ermöglicht SIGINT/SIGTERM eine saubere Deinitialisierung, welche das Speichern der Konfigurationsdatei mit einschließt, falls aktiviert."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
    "Jetzt synchronisieren"
    )
@@ -250,14 +258,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
    "Alle Konflikte durch Herunterladen von Serverdateien und das Ersetzen lokaler Kopien lösen."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist deaktiviert."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "RetroArch beenden. Durch das harte Beenden (SIGKILL usw.) des Programms wird RetroArch beendet, ohne die Konfiguration zu speichern in jedem Fall. Auf Unix-ähnlichen Systemen ermöglicht SIGINT/SIGTERM eine saubere Deinitialisierung, welche das Speichern der Konfigurationsdatei mit einschließt, falls aktiviert."
    )
 
 /* Main Menu > Load Core */
@@ -1073,6 +1073,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
    "Das Passwort für das eigene Cloud-Speicher-Konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Zugangsschlüssel-ID"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Die Zugangsschlüssel-ID für das eigene Cloud-Speicher-Konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Geheimer Zugangsschlüssel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Der geheime Zugangsschlüssel für das eigene Cloud-Speicher-Konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   "S3-URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "Die S3-Endpoint-URL für den eigenen Cloud-Speicher."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -2335,24 +2359,28 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Aktiviert den HDR-Ausgabemodus, wenn der Bildschirm ihn unterstützt. Hinweis: scRGB kann strenge CRT-Shader-Masken abschwächen, da der Betriebssystem-Compositor nach Anwendung der Maske in HDR10 umwandelt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    "Aus"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Maximale Leuchtdichte"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Helligkeit"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Die maximale Leuchtdichte (in cd/m²) festlegen, die der Bildschirm darstellen kann. Dieser Wert sollte nach der Einstellung nicht mehr geändert werden. Die Papierweiß-Leuchtdichte dient zur Anpassung der Helligkeit. Die maximale Leuchtdichte des Bildschirms ist auf RTings.com zu finden. Bei einigen Bildschirmen mit Scanlines (siehe unten) kann es erforderlich sein, die Leuchtdichte (und die Papierweiß-Leuchtdichte) zu erhöhen, um die Gesamthelligkeit zu steigern."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Helligkeit des Menüs in cd/m² (Nits) bei Nutzung eines HDR-Displays. Nur sichtbar, wenn HDR unter „Einstellungen > Video > HDR“ aktiviert ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Papierweißleuchtdichte"
+   "Helligkeit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Sobald die maximale Leuchtdichte eingestellt ist, diese als Standardhelligkeitseinstellung verwenden. Technisch gesehen legt dies die Leuchtdichte fest, bei der Papierweiß gut lesbar sein sollte - also die Leuchtdichte am oberen Ende des SDR-Bereichs (Standard Dynamic Range)."
+   "Legt die HDR-Helligkeit in Nits fest. Diese in Kombination mit den physischen Helligkeitseinstellungen des Bildschirms verwenden. Als Ausgangspunkt sollte dieser Wert auf 80 und die Bildschirmhelligkeit auf die maximale Stufe eingestellt werden. Alternativ kann dieser Wert auf die maximale Nits-Zahl des Bildschirms einstellt und die Bildschirmhelligkeit so lange verringert werden, bis das Bild optimal aussieht."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2360,7 +2388,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Nutzt den gesamten Farbbereich Ihres Bildschirms, um ein helleres, satteres Bild zu erzeugen. Für Farben, die dem ursprünglichen Spieldesign besser entsprechen, diese Option auf „PRÄZISE” einstellen."
+   "Nutzt den gesamten Farbraum des Bildschirms, um ein helleres, satteres Bild zu erzeugen. Damit die Farben dem ursprünglichen Spieldesign getreuer entsprechen, diese Option auf „Genau“ eingestellen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
@@ -3089,8 +3117,16 @@ MSG_HASH(
    "Die Empfindlichkeit für den Beschleunigungsmesser anpassen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "Sensorausrichtung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "Die Achsen des Beschleunigungsmessers und des Gyroskops drehen, sodass sie der Geräteausrichtung entsprechen."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-  "Die Empfindlichkeit für das Gyroskop anpassen."
+   "Die Empfindlichkeit für das Gyroskop anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3232,6 +3268,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Haptisches Feedback- und Vibrationseinstellungen ändern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "Bewegungs-/Lichtsensoren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "Ändert Beschleunigungsmesser, Gyroskop und Beleuchtungsstärke."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -4766,8 +4810,16 @@ MSG_HASH(
    "Eingebauten Mediaplayer verwenden"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "Medienplayer-unterstützte Dateien im Dateibrowser anzeigen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Integrierten Bildbetrachter verwenden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Bildbetrachter-unterstützte Dateien im Dateibrowser anzeigen."
    )
 
 /* Settings > Frame Throttle */
@@ -6305,11 +6357,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "\"Neu starten\" anzeigen"
+   "„Zurücksetzen“ anzeigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-   "Die Option zum neu Starten des Inhalts anzeigen."
+   "Die Option zum Zurücksetzen des Inhalts anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -8770,11 +8822,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Neu starten"
+   "Zurücksetzen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Den Inhalt von vorne starten. RetroPad Start löst einen Hard-Reset aus."
+   "Softreset auslösen. RetroPad Start löst einen Hardreset aus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9159,8 +9211,8 @@ MSG_HASH(
    "Cheatsuche starten oder fortsetzen"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Speicher durchsuchen, um neue Cheats zu erstellen."
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "Speicher scannen, um neue Cheats zu erstellen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -9183,6 +9235,10 @@ MSG_HASH(
    "Spielspezifische Cheats neu laden"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Alle vorhandenen Cheats neu laden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Speichere Cheat-Datei unter ..."
    )
@@ -9195,12 +9251,24 @@ MSG_HASH(
    "Neuen Cheat oben hinzufügen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Cheat am Anfang der Liste einfügen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Neuen Cheat unten hinzufügen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Cheat am Ende der Liste einfügen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Alle Cheats löschen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "Die Cheat-Liste löschen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9323,7 +9391,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Die %u Treffer zu Deiner Liste hinzufügen"
+   "%u Übereinstimmungen zu der Liste hinzufügen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14206,6 +14274,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Alle Cheats gelöscht."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Alle Cheats neu geladen."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

@@ -416,7 +416,7 @@ static INLINE bool d3d9_cg_validate_param_name(const char *name)
    if (!name)
       return false;
 
-   for (i = 0; i < sizeof(illegal) / sizeof(illegal[0]); i++)
+   for (i = 0; i < (int)ARRAY_SIZE(illegal); i++)
       if (strstr(name, illegal[i]) == name)
          return false;
 
@@ -505,8 +505,8 @@ static bool d3d9_cg_load_program(cg_renderchain_t *chain,
    if (!pass->fprg || !pass->vprg)
       goto error;
 
-   cgD3D9LoadProgram(pass->fprg, true, 0);
-   cgD3D9LoadProgram(pass->vprg, true, 0);
+   cgD3D9LoadProgram((CGprogram)pass->fprg, true, 0);
+   cgD3D9LoadProgram((CGprogram)pass->vprg, true, 0);
 
    free(listing_f);
    free(listing_v);
@@ -962,7 +962,7 @@ static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
    {
       d3d9_vertex_buffer_free(NULL, chain->chain.passes->data[0].vertex_decl);
 
-      for (i = 1; i < chain->chain.passes->count; i++)
+      for (i = 1; i < (int)chain->chain.passes->count; i++)
       {
          if (chain->chain.passes->data[i].tex)
             IDirect3DTexture9_Release(chain->chain.passes->data[i].tex);
@@ -972,16 +972,16 @@ static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
                chain->chain.passes->data[i].vertex_decl);
 
          if (chain->chain.passes->data[i].fprg)
-            cgDestroyProgram(chain->chain.passes->data[i].fprg);
+            cgDestroyProgram((CGprogram)chain->chain.passes->data[i].fprg);
          if (chain->chain.passes->data[i].vprg)
-            cgDestroyProgram(chain->chain.passes->data[i].vprg);
+            cgDestroyProgram((CGprogram)chain->chain.passes->data[i].vprg);
       }
    }
 
    if (chain->stock_shader.fprg)
-      cgDestroyProgram(chain->stock_shader.fprg);
+      cgDestroyProgram((CGprogram)chain->stock_shader.fprg);
    if (chain->stock_shader.vprg)
-      cgDestroyProgram(chain->stock_shader.vprg);
+      cgDestroyProgram((CGprogram)chain->stock_shader.vprg);
 }
 
 static void d3d9_cg_destroy_resources(cg_renderchain_t *chain)
@@ -998,7 +998,7 @@ static void d3d9_cg_destroy_resources(cg_renderchain_t *chain)
 
    d3d9_cg_deinit_progs(chain);
 
-   for (i = 0; i < chain->chain.luts->count; i++)
+   for (i = 0; i < (int)chain->chain.luts->count; i++)
    {
       if (chain->chain.luts->data[i].tex)
          IDirect3DTexture9_Release(chain->chain.luts->data[i].tex);
@@ -1334,7 +1334,7 @@ static void d3d9_cg_renderchain_render_pass(
    {
       CGparameter vparam;
       CGparameter fparam = cgGetNamedParameter(
-            pass->fprg, chain->luts->data[i].id);
+            (CGprogram)pass->fprg, chain->luts->data[i].id);
       int bound_index    = -1;
 
       if (fparam)
@@ -1345,7 +1345,7 @@ static void d3d9_cg_renderchain_render_pass(
          d3d9_renderchain_add_lut_internal(chain, index, i);
       }
 
-      vparam = cgGetNamedParameter(pass->vprg,
+      vparam = cgGetNamedParameter((CGprogram)pass->vprg,
             chain->luts->data[i].id);
 
       if (vparam)
@@ -1653,7 +1653,7 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
       for (i = 0; i < d3d->shader.luts; i++)
       {
          if (!d3d9_renderchain_add_lut(
-                  d3d->renderchain_data,
+                  (d3d9_renderchain_t*)d3d->renderchain_data,
                   d3d->shader.lut[i].id, d3d->shader.lut[i].path,
                   d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC
                   ? video_smooth
@@ -1882,10 +1882,10 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
 
    windowed_full         = settings->bools.video_windowed_fullscreen;
 
-   full_x                = (windowed_full || info->width  == 0) ?
-      (mon_rect.right  - mon_rect.left) : info->width;
-   full_y                = (windowed_full || info->height == 0) ?
-      (mon_rect.bottom - mon_rect.top)  : info->height;
+   full_x                = (windowed_full || info->width  == 0)
+      ? (unsigned)(mon_rect.right  - mon_rect.left) : info->width;
+   full_y                = (windowed_full || info->height == 0)
+      ? (unsigned)(mon_rect.bottom - mon_rect.top)  : info->height;
 #else
    {
       d3d9_get_video_size(d3d, &full_x, &full_y);
@@ -2104,7 +2104,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    if (black_frame_insertion && !d3d->menu->enabled)
    {
       int n;
-      for (n = 0; n < video_info->black_frame_insertion; ++n)
+      for (n = 0; n < (int)video_info->black_frame_insertion; ++n)
       {
         bool ret = (IDirect3DDevice9_Present(d3d->dev,
                  NULL, NULL, NULL, NULL) != D3DERR_DEVICELOST);
@@ -2209,7 +2209,7 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */

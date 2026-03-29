@@ -923,21 +923,18 @@ static void gl2_raster_font_render_message(gl2_t *gl,
    int lines                              = 0;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / gl->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
-
+      const char *end = msg;
+      while (*end && *end != '\n')
+         end++;
       /* Draw the line */
       gl2_raster_font_render_line(gl, font,
-            msg, msg_len, scale, color, pos_x,
+            msg, (size_t)(end - msg), scale, color, pos_x,
             pos_y - (float)lines*line_height, text_align);
-
-      if (!delim)
+      if (!*end)
          break;
-
-      msg += msg_len + 1;
+      msg = end + 1;
       lines++;
    }
 }
@@ -1032,7 +1029,7 @@ static void gl2_raster_font_render_msg(
       font->block->fullscreen  = full_screen;
    else
       gl2_raster_font_setup_viewport(gl, font, width, height, full_screen,
-            config_get_ptr()->bools.video_scale_integer);
+            video_scale_integer);
 
    if (    !string_is_empty(msg)
          && font->font_data
@@ -5319,7 +5316,7 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
