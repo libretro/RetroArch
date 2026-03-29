@@ -14,6 +14,9 @@
 *  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <libavformat/version.h>
+#if LIBAVFORMAT_VERSION_MAJOR >= 58
+
 #include <libretro.h>
 
 #include <memalign.h>
@@ -784,3 +787,5 @@ camera_driver_t camera_ffmpeg = {
    ffmpeg_camera_poll,
    "ffmpeg",
 };
+
+#endif /* LIBAVFORMAT_VERSION_MAJOR >= 58 */
