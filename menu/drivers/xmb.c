@@ -9757,6 +9757,49 @@ static int xmb_pointer_up(void *userdata,
    {
       case MENU_INPUT_GESTURE_TAP:
       case MENU_INPUT_GESTURE_SHORT_PRESS:
+         /* Switch tabs */
+         if (xmb->depth == 1)
+         {
+            if (     (int)y >= margin_top - (xmb->icon_size + xmb->icon_spacing_vertical) / 2
+                  && (int)y <= margin_top + (xmb->icon_size + xmb->icon_spacing_vertical) / 2)
+            {
+               int current_tab_x = margin_left + xmb->icon_spacing_horizontal;
+               int tab_delta     = floor(((int)x - current_tab_x + (xmb->icon_spacing_horizontal / 2)) / xmb->icon_spacing_horizontal);
+
+               if (tab_delta)
+               {
+                  int i          = 0;
+                  menu_entry_t entry;
+                  MENU_ENTRY_INITIALIZE(entry);
+                  menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+
+                  /* Icon animations get stuck if they happen too fast,
+                   * therefore allow it only on the last action */
+                  xmb->allow_horizontal_animation = false;
+                  /* Prevent dynamic wallpaper flashing during jump */
+                  xmb->allow_dynamic_wallpaper    = false;
+
+                  if (tab_delta < 0)
+                  {
+                     for (i = tab_delta; i < 0; i++)
+                        xmb_menu_entry_action(xmb,
+                              &entry, menu_st->selection_ptr, MENU_ACTION_LEFT);
+                  }
+                  else
+                  {
+                     for (i = 0; i < tab_delta; i++)
+                        xmb_menu_entry_action(xmb,
+                              &entry, menu_st->selection_ptr, MENU_ACTION_RIGHT);
+                  }
+
+                  xmb->allow_horizontal_animation = true;
+                  xmb->allow_dynamic_wallpaper    = true;
+               }
+
+               return MENU_ACTION_NOOP;
+            }
+         }
+
          /* - A touch in the left margin:
           *   > ...triggers a 'cancel' action beneath the top margin
           *   > ...triggers a 'search' action above the top margin
