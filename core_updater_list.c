@@ -414,7 +414,7 @@ static bool core_updater_list_set_paths(
    _len = strlen(filename_str) + 1;
    if (entry->remote_filename)
    {
-      char *tmp = realloc(entry->remote_filename, _len);
+      char *tmp = (char*)realloc(entry->remote_filename, _len);
       if (!tmp)
          return false;
       entry->remote_filename = tmp;
@@ -446,7 +446,7 @@ static bool core_updater_list_set_paths(
    _len = strlen(remote_core_path) + 1;
    if (entry->remote_core_path)
    {
-      char *tmp = realloc(entry->remote_core_path, _len);
+      char *tmp = (char*)realloc(entry->remote_core_path, _len);
       if (!tmp)
          return false;
       entry->remote_core_path = tmp;
@@ -475,7 +475,7 @@ static bool core_updater_list_set_paths(
    _len = strlen(local_core_path) + 1;
    if (entry->local_core_path)
    {
-      char *tmp = realloc(entry->local_core_path, _len);
+      char *tmp = (char*)realloc(entry->local_core_path, _len);
       if (!tmp)
          return false;
       entry->local_core_path = tmp;
@@ -514,7 +514,7 @@ static bool core_updater_list_set_paths(
    _len = strlen(local_info_path) + 1;
    if (entry->local_info_path)
    {
-      char *tmp = realloc(entry->local_info_path, _len);
+      char *tmp = (char*)realloc(entry->local_info_path, _len);
       if (!tmp)
          return false;
       entry->local_info_path = tmp;

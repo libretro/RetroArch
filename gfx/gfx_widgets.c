@@ -269,7 +269,7 @@ void gfx_widgets_msg_queue_push(
             msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
             /* +1 for potential '\n' insertion, +1 for NUL */
             msg_len                             = len + 1 + 1;
-            if (!(msg_new = (char *)malloc(msg_len)))
+            if (!(msg_new = (char*)malloc(msg_len)))
             {
                free(msg_widget);
                return;

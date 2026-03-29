@@ -2838,8 +2838,7 @@ static void rgui_render_fs_thumbnail(
    }
 }
 
-/* Forward declaration */
-static void (*rgui_blit_line)(
+static void rgui_blit_line_regular(
       rgui_t *rgui,
       unsigned fb_width,
       int x,
@@ -2847,6 +2846,14 @@ static void (*rgui_blit_line)(
       const char *message,
       uint16_t color,
       uint16_t shadow_color);
+static void (*rgui_blit_line)(
+      rgui_t *rgui,
+      unsigned fb_width,
+      int x,
+      int y,
+      const char *message,
+      uint16_t color,
+      uint16_t shadow_color) = rgui_blit_line_regular;
 
 static INLINE unsigned rgui_get_mini_thumbnail_fullwidth(rgui_t *rgui)
 {
@@ -4053,15 +4060,6 @@ static void rgui_blit_line_6x10_shadow(
    }
 }
 #endif
-
-static void (*rgui_blit_line)(
-      rgui_t *rgui,
-      unsigned fb_width,
-      int x,
-      int y,
-      const char *message,
-      uint16_t color,
-      uint16_t shadow_color) = rgui_blit_line_regular;
 
 /* rgui_blit_symbol() */
 
