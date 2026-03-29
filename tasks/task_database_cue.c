@@ -135,7 +135,8 @@ static void cue_append_multi_disc_suffix(char * str1, const char *filename)
    }
 }
 
-static int64_t task_database_cue_get_token(intfstream_t *fd, char *s, uint64_t len)
+static int64_t task_database_cue_get_token(intfstream_t *fd, char *s,
+   uint64_t len)
 {
    char *c       = s;
    int64_t _len  = 0;
@@ -187,7 +188,8 @@ static int64_t task_database_cue_get_token(intfstream_t *fd, char *s, uint64_t l
 
 #define DISC_DATA_SIZE_PS1 60000
 
-int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
+int detect_ps1_game(intfstream_t *fd, char *s, size_t len,
+   const char *filename)
 {
    int pos;
    char raw_game_id[50];
@@ -403,7 +405,8 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len,
    return 0;
 }
 
-int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
+int detect_psp_game(intfstream_t *fd, char *s, size_t len,
+   const char *filename)
 {
 #define DISC_DATA_SIZE_PSP 300000
    int pos;
@@ -467,7 +470,8 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    return 0;
 }
 
-size_t detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
+size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
+   const char *filename)
 {
    char region_id;
    char pre_game_id[20];
@@ -558,7 +562,8 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filenam
    return _len;
 }
 
-int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
+int detect_scd_game(intfstream_t *fd, char *s, size_t len,
+   const char *filename)
 {
    #define SCD_SERIAL_OFFSET 0x0193
    #define SCD_SERIAL_LEN    11
@@ -773,12 +778,13 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len,
    return 1;
 }
 
-int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
+int detect_dc_game(intfstream_t *fd, char *s, size_t len,
+   const char *filename)
 {
    int index;
-   size_t _len, __len, ___len;
    int total_hyphens;
    int total_hyphens_recalc;
+   size_t _len, __len, ___len;
    char pre_game_id[50];
    char raw_game_id[50];
    char lgame_id[20];
@@ -816,27 +822,25 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       if (total_hyphens >= 2)
       {
-         index               = string_index_last_occurance(raw_game_id, '-');
+         index             = string_index_last_occurance(raw_game_id, '-');
          if (index < 0)
             return 0;
          strlcpy(lgame_id, &raw_game_id[0], (size_t)index + 1);
          strlcpy(rgame_id, &raw_game_id[index + 1], sizeof(rgame_id));
-         _len                = strlcpy(s, lgame_id, len);
-         s[  _len]           = '-';
-         s[++_len]           = '\0';
+         _len              = strlcpy(s, lgame_id, len);
+         s[  _len]         = '-';
+         s[++_len]         = '\0';
          strlcpy(s + _len, rgame_id, len - _len);
       }
       else if (__len <= 7)
-      {
          strlcpy(s, raw_game_id, 8);
-      }
       else
       {
          strlcpy(lgame_id, raw_game_id, 8);
          strlcpy(rgame_id, &raw_game_id[__len - 2], sizeof(rgame_id));
-         _len                 = strlcpy(s, lgame_id, len);
-         s[  _len]            = '-';
-         s[++_len]            = '\0';
+         _len              = strlcpy(s, lgame_id, len);
+         s[  _len]         = '-';
+         s[++_len]         = '\0';
          strlcpy(s + _len, rgame_id, len - _len);
       }
       cue_append_multi_disc_suffix(s, filename);
@@ -904,8 +908,10 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       if (__len <= 8)
       {
-         /* For 8 chars serials in 'MK-xxxxx' format, we need to remove 'MK-' to match Redump database
-          * Sega GT being the only exception (MK-51053), we have to check if it's not that game first */
+         /* For 8 character serials in 'MK-xxxxx' format, 
+          * we need to remove 'MK-' to match Redump database
+          * Sega GT being the only exception (MK-51053), 
+          * we have to check if it's not that game first */
          if (memcmp(raw_game_id, "MK-51053", STRLEN_CONST("MK-51053")) != 0)
             strlcpy(s, raw_game_id + 3, 6);
          else
@@ -928,7 +934,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    return 1;
 }
 
-size_t detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filename)
+size_t detect_wii_game(intfstream_t *fd, char *s, size_t len,
+   const char *filename)
 {
    char raw_game_id[15];
 
@@ -972,7 +979,8 @@ size_t detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filena
    return strlcpy(s, raw_game_id, len);
 }
 
-int detect_system(intfstream_t *fd, const char **system_name, const char * filename)
+int detect_system(intfstream_t *fd, const char **system_name,
+   const char * filename)
 {
    int i;
    char magic[50];
@@ -1054,7 +1062,7 @@ int cue_find_track(const char *cue_path, bool first,
    int64_t cand_index         = -1;
    int32_t cand_track         = -1;
    int32_t track              = 0;
-   uint64_t largest             = 0;
+   uint64_t largest           = 0;
    int64_t volatile file_size = -1;
    bool is_data               = false;
    cue_dir[0] = last_file[0]  = '\0';
@@ -1121,10 +1129,11 @@ int cue_find_track(const char *cue_path, bool first,
          /* Check if track 1 is AUDIO but contains CD-i magic bytes */
          if (!is_data && track == 1 && last_file[0] != '\0')
          {
-            intfstream_t *track_fd = NULL;
-            intfstream_info_t track_info;
             uint8_t magic_buf[12];
-            const uint8_t cdi_magic[] = {0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00};
+            intfstream_info_t track_info;
+            intfstream_t *track_fd    = NULL;
+            const uint8_t cdi_magic[] = {0x00, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00};
 
             track_info.type = INTFSTREAM_FILE;
             if ((track_fd = (intfstream_t*)intfstream_init(&track_info)))
@@ -1362,7 +1371,8 @@ size_t gdi_next_file(intfstream_t *fd, const char *gdi_path,
    return 0;
 }
 
-int intfstream_get_serial(intfstream_t *fd, char *s, size_t len, const char *filename)
+int intfstream_get_serial(intfstream_t *fd, char *s, size_t len,
+   const char *filename)
 {
    const char *system_name = NULL;
    if (detect_system(fd, &system_name, filename) >= 1)
@@ -1425,7 +1435,8 @@ int intfstream_get_serial(intfstream_t *fd, char *s, size_t len, const char *fil
                return 1;
          }
       }
-      /* Philips CD-i has no serial entry on disc, use default fallback to CRC */
+      /* Philips CD-i has no serial entry on disc,
+       * use default fallback to CRC */
    }
    return 0;
 }
@@ -1490,7 +1501,8 @@ error:
    return 0;
 }
 
-int task_database_cue_get_serial(const char *name, char *s, size_t len, uint64_t *filesize)
+int task_database_cue_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize)
 {
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
@@ -1508,10 +1520,12 @@ int task_database_cue_get_serial(const char *name, char *s, size_t len, uint64_t
       return 0;
    }
 
-   return intfstream_file_get_serial(track_path, offset, _len, s, len, filesize);
+   return intfstream_file_get_serial(track_path, offset, _len, s, len,
+   filesize);
 }
 
-int task_database_gdi_get_serial(const char *name, char *s, size_t len, uint64_t *filesize)
+int task_database_gdi_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize)
 {
    char track_path[PATH_MAX_LENGTH];
 
@@ -1527,7 +1541,8 @@ int task_database_gdi_get_serial(const char *name, char *s, size_t len, uint64_t
       return 0;
    }
 
-   return intfstream_file_get_serial(track_path, 0, INT64_MAX, s, len, filesize);
+   return intfstream_file_get_serial(track_path, 0, INT64_MAX, s, len,
+   filesize);
 }
 
 /* Helper function to detect if a CHD file is a CD-i disc
@@ -1557,7 +1572,8 @@ bool is_chd_file_cdi(const char *path)
    return is_cdi;
 }
 
-int task_database_chd_get_serial(const char *name, char *serial, size_t len, uint64_t *filesize)
+int task_database_chd_get_serial(const char *name, char *serial,
+   size_t len, uint64_t *filesize)
 {
    int result;
    /* CD-i discs store data in AUDIO-labeled tracks, so we must
@@ -1571,7 +1587,8 @@ int task_database_chd_get_serial(const char *name, char *serial, size_t len, uin
    if (!fd)
       return 0;
 
-   *filesize = intfstream_get_size(fd); /* TODO: get the full CHD size instead */
+   /* TODO/FIXME: get the full CHD size instead */
+   *filesize = intfstream_get_size(fd);
    result    = intfstream_get_serial(fd, serial, len, name);
    intfstream_close(fd);
    free(fd);
@@ -1638,7 +1655,8 @@ error:
    return 0;
 }
 
-int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc, uint64_t *size)
+int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc,
+   uint64_t *size)
 {
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
@@ -1655,17 +1673,19 @@ int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc, uint64_t
 #endif
       return 0;
    }
-   return intfstream_file_get_crc_and_size(track_path, offset, _len, crc, size);
+   return intfstream_file_get_crc_and_size(track_path, offset,
+   _len, crc, size);
 }
 
-int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc, uint64_t *size)
+int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc,
+   uint64_t *size)
 {
    char track_path[PATH_MAX_LENGTH];
 
    track_path[0] = '\0';
 
    if (gdi_find_track(name, true,
-               track_path, sizeof(track_path)) < 0)
+       track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("[Scanner] %s\n",
@@ -1676,7 +1696,8 @@ int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc, uint64_t
    return intfstream_file_get_crc_and_size(track_path, 0, INT64_MAX, crc, size);
 }
 
-bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc, uint64_t *size)
+bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc,
+   uint64_t *size)
 {
    bool found_crc   = false;
    /* CD-i discs store data in AUDIO-labeled tracks, so we must
@@ -1690,7 +1711,7 @@ bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc, uint64_
    if (!fd)
       return 0;
 
-   *size = intfstream_get_size(fd);
+   *size     = intfstream_get_size(fd);
    found_crc = intfstream_get_crc(fd, crc);
    if (fd)
    {
