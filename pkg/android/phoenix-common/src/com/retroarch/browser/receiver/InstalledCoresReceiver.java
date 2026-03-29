@@ -33,11 +33,8 @@ public class InstalledCoresReceiver extends BroadcastReceiver
             for (File file : files)
             {
                String name = file.getName();
-               if (name.endsWith("_libretro_android.so"))
-               {
-                  String coreName = name.replace("_libretro_android.so", "");
-                  cores.add(coreName);
-               }
+               if (name.endsWith("_libretro_android.so") || name.endsWith("_libretro.so"))
+                  cores.add(name);
             }
          }
       }
