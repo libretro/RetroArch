@@ -276,18 +276,15 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          r = vsnprintf(buffer, sizeof(buffer), fmt, ap);
          if (r < 0)
          {
-            size_t _len;
             buffer[sizeof(buffer) - 1] = '\0';
-            _len = strlen(buffer);
-            if (_len > 0)
-               buffer[_len - 1] = '\n';
+            if (buffer[0] != '\0')
+               buffer[sizeof(buffer) - 2] = '\n';
             else
             {
                buffer[0] = '\n';
                buffer[1] = '\0';
             }
          }
-
          if (fp)
          {
             fprintf(fp, "%s %s", tag_v, buffer);
