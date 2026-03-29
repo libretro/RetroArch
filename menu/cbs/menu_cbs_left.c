@@ -1125,14 +1125,13 @@ static int bind_left_generic(unsigned type, const char *label,
 static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, size_t lbl_len, const char *menu_label, size_t menu_lbl_len)
 {
-
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
    {
       BIND_ACTION_LEFT(cbs, action_left_mainmenu);
       return 0;
    }
 
-   if (strstr(label, "rdb_entry") || string_starts_with_size(label, "content_info", STRLEN_CONST("content_info")))
+   if (string_starts_with_size(label, "rdb_entry", STRLEN_CONST("rdb_entry")) || string_starts_with_size(label, "content_info", STRLEN_CONST("content_info")))
    {
       BIND_ACTION_LEFT(cbs, action_left_scroll);
    }
@@ -1256,9 +1255,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
          }
       }
       else
-      {
          return -1;
-      }
    }
 
    return 0;

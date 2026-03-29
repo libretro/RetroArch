@@ -1421,7 +1421,8 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    /* this reinitializes state based on the new location */
 
    /* url may be absolute or relative to the current url */
-   bool absolute = (strstr(location, "://") != NULL);
+   bool absolute = (!strncmp(location, "http://", STRLEN_CONST("http://"))
+                 || !strncmp(location, "https://", STRLEN_CONST("https://")));
 
    if (absolute)
    {
