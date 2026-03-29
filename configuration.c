@@ -3926,26 +3926,45 @@ static bool config_load_file(global_t *global,
 
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
    {
-      /* Don't destroy append_config_path, store in temporary
-       * variable. */
       char tmp_append_path[PATH_MAX_LENGTH];
       const char *extra_path = NULL;
+      const char *ptr         = NULL;
+
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_APPEND),
             sizeof(tmp_append_path));
-      extra_path = strtok_r(tmp_append_path, "|", &save);
 
-      while (extra_path)
+      ptr = tmp_append_path;
+
+      while (ptr && *ptr)
       {
-         bool result = config_append_file(conf, extra_path);
+         char config_path[PATH_MAX_LENGTH];
+         const char *delim = strchr(ptr, '|');
 
-         if (!first_load)
+         if (delim)
          {
-            RARCH_LOG("[Config] Appending config: \"%s\".\n", extra_path);
-
-            if (!result)
-               RARCH_ERR("[Config] Failed to append config: \"%s\".\n", extra_path);
+            size_t len = delim - ptr;
+            if (len >= sizeof(config_path))
+               len = sizeof(config_path) - 1;
+            memcpy(config_path, ptr, len);
+            config_path[len] = '\0';
+            ptr = delim + 1;
          }
-         extra_path = strtok_r(NULL, "|", &save);
+         else
+         {
+            strlcpy(config_path, ptr, sizeof(config_path));
+            ptr = NULL;
+         }
+
+         if (*config_path)
+         {
+            bool result = config_append_file(conf, config_path);
+            if (!first_load)
+            {
+               RARCH_LOG("[Config] Appending config: \"%s\".\n", config_path);
+               if (!result)
+                  RARCH_ERR("[Config] Failed to append config: \"%s\".\n", config_path);
+            }
+         }
       }
 
       /* Re-check verbosity settings */
@@ -3954,8 +3973,6 @@ static bool config_load_file(global_t *global,
 
    if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE) && !without_overrides)
    {
-      /* Don't destroy append_config_path, store in temporary
-       * variable. */
       char tmp_append_path[PATH_MAX_LENGTH];
       const char *extra_path = NULL;
 #ifdef HAVE_OVERLAY
@@ -3964,20 +3981,24 @@ static bool config_load_file(global_t *global,
 #endif
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_OVERRIDE),
             sizeof(tmp_append_path));
-      extra_path = strtok_r(tmp_append_path, "|", &save);
 
-      while (extra_path)
+      extra_path = tmp_append_path;
+      while (extra_path && *extra_path)
       {
-         bool result = config_append_file(conf, extra_path);
+         char *next = strchr(extra_path, '|');
+         if (next)
+            *next++ = '\0';
 
-         if (!first_load)
          {
-            RARCH_LOG("[Config] Appending override config: \"%s\".\n", extra_path);
-
-            if (!result)
-               RARCH_ERR("[Config] Failed to append override config: \"%s\".\n", extra_path);
+            bool result = config_append_file(conf, extra_path);
+            if (!first_load)
+            {
+               RARCH_LOG("[Config] Appending override config: \"%s\".\n", extra_path);
+               if (!result)
+                  RARCH_ERR("[Config] Failed to append override config: \"%s\".\n", extra_path);
+            }
          }
-         extra_path = strtok_r(NULL, "|", &save);
+         extra_path = next;
       }
 
       /* Re-check verbosity settings */
