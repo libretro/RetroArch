@@ -125,26 +125,37 @@ static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
 static int GLXExtensionSupported(Display *dpy, const char *ext)
 {
-   const char *ext_string        = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
-   const char *client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
-   const char *pos               = strstr(ext_string, ext);
-   size_t pos_ext_len            = strlen(ext);
+   size_t _len;
+   const char *ext_string;
+   const char *client_extensions;
+   const char *pos;
 
-   if (      pos
-         && (pos == ext_string       || pos[-1] == ' ')
-         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
-      )
-      return 1;
+   if (!ext || *ext == '\0')
+      return 0;
 
-   pos                           = strstr(client_extensions, ext);
-   pos_ext_len                   = strlen(ext);
+   _len              = strlen(ext);
+   ext_string        = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+   client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
 
-   if (
-             pos
-         && (pos == ext_string       || pos[-1] == ' ')
-         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
-      )
-      return 1;
+   if (ext_string)
+   {
+      pos = strstr(ext_string, ext);
+      if (      pos
+            && (pos       == ext_string || pos[-1]   == ' ')
+            && (pos[_len] == ' '        || pos[_len] == '\0')
+         )
+         return 1;
+   }
+
+   if (client_extensions)
+   {
+      pos = strstr(client_extensions, ext);
+      if (      pos
+            && (pos       == client_extensions || pos[-1]   == ' ')
+            && (pos[_len] == ' '               || pos[_len] == '\0')
+         )
+         return 1;
+   }
 
    return 0;
 }

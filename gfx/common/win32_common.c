@@ -1320,12 +1320,13 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                   char *utf8   = utf16_to_utf8_string_alloc(wstr+i);
                   if (!utf8)
                      continue;
-                  __len         = strlen(utf8) + 1;
+                  __len        = strlen(utf8) + 1;
                   if (__len >= 1 && __len <= 3)
                   {
                      if (__len >= 2)
                         utf8[3] = (gcs) | (gcs >> 4);
-                     input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD);
+                     input_keyboard_event(true, 1, *((int*)utf8), 0,
+                     RETRO_DEVICE_KEYBOARD);
                   }
                   free(utf8);
                }
