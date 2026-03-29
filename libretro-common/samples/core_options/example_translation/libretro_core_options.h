@@ -174,6 +174,7 @@ struct retro_core_options_v2 *options_intl[RETRO_LANGUAGE_LAST] = {
    &options_be,      /* RETRO_LANGUAGE_BELARUSIAN */
    &options_gl,      /* RETRO_LANGUAGE_GALICIAN */
    &options_no,      /* RETRO_LANGUAGE_NORWEGIAN */
+   &options_th,      /* RETRO_LANGUAGE_THAI */
 };
 #endif
 

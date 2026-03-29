@@ -140,6 +140,8 @@ const char *get_user_language_iso639_1(bool limit)
           return "no";
       case RETRO_LANGUAGE_IRISH:
           return "ga";
+      case RETRO_LANGUAGE_THAI:
+          return "th";
    }
    return "en";
 }
@@ -564,6 +566,18 @@ static const char *msg_hash_to_str_ga(enum msg_hash_enums msg)
 
    return "null";
 }
+
+static const char *msg_hash_to_str_th(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_th.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
 #endif
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
@@ -677,6 +691,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_IRISH:
          ret = msg_hash_to_str_ga(msg);
+         break;
+      case RETRO_LANGUAGE_THAI:
+         ret = msg_hash_to_str_th(msg);
          break;
       default:
          break;

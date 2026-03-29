@@ -150,6 +150,8 @@ struct retro_core_options_v2 options_fr = {
 
 /* RETRO_LANGUAGE_FINNISH */
 
+/* RETRO_LANGUAGE_THAI */
+
 #ifdef __cplusplus
 }
 #endif

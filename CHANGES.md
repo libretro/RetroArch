@@ -43,6 +43,7 @@
 - LIBRETRO: RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO allows cores to disable frontend's save state undo feature to decrease memory usage
 - LIBRETRO: Performance improvements for nbio and archive handling in libretro-common
 - LIBRETRO: Performance improvements for utf encoding in libretro-common
+- LOCALIZATION: Add Thai language
 - MACOS: Fix OpenGL color on wide gamut displays
 - MENU: Do hard reset when pushing RetroPad Start on Restart menu item
 - MENU: Remove "Missing firmware check" option

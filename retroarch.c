@@ -8941,6 +8941,7 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
       {"gl", RETRO_LANGUAGE_GALICIAN},
       {"no", RETRO_LANGUAGE_NORWEGIAN},
       {"ga", RETRO_LANGUAGE_IRISH},
+      {"th", RETRO_LANGUAGE_THAI},
    };
 
    if (string_is_empty(iso639))
