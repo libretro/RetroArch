@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../command.h"
 #include "../../location_driver.h"
 #include "../../retroarch.h"
 
@@ -134,12 +135,26 @@ static bool android_location_start(void *data)
 
 static void android_location_stop(void *data)
 {
-   struct android_app *android_app = (struct android_app*)g_android;
    androidlocation_t *androidlocation = (androidlocation_t*)data;
    JNIEnv *env = jni_thread_getenv();
-   if (!env)
+   if (!androidlocation || !env)
       return;
 
+#if 0
+   settings_t* settings = config_get_ptr();
+   if (settings->bools.auto_save_state)
+   {
+      /* Make a save state */
+      command_event(CMD_EVENT_SAVE_STATE, NULL);
+
+      /* Flush the auto save state to disk */
+      command_event(CMD_EVENT_AUTOSAVE_DELETE, NULL);
+   }
+#endif
+
+   command_event(CMD_EVENT_SAVE_FILES, NULL);
+
+   struct android_app *android_app = (struct android_app*)g_android;
    CALL_VOID_METHOD(env, android_app->activity->clazz,
          androidlocation->onLocationStop);
 }
