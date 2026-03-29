@@ -37,7 +37,7 @@ static int file_decompressed_target_file(const char *name,
 static int file_decompressed_subdir(const char *name,
       const char *valid_exts,
       const uint8_t *cdata,
-      unsigned cmode, uint32_t csize,uint32_t size,
+      unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    char path_dir[DIR_MAX_LENGTH];
@@ -47,25 +47,32 @@ static int file_decompressed_subdir(const char *name,
    /* Look at last character. Ignore directories, go to next file. */
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
+
    /* Loop multiple subdirs */
    if (strchr(userdata->dec->subdir, '|'))
    {
-      const char *subdir = NULL;
-      char *save         = NULL;
-      char temp[PATH_MAX_LENGTH];
+      const char *subdir = userdata->dec->subdir;
+      bool found         = false;
 
-      strlcpy(temp, userdata->dec->subdir, sizeof(temp));
-      subdir = strtok_r(temp, "|", &save);
-
-      while (subdir)
+      while (*subdir)
       {
-         if (strstr(name, subdir) == name)
-            break;
+         const char *end = strchr(subdir, '|');
+         size_t len      = end ? (size_t)(end - subdir) : strlen(subdir);
 
-         subdir = strtok_r(NULL, "|", &save);
+         if (strncmp(name, subdir, len) == 0
+               && (name[len] == '/' || name[len] == '\\' || name[len] == '\0'))
+         {
+            found = true;
+            break;
+         }
+
+         if (end)
+            subdir = end + 1;
+         else
+            break;
       }
 
-      if (!subdir)
+      if (!found)
          return 1;
    }
    else if (strstr(name, userdata->dec->subdir) != name)
@@ -91,8 +98,8 @@ static int file_decompressed_subdir(const char *name,
          "Failed to deflate ",
          CALLBACK_ERROR_SIZE);
    _len += strlcpy(
-		   userdata->dec->callback_error + _len,
-		   path,
+         userdata->dec->callback_error + _len,
+         path,
          CALLBACK_ERROR_SIZE - _len);
    userdata->dec->callback_error[  _len] = '.';
    userdata->dec->callback_error[++_len] = '\n';

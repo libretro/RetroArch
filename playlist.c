@@ -2757,22 +2757,18 @@ static bool playlist_read_file(playlist_t *playlist)
                         line_buf[3], thumbnail_mode_str,
                         sizeof(thumbnail_mode_str)) > 0)
                {
-                  char *save = NULL;
-                  char *tok  = strtok_r(thumbnail_mode_str, "|", &save);
-                  if (tok)
+                  char *delim = strchr(thumbnail_mode_str, '|');
+                  if (delim)
                   {
-                     char *tok2 = strtok_r(NULL, "|", &save);
-                     if (tok2)
-                     {
-                        /* Right thumbnail mode */
-                        unsigned thumbnail_mode = string_to_unsigned(tok);
-                        if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
-                           playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
-                        /* Left thumbnail mode */
-                        thumbnail_mode = string_to_unsigned(tok2);
-                        if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
-                           playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
-                     }
+                     *delim = '\0';
+                     /* Right thumbnail mode */
+                     unsigned thumbnail_mode = string_to_unsigned(thumbnail_mode_str);
+                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
+                        playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
+                     /* Left thumbnail mode */
+                     thumbnail_mode = string_to_unsigned(delim + 1);
+                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
+                        playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
                   }
                }
             }

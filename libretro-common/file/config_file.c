@@ -637,28 +637,27 @@ static int config_file_from_string_internal(
       char *from_string,
       const char *path)
 {
-   char *lines                    = from_string;
-   char *save_ptr                 = NULL;
-   char *line                     = NULL;
+   char *line                     = from_string;
 
    if (!string_is_empty(path))
       conf->path                  = strdup(path);
-   if (string_is_empty(lines))
+
+   if (string_is_empty(line))
       return 0;
 
-   /* Get first line of config file */
-   line = strtok_r(lines, "\n", &save_ptr);
-
-   while (line)
+   while (*line)
    {
       struct config_entry_list *list = NULL;
+      char *next                     = strchr(line, '\n');
+
+      if (next)
+         *next = '\0';
 
       /* Parse current line */
       if (!string_is_empty(line))
       {
          list = (struct config_entry_list*)
                malloc(sizeof(*list));
-
          if (!list)
             return -1;
 
@@ -673,7 +672,6 @@ static int config_file_from_string_internal(
                conf->tail->next = list;
             else
                conf->entries    = list;
-
             conf->tail          = list;
 
             if (list->key)
@@ -690,13 +688,15 @@ static int config_file_from_string_internal(
             free(list);
       }
 
-      /* Get next line of config file */
-      line = strtok_r(NULL, "\n", &save_ptr);
+      /* Advance to next line */
+      if (next)
+         line = next + 1;
+      else
+         break;
    }
 
    return 0;
 }
-
 
 bool config_file_deinitialize(config_file_t *conf)
 {

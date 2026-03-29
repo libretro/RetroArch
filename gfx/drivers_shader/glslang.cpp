@@ -64,11 +64,6 @@ struct SlangProcessHolder
 
 SlangProcess::SlangProcess()
 {
-   /* Initialize resource limits directly instead of parsing a string.
-    * This eliminates ~200 lines of if/else-if string comparisons,
-    * avoids strtok_r mutation of a local buffer, and is both faster
-    * at startup and far easier to maintain.
-    */
    std::memset(&Resources, 0, sizeof(Resources));
 
    /* Integer resource limits */
