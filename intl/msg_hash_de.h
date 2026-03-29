@@ -1075,6 +1075,30 @@ MSG_HASH(
    "Das Passwort für das eigene Cloud-Speicher-Konto."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Zugangsschlüssel-ID"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Die Zugangsschlüssel-ID für das eigene Cloud-Speicher-Konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Geheimer Zugangsschlüssel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Der geheime Zugangsschlüssel für das eigene Cloud-Speicher-Konto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   "S3-URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "Die S3-Endpoint-URL für den eigenen Cloud-Speicher."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Protokollierung"
    )
