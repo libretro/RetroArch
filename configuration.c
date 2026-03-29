@@ -5400,38 +5400,24 @@ void config_get_autoconf_profile_filename(
       const char *device_name, unsigned user,
       char *s, size_t len)
 {
-   const char* invalid_filename_chars[] = {
-      /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
-      "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
-      NULL
-   };
+   static const char invalid_filename_chars[] =
+      "~#%&*{}\\:[]?/|'\"";
    size_t i;
    size_t _len;
    char *sanitised_name                 = NULL;
-
    if (string_is_empty(device_name))
       return;
-
    sanitised_name = strdup(device_name);
-
    /* Remove invalid filename characters from
     * input device name */
-   for (i = 0; invalid_filename_chars[i]; i++)
+   for (i = 0; sanitised_name[i]; i++)
    {
-      for (;;)
-      {
-         char *tmp = strstr(sanitised_name, invalid_filename_chars[i]);
-
-         if (!tmp)
-            break;
-         *tmp = '_';
-      }
+      if (strchr(invalid_filename_chars, sanitised_name[i]))
+         sanitised_name[i] = '_';
    }
-
    /* Generate autoconfig file path */
    _len = strlcpy(s, sanitised_name, len);
    strlcpy(s + _len, ".cfg", len - _len);
-
    free(sanitised_name);
    sanitised_name = NULL;
 }

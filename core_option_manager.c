@@ -687,7 +687,18 @@ static bool core_option_manager_parse_variable(
       value                   = strdup(var->value);
 
    if (!string_is_empty(value))
-      desc_end                = strstr(value, "; ");
+   {
+      char *p = value;
+      while (*p)
+      {
+         if (p[0] == ';' && p[1] == ' ')
+         {
+            desc_end = p;
+            break;
+         }
+         p++;
+      }
+   }
 
    if (!desc_end)
       goto error;
