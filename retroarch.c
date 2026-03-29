@@ -3564,7 +3564,7 @@ bool command_event(enum event_command cmd, void *data)
             configuration_set_int(settings, settings->ints.replay_slot, replay_slot);
          if (!res)
          {
-             const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
+            const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             RARCH_ERR("[Replay] %s.\n", _msg);
@@ -6014,16 +6014,15 @@ void main_exit(void *args)
 static int mkdir_p(const char *path, mode_t mode)
 {
     char tmp[PATH_MAX_LENGTH];
-    char *p = NULL;
-    size_t len;
+    char *p     = NULL;
+    size_t _len = strlcpy(tmp, path, sizeof(tmp));
+    if (tmp[_len - 1] == '/')
+        tmp[_len - 1] = 0;
 
-    snprintf(tmp, sizeof(tmp), "%s", path);
-    len = strlen(tmp);
-    if (tmp[len - 1] == '/')
-        tmp[len - 1] = 0;
-
-    for (p = tmp + 1; *p; p++) {
-        if (*p == '/') {
+    for (p = tmp + 1; *p; p++)
+    {
+        if (*p == '/')
+        {
             *p = 0;
             mkdir(tmp, mode);
             *p = '/';
