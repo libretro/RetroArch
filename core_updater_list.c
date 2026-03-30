@@ -767,8 +767,9 @@ bool core_updater_list_parse_network_data(
       const char *network_buildbot_url,
       const char *data, size_t len)
 {
-   char *tok, *save   = NULL;
    char *data_buf     = NULL;
+   char *line         = NULL;
+   char *data_end     = NULL;
 
    /* Sanity check */
    if (!core_list || string_is_empty(data) || (len < 1))
@@ -786,30 +787,68 @@ bool core_updater_list_parse_network_data(
    memcpy(data_buf, data, len * sizeof(char));
    data_buf[len] = '\0';
 
-   /* Split network listing request into lines
-    * and loop over each line.
-    * The outer strtok_r replaces '\n' with '\0' in data_buf,
-    * so each tok is an isolated null-terminated string that
-    * can be safely tokenized in-place by the inner strtok_r
-    * without any extra allocations. */
-   for (tok = strtok_r(data_buf, "\n", &save); tok;
-        tok = strtok_r(NULL, "\n", &save))
+   data_end = data_buf + len;
+
+   /* Parse each line from the network data */
+   for (line = data_buf; line < data_end; )
    {
-      char *save2 = NULL;
+      char *line_end;
+      char *p;
       char *elem0 = NULL; /* date     */
       char *elem1 = NULL; /* crc      */
       char *elem2 = NULL; /* filename */
 
-      if (string_is_empty(tok))
-         continue;
+      /* Find end of current line and terminate it */
+      for (line_end = line; line_end < data_end && *line_end != '\n'; line_end++)
+         ;
+      *line_end = '\0';
 
-      /* Split line into listings info components
-       * directly in place - no strdup needed since
-       * strtok_r tracks state via save pointers,
-       * not the input string itself */
-      if ((elem0 = strtok_r(tok,  " ", &save2)) != NULL)
-      if ((elem1 = strtok_r(NULL, " ", &save2)) != NULL)
-            elem2 = strtok_r(NULL, " ", &save2);
+      /* Skip empty lines */
+      if (string_is_empty(line))
+      {
+         line = line_end + 1;
+         continue;
+      }
+
+      p = line;
+
+      /* --- elem0: date --- */
+      /* Skip leading spaces */
+      while (*p == ' ')
+         p++;
+      if (*p != '\0')
+      {
+         elem0 = p;
+         /* Advance to next space and terminate */
+         while (*p != ' ' && *p != '\0')
+            p++;
+         if (*p == ' ')
+            *p++ = '\0';
+      }
+
+      /* --- elem1: crc --- */
+      while (*p == ' ')
+         p++;
+      if (*p != '\0')
+      {
+         elem1 = p;
+         while (*p != ' ' && *p != '\0')
+            p++;
+         if (*p == ' ')
+            *p++ = '\0';
+      }
+
+      /* --- elem2: filename --- */
+      while (*p == ' ')
+         p++;
+      if (*p != '\0')
+      {
+         elem2 = p;
+         while (*p != ' ' && *p != '\0')
+            p++;
+         if (*p == ' ')
+            *p = '\0';
+      }
 
       /* Parse listings info and add to core updater
        * list */
@@ -824,6 +863,9 @@ bool core_updater_list_parse_network_data(
                path_libretro_info,
                network_buildbot_url,
                elem0, elem1, elem2);
+
+      /* Advance to next line */
+      line = line_end + 1;
    }
 
    /* Temporary data buffer is no longer required */
