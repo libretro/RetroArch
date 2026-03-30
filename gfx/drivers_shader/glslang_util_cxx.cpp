@@ -29,7 +29,7 @@
 #endif
 
 #include "glslang_util.h"
-#include "glslang_util_cxx.h"
+#include "glslang_util_cxx.hpp"
 #if defined(HAVE_GLSLANG)
 #include "glslang.hpp"
 #endif

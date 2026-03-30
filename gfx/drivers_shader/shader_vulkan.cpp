@@ -17,7 +17,7 @@
 #include "../include/vulkan/vk_sdk_platform.h"
 #include "shader_vulkan.h"
 #include "glslang_util.h"
-#include "glslang_util_cxx.h"
+#include "glslang_util_cxx.hpp"
 #include <vector>
 #include <memory>
 #include <functional>
@@ -31,8 +31,7 @@
 #include <gfx/math/matrix_4x4.h>
 #include <retro_miscellaneous.h>
 
-#include "slang_reflection.h"
-#include "slang_reflection.hpp"
+#include "slang_process.h"
 
 #include "../common/vulkan_common.h"
 #include "../../retroarch.h"

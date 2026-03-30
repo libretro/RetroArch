@@ -17,7 +17,7 @@
 
 #include "shader_gl3.h"
 #include "glslang_util.h"
-#include "glslang_util_cxx.h"
+#include "glslang_util_cxx.hpp"
 
 #include <vector>
 #include <memory>
@@ -30,8 +30,7 @@
 #include <formats/image.h>
 #include <retro_miscellaneous.h>
 
-#include "slang_reflection.h"
-#include "slang_reflection.hpp"
+#include "slang_process.h"
 #include "spirv_glsl.hpp"
 
 #include "../common/gl3_defines.h"

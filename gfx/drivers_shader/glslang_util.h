@@ -22,7 +22,6 @@
 
 #include <lists/string_list.h>
 
-#include "slang_reflection.h"
 #include "../video_shader_parse.h"
 
 typedef enum glslang_format
@@ -69,6 +68,48 @@ typedef enum glslang_format
 
    SLANG_FORMAT_MAX
 } glslang_format;
+
+/* Textures with built-in meaning. */
+typedef enum slang_texture_semantic
+{
+   /* The input texture to the filter chain.
+    * Canonical name: "Original". */
+   SLANG_TEXTURE_SEMANTIC_ORIGINAL         = 0,
+
+   /* The output from pass N - 1 if executing pass N, or ORIGINAL
+    * if pass #0 is executed.
+    * Canonical name: "Source".
+    */
+   SLANG_TEXTURE_SEMANTIC_SOURCE           = 1,
+
+   /* The original inputs with a history back in time.
+    * Canonical name: "OriginalHistory#", e.g. "OriginalHistory2" <- Two frames back.
+    * "OriginalHistory0" is an alias for SEMANTIC_ORIGINAL.
+    * Size name: "OriginalHistorySize#".
+    */
+   SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY = 2,
+
+   /* The output from pass #N, where pass #0 is the first pass.
+    * Canonical name: "PassOutput#", e.g. "PassOutput3".
+    * Size name: "PassOutputSize#".
+    */
+   SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT      = 3,
+
+   /* The output from pass #N, one frame ago where pass #0 is the first pass.
+    * It is not valid to use the pass feedback from a pass which is not offscreen.
+    * Canonical name: "PassFeedback#", e.g. "PassFeedback2".
+    */
+   SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK    = 4,
+
+   /* Inputs from static textures, defined by the user.
+    * There is no canonical name, and the only way to use these semantics are by
+    * remapping.
+    */
+   SLANG_TEXTURE_SEMANTIC_USER             = 5,
+
+   SLANG_NUM_TEXTURE_SEMANTICS,
+   SLANG_INVALID_TEXTURE_SEMANTIC       = -1
+} slang_texture_semantic;
 
 typedef enum glslang_filter_chain_filter
 {

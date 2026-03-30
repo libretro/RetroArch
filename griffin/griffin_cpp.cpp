@@ -91,7 +91,6 @@ VIDEO DRIVER
 #ifdef HAVE_SLANG
 #include "../gfx/drivers_shader/glslang_util_cxx.cpp"
 #include "../gfx/drivers_shader/slang_process.cpp"
-#include "../gfx/drivers_shader/slang_reflection.cpp"
 #endif
 #endif
 
