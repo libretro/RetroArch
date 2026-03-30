@@ -252,98 +252,98 @@ static size_t string_count_tokens(const char *str, const char *delim)
 
 struct string_list *string_split(const char *str, const char *delim)
 {
-   char *save      = NULL;
-   char *copy      = NULL;
-   const char *tmp = NULL;
+   const char *p = str;
    struct string_list *list = string_list_new();
-
    if (!list)
       return NULL;
 
-   if (!(copy = strdup(str)))
-      goto error;
-
-   /* Pre-size the element array to avoid repeated reallocs.
-    * We scan the original string (not the copy, since strtok
-    * mutates it) to count tokens. */
-   {
-      size_t token_count = string_count_tokens(str, delim);
-      if (token_count > list->cap)
-      {
-         if (!string_list_capacity(list, token_count))
-            goto error;
-      }
-   }
-
-   tmp = strtok_r(copy, delim, &save);
-   while (tmp)
+   while (*p)
    {
       union string_list_elem_attr attr;
-      size_t tok_len;
+      const char *tok;
 
-      attr.i  = 0;
-      tok_len = strlen(tmp);
+      while (*p && strchr(delim, *p))
+         p++;
+      if (!*p)
+         break;
 
-      if (!string_list_append_n(list, tmp, tok_len, attr))
+      tok = p;
+      while (*p && !strchr(delim, *p))
+         p++;
+
+      attr.i = 0;
+      if (!string_list_append_n(list, tok, p - tok, attr))
          goto error;
-
-      tmp = strtok_r(NULL, delim, &save);
    }
 
-   free(copy);
    return list;
 
 error:
    string_list_free(list);
-   free(copy);
    return NULL;
 }
 
 bool string_split_noalloc(struct string_list *list,
       const char *str, const char *delim)
 {
-   char *save      = NULL;
-   char *copy      = NULL;
-   const char *tmp = NULL;
+   size_t _len;
+   const char *end;
+   const char *p   = str;
 
-   if (!list)
+   if (!list || !str || !delim || !*delim)
       return false;
 
-   if (!(copy = strdup(str)))
-      return false;
+   /* Compute delimiter length once. */
+   {
+      const char *d = delim;
+      while (*d)
+         d++;
+      _len = d - delim;
+   }
 
    /* Pre-size to avoid repeated reallocs. */
    {
-      size_t token_count = string_count_tokens(str, delim);
-      if (token_count > list->cap)
+      size_t __len = string_count_tokens(str, delim);
+      if (__len > list->cap)
       {
-         if (!string_list_capacity(list, token_count))
-         {
-            free(copy);
+         if (!string_list_capacity(list, __len))
             return false;
-         }
       }
    }
 
-   tmp = strtok_r(copy, delim, &save);
-   while (tmp)
+   while (*p)
    {
       union string_list_elem_attr attr;
-      size_t tok_len;
+      size_t __len;
 
-      attr.i  = 0;
-      tok_len = strlen(tmp);
+      attr.i = 0;
+      end    = strstr(p, delim);
 
-      if (!string_list_append_n(list, tmp, tok_len, attr))
+      if (end)
       {
-         free(copy);
-         return false;
+         __len = end - p;
+         if (__len > 0)
+         {
+            if (!string_list_append_n(list, p, __len, attr))
+               return false;
+         }
+         p = end + _len;
       }
-
-      tmp = strtok_r(NULL, delim, &save);
+      else
+      {
+         const char *s = p;
+         while (*s)
+            s++;
+         __len = s - p;
+         if (__len > 0)
+         {
+            if (!string_list_append_n(list, p, __len, attr))
+               return false;
+         }
+         break;
+      }
    }
 
-   free(copy);
    return true;
 }
 
