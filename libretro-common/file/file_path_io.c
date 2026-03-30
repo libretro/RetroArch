@@ -37,8 +37,13 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#include <windows.h>
 #else
 #include <unistd.h> /* stat() is defined here */
+#endif
+
+#if defined(__unix__) || defined(__APPLE__)
+#include <sys/statvfs.h>
 #endif
 
 /* TODO/FIXME - globals */
@@ -86,6 +91,33 @@ bool path_is_directory(const char *path)
    if (path_stat64_cb)
       return (path_stat64_cb(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
    return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
+}
+
+bool path_is_empty_directory(const char *dir)
+{
+    struct retro_vfs_dir_handle *d;
+    const char *name;
+
+    d = retro_vfs_opendir_impl(dir, false);
+    if (!d)
+        return false;
+
+    while (retro_vfs_readdir_impl(d))
+    {
+        name = retro_vfs_dirent_get_name_impl(d);
+
+        /* Skip . and .. */
+        if (name &&
+            strcmp(name, ".") != 0 &&
+            strcmp(name, "..") != 0)
+        {
+            retro_vfs_closedir_impl(d);
+            return false;
+        }
+    }
+
+    retro_vfs_closedir_impl(d);
+    return true;
 }
 
 bool path_is_character_special(const char *path)
@@ -165,4 +197,22 @@ bool path_mkdir(const char *dir)
          return true;
    }
    return false;
+}
+
+int64_t path_get_free_space(const char *path)
+{
+#if defined(_WIN32)
+   ULARGE_INTEGER free_bytes_available;
+   if (GetDiskFreeSpaceExA(path, &free_bytes_available, NULL, NULL))
+      return (int64_t)free_bytes_available.QuadPart;
+   return -1;
+#elif defined(__unix__) || defined(__APPLE__)
+   struct statvfs fs;
+   if (statvfs(path, &fs) == 0)
+      return (int64_t)fs.f_bavail * (int64_t)fs.f_frsize;
+   return -1;
+#else
+   /* Unsupported platform */
+   return -1;
+#endif
 }
