@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend fror libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2017 - Hans-Kristian Arntzen
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
@@ -43,7 +43,7 @@ enum slang_semantic
    SLANG_SEMANTIC_FRAME_DIRECTION  = 4,
    /* uint, FrameTimeDelta */
    SLANG_SEMANTIC_FRAME_TIME_DELTA = 5,
-   /* uint, OriginalFPS */
+   /* float, OriginalFPS */
    SLANG_SEMANTIC_ORIGINAL_FPS     = 6,
    /* uint, rotation */
    SLANG_SEMANTIC_ROTATION         = 7,

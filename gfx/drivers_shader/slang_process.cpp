@@ -580,7 +580,7 @@ bool slang_process(
 
    try
    {
-	   spirv_cross::ShaderResources vs_resources;
+      spirv_cross::ShaderResources vs_resources;
       spirv_cross::ShaderResources ps_resources;
       std::string     vs_code;
       std::string     ps_code;
