@@ -1107,6 +1107,10 @@ MSG_HASH(
    "Salasanasi pilvitallennustililläsi."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   "S3:n URL-osoite"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Lokiin kirjaus"
    )
