@@ -1190,7 +1190,7 @@ bool cocoa_launch_game_by_filename(NSString *filename)
 
    RARCH_LOG("Launching game by filename: %s\n", [filename UTF8String]);
 
-   // Strategy 1: Try to find game in playlists first (existing behavior)
+   /* Strategy 1: Try to find game in playlists first (existing behavior) */
    RetroArchPlaylistGame *game = [RetroArchPlaylistManager findGameByFilename:filename];
 
    if (game && game.corePath && game.fullPath) {
@@ -1214,7 +1214,7 @@ bool cocoa_launch_game_by_filename(NSString *filename)
       }
    }
 
-   // Strategy 2: Fallback to automatic core detection for non-playlist content
+   /* Strategy 2: Fallback to automatic core detection for non-playlist content */
    RARCH_LOG("Game '%s' not found in playlists, trying automatic core detection\n", [filename UTF8String]);
 
    fill_pathname_expand_special(full_path, [filename UTF8String], sizeof(full_path));
@@ -1225,7 +1225,7 @@ bool cocoa_launch_game_by_filename(NSString *filename)
 
    RARCH_LOG("Found file at path: %s\n", full_path);
 
-   // Get list of compatible cores for this content file
+   /* Get list of compatible cores for this content file */
    core_info_get_list(&core_info_list);
    if (!core_info_list) {
       RARCH_WARN("No core info list available\n");
@@ -1243,7 +1243,7 @@ bool cocoa_launch_game_by_filename(NSString *filename)
 
    path_set(RARCH_PATH_CONTENT, full_path);
 
-   // Strategy 2a: Check if current core supports this content
+   /* Strategy 2a: Check if current core supports this content */
    if (!path_is_empty(RARCH_PATH_CORE)) {
       const char *current_core = path_get(RARCH_PATH_CORE);
       for (size_t i = 0; i < list_size; i++) {
@@ -1256,16 +1256,17 @@ bool cocoa_launch_game_by_filename(NSString *filename)
       }
    }
 
-   // Strategy 2b: If only one compatible core, use it automatically
-   if (list_size == 1) {
+   /* Strategy 2b: If only one compatible core, use it automatically */
+   if (list_size == 1)
+   {
       const core_info_t *info = &core_info[0];
       RARCH_LOG("Only one compatible core found: '%s', using it automatically\n", info->display_name);
       return task_push_load_content_with_new_core_from_companion_ui(
          info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
    }
 
-   // Strategy 2c: Multiple cores available - use the first one
-   // In a future implementation, this could present a user choice dialog
+   /* Strategy 2c: Multiple cores available - use the first one
+    * In a future implementation, this could present a user choice dialog */
    const core_info_t *info = &core_info[0];
    RARCH_LOG("Multiple cores available, automatically selecting first: '%s'\n", info->display_name);
    return task_push_load_content_with_new_core_from_companion_ui(
