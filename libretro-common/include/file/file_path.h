@@ -664,6 +664,10 @@ bool path_mkdir(const char *dir);
  */
 bool path_is_directory(const char *path);
 
+bool path_is_empty_directory(const char *dir);
+
+int64_t path_get_free_space(const char *path);
+
 /* Time format strings with AM-PM designation require special
  * handling due to platform dependence
  * @return Length of the string written to @s

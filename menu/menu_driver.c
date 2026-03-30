@@ -49,6 +49,7 @@
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "../driver.h"
+#include "../file_path_special.h"
 #include "../list_special.h"
 #include "../msg_hash_lbl_str.h"
 #include "../paths.h"
@@ -3689,6 +3690,9 @@ static bool rarch_menu_init(
    bool menu_show_start_screen = settings->bools.menu_show_start_screen;
    bool config_save_on_exit    = settings->bools.config_save_on_exit;
 #endif
+#ifdef HAVE_COMPRESSION
+   bool have_bundled_assets = false;
+#endif
 
    /* thumbnail initialization */
    if (!(menu_st->thumbnail_path_data = gfx_thumbnail_path_init()))
@@ -3731,6 +3735,7 @@ static bool rarch_menu_init(
             != settings->uints.bundle_assets_extract_last_version)
       )
    {
+      have_bundled_assets = true;
       p_dialog->current_type         = MENU_DIALOG_HELP_EXTRACT;
       task_push_decompress(
             settings->paths.bundle_assets_src,
@@ -3750,22 +3755,37 @@ static bool rarch_menu_init(
 #if defined(HAVE_ONLINE_UPDATER) && defined(HAVE_NETWORKING) && defined(HAVE_ZLIB)
    else
    {
-#ifdef HAVE_UPDATE_ASSETS
-      if (!path_is_directory(settings->paths.directory_assets))
-         menu_download(MENU_ENUM_LABEL_CB_UPDATE_ASSETS);
+#ifdef HAVE_CONFIGFILE
+   if (!menu_show_start_screen)
+      return true;
 #endif
-      if (!path_is_directory(settings->paths.directory_autoconfig))
+#ifdef HAVE_COMPRESSION
+   if (have_bundled_assets)
+      return true;
+#endif
+
+#ifdef HAVE_UPDATE_ASSETS
+      if (!path_is_directory(settings->paths.directory_assets) || path_is_empty_directory(settings->paths.directory_assets))
+      {
+         if (path_get_free_space(settings->paths.directory_assets) >= ASSETS_ZIP_PLUS_DECOMPRESSION_SIZE)
+            menu_download(MENU_ENUM_LABEL_CB_UPDATE_ASSETS);
+      }
+#endif
+      if (!path_is_directory(settings->paths.directory_autoconfig) || path_is_empty_directory(settings->paths.directory_autoconfig))
          menu_download(MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES);
 #ifdef HAVE_UPDATE_CORE_INFO
-      if (!path_is_directory(settings->paths.path_libretro_info))
+      if (!path_is_directory(settings->paths.path_libretro_info) || path_is_empty_directory(settings->paths.path_libretro_info))
          menu_download(MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES);
 #endif
-#ifdef HAVE_LIBRETRODB
-      if (!path_is_directory(settings->paths.path_content_database))
-         menu_download(MENU_ENUM_LABEL_CB_UPDATE_DATABASES);
+#if defined(HAVE_LIBRETRODB)
+      if (!path_is_directory(settings->paths.path_content_database) || path_is_empty_directory(settings->paths.path_content_database))
+      {
+         if (path_get_free_space(settings->paths.path_content_database) >= DATABASE_RDB_ZIP_PLUS_DECOMPRESSION_SIZE)
+            menu_download(MENU_ENUM_LABEL_CB_UPDATE_DATABASES);
+      }
 #endif
 #if defined(RARCH_MOBILE) && defined(HAVE_OVERLAY)
-      if (!path_is_directory(settings->paths.directory_overlay))
+      if (!path_is_directory(settings->paths.directory_overlay) || path_is_empty_directory(settings->paths.directory_overlay))
          menu_download(MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS);
 #endif
    }
