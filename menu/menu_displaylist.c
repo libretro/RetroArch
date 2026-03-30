@@ -2888,18 +2888,24 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             if (entry->crc32)
             {
                char entry_crc32_buf[256];
-               char *save      = NULL;
-               const char *con = NULL;
-               size_t crc_len  = strlcpy(entry_crc32_buf,
+               size_t crc_len = strlcpy(entry_crc32_buf,
                      entry->crc32, sizeof(entry_crc32_buf));
 
                if (crc_len < sizeof(entry_crc32_buf))
-                  con = strtok_r(entry_crc32_buf, "|", &save);
-
-               if (con)
                {
-                  const char *elem0     = con;
-                  const char *hash_type = strtok_r(NULL, "|", &save);
+                  const char *elem0     = entry_crc32_buf;
+                  const char *hash_type = NULL;
+                  char *delim           = strchr(entry_crc32_buf, '|');
+
+                  if (delim)
+                  {
+                     *delim    = '\0';
+                     hash_type = delim + 1;
+
+                     delim = strchr(hash_type, '|');
+                     if (delim)
+                        *delim = '\0';
+                  }
 
                   if (hash_type)
                   {

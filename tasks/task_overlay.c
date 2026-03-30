@@ -910,15 +910,27 @@ static void task_overlay_deferred_load(retro_task_t *task)
          char cfg_rect_buf[256];
          char *elems[4]                = {NULL, NULL, NULL, NULL};
          unsigned list_size            = 0;
-         char *tok, *save              = NULL;
+         char *p                       = NULL;
 
          strlcpy(cfg_rect_buf, overlay->config.rect.array,
                sizeof(cfg_rect_buf));
 
-         for (tok = strtok_r(cfg_rect_buf, ", ", &save);
-              tok && list_size < 4;
-              tok = strtok_r(NULL, ", ", &save))
-            elems[list_size++] = tok;
+         p = cfg_rect_buf;
+
+         while (*p && list_size < 4)
+         {
+            /* Skip leading delimiters */
+            while (*p == ',' || *p == ' ')
+               p++;
+            if (*p == '\0')
+               break;
+            elems[list_size++] = p;
+            /* Advance to next delimiter or end */
+            while (*p && *p != ',' && *p != ' ')
+               p++;
+            if (*p)
+               *p++ = '\0';
+         }
 
          if (list_size < 4)
          {
@@ -947,15 +959,25 @@ static void task_overlay_deferred_load(retro_task_t *task)
          char cfg_vp_buf[256];
          char *elems[4]             = {NULL, NULL, NULL, NULL};
          unsigned list_size         = 0;
-         char *tok, *save           = NULL;
+         char *p                    = NULL;
          RARCH_DBG("[Overlay] Found viewport value: %s\n", tmp_str);
 
          strlcpy(cfg_vp_buf, tmp_str, sizeof(cfg_vp_buf));
 
-         for (tok = strtok_r(cfg_vp_buf, ", ", &save);
-              tok && list_size < 4;
-              tok = strtok_r(NULL, ", ", &save))
-            elems[list_size++] = tok;
+         p = cfg_vp_buf;
+
+         while (*p && list_size < 4)
+         {
+            while (*p == ',' || *p == ' ')
+               p++;
+            if (*p == '\0')
+               break;
+            elems[list_size++] = p;
+            while (*p && *p != ',' && *p != ' ')
+               p++;
+            if (*p)
+               *p++ = '\0';
+         }
 
          if (list_size >= 4)
          {
