@@ -774,81 +774,91 @@ static bool video_shader_parse_pass(config_file_t *conf,
 static bool video_shader_parse_textures(config_file_t *conf,
       struct video_shader *shader)
 {
-   char *textures       = (char*)malloc(1024 + PATH_MAX_LENGTH);
-
-   if (!textures)
-      return false;
+   char textures[1024];
+   const char *id        = NULL;
+   const char *next      = NULL;
 
    textures[0] = '\0';
 
-   if (config_get_array(conf, "textures", textures, 1024))
+   if (!config_get_array(conf, "textures", textures, sizeof(textures)))
+      return true;
+
+   for (id = textures; id && *id && shader->luts < GFX_MAX_TEXTURES; id = next)
    {
+      size_t id_len;
+      char id_buf[64];
+      char idx[64];
       char texture_path[PATH_MAX_LENGTH];
-      const char *id  = NULL;
-      char *save      = NULL;
+      bool mipmap                     = false;
+      bool smooth                     = false;
+      struct config_entry_list *entry = NULL;
+
+      /* Find the next semicolon delimiter */
+      next = strchr(id, ';');
+      if (next)
+      {
+         id_len = (size_t)(next - id);
+         next++;                       /* skip past ';' */
+      }
+      else
+         id_len = strlen(id);
+
+      /* Skip empty tokens */
+      if (id_len == 0)
+         continue;
+
+      /* Copy token into a null-terminated buffer */
+      if (id_len >= sizeof(id_buf))
+         id_len = sizeof(id_buf) - 1;
+      memcpy(id_buf, id, id_len);
+      id_buf[id_len] = '\0';
 
       texture_path[0] = '\0';
 
-      for (id = strtok_r(textures, ";", &save);
-            id && shader->luts < GFX_MAX_TEXTURES;
-            shader->luts++, id = strtok_r(NULL, ";", &save))
+      if (  !(entry = config_get_entry(conf, id_buf))
+          || string_is_empty(entry->value))
       {
-         size_t _len;
-         char idx[64];
-         bool mipmap                     = false;
-         bool smooth                     = false;
-         struct config_entry_list *entry = NULL;
-
-         idx[0]                          = '\0';
-
-         if ( !(entry = config_get_entry(conf, id))
-             || string_is_empty(entry->value))
-         {
-            RARCH_ERR("[Shaders] Cannot find path to texture \"%s\".\n",
-                  id);
-            free(textures);
-            return false;
-         }
-
-         config_get_path(conf, id, texture_path, sizeof(texture_path));
-
-         /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(shader->lut[shader->luts].path,
-               PATH_MAX_LENGTH, conf->path, texture_path);
-         /* TODO/FIXME - dehardcode PATH_MAX_LENGTH */
-         video_shader_replace_wildcards(shader->lut[shader->luts].path,
-               PATH_MAX_LENGTH, conf->path);
-
-         strlcpy(shader->lut[shader->luts].id, id,
-               sizeof(shader->lut[shader->luts].id));
-
-         _len = strlcpy(idx, id, sizeof(idx));
-
-         strlcpy(idx + _len, "_linear", sizeof(idx) - _len);
-         if (config_get_bool(conf, idx, &smooth))
-            shader->lut[shader->luts].filter = smooth
-               ? RARCH_FILTER_LINEAR
-               : RARCH_FILTER_NEAREST;
-         else
-            shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
-
-         strlcpy(idx + _len, "_mipmap", sizeof(idx) - _len);
-         if (config_get_bool(conf, idx, &mipmap))
-            shader->lut[shader->luts].mipmap = mipmap;
-         else
-            shader->lut[shader->luts].mipmap = false;
-
-         strlcpy(idx + _len, "_wrap_mode", sizeof(idx) - _len);
-         entry = NULL;
-         if ((entry = config_get_entry(conf, idx))
-               && !string_is_empty(entry->value))
-            shader->lut[shader->luts].wrap = video_shader_wrap_str_to_mode(entry->value);
-         entry = NULL;
-
+         RARCH_ERR("[Shaders] Cannot find path to texture \"%s\".\n",
+               id_buf);
+         return false;
       }
+
+      config_get_path(conf, id_buf, texture_path, sizeof(texture_path));
+
+      fill_pathname_expanded_and_absolute(shader->lut[shader->luts].path,
+            PATH_MAX_LENGTH, conf->path, texture_path);
+      video_shader_replace_wildcards(shader->lut[shader->luts].path,
+            PATH_MAX_LENGTH, conf->path);
+
+      strlcpy(shader->lut[shader->luts].id, id_buf,
+            sizeof(shader->lut[shader->luts].id));
+
+      strlcpy(idx, id_buf, sizeof(idx));
+
+      strlcpy(idx + id_len, "_linear", sizeof(idx) - id_len);
+      if (config_get_bool(conf, idx, &smooth))
+         shader->lut[shader->luts].filter = smooth
+            ? RARCH_FILTER_LINEAR
+            : RARCH_FILTER_NEAREST;
+      else
+         shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
+
+      strlcpy(idx + id_len, "_mipmap", sizeof(idx) - id_len);
+      if (config_get_bool(conf, idx, &mipmap))
+         shader->lut[shader->luts].mipmap = mipmap;
+      else
+         shader->lut[shader->luts].mipmap = false;
+
+      strlcpy(idx + id_len, "_wrap_mode", sizeof(idx) - id_len);
+      entry = NULL;
+      if (  (entry = config_get_entry(conf, idx))
+          && !string_is_empty(entry->value))
+         shader->lut[shader->luts].wrap = video_shader_wrap_str_to_mode(entry->value);
+      entry = NULL;
+
+      shader->luts++;
    }
 
-   free(textures);
    return true;
 }
 
