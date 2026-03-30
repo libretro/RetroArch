@@ -184,11 +184,14 @@ static bool wgl_has_extension(const char *ext, const char *exts)
    if (!exts || !ext || *ext == '\0' || strchr(ext, ' '))
       return false;
    _len = strlen(ext);
-   for (const char *start = exts; (start = strstr(start, ext)); start += _len)
    {
-      if (   (start       == exts || start[-1]   == ' ')
-          && (start[_len] == ' '  || start[_len] == '\0'))
-         return true;
+      const char *start;
+      for (start = exts; (start = strstr(start, ext)); start += _len)
+      {
+         if (   (start       == exts || start[-1]   == ' ')
+             && (start[_len] == ' '  || start[_len] == '\0'))
+            return true;
+      }
    }
    return false;
 }
