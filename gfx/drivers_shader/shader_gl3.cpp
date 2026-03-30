@@ -165,7 +165,7 @@ GLuint gl3_cross_compile_program(
       vertex_resources                      = vertex_compiler.get_shader_resources();
       fragment_resources                    = fragment_compiler.get_shader_resources();
 
-      for (auto &res : vertex_resources.stage_inputs)
+      for (spirv_cross::Resource &res : vertex_resources.stage_inputs)
       {
          uint32_t location = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
          char loc_buf[64];
@@ -174,7 +174,7 @@ GLuint gl3_cross_compile_program(
          vertex_compiler.unset_decoration(res.id, spv::DecorationLocation);
       }
 
-      for (auto &res : vertex_resources.stage_outputs)
+      for (spirv_cross::Resource &res : vertex_resources.stage_outputs)
       {
          uint32_t location = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
          char loc_buf[64];
@@ -183,7 +183,7 @@ GLuint gl3_cross_compile_program(
          vertex_compiler.unset_decoration(res.id, spv::DecorationLocation);
       }
 
-      for (auto &res : fragment_resources.stage_inputs)
+      for (spirv_cross::Resource &res : fragment_resources.stage_inputs)
       {
          uint32_t location = fragment_compiler.get_decoration(res.id, spv::DecorationLocation);
          char loc_buf[64];
@@ -198,7 +198,7 @@ GLuint gl3_cross_compile_program(
          return 0;
       }
 
-      for (auto &res : vertex_resources.push_constant_buffers)
+      for (spirv_cross::Resource &res : vertex_resources.push_constant_buffers)
       {
          vertex_compiler.set_name(res.id, "RARCH_PUSH_VERTEX_INSTANCE");
          vertex_compiler.set_name(res.base_type_id, "RARCH_PUSH_VERTEX");
@@ -210,7 +210,7 @@ GLuint gl3_cross_compile_program(
          return 0;
       }
 
-      for (auto &res : vertex_resources.uniform_buffers)
+      for (spirv_cross::Resource &res : vertex_resources.uniform_buffers)
       {
          if (flatten)
             vertex_compiler.flatten_buffer_block(res.id);
@@ -226,7 +226,7 @@ GLuint gl3_cross_compile_program(
          return 0;
       }
 
-      for (auto &res : fragment_resources.push_constant_buffers)
+      for (spirv_cross::Resource &res : fragment_resources.push_constant_buffers)
       {
          fragment_compiler.set_name(res.id, "RARCH_PUSH_FRAGMENT_INSTANCE");
          fragment_compiler.set_name(res.base_type_id, "RARCH_PUSH_FRAGMENT");
@@ -238,7 +238,7 @@ GLuint gl3_cross_compile_program(
          return 0;
       }
 
-      for (auto &res : fragment_resources.uniform_buffers)
+      for (spirv_cross::Resource &res : fragment_resources.uniform_buffers)
       {
          if (flatten)
             fragment_compiler.flatten_buffer_block(res.id);
@@ -249,7 +249,7 @@ GLuint gl3_cross_compile_program(
       }
 
       std::vector<uint32_t> texture_binding_fixups;
-      for (auto &res : fragment_resources.sampled_images)
+      for (spirv_cross::Resource &res : fragment_resources.sampled_images)
       {
          uint32_t binding = fragment_compiler.get_decoration(res.id, spv::DecorationBinding);
          char loc_buf[64];
@@ -260,8 +260,8 @@ GLuint gl3_cross_compile_program(
          texture_binding_fixups.push_back(binding);
       }
 
-      auto vertex_source     = vertex_compiler.compile();
-      auto fragment_source   = fragment_compiler.compile();
+      std::string vertex_source     = vertex_compiler.compile();
+      std::string fragment_source   = fragment_compiler.compile();
       GLuint vertex_shader   = gl3_compile_shader(GL_VERTEX_SHADER, vertex_source.c_str());
       GLuint fragment_shader = gl3_compile_shader(GL_FRAGMENT_SHADER, fragment_source.c_str());
 
@@ -278,7 +278,7 @@ GLuint gl3_cross_compile_program(
       program = glCreateProgram();
       glAttachShader(program, vertex_shader);
       glAttachShader(program, fragment_shader);
-      for (auto &res : vertex_resources.stage_inputs)
+      for (spirv_cross::Resource &res : vertex_resources.stage_inputs)
       {
          char loc_buf[64];
          uint32_t _loc = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
@@ -336,7 +336,7 @@ GLuint gl3_cross_compile_program(
       }
 
       /* Force proper bindings for textures. */
-      for (auto &binding : texture_binding_fixups)
+      for (uint32_t &binding : texture_binding_fixups)
       {
          char loc_buf[64];
          snprintf(loc_buf, sizeof(loc_buf), "RARCH_TEXTURE_%d", binding);
@@ -1117,9 +1117,9 @@ bool Pass::init_pipeline()
    reflect_parameter("AccelerometerRest", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST]);
 
    {
-      auto &g = reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
-      auto &a = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
-      auto &r = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
+      slang_semantic_meta &g = reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
+      slang_semantic_meta &a = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
+      slang_semantic_meta &r = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
       if (g.uniform || g.push_constant ||
           a.uniform || a.push_constant ||
           r.uniform || r.push_constant)
@@ -1132,14 +1132,14 @@ bool Pass::init_pipeline()
    reflect_parameter_array("PassOutputSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT]);
    reflect_parameter_array("PassFeedbackSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK]);
    reflect_parameter_array("UserSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_USER]);
-   for (auto &m : common->texture_semantic_uniform_map)
+   for (std::pair<const std::string, slang_texture_semantic_map> &m : common->texture_semantic_uniform_map)
    {
-      auto &array = reflection.semantic_textures[m.second.semantic];
+      std::vector<slang_texture_semantic_meta> &array = reflection.semantic_textures[m.second.semantic];
       if (m.second.index < array.size())
          reflect_parameter(m.first, array[m.second.index]);
    }
 
-   for (auto &m : filtered_parameters)
+   for (Parameter &m : filtered_parameters)
       if (m.semantic_index < reflection.semantic_float_parameters.size())
          reflect_parameter(m.id, reflection.semantic_float_parameters[m.semantic_index]);
 
@@ -1301,7 +1301,7 @@ void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
 void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
                                uint32_t value)
 {
-   auto &refl = reflection.semantics[semantic];
+   slang_semantic_meta &refl = reflection.semantics[semantic];
 
    if (data && refl.uniform)
    {
@@ -1333,7 +1333,7 @@ void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
 void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
                               int32_t value)
 {
-   auto &refl = reflection.semantics[semantic];
+   slang_semantic_meta &refl = reflection.semantics[semantic];
 
    if (data && refl.uniform)
    {
@@ -1365,7 +1365,7 @@ void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
 void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
                               float value)
 {
-   auto &refl = reflection.semantics[semantic];
+   slang_semantic_meta &refl = reflection.semantics[semantic];
 
    if (data && refl.uniform)
    {
@@ -1397,7 +1397,7 @@ void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
 void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
                               const float *values)
 {
-   auto &refl = reflection.semantics[semantic];
+   slang_semantic_meta &refl = reflection.semantics[semantic];
 
    if (data && refl.uniform)
    {
@@ -1437,7 +1437,7 @@ void Pass::build_semantic_texture(uint8_t *buffer,
 void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
       unsigned index, unsigned width, unsigned height)
 {
-   auto &refl = reflection.semantic_textures[semantic];
+   std::vector<slang_texture_semantic_meta> &refl = reflection.semantic_textures[semantic];
    if (index >= refl.size())
       return;
 
@@ -2154,10 +2154,10 @@ bool gl3_filter_chain::init_feedback()
    for (i = 0; i < passes.size() - 1; i++)
    {
       bool use_feedback = false;
-      for (auto &pass : passes)
+      for (std::unique_ptr<gl3_shader::Pass> &pass : passes)
       {
-         auto &r          = pass->get_reflection();
-         auto &feedbacks  = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         const slang_reflection &r          = pass->get_reflection();
+         const std::vector<slang_texture_semantic_meta> &feedbacks  = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
 
          if (i < feedbacks.size() && feedbacks[i].texture)
          {
@@ -2597,21 +2597,30 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          return nullptr;
       }
 
-      for (auto &meta_param : output.meta.parameters)
+      for (unsigned j = 0; j < output.meta.parameters.size(); j++)
       {
+         auto meta_param = output.meta.parameters[j];
+
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
             RARCH_ERR("[GLCore] Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
             return nullptr;
          }
 
-         auto itr = std::find_if(shader->parameters, shader->parameters + shader->num_parameters,
-               [&](const video_shader_parameter &param)
+         video_shader_parameter *itr = NULL;
+         {
+            unsigned k;
+            for (k = 0; k < shader->num_parameters; k++)
+            {
+               if (meta_param.id == shader->parameters[k].id)
                {
-                  return meta_param.id == param.id;
-               });
+                  itr = &shader->parameters[k];
+                  break;
+               }
+            }
+         }
 
-         if (itr != shader->parameters + shader->num_parameters)
+         if (itr)
          {
             /* Allow duplicate #pragma parameter, but
              * only if they are exactly the same. */

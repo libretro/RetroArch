@@ -22,7 +22,6 @@
 #include <memory>
 #include <functional>
 #include <utility>
-#include <algorithm>
 #include <string.h>
 
 #include <compat/strl.h>
@@ -3056,7 +3055,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
       FBO_SCALE_FLAG_VALID;
-   auto tmpinfo          = *info;
+   struct vulkan_filter_chain_create_info tmpinfo = *info;
    tmpinfo.num_passes    = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
    std::unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
@@ -3093,29 +3092,37 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          goto error;
       }
 
-      for (auto &meta_param : output.meta.parameters)
+      for (unsigned j = 0; j < output.meta.parameters.size(); j++)
       {
+         unsigned k;
+         auto &meta_param = output.meta.parameters[j];
+         video_shader_parameter *itr = NULL;
+
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
             RARCH_ERR("[Vulkan] Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
             goto error;
          }
 
-         auto itr = std::find_if(shader->parameters, shader->parameters + shader->num_parameters,
-               [&](const video_shader_parameter &param)
-               {
-                  return meta_param.id == param.id;
-               });
+         /* Find existing parameter with matching id. */
+         for (k = 0; k < shader->num_parameters; k++)
+         {
+            if (meta_param.id == shader->parameters[k].id)
+            {
+               itr = &shader->parameters[k];
+               break;
+            }
+         }
 
-         if (itr != shader->parameters + shader->num_parameters)
+         if (itr)
          {
             /* Allow duplicate #pragma parameter, but
              * only if they are exactly the same. */
-            if (meta_param.desc    != itr->desc ||
-                meta_param.initial != itr->initial ||
-                meta_param.minimum != itr->minimum ||
-                meta_param.maximum != itr->maximum ||
-                meta_param.step    != itr->step)
+            if (   meta_param.desc    != itr->desc
+                || meta_param.initial != itr->initial
+                || meta_param.minimum != itr->minimum
+                || meta_param.maximum != itr->maximum
+                || meta_param.step    != itr->step)
             {
                RARCH_ERR("[Vulkan] Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
