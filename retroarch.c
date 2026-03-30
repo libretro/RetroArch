@@ -2562,52 +2562,63 @@ bool path_set(enum rarch_path_type type, const char *path)
                p_rarch->dir_savestate);
          break;
       case RARCH_PATH_CORE:
-         strlcpy(p_rarch->path_libretro, path,
-               sizeof(p_rarch->path_libretro));
+         if (path != p_rarch->path_libretro)
+            strlcpy(p_rarch->path_libretro, path,
+                  sizeof(p_rarch->path_libretro));
          break;
       case RARCH_PATH_CORE_LAST:
-         strlcpy(p_rarch->path_libretro_last, path,
-               sizeof(p_rarch->path_libretro_last));
+         if (path != p_rarch->path_libretro_last)
+            strlcpy(p_rarch->path_libretro_last, path,
+                  sizeof(p_rarch->path_libretro_last));
          break;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         strlcpy(p_rarch->path_default_shader_preset, path,
-               sizeof(p_rarch->path_default_shader_preset));
+         if (path != p_rarch->path_default_shader_preset)
+            strlcpy(p_rarch->path_default_shader_preset, path,
+                  sizeof(p_rarch->path_default_shader_preset));
          break;
       case RARCH_PATH_CONFIG:
-         strlcpy(p_rarch->path_config_file, path,
-               sizeof(p_rarch->path_config_file));
+         if (path != p_rarch->path_config_file)
+            strlcpy(p_rarch->path_config_file, path,
+                  sizeof(p_rarch->path_config_file));
          break;
       case RARCH_PATH_CONFIG_DEFAULT:
-         strlcpy(p_rarch->path_config_default_file, path,
-               sizeof(p_rarch->path_config_default_file));
+         if (path != p_rarch->path_config_default_file)
+            strlcpy(p_rarch->path_config_default_file, path,
+                  sizeof(p_rarch->path_config_default_file));
          break;
       case RARCH_PATH_CONFIG_APPEND:
-         strlcpy(p_rarch->path_config_append_file, path,
-               sizeof(p_rarch->path_config_append_file));
+         if (path != p_rarch->path_config_append_file)
+            strlcpy(p_rarch->path_config_append_file, path,
+                  sizeof(p_rarch->path_config_append_file));
          break;
       case RARCH_PATH_CONFIG_OVERRIDE:
-         strlcpy(p_rarch->path_config_override_file, path,
-               sizeof(p_rarch->path_config_override_file));
+         if (path != p_rarch->path_config_override_file)
+            strlcpy(p_rarch->path_config_override_file, path,
+                  sizeof(p_rarch->path_config_override_file));
          break;
       case RARCH_PATH_CORE_OPTIONS:
-         strlcpy(p_rarch->path_core_options_file, path,
-               sizeof(p_rarch->path_core_options_file));
+         if (path != p_rarch->path_core_options_file)
+            strlcpy(p_rarch->path_core_options_file, path,
+                  sizeof(p_rarch->path_core_options_file));
          break;
       case RARCH_PATH_CONTENT:
-         strlcpy(p_rarch->path_content, path,
-               sizeof(p_rarch->path_content));
+         if (path != p_rarch->path_content)
+            strlcpy(p_rarch->path_content, path,
+                  sizeof(p_rarch->path_content));
          break;
       case RARCH_PATH_NONE:
          break;
       case RARCH_PATH_BASENAME:
          runloop_st = runloop_state_get_ptr();
-         strlcpy(runloop_st->runtime_content_path_basename, path,
-               sizeof(runloop_st->runtime_content_path_basename));
+         if (path != runloop_st->runtime_content_path_basename)
+            strlcpy(runloop_st->runtime_content_path_basename, path,
+                  sizeof(runloop_st->runtime_content_path_basename));
          break;
       case RARCH_PATH_SUBSYSTEM:
          runloop_st = runloop_state_get_ptr();
-         strlcpy(runloop_st->subsystem_path, path,
-               sizeof(runloop_st->subsystem_path));
+         if (path != runloop_st->subsystem_path)
+            strlcpy(runloop_st->subsystem_path, path,
+                  sizeof(runloop_st->subsystem_path));
          break;
    }
 
