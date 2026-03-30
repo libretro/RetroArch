@@ -201,16 +201,18 @@ static void task_overlay_redefine_eightway_direction(
       char *str, input_bits_t *data)
 {
    unsigned bit;
-   char *tok, *save = NULL;
-
+   char *cur = str;
+   char *next;
    BIT256_CLEAR_ALL(*data);
-
-   for (tok = strtok_r(str, "|", &save); tok;
-         tok = strtok_r(NULL, "|", &save))
+   while (cur && *cur)
    {
-      bit = input_config_translate_str_to_bind_id(tok);
+      next = strchr(cur, '|');
+      if (next)
+         *next++ = '\0';
+      bit = input_config_translate_str_to_bind_id(cur);
       if (bit < RARCH_CUSTOM_BIND_LIST_END)
          BIT256_SET(*data, bit);
+      cur = next;
    }
 }
 
@@ -330,7 +332,6 @@ static bool task_overlay_load_desc(
    char overlay[256];
    unsigned list_size          = 0;
    char *elems[6]              = {NULL, NULL, NULL, NULL, NULL, NULL};
-   char *tok, *save            = NULL;
    float tmp_float             = 0.0f;
    bool tmp_bool               = false;
    bool by_pixel               = false;
@@ -366,10 +367,23 @@ static bool task_overlay_load_desc(
 
    /* Tokenize in-place — overlay[] is a local buffer,
     * no heap allocation needed */
-   for (tok = strtok_r(overlay, ", ", &save);
-        tok && list_size < 6;
-        tok = strtok_r(NULL, ", ", &save))
-      elems[list_size++] = tok;
+   {
+      char *p = overlay;
+      while (*p && list_size < 6)
+      {
+         /* skip delimiters */
+         while (*p == ',' || *p == ' ')
+            p++;
+         if (!*p)
+            break;
+         elems[list_size++] = p;
+         /* advance to next delimiter or end */
+         while (*p && *p != ',' && *p != ' ')
+            p++;
+         if (*p)
+            *p++ = '\0';
+      }
+   }
 
    if (list_size < 6)
    {
@@ -378,7 +392,7 @@ static bool task_overlay_load_desc(
    }
 
    /* elems[0] (key) will be mutated by the button-parsing
-    * strtok_r below, so read x/y/box from their own pointers
+    * below, so read x/y/box from their own pointers
     * before that happens. They are separate tokens in the
     * buffer and won't be touched. */
    box                 = elems[3];
@@ -402,13 +416,19 @@ static bool task_overlay_load_desc(
    }
    else
    {
-      char      *save2 = NULL;
-      const char *tmp   = strtok_r(elems[0], "|", &save2);
+      const char *tmp;
+      char *p = elems[0];
 
       desc->type = OVERLAY_TYPE_BUTTONS;
 
-      for (; tmp; tmp = strtok_r(NULL, "|", &save2))
+      while (p)
       {
+         char *delim = strchr(p, '|');
+         if (delim)
+            *delim = '\0';
+         tmp = p;
+         p   = delim ? delim + 1 : NULL;
+
          if (!string_is_equal(tmp, "nul"))
          {
             unsigned bind_id = input_config_translate_str_to_bind_id(tmp);

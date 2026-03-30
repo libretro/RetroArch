@@ -513,21 +513,22 @@ char* string_tokenize(char **str, const char *delim)
  * Leaf function.
  *
  * Removes every instance of character @c from @s
+ *
+ * Returns the length of the resulting string.
  **/
-void string_remove_all_chars(char *s, char c)
+size_t string_remove_all_chars(char *s, char c)
 {
-   char *read_ptr  = s;
-   char *write_ptr = s;
-
-   while (*read_ptr != '\0')
+   char *dst = s;
+   char *src = s;
+   while (*src)
    {
       /* Only write if the character is not the one to remove */
-      if (*read_ptr != c)
-         *write_ptr++ = *read_ptr;
-      read_ptr++;
+      if (*src != c)
+         *dst++ = *src;
+      src++;
    }
-
-   *write_ptr = '\0';
+   *dst = '\0';
+   return (size_t)(dst - s);
 }
 
 /**

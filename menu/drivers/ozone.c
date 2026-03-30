@@ -7050,7 +7050,6 @@ static void ozone_draw_osk(
       0.00, 0.00, 0.00, 0.15,
       0.00, 0.00, 0.00, 0.15,
    };
-   char *tok, *save               = NULL;
    unsigned i                     = 0;
    static retro_time_t last_time  = 0;
    unsigned list_size             = 0;
@@ -7061,6 +7060,8 @@ static void ozone_draw_osk(
    unsigned y_offset              = 0;
    bool draw_placeholder          = string_is_empty(str);
    retro_time_t current_time      = menu_driver_get_current_time();
+   const char *line               = NULL;
+   const char *next               = NULL;
 
    if (current_time - last_time >= INTERVAL_OSK_CURSOR)
    {
@@ -7163,16 +7164,28 @@ static void ozone_draw_osk(
          ozone->fonts.entries_label.wideglyph_width,
          0);
 
-   tok       = strtok_r(message, "\n", &save);
    list_size = string_count_occurrences_single_character(message, '\n');
 
-   while (tok)
+   for (line = message; line; line = next ? next + 1 : NULL)
    {
-      const char *msg = tok;
+      char line_buf[2048];
+      size_t _len;
+
+      next  = strchr(line, '\n');
+      _len  = next ? (size_t)(next - line) : strlen(line);
+
+      if (_len == 0 && !next)
+         break;
+
+      if (_len >= sizeof(line_buf))
+         _len = sizeof(line_buf) - 1;
+
+      memcpy(line_buf, line, _len);
+      line_buf[_len] = '\0';
 
       gfx_display_draw_text(
             ozone->fonts.entries_label.font,
-            msg,
+            line_buf,
             margin + (padding * 2),
             margin + padding + ozone->fonts.entries_label.line_height + y_offset,
             video_width,
@@ -7191,7 +7204,7 @@ static void ozone_draw_osk(
          {
             unsigned cursor_x = draw_placeholder
                   ? 0
-                  : font_driver_get_message_width(ozone->fonts.entries_label.font, msg, strlen(msg), 1.0f);
+                  : font_driver_get_message_width(ozone->fonts.entries_label.font, line_buf, _len, 1.0f);
             gfx_display_draw_quad(
                   p_disp,
                   userdata,
@@ -7217,7 +7230,6 @@ static void ozone_draw_osk(
       else
          y_offset += 25 * scale_factor;
 
-      tok = strtok_r(NULL, "\n", &save);
       i++;
    }
 

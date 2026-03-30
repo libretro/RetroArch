@@ -267,13 +267,15 @@ char *string_tokenize(char **str, const char *delim);
 
 /**
  * string_remove_all_chars:
- * @str                : input string (must be non-NULL, otherwise UB)
+ * @s                 : input string (must be non-NULL, otherwise UB)
  *
  * Leaf function.
  *
- * Removes every instance of character @c from @str
+ * Removes every instance of character @c from @s
+ *
+ * Returns the length of the resulting string.
  **/
-void string_remove_all_chars(char *str, char c);
+size_t string_remove_all_chars(char *s, char c);
 
 /**
  * string_replace_all_chars:

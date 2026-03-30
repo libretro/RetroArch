@@ -124,39 +124,31 @@ static int parse_short(const char *optstring, char * const *argv)
 static int parse_long(const struct option *longopts, char * const *argv)
 {
    size_t i;
-   char *save  = NULL;
-   char *argv0 = strdup(&argv[0][2]);
-   char *token = strtok_r(argv0, "=", &save);
+   const char *arg = &argv[0][2];
+   const char *eq  = strchr(arg, '=');
+   size_t len      = eq ? (size_t)(eq - arg) : strlen(arg);
    const struct option *opt = NULL;
 
    for (i = 0; longopts[i].name; i++)
    {
-      if (token && !strcmp(longopts[i].name, token))
+      if (strlen(longopts[i].name) == len && !strncmp(longopts[i].name, arg, len))
       {
          opt = &longopts[i];
          break;
       }
    }
 
-   free(argv0);
-   argv0 = NULL;
-
    if (!opt)
       return '?';
 
    /* Handle args with '=' instead of space */
-   if (opt->has_arg)
+   if (opt->has_arg && eq)
    {
-      char *special_arg = strchr(argv[0], '=');
-      if (special_arg)
-      {
-         optarg = ++special_arg;
-         optind++;
-         return opt->val;
-      }
+      optarg = (char *)(eq + 1);
+      optind++;
+      return opt->val;
    }
 
-   /* getopt_long has an "optional" arg, but we don't bother with that. */
    if (opt->has_arg && !argv[1])
       return '?';
 
