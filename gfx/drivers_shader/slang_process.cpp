@@ -24,7 +24,6 @@
 #include <string>
 #include <stdio.h>
 #include <stdint.h>
-#include <algorithm>
 #include <vector>
 #include <string/stdstring.h>
 
@@ -84,10 +83,11 @@ static const char *get_semantic_name(
       const std::unordered_map<std::string, M>* map,
       S semantic, unsigned index)
 {
-   for (const auto& m : *map)
+   for (typename std::unordered_map<std::string, M>::const_iterator it = map->begin();
+         it != map->end(); ++it)
    {
-      if (m.second.semantic == semantic && m.second.index == index)
-         return m.first.c_str();
+      if (it->second.semantic == semantic && it->second.index == index)
+         return it->first.c_str();
    }
    return "";
 }
@@ -469,28 +469,31 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
     * initialized to something sane. */
    for (i = 0; i < meta.parameters.size(); i++)
    {
+      unsigned k;
       struct video_shader_parameter *p = NULL;
       bool mismatch_dup                = false;
-      auto itr                         = std::find_if(shader->parameters,
-            shader->parameters + shader->num_parameters,
-            [&](const video_shader_parameter &parsed_param)
-            {
-            return meta.parameters[i].id == parsed_param.id;
-            });
+      for (k = 0; k < shader->num_parameters; k++)
+      {
+         if (meta.parameters[i].id == shader->parameters[k].id)
+         {
+            p = &shader->parameters[k];
+            break;
+         }
+      }
 
-      if (itr != shader->parameters + shader->num_parameters)
+      if (p != NULL)
       {
          /* Allow duplicate #pragma parameter, but only
           * if they are exactly the same. */
-         if (  meta.parameters[i].desc    != itr->desc    ||
-               meta.parameters[i].initial != itr->initial ||
-               meta.parameters[i].minimum != itr->minimum ||
-               meta.parameters[i].maximum != itr->maximum ||
-               meta.parameters[i].step    != itr->step)
+         if (     meta.parameters[i].desc    != p->desc
+               || meta.parameters[i].initial != p->initial
+               || meta.parameters[i].minimum != p->minimum
+               || meta.parameters[i].maximum != p->maximum
+               || meta.parameters[i].step    != p->step)
          {
             RARCH_ERR("[Slang] Duplicate parameters"
                   " found for \"%s\", but arguments do not match.\n",
-                  itr->id);
+                  p->id);
             mismatch_dup = true;
          }
          else
