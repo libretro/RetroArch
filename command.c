@@ -691,7 +691,7 @@ static bool udp_send_packet(const char *host, uint16_t port, const char *msg)
 bool command_network_send(const char *cmd_)
 {
    char buf[4096];
-   char *save           = NULL;
+   char *ptr;
    const char *cmd      = NULL;
    const char *host     = NULL;
    const char *port_str = NULL;
@@ -710,13 +710,22 @@ bool command_network_send(const char *cmd_)
 
    memcpy(buf, cmd_, len + 1);
 
-   cmd = strtok_r(buf, ";", &save);
-   if (!cmd)
-      return false;
+   cmd = buf;
+   ptr = strchr(buf, ';');
+   if (ptr)
+   {
+      *ptr++ = '\0';
+      host   = ptr;
+      ptr    = strchr(ptr, ';');
+      if (ptr)
+      {
+         *ptr++   = '\0';
+         port_str = ptr;
+      }
+   }
 
-   host     = strtok_r(NULL, ";", &save);
-   if (host)
-      port_str = strtok_r(NULL, ";", &save);
+   if (!cmd || !*cmd)
+      return false;
 
    if (!host || !*host)
    {
