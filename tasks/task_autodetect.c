@@ -22,7 +22,7 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <lists/string_list.h>
+#include <retro_dirent.h>
 #include <string/stdstring.h>
 #include <file/config_file.h>
 
@@ -260,62 +260,63 @@ static bool input_autoconfigure_scan_config_files_external(
 {
    const char *dir_autoconfig           = autoconfig_handle->dir_autoconfig;
    const char *dir_driver_autoconfig    = autoconfig_handle->dir_driver_autoconfig;
-   struct string_list *config_file_list = NULL;
    unsigned max_affinity                = 0;
    bool match_found                     = false;
-   bool dir_driver_iterated             = false;
+   config_file_t *best_config           = NULL;
+   const char *dirs[2];
+   unsigned num_dirs = 0;
+   unsigned d;
 
-   /* First attempt to fetch from autoconfig base directory */
    if (     !string_is_empty(dir_autoconfig)
          && path_is_directory(dir_autoconfig))
-      config_file_list = dir_list_new_special(
-            dir_autoconfig, DIR_LIST_AUTOCONFIG,
-            "cfg", false);
+      dirs[num_dirs++] = dir_autoconfig;
 
-list_iterate:
-   if (config_file_list && config_file_list->size)
+   if (     !string_is_empty(dir_driver_autoconfig)
+         && path_is_directory(dir_driver_autoconfig))
+      dirs[num_dirs++] = dir_driver_autoconfig;
+
+   for (d = 0; d < num_dirs; d++)
    {
-      size_t i;
-      config_file_t *best_config = NULL;
+      struct RDIR *rdir = retro_opendir(dirs[d]);
+      if (!rdir)
+         continue;
 
-      /* Loop through external config files */
-      for (i = 0; i < config_file_list->size; i++)
+      while (retro_readdir(rdir))
       {
-         const char *config_file_path = config_file_list->elems[i].data;
-         config_file_t *config        = NULL;
-         unsigned affinity            = 0;
+         const char *entry_name    = retro_dirent_get_name(rdir);
+         char config_file_path[PATH_MAX_LENGTH];
+         config_file_t *config     = NULL;
+         unsigned affinity         = 0;
 
-         if (string_is_empty(config_file_path))
+         if (     string_is_empty(entry_name)
+               || !string_is_equal_noncase(
+                     path_get_extension(entry_name), "cfg"))
             continue;
 
-         /* Load autoconfig file */
+         fill_pathname_join_special(config_file_path,
+               dirs[d], entry_name, sizeof(config_file_path));
+
          if (!(config = config_file_new_from_path_to_string(config_file_path)))
             continue;
 
-         /* Check for a match */
-         if (autoconfig_handle && config)
-            affinity = input_autoconfigure_get_config_file_affinity(
-                  autoconfig_handle, config);
+         affinity = input_autoconfigure_get_config_file_affinity(
+               autoconfig_handle, config);
 
          if (affinity > max_affinity)
          {
             if (best_config)
-            {
                config_file_free(best_config);
-               best_config = NULL;
-            }
 
-            /* 'Cache' config file for later processing */
             best_config  = config;
             config       = NULL;
             max_affinity = affinity;
 
-            /* An affinity of 6x is a 'perfect' match,
-             * and means we can return immediately */
             if (affinity >= 60)
-               break;
+            {
+               retro_closedir(rdir);
+               goto done;
+            }
          }
-         /* No match - just clean up config file */
          else
          {
             config_file_free(config);
@@ -323,45 +324,29 @@ list_iterate:
          }
       }
 
-      /* If we reach this point and a config file has
-       * been cached, then we have a match */
+      retro_closedir(rdir);
+
       if (best_config)
-      {
-         if (autoconfig_handle && best_config)
-            input_autoconfigure_set_config_file(
-                  autoconfig_handle, best_config,
-                  max_affinity % 10);
-         match_found = true;
-      }
-
-      RARCH_DBG("[Autoconf] Config files scanned: driver \"%s\", name \"%s\" (%04x/%04x), phys \"%s\", affinity %d.\n",
-            autoconfig_handle->device_info.joypad_driver,
-            autoconfig_handle->device_info.name,
-            autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
-            autoconfig_handle->device_info.phys,
-            max_affinity);
+         break;
    }
 
-   string_list_free(config_file_list);
-   config_file_list = NULL;
-
-   if (match_found)
-      return true;
-   else if (!match_found && !dir_driver_iterated)
+done:
+   if (best_config)
    {
-      /* Attempt to fetch file listing from driver-specific
-       * autoconfig directory */
-      if (     !string_is_empty(dir_driver_autoconfig)
-            && path_is_directory(dir_driver_autoconfig))
-         config_file_list = dir_list_new_special(
-               dir_driver_autoconfig, DIR_LIST_AUTOCONFIG,
-               "cfg", false);
-
-      dir_driver_iterated = true;
-      goto list_iterate;
+      input_autoconfigure_set_config_file(
+            autoconfig_handle, best_config,
+            max_affinity % 10);
+      match_found = true;
    }
 
-   return false;
+   RARCH_DBG("[Autoconf] Config files scanned: driver \"%s\", name \"%s\" (%04x/%04x), phys \"%s\", affinity %d.\n",
+         autoconfig_handle->device_info.joypad_driver,
+         autoconfig_handle->device_info.name,
+         autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
+         autoconfig_handle->device_info.phys,
+         max_affinity);
+
+   return match_found;
 }
 
 /* Attempts to find an internal autoconfig definition
