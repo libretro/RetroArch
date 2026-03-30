@@ -216,58 +216,60 @@ bool content_file_override_set(
 {
    size_t i;
    content_state_t *p_content = content_state_get_ptr();
-
    if (!p_content || !overrides)
       return false;
-
    /* Free any existing override list */
    content_file_override_free(p_content);
-
    for (i = 0; overrides[i].extensions; i++)
    {
-      char *tok, *save        = NULL;
-      char *overrides_ext_cpy = strdup(overrides[i].extensions);
-
-      /* Get list of extensions affected by overrides */
-      for ( tok = strtok_r(overrides_ext_cpy, "|", &save); tok;
-            tok = strtok_r(NULL, "|", &save))
+      const char *ptr = overrides[i].extensions;
+      while (*ptr)
       {
-         size_t num_entries;
-         const char *ext                   = tok;
+         char ext[32];
+         size_t num_entries, _len;
          content_file_override_t *override = NULL;
+         /* Find next '|' delimiter or end of string */
+         const char *delim = ptr;
+         while (*delim && *delim != '|')
+            delim++;
+         _len              = (size_t)(delim - ptr);
 
-         /* Check whether extension has already been
-          * registered */
-         if (   string_is_empty(ext)
-             || content_file_override_get_ext(p_content, ext, NULL))
-            continue;
-
-         /* Add current override to the list */
-         num_entries = RBUF_LEN(p_content->content_override_list);
-
-         if (!RBUF_TRYFIT(p_content->content_override_list,
-               num_entries + 1))
+         /* Extract extension token */
+         if (_len > 0 && _len < sizeof(ext))
          {
-            free(overrides_ext_cpy);
-            return false;
+            memcpy(ext, ptr, _len);
+            ext[_len] = '\0';
+
+            /* Check whether extension has already been
+             * registered */
+            if (!content_file_override_get_ext(p_content, ext, NULL))
+            {
+               /* Add current override to the list */
+               num_entries = RBUF_LEN(p_content->content_override_list);
+               if (!RBUF_TRYFIT(p_content->content_override_list,
+                     num_entries + 1))
+                  return false;
+
+               RBUF_RESIZE(p_content->content_override_list,
+                     num_entries + 1);
+
+               RARCH_LOG("[Content Override] File Extension: '%3s' - need_fullpath: %s, persistent_data: %s\n",
+                     ext, overrides[i].need_fullpath ? "TRUE" : "FALSE",
+                     overrides[i].persistent_data    ? "TRUE" : "FALSE");
+
+               override                  = &p_content->content_override_list[num_entries];
+               override->ext             = strdup(ext);
+               override->need_fullpath   = overrides[i].need_fullpath;
+               override->persistent_data = overrides[i].persistent_data;
+            }
          }
 
-         RBUF_RESIZE(p_content->content_override_list,
-               num_entries + 1);
-
-         RARCH_LOG("[Content Override] File Extension: '%3s' - need_fullpath: %s, persistent_data: %s\n",
-               ext, overrides[i].need_fullpath ? "TRUE" : "FALSE",
-               overrides[i].persistent_data    ? "TRUE" : "FALSE");
-
-         override                  = &p_content->content_override_list[num_entries];
-         override->ext             = strdup(ext);
-         override->need_fullpath   = overrides[i].need_fullpath;
-         override->persistent_data = overrides[i].persistent_data;
+         /* Advance past token and delimiter */
+         ptr += _len;
+         if (*ptr == '|')
+            ptr++;
       }
-
-      free(overrides_ext_cpy);
    }
-
    return true;
 }
 
