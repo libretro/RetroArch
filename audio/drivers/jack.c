@@ -112,22 +112,23 @@ static void ja_shutdown_cb(void *data)
 static int ja_parse_ports(char **dest_ports, const char **jports)
 {
    int i;
-   char           *save   = NULL;
-   int           parsed   = 0;
-   settings_t *settings   = config_get_ptr();
-   char *audio_device_cpy = strdup(settings->arrays.audio_device);
-   const char      *con   = strtok_r(audio_device_cpy, ",", &save);
+   int parsed               = 0;
+   settings_t *settings     = config_get_ptr();
+   const char *audio_device = settings->arrays.audio_device;
+   const char *comma        = strchr(audio_device, ',');
 
-   if (con)
-      dest_ports[parsed++] = strdup(con);
-   con = strtok_r(NULL, ",", &save);
-   if (con)
-      dest_ports[parsed++] = strdup(con);
+   if (comma && comma != audio_device)
+   {
+      dest_ports[parsed++] = strndup(audio_device, comma - audio_device);
+      if (*(comma + 1))
+         dest_ports[parsed++] = strdup(comma + 1);
+   }
+   else if (*audio_device)
+      dest_ports[parsed++] = strdup(audio_device);
 
    for (i = parsed; i < 2; i++)
       dest_ports[i] = strdup(jports[i]);
 
-   free(audio_device_cpy);
    return 2;
 }
 
