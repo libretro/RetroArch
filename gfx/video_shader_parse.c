@@ -1164,19 +1164,17 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    size_t i;
    char key[64];
    bool ret             = true;
-   char *tmp            = NULL;
    char *tmp_rel        = NULL;
    char *tmp_base       = NULL;
-   config_file_t *conf  = config_file_new_alloc();
-
-   if (!conf)
-      return false;
-
-   tmp = (char*)malloc(3 * PATH_MAX_LENGTH);
+   config_file_t *conf  = NULL;
+   char *tmp            = (char*)malloc(3 * PATH_MAX_LENGTH);
 
    if (!tmp)
+      return false;
+
+   if (!(conf = config_file_new_alloc()))
    {
-      config_file_free(conf);
+      free(tmp);
       return false;
    }
 
@@ -1951,8 +1949,8 @@ static bool video_shader_override_values(config_file_t *override_conf,
    /* If the shader has parameters */
    if (shader->num_parameters)
    {
-      /* Step through the parameters in the shader and
-       * see if there is an entry for each in the override config */
+      /* Step through the parameters in the shader
+       * and see if there is an entry for each in the override config */
       for (i = 0; i < shader->num_parameters; i++)
       {
          /* If the parameter is in the reference config */
@@ -1975,17 +1973,22 @@ static bool video_shader_override_values(config_file_t *override_conf,
       }
    }
 
-   /* ---------------------------------------------------------------------------------
-    * ------------- Resolve Override texture paths to absolute paths-------------------
-    * --------------------------------------------------------------------------------- */
+   /* --------------------------------------------------------------
+    * ----- Resolve Override texture paths to absolute paths--------
+    * --------------------------------------------------------------*/
 
    /* If the shader has textures */
    if (shader->luts)
    {
+      char *tex_path          = (char*)malloc(PATH_MAX_LENGTH);
       char *override_tex_path = (char*)malloc(PATH_MAX_LENGTH);
 
-      if (!override_tex_path)
+      if (!tex_path || !override_tex_path)
+      {
+         free(tex_path);
+         free(override_tex_path);
          return return_val;
+      }
 
       /* Step through the textures in the shader and see if there is an entry
        * for each in the override config */
@@ -1994,16 +1997,12 @@ static bool video_shader_override_values(config_file_t *override_conf,
          /* If the texture is defined in the reference config */
          if (config_get_entry(override_conf, shader->lut[i].id))
          {
-            char *tex_path = (char*)malloc(PATH_MAX_LENGTH);
-            if (!tex_path)
-               break;
             /* Texture path from the config */
             config_get_path(override_conf, shader->lut[i].id, tex_path,
                   PATH_MAX_LENGTH);
             /* Get the absolute path and replace wildcards in the path */
             fill_pathname_expanded_and_absolute(override_tex_path,
                   PATH_MAX_LENGTH, override_conf->path, tex_path);
-            /* TODO/FIXME - dehardcode PATH_MAX_LENGTH */
             video_shader_replace_wildcards(override_tex_path,
                   PATH_MAX_LENGTH, override_conf->path);
             strlcpy(shader->lut[i].path, override_tex_path,
@@ -2013,11 +2012,11 @@ static bool video_shader_override_values(config_file_t *override_conf,
                         shader->lut[i].id,
                         shader->lut[i].path);
 #endif
-            free(tex_path);
             return_val = true;
          }
       }
 
+      free(tex_path);
       free(override_tex_path);
    }
 
