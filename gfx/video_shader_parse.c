@@ -470,37 +470,60 @@ static void video_shader_replace_wildcards(
  *
  * @return void
  **/
+/**
+ * video_shader_gather_reference_path_list:
+ * @in_path_linked_list : output linked list collecting all preset paths
+ * @path                : path to the current shader preset
+ * @reference_depth     : current recursion depth (guards against cycles)
+ *
+ * Recursively resolves shader preset references in post-order
+ * (deepest presets first) and appends every visited path to
+ * @in_path_linked_list.
+ */
 static void video_shader_gather_reference_path_list(
       struct path_linked_list *in_path_linked_list,
-      char *path,
-      int reference_depth)
+      char *path, int reference_depth)
 {
    config_file_t *conf = NULL;
-
+ 
    if (reference_depth > SHADER_MAX_REFERENCE_DEPTH)
       return;
-
-   if ((conf = config_file_new_from_path_to_string(path)))
+ 
+   conf = config_file_new_from_path_to_string(path);
+   if (!conf)
    {
-      struct path_linked_list *ref_tmp = (struct path_linked_list*)conf->references;
+      RARCH_WARN("[Shaders] No preset located at \"%s\".\n", path);
+      return;
+   }
+ 
+   {
+      char reference_preset_path[PATH_MAX_LENGTH];
+      struct path_linked_list *ref_tmp =
+            (struct path_linked_list*)conf->references;
+ 
       while (ref_tmp)
       {
-         char *reference_preset_path = (char*)malloc(PATH_MAX_LENGTH);
-         if (!reference_preset_path)
-            break;
-         /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(reference_preset_path, PATH_MAX_LENGTH, conf->path, ref_tmp->path);
-         /* TODO/FIXME - dehardcode PATH_MAX_LENGTH */
-         video_shader_replace_wildcards(reference_preset_path, PATH_MAX_LENGTH, conf->path);
-         video_shader_gather_reference_path_list(in_path_linked_list, reference_preset_path, reference_depth + 1);
-         free(reference_preset_path);
+         /* Resolve to absolute path and expand wildcards */
+         fill_pathname_expanded_and_absolute(
+               reference_preset_path, sizeof(reference_preset_path),
+               conf->path, ref_tmp->path);
+ 
+         video_shader_replace_wildcards(
+               reference_preset_path, sizeof(reference_preset_path),
+               conf->path);
+ 
+         video_shader_gather_reference_path_list(
+               in_path_linked_list,
+               reference_preset_path,
+               reference_depth + 1);
+ 
          ref_tmp = ref_tmp->next;
       }
-      path_linked_list_add_path(in_path_linked_list, path);
-      config_file_free(conf);
    }
-   else
-      RARCH_WARN("[Shaders] No preset located at \"%s\".\n", path);
+ 
+   /* Post-order: add current path after all its children */
+   path_linked_list_add_path(in_path_linked_list, path);
+   config_file_free(conf);
 }
 
 /**
