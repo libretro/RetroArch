@@ -152,13 +152,11 @@ static void autosave_thread(void *data)
             }
          }
 
+         /* Only copy from first difference onward */
          if (differ)
-         {
-            /* Only copy from first difference onward */
             memcpy((unsigned char*)save->buffer + offset,
                    (const unsigned char*)save->retro_buffer + offset,
                    save->bufsize - offset);
-         }
 
          /* Clear dirty flag regardless — we've checked */
          save->flags &= ~AUTOSAVE_FLAG_DIRTY;

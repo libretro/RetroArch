@@ -1314,21 +1314,11 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
 static config_file_t *video_shader_get_root_preset_config(const char *path)
 {
+   char nested_reference_path[PATH_MAX_LENGTH];
    int reference_depth           = 1;
-   char* nested_reference_path   = NULL;
    config_file_t *conf           = config_file_new_from_path_to_string(path);
-
    if (!conf)
       return NULL;
-
-   nested_reference_path         = (char*)malloc(PATH_MAX_LENGTH);
-
-   if (!nested_reference_path)
-   {
-      config_file_free(conf);
-      return NULL;
-   }
-
    while (conf->references)
    {
       /* If we have reached the max depth of nested references,
@@ -1342,34 +1332,23 @@ static config_file_t *video_shader_get_root_preset_config(const char *path)
          RARCH_ERR("[Shaders] Get root preset - Exceeded maximum reference depth (%u) without finding a full preset. "
                "This chain of referenced presets is likely cyclical.\n", SHADER_MAX_REFERENCE_DEPTH);
          config_file_free(conf);
-         conf = NULL;
-         free(nested_reference_path);
          return NULL;
       }
-
       /* Get the absolute path and replace wildcards in the path */
       fill_pathname_expanded_and_absolute(nested_reference_path,
-            PATH_MAX_LENGTH, conf->path, conf->references->path);
-      /* TODO/FIXME - dehardcode PATH_MAX_LENGTH */
+            sizeof(nested_reference_path), conf->path, conf->references->path);
       video_shader_replace_wildcards(nested_reference_path,
-            PATH_MAX_LENGTH, conf->path);
-
+            sizeof(nested_reference_path), conf->path);
       /* Create a new config from the referenced path */
       config_file_free(conf);
-
       /* If we can't read the reference preset */
       if (!(conf = config_file_new_from_path_to_string(nested_reference_path)))
       {
          RARCH_WARN("[Shaders] Could not read shader preset in #reference line: \"%s\".\n", nested_reference_path);
-         free(nested_reference_path);
          return NULL;
       }
-
       reference_depth += 1;
    }
-
-   free(nested_reference_path);
-
    return conf;
 }
 
@@ -1408,91 +1387,75 @@ static config_file_t *video_shader_get_root_preset_config(const char *path)
 static bool video_shader_check_reference_chain_for_save(
       const char *path_to_save, const char *ref_path)
 {
-   config_file_t *conf    = config_file_new_from_path_to_string(ref_path);
+   char path_to_save_conformed[PATH_MAX_LENGTH];
+   char nested_ref_path[PATH_MAX_LENGTH];
+   int ref_depth          = 1;
    bool ret               = true;
+   config_file_t *conf    = config_file_new_from_path_to_string(ref_path);
 
    if (!conf)
    {
       RARCH_ERR("[Shaders] Could not read the #reference preset: \"%s\".\n", ref_path);
       return false;
    }
-   else
-   {
-      int ref_depth                 = 1;
-      char *path_to_save_conformed  = (char*)malloc(PATH_MAX_LENGTH);
-      char *nested_ref_path         = (char*)malloc(PATH_MAX_LENGTH);
 
-      if (!path_to_save_conformed || !nested_ref_path)
+   strlcpy(path_to_save_conformed, path_to_save, sizeof(path_to_save_conformed));
+   pathname_conform_slashes_to_os(path_to_save_conformed);
+
+   while (conf->references)
+   {
+      /* If we have reached the max depth of nested references,
+       * we are likely in a self-referential loop. */
+      if (ref_depth > SHADER_MAX_REFERENCE_DEPTH)
       {
-         free(path_to_save_conformed);
-         free(nested_ref_path);
-         config_file_free(conf);
+         RARCH_ERR("[Shaders] Check reference chain for save - "
+                   "Exceeded maximum reference depth(%u) without "
+                   "finding a full preset. This chain of referenced "
+                   "presets is likely cyclical.\n",
+                   SHADER_MAX_REFERENCE_DEPTH);
+         ret = false;
+         break;
+      }
+
+      /* Get the absolute path and replace wildcards in the path */
+      fill_pathname_expanded_and_absolute(nested_ref_path,
+            sizeof(nested_ref_path), conf->path, conf->references->path);
+      video_shader_replace_wildcards(nested_ref_path,
+            sizeof(nested_ref_path), conf->path);
+
+      /* If one of the reference paths is the same as the file we want
+       * to save, this reference chain would be cyclical. */
+      if (string_is_equal(nested_ref_path, path_to_save_conformed))
+      {
+         RARCH_WARN("[Shaders] Saving preset:\n"
+                    "        \"%s\"\n"
+                    "        With a #reference of:\n"
+                    "        \"%s\"\n"
+                    "        Would create a cyclical reference in preset:\n"
+                    "        \"%s\"\n"
+                    "        Which already references preset:\n"
+                    "        \"%s\"\n",
+                    path_to_save_conformed, ref_path,
+                    conf->path, nested_ref_path);
+         ret = false;
+         break;
+      }
+
+      /* Walk to the next link in the reference chain */
+      config_file_free(conf);
+      conf = config_file_new_from_path_to_string(nested_ref_path);
+
+      if (!conf)
+      {
+         RARCH_WARN("[Shaders] Could not read shader preset "
+               "in #reference line: \"%s\".\n", nested_ref_path);
          return false;
       }
 
-      strlcpy(path_to_save_conformed, path_to_save, PATH_MAX_LENGTH);
-      pathname_conform_slashes_to_os(path_to_save_conformed);
-
-      while (conf->references)
-      {
-         /* If we have reached the max depth of nested references stop attempting to read
-          * the next reference because we are likely in a self referential loop. */
-         if (ref_depth > SHADER_MAX_REFERENCE_DEPTH)
-         {
-            RARCH_ERR("[Shaders] Check reference chain for save - Exceeded maximum reference depth(%u) without "
-                      "finding a full preset. This chain of referenced presets is likely cyclical.\n", SHADER_MAX_REFERENCE_DEPTH);
-            ret = false;
-            break;
-         }
-
-         /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(nested_ref_path,
-               PATH_MAX_LENGTH, conf->path, conf->references->path);
-         /* TODO/FIXME - dehardcode PATH_MAX_LENGTH */
-         video_shader_replace_wildcards(nested_ref_path,
-               PATH_MAX_LENGTH, conf->path);
-
-         /* If one of the reference paths is the same as the file we want to save,
-          * then this reference chain would be self-referential / cyclical and
-          * we can't save this as a simple preset */
-         if (string_is_equal(nested_ref_path, path_to_save_conformed))
-         {
-            RARCH_WARN("[Shaders] Saving preset:\n"
-                       "        \"%s\"\n"
-                       "        With a #reference of:\n"
-                       "        \"%s\"\n"
-                       "        Would create a cyclical reference in preset:\n"
-                       "        \"%s\"\n"
-                       "        Which already references preset:\n"
-                       "        \"%s\"\n",
-                       path_to_save_conformed, ref_path,
-                       conf->path, nested_ref_path);
-            ret = false;
-            break;
-         }
-
-         /* Create a new config from the referenced path */
-         config_file_free(conf);
-
-         /* If we can't read the reference preset */
-         if (!(conf = config_file_new_from_path_to_string(nested_ref_path)))
-         {
-            RARCH_WARN("[Shaders] Could not read shader preset "
-                  "in #reference line: \"%s\".\n", nested_ref_path);
-            ret = false;
-            break;
-         }
-
-         ref_depth++;
-      }
-
-      free(path_to_save_conformed);
-      free(nested_ref_path);
+      ref_depth++;
    }
 
-   if (conf)
-      config_file_free(conf);
-
+   config_file_free(conf);
    return ret;
 }
 
@@ -1517,36 +1480,26 @@ static bool video_shader_write_referenced_preset(
 {
    size_t i;
    char config_dir[DIR_MAX_LENGTH];
+   char path_to_ref[PATH_MAX_LENGTH];
+   char path_to_save_conformed[PATH_MAX_LENGTH];
    config_file_t *conf                    = NULL;
    config_file_t *ref_conf                = NULL;
    struct video_shader *ref_shader        = (struct video_shader*)
       calloc(1, sizeof(*ref_shader));
    bool ret                               = false;
-   char *path_to_ref                      = (char*)malloc(PATH_MAX_LENGTH);
-   char *path_to_save_conformed           = (char*)malloc(PATH_MAX_LENGTH);
 
-   if (!ref_shader || !path_to_ref || !path_to_save_conformed)
-   {
-      free(ref_shader);
-      free(path_to_ref);
-      free(path_to_save_conformed);
+   if (!ref_shader)
       return false;
-   }
 
-   strlcpy(path_to_save_conformed, path_to_save, PATH_MAX_LENGTH);
+   strlcpy(path_to_save_conformed, path_to_save, sizeof(path_to_save_conformed));
    pathname_conform_slashes_to_os(path_to_save_conformed);
 
    config_dir[0]                          = '\0';
    path_to_ref[0]                         = '\0';
 
-   /* Get the retroarch config dir where the automatically
-    * loaded presets are located
-    * and where Save Game Preset, Save Core Preset,
-    * Save Global Preset save to */
-   fill_pathname_application_special(config_dir, DIR_MAX_LENGTH,
+   fill_pathname_application_special(config_dir, sizeof(config_dir),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   /* If there is no initial preset path loaded */
    if (string_is_empty(shader->loaded_preset_path))
    {
       RARCH_WARN("[Shaders] Saving full preset because the loaded shader "
@@ -1555,9 +1508,6 @@ static bool video_shader_write_referenced_preset(
       goto end;
    }
 
-   /* If the initial preset loaded is the ever-changing retroarch
-    * preset don't save a reference
-    * TODO/FIXME - remove once we don't write this preset anymore */
    if (!strncmp(path_basename_nocompression(shader->loaded_preset_path),
             "retroarch",
             STRLEN_CONST("retroarch")))
@@ -1568,12 +1518,9 @@ static bool video_shader_write_referenced_preset(
       goto end;
    }
 
-   strlcpy(path_to_ref, shader->loaded_preset_path, PATH_MAX_LENGTH);
+   strlcpy(path_to_ref, shader->loaded_preset_path, sizeof(path_to_ref));
    pathname_conform_slashes_to_os(path_to_ref);
 
-   /* Get a config from the file we want to make a reference to */
-   /* If the original preset can't be loaded, probably because
-    * it isn't there anymore */
    if (!(ref_conf = config_file_new_from_path_to_string(path_to_ref)))
    {
       RARCH_WARN("[Shaders] Saving full preset because the initially "
@@ -1582,99 +1529,48 @@ static bool video_shader_write_referenced_preset(
       goto end;
    }
 
-   /* If we are trying to save on top the path referenced in the
-    * initially loaded preset.
-    *
-    * E.G. Preset_B references Preset_A, I load Preset_B do some
-    * parameter adjustments,
-    * then I save on top of Preset_A, we want to get a preset
-    * just like the original Preset_A with the new parameter
-    * adjustments.
-    *
-    * If there is a reference in the initially loaded preset,
-    * we should check it against the preset path we are currently
-    * trying to save */
    if (ref_conf->references)
    {
-      char *abs_tmp_ref_path = (char*)malloc(PATH_MAX_LENGTH);
-      abs_tmp_ref_path[0]    = '\0';
-      /* Get the absolute path and replace wildcards in the path */
-      fill_pathname_expanded_and_absolute(abs_tmp_ref_path, PATH_MAX_LENGTH,
+      char abs_tmp_ref_path[PATH_MAX_LENGTH];
+      abs_tmp_ref_path[0] = '\0';
+      fill_pathname_expanded_and_absolute(abs_tmp_ref_path, sizeof(abs_tmp_ref_path),
             ref_conf->path, ref_conf->references->path);
-      /* TODO/FIXME - dehardcode PATH_MAX_LENGTH */
       video_shader_replace_wildcards(abs_tmp_ref_path,
-            PATH_MAX_LENGTH, ref_conf->path);
+            sizeof(abs_tmp_ref_path), ref_conf->path);
       pathname_conform_slashes_to_os(abs_tmp_ref_path);
 
-      /* If the reference is the same as the path we are trying to save to
-         then this should be used as the reference to save */
       if (string_is_equal(abs_tmp_ref_path, path_to_save_conformed))
       {
-         strlcpy(path_to_ref, abs_tmp_ref_path, PATH_MAX_LENGTH);
+         strlcpy(path_to_ref, abs_tmp_ref_path, sizeof(path_to_ref));
          config_file_free(ref_conf);
-         ref_conf = config_file_new_from_path_to_string(
-               path_to_ref);
+         ref_conf = config_file_new_from_path_to_string(path_to_ref);
       }
-      free(abs_tmp_ref_path);
    }
 
-   /*
-    * If
-    *    The new preset file we are trying to save is the
-    *    same as the initially loaded preset
-    * or
-    *    The initially loaded preset was located under the
-    *    retroarch config folder
-    *    this means that it was likely saved from inside the retroarch UI
-    * Then
-    *    We should not save a preset with a reference to the initially loaded
-    *    preset file itself, instead we need to save a new preset with
-    *    the same reference as was in the initially loaded preset.
-    */
-
-   /* If the reference path is the same as the path we want to save
-    * or the reference path is in the config (auto shader) folder */
    if (      string_is_equal(path_to_ref, path_to_save_conformed)
          || !strncmp(config_dir, path_to_ref, strlen(config_dir)))
    {
-      /* If the config from the reference path has a reference in it,
-       * we will use this same nested reference for the new preset */
       if (ref_conf->references)
       {
-         /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(path_to_ref, PATH_MAX_LENGTH,
+         fill_pathname_expanded_and_absolute(path_to_ref, sizeof(path_to_ref),
                ref_conf->path, ref_conf->references->path);
-         /* TODO/FIXME - dehardcode PATH_MAX_LENGTH */
          video_shader_replace_wildcards(path_to_ref,
-               PATH_MAX_LENGTH, ref_conf->path);
+               sizeof(path_to_ref), ref_conf->path);
 
-         /* If the reference path is also the same as what
-          * we are trying to save
-            This can easily happen
-            E.G.
-            - Save Preset As
-            - Save Game Preset
-            - Save Preset As (use same name as first time)
-         */
          if (string_is_equal(path_to_ref, path_to_save_conformed))
          {
             config_file_free(ref_conf);
             ref_conf = config_file_new_from_path_to_string(path_to_ref);
 
-            /* If the reference also has a reference inside it */
-            /* Get the absolute path for the reference */
             if (ref_conf && ref_conf->references)
             {
-               /* Get the absolute path and replace wildcards in the path */
-               fill_pathname_expanded_and_absolute(path_to_ref, PATH_MAX_LENGTH,
+               fill_pathname_expanded_and_absolute(path_to_ref, sizeof(path_to_ref),
                      ref_conf->path, ref_conf->references->path);
-               /* TODO/FIXME - dehardcode PATH_MAX_LENGTH */
                video_shader_replace_wildcards(path_to_ref,
-                     PATH_MAX_LENGTH, ref_conf->path);
+                     sizeof(path_to_ref), ref_conf->path);
             }
             else
             {
-               /* If the config referenced is a full preset */
                RARCH_WARN("[Shaders] Saving full preset because "
                      "a preset which "
                      "would reference itself can't be saved.\n");
@@ -1682,11 +1578,8 @@ static bool video_shader_write_referenced_preset(
             }
          }
       }
-      /* If there is no reference in the initial preset we need to
-       * save a full preset */
       else
       {
-         /* We can't save a reference to ourselves */
          RARCH_WARN("[Shaders] Saving full preset because "
                "a preset which "
                "would reference itself can't be saved.\n");
@@ -1694,8 +1587,6 @@ static bool video_shader_write_referenced_preset(
       }
    }
 
-   /* Check the reference chain that we would be saving to make sure it
-    * is valid */
    if (!video_shader_check_reference_chain_for_save(
             path_to_save_conformed, path_to_ref))
    {
@@ -1709,7 +1600,6 @@ static bool video_shader_write_referenced_preset(
    RARCH_DBG("[Shaders] Reading preset to compare with "
          "current values: \"%s\".\n", path_to_save_conformed);
 
-   /* Load the preset referenced in the preset into the shader */
    if (!video_shader_load_preset_into_shader(path_to_ref, ref_shader))
    {
       RARCH_WARN("[Shaders] Saving full preset because "
@@ -1718,26 +1608,15 @@ static bool video_shader_write_referenced_preset(
       goto end;
    }
 
-   /* Create a new EMPTY config */
    if (!(conf = config_file_new_alloc()))
       goto end;
 
    conf->path = strdup(path_to_save_conformed);
 
-   /* Add the reference path to the config */
    config_file_add_reference(conf, path_to_ref);
 
-   /* Set modified flag to true so when
-    * you run config_file_write it will save a file */
    conf->flags |= CONF_FILE_FLG_MODIFIED;
 
-   /*
-      Compare the shader to a shader created from the referenced
-      config to see if we can save a referenced preset and what
-      parameters and textures of the root_config are overridden
-   */
-
-   /* Check number of passes match */
    if (shader->passes != ref_shader->passes)
    {
       RARCH_WARN("[Shaders] Passes (number of passes) "
@@ -1746,14 +1625,8 @@ static bool video_shader_write_referenced_preset(
    }
    else
    {
-      /* Compare all passes from the shader, if anything is different
-       * then we should not save a reference and instead save a
-       * full preset instead.
-       */
       bool continue_saving_ref                     = true;
 
-      /* Step through each pass comparing all the properties to
-       * make sure they match */
       for (i = 0; (i < shader->passes && continue_saving_ref);
             i++)
       {
@@ -1897,14 +1770,10 @@ static bool video_shader_write_referenced_preset(
       }
    }
 
-   /* If the shader has parameters */
    if (shader->num_parameters)
    {
       for (i = 0; i < shader->num_parameters; i++)
       {
-         /* If the parameter's current value is different
-          * than the referenced shader then write the value
-          * into the new preset */
          if (     shader->parameters[i].current
                != ref_shader->parameters[i].current)
             config_set_float(conf, shader->parameters[i].id,
@@ -1912,34 +1781,27 @@ static bool video_shader_write_referenced_preset(
       }
    }
 
-   /* If the shader has textures */
    if (shader->luts)
    {
       for (i = 0; i < shader->luts; i++)
       {
-         /* If the current shader texture path is different
-          * than the referenced shader texture then write the
-          * current path into the new preset */
          if (!string_is_equal(ref_shader->lut[i].path,
                   shader->lut[i].path))
          {
-            char *path_for_save  = (char*)malloc(PATH_MAX_LENGTH);
+            char path_for_save[PATH_MAX_LENGTH];
 
             fill_pathname_abbreviated_or_relative(path_for_save,
-                  conf->path, shader->lut[i].path, PATH_MAX_LENGTH);
+                  conf->path, shader->lut[i].path, sizeof(path_for_save));
             pathname_make_slashes_portable(path_for_save);
             config_set_string(conf, shader->lut[i].id, path_for_save);
 #ifdef DEBUG
             RARCH_DBG("[Shaders] Texture override \"%s\" = \"%s\".\n",
                   shader->lut[i].id, path_for_save);
 #endif
-
-            free(path_for_save);
          }
       }
    }
 
-   /* Write the file, return will be true if successful */
    RARCH_DBG("[Shaders] Saving simple preset to: \"%s\"\n",
          path_to_save_conformed);
    ret = config_file_write(conf, path_to_save_conformed, false);
@@ -1949,8 +1811,6 @@ end:
    config_file_free(conf);
    config_file_free(ref_conf);
    free(ref_shader);
-   free(path_to_ref);
-   free(path_to_save_conformed);
 
    return ret;
 }
@@ -2299,11 +2159,12 @@ bool video_shader_write_preset(const char *path,
 bool video_shader_load_preset_into_shader(const char *path,
       struct video_shader *shader)
 {
-   bool ret                                          = true;
-   config_file_t *conf                               = NULL;
-   struct path_linked_list* override_paths_list      = NULL;
-   struct path_linked_list* path_list_tmp            = NULL;
-   config_file_t *root_conf                          = video_shader_get_root_preset_config(path);
+   char path_to_ref[PATH_MAX_LENGTH];
+   bool ret                                     = true;
+   config_file_t *conf                          = NULL;
+   struct path_linked_list* override_paths_list = NULL;
+   struct path_linked_list* path_list_tmp       = NULL;
+   config_file_t *root_conf                     = video_shader_get_root_preset_config(path);
 
    if (!root_conf)
    {
@@ -2323,7 +2184,7 @@ bool video_shader_load_preset_into_shader(const char *path,
       goto end;
    }
 
-  /* If the root_conf path matches the original path then
+   /* If the root_conf path matches the original path then
     * there are no references so we just load it and go to the end */
    if (string_is_equal(root_conf->path, path))
    {
@@ -2356,12 +2217,7 @@ bool video_shader_load_preset_into_shader(const char *path,
    while (path_list_tmp)
    {
       config_file_t *tmp_conf = NULL;
-      char *path_to_ref       = (char*)malloc(PATH_MAX_LENGTH);
-      if (!path_to_ref)
-      {
-         ret = false;
-         goto end;
-      }
+
       /* Get the absolute path and replace wildcards in the path */
       fill_pathname_expanded_and_absolute(path_to_ref, PATH_MAX_LENGTH,
             conf->path, path_list_tmp->path);
@@ -2378,7 +2234,6 @@ bool video_shader_load_preset_into_shader(const char *path,
          {
             RARCH_WARN("[Shaders] Additional #reference entries pointing at shader chain presets are not supported: \"%s\".\n", path_to_ref);
             config_file_free(tmp_conf);
-            free(path_to_ref);
             ret = false;
             goto end;
          }
@@ -2387,11 +2242,9 @@ bool video_shader_load_preset_into_shader(const char *path,
       else
       {
          RARCH_WARN("[Shaders] Could not load root preset for #reference entry: \"%s\".\n", path_to_ref);
-         free(path_to_ref);
          ret = false;
          goto end;
       }
-      free(path_to_ref);
       path_list_tmp = path_list_tmp->next;
    }
 
