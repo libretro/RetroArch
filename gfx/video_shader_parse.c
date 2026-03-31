@@ -645,7 +645,6 @@ static bool video_shader_parse_pass(config_file_t *conf,
    if ((entry = config_get_entry(conf, shader_var))
          && !string_is_empty(entry->value))
       pass->wrap = video_shader_wrap_str_to_mode(entry->value);
-   entry = NULL;
 
    /* Frame count mod */
    _len  = strlcpy(shader_var, "frame_count_mod", sizeof(shader_var));
@@ -653,7 +652,6 @@ static bool video_shader_parse_pass(config_file_t *conf,
    if ((entry = config_get_entry(conf, shader_var))
          && !string_is_empty(entry->value))
       pass->frame_count_mod = (unsigned)strtoul(entry->value, NULL, 0);
-   entry = NULL;
 
    /* FBO types and mipmapping */
    _len  = strlcpy(shader_var, "srgb_framebuffer", sizeof(shader_var));

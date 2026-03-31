@@ -3856,7 +3856,6 @@ static bool config_load_file(global_t *global,
    static bool first_load                          = true;
    bool without_overrides                          = false;
    unsigned msg_color                              = 0;
-   char *save                                      = NULL;
    char *override_username                         = NULL;
    runloop_state_t *runloop_st                     = runloop_state_get_ptr();
    int bool_settings_size                          = SETTINGS_BOOL_COUNT_MAX;
@@ -3927,7 +3926,6 @@ static bool config_load_file(global_t *global,
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
    {
       char tmp_append_path[PATH_MAX_LENGTH];
-      const char *extra_path = NULL;
       const char *ptr         = NULL;
 
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_APPEND),
