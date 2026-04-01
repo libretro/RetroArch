@@ -60,11 +60,11 @@
 #include "../../cheevos/cheevos_menu.h"
 #endif
 
-#define ANIMATION_PUSH_ENTRY_DURATION 166.66667f
-#define ANIMATION_CURSOR_DURATION     166.66667f
-#define ANIMATION_CURSOR_PULSE        166.66667f * 3
+#define ANIMATION_PUSH_ENTRY_DURATION (166.66667f)
+#define ANIMATION_CURSOR_DURATION     (ANIMATION_PUSH_ENTRY_DURATION)
+#define ANIMATION_CURSOR_PULSE        (ANIMATION_PUSH_ENTRY_DURATION * 3)
 
-#define OZONE_THUMBNAIL_STREAM_DELAY  16.66667f * 3
+#define OZONE_THUMBNAIL_STREAM_DELAY  ANIMATION_CURSOR_PULSE
 
 #define OZONE_EASING_ALPHA            EASING_OUT_CIRC
 #define OZONE_EASING_ALPHA_IN         EASING_IN_QUAD
@@ -457,6 +457,7 @@ struct ozone_handle
    menu_input_pointer_t pointer; /* retro_time_t alignment */
 
    ozone_theme_t *theme;
+   ozone_theme_t *default_theme;
    char *pending_message;
    file_list_t selection_buf_old;                  /* ptr alignment */
    file_list_t horizontal_list; /* console tabs */ /* ptr alignment */
@@ -570,6 +571,7 @@ struct ozone_handle
    unsigned selection_core_name_lines;
    unsigned old_list_offset_y;
    unsigned draw_entry_delay;
+   unsigned last_color_theme;
 
    uint32_t flags;
 
@@ -617,6 +619,8 @@ struct ozone_handle
    } theme_dynamic;
 
    float scroll_old;
+   /* Enable runtime configuration of framebuffer opacity */
+   float last_framebuffer_opacity;
 
    int16_t pointer_active_delta;
    int16_t cursor_x_old;
@@ -1631,12 +1635,6 @@ static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_evergarden,
 };
 
-/* TODO/FIXME - global variables referenced outside */
-static unsigned ozone_last_color_theme      = 0;
-static ozone_theme_t *ozone_default_theme   = &ozone_theme_dark; /* also used as a tag for cursor animation */
-/* Enable runtime configuration of framebuffer opacity */
-static float ozone_last_framebuffer_opacity = -1.0f;
-
 /* Forward declarations */
 static void ozone_set_header(ozone_handle_t *ozone);
 static void ozone_animation_list_alpha(ozone_handle_t *ozone, bool fade_in);
@@ -1663,7 +1661,7 @@ static void ozone_animate_cursor(ozone_handle_t *ozone,
    gfx_animation_ctx_entry_t entry;
 
    entry.easing_enum = OZONE_EASING_XY;
-   entry.tag         = (uintptr_t)&ozone_default_theme;
+   entry.tag         = (uintptr_t)&ozone->default_theme;
    entry.duration    = ANIMATION_CURSOR_PULSE;
    entry.userdata    = ozone;
 
@@ -1706,7 +1704,7 @@ static void ozone_cursor_animation_cb(void *userdata)
 
 static void ozone_restart_cursor_animation(ozone_handle_t *ozone)
 {
-   uintptr_t tag = (uintptr_t)&ozone_default_theme;
+   uintptr_t tag = (uintptr_t)&ozone->default_theme;
 
    ozone->theme_dynamic_cursor_state = 1;
    memcpy(ozone->theme_dynamic.cursor_border,
@@ -1719,11 +1717,10 @@ static void ozone_restart_cursor_animation(ozone_handle_t *ozone)
          ozone->theme->cursor_border_1);
 }
 
-static void ozone_set_color_theme(
-      ozone_handle_t *ozone,
+static void ozone_set_color_theme(ozone_handle_t *ozone,
       unsigned color_theme)
 {
-   ozone_theme_t *theme = ozone_default_theme;
+   ozone_theme_t *theme = ozone->default_theme;
 
    switch (color_theme)
    {
@@ -1803,7 +1800,7 @@ static void ozone_set_color_theme(
    if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)
       ozone_restart_cursor_animation(ozone);
 
-   ozone_last_color_theme = color_theme;
+   ozone->last_color_theme = color_theme;
 }
 
 static unsigned ozone_get_system_theme(void)
@@ -1873,7 +1870,7 @@ static void ozone_set_background_running_opacity(
    background[7]                                = framebuffer_opacity;
 #endif
 
-   ozone_last_framebuffer_opacity               = framebuffer_opacity;
+   ozone->last_framebuffer_opacity              = framebuffer_opacity;
 
    /* Set sidebar background to half opacity if transparent */
    if (ozone->theme->sidebar_background[3] > 0)
@@ -2930,7 +2927,7 @@ static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
    {
       ozone_theme_t *theme = ozone_themes[j];
 
-      if (!theme->name || j != ozone_last_color_theme)
+      if (!theme->name || j != ozone->last_color_theme)
          continue;
 
       fill_pathname_join_special(
@@ -3309,7 +3306,7 @@ static void ozone_draw_cursor(
 
    /* Draw the cursor */
    if (     (ozone->theme->name)
-         && (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS))
+         && ((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) || (ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)))
       ozone_draw_cursor_slice(ozone,
             p_disp,
             userdata,
@@ -5074,7 +5071,8 @@ static void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
 static ozone_node_t *ozone_alloc_node(void)
 {
    ozone_node_t *node   = (ozone_node_t*)malloc(sizeof(*node));
-
+   if (!node)
+      return NULL;
    node->height         = 0;
    node->position_y     = 0;
    node->console_name   = NULL;
@@ -5083,7 +5081,6 @@ static ozone_node_t *ozone_alloc_node(void)
    node->fullpath       = NULL;
    node->sublabel_lines = 0;
    node->wrap           = false;
-
    return node;
 }
 
@@ -5421,7 +5418,7 @@ static void ozone_draw_no_thumbnail_available(
       math_matrix_4x4 *mymat)
 {
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   unsigned icon_size                = (unsigned)ozone->dimensions.sidebar_entry_icon_size * 2.0f;
+   unsigned icon_size                = (unsigned)(ozone->dimensions.sidebar_entry_icon_size * 2.0f);
    float                        *col = ozone->theme_dynamic.entries_icon;
 
    ozone->flags                     |= OZONE_FLAG_NO_THUMBNAIL_AVAILABLE;
@@ -9195,6 +9192,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    video_driver_get_size(&width, &height);
 
+   /* Also used as a tag for cursor animation */
+   ozone->default_theme                         = &ozone_theme_dark; 
+
+   ozone->last_framebuffer_opacity              = -1.0f;
    ozone->last_width                            = width;
    ozone->last_height                           = height;
    ozone->last_scale_factor                     = gfx_display_get_dpi_scale(p_disp,
@@ -9207,7 +9208,6 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    ozone->flags                                |= OZONE_FLAG_DRAW_SIDEBAR;
    ozone->sidebar_offset                        = 0;
-   ozone->pending_message                       = NULL;
    ozone->categories_selection_ptr              = 0;
    ozone->pending_message                       = NULL;
 
@@ -9957,7 +9957,7 @@ static void ozone_context_destroy(void *data)
    ozone_font_free(&ozone->fonts.entries_sublabel);
    ozone_font_free(&ozone->fonts.sidebar);
 
-   tag = (uintptr_t) &ozone_default_theme;
+   tag = (uintptr_t)&ozone->default_theme;
    gfx_animation_kill_by_tag(&tag);
 
    /* Horizontal list */
@@ -11847,7 +11847,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_last_use_preferred_system_color_theme =
          ozone->flags2 & OZONE_FLAG2_LAST_USE_PREFERRED_SYSTEM_COLOR_THEME;
 
-   if (   (color_theme != ozone_last_color_theme)
+   if (   (color_theme != ozone->last_color_theme)
        || (ozone_last_use_preferred_system_color_theme != use_preferred_system_color_theme))
    {
       if (use_preferred_system_color_theme)
@@ -11918,7 +11918,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    /* Background (Always use running background due to overlays) */
    if (menu_framebuffer_opacity < 1.0f)
    {
-      if (menu_framebuffer_opacity != ozone_last_framebuffer_opacity)
+      if (menu_framebuffer_opacity != ozone->last_framebuffer_opacity)
          if (ozone->theme->background_libretro_running)
             ozone_set_background_running_opacity(ozone, menu_framebuffer_opacity);
 
