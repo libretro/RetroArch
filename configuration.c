@@ -7030,11 +7030,8 @@ void input_config_parse_joy_button(
    config_file_t *conf             = (config_file_t*)data;
    struct retro_keybind *bind      = (struct retro_keybind*)bind_data;
    struct config_entry_list *tmp_a = NULL;
-
    tmp[0]                          = '\0';
-
    fill_pathname_join_delim(key, s, "btn", '_', sizeof(key));
-
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       btn = tmp;
@@ -7050,7 +7047,7 @@ void input_config_parse_joy_button(
          {
             const char *str = btn + 1;
             /* Parse hat? */
-            if (str && ISDIGIT((int)*str))
+            if (str && *str >= '0' && *str <= '9')
             {
                char        *dir = NULL;
                uint16_t     hat = strtoul(str, &dir, 0);
@@ -7061,16 +7058,12 @@ void input_config_parse_joy_button(
          }
          else
             bind->joykey = strtoull(tmp, NULL, 0);
-
          bind->valid = true;
       }
    }
-
    fill_pathname_join_delim(key, s,
          "btn_label", '_', sizeof(key));
-
    tmp_a = config_get_entry(conf, key);
-
    if (tmp_a && !string_is_empty(tmp_a->value))
    {
       if (!string_is_empty(bind->joykey_label))
