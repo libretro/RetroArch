@@ -401,16 +401,14 @@ int dingux_get_battery_level(void)
 
 /* Fetches the path of the base 'retroarch'
  * directory */
-void dingux_get_base_path(char *path, size_t len)
+size_t dingux_get_base_path(char *s, size_t len)
 {
    const char *home             = NULL;
 #if defined(RS90)
    struct string_list *dir_list = NULL;
 #endif
-
-   if (!path || (len < 1))
-      return;
-
+   if (!s || (len < 1))
+      return 0;
 #if defined(RS90)
    /* The RS-90 home directory is located on the
     * device's internal storage. This has limited
@@ -423,7 +421,7 @@ void dingux_get_base_path(char *path, size_t len)
    if ((dir_list = dir_list_new(DINGUX_RS90_MEDIA_PATH,
          NULL, true, true, false, false)))
    {
-      size_t i;
+      size_t i, _len  = 0;
       bool path_found = false;
 
       for (i = 0; i < dir_list->size; i++)
@@ -438,7 +436,7 @@ void dingux_get_base_path(char *path, size_t len)
             continue;
 
          /* Build 'retroarch' subdirectory path */
-         snprintf(path, len, "%s%c%s", dir_path,
+         _len = snprintf(s, len, "%s%c%s", dir_path,
                PATH_DEFAULT_SLASH_C(), DINGUX_BASE_DIR);
 
          /* We can use this subdirectory path if:
@@ -446,7 +444,7 @@ void dingux_get_base_path(char *path, size_t len)
           *   microsd card
           * - Subdirectory already exists */
          if (   string_is_equal(dir_path, DINGUX_RS90_DEFAULT_SD_PATH)
-             || path_is_directory(path))
+             || path_is_directory(s))
          {
             path_found = true;
             break;
@@ -456,7 +454,7 @@ void dingux_get_base_path(char *path, size_t len)
       dir_list_free(dir_list);
 
       if (path_found)
-         return;
+         return _len;
    }
 #endif
    /* Get home directory
@@ -467,8 +465,7 @@ void dingux_get_base_path(char *path, size_t len)
     *   driver default of "retroarch" (this will ultimately
     *   fail, but there is nothing else we can do...) */
    if ((home = getenv(DINGUX_HOME_ENVAR)))
-      snprintf(path, len, "%s%c%s", home,
+      return snprintf(s, len, "%s%c%s", home,
             PATH_DEFAULT_SLASH_C(), DINGUX_BASE_DIR_HIDDEN);
-   else
-      strlcpy(path, DINGUX_BASE_DIR, len);
+   return strlcpy(s, DINGUX_BASE_DIR, len);
 }

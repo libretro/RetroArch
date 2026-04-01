@@ -354,7 +354,8 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
                      icon);
 
                /* Add icon to hash map */
-               RHMAP_SET_STR(state->icons->system, core_info->core_file_id.str, icon);
+               RHMAP_SET_STR(state->icons->system,
+               core_info->core_file_id.str, icon);
             }
 
             image_texture_free(&ti);

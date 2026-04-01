@@ -100,13 +100,13 @@ bool fill_pathname_application_data(char *s, size_t len)
 #endif
 
 #elif defined(OSX)
+   CFStringRef parent_path;
+   CFURLRef bundle_url, parent_url;
    CFBundleRef bundle = CFBundleGetMainBundle();
    if (!bundle)
       return false;
 
    /* get the directory containing the app */
-   CFStringRef parent_path;
-   CFURLRef bundle_url, parent_url;
    bundle_url  = CFBundleCopyBundleURL(bundle);
    parent_url  = CFURLCreateCopyDeletingLastPathComponent(NULL, bundle_url);
    parent_path = CFURLCopyFileSystemPath(parent_url, kCFURLPOSIXPathStyle);
