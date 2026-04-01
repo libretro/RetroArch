@@ -2759,23 +2759,63 @@ static void ram_state_to_file(void)
       command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }
 
+/**
+ * Compute DJB2 hash of a short string, lowercasing ASCII on the fly.
+ * Assumes ext points to a valid, short (extension-length) string.
+ */
+static INLINE uint32_t djb2_calculate_lower(const char *s)
+{
+   uint32_t h = 5381;
+   for (; *s; s++)
+   {
+      unsigned char c = (unsigned char)*s;
+      /* Branchless ASCII tolower: set bit 5 if uppercase letter */
+      c |= ((unsigned int)c - 'A' < 26u) ? 0x20 : 0x00;
+      h = (h << 5) + h + c;
+   }
+   return h;
+}
+
 enum rarch_content_type path_is_media_type(const char *path)
 {
-   char ext_lower[16];
-   strlcpy(ext_lower, path_get_extension(path), sizeof(ext_lower));
+   const char *ext;
 
-   string_to_lower(ext_lower);
+   if (!path || !*path)
+      return RARCH_CONTENT_NONE;
 
-   /* hack, to detect livestreams so the ffmpeg core can be started */
-   if (   string_starts_with_size(path, "udp://",   STRLEN_CONST("udp://"))
-       || string_starts_with_size(path, "http://",  STRLEN_CONST("http://"))
-       || string_starts_with_size(path, "https://", STRLEN_CONST("https://"))
-       || string_starts_with_size(path, "tcp://",   STRLEN_CONST("tcp://"))
-       || string_starts_with_size(path, "rtmp://",  STRLEN_CONST("rtmp://"))
-       || string_starts_with_size(path, "rtp://",   STRLEN_CONST("rtp://")))
-      return RARCH_CONTENT_MOVIE;
+   /* Fast streaming-protocol check: switch on first char to avoid
+    * testing all prefixes linearly. Only fall through on match. */
+   switch (path[0])
+   {
+      case 'u':
+         if (string_starts_with_size(path, "udp://", STRLEN_CONST("udp://")))
+            return RARCH_CONTENT_MOVIE;
+         break;
+      case 'h':
+         if (   string_starts_with_size(path, "http://",  STRLEN_CONST("http://"))
+             || string_starts_with_size(path, "https://", STRLEN_CONST("https://")))
+            return RARCH_CONTENT_MOVIE;
+         break;
+      case 't':
+         if (string_starts_with_size(path, "tcp://", STRLEN_CONST("tcp://")))
+            return RARCH_CONTENT_MOVIE;
+         break;
+      case 'r':
+         if (   string_starts_with_size(path, "rtmp://", STRLEN_CONST("rtmp://"))
+             || string_starts_with_size(path, "rtp://",  STRLEN_CONST("rtp://")))
+            return RARCH_CONTENT_MOVIE;
+         break;
+      default:
+         break;
+   }
 
-   switch (msg_hash_to_file_type(msg_hash_calculate(ext_lower)))
+   ext = path_get_extension(path);
+   if (!ext || !*ext)
+      return RARCH_CONTENT_NONE;
+
+   /* Hash the extension directly, lowercasing during hashing —
+    * eliminates strlcpy, string_to_lower, and the stack buffer. */
+   switch (msg_hash_to_file_type(djb2_calculate_lower(ext)))
    {
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case FILE_TYPE_OGM:
@@ -2831,7 +2871,6 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_BMP:
          return RARCH_CONTENT_IMAGE;
 #endif
-      case FILE_TYPE_NONE:
       default:
          break;
    }
