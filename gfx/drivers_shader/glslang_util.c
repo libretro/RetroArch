@@ -14,6 +14,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
@@ -27,6 +28,110 @@
 
 #include "glslang_util.h"
 #include "../../verbosity.h"
+
+/* -------------------------------------------------------------------
+ * shader_line_buf implementation
+ * ------------------------------------------------------------------- */
+
+#define SHADER_LINE_BUF_INITIAL_DATA_CAP  4096
+#define SHADER_LINE_BUF_INITIAL_LINES_CAP 128
+
+bool shader_line_buf_init(struct shader_line_buf *buf)
+{
+   buf->data = (char*)malloc(SHADER_LINE_BUF_INITIAL_DATA_CAP);
+   if (!buf->data)
+      return false;
+   buf->len           = 0;
+   buf->cap           = SHADER_LINE_BUF_INITIAL_DATA_CAP;
+
+   buf->line_offsets  = (size_t*)malloc(
+         SHADER_LINE_BUF_INITIAL_LINES_CAP * sizeof(size_t));
+   if (!buf->line_offsets)
+   {
+      free(buf->data);
+      buf->data = NULL;
+      return false;
+   }
+   buf->num_lines     = 0;
+   buf->lines_cap     = SHADER_LINE_BUF_INITIAL_LINES_CAP;
+   return true;
+}
+
+void shader_line_buf_free(struct shader_line_buf *buf)
+{
+   if (buf->data)
+   {
+      free(buf->data);
+      buf->data = NULL;
+   }
+   if (buf->line_offsets)
+   {
+      free(buf->line_offsets);
+      buf->line_offsets = NULL;
+   }
+   buf->len        = 0;
+   buf->cap        = 0;
+   buf->num_lines  = 0;
+   buf->lines_cap  = 0;
+}
+
+bool shader_line_buf_append(struct shader_line_buf *buf,
+      const char *line, size_t line_len)
+{
+   /* Need line_len + 1 bytes for the line content plus '\0' terminator */
+   size_t needed = buf->len + line_len + 1;
+   if (needed > buf->cap)
+   {
+      size_t new_cap = buf->cap;
+      char  *tmp;
+      while (new_cap < needed)
+         new_cap *= 2;
+      tmp = (char*)realloc(buf->data, new_cap);
+      if (!tmp)
+         return false;
+      buf->data = tmp;
+      buf->cap  = new_cap;
+   }
+
+   /* Grow line_offsets if needed */
+   if (buf->num_lines >= buf->lines_cap)
+   {
+      size_t  new_lcap = buf->lines_cap * 2;
+      size_t *tmp      = (size_t*)realloc(buf->line_offsets,
+            new_lcap * sizeof(size_t));
+      if (!tmp)
+         return false;
+      buf->line_offsets = tmp;
+      buf->lines_cap   = new_lcap;
+   }
+
+   /* Record offset, copy data, null-terminate the line */
+   buf->line_offsets[buf->num_lines++] = buf->len;
+   memcpy(buf->data + buf->len, line, line_len);
+   buf->len               += line_len;
+   buf->data[buf->len++]   = '\0';
+   return true;
+}
+
+bool shader_line_buf_append_str(struct shader_line_buf *buf, const char *line)
+{
+   return shader_line_buf_append(buf, line, strlen(line));
+}
+
+const char *shader_line_buf_get(const struct shader_line_buf *buf, size_t index)
+{
+   return buf->data + buf->line_offsets[index];
+}
+
+size_t shader_line_buf_line_len(const struct shader_line_buf *buf, size_t index)
+{
+   /* Each stored line is null-terminated, so strlen works directly. */
+   return strlen(buf->data + buf->line_offsets[index]);
+}
+
+/* -------------------------------------------------------------------
+ * Original helper functions (unchanged)
+ * ------------------------------------------------------------------- */
 
 static char *slang_get_include_file(char *line, size_t len)
 {
@@ -88,18 +193,20 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
    return SLANG_INVALID_TEXTURE_SEMANTIC;
 }
 
+/* -------------------------------------------------------------------
+ * glslang_read_shader_file — rewritten to use shader_line_buf
+ * ------------------------------------------------------------------- */
+
 bool glslang_read_shader_file(const char *path,
-      struct string_list *output, bool root_file, bool is_optional)
+      struct shader_line_buf *output, bool root_file, bool is_optional)
 {
    char tmp[PATH_MAX_LENGTH];
-   union string_list_elem_attr attr;
    const char *basename      = NULL;
    uint8_t *buf              = NULL;
    int64_t buf_len           = 0;
    bool    ret               = false;
 
    tmp[0] = '\0';
-   attr.i = 0;
 
    /* Sanity check */
    if (string_is_empty(path) || !output)
@@ -160,7 +267,7 @@ bool glslang_read_shader_file(const char *path,
                   goto cleanup;
                }
 
-               if (!string_list_append(output, line_start, attr))
+               if (!shader_line_buf_append_str(output, line_start))
                {
                   *newline = saved;
                   goto cleanup;
@@ -168,26 +275,25 @@ bool glslang_read_shader_file(const char *path,
 
                /* Allows us to use #line to make dealing with shader
                 * errors easier. */
-               if (!string_list_append_n(output,
+               if (!shader_line_buf_append(output,
                      "#extension GL_GOOGLE_cpp_style_line_directive : require",
-                     STRLEN_CONST("#extension GL_GOOGLE_cpp_style_line_directive : require"),
-                     attr))
+                     STRLEN_CONST("#extension GL_GOOGLE_cpp_style_line_directive : require")))
                {
                   *newline = saved;
                   goto cleanup;
                }
 
                /* Append feature defines */
-               if (!string_list_append_n(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"), attr)
-                || !string_list_append_n(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"), attr)
-                || !string_list_append_n(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS"), attr))
+               if (!shader_line_buf_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"))
+                || !shader_line_buf_append(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"))
+                || !shader_line_buf_append(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS")))
                {
                   *newline = saved;
                   goto cleanup;
                }
 
                snprintf(tmp, sizeof(tmp), "#line 2 \"%s\"", basename);
-               if (!string_list_append(output, tmp, attr))
+               if (!shader_line_buf_append_str(output, tmp))
                {
                   *newline = saved;
                   goto cleanup;
@@ -203,16 +309,16 @@ bool glslang_read_shader_file(const char *path,
             /* Non-root or non-slang: emit feature defines + #line once */
             if (root_file)
             {
-               if (!string_list_append_n(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"), attr)
-                || !string_list_append_n(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"), attr)
-                || !string_list_append_n(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS"), attr))
+               if (!shader_line_buf_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"))
+                || !shader_line_buf_append(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"))
+                || !shader_line_buf_append(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS")))
                {
                   *newline = saved;
                   goto cleanup;
                }
 
                snprintf(tmp, sizeof(tmp), "#line 2 \"%s\"", basename);
-               if (!string_list_append(output, tmp, attr))
+               if (!shader_line_buf_append_str(output, tmp))
                {
                   *newline = saved;
                   goto cleanup;
@@ -220,16 +326,16 @@ bool glslang_read_shader_file(const char *path,
             }
             else
             {
-               if (!string_list_append_n(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"), attr)
-                || !string_list_append_n(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"), attr)
-                || !string_list_append_n(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS"), attr))
+               if (!shader_line_buf_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"))
+                || !shader_line_buf_append(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"))
+                || !shader_line_buf_append(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS")))
                {
                   *newline = saved;
                   goto cleanup;
                }
 
                snprintf(tmp, sizeof(tmp), "#line 1 \"%s\"", basename);
-               if (!string_list_append(output, tmp, attr))
+               if (!shader_line_buf_append_str(output, tmp))
                {
                   *newline = saved;
                   goto cleanup;
@@ -284,13 +390,13 @@ bool glslang_read_shader_file(const char *path,
 
                snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
                      (unsigned)(line_idx + 1), basename);
-               if (!string_list_append(output, tmp, attr))
+               if (!shader_line_buf_append_str(output, tmp))
                   goto cleanup;
             }
             else if (  !strncmp("#endif",  line_start, STRLEN_CONST("#endif"))
                     || !strncmp("#pragma", line_start, STRLEN_CONST("#pragma")))
             {
-               if (!string_list_append(output, line_start, attr))
+               if (!shader_line_buf_append_str(output, line_start))
                {
                   *newline = saved;
                   goto cleanup;
@@ -298,12 +404,12 @@ bool glslang_read_shader_file(const char *path,
                snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
                      (unsigned)(line_idx + 2), basename);
                *newline = saved;
-               if (!string_list_append(output, tmp, attr))
+               if (!shader_line_buf_append_str(output, tmp))
                   goto cleanup;
             }
             else
             {
-               if (!string_list_append(output, line_start, attr))
+               if (!shader_line_buf_append_str(output, line_start))
                {
                   *newline = saved;
                   goto cleanup;
@@ -328,6 +434,10 @@ cleanup:
       free(buf);
    return ret;
 }
+
+/* -------------------------------------------------------------------
+ * Format helpers (unchanged)
+ * ------------------------------------------------------------------- */
 
 const char *glslang_format_to_string(enum glslang_format fmt)
 {

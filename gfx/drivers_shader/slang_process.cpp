@@ -19,7 +19,6 @@
 #include <spirv_msl.hpp>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
-#include <lists/string_list.h>
 #include <string>
 #include <stdio.h>
 #include <stdint.h>
@@ -462,22 +461,23 @@ static bool slang_process_reflection(
 }
 
 static std::string build_stage_source(
-      const struct string_list *lines, const char *stage)
+      const struct shader_line_buf *lines, const char *stage)
 {
    size_t i;
    std::string str;
    bool active = true;
-   if (!lines || lines->size < 1)
+   if (!lines || lines->num_lines < 1)
       return "";
-   str.reserve(lines->size);
+   /* Reserve a rough estimate to reduce reallocations */
+   str.reserve(lines->len);
 
-   /* Version header. */
-   str.append(lines->elems[0].data);
+   /* Version header (line 0). */
+   str.append(shader_line_buf_get(lines, 0));
    str.append("\n");
 
-   for (i = 1; i < lines->size; i++)
+   for (i = 1; i < lines->num_lines; i++)
    {
-      const char *line = lines->elems[i].data;
+      const char *line = shader_line_buf_get(lines, i);
 
       if (string_starts_with_size(line, "#pragma", STRLEN_CONST("#pragma")))
       {
@@ -512,7 +512,7 @@ static std::string build_stage_source(
    return str;
 }
 
-static bool glslang_parse_meta(const struct string_list *lines,
+static bool glslang_parse_meta(const struct shader_line_buf *lines,
    glslang_meta *meta)
 {
    char id[64];
@@ -522,9 +522,9 @@ static bool glslang_parse_meta(const struct string_list *lines,
    id[0]   = '\0';
    desc[0] = '\0';
 
-   for (i = 0; i < lines->size; i++)
+   for (i = 0; i < lines->num_lines; i++)
    {
-      const char *line = lines->elems[i].data;
+      const char *line = shader_line_buf_get(lines, i);
 
       if (string_starts_with_size(line, "#pragma", STRLEN_CONST("#pragma")))
       {
@@ -637,12 +637,15 @@ static bool glslang_parse_meta(const struct string_list *lines,
    return true;
 }
 
+/* -----------------------------------------------------------------------
+ * glslang_compile_shader — now uses shader_line_buf
+ * ----------------------------------------------------------------------- */
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
 #if defined(HAVE_GLSLANG)
-   struct string_list lines;
+   struct shader_line_buf lines;
 
-   if (!string_list_initialize(&lines))
+   if (!shader_line_buf_init(&lines))
       return false;
 
    RARCH_LOG("[Slang] Compiling shader: \"%s\".\n", shader_path);
@@ -667,12 +670,12 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
       goto error;
    }
 
-   string_list_deinitialize(&lines);
+   shader_line_buf_free(&lines);
 
    return true;
 
 error:
-   string_list_deinitialize(&lines);
+   shader_line_buf_free(&lines);
 #endif
 
    {
@@ -752,25 +755,30 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
    return true;
 }
 
+/* -----------------------------------------------------------------------
+ * slang_preprocess_parse_parameters (C-linkage overload) — uses shader_line_buf
+ * ----------------------------------------------------------------------- */
 bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader)
 {
-   struct string_list lines = {0};
+   struct shader_line_buf lines;
 
-   if (string_list_initialize(&lines))
+   memset(&lines, 0, sizeof(lines));
+
+   if (shader_line_buf_init(&lines))
    {
       if (glslang_read_shader_file(shader_path, &lines, true, false))
       {
          glslang_meta meta = glslang_meta{};
          if (glslang_parse_meta(&lines, &meta))
          {
-            string_list_deinitialize(&lines);
+            shader_line_buf_free(&lines);
             return slang_preprocess_parse_parameters(meta, shader);
          }
       }
    }
 
-   string_list_deinitialize(&lines);
+   shader_line_buf_free(&lines);
    return false;
 }
 
@@ -1703,4 +1711,3 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
       return false;
    }
 }
-
