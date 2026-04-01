@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string/stdstring.h>
 #include <file/file_path.h>
 
 #include <streams/file_stream.h>
@@ -388,8 +387,8 @@ rzipstream_t* rzipstream_open(const char *path, unsigned mode)
    /* Sanity check
     * > Only RETRO_VFS_FILE_ACCESS_READ and
     *   RETRO_VFS_FILE_ACCESS_WRITE are supported */
-   if (string_is_empty(path)
-       || (   (mode != RETRO_VFS_FILE_ACCESS_READ)
+   if (
+          (   (mode != RETRO_VFS_FILE_ACCESS_READ)
            && (mode != RETRO_VFS_FILE_ACCESS_WRITE)))
       return NULL;
 

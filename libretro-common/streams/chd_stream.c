@@ -25,11 +25,11 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <compat/strl.h>
 
 #include <streams/chd_stream.h>
 #include <retro_endianness.h>
 #include <libchdr/chd.h>
-#include <string/stdstring.h>
 
 #define SECTOR_RAW_SIZE 2352
 #define SECTOR_SIZE 2048
@@ -223,17 +223,13 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    chdstream_t *stream     = NULL;
    chd_file *chd           = NULL;
    chd_error err           = chd_open(path, CHD_OPEN_READ, NULL, &chd);
-
    if (err != CHDERR_NONE)
       return NULL;
-
    if (!chdstream_find_track(chd, track, &meta))
       goto error;
-
    stream                  = (chdstream_t*)malloc(sizeof(*stream));
    if (!stream)
       goto error;
-
    stream->chd             = NULL;
    stream->swab            = false;
    stream->frame_size      = 0;
@@ -245,52 +241,45 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->offset          = 0;
    stream->hunkmem         = NULL;
    stream->hunknum         = -1;
-
    hd                      = chd_get_header(chd);
    hunkmem                 = (uint8_t*)malloc(hd->hunkbytes);
    if (!hunkmem)
       goto error;
-
    stream->hunkmem         = hunkmem;
-
-   if (string_is_equal(meta.type, "MODE1_RAW"))
-      stream->frame_size   = SECTOR_RAW_SIZE;
-   else if (string_is_equal(meta.type, "MODE2_RAW"))
-      stream->frame_size   = SECTOR_RAW_SIZE;
-   else if (string_is_equal(meta.type, "MODE1"))
-      stream->frame_size   = SECTOR_SIZE;
-   else if (string_is_equal(meta.type, "AUDIO"))
+   switch (meta.type[0])
    {
-      stream->frame_size   = SECTOR_RAW_SIZE;
-      stream->swab         = true;
+      case 'M':
+         if (meta.type[4] == '_')
+            stream->frame_size = SECTOR_RAW_SIZE;
+         else
+            stream->frame_size = SECTOR_SIZE;
+         break;
+      case 'A':
+         stream->frame_size   = SECTOR_RAW_SIZE;
+         stream->swab         = true;
+         break;
+      case 'D':
+         stream->frame_size   = hd->unitbytes;
+         meta.frames          = hd->totalhunks;
+         break;
+      default:
+         stream->frame_size   = hd->unitbytes;
+         break;
    }
-   else if (string_is_equal(meta.type, "DVD"))
-   {
-      stream->frame_size   = hd->unitbytes;
-      meta.frames          = hd->totalhunks;
-   }
-   else
-      stream->frame_size   = hd->unitbytes;
-
    /* Only include pregap data if it was in the track file */
    if (meta.pgtype[0] != 'V')
       pregap               = meta.pregap;
-
    stream->chd             = chd;
    stream->frames_per_hunk = hd->hunkbytes / hd->unitbytes;
    stream->track_frame     = meta.frame_offset;
    stream->track_start     = (size_t)pregap * stream->frame_size;
    stream->track_end       = stream->track_start +
                              (size_t)meta.frames * stream->frame_size;
-
    return stream;
-
 error:
    chdstream_close(stream);
-
    if (chd)
       chd_close(chd);
-
    return NULL;
 }
 
