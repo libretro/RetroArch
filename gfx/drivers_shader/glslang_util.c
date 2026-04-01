@@ -184,7 +184,7 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
             return semantic;
          }
       }
-      else if (string_is_equal(name, *names))
+      else if (strcmp(name, *names) == 0)
       {
          *index = 0;
          return semantic;
@@ -194,9 +194,8 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 }
 
 /* -------------------------------------------------------------------
- * glslang_read_shader_file — rewritten to use shader_line_buf
+ * glslang_read_shader_file
  * ------------------------------------------------------------------- */
-
 bool glslang_read_shader_file(const char *path,
       struct shader_line_buf *output, bool root_file, bool is_optional)
 {
@@ -209,12 +208,12 @@ bool glslang_read_shader_file(const char *path,
    tmp[0] = '\0';
 
    /* Sanity check */
-   if (string_is_empty(path) || !output)
+   if (!path || path[0] == '\0' || !output)
       return false;
 
    basename = path_basename_nocompression(path);
 
-   if (string_is_empty(basename))
+   if (!basename || basename[0] == '\0')
       return false;
 
    /* Read file contents */
@@ -239,7 +238,7 @@ bool glslang_read_shader_file(const char *path,
       /* If this is the 'parent' shader file and a slang file,
        * ensure that first line is a 'VERSION' string */
       bool check_version = root_file
-            && string_is_equal(path_get_extension(path), "slang");
+            && (strcmp(path_get_extension(path), "slang") == 0);
 
       while (*cursor != '\0')
       {
@@ -259,7 +258,7 @@ bool glslang_read_shader_file(const char *path,
 
             if (check_version)
             {
-               if (strncmp("#version ", line_start, STRLEN_CONST("#version ")))
+               if (strncmp("#version ", line_start, sizeof("#version ")-1))
                {
                   RARCH_ERR("[Slang] First line of the shader must contain a valid "
                         "#version string.\n");
@@ -277,16 +276,16 @@ bool glslang_read_shader_file(const char *path,
                 * errors easier. */
                if (!shader_line_buf_append(output,
                      "#extension GL_GOOGLE_cpp_style_line_directive : require",
-                     STRLEN_CONST("#extension GL_GOOGLE_cpp_style_line_directive : require")))
+                     sizeof("#extension GL_GOOGLE_cpp_style_line_directive : require")-1))
                {
                   *newline = saved;
                   goto cleanup;
                }
 
                /* Append feature defines */
-               if (!shader_line_buf_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"))
-                || !shader_line_buf_append(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"))
-                || !shader_line_buf_append(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS")))
+               if (!shader_line_buf_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", sizeof("#define _HAS_ORIGINALASPECT_UNIFORMS")-1)
+                || !shader_line_buf_append(output, "#define _HAS_FRAMETIME_UNIFORMS", sizeof("#define _HAS_FRAMETIME_UNIFORMS")-1)
+                || !shader_line_buf_append(output, "#define _HAS_SENSOR_UNIFORMS", sizeof("#define _HAS_SENSOR_UNIFORMS")-1))
                {
                   *newline = saved;
                   goto cleanup;
@@ -309,9 +308,9 @@ bool glslang_read_shader_file(const char *path,
             /* Non-root or non-slang: emit feature defines + #line once */
             if (root_file)
             {
-               if (!shader_line_buf_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"))
-                || !shader_line_buf_append(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"))
-                || !shader_line_buf_append(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS")))
+               if (!shader_line_buf_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", sizeof("#define _HAS_ORIGINALASPECT_UNIFORMS")-1)
+                || !shader_line_buf_append(output, "#define _HAS_FRAMETIME_UNIFORMS", sizeof("#define _HAS_FRAMETIME_UNIFORMS")-1)
+                || !shader_line_buf_append(output, "#define _HAS_SENSOR_UNIFORMS", sizeof("#define _HAS_SENSOR_UNIFORMS")-1))
                {
                   *newline = saved;
                   goto cleanup;
@@ -326,9 +325,9 @@ bool glslang_read_shader_file(const char *path,
             }
             else
             {
-               if (!shader_line_buf_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", STRLEN_CONST("#define _HAS_ORIGINALASPECT_UNIFORMS"))
-                || !shader_line_buf_append(output, "#define _HAS_FRAMETIME_UNIFORMS", STRLEN_CONST("#define _HAS_FRAMETIME_UNIFORMS"))
-                || !shader_line_buf_append(output, "#define _HAS_SENSOR_UNIFORMS", STRLEN_CONST("#define _HAS_SENSOR_UNIFORMS")))
+               if (!shader_line_buf_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", sizeof("#define _HAS_ORIGINALASPECT_UNIFORMS")-1)
+                || !shader_line_buf_append(output, "#define _HAS_FRAMETIME_UNIFORMS", sizeof("#define _HAS_FRAMETIME_UNIFORMS")-1)
+                || !shader_line_buf_append(output, "#define _HAS_SENSOR_UNIFORMS", sizeof("#define _HAS_SENSOR_UNIFORMS")-1))
                {
                   *newline = saved;
                   goto cleanup;
@@ -356,16 +355,16 @@ bool glslang_read_shader_file(const char *path,
          /* Process the line */
          {
             bool include_optional = !strncmp("#pragma include_optional ",
-                  line_start, STRLEN_CONST("#pragma include_optional "));
+                  line_start, sizeof("#pragma include_optional ")-1);
 
-            if (  !strncmp("#include ", line_start, STRLEN_CONST("#include "))
+            if (  !strncmp("#include ", line_start, sizeof("#include ")-1)
                   || include_optional)
             {
                char include_path[PATH_MAX_LENGTH];
                char *include_file = slang_get_include_file(
                      line_start, strlen(line_start));
 
-               if (string_is_empty(include_file))
+               if (!include_file || include_file[0] == '\0')
                {
                   RARCH_ERR("[Slang] Invalid include statement \"%s\".\n",
                         line_start);
@@ -393,8 +392,8 @@ bool glslang_read_shader_file(const char *path,
                if (!shader_line_buf_append_str(output, tmp))
                   goto cleanup;
             }
-            else if (  !strncmp("#endif",  line_start, STRLEN_CONST("#endif"))
-                    || !strncmp("#pragma", line_start, STRLEN_CONST("#pragma")))
+            else if (  !strncmp("#endif",  line_start, sizeof("#endif")-1)
+                    || !strncmp("#pragma", line_start, sizeof("#pragma")-1))
             {
                if (!shader_line_buf_append_str(output, line_start))
                {
@@ -483,8 +482,13 @@ const char *glslang_format_to_string(enum glslang_format fmt)
 
 enum glslang_format glslang_find_format(const char *fmt)
 {
+   size_t len = strlen(fmt);
 #undef FMT
-#define FMT(x) if (string_is_equal(fmt, #x)) return SLANG_FORMAT_ ## x
+#define FMT(x) do { \
+   static const char s[] = #x; \
+   if (sizeof(s) - 1 == len && memcmp(fmt, s, sizeof(s) - 1) == 0) \
+      return SLANG_FORMAT_ ## x; \
+} while(0)
    FMT(R8_UNORM);
    FMT(R8_UINT);
    FMT(R8_SINT);
@@ -495,10 +499,8 @@ enum glslang_format glslang_find_format(const char *fmt)
    FMT(R8G8B8A8_UINT);
    FMT(R8G8B8A8_SINT);
    FMT(R8G8B8A8_SRGB);
-
    FMT(A2B10G10R10_UNORM_PACK32);
    FMT(A2B10G10R10_UINT_PACK32);
-
    FMT(R16_UINT);
    FMT(R16_SINT);
    FMT(R16_SFLOAT);
@@ -508,7 +510,6 @@ enum glslang_format glslang_find_format(const char *fmt)
    FMT(R16G16B16A16_UINT);
    FMT(R16G16B16A16_SINT);
    FMT(R16G16B16A16_SFLOAT);
-
    FMT(R32_UINT);
    FMT(R32_SINT);
    FMT(R32_SFLOAT);
@@ -518,7 +519,6 @@ enum glslang_format glslang_find_format(const char *fmt)
    FMT(R32G32B32A32_UINT);
    FMT(R32G32B32A32_SINT);
    FMT(R32G32B32A32_SFLOAT);
-
    return SLANG_FORMAT_UNKNOWN;
 }
 
