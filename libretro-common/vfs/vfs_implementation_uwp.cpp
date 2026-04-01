@@ -43,6 +43,7 @@
 #include <vfs/vfs_implementation.h>
 #include <libretro.h>
 #include <encodings/utf.h>
+#include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <retro_environment.h>
