@@ -278,112 +278,112 @@ static int action_get_title_dropdown_item(
    /* Sanity check */
    if (!string_is_empty(path))
    {
-	   if (string_starts_with_size(path, "core_option_",
-				   STRLEN_CONST("core_option_")))
-	   {
-		   /* This is a core options item */
-		   core_option_manager_t *coreopts = NULL;
+      if (string_starts_with_size(path, "core_option_",
+               STRLEN_CONST("core_option_")))
+      {
+         /* This is a core options item */
+         core_option_manager_t *coreopts = NULL;
          const char *opt = strrchr(path, '_');
-		   if (opt && opt[1] != '\0')
-		   {
-			   retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+         if (opt && opt[1] != '\0')
+         {
+            retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
-			   if (coreopts)
-			   {
-				   unsigned option_index = string_to_unsigned(opt+1);
-				   const char *title     = core_option_manager_get_desc(
-						   coreopts, option_index, true);
+            if (coreopts)
+            {
+               unsigned option_index = string_to_unsigned(opt+1);
+               const char *title     = core_option_manager_get_desc(
+                     coreopts, option_index, true);
 
-				   if (s && !string_is_empty(title))
-				   {
-					   strlcpy(s, title, len);
+               if (s && !string_is_empty(title))
+               {
+                  strlcpy(s, title, len);
                   return 1;
-				   }
-			   }
-		   }
-	   }
-	   else
-	   {
-		   /* This is a 'normal' drop down list */
+               }
+            }
+         }
+      }
+      else
+      {
+         /* This is a 'normal' drop down list */
 
-		   /* In msg_hash.h, msg_hash_enums are generated via
-		    * the following macro:
-		    *    #define MENU_LABEL(STR) \
-		    *       MENU_ENUM_LABEL_##STR, \
-		    *       MENU_ENUM_SUBLABEL_##STR, \
-		    *       MENU_ENUM_LABEL_VALUE_##STR
-		    * to get 'MENU_ENUM_LABEL_VALUE_' from a
-		    * 'MENU_ENUM_LABEL_', we therefore add 2... */
-		   enum msg_hash_enums enum_idx = (enum msg_hash_enums)
-			   (string_to_unsigned(path) + 2);
+         /* In msg_hash.h, msg_hash_enums are generated via
+          * the following macro:
+          *    #define MENU_LABEL(STR) \
+          *       MENU_ENUM_LABEL_##STR, \
+          *       MENU_ENUM_SUBLABEL_##STR, \
+          *       MENU_ENUM_LABEL_VALUE_##STR
+          * to get 'MENU_ENUM_LABEL_VALUE_' from a
+          * 'MENU_ENUM_LABEL_', we therefore add 2... */
+         enum msg_hash_enums enum_idx = (enum msg_hash_enums)
+            (string_to_unsigned(path) + 2);
 
-		   /* Check if enum index is valid
-		    * Note: This is a very crude check, but better than nothing */
-		   if ((enum_idx > MSG_UNKNOWN) && (enum_idx < MSG_LAST))
-		   {
-			   /* An annoyance: MENU_ENUM_LABEL_THUMBNAILS and
-			    * MENU_ENUM_LABEL_LEFT_THUMBNAILS require special
-			    * treatment, since their titles depend upon the
-			    * current menu driver... */
-			   switch (enum_idx)
-			   {
-				   case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
-					   return action_get_title_thumbnails(
-							   path, label, menu_type, s, len);
-				   case MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS:
-					   return action_get_title_left_thumbnails(
-							   path, label, menu_type, s, len);
-				   default:
-					   {
-						   /* Submenu label exceptions */
-						   /* Device Type */
-						   if ((enum_idx >= MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE;
+         /* Check if enum index is valid
+          * Note: This is a very crude check, but better than nothing */
+         if ((enum_idx > MSG_UNKNOWN) && (enum_idx < MSG_LAST))
+         {
+            /* An annoyance: MENU_ENUM_LABEL_THUMBNAILS and
+             * MENU_ENUM_LABEL_LEFT_THUMBNAILS require special
+             * treatment, since their titles depend upon the
+             * current menu driver... */
+            switch (enum_idx)
+            {
+               case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
+                  return action_get_title_thumbnails(
+                        path, label, menu_type, s, len);
+               case MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS:
+                  return action_get_title_left_thumbnails(
+                        path, label, menu_type, s, len);
+               default:
+                  {
+                     /* Submenu label exceptions */
+                     /* Device Type */
+                     if ((enum_idx >= MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE) &&
+                           (enum_idx <= MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE_LAST))
+                        enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE;
 
-						   /* Analog to Digital Type */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE;
+                     /* Analog to Digital Type */
+                     else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE) &&
+                           (enum_idx <= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE_LAST))
+                        enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE;
 
-						   /* Device Index */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX;
+                     /* Device Index */
+                     else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX) &&
+                           (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST))
+                        enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX;
 
-						   /* Device Reservation Type */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE;
+                     /* Device Reservation Type */
+                     else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE) &&
+                           (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE_LAST))
+                        enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE;
 
-						   /* Reserved Device Name */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME;
+                     /* Reserved Device Name */
+                     else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME) &&
+                           (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME_LAST))
+                        enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME;
 
-						   /* Mouse Index */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX;
+                     /* Mouse Index */
+                     else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX) &&
+                           (enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST))
+                        enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX;
 
-						   /* Mapped Port (virtual -> 'physical' port mapping) */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT;
+                     /* Mapped Port (virtual -> 'physical' port mapping) */
+                     else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT) &&
+                           (enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
+                        enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT;
 
-						   {
-							   const char *title = msg_hash_to_str(enum_idx);
-							   if (s && !string_is_empty(title))
-							   {
-						              sanitize_to_string(s, title, len);
-							      return 1;
-							   }
-						   }
-					   }
-					   break;
-			   }
-		   }
-	   }
+                     {
+                        const char *title = msg_hash_to_str(enum_idx);
+                        if (s && !string_is_empty(title))
+                        {
+                           sanitize_to_string(s, title, len);
+                           return 1;
+                        }
+                     }
+                  }
+                  break;
+            }
+         }
+      }
    }
 
    return 0;
