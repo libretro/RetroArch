@@ -47,9 +47,8 @@
  * Returns the new write position. If there is not enough room, the buffer
  * is left untouched and the original _len is returned. */
 static size_t safe_strbuf_append(char *s, size_t len, size_t _len,
-      const char *suffix)
+      const char *suffix, size_t suffix_len)
 {
-   size_t suffix_len = strlen(suffix);
    if (_len + suffix_len < len)
    {
       memcpy(s + _len, suffix, suffix_len);
@@ -89,7 +88,7 @@ static void sanitize_to_string(char *s, const char *lbl, size_t len)
       _len = strlcpy(s, title, len); \
    if (!string_is_empty(path)) \
    { \
-      _len = safe_strbuf_append(s, len, _len, ": "); \
+      _len = safe_strbuf_append(s, len, _len, ": ", STRLEN_CONST(": ")); \
       strlcpy(s + _len, path, len - _len); \
    } \
    return 1; \
@@ -126,7 +125,7 @@ static void action_get_title_fill_path_search_filter_default(
    const char *title = msg_hash_to_str(lbl);
    if (!string_is_empty(title))
       _len           = strlcpy(s, title, len);
-   _len = safe_strbuf_append(s, len, _len, " ");
+   _len = safe_strbuf_append(s, len, _len, " ", STRLEN_CONST(" "));
    if (!string_is_empty(path))
       strlcpy(s + _len, path, len - _len);
 
@@ -445,7 +444,7 @@ static int action_get_title_deferred_core_backup_list(
       return 0;
 
    _len      = strlcpy(s, prefix, len);
-   _len      = safe_strbuf_append(s, len, _len, ": ");
+   _len      = safe_strbuf_append(s, len, _len, ": ", STRLEN_CONST(": "));
 
    /* Search for specified core
     * > If core is found, add display name */
@@ -522,7 +521,7 @@ static int action_get_core_information_steam_list(
       char *s, size_t len)
 {
    size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), len);
-   _len = safe_strbuf_append(s, len, _len, " - ");
+   _len = safe_strbuf_append(s, len, _len, " - ", STRLEN_CONST(" - "));
    strlcpy(s + _len, path, len - _len);
    return 1;
 }
@@ -839,7 +838,7 @@ static int action_get_sideload_core_list(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
    size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST), len);
-   _len = safe_strbuf_append(s, len, _len, " ");
+   _len = safe_strbuf_append(s, len, _len, " ", STRLEN_CONST(" "));
    if (!string_is_empty(path))
       strlcpy(s + _len, path, len - _len);
    return 0;
@@ -852,7 +851,7 @@ static int action_get_title_default(const char *path, const char *label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
    if (!string_is_empty(path))
    {
-      _len = safe_strbuf_append(s, len, _len, ": ");
+      _len = safe_strbuf_append(s, len, _len, ": ", STRLEN_CONST(": "));
 #if IOS
       fill_pathname_abbreviate_special(s + _len, path, len - _len);
 #else
@@ -923,7 +922,7 @@ static int action_get_title_group_settings(const char *path, const char *label,
          _len = first_len;
          if (sep[1] != '\0')
          {
-            _len = safe_strbuf_append(s, len, _len, " - ");
+            _len = safe_strbuf_append(s, len, _len, " - ", STRLEN_CONST(" - "));
             strlcpy(s + _len, sep + 1, len - _len);
          }
       }
