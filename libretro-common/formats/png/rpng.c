@@ -46,7 +46,6 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <streams/trans_stream.h>
-#include <string/stdstring.h>
 
 #include "rpng_internal.h"
 

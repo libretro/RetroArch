@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <errno.h>
+#include <string.h>
 
 #include <net/net_http.h>
 #include <net/net_compat.h>
@@ -34,11 +35,10 @@
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <file/file_path.h>
-#include <string/stdstring.h>
-#include <string.h>
 #include <lists/string_list.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
@@ -414,52 +414,45 @@ struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {
    struct http_connection_t *conn = NULL;
-
    if (!url)
       return NULL;
    if (!(conn = (struct http_connection_t*)calloc(1, sizeof(*conn))))
       return NULL;
-
    if (method)
-      conn->method         = strdup(method);
-
+   {
+      conn->method = strdup(method);
+      if (!conn->method)
+         goto error;
+   }
    if (data)
    {
-      conn->postdata       = strdup(data);
-      conn->contentlength  = strlen(data);
+      conn->postdata = strdup(data);
+      if (!conn->postdata)
+         goto error;
+      conn->contentlength = strlen(data);
    }
-
-   if ((conn->url = strdup(url)))
+   conn->url = strdup(url);
+   if (!conn->url)
+      goto error;
+   if (memcmp(url, "http://", 7) == 0)
    {
-      if (!strncmp(url, "http://", STRLEN_CONST("http://")))
-      {
-         conn->scan   = conn->url + STRLEN_CONST("http://");
-
-         if (!string_is_empty(conn->scan))
-         {
-            conn->domain = conn->scan;
-            return conn;
-         }
-      }
-      else if (!strncmp(url, "https://", STRLEN_CONST("https://")))
-      {
-         conn->scan   = conn->url + STRLEN_CONST("https://");
-         conn->ssl    = true;
-
-         if (!string_is_empty(conn->scan))
-         {
-            conn->domain = conn->scan;
-            return conn;
-         }
-      }
+      conn->scan = conn->url + 7;
    }
-
-   if (conn->url)
-      free(conn->url);
-   if (conn->method)
-      free(conn->method);
-   if (conn->postdata)
-      free(conn->postdata);
+   else if (memcmp(url, "https://", 8) == 0)
+   {
+      conn->scan = conn->url + 8;
+      conn->ssl  = true;
+   }
+   else
+      goto error;
+   if (*conn->scan == '\0')
+      goto error;
+   conn->domain = conn->scan;
+   return conn;
+error:
+   free(conn->url);
+   free(conn->method);
+   free(conn->postdata);
    free(conn);
    return NULL;
 }
@@ -666,7 +659,7 @@ static struct dns_cache_entry *net_http_dns_cache_find(const char *domain, int p
    entry = dns_cache;
    while (entry)
    {
-      if (port == entry->port && string_is_equal(entry->domain, domain))
+      if (port == entry->port && strcmp(entry->domain, domain) == 0)
       {
 #ifdef HAVE_THREADS
          if (entry->thread && entry->valid)
@@ -836,7 +829,7 @@ static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int p
    entry = conn_pool;
    while (entry)
    {
-      if (!entry->in_use && port == entry->port && string_is_equal(entry->domain, domain))
+      if (!entry->in_use && port == entry->port && strcmp(entry->domain, domain) == 0)
       {
          entry->in_use = true;
          net_http_conn_pool_move_to_end(entry);
@@ -1116,22 +1109,18 @@ static void net_http_send_str(
 static bool net_http_send_request(struct http_t *state)
 {
    struct request *request = (struct request*)&state->request;
-
    /* This is a bit lazy, but it works. */
    if (request->method)
    {
       net_http_send_str(state, request->method, strlen(request->method));
-      net_http_send_str(state, " /", STRLEN_CONST(" /"));
+      net_http_send_str(state, " /", sizeof(" /")-1);
    }
    else
-      net_http_send_str(state, "GET /", STRLEN_CONST("GET /"));
-
+      net_http_send_str(state, "GET /", sizeof("GET /")-1);
    net_http_send_str(state, request->path, strlen(request->path));
-   net_http_send_str(state, " HTTP/1.1\r\n", STRLEN_CONST(" HTTP/1.1\r\n"));
-
-   net_http_send_str(state, "Host: ", STRLEN_CONST("Host: "));
+   net_http_send_str(state, " HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n")-1);
+   net_http_send_str(state, "Host: ", sizeof("Host: ")-1);
    net_http_send_str(state, request->domain, strlen(request->domain));
-
    if (request->port && request->port != 80 && request->port != 443)
    {
       char portstr[16];
@@ -1142,40 +1131,33 @@ static bool net_http_send_request(struct http_t *state)
             "%i", request->port);
       net_http_send_str(state, portstr, _len);
    }
-
-   net_http_send_str(state, "\r\n", STRLEN_CONST("\r\n"));
-
+   net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
    /* Pre-formatted headers */
    if (request->headers)
       net_http_send_str(state, request->headers, strlen(request->headers));
    if (request->contenttype)
    {
-      net_http_send_str(state, "Content-Type: ", STRLEN_CONST("Content-Type: "));
+      net_http_send_str(state, "Content-Type: ", sizeof("Content-Type: ")-1);
       net_http_send_str(state, request->contenttype, strlen(request->contenttype));
-      net_http_send_str(state, "\r\n", STRLEN_CONST("\r\n"));
+      net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
    }
-
-   if (request->method && (string_is_equal(request->method, "POST") || string_is_equal(request->method, "PUT")))
+   if (request->method && request->method[0] == 'P')
    {
       size_t _len, len;
       char *len_str = NULL;
-
-      if (!request->postdata &&
-            !string_is_equal(request->method, "PUT") &&
-            request->contentlength > 0)
+      if (     !request->postdata
+            && request->method[1] == 'O' /* POST, not PUT */
+            && request->contentlength > 0)
       {
          state->err = true;
          net_http_log_transport_state(state, "post_without_payload", -1);
          return true;
       }
-
       if (!request->headers && !request->contenttype)
          net_http_send_str(state,
                "Content-Type: application/x-www-form-urlencoded\r\n",
-               STRLEN_CONST("Content-Type: application/x-www-form-urlencoded\r\n"));
-
-      net_http_send_str(state, "Content-Length: ", STRLEN_CONST("Content-Length: "));
-
+               sizeof("Content-Type: application/x-www-form-urlencoded\r\n")-1);
+      net_http_send_str(state, "Content-Length: ", sizeof("Content-Length: ")-1);
       _len = request->contentlength;
 #ifdef _WIN32
       len     = snprintf(NULL, 0, "%" PRIuPTR, _len);
@@ -1186,28 +1168,21 @@ static bool net_http_send_request(struct http_t *state)
       len_str = (char*)malloc(len + 1);
       snprintf(len_str, len + 1, "%llu", (long long unsigned)_len);
 #endif
-
       len_str[len] = '\0';
-
       net_http_send_str(state, len_str, strlen(len_str));
-      net_http_send_str(state, "\r\n", STRLEN_CONST("\r\n"));
-
+      net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
       free(len_str);
    }
-
-   net_http_send_str(state, "User-Agent: ", STRLEN_CONST("User-Agent: "));
+   net_http_send_str(state, "User-Agent: ", sizeof("User-Agent: ")-1);
    if (request->useragent)
       net_http_send_str(state, request->useragent, strlen(request->useragent));
    else
-      net_http_send_str(state, "libretro", STRLEN_CONST("libretro"));
-   net_http_send_str(state, "\r\n", STRLEN_CONST("\r\n"));
-
-   net_http_send_str(state, "\r\n", STRLEN_CONST("\r\n"));
-
+      net_http_send_str(state, "libretro", sizeof("libretro")-1);
+   net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
+   net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
    if (request->postdata && request->contentlength)
       net_http_send_str(state, (const char*)request->postdata,
             request->contentlength);
-
    state->request_sent = true;
    return state->err;
 }
@@ -1248,21 +1223,21 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
 
       if (response->part == P_HEADER_TOP)
       {
-         if (strncmp(response->data, "HTTP/1.", STRLEN_CONST("HTTP/1."))!=0)
+         if (strncmp(response->data, "HTTP/1.", sizeof("HTTP/1.")-1)!=0)
          {
             response->part = P_DONE;
             state->err     = true;
             return -1;
          }
          response->status = (int)strtoul(response->data
-               + STRLEN_CONST("HTTP/1.1 "), NULL, 10);
+               + (sizeof("HTTP/1.1 ")-1), NULL, 10);
          response->part   = P_HEADER;
       }
       else
       {
          if (string_starts_with_case_insensitive(response->data, "Content-Length:"))
          {
-            char* ptr = response->data + STRLEN_CONST("Content-Length:");
+            char* ptr = response->data + (sizeof("Content-Length:")-1);
             while (ISSPACE(*ptr))
                ++ptr;
 
@@ -1421,8 +1396,8 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    /* this reinitializes state based on the new location */
 
    /* url may be absolute or relative to the current url */
-   bool absolute = (!strncmp(location, "http://", STRLEN_CONST("http://"))
-                 || !strncmp(location, "https://", STRLEN_CONST("https://")));
+   bool absolute = (!strncmp(location, "http://", sizeof("http://")-1)
+                 || !strncmp(location, "https://", sizeof("https://")-1));
 
    if (absolute)
    {
@@ -1585,7 +1560,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       for (_len = 0; (size_t)_len < response->headers->size; _len++)
       {
          if (string_starts_with_case_insensitive(response->headers->elems[_len].data, "Location: "))
-            return net_http_redirect(state, response->headers->elems[_len].data + STRLEN_CONST("Location: "));
+            return net_http_redirect(state, response->headers->elems[_len].data + (sizeof("Location: ")-1));
       }
    }
 
