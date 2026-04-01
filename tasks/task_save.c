@@ -27,7 +27,6 @@
 #include <rthreads/rthreads.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
-#include <string/stdstring.h>
 #include <time/rtime.h>
 
 #ifdef HAVE_CONFIG_H
@@ -595,7 +594,7 @@ static void task_save_handler(retro_task_t *task)
 
       task_save_handler_finished(task, state);
 
-      if (!string_is_empty(msg))
+      if (msg)
          free(msg);
    }
 }
