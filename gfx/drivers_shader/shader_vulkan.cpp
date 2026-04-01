@@ -17,7 +17,6 @@
 #include "../include/vulkan/vk_sdk_platform.h"
 #include "shader_vulkan.h"
 #include "glslang_util.h"
-#include "glslang_util_cxx.hpp"
 #include <vector>
 #include <memory>
 #include <functional>

@@ -1886,7 +1886,6 @@ ifeq ($(HAVE_SLANG),1)
    DEFINES += -DHAVE_SLANG
    OBJ += gfx/drivers_shader/slang_process.o
    OBJ += gfx/drivers_shader/glslang_util.o
-   OBJ += gfx/drivers_shader/glslang_util_cxx.o
 endif
 
 ifeq ($(HAVE_SHADERS_COMMON), 1)

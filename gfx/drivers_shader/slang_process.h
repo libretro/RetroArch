@@ -183,11 +183,41 @@ bool slang_process(
 RETRO_END_DECLS
 
 #ifdef __cplusplus
+#include <vector>
 #include <string>
 #include <unordered_map>
 #include <spirv_cross.hpp>
 
-#include "glslang_util_cxx.hpp"
+struct glslang_parameter
+{
+   std::string id;
+   std::string desc;
+   float initial;
+   float minimum;
+   float maximum;
+   float step;
+};
+
+struct glslang_meta
+{
+   std::vector<glslang_parameter> parameters;
+   std::string name;
+   glslang_format rt_format;
+
+   glslang_meta()
+   {
+	   rt_format = SLANG_FORMAT_UNKNOWN;
+   }
+};
+
+struct glslang_output
+{
+   std::vector<uint32_t> vertex;
+   std::vector<uint32_t> fragment;
+   glslang_meta meta;
+};
+
+bool glslang_compile_shader(const char *shader_path, glslang_output *output);
 
 bool slang_preprocess_parse_parameters(glslang_meta& meta,
       struct video_shader *shader);
