@@ -25,7 +25,7 @@
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
 
-#include "libretro-db/libretrodb.h"
+#include <libretro-db/libretrodb.h>
 
 #include "core_info.h"
 #include "database_info.h"
