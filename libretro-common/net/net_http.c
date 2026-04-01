@@ -1238,7 +1238,7 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
          if (string_starts_with_case_insensitive(response->data, "Content-Length:"))
          {
             char* ptr = response->data + (sizeof("Content-Length:")-1);
-            while (ISSPACE(*ptr))
+            while (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')
                ++ptr;
 
             response->bodytype = T_LEN;
