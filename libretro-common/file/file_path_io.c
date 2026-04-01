@@ -32,7 +32,6 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_miscellaneous.h>
-#include <string/stdstring.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
 

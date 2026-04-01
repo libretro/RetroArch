@@ -36,7 +36,6 @@
 
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
-#include <string/stdstring.h>
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
@@ -221,12 +220,9 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
    int        ret       = 0;
    int64_t startpos     = filestream_tell(stream);
    int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
-
    if (maxlen <= 0)
       return EOF;
-
    buf[maxlen] = '\0';
-
    /* Have to copy the input va_list here
     * > Calling va_arg() on 'args' directly would
     *   cause the va_list to have an indeterminate value
@@ -237,7 +233,6 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
 #else
    va_copy(args_copy, *args);
 #endif
-
    while (*format)
    {
       if (*format == '%')
@@ -245,20 +240,15 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
          int sublen       = 0;
          char* subfmtiter = subfmt;
          bool asterisk    = false;
-
          *subfmtiter++    = *format++; /* '%' */
-
          /* %[*][width][length]specifier */
-
          if (*format == '*')
          {
             asterisk      = true;
             *subfmtiter++ = *format++;
          }
-
-         while (ISDIGIT((unsigned char)*format))
+         while (*format >= '0' && *format <= '9')
             *subfmtiter++ = *format++; /* width */
-
          /* length */
          if (*format == 'h' || *format == 'l')
          {
@@ -274,7 +264,6 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
          {
             *subfmtiter++ = *format++;
          }
-
          /* specifier - always a single character (except ]) */
          if (*format == '[')
          {
@@ -284,14 +273,11 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
          }
          else
             *subfmtiter++    = *format++;
-
          *subfmtiter++       = '%';
          *subfmtiter++       = 'n';
          *subfmtiter++       = '\0';
-
          if (sizeof(void*) != sizeof(long*))
             abort(); /* all pointers must have the same size */
-
          if (asterisk)
          {
             int v = sscanf(bufiter, subfmt, &sublen);
@@ -308,7 +294,6 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
             if (v != 1)
                break;
          }
-
          ret++;
          bufiter += sublen;
       }
@@ -326,11 +311,9 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
          format++;
       }
    }
-
    va_end(args_copy);
    filestream_seek(stream, startpos + (bufiter - buf),
          RETRO_VFS_SEEK_POSITION_START);
-
    return ret;
 }
 

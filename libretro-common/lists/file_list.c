@@ -25,8 +25,8 @@
 #include <string.h>
 
 #include <retro_common.h>
+#include <retro_inline.h>
 #include <lists/file_list.h>
-#include <string/stdstring.h>
 #include <compat/strcasestr.h>
 
 static bool file_list_deinitialize_internal(file_list_t *list)
