@@ -435,9 +435,7 @@ struct http_connection_t *net_http_connection_new(const char *url,
    if (!conn->url)
       goto error;
    if (memcmp(url, "http://", 7) == 0)
-   {
       conn->scan = conn->url + 7;
-   }
    else if (memcmp(url, "https://", 8) == 0)
    {
       conn->scan = conn->url + 8;
@@ -650,7 +648,8 @@ static void net_http_dns_cache_remove_expired(void)
    }
 }
 
-static struct dns_cache_entry *net_http_dns_cache_find(const char *domain, int port)
+static struct dns_cache_entry *net_http_dns_cache_find(
+   const char *domain, int port)
 {
    struct dns_cache_entry *entry;
 
@@ -678,9 +677,11 @@ static struct dns_cache_entry *net_http_dns_cache_find(const char *domain, int p
    return NULL;
 }
 
-static struct dns_cache_entry *net_http_dns_cache_add(const char *domain, int port, struct addrinfo *addr)
+static struct dns_cache_entry *net_http_dns_cache_add(
+   const char *domain, int port, struct addrinfo *addr)
 {
-   struct dns_cache_entry *entry = (struct dns_cache_entry*)calloc(1, sizeof(*entry));
+   struct dns_cache_entry *entry = (struct dns_cache_entry*)
+      calloc(1, sizeof(*entry));
    if (!entry)
       return NULL;
    entry->domain = strdup(domain);
@@ -765,7 +766,8 @@ static void net_http_conn_pool_remove_expired(void)
    {
       if (!entry->in_use && FD_ISSET(entry->fd, &fds))
       {
-         /* if it's not in use and it's reaadable we assume that means it's closed without checking recv */
+         /* If it's not in use and it's readable,
+          * we assume that means it's closed without checking recv */
          if (prev)
             prev->next = entry->next;
          else
@@ -818,7 +820,8 @@ static void net_http_conn_pool_move_to_end(struct conn_pool_entry *entry)
       entry->next = NULL;
 }
 
-static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int port)
+static struct conn_pool_entry *net_http_conn_pool_find(
+   const char *domain, int port)
 {
    struct conn_pool_entry *entry;
 
@@ -829,7 +832,9 @@ static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int p
    entry = conn_pool;
    while (entry)
    {
-      if (!entry->in_use && port == entry->port && strcmp(entry->domain, domain) == 0)
+      if (  !entry->in_use 
+          && port == entry->port
+          && strcmp(entry->domain, domain) == 0)
       {
          entry->in_use = true;
          net_http_conn_pool_move_to_end(entry);
@@ -844,7 +849,8 @@ static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int p
 
 static struct conn_pool_entry *net_http_conn_pool_add(const char *domain, int port, int fd, bool ssl)
 {
-   struct conn_pool_entry *entry = (struct conn_pool_entry*)calloc(1, sizeof(*entry));
+   struct conn_pool_entry *entry = (struct conn_pool_entry*)
+      calloc(1, sizeof(*entry));
    if (!entry)
       return NULL;
    entry->domain = strdup(domain);
@@ -883,9 +889,9 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       state->request.postdata   = malloc(conn->contentlength);
       memcpy(state->request.postdata, conn->postdata, conn->contentlength);
    }
-   state->request.useragent     = conn->useragent ? strdup(conn->useragent) : NULL;
-   state->request.headers       = conn->headers ? strdup(conn->headers) : NULL;
-   state->request.port          = conn->port;
+   state->request.useragent= conn->useragent ? strdup(conn->useragent) : NULL;
+   state->request.headers  = conn->headers ? strdup(conn->headers) : NULL;
+   state->request.port     = conn->port;
 
    state->response.status  = -1;
    state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
@@ -897,21 +903,21 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
 static void net_http_resolve(void *data)
 {
+   int port;
+   char *domain;
+   char port_buf[6];
    struct dns_cache_entry *entry = (struct dns_cache_entry*)data;
    struct addrinfo hints         = {0};
    struct addrinfo *addr         = NULL;
-   char *domain;
-   int port;
-   char port_buf[6];
 #if defined(HAVE_SOCKET_LEGACY) || defined(WIIU)
    int family                    = AF_INET;
 #else
    int family                    = AF_UNSPEC;
 #endif
 
-   hints.ai_family = family;
-   hints.ai_socktype = SOCK_STREAM;
-   hints.ai_flags |= AI_NUMERICSERV;
+   hints.ai_family               = family;
+   hints.ai_socktype             = SOCK_STREAM;
+   hints.ai_flags               |= AI_NUMERICSERV;
 
    LOCK_DNS_CACHE();
    domain = strdup(entry->domain);
@@ -1235,7 +1241,8 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
       }
       else
       {
-         if (string_starts_with_case_insensitive(response->data, "Content-Length:"))
+         if (string_starts_with_case_insensitive(response->data,
+            "Content-Length:"))
          {
             char* ptr = response->data + (sizeof("Content-Length:")-1);
             while (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')
@@ -1244,15 +1251,14 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
             response->bodytype = T_LEN;
             response->len      = strtol(ptr, NULL, 10);
          }
-         else if (string_is_equal_case_insensitive(response->data, "Transfer-Encoding: chunked"))
+         else if (string_is_equal_case_insensitive(response->data,
+            "Transfer-Encoding: chunked"))
             response->bodytype = T_CHUNK;
 
          if (response->data[0]=='\0')
          {
             if (response->status == 100)
-            {
                response->part = P_HEADER_TOP;
-            }
             else
             {
                response->part = P_BODY;
@@ -1303,7 +1309,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          return false;
       response->part      = P_DONE;
       if (response->buflen != response->len)
-         response->data      = (char*)realloc(response->data, response->len);
+         response->data   = (char*)realloc(response->data, response->len);
       return true;
    }
 
@@ -1322,8 +1328,8 @@ parse_again:
              */
 
             char *fullend = response->data + response->pos;
-            char *end     = (char*)memchr(response->data + response->len + 2, '\n',
-                  response->pos - response->len - 2);
+            char *end     = (char*)memchr(response->data + response->len + 2,
+            '\n', response->pos - response->len - 2);
 
             if (end)
             {
@@ -1393,16 +1399,17 @@ parse_again:
 
 static bool net_http_redirect(struct http_t *state, const char *location)
 {
-   /* this reinitializes state based on the new location */
+   /* This reinitializes state based on the new location */
 
-   /* url may be absolute or relative to the current url */
+   /* URL may be absolute or relative to the current URL */
    bool absolute = (!strncmp(location, "http://", sizeof("http://")-1)
                  || !strncmp(location, "https://", sizeof("https://")-1));
 
    if (absolute)
    {
       /* this block is a little wasteful, memory-wise */
-      struct http_connection_t *new_url = net_http_connection_new(location, NULL, NULL);
+      struct http_connection_t *new_url = net_http_connection_new(
+      location, NULL, NULL);
       net_http_connection_iterate(new_url);
       if (!net_http_connection_done(new_url))
       {
@@ -1430,7 +1437,8 @@ static bool net_http_redirect(struct http_t *state, const char *location)
       else
       {
          char *path = (char*)malloc(PATH_MAX_LENGTH);
-         fill_pathname_resolve_relative(path, state->request.path, location, PATH_MAX_LENGTH);
+         fill_pathname_resolve_relative(path, state->request.path,
+         location, PATH_MAX_LENGTH);
          free(state->request.path);
          state->request.path = path;
       }
@@ -1438,8 +1446,10 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    state->request_sent       = false;
    state->response.part      = P_HEADER_TOP;
    state->response.status    = -1;
-   state->response.buflen    = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
-   state->response.data      = (char*)realloc(state->response.data, state->response.buflen);
+   /* Start with larger buffer to reduce reallocations */
+   state->response.buflen    = 64 * 1024;
+   state->response.data      = (char*)realloc(state->response.data,
+   state->response.buflen);
    state->response.pos       = 0;
    state->response.len       = 0;
    state->response.bodytype  = T_FULL;
