@@ -1019,6 +1019,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_refresh_lan,                
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rename_entry,                          MENU_ENUM_SUBLABEL_RENAME_ENTRY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_delete_entry,                          MENU_ENUM_SUBLABEL_DELETE_ENTRY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_information,                           MENU_ENUM_SUBLABEL_INFORMATION)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_patches,                               MENU_ENUM_SUBLABEL_PATCHES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run,                                   MENU_ENUM_SUBLABEL_RUN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_add_to_favorites,                      MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_add_to_playlist,                       MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST)
@@ -1103,6 +1104,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_use_builtin_media_player,           
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_use_builtin_image_viewer,              MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER)
 DEFAULT_SUBLABEL_MACRO(action_bind_dynamic_wallpapers_directory,                   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_thumbnails_directory,                           MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_patches_directory,                              MENU_ENUM_SUBLABEL_PATCHES_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_rgui_config_directory,                          MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_latency_frames,                  MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_latency_frames_range,            MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE)
@@ -3348,6 +3350,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_thumbnails_directory);
             break;
+         case MENU_ENUM_LABEL_PATCHES_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_patches_directory);
+            break;
          case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_dynamic_wallpapers_directory);
             break;
@@ -3591,6 +3596,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INFORMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_information);
+            break;
+         case MENU_ENUM_LABEL_PATCHES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_patches);
             break;
          case MENU_ENUM_LABEL_RENAME_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rename_entry);

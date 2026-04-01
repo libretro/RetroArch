@@ -616,6 +616,7 @@ typedef struct settings
       char directory_assets[DIR_MAX_LENGTH];
       char directory_dynamic_wallpapers[DIR_MAX_LENGTH];
       char directory_thumbnails[DIR_MAX_LENGTH];
+      char directory_patches[DIR_MAX_LENGTH];
       char directory_menu_config[DIR_MAX_LENGTH];
       char directory_menu_content[DIR_MAX_LENGTH];
 #ifdef _3DS

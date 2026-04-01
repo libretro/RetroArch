@@ -24,6 +24,7 @@
 #include <array/rbuf.h>
 #include <lists/file_list.h>
 #include <lists/dir_list.h>
+#include <lists/string_list.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <playlists/label_sanitization.h>
@@ -259,6 +260,11 @@ static int filebrowser_parse(
       if (string_is_equal(label,
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
          filter_ext = false;
+      else if (string_is_equal(label, "patches_add_list"))
+      {
+         exts = "ips|bps|ups|xdelta";
+         filter_ext = true;
+      }
 
       if (   string_is_equal(label, "database_manager_list")
 #ifdef IOS
@@ -4043,6 +4049,14 @@ static int menu_displaylist_parse_horizontal_content_actions(
          }
 #endif
       }
+
+#ifdef HAVE_PATCH
+      menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PATCHES),
+            msg_hash_to_str(MENU_ENUM_LABEL_PATCHES),
+            MENU_ENUM_LABEL_PATCHES,
+            MENU_SETTING_ACTION_PATCHES, 0, 0, NULL);
+#endif
 
       if (settings->bools.quick_menu_show_information)
          menu_entries_append(list,
@@ -8503,6 +8517,106 @@ unsigned menu_displaylist_build_list(
          }
 #endif
          break;
+      case DISPLAYLIST_OPTIONS_PATCHES:
+#ifdef HAVE_PATCH
+         {
+            size_t i;
+            size_t patch_count;
+            char patch_label[NAME_MAX_LENGTH];
+            struct string_list *selected = NULL;
+
+            if (!patch_stack_load_selected_patches_list(&selected) || !selected)
+               break;
+
+            patch_count = selected->size;
+            if (patch_count > MAX_PATCH_COUNTERS)
+               patch_count = MAX_PATCH_COUNTERS;
+
+            for (i = 0; i < patch_count; i++)
+            {
+               const char *patch_name = selected->elems[i].data;
+               const char *patch_label_name = path_basename(patch_name);
+               if (string_is_empty(patch_name))
+                  continue;
+               if (string_is_empty(patch_label_name))
+                  patch_label_name = patch_name;
+
+               snprintf(patch_label, sizeof(patch_label), "%u: %s",
+                     (unsigned)(i + 1), patch_label_name);
+
+               if (menu_entries_append(list,
+                        patch_label,
+                        patch_name,
+                        MSG_UNKNOWN,
+                        (unsigned)(MENU_SETTINGS_PATCH_BEGIN + i), 0, 0, NULL))
+                  count++;
+            }
+
+            string_list_free(selected);
+
+            if (menu_entries_append(list,
+                     "Add Patch",
+                     "Add Patch",
+                     MSG_UNKNOWN,
+                     MENU_SETTING_ACTION_PATCH_ADD, 0, 0, NULL))
+               count++;
+         }
+#endif
+         break;
+      case DISPLAYLIST_OPTIONS_PATCHES_ACTIONS:
+#ifdef HAVE_PATCH
+         {
+            size_t selected_idx;
+            size_t selected_size;
+            unsigned menu_type = FILE_TYPE_NONE;
+            struct string_list *selected = NULL;
+
+            if (!patch_stack_load_selected_patches_list(&selected) || !selected)
+               break;
+
+            selected_size = selected->size;
+            if (selected_size > MAX_PATCH_COUNTERS)
+               selected_size = MAX_PATCH_COUNTERS;
+            menu_entries_get_last_stack(NULL, NULL, &menu_type, NULL, NULL);
+            selected_idx  = (menu_type >= MENU_SETTINGS_PATCH_BEGIN
+                  && menu_type <= MENU_SETTINGS_PATCH_END)
+               ? (size_t)(menu_type - MENU_SETTINGS_PATCH_BEGIN)
+               : 0;
+
+            if (selected_idx > 0)
+            {
+               if (menu_entries_append(list,
+                        "Move Up",
+                        "Move Up",
+                        MSG_UNKNOWN,
+                        MENU_SETTING_ACTION_PATCH_MOVE_UP, 0, 0, NULL))
+                  count++;
+            }
+
+            if ((selected_idx + 1) < selected_size)
+            {
+               if (menu_entries_append(list,
+                        "Move Down",
+                        "Move Down",
+                        MSG_UNKNOWN,
+                        MENU_SETTING_ACTION_PATCH_MOVE_DOWN, 0, 0, NULL))
+                  count++;
+            }
+
+            if (selected_size > 0)
+            {
+               if (menu_entries_append(list,
+                        "Remove",
+                        "Remove",
+                        MSG_UNKNOWN,
+                        MENU_SETTING_ACTION_PATCH_REMOVE, 0, 0, NULL))
+                  count++;
+            }
+
+            string_list_free(selected);
+         }
+#endif
+         break;
 
 #ifdef HAVE_GAME_AI
       case DISPLAYLIST_OPTIONS_GAME_AI:
@@ -11643,6 +11757,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,           PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_ASSETS_DIRECTORY,                PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,            PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_PATCHES_DIRECTORY,               PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,    PARSE_ONLY_DIR},
 #ifdef HAVE_CHEATS
                {MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,             PARSE_ONLY_DIR},
@@ -14774,6 +14889,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_NETWORK_SETTINGS_LIST:
          case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
          case DISPLAYLIST_OPTIONS_CHEATS:
+         case DISPLAYLIST_OPTIONS_PATCHES:
+         case DISPLAYLIST_OPTIONS_PATCHES_ACTIONS:
          case DISPLAYLIST_NETWORK_INFO:
          case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
