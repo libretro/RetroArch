@@ -30,16 +30,14 @@ int config_userdata_get_float(void *userdata, const char *key_str,
 {
    char key[256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
-
    *value = default_value;
-
    fill_pathname_join_delim(key, usr->prefix[0], key_str, '_', sizeof(key));
    if (config_get_float(usr->conf, key, value))
-      return true;
+      return 1;
    fill_pathname_join_delim(key, usr->prefix[1], key_str, '_', sizeof(key));
    if (config_get_float(usr->conf, key, value))
-      return true;
-   return false;
+      return 1;
+   return 0;
 }
 
 int config_userdata_get_int(void *userdata, const char *key_str,
@@ -47,16 +45,14 @@ int config_userdata_get_int(void *userdata, const char *key_str,
 {
    char key[256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
-
    *value = default_value;
-
    fill_pathname_join_delim(key, usr->prefix[0], key_str, '_', sizeof(key));
    if (config_get_int(usr->conf, key, value))
-      return true;
+      return 1;
    fill_pathname_join_delim(key, usr->prefix[1], key_str, '_', sizeof(key));
    if (config_get_int(usr->conf, key, value))
-      return true;
-   return false;
+      return 1;
+   return 0;
 }
 
 int config_userdata_get_hex(void *userdata, const char *key_str,
@@ -64,16 +60,14 @@ int config_userdata_get_hex(void *userdata, const char *key_str,
 {
    char key[256];
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
-
    *value = default_value;
-
    fill_pathname_join_delim(key, usr->prefix[0], key_str, '_', sizeof(key));
    if (config_get_hex(usr->conf, key, value))
-      return true;
+      return 1;
    fill_pathname_join_delim(key, usr->prefix[1], key_str, '_', sizeof(key));
    if (config_get_hex(usr->conf, key, value))
-      return true;
-   return false;
+      return 1;
+   return 0;
 }
 
 int config_userdata_get_float_array(void *userdata, const char *key_str,
@@ -193,7 +187,7 @@ int config_userdata_get_int_array(void *userdata, const char *key_str,
          free(str);
          *values         = NULL;
          *out_num_values = 0;
-         return true;
+         return 1;
       }
 
       *values = (int*)calloc(count, sizeof(int));
@@ -201,7 +195,7 @@ int config_userdata_get_int_array(void *userdata, const char *key_str,
       {
          free(str);
          *out_num_values = 0;
-         return true;
+         return 1;
       }
 
       /* Second pass: parse integers */
@@ -220,14 +214,14 @@ int config_userdata_get_int_array(void *userdata, const char *key_str,
 
       *out_num_values = count;
       free(str);
-      return true;
+      return 1;
    }
 
    *values = (int*)calloc(num_default_values, sizeof(int));
    if (*values)
       memcpy(*values, default_values, sizeof(int) * num_default_values);
    *out_num_values = *values ? num_default_values : 0;
-   return false;
+   return 0;
 }
 
 int config_userdata_get_string(void *userdata, const char *key_str,
@@ -238,16 +232,14 @@ int config_userdata_get_string(void *userdata, const char *key_str,
    struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
    fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
    fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
-
    if (     config_get_string(usr->conf, key[0], &str)
          || config_get_string(usr->conf, key[1], &str))
    {
       *output = str;
-      return true;
+      return 1;
    }
-
    *output = strdup(default_output);
-   return false;
+   return 0;
 }
 
 void config_userdata_free(void *ptr)
