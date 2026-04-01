@@ -1,4 +1,3 @@
-
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
@@ -65,13 +64,13 @@
 #include "../../cheevos/cheevos_menu.h"
 #endif
 
-#define XMB_RIBBON_ROWS 64
-#define XMB_RIBBON_COLS 64
+#define XMB_RIBBON_ROWS (64)
+#define XMB_RIBBON_COLS (64)
 #define XMB_RIBBON_VERTICES (XMB_RIBBON_ROWS * (2 * XMB_RIBBON_COLS)) - (2 * XMB_RIBBON_COLS)
 
 #define XMB_TAB_MAX_LENGTH 255
 
-#define XMB_DELAY 166.66667f
+#define XMB_DELAY (166.66667f)
 
 #define XMB_EASING_ALPHA EASING_OUT_CIRC
 #define XMB_EASING_XY    EASING_OUT_QUAD
@@ -91,7 +90,7 @@
  *   Reducing the delay by 1 ms accommodates
  *   any timing fluctuations, resulting in
  *   smooth motion */
-#define XMB_TAB_SWITCH_REPEAT_DELAY 99000
+#define XMB_TAB_SWITCH_REPEAT_DELAY (99000)
 
 /* XMB does not have a clean colour theme
  * implementation. Until this is available,
@@ -101,7 +100,7 @@
 
 /* Mean human reading speed for all western languages,
  * characters per minute */
-#define TICKER_CPM                                1000.0f
+#define TICKER_CPM (1000.0f)
 
 /* Base time for which a line should be shown, in us */
 #define TICKER_LINE_DURATION_US(line_len)         ((line_len * 60.0f * 1000.0f * 1000.0f) / TICKER_CPM)

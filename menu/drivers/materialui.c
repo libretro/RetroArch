@@ -67,7 +67,7 @@
  * unit reference size for all UI elements.
  * 212 px corresponds to the the baseline standard
  * 22 inch, 96 DPI display */
-#define MUI_DIP_BASE_UNIT_SIZE 212.0f
+#define MUI_DIP_BASE_UNIT_SIZE (212.0f)
 
 /* Spacer for left scrolling ticker text */
 #if defined(__APPLE__)
@@ -94,11 +94,11 @@
  *   Reducing the delay by 1 ms accommodates
  *   any timing fluctuations, resulting in
  *   smooth motion */
-#define MUI_TAB_SWITCH_REPEAT_DELAY 299000
+#define MUI_TAB_SWITCH_REPEAT_DELAY (299000)
 
 /* Animation defines */
-#define MUI_ANIM_DURATION_SCROLL 166.66667f
-#define MUI_ANIM_DURATION_SCROLL_RESET 83.333333f
+#define MUI_ANIM_DURATION_SCROLL (166.66667f)
+#define MUI_ANIM_DURATION_SCROLL_RESET (83.333333f)
 /* According to Material UI specifications, animations
  * that affect a large portion of the screen should
  * have a duration of between 250ms and 300ms. This
@@ -126,13 +126,13 @@
 
 /* Thumbnail stream delay when performing standard
  * menu navigation */
-#define MUI_THUMBNAIL_STREAM_DELAY_DEFAULT 16.66667f * 3
+#define MUI_THUMBNAIL_STREAM_DELAY_DEFAULT (16.66667f * 3)
 /* Thumbnail stream delay when performing 'fast'
  * navigation by dragging the scrollbar
  * > Must increase stream delay, otherwise it's
  *   too easy to enqueue vast numbers of image
  *   requests... */
-#define MUI_THUMBNAIL_STREAM_DELAY_SCROLLBAR_DRAG 166.66667f
+#define MUI_THUMBNAIL_STREAM_DELAY_SCROLLBAR_DRAG MUI_ANIM_DURATION_SCROLL
 /* Thumbnail stream delay when viewing
  * 'desktop'-layout playlists
  * > In this case, thumbnails are loaded

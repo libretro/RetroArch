@@ -69,9 +69,7 @@
  * to query the hardware for the actual display
  * aspect ratio... */
 #include <ogc/conf.h>
-#endif
 
-#if defined(GEKKO)
 /* When running on the Wii, need to round down the
  * frame buffer width value such that the last two
  * bits are zero */
