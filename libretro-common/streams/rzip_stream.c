@@ -120,8 +120,8 @@ static bool rzipstream_read_file_header(rzipstream_t *stream)
    if ((stream->chunk_size = (
                             (uint32_t)header_bytes[11] << 24)
                          | ((uint32_t)header_bytes[10] << 16)
-                         | ((uint32_t)header_bytes[9]  <<  8)
-                         | (uint32_t)header_bytes[8]) == 0)
+                         | ((uint32_t)header_bytes[9]  << 8)
+                         |  (uint32_t)header_bytes[8]) == 0)
       return false;
 
    /* Get total uncompressed data size - next 8 bytes */
@@ -133,7 +133,7 @@ static bool rzipstream_read_file_header(rzipstream_t *stream)
                    | ((uint64_t)header_bytes[15] << 24)
                    | ((uint64_t)header_bytes[14] << 16)
                    | ((uint64_t)header_bytes[13] <<  8)
-                   | (uint64_t)header_bytes[12]) == 0)
+                   |  (uint64_t)header_bytes[12]) == 0)
       return false;
 
    stream->is_compressed = true;
