@@ -45,7 +45,6 @@
 #include <encodings/utf.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
-#include <string/stdstring.h>
 #include <retro_environment.h>
 #include <uwp/std_filesystem_compat.h>
 

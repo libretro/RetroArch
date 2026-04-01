@@ -26,8 +26,6 @@
 #include <errno.h>
 #include <sys/types.h>
 
-#include <string/stdstring.h> /* string_is_empty */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -1225,23 +1223,20 @@ int retro_vfs_mkdir_impl(const char *dir)
       /* On GEKKO platforms, mkdir() fails if
        * the path has a trailing slash. We must
        * therefore remove it. */
-      int ret = -1;
-      if (!string_is_empty(dir))
+      int ret       = -1;
+      char *dir_buf = strdup(dir);
+
+      if (dir_buf)
       {
-         char *dir_buf = strdup(dir);
+         size_t _len = strlen(dir_buf);
 
-         if (dir_buf)
-         {
-            size_t _len = strlen(dir_buf);
+         if (_len > 0)
+            if (dir_buf[_len - 1] == '/')
+               dir_buf[_len - 1] = '\0';
 
-            if (_len > 0)
-               if (dir_buf[_len - 1] == '/')
-                   dir_buf[_len - 1] = '\0';
+         ret = mkdir(dir_buf, 0750);
 
-            ret = mkdir(dir_buf, 0750);
-
-            free(dir_buf);
-         }
+         free(dir_buf);
       }
 #else
       int ret = mkdir(dir, 0750);
@@ -1396,7 +1391,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 #elif defined(VITA)
    rdir->directory       = sceIoDopen(name);
 #elif defined(_3DS)
-   rdir->directory       = !string_is_empty(name) ? opendir(name) : NULL;
+   rdir->directory       = opendir(name);
    rdir->entry           = NULL;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
    rdir->error           = sysFsOpendir(name, &rdir->directory);
