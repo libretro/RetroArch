@@ -12,11 +12,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <encodings/base64.h>
 #include <lrc_hash.h>
 #include <net/net_http.h>
-#include <string/stdstring.h>
 #include <time/rtime.h>
+#include <string/stdstring.h>
 
 #include "../cloud_sync_driver.h"
 #include "../../retroarch.h"
@@ -148,7 +149,7 @@ static bool webdav_create_digest_auth(char *digest)
    size_t _len;
    webdav_state_t *webdav_st = webdav_state_get_ptr();
    settings_t     *settings  = config_get_ptr();
-   char           *ptr       = digest + STRLEN_CONST("WWW-Authenticate: Digest ");
+   char           *ptr       = digest + (sizeof("WWW-Authenticate: Digest")-1);
    char           *end       = ptr + strlen(ptr);
 
    if (   string_is_empty(settings->arrays.webdav_username)
@@ -161,7 +162,7 @@ static bool webdav_create_digest_auth(char *digest)
 
    while (ptr < end)
    {
-      while (ISSPACE(*ptr))
+      while (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')
          ++ptr;
 
       if (!*ptr)
@@ -169,7 +170,7 @@ static bool webdav_create_digest_auth(char *digest)
 
       if (string_starts_with(ptr, "realm=\""))
       {
-         ptr += STRLEN_CONST("realm=\"");
+         ptr += (sizeof("realm=\"")-1);
          _len = strchr(ptr, '"') + 1 - ptr;
          webdav_st->realm = (char*)malloc(_len);
          strlcpy(webdav_st->realm, ptr, _len);
@@ -182,7 +183,7 @@ static bool webdav_create_digest_auth(char *digest)
       else if (string_starts_with(ptr, "qop=\""))
       {
          char *tail;
-         ptr += STRLEN_CONST("qop=\"");
+         ptr += (sizeof("qop=\"")-1);
          tail = strchr(ptr, '"');
          while (ptr < tail)
          {
@@ -205,7 +206,7 @@ static bool webdav_create_digest_auth(char *digest)
       }
       else if (string_starts_with(ptr, "nonce=\""))
       {
-         ptr += STRLEN_CONST("nonce=\"");
+         ptr += (sizeof("nonce=\"")-1);
          _len = strchr(ptr, '"') + 1 - ptr;
          webdav_st->nonce = (char*)malloc(_len);
          strlcpy(webdav_st->nonce, ptr, _len);
@@ -213,7 +214,7 @@ static bool webdav_create_digest_auth(char *digest)
       }
       else if (string_starts_with(ptr, "algorithm="))
       {
-         ptr += STRLEN_CONST("algorithm=");
+         ptr += (sizeof("algorithm=")-1);
          if (strchr(ptr, ','))
          {
             _len = strchr(ptr, ',') + 1 - ptr;
@@ -229,7 +230,7 @@ static bool webdav_create_digest_auth(char *digest)
       }
       else if (string_starts_with(ptr, "opaque=\""))
       {
-         ptr += STRLEN_CONST("opaque=\"");
+         ptr += (sizeof("opaque=\"")-1);
          _len = strchr(ptr, '"') + 1 - ptr;
          webdav_st->opaque = (char*)malloc(_len);
          strlcpy(webdav_st->opaque, ptr, _len);
@@ -254,7 +255,7 @@ static bool webdav_create_digest_auth(char *digest)
          }
       }
 
-      while (ISSPACE(*ptr))
+      while (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')
          ++ptr;
       if (*ptr == ',')
          ptr++;
@@ -340,7 +341,7 @@ static char *webdav_create_digest_response(const char *method, const char *path)
       MD5_Update(&md5, ":", 1);
       MD5_Update(&md5, webdav_st->cnonce, (unsigned long)strlen(webdav_st->cnonce));
       MD5_Update(&md5, ":", 1);
-      MD5_Update(&md5, "auth", STRLEN_CONST("auth"));
+      MD5_Update(&md5, "auth", (sizeof("auth")-1));
    }
    MD5_Update(&md5, ":", 1);
    MD5_Update(&md5, ha2, 32);
@@ -520,7 +521,7 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 #endif
    /* TODO/FIXME: LOCK? */
    if (!strstr(url, "://"))
-       _len += strlcpy(webdav_st->url, "http://", STRLEN_CONST("http://"));
+       _len += strlcpy(webdav_st->url, "http://", (sizeof("http://")-1));
    strlcpy(webdav_st->url + _len, url, sizeof(webdav_st->url) - _len);
    fill_pathname_slash(webdav_st->url, sizeof(webdav_st->url));
 

@@ -141,17 +141,14 @@ char *string_trim_whitespace_left(char *const s)
    if (s && *s)
    {
       char *current  = s;
-
-      while (*current && ISSPACE((unsigned char)*current))
+      while (*current && (*current == ' ' || *current == '\t' || *current == '\n' || *current == '\r' || *current == '\v' || *current == '\f'))
          ++current;
-
       if (s != current)
       {
          size_t _len = strlen(current);
          memmove(s, current, _len + 1);
       }
    }
-
    return s;
 }
 
