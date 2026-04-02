@@ -436,30 +436,29 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    const char *directory_cache    = settings->paths.directory_cache;
    const char *directory_system   = settings->paths.directory_system;
    const char *path_username      = settings->paths.username;
-
-   if (string_is_equal(arg, "video_fullscreen"))
+   if (memcmp(arg, "video_fullscreen", sizeof("video_fullscreen")) == 0)
    {
       if (video_fullscreen)
          value = "true";
       else
          value = "false";
    }
-   else if (string_is_equal(arg, "savefile_directory"))
+   else if (memcmp(arg, "savefile_directory", sizeof("savefile_directory")) == 0)
       value = dir_get_ptr(RARCH_DIR_SAVEFILE);
-   else if (string_is_equal(arg, "savestate_directory"))
+   else if (memcmp(arg, "savestate_directory", sizeof("savestate_directory")) == 0)
       value = dir_get_ptr(RARCH_DIR_SAVESTATE);
-   else if (string_is_equal(arg, "runtime_log_directory"))
+   else if (memcmp(arg, "runtime_log_directory", sizeof("runtime_log_directory")) == 0)
       value = dir_runtime_log;
-   else if (string_is_equal(arg, "log_dir"))
+   else if (memcmp(arg, "log_dir", sizeof("log_dir")) == 0)
       value = log_dir;
-   else if (string_is_equal(arg, "cache_directory"))
+   else if (memcmp(arg, "cache_directory", sizeof("cache_directory")) == 0)
       value = directory_cache;
-   else if (string_is_equal(arg, "system_directory"))
+   else if (memcmp(arg, "system_directory", sizeof("system_directory")) == 0)
       value = directory_system;
-   else if (string_is_equal(arg, "netplay_nickname"))
+   else if (memcmp(arg, "netplay_nickname", sizeof("netplay_nickname")) == 0)
       value = path_username;
 #ifdef HAVE_BSV_MOVIE
-   else if (string_is_equal(arg, "active_replay"))
+   else if (memcmp(arg, "active_replay", sizeof("active_replay")) == 0)
    {
       input_driver_state_t *input_st = input_state_get_ptr();
       value            = value_dynamic;
@@ -477,7 +476,6 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    }
    #endif
    /* TODO: query any string */
-
    _len  = strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
    _len += strlcpy(reply + _len, arg, sizeof(reply)  - _len);
    reply[  _len] = ' ';

@@ -1246,14 +1246,18 @@ bool cocoa_launch_game_by_filename(NSString *filename)
    path_set(RARCH_PATH_CONTENT, full_path);
 
    /* Strategy 2a: Check if current core supports this content */
-   if (!path_is_empty(RARCH_PATH_CORE)) {
+   if (!path_is_empty(RARCH_PATH_CORE))
+   {
+      size_t i;
       const char *current_core = path_get(RARCH_PATH_CORE);
-      for (size_t i = 0; i < list_size; i++) {
+      for (i = 0; i < list_size; i++)
+      {
          const core_info_t *info = &core_info[i];
-         if (string_is_equal(current_core, info->path)) {
+         if (string_is_equal(current_core, info->path))
+         {
             RARCH_LOG("Current core '%s' supports this content, using it\n", info->display_name);
             return task_push_load_content_with_current_core_from_companion_ui(
-               NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+                  NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
          }
       }
    }

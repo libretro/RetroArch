@@ -659,32 +659,31 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
 static enum msg_file_type extension_to_file_type(const char *ext)
 {
    char ext_lower[6];
-   /* Copy and convert to lower case */
    strlcpy(ext_lower, ext, sizeof(ext_lower));
    string_to_lower(ext_lower);
 
    if (
-            string_is_equal(ext_lower, "7z")
-         || string_is_equal(ext_lower, "zip")
-         || string_is_equal(ext_lower, "apk")
-         || string_is_equal(ext_lower, "zst")
+            memcmp(ext_lower, "7z",  3) == 0
+         || memcmp(ext_lower, "zip", 4) == 0
+         || memcmp(ext_lower, "apk", 4) == 0
+         || memcmp(ext_lower, "zst", 4) == 0
       )
       return FILE_TYPE_COMPRESSED;
-   if (string_is_equal(ext_lower, "cue"))
+   if (memcmp(ext_lower, "cue",   4) == 0)
       return FILE_TYPE_CUE;
-   if (string_is_equal(ext_lower, "gdi"))
+   if (memcmp(ext_lower, "gdi",   4) == 0)
       return FILE_TYPE_GDI;
-   if (string_is_equal(ext_lower, "iso"))
+   if (memcmp(ext_lower, "iso",   4) == 0)
       return FILE_TYPE_ISO;
-   if (string_is_equal(ext_lower, "chd"))
+   if (memcmp(ext_lower, "chd",   4) == 0)
       return FILE_TYPE_CHD;
-   if (string_is_equal(ext_lower, "wbfs"))
+   if (memcmp(ext_lower, "wbfs",  5) == 0)
       return FILE_TYPE_WBFS;
-   if (string_is_equal(ext_lower, "rvz"))
+   if (memcmp(ext_lower, "rvz",   4) == 0)
       return FILE_TYPE_RVZ;
-   if (string_is_equal(ext_lower, "wia"))
+   if (memcmp(ext_lower, "wia",   4) == 0)
       return FILE_TYPE_WIA;
-   if (string_is_equal(ext_lower, "lutro"))
+   if (memcmp(ext_lower, "lutro", 6) == 0)
       return FILE_TYPE_LUTRO;
    return FILE_TYPE_NONE;
 }
