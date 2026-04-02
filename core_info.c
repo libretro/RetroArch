@@ -1423,7 +1423,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
                path_list->core_list->size].filename = filename;
          path_list->core_list->size++;
       }
-      else if (string_is_equal(file_ext, FILE_PATH_LOCK_EXTENSION_NO_DOT))
+      else if (memcmp(file_ext, FILE_PATH_LOCK_EXTENSION_NO_DOT, sizeof(FILE_PATH_LOCK_EXTENSION_NO_DOT)) == 0)
       {
          path_list->lock_list->list[
                path_list->lock_list->size].filename = filename;
@@ -1432,7 +1432,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
          path_list->lock_list->size++;
       }
 #if defined(HAVE_DYNAMIC)
-      else if (string_is_equal(file_ext, FILE_PATH_STANDALONE_EXEMPT_EXTENSION_NO_DOT))
+      else if (memcmp(file_ext, FILE_PATH_STANDALONE_EXEMPT_EXTENSION_NO_DOT, sizeof(FILE_PATH_STANDALONE_EXEMPT_EXTENSION_NO_DOT) - 1) == 0)
       {
          path_list->standalone_exempt_list->list[
                path_list->standalone_exempt_list->size].filename = filename;
@@ -1530,8 +1530,8 @@ static size_t core_info_get_file_id(const char *core_filename,
 #endif
    /* > Remove suffix */
    last_underscore = (char*)strrchr(s, '_');
-   if (   !string_is_empty(last_underscore)
-       && !string_is_equal(last_underscore, "_libretro"))
+   if (   last_underscore
+       && memcmp(last_underscore, "_libretro", STRLEN_CONST("_libretro") + 1))
    {
       *last_underscore = '\0';
       _len = last_underscore - s;
@@ -2478,16 +2478,23 @@ bool core_info_core_file_id_is_equal(const char *core_path_a,
 {
    char core_file_id_a[256];
    char core_file_id_b[256];
-   if (   string_is_empty(core_path_a)
-       || string_is_empty(core_path_b)
-       || (core_info_get_file_id(
-          path_basename_nocompression(core_path_a),
-            core_file_id_a, sizeof(core_file_id_a)) == 0)
-       || (core_info_get_file_id(
-          path_basename_nocompression(core_path_b),
-            core_file_id_b, sizeof(core_file_id_b)) == 0))
+   size_t _len;
+
+   if (!core_path_a || !core_path_b)
       return false;
-   return string_is_equal(core_file_id_a, core_file_id_b);
+
+   _len = core_info_get_file_id(
+         path_basename_nocompression(core_path_a),
+            core_file_id_a, sizeof(core_file_id_a));
+   if (!_len)
+      return false;
+
+   if (!core_info_get_file_id(
+          path_basename_nocompression(core_path_b),
+            core_file_id_b, sizeof(core_file_id_b)))
+      return false;
+
+   return !strcmp(core_file_id_a, core_file_id_b);
 }
 
 bool core_info_database_match_archive_member(const char *database_path)
