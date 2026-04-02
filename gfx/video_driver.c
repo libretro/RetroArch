@@ -2422,8 +2422,8 @@ bool video_driver_find_driver(
                /* If we have configured one of the HW render
                 * capable GL drivers, go with that. */
 #if defined(HAVE_OPENGL_CORE)
-               if (     !string_is_equal(settings->arrays.video_driver, "gl")
-                     && !string_is_equal(settings->arrays.video_driver, "glcore"))
+               if (     memcmp(settings->arrays.video_driver, "gl", 3) != 0
+                     && memcmp(settings->arrays.video_driver, "glcore", 7) != 0)
                {
                   strlcpy(video_st->cached_driver_id,
                         settings->arrays.video_driver,
@@ -2437,7 +2437,7 @@ bool video_driver_find_driver(
                   return true;
                }
 #else
-               if (  !string_is_equal(settings->arrays.video_driver, "gl"))
+               if (memcmp(settings->arrays.video_driver, "gl", 3) != 0)
                {
                   strlcpy(video_st->cached_driver_id,
                         settings->arrays.video_driver,

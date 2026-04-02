@@ -252,7 +252,8 @@ bool core_updater_list_get_filename(
             if (string_is_empty(current_entry->remote_filename))
                continue;
 
-            if (string_is_equal(remote_filename, current_entry->remote_filename))
+            if (string_is_equal(remote_filename,
+                current_entry->remote_filename))
             {
                *entry = current_entry;
                return true;
@@ -306,10 +307,12 @@ bool core_updater_list_get_core(
 
 #ifdef _WIN32
       /* Handle case-insensitive operating systems*/
-      if (string_is_equal_noncase(real_core_path, current_entry->local_core_path))
+      if (string_is_equal_noncase(real_core_path,
+          current_entry->local_core_path))
       {
 #else
-      if (string_is_equal(real_core_path, current_entry->local_core_path))
+      if (string_is_equal(real_core_path,
+          current_entry->local_core_path))
       {
 #endif
          *entry = current_entry;
@@ -502,7 +505,7 @@ static bool core_updater_list_set_paths(
 
    last_underscore = (char*)strrchr(local_info_path, '_');
    if (!string_is_empty(last_underscore))
-      if (!string_is_equal(last_underscore, "_libretro"))
+      if (memcmp(last_underscore, "_libretro", 9) != 0)
          *last_underscore = '\0';
 
    _len = strlen(local_info_path);

@@ -23,7 +23,6 @@
 #include <file/file_path.h>
 #include <lists/string_list.h>
 #include <lists/dir_list.h>
-#include <string/stdstring.h>
 
 #include "libretro-db/libretrodb.h"
 
@@ -507,7 +506,6 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 {
    size_t i;
    struct rmsgpack_dom_value item;
-   const char* str                = NULL;
 
    if (libretrodb_cursor_read_item(cur, &item) != 0)
       return -1;
@@ -526,223 +524,281 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
    {
       struct rmsgpack_dom_value *key = &item.val.map.items[i].key;
       struct rmsgpack_dom_value *val = &item.val.map.items[i].value;
-      const char *val_string         = NULL;
+      const char *str;
+      const char *val_string;
+      size_t      str_len;
 
       if (!key || !val)
          continue;
 
-      val_string                     = val->val.string.buff;
-      str                            = key->val.string.buff;
+      if (key->type != RDT_STRING)
+         continue;
 
-      if (string_is_equal(str, "publisher"))
+      str     = key->val.string.buff;
+      str_len = strlen(str);
+
+      /* Only read val as string when it actually is one */
+      val_string = (val->type == RDT_STRING) ? val->val.string.buff : NULL;
+
+      switch (str_len)
       {
-         if (!string_is_empty(val_string))
-            db_info->publisher = strdup(val_string);
+         case 3:
+            if (memcmp(str, "crc", 3) == 0)
+            {
+               if (val->type == RDT_BINARY)
+               {
+                  switch (val->val.binary.len)
+                  {
+                     case 1:
+                        db_info->crc32 = *(uint8_t*)val->val.binary.buff;
+                        break;
+                     case 2:
+                        db_info->crc32 = swap_if_little16(
+                              *(uint16_t*)val->val.binary.buff);
+                        break;
+                     case 4:
+                        db_info->crc32 = swap_if_little32(
+                              *(uint32_t*)val->val.binary.buff);
+                        break;
+                     default:
+                        db_info->crc32 = 0;
+                        break;
+                  }
+               }
+            }
+            else if (memcmp(str, "md5", 3) == 0)
+            {
+               if (val->type == RDT_BINARY)
+                  db_info->md5 = bin_to_hex_alloc(
+                        (uint8_t*)val->val.binary.buff,
+                        val->val.binary.len);
+            }
+            break;
+
+         case 4:
+            if (memcmp(str, "name", 4) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->name = strdup(val_string);
+            }
+            else if (memcmp(str, "size", 4) == 0)
+               db_info->size = (uint64_t)val->val.uint_;
+            else if (memcmp(str, "coop", 4) == 0)
+               db_info->coop_supported = (int)val->val.uint_;
+            else if (memcmp(str, "sha1", 4) == 0)
+            {
+               if (val->type == RDT_BINARY)
+                  db_info->sha1 = bin_to_hex_alloc(
+                        (uint8_t*)val->val.binary.buff,
+                        val->val.binary.len);
+            }
+            break;
+
+         case 5:
+            if (memcmp(str, "genre", 5) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->genre = strdup(val_string);
+            }
+            else if (memcmp(str, "score", 5) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->score = strdup(val_string);
+            }
+            else if (memcmp(str, "media", 5) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->media = strdup(val_string);
+            }
+            else if (memcmp(str, "users", 5) == 0)
+               db_info->max_users = (unsigned)val->val.uint_;
+            break;
+
+         case 6:
+            if (memcmp(str, "serial", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->serial = strdup(val_string);
+            }
+            else if (memcmp(str, "region", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->region = strdup(val_string);
+            }
+            else if (memcmp(str, "pacing", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->pacing = strdup(val_string);
+            }
+            else if (memcmp(str, "visual", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->visual = strdup(val_string);
+            }
+            else if (memcmp(str, "origin", 6) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->origin = strdup(val_string);
+            }
+            else if (memcmp(str, "rumble", 6) == 0)
+               db_info->rumble_supported = (int)val->val.uint_;
+            else if (memcmp(str, "analog", 6) == 0)
+               db_info->analog_supported = (int)val->val.uint_;
+            break;
+
+         case 7:
+            if (memcmp(str, "setting", 7) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->setting = strdup(val_string);
+            }
+            break;
+
+         case 8:
+            if (memcmp(str, "category", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->category = strdup(val_string);
+            }
+            else if (memcmp(str, "language", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->language = strdup(val_string);
+            }
+            else if (memcmp(str, "controls", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->controls = strdup(val_string);
+            }
+            else if (memcmp(str, "artstyle", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->artstyle = strdup(val_string);
+            }
+            else if (memcmp(str, "gameplay", 8) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->gameplay = strdup(val_string);
+            }
+            else if (memcmp(str, "rom_name", 8) == 0)
+            {
+               /* rom_name is not used anywhere in codebase,
+                * but is frequently added to DB */
+            }
+            break;
+
+         case 9:
+            if (memcmp(str, "publisher", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->publisher = strdup(val_string);
+            }
+            else if (memcmp(str, "developer", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->developer = string_split(val_string, "|");
+            }
+            else if (memcmp(str, "narrative", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->narrative = strdup(val_string);
+            }
+            else if (memcmp(str, "vehicular", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->vehicular = strdup(val_string);
+            }
+            else if (memcmp(str, "franchise", 9) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->franchise = strdup(val_string);
+            }
+            break;
+
+         case 10:
+            if (memcmp(str, "edge_issue", 10) == 0)
+               db_info->edge_magazine_issue = (unsigned)val->val.uint_;
+            break;
+
+         case 11:
+            if (memcmp(str, "description", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->description = strdup(val_string);
+            }
+            else if (memcmp(str, "perspective", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->perspective = strdup(val_string);
+            }
+            else if (memcmp(str, "bbfc_rating", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->bbfc_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "esrb_rating", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->esrb_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "cero_rating", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->cero_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "pegi_rating", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->pegi_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "edge_rating", 11) == 0)
+               db_info->edge_magazine_rating = (unsigned)val->val.uint_;
+            else if (memcmp(str, "tgdb_rating", 11) == 0)
+               db_info->tgdb_rating = (unsigned)val->val.uint_;
+            else if (memcmp(str, "edge_review", 11) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->edge_magazine_review = strdup(val_string);
+            }
+            else if (memcmp(str, "releaseyear", 11) == 0)
+               db_info->releaseyear = (unsigned)val->val.uint_;
+            break;
+
+         case 12:
+            if (memcmp(str, "elspa_rating", 12) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->elspa_rating = strdup(val_string);
+            }
+            else if (memcmp(str, "releasemonth", 12) == 0)
+               db_info->releasemonth = (unsigned)val->val.uint_;
+            else if (memcmp(str, "achievements", 12) == 0)
+               db_info->achievements = (int)val->val.uint_;
+            break;
+
+         case 14:
+            if (memcmp(str, "famitsu_rating", 14) == 0)
+               db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
+            else if (memcmp(str, "enhancement_hw", 14) == 0)
+            {
+               if (val_string && *val_string)
+                  db_info->enhancement_hw = strdup(val_string);
+            }
+            break;
+
+         case 17:
+            if (memcmp(str, "console_exclusive", 17) == 0)
+               db_info->console_exclusive = (int)val->val.uint_;
+            break;
+
+         case 18:
+            if (memcmp(str, "platform_exclusive", 18) == 0)
+               db_info->platform_exclusive = (int)val->val.uint_;
+            break;
+
+         default:
+            break;
       }
-      else if (string_is_equal(str, "developer"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->developer = string_split(val_string, "|");
-      }
-      else if (string_is_equal(str, "serial"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->serial = strdup(val_string);
-      }
-      else if (string_is_equal(str, "rom_name"))
-      {
-/* rom_name is not used anywhere in codebase, but is frequently added to DB */
-#if 0
-         if (!string_is_empty(val_string))
-            db_info->rom_name = strdup(val_string);
-#endif
-      }
-      else if (string_is_equal(str, "name"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->name = strdup(val_string);
-      }
-      else if (string_is_equal(str, "description"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->description = strdup(val_string);
-      }
-      else if (string_is_equal(str, "genre"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->genre = strdup(val_string);
-      }
-      else if (string_is_equal(str, "category"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->category = strdup(val_string);
-      }
-      else if (string_is_equal(str, "language"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->language = strdup(val_string);
-      }
-      else if (string_is_equal(str, "region"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->region = strdup(val_string);
-      }
-      else if (string_is_equal(str, "score"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->score = strdup(val_string);
-      }
-      else if (string_is_equal(str, "media"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->media = strdup(val_string);
-      }
-      else if (string_is_equal(str, "controls"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->controls = strdup(val_string);
-      }
-      else if (string_is_equal(str, "artstyle"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->artstyle = strdup(val_string);
-      }
-      else if (string_is_equal(str, "gameplay"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->gameplay = strdup(val_string);
-      }
-      else if (string_is_equal(str, "narrative"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->narrative = strdup(val_string);
-      }
-      else if (string_is_equal(str, "pacing"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->pacing = strdup(val_string);
-      }
-      else if (string_is_equal(str, "perspective"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->perspective = strdup(val_string);
-      }
-      else if (string_is_equal(str, "setting"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->setting = strdup(val_string);
-      }
-      else if (string_is_equal(str, "visual"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->visual = strdup(val_string);
-      }
-      else if (string_is_equal(str, "vehicular"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->vehicular = strdup(val_string);
-      }
-      else if (string_is_equal(str, "origin"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->origin = strdup(val_string);
-      }
-      else if (string_is_equal(str, "franchise"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->franchise = strdup(val_string);
-      }
-      else if (string_ends_with_size(str, "_rating",
-               strlen(str), STRLEN_CONST("_rating")))
-      {
-         if (string_is_equal(str, "bbfc_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->bbfc_rating = strdup(val_string);
-         }
-         else if (string_is_equal(str, "esrb_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->esrb_rating = strdup(val_string);
-         }
-         else if (string_is_equal(str, "elspa_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->elspa_rating = strdup(val_string);
-         }
-         else if (string_is_equal(str, "cero_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->cero_rating          = strdup(val_string);
-         }
-         else if (string_is_equal(str, "pegi_rating"))
-         {
-            if (!string_is_empty(val_string))
-               db_info->pegi_rating          = strdup(val_string);
-         }
-         else if (string_is_equal(str, "edge_rating"))
-            db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
-         else if (string_is_equal(str, "famitsu_rating"))
-            db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
-         else if (string_is_equal(str, "tgdb_rating"))
-            db_info->tgdb_rating             = (unsigned)val->val.uint_;
-      }
-      else if (string_is_equal(str, "enhancement_hw"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->enhancement_hw       = strdup(val_string);
-      }
-      else if (string_is_equal(str, "edge_review"))
-      {
-         if (!string_is_empty(val_string))
-            db_info->edge_magazine_review = strdup(val_string);
-      }
-      else if (string_is_equal(str, "edge_issue"))
-         db_info->edge_magazine_issue     = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "users"))
-         db_info->max_users               = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "releasemonth"))
-         db_info->releasemonth            = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "releaseyear"))
-         db_info->releaseyear             = (unsigned)val->val.uint_;
-      else if (string_is_equal(str, "rumble"))
-         db_info->rumble_supported        = (int)val->val.uint_;
-      else if (string_is_equal(str, "achievements"))
-         db_info->achievements            = (int)val->val.uint_;
-      else if (string_is_equal(str, "console_exclusive"))
-         db_info->console_exclusive       = (int)val->val.uint_;
-      else if (string_is_equal(str, "platform_exclusive"))
-         db_info->platform_exclusive      = (int)val->val.uint_;
-      else if (string_is_equal(str, "coop"))
-         db_info->coop_supported          = (int)val->val.uint_;
-      else if (string_is_equal(str, "analog"))
-         db_info->analog_supported        = (int)val->val.uint_;
-      else if (string_is_equal(str, "size"))
-         db_info->size                    = (uint64_t)val->val.uint_;
-      else if (string_is_equal(str, "crc"))
-      {
-         switch (val->val.binary.len)
-         {
-            case 1:
-               db_info->crc32 = *(uint8_t*)val->val.binary.buff;
-               break;
-            case 2:
-               db_info->crc32 = swap_if_little16(*(uint16_t*)val->val.binary.buff);
-               break;
-            case 4:
-               db_info->crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);
-               break;
-            default:
-               db_info->crc32 = 0;
-               break;
-         }
-      }
-      else if (string_is_equal(str, "sha1"))
-         db_info->sha1 = bin_to_hex_alloc(
-               (uint8_t*)val->val.binary.buff, val->val.binary.len);
-      else if (string_is_equal(str, "md5"))
-         db_info->md5 = bin_to_hex_alloc(
-               (uint8_t*)val->val.binary.buff, val->val.binary.len);
    }
 
    rmsgpack_dom_value_free(&item);
@@ -777,12 +833,19 @@ static int database_cursor_open(libretrodb_t *db,
    return 0;
 }
 
+/* Types 'cue' and 'gdi' are prioritized */
 static bool type_is_prioritized(const char *path)
 {
    const char *ext = path_get_extension(path);
-   if (     string_is_equal_noncase(ext, "cue")
-         || string_is_equal_noncase(ext, "gdi"))
-      return true;
+   if (ext)
+   {
+      char e0 = ext[0] | 0x20;
+      char e1 = ext[1] | 0x20;
+      char e2 = ext[2] | 0x20;
+      if (ext[3] == '\0')
+         return (e0 == 'c' && e1 == 'u' && e2 == 'e')
+            || (e0 == 'g' && e1 == 'd' && e2 == 'i');
+   }
    return false;
 }
 
