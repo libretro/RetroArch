@@ -1,7 +1,7 @@
 /* Copyright  (C) 2021 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (test_stdstring.c).
+ * The following license statement only applies to this file (test_utils.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
