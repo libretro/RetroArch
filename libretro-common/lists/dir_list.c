@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <ctype.h>
 
 #if defined(_WIN32) && defined(_XBOX)
 #include <xtl.h>
@@ -35,31 +36,48 @@
 #include <compat/strl.h>
 #include <retro_dirent.h>
 
-#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
 static int qstrcmp_plain(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_;
    const struct string_list_elem *b = (const struct string_list_elem*)b_;
+   const char *s1 = a->data;
+   const char *s2 = b->data;
 
-   return strcasecmp(a->data, b->data);
+   for (;;)
+   {
+      int c1 = tolower((unsigned char)*s1);
+      int c2 = tolower((unsigned char)*s2);
+      if (c1 != c2)
+         return c1 - c2;
+      if (c1 == '\0')
+         return 0;
+      s1++;
+      s2++;
+   }
 }
 
 static int qstrcmp_plain_noext(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_;
    const struct string_list_elem *b = (const struct string_list_elem*)b_;
+   const char *pa = a->data;
+   const char *pb = b->data;
 
-   const char *ext_a = path_get_extension(a->data);
-   size_t l_a = string_is_empty(ext_a) ? strlen(a->data) : (size_t)(ext_a - a->data - 1);
-   const char *ext_b = path_get_extension(b->data);
-   size_t l_b = string_is_empty(ext_b) ? strlen(b->data) : (size_t)(ext_b - b->data - 1);
+   for (;;)
+   {
+      int ca = (*pa == '.' || *pa == '\0') ? 0 : tolower((unsigned char)*pa);
+      int cb = (*pb == '.' || *pb == '\0') ? 0 : tolower((unsigned char)*pb);
+      if (ca != cb)
+         return ca - cb;
+      if (ca == 0)
+         break;
+      pa++;
+      pb++;
+   }
 
-   int rv = strncasecmp(a->data, b->data, MIN(l_a, l_b));
-   if (rv == 0 && l_a != l_b)
-       return (int)(l_a - l_b);
-   return rv;
+   return 0;
 }
 
 static int qstrcmp_dir(const void *a_, const void *b_)
@@ -167,7 +185,7 @@ static int dir_list_read(const char *dir,
    {
       union string_list_elem_attr attr;
       char file_path[PATH_MAX_LENGTH];
-      const char *name                = retro_dirent_get_name(entry);
+      const char *name = retro_dirent_get_name(entry);
 
       if (name[0] == '.' || name[0] == '$')
       {
@@ -194,15 +212,19 @@ static int dir_list_read(const char *dir,
             continue;
 
 #if defined(IOS) || defined(OSX)
-         if (string_ends_with(name, ".framework"))
          {
-            attr.i = RARCH_PLAIN_FILE;
-            if (!string_list_append(list, file_path, attr))
+            size_t name_len = strlen(name);
+            if (name_len >= 10
+                  && !memcmp(name + name_len - 10, ".framework", 10))
             {
-               retro_closedir(entry);
-               return -1;
+               attr.i = RARCH_PLAIN_FILE;
+               if (!string_list_append(list, file_path, attr))
+               {
+                  retro_closedir(entry);
+                  return -1;
+               }
+               continue;
             }
-            continue;
          }
 #endif
          if (recursive)
