@@ -617,7 +617,7 @@ static int menu_displaylist_parse_core_info(
          {
             core_path = entry->core_path;
 
-            if (string_is_equal(entry->core_path, FILE_PATH_DETECT))
+            if (memcmp(entry->core_path, FILE_PATH_DETECT, sizeof(FILE_PATH_DETECT)) == 0)
             {
                const char* default_core_path = playlist_get_default_core_path(playlist);
 
@@ -2574,7 +2574,7 @@ static int menu_displaylist_parse_playlist(
       return 0;
 
    /* Check whether core name should be added to playlist entries */
-   if (   !string_is_equal(menu_driver, "ozone")
+   if (    (memcmp(menu_driver, "ozone", 6) != 0)
        && !pl_show_sublabels
        && ((pl_show_inline_core_name == PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS)
        ||  (!is_collection
@@ -15213,9 +15213,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   && !settings->bools.kiosk_mode_enable;
                bool show_settings = settings->bools.menu_content_show_settings
                   && !settings->bools.kiosk_mode_enable
-                  && (     (string_is_equal(menu_ident, "rgui"))
-                        || (string_is_equal(menu_ident, "glui")
-                     &&    !settings->bools.menu_materialui_show_nav_bar));
+                  && (        memcmp(menu_ident, "rgui", 4) == 0
+                        || (  memcmp(menu_ident, "glui", 4) == 0
+                           && !settings->bools.menu_materialui_show_nav_bar));
 
                if (     memcmp(menu_ident, "glui", 4) == 0 && menu_ident[4] == '\0'
                      && settings->bools.menu_materialui_show_nav_bar
