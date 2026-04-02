@@ -4165,7 +4165,8 @@ static bool config_load_file(global_t *global,
    /* Post-settings load */
 
    libretro_directory = getenv("LIBRETRO_DIRECTORY");
-   if (libretro_directory) {
+   if (libretro_directory)
+   {
       configuration_set_string(settings,
             settings->paths.directory_libretro, libretro_directory);
       configuration_set_string(settings,
@@ -4368,28 +4369,45 @@ static bool config_load_file(global_t *global,
       *settings->paths.path_menu_wallpaper = '\0';
    if (string_is_equal(settings->paths.path_rgui_theme_preset, "default"))
       *settings->paths.path_rgui_theme_preset = '\0';
+
    libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
-   if (libretro_video_shader_directory) { /* override configuration value */
+
+   if (libretro_video_shader_directory)
+   {
+      /* override configuration value */
       configuration_set_string(settings, settings->paths.directory_video_shader,
-			       libretro_video_shader_directory);
-   } else if (string_is_equal(settings->paths.directory_video_shader, "default"))
+            libretro_video_shader_directory);
+   }
+   else if (string_is_equal(settings->paths.directory_video_shader, "default"))
       *settings->paths.directory_video_shader = '\0';
+
    libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
-   if (libretro_video_filter_directory) { /* override configuration value */
+
+   if (libretro_video_filter_directory)
+   {
+      /* override configuration value */
        configuration_set_string(settings, settings->paths.directory_video_filter,
 				libretro_video_filter_directory);
-   } else if (string_is_equal(settings->paths.directory_video_filter, "default"))
+   }
+   else if (string_is_equal(settings->paths.directory_video_filter, "default"))
       *settings->paths.directory_video_filter = '\0';
+
    if (string_is_equal(settings->paths.directory_audio_filter, "default"))
       *settings->paths.directory_audio_filter = '\0';
    if (string_is_equal(settings->paths.directory_core_assets, "default"))
       *settings->paths.directory_core_assets = '\0';
+
    libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
-   if (libretro_assets_directory) { /* override configuration value */
+
+   if (libretro_assets_directory)
+   {
+      /* override configuration value */
       configuration_set_string(settings,
            settings->paths.directory_assets, libretro_assets_directory);
-   } else if (string_is_equal(settings->paths.directory_assets, "default"))
+   }
+   else if (string_is_equal(settings->paths.directory_assets, "default"))
       *settings->paths.directory_assets = '\0';
+
 #ifdef _3DS
    if (string_is_equal(settings->paths.directory_bottom_assets, "default"))
       configuration_set_string(settings,
@@ -6501,7 +6519,8 @@ bool input_remapping_save_file(const char *path)
          continue;
 
       _len = snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
-      if (_len >= sizeof(formatted_number)) {
+      if (_len >= sizeof(formatted_number))
+      {
          RARCH_ERR("[Config] Unexpectedly high number of users.");
          break;
       }

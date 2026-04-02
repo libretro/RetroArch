@@ -256,7 +256,7 @@ static void *task_push_http_transfer_generic(
     * only by the POST data, and task_http_finder doesn't look at that, so
     * unique requests could be misclassified as duplicates.
     */
-   if (string_is_equal(method, "GET"))
+   if (memcmp(method, "GET", 3) == 0 && method[3] == '\0')
    {
       task_finder_data_t find_data;
       find_data.func     = task_http_finder;

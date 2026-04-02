@@ -266,12 +266,14 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
          {
             /* Check for history/favourites playlists */
             bool playlist_valid =
-               (string_is_equal(system, "history")
-                && string_is_equal(playlist_file,
-                   FILE_PATH_CONTENT_HISTORY))
-                || (string_is_equal(system, "favorites")
-                && string_is_equal(playlist_file,
-                   FILE_PATH_CONTENT_FAVORITES));
+               (   memcmp(system, "history", 8) == 0
+                && memcmp(playlist_file,
+                   FILE_PATH_CONTENT_HISTORY,
+                   sizeof(FILE_PATH_CONTENT_HISTORY)) == 0)
+               || (     memcmp(system, "favorites", 10) == 0
+                     && memcmp(playlist_file,
+                        FILE_PATH_CONTENT_FAVORITES,
+                        sizeof(FILE_PATH_CONTENT_FAVORITES)) == 0);
 
             /* This means we have to work a little harder
              * i.e. check whether the cached playlist file
@@ -632,8 +634,8 @@ bool gfx_thumbnail_update_path(
        * then the current 'path_data->system' string is
        * meaningless. In this case, we fall back to the
        * content directory name */
-      if (   string_is_equal(path_data->system, "history")
-          || string_is_equal(path_data->system, "favorites"))
+      if (     memcmp(path_data->system, "history", 8) == 0
+            || memcmp(path_data->system, "favorites", 10) == 0)
       {
          if (gfx_thumbnail_get_content_dir(
                path_data, content_dir, sizeof(content_dir)) == 0)
@@ -649,8 +651,8 @@ bool gfx_thumbnail_update_path(
 
    /* > Special case: thumbnail for imageviewer content
     *   is the image file itself */
-   if (   string_is_equal(system_name, "images_history")
-       || string_is_equal(path_data->content_core_name, "imageviewer"))
+   if (   memcmp(system_name, "images_history", sizeof("images_history")) == 0
+       || memcmp(path_data->content_core_name, "imageviewer", sizeof("imageviewer")) == 0)
    {
       /* imageviewer content is identical for left and right thumbnails */
       if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
