@@ -24,13 +24,16 @@
 #include <math.h>
 
 #include <retro_common_api.h>
+#include <compat/strl.h>
+#include <string/stdstring.h>
+
+#include "gfx_display.h"
 #include "video_crt_switch.h"
 #include "video_display_server.h"
 #include "../core_info.h"
 #include "../verbosity.h"
 #include "../file_path_special.h"
 #include "../paths.h"
-#include "gfx_display.h"
 
 #include "../deps/switchres/switchres_wrapper.h"
 static sr_mode srm;

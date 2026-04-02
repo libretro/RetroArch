@@ -21,7 +21,6 @@
 
 #include <compat/strl.h>
 #include <features/features_cpu.h>
-#include <string/stdstring.h>
 
 #ifdef _3DS
 #include <3ds/types.h>

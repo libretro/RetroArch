@@ -15,7 +15,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <features/features_cpu.h>
+#include <string/stdstring.h>
 
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"

@@ -18,8 +18,7 @@
 #endif
 
 #include <stdlib.h>
-
-#include <string/stdstring.h>
+#include <string.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

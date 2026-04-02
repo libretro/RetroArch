@@ -18,7 +18,6 @@
 
 #include <lists/string_list.h>
 #include <queues/fifo_queue.h>
-#include <string/stdstring.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>

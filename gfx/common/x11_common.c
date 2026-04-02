@@ -42,7 +42,6 @@
 
 #include <encodings/utf.h>
 #include <compat/strl.h>
-#include <string/stdstring.h>
 
 #ifdef HAVE_DBUS
 #include "dbus_common.h"

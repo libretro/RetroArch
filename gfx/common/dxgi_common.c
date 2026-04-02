@@ -14,7 +14,6 @@
  */
 
 #include <compat/strl.h>
-#include <string/stdstring.h>
 #include <retro_environment.h>
 
 #ifdef HAVE_CONFIG_H

@@ -25,7 +25,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <string/stdstring.h>
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
 

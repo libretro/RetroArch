@@ -17,6 +17,7 @@
 
 /* We are targeting XRandR 1.2 here. */
 #include <math.h>
+#include <string.h>
 
 #include <compat/strl.h>
 #include <string/stdstring.h>

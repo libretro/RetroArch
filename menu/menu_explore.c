@@ -24,6 +24,7 @@
 #include <formats/rjson_helpers.h>
 #include <retro_endianness.h>
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
