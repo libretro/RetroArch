@@ -1204,7 +1204,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 
    /* Slow path: fall back to O(n) string comparison for labels
     * not matched by enum_idx (e.g. dynamically generated labels) */
-   if (!string_is_equal(label, "null"))
+   if (memcmp(label, "null", 5) != 0)
    {
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {

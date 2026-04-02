@@ -307,7 +307,7 @@ bool gfx_widget_start_load_content_animation(void)
     *   to change...) */
    if (   string_is_empty(content_path)
        || string_is_empty(core_path)
-       || string_is_equal(core_path, "builtin"))
+       || memcmp(core_path, "builtin", 7) == 0)
       return false;
 
    /* Check core validity */

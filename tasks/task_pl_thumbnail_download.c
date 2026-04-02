@@ -546,7 +546,8 @@ static bool task_pl_thumbnail_finder(retro_task_t *task, void *user_data)
    {
       pl_thumb_handle_t *pl_thumb = NULL;
       if ((pl_thumb = (pl_thumb_handle_t*)task->state))
-         return string_is_equal((const char*)user_data, pl_thumb->playlist_config.path);
+         return string_is_equal((const char*)user_data,
+         pl_thumb->playlist_config.path);
    }
    return false;
 }
@@ -584,8 +585,8 @@ bool task_push_pl_thumbnail_download(
                )
          || string_is_equal(playlist_file,
             FILE_PATH_CONTENT_FAVORITES)
-         || string_is_equal(system, "history")
-         || string_is_equal(system, "favorites"))
+	 || memcmp(system, "history", 7) == 0
+	 || memcmp(system, "favorites", 9) == 0)
       goto error;
 
    /* Concurrent download of thumbnails for the same
@@ -677,7 +678,7 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
       return;
 
 #ifdef HAVE_MATERIALUI
-   if (string_is_equal(menu_driver, "glui"))
+   if (menu_driver && memcmp(menu_driver, "glui", sizeof("glui")) == 0)
    {
       if (!string_is_equal(pl_thumb->playlist_path,
             playlist_get_conf_path(current_playlist)))
@@ -847,7 +848,8 @@ static bool task_pl_entry_thumbnail_finder(retro_task_t *task, void *user_data)
       pl_thumb_handle_t *pl_thumb = NULL;
       if ((pl_thumb = (pl_thumb_handle_t*)task->state))
          return (entry_id->idx == pl_thumb->list_index)
-            &&   string_is_equal(entry_id->playlist_path, pl_thumb->playlist_path);
+            &&   string_is_equal(entry_id->playlist_path,
+                 pl_thumb->playlist_path);
    }
    return false;
 }

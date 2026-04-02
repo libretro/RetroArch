@@ -4260,15 +4260,15 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
 
    if (!string_is_empty(menu_st->thumbnail_path_data->content_core_name))
    {
-      if (     string_is_equal(
+      if (     memcmp(
                menu_st->thumbnail_path_data->content_core_name,
-               "imageviewer")
-            || string_is_equal(
+               "imageviewer", STRLEN_CONST("imageviewer") + 1) == 0
+            || memcmp(
                menu_st->thumbnail_path_data->content_core_name,
-               "musicplayer")
-            || string_is_equal(
+               "musicplayer", STRLEN_CONST("musicplayer") + 1) == 0
+            || memcmp(
                menu_st->thumbnail_path_data->content_core_name,
-               "movieplayer"))
+               "movieplayer", STRLEN_CONST("movieplayer") + 1) == 0)
          ozone->flags2 |=  OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
       else
          ozone->flags2 &= ~OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
@@ -5339,7 +5339,7 @@ static void ozone_draw_entry_value(
    {
       if (!string_is_empty(entry->value))
       {
-         if (string_is_equal(entry->value, "..."))
+         if (memcmp(entry->value, "...", 3) == 0 && entry->value[3] == '\0')
             return;
          if (string_starts_with_size(entry->value, "(", STRLEN_CONST("("))
                && string_ends_with  (entry->value, ")"))
@@ -7928,7 +7928,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
       }
    }
 #endif
-   else if (string_is_equal(s, "imageviewer"))
+   else if (memcmp(s, "imageviewer", sizeof("imageviewer")) == 0)
    {
       /* Filebrowser image updates */
       size_t selection           = menu_st->selection_ptr;

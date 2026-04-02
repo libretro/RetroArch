@@ -7893,7 +7893,7 @@ int generic_menu_entry_action(
             break;
          case MENU_ACTION_START:
             /* if equal to '..' we break, else we fall-through */
-            if (string_is_equal(current_value, "..."))
+            if (memcmp(current_value, "...", 3) == 0)
                break;
             /* fall-through */
          case MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL:
@@ -7927,7 +7927,7 @@ int generic_menu_entry_action(
                menu_st,
                speak_string + _len,
                sizeof(speak_string) - _len);
-         if (!string_is_equal(current_value, "..."))
+         if (memcmp(current_value, "...", 4) != 0)
          {
             speak_string[  _len] = ' ';
             speak_string[++_len] = '\0';
@@ -7942,7 +7942,7 @@ int generic_menu_entry_action(
                menu_st,
                speak_string,
                sizeof(speak_string));
-         if (!string_is_equal(current_value, "..."))
+         if (memcmp(current_value, "...", 4) != 0)
          {
             speak_string[  _len] = ' ';
             speak_string[++_len] = '\0';
@@ -8282,8 +8282,8 @@ bool menu_is_running_quick_menu(void)
    entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
                 | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&entry, 0, 0, NULL, true);
-   return    string_is_equal(entry.label, "resume_content")
-          || string_is_equal(entry.label, "state_slot");
+   return    memcmp(entry.label, "resume_content", sizeof("resume_content")) == 0
+          || memcmp(entry.label, "state_slot", sizeof("state_slot")) == 0;
 }
 
 #ifdef HAVE_RUNAHEAD
