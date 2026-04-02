@@ -90,26 +90,30 @@ size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
    while (in_size && out_chars)
    {
       uint32_t c;
-      uint8_t first = (uint8_t)*in++;
+      uint8_t first;
       unsigned ones;
 
-      /* Fast path: ASCII (most common case) */
-      if (first < 0x80)
+      /* Fast path: batch ASCII characters */
+      while (in_size && out_chars && (uint8_t)*in < 0x80)
       {
-         *out++ = first;
+         *out++ = (uint8_t)*in++;
          in_size--;
          out_chars--;
          ret++;
-         continue;
       }
 
-      ones = utf8_lut[first];
-
-      if (ones > 6 || ones == 1) /* Invalid or desync. */
+      if (!in_size || !out_chars)
          break;
 
-      /* ones >= 2 here; extra = ones - 1 */
-      if (ones > in_size) /* Overflow. */
+      first = (uint8_t)*in++;
+      ones  = utf8_lut[first];
+
+      if (ones > 6 || ones < 2) /* Invalid or desync. */
+         break;
+
+      /* ones includes the lead byte; we already consumed it,
+       * but need (ones - 1) more continuation bytes */
+      if (ones > in_size)       /* Not enough data. */
          break;
 
       /* Decode based on sequence length to avoid inner loop */
@@ -210,13 +214,18 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
          *out_chars = out_pos;
          return true;
       }
-      value = in[in_pos++];
 
-      if (value < 0x80)
+      /* Batch ASCII run: avoid per-char branch into multi-byte path */
+      while (in_pos < in_size && in[in_pos] < 0x80)
+         out[out_pos++] = (uint8_t)in[in_pos++];
+
+      if (in_pos == in_size)
       {
-         out[out_pos++] = (uint8_t)value;
-         continue;
+         *out_chars = out_pos;
+         return true;
       }
+
+      value = in[in_pos++];
 
       if (value >= 0xD800 && value < 0xE000)
       {
@@ -323,13 +332,21 @@ const char *utf8skip(const char *str, size_t chars)
 
    do
    {
-      unsigned ones = utf8_lut[*strb];
+      unsigned ones;
+      if (!*strb)
+         break;
+      ones = utf8_lut[*strb];
       if (ones < 2)
          strb++;
       else
-         strb += ones;
-      chars--;
-   } while (chars);
+      {
+         /* Verify we don't walk past a NUL inside a multi-byte seq */
+         unsigned i;
+         for (i = 0; i < ones && strb[i]; i++)
+            ;
+         strb += i;
+      }
+   } while (--chars);
 
    return (const char*)strb;
 }
@@ -375,37 +392,51 @@ size_t utf8len(const char *string)
  **/
 uint32_t utf8_walk(const char **string)
 {
-   uint8_t first = UTF8_WALKBYTE(string);
-   uint32_t ret  = 0;
+   const uint8_t *s = (const uint8_t*)*string;
+   uint8_t first    = *s++;
+   uint32_t ret;
 
-   if (first < 128)
-      return first;
-
-   ret    = (ret << 6) | (UTF8_WALKBYTE(string) & 0x3F);
-   if (first >= 0xE0)
+   if (first < 0x80)
    {
-      ret = (ret << 6) | (UTF8_WALKBYTE(string) & 0x3F);
-      if (first >= 0xF0)
-      {
-         ret = (ret << 6) | (UTF8_WALKBYTE(string) & 0x3F);
-         return ret | (first & 7) << 18;
-      }
-      return ret | (first & 15) << 12;
+      *string = (const char*)s;
+      return first;
    }
 
-   return ret | (first & 31) << 6;
+   /* Use LUT + switch to decode, matching utf8_conv_utf32 style */
+   ret = first & ((1 << (7 - utf8_lut[first])) - 1);
+   switch (utf8_lut[first])
+   {
+      case 4:
+         ret = (ret << 6) | (*s++ & 0x3F);
+         /* fall through */
+      case 3:
+         ret = (ret << 6) | (*s++ & 0x3F);
+         /* fall through */
+      case 2:
+         ret = (ret << 6) | (*s++ & 0x3F);
+         break;
+      default:
+         break;
+   }
+
+   *string = (const char*)s;
+   return ret;
 }
 
 static bool utf16_to_char(uint8_t **utf_data,
       size_t *dest_len, const uint16_t *in)
 {
-   size_t _len    = 0;
-   while (in[_len] != '\0')
-      _len++;
-   utf16_conv_utf8(NULL, dest_len, in, _len);
-   *dest_len  += 1;
-   if ((*utf_data = (uint8_t*)malloc(*dest_len)) != 0)
-      return utf16_conv_utf8(*utf_data, dest_len, in, _len);
+   const uint16_t *p = in;
+   /* Find length in a single scan */
+   while (*p != 0)
+      p++;
+   {
+      size_t in_len = (size_t)(p - in);
+      utf16_conv_utf8(NULL, dest_len, in, in_len);
+      *dest_len  += 1;
+      if ((*utf_data = (uint8_t*)malloc(*dest_len)) != 0)
+         return utf16_conv_utf8(*utf_data, dest_len, in, in_len);
+   }
    return false;
 }
 
