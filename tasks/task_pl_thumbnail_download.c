@@ -35,7 +35,7 @@
 #include "../verbosity.h"
 
 #ifdef RARCH_INTERNAL
-#include "../gfx/gfx_thumbnail_path.h"
+#include "../gfx/gfx_thumbnail.h"
 #ifdef HAVE_MENU
 #include "../menu/menu_cbs.h"
 #include "../menu/menu_driver.h"

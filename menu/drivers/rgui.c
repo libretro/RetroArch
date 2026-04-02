@@ -47,7 +47,7 @@
 
 #include "../menu_driver.h"
 #include "../../gfx/gfx_animation.h"
-#include "../../gfx/gfx_thumbnail_path.h"
+#include "../../gfx/gfx_thumbnail.h"
 
 #include "../../configuration.h"
 #include "../../file_path_special.h"

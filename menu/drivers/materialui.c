@@ -44,7 +44,6 @@
 #include "../menu_screensaver.h"
 
 #include "../../gfx/gfx_animation.h"
-#include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
 
 #include "../../core_info.h"

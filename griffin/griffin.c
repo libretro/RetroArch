@@ -971,7 +971,6 @@ DRIVERS
 #endif
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
-#include "../gfx/gfx_thumbnail_path.c"
 #include "../gfx/gfx_thumbnail.c"
 #ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mixer.c"

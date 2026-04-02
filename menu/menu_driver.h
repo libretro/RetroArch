@@ -41,7 +41,7 @@
 #include "menu_shader.h"
 #include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
-#include "../gfx/gfx_thumbnail_path.h"
+#include "../gfx/gfx_thumbnail.h"
 #include "../gfx/font_driver.h"
 #include "../performance_counters.h"
 

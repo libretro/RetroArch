@@ -347,9 +347,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o
 
 ifeq ($(HAVE_MENU), 1)
-   OBJ += \
-       gfx/gfx_thumbnail_path.o \
-       gfx/gfx_thumbnail.o
+   OBJ += gfx/gfx_thumbnail.o
 endif
 
 ifeq ($(HAVE_MICROPHONE), 1)
