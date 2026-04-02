@@ -20,14 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <lists/string_list.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <string/stdstring.h>
 
 static bool string_list_deinitialize_internal(struct string_list *list)
 {
@@ -349,13 +348,20 @@ bool string_split_noalloc(struct string_list *list,
 
 int string_list_find_elem(const struct string_list *list, const char *elem)
 {
-   if (list)
+   if (list && elem)
    {
       size_t i;
       for (i = 0; i < list->size; i++)
       {
-         if (string_is_equal_noncase(list->elems[i].data, elem))
-            return (int)(i + 1);
+         const unsigned char *p1 = (const unsigned char*)list->elems[i].data;
+         const unsigned char *p2 = (const unsigned char*)elem;
+         while ((*p1 | 32) == (*p2 | 32) || (*p1 == *p2))
+         {
+            if (*p1 == '\0')
+               return (int)(i + 1);
+            p1++;
+            p2++;
+         }
       }
    }
    return 0;
@@ -372,9 +378,26 @@ bool string_list_find_elem_prefix(const struct string_list *list,
       strlcpy(prefixed + _len, elem, sizeof(prefixed) - _len);
       for (i = 0; i < list->size; i++)
       {
-         if (     string_is_equal_noncase(list->elems[i].data, elem)
-               || string_is_equal_noncase(list->elems[i].data, prefixed))
-            return true;
+         const char *data = list->elems[i].data;
+         const char *a    = data;
+         const char *b    = elem;
+         while (tolower((unsigned char)*a) == tolower((unsigned char)*b))
+         {
+            if (*a == '\0')
+               return true;
+            a++;
+            b++;
+         }
+
+         a = data;
+         b = prefixed;
+         while (tolower((unsigned char)*a) == tolower((unsigned char)*b))
+         {
+            if (*a == '\0')
+               return true;
+            a++;
+            b++;
+         }
       }
    }
    return false;
