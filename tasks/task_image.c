@@ -21,7 +21,6 @@
 #include <file/nbio.h>
 #include <formats/image.h>
 #include <compat/strl.h>
-#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
 
@@ -89,7 +88,7 @@ static int cb_image_upload_generic(void *data, size_t len)
    image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
    image->flags                   |=  IMAGE_FLAG_IS_BLOCKING;
    image->flags                   |=  IMAGE_FLAG_IS_FINISHED;
-   nbio->is_finished                        = true;
+   nbio->is_finished               = true;
 
    return 0;
 }
@@ -124,8 +123,8 @@ static int cb_image_thumbnail(void *data, size_t len)
    struct nbio_image_handle *image  = (struct nbio_image_handle*)nbio->data;
    int retval                       = image ? task_image_process(image, &width, &height) : IMAGE_PROCESS_ERROR;
 
-   if ((retval == IMAGE_PROCESS_ERROR)    ||
-       (retval == IMAGE_PROCESS_ERROR_END)
+   if (   (retval == IMAGE_PROCESS_ERROR)
+       || (retval == IMAGE_PROCESS_ERROR_END)
       )
       return -1;
 
@@ -151,7 +150,8 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 
    do
    {
-      if ((retval = task_image_process(image, &width, &height)) != IMAGE_PROCESS_NEXT)
+      if ((retval = task_image_process(image, &width, &height)) 
+          != IMAGE_PROCESS_NEXT)
          break;
    }while (cpu_features_get_time_usec() - start_time
          < image->frame_duration);
@@ -371,10 +371,10 @@ bool task_image_load_handler(retro_task_t *task)
                 && ((image->ti.width  < image->upscale_threshold)
                 ||  (image->ti.height < image->upscale_threshold)))
             {
-               unsigned min_size                  = (image->ti.width < image->ti.height)
-                                                    ? image->ti.width : image->ti.height;
-               unsigned scale_factor_int          = ((image->upscale_threshold + min_size - 1)
-                                                    / min_size);
+               unsigned min_size = (image->ti.width < image->ti.height)
+                                  ? image->ti.width : image->ti.height;
+               unsigned scale_factor_int = ((image->upscale_threshold 
+               + min_size - 1) / min_size);
                struct texture_image img_resampled = {
                   NULL,
                   0,

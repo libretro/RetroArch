@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string/stdstring.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <retro_miscellaneous.h>
@@ -266,11 +265,9 @@ static bool task_decompress_finder(
       retro_task_t *task, void *user_data)
 {
    decompress_state_t *dec = (decompress_state_t*)task->state;
-
    if (task->handler != task_decompress_handler)
       return false;
-
-   return string_is_equal(dec->source_file, (const char*)user_data);
+   return !strcmp(dec->source_file, (const char*)user_data);
 }
 
 bool task_check_decompress(const char *source_file)
@@ -301,90 +298,91 @@ void *task_push_decompress(
    const char *ext            = NULL;
    decompress_state_t *s      = NULL;
    retro_task_t *t            = NULL;
-
    tmp[0] = '\0';
-
-   if (string_is_empty(target_dir) || string_is_empty(source_file))
+   if (!target_dir || !*target_dir || !source_file || !*source_file)
       return NULL;
-
    ext = path_get_extension(source_file);
-
    /* ZIP or APK only */
    if (
          !path_is_valid(source_file) ||
          (
-             !string_is_equal_noncase(ext, "zip")
-          && !string_is_equal_noncase(ext, "apk")
+             strcasecmp(ext, "zip") != 0
+          && strcasecmp(ext, "apk") != 0
 #ifdef HAVE_7ZIP
-          && !string_is_equal_noncase(ext, "7z")
+          && strcasecmp(ext, "7z")  != 0
 #endif
 #ifdef HAVE_ZSTD
-          && !string_is_equal_noncase(ext, "zst")
+          && strcasecmp(ext, "zst") != 0
 #endif
          )
       )
       return NULL;
-
    if (!valid_ext || !valid_ext[0])
       valid_ext   = NULL;
-
    if (task_check_decompress(source_file))
       return NULL;
-
    if (!(s = (decompress_state_t*)calloc(1, sizeof(*s))))
       return NULL;
-
    if (!(t = task_init()))
    {
       free(s);
       return NULL;
    }
-
    s->source_file      = strdup(source_file);
    s->target_dir       = strdup(target_dir);
-
+   if (!s->source_file || !s->target_dir)
+      goto error;
    s->valid_ext        = valid_ext ? strdup(valid_ext) : NULL;
    s->archive.type     = ARCHIVE_TRANSFER_INIT;
    s->userdata         = (struct archive_extract_userdata*)
       calloc(1, sizeof(*s->userdata));
-
+   if (!s->userdata)
+      goto error;
    t->frontend_userdata= frontend_userdata;
-
    t->state            = s;
    t->handler          = task_decompress_handler;
-
-   if (!string_is_empty(subdir))
+   if (subdir && *subdir)
    {
       s->subdir        = strdup(subdir);
+      if (!s->subdir)
+         goto error;
       t->handler       = task_decompress_handler_subdir;
    }
-   else if (!string_is_empty(target_file))
+   else if (target_file && *target_file)
    {
       s->target_file   = strdup(target_file);
+      if (!s->target_file)
+         goto error;
       t->handler       = task_decompress_handler_target_file;
    }
-
    t->callback         = cb;
    t->user_data        = user_data;
-
    _len                = strlcpy(tmp,
 		   msg_hash_to_str(MSG_EXTRACTING), sizeof(tmp));
    tmp[  _len]         = ':';
    tmp[++_len]         = ' ';
    tmp[++_len]         = '\0';
-   _len               += strlcpy(tmp + _len,
+   strlcpy(tmp + _len,
          path_basename(source_file),
                          sizeof(tmp) - _len);
-   tmp[++_len]         = '\0';
-
    t->title            = strdup(tmp);
+   if (!t->title)
+      goto error;
    t->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       t->flags        |=  RETRO_TASK_FLG_MUTE;
    else
       t->flags        &= ~RETRO_TASK_FLG_MUTE;
-
    task_queue_push(t);
-
    return t;
+error:
+   free(s->source_file);
+   free(s->target_dir);
+   free(s->valid_ext);
+   free(s->subdir);
+   free(s->target_file);
+   free(s->userdata);
+   free(s);
+   free(t);
+   return NULL;
 }

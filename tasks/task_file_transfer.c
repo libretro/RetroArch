@@ -18,8 +18,6 @@
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
-#include <string/stdstring.h>
-
 #ifdef HAVE_AUDIOMIXER
 #include "task_audio_mixer.h"
 #endif
@@ -62,41 +60,39 @@ void task_file_load_handler(retro_task_t *task)
 {
    uint8_t flg;
    nbio_handle_t         *nbio  = (nbio_handle_t*)task->state;
-
    if (nbio)
    {
       switch (nbio->status)
       {
          case NBIO_STATUS_INIT:
-            if (nbio && !string_is_empty(nbio->path))
+            if (nbio->path)
             {
                struct nbio_t *handle = (struct nbio_t*)nbio_open(nbio->path, NBIO_READ);
-
                if (handle)
                {
                   nbio->handle       = handle;
                   nbio->status       = NBIO_STATUS_TRANSFER;
-
                   nbio_begin_read(handle);
                   return;
                }
-
                task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
             }
             break;
          case NBIO_STATUS_TRANSFER_PARSE:
-            if (!nbio || task_file_transfer_iterate_parse(nbio) == -1)
+            if (task_file_transfer_iterate_parse(nbio) == -1)
+            {
                task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+               break;
+            }
             nbio->status = NBIO_STATUS_TRANSFER_FINISHED;
             break;
          case NBIO_STATUS_TRANSFER:
-            if (!nbio || task_file_transfer_iterate_transfer(nbio) == -1)
+            if (task_file_transfer_iterate_transfer(nbio) == -1)
                nbio->status = NBIO_STATUS_TRANSFER_PARSE;
             break;
          case NBIO_STATUS_TRANSFER_FINISHED:
             break;
       }
-
       switch (nbio->type)
       {
          case NBIO_TYPE_PNG:
@@ -123,9 +119,7 @@ void task_file_load_handler(retro_task_t *task)
             break;
       }
    }
-
    flg = task_get_flags(task);
-
    if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
    {
       task_set_error(task, strldup("Task canceled.", sizeof("Task canceled.")));
