@@ -1211,51 +1211,45 @@ int net_http_fd(struct http_t *state)
 static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
 {
    struct response *response = (struct response*)&state->response;
+   char *scan;
+   char *dataend;
 
    response->pos += len;
+   scan    = response->data;
+   dataend = response->data + response->pos;
 
    while (response->part < P_BODY)
    {
-      char *dataend  = response->data + response->pos;
-      char *lineend  = (char*)memchr(response->data, '\n', response->pos);
-
+      ssize_t remaining = dataend - scan;
+      char *lineend     = (char*)memchr(scan, '\n', remaining);
       if (!lineend)
          break;
 
-      *lineend       = '\0';
-
-      if (lineend != response->data && lineend[-1]=='\r')
+      *lineend = '\0';
+      if (lineend != scan && lineend[-1] == '\r')
          lineend[-1] = '\0';
 
       if (response->part == P_HEADER_TOP)
       {
-         if (strncmp(response->data, "HTTP/1.", sizeof("HTTP/1.")-1)!=0)
+         if (   scan[0] != 'H' || scan[1] != 'T' || scan[2] != 'T'
+             || scan[3] != 'P' || scan[4] != '/' || scan[5] != '1'
+             || scan[6] != '.')
          {
             response->part = P_DONE;
             state->err     = true;
             return -1;
          }
-         response->status = (int)strtoul(response->data
-               + (sizeof("HTTP/1.1 ")-1), NULL, 10);
-         response->part   = P_HEADER;
+         {
+            const char *p  = scan + 9;
+            response->status = (p[0] - '0') * 100
+                             + (p[1] - '0') * 10
+                             + (p[2] - '0');
+         }
+         response->part = P_HEADER;
       }
       else
       {
-         if (string_starts_with_case_insensitive(response->data,
-            "Content-Length:"))
-         {
-            char* ptr = response->data + (sizeof("Content-Length:")-1);
-            while (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')
-               ++ptr;
-
-            response->bodytype = T_LEN;
-            response->len      = strtol(ptr, NULL, 10);
-         }
-         else if (string_is_equal_case_insensitive(response->data,
-            "Transfer-Encoding: chunked"))
-            response->bodytype = T_CHUNK;
-
-         if (response->data[0]=='\0')
+         if (scan[0] == '\0')
          {
             if (response->status == 100)
                response->part = P_HEADER_TOP;
@@ -1265,17 +1259,51 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
                if (response->bodytype == T_CHUNK)
                   response->part = P_BODY_CHUNKLEN;
             }
+            scan = lineend + 1;
+            continue;
          }
-         else
+
+         switch (scan[0] | 0x20)
+         {
+            case 'c':
+               if (strncasecmp(scan, "Content-Length:",
+                     sizeof("Content-Length:") - 1) == 0)
+               {
+                  char *ptr      = scan + (sizeof("Content-Length:") - 1);
+                  ssize_t val    = 0;
+                  while (*ptr == ' ' || *ptr == '\t')
+                     ++ptr;
+                  while (*ptr >= '0' && *ptr <= '9')
+                     val = val * 10 + (*ptr++ - '0');
+                  response->bodytype = T_LEN;
+                  response->len      = val;
+               }
+               break;
+            case 't':
+               if (strcasecmp(scan,
+                     "Transfer-Encoding: chunked") == 0)
+                  response->bodytype = T_CHUNK;
+               break;
+            default:
+               break;
+         }
+
          {
             union string_list_elem_attr attr;
             attr.i = 0;
-            string_list_append(response->headers, response->data, attr);
+            string_list_append(response->headers, scan, attr);
          }
       }
 
-      memmove(response->data, lineend + 1, dataend-(lineend+1));
-      response->pos = (dataend-(lineend + 1));
+      scan = lineend + 1;
+   }
+
+   if (scan != response->data)
+   {
+      ssize_t leftover = dataend - scan;
+      if (leftover > 0)
+         memmove(response->data, scan, leftover);
+      response->pos = leftover;
    }
 
    if (response->part >= P_BODY)
