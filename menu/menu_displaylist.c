@@ -2095,7 +2095,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                count++;
 
 #ifdef HAVE_RGUI
-            if (string_is_equal(menu_driver, "rgui"))
+            if (memcmp(menu_driver, "rgui", 5) == 0)
             {
                /* Device Display Name */
                snprintf(entry, sizeof(entry), /* TODO/FIXME: localize */
@@ -2585,7 +2585,7 @@ static int menu_displaylist_parse_playlist(
 #ifdef HAVE_RGUI
       /* Get spacer for menu entry labels (<content><spacer><core>)
        * > Note: Only required when showing inline core names */
-      if (string_is_equal(menu_driver, "rgui"))
+      if (memcmp(menu_driver, "rgui", 5) == 0)
          strlcpy(label_spacer, PL_LABEL_SPACER_RGUI, sizeof(label_spacer));
       else
 #endif
@@ -3602,9 +3602,9 @@ static int menu_displaylist_parse_load_content_settings(
                      count++;
                }
 
-               if (  settings->bools.quick_menu_show_start_streaming
-                  && string_is_equal(settings->arrays.record_driver,
-                        "ffmpeg"))
+               if (     settings->bools.quick_menu_show_start_streaming
+                     && memcmp(settings->arrays.record_driver,
+                        "ffmpeg", STRLEN_CONST("ffmpeg")) == 0)
                {
                   if (menu_entries_append(list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
@@ -3937,11 +3937,13 @@ static int menu_displaylist_parse_horizontal_content_actions(
                         || string_ends_with_size(menu_st->thumbnail_path_data->system, "_history",
                               menu_st->thumbnail_path_data->system_len, STRLEN_CONST("_history"));
 
-                  /* An annoyance: if the user navigates to the information menu,
-                   * then to the database entry, the thumbnail system will be changed.
-                   * This breaks the above 'remove_entry_enabled' check for the
-                   * history and favorites playlists. We therefore have to check
-                   * the playlist file name as well... */
+                  /* An annoyance: if the user navigates to the 
+                   * information menu, then to the database entry, 
+                   * the thumbnail system will be changed.
+                   * This breaks the above 'remove_entry_enabled' 
+                   * check for the history and favorites playlists. 
+                   * We therefore have to check the playlist file 
+                   * name as well... */
                   if (   !remove_entry_enabled
                       && settings->bools.quick_menu_show_information
                       && !string_is_empty(playlist_file))
@@ -4202,9 +4204,9 @@ static unsigned menu_displaylist_parse_playlists(
       const char *menu_ident = menu_driver_ident();
       bool show_add_content  = (settings->uints.menu_content_show_add_entry ==
             MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB);
-      bool show_history      = !string_is_equal(menu_ident, "rgui")
-            && !(string_is_equal(menu_ident, "glui")
-            && !settings->bools.menu_materialui_show_nav_bar);
+      bool show_history = !(memcmp(menu_ident, "rgui", 4) == 0)
+                       && !(memcmp(menu_ident, "glui", 4) == 0
+                       && !settings->bools.menu_materialui_show_nav_bar);
 
       if (show_history)
       {
@@ -4619,8 +4621,8 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(file_list_t *list,
          /* Ignore history/favourites
           * > content_history + favorites are handled separately
           * > music/video/image_history are ignored */
-         if ( string_ends_with_size(path, "_history.lpl", strlen(path), STRLEN_CONST("_history.lpl"))
-               || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
+         if (     string_ends_with_size(path, "_history.lpl", strlen(path), STRLEN_CONST("_history.lpl"))
+               || memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, strlen(FILE_PATH_CONTENT_FAVORITES)) == 0)
             continue;
 
          fill_pathname(playlist_display_name, playlist_file, "",
@@ -4683,9 +4685,10 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
           * > music/video/image_history are ignored */
          if (
                   string_ends_with_size(path, "_history.lpl",
-                     strlen(path), STRLEN_CONST("_history.lpl"))
-               || string_is_equal(playlist_file,
-                  FILE_PATH_CONTENT_FAVORITES))
+                  strlen(path), STRLEN_CONST("_history.lpl"))
+               || memcmp(playlist_file,
+                  FILE_PATH_CONTENT_FAVORITES,
+                  strlen(FILE_PATH_CONTENT_FAVORITES)) == 0)
             continue;
 
          menu_entries_append(list, path, "",
@@ -4812,21 +4815,21 @@ static bool menu_displaylist_parse_playlist_manager_settings(
 
    /* > Get label values */
 #ifdef HAVE_RGUI
-   if (string_is_equal(menu_driver, "rgui"))
+   if (memcmp(menu_driver, "rgui", 4) == 0 && menu_driver[4] == '\0')
    {
       right_thumbnail_label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
       left_thumbnail_label_value  = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
    }
 #endif
 #ifdef HAVE_OZONE
-   if (string_is_equal(menu_driver, "ozone"))
+   if (memcmp(menu_driver, "ozone", 6) == 0)
    {
       right_thumbnail_label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
       left_thumbnail_label_value  = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
    }
 #endif
 #ifdef HAVE_MATERIALUI
-   if (string_is_equal(menu_driver, "glui"))
+   if (memcmp(menu_driver, "glui", 5) == 0)
    {
       right_thumbnail_label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI;
       left_thumbnail_label_value  = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI;
@@ -6662,7 +6665,7 @@ static unsigned menu_displaylist_populate_subsystem(
    int  i       = 0;
 #if defined(HAVE_RGUI)
    const char *menu_driver  = menu_driver_ident();
-   bool is_rgui             = string_is_equal(menu_driver, "rgui");
+   bool is_rgui             = (memcmp(menu_driver, "rgui", 4) == 0);
 
    /* Select appropriate 'star' marker for subsystem menu entries
     * (i.e. RGUI does not support unicode, so use a 'standard'
@@ -8082,7 +8085,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK:
-                     if (string_is_equal(menu_driver, "rgui"))
+                     if (memcmp(menu_driver, "rgui", 5) == 0)
                         build_list[i].checked = false;
                      break;
                   default:
@@ -8463,7 +8466,8 @@ unsigned menu_displaylist_build_list(
                               entry_valid = false;
                         }
                         /* Check for 'off' keyword */
-                        else if (string_is_equal_noncase(search_term, off_string))
+                        else if (string_is_equal_noncase(
+                           search_term, off_string))
                         {
                            if (cheat_on)
                               entry_valid = false;
@@ -11114,7 +11118,7 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
-                     if (string_is_equal(settings->arrays.cloud_sync_driver, "webdav")
+                     if (  string_is_equal(settings->arrays.cloud_sync_driver, "webdav")
                         || string_is_equal(settings->arrays.cloud_sync_driver, "s3"))
                        build_list[i].checked = true;
                      break;
@@ -12562,7 +12566,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                unsigned max_users          = settings->uints.input_max_users;
                const char *menu_driver     = menu_driver_ident();
 #ifdef HAVE_RGUI
-               bool is_rgui                = string_is_equal(menu_driver, "rgui");
+               bool is_rgui                = memcmp(menu_driver, "rgui", STRLEN_CONST("rgui")) == 0 && menu_driver[STRLEN_CONST("rgui")] == '\0';
 #endif
                file_list_t *list           = info->list;
                unsigned port               = string_to_unsigned(info->path);
@@ -13733,16 +13737,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (     string_starts_with_size(info->path, "content_", STRLEN_CONST("content_"))
                   && string_ends_with_size  (info->path, ".lpl", strlen(info->path), STRLEN_CONST(".lpl")))
             {
-               if (string_is_equal(info->path,
-                        FILE_PATH_CONTENT_HISTORY))
+               if (memcmp(info->path, FILE_PATH_CONTENT_HISTORY, sizeof(FILE_PATH_CONTENT_HISTORY)) == 0)
                {
                   if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info, settings))
                      return menu_displaylist_process(info);
                   return false;
                }
 
-               if (string_is_equal(info->path,
-                        FILE_PATH_CONTENT_FAVORITES))
+               if (memcmp(info->path, FILE_PATH_CONTENT_FAVORITES, sizeof(FILE_PATH_CONTENT_FAVORITES)) == 0)
                {
                   if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info, settings))
                      return menu_displaylist_process(info);
@@ -15209,13 +15211,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                bool show_add_content         = (settings->uints.menu_content_show_add_entry ==
                      MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB)
                   && !settings->bools.kiosk_mode_enable;
-               bool show_settings            = settings->bools.menu_content_show_settings
-                     && !settings->bools.kiosk_mode_enable
-                     && (  (string_is_equal(menu_ident, "rgui"))
+               bool show_settings = settings->bools.menu_content_show_settings
+                  && !settings->bools.kiosk_mode_enable
+                  && (     (string_is_equal(menu_ident, "rgui"))
                         || (string_is_equal(menu_ident, "glui")
                      &&    !settings->bools.menu_materialui_show_nav_bar));
 
-               if (     string_is_equal(menu_ident, "glui")
+               if (     memcmp(menu_ident, "glui", 4) == 0 && menu_ident[4] == '\0'
                      && settings->bools.menu_materialui_show_nav_bar
                      && settings->bools.menu_content_show_playlist_tabs)
                   show_playlists = false;

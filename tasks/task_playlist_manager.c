@@ -371,13 +371,13 @@ static void pl_manager_validate_core_association(
       goto reset_core;
 
    /* Handle 'DETECT' entries */
-   if (string_is_equal(core_path, "DETECT"))
+   if (memcmp(core_path, "DETECT", 7) == 0)
    {
-      if (!string_is_equal(core_name, "DETECT"))
+      if (memcmp(core_name, "DETECT", 7) != 0)
          goto reset_core;
    }
    /* Handle 'builtin' entries */
-   else if (string_is_equal(core_path, "builtin"))
+   else if (memcmp(core_path, "builtin", 8) == 0)
    {
       if (string_is_empty(core_name))
          goto reset_core;
