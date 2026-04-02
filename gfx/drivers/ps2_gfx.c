@@ -931,7 +931,7 @@ static bool ps2_frame(void *data, const void *frame,
          font_driver_render_msg(ps2, video_info->stat_text, osd_params, NULL);
    }
 
-   if (!string_is_empty(msg))
+   if (msg)
       font_driver_render_msg(ps2, msg, NULL, NULL);
 
    if (gsGlobal->DoubleBuffering == GS_SETTING_OFF)
