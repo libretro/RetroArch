@@ -28,7 +28,6 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <file/nbio.h>
-#include <string/stdstring.h>
 
 enum image_type_enum image_texture_get_type(const char *path)
 {
@@ -37,41 +36,61 @@ enum image_type_enum image_texture_get_type(const char *path)
     * in length. We therefore only need to extract the first
     * 5 characters from the extension of the input path
     * to correctly validate a match */
+   size_t len;
    const char *ext = NULL;
-   char ext_lower[6];
-
-   ext_lower[0] = '\0';
-
-   if (string_is_empty(path))
+   if (!path || *path == '\0')
       return IMAGE_TYPE_NONE;
 
-   /* Get file extension */
    ext = strrchr(path, '.');
-
    if (!ext || (*(++ext) == '\0'))
       return IMAGE_TYPE_NONE;
 
-   /* Copy and convert to lower case */
-   strlcpy(ext_lower, ext, sizeof(ext_lower));
-   string_to_lower(ext_lower);
+   len = strlen(ext);
 
+   /* All supported extensions are 3 or 4 characters */
+   if (len < 3 || len > 4)
+      return IMAGE_TYPE_NONE;
+
+   /* Compare with inline lowering — avoids copy + tolower pass */
+   switch (len)
+   {
+      case 3:
 #ifdef HAVE_RPNG
-   if (string_is_equal(ext_lower, "png"))
-      return IMAGE_TYPE_PNG;
+         if ((ext[0] | 0x20) == 'p' &&
+             (ext[1] | 0x20) == 'n' &&
+             (ext[2] | 0x20) == 'g')
+            return IMAGE_TYPE_PNG;
 #endif
 #ifdef HAVE_RJPEG
-   if (string_is_equal(ext_lower, "jpg") ||
-       string_is_equal(ext_lower, "jpeg"))
-      return IMAGE_TYPE_JPEG;
+         if ((ext[0] | 0x20) == 'j' &&
+             (ext[1] | 0x20) == 'p' &&
+             (ext[2] | 0x20) == 'g')
+            return IMAGE_TYPE_JPEG;
 #endif
 #ifdef HAVE_RBMP
-   if (string_is_equal(ext_lower, "bmp"))
-      return IMAGE_TYPE_BMP;
+         if ((ext[0] | 0x20) == 'b' &&
+             (ext[1] | 0x20) == 'm' &&
+             (ext[2] | 0x20) == 'p')
+            return IMAGE_TYPE_BMP;
 #endif
 #ifdef HAVE_RTGA
-   if (string_is_equal(ext_lower, "tga"))
-      return IMAGE_TYPE_TGA;
+         if ((ext[0] | 0x20) == 't' &&
+             (ext[1] | 0x20) == 'g' &&
+             (ext[2] | 0x20) == 'a')
+            return IMAGE_TYPE_TGA;
 #endif
+         break;
+
+      case 4:
+#ifdef HAVE_RJPEG
+         if ((ext[0] | 0x20) == 'j' &&
+             (ext[1] | 0x20) == 'p' &&
+             (ext[2] | 0x20) == 'e' &&
+             (ext[3] | 0x20) == 'g')
+            return IMAGE_TYPE_JPEG;
+#endif
+         break;
+   }
 
    return IMAGE_TYPE_NONE;
 }
@@ -118,10 +137,10 @@ bool image_texture_color_convert(unsigned r_shift,
          /* Explicitly cast these to uint32_t to prevent
           * ASAN runtime error: left shift of 255 by 24 places
           * cannot be represented in type 'int' */
-         pixels[i]    = ((uint32_t)a << a_shift) |
-                        ((uint32_t)r << r_shift) |
-                        ((uint32_t)g << g_shift) |
-                        ((uint32_t)b << b_shift);
+         pixels[i]    = (  (uint32_t)a << a_shift)
+                        | ((uint32_t)r << r_shift)
+                        | ((uint32_t)g << g_shift)
+                        | ((uint32_t)b << b_shift);
       }
 
       return true;

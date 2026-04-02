@@ -27,7 +27,6 @@
 #include <io.h>
 #endif
 #include <fcntl.h>
-#include <string/stdstring.h>
 
 #ifndef _SHA1_H_
 #define _SHA1_H_
