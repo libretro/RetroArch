@@ -3546,39 +3546,42 @@ static bool check_menu_driver_compatibility(settings_t *settings)
    char *video_driver   = settings->arrays.video_driver;
    char *menu_driver    = settings->arrays.menu_driver;
 
+   /* rgui and null menu work with anything */
    if (     string_is_equal(menu_driver,  "rgui")
          || string_is_equal(menu_driver,  "null")
          || string_is_equal(video_driver, "null"))
       return true;
 
-   /* TODO/FIXME - maintenance hazard */
-   if (string_starts_with_size(video_driver, "d3d", STRLEN_CONST("d3d")))
-      if (
-               string_is_equal(video_driver, "d3d9_hlsl")
-            || string_is_equal(video_driver, "d3d9_cg")
-            || string_is_equal(video_driver, "d3d10")
-            || string_is_equal(video_driver, "d3d11")
-            || string_is_equal(video_driver, "d3d12")
-         )
-      return true;
-   if (string_starts_with_size(video_driver, "gl", STRLEN_CONST("gl")))
-      if (
-               string_is_equal(video_driver, "gl")
-            || string_is_equal(video_driver, "gl1")
-            || string_is_equal(video_driver, "glcore")
-         )
-         return true;
-   if (
-            string_is_equal(video_driver, "caca")
-         || string_is_equal(video_driver, "gdi")
-         || string_is_equal(video_driver, "gx2")
-         || string_is_equal(video_driver, "vulkan")
-         || string_is_equal(video_driver, "metal")
-         || string_is_equal(video_driver, "ctr")
-         || string_is_equal(video_driver, "vita2d")
-         || string_is_equal(video_driver, "rsx")
-      )
-      return true;
+   /* Non-rgui menu drivers (e.g. xmb, ozone, materialui)
+    * require a GPU-accelerated video driver. */
+   switch (video_driver[0])
+   {
+      case 'd':
+         return string_is_equal(video_driver, "d3d9_hlsl")
+             || string_is_equal(video_driver, "d3d9_cg")
+             || string_is_equal(video_driver, "d3d10")
+             || string_is_equal(video_driver, "d3d11")
+             || string_is_equal(video_driver, "d3d12");
+      case 'g':
+         if (video_driver[1] == 'l')
+            return string_is_equal(video_driver, "gl")
+                || string_is_equal(video_driver, "gl1")
+                || string_is_equal(video_driver, "glcore");
+         if (video_driver[1] == 'x')
+            return string_is_equal(video_driver, "gx2");
+         return false;
+      case 'v':
+         return string_is_equal(video_driver, "vulkan")
+             || string_is_equal(video_driver, "vita2d");
+      case 'm':
+         return string_is_equal(video_driver, "metal");
+      case 'r':
+         return string_is_equal(video_driver, "rsx");
+      case 'c':
+         return string_is_equal(video_driver, "ctr");
+      default:
+         break;
+   }
 
    return false;
 }
