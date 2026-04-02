@@ -988,7 +988,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   "กำลังบันทึก"
+   "การบันทึก"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
@@ -1001,6 +1001,206 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
    "เปลี่ยนการตั้งค่าการซิงค์คลาวด์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "เปิดใช้งานการซิงค์คลาวด์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "พยายาม Sync Configs, Sram, และ States ไปยังผู้ให้บริการ พื้นที่จัดเก็บข้อมูลบนคลาวด์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "การซิงค์คลาวด์แบบเขียนทับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "ซิงค์: Saves/States"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "ซิงค์: ไฟล์กำหนดค่า Config"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "ซิงค์: รูปภาพปก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "ซิงค์: ไฟล์ระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "เมื่อเปิดใช้งาน Saves/States จะถูกซิงค์ไปยังคลาวด์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "เมื่อเปิดใช้งาน Saves/States จะถูกซิงค์ไปยังคลาวด์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "เมื่อเปิดใช้งาน รูปภาพตัวอย่าง จะถูกซิงค์ไปยังคลาวด์ โดยปกติไม่แนะนำให้เปิดใช้งาน ยกเว้นกรณีที่มี รูปภาพตัวอย่าง แบบกำหนดเองจำนวนมาก มิฉะนั้นการใช้ ตัวดาวน์โหลดรูปภาพตัวอย่[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "เมื่อเปิดใช้งาน ไฟล์ระบบจะถูกซิงค์ไปยังคลาวด์ ซึ่งอาจทำให้ใช้เวลาในการซิงค์เพิ่มขึ้นอย่างมาก โปรดใช้งานด้วยความระมัดระวัง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "เมื่อปิดใช้งาน ไฟล์จะถูกย้ายไปยังโฟลเดอร์สำรองข้อมูลก่อนที่จะถูกเขียนทับหรือลบทิ้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "โหมด ซิงค์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "อัตโนมัติ: ซิงค์เมื่อเริ่มใช้งาน RetroArch และเมื่อปิด Core ที่รันอยู่กำหนดเอง: ซิงค์เฉพาะเมื่อกดปุ่ม 'ซิงค์ทันที' ด้วยตนเองเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "คลาวด์ซิงค์ ทำงานเบื้องหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "เลือกโปรโตคอลเครือข่ายสำหรับพื้นที่จัดเก็บข้อมูลบนคลาวด์ที่จะใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "URL พื้นที่จัดเก็บข้อมูลคลาวด์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "URL สำหรับจุดเชื่อมต่อ API ไปยังบริการพื้นที่จัดเก็บข้อมูลบนคลาวด์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "ชื่อผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "ชื่อผู้ใช้งานสำหรับบัญชีพื้นที่จัดเก็บข้อมูลบนคลาวด์ของคุณ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "รหัสผ่าน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "รหัสผ่านสำหรับบัญชีพื้นที่จัดเก็บข้อมูลบนคลาวด์ของคุณ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID คีย์การเข้าถึง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID คีย์การเข้าถึงสำหรับบัญชีพื้นที่จัดเก็บข้อมูลบนคลาวด์ของคุณ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "คีย์การเข้าถึงลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "คีย์การเข้าถึงลับสำหรับบัญชีพื้นที่จัดเก็บข้อมูลบนคลาวด์ของคุณ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "URL สำหรับ S3 Endpoint ของพื้นที่จัดเก็บข้อมูลบนคลาวด์ของคุณ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   "การบันทึกข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   "เปลี่ยนการตั้งค่าการบันทึกข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   "ตัวจัดการไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "เปลี่ยนการตั้งค่าตัวจัดการไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "ไฟล์กำหนดค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "ไฟล์บีบอัด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "ไฟล์กำหนดค่าการบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "ไฟล์ตัวชี้ ฐานข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "ไฟล์กำหนดค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "ไฟล์ Shader preset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "ไฟล์ Shader"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   "ไฟล์กำหนดปุ่ม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "ไฟล์สูตรโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "ไฟล์ Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "ไฟล์ฐานข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "ไฟล์ฟอนต์ TrueType"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "ไฟล์ทั่วไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "วิดีโอ เลือกเพื่อเปิดไฟล์นี้ด้วยเครื่องเล่นวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "เพลง เลือกเพื่อเปิดไฟล์นี้ด้วยเครื่องเล่นเพลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "ไฟล์รูปภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "รูปภาพ เลือกเพื่อเปิดไฟล์นี้ด้วยโปรแกรมดูรูปภาพ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1460,6 +1660,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    "รายการเล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   "ตัวจัดการไฟล์"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
