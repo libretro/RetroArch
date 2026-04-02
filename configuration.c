@@ -3546,43 +3546,39 @@ static bool check_menu_driver_compatibility(settings_t *settings)
    char *video_driver   = settings->arrays.video_driver;
    char *menu_driver    = settings->arrays.menu_driver;
 
-   /* rgui and null menu work with anything */
-   if (     string_is_equal(menu_driver,  "rgui")
-         || string_is_equal(menu_driver,  "null")
-         || string_is_equal(video_driver, "null"))
+   if (  (memcmp(menu_driver,  "rgui", 4) == 0 && menu_driver[4]  == '\0')
+      || (memcmp(menu_driver,  "null", 4) == 0 && menu_driver[4]  == '\0')
+      || (memcmp(video_driver, "null", 4) == 0 && video_driver[4] == '\0'))
       return true;
 
-   /* Non-rgui menu drivers (e.g. xmb, ozone, materialui)
-    * require a GPU-accelerated video driver. */
    switch (video_driver[0])
    {
       case 'd':
-         return string_is_equal(video_driver, "d3d9_hlsl")
-             || string_is_equal(video_driver, "d3d9_cg")
-             || string_is_equal(video_driver, "d3d10")
-             || string_is_equal(video_driver, "d3d11")
-             || string_is_equal(video_driver, "d3d12");
+         return (memcmp(video_driver, "d3d9_hlsl", 9) == 0 && video_driver[9] == '\0')
+             || (memcmp(video_driver, "d3d9_cg",  7) == 0 && video_driver[7]  == '\0')
+             || (memcmp(video_driver, "d3d10",    5) == 0 && video_driver[5]  == '\0')
+             || (memcmp(video_driver, "d3d11",    5) == 0 && video_driver[5]  == '\0')
+             || (memcmp(video_driver, "d3d12",    5) == 0 && video_driver[5]  == '\0');
       case 'g':
          if (video_driver[1] == 'l')
-            return string_is_equal(video_driver, "gl")
-                || string_is_equal(video_driver, "gl1")
-                || string_is_equal(video_driver, "glcore");
+            return (memcmp(video_driver, "gl",     2) == 0 && video_driver[2] == '\0')
+                || (memcmp(video_driver, "gl1",    3) == 0 && video_driver[3] == '\0')
+                || (memcmp(video_driver, "glcore", 6) == 0 && video_driver[6] == '\0');
          if (video_driver[1] == 'x')
-            return string_is_equal(video_driver, "gx2");
+            return (memcmp(video_driver, "gx2",    3) == 0 && video_driver[3] == '\0');
          return false;
       case 'v':
-         return string_is_equal(video_driver, "vulkan")
-             || string_is_equal(video_driver, "vita2d");
+         return (memcmp(video_driver, "vulkan", 6) == 0 && video_driver[6] == '\0')
+             || (memcmp(video_driver, "vita2d", 6) == 0 && video_driver[6] == '\0');
       case 'm':
-         return string_is_equal(video_driver, "metal");
+         return (memcmp(video_driver, "metal",  5) == 0 && video_driver[5] == '\0');
       case 'r':
-         return string_is_equal(video_driver, "rsx");
+         return (memcmp(video_driver, "rsx",    3) == 0 && video_driver[3] == '\0');
       case 'c':
-         return string_is_equal(video_driver, "ctr");
+         return (memcmp(video_driver, "ctr",    3) == 0 && video_driver[3] == '\0');
       default:
          break;
    }
-
    return false;
 }
 #endif
