@@ -490,9 +490,9 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
             strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
-         if (string_is_equal(value, "true"))
+         if (memcmp(value, "true", 5) == 0)
             *setting->value.target.boolean = true;
-         else if (string_is_equal(value, "false"))
+         else if (memcmp(value, "false", 6) == 0)
             *setting->value.target.boolean = false;
          break;
       default:
@@ -6095,9 +6095,9 @@ static int setting_string_action_left_driver(
    success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv);
    if (setting_is_protected_driver(setting))
    {
-      while (success &&
-             string_is_equal(drv.s, "null") &&
-             (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
+      while (    success
+             &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+             && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
    }
 
    if (!success)
@@ -6116,9 +6116,9 @@ static int setting_string_action_left_driver(
          success = driver_ctl(RARCH_DRIVER_CTL_FIND_LAST, &drv);
          if (setting_is_protected_driver(setting))
          {
-            while (success &&
-                   string_is_equal(drv.s, "null") &&
-                   (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
+            while (    success
+                   &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+                   && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
          }
       }
       else if (setting_is_protected_driver(setting))
@@ -6127,9 +6127,9 @@ static int setting_string_action_left_driver(
           * find the next driver in the array of drivers and keep finding more
           * next drivers while the driver is null or until there are no more next drivers. */
          success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv);
-         while (success &&
-                string_is_equal(drv.s, "null") &&
-                (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
+         while (    success
+                &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+                && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
       }
    }
 
@@ -6418,9 +6418,9 @@ static int setting_string_action_right_driver(
    success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv);
    if (setting_is_protected_driver(setting))
    {
-      while (success &&
-             string_is_equal(drv.s, "null") &&
-             (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
+      while (    success
+             &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+             && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
    }
 
    if (!success)
@@ -6439,9 +6439,9 @@ static int setting_string_action_right_driver(
          success = driver_ctl(RARCH_DRIVER_CTL_FIND_FIRST, &drv);
          if (setting_is_protected_driver(setting))
          {
-            while (success &&
-                   string_is_equal(drv.s, "null") &&
-                   (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
+            while (    success
+                   &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+                   && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
          }
       }
       else if (setting_is_protected_driver(setting))
@@ -6450,9 +6450,9 @@ static int setting_string_action_right_driver(
           * find the previous driver in the array of drivers and keep finding more
           * previous drivers while the driver is null or until there are no more previous drivers. */
          success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv);
-         while (success &&
-                string_is_equal(drv.s, "null") &&
-                (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
+         while (    success
+                &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+                && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
       }
    }
 
@@ -7769,8 +7769,8 @@ rarch_setting_t *menu_setting_find(const char *label)
       const char *short_description = setting->short_description;
 
       if (
-            string_is_equal(label, name) &&
-            (setting->type <= ST_GROUP))
+                string_is_equal(label, name)
+            && (setting->type <= ST_GROUP))
       {
          if (string_is_empty(short_description))
             break;
@@ -9317,8 +9317,8 @@ static void general_write_handler(rarch_setting_t *setting)
          /* > Mapped Port (virtual -> 'physical' port mapping)
           *   Occupies a range of enum indices, so cannot
           *   simply switch on the value */
-         if ((setting->enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT) &&
-             (setting->enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
+         if (   (setting->enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT)
+             && (setting->enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
          {
             /* Must be called whenever settings->uints.input_remap_ports
              * is modified */
@@ -18640,8 +18640,8 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (string_is_not_equal(settings->arrays.menu_driver, "rgui") &&
-             string_is_not_equal(settings->arrays.menu_driver, "ozone"))
+         if (   string_is_not_equal(settings->arrays.menu_driver, "rgui")
+             && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_PATH(
                   list, list_info,
@@ -18673,8 +18673,8 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
          }
 
-         if (string_is_not_equal(settings->arrays.menu_driver, "rgui") &&
-             string_is_not_equal(settings->arrays.menu_driver, "xmb"))
+         if (   string_is_not_equal(settings->arrays.menu_driver, "rgui")
+             && string_is_not_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_FLOAT(
                   list, list_info,
@@ -18793,9 +18793,9 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, 1800, 10, true, true);
 
 #if (defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)) && !defined(_3DS)
-         if (   string_is_equal(settings->arrays.menu_driver, "glui")
-             || string_is_equal(settings->arrays.menu_driver, "xmb")
-             || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (     memcmp(settings->arrays.menu_driver, "glui", 5) == 0
+               || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
+               || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
             CONFIG_UINT(
                   list, list_info,
@@ -19078,9 +19078,9 @@ static bool setting_append_list(
 
             /* ps2 and sdl_dingux/sdl_rs90 gfx drivers do
              * not support menu framebuffer transparency */
-            if (!string_is_equal(settings->arrays.video_driver, "ps2") &&
-                !string_is_equal(settings->arrays.video_driver, "sdl_dingux") &&
-                !string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            if (   !string_is_equal(settings->arrays.video_driver, "ps2")
+                && !string_is_equal(settings->arrays.video_driver, "sdl_dingux")
+                && !string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -19417,9 +19417,9 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
          /* > MaterialUI, XMB and Ozone all support menu scaling */
-         if (   string_is_equal(settings->arrays.menu_driver, "glui")
-             || string_is_equal(settings->arrays.menu_driver, "xmb")
-             || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (     memcmp(settings->arrays.menu_driver, "glui", 5) == 0
+               || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
+               || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
             CONFIG_FLOAT(
                   list, list_info,
@@ -20723,9 +20723,9 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
-             || string_is_equal(settings->arrays.menu_driver, "ozone")
-             || string_is_equal(settings->arrays.menu_driver, "rgui"))
+         if (     memcmp(settings->arrays.menu_driver, "glui", 5) == 0
+               || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
+               || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -20857,9 +20857,9 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 100, 1, true, true);
          }
 
-         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
-             || string_is_equal(settings->arrays.menu_driver, "ozone")
-             || string_is_equal(settings->arrays.menu_driver, "glui"))
+         if (     memcmp(settings->arrays.menu_driver, "glui", 5) == 0
+               || memcmp(settings->arrays.menu_driver, "xmb", 4) == 0
+               || memcmp(settings->arrays.menu_driver, "ozone", 6) == 0)
          {
             CONFIG_UINT(
                   list, list_info,

@@ -304,8 +304,8 @@ runtime_log_t *runtime_log_init(
    }
 
    if (     string_is_empty(core_path)
-         || string_is_equal(core_path, "builtin")
-         || string_is_equal(core_path, "DETECT"))
+         || !memcmp(core_path, "builtin", 8)
+         || !memcmp(core_path, "DETECT", 7))
       return NULL;
 
    /* Get core info:
@@ -378,7 +378,7 @@ runtime_log_t *runtime_log_init(
    }
    /* NOTE: TyrQuake requires a specific hack, since all
     * content has the same name... */
-   else if (string_is_equal(core_name, "TyrQuake"))
+   else if (memcmp(core_name, "TyrQuake", 9) == 0)
    {
       char *last_slash = find_last_slash(content_path);
       if (last_slash)
@@ -1338,8 +1338,8 @@ void runtime_update_playlist(
    if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
    {
       const char *menu_ident = menu_driver_ident();
-      if (   string_is_equal(menu_ident, "ozone")
-          || string_is_equal(menu_ident, "glui"))
+      if (     memcmp(menu_ident, "ozone", 5) == 0
+            || memcmp(menu_ident, "glui", 4) == 0)
       {
          runtime_log_get_runtime_str(NULL,
                runtime_str, sizeof(runtime_str));
@@ -1429,8 +1429,8 @@ void runtime_update_contentless_core(
    if (runtime_info.status != CONTENTLESS_CORE_RUNTIME_VALID)
    {
       const char *menu_ident = menu_driver_ident();
-      if (   string_is_equal(menu_ident, "ozone")
-          || string_is_equal(menu_ident, "glui"))
+      if (     memcmp(menu_ident, "ozone", 5) == 0
+            || memcmp(menu_ident, "glui", 4) == 0)
       {
          runtime_log_get_runtime_str(NULL,
                runtime_str, sizeof(runtime_str));

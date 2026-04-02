@@ -400,13 +400,13 @@ static bool task_overlay_load_desc(
    desc->retro_key_idx = 0;
    BIT256_CLEAR_ALL(desc->button_mask);
 
-   if (string_is_equal(elems[0], "analog_left"))
+   if (memcmp(elems[0], "analog_left", 11) == 0)
       desc->type          = OVERLAY_TYPE_ANALOG_LEFT;
-   else if (string_is_equal(elems[0], "analog_right"))
+   else if (memcmp(elems[0], "analog_right", 12) == 0)
       desc->type          = OVERLAY_TYPE_ANALOG_RIGHT;
-   else if (string_is_equal(elems[0], "dpad_area"))
+   else if (memcmp(elems[0], "dpad_area", 9) == 0)
       desc->type          = OVERLAY_TYPE_DPAD_AREA;
-   else if (string_is_equal(elems[0], "abxy_area"))
+   else if (memcmp(elems[0], "abxy_area", 9) == 0)
       desc->type          = OVERLAY_TYPE_ABXY_AREA;
    else if (strstr(elems[0], "retrok_") == elems[0])
    {
@@ -429,13 +429,13 @@ static bool task_overlay_load_desc(
          tmp = p;
          p   = delim ? delim + 1 : NULL;
 
-         if (!string_is_equal(tmp, "nul"))
+         if (memcmp(tmp, "nul", 4) != 0)
          {
             unsigned bind_id = input_config_translate_str_to_bind_id(tmp);
             if (bind_id == RARCH_BIND_LIST_END)
             {
                size_t __len = strlen(tmp);
-               if (__len > 7 && string_is_equal(tmp + __len - 7, "_enable"))
+               if (__len > 7 && memcmp(tmp + __len - 7, "_enable", 7) == 0)
                {
                   char stripped[64];
                   strlcpy(stripped, tmp, __len - 7 + 1 < sizeof(stripped)
@@ -474,9 +474,9 @@ static bool task_overlay_load_desc(
    desc->x_shift = desc->x;
    desc->y_shift = desc->y;
 
-   if (string_is_equal(box, "radial"))
+   if (memcmp(box, "radial", 6) == 0)
       desc->hitbox = OVERLAY_HITBOX_RADIAL;
-   else if (string_is_equal(box, "rect"))
+   else if (memcmp(box, "rect", 4) == 0)
       desc->hitbox = OVERLAY_HITBOX_RECT;
    else
    {
