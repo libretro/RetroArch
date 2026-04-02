@@ -63,24 +63,27 @@ typedef struct
 static bool RtlJSONObjectMemberHandler(void *ctx, const char *s, size_t len)
 {
    RtlJSONContext *p_ctx = (RtlJSONContext*)ctx;
-
    /* Something went wrong */
    if (p_ctx->current_entry_val)
       return false;
-
-   if (len)
+   switch (len)
    {
-      if (string_is_equal(s, "runtime"))
-         p_ctx->current_entry_val = &p_ctx->runtime_string;
-      else if (string_is_equal(s, "last_played"))
-         p_ctx->current_entry_val = &p_ctx->last_played_string;
-      else if (string_is_equal(s, "play_count"))
-         p_ctx->current_entry_val = &p_ctx->play_count;
-      else if (string_is_equal(s, "state_slot"))
-         p_ctx->current_entry_val = &p_ctx->state_slot;
+      case 7:
+         if (memcmp(s, "runtime", 7) == 0)
+            p_ctx->current_entry_val = &p_ctx->runtime_string;
+         break;
+      case 10:
+         if (memcmp(s, "play_count", 10) == 0)
+            p_ctx->current_entry_val = &p_ctx->play_count;
+         else if (memcmp(s, "state_slot", 10) == 0)
+            p_ctx->current_entry_val = &p_ctx->state_slot;
+         break;
+      case 11:
+         if (memcmp(s, "last_played", 11) == 0)
+            p_ctx->current_entry_val = &p_ctx->last_played_string;
+         break;
       /* Ignore unknown members */
    }
-
    return true;
 }
 
@@ -88,7 +91,7 @@ static bool RtlJSONStringHandler(void *ctx, const char *s, size_t len)
 {
    RtlJSONContext *p_ctx = (RtlJSONContext*)ctx;
 
-   if (p_ctx->current_entry_val && len && !string_is_empty(s))
+   if (p_ctx->current_entry_val && len && s)
    {
       if (*p_ctx->current_entry_val)
          free(*p_ctx->current_entry_val);
@@ -179,7 +182,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    /* Process string values read from JSON file */
 
    /* Runtime */
-   if (!string_is_empty(context.runtime_string))
+   if (context.runtime_string)
    {
       if (sscanf(context.runtime_string,
                LOG_FILE_RUNTIME_FORMAT_STR,
@@ -193,7 +196,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    }
 
    /* Last played */
-   if (!string_is_empty(context.last_played_string))
+   if (context.last_played_string)
    {
       if (sscanf(context.last_played_string,
                LOG_FILE_LAST_PLAYED_FORMAT_STR,
@@ -210,11 +213,9 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    }
 
    /* Play count */
-   if (!string_is_empty(context.play_count))
+   if (context.play_count)
    {
-      if (sscanf(context.play_count,
-               "%u",
-               &play_count) != 1)
+      if (sscanf(context.play_count, "%u", &play_count) != 1)
       {
          RARCH_ERR("[Runtime] Invalid \"play count\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
@@ -222,11 +223,9 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    }
 
    /* State slot */
-   if (!string_is_empty(context.state_slot))
+   if (context.state_slot)
    {
-      if (sscanf(context.state_slot,
-               "%u",
-               &state_slot) != 1)
+      if (sscanf(context.state_slot, "%u", &state_slot) != 1)
       {
          RARCH_ERR("[Runtime] Invalid \"state slot\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;

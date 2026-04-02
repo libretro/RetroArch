@@ -114,9 +114,8 @@ static bool linuxraw_joypad_init_pad(const char *path,
 
 static const char *linuxraw_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS || string_is_empty(linuxraw_pads[pad].ident))
+   if (pad >= MAX_USERS)
       return NULL;
-
    return linuxraw_pads[pad].ident;
 }
 

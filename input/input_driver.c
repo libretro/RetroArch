@@ -4564,7 +4564,6 @@ static bool input_keyboard_line_event(
    return ret;
 }
 
-
 void input_event_osk_append(
       input_keyboard_line_t *keyboard_line,
       enum osk_type *osk_idx,
@@ -4576,54 +4575,53 @@ void input_event_osk_append(
       size_t len)
 {
 #ifdef HAVE_LANGEXTRA
-   if (string_is_equal(word, "\xe2\x87\xa6")) /* backspace character */
+   if (memcmp(word, "\xe2\x87\xa6", 4) == 0) /* backspace character */
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(word, "\xe2\x8f\x8e")) /* return character */
+   else if (memcmp(word, "\xe2\x8f\x8e", 4) == 0) /* return character */
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else
-   if (string_is_equal(word, "\xe2\x87\xa7")) /* up arrow */
+   else if (memcmp(word, "\xe2\x87\xa7", 4) == 0) /* up arrow */
       *osk_idx = OSK_UPPERCASE_LATIN;
-   else if (string_is_equal(word, "\xe2\x87\xa9")) /* down arrow */
+   else if (memcmp(word, "\xe2\x87\xa9", 4) == 0) /* down arrow */
       *osk_idx = OSK_LOWERCASE_LATIN;
-   else if (string_is_equal(word,"\xe2\x8a\x95")) /* plus sign (next button) */
+   else if (memcmp(word, "\xe2\x8a\x95", 4) == 0) /* plus sign (next button) */
    {
-      if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_KOREAN   )
+      if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_KOREAN)
       {
-         static int prv_osk = OSK_TYPE_UNKNOWN+1;
-         if (*osk_idx < OSK_KOREAN_PAGE1 )
+         static int prv_osk = OSK_TYPE_UNKNOWN + 1;
+         if (*osk_idx < OSK_KOREAN_PAGE1)
          {
             prv_osk = *osk_idx;
-            *osk_idx =  OSK_KOREAN_PAGE1;
+            *osk_idx = OSK_KOREAN_PAGE1;
          }
          else
             *osk_idx = (enum osk_type)prv_osk;
       }
-      else
-      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
+      else if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
          *osk_idx = (enum osk_type)(*osk_idx + 1);
       else
-         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+         *osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
    }
    else if (*osk_idx == OSK_KOREAN_PAGE1 && word && len == 3)
    {
       unsigned character = *((unsigned*)word) | 0x01000000;
-      input_keyboard_line_event(&input_driver_st,  keyboard_line, character);
+      input_keyboard_line_event(&input_driver_st, keyboard_line, character);
    }
 #else
-   if (string_is_equal(word, "Bksp"))
+   if (memcmp(word, "Bksp", 5) == 0)
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(word, "Enter"))
+   else if (memcmp(word, "Enter", 6) == 0)
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else
-   if (string_is_equal(word, "Upper"))
+   else if (memcmp(word, "Upper", 6) == 0)
       *osk_idx = OSK_UPPERCASE_LATIN;
-   else if (string_is_equal(word, "Lower"))
+   else if (memcmp(word, "Lower", 6) == 0)
       *osk_idx = OSK_LOWERCASE_LATIN;
-   else if (string_is_equal(word, "Next"))
+   else if (memcmp(word, "Next", 5) == 0)
+   {
       if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
          *osk_idx = (enum osk_type)(*osk_idx + 1);
       else
-         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+         *osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
+   }
 #endif
    else
    {

@@ -336,7 +336,8 @@ static void handle_translation_response(
    {
       RARCH_ERR("[Translation] %s\n", response->error);
 #ifdef HAVE_GFX_WIDGETS
-      if (string_is_equal(response->error, "No text found.") && gfx_widgets_paused)
+      if (   string_is_equal(response->error, "No text found.") 
+          && gfx_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
          p_dispwidget->ai_service_overlay_state = 2;
@@ -574,59 +575,82 @@ static void handle_translation_response(
          char t = response->key_presses[i];
          if (i == _len - 1 || t == ' ' || t == ',')
          {
+            size_t key_len;
             if (i == _len - 1 && t != ' ' && t!= ',')
                i++;
 
-            if (i-start > 7)
+            key_len = i - start;
+            if (key_len > 7)
             {
                start = i;
                continue;
             }
 
-            strlcpy(key, response->key_presses + start, i-start+1);
+            memcpy(key, response->key_presses + start, key_len);
+            key[key_len] = '\0';
 
+            switch (key_len)
+            {
+               case 1:
 #ifdef HAVE_ACCESSIBILITY
-            if (string_is_equal(key, "b"))
-               input_st->ai_gamepad_state[0]  = 2;
-            if (string_is_equal(key, "y"))
-               input_st->ai_gamepad_state[1]  = 2;
-            if (string_is_equal(key, "select"))
-               input_st->ai_gamepad_state[2]  = 2;
-            if (string_is_equal(key, "start"))
-               input_st->ai_gamepad_state[3]  = 2;
-
-            if (string_is_equal(key, "up"))
-               input_st->ai_gamepad_state[4]  = 2;
-            if (string_is_equal(key, "down"))
-               input_st->ai_gamepad_state[5]  = 2;
-            if (string_is_equal(key, "left"))
-               input_st->ai_gamepad_state[6]  = 2;
-            if (string_is_equal(key, "right"))
-               input_st->ai_gamepad_state[7]  = 2;
-
-            if (string_is_equal(key, "a"))
-               input_st->ai_gamepad_state[8]  = 2;
-            if (string_is_equal(key, "x"))
-               input_st->ai_gamepad_state[9]  = 2;
-            if (string_is_equal(key, "l"))
-               input_st->ai_gamepad_state[10] = 2;
-            if (string_is_equal(key, "r"))
-               input_st->ai_gamepad_state[11] = 2;
-
-            if (string_is_equal(key, "l2"))
-               input_st->ai_gamepad_state[12] = 2;
-            if (string_is_equal(key, "r2"))
-               input_st->ai_gamepad_state[13] = 2;
-            if (string_is_equal(key, "l3"))
-               input_st->ai_gamepad_state[14] = 2;
-            if (string_is_equal(key, "r3"))
-               input_st->ai_gamepad_state[15] = 2;
+                  if (key[0] == 'b')
+                     input_st->ai_gamepad_state[0]  = 2;
+                  else if (key[0] == 'y')
+                     input_st->ai_gamepad_state[1]  = 2;
+                  else if (key[0] == 'a')
+                     input_st->ai_gamepad_state[8]  = 2;
+                  else if (key[0] == 'x')
+                     input_st->ai_gamepad_state[9]  = 2;
+                  else if (key[0] == 'l')
+                     input_st->ai_gamepad_state[10] = 2;
+                  else if (key[0] == 'r')
+                     input_st->ai_gamepad_state[11] = 2;
 #endif
-
-            if (string_is_equal(key, "pause"))
-               command_event(CMD_EVENT_PAUSE, NULL);
-            if (string_is_equal(key, "unpause"))
-               command_event(CMD_EVENT_UNPAUSE, NULL);
+                  break;
+               case 2:
+#ifdef HAVE_ACCESSIBILITY
+                  if (memcmp(key, "up", 2) == 0)
+                     input_st->ai_gamepad_state[4]  = 2;
+                  else if (memcmp(key, "l2", 2) == 0)
+                     input_st->ai_gamepad_state[12] = 2;
+                  else if (memcmp(key, "r2", 2) == 0)
+                     input_st->ai_gamepad_state[13] = 2;
+                  else if (memcmp(key, "l3", 2) == 0)
+                     input_st->ai_gamepad_state[14] = 2;
+                  else if (memcmp(key, "r3", 2) == 0)
+                     input_st->ai_gamepad_state[15] = 2;
+#endif
+                  break;
+               case 4:
+#ifdef HAVE_ACCESSIBILITY
+                  if (memcmp(key, "down", 4) == 0)
+                     input_st->ai_gamepad_state[5]  = 2;
+                  else if (memcmp(key, "left", 4) == 0)
+                     input_st->ai_gamepad_state[6]  = 2;
+#endif
+                  break;
+               case 5:
+#ifdef HAVE_ACCESSIBILITY
+                  if (memcmp(key, "start", 5) == 0)
+                     input_st->ai_gamepad_state[3]  = 2;
+                  else if (memcmp(key, "right", 5) == 0)
+                     input_st->ai_gamepad_state[7]  = 2;
+                  else
+#endif
+                  if (memcmp(key, "pause", 5) == 0)
+                     command_event(CMD_EVENT_PAUSE, NULL);
+                  break;
+               case 6:
+#ifdef HAVE_ACCESSIBILITY
+                  if (memcmp(key, "select", 6) == 0)
+                     input_st->ai_gamepad_state[2]  = 2;
+#endif
+                  break;
+               case 7:
+                  if (memcmp(key, "unpause", 7) == 0)
+                     command_event(CMD_EVENT_UNPAUSE, NULL);
+                  break;
+            }
 
             start = i+1;
          }

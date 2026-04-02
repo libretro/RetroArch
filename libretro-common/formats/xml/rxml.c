@@ -20,10 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <string.h>
+
 #include <boolean.h>
 #include <streams/file_stream.h>
 #include <compat/posix_string.h>
-#include <string/stdstring.h>
 
 #include <formats/rxml.h>
 
@@ -321,7 +322,7 @@ const char *rxml_node_attrib(struct rxml_node *node, const char *attrib)
    struct rxml_attrib_node *attribs = NULL;
    for (attribs = node->attrib; attribs; attribs = attribs->next)
    {
-      if (string_is_equal(attrib, attribs->attrib))
+      if (strcmp(attrib, attribs->attrib) == 0)
          return attribs->value;
    }
 

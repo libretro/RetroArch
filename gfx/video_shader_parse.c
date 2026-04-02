@@ -565,15 +565,14 @@ static const char *video_shader_wrap_mode_to_str(enum gfx_wrap_type type)
  **/
 static enum gfx_wrap_type video_shader_wrap_str_to_mode(const char *wrap_mode)
 {
-   if (string_is_equal(wrap_mode,      "clamp_to_border"))
+   if (memcmp(wrap_mode,      "clamp_to_border", sizeof("clamp_to_border")) == 0)
       return RARCH_WRAP_BORDER;
-   else if (string_is_equal(wrap_mode, "clamp_to_edge"))
+   else if (memcmp(wrap_mode, "clamp_to_edge", sizeof("clamp_to_edge")) == 0)
       return RARCH_WRAP_EDGE;
-   else if (string_is_equal(wrap_mode, "repeat"))
+   else if (memcmp(wrap_mode, "repeat", sizeof("repeat")) == 0)
       return RARCH_WRAP_REPEAT;
-   else if (string_is_equal(wrap_mode, "mirrored_repeat"))
+   else if (memcmp(wrap_mode, "mirrored_repeat", sizeof("mirrored_repeat")) == 0)
       return RARCH_WRAP_MIRRORED_REPEAT;
-
    RARCH_WARN("[Shaders] Invalid wrapping type \"%s\". Valid ones are: \"clamp_to_border\" "
          "(default), \"clamp_to_edge\", \"repeat\" and \"mirrored_repeat\". Falling back to default.\n",
          wrap_mode);
@@ -714,11 +713,11 @@ static bool video_shader_parse_pass(config_file_t *conf,
 
    if (*scale_type_x)
    {
-      if (string_is_equal(scale_type_x, "source"))
+      if (memcmp(scale_type_x, "source", 7) == 0)
          scale->type_x = RARCH_SCALE_INPUT;
-      else if (string_is_equal(scale_type_x, "viewport"))
+      else if (memcmp(scale_type_x, "viewport", 9) == 0)
          scale->type_x = RARCH_SCALE_VIEWPORT;
-      else if (string_is_equal(scale_type_x, "absolute"))
+      else if (memcmp(scale_type_x, "absolute", 9) == 0)
          scale->type_x = RARCH_SCALE_ABSOLUTE;
       else
       {
@@ -729,11 +728,11 @@ static bool video_shader_parse_pass(config_file_t *conf,
 
    if (*scale_type_y)
    {
-      if (string_is_equal(scale_type_y, "source"))
+      if (memcmp(scale_type_y, "source", sizeof("source")) == 0)
          scale->type_y = RARCH_SCALE_INPUT;
-      else if (string_is_equal(scale_type_y, "viewport"))
+      else if (memcmp(scale_type_y, "viewport", sizeof("viewport")) == 0)
          scale->type_y = RARCH_SCALE_VIEWPORT;
-      else if (string_is_equal(scale_type_y, "absolute"))
+      else if (memcmp(scale_type_y, "absolute", sizeof("absolute")) == 0)
          scale->type_y = RARCH_SCALE_ABSOLUTE;
       else
       {

@@ -17,7 +17,6 @@
 #include <string.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
-#include <string/stdstring.h>
 
 #include "tasks_internal.h"
 

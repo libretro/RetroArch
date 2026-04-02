@@ -25,9 +25,9 @@
 #include <boolean.h>
 
 #include <compat/msvc.h>
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-#include <string/stdstring.h>
 
 #include <encodings/crc32.h>
 
@@ -759,7 +759,7 @@ static bool try_bps_patch(bool allow_bps, const char *name_bps,
       uint8_t **buf, ssize_t *size)
 {
    if (     allow_bps
-         && !string_is_empty(name_bps)
+         && name_bps
          && path_is_valid(name_bps)
       )
    {
@@ -786,7 +786,7 @@ static bool try_ups_patch(bool allow_ups, const char *name_ups,
       uint8_t **buf, ssize_t *size)
 {
    if (     allow_ups
-         && !string_is_empty(name_ups)
+         && name_ups
          && path_is_valid(name_ups)
       )
    {
@@ -812,7 +812,7 @@ static bool try_ips_patch(bool allow_ips,
       const char *name_ips, uint8_t **buf, ssize_t *size)
 {
    if (     allow_ips
-         && !string_is_empty(name_ips)
+         && name_ips
          && path_is_valid(name_ips)
       )
    {
@@ -839,7 +839,7 @@ static bool try_xdelta_patch(bool allow_xdelta,
 {
 #if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
    if (     allow_xdelta
-            && !string_is_empty(name_xdelta)
+            && name_xdelta
             && path_is_valid(name_xdelta)
            )
    {

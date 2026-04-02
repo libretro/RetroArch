@@ -14,11 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
+#include <compat/strl.h>
+#include <string/stdstring.h> /* for string_replace_substring */
 #include <lrc_hash.h>
-#include <string/stdstring.h>
 #include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
@@ -43,8 +44,8 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
    int ret = msg_hash_get_help_us_enum(msg, s, len);
    /* Replace line-breaks with "empty line-breaks" for readability */
    const char *temp = string_replace_substring(s, strlen(s),
-         "\n",    STRLEN_CONST("\n"),
-         "\n \n", STRLEN_CONST("\n \n"));
+         "\n",    (sizeof("\n")-1),
+         "\n \n", (sizeof("\n \n")-1));
 
    if (temp)
    {
@@ -699,10 +700,8 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
    }
 #endif
-
-   if (ret && !string_is_equal(ret, "null"))
+   if (ret && strcmp(ret, "null") != 0)
       return ret;
-
    return msg_hash_to_str_us(msg);
 }
 

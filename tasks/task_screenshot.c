@@ -28,7 +28,6 @@
 
 #include <file/file_path.h>
 #include <compat/strl.h>
-#include <string/stdstring.h>
 #include <gfx/video_frame.h>
 
 #ifdef HAVE_RBMP
@@ -359,14 +358,14 @@ static bool screenshot_dump(
       {
          char new_screenshot_dir[DIR_MAX_LENGTH];
 
-         if (!string_is_empty(screenshot_dir))
+         if (screenshot_dir && *screenshot_dir)
          {
             const char *content_dir = path_get(RARCH_PATH_BASENAME);
 
             /* Append content directory name to screenshot
              * path, if required */
             if (    settings->bools.sort_screenshots_by_content_enable
-                && !string_is_empty(content_dir))
+                && content_dir && *content_dir)
             {
                char content_dir_name[DIR_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,
@@ -395,7 +394,7 @@ static bool screenshot_dump(
                   return false;
                }
 
-               if (string_is_empty(sysinfo.library_name))
+               if (!sysinfo.library_name || !*sysinfo.library_name)
                   screenshot_name = "RetroArch";
                else
                   screenshot_name = sysinfo.library_name;
@@ -416,7 +415,7 @@ static bool screenshot_dump(
                   sizeof(state->shotname) - _len);
          }
 
-         if (     string_is_empty(new_screenshot_dir)
+         if (     !*new_screenshot_dir
                || settings->bools.screenshots_in_content_dir)
             fill_pathname_basedir(new_screenshot_dir, name_base,
                   sizeof(new_screenshot_dir));
@@ -462,7 +461,7 @@ static bool screenshot_dump(
       else
 #endif
       {
-         if (!savestate & settings->bools.notification_show_screenshot)
+         if (!savestate && settings->bools.notification_show_screenshot)
             task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
       }
 
@@ -654,12 +653,10 @@ bool take_screenshot(
       if (video_gpu_screenshot && !savestate)
          prefer_vp_read           = true;
    }
-
    /* No way to infer screenshot directory. */
-   if (     string_is_empty(screenshot_dir)
-         && string_is_empty(name_base))
+   if (     (!screenshot_dir || !*screenshot_dir)
+         && (!name_base || !*name_base))
       return false;
-
    ret       = take_screenshot_choice(
          video_st,
          screenshot_dir,
@@ -673,10 +670,9 @@ bool take_screenshot(
          (video_st->current_video->read_frame_raw != NULL),
          video_st->pix_fmt
          );
-
    if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)
          && (!(runloop_flags & RUNLOOP_FLAG_IDLE)))
          video_driver_cached_frame();
-
    return ret;
 }
+

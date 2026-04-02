@@ -612,31 +612,31 @@ const char *hw_render_context_name(
 static enum retro_hw_context_type hw_render_context_type(const char *s)
 {
 #ifdef HAVE_OPENGL_CORE
-   if (string_is_equal(s, "glcore"))
+   if (memcmp(s, "glcore", 7) == 0)
       return RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
 #ifdef HAVE_OPENGL
-   if (string_is_equal(s, "gl"))
+   if (memcmp(s, "gl", 3) == 0)
       return RETRO_HW_CONTEXT_OPENGL;
 #endif
 #ifdef HAVE_VULKAN
-   if (string_is_equal(s, "vulkan"))
+   if (memcmp(s, "vulkan", 7) == 0)
       return RETRO_HW_CONTEXT_VULKAN;
 #endif
 #if defined(HAVE_D3D9) && defined(HAVE_HLSL)
-   if (string_is_equal(s, "d3d9_hlsl"))
+   if (memcmp(s, "d3d9_hlsl", 10) == 0)
       return RETRO_HW_CONTEXT_D3D9;
 #endif
 #ifdef HAVE_D3D10
-   if (string_is_equal(s, "d3d10"))
+   if (memcmp(s, "d3d10", 6) == 0)
       return RETRO_HW_CONTEXT_D3D10;
 #endif
 #ifdef HAVE_D3D11
-   if (string_is_equal(s, "d3d11"))
+   if (memcmp(s, "d3d11", 6) == 0)
       return RETRO_HW_CONTEXT_D3D11;
 #endif
 #ifdef HAVE_D3D12
-   if (string_is_equal(s, "d3d12"))
+   if (memcmp(s, "d3d12", 6) == 0)
       return RETRO_HW_CONTEXT_D3D12;
 #endif
    return RETRO_HW_CONTEXT_NONE;
@@ -3170,7 +3170,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
     * frameskip target to make it smoother and faster. */
    if (     video_info->fullscreen
          && settings->bools.video_vsync
-         && string_is_equal(video_driver_get_ident(), "vulkan"))
+         && (memcmp(video_driver_get_ident(), "vulkan", 6) == 0))
       video_info->frame_time_target       /= 2.0f;
 #endif
 #endif
@@ -3400,40 +3400,37 @@ enum gfx_ctx_api video_context_driver_get_api(void)
    enum gfx_ctx_api         ctx_api = ctx_data
       ? ctx->get_api(ctx_data)
       : GFX_CTX_NONE;
-
    if (ctx_api == GFX_CTX_NONE)
    {
       const char *video_ident  = (vid) ? vid->ident : NULL;
       if (string_starts_with_size(video_ident, "d3d", STRLEN_CONST("d3d")))
       {
-         if (string_is_equal(video_ident, "d3d9_hlsl"))
+         if (!memcmp(video_ident, "d3d9_hlsl", STRLEN_CONST("d3d9_hlsl") + 1))
             return GFX_CTX_DIRECT3D9_API;
-         else if (string_is_equal(video_ident, "d3d10"))
+         else if (!memcmp(video_ident, "d3d10", STRLEN_CONST("d3d10") + 1))
             return GFX_CTX_DIRECT3D10_API;
-         else if (string_is_equal(video_ident, "d3d11"))
+         else if (!memcmp(video_ident, "d3d11", STRLEN_CONST("d3d11") + 1))
             return GFX_CTX_DIRECT3D11_API;
-         else if (string_is_equal(video_ident, "d3d12"))
+         else if (!memcmp(video_ident, "d3d12", STRLEN_CONST("d3d12") + 1))
             return GFX_CTX_DIRECT3D12_API;
       }
       if (string_starts_with_size(video_ident, "gl", STRLEN_CONST("gl")))
       {
-         if (string_is_equal(video_ident, "gl"))
+         if (!memcmp(video_ident, "gl", STRLEN_CONST("gl") + 1))
             return GFX_CTX_OPENGL_API;
-         else if (string_is_equal(video_ident, "gl1"))
+         else if (!memcmp(video_ident, "gl1", STRLEN_CONST("gl1") + 1))
             return GFX_CTX_OPENGL_API;
-         else if (string_is_equal(video_ident, "glcore"))
+         else if (!memcmp(video_ident, "glcore", STRLEN_CONST("glcore") + 1))
             return GFX_CTX_OPENGL_API;
       }
-      else if (string_is_equal(video_ident, "vulkan"))
+      else if (!memcmp(video_ident, "vulkan", STRLEN_CONST("vulkan") + 1))
          return GFX_CTX_VULKAN_API;
-      else if (string_is_equal(video_ident, "metal"))
+      else if (!memcmp(video_ident, "metal", STRLEN_CONST("metal") + 1))
          return GFX_CTX_METAL_API;
-      else if (string_is_equal(video_ident, "rsx"))
+      else if (!memcmp(video_ident, "rsx", STRLEN_CONST("rsx") + 1))
          return GFX_CTX_RSX_API;
-
       return GFX_CTX_NONE;
    }
-
    return ctx_api;
 }
 
