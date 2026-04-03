@@ -28,18 +28,16 @@
 /* Implementation of strlcpy()/strlcat() based on OpenBSD. */
 
 #if !(defined(__MACH__) && defined(__APPLE__))
-size_t strlcpy(char *s, const char *source, size_t len)
+size_t strlcpy(char *s, const char *in, size_t len)
 {
-   size_t _len  = len;
-   size_t __len = 0;
-   if (_len)
-      while (--_len && (*s++ = *source++)) __len++;
-   if (!_len)
-   {
-      if (len) *s = '\0';
-      while (*source++) __len++;
-   }
-   return __len;
+    size_t _len = strlen(in);
+    if (len)
+    {
+        size_t __len = _len < len - 1 ? _len : len - 1;
+        memcpy(s, in, __len);
+        s[__len] = '\0';
+    }
+    return _len;
 }
 
 size_t strlcat(char *s, const char *source, size_t len)
