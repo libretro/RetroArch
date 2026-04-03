@@ -41,6 +41,7 @@
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 #include "led/led_defines.h"
+#include "intl/msg_hash_lbl_str.h"
 #include "defaults.h"
 #include "core.h"
 #include "paths.h"

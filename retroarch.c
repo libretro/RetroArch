@@ -5544,9 +5544,9 @@ bool command_event(enum event_command cmd, void *data)
                if (show_message)
                {
                   const char *_msg =
-                        input_st->game_focus_state.enabled ?
-                        msg_hash_to_str(MSG_GAME_FOCUS_ON) :
-                        msg_hash_to_str(MSG_GAME_FOCUS_OFF);
+                        input_st->game_focus_state.enabled
+                        ? msg_hash_to_str(MSG_GAME_FOCUS_ON)
+                        : msg_hash_to_str(MSG_GAME_FOCUS_OFF);
 
                   runloop_msg_queue_push(_msg, strlen(_msg), 1, 60, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

@@ -34,6 +34,7 @@
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../verbosity.h"
+#include "../../intl/msg_hash_lbl_str.h"
 
 enum
 {
@@ -1220,7 +1221,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
        *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
        * i.e. cannot use a normal string_is_equal() */
       if (string_starts_with(label,
-         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+         MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL_STR))
       {
          BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
          return 0;
