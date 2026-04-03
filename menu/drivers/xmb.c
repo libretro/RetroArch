@@ -1311,7 +1311,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(entry.label))
       {
-         if (     string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
+         unsigned _state_slot = string_to_unsigned(entry.label);
+         if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
@@ -1321,7 +1322,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             int state_slot              = settings->ints.state_slot;
 
             /* State slot dropdown */
-            if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
+            if (_state_slot == MENU_ENUM_LABEL_STATE_SLOT)
             {
                state_slot         = i - 1;
                xmb->is_state_slot = true;
