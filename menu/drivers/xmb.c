@@ -1062,8 +1062,8 @@ static void xmb_draw_text(
    if (a8 == 0)
       return;
 
-   if (     string_is_equal(str, "null")
-         || string_is_equal(str, "OFF"))
+   if (     (memcmp(str, "null", 4) == 0 && str[4] == '\0')
+         || (memcmp(str, "OFF", 3) == 0 && str[3] == '\0'))
       a8    = 0x7F * alpha;
 
    color    = FONT_COLOR_RGBA(
@@ -1548,7 +1548,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       }
    }
 #endif
-   else if (string_is_equal(s, "imageviewer"))
+   else if (memcmp(s, "imageviewer", sizeof("imageviewer")) == 0)
    {
       /* Filebrowser image updates */
       menu_entry_t entry;
@@ -4975,7 +4975,7 @@ static int xmb_draw_item(
       if (!string_is_empty(entry.value))
       {
          bool found = false;
-         if (string_is_equal(entry.value, "..."))
+         if (memcmp(entry.value, "...", 4) == 0)
             found   = true;
          else if (string_starts_with_size(entry.value, "(", STRLEN_CONST("("))
                && string_ends_with(entry.value, ")"))
