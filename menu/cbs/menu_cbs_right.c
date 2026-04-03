@@ -41,6 +41,7 @@
 #include "../../retroarch.h"
 #include "../../audio/audio_driver.h"
 #include "../../verbosity.h"
+#include "../../intl/msg_hash_lbl_str.h"
 #include "../../ui/ui_companion_driver.h"
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -1237,7 +1238,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
             if (
                      string_ends_with_size(menu_lbl, "_tab",
                         menu_lbl_len, STRLEN_CONST("_tab"))
-                  || string_is_equal(menu_lbl, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+                  || string_is_equal(menu_lbl, MENU_ENUM_LABEL_HORIZONTAL_MENU_STR)
                )
             {
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
@@ -1287,7 +1288,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, size_t lbl_len, const char *menu_lbl, size_t menu_lbl_len)
 {
 
-   if (string_is_equal(menu_lbl, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+   if (string_is_equal(menu_lbl, MENU_ENUM_LABEL_PLAYLISTS_TAB_STR))
    {
       BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
       return 0;
@@ -1348,8 +1349,8 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                         menu_lbl_len,
                         STRLEN_CONST("_tab")
                         )
-                     || string_is_equal(menu_lbl, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
-                     || string_is_equal(menu_lbl, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+                     || string_is_equal(menu_lbl, MENU_ENUM_LABEL_MAIN_MENU_STR)
+                     || string_is_equal(menu_lbl, MENU_ENUM_LABEL_HORIZONTAL_MENU_STR)
                   )
                {
                   BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
@@ -1441,8 +1442,8 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
                string_ends_with_size(menu_lbl, "_tab",
                   menu_lbl_len,
                   STRLEN_CONST("_tab"))
-            || string_is_equal(menu_lbl, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
-            || string_is_equal(menu_lbl, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+            || string_is_equal(menu_lbl, MENU_ENUM_LABEL_MAIN_MENU_STR)
+            || string_is_equal(menu_lbl, MENU_ENUM_LABEL_HORIZONTAL_MENU_STR)
          )
       {
             BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
@@ -1454,7 +1455,7 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
    {
       const char *parent_group   = cbs->setting->parent_group;
 
-      if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
+      if (string_is_equal(parent_group, MENU_ENUM_LABEL_MAIN_MENU_STR)
                && (cbs->setting->type == ST_GROUP))
       {
          BIND_ACTION_RIGHT(cbs, action_right_scroll);
