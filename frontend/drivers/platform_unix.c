@@ -85,6 +85,7 @@
 #include "../../defaults.h"
 #include "../../msg_hash.h"
 #include "../../paths.h"
+#include "../../intl/msg_hash_lbl_str.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
@@ -657,7 +658,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       generic_action_ok_displaylist_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
             serialized_path,
-            msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+            MENU_ENUM_LABEL_FAVORITES_STR,
             MENU_SETTING_ACTION,
             0,
             0,
@@ -2456,19 +2457,19 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 #elif defined(WEBOS)
    if (path_is_directory("/media/developer/temp"))
       menu_entries_append(list, "/media/developer/temp",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
    if (path_is_directory("/media/internal"))
       menu_entries_append(list, "/media/internal",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
    if (path_is_directory("/tmp/usb"))
       menu_entries_append(list, "/tmp/usb",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #else
@@ -2506,35 +2507,35 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    if (!string_is_empty(base_path))
    {
       menu_entries_append(list, base_path,
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (!string_is_empty(home))
    {
       menu_entries_append(list, home,
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory(udisks_media_path))
    {
       menu_entries_append(list, udisks_media_path,
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory("/media"))
    {
       menu_entries_append(list, "/media",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory("/mnt"))
    {
       menu_entries_append(list, "/mnt",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
@@ -2547,7 +2548,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 #endif
    {
       menu_entries_append(list, "/",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
