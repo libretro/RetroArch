@@ -6315,24 +6315,21 @@ static bool rgui_set_aspect_ratio(
          break;
       case RGUI_ASPECT_RATIO_AUTO:
          {
+#if !defined(DJGPP)
             /* Use 4:3 as base, and adjust width according to core geometry */
             video_driver_state_t *video_st = video_state_get_ptr();
-
-#if defined(DJGPP)
-            rgui->frame_buf.width = RGUI_DOS_FB_WIDTH;
-#else
             if (rgui->frame_buf.height == 240)
                rgui->frame_buf.width = 320;
             else
                rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
                      (4.0f / 3.0f) * (float)rgui->frame_buf.height);
-#endif
             base_term_width = rgui->frame_buf.width;
-
-#if !defined(DJGPP)
             if (video_st && video_st->av_info.geometry.aspect_ratio > 0)
                rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
                      rgui->frame_buf.height * video_st->av_info.geometry.aspect_ratio);
+#else
+            rgui->frame_buf.width = RGUI_DOS_FB_WIDTH;
+            base_term_width = rgui->frame_buf.width;
 #endif
          }
          break;
