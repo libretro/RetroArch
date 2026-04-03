@@ -260,12 +260,12 @@ static int filebrowser_parse(
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
          filter_ext = false;
 
-      if (   string_is_equal(label, "database_manager_list")
+      if (   memcmp(label, "database_manager_list", STRLEN_CONST("database_manager_list")) == 0
 #ifdef IOS
-          || string_is_equal(label, "video_filter")
-          || string_is_equal(label, "audio_dsp_plugin")
+            || memcmp(label, "video_filter", STRLEN_CONST("video_filter")) == 0
+            || memcmp(label, "audio_dsp_plugin", STRLEN_CONST("audio_dsp_plugin")) == 0
 #endif
-          || string_is_equal(label, "cursor_manager_list"))
+            || memcmp(label, "cursor_manager_list", STRLEN_CONST("cursor_manager_list")) == 0)
          allow_parent_directory = false;
 
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
@@ -620,9 +620,8 @@ static int menu_displaylist_parse_core_info(
             if (memcmp(entry->core_path, FILE_PATH_DETECT, sizeof(FILE_PATH_DETECT)) == 0)
             {
                const char* default_core_path = playlist_get_default_core_path(playlist);
-
-               if (     !string_is_empty(default_core_path)
-                     && !string_is_equal(default_core_path, FILE_PATH_DETECT))
+               if (     default_core_path
+                     && memcmp(default_core_path, FILE_PATH_DETECT, sizeof(FILE_PATH_DETECT)) != 0)
                   core_path = default_core_path;
             }
          }
@@ -666,7 +665,8 @@ static int menu_displaylist_parse_core_info(
       info_list[0].name = core_info->core_name;
       info_list[1].name = core_info->display_name;
       info_list[2].name =
-               (string_is_equal(runloop_st->current_library_name, core_info->core_name)
+               (string_is_equal(runloop_st->current_library_name,
+                core_info->core_name)
             && !string_is_empty(runloop_st->current_library_version))
                   ? runloop_st->current_library_version
                   : core_info->display_version;
@@ -2604,8 +2604,8 @@ static int menu_displaylist_parse_playlist(
        * 'download thumbnails' option, we must also extend
        * this to music_history and video_history */
       if (
-               string_is_equal(path_playlist, "history")
-            || string_is_equal(path_playlist, "favorites")
+               memcmp(path_playlist, "history", sizeof("history")) == 0
+            || memcmp(path_playlist, "favorites", sizeof("favorites")) == 0
             || string_ends_with_size(path_playlist, "_history",
                path_playlist_size, STRLEN_CONST("_history")))
          gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
@@ -2681,10 +2681,10 @@ static int menu_displaylist_parse_playlist(
          if (show_inline_core_name)
          {
             /* Both core name and core path must be valid */
-            if (   !string_is_empty(entry->core_name)
-                && !string_is_equal(entry->core_name, FILE_PATH_DETECT)
-                && !string_is_empty(entry->core_path)
-                && !string_is_equal(entry->core_path, FILE_PATH_DETECT))
+            if (     entry->core_name[0] != '\0'
+                  && memcmp(entry->core_name, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT) + 1)
+                  && entry->core_path[0] != '\0'
+                  && memcmp(entry->core_path, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT) + 1))
             {
                _len += strlcpy(
                      menu_entry_lbl           + _len,
@@ -3357,9 +3357,10 @@ static void menu_displaylist_set_new_playlist(
       if (string_ends_with_size(playlist_file_name, "_history.lpl",
                strlen(playlist_file_name), STRLEN_CONST("_history.lpl")))
          playlist_config.capacity = content_history_size;
-      else if (string_is_equal(playlist_file_name,
-                     FILE_PATH_CONTENT_FAVORITES)
-               && (content_favorites_size >= 0))
+      else if (memcmp(playlist_file_name,
+               FILE_PATH_CONTENT_FAVORITES,
+               strlen(FILE_PATH_CONTENT_FAVORITES) + 1) == 0
+            && (content_favorites_size >= 0))
          playlist_config.capacity = (unsigned)content_favorites_size;
    }
 
@@ -3685,8 +3686,7 @@ static int menu_displaylist_parse_load_content_settings(
             if (!string_is_empty(playlist_path))
                playlist_file = path_basename_nocompression(playlist_path);
 
-            if (  !string_is_empty(playlist_file)
-                && string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
+            if (memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, strlen(FILE_PATH_CONTENT_FAVORITES)) == 0)
                add_to_favorites_enabled = false;
          }
 
@@ -3932,8 +3932,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
                {
                   if (!string_is_empty(menu_st->thumbnail_path_data->system))
                      remove_entry_enabled =
-                           string_is_equal(menu_st->thumbnail_path_data->system, "history")
-                        || string_is_equal(menu_st->thumbnail_path_data->system, "favorites")
+                        memcmp(menu_st->thumbnail_path_data->system, "history", sizeof("history")) == 0
+                        || memcmp(menu_st->thumbnail_path_data->system, "favorites", sizeof("favorites")) == 0
                         || string_ends_with_size(menu_st->thumbnail_path_data->system, "_history",
                               menu_st->thumbnail_path_data->system_len, STRLEN_CONST("_history"));
 
@@ -3947,7 +3947,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
                   if (   !remove_entry_enabled
                       && settings->bools.quick_menu_show_information
                       && !string_is_empty(playlist_file))
-                     remove_entry_enabled = string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY)
+                     remove_entry_enabled = 
+                           string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY)
                         || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES);
                }
                break;
@@ -4149,7 +4150,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 
       if (     !settings->bools.menu_content_show_settings
             && !settings->bools.kiosk_mode_enable
-            && !( string_is_equal(menu_ident, "glui")
+            && !(string_is_equal(menu_ident, "glui")
                && settings->bools.menu_materialui_show_nav_bar)
             && !string_is_empty(settings->paths.menu_content_show_settings_password))
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
@@ -4977,7 +4978,7 @@ static unsigned menu_displaylist_parse_content_information(
    unsigned count                      = 0;
    bool content_loaded                 = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
       && !string_is_empty(loaded_content_path)
-      && string_is_equal(menu->deferred_path, loaded_content_path);
+      &&  string_is_equal(menu->deferred_path, loaded_content_path);
    bool core_supports_no_game          = false;
 
    core_name[0]                        = '\0';
@@ -5850,7 +5851,7 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
     bool keyboard_added           = false;
     input_driver_state_t *st      = input_state_get_ptr();
     input_driver_t *current_input = st->current_driver;
-    bool is_android_driver        = string_is_equal(current_input->ident, "android");
+    bool is_android_driver        = (memcmp(current_input->ident, "android", 8) == 0);
 
     device_lbl[0]                 = '\0';
 
@@ -7288,9 +7289,9 @@ unsigned menu_displaylist_build_list(
                   count++;
 
             /* TODO/FIXME - should we dehardcode this? */
-            if (    string_is_equal(current_input->ident, "android")
-                || (string_is_equal(current_input->ident, "cocoa")
-                &&  string_is_equal(os_ver, "iOS")))
+            if (         memcmp(current_input->ident, "android", 8) == 0
+                  ||    (memcmp(current_input->ident, "cocoa", 6)   == 0
+                     &&  memcmp(os_ver, "iOS", 4) == 0))
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
                         PARSE_ONLY_BOOL, false) == 0)
@@ -8626,7 +8627,8 @@ unsigned menu_displaylist_build_list(
                               i + 1, 0, NULL))
                         count++;
 
-                     if (string_is_equal(current_core_name, core_info->display_name))
+                     if (string_is_equal(current_core_name,
+                         core_info->display_name))
                      {
                         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i + 1].actiondata;
                         if (cbs)
@@ -9453,11 +9455,11 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:
          {
             unsigned streaming_mode = settings->uints.streaming_mode;
-            bool is_ffmpeg          = string_is_equal(
-                  settings->arrays.record_driver, "ffmpeg");
+            bool is_ffmpeg          = (memcmp(
+                     settings->arrays.record_driver, "ffmpeg", 6) == 0);
             bool has_video          = is_ffmpeg
-                  || string_is_equal(
-                     settings->arrays.record_driver, "avfoundation");
+               || memcmp(
+                     settings->arrays.record_driver, "avfoundation", 13) == 0;
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_RECORD_DRIVER,                                         PARSE_ONLY_STRING_OPTIONS, true},
                {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,           false},
@@ -15281,9 +15283,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
 
                /* Show History and Favorites in menus without sidebar/tabs */
-               if (     (string_is_equal(menu_ident, "rgui"))
-                     || (string_is_equal(menu_ident, "glui")
-                     && !settings->bools.menu_materialui_show_nav_bar))
+               if ((       memcmp(menu_ident, "rgui", 4) == 0
+                        || memcmp(menu_ident, "glui", 4) == 0)
+                       && !settings->bools.menu_materialui_show_nav_bar)
                {
                   if (settings->bools.menu_content_show_favorites_first)
                   {
@@ -15412,9 +15414,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   if (     !settings->bools.menu_content_show_settings
                         && !settings->bools.kiosk_mode_enable
-                        && !( string_is_equal(menu_ident, "glui")
+                        && !( memcmp(menu_ident, "glui", 4) == 0
                            && settings->bools.menu_materialui_show_nav_bar)
-                        && !string_is_empty(settings->paths.menu_content_show_settings_password))
+                        && settings->paths.menu_content_show_settings_password[0] != '\0')
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                            info->list,
                            MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,

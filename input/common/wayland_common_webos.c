@@ -253,32 +253,22 @@ static void wl_registry_handle_global_webos(void *data,
       wl->data_device_manager = (struct wl_data_device_manager*)wl_registry_bind(reg,
          id, &wl_data_device_manager_interface, MIN(version, 1));
    else if (string_is_equal(interface, "wl_shell"))
-   {
       wl->shell = (struct wl_shell*)wl_registry_bind(reg,
          id, &wl_shell_interface, 1);
-   }
    else if (string_is_equal(interface, "wl_webos_shell"))
-   {
       wl->webos_shell = (struct wl_webos_shell*)wl_registry_bind(reg,
          id, &wl_webos_shell_interface, 1);
-   }
 #ifdef HAVE_WEBOS_EXTRA_PROTOS
    else if (string_is_equal(interface, "wl_webos_foreign"))
-   {
       wl->webos_foreign = (struct wl_webos_foreign*)wl_registry_bind(reg,
          id, &wl_webos_foreign_interface, MIN(version, 1));
-   }
    else if (string_is_equal(interface, "wl_webos_surface_group_compositor"))
-   {
       wl->webos_surface_group_compositor = 
          (struct wl_webos_surface_group_compositor*)wl_registry_bind(reg,
          id, &wl_webos_surface_group_compositor_interface, 1);
-   }
    else if (string_is_equal(interface, "wl_webos_input_manager"))
-   {
       wl->webos_input_manager = (struct wl_webos_input_manager*)wl_registry_bind(reg,
          id, &wl_webos_input_manager_interface, 1);
-   }
 #endif
 }
 
@@ -672,9 +662,14 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t *w
 #ifdef HAVE_USERLAND
 static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
 {
+   char *resp;
    enum rjson_type t;
-   rjson_t *json = NULL;
-   const char *key = NULL, *val = NULL;
+   HContext response_ctx;
+   bool suspend_screensaver;
+   settings_t *settings;
+   rjsonwriter_t *w = NULL;
+   rjson_t *json    = NULL;
+   const char *key  = NULL, *val = NULL;
    const char *msg        = HLunaServiceMessage(reply);
    size_t _len            = msg ? strlen(msg) : 0;
    char state[32]         = {0};
@@ -693,7 +688,7 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
       if (t == RJSON_STRING)
       {
          key = rjson_get_string(json, NULL);
-         t = rjson_next(json);
+         t   = rjson_next(json);
          if (t == RJSON_STRING || t == RJSON_NUMBER)
          {
             val = rjson_get_string(json, NULL);
@@ -709,10 +704,10 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    if (strcmp(state, "Active") != 0)
       return true;
 
-   settings_t *settings = config_get_ptr();
-   bool suspend_screensaver = settings->bools.ui_suspend_screensaver_enable;
+   settings            = config_get_ptr();
+   suspend_screensaver = settings->bools.ui_suspend_screensaver_enable;
 
-   rjsonwriter_t *w = rjsonwriter_open_memory();
+   w                   = rjsonwriter_open_memory();
    rjsonwriter_raw(w, "{", 1);
    rjsonwriter_add_string(w, "clientName");
    rjsonwriter_raw(w, ":", 1);
@@ -727,10 +722,9 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    rjsonwriter_add_string(w, timestamp);
    rjsonwriter_raw(w, "}", 1);
 
-   char *resp = rjsonwriter_get_memory_buffer(w, NULL);
+   resp = rjsonwriter_get_memory_buffer(w, NULL);
    RARCH_DBG("[LunaRequest] responseScreenSaverRequest payload: %s\n", resp);
 
-   HContext response_ctx;
    memset(&response_ctx, 0, sizeof(response_ctx));
    response_ctx.multiple = false;
    response_ctx.pub = true;
@@ -748,6 +742,7 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
 bool gfx_ctx_wl_suppress_screensaver_webos(void *data, bool state)
 {
 #ifdef HAVE_USERLAND
+   char payload[256];
    const char *appId = get_app_id();
    if (!g_screensaver_ctx)
       g_screensaver_ctx = (HContext*)malloc(sizeof(HContext));
@@ -766,7 +761,6 @@ bool gfx_ctx_wl_suppress_screensaver_webos(void *data, bool state)
       g_screensaver_ctx->userdata = client_name;
    }
 
-   char payload[256];
    snprintf(payload, sizeof(payload),
             "{\"clientName\":\"%s\",\"subscribe\":true}",
             (const char *)g_screensaver_ctx->userdata);
@@ -864,7 +858,7 @@ void wl_keyboard_handle_key_webos(void *data,
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
 
-void shutdown_webos_contexts()
+void shutdown_webos_contexts(void)
 {
 #ifdef HAVE_USERLAND
    if (g_register_ctx)

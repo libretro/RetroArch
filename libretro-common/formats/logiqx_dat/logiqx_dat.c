@@ -68,8 +68,8 @@ bool logiqx_dat_path_is_valid(const char *path, uint64_t *file_size)
    if (string_is_empty(file_ext))
       return false;
 
-   if (!string_is_equal_noncase(file_ext, "dat") &&
-       !string_is_equal_noncase(file_ext, "xml"))
+   if (   !string_is_equal_noncase(file_ext, "dat")
+       && !string_is_equal_noncase(file_ext, "xml"))
       return false;
 
    /* Ensure file exists */
@@ -128,9 +128,9 @@ logiqx_dat_t *logiqx_dat_init(const char *path)
    /* > Logiqx XML uses:           'datafile'
     * > MAME List XML uses:        'mame'
     * > MAME 'Software List' uses: 'softwarelist' */
-   if (!string_is_equal(root_node->name, "datafile") &&
-       !string_is_equal(root_node->name, "mame") &&
-       !string_is_equal(root_node->name, "softwarelist"))
+   if (   !string_is_equal(root_node->name, "datafile")
+       && !string_is_equal(root_node->name, "mame")
+       && !string_is_equal(root_node->name, "softwarelist"))
       goto error;
 
    /* Get pointer to initial child node */
@@ -184,9 +184,9 @@ static bool logiqx_dat_is_game_node(rxml_node_t *node)
    /* > Logiqx XML uses:           'game'
     * > MAME List XML uses:        'machine'
     * > MAME 'Software List' uses: 'software' */
-   return string_is_equal(node_name, "game") ||
-          string_is_equal(node_name, "machine") ||
-          string_is_equal(node_name, "software");
+   return    string_is_equal(node_name, "game")
+          || string_is_equal(node_name, "machine")
+          || string_is_equal(node_name, "software");
 }
 
 /* Returns true if specified node is a game
@@ -197,8 +197,8 @@ static bool logiqx_dat_game_node_matches_name(
 {
    const char *node_game_name = NULL;
 
-   if (!logiqx_dat_is_game_node(node) ||
-       string_is_empty(game_name))
+   if (  !logiqx_dat_is_game_node(node)
+       || string_is_empty(game_name))
       return false;
 
    /* Get 'name' attribute of XML node */
