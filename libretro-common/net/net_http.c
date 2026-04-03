@@ -217,156 +217,47 @@ static slock_t *dns_cache_lock = NULL;
  **/
 void net_http_urlencode(char **dest, const char *source)
 {
-   static const char urlencode_lut[] =
-   {
-      0,       /* 0   */
-      0,       /* 1   */
-      0,       /* 2   */
-      0,       /* 3   */
-      0,       /* 4   */
-      0,       /* 5   */
-      0,       /* 6   */
-      0,       /* 7   */
-      0,       /* 8   */
-      0,       /* 9   */
-      0,       /* 10  */
-      0,       /* 11  */
-      0,       /* 12  */
-      0,       /* 13  */
-      0,       /* 14  */
-      0,       /* 15  */
-      0,       /* 16  */
-      0,       /* 17  */
-      0,       /* 18  */
-      0,       /* 19  */
-      0,       /* 20  */
-      0,       /* 21  */
-      0,       /* 22  */
-      0,       /* 23  */
-      0,       /* 24  */
-      0,       /* 25  */
-      0,       /* 26  */
-      0,       /* 27  */
-      0,       /* 28  */
-      0,       /* 29  */
-      0,       /* 30  */
-      0,       /* 31  */
-      0,       /* 32  */
-      0,       /* 33  */
-      0,       /* 34  */
-      0,       /* 35  */
-      0,       /* 36  */
-      0,       /* 37  */
-      0,       /* 38  */
-      0,       /* 39  */
-      0,       /* 40  */
-      0,       /* 41  */
-      '*',     /* 42  */
-      0,       /* 43  */
-      0,       /* 44  */
-      '-',     /* 45  */
-      '.',     /* 46  */
-      '/',     /* 47  */
-      '0',     /* 48  */
-      '1',     /* 49  */
-      '2',     /* 50  */
-      '3',     /* 51  */
-      '4',     /* 52  */
-      '5',     /* 53  */
-      '6',     /* 54  */
-      '7',     /* 55  */
-      '8',     /* 56  */
-      '9',     /* 57  */
-      0,       /* 58  */
-      0,       /* 59  */
-      0,       /* 60  */
-      0,       /* 61  */
-      0,       /* 62  */
-      0,       /* 63  */
-      0,       /* 64  */
-      'A',     /* 65  */
-      'B',     /* 66  */
-      'C',     /* 67  */
-      'D',     /* 68  */
-      'E',     /* 69  */
-      'F',     /* 70  */
-      'G',     /* 71  */
-      'H',     /* 72  */
-      'I',     /* 73  */
-      'J',     /* 74  */
-      'K',     /* 75  */
-      'L',     /* 76  */
-      'M',     /* 77  */
-      'N',     /* 78  */
-      'O',     /* 79  */
-      'P',     /* 80  */
-      'Q',     /* 81  */
-      'R',     /* 82  */
-      'S',     /* 83  */
-      'T',     /* 84  */
-      'U',     /* 85  */
-      'V',     /* 86  */
-      'W',     /* 87  */
-      'X',     /* 88  */
-      'Y',     /* 89  */
-      'Z',     /* 90  */
-      0,       /* 91  */
-      0,       /* 92  */
-      0,       /* 93  */
-      0,       /* 94  */
-      '_',     /* 95  */
-      0,       /* 96  */
-      'a',     /* 97  */
-      'b',     /* 98  */
-      'c',     /* 99  */
-      'd',     /* 100 */
-      'e',     /* 101 */
-      'f',     /* 102 */
-      'g',     /* 103 */
-      'h',     /* 104 */
-      'i',     /* 105 */
-      'j',     /* 106 */
-      'k',     /* 107 */
-      'l',     /* 108 */
-      'm',     /* 109 */
-      'n',     /* 110 */
-      'o',     /* 111 */
-      'p',     /* 112 */
-      'q',     /* 113 */
-      'r',     /* 114 */
-      's',     /* 115 */
-      't',     /* 116 */
-      'u',     /* 117 */
-      'v',     /* 118 */
-      'w',     /* 119 */
-      'x',     /* 120 */
-      'y',     /* 121 */
-      'z'      /* 122 */
+   /* Bitmask for unreserved chars: A-Z a-z 0-9 * - . / _ */
+   static const uint32_t safe[4] = {
+      0x00000000, /*  0-31:  none           */
+      0x03FFE400, /* 32-63:  * - . / 0-9    */
+      0x87FFFFFE, /* 64-95:  A-Z _          */
+      0x07FFFFFE  /* 96-127: a-z            */
    };
 
-   /* Assume every character will be encoded, so we need 3 times the space. */
-   size_t _len                      = strlen(source) * 3 + 1;
-   size_t count                     = _len;
-   char *enc                        = (char*)calloc(1, _len);
-   *dest                            = enc;
+   const char *s;
+   char *enc;
+   size_t len = 0;
 
-   for (; *source; source++)
+   /* First pass: compute exact output length */
+   for (s = source; *s; s++)
    {
-      int written = 0;
-
-      /* any non-ASCII character will just be encoded without question */
-      if ((unsigned)*source < sizeof(urlencode_lut) && urlencode_lut[(unsigned)*source])
-         written = snprintf(enc, count, "%c", urlencode_lut[(unsigned)*source]);
+      unsigned char c = (unsigned char)*s;
+      if (c < 128 && (safe[c >> 5] & (1u << (c & 31))))
+         len += 1;
       else
-         written = snprintf(enc, count, "%%%02X", *source & 0xFF);
-
-      if (written > 0)
-         count -= written;
-
-      while (*++enc);
+         len += 3;
    }
 
-   (*dest)[_len - 1] = '\0';
+   enc   = (char*)malloc(len + 1);
+   *dest = enc;
+
+   /* Second pass: encode */
+   for (s = source; *s; s++)
+   {
+      unsigned char c = (unsigned char)*s;
+      if (c < 128 && (safe[c >> 5] & (1u << (c & 31))))
+         *enc++ = (char)c;
+      else
+      {
+         static const char hex[] = "0123456789ABCDEF";
+         *enc++ = '%';
+         *enc++ = hex[c >> 4];
+         *enc++ = hex[c & 0x0F];
+      }
+   }
+
+   *enc = '\0';
 }
 
 /**
@@ -376,38 +267,69 @@ void net_http_urlencode(char **dest, const char *source)
  **/
 void net_http_urlencode_full(char *s, const char *source, size_t len)
 {
-   size_t buf_pos;
-   size_t tmp_len;
-   char url_domain[256];
-   char url_path[PATH_MAX_LENGTH];
-   int count      = 0;
-   char *tmp      = url_path;
+   static const char hex[] = "0123456789ABCDEF";
+   const char *path_start;
+   const char *p;
+   size_t domain_len;
+   size_t pos;
+   int slashes = 0;
 
-   strlcpy(url_path, source, sizeof(url_path));
+   if (!s || !source || len == 0)
+      return;
 
-   while (count < 3 && tmp[0] != '\0')
+   /* Find the third '/' to locate the domain/path boundary */
+   for (p = source; *p && slashes < 3; p++)
    {
-      tmp = strchr(tmp, '/');
-      if (!tmp)
-         break;
-      count++;
-      tmp++;
+      if (*p == '/')
+         slashes++;
    }
 
-   tmp_len        = strlen(tmp);
-   buf_pos        = ((strlcpy(url_domain, source, tmp - url_path)) - tmp_len) - 1;
-   strlcpy(url_path,
-         source  + buf_pos + 1,
-         tmp_len           + 1
-         );
+   /* If fewer than 3 slashes, no path to encode — just copy as-is */
+   if (slashes < 3)
+   {
+      strlcpy(s, source, len);
+      return;
+   }
 
-   tmp             = NULL;
-   net_http_urlencode(&tmp, url_path);
-   buf_pos         = strlcpy(s, url_domain, len);
-   s[  buf_pos] = '/';
-   s[++buf_pos] = '\0';
-   strlcpy(s + buf_pos, tmp, len - buf_pos);
-   free(tmp);
+   path_start = p; /* points just past the third '/' */
+   domain_len = (size_t)(path_start - source);
+
+   /* Copy domain (including trailing '/') */
+   if (domain_len >= len)
+   {
+      strlcpy(s, source, len);
+      return;
+   }
+   memcpy(s, source, domain_len);
+   pos = domain_len;
+
+   /* Encode path directly into output buffer */
+   for (p = path_start; *p && pos + 1 < len; p++)
+   {
+      unsigned char c = (unsigned char)*p;
+
+      if (   (c >= 'A' && c <= 'Z')
+          || (c >= 'a' && c <= 'z')
+          || (c >= '0' && c <= '9')
+          || c == '-' || c == '_'
+          || c == '.' || c == '~'
+          || c == '/' || c == ':' 
+          || c == '?' || c == '#'
+          || c == '&' || c == '=')
+      {
+         s[pos++] = c;
+      }
+      else if (pos + 3 < len)
+      {
+         s[pos++] = '%';
+         s[pos++] = hex[(c >> 4) & 0x0F];
+         s[pos++] = hex[ c       & 0x0F];
+      }
+      else
+         break; /* not enough space for encoded char */
+   }
+
+   s[pos] = '\0';
 }
 
 struct http_connection_t *net_http_connection_new(const char *url,
