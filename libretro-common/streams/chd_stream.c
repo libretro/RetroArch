@@ -249,16 +249,21 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    switch (meta.type[0])
    {
       case 'M':
-         if (meta.type[4] == '_')
-            stream->frame_size = SECTOR_RAW_SIZE;
-         else
+         if (meta.type[5] == '_')
+         {
+            if (meta.type[6] == 'R') /* MODE1_RAW or MODE2_RAW */
+               stream->frame_size = SECTOR_RAW_SIZE;
+            else /* MODE2_FORM... (unhandled, treat like default)*/
+               stream->frame_size = hd->unitbytes;
+         }
+         else /* MODE1 */
             stream->frame_size = SECTOR_SIZE;
          break;
-      case 'A':
+      case 'A': /* AUDIO */
          stream->frame_size   = SECTOR_RAW_SIZE;
          stream->swab         = true;
          break;
-      case 'D':
+      case 'D': /* DVD */
          stream->frame_size   = hd->unitbytes;
          meta.frames          = hd->totalhunks;
          break;
