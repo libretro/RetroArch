@@ -31,6 +31,7 @@
 #include "../retroarch.h"
 #include "../configuration.h"
 #include "../file_path_special.h"
+#include "../intl/msg_hash_lbl_str.h"
 #include "../playlist.h"
 #include "../verbosity.h"
 #include "../libretro-db/libretrodb.h"
@@ -478,8 +479,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
    if (!state)
       return NULL;
 
-   state->label_explore_item_str    =
-      msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_ITEM);
+   state->label_explore_item_str = MENU_ENUM_LABEL_EXPLORE_ITEM_STR;
 
    /* Index all playlists */
    for (dir = retro_vfs_opendir_impl(directory_playlist, false); dir;)
@@ -870,7 +870,7 @@ static int explore_action_sublabel_spacer(
 static int explore_action_ok(const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   const char* explore_tab = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB);
+   const char *explore_tab = MENU_ENUM_LABEL_EXPLORE_TAB_STR;
    if (type >= EXPLORE_TYPE_FIRSTITEM || type == EXPLORE_TYPE_FILTERNULL)
    {
       struct menu_state   *menu_st  = menu_state_get_ptr();
@@ -1015,7 +1015,7 @@ static const char* explore_get_view_path(struct menu_state *menu_st,
    if (    (cur->type == MENU_EXPLORE_TAB)
          && cur->path
          && !string_is_equal(cur->path,
-            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE))
+            MENU_ENUM_LABEL_GOTO_EXPLORE_STR)
       )
       return cur->path;
 
