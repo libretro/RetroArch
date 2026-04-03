@@ -1131,6 +1131,30 @@ MSG_HASH(
    "O teu contrasinal para a túa conta de almacenamento na nube."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID da clave de acceso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "O teu ID de clave de acceso para a túa conta de almacenamento na nube."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Clave secreta de acceso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "A túa clave de acceso secreta para a túa conta de almacenamento na nube."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   "URL de S3"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "A URL do punto de acceso S3 para o almacenamento na nube."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Rexistro de eventos"
    )
