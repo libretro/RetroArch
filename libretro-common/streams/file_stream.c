@@ -393,7 +393,7 @@ int64_t filestream_tell(RFILE *stream)
 {
    int64_t output;
 
-   if (filestream_size_cb)
+   if (filestream_tell_cb)
       output = filestream_tell_cb(stream->hfile);
    else
       output = retro_vfs_file_tell_impl(
