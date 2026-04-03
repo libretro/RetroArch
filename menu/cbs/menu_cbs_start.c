@@ -44,6 +44,7 @@
 #include "../../performance_counters.h"
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
+#include "../../intl/msg_hash_lbl_str.h"
 
 #include "../../audio/audio_driver.h"
 #include "../../input/input_remapping.h"
@@ -131,7 +132,7 @@ static int action_start_shader_parameters(
    generic_action_ok_displaylist_push(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS),
          NULL,
-         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS),
+         MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS_STR,
          MENU_SETTING_ACTION,
          idx, 0, ACTION_OK_DL_GENERIC);
 #endif

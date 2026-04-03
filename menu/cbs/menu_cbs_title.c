@@ -21,6 +21,7 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 
+#include "../../intl/msg_hash_lbl_str.h"
 #include "../../configuration.h"
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
@@ -1256,7 +1257,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    {
       const char *parent_group   = cbs->setting->parent_group;
 
-      if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
+      if (string_is_equal(parent_group, MENU_ENUM_LABEL_MAIN_MENU_STR)
             && cbs->setting->type == ST_GROUP)
       {
          BIND_ACTION_GET_TITLE(cbs, action_get_title_group_settings);
@@ -1278,7 +1279,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
     *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
     * i.e. cannot use a normal string_is_equal() */
    if (string_starts_with(label,
-      msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+      MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL_STR))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_database_manager_list);
       return 0;
