@@ -54,6 +54,7 @@
 #include "../../file_path_special.h"
 #include "../../input/input_osk.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../intl/msg_hash_lbl_str.h"
 
 #ifdef HAVE_AUDIOMIXER
 #include "../../audio/audio_driver.h"
@@ -1311,9 +1312,9 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
       if (!string_is_empty(entry.label))
       {
          if (     string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
          {
             char path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
@@ -2305,11 +2306,11 @@ static void xmb_set_title(xmb_handle_t *xmb)
       label_original               = label;
 
       /* Direct exceptions */
-      if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST)))
+      if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST_STR))
          enum_idx = MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR))
          enum_idx = MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET_STR))
          enum_idx = MENU_ENUM_LABEL_CORE_LIST;
       else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)))
          enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
@@ -2363,9 +2364,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
          type     = type - input_id;
          enum_idx = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
       }
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND_STR))
          enum_idx = (enum msg_hash_enums)atoi(path);
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_STR))
       {
          enum_idx = (enum msg_hash_enums)atoi(path);
          if (     enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
@@ -2487,7 +2488,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
             enum_idx = MENU_ENUM_LABEL_EXPLORE_ITEM;
          break;
       case MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST:
-         if (!string_is_equal(path, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE)))
+         if (!string_is_equal(path, MENU_ENUM_LABEL_GOTO_EXPLORE_STR))
             enum_idx = MENU_ENUM_LABEL_EXPLORE_ITEM;
          else
             enum_idx = MENU_ENUM_LABEL_GOTO_EXPLORE;
@@ -2815,7 +2816,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 
    info.list                        = &xmb->horizontal_list;
    info.path                        = strdup(dir_playlist);
-   info.label                       = strdup(msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
+   info.label                       = strdup(MENU_ENUM_LABEL_PLAYLISTS_TAB_STR);
    info.exts                        = strldup("lpl", sizeof("lpl"));
    info.type_default                = FILE_TYPE_PLAIN;
    info.enum_idx                    = MENU_ENUM_LABEL_PLAYLISTS_TAB;
@@ -3250,12 +3251,12 @@ static void xmb_populate_entries(void *data,
 #endif
             )
          )
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
+         || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST_STR);
 
    xmb->is_playlist |=
             (xmb_horizontal_type == FILE_TYPE_PLAYLIST_COLLECTION)
@@ -3264,20 +3265,20 @@ static void xmb_populate_entries(void *data,
 
    xmb->is_playlist =
              xmb->is_playlist
-         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION))
-         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL));
+         && !string_is_equal(label, MENU_ENUM_LABEL_INFORMATION_STR)
+         && !string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL_STR);
 
    xmb->is_playlist_tab = !xmb->is_playlist && string_is_equal(label,
-         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
+         MENU_ENUM_LABEL_PLAYLISTS_TAB_STR);
 
    xmb->is_playlist_information =
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL));
+            string_is_equal(label, MENU_ENUM_LABEL_INFORMATION_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL_STR);
 
    /* Determine whether this is a database manager list */
    was_db_manager_list     = xmb->is_db_manager_list && depth >= 4;
    xmb->is_db_manager_list = string_is_equal(label,
-         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
+         MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR);
 
    if (was_db_manager_list)
    {
@@ -3288,9 +3289,9 @@ static void xmb_populate_entries(void *data,
    /* Determine whether this is the contentless cores menu */
    xmb->is_contentless_cores    =
             string_is_equal(label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB))
+                  MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR)
          || string_is_equal(label,
-               msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST));
+               MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST_STR);
 
    /* Determine whether this is a 'file list'
     * (needed for handling thumbnails when viewing images
@@ -3299,27 +3300,25 @@ static void xmb_populate_entries(void *data,
     *   as the 'label' when navigating directories after
     *   selecting 'load content' */
    xmb->is_file_list =
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER));
+            string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_MENU_WALLPAPER_STR);
 
    /* Determine whether this is the quick menu */
    xmb->is_quick_menu =
             string_is_equal(label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
+                  MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
          || string_is_equal(label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
+               MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
          || string_is_equal(label,
-               msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST));
+               MENU_ENUM_LABEL_SAVESTATE_LIST_STR);
 
    xmb->is_state_slot = string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT;
 
 #if defined(HAVE_LIBRETRODB)
    /* Explore list */
    xmb->is_explore_list =
-            string_is_equal(label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST))
-         || string_is_equal(label,
-               msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB))
+            string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_EXPLORE_TAB_STR)
          || xmb_horizontal_type == MENU_EXPLORE_TAB;
 
    if (xmb->is_explore_list)
@@ -3330,12 +3329,9 @@ static void xmb_populate_entries(void *data,
       menu_entry_get(&entry, 0, 0, NULL, true);
 
       /* Quick Menu under Explore list must also be Quick Menu */
-      if (     string_is_equal(entry.label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_RUN))
-            || string_is_equal(entry.label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT))
-            || string_is_equal(entry.label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+      if (     string_is_equal(entry.label, MENU_ENUM_LABEL_RUN_STR)
+            || string_is_equal(entry.label, MENU_ENUM_LABEL_RESUME_CONTENT_STR)
+            || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
          )
       {
          xmb->is_quick_menu = true;
@@ -3397,7 +3393,7 @@ static void xmb_populate_entries(void *data,
       if (xmb->is_explore_list)
       {
          entry_idx_offset = 2;
-         if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST))
+         if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR)
                || xmb_horizontal_type == MENU_EXPLORE_TAB)
             entry_idx_offset = 1;
 
@@ -3637,7 +3633,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS:
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
-         if (xmb->depth > 1 || string_is_equal(enum_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
+         if (xmb->depth > 1 || string_is_equal(enum_label, MENU_ENUM_LABEL_ADD_TAB_STR))
             return xmb->textures.list[XMB_TEXTURE_ADD];
          return xmb->textures.list[XMB_TEXTURE_MENU_ADD];
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:

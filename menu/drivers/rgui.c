@@ -49,6 +49,7 @@
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
 
+#include "../../intl/msg_hash_lbl_str.h"
 #include "../../configuration.h"
 #include "../../file_path_special.h"
 #include "../../input/input_osk.h"
@@ -6986,9 +6987,9 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
       if (!string_is_empty(entry.label))
       {
          if (     string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
          {
             char path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
@@ -7473,12 +7474,12 @@ static void rgui_populate_entries(
 #endif
 
    /* Check whether we are currently viewing a playlist */
-   if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST))
+   if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST_STR)
       )
       rgui->flags |=  RGUI_FLAG_IS_PLAYLIST;
    else
@@ -7490,9 +7491,9 @@ static void rgui_populate_entries(
       rgui->flags &= ~RGUI_FLAG_IS_PLAYLISTS_TAB;
 
    /* Determine whether this is the quick menu */
-   if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST)))
+   if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_SAVESTATE_LIST_STR))
       rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
    else
       rgui->flags &= ~RGUI_FLAG_IS_QUICK_MENU;
@@ -7503,8 +7504,8 @@ static void rgui_populate_entries(
       rgui->flags &= ~RGUI_FLAG_IS_STATE_SLOT;
 
 #if defined(HAVE_LIBRETRODB)
-   if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+   if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_EXPLORE_TAB_STR))
       rgui->flags |=  RGUI_FLAG_IS_EXPLORE_LIST;
    else
       rgui->flags &= ~RGUI_FLAG_IS_EXPLORE_LIST;
@@ -7518,9 +7519,9 @@ static void rgui_populate_entries(
       menu_entry_get(&entry, 0, 0, NULL, true);
 
       /* Quick Menu under Explore list must also be Quick Menu */
-      if (     string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_RUN))
-            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT))
-            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+      if (     string_is_equal(entry.label, MENU_ENUM_LABEL_RUN_STR)
+            || string_is_equal(entry.label, MENU_ENUM_LABEL_RESUME_CONTENT_STR)
+            || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
          )
       {
          rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
@@ -7540,7 +7541,7 @@ static void rgui_populate_entries(
    rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
 
    if (     rgui->flags & RGUI_FLAG_IS_PLAYLIST
-         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
+         && !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
@@ -7552,7 +7553,7 @@ static void rgui_populate_entries(
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
          menu_state_get_ptr()->selection_ptr = rgui->playlist_selection_ptr;
    }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS)))
+   else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_STR))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_MAIN)
@@ -7572,9 +7573,9 @@ static void rgui_populate_entries(
        * resolutions is cumbersome (if menu aspect ratio
        * is locked while this occurs, menu dimensions
        * go out of sync...) */
-      if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST)))
+      if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST_STR))
 #else
-      if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST)))
+      if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST_STR))
 #endif
       {
          /* Make sure that any changes made while accessing
