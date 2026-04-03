@@ -176,7 +176,7 @@ static struct nlmsghdr *ifaddrs_get_netlink_response(int p_socket,
    }
 }
 
-static NetlinkList *iffaddr_new_list_item(struct nlmsghdr *p_data,
+static NetlinkList *ifaddr_new_list_item(struct nlmsghdr *p_data,
    unsigned int p_size)
 {
    NetlinkList *l_item = (NetlinkList*)malloc(sizeof(NetlinkList));
