@@ -59,6 +59,7 @@
 #include <lists/dir_list.h>
 #include <vfs/vfs_implementation.h>
 #include <array/rbuf.h>
+#include "../intl/msg_hash_lbl_str.h"
 
 #include <retro_miscellaneous.h>
 
@@ -2286,8 +2287,8 @@ bool task_push_load_contentless_core_from_menu(
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
-   if (   string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB))
-       || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+   if (   string_is_equal(menu_label, MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR)
+       || string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST_STR))
       flush_menu = false;
 
    /* Push Quick Menu onto menu stack */

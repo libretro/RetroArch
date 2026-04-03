@@ -8043,7 +8043,7 @@ unsigned menu_displaylist_build_list(
             {
                if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE),
-                  MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE_STR,
+                  msg_hash_to_str(MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE),
                   MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,
                   FILE_TYPE_DIRECTORY, 0, 0, NULL))
                   count++;

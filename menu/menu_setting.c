@@ -2386,7 +2386,8 @@ static void config_dir(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          s, (unsigned)len,
-         default_value, msg_hash_to_str(empty_enum_idx),
+         default_value,
+         msg_hash_to_str(empty_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false);
@@ -6719,7 +6720,7 @@ static size_t setting_get_string_representation_video_frame_delay(
 
    /* Non-automatic and dropdown list */
    if (     !settings->bools.video_frame_delay_auto
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_STR))
    {
       if (value == 0)
          _len = snprintf(s, len, "%s",
@@ -10269,7 +10270,7 @@ static bool setting_append_list(
    switch (type)
    {
       case SETTINGS_LIST_MAIN_MENU:
-         START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), parent_group);
+         START_GROUP(list, list_info, &group_info, MENU_ENUM_LABEL_MAIN_MENU_STR, parent_group);
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_MAIN_MENU);
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -15582,7 +15583,7 @@ static bool setting_append_list(
          {
 
             START_GROUP(list, list_info, &group_info,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN),
+                  MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN_STR,
                   parent_group);
 
             parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
@@ -16893,7 +16894,7 @@ static bool setting_append_list(
          {
             unsigned i;
             START_GROUP(list, list_info, &group_info,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS_BEGIN),
+                  MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS_BEGIN_STR,
                   parent_group);
 
             parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
@@ -22520,7 +22521,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_PLAYLIST:
          START_GROUP(list, list_info, &group_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN),
+               MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN_STR,
                parent_group);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
