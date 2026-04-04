@@ -516,6 +516,20 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
    id[0]   = '\0';
    desc[0] = '\0';
 
+   /* Pre-count parameters to avoid vector reallocation */
+   {
+      size_t param_count = 0;
+      for (i = 0; i < lines->num_lines; i++)
+      {
+         const char *line = shader_line_buf_get(lines, i);
+         if (line && !memcmp(line, "#pragma parameter ",
+                  sizeof("#pragma parameter ") - 1))
+            param_count++;
+      }
+      if (param_count > 0)
+         meta->parameters.reserve(param_count);
+   }
+
    for (i = 0; i < lines->num_lines; i++)
    {
       const char *line = shader_line_buf_get(lines, i);
@@ -547,6 +561,7 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
          int fields         = 0;
          const char *s      = line + (sizeof("#pragma parameter ") - 1);
          size_t len         = 0;
+         size_t id_len, desc_len;
          char *end          = NULL;
 
          /* Parse id */
@@ -562,6 +577,7 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
          }
          memcpy(id, s, len);
          id[len] = '\0';
+         id_len  = len;
          s += len;
 
          /* Parse quoted description */
@@ -583,6 +599,7 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
          }
          memcpy(desc, s, len);
          desc[len] = '\0';
+         desc_len  = len;
          s += len + 1;
 
          /* Parse initial */
@@ -642,7 +659,9 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
 
             for (j = 0; j < meta->parameters.size(); j++)
             {
-               if (meta->parameters[j].id == id)
+               const std::string &pid = meta->parameters[j].id;
+               if (pid.size() == id_len
+                     && !memcmp(pid.data(), id, id_len))
                {
                   parameter_found = true;
                   parameter_index = j;
@@ -656,7 +675,8 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
             {
                const glslang_parameter *parameter =
                   &meta->parameters[parameter_index];
-               if (     (parameter->desc    != desc)
+               if (     parameter->desc.size() != desc_len
+                     || memcmp(parameter->desc.data(), desc, desc_len)
                      || (parameter->initial != initial)
                      || (parameter->minimum != minimum)
                      || (parameter->maximum != maximum)
@@ -670,8 +690,16 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
                }
             }
             else
-               meta->parameters.push_back({
-                     id, desc, initial, minimum, maximum, step });
+            {
+               glslang_parameter p;
+               p.id.assign(id, id_len);
+               p.desc.assign(desc, desc_len);
+               p.initial = initial;
+               p.minimum = minimum;
+               p.maximum = maximum;
+               p.step    = step;
+               meta->parameters.push_back(p);
+            }
          }
       }
       /* Check for framebuffer format */

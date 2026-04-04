@@ -981,16 +981,23 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
 bool config_get_size_t(config_file_t *conf, const char *key, size_t *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
-   errno = 0;
 
    if (entry)
    {
-      size_t val = 0;
-      if (sscanf(entry->value, "%" PRI_SIZET, &val) == 1)
-      {
-         *in = val;
-         return true;
-      }
+      char *end = NULL;
+      errno = 0;
+      unsigned long val = (unsigned long)strtoul(entry->value, &end, 0);
+
+      if (errno != 0 || end == entry->value || *end != '\0')
+         return false;
+
+#if (SIZE_MAX < ULONG_MAX)
+      if (val > SIZE_MAX)
+         return false;
+#endif
+
+      *in = (size_t)val;
+      return true;
    }
 
    return false;
@@ -1004,7 +1011,7 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 
    if (entry)
    {
-      uint64_t val = strtoull(entry->value, NULL, 0);
+      uint64_t val = (uint64_t)strtoull(entry->value, NULL, 0);
 
       if (errno == 0)
       {
