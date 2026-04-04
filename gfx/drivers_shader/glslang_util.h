@@ -151,6 +151,7 @@ struct shader_line_buf
    size_t  *line_offsets;  /* Byte offset of each line start within data[]   */
    size_t   num_lines;     /* Number of lines stored                         */
    size_t   lines_cap;     /* Allocated capacity for line_offsets[]           */
+   bool _single_alloc;
 };
 
 RETRO_BEGIN_DECLS
