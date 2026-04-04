@@ -1555,10 +1555,10 @@ static struct config_array_setting *populate_settings_array(
 {
    unsigned i                           = 0;
    unsigned count                       = 0;
-   struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(SETTINGS_ARRAY_COUNT_MAX, sizeof(struct config_array_setting));
+   static struct config_array_setting tmp_buf[SETTINGS_ARRAY_COUNT_MAX];
+   struct config_array_setting  *tmp    = tmp_buf;
 
-   if (!tmp)
-      return NULL;
+   memset(tmp, 0, SETTINGS_ARRAY_COUNT_MAX * sizeof(struct config_array_setting));
 
    /* Arrays */
    SETTING_ARRAY("audio_driver",                 settings->arrays.audio_driver, false, NULL, true);
@@ -1662,10 +1662,10 @@ static struct config_path_setting *populate_settings_path(
 {
    unsigned count = 0;
    recording_state_t *recording_st     = recording_state_get_ptr();
-   struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(SETTINGS_PATH_COUNT_MAX, sizeof(struct config_path_setting));
+   static struct config_path_setting tmp_buf[SETTINGS_PATH_COUNT_MAX];
+   struct config_path_setting  *tmp    = tmp_buf;
 
-   if (!tmp)
-      return NULL;
+   memset(tmp, 0, SETTINGS_PATH_COUNT_MAX * sizeof(struct config_path_setting));
 
    /* Paths */
    SETTING_PATH("bundle_assets_src_path",        settings->paths.bundle_assets_src, false, NULL, true);
@@ -1772,8 +1772,11 @@ static struct config_path_setting *populate_settings_path(
 static struct config_bool_setting *populate_settings_bool(
       settings_t *settings, int *size)
 {
-   struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(SETTINGS_BOOL_COUNT_MAX, sizeof(struct config_bool_setting));
+   static struct config_bool_setting tmp_buf[SETTINGS_BOOL_COUNT_MAX];
+   struct config_bool_setting  *tmp    = tmp_buf;
    unsigned count                      = 0;
+
+   memset(tmp, 0, SETTINGS_BOOL_COUNT_MAX * sizeof(struct config_bool_setting));
 
    SETTING_BOOL("accessibility_enable",          &settings->bools.accessibility_enable, true, DEFAULT_ACCESSIBILITY_ENABLE, false);
    SETTING_BOOL("driver_switch_enable",          &settings->bools.driver_switch_enable, true, DEFAULT_DRIVER_SWITCH_ENABLE, false);
@@ -2328,10 +2331,10 @@ static struct config_float_setting *populate_settings_float(
       settings_t *settings, int *size)
 {
    unsigned count = 0;
-   struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(SETTINGS_FLOAT_COUNT_MAX, sizeof(struct config_float_setting));
+   static struct config_float_setting tmp_buf[SETTINGS_FLOAT_COUNT_MAX];
+   struct config_float_setting  *tmp      = tmp_buf;
 
-   if (!tmp)
-      return NULL;
+   memset(tmp, 0, SETTINGS_FLOAT_COUNT_MAX * sizeof(struct config_float_setting));
 
 #ifdef HAVE_MENU
    SETTING_FLOAT("menu_scale_factor",            &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);
@@ -2432,10 +2435,10 @@ static struct config_uint_setting *populate_settings_uint(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(SETTINGS_UINT_COUNT_MAX, sizeof(struct config_uint_setting));
+   static struct config_uint_setting tmp_buf[SETTINGS_UINT_COUNT_MAX];
+   struct config_uint_setting  *tmp   = tmp_buf;
 
-   if (!tmp)
-      return NULL;
+   memset(tmp, 0, SETTINGS_UINT_COUNT_MAX * sizeof(struct config_uint_setting));
 
    SETTING_UINT("frontend_log_level",            &settings->uints.frontend_log_level, true, DEFAULT_FRONTEND_LOG_LEVEL, false);
    SETTING_UINT("libretro_log_level",            &settings->uints.libretro_log_level, true, DEFAULT_LIBRETRO_LOG_LEVEL, false);
@@ -2735,10 +2738,10 @@ static struct config_size_setting *populate_settings_size(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_size_setting  *tmp   = (struct config_size_setting*)calloc(SETTINGS_SIZE_COUNT_MAX, sizeof(struct config_size_setting));
+   static struct config_size_setting tmp_buf[SETTINGS_SIZE_COUNT_MAX];
+   struct config_size_setting  *tmp   = tmp_buf;
 
-   if (!tmp)
-      return NULL;
+   memset(tmp, 0, SETTINGS_SIZE_COUNT_MAX * sizeof(struct config_size_setting));
 
    SETTING_SIZE("rewind_buffer_size",            &settings->sizes.rewind_buffer_size, true, DEFAULT_REWIND_BUFFER_SIZE, false);
 
@@ -2751,10 +2754,10 @@ static struct config_int_setting *populate_settings_int(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_int_setting  *tmp    = (struct config_int_setting*)calloc(SETTINGS_INT_COUNT_MAX, sizeof(struct config_int_setting));
+   static struct config_int_setting tmp_buf[SETTINGS_INT_COUNT_MAX];
+   struct config_int_setting  *tmp    = tmp_buf;
 
-   if (!tmp)
-      return NULL;
+   memset(tmp, 0, SETTINGS_INT_COUNT_MAX * sizeof(struct config_int_setting));
 
    SETTING_INT("content_favorites_size",         &settings->ints.content_favorites_size, true, DEFAULT_CONTENT_FAVORITES_SIZE, false);
    SETTING_INT("state_slot",                     &settings->ints.state_slot, false, 0, false);
@@ -2907,8 +2910,6 @@ void config_set_defaults(void *data)
          if (bool_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *bool_settings[i].ptr = bool_settings[i].def;
       }
-
-      free(bool_settings);
    }
 
    if (int_settings && (int_settings_size > 0))
@@ -2918,8 +2919,6 @@ void config_set_defaults(void *data)
          if (int_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *int_settings[i].ptr = int_settings[i].def;
       }
-
-      free(int_settings);
    }
 
    if (uint_settings && (uint_settings_size > 0))
@@ -2929,8 +2928,6 @@ void config_set_defaults(void *data)
          if (uint_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *uint_settings[i].ptr = uint_settings[i].def;
       }
-
-      free(uint_settings);
    }
 
    if (size_settings && (size_settings_size > 0))
@@ -2940,8 +2937,6 @@ void config_set_defaults(void *data)
          if (size_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *size_settings[i].ptr = size_settings[i].def;
       }
-
-      free(size_settings);
    }
 
    if (float_settings && (float_settings_size > 0))
@@ -2951,8 +2946,6 @@ void config_set_defaults(void *data)
          if (float_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *float_settings[i].ptr = float_settings[i].def;
       }
-
-      free(float_settings);
    }
 
    if (def_camera)
@@ -3856,7 +3849,8 @@ static bool config_load_file(global_t *global,
    static bool first_load                          = true;
    bool without_overrides                          = false;
    unsigned msg_color                              = 0;
-   char *override_username                         = NULL;
+   char override_username[PATH_MAX_LENGTH];
+   bool override_username_set                      = false;
    runloop_state_t *runloop_st                     = runloop_state_get_ptr();
    int bool_settings_size                          = SETTINGS_BOOL_COUNT_MAX;
    int float_settings_size                         = SETTINGS_FLOAT_COUNT_MAX;
@@ -4019,7 +4013,10 @@ static bool config_load_file(global_t *global,
    /* Overrides */
 
    if (rarch_flags & RARCH_FLAGS_HAS_SET_USERNAME)
-      override_username = strdup(settings->paths.username);
+   {
+      strlcpy(override_username, settings->paths.username, sizeof(override_username));
+      override_username_set = true;
+   }
 
    /* Boolean settings */
 
@@ -4198,12 +4195,11 @@ static bool config_load_file(global_t *global,
 				libretro_system_directory);
 
    if (     (rarch_flags & RARCH_FLAGS_HAS_SET_USERNAME)
-         && (override_username))
+         && override_username_set)
    {
       configuration_set_string(settings,
             settings->paths.username,
             override_username);
-      free(override_username);
    }
 
    if (settings->uints.video_hard_sync_frames > MAXIMUM_HARD_SYNC_FRAMES)
@@ -4656,20 +4652,6 @@ static bool config_load_file(global_t *global,
 
    if (conf)
       config_file_free(conf);
-   if (bool_settings)
-      free(bool_settings);
-   if (int_settings)
-      free(int_settings);
-   if (uint_settings)
-      free(uint_settings);
-   if (float_settings)
-      free(float_settings);
-   if (array_settings)
-      free(array_settings);
-   if (path_settings)
-      free(path_settings);
-   if (size_settings)
-      free(size_settings);
    first_load = false;
    return true;
 }
@@ -5420,10 +5402,10 @@ void config_get_autoconf_profile_filename(
       "~#%&*{}\\:[]?/|'\"";
    size_t i;
    size_t _len;
-   char *sanitised_name                 = NULL;
+   char sanitised_name[PATH_MAX_LENGTH];
    if (string_is_empty(device_name))
       return;
-   sanitised_name = strdup(device_name);
+   strlcpy(sanitised_name, device_name, sizeof(sanitised_name));
    /* Remove invalid filename characters from
     * input device name */
    for (i = 0; sanitised_name[i]; i++)
@@ -5434,8 +5416,6 @@ void config_get_autoconf_profile_filename(
    /* Generate autoconfig file path */
    _len = strlcpy(s, sanitised_name, len);
    strlcpy(s + _len, ".cfg", len - _len);
-   free(sanitised_name);
-   sanitised_name = NULL;
 }
 
 /**
@@ -5672,8 +5652,6 @@ bool config_save_file(const char *path)
 
          config_set_path(conf, path_settings[i].ident, value);
       }
-
-      free(path_settings);
    }
 
 #ifdef HAVE_MENU
@@ -5694,8 +5672,6 @@ bool config_save_file(const char *path)
             config_set_string(conf,
                   array_settings[i].ident,
                   array_settings[i].ptr);
-
-      free(array_settings);
    }
 
    /* Float settings  */
@@ -5707,8 +5683,6 @@ bool config_save_file(const char *path)
             config_set_float(conf,
                   float_settings[i].ident,
                   *float_settings[i].ptr);
-
-      free(float_settings);
    }
 
    /* Integer settings */
@@ -5720,8 +5694,6 @@ bool config_save_file(const char *path)
             config_set_int(conf,
                   int_settings[i].ident,
                   *int_settings[i].ptr);
-
-      free(int_settings);
    }
 
    if (uint_settings && (uint_settings_size > 0))
@@ -5732,8 +5704,6 @@ bool config_save_file(const char *path)
             config_set_int(conf,
                   uint_settings[i].ident,
                   *uint_settings[i].ptr);
-
-      free(uint_settings);
    }
 
    if (size_settings && (size_settings_size > 0))
@@ -5744,8 +5714,6 @@ bool config_save_file(const char *path)
             config_set_int(conf,
                   size_settings[i].ident,
                   (int)*size_settings[i].ptr);
-
-      free(size_settings);
    }
 
    for (i = 0; i < MAX_USERS; i++)
@@ -5786,8 +5754,6 @@ bool config_save_file(const char *path)
             config_set_string(conf, bool_settings[i].ident,
                   *bool_settings[i].ptr
                   ? "true" : "false");
-
-      free(bool_settings);
    }
 
 #ifdef HAVE_NETWORKGAMEPAD
@@ -5954,31 +5920,73 @@ int8_t config_save_overrides(enum override_type type,
    config_load_file(global_get_ptr(),
          "without-overrides", settings);
 
-   bool_settings       = populate_settings_bool(settings,   &bool_settings_size);
+   /* populate_settings_*() returns a pointer to a static buffer.
+    * Since we need two results simultaneously (settings vs overrides),
+    * snapshot the first result into a heap copy before the second call.
+    * This is a rare code path (user-initiated save) so the allocation
+    * is acceptable, and it avoids large stack locals that would be
+    * unsafe on embedded targets (3DS, PSP, Wii: 32 KB stack). */
+
+   {
+      struct config_bool_setting *tmp = populate_settings_bool(settings, &bool_settings_size);
+      bool_settings = (struct config_bool_setting*)malloc(bool_settings_size * sizeof(*bool_settings));
+      if (bool_settings)
+         memcpy(bool_settings, tmp, bool_settings_size * sizeof(*bool_settings));
+   }
    tmp_i               = SETTINGS_BOOL_COUNT_MAX;
    bool_overrides      = populate_settings_bool(overrides,  &tmp_i);
 
-   int_settings        = populate_settings_int(settings,    &int_settings_size);
+   {
+      struct config_int_setting *tmp = populate_settings_int(settings, &int_settings_size);
+      int_settings = (struct config_int_setting*)malloc(int_settings_size * sizeof(*int_settings));
+      if (int_settings)
+         memcpy(int_settings, tmp, int_settings_size * sizeof(*int_settings));
+   }
    tmp_i               = SETTINGS_INT_COUNT_MAX;
    int_overrides       = populate_settings_int(overrides,   &tmp_i);
 
-   uint_settings       = populate_settings_uint(settings,   &uint_settings_size);
+   {
+      struct config_uint_setting *tmp = populate_settings_uint(settings, &uint_settings_size);
+      uint_settings = (struct config_uint_setting*)malloc(uint_settings_size * sizeof(*uint_settings));
+      if (uint_settings)
+         memcpy(uint_settings, tmp, uint_settings_size * sizeof(*uint_settings));
+   }
    tmp_i               = SETTINGS_UINT_COUNT_MAX;
    uint_overrides      = populate_settings_uint(overrides,  &tmp_i);
 
-   size_settings       = populate_settings_size(settings,   &size_settings_size);
+   {
+      struct config_size_setting *tmp = populate_settings_size(settings, &size_settings_size);
+      size_settings = (struct config_size_setting*)malloc(size_settings_size * sizeof(*size_settings));
+      if (size_settings)
+         memcpy(size_settings, tmp, size_settings_size * sizeof(*size_settings));
+   }
    tmp_i               = SETTINGS_SIZE_COUNT_MAX;
    size_overrides      = populate_settings_size(overrides,  &tmp_i);
 
-   float_settings      = populate_settings_float(settings,  &float_settings_size);
+   {
+      struct config_float_setting *tmp = populate_settings_float(settings, &float_settings_size);
+      float_settings = (struct config_float_setting*)malloc(float_settings_size * sizeof(*float_settings));
+      if (float_settings)
+         memcpy(float_settings, tmp, float_settings_size * sizeof(*float_settings));
+   }
    tmp_i               = SETTINGS_FLOAT_COUNT_MAX;
    float_overrides     = populate_settings_float(overrides, &tmp_i);
 
-   array_settings      = populate_settings_array(settings,  &array_settings_size);
+   {
+      struct config_array_setting *tmp = populate_settings_array(settings, &array_settings_size);
+      array_settings = (struct config_array_setting*)malloc(array_settings_size * sizeof(*array_settings));
+      if (array_settings)
+         memcpy(array_settings, tmp, array_settings_size * sizeof(*array_settings));
+   }
    tmp_i               = SETTINGS_ARRAY_COUNT_MAX;
    array_overrides     = populate_settings_array(overrides, &tmp_i);
 
-   path_settings       = populate_settings_path(settings,   &path_settings_size);
+   {
+      struct config_path_setting *tmp = populate_settings_path(settings, &path_settings_size);
+      path_settings = (struct config_path_setting*)malloc(path_settings_size * sizeof(*path_settings));
+      if (path_settings)
+         memcpy(path_settings, tmp, path_settings_size * sizeof(*path_settings));
+   }
    tmp_i               = SETTINGS_PATH_COUNT_MAX;
    path_overrides      = populate_settings_path(overrides,  &tmp_i);
 
@@ -6238,34 +6246,15 @@ int8_t config_save_overrides(enum override_type type,
    /* Since config_load_file resets binds, restore overrides back to current binds */
    memcpy(input_config_binds, input_override_binds, sizeof(input_config_binds));
 
-   if (bool_settings)
-      free(bool_settings);
-   if (bool_overrides)
-      free(bool_overrides);
-   if (int_settings)
-      free(int_settings);
-   if (uint_settings)
-      free(uint_settings);
-   if (size_settings)
-      free(size_settings);
-   if (int_overrides)
-      free(int_overrides);
-   if (uint_overrides)
-      free(uint_overrides);
-   if (float_settings)
-      free(float_settings);
-   if (float_overrides)
-      free(float_overrides);
-   if (array_settings)
-      free(array_settings);
-   if (array_overrides)
-      free(array_overrides);
-   if (path_settings)
-      free(path_settings);
-   if (path_overrides)
-      free(path_overrides);
-   if (size_overrides)
-      free(size_overrides);
+   /* Free the malloc'd snapshot copies of settings
+    * (overrides pointers point to static buffers, no free needed) */
+   free(bool_settings);
+   free(int_settings);
+   free(uint_settings);
+   free(size_settings);
+   free(float_settings);
+   free(array_settings);
+   free(path_settings);
    free(settings);
 
    return ret;
