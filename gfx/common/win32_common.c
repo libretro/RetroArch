@@ -2107,10 +2107,14 @@ static unsigned int menu_id_to_meta_key(unsigned int menu_id)
    return 0;
 }
 
-/* Given a short key (meta key), get its name as a string */
-/* For single character results, may return same pointer
- * with different data inside (modifying the old result) */
-static const char *win32_meta_key_to_name(unsigned int meta_key)
+/* Given a short key (meta key), get its name as a string.
+ * For named keys the return value points into the global
+ * input_config_key_map table.  For single printable-ASCII
+ * characters the name is written into the caller-supplied
+ * buffer (buf, buf_size) and the return value points there.
+ * Returns NULL when no name can be determined. */
+static const char *win32_meta_key_to_name(unsigned int meta_key,
+      char *buf, size_t buf_size)
 {
    int i = 0;
    const struct retro_keybind* key = &input_config_binds[0][meta_key];
@@ -2126,11 +2130,11 @@ static const char *win32_meta_key_to_name(unsigned int meta_key)
       i++;
    }
 
-   if (key_code >= 32 && key_code < 127)
+   if (key_code >= 32 && key_code < 127 && buf_size >= 2)
    {
-      static char single_char[2] = "A";
-      single_char[0]              = key_code;
-      return single_char;
+      buf[0] = (char)key_code;
+      buf[1] = '\0';
+      return buf;
    }
    return NULL;
 }
@@ -2185,6 +2189,7 @@ static void win32_localize_menu(HMENU menu)
          const char* new_label2     = new_label;
          const char* meta_key_name  = NULL;
          char* new_label_text       = NULL;
+         char key_name_buf[2]       = {0};
 
          /* specific replacements:
             Load Content = "Ctrl+O"
@@ -2203,7 +2208,8 @@ static void win32_localize_menu(HMENU menu)
          }
          else if (meta_key != 0)
          {
-            meta_key_name = win32_meta_key_to_name(meta_key);
+            meta_key_name = win32_meta_key_to_name(meta_key,
+                  key_name_buf, sizeof(key_name_buf));
             __len         = meta_key_name ? strlen(meta_key_name) : 0;
          }
 
