@@ -672,7 +672,7 @@ static bool win32_browser(
        * so this cast should be safe */
       browser_state.filters  = (char*)extensions;
       browser_state.title    = new_title;
-      browser_state.startdir = strdup(initial_dir);
+      browser_state.startdir = initial_dir ? strdup(initial_dir) : NULL;
       browser_state.path     = new_file;
       browser_state.window   = owner;
 
@@ -683,7 +683,8 @@ static bool win32_browser(
       if (filename && browser_state.path)
          strlcpy(filename, browser_state.path, filename_size);
 
-      free(browser_state.startdir);
+      if (browser_state.startdir)
+         free(browser_state.startdir);
    }
 
    return result;
@@ -2320,7 +2321,8 @@ bool win32_suspend_screensaver(void *data, bool enable)
                Request                                  =
                   powerCreateRequest(&RequestContext);
 
-               powerSetRequest( Request, PowerRequestDisplayRequired);
+               powerSetRequest(Request, PowerRequestDisplayRequired);
+               CloseHandle(Request);
                return true;
             }
          }
@@ -2637,13 +2639,13 @@ void win32_get_video_output_prev(
 
 float win32_get_refresh_rate(void *data)
 {
-   float refresh_rate                      = 0.0f;
 #if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
    UINT32 TopologyID;
-   unsigned int NumPathArrayElements       = 0;
-   unsigned int NumModeInfoArrayElements   = 0;
-   DISPLAYCONFIG_PATH_INFO_CUSTOM *PathInfoArray  = NULL;
-   DISPLAYCONFIG_MODE_INFO_CUSTOM *ModeInfoArray  = NULL;
+   float refresh_rate                            = 0.0f;
+   unsigned int NumPathArrayElements             = 0;
+   unsigned int NumModeInfoArrayElements         = 0;
+   DISPLAYCONFIG_PATH_INFO_CUSTOM *PathInfoArray = NULL;
+   DISPLAYCONFIG_MODE_INFO_CUSTOM *ModeInfoArray = NULL;
 #ifdef HAVE_DYLIB
    static QUERYDISPLAYCONFIG pQueryDisplayConfig;
    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
@@ -2651,51 +2653,56 @@ float win32_get_refresh_rate(void *data)
    {
       HMODULE user32 = GetModuleHandle("user32.dll");
       if (!pQueryDisplayConfig)
-         pQueryDisplayConfig        = (QUERYDISPLAYCONFIG)GetProcAddress(
-               user32, "QueryDisplayConfig");
+         pQueryDisplayConfig        = (QUERYDISPLAYCONFIG)
+         GetProcAddress(user32, "QueryDisplayConfig");
       if (!pGetDisplayConfigBufferSizes)
-         pGetDisplayConfigBufferSizes = (GETDISPLAYCONFIGBUFFERSIZES)GetProcAddress(
-               user32, "GetDisplayConfigBufferSizes");
+         pGetDisplayConfigBufferSizes = (GETDISPLAYCONFIGBUFFERSIZES)
+         GetProcAddress(user32, "GetDisplayConfigBufferSizes");
    }
 #else
-   static QUERYDISPLAYCONFIG pQueryDisplayConfig                   = QueryDisplayConfig;
+   static QUERYDISPLAYCONFIG pQueryDisplayConfig = QueryDisplayConfig;
    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
 #endif
 
    /* Both function pointers must be valid before proceeding. */
    if (!pQueryDisplayConfig || !pGetDisplayConfigBufferSizes)
-      return refresh_rate;
+      return 0.0f;
 
    if (pGetDisplayConfigBufferSizes(
             QDC_DATABASE_CURRENT,
             &NumPathArrayElements,
             &NumModeInfoArrayElements) != ERROR_SUCCESS)
-      return refresh_rate;
+      return 0.0f;
 
    PathInfoArray = (DISPLAYCONFIG_PATH_INFO_CUSTOM *)
       malloc(sizeof(DISPLAYCONFIG_PATH_INFO_CUSTOM) * NumPathArrayElements);
+   if (!PathInfoArray)
+      return 0.0f;
    ModeInfoArray = (DISPLAYCONFIG_MODE_INFO_CUSTOM *)
       malloc(sizeof(DISPLAYCONFIG_MODE_INFO_CUSTOM) * NumModeInfoArrayElements);
-
-   if (PathInfoArray && ModeInfoArray)
+   if (!ModeInfoArray)
    {
-      if (pQueryDisplayConfig(QDC_DATABASE_CURRENT,
-                                 &NumPathArrayElements,
-                                 PathInfoArray,
-                                 &NumModeInfoArrayElements,
-                                 ModeInfoArray,
-                                 &TopologyID) == ERROR_SUCCESS
-            && NumPathArrayElements >= 1
-            && PathInfoArray[0].targetInfo.refreshRate.Denominator != 0)
-         refresh_rate = (float)PathInfoArray[0].targetInfo.refreshRate.Numerator /
-                               PathInfoArray[0].targetInfo.refreshRate.Denominator;
+      free(PathInfoArray);
+      return 0.0f;
    }
+
+   if (pQueryDisplayConfig(QDC_DATABASE_CURRENT,
+            &NumPathArrayElements,
+            PathInfoArray,
+            &NumModeInfoArrayElements,
+            ModeInfoArray,
+            &TopologyID) == ERROR_SUCCESS
+         && NumPathArrayElements >= 1
+         && PathInfoArray[0].targetInfo.refreshRate.Denominator != 0)
+      refresh_rate = (float)PathInfoArray[0].targetInfo.refreshRate.Numerator
+         / PathInfoArray[0].targetInfo.refreshRate.Denominator;
 
    free(ModeInfoArray);
    free(PathInfoArray);
-
-#endif
    return refresh_rate;
+#else
+   return 0.0f;
+#endif
 }
 
 void win32_get_video_output_next(
