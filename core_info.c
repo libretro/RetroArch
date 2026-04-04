@@ -2197,19 +2197,19 @@ static bool core_info_does_support_any_file(const core_info_t *core,
 static bool core_info_does_support_file(
       const core_info_t *core, const char *path)
 {
-   const char *basename, *ext;
+   const char *ext;
    if (!core || !core->supported_extensions_list)
       return false;
    if (string_is_empty(path))
       return false;
-   basename = path_basename(path);
-   /* if a core has / in its list of supported extensions, the core
-      supports loading of directories on the host file system */
-   if (string_is_empty(basename))
-      return string_list_find_elem(core->supported_extensions_list, "/");
-   ext = strrchr(basename, '.');
-   return string_list_find_elem_prefix(
-         core->supported_extensions_list, ".", (ext ? ext + 1 : ""));
+   ext = strrchr(path, '.');
+   if (!ext)
+   {
+      size_t len = strlen(path);
+      return len > 0 && path[len - 1] == '/'
+         && string_list_find_elem(core->supported_extensions_list, "/");
+   }
+   return string_list_find_elem(core->supported_extensions_list, ext);
 }
 
 /* qsort_r() is not in standard C, sadly. */
@@ -2224,15 +2224,17 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
    int support_b                 = core_info_does_support_file(b,
          p_coreinfo->tmp_path);
 #ifdef HAVE_COMPRESSION
-   support_a            = support_a
-      || core_info_does_support_any_file(a, p_coreinfo->tmp_list);
-   support_b            = support_b
-      || core_info_does_support_any_file(b, p_coreinfo->tmp_list);
+   if (!support_a)
+      support_a = core_info_does_support_any_file(a, p_coreinfo->tmp_list);
+   if (!support_b)
+      support_b = core_info_does_support_any_file(b, p_coreinfo->tmp_list);
 #endif
    if (support_a != support_b)
       return support_b - support_a;
-   if (!a->display_name || !b->display_name)
-      return 0;
+   if (!a->display_name)
+      return b->display_name ? -1 : 0;
+   if (!b->display_name)
+      return 1;
    return strcasecmp(a->display_name, b->display_name);
 }
 
