@@ -1971,7 +1971,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d11->pass[i].current_subframe,/* CurrentSubFrame */
 #ifdef HAVE_DXGI_HDR
             &d3d11->pass[i].hdr_mode,        /* HDRMode */
-            &d3d11->pass[i].paper_white_nits,/* PaperWhiteNits */
+            &d3d11->pass[i].paper_white_nits,/* BrightnessNits */
             &d3d11->pass[i].scanlines,       /* Scanlines */
             &d3d11->pass[i].subpixel_layout, /* SubpixelLayout */
             &d3d11->pass[i].expand_gamut,    /* ExpandGamut */

@@ -2253,7 +2253,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->pass[i].current_subframe,/* CurrentSubFrame */
 #ifdef HAVE_DXGI_HDR
             &d3d12->pass[i].hdr_mode,       /* HDRMode */
-            &d3d12->pass[i].paper_white_nits,/* PaperWhiteNits */
+            &d3d12->pass[i].paper_white_nits,/* BrightnessNits */
             &d3d12->pass[i].scanlines,       /* Scanlines */
             &d3d12->pass[i].subpixel_layout, /* SubpixelLayout */
             &d3d12->pass[i].expand_gamut,    /* ExpandGamut */
