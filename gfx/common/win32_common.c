@@ -376,6 +376,8 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info,
                               &list_size);
+                        if (lbItem < 0 || (size_t)lbItem >= list_size)
+                           break;
                         path_set(RARCH_PATH_CORE, core_info[lbItem].path);
                      }
                      break;
@@ -391,7 +393,8 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
 {
    win32_common_state_t
       *g_win32           = (win32_common_state_t*)&win32_st;
-
+   if (g_win32->monitor_count >= MAX_MONITORS)
+      return FALSE;
    win32_monitor_all[g_win32->monitor_count++] = hMonitor;
    return TRUE;
 }
@@ -658,9 +661,11 @@ static bool win32_browser(
        * path/name of any file the user may select. */
       char new_title[PATH_MAX];
       char new_file[PATH_MAX_LENGTH]; /* MAX_PATH-length path buffer */
+      char new_dir[DIR_MAX_LENGTH];
 
       new_title[0] = '\0';
       new_file[0]  = '\0';
+      new_dir[0]   = '\0';
 
       if (!string_is_empty(title))
          strlcpy(new_title, title, sizeof(new_title));
@@ -668,11 +673,14 @@ static bool win32_browser(
       if (filename && *filename)
          strlcpy(new_file, filename, sizeof(new_file));
 
+      if (initial_dir && *initial_dir)
+         strlcpy(new_dir, initial_dir, sizeof(new_dir));
+
       /* OPENFILENAME.lpstrFilters is actually const,
        * so this cast should be safe */
       browser_state.filters  = (char*)extensions;
       browser_state.title    = new_title;
-      browser_state.startdir = initial_dir ? strdup(initial_dir) : NULL;
+      browser_state.startdir = new_dir;
       browser_state.path     = new_file;
       browser_state.window   = owner;
 
@@ -682,9 +690,6 @@ static bool win32_browser(
        * copy the final path back to the caller's buffer. */
       if (filename && browser_state.path)
          strlcpy(filename, browser_state.path, filename_size);
-
-      if (browser_state.startdir)
-         free(browser_state.startdir);
    }
 
    return result;
@@ -2809,6 +2814,7 @@ void win32_get_video_output_size(void *data, unsigned *width,
 
 void win32_setup_pixel_format(HDC hdc, bool supports_gl)
 {
+   int pf;
    PIXELFORMATDESCRIPTOR pfd = {0};
    pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
    pfd.nVersion     = 1;
@@ -2822,7 +2828,9 @@ void win32_setup_pixel_format(HDC hdc, bool supports_gl)
    if (supports_gl)
       pfd.dwFlags  |= PFD_SUPPORT_OPENGL;
 
-   SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
+   pf = ChoosePixelFormat(hdc, &pfd);
+   if (pf == 0 || !SetPixelFormat(hdc, pf, &pfd))
+      RARCH_ERR("[Win32] Failed to set pixel format.\n");
 }
 
 #ifndef __WINRT__
