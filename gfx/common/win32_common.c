@@ -1305,31 +1305,58 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_IME_COMPOSITION:
          {
             HIMC    hIMC = ImmGetContext(hwnd);
-            unsigned gcs = lparam & (GCS_COMPSTR|GCS_RESULTSTR);
-            if (gcs)
+            /* Process composition and result strings separately;
+             * ImmGetCompositionStringW expects a single flag per call. */
+            unsigned gcs_flags[2] = { GCS_RESULTSTR, GCS_COMPSTR };
+            int f;
+            for (f = 0; f < 2; f++)
             {
-               int i;
-               wchar_t wstr[4] = {0,};
-               LONG _len       = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);
-               wstr[2]         = wstr[1];
-               wstr[1]         = 0;
-               if ((_len <= 0) || (_len > 4))
-                  break;
-               for (i = 0; i < _len; i = i + 2)
+               unsigned gcs_flag = gcs_flags[f];
+               if (!(lparam & gcs_flag))
+                  continue;
                {
-                  size_t __len;
-                  char *utf8   = utf16_to_utf8_string_alloc(wstr+i);
-                  if (!utf8)
+                  int i;
+                  /* Request up to 2 wide chars (4 bytes). Return value is in bytes. */
+                  wchar_t wstr[3] = {0, 0, 0};
+                  LONG byte_len   = ImmGetCompositionStringW(
+                        hIMC, gcs_flag, wstr, 2 * sizeof(wchar_t));
+                  int char_count;
+
+                  if (byte_len <= 0 || byte_len > (LONG)(2 * sizeof(wchar_t)))
                      continue;
-                  __len        = strlen(utf8) + 1;
-                  if (__len >= 1 && __len <= 3)
+
+                  char_count = byte_len / (int)sizeof(wchar_t);
+
+                  for (i = 0; i < char_count; i++)
                   {
-                     if (__len >= 2)
-                        utf8[3] = (gcs) | (gcs >> 4);
-                     input_keyboard_event(true, 1, *((int*)utf8), 0,
-                     RETRO_DEVICE_KEYBOARD);
+                     wchar_t single[2];
+                     char *utf8;
+                     size_t utf8_len;
+                     uint32_t packed = 0;
+
+                     single[0] = wstr[i];
+                     single[1] = 0;
+
+                     utf8 = utf16_to_utf8_string_alloc(single);
+                     if (!utf8)
+                        continue;
+
+                     utf8_len = strlen(utf8);
+
+                     /* Pack up to 3 UTF-8 bytes into the low 24 bits and
+                      * the composition/result flag into the high byte.
+                      * This matches what the receiver expects as a uint32. */
+                     if (utf8_len >= 1 && utf8_len <= 3)
+                     {
+                        memcpy(&packed, utf8, utf8_len);
+                        if (utf8_len >= 2)
+                           ((unsigned char*)&packed)[3] =
+                              (unsigned char)((gcs_flag) | (gcs_flag >> 4));
+                        input_keyboard_event(true, 1, (uint32_t)packed, 0,
+                              RETRO_DEVICE_KEYBOARD);
+                     }
+                     free(utf8);
                   }
-                  free(utf8);
                }
             }
             ImmReleaseContext(hwnd, hIMC);
@@ -2322,7 +2349,12 @@ bool win32_suspend_screensaver(void *data, bool enable)
                   powerCreateRequest(&RequestContext);
 
                powerSetRequest(Request, PowerRequestDisplayRequired);
-               CloseHandle(Request);
+               /* TODO/FIXME - handle is never released so
+                * technically counts as a memory leak. However, this
+                * handle needs to be kept alive so long as the screensaver
+                * should be suppressed. So this variable might need to
+                * be bookkept somewhere else where it can be properly
+                * closed upon shutdown */
                return true;
             }
          }
