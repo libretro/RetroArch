@@ -1203,17 +1203,149 @@ MSG_HASH(
    "รูปภาพ เลือกเพื่อเปิดไฟล์นี้ด้วยโปรแกรมดูรูปภาพ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Libretro core การเลือกนี้จะเป็นการเชื่อมโยง Core นี้เข้ากับตัวเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Libretro core เลือกไฟล์นี้เพื่อให้ RetroArch โหลด Core นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "ไดเรกทอรี เลือกเพื่อเปิดไดเรกทอรีนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   "จำกัดเฟรมเรต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   "เปลี่ยนการตั้งค่าการย้อนกลับ, การเร่งความเร็ว และสโลว์โมชัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   "บันทึกวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   "เปลี่ยนการตั้งค่าการบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   "การแสดงผลบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   "ปลี่ยนการตั้งค่าภาพซ้อนทับหน้าจอ (Overlay), แป้นพิมพ์ และการแจ้งเตือนบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   "ส่วนติดต่อผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   "เปลี่ยนการตั้งค่าส่วนติดต่อผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   "บริการ AI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   "เปลี่ยนการตั้งค่าบริการ AI (การแปลภาษา/การอ่านออกเสียง/อื่นๆ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   "การช่วยเหลือพิเศษ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   "เปลี่ยนการตั้งค่าเสียงบรรยายสำหรับการเข้าถึง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   "การจัดการพลังงาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   "เปลี่ยนการตั้งค่าการจัดการพลังงาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   "ความสำเร็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   "เปลี่ยนการตั้งค่าความสำเร็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   "เครือข่าย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "เปลี่ยนการตั้งค่าเซิร์ฟเวอร์และเครือข่าย"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
    "รายการเล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   "เปลี่ยนการตั้งค่าเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   "ผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "เปลี่ยนการตั้งค่าความเป็นส่วนตัว บัญชี และชื่อผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   "ไดเรกทอรี"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   "เปลี่ยนเส้นทางตำแหน่งที่จัดเก็บไฟล์"
    )
 
 /* Core option category placeholders for icons */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "กำหนดปุ่ม"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    "สื่อ"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "ประสิทธิภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "เสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "รายละเอียด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "พื้นที่จัดเก็บข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "ระบบ"
+   )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "เปลี่ยนการตั้งค่าที่เกี่ยวข้องกับ Steam"
+   )
 #endif
 
 /* Settings > Drivers */
@@ -1221,6 +1353,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "การควบคุม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "ไดรเวอร์อินพุตที่ใช้ ไดรเวอร์วิดีโอบางตัวอาจบังคับให้ต้องใช้ไดรเวอร์อินพุตที่ต่างออกไป (ต้องเริ่มระบบใหม่)"
    )
 
 MSG_HASH(
@@ -1339,6 +1475,10 @@ MSG_HASH(
 
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "บริการ AI"
+   )
 
 
 /* Settings > Input > Port # Controls */
@@ -1385,6 +1525,14 @@ MSG_HASH(
 
 /* Settings > Recording */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   "ปานกลาง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   "ปานกลาง"
+   )
 
 /* Settings > On-Screen Display */
 
@@ -1449,6 +1597,10 @@ MSG_HASH(
 
 /* Settings > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   "ความสำเร็จ"
+   )
 
 /* Settings > Achievements > Appearance */
 
@@ -1556,6 +1708,10 @@ MSG_HASH(
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   "ความสำเร็จ"
+   )
 
 /* Quick Menu > Options */
 
@@ -1675,6 +1831,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    "ประวัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER,
+   "ผู้ใช้"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
