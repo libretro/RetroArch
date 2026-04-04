@@ -1998,15 +1998,21 @@ void win32_check_window(void *data,
 #ifdef HAVE_CLIP_WINDOW
 void win32_clip_window(bool state)
 {
-   RECT clip_rect;
-
    if (state && main_window.hwnd)
    {
       WINDOWINFO info;
-      info.cbSize = sizeof(WINDOWINFO);
+      RECT clip_rect;
+      info.cbSize      = sizeof(WINDOWINFO);
 
       if (GetWindowInfo(main_window.hwnd, &info))
          clip_rect = info.rcClient;
+      else
+      {
+         clip_rect.left   = 0;
+         clip_rect.top    = 0;
+         clip_rect.right  = 0;
+         clip_rect.bottom = 0;
+      }
 
       ClipCursor(&clip_rect);
    }
@@ -2639,13 +2645,13 @@ void win32_get_video_output_prev(
    unsigned curr_width  = 0;
    unsigned curr_height = 0;
 
-   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   if (win32_get_video_output(&dm, -1))
    {
       curr_width  = dm.dmPelsWidth;
       curr_height = dm.dmPelsHeight;
    }
 
-   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
+   for (i = 0; win32_get_video_output(&dm, i); i++)
    {
       if (     dm.dmPelsWidth  == curr_width
             && dm.dmPelsHeight == curr_height)
@@ -2746,13 +2752,13 @@ void win32_get_video_output_next(
    unsigned curr_width  = 0;
    unsigned curr_height = 0;
 
-   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   if (win32_get_video_output(&dm, -1))
    {
       curr_width  = dm.dmPelsWidth;
       curr_height = dm.dmPelsHeight;
    }
 
-   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
+   for (i = 0; win32_get_video_output(&dm, i); i++)
    {
       if (found)
       {
@@ -2773,26 +2779,28 @@ void win32_get_video_output_next(
 #define WIN32_GET_VIDEO_OUTPUT(devName, iModeNum, dm) EnumDisplaySettings(devName, iModeNum, dm)
 #endif
 
-bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
+bool win32_get_video_output(DEVMODE *dm, int mode)
 {
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use        = NULL;
    unsigned mon_id           = 0;
-   memset(dm, 0, len);
-   dm->dmSize  = len;
+
+   memset(dm, 0, sizeof(DEVMODE));
+   dm->dmSize = sizeof(DEVMODE);
+
    win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
-   if (WIN32_GET_VIDEO_OUTPUT((const char*)&current_mon.szDevice, (mode == -1)
-            ? ENUM_CURRENT_SETTINGS
-            : (DWORD)mode,
-            dm) == 0)
-      return false;
-   return true;
+
+   return WIN32_GET_VIDEO_OUTPUT(
+         current_mon.szDevice,
+         (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode,
+         dm) != 0;
 }
 
-void win32_get_video_output_size(void *data, unsigned *width, unsigned *height, char *desc, size_t len)
+void win32_get_video_output_size(void *data, unsigned *width,
+   unsigned *height, char *desc, size_t len)
 {
    DEVMODE dm;
-   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   if (win32_get_video_output(&dm, -1))
    {
       *width  = dm.dmPelsWidth;
       *height = dm.dmPelsHeight;

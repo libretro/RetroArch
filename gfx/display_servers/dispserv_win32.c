@@ -243,7 +243,7 @@ static bool win32_display_server_set_resolution(void *data,
    if (!serv)
       return false;
 
-   win32_get_video_output(&dm, -1, sizeof(dm));
+   win32_get_video_output(&dm, -1);
 
    if (serv->orig_width == 0)
       serv->orig_width  = GetSystemMetrics(SM_CXSCREEN);
@@ -268,7 +268,7 @@ static bool win32_display_server_set_resolution(void *data,
       curr_orientation = dm.dmDisplayOrientation;
 #endif
 
-   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
+   for (i = 0; win32_get_video_output(&dm, i); i++)
    {
       if (dm.dmPelsWidth  != width)
          continue;
@@ -359,7 +359,7 @@ static void *win32_display_server_get_resolution_list(
    bool curr_interlaced              = false;
    struct video_display_config *conf = NULL;
 
-   if (win32_get_video_output(&dm, -1, sizeof(dm)))
+   if (win32_get_video_output(&dm, -1))
    {
       curr_width                     = dm.dmPelsWidth;
       curr_height                    = dm.dmPelsHeight;
@@ -371,7 +371,7 @@ static void *win32_display_server_get_resolution_list(
 #endif
    }
 
-   for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
+   for (i = 0; win32_get_video_output(&dm, i); i++)
    {
       if (dm.dmBitsPerPel != curr_bpp)
          continue;
@@ -390,7 +390,7 @@ static void *win32_display_server_get_resolution_list(
       calloc(*len, sizeof(struct video_display_config))))
       return NULL;
 
-   for (i = 0, j = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
+   for (i = 0, j = 0; win32_get_video_output(&dm, i); i++)
    {
       if (dm.dmBitsPerPel != curr_bpp)
          continue;
@@ -440,7 +440,7 @@ static void *win32_display_server_get_resolution_list(
 enum rotation win32_display_server_get_screen_orientation(void *data)
 {
    DEVMODE dm = {0};
-   win32_get_video_output(&dm, -1, sizeof(dm));
+   win32_get_video_output(&dm, -1);
 
    switch (dm.dmDisplayOrientation)
    {
@@ -463,7 +463,7 @@ void win32_display_server_set_screen_orientation(void *data,
 {
    DEVMODE dm = {0};
 
-   win32_get_video_output(&dm, -1, sizeof(dm));
+   win32_get_video_output(&dm, -1);
 
    switch (rotation)
    {

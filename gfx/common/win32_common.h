@@ -89,7 +89,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 int win32_change_display_settings(const char *str, void *devmode_data,
       unsigned flags);
 
-bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
+bool win32_get_video_output(DEVMODE *dm, int mode);
 
 #if !defined(__WINRT__)
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
