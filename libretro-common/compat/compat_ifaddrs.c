@@ -22,6 +22,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <compat/strl.h>
 #include <compat/ifaddrs.h>
 
 #include <string.h>
@@ -369,7 +370,7 @@ static int ifaddrs_interpret_link(struct nlmsghdr *p_hdr,
             }
             break;
          case IFLA_IFNAME:
-            strncpy(l_name, l_rtaData, l_rtaDataSize);
+            memcpy(l_name, l_rtaData, l_rtaDataSize);
             l_name[l_rtaDataSize] = '\0';
             l_entry->ifa_name = l_name;
             break;
@@ -407,7 +408,7 @@ static struct ifaddrs *ifaddrs_find_interface(int p_index,
    return NULL;
 }
 
-static int interpretAddr(struct nlmsghdr *p_hdr,
+static int ifaddrs_interpret_addr(struct nlmsghdr *p_hdr,
       struct ifaddrs **p_resultList, int p_numLinks)
 {
    char *l_name, *l_addr;
@@ -508,8 +509,7 @@ static int interpretAddr(struct nlmsghdr *p_hdr,
                break;
             }
          case IFA_LABEL:
-            strncpy(l_name, l_rtaData, l_rtaDataSize);
-            l_name[l_rtaDataSize] = '\0';
+            strlcpy(l_name, l_rtaData, l_rtaDataSize + 1);
             l_entry->ifa_name = l_name;
             break;
          default:
@@ -598,7 +598,7 @@ static int ifaddrs_interpret_addrs(int p_socket,
 
          if (l_hdr->nlmsg_type == RTM_NEWADDR)
          {
-            if (interpretAddr(l_hdr, p_resultList, p_numLinks) == -1)
+            if (ifaddrs_interpret_addr(l_hdr, p_resultList, p_numLinks) == -1)
                return -1;
          }
       }

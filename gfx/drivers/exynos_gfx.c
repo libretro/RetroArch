@@ -29,6 +29,7 @@
 #include <exynos/exynos_fimg2d.h>
 
 #include <retro_inline.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -560,7 +561,7 @@ static int exynos_open(struct exynos_data *pdata)
    g_drm_evctx.version                  = DRM_EVENT_CONTEXT_VERSION;
    g_drm_evctx.page_flip_handler        = exynos_page_flip_handler;
 
-   strncpy(pdata->drmname, buf, sizeof(buf));
+   strlcpy(pdata->drmname, buf, sizeof(pdata->drmname));
    g_drm_fd = fd;
 
    RARCH_LOG("[Exynos] using DRM device \"%s\" with connector id %u.\n",
