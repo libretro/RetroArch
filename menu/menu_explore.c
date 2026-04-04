@@ -505,7 +505,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
          break;
       }
 
-      fname                                     = retro_vfs_dirent_get_name_impl(dir);
+      fname = retro_vfs_dirent_get_name_impl(dir);
       if (fname)
          fext                           = strrchr(fname, '.');
 
@@ -542,7 +542,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
                && strcasecmp(entry->db_name, fname))
          {
             db_name = entry->db_name;
-            db_ext = strrchr(db_name, '.');
+            db_ext  = strrchr(db_name, '.');
             if (!db_ext)
                db_ext = db_name + strlen(db_name);
             rdb_hash = ex_hash32_nocase_filtered(

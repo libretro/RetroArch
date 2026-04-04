@@ -3906,7 +3906,8 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcpy(ozone->savestate_thumbnail_file_path, path,
                   sizeof(ozone->savestate_thumbnail_file_path));
 
-            if (!string_is_equal(current_path, ozone->savestate_thumbnail_file_path))
+            if (!string_is_equal(current_path,
+                ozone->savestate_thumbnail_file_path))
                gfx_thumbnail_reset(&ozone->thumbnails.savestate);
 
             ozone->flags |= OZONE_FLAG_WANT_THUMBNAIL_BAR
@@ -4364,7 +4365,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       /* Fill core name */
       if (entry)
       {
-         if (!entry->core_name || string_is_equal(entry->core_name, "DETECT"))
+         if (!entry->core_name || memcmp(entry->core_name, "DETECT", STRLEN_CONST("DETECT")) == 0)
             core_label = msg_hash_to_str(MSG_AUTODETECT);
          else
             core_label = entry->core_name;
@@ -5376,9 +5377,9 @@ static void ozone_draw_entry_value(
             y,
             video_width,
             video_height,
-            !string_is_equal(value, "null")
-                  ? COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32)
-                  : COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32 >> 1),
+            (memcmp(value, "null", STRLEN_CONST("null")) == 0)
+                  ? COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32 >> 1)
+                  : COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32),
             TEXT_ALIGN_RIGHT,
             1.0f,
             false,
@@ -6065,18 +6066,22 @@ border_iterate:
          /* Playlist manager icons */
          else if (ozone->depth == 3 && entry.enum_idx == MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS)
          {
-            if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
+            if (string_is_equal(entry.rich_label,
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
                texture = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
-            else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
+            else if (string_is_equal(entry.rich_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
                texture = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES];
 #ifdef HAVE_IMAGEVIEWER
-            else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+            else if (string_is_equal(entry.rich_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
                texture = ozone->icons_textures[OZONE_TAB_TEXTURE_IMAGE];
 #endif
             else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
                texture = ozone->icons_textures[OZONE_TAB_TEXTURE_MUSIC];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
+            else if (string_is_equal(entry.rich_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
                texture = ozone->icons_textures[OZONE_TAB_TEXTURE_VIDEO];
 #endif
             else if (i < ozone->horizontal_list.size)
@@ -6088,7 +6093,9 @@ border_iterate:
                for (offset = 0; offset < ozone->horizontal_list.size; offset++)
                {
                   char playlist_file_noext[NAME_MAX_LENGTH];
-                  fill_pathname(playlist_file_noext, ozone->horizontal_list.list[offset].path, "", sizeof(playlist_file_noext));
+                  fill_pathname(playlist_file_noext,
+                  ozone->horizontal_list.list[offset].path, "",
+                  sizeof(playlist_file_noext));
                   if (string_is_equal(playlist_file_noext, entry.rich_label))
                      break;
                }
@@ -8785,7 +8792,9 @@ static enum menu_action ozone_parse_menu_entry_action(
             const file_list_t *list = menu_st->entries.list ? MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
             if (list->size)
             {
-               if (string_is_equal(list->list[list->size - 1].label, MENU_ENUM_LABEL_CONFIGURATIONS_STR))
+               if (memcmp(list->list[list->size - 1].label,
+                   MENU_ENUM_LABEL_CONFIGURATIONS_STR,
+                   STRLEN_CONST(MENU_ENUM_LABEL_CONFIGURATIONS_STR)) == 0)
                   ozone->flags2 |= OZONE_FLAG2_RESET_DEPTH;
             }
          }
@@ -9728,7 +9737,7 @@ static void ozone_set_layout(
    if (!string_is_empty(path_menu_font))
       strlcpy(font_path, path_menu_font, sizeof(font_path));
 
-   ozone->font_unicode = !string_is_equal(path_menu_font, FILE_PATH_UNKNOWN) ? true : false;
+   ozone->font_unicode = (memcmp(path_menu_font, FILE_PATH_UNKNOWN, STRLEN_CONST(FILE_PATH_UNKNOWN)) == 0) ? false : true;
 
    /* Sidebar */
    font_inited = ozone_init_font(&ozone->fonts.sidebar,
@@ -12333,7 +12342,11 @@ static void ozone_set_header(ozone_handle_t *ozone)
             size_t tab_texture = ozone->tabs[ozone->categories_selection_ptr];
             ozone->header_icon = ozone->tab_textures[tab_texture];
 
-            if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
+            /* TODO/FIXME - cannot turn this one into memcmp -
+             * probably because label can be shorter than 
+             * MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR */
+            if (string_is_equal(label,
+                MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
                ozone_get_playlist_index_header_icon(ozone);
             else if (ozone->depth > 1)
                ozone_search_header_icon(ozone, &enum_idx, path, label, type);
@@ -12570,21 +12583,21 @@ static void ozone_populate_entries(
       ozone->flags            &= ~OZONE_FLAG_FADE_DIRECTION;
    ozone->depth                = new_depth;
 
-   if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR))
+   if (memcmp(label, MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR, STRLEN_CONST(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR) == 0))
       ozone->flags            |=  OZONE_FLAG_IS_DB_MANAGER_LIST;
    else
       ozone->flags            &= ~OZONE_FLAG_IS_DB_MANAGER_LIST;
 
 #if defined(HAVE_LIBRETRODB)
-   if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR)
-         || string_is_equal(label, MENU_ENUM_LABEL_EXPLORE_TAB_STR)
+   if (     memcmp(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR, STRLEN_CONST(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR)) == 0
+         || memcmp(label, MENU_ENUM_LABEL_EXPLORE_TAB_STR, STRLEN_CONST(MENU_ENUM_LABEL_EXPLORE_TAB_STR)) == 0
          || ozone_get_horizontal_selection_type(ozone) == MENU_EXPLORE_TAB)
       ozone->flags |=  OZONE_FLAG_IS_EXPLORE_LIST;
    else
       ozone->flags &= ~OZONE_FLAG_IS_EXPLORE_LIST;
 #endif
 
-   if (string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_STR))
+   if (memcmp(label, MENU_ENUM_LABEL_FAVORITES_STR, STRLEN_CONST(MENU_ENUM_LABEL_FAVORITES_STR)) == 0)
       ozone->flags |=  OZONE_FLAG_IS_FILE_LIST;
    else
       ozone->flags &= ~OZONE_FLAG_IS_FILE_LIST;
@@ -12673,7 +12686,7 @@ static void ozone_populate_entries(
       ozone->flags |= OZONE_FLAG_SKIP_THUMBNAIL_RESET;
 
    /* Always allow thumbnail reset in Information page */
-   if (string_is_equal(label, MENU_ENUM_LABEL_INFORMATION_STR))
+   if (memcmp(label, MENU_ENUM_LABEL_INFORMATION_STR, STRLEN_CONST(MENU_ENUM_LABEL_INFORMATION_STR)) == 0)
       ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
 
    if (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)
