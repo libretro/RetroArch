@@ -12583,7 +12583,7 @@ static void ozone_populate_entries(
       ozone->flags            &= ~OZONE_FLAG_FADE_DIRECTION;
    ozone->depth                = new_depth;
 
-   if (memcmp(label, MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR, STRLEN_CONST(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR) == 0))
+   if (memcmp(label, MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR, STRLEN_CONST(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR)) == 0)
       ozone->flags            |=  OZONE_FLAG_IS_DB_MANAGER_LIST;
    else
       ozone->flags            &= ~OZONE_FLAG_IS_DB_MANAGER_LIST;
