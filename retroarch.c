@@ -7725,12 +7725,27 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case RA_OPT_SIZE:
-               if (sscanf(optarg, "%ux%u",
-                        &rec_st->width, &rec_st->height) != 2)
                {
-                  RARCH_ERR("Wrong format for --size.\n");
-                  retroarch_print_help(argv[0]);
-                  retroarch_fail(1, "retroarch_parse_input()");
+                  char *sep;
+                  unsigned long w = (unsigned long)strtoul(optarg, &sep, 0);
+                  if (sep == optarg || *sep != 'x')
+                  {
+                     RARCH_ERR("Wrong format for --size.\n");
+                     retroarch_print_help(argv[0]);
+                     retroarch_fail(1, "retroarch_parse_input()");
+                  }
+                  {
+                     char *end;
+                     unsigned long h = (unsigned long)strtoul(sep + 1, &end, 0);
+                     if (end == sep + 1 || *end != '\0')
+                     {
+                        RARCH_ERR("Wrong format for --size.\n");
+                        retroarch_print_help(argv[0]);
+                        retroarch_fail(1, "retroarch_parse_input()");
+                     }
+                     rec_st->width  = (unsigned)w;
+                     rec_st->height = (unsigned)h;
+                  }
                }
                break;
 
