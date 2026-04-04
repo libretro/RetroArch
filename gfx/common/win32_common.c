@@ -328,32 +328,29 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
       WPARAM wParam, LPARAM lParam)
 {
    size_t list_size;
-   core_info_list_t *core_info_list = NULL;
-   const core_info_t *core_info     = NULL;
 
    switch (message)
    {
       case WM_INITDIALOG:
          {
-            HWND hwndList;
-            unsigned i;
-
+            const core_info_t *core_info     = NULL;
+            core_info_list_t *core_info_list = NULL;
             /* Add items to list. */
             core_info_get_list(&core_info_list);
             core_info_list_get_supported_cores(core_info_list,
                   path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
-
-            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
-
-            for (i = 0; i < list_size; i++)
-               SendMessage(hwndList, LB_ADDSTRING, 0,
-                     (LPARAM)core_info[i].display_name);
-
-            /* Select the first item in the list */
-            SendMessage(hwndList, LB_SETCURSEL, 0, 0);
-            path_set(RARCH_PATH_CORE, core_info[0].path);
-
-            SetFocus(hwndList);
+            if (list_size != 0)
+            {
+               size_t i;
+               HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
+               for (i = 0; i < list_size; i++)
+                  SendMessage(hwndList, LB_ADDSTRING, 0,
+                        (LPARAM)core_info[i].display_name);
+               /* Select the first item in the list */
+               SendMessage(hwndList, LB_SETCURSEL, 0, 0);
+               path_set(RARCH_PATH_CORE, core_info[0].path);
+               SetFocus(hwndList);
+            }
             return TRUE;
          }
 
@@ -369,13 +366,16 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
                {
                   case LBN_SELCHANGE:
                      {
+                        const core_info_t *core_info     = NULL;
+                        core_info_list_t *core_info_list = NULL;
                         HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
                         int lbItem    = (int)
                            SendMessage(hwndList, LB_GETCURSEL, 0, 0);
 
                         core_info_get_list(&core_info_list);
                         core_info_list_get_supported_cores(core_info_list,
-                              path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
+                              path_get(RARCH_PATH_CONTENT), &core_info,
+                              &list_size);
                         path_set(RARCH_PATH_CORE, core_info[lbItem].path);
                      }
                      break;
