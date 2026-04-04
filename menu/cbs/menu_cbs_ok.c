@@ -65,7 +65,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
 #include "../../core_option_manager.h"
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 #ifdef HAVE_CHEATS
 #include "../../cheat_manager.h"
 #endif

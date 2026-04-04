@@ -85,7 +85,7 @@
 #include "../../defaults.h"
 #include "../../msg_hash.h"
 #include "../../paths.h"
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 

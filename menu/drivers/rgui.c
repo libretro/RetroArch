@@ -49,7 +49,7 @@
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
 
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../configuration.h"
 #include "../../file_path_special.h"
 #include "../../input/input_osk.h"

@@ -24,7 +24,7 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../input/input_remapping.h"
 #include "../../input/input_driver.h"
 

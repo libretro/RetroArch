@@ -53,7 +53,7 @@
 #include "../../paths.h"
 #include "../../msg_hash.h"
 #include "../../verbosity.h"
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../ui/drivers/ui_win32.h"
 
 #include "platform_win32.h"

@@ -87,7 +87,7 @@
 #include "../paths.h"
 #include "../dynamic.h"
 #include "../list_special.h"
-#include "../intl/msg_hash_lbl_str.h"
+#include "../msg_hash_lbl_str.h"
 #include "../audio/audio_driver.h"
 #ifdef HAVE_MICROPHONE
 #include "../audio/microphone_driver.h"

@@ -20,7 +20,7 @@
 
 #include "../../configuration.h"
 #include "../../audio/audio_driver.h"
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"

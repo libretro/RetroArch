@@ -1,4 +1,4 @@
-#include "msg_hash_lbl_str.h"
+#include "../msg_hash_lbl_str.h"
 
 #ifdef HAVE_LIBNX
 MSG_HASH(

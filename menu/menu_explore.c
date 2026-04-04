@@ -31,7 +31,7 @@
 #include "../retroarch.h"
 #include "../configuration.h"
 #include "../file_path_special.h"
-#include "../intl/msg_hash_lbl_str.h"
+#include "../msg_hash_lbl_str.h"
 #include "../playlist.h"
 #include "../verbosity.h"
 #include "../libretro-db/libretrodb.h"

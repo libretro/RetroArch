@@ -34,7 +34,7 @@
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../verbosity.h"
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 
 enum
 {

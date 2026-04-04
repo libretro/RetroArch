@@ -24,7 +24,7 @@
 #ifdef HAVE_CHEATS
 #include "../../cheat_manager.h"
 #endif
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 
 #ifndef BIND_ACTION_CANCEL
 #define BIND_ACTION_CANCEL(cbs, name) (cbs)->action_cancel = (name)

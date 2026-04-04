@@ -45,7 +45,7 @@
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 
 #include "../../core_info.h"
 #include "../../configuration.h"

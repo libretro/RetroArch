@@ -48,7 +48,7 @@
 #include "menu_cbs.h"
 #include "../driver.h"
 #include "../list_special.h"
-#include "../intl/msg_hash_lbl_str.h"
+#include "../msg_hash_lbl_str.h"
 #include "../paths.h"
 #include "../tasks/task_content.h"
 #include "../tasks/task_powerstate.h"

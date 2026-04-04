@@ -53,7 +53,7 @@
 #endif
 #include "../../tasks/tasks_internal.h"
 
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../playlist.h"
 #include "../../runtime_file.h"
 

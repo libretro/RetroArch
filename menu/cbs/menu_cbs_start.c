@@ -44,7 +44,7 @@
 #include "../../performance_counters.h"
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 
 #include "../../audio/audio_driver.h"
 #include "../../input/input_remapping.h"

@@ -38,7 +38,7 @@
 #include "../menu_driver.h"
 #include "../menu_screensaver.h"
 
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_display.h"
 #include "../../gfx/gfx_thumbnail.h"

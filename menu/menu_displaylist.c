@@ -82,7 +82,7 @@
 #include "../audio/audio_driver.h"
 #include "../midi_driver.h"
 #include "../record/record_driver.h"
-#include "../intl/msg_hash_lbl_str.h"
+#include "../msg_hash_lbl_str.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
 #include "menu_entries.h"

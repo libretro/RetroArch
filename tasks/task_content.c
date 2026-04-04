@@ -59,7 +59,7 @@
 #include <lists/dir_list.h>
 #include <vfs/vfs_implementation.h>
 #include <array/rbuf.h>
-#include "../intl/msg_hash_lbl_str.h"
+#include "../msg_hash_lbl_str.h"
 
 #include <retro_miscellaneous.h>
 

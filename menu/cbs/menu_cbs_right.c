@@ -41,7 +41,7 @@
 #include "../../retroarch.h"
 #include "../../audio/audio_driver.h"
 #include "../../verbosity.h"
-#include "../../intl/msg_hash_lbl_str.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../ui/ui_companion_driver.h"
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
