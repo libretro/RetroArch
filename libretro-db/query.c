@@ -388,10 +388,29 @@ static struct buffer query_parse_integer(
       struct rmsgpack_dom_value *value,
       const char **err)
 {
+   int64_t result = 0;
+   int sign       = 1;
+   bool has_digit = false;
+   size_t idx     = buff.offset;
+
    value->type = RDT_INT;
-   if (sscanf(buff.data + buff.offset,
-            STRING_REP_INT64,
-            (int64_t*)&value->val.int_) == 0)
+
+   if (idx < buff.len && buff.data[idx] == '-')
+   {
+      sign = -1;
+      idx++;
+   }
+   else if (idx < buff.len && buff.data[idx] == '+')
+      idx++;
+
+   while (idx < buff.len && ISDIGIT((int)buff.data[idx]))
+   {
+      has_digit = true;
+      result    = result * 10 + (buff.data[idx] - '0');
+      idx++;
+   }
+
+   if (!has_digit)
    {
       snprintf(s, len,
             "%" PRIu64 "::Expected number",
@@ -400,8 +419,8 @@ static struct buffer query_parse_integer(
    }
    else
    {
-      while (ISDIGIT((int)buff.data[buff.offset]))
-         buff.offset++;
+      value->val.int_ = result * sign;
+      buff.offset      = idx;
    }
 
    return buff;
