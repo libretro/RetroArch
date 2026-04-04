@@ -418,7 +418,7 @@ static void explore_load_icons(explore_state_t *state)
 
    fill_pathname_application_special(path, sizeof(path),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS);
-   if (string_is_empty(path))
+   if (!*path)
       return;
 
    _len = fill_pathname_slash(path, sizeof(path));
@@ -665,7 +665,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
                continue;
 
             key_str                         = key->val.string.buff;
-            if (string_is_equal(key_str, "crc"))
+            if (memcmp(key_str, "crc", STRLEN_CONST("crc") + 1) == 0)
             {
                switch (val->val.binary.len)
                {
@@ -685,13 +685,13 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
                continue;
             }
-            else if (string_is_equal(key_str, "name"))
+            else if (memcmp(key_str, "name", STRLEN_CONST("name") + 1) == 0)
             {
                name = val->val.string.buff;
                continue;
             }
 #ifdef EXPLORE_SHOW_ORIGINAL_TITLE
-            else if (string_is_equal(key_str, "original_title"))
+            else if (memcmp(key_str, "original_title", STRLEN_CONST("original_title") + 1) == 0)
             {
                original_title = val->val.string.buff;
                continue;
@@ -700,7 +700,8 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
             for (cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
             {
-               if (!string_is_equal(key_str, explore_by_info[cat].rdbkey))
+               if (memcmp(key_str, explore_by_info[cat].rdbkey,
+                        strlen(explore_by_info[cat].rdbkey) + 1) != 0)
                   continue;
 
                meta_count++;
@@ -858,7 +859,7 @@ static int explore_action_sublabel_spacer(
     * > In RGUI it does nothing other than
     *   unnecessarily blank out the fallback
     *   core title text in the sublabel area */
-   if (string_is_equal(menu_driver, "ozone"))
+   if (memcmp(menu_driver, "ozone", STRLEN_CONST("ozone") + 1) == 0)
    {
       s[0] = ' ';
       s[1] = '\0';
@@ -1014,8 +1015,9 @@ static const char* explore_get_view_path(struct menu_state *menu_st,
    /* check if we are opening a saved view via Content > Playlists */
    if (    (cur->type == MENU_EXPLORE_TAB)
          && cur->path
-         && !string_is_equal(cur->path,
-            MENU_ENUM_LABEL_GOTO_EXPLORE_STR)
+         && memcmp(cur->path,
+            MENU_ENUM_LABEL_GOTO_EXPLORE_STR,
+            STRLEN_CONST(MENU_ENUM_LABEL_GOTO_EXPLORE_STR) + 1) != 0
       )
       return cur->path;
 
@@ -1196,18 +1198,18 @@ static void explore_load_view(explore_state_t *state, const char* path)
       if (depth == 1 && type == RJSON_STRING)
       {
          const char* key = rjson_get_string(json, NULL);
-         if (        string_is_equal(key, "filter_name")
+         if (        memcmp(key, "filter_name", STRLEN_CONST("filter_name") + 1) == 0
                   && rjson_next(json) == RJSON_STRING)
             strlcpy(state->view_search,
                   rjson_get_string(json, NULL),
 		  sizeof(state->view_search));
-         else if (   string_is_equal(key, "filter_equal")
+         else if (   memcmp(key, "filter_equal", STRLEN_CONST("filter_equal") + 1) == 0
                   && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_EQUAL;
-         else if (   string_is_equal(key, "filter_min")
+         else if (   memcmp(key, "filter_min", STRLEN_CONST("filter_min") + 1) == 0
                   && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MIN;
-         else if (   string_is_equal(key, "filter_max")
+         else if (   memcmp(key, "filter_max", STRLEN_CONST("filter_max") + 1) == 0
                   && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MAX;
       }
@@ -1217,7 +1219,8 @@ static void explore_load_view(explore_state_t *state, const char* path)
       {
          const char* key = rjson_get_string(json, NULL);
          for (cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
-            if (string_is_equal(key, explore_by_info[cat].rdbkey))
+            if (memcmp(key, explore_by_info[cat].rdbkey,
+                     strlen(explore_by_info[cat].rdbkey) + 1) == 0)
                break;
          if (cat == EXPLORE_CAT_COUNT)
             rjson_next(json); /* skip value */
@@ -1803,7 +1806,7 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
       return -1;
 
    db_name = entry->by[EXPLORE_BY_SYSTEM]->str;
-   if (!string_is_empty(db_name))
+   if (db_name && *db_name)
       playlist_index = menu_explore_get_entry_playlist_index(
             type, &playlist, NULL, NULL, NULL, NULL);
 
