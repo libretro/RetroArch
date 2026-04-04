@@ -2624,7 +2624,7 @@ bool win32_set_video_mode(void *data,
 
 bool win32_get_client_rect(RECT* rect)
 {
-   return GetWindowRect(main_window.hwnd, rect);
+   return GetClientRect(main_window.hwnd, rect);
 }
 
 void win32_window_reset(void)
