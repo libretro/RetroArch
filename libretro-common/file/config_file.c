@@ -983,10 +983,11 @@ bool config_get_size_t(config_file_t *conf, const char *key, size_t *in)
    const struct config_entry_list *entry = config_get_entry(conf, key);
 
    if (entry)
-   {
+   { 
+      unsigned long val;
       char *end = NULL;
       errno = 0;
-      unsigned long val = (unsigned long)strtoul(entry->value, &end, 0);
+      val   = (unsigned long)strtoul(entry->value, &end, 0);
 
       if (errno != 0 || end == entry->value || *end != '\0')
          return false;
