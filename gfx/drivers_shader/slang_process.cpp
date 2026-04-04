@@ -512,108 +512,190 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
    char id[64];
    char desc[64];
    size_t i;
+
    id[0]   = '\0';
    desc[0] = '\0';
+
    for (i = 0; i < lines->num_lines; i++)
    {
       const char *line = shader_line_buf_get(lines, i);
       if (!line)
          continue;
-      if (!memcmp(line, "#pragma", sizeof("#pragma")-1))
+
+      if (memcmp(line, "#pragma", sizeof("#pragma") - 1))
+         continue;
+
+      /* Check for shader identifier */
+      if (!memcmp(line, "#pragma name ",
+               sizeof("#pragma name ") - 1))
       {
-         /* Check for shader identifier */
-         if (!memcmp(line, "#pragma name ",
-                  sizeof("#pragma name ")-1))
+         const char *str = line + (sizeof("#pragma name ") - 1);
+         while (*str == ' ' || *str == '\t')
+            str++;
+         if (!meta->name.empty())
          {
-            const char *str = NULL;
-            if (!meta->name.empty())
-            {
-               RARCH_ERR("[Slang] Trying to declare multiple names for file.\n");
-               return false;
-            }
-            str = line + (sizeof("#pragma name ")-1);
-            while (*str == ' ')
-               str++;
-            meta->name = str;
+            RARCH_ERR("[Slang] Trying to declare multiple names for file.\n");
+            return false;
          }
-         /* Check for shader parameters */
-         else if (!memcmp(line, "#pragma parameter ",
-                  sizeof("#pragma parameter ")-1))
+         meta->name = str;
+      }
+      /* Check for shader parameters */
+      else if (!memcmp(line, "#pragma parameter ",
+               sizeof("#pragma parameter ") - 1))
+      {
+         float initial, minimum, maximum, step;
+         int fields         = 0;
+         const char *s      = line + (sizeof("#pragma parameter ") - 1);
+         size_t len         = 0;
+         char *end          = NULL;
+
+         /* Parse id */
+         while (*s == ' ' || *s == '\t')
+            s++;
+         len = 0;
+         while (s[len] && s[len] != ' ' && s[len] != '\t')
+            len++;
+         if (len == 0 || len >= sizeof(id))
          {
-            float initial, minimum, maximum, step;
-            int ret = sscanf(
-                  line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
-                  id, desc, &initial, &minimum, &maximum, &step);
-            if (ret == 5)
+            RARCH_ERR("[Slang] Invalid #pragma parameter line: \"%s\".\n", line);
+            return false;
+         }
+         memcpy(id, s, len);
+         id[len] = '\0';
+         s += len;
+
+         /* Parse quoted description */
+         while (*s == ' ' || *s == '\t')
+            s++;
+         if (*s != '"')
+         {
+            RARCH_ERR("[Slang] Invalid #pragma parameter line: \"%s\".\n", line);
+            return false;
+         }
+         s++;
+         len = 0;
+         while (s[len] && s[len] != '"')
+            len++;
+         if (s[len] != '"' || len >= sizeof(desc))
+         {
+            RARCH_ERR("[Slang] Invalid #pragma parameter line: \"%s\".\n", line);
+            return false;
+         }
+         memcpy(desc, s, len);
+         desc[len] = '\0';
+         s += len + 1;
+
+         /* Parse initial */
+         while (*s == ' ' || *s == '\t')
+            s++;
+         initial = (float)strtod(s, &end);
+         if (end == s)
+         {
+            RARCH_ERR("[Slang] Invalid #pragma parameter line: \"%s\".\n", line);
+            return false;
+         }
+         s = end;
+
+         /* Parse minimum */
+         while (*s == ' ' || *s == '\t')
+            s++;
+         minimum = (float)strtod(s, &end);
+         if (end == s)
+         {
+            RARCH_ERR("[Slang] Invalid #pragma parameter line: \"%s\".\n", line);
+            return false;
+         }
+         s = end;
+
+         /* Parse maximum */
+         while (*s == ' ' || *s == '\t')
+            s++;
+         maximum = (float)strtod(s, &end);
+         if (end == s)
+         {
+            RARCH_ERR("[Slang] Invalid #pragma parameter line: \"%s\".\n", line);
+            return false;
+         }
+         s       = end;
+         fields  = 5;
+
+         /* Parse step (optional) */
+         while (*s == ' ' || *s == '\t')
+            s++;
+         if (*s)
+         {
+            step = (float)strtod(s, &end);
+            if (end != s)
+               fields = 6;
+         }
+
+         if (fields == 5)
+         {
+            step    = 0.1f * (maximum - minimum);
+            fields  = 6;
+         }
+
+         {
+            bool parameter_found   = false;
+            size_t parameter_index = 0;
+            size_t j;
+
+            for (j = 0; j < meta->parameters.size(); j++)
             {
-               step = 0.1f * (maximum - minimum);
-               ret  = 6;
+               if (meta->parameters[j].id == id)
+               {
+                  parameter_found = true;
+                  parameter_index = j;
+                  break;
+               }
             }
-            if (ret == 6)
+
+            /* Allow duplicate #pragma parameter, but only
+             * if they are exactly the same. */
+            if (parameter_found)
             {
-               bool parameter_found   = false;
-               size_t parameter_index = 0;
-               size_t j;
-               for (j = 0; j < meta->parameters.size(); j++)
+               const glslang_parameter *parameter =
+                  &meta->parameters[parameter_index];
+               if (     (parameter->desc    != desc)
+                     || (parameter->initial != initial)
+                     || (parameter->minimum != minimum)
+                     || (parameter->maximum != maximum)
+                     || (parameter->step    != step)
+                  )
                {
-                  /* Note: LHS is a std:string, RHS is a C string.
-                   * (the glslang_meta stuff has to be C++) */
-                  if (meta->parameters[j].id == id)
-                  {
-                     parameter_found = true;
-                     parameter_index = j;
-                     break;
-                  }
+                  RARCH_ERR("[Slang] Duplicate parameters"
+                        " found for \"%s\", but arguments"
+                        " do not match.\n", id);
+                  return false;
                }
-               /* Allow duplicate #pragma parameter, but only
-                * if they are exactly the same. */
-               if (parameter_found)
-               {
-                  const glslang_parameter *parameter =
-                     &meta->parameters[parameter_index];
-                  if (     (parameter->desc    != desc)
-                        || (parameter->initial != initial)
-                        || (parameter->minimum != minimum)
-                        || (parameter->maximum != maximum)
-                        || (parameter->step    != step)
-                     )
-                  {
-                     RARCH_ERR("[Slang] Duplicate parameters found for \"%s\", but arguments do not match.\n", id);
-                     return false;
-                  }
-               }
-               else
-                  meta->parameters.push_back({ id, desc, initial, minimum, maximum, step });
             }
             else
-            {
-               RARCH_ERR("[Slang] Invalid #pragma parameter line: \"%s\".\n",
-                     line);
-               return false;
-            }
+               meta->parameters.push_back({
+                     id, desc, initial, minimum, maximum, step });
          }
-         /* Check for framebuffer format */
-         else if (!memcmp(line, "#pragma format ",
-                  sizeof("#pragma format ")-1))
+      }
+      /* Check for framebuffer format */
+      else if (!memcmp(line, "#pragma format ",
+               sizeof("#pragma format ") - 1))
+      {
+         const char *str = line + (sizeof("#pragma format ") - 1);
+         while (*str == ' ' || *str == '\t')
+            str++;
+         if (meta->rt_format != SLANG_FORMAT_UNKNOWN)
          {
-            const char *str = NULL;
-            if (meta->rt_format != SLANG_FORMAT_UNKNOWN)
-            {
-               RARCH_ERR("[Slang] Trying to declare format multiple times for file.\n");
-               return false;
-            }
-            str = line + (sizeof("#pragma format ")-1);
-            while (*str == ' ')
-               str++;
-            meta->rt_format = glslang_find_format(str);
-            if (meta->rt_format == SLANG_FORMAT_UNKNOWN)
-            {
-               RARCH_ERR("[Slang] Failed to find format \"%s\".\n", str);
-               return false;
-            }
+            RARCH_ERR("[Slang] Trying to declare format"
+                  " multiple times for file.\n");
+            return false;
+         }
+         meta->rt_format = glslang_find_format(str);
+         if (meta->rt_format == SLANG_FORMAT_UNKNOWN)
+         {
+            RARCH_ERR("[Slang] Failed to find format \"%s\".\n", str);
+            return false;
          }
       }
    }
+
    return true;
 }
 
