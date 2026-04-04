@@ -21,6 +21,7 @@
 #else
 #include <unistd.h>
 #endif
+#include <string.h>
 #include <libretro.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
@@ -1074,7 +1075,7 @@ static size_t setting_get_string_representation_int_gpu_index(rarch_setting_t *s
       _len = snprintf(s, len, "%d", *setting->value.target.integer);
       if (      list
             && (*setting->value.target.integer < (int)list->size)
-            && !string_is_empty(list->elems[*setting->value.target.integer].data))
+            && (list->elems[*setting->value.target.integer].data && *list->elems[*setting->value.target.integer].data))
       {
          _len += strlcpy(s + _len, " - ", len - _len);
          _len += strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
@@ -2863,7 +2864,7 @@ static void setting_action_ok_color_rgb_cb(void *userdata, const char *line)
 
          rgb = (unsigned)strtoul(line, &rgb_end, 16);
 
-         if (!(*rgb_end) && (rgb_end - line) == STRLEN_CONST("RRGGBB"))
+         if (!(*rgb_end) && (rgb_end - line) == (sizeof("RRGGBB")-1))
             *setting->value.target.unsigned_integer = rgb;
       }
    }
@@ -3131,7 +3132,7 @@ static size_t setting_get_string_representation_video_font_path(
 {
    if (!setting)
       return 0;
-   if (string_is_empty(setting->value.target.string))
+   if ((!setting->value.target.string || !*setting->value.target.string))
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    return fill_pathname(s, path_basename(setting->value.target.string),
          "", len);
@@ -3243,7 +3244,7 @@ static size_t setting_get_string_representation_password(
 {
    if (setting)
    {
-      if (!string_is_empty(setting->value.target.string))
+      if ((setting->value.target.string && *setting->value.target.string))
          return strlcpy(s, "********", len);
       if (config_get_ptr()->arrays.cheevos_token[0])
          return strlcpy(s, "********", len);
@@ -5120,7 +5121,7 @@ static size_t setting_get_string_representation_string_audio_device(rarch_settin
 {
    if (!setting)
       return 0;
-   if (string_is_empty(setting->value.target.string))
+   if ((!setting->value.target.string || !*setting->value.target.string))
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    return strlcpy(s, setting->value.target.string, len);
 }
@@ -5830,8 +5831,8 @@ static bool setting_action_input_device_index_prevent(
    if (setting->index_offset == 0)
    {
       if (     p == setting->index_offset
-            && !string_is_empty(input_config_get_device_name(setting->index_offset))
-            && string_is_empty(input_config_get_device_name(p_new)))
+            && (input_config_get_device_name(setting->index_offset) && *input_config_get_device_name(setting->index_offset))
+            && (!input_config_get_device_name(p_new) || !*input_config_get_device_name(p_new)))
          return true;
    }
    return false;
@@ -6164,7 +6165,7 @@ static int setting_string_action_left_netplay_mitm_server(
    {
       const mitm_server_t *server = &netplay_mitm_server_list[i];
 
-      if (string_is_equal(server->name, netplay_mitm_server))
+      if (memcmp(server->name, netplay_mitm_server, strlen(netplay_mitm_server) + 1) == 0)
       {
          if (i > 0)
             offset = i - 1;
@@ -6202,7 +6203,7 @@ static int setting_string_action_right_netplay_mitm_server(
    {
       const mitm_server_t *server = &netplay_mitm_server_list[i];
 
-      if (string_is_equal(server->name, netplay_mitm_server))
+      if (memcmp(server->name, netplay_mitm_server, strlen(netplay_mitm_server) + 1) == 0)
       {
          if (i < (ARRAY_SIZE(netplay_mitm_server_list) - 1))
             offset = i + 1;
@@ -6708,7 +6709,7 @@ static size_t setting_get_string_representation_video_frame_delay(
 
    /* Non-automatic and dropdown list */
    if (     !settings->bools.video_frame_delay_auto
-         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_STR))
+         || memcmp(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_STR, strlen(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_STR) + 1) == 0)
    {
       if (value == 0)
          _len = snprintf(s, len, "%s",
@@ -7644,10 +7645,10 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             info.list                     = menu_stack;
 
             /* Menu background image */
-            if (string_is_equal(info.label, MENU_ENUM_LABEL_MENU_WALLPAPER_STR))
+            if (memcmp(info.label, MENU_ENUM_LABEL_MENU_WALLPAPER_STR, strlen(MENU_ENUM_LABEL_MENU_WALLPAPER_STR) + 1) == 0)
             {
                /* Start from current wallpaper instead if available */
-               if (!string_is_empty(settings->paths.path_menu_wallpaper))
+               if (*settings->paths.path_menu_wallpaper)
                {
                   free(info.path);
                   info.path = strdup(settings->paths.path_menu_wallpaper);
@@ -7655,10 +7656,10 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             }
 
             /* Browse basedir instead and set selection to file if available */
-            if (!string_is_empty(info.path) && !path_is_directory(info.path))
+            if ((info.path && *info.path) && !path_is_directory(info.path))
             {
                const char *selection_path = path_basename(info.path);
-               if (!string_is_empty(selection_path))
+               if ((selection_path && *selection_path))
                   menu_driver_set_pending_selection(selection_path);
                path_basedir(info.path);
             }
@@ -7759,10 +7760,10 @@ rarch_setting_t *menu_setting_find(const char *label)
       const char *short_description = setting->short_description;
 
       if (
-                string_is_equal(label, name)
+                memcmp(label, name, strlen(name) + 1) == 0
             && (setting->type <= ST_GROUP))
       {
-         if (string_is_empty(short_description))
+         if ((!short_description || !*short_description))
             break;
 
          if (setting->read_handler)
@@ -7795,7 +7796,7 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
             setting->type <= ST_GROUP)
       {
          const char *short_description = setting->short_description;
-         if (string_is_empty(short_description))
+         if ((!short_description || !*short_description))
             return NULL;
 
          if (setting->read_handler)
@@ -8209,7 +8210,7 @@ static size_t setting_get_string_representation_smb_password(
    if (!setting)
       return 0;
 
-   if (string_is_empty(setting->value.target.string))
+   if ((!setting->value.target.string || !*setting->value.target.string))
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    else
    {
@@ -8333,7 +8334,7 @@ static size_t setting_get_string_representation_input_device_reserved_device_nam
    unsigned int dev_product_id;
    if (!setting)
       return 0;
-   if (string_is_empty(setting->value.target.string))
+   if ((!setting->value.target.string || !*setting->value.target.string))
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
    else if (sscanf(setting->value.target.string, "%04x:%04x ", &dev_vendor_id, &dev_product_id) != 2)
       return strlcpy(s, setting->value.target.string, len);
@@ -13073,7 +13074,7 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_VULKAN
-            if (string_is_equal(video_driver_get_ident(), "vulkan"))
+            if (memcmp(video_driver_get_ident(), "vulkan", sizeof("vulkan")) == 0)
             {
 #ifdef __APPLE__
                CONFIG_BOOL(
@@ -13111,7 +13112,7 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_D3D10
-            if (string_is_equal(video_driver_get_ident(), "d3d10"))
+            if (memcmp(video_driver_get_ident(), "d3d10", sizeof("d3d10")) == 0)
             {
                CONFIG_INT(
                      list, list_info,
@@ -13132,7 +13133,7 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_D3D11
-            if (string_is_equal(video_driver_get_ident(), "d3d11"))
+            if (memcmp(video_driver_get_ident(), "d3d11", sizeof("d3d11")) == 0)
             {
                CONFIG_INT(
                      list, list_info,
@@ -13153,7 +13154,7 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_D3D12
-            if (string_is_equal(video_driver_get_ident(), "d3d12"))
+            if (memcmp(video_driver_get_ident(), "d3d12", sizeof("d3d12")) == 0)
             {
                CONFIG_INT(
                      list, list_info,
@@ -13274,8 +13275,8 @@ static bool setting_append_list(
             }
 
 #if defined(DINGUX) && defined(DINGUX_BETA)
-            if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
-                || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            if (   memcmp(settings->arrays.video_driver, "sdl_dingux", sizeof("sdl_dingux")) == 0
+                || memcmp(settings->arrays.video_driver, "sdl_rs90", sizeof("sdl_rs90")) == 0)
             {
                CONFIG_UINT(
                      list, list_info,
@@ -13389,7 +13390,7 @@ static bool setting_append_list(
                menu_settings_list_current_add_range(list, list_info, 50, 56, 0.1, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-            if (string_is_equal(settings->arrays.video_driver, "gl"))
+            if (memcmp(settings->arrays.video_driver, "gl", sizeof("gl")) == 0)
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -13568,7 +13569,7 @@ static bool setting_append_list(
 #if defined(GEKKO) || defined(PS2) || defined(__PS3__)
             if (true)
 #else
-            if (!string_is_equal(video_display_server_get_ident(), "null"))
+            if (memcmp(video_display_server_get_ident(), "null", sizeof("null")) != 0)
 #endif
             {
                CONFIG_ACTION(
@@ -13651,8 +13652,8 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
 #if defined(DINGUX)
-            if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
-                || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            if (   memcmp(settings->arrays.video_driver, "sdl_dingux", sizeof("sdl_dingux")) == 0
+                || memcmp(settings->arrays.video_driver, "sdl_rs90", sizeof("sdl_rs90")) == 0)
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -13984,7 +13985,7 @@ static bool setting_append_list(
 #endif
 
 #if defined(DINGUX)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            if (memcmp(settings->arrays.video_driver, "sdl_dingux", sizeof("sdl_dingux")) == 0)
             {
                CONFIG_UINT(
                      list, list_info,
@@ -14004,7 +14005,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             }
 #if defined(RS90) || defined(MIYOO)
-            else if (string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            else if (memcmp(settings->arrays.video_driver, "sdl_rs90", sizeof("sdl_rs90")) == 0)
             {
                CONFIG_UINT(
                      list, list_info,
@@ -15325,7 +15326,7 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef HAVE_WASAPI
-         if (string_is_equal(audio_driver_get_ident(), "wasapi"))
+         if (memcmp(audio_driver_get_ident(), "wasapi", sizeof("wasapi")) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -15510,7 +15511,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, RESAMPLER_QUALITY_DONTCARE, RESAMPLER_QUALITY_HIGHEST, 1.0, true, true);
 
 #ifdef HAVE_WASAPI
-         if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
+         if (memcmp(settings->arrays.microphone_driver, "wasapi", sizeof("wasapi")) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -16250,7 +16251,7 @@ static bool setting_append_list(
 
             input_driver_state_t *st = input_state_get_ptr();
             input_driver_t *current_input = st->current_driver;
-            if (string_is_equal(current_input->ident, "android"))
+            if (memcmp(current_input->ident, "android", sizeof("android")) == 0)
             {
                CONFIG_ACTION(
                      list, list_info,
@@ -18681,7 +18682,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
          }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (memcmp(settings->arrays.menu_driver, "xmb", sizeof("xmb")) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -18891,7 +18892,7 @@ static bool setting_append_list(
                SD_FLAG_ADVANCED
                );
 
-         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         if (memcmp(settings->arrays.menu_driver, "rgui", sizeof("rgui")) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -19067,9 +19068,9 @@ static bool setting_append_list(
 
             /* ps2 and sdl_dingux/sdl_rs90 gfx drivers do
              * not support menu framebuffer transparency */
-            if (   !string_is_equal(settings->arrays.video_driver, "ps2")
-                && !string_is_equal(settings->arrays.video_driver, "sdl_dingux")
-                && !string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            if (   memcmp(settings->arrays.video_driver, "ps2", sizeof("ps2")) != 0
+                && memcmp(settings->arrays.video_driver, "sdl_dingux", sizeof("sdl_dingux")) != 0
+                && memcmp(settings->arrays.video_driver, "sdl_rs90", sizeof("sdl_rs90")) != 0)
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -19183,7 +19184,7 @@ static bool setting_append_list(
          }
 
 #ifdef HAVE_XMB
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (memcmp(settings->arrays.menu_driver, "xmb", sizeof("xmb")) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -19427,7 +19428,7 @@ static bool setting_append_list(
          }
 
 #ifdef HAVE_XMB
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (memcmp(settings->arrays.menu_driver, "xmb", sizeof("xmb")) == 0)
          {
             /* only XMB uses these values, don't show
              * them on other drivers. */
@@ -19708,7 +19709,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
        }
 #endif
-         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (memcmp(settings->arrays.menu_driver, "ozone", sizeof("ozone")) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -20205,7 +20206,7 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef HAVE_MATERIALUI
-         if (string_is_equal(settings->arrays.menu_driver, "glui"))
+         if (memcmp(settings->arrays.menu_driver, "glui", sizeof("glui")) == 0)
          {
             /* only MaterialUI uses these values, don't show
              * them on other drivers. */
@@ -20408,7 +20409,7 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_OZONE
-         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (memcmp(settings->arrays.menu_driver, "ozone", sizeof("ozone")) == 0)
          {
             CONFIG_UINT(
                   list, list_info,
@@ -20679,7 +20680,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
-         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         if (memcmp(settings->arrays.menu_driver, "rgui", sizeof("rgui")) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -20732,25 +20733,25 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
-             || string_is_equal(settings->arrays.menu_driver, "ozone")
-             || string_is_equal(settings->arrays.menu_driver, "rgui")
-             || string_is_equal(settings->arrays.menu_driver, "glui"))
+         if (   memcmp(settings->arrays.menu_driver, "xmb", sizeof("xmb")) == 0
+             || memcmp(settings->arrays.menu_driver, "ozone", sizeof("ozone")) == 0
+             || memcmp(settings->arrays.menu_driver, "rgui", sizeof("rgui")) == 0
+             || memcmp(settings->arrays.menu_driver, "glui", sizeof("glui")) == 0)
          {
             enum msg_hash_enums thumbnails_label_value;
             enum msg_hash_enums left_thumbnails_label_value;
 
-            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+            if (memcmp(settings->arrays.menu_driver, "rgui", sizeof("rgui")) == 0)
             {
                thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
                left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
             }
-            else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+            else if (memcmp(settings->arrays.menu_driver, "ozone", sizeof("ozone")) == 0)
             {
                thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
                left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
             }
-            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            else if (memcmp(settings->arrays.menu_driver, "glui", sizeof("glui")) == 0)
             {
                thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI;
                left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI;
@@ -20796,7 +20797,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
          }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (memcmp(settings->arrays.menu_driver, "xmb", sizeof("xmb")) == 0)
          {
              CONFIG_UINT(
                   list, list_info,
@@ -20865,7 +20866,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 1024, 256, true, true);
          }
 
-         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         if (memcmp(settings->arrays.menu_driver, "rgui", sizeof("rgui")) == 0)
          {
             CONFIG_UINT(
                   list, list_info,
@@ -22676,8 +22677,8 @@ static bool setting_append_list(
 
          /* Playlist entry index display and content specific history icon
           * are currently supported only by Ozone & XMB */
-         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
-             || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (   memcmp(settings->arrays.menu_driver, "xmb", sizeof("xmb")) == 0
+             || memcmp(settings->arrays.menu_driver, "ozone", sizeof("ozone")) == 0)
          {
             CONFIG_UINT(
                   list, list_info,
@@ -22855,8 +22856,8 @@ static bool setting_append_list(
             );
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
-         if (   string_is_equal(settings->arrays.menu_driver, "ozone")
-             || string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (   memcmp(settings->arrays.menu_driver, "ozone", sizeof("ozone")) == 0
+             || memcmp(settings->arrays.menu_driver, "xmb", sizeof("xmb")) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
