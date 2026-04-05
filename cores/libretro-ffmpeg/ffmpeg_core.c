@@ -192,6 +192,7 @@ static video_buffer_t *video_buffer_create(
 
    for (i = 0; i < (unsigned)capacity; i++)
    {
+      AVFrame* frame;
       b->buffer[i].index     = i;
       b->buffer[i].pts       = 0;
       b->buffer[i].sws       = sws_alloc_context();
@@ -201,7 +202,7 @@ static video_buffer_t *video_buffer_create(
 #endif
       b->buffer[i].target    = av_frame_alloc();
 
-      AVFrame* frame = b->buffer[i].target;
+      frame = b->buffer[i].target;
       av_image_alloc(frame->data, frame->linesize,
             width, height, AV_PIX_FMT_RGB32, 1);
 
