@@ -49,8 +49,6 @@ extern "C" {
 #include <rthreads/tpool.h>
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
-#include "packet_buffer.h"
-#include "video_buffer.h"
 
 #include <libretro.h>
 #ifdef RARCH_INTERNAL
@@ -59,6 +57,12 @@ extern "C" {
 #else
 #define CORE_PREFIX(s) s
 #endif
+
+/* If libavutil is at least version 55,
+ * and if libavcodec is at least version 57.80.100,
+ * enable hardware acceleration */
+#define ENABLE_HW_ACCEL ((LIBAVUTIL_VERSION_MAJOR >= 55) && \
+      (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 80, 100)))
 
 #define PRINT_VERSION(s) log_cb(RETRO_LOG_INFO, "[FFMPEG] lib%s version:\t%d.%d.%d\n", #s, \
    s ##_version() >> 16 & 0xFF, \
@@ -69,6 +73,398 @@ extern "C" {
 
 static bool reset_triggered;
 static bool libretro_supports_bitmasks = false;
+
+typedef struct AVPacketNode AVPacketNode_t;
+
+struct packet_buffer
+{
+   AVPacketNode_t *head;
+   AVPacketNode_t *tail;
+   size_t size;
+};
+typedef struct packet_buffer packet_buffer_t;
+
+struct video_decoder_context
+{
+   int64_t pts;
+   struct SwsContext *sws;
+   AVFrame *source;
+#if ENABLE_HW_ACCEL
+   AVFrame *hw_source;
+#endif
+   AVFrame *target;
+#ifdef HAVE_SSA
+   ASS_Track *ass_track_active;
+#endif
+   uint8_t *frame_buf;
+   int index;
+};
+typedef struct video_decoder_context video_decoder_context_t;
+
+struct AVPacketNode
+{
+   AVPacket *data;
+   struct AVPacketNode *next;
+   struct AVPacketNode *previous;
+};
+
+enum kb_status
+{
+  KB_OPEN = 0,
+  KB_IN_PROGRESS,
+  KB_FINISHED
+};
+
+struct video_buffer
+{
+   int64_t head;
+   int64_t tail;
+   video_decoder_context_t *buffer;
+   enum kb_status *status;
+   slock_t *lock;
+   scond_t *open_cond;
+   scond_t *finished_cond;
+   size_t capacity;
+};
+typedef struct video_buffer video_buffer_t;
+
+static void video_buffer_destroy(video_buffer_t *video_buffer)
+{
+   unsigned i;
+   if (!video_buffer)
+      return;
+
+   slock_free(video_buffer->lock);
+   scond_free(video_buffer->open_cond);
+   scond_free(video_buffer->finished_cond);
+   free(video_buffer->status);
+   if (video_buffer->buffer)
+   {
+      for (i = 0; i < video_buffer->capacity; i++)
+      {
+#if ENABLE_HW_ACCEL
+         av_frame_free(&video_buffer->buffer[i].hw_source);
+#endif
+         av_frame_free(&video_buffer->buffer[i].source);
+         av_freep((AVFrame*)video_buffer->buffer[i].target);
+         av_frame_free(&video_buffer->buffer[i].target);
+         sws_freeContext(video_buffer->buffer[i].sws);
+      }
+   }
+   free(video_buffer->buffer);
+   free(video_buffer);
+}
+
+static video_buffer_t *video_buffer_create(
+      size_t capacity, int frame_size, int width, int height)
+{
+   unsigned i;
+   video_buffer_t *b = (video_buffer_t*)malloc(sizeof(video_buffer_t));
+   if (!b)
+      return NULL;
+
+   b->buffer        = NULL;
+   b->capacity      = capacity;
+   b->lock          = NULL;
+   b->open_cond     = NULL;
+   b->finished_cond = NULL;
+   b->head          = 0;
+   b->tail          = 0;
+   b->status        = (enum kb_status*)malloc(sizeof(enum kb_status) * capacity);
+
+   if (!b->status)
+      goto fail;
+
+   for (i = 0; i < capacity; i++)
+      b->status[i]  = KB_OPEN;
+
+   b->lock          = slock_new();
+   b->open_cond     = scond_new();
+   b->finished_cond = scond_new();
+   if (!b->lock || !b->open_cond || !b->finished_cond)
+      goto fail;
+
+   b->buffer        = (video_decoder_context_t*)
+      malloc(sizeof(video_decoder_context_t) * capacity);
+   if (!b->buffer)
+      goto fail;
+
+   for (i = 0; i < (unsigned)capacity; i++)
+   {
+      b->buffer[i].index     = i;
+      b->buffer[i].pts       = 0;
+      b->buffer[i].sws       = sws_alloc_context();
+      b->buffer[i].source    = av_frame_alloc();
+#if ENABLE_HW_ACCEL
+      b->buffer[i].hw_source = av_frame_alloc();
+#endif
+      b->buffer[i].target    = av_frame_alloc();
+
+      AVFrame* frame = b->buffer[i].target;
+      av_image_alloc(frame->data, frame->linesize,
+            width, height, AV_PIX_FMT_RGB32, 1);
+
+      if (!b->buffer[i].sws       ||
+          !b->buffer[i].source    ||
+#if ENABLE_HW_ACCEL
+          !b->buffer[i].hw_source ||
+#endif
+          !b->buffer[i].target)
+         goto fail;
+   }
+   return b;
+
+fail:
+   video_buffer_destroy(b);
+   return NULL;
+}
+
+static void video_buffer_clear(video_buffer_t *video_buffer)
+{
+   unsigned i;
+   if (!video_buffer)
+      return;
+
+   slock_lock(video_buffer->lock);
+
+   scond_signal(video_buffer->open_cond);
+   scond_signal(video_buffer->finished_cond);
+
+   video_buffer->head = 0;
+   video_buffer->tail = 0;
+   for (i = 0; i < video_buffer->capacity; i++)
+      video_buffer->status[i] = KB_OPEN;
+
+   slock_unlock(video_buffer->lock);
+}
+
+static void video_buffer_get_open_slot(
+      video_buffer_t *video_buffer, video_decoder_context_t **context)
+{
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[video_buffer->head] == KB_OPEN)
+   {
+      *context = &video_buffer->buffer[video_buffer->head];
+      video_buffer->status[video_buffer->head] = KB_IN_PROGRESS;
+      video_buffer->head++;
+      video_buffer->head %= video_buffer->capacity;
+   }
+
+   slock_unlock(video_buffer->lock);
+}
+
+static void video_buffer_return_open_slot(
+      video_buffer_t *video_buffer, video_decoder_context_t *context)
+{
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[context->index] == KB_IN_PROGRESS)
+   {
+      video_buffer->status[context->index] = KB_OPEN;
+      video_buffer->head--;
+      video_buffer->head %= video_buffer->capacity;
+   }
+
+   slock_unlock(video_buffer->lock);
+}
+
+static void video_buffer_open_slot(
+      video_buffer_t *video_buffer,
+      video_decoder_context_t *context)
+{
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[context->index] == KB_FINISHED)
+   {
+      video_buffer->status[context->index] = KB_OPEN;
+      video_buffer->tail++;
+      video_buffer->tail %= (video_buffer->capacity);
+      scond_signal(video_buffer->open_cond);
+   }
+
+   slock_unlock(video_buffer->lock);
+}
+
+static void video_buffer_get_finished_slot(
+      video_buffer_t *video_buffer,
+      video_decoder_context_t **context)
+{
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[video_buffer->tail] == KB_FINISHED)
+      *context = &video_buffer->buffer[video_buffer->tail];
+
+   slock_unlock(video_buffer->lock);
+}
+
+static void video_buffer_finish_slot(
+      video_buffer_t *video_buffer,
+      video_decoder_context_t *context)
+{
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[context->index] == KB_IN_PROGRESS)
+   {
+      video_buffer->status[context->index] = KB_FINISHED;
+      scond_signal(video_buffer->finished_cond);
+   }
+
+   slock_unlock(video_buffer->lock);
+}
+
+static bool video_buffer_wait_for_finished_slot(video_buffer_t *video_buffer)
+{
+   slock_lock(video_buffer->lock);
+
+   while (video_buffer->status[video_buffer->tail] != KB_FINISHED)
+      scond_wait(video_buffer->finished_cond, video_buffer->lock);
+
+   slock_unlock(video_buffer->lock);
+
+   return true;
+}
+
+static bool video_buffer_has_open_slot(video_buffer_t *video_buffer)
+{
+   bool ret = false;
+
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[video_buffer->head] == KB_OPEN)
+      ret = true;
+
+   slock_unlock(video_buffer->lock);
+
+   return ret;
+}
+
+bool video_buffer_has_finished_slot(video_buffer_t *video_buffer)
+{
+   bool ret = false;
+
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[video_buffer->tail] == KB_FINISHED)
+      ret = true;
+
+   slock_unlock(video_buffer->lock);
+
+   return ret;
+}
+
+static packet_buffer_t *packet_buffer_create(void)
+{
+   packet_buffer_t *b = (packet_buffer_t*)malloc(sizeof(packet_buffer_t));
+   if (!b)
+      return NULL;
+
+   memset(b, 0, sizeof(packet_buffer_t));
+
+   return b;
+}
+
+static void packet_buffer_destroy(packet_buffer_t *packet_buffer)
+{
+   AVPacketNode_t *node;
+
+   if (!packet_buffer)
+      return;
+
+   if (packet_buffer->head)
+   {
+      node = packet_buffer->head;
+      while (node)
+      {
+         AVPacketNode_t *next = node->next;
+         av_packet_free(&node->data);
+         free(node);
+         node = next;
+      }
+   }
+
+   free(packet_buffer);
+}
+
+static void packet_buffer_clear(packet_buffer_t **packet_buffer)
+{
+   if (!packet_buffer)
+      return;
+
+   packet_buffer_destroy(*packet_buffer);
+   *packet_buffer = packet_buffer_create();
+}
+
+static bool packet_buffer_empty(packet_buffer_t *packet_buffer)
+{
+   if (!packet_buffer)
+      return true;
+
+   return packet_buffer->size == 0;
+}
+
+static void packet_buffer_add_packet(packet_buffer_t *packet_buffer, AVPacket *pkt)
+{
+   AVPacketNode_t *new_head = (AVPacketNode_t *) malloc(sizeof(AVPacketNode_t));
+   new_head->data = av_packet_alloc();
+
+   av_packet_move_ref(new_head->data, pkt);
+
+   if (packet_buffer->head)
+   {
+      new_head->next = packet_buffer->head;
+      packet_buffer->head->previous = new_head;
+   }
+   else
+   {
+      new_head->next = NULL;
+      packet_buffer->tail = new_head;
+   }
+
+   packet_buffer->head = new_head;
+   packet_buffer->head->previous = NULL;
+   packet_buffer->size++;
+}
+
+static void packet_buffer_get_packet(packet_buffer_t *packet_buffer,
+   AVPacket *pkt)
+{
+   AVPacketNode_t *new_tail = NULL;
+
+   if (!packet_buffer->tail)
+      return;
+
+   av_packet_move_ref(pkt, packet_buffer->tail->data);
+   if (packet_buffer->tail->previous)
+   {
+      new_tail = packet_buffer->tail->previous;
+      new_tail->next = NULL;
+   }
+   else
+      packet_buffer->head = NULL;
+
+   av_packet_free(&packet_buffer->tail->data);
+   free(packet_buffer->tail);
+
+   packet_buffer->tail = new_tail;
+   packet_buffer->size--;
+}
+
+static int64_t packet_buffer_peek_start_pts(packet_buffer_t *packet_buffer)
+{
+   if (!packet_buffer->tail)
+      return 0;
+
+   return packet_buffer->tail->data->pts;
+}
+
+static int64_t packet_buffer_peek_end_pts(packet_buffer_t *packet_buffer)
+{
+   if (!packet_buffer->tail)
+      return 0;
+
+   return packet_buffer->tail->data->pts + packet_buffer->tail->data->duration;
+}
 
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
