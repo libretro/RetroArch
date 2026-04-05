@@ -94,7 +94,7 @@
 #define HID_USAGE_GENERIC_DIAL      0x37
 #endif
 
-static bool winraw_joypad_is_axis_usage(const HIDP_VALUE_CAPS *vcap)
+static INLINE bool winraw_joypad_is_axis_usage(const HIDP_VALUE_CAPS *vcap)
 {
    USAGE usage = vcap->IsRange
                ? vcap->Range.UsageMin
@@ -105,10 +105,7 @@ static bool winraw_joypad_is_axis_usage(const HIDP_VALUE_CAPS *vcap)
       return false;
 
    /* Accept X, Y, Z, Rx, Ry, Rz, Slider, Dial (0x30..0x37) */
-   if (usage >= HID_USAGE_GENERIC_X && usage <= HID_USAGE_GENERIC_DIAL)
-      return true;
-
-   return false;
+   return (usage >= HID_USAGE_GENERIC_X && usage <= HID_USAGE_GENERIC_DIAL);
 }
 
 /* ------------------------------------------------------------------ */
@@ -117,34 +114,30 @@ static bool winraw_joypad_is_axis_usage(const HIDP_VALUE_CAPS *vcap)
 
 typedef struct winraw_joypad_joypad_data
 {
+   /* --- Hot fields (accessed every WM_INPUT + every frame poll) --- */
+   /* Keeping these together maximises L1 cache line utilisation.     */
    HANDLE              hDevice;      /* RawInput device handle           */
-   PHIDP_PREPARSED_DATA preparsed;   /* HID preparsed data (opaque blob) */
-   HIDP_CAPS           caps;         /* HID device capabilities          */
-
-   /* Value-cap arrays, allocated once at device arrival */
-   HIDP_BUTTON_CAPS   *btn_caps;
-   HIDP_VALUE_CAPS    *val_caps;
-
-   /* Resolved button usage range -> total number of buttons */
-   USAGE               btn_usage_min;
-   USAGE               btn_usage_max;
-
-   /* Current state ------------------------------------------------------- */
-   bool                buttons[RAWINPUT_MAX_BUTTONS];
-   int16_t             axes[RAWINPUT_MAX_AXES];
-   /* Hat (POV) states stored as direction bitmask:
-    *   bit 0 = up, 1 = down, 2 = left, 3 = right                         */
-   uint8_t             hats[RAWINPUT_MAX_HATS];
+   bool                connected;
 
    uint16_t            num_buttons;
    uint16_t            num_axes;
    uint16_t            num_hats;
+   USAGE               btn_usage_min;
+
+   int16_t             axes[RAWINPUT_MAX_AXES];        /* 16 bytes */
+   uint8_t             hats[RAWINPUT_MAX_HATS];        /*  4 bytes */
+   bool                buttons[RAWINPUT_MAX_BUTTONS];  /* 128 bytes */
+
+   /* --- Cold fields (accessed only at device add/remove) ---------- */
+   PHIDP_PREPARSED_DATA preparsed;   /* HID preparsed data (opaque blob) */
+   HIDP_CAPS           caps;         /* HID device capabilities          */
+   HIDP_BUTTON_CAPS   *btn_caps;
+   HIDP_VALUE_CAPS    *val_caps;
+   USAGE               btn_usage_max;
 
    uint16_t            vid;
    uint16_t            pid;
-
    char                name[256];
-   bool                connected;
 } winraw_joypad_joypad_data_t;
 
 /* ------------------------------------------------------------------ */
@@ -162,35 +155,34 @@ static bool     winraw_joypad_initialised        = false;
 /* ------------------------------------------------------------------ */
 
 /* Convert an HID hat-switch value (0..7 for 8-way, 8 or 0xF = centred)
- * into the bitmask format RetroArch expects for HAT_UP_MASK etc. */
+ * into the bitmask format RetroArch expects for HAT_UP_MASK etc.
+ * Uses a lookup table to avoid branching in the per-report hot path. */
+static const uint8_t winraw_joypad_hat_lut[8] = {
+   (1 << 0),                    /* 0: N  = up          */
+   (1 << 0) | (1 << 3),         /* 1: NE = up+right    */
+   (1 << 3),                     /* 2: E  = right       */
+   (1 << 1) | (1 << 3),         /* 3: SE = down+right  */
+   (1 << 1),                     /* 4: S  = down        */
+   (1 << 1) | (1 << 2),         /* 5: SW = down+left   */
+   (1 << 2),                     /* 6: W  = left        */
+   (1 << 0) | (1 << 2),         /* 7: NW = up+left     */
+};
+
 static uint8_t winraw_joypad_hat_value_to_bitmask(LONG value, LONG logical_min, LONG logical_max)
 {
-   /* Normalise so that 0 = North and the range spans 8 positions.
-    * A value outside [logical_min, logical_max] means centred/neutral. */
-   int range = (int)(logical_max - logical_min + 1);
+   int dir;
 
    if (value < logical_min || value > logical_max)
       return 0; /* centred */
 
-   /* Normalise into 0..7 for an 8-way hat */
-   {
-      int dir = (int)(value - logical_min);
-      if (range == 4)
-         dir *= 2; /* 4-way -> 8-way */
+   dir = (int)(value - logical_min);
 
-      switch (dir)
-      {
-         case 0: return (1 << 0);                    /* N  = up          */
-         case 1: return (1 << 0) | (1 << 3);         /* NE = up+right    */
-         case 2: return (1 << 3);                     /* E  = right       */
-         case 3: return (1 << 1) | (1 << 3);         /* SE = down+right  */
-         case 4: return (1 << 1);                     /* S  = down        */
-         case 5: return (1 << 1) | (1 << 2);         /* SW = down+left   */
-         case 6: return (1 << 2);                     /* W  = left        */
-         case 7: return (1 << 0) | (1 << 2);         /* NW = up+left     */
-         default: break;
-      }
-   }
+   /* 4-way -> 8-way */
+   if ((logical_max - logical_min + 1) == 4)
+      dir *= 2;
+
+   if (dir >= 0 && dir < 8)
+      return winraw_joypad_hat_lut[dir];
 
    return 0;
 }
@@ -199,7 +191,7 @@ static uint8_t winraw_joypad_hat_value_to_bitmask(LONG value, LONG logical_min, 
  * descriptor declares a signed logical range (LogicalMin < 0) the value
  * is actually two's-complement in the report field.  We need to
  * sign-extend it manually using the field's bit size. */
-static LONG winraw_joypad_sign_extend(ULONG value, USHORT bit_size)
+static INLINE LONG winraw_joypad_sign_extend(ULONG value, USHORT bit_size)
 {
    /* If the top bit of the field is set, the value is negative in the
     * HID descriptor's signed interpretation. */
@@ -213,32 +205,37 @@ static LONG winraw_joypad_sign_extend(ULONG value, USHORT bit_size)
 }
 
 /* Scale a raw HID axis value from [logical_min .. logical_max]
- * into RetroArch's signed 16-bit range [-0x7fff .. +0x7fff]. */
+ * into RetroArch's signed 16-bit range [-0x7fff .. +0x7fff].
+ * Uses pure integer arithmetic to avoid FPU overhead in the
+ * per-report hot path. */
 static int16_t winraw_joypad_scale_axis(LONG value, LONG logical_min,
    LONG logical_max)
 {
-   double scaled;
-   double range  = (double)(logical_max - logical_min);
+   LONG range = logical_max - logical_min;
 
-   if (range <= 0.0)
+   if (range <= 0)
       return 0;
 
    /* Clamp to the declared logical range */
    if (value < logical_min)
       value = logical_min;
-   if (value > logical_max)
+   else if (value > logical_max)
       value = logical_max;
 
-   /* Normalise to [0.0 .. 1.0], then to [-1.0 .. +1.0] */
-   scaled = ((double)(value - logical_min) / range) * 2.0 - 1.0;
+   /* Map [logical_min .. logical_max] -> [-0x7fff .. +0x7fff]
+    * Formula: result = ((value - min) * 2 * 0x7fff) / range - 0x7fff
+    * Using 64-bit intermediate to prevent overflow. */
+   {
+      int32_t result = (int32_t)(
+         ((int64_t)(value - logical_min) * (2 * 0x7fff)) / range - 0x7fff);
 
-   /* Clamp and convert to int16 */
-   if (scaled < -1.0)
-      scaled = -1.0;
-   if (scaled >  1.0)
-      scaled =  1.0;
+      if (result < -0x7fff)
+         result = -0x7fff;
+      else if (result > 0x7fff)
+         result = 0x7fff;
 
-   return (int16_t)(scaled * 0x7fff);
+      return (int16_t)result;
+   }
 }
 
 /* Look up a pad slot by HANDLE.  Returns index or -1. */
@@ -561,15 +558,19 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
    ULONG   usage_count;
    USAGE   usages[RAWINPUT_MAX_BUTTONS];
    unsigned i;
+   unsigned num_buttons;
 
    if (!pad || !pad->preparsed || !raw_data || raw_data_size == 0)
       return;
 
-   /* --- Buttons --- */
-   /* Clear all buttons first */
-   memset(pad->buttons, 0, sizeof(pad->buttons));
+   num_buttons = pad->num_buttons;
 
-   usage_count = (ULONG)pad->num_buttons;
+   /* --- Buttons --- */
+   /* Clear only the buttons this device actually has, not the full 128 */
+   if (num_buttons > 0)
+      memset(pad->buttons, 0, num_buttons * sizeof(pad->buttons[0]));
+
+   usage_count = (ULONG)num_buttons;
    if (usage_count > RAWINPUT_MAX_BUTTONS)
       usage_count = RAWINPUT_MAX_BUTTONS;
 
@@ -581,10 +582,11 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
              pad->preparsed,
              (PCHAR)raw_data, raw_data_size) == HIDP_STATUS_SUCCESS)
    {
+      USAGE btn_min = pad->btn_usage_min;
       for (i = 0; i < usage_count; i++)
       {
-         unsigned btn_index = usages[i] - pad->btn_usage_min;
-         if (btn_index < RAWINPUT_MAX_BUTTONS)
+         unsigned btn_index = usages[i] - btn_min;
+         if (btn_index < num_buttons)
             pad->buttons[btn_index] = true;
       }
    }
@@ -595,6 +597,8 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
       USHORT num_val_caps = pad->caps.NumberInputValueCaps;
       unsigned axis_idx   = 0;
       unsigned hat_idx    = 0;
+      unsigned max_axes   = pad->num_axes;
+      unsigned max_hats   = pad->num_hats;
 
       for (i = 0; i < num_val_caps; i++)
       {
@@ -612,7 +616,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
 
          if (usage == HID_USAGE_GENERIC_HATSWITCH)
          {
-            if (hat_idx < RAWINPUT_MAX_HATS)
+            if (hat_idx < max_hats)
             {
                pad->hats[hat_idx] = winraw_joypad_hat_value_to_bitmask(
                      (LONG)value,
@@ -623,7 +627,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
          }
          else if (winraw_joypad_is_axis_usage(&pad->val_caps[i]))
          {
-            if (axis_idx < RAWINPUT_MAX_AXES)
+            if (axis_idx < max_axes)
             {
                LONG signed_value = (pad->val_caps[i].LogicalMin < 0)
                   ? winraw_joypad_sign_extend(value, pad->val_caps[i].BitSize)
@@ -654,16 +658,29 @@ static LRESULT CALLBACK winraw_joypad_joypad_wndproc(
          int slot;
          UINT size = 0;
          RAWINPUT *raw;
+         /* Stack buffer sized for typical gamepad HID reports.
+          * Avoids the double GetRawInputData call in the common case. */
+         BYTE stack_buf[256];
 
-         GetRawInputData((HRAWINPUT)lParam, RID_INPUT,
-               NULL, &size, sizeof(RAWINPUTHEADER));
-         if (size == 0)
-            break;
-
-         raw = (RAWINPUT*)alloca(size);
+         size = sizeof(stack_buf);
          if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT,
-                  raw, &size, sizeof(RAWINPUTHEADER)) != size)
-            break;
+                  stack_buf, &size, sizeof(RAWINPUTHEADER)) != (UINT)-1)
+         {
+            raw = (RAWINPUT*)stack_buf;
+         }
+         else
+         {
+            /* Report didn't fit; query actual size and use alloca */
+            size = 0;
+            GetRawInputData((HRAWINPUT)lParam, RID_INPUT,
+                  NULL, &size, sizeof(RAWINPUTHEADER));
+            if (size == 0)
+               break;
+            raw = (RAWINPUT*)alloca(size);
+            if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT,
+                     raw, &size, sizeof(RAWINPUTHEADER)) != size)
+               break;
+         }
 
          if (raw->header.dwType != RIM_TYPEHID)
             break;
@@ -974,9 +991,32 @@ static int16_t winraw_joypad_joypad_state(
 {
    unsigned i;
    int16_t ret = 0;
+   const winraw_joypad_joypad_data_t *pad;
+   unsigned joy_idx;
+   /* Pre-compute integer threshold to avoid per-bind float division.
+    * axis_threshold is in [0.0 .. 1.0]; scale to [0 .. 0x8000]. */
+   int32_t threshold;
 
-   if (port >= MAX_USERS || !winraw_joypad_pads[port].connected)
+   if (port >= MAX_USERS)
       return 0;
+
+   pad = &winraw_joypad_pads[port];
+   if (!pad->connected)
+      return 0;
+
+   joy_idx   = joypad_info->joy_idx;
+   threshold = (int32_t)(joypad_info->axis_threshold * 0x8000);
+
+   if (joy_idx >= MAX_USERS)
+      return 0;
+
+   /* If joy_idx differs from port, we need that pad instead */
+   if (joy_idx != port)
+   {
+      pad = &winraw_joypad_pads[joy_idx];
+      if (!pad->connected)
+         return 0;
+   }
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -988,15 +1028,63 @@ static int16_t winraw_joypad_joypad_state(
                              ?  binds[i].joyaxis
                              :  joypad_info->auto_binds[i].joyaxis;
 
-      if ((uint16_t)joykey != NO_BTN
-            && winraw_joypad_joypad_button(joypad_info->joy_idx,
-               (uint16_t)joykey))
-         ret |= (1 << i);
-      else if (joyaxis != AXIS_NONE
-            && ((float)abs(winraw_joypad_joypad_axis(
-               joypad_info->joy_idx, joyaxis))
-               / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
+      /* --- Inlined button check --- */
+      if ((uint16_t)joykey != NO_BTN)
+      {
+         uint16_t key = (uint16_t)joykey;
+         unsigned hat_dir = GET_HAT_DIR(key);
+
+         if (hat_dir)
+         {
+            unsigned hat_index = GET_HAT(key);
+            if (hat_index < pad->num_hats)
+            {
+               uint8_t hv = pad->hats[hat_index];
+               switch (hat_dir)
+               {
+                  case HAT_UP_MASK:    if (hv & (1 << 0)) ret |= (1 << i); break;
+                  case HAT_DOWN_MASK:  if (hv & (1 << 1)) ret |= (1 << i); break;
+                  case HAT_LEFT_MASK:  if (hv & (1 << 2)) ret |= (1 << i); break;
+                  case HAT_RIGHT_MASK: if (hv & (1 << 3)) ret |= (1 << i); break;
+                  default: break;
+               }
+            }
+         }
+         else if (key < pad->num_buttons && pad->buttons[key])
+            ret |= (1 << i);
+
+         /* If button matched, skip axis check for this bind */
+         if (ret & (1 << i))
+            continue;
+      }
+
+      /* --- Inlined axis check --- */
+      if (joyaxis != AXIS_NONE)
+      {
+         int axis;
+         int16_t val;
+
+         if (AXIS_NEG_GET(joyaxis) < AXIS_DIR_NONE)
+         {
+            axis = AXIS_NEG_GET(joyaxis);
+            if (axis >= 0 && (unsigned)axis < pad->num_axes)
+            {
+               val = pad->axes[axis];
+               if (val < 0 && abs((int)val) > threshold)
+                  ret |= (1 << i);
+            }
+         }
+         else if (AXIS_POS_GET(joyaxis) < AXIS_DIR_NONE)
+         {
+            axis = AXIS_POS_GET(joyaxis);
+            if (axis >= 0 && (unsigned)axis < pad->num_axes)
+            {
+               val = pad->axes[axis];
+               if (val > 0 && val > threshold)
+                  ret |= (1 << i);
+            }
+         }
+      }
    }
 
    return ret;
@@ -1005,12 +1093,11 @@ static int16_t winraw_joypad_joypad_state(
 static void winraw_joypad_joypad_poll(void)
 {
    MSG msg;
-   /* Drain all pending messages for our hidden window */
+   /* Drain all pending messages for our hidden window.
+    * TranslateMessage is omitted — we only handle WM_INPUT and
+    * WM_INPUT_DEVICE_CHANGE, neither of which needs key translation. */
    while (PeekMessageA(&msg, winraw_joypad_msg_window, 0, 0, PM_REMOVE))
-   {
-      TranslateMessage(&msg);
       DispatchMessageA(&msg);
-   }
 }
 
 static const char *winraw_joypad_joypad_name(unsigned port)
