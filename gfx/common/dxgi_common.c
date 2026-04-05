@@ -187,7 +187,7 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
          { \
             for (j = 0; j < width; j++) \
             { \
-               unsigned r, g, b, a; \
+               unsigned r = 0, g = 0, b = 0, a = 0; \
                src_type src_val = *src_ptr++; \
                if (src_rb) \
                { \
