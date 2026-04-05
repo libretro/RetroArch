@@ -33,6 +33,7 @@
 #include "../../config.h"
 #endif
 
+#include "../../tasks/tasks_internal.h"
 #include "../input_keymaps.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -56,14 +57,15 @@ struct dinput_joypad_data
    DIEFFECT             rumble_props;
 };
 
-/* TODO/FIXME - static globals; 
-   candidate for context-struct refactor */
-static struct dinput_joypad_data g_dinput_pads[MAX_USERS];
-static unsigned g_dinput_joypad_cnt = 0;
+/* TODO/FIXME - globals referenced outside; candidate for context-struct refactor */
+struct dinput_joypad_data g_pads[MAX_USERS];
+unsigned g_joypad_cnt;
 
 /* Forward declarations */
 /* Defined in dinput.c / dinput_input.c */
 extern LPDIRECTINPUT8 g_dinput_ctx;
+extern struct dinput_joypad_data g_pads[MAX_USERS];
+extern unsigned g_joypad_cnt;
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
 void dinput_destroy_context(void);
@@ -79,7 +81,7 @@ bool dinput_init_context(void);
  * --------------------------------------------------------------------------*/
 static void dinput_joypad_cleanup_pad(unsigned idx)
 {
-   struct dinput_joypad_data *pad = &g_dinput_pads[idx];
+   struct dinput_joypad_data *pad = &g_pads[idx];
 
    if (pad->joypad)
    {
@@ -102,7 +104,7 @@ static void dinput_joypad_poll(void)
    for (i = 0; i < MAX_USERS; i++)
    {
       HRESULT ret;
-      struct dinput_joypad_data *pad = &g_dinput_pads[i];
+      struct dinput_joypad_data *pad = &g_pads[i];
 
       if (!pad->joypad)
          continue;
@@ -124,7 +126,7 @@ static void dinput_joypad_poll(void)
 
       if (ret == DIERR_INPUTLOST || ret == DIERR_NOTACQUIRED)
       {
-         input_autoconfigure_disconnect(i, g_dinput_pads[i].joy_friendly_name);
+         input_autoconfigure_disconnect(i, g_pads[i].joy_friendly_name);
          dinput_joypad_cleanup_pad(i);
       }
    }
@@ -245,10 +247,10 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
    (void)p; /* unused */
 
-   if (g_dinput_joypad_cnt == MAX_USERS)
+   if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
 
-   pad = &g_dinput_pads[g_dinput_joypad_cnt].joypad;
+   pad = &g_pads[g_joypad_cnt].joypad;
 
 #ifdef __cplusplus
    if (FAILED(IDirectInput8_CreateDevice(
@@ -261,22 +263,22 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
    /* Bug fixed: use the safe TCHAR helper instead of a raw cast that
     * would produce garbage under Unicode builds. */
-   g_dinput_pads[g_dinput_joypad_cnt].joy_name          =
+   g_pads[g_joypad_cnt].joy_name          =
       dinput_joypad_tchar_to_str(inst->tszProductName);
-   g_dinput_pads[g_dinput_joypad_cnt].joy_friendly_name =
+   g_pads[g_joypad_cnt].joy_friendly_name =
       dinput_joypad_tchar_to_str(inst->tszInstanceName);
 
    /* VID is in the low 16 bits of guidProduct.Data1,
     * PID is in the high 16 bits. */
-   g_dinput_pads[g_dinput_joypad_cnt].vid = (int32_t)(inst->guidProduct.Data1 & 0xFFFFu);
-   g_dinput_pads[g_dinput_joypad_cnt].pid = (int32_t)(inst->guidProduct.Data1 >> 16);
+   g_pads[g_joypad_cnt].vid = (int32_t)(inst->guidProduct.Data1 & 0xFFFFu);
+   g_pads[g_joypad_cnt].pid = (int32_t)(inst->guidProduct.Data1 >> 16);
 
    /* Set data format to extended joystick state.
     * If either SetDataFormat or SetCooperativeLevel fails the device
     * is unusable - release everything and move on to the next pad. */
    if (FAILED(IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2)))
    {
-      dinput_joypad_cleanup_pad(g_dinput_joypad_cnt);
+      dinput_joypad_cleanup_pad(g_joypad_cnt);
       return DIENUM_CONTINUE;
    }
 
@@ -284,25 +286,25 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
          (HWND)video_driver_window_get(),
          DISCL_EXCLUSIVE | DISCL_BACKGROUND)))
    {
-      dinput_joypad_cleanup_pad(g_dinput_joypad_cnt);
+      dinput_joypad_cleanup_pad(g_joypad_cnt);
       return DIENUM_CONTINUE;
    }
 
    IDirectInputDevice8_EnumObjects(*pad, dinput_enum_axes_cb,
          *pad, DIDFT_ABSAXIS);
 
-   dinput_create_rumble_effects(&g_dinput_pads[g_dinput_joypad_cnt]);
+   dinput_create_rumble_effects(&g_pads[g_joypad_cnt]);
 
    input_autoconfigure_connect(
-         g_dinput_pads[g_dinput_joypad_cnt].joy_name,
-         g_dinput_pads[g_dinput_joypad_cnt].joy_friendly_name,
+         g_pads[g_joypad_cnt].joy_name,
+         g_pads[g_joypad_cnt].joy_friendly_name,
          NULL,
          dinput_joypad.ident,
-         g_dinput_joypad_cnt,
-         g_dinput_pads[g_dinput_joypad_cnt].vid,
-         g_dinput_pads[g_dinput_joypad_cnt].pid);
+         g_joypad_cnt,
+         g_pads[g_joypad_cnt].vid,
+         g_pads[g_joypad_cnt].pid);
 
-   g_dinput_joypad_cnt++;
+   g_joypad_cnt++;
    return DIENUM_CONTINUE;
 }
 
@@ -312,7 +314,7 @@ static void *dinput_joypad_init(void *data)
       return NULL;
    /* Zero the pad array; dinput_joypad_destroy() uses memset() on the same
     * region, so we stay consistent and avoid partial-initialisation bugs. */
-   ZeroMemory(g_dinput_pads, sizeof(g_dinput_pads));
+   ZeroMemory(g_pads, sizeof(g_pads));
    IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
          enum_joypad_cb, NULL, DIEDFL_ATTACHEDONLY);
    return (void*)-1;
@@ -418,18 +420,18 @@ static int32_t dinput_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= MAX_USERS)
       return 0;
-   if (!g_dinput_pads[port].joypad)
+   if (!g_pads[port].joypad)
       return 0;
-   return dinput_joypad_button_state(&g_dinput_pads[port], joykey);
+   return dinput_joypad_button_state(&g_pads[port], joykey);
 }
 
 static int16_t dinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (port >= MAX_USERS)
       return 0;
-   if (!g_dinput_pads[port].joypad)
+   if (!g_pads[port].joypad)
       return 0;
-   return dinput_joypad_axis_state(&g_dinput_pads[port], joyaxis);
+   return dinput_joypad_axis_state(&g_pads[port], joyaxis);
 }
 
 static int16_t dinput_joypad_state(
@@ -448,7 +450,7 @@ static int16_t dinput_joypad_state(
    if (port_idx >= MAX_USERS)
       return 0;
 
-   pad = &g_dinput_pads[port_idx];
+   pad = &g_pads[port_idx];
    if (!pad->joypad)
       return 0;
 
@@ -475,7 +477,7 @@ static int16_t dinput_joypad_state(
 
 static bool dinput_joypad_query_pad(unsigned port)
 {
-   return port < MAX_USERS && g_dinput_pads[port].joypad;
+   return port < MAX_USERS && g_pads[port].joypad;
 }
 
 static bool dinput_joypad_set_rumble(unsigned port,
@@ -484,7 +486,7 @@ static bool dinput_joypad_set_rumble(unsigned port,
    /* RETRO_RUMBLE_STRONG == 0, RETRO_RUMBLE_WEAK == 1 — map directly */
    int iface_idx = (type == RETRO_RUMBLE_STRONG) ? 0 : 1;
 
-   if (port >= g_dinput_joypad_cnt || !g_dinput_pads[port].rumble_iface[iface_idx])
+   if (port >= g_joypad_cnt || !g_pads[port].rumble_iface[iface_idx])
       return false;
 
    if (strength)
@@ -492,13 +494,13 @@ static bool dinput_joypad_set_rumble(unsigned port,
       /* Integer approximation: avoids float/double entirely.
        * strength in [0, 65535], DI_FFNOMINALMAX = 10000.
        * Result fits in DWORD. */
-      g_dinput_pads[port].rumble_props.dwGain =
+      g_pads[port].rumble_props.dwGain =
             (DWORD)(((unsigned)strength * (unsigned)DI_FFNOMINALMAX) / 65535u);
-      IDirectInputEffect_SetParameters(g_dinput_pads[port].rumble_iface[iface_idx],
-            &g_dinput_pads[port].rumble_props, DIEP_GAIN | DIEP_START);
+      IDirectInputEffect_SetParameters(g_pads[port].rumble_iface[iface_idx],
+            &g_pads[port].rumble_props, DIEP_GAIN | DIEP_START);
    }
    else
-      IDirectInputEffect_Stop(g_dinput_pads[port].rumble_iface[iface_idx]);
+      IDirectInputEffect_Stop(g_pads[port].rumble_iface[iface_idx]);
 
    return true;
 }
@@ -509,32 +511,32 @@ static void dinput_joypad_destroy(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if (g_dinput_pads[i].joypad)
+      if (g_pads[i].joypad)
       {
          unsigned r;
          for (r = 0; r < 2; r++)
          {
-            if (g_dinput_pads[i].rumble_iface[r])
+            if (g_pads[i].rumble_iface[r])
             {
-               IDirectInputEffect_Stop(g_dinput_pads[i].rumble_iface[r]);
-               IDirectInputEffect_Release(g_dinput_pads[i].rumble_iface[r]);
+               IDirectInputEffect_Stop(g_pads[i].rumble_iface[r]);
+               IDirectInputEffect_Release(g_pads[i].rumble_iface[r]);
             }
          }
 
-         IDirectInputDevice8_Unacquire(g_dinput_pads[i].joypad);
-         IDirectInputDevice8_Release(g_dinput_pads[i].joypad);
+         IDirectInputDevice8_Unacquire(g_pads[i].joypad);
+         IDirectInputDevice8_Release(g_pads[i].joypad);
       }
 
-      free(g_dinput_pads[i].joy_name);
-      g_dinput_pads[i].joy_name = NULL;
-      free(g_dinput_pads[i].joy_friendly_name);
-      g_dinput_pads[i].joy_friendly_name = NULL;
+      free(g_pads[i].joy_name);
+      g_pads[i].joy_name = NULL;
+      free(g_pads[i].joy_friendly_name);
+      g_pads[i].joy_friendly_name = NULL;
 
       input_config_clear_device_name(i);
    }
 
-   g_dinput_joypad_cnt = 0;
-   memset(g_dinput_pads, 0, sizeof(g_dinput_pads));
+   g_joypad_cnt = 0;
+   memset(g_pads, 0, sizeof(g_pads));
 
    /* Can be blocked by global DInput context. */
    dinput_destroy_context();
@@ -543,7 +545,7 @@ static void dinput_joypad_destroy(void)
 static const char *dinput_joypad_name(unsigned port)
 {
    if (port < MAX_USERS)
-      return g_dinput_pads[port].joy_name;
+      return g_pads[port].joy_name;
    return NULL;
 }
 
