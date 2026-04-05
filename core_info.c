@@ -2207,8 +2207,7 @@ static bool core_info_does_support_file(
       return string_list_find_elem(core->supported_extensions_list, "/");
    if (!ext[1])
       return false;
-   return string_list_find_elem_prefix(
-         core->supported_extensions_list, ".", ext + 1);
+   return string_list_find_elem(core->supported_extensions_list, ext + 1);
 }
 
 /* qsort_r() is not in standard C, sadly. */
