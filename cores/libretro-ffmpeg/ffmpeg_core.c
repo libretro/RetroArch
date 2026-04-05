@@ -48,7 +48,6 @@ extern "C" {
 #include <rthreads/rthreads.h>
 #include <rthreads/tpool.h>
 #include <queues/fifo_queue.h>
-#include <string/stdstring.h>
 
 #include <libretro.h>
 #ifdef RARCH_INTERNAL
@@ -511,6 +510,8 @@ static bool force_sw_decoder;
 #endif
 
 #define MAX_STREAMS 8
+/* Sentinel return value indicating no frame available (EAGAIN/EOF) */
+#define DECODE_NO_FRAME (-42)
 static AVCodecContext *actx[MAX_STREAMS];
 static AVCodecContext *sctx[MAX_STREAMS];
 static int audio_streams[MAX_STREAMS];
@@ -1207,8 +1208,8 @@ void CORE_PREFIX(retro_run)(void)
    frame_cnt++;
 
    /* Have to decode audio before video
-    * incase there are PTS fuckups due
-    * to seeking. */
+    * in case there are PTS discontinuities
+    * due to seeking. */
    if (audio_streams_num > 0)
    {
       /* Audio */
@@ -2006,7 +2007,7 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
       ret = avcodec_receive_frame(ctx, decoder_ctx->source);
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
       {
-         ret = -42;
+         ret = DECODE_NO_FRAME;
          goto end;
       }
       else if (ret < 0)
@@ -2334,7 +2335,7 @@ static void decode_thread(void *data)
          break;
       }
 
-      // Read the next frame and stage it in case of audio or video frame.
+      /* Read the next frame and stage it in case of audio or video frame. */
       if (av_read_frame(fctx, pkt) < 0)
          eof = true;
       else if (pkt->stream_index == audio_stream_index && actx_active)
