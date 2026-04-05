@@ -833,13 +833,13 @@ static void check_variables(bool firststart)
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &color_var) && color_var.value)
    {
       slock_lock(decode_thread_lock);
-      if (string_is_equal(color_var.value, "BT.709"))
+      if (memcmp(color_var.value, "BT.709", 6) == 0)
          colorspace = AVCOL_SPC_BT709;
-      else if (string_is_equal(color_var.value, "BT.601"))
+      else if (memcmp(color_var.value, "BT.601", 6) == 0)
          colorspace = AVCOL_SPC_BT470BG;
       else if (memcmp(color_var.value, "FCC", 3) == 0)
          colorspace = AVCOL_SPC_FCC;
-      else if (string_is_equal(color_var.value, "SMPTE240M"))
+      else if (memcmp(color_var.value, "SMPTE240M", 9) == 0)
          colorspace = AVCOL_SPC_SMPTE240M;
       else
          colorspace = AVCOL_SPC_UNSPECIFIED;
@@ -856,29 +856,29 @@ static void check_variables(bool firststart)
 
       if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &hw_var) && hw_var.value)
       {
-         if (string_is_equal(hw_var.value, "off"))
+         if (memcmp(hw_var.value, "off", 3) == 0)
             force_sw_decoder = true;
-         else if (string_is_equal(hw_var.value, "cuda"))
+         else if (memcmp(hw_var.value, "cuda", 4) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_CUDA;
-         else if (string_is_equal(hw_var.value, "d3d11va"))
+         else if (memcmp(hw_var.value, "d3d11va", 7) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_D3D11VA;
-         else if (string_is_equal(hw_var.value, "drm"))
+         else if (memcmp(hw_var.value, "drm", 3) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_DRM;
-         else if (string_is_equal(hw_var.value, "dxva2"))
+         else if (memcmp(hw_var.value, "dxva2", 5) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_DXVA2;
 #if !FFMPEG3
-         else if (string_is_equal(hw_var.value, "mediacodec"))
+         else if (memcmp(hw_var.value, "mediacodec", 10) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_MEDIACODEC;
-         else if (string_is_equal(hw_var.value, "opencl"))
+         else if (memcmp(hw_var.value, "opencl", 6) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_OPENCL;
 #endif
-         else if (string_is_equal(hw_var.value, "qsv"))
+         else if (memcmp(hw_var.value, "qsv", 3) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_QSV;
-         else if (string_is_equal(hw_var.value, "vaapi"))
+         else if (memcmp(hw_var.value, "vaapi", 5) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_VAAPI;
-         else if (string_is_equal(hw_var.value, "vdpau"))
+         else if (memcmp(hw_var.value, "vdpau", 5) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_VDPAU;
-         else if (string_is_equal(hw_var.value, "videotoolbox"))
+         else if (memcmp(hw_var.value, "videotoolbox", 12) == 0)
             hw_decoder = AV_HWDEVICE_TYPE_VIDEOTOOLBOX;
       }
    }
@@ -889,7 +889,7 @@ static void check_variables(bool firststart)
       sw_threads_var.key = "ffmpeg_sw_decoder_threads";
       if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &sw_threads_var) && sw_threads_var.value)
       {
-         if (string_is_equal(sw_threads_var.value, "auto"))
+         if (memcmp(sw_threads_var.value, "auto", 4) == 0)
          {
             sw_decoder_threads = cpu_features_get_core_amount();
          }
