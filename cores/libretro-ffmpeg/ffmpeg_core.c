@@ -146,7 +146,8 @@ static void video_buffer_destroy(video_buffer_t *video_buffer)
          av_frame_free(&video_buffer->buffer[i].hw_source);
 #endif
          av_frame_free(&video_buffer->buffer[i].source);
-         av_freep((AVFrame*)video_buffer->buffer[i].target);
+         if (video_buffer->buffer[i].target)
+            av_freep(&video_buffer->buffer[i].target->data[0]);
          av_frame_free(&video_buffer->buffer[i].target);
          sws_freeContext(video_buffer->buffer[i].sws);
       }
