@@ -64,6 +64,8 @@ static tpool_work_t *tpool_work_create(thread_func_t func, void *arg)
       return NULL;
 
    work       = (tpool_work_t*)calloc(1, sizeof(*work));
+   if (!work)
+      return NULL;
    work->func = func;
    work->arg  = arg;
    work->next = NULL;
@@ -72,8 +74,7 @@ static tpool_work_t *tpool_work_create(thread_func_t func, void *arg)
 
 static void tpool_work_destroy(tpool_work_t *work)
 {
-   if (work)
-      free(work);
+   free(work);
 }
 
 /* Pull the first work item out of the queue. */
@@ -107,46 +108,38 @@ static void tpool_worker(void *arg)
    for (;;)
    {
       slock_lock(tp->work_mutex);
-      /* Keep running until told to stop. */
+
+      /* Wait until there is work available or we are told to stop.
+       * Loop handles spurious wakeups. */
+      while (!tp->work_first && !tp->stop)
+         scond_wait(tp->work_cond, tp->work_mutex);
+
+      /* Re-check stop after waking from the conditional. */
       if (tp->stop)
          break;
 
-      /* If there is no work in the queue wait in the conditional until
-       * there is work to take. */
-      if (!tp->work_first)
-         scond_wait(tp->work_cond, tp->work_mutex);
-
       /* Try to pull work from the queue. */
       work = tpool_work_get(tp);
-      tp->working_cnt++;
+      if (work)
+         tp->working_cnt++;
       slock_unlock(tp->work_mutex);
 
-      /* Call the work function and let it process.
-       *
-       * work can legitimately be NULL. Since multiple threads from the pool
-       * will wake when there is work, a thread might not get any work. 1
-       * piece of work and 2 threads, both will wake but with 1 only work 1
-       * will get the work and the other won't.
-       *
-       * working_cnt has been increment and work could be NULL. While it's
-       * not true there is work processing the thread is considered working
-       * because it's not waiting in the conditional. Pedantic but...
-       */
+      /* Call the work function and let it process. */
       if (work)
       {
          work->func(work->arg);
          tpool_work_destroy(work);
-      }
 
-      slock_lock(tp->work_mutex);
-      tp->working_cnt--;
-      /* Since we're in a lock no work can be added or removed form the queue.
-       * Also, the working_cnt can't be changed (except the thread holding the lock).
-       * At this point if there isn't any work processing and if there is no work
-       * signal this is the case. */
-      if (!tp->stop && tp->working_cnt == 0 && !tp->work_first)
-         scond_signal(tp->working_cond);
-      slock_unlock(tp->work_mutex);
+         slock_lock(tp->work_mutex);
+         tp->working_cnt--;
+         /* Since we're in a lock no work can be added or removed from the queue.
+          * Also, the working_cnt can't be changed (except the thread holding the lock).
+          * At this point if there isn't any work processing and if there is no work
+          * signal this is the case. */
+         if (!tp->stop && tp->working_cnt == 0 && !tp->work_first)
+            scond_signal(tp->working_cond);
+         slock_unlock(tp->work_mutex);
+      }
    }
 
    tp->thread_cnt--;
@@ -165,20 +158,49 @@ tpool_t *tpool_create(size_t num)
       num = 2;
 
    tp               = (tpool_t*)calloc(1, sizeof(*tp));
+   if (!tp)
+      return NULL;
+
    tp->thread_cnt   = num;
 
    tp->work_mutex   = slock_new();
    tp->work_cond    = scond_new();
    tp->working_cond = scond_new();
 
+   if (!tp->work_mutex || !tp->work_cond || !tp->working_cond)
+   {
+      if (tp->work_mutex)
+         slock_free(tp->work_mutex);
+      if (tp->work_cond)
+         scond_free(tp->work_cond);
+      if (tp->working_cond)
+         scond_free(tp->working_cond);
+      free(tp);
+      return NULL;
+   }
+
    tp->work_first   = NULL;
    tp->work_last    = NULL;
 
-   /* Create the requested number of thread and detach them. */
+   /* Create the requested number of threads and detach them. */
+   tp->thread_cnt   = 0;
    for (i = 0; i < num; i++)
    {
       thread = sthread_create(tpool_worker, tp);
+      if (!thread)
+         continue;
+      tp->thread_cnt++;
       sthread_detach(thread);
+   }
+
+   /* If no threads were created, clean up and fail. */
+   if (tp->thread_cnt == 0)
+   {
+      slock_free(tp->work_mutex);
+      scond_free(tp->work_cond);
+      scond_free(tp->working_cond);
+      free(tp);
+      return NULL;
    }
 
    return tp;
@@ -201,6 +223,8 @@ void tpool_destroy(tpool_t *tp)
       tpool_work_destroy(work);
       work = work2;
    }
+   tp->work_first = NULL;
+   tp->work_last  = NULL;
 
    /* Tell the worker threads to stop. */
    tp->stop = true;
@@ -240,7 +264,7 @@ bool tpool_add_work(tpool_t *tp, thread_func_t func, void *arg)
       tp->work_last       = work;
    }
 
-   scond_broadcast(tp->work_cond);
+   scond_signal(tp->work_cond);
    slock_unlock(tp->work_mutex);
 
    return true;
