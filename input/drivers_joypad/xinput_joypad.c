@@ -42,7 +42,71 @@
 
 #include "../../verbosity.h"
 
-#include "xinput_joypad.h"
+#ifndef __XINPUT_JOYPAD_H
+#define __XINPUT_JOYPAD_H
+
+#include <stdint.h>
+#include <boolean.h>
+#include <retro_common_api.h>
+
+#if defined(__WINRT__)
+#include <Xinput.h>
+#endif
+
+/* Check if the definitions do not already exist.
+ * Official and mingw xinput headers have different include guards.
+ * Windows 10 API version doesn't have an include guard at all and just uses #pragma once instead
+ */
+#if ((!_XINPUT_H_) && (!__WINE_XINPUT_H)) && !defined(__WINRT__) && !defined(_XBOX)
+
+#define XINPUT_GAMEPAD_DPAD_UP          0x0001
+#define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
+#define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
+#define XINPUT_GAMEPAD_DPAD_RIGHT       0x0008
+#define XINPUT_GAMEPAD_START            0x0010
+#define XINPUT_GAMEPAD_BACK             0x0020
+#define XINPUT_GAMEPAD_LEFT_THUMB       0x0040
+#define XINPUT_GAMEPAD_RIGHT_THUMB      0x0080
+#define XINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
+#define XINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
+#define XINPUT_GAMEPAD_A                0x1000
+#define XINPUT_GAMEPAD_B                0x2000
+#define XINPUT_GAMEPAD_X                0x4000
+#define XINPUT_GAMEPAD_Y                0x8000
+
+typedef struct
+{
+   uint16_t wButtons;
+   uint8_t  bLeftTrigger;
+   uint8_t  bRightTrigger;
+   int16_t  sThumbLX;
+   int16_t  sThumbLY;
+   int16_t  sThumbRX;
+   int16_t  sThumbRY;
+} XINPUT_GAMEPAD;
+
+typedef struct
+{
+   uint32_t       dwPacketNumber;
+   XINPUT_GAMEPAD Gamepad;
+} XINPUT_STATE;
+
+typedef struct
+{
+   uint16_t wLeftMotorSpeed;
+   uint16_t wRightMotorSpeed;
+} XINPUT_VIBRATION;
+
+#endif
+
+/* Guide constant is not officially documented. */
+#define XINPUT_GAMEPAD_GUIDE 0x0400
+
+#ifndef ERROR_DEVICE_NOT_CONNECTED
+#define ERROR_DEVICE_NOT_CONNECTED 1167
+#endif
+
+#endif
 
 typedef struct
 {
@@ -96,7 +160,128 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 #endif
 };
 
-#include "xinput_joypad_inl.h"
+#ifndef __XINPUT_JOYPAD_INL_H
+#define __XINPUT_JOYPAD_INL_H
+
+#include <stdint.h>
+#include <boolean.h>
+#include <retro_common_api.h>
+
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
+static bool load_xinput_dll(void)
+{
+   const char *version = "1.4";
+   /* Find the correct path to load the DLL from.
+    * Usually this will be from the system directory,
+    * but occasionally a user may wish to use a third-party
+    * wrapper DLL (such as x360ce); support these by checking
+    * the working directory first.
+    *
+    * No need to check for existence as we will be checking dylib_load's
+    * success anyway.
+    */
+
+   g_xinput_dll = dylib_load("xinput1_4.dll");
+   if (!g_xinput_dll)
+   {
+      g_xinput_dll = dylib_load("xinput1_3.dll");
+      version = "1.3";
+   }
+
+   if (!g_xinput_dll)
+   {
+      RARCH_ERR("[XInput] Failed to load XInput. Ensure DirectX and controller drivers are up to date.\n");
+      return false;
+   }
+
+   RARCH_LOG("[XInput] Found XInput v%s.\n", version);
+   return true;
+}
+#endif
+
+static int32_t xinput_joypad_button_state(
+      unsigned xuser, uint16_t btn_word,
+      unsigned port, uint16_t joykey)
+{
+   unsigned hat_dir  = GET_HAT_DIR(joykey);
+
+   if (hat_dir)
+   {
+      switch (hat_dir)
+      {
+         case HAT_UP_MASK:
+            return (btn_word & XINPUT_GAMEPAD_DPAD_UP);
+         case HAT_DOWN_MASK:
+            return (btn_word & XINPUT_GAMEPAD_DPAD_DOWN);
+         case HAT_LEFT_MASK:
+            return (btn_word & XINPUT_GAMEPAD_DPAD_LEFT);
+         case HAT_RIGHT_MASK:
+            return (btn_word & XINPUT_GAMEPAD_DPAD_RIGHT);
+         default:
+            break;
+      }
+      /* hat requested and no hat button down */
+   }
+   else if (joykey < g_xinput_num_buttons)
+      return (btn_word & button_index_to_bitmap_code[joykey]);
+   return 0;
+}
+
+static int16_t xinput_joypad_axis_state(
+      XINPUT_GAMEPAD *pad,
+      unsigned port, uint32_t joyaxis)
+{
+   int16_t val         = 0;
+   int     axis        = -1;
+   bool is_neg         = false;
+   bool is_pos         = false;
+   /* triggers (axes 4,5) cannot be negative */
+   if (AXIS_NEG_GET(joyaxis) <= 3)
+   {
+      axis             = AXIS_NEG_GET(joyaxis);
+      is_neg           = true;
+   }
+   else if (AXIS_POS_GET(joyaxis) <= 5)
+   {
+      axis             = AXIS_POS_GET(joyaxis);
+      is_pos           = true;
+   }
+   else
+      return 0;
+
+   switch (axis)
+   {
+      case 0:
+         val = pad->sThumbLX;
+         break;
+      case 1:
+         val = pad->sThumbLY;
+         break;
+      case 2:
+         val = pad->sThumbRX;
+         break;
+      case 3:
+         val = pad->sThumbRY;
+         break;
+      case 4:
+         val = pad->bLeftTrigger  * 32767 / 255;
+         break; /* map 0..255 to 0..32767 */
+      case 5:
+         val = pad->bRightTrigger * 32767 / 255;
+         break;
+   }
+
+   if (is_neg && val > 0)
+      return 0;
+   else if (is_pos && val < 0)
+      return 0;
+   /* Clamp to avoid overflow error. */
+   else if (val == -32768)
+      return -32767;
+   return val;
+}
+
+#endif
 
 static INLINE int pad_index_to_xuser_index(unsigned pad)
 {
