@@ -682,6 +682,7 @@ void dxgi_set_hdr_metadata(
       float                         max_fall
 )
 {
+   /* TODO/FIXME - static globals - not thread-safe */
    static DXGI_HDR_METADATA_HDR10 g_hdr10_meta_data = {0};
    static const display_chromaticities_t
       display_chromaticity_list[]                   =
