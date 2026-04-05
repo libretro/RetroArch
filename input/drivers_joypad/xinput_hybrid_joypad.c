@@ -422,6 +422,7 @@ static int16_t dinput_joypad_state(
    int16_t  ret;
    uint16_t port_idx;
    const struct dinput_joypad_data *pad;
+   int16_t  threshold_int;
 
    (void)port; /* joy_idx from joypad_info is authoritative */
 
@@ -434,6 +435,7 @@ static int16_t dinput_joypad_state(
       return 0;
 
    ret = 0;
+   threshold_int = (int16_t)(joypad_info->axis_threshold * 0x8000);
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       /* Auto-binds are per joypad, not per user. */
@@ -446,8 +448,8 @@ static int16_t dinput_joypad_state(
             && dinput_joypad_button_state(pad, (uint16_t)joykey))
          ret |= (1 << i);
       else if (joyaxis != AXIS_NONE
-            && ((float)abs(dinput_joypad_axis_state(pad, joyaxis))
-                  / 0x8000) > joypad_info->axis_threshold)
+            && abs(dinput_joypad_axis_state(pad, joyaxis))
+                  > threshold_int)
          ret |= (1 << i);
    }
 
@@ -680,24 +682,20 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    }
 
    /* Go through RAWINPUT (WinXP and later) to find HID devices. */
+   if ((GetRawInputDeviceList(NULL, &num_raw_devs,
+               sizeof(RAWINPUTDEVICELIST)) == (UINT)-1) || (!num_raw_devs))
+      return false;
+
+   raw_devs = (PRAWINPUTDEVICELIST)
+      malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs);
    if (!raw_devs)
+      return false;
+
+   if (GetRawInputDeviceList(raw_devs, &num_raw_devs,
+            sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
    {
-      if ((GetRawInputDeviceList(NULL, &num_raw_devs,
-                  sizeof(RAWINPUTDEVICELIST)) == (UINT)-1) || (!num_raw_devs))
-         return false;
-
-      raw_devs = (PRAWINPUTDEVICELIST)
-         malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs);
-      if (!raw_devs)
-         return false;
-
-      if (GetRawInputDeviceList(raw_devs, &num_raw_devs,
-               sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
-      {
-         free(raw_devs);
-         raw_devs = NULL;
-         return false;
-      }
+      free(raw_devs);
+      return false;
    }
 
    for (i = 0; i < num_raw_devs; i++)
@@ -739,7 +737,6 @@ static bool guid_is_xinput_device(const GUID* product_guid)
       {
          free(dev_name);
          free(raw_devs);
-         raw_devs = NULL;
          return true;
       }
 
@@ -748,7 +745,6 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    }
 
    free(raw_devs);
-   raw_devs = NULL;
    return false;
 }
 
@@ -819,8 +815,8 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
    inst->guidProduct.Data4[7]);
 #endif
 
-   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
-   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
+   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 & 0xFFFF;
+   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 >> 16;
 
    is_xinput_pad            =    g_xinput_block_pads
                               && guid_is_xinput_device(&inst->guidProduct);
@@ -843,17 +839,14 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
 
    dinput_create_rumble_effects(&g_pads[g_joypad_cnt]);
 
-   if (!is_xinput_pad)
-   {
-      input_autoconfigure_connect(
-            g_pads[g_joypad_cnt].joy_name,
-            g_pads[g_joypad_cnt].joy_friendly_name,
-            NULL,
-            dinput_joypad.ident,
-            g_joypad_cnt,
-            g_pads[g_joypad_cnt].vid,
-            g_pads[g_joypad_cnt].pid);
-   }
+   input_autoconfigure_connect(
+         g_pads[g_joypad_cnt].joy_name,
+         g_pads[g_joypad_cnt].joy_friendly_name,
+         NULL,
+         dinput_joypad.ident,
+         g_joypad_cnt,
+         g_pads[g_joypad_cnt].vid,
+         g_pads[g_joypad_cnt].pid);
 
 enum_iteration_done:
    g_joypad_cnt++;
@@ -919,7 +912,7 @@ static void *xinput_joypad_init(void *data)
       g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(
             g_xinput_dll, "XInputGetState");
 #else
-	  g_XInputGetStateEx = (XInputGetStateEx_t)XInputGetState;
+      g_XInputGetStateEx = (XInputGetStateEx_t)XInputGetState;
 #endif
 
       if (!g_XInputGetStateEx)
@@ -952,14 +945,7 @@ static void *xinput_joypad_init(void *data)
    /* Zero out the states. */
    for (i = 0; i < 4; ++i)
    {
-      g_xinput_states[i].xstate.dwPacketNumber        = 0;
-      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
-      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
-      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
+      memset(&g_xinput_states[i].xstate, 0, sizeof(XINPUT_STATE));
       g_xinput_states[i].connected                    =
          !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
@@ -1048,23 +1034,26 @@ static bool xinput_joypad_query_pad(unsigned pad)
 static int32_t xinput_joypad_button(unsigned port, uint16_t joykey)
 {
    int xuser                  = PAD_INDEX_TO_XUSER_INDEX(port);
-   xinput_joypad_state *state = &g_xinput_states[xuser];
-   uint16_t btn_word          = 0;
+   xinput_joypad_state *state;
+   uint16_t btn_word;
    if (xuser == -1)
       return dinput_joypad_button(port, joykey);
+   state = &g_xinput_states[xuser];
    if (!state->connected)
       return 0;
-   btn_word          = state->xstate.Gamepad.wButtons;
+   btn_word = state->xstate.Gamepad.wButtons;
    return xinput_joypad_button_state(xuser, btn_word, port, joykey);
 }
 
 static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    int xuser                  = PAD_INDEX_TO_XUSER_INDEX(port);
-   xinput_joypad_state *state = &g_xinput_states[xuser];
-   XINPUT_GAMEPAD *pad        = &state->xstate.Gamepad;
+   xinput_joypad_state *state;
+   XINPUT_GAMEPAD *pad;
    if (xuser == -1)
       return dinput_joypad_axis(port, joyaxis);
+   state = &g_xinput_states[xuser];
+   pad   = &state->xstate.Gamepad;
    if (!state->connected)
       return 0;
    return xinput_joypad_axis_state(pad, port, joyaxis);
@@ -1080,13 +1069,17 @@ static int16_t xinput_joypad_state_func(
    int16_t ret                = 0;
    uint16_t port_idx          = joypad_info->joy_idx;
    int xuser                  = PAD_INDEX_TO_XUSER_INDEX(port_idx);
-   xinput_joypad_state *state = &g_xinput_states[xuser];
-   XINPUT_GAMEPAD *pad        = &state->xstate.Gamepad;
+   xinput_joypad_state *state;
+   XINPUT_GAMEPAD *pad;
+   int16_t threshold_int;
    if (xuser == -1)
       return dinput_joypad_state(joypad_info, binds, port_idx);
+   state = &g_xinput_states[xuser];
+   pad   = &state->xstate.Gamepad;
    if (!state->connected)
       return 0;
    btn_word                   = state->xstate.Gamepad.wButtons;
+   threshold_int              = (int16_t)(joypad_info->axis_threshold * 0x8000);
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -1101,8 +1094,8 @@ static int16_t xinput_joypad_state_func(
                xuser, btn_word, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(xinput_joypad_axis_state(pad, port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
+            abs(xinput_joypad_axis_state(pad, port_idx, joyaxis))
+             > threshold_int)
          ret |= (1 << i);
    }
 
@@ -1183,51 +1176,13 @@ static void xinput_joypad_poll(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      unsigned j;
       HRESULT ret;
       struct dinput_joypad_data *pad  = &g_pads[i];
       bool                    polled  = g_xinput_pad_indexes[i] < 0;
       if (!polled || !pad || !pad->joypad)
          continue;
 
-      pad->joy_state.lX               = 0;
-      pad->joy_state.lY               = 0;
-      pad->joy_state.lRx              = 0;
-      pad->joy_state.lRy              = 0;
-      pad->joy_state.lRz              = 0;
-      pad->joy_state.rglSlider[0]     = 0;
-      pad->joy_state.rglSlider[1]     = 0;
-      pad->joy_state.rgdwPOV[0]       = 0;
-      pad->joy_state.rgdwPOV[1]       = 0;
-      pad->joy_state.rgdwPOV[2]       = 0;
-      pad->joy_state.rgdwPOV[3]       = 0;
-      for (j = 0; j < 128; j++)
-         pad->joy_state.rgbButtons[j] = 0;
-
-      pad->joy_state.lVX              = 0;
-      pad->joy_state.lVY              = 0;
-      pad->joy_state.lVZ              = 0;
-      pad->joy_state.lVRx             = 0;
-      pad->joy_state.lVRy             = 0;
-      pad->joy_state.lVRz             = 0;
-      pad->joy_state.rglVSlider[0]    = 0;
-      pad->joy_state.rglVSlider[1]    = 0;
-      pad->joy_state.lAX              = 0;
-      pad->joy_state.lAY              = 0;
-      pad->joy_state.lAZ              = 0;
-      pad->joy_state.lARx             = 0;
-      pad->joy_state.lARy             = 0;
-      pad->joy_state.lARz             = 0;
-      pad->joy_state.rglASlider[0]    = 0;
-      pad->joy_state.rglASlider[1]    = 0;
-      pad->joy_state.lFX              = 0;
-      pad->joy_state.lFY              = 0;
-      pad->joy_state.lFZ              = 0;
-      pad->joy_state.lFRx             = 0;
-      pad->joy_state.lFRy             = 0;
-      pad->joy_state.lFRz             = 0;
-      pad->joy_state.rglFSlider[0]    = 0;
-      pad->joy_state.rglFSlider[1]    = 0;
+      memset(&pad->joy_state, 0, sizeof(DIJOYSTATE2));
 
       /* If this fails, something *really* bad must have happened. */
       if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
@@ -1277,14 +1232,7 @@ static void xinput_joypad_destroy(void)
 
    for (i = 0; i < 4; ++i)
    {
-      g_xinput_states[i].xstate.dwPacketNumber        = 0;
-      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
-      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
-      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
+      memset(&g_xinput_states[i].xstate, 0, sizeof(XINPUT_STATE));
       g_xinput_states[i].connected                    = false;
    }
 
