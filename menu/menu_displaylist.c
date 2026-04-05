@@ -15280,9 +15280,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
 
                /* Show History and Favorites in menus without sidebar/tabs */
-               if ((       memcmp(menu_ident, "rgui", 4) == 0
-                        || memcmp(menu_ident, "glui", 4) == 0)
-                       && !settings->bools.menu_materialui_show_nav_bar)
+               if (         (memcmp(menu_ident, "rgui", 4) == 0)
+                        || ((memcmp(menu_ident, "glui", 4) == 0)
+                       && !settings->bools.menu_materialui_show_nav_bar))
                {
                   if (settings->bools.menu_content_show_favorites_first)
                   {
