@@ -641,6 +641,7 @@ INPUT
 #ifdef HAVE_WINRAWINPUT
 /* winraw only available since XP */
 #include "../input/drivers/winraw_input.c"
+#include "../input/drivers_joypad/winraw_joypad.c"
 #endif
 #endif
 

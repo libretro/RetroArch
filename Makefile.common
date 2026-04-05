@@ -1236,8 +1236,8 @@ endif
 
 ifeq ($(TARGET), retroarch_orbis)
    OBJ +=  input/drivers/ps4_input.o \
-			  input/drivers_joypad/ps4_joypad.o \
-			  audio/drivers/psp_audio.o
+	   input/drivers_joypad/ps4_joypad.o \
+	   audio/drivers/psp_audio.o
 endif
 
 ifeq ($(TARGET), retroarch_vita)
@@ -1458,6 +1458,7 @@ ifneq ($(findstring Win32,$(OS)),)
 ifeq ($(HAVE_WINRAWINPUT), 1)
    DEFINES += -DHAVE_WINRAWINPUT
    OBJ     += input/drivers/winraw_input.o
+   OBJ     += input/drivers_joypad/winraw_joypad.o
 endif
 endif
 

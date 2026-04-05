@@ -242,6 +242,7 @@ enum joypad_driver_enum
    JOYPAD_QNX,
    JOYPAD_RWEBPAD,
    JOYPAD_MFI,
+   JOYPAD_WINRAW,
    JOYPAD_NULL
 };
 
@@ -716,6 +717,8 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DINPUT;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_UDEV;
 #elif defined(__linux) && !defined(ANDROID)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_LINUXRAW;
+#elif defined(HAVE_WINRAWINPUT)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WINRAW;
 #elif defined(ANDROID)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_ANDROID;
 #elif defined(HAVE_MFI)
@@ -1308,6 +1311,8 @@ const char *config_get_default_joypad(void)
          return "dos";
       case JOYPAD_MFI:
          return "mfi";
+      case JOYPAD_WINRAW:
+         return "winraw";
       case JOYPAD_NULL:
          break;
    }
