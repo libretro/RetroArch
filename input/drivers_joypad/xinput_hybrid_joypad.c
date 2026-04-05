@@ -39,6 +39,13 @@
 #include <compat/strl.h>
 #include <dynamic/dylib.h>
 
+#define WIN32_LEAN_AND_MEAN
+#include <dinput.h>
+
+#if defined(__WINRT__)
+#include <Xinput.h>
+#endif
+
 #include <windowsx.h>
 #include <dinput.h>
 #include <mmsystem.h>
@@ -55,9 +62,77 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-#include "dinput_joypad.h"
+/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
+#define ARRAY_SIZE_RGB_BUTTONS 128
 
-#include "xinput_joypad.h"
+/* DirectInput POV value indicating the hat is centred (no direction pressed).
+ * rgdwPOV[] returns this sentinel when the hat is released. */
+#define DINPUT_POV_CENTERED 0xFFFFFFFFu
+
+struct dinput_joypad_data
+{
+   LPDIRECTINPUTDEVICE8 joypad;
+   DIJOYSTATE2          joy_state;
+   char                *joy_name;
+   char                *joy_friendly_name;
+   int32_t              vid;
+   int32_t              pid;
+   LPDIRECTINPUTEFFECT  rumble_iface[2];
+   DIEFFECT             rumble_props;
+};
+
+/* Check if the definitions do not already exist.
+ * Official and mingw xinput headers have different include guards.
+ * Windows 10 API version doesn't have an include guard at all and just uses #pragma once instead
+ */
+#if ((!_XINPUT_H_) && (!__WINE_XINPUT_H)) && !defined(__WINRT__) && !defined(_XBOX)
+
+#define XINPUT_GAMEPAD_DPAD_UP          0x0001
+#define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
+#define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
+#define XINPUT_GAMEPAD_DPAD_RIGHT       0x0008
+#define XINPUT_GAMEPAD_START            0x0010
+#define XINPUT_GAMEPAD_BACK             0x0020
+#define XINPUT_GAMEPAD_LEFT_THUMB       0x0040
+#define XINPUT_GAMEPAD_RIGHT_THUMB      0x0080
+#define XINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
+#define XINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
+#define XINPUT_GAMEPAD_A                0x1000
+#define XINPUT_GAMEPAD_B                0x2000
+#define XINPUT_GAMEPAD_X                0x4000
+#define XINPUT_GAMEPAD_Y                0x8000
+
+typedef struct
+{
+   uint16_t wButtons;
+   uint8_t  bLeftTrigger;
+   uint8_t  bRightTrigger;
+   int16_t  sThumbLX;
+   int16_t  sThumbLY;
+   int16_t  sThumbRX;
+   int16_t  sThumbRY;
+} XINPUT_GAMEPAD;
+
+typedef struct
+{
+   uint32_t       dwPacketNumber;
+   XINPUT_GAMEPAD Gamepad;
+} XINPUT_STATE;
+
+typedef struct
+{
+   uint16_t wLeftMotorSpeed;
+   uint16_t wRightMotorSpeed;
+} XINPUT_VIBRATION;
+
+#endif
+
+/* Guide constant is not officially documented. */
+#define XINPUT_GAMEPAD_GUIDE 0x0400
+
+#ifndef ERROR_DEVICE_NOT_CONNECTED
+#define ERROR_DEVICE_NOT_CONNECTED 1167
+#endif
 
 /* Forward declarations */
 extern struct dinput_joypad_data g_pads[MAX_USERS];
