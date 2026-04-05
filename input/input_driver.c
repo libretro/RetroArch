@@ -317,8 +317,10 @@ input_device_driver_t *joypad_drivers[] = {
 #ifdef EMSCRIPTEN
    &rwebpad_joypad,
 #endif
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
 #ifdef HAVE_WINRAWINPUT
    &winraw_joypad,
+#endif
 #endif
 #ifdef HAVE_TEST_DRIVERS
    &test_joypad,
