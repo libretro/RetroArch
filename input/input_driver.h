@@ -28,10 +28,13 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 #include <streams/interface_stream.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
+
+#if defined(_WIN32) && !defined(SOCKET)
+#include <winsock2.h>
+#endif
 
 #include "input_defines.h"
 #include "input_types.h"
@@ -345,6 +348,18 @@ struct remote_message
    int index;
    int id;
    uint16_t state;
+};
+
+struct input_remote
+{
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#ifdef _WIN32
+   SOCKET net_fd[MAX_USERS];
+#else
+   int net_fd[MAX_USERS];
+#endif
+#endif
+   bool state[RARCH_BIND_LIST_END];
 };
 
 typedef struct

@@ -21,7 +21,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windowsx.h>
 
-#define WIN32_LEAN_AND_MEAN
 #include <dinput.h>
 #include <mmsystem.h>
 
@@ -37,25 +36,7 @@
 #include "../input_keymaps.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-
-/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
-#define ARRAY_SIZE_RGB_BUTTONS 128
-
-/* DirectInput POV value indicating the hat is centred (no direction pressed).
- * rgdwPOV[] returns this sentinel when the hat is released. */
-#define DINPUT_POV_CENTERED 0xFFFFFFFFu
-
-struct dinput_joypad_data
-{
-   LPDIRECTINPUTDEVICE8 joypad;
-   DIJOYSTATE2          joy_state;
-   char                *joy_name;
-   char                *joy_friendly_name;
-   int32_t              vid;
-   int32_t              pid;
-   LPDIRECTINPUTEFFECT  rumble_iface[2];
-   DIEFFECT             rumble_props;
-};
+#include "dinput_joypad.h"
 
 /* TODO/FIXME - globals referenced outside; candidate for context-struct refactor */
 struct dinput_joypad_data g_pads[MAX_USERS];
