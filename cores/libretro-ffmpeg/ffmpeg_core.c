@@ -70,8 +70,7 @@ extern "C" {
 
 #define HAVE_CH_LAYOUT (LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100))
 
-static bool reset_triggered;
-static bool libretro_supports_bitmasks = false;
+/* reset_triggered and libretro_supports_bitmasks moved into ffmpeg_core_ctx_t */
 
 typedef struct AVPacketNode AVPacketNode_t;
 
@@ -484,15 +483,6 @@ static retro_input_poll_t CORE_PREFIX(input_poll_cb);
 static retro_input_state_t CORE_PREFIX(input_state_cb);
 
 /* FFmpeg context data. */
-static AVFormatContext *fctx;
-static AVCodecContext *vctx;
-static int video_stream_index;
-static enum AVColorSpace colorspace;
-
-static unsigned sw_decoder_threads;
-static unsigned sw_sws_threads;
-static video_buffer_t *video_buffer;
-static tpool_t *tpool;
 
 #ifndef FFMPEG3
 #define FFMPEG3 ((LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56, 6, 100)) || \
@@ -502,72 +492,15 @@ static tpool_t *tpool;
 #define FFMPEG8 (LIBAVCODEC_VERSION_MAJOR >= 62)
 #endif
 
-#if ENABLE_HW_ACCEL
-static enum AVHWDeviceType hw_decoder;
-static bool hw_decoding_enabled;
-static enum AVPixelFormat pix_fmt;
-static bool force_sw_decoder;
-#endif
-
 #define MAX_STREAMS 8
 /* Sentinel return value indicating no frame available (EAGAIN/EOF) */
 #define DECODE_NO_FRAME (-42)
-static AVCodecContext *actx[MAX_STREAMS];
-static AVCodecContext *sctx[MAX_STREAMS];
-static int audio_streams[MAX_STREAMS];
-static int audio_streams_num;
-static int audio_streams_ptr;
-static int subtitle_streams[MAX_STREAMS];
-static int subtitle_streams_num;
-static int subtitle_streams_ptr;
-
-#ifdef HAVE_SSA
-/* AAS/SSA subtitles. */
-static ASS_Library *ass;
-static ASS_Renderer *ass_render;
-static ASS_Track *ass_track[MAX_STREAMS];
-static uint8_t *ass_extra_data[MAX_STREAMS];
-static size_t ass_extra_data_size[MAX_STREAMS];
-static slock_t *ass_lock;
-static void render_ass_img(AVFrame *conv_frame, ASS_Image *img);
-#endif
 
 struct attachment
 {
    uint8_t *data;
    size_t size;
 };
-static struct attachment *attachments;
-static size_t attachments_size;
-
-#ifdef HAVE_GL_FFT
-static fft_t *fft;
-unsigned fft_width;
-unsigned fft_height;
-unsigned fft_multisample;
-#endif
-
-/* A/V timing. */
-static uint64_t frame_cnt;
-static uint64_t audio_frames;
-static double pts_bias;
-
-/* Threaded FIFOs. */
-static volatile bool decode_thread_dead;
-static fifo_buffer_t *audio_decode_fifo;
-static scond_t *fifo_cond;
-static scond_t *fifo_decode_cond;
-static slock_t *fifo_lock;
-static slock_t *decode_thread_lock;
-static sthread_t *decode_thread_handle;
-static double decode_last_audio_time;
-static bool main_sleeping;
-
-static uint32_t *video_frame_temp_buffer;
-
-/* Seeking. */
-static bool do_seek;
-static double seek_time;
 
 /* GL stuff */
 struct frame
@@ -581,20 +514,7 @@ struct frame
    double pts;
 };
 
-static struct frame frames[2];
-
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-static bool temporal_interpolation;
-static bool use_gl;
-static struct retro_hw_render_callback hw_render;
-static GLuint prog;
-static GLuint vbo;
-static GLint vertex_loc;
-static GLint tex_loc;
-static GLint mix_loc;
-#endif
-
-static struct
+struct media_info
 {
    double interpolate_fps;
    unsigned width;
@@ -610,8 +530,184 @@ static struct
       unsigned minutes;
       unsigned seconds;
    } duration;
+};
 
-} media;
+/*
+ * Consolidated core state.
+ *
+ * All mutable runtime state that was previously scattered across
+ * individual file-scope variables is now grouped here.  A single
+ * static instance (g_ctx) is defined below, and short #define
+ * aliases keep the rest of the file unchanged.  In the future the
+ * defines can be removed and g_ctx passed explicitly to eliminate
+ * all hidden global state.
+ */
+typedef struct ffmpeg_core_ctx
+{
+   /* General */
+   bool reset_triggered;
+   bool libretro_supports_bitmasks;
+
+   /* Demuxer / codecs */
+   AVFormatContext *fctx;
+   AVCodecContext *vctx;
+   int video_stream_index;
+   enum AVColorSpace color_space;
+
+   /* Decoder configuration */
+   unsigned sw_decoder_threads;
+   unsigned sw_sws_threads;
+   video_buffer_t *video_buffer;
+   tpool_t *tpool;
+
+#if ENABLE_HW_ACCEL
+   enum AVHWDeviceType hw_decoder;
+   bool hw_decoding_enabled;
+   enum AVPixelFormat hw_pix_fmt;
+   bool force_sw_decoder;
+#endif
+
+   /* Stream bookkeeping */
+   AVCodecContext *actx[MAX_STREAMS];
+   AVCodecContext *sctx[MAX_STREAMS];
+   int audio_streams[MAX_STREAMS];
+   int audio_streams_num;
+   int audio_stream_idx;
+   int subtitle_streams[MAX_STREAMS];
+   int subtitle_streams_num;
+   int subtitle_stream_idx;
+
+#ifdef HAVE_SSA
+   /* ASS/SSA subtitles */
+   ASS_Library *ass_lib;
+   ASS_Renderer *ass_render;
+   ASS_Track *ass_track[MAX_STREAMS];
+   uint8_t *ass_extra_data[MAX_STREAMS];
+   size_t ass_extra_data_size[MAX_STREAMS];
+   slock_t *ass_lock;
+#endif
+
+   /* Attachments (e.g. embedded fonts) */
+   struct attachment *attachments;
+   size_t attachments_size;
+
+#ifdef HAVE_GL_FFT
+   fft_t *fft;
+   unsigned fft_width;
+   unsigned fft_height;
+   unsigned fft_multisample;
+#endif
+
+   /* A/V timing */
+   uint64_t decoded_frame_cnt;
+   uint64_t audio_frames;
+   double pts_bias;
+
+   /* Threaded FIFOs */
+   volatile bool decode_thread_dead;
+   fifo_buffer_t *audio_decode_fifo;
+   scond_t *fifo_cond;
+   scond_t *fifo_decode_cond;
+   slock_t *fifo_lock;
+   slock_t *decode_thread_lock;
+   sthread_t *decode_thread_handle;
+   double decode_last_audio_time;
+   bool main_sleeping;
+
+   uint32_t *video_frame_temp_buffer;
+
+   /* Seeking */
+   bool do_seek;
+   double seek_time;
+
+   /* Video frames (double-buffered for interpolation) */
+   struct frame frames[2];
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+   bool temporal_interpolation;
+   bool use_gl;
+   struct retro_hw_render_callback hw_render;
+   GLuint prog;
+   GLuint vbo;
+   GLint vertex_loc;
+   GLint tex_loc;
+   GLint mix_loc;
+#endif
+
+   /* Media info */
+   struct media_info media;
+} ffmpeg_core_ctx_t;
+
+static ffmpeg_core_ctx_t g_ctx;
+
+/* ---- Backward-compatible aliases ----
+ * These let existing code reference the old global names unchanged.
+ * Remove these one-by-one when passing g_ctx explicitly. */
+#define reset_triggered        (g_ctx.reset_triggered)
+#define libretro_supports_bitmasks (g_ctx.libretro_supports_bitmasks)
+#define fctx                   (g_ctx.fctx)
+#define vctx                   (g_ctx.vctx)
+#define video_stream_index     (g_ctx.video_stream_index)
+#define sw_decoder_threads     (g_ctx.sw_decoder_threads)
+#define sw_sws_threads         (g_ctx.sw_sws_threads)
+#define video_buffer           (g_ctx.video_buffer)
+#define tpool                  (g_ctx.tpool)
+#if ENABLE_HW_ACCEL
+#define hw_decoder             (g_ctx.hw_decoder)
+#define hw_decoding_enabled    (g_ctx.hw_decoding_enabled)
+#define force_sw_decoder       (g_ctx.force_sw_decoder)
+#endif
+#define actx                   (g_ctx.actx)
+#define sctx                   (g_ctx.sctx)
+#define audio_streams          (g_ctx.audio_streams)
+#define audio_streams_num      (g_ctx.audio_streams_num)
+#define subtitle_streams       (g_ctx.subtitle_streams)
+#define subtitle_streams_num   (g_ctx.subtitle_streams_num)
+#ifdef HAVE_SSA
+#define ass_render             (g_ctx.ass_render)
+#define ass_track              (g_ctx.ass_track)
+#define ass_extra_data         (g_ctx.ass_extra_data)
+#define ass_extra_data_size    (g_ctx.ass_extra_data_size)
+#define ass_lock               (g_ctx.ass_lock)
+#endif
+#define attachments            (g_ctx.attachments)
+#define attachments_size       (g_ctx.attachments_size)
+#ifdef HAVE_GL_FFT
+#define fft                    (g_ctx.fft)
+#define fft_width              (g_ctx.fft_width)
+#define fft_height             (g_ctx.fft_height)
+#define fft_multisample        (g_ctx.fft_multisample)
+#endif
+#define audio_frames           (g_ctx.audio_frames)
+#define pts_bias               (g_ctx.pts_bias)
+#define decode_thread_dead     (g_ctx.decode_thread_dead)
+#define audio_decode_fifo      (g_ctx.audio_decode_fifo)
+#define fifo_cond              (g_ctx.fifo_cond)
+#define fifo_decode_cond       (g_ctx.fifo_decode_cond)
+#define fifo_lock              (g_ctx.fifo_lock)
+#define decode_thread_lock     (g_ctx.decode_thread_lock)
+#define decode_thread_handle   (g_ctx.decode_thread_handle)
+#define decode_last_audio_time (g_ctx.decode_last_audio_time)
+#define main_sleeping          (g_ctx.main_sleeping)
+#define video_frame_temp_buffer (g_ctx.video_frame_temp_buffer)
+#define do_seek                (g_ctx.do_seek)
+#define seek_time              (g_ctx.seek_time)
+#define frames                 (g_ctx.frames)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#define temporal_interpolation (g_ctx.temporal_interpolation)
+#define use_gl                 (g_ctx.use_gl)
+#define hw_render              (g_ctx.hw_render)
+#define prog                   (g_ctx.prog)
+#define vbo                    (g_ctx.vbo)
+#define vertex_loc             (g_ctx.vertex_loc)
+#define tex_loc                (g_ctx.tex_loc)
+#define mix_loc                (g_ctx.mix_loc)
+#endif
+#define media                  (g_ctx.media)
+
+#ifdef HAVE_SSA
+static void render_ass_img(AVFrame *conv_frame, ASS_Image *img);
+#endif
 
 #ifdef HAVE_SSA
 static void ass_msg_cb(int level, const char *fmt, va_list args, void *data)
@@ -653,8 +749,6 @@ void CORE_PREFIX(retro_init)(void)
 
 void CORE_PREFIX(retro_deinit)(void)
 {
-   libretro_supports_bitmasks = false;
-
    if (video_buffer)
    {
       video_buffer_destroy(video_buffer);
@@ -666,6 +760,12 @@ void CORE_PREFIX(retro_deinit)(void)
       tpool_destroy(tpool);
       tpool = NULL;
    }
+
+   /* Zero the entire context so every member starts clean on the
+    * next retro_init() / retro_load_game() cycle.  This is safe
+    * because all resources have already been freed above and in
+    * retro_unload_game(). */
+   memset(&g_ctx, 0, sizeof(g_ctx));
 }
 
 unsigned CORE_PREFIX(retro_api_version)(void)
@@ -778,7 +878,9 @@ static void print_ffmpeg_version(void)
    PRINT_VERSION(avformat)
    PRINT_VERSION(avcodec)
    PRINT_VERSION(avutil)
+#ifdef HAVE_SWRESAMPLE
    PRINT_VERSION(swresample)
+#endif
    PRINT_VERSION(swscale)
 }
 
@@ -835,15 +937,15 @@ static void check_variables(bool firststart)
    {
       slock_lock(decode_thread_lock);
       if (memcmp(color_var.value, "BT.709", 6) == 0)
-         colorspace = AVCOL_SPC_BT709;
+         g_ctx.color_space = AVCOL_SPC_BT709;
       else if (memcmp(color_var.value, "BT.601", 6) == 0)
-         colorspace = AVCOL_SPC_BT470BG;
+         g_ctx.color_space = AVCOL_SPC_BT470BG;
       else if (memcmp(color_var.value, "FCC", 3) == 0)
-         colorspace = AVCOL_SPC_FCC;
+         g_ctx.color_space = AVCOL_SPC_FCC;
       else if (memcmp(color_var.value, "SMPTE240M", 9) == 0)
-         colorspace = AVCOL_SPC_SMPTE240M;
+         g_ctx.color_space = AVCOL_SPC_SMPTE240M;
       else
-         colorspace = AVCOL_SPC_UNSPECIFIED;
+         g_ctx.color_space = AVCOL_SPC_UNSPECIFIED;
       slock_unlock(decode_thread_lock);
    }
 
@@ -918,15 +1020,15 @@ static void seek_frame(int seek_frames)
 
    /* Handle resets + attempts to seek to a location
     * before the start of the video */
-   if ((seek_frames < 0 && (unsigned)-seek_frames > frame_cnt) || reset_triggered)
-      frame_cnt = 0;
+   if ((seek_frames < 0 && (unsigned)-seek_frames > g_ctx.decoded_frame_cnt) || reset_triggered)
+      g_ctx.decoded_frame_cnt = 0;
    /* Handle backwards seeking */
    else if (seek_frames < 0)
-      frame_cnt += seek_frames;
+      g_ctx.decoded_frame_cnt += seek_frames;
    /* Handle forwards seeking */
    else
    {
-      double current_time     = (double)frame_cnt / media.interpolate_fps;
+      double current_time     = (double)g_ctx.decoded_frame_cnt / media.interpolate_fps;
       double seek_step_time   = (double)seek_frames / media.interpolate_fps;
       double seek_target_time = current_time + seek_step_time;
       double seek_time_max    = media.duration.time - 1.0;
@@ -951,14 +1053,14 @@ static void seek_frame(int seek_frames)
       }
 
       if (seek_frames_capped < 0)
-         frame_cnt  = 0;
+         g_ctx.decoded_frame_cnt  = 0;
       else
-         frame_cnt += seek_frames_capped;
+         g_ctx.decoded_frame_cnt += seek_frames_capped;
    }
 
    slock_lock(fifo_lock);
    do_seek        = true;
-   seek_time      = frame_cnt / media.interpolate_fps;
+   seek_time      = g_ctx.decoded_frame_cnt / media.interpolate_fps;
 
    /* Convert seek time to a printable format */
    seek_seconds  = (unsigned)seek_time;
@@ -995,7 +1097,7 @@ static void seek_frame(int seek_frames)
       frames[0].pts = 0.0;
       frames[1].pts = 0.0;
    }
-   audio_frames = frame_cnt * media.sample_rate / media.interpolate_fps;
+   audio_frames = g_ctx.decoded_frame_cnt * media.sample_rate / media.interpolate_fps;
 
    if (audio_decode_fifo)
       fifo_clear(audio_decode_fifo);
@@ -1134,10 +1236,10 @@ void CORE_PREFIX(retro_run)(void)
       msg[0] = '\0';
 
       slock_lock(decode_thread_lock);
-      audio_streams_ptr = (((audio_streams_ptr + adjustment) % audio_streams_num) + audio_streams_num) % audio_streams_num;
+      g_ctx.audio_stream_idx = (((g_ctx.audio_stream_idx + adjustment) % audio_streams_num) + audio_streams_num) % audio_streams_num;
       slock_unlock(decode_thread_lock);
 
-      snprintf(msg, sizeof(msg), "Audio Track #%d.", audio_streams_ptr);
+      snprintf(msg, sizeof(msg), "Audio Track #%d.", g_ctx.audio_stream_idx);
 
       msg_obj.msg      = msg;
       msg_obj.duration = 3000;
@@ -1160,11 +1262,11 @@ void CORE_PREFIX(retro_run)(void)
       msg[0] = '\0';
 
       slock_lock(decode_thread_lock);
-      subtitle_streams_ptr = (((subtitle_streams_ptr + adjustment) % (subtitle_streams_num + 1)) + (subtitle_streams_num + 1)) % (subtitle_streams_num + 1);
+      g_ctx.subtitle_stream_idx = (((g_ctx.subtitle_stream_idx + adjustment) % (subtitle_streams_num + 1)) + (subtitle_streams_num + 1)) % (subtitle_streams_num + 1);
       slock_unlock(decode_thread_lock);
 
-      if(subtitle_streams_ptr)
-         snprintf(msg, sizeof(msg), "Subtitle Track #%d.", subtitle_streams_ptr - 1);
+      if(g_ctx.subtitle_stream_idx)
+         snprintf(msg, sizeof(msg), "Subtitle Track #%d.", g_ctx.subtitle_stream_idx - 1);
       else
          snprintf(msg, sizeof(msg), "Subtitles Disabled.");
 
@@ -1205,7 +1307,7 @@ void CORE_PREFIX(retro_run)(void)
       return;
    }
 
-   frame_cnt++;
+   g_ctx.decoded_frame_cnt++;
 
    /* Have to decode audio before video
     * in case there are PTS discontinuities
@@ -1217,7 +1319,7 @@ void CORE_PREFIX(retro_run)(void)
       double expected_pts;
       double old_pts_bias;
       size_t to_read_bytes;
-      uint64_t expected_audio_frames = frame_cnt * media.sample_rate / media.interpolate_fps;
+      uint64_t expected_audio_frames = g_ctx.decoded_frame_cnt * media.sample_rate / media.interpolate_fps;
 
       to_read_frames = expected_audio_frames - audio_frames;
       to_read_bytes = to_read_frames * sizeof(int16_t) * 2;
@@ -1252,7 +1354,7 @@ void CORE_PREFIX(retro_run)(void)
       audio_frames += to_read_frames;
    }
 
-   min_pts = frame_cnt / media.interpolate_fps + pts_bias;
+   min_pts = g_ctx.decoded_frame_cnt / media.interpolate_fps + pts_bias;
 
    if (video_stream_index >= 0)
    {
@@ -1420,12 +1522,12 @@ void CORE_PREFIX(retro_run)(void)
 #if defined(HAVE_GL_FFT) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGLES))
    else if (fft)
    {
-      unsigned       frames = to_read_frames;
+      unsigned       fft_frames = to_read_frames;
       const int16_t *buffer = audio_buffer;
 
-      while (frames)
+      while (fft_frames)
       {
-         unsigned to_read = frames;
+         unsigned to_read = fft_frames;
 
          /* FFT size we use (1 << 11). Really shouldn't happen,
           * unless we use a crazy high sample rate. */
@@ -1434,7 +1536,7 @@ void CORE_PREFIX(retro_run)(void)
 
          fft_step_fft(fft, buffer, to_read);
          buffer += to_read * 2;
-         frames -= to_read;
+         fft_frames -= to_read;
       }
       fft_render(fft, hw_render.get_current_framebuffer(), fft_width, fft_height);
       CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID,
@@ -1490,10 +1592,10 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
          if (pix_fmts != NULL)
          {
             /* Look if codec can supports the pix format of the device */
-            for (size_t i = 0; pix_fmts[i] != AV_PIX_FMT_NONE; i++)
-               if (pix_fmts[i] == device_pix_fmt)
+            for (size_t j = 0; pix_fmts[j] != AV_PIX_FMT_NONE; j++)
+               if (pix_fmts[j] == device_pix_fmt)
                {
-                  decoder_pix_fmt = pix_fmts[i];
+                  decoder_pix_fmt = pix_fmts[j];
                   goto exit;
                }
             log_cb(RETRO_LOG_ERROR, "[FFMPEG] Codec %s does not support device pixel format %s.\n",
@@ -1593,13 +1695,13 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
    /* Look if we can reuse the current decoder */
    for (size_t i = 0; pix_fmts[i] != AV_PIX_FMT_NONE; i++)
    {
-      if (pix_fmts[i] == pix_fmt)
-         return pix_fmt;
+      if (pix_fmts[i] == g_ctx.hw_pix_fmt)
+         return g_ctx.hw_pix_fmt;
    }
 
-   pix_fmt = select_decoder(ctx, pix_fmts);
+   g_ctx.hw_pix_fmt = select_decoder(ctx, pix_fmts);
 
-   return pix_fmt;
+   return g_ctx.hw_pix_fmt;
 }
 #endif
 
@@ -1622,7 +1724,7 @@ static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned ind
 
 #if ENABLE_HW_ACCEL
       vctx->get_format  = get_format;
-      pix_fmt = select_decoder((*ctx), NULL);
+      g_ctx.hw_pix_fmt = select_decoder((*ctx), NULL);
 #else
       select_decoder((*ctx), NULL);
 #endif
@@ -1697,8 +1799,8 @@ static bool open_codecs(void)
    subtitle_streams_num = 0;
 
    slock_lock(decode_thread_lock);
-   audio_streams_ptr    = 0;
-   subtitle_streams_ptr = 0;
+   g_ctx.audio_stream_idx    = 0;
+   g_ctx.subtitle_stream_idx = 0;
    slock_unlock(decode_thread_lock);
 
    memset(audio_streams,    0, sizeof(audio_streams));
@@ -1812,22 +1914,22 @@ static bool init_media_info(void)
    {
       unsigned i;
 
-      ass = ass_library_init();
-      ass_set_message_cb(ass, ass_msg_cb, NULL);
+      g_ctx.ass_lib = ass_library_init();
+      ass_set_message_cb(g_ctx.ass_lib, ass_msg_cb, NULL);
 
       for (i = 0; i < attachments_size; i++)
-         ass_add_font(ass, (char*)"",
+         ass_add_font(g_ctx.ass_lib, (char*)"",
                (char*)attachments[i].data, attachments[i].size);
 
-      ass_render = ass_renderer_init(ass);
+      ass_render = ass_renderer_init(g_ctx.ass_lib);
       ass_set_frame_size(ass_render, media.width, media.height);
-      ass_set_extract_fonts(ass, true);
+      ass_set_extract_fonts(g_ctx.ass_lib, true);
       ass_set_fonts(ass_render, NULL, NULL, 1, NULL, 1);
       ass_set_hinting(ass_render, ASS_HINTING_LIGHT);
 
       for (i = 0; i < (unsigned)subtitle_streams_num; i++)
       {
-         ass_track[i] = ass_new_track(ass);
+         ass_track[i] = ass_new_track(g_ctx.ass_lib);
          ass_process_codec_private(ass_track[i], (char*)ass_extra_data[i],
                ass_extra_data_size[i]);
       }
@@ -1843,7 +1945,7 @@ static void set_colorspace(struct SwsContext *sws,
 {
    const int *coeffs = NULL;
 
-   if (colorspace == AVCOL_SPC_UNSPECIFIED)
+   if (g_ctx.color_space == AVCOL_SPC_UNSPECIFIED)
    {
       if (default_color != AVCOL_SPC_UNSPECIFIED)
          coeffs = sws_getCoefficients(default_color);
@@ -1853,7 +1955,7 @@ static void set_colorspace(struct SwsContext *sws,
          coeffs = sws_getCoefficients(AVCOL_SPC_BT470BG);
    }
    else
-      coeffs = sws_getCoefficients(colorspace);
+      coeffs = sws_getCoefficients(g_ctx.color_space);
 
    if (coeffs)
    {
@@ -2114,7 +2216,7 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
       }
 
       decode_last_audio_time = pts * av_q2d(
-            fctx->streams[audio_streams[audio_streams_ptr]]->time_base);
+            fctx->streams[audio_streams[g_ctx.audio_stream_idx]]->time_base);
 
       if (!decode_thread_dead)
          fifo_write(audio_decode_fifo, buffer, required_buffer);
@@ -2145,15 +2247,15 @@ static void decode_thread_seek(double time)
       video_buffer_clear(video_buffer);
    }
 
-   if (actx[audio_streams_ptr])
-      avcodec_flush_buffers(actx[audio_streams_ptr]);
+   if (actx[g_ctx.audio_stream_idx])
+      avcodec_flush_buffers(actx[g_ctx.audio_stream_idx]);
    if (vctx)
       avcodec_flush_buffers(vctx);
-   if (subtitle_streams_ptr && sctx[subtitle_streams_ptr - 1])
-      avcodec_flush_buffers(sctx[subtitle_streams_ptr - 1]);
+   if (g_ctx.subtitle_stream_idx && sctx[g_ctx.subtitle_stream_idx - 1])
+      avcodec_flush_buffers(sctx[g_ctx.subtitle_stream_idx - 1]);
 #ifdef HAVE_SSA
-   if (subtitle_streams_ptr && ass_track[subtitle_streams_ptr - 1])
-      ass_flush_events(ass_track[subtitle_streams_ptr - 1]);
+   if (g_ctx.subtitle_stream_idx && ass_track[g_ctx.subtitle_stream_idx - 1])
+      ass_flush_events(ass_track[g_ctx.subtitle_stream_idx - 1]);
 #endif
 }
 
@@ -2263,13 +2365,13 @@ static void decode_thread(void *data)
       }
 
       slock_lock(decode_thread_lock);
-      audio_stream_index          = audio_streams[audio_streams_ptr];
-      audio_stream_ptr            = audio_streams_ptr;
-      subtitle_stream             = subtitle_streams_ptr ? subtitle_streams[subtitle_streams_ptr - 1] : 0;
-      actx_active                 = actx[audio_streams_ptr];
-      sctx_active                 = subtitle_streams_ptr ? sctx[subtitle_streams_ptr - 1] : 0;
+      audio_stream_index          = audio_streams[g_ctx.audio_stream_idx];
+      audio_stream_ptr            = g_ctx.audio_stream_idx;
+      subtitle_stream             = g_ctx.subtitle_stream_idx ? subtitle_streams[g_ctx.subtitle_stream_idx - 1] : 0;
+      actx_active                 = actx[g_ctx.audio_stream_idx];
+      sctx_active                 = g_ctx.subtitle_stream_idx ? sctx[g_ctx.subtitle_stream_idx - 1] : 0;
 #ifdef HAVE_SSA
-      ass_track_active            = subtitle_streams_ptr ? ass_track[subtitle_streams_ptr - 1] : 0;
+      ass_track_active            = g_ctx.subtitle_stream_idx ? ass_track[g_ctx.subtitle_stream_idx - 1] : 0;
 #endif
       audio_timebase = av_q2d(fctx->streams[audio_stream_index]->time_base);
       if (video_stream_index >= 0)
@@ -2556,7 +2658,7 @@ void CORE_PREFIX(retro_unload_game)(void)
 
    frames[0].pts = frames[1].pts = 0.0;
    pts_bias = 0.0;
-   frame_cnt = 0;
+   g_ctx.decoded_frame_cnt = 0;
    audio_frames = 0;
 
    for (i = 0; i < MAX_STREAMS; i++)
@@ -2609,11 +2711,11 @@ void CORE_PREFIX(retro_unload_game)(void)
    }
    if (ass_render)
       ass_renderer_done(ass_render);
-   if (ass)
-      ass_library_done(ass);
+   if (g_ctx.ass_lib)
+      ass_library_done(g_ctx.ass_lib);
 
    ass_render = NULL;
-   ass = NULL;
+   g_ctx.ass_lib = NULL;
 #endif
 
    av_freep(&video_frame_temp_buffer);
@@ -2776,9 +2878,9 @@ bool CORE_PREFIX(retro_serialize)(void *data, size_t len)
    serialized_data info;
 
    slock_lock(decode_thread_lock);
-   info.frame_cnt = frame_cnt;
-   info.audio_streams_ptr = audio_streams_ptr;
-   info.subtitle_streams_ptr = subtitle_streams_ptr;
+   info.frame_cnt = g_ctx.decoded_frame_cnt;
+   info.audio_streams_ptr = g_ctx.audio_stream_idx;
+   info.subtitle_streams_ptr = g_ctx.subtitle_stream_idx;
    slock_unlock(decode_thread_lock);
 
    if (sizeof(serialized_data) <= len)
@@ -2803,11 +2905,11 @@ bool CORE_PREFIX(retro_unserialize)(const void *data, size_t len)
       memcpy(&info, data, sizeof(serialized_data));
 
       slock_lock(decode_thread_lock);
-      audio_streams_ptr = info.audio_streams_ptr;
-      subtitle_streams_ptr = info.subtitle_streams_ptr;
+      g_ctx.audio_stream_idx = info.audio_streams_ptr;
+      g_ctx.subtitle_stream_idx = info.subtitle_streams_ptr;
       slock_unlock(decode_thread_lock);
 
-      seek_frame(info.frame_cnt - frame_cnt);
+      seek_frame(info.frame_cnt - g_ctx.decoded_frame_cnt);
 
       return true;
    }
