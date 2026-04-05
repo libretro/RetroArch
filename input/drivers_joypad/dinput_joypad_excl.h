@@ -25,6 +25,32 @@
 #include <dinput.h>
 #include <mmsystem.h>
 
+/* ---------------------------------------------------------------------------
+ * dinput_joypad_cleanup_pad
+ *
+ * Releases the DirectInput device and frees heap-allocated name strings
+ * for the pad at the given index, then zeroes the slot.  Used both for
+ * error roll-back during enumeration and for disconnect cleanup.
+ * --------------------------------------------------------------------------*/
+static void dinput_joypad_cleanup_pad(unsigned idx)
+{
+   struct dinput_joypad_data *pad = &g_pads[idx];
+
+   if (pad->joypad)
+   {
+      IDirectInputDevice8_Unacquire(pad->joypad);
+      IDirectInputDevice8_Release(pad->joypad);
+   }
+
+   if (pad->joy_name)
+      free(pad->joy_name);
+   if (pad->joy_friendly_name)
+      free(pad->joy_friendly_name);
+
+   ZeroMemory(pad, sizeof(*pad));
+}
+
+
 static void dinput_joypad_poll(void)
 {
    int i;
@@ -52,7 +78,10 @@ static void dinput_joypad_poll(void)
             sizeof(DIJOYSTATE2), &pad->joy_state);
 
       if (ret == DIERR_INPUTLOST || ret == DIERR_NOTACQUIRED)
+      {
          input_autoconfigure_disconnect(i, g_pads[i].joy_friendly_name);
+         dinput_joypad_cleanup_pad(i);
+      }
    }
 }
 
@@ -128,11 +157,22 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].vid = (int32_t)(inst->guidProduct.Data1 & 0xFFFFu);
    g_pads[g_joypad_cnt].pid = (int32_t)(inst->guidProduct.Data1 >> 16);
 
-   /* Set data format to extended joystick state */
-   IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
-   IDirectInputDevice8_SetCooperativeLevel(*pad,
+   /* Set data format to extended joystick state.
+    * If either SetDataFormat or SetCooperativeLevel fails the device
+    * is unusable - release everything and move on to the next pad. */
+   if (FAILED(IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2)))
+   {
+      dinput_joypad_cleanup_pad(g_joypad_cnt);
+      return DIENUM_CONTINUE;
+   }
+
+   if (FAILED(IDirectInputDevice8_SetCooperativeLevel(*pad,
          (HWND)video_driver_window_get(),
-         DISCL_EXCLUSIVE | DISCL_BACKGROUND);
+         DISCL_EXCLUSIVE | DISCL_BACKGROUND)))
+   {
+      dinput_joypad_cleanup_pad(g_joypad_cnt);
+      return DIENUM_CONTINUE;
+   }
 
    IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb,
          *pad, DIDFT_ABSAXIS);
