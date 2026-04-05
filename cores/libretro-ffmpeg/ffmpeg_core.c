@@ -619,6 +619,18 @@ typedef struct ffmpeg_core_ctx
    /* Seeking */
    bool do_seek;
    double seek_time;
+   int seek_l2;
+   int seek_r2;
+
+   /* Input edge-detection (previous frame state) */
+   bool last_left;
+   bool last_right;
+   bool last_up;
+   bool last_down;
+   bool last_l1;
+   bool last_l2;
+   bool last_r1;
+   bool last_r2;
 
    /* Video frames (double-buffered for interpolation) */
    struct frame frames[2];
@@ -692,6 +704,16 @@ static ffmpeg_core_ctx_t g_ctx;
 #define video_frame_temp_buffer (g_ctx.video_frame_temp_buffer)
 #define do_seek                (g_ctx.do_seek)
 #define seek_time              (g_ctx.seek_time)
+#define seek_l2                (g_ctx.seek_l2)
+#define seek_r2                (g_ctx.seek_r2)
+#define last_left              (g_ctx.last_left)
+#define last_right             (g_ctx.last_right)
+#define last_up                (g_ctx.last_up)
+#define last_down              (g_ctx.last_down)
+#define last_l1                (g_ctx.last_l1)
+#define last_l2                (g_ctx.last_l2)
+#define last_r1                (g_ctx.last_r1)
+#define last_r2                (g_ctx.last_r2)
 #define frames                 (g_ctx.frames)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #define temporal_interpolation (g_ctx.temporal_interpolation)
@@ -1133,16 +1155,6 @@ static int seek_adjust(int target)
 
 void CORE_PREFIX(retro_run)(void)
 {
-   static bool last_left;
-   static bool last_right;
-   static bool last_up;
-   static bool last_down;
-   static bool last_l1;
-   static bool last_l2;
-   static bool last_r1;
-   static bool last_r2;
-   static int seek_l2;
-   static int seek_r2;
    double min_pts;
    int16_t audio_buffer[media.sample_rate / 20];
    bool left, right, up, down, l1, l2, r1, r2;
