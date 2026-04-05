@@ -64,6 +64,13 @@ struct dinput_joypad_data
    int32_t              pid;
    LPDIRECTINPUTEFFECT  rumble_iface[2];
    DIEFFECT             rumble_props;
+   /* Persistent storage for fields referenced by rumble_props pointers.
+    * Previously these lived on the stack in dinput_create_rumble_effects(),
+    * causing rumble_props to hold dangling pointers after that call returned. */
+   DWORD                rumble_axis;
+   LONG                 rumble_direction;
+   DIENVELOPE           rumble_envelope;
+   DICONSTANTFORCE      rumble_force;
 };
 
 RETRO_END_DECLS
@@ -98,18 +105,17 @@ bool dinput_init_context(void);
 
 static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
 {
-   DIENVELOPE        dienv;
-   DICONSTANTFORCE   dicf;
-   LONG              direction  = 0;
-   DWORD             axis       = DIJOFS_X;
+   /* Store rumble parameters in the pad struct so that rumble_props pointers
+    * remain valid for the lifetime of the pad (fixes dangling-pointer UB). */
+   pad->rumble_force.lMagnitude  = 0;
+   pad->rumble_direction         = 0;
+   pad->rumble_axis              = DIJOFS_X;
 
-   dicf.lMagnitude              = 0;
-
-   dienv.dwSize                 = sizeof(DIENVELOPE);
-   dienv.dwAttackLevel          = 5000;
-   dienv.dwAttackTime           = 250000;
-   dienv.dwFadeLevel            = 0;
-   dienv.dwFadeTime             = 250000;
+   pad->rumble_envelope.dwSize        = sizeof(DIENVELOPE);
+   pad->rumble_envelope.dwAttackLevel  = 5000;
+   pad->rumble_envelope.dwAttackTime   = 250000;
+   pad->rumble_envelope.dwFadeLevel    = 0;
+   pad->rumble_envelope.dwFadeTime     = 250000;
 
    pad->rumble_props.dwSize                  = sizeof(DIEFFECT);
    pad->rumble_props.dwFlags                 = DIEFF_CARTESIAN | DIEFF_OBJECTOFFSETS;
@@ -118,11 +124,11 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
    pad->rumble_props.dwTriggerButton         = DIEB_NOTRIGGER;
    pad->rumble_props.dwTriggerRepeatInterval = 0;
    pad->rumble_props.cAxes                   = 1;
-   pad->rumble_props.rgdwAxes                = &axis;
-   pad->rumble_props.rglDirection            = &direction;
-   pad->rumble_props.lpEnvelope              = &dienv;
+   pad->rumble_props.rgdwAxes                = &pad->rumble_axis;
+   pad->rumble_props.rglDirection            = &pad->rumble_direction;
+   pad->rumble_props.lpEnvelope              = &pad->rumble_envelope;
    pad->rumble_props.cbTypeSpecificParams    = sizeof(DICONSTANTFORCE);
-   pad->rumble_props.lpvTypeSpecificParams   = &dicf;
+   pad->rumble_props.lpvTypeSpecificParams   = &pad->rumble_force;
    pad->rumble_props.dwGain                  = 0;
 
    /* --- strong motor (X axis) --- */
@@ -136,7 +142,7 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
       RARCH_WARN("[DInput] Strong rumble unavailable.\n");
 
    /* --- weak motor (Y axis) --- */
-   axis = DIJOFS_Y;
+   pad->rumble_axis = DIJOFS_Y;
 #ifdef __cplusplus
    if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
@@ -164,23 +170,34 @@ static BOOL CALLBACK enum_axes_cb(
    return DIENUM_CONTINUE;
 }
 
+/* Offset table for DIJOYSTATE2 axis fields — single bounds-check + indexed
+ * load instead of a switch/jump-table.  All target fields are LONG. */
+static const size_t dinput_axis_offsets[8] = {
+   offsetof(DIJOYSTATE2, lX),
+   offsetof(DIJOYSTATE2, lY),
+   offsetof(DIJOYSTATE2, lZ),
+   offsetof(DIJOYSTATE2, lRx),
+   offsetof(DIJOYSTATE2, lRy),
+   offsetof(DIJOYSTATE2, lRz),
+   offsetof(DIJOYSTATE2, rglSlider[0]),
+   offsetof(DIJOYSTATE2, rglSlider[1]),
+};
+
 static int16_t dinput_joypad_get_axis_val(
-      const struct dinput_joypad_data *pad, int axis)
+      const struct dinput_joypad_data *pad, unsigned axis)
 {
-   switch (axis)
-   {
-      case 0: return (int16_t)pad->joy_state.lX;
-      case 1: return (int16_t)pad->joy_state.lY;
-      case 2: return (int16_t)pad->joy_state.lZ;
-      case 3: return (int16_t)pad->joy_state.lRx;
-      case 4: return (int16_t)pad->joy_state.lRy;
-      case 5: return (int16_t)pad->joy_state.lRz;
-      case 6: return (int16_t)pad->joy_state.rglSlider[0];
-      case 7: return (int16_t)pad->joy_state.rglSlider[1];
-      default: break;
-   }
+   if (axis < 8)
+      return (int16_t)(*(const LONG*)
+            ((const char*)&pad->joy_state + dinput_axis_offsets[axis]));
    return 0;
 }
+
+/* Pre-computed diagonal POV values (hundredths of degrees).
+ * Avoids repeated arithmetic in the hot path. */
+#define DINPUT_POV_NE  (JOY_POVRIGHT   / 2)                  /*  4500 */
+#define DINPUT_POV_SE  (JOY_POVRIGHT   + JOY_POVRIGHT / 2)   /* 13500 */
+#define DINPUT_POV_SW  (JOY_POVBACKWARD + JOY_POVRIGHT / 2)  /* 22500 */
+#define DINPUT_POV_NW  (JOY_POVLEFT    + JOY_POVRIGHT / 2)   /* 31500 */
 
 static int32_t dinput_joypad_button_state(
       const struct dinput_joypad_data *pad,
@@ -203,23 +220,23 @@ static int32_t dinput_joypad_button_state(
          {
             case HAT_UP_MASK:
                return (pov == JOY_POVFORWARD)
-                   || (pov == JOY_POVRIGHT  / 2)
-                   || (pov == JOY_POVLEFT   + JOY_POVRIGHT / 2);
+                   || (pov == DINPUT_POV_NE)
+                   || (pov == DINPUT_POV_NW);
 
             case HAT_RIGHT_MASK:
                return (pov == JOY_POVRIGHT)
-                   || (pov == JOY_POVRIGHT / 2)
-                   || (pov == JOY_POVRIGHT + JOY_POVRIGHT / 2);
+                   || (pov == DINPUT_POV_NE)
+                   || (pov == DINPUT_POV_SE);
 
             case HAT_DOWN_MASK:
                return (pov == JOY_POVBACKWARD)
-                   || (pov == JOY_POVRIGHT   + JOY_POVRIGHT / 2)
-                   || (pov == JOY_POVBACKWARD + JOY_POVRIGHT / 2);
+                   || (pov == DINPUT_POV_SE)
+                   || (pov == DINPUT_POV_SW);
 
             case HAT_LEFT_MASK:
                return (pov == JOY_POVLEFT)
-                   || (pov == JOY_POVBACKWARD + JOY_POVRIGHT / 2)
-                   || (pov == JOY_POVLEFT     + JOY_POVRIGHT / 2);
+                   || (pov == DINPUT_POV_SW)
+                   || (pov == DINPUT_POV_NW);
 
             default:
                break;
@@ -239,19 +256,19 @@ static int16_t dinput_joypad_axis_state(
       const struct dinput_joypad_data *pad,
       uint32_t joyaxis)
 {
-   int     axis;
-   int16_t val;
+   unsigned axis;
+   int16_t  val;
 
    if (AXIS_NEG_GET(joyaxis) <= 7)
    {
-      axis = (int)AXIS_NEG_GET(joyaxis);
+      axis = (unsigned)AXIS_NEG_GET(joyaxis);
       val  = dinput_joypad_get_axis_val(pad, axis);
       if (val < 0)
          return val;
    }
    else if (AXIS_POS_GET(joyaxis) <= 7)
    {
-      axis = (int)AXIS_POS_GET(joyaxis);
+      axis = (unsigned)AXIS_POS_GET(joyaxis);
       val  = dinput_joypad_get_axis_val(pad, axis);
       if (val > 0)
          return val;
@@ -287,6 +304,9 @@ static int16_t dinput_joypad_state(
    int16_t  ret;
    uint16_t port_idx;
    const struct dinput_joypad_data *pad;
+   /* Pre-convert the floating-point threshold to an integer value once,
+    * eliminating a float cast + division per bind per frame. */
+   int32_t  axis_thresh_abs;
 
    (void)port; /* joy_idx from joypad_info is authoritative */
 
@@ -297,6 +317,8 @@ static int16_t dinput_joypad_state(
    pad = &g_pads[port_idx];
    if (!pad->joypad)
       return 0;
+
+   axis_thresh_abs = (int32_t)(joypad_info->axis_threshold * 0x8000);
 
    ret = 0;
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -311,8 +333,8 @@ static int16_t dinput_joypad_state(
             && dinput_joypad_button_state(pad, (uint16_t)joykey))
          ret |= (1 << i);
       else if (joyaxis != AXIS_NONE
-            && ((float)abs(dinput_joypad_axis_state(pad, joyaxis))
-                  / 0x8000) > joypad_info->axis_threshold)
+            && abs(dinput_joypad_axis_state(pad, joyaxis))
+                  > axis_thresh_abs)
          ret |= (1 << i);
    }
 
@@ -423,10 +445,8 @@ static void dinput_joypad_cleanup_pad(unsigned idx)
       IDirectInputDevice8_Release(pad->joypad);
    }
 
-   if (pad->joy_name)
-      free(pad->joy_name);
-   if (pad->joy_friendly_name)
-      free(pad->joy_friendly_name);
+   free(pad->joy_name);
+   free(pad->joy_friendly_name);
 
    ZeroMemory(pad, sizeof(*pad));
 }
@@ -434,19 +454,18 @@ static void dinput_joypad_cleanup_pad(unsigned idx)
 
 static void dinput_joypad_poll(void)
 {
-   int i;
-   for (i = 0; i < MAX_USERS; i++)
+   unsigned i;
+   /* Only iterate connected pad slots — avoids touching empty entries.
+    * Note: disconnect via cleanup_pad zeroes the slot but does not compact
+    * the array, so mid-array gaps have pad->joypad == NULL and are skipped
+    * by the existing NULL check below. */
+   for (i = 0; i < g_joypad_cnt; i++)
    {
       HRESULT ret;
       struct dinput_joypad_data *pad = &g_pads[i];
 
       if (!pad->joypad)
          continue;
-
-      /* Zero the entire state structure before polling.
-       * This also correctly zeroes lZ, which the previous
-       * field-by-field implementation accidentally omitted. */
-      ZeroMemory(&pad->joy_state, sizeof(pad->joy_state));
 
       /* If Poll() fails, attempt to re-acquire and poll again.
        * If that also fails, skip this pad for this frame. */
@@ -463,6 +482,9 @@ static void dinput_joypad_poll(void)
          input_autoconfigure_disconnect(i, g_pads[i].joy_friendly_name);
          dinput_joypad_cleanup_pad(i);
       }
+      /* GetDeviceState writes the full DIJOYSTATE2 on success, so no
+       * pre-zeroing is needed.  On failure the pad is cleaned up above,
+       * which zeroes the entire slot including joy_state. */
    }
 }
 
