@@ -34,14 +34,6 @@
 #include "input_osk.h"
 #include "input_types.h"
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif /* HAVE_CONFIG_H */
-
-#if defined(_WIN32) && !defined(SOCKET)
-#include <winsock2.h>
-#endif
-
 #ifdef HAVE_BSV_MOVIE
 #include "bsv/bsvmovie.h"
 #endif
