@@ -28,9 +28,6 @@
  *   - XInput-only controllers (Xbox 360/One when using the XInput-only driver
  *     path) will NOT appear here; pair with xinput_joypad for those.
  *   - No force-feedback / rumble (HID PID output reports are not implemented).
- *   - Some inputs get double registered right now after disconnecting and 
- *     reconnecting controller. It works fine as long as you leave one
- *     controller plugged in. Investigate and fix.
  */
 
 #include <stdlib.h>
@@ -248,7 +245,7 @@ static int16_t winraw_joypad_scale_axis(LONG value, LONG logical_min,
 static int winraw_joypad_find_pad(HANDLE hDevice)
 {
    unsigned i;
-   for (i = 0; i < winraw_joypad_pad_count; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       if (winraw_joypad_pads[i].connected 
        && winraw_joypad_pads[i].hDevice == hDevice)
@@ -305,7 +302,49 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
        && dev_info.hid.usUsage != HID_USAGE_GENERIC_GAMEPAD)
       return false;
 
-   slot = winraw_joypad_find_free_slot();
+   /* ---- Handle reconnection race condition ----
+    * Windows can send GIDC_ARRIVAL for a newly-assigned handle *before*
+    * GIDC_REMOVAL for the old handle of the same physical device.
+    * If we find an existing slot with the same VID:PID but a different
+    * (now-stale) handle, evict it first to prevent double-registered
+    * inputs from two slots reading the same physical controller.
+    * We also try to reuse the same slot so that port mapping is
+    * preserved across disconnect/reconnect cycles. */
+   {
+      unsigned i;
+      int reuse_slot = -1;
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         winraw_joypad_joypad_data_t *p = &winraw_joypad_pads[i];
+         if (   p->connected
+             && p->vid == (uint16_t)dev_info.hid.dwVendorId
+             && p->pid == (uint16_t)dev_info.hid.dwProductId
+             && p->hDevice != hDevice)
+         {
+            /* Stale entry for the same physical device — clean it up */
+            RARCH_LOG("[RawInput Joypad] Evicting stale slot %d "
+                  "(handle %p -> %p) for reconnected device "
+                  "VID:%04X PID:%04X.\n",
+                  (int)i, p->hDevice, hDevice,
+                  p->vid, p->pid);
+
+            /* Free resources but DON'T fire autoconfigure disconnect
+             * because we'll reuse the same slot and keep the bindings. */
+            if (p->btn_caps)
+               free(p->btn_caps);
+            if (p->val_caps)
+               free(p->val_caps);
+            if (p->preparsed)
+               free(p->preparsed);
+
+            memset(p, 0, sizeof(*p));
+            reuse_slot = (int)i;
+            break; /* Only one stale entry per VID:PID expected */
+         }
+      }
+
+      slot = (reuse_slot >= 0) ? reuse_slot : winraw_joypad_find_free_slot();
+   }
    if (slot < 0)
    {
       RARCH_WARN("[RawInput Joypad] No free pad slots, ignoring device.\n");
@@ -493,6 +532,22 @@ static void winraw_joypad_remove_device(HANDLE hDevice)
          free(pad->preparsed);
 
       memset(pad, 0, sizeof(*pad));
+      /* pad->connected is now false from the memset */
+   }
+
+   /* Recalculate pad_count so it reflects the highest connected slot + 1.
+    * Without this, pad_count only ever grows, which is benign for
+    * find_pad / find_free_slot scanning, but can cause autoconfig
+    * to keep seeing stale slots as "in use" during reconnect. */
+   {
+      unsigned i;
+      unsigned new_count = 0;
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         if (winraw_joypad_pads[i].connected)
+            new_count = i + 1;
+      }
+      winraw_joypad_pad_count = new_count;
    }
 }
 
