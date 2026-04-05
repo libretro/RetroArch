@@ -21,6 +21,7 @@
 #include "netplay.h"
 #include "netplay_protocol.h"
 
+#include <stdint.h>
 #include <libretro.h>
 
 #include <streams/trans_stream.h>
