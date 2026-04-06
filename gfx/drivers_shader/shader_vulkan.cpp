@@ -37,24 +37,45 @@
 #include "../../msg_hash.h"
 #include "../../input/input_driver.h"
 
-#define VULKAN_PASS_SET_TEXTURE(device, set, _sampler, binding, image_view, image_layout) \
+/* Maximum number of texture descriptor writes that can be batched in a
+ * single pass.  This covers: Original, Source, OriginalHistory[0],
+ * up to ~30 history/pass-output/feedback/LUT textures.  If a shader
+ * preset somehow exceeds this, the batch is flushed early. */
+#define VULKAN_MAX_DESCRIPTOR_WRITES 64
+
+/* Append a texture descriptor write to the batch arrays.
+ * The caller must call vulkan_flush_descriptor_writes() once all
+ * textures have been queued. */
+#define VULKAN_PASS_SET_TEXTURE_BATCHED(set, _sampler, binding, image_view, image_layout, \
+      image_infos, writes, write_count) \
 { \
-   VkDescriptorImageInfo image_info; \
-   VkWriteDescriptorSet write; \
-   image_info.sampler         = _sampler; \
-   image_info.imageView       = image_view; \
-   image_info.imageLayout     = image_layout; \
-   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
-   write.pNext                = NULL; \
-   write.dstSet               = set; \
-   write.dstBinding           = binding; \
-   write.dstArrayElement      = 0; \
-   write.descriptorCount      = 1; \
-   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; \
-   write.pImageInfo           = &image_info; \
-   write.pBufferInfo          = NULL; \
-   write.pTexelBufferView     = NULL; \
-   vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
+   unsigned _idx = (write_count); \
+   VkDescriptorImageInfo *_img = &(image_infos)[_idx]; \
+   VkWriteDescriptorSet  *_wr  = &(writes)[_idx]; \
+   _img->sampler         = _sampler; \
+   _img->imageView       = image_view; \
+   _img->imageLayout     = image_layout; \
+   _wr->sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
+   _wr->pNext            = NULL; \
+   _wr->dstSet           = set; \
+   _wr->dstBinding       = binding; \
+   _wr->dstArrayElement  = 0; \
+   _wr->descriptorCount  = 1; \
+   _wr->descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; \
+   _wr->pImageInfo       = _img; \
+   _wr->pBufferInfo      = NULL; \
+   _wr->pTexelBufferView = NULL; \
+   (write_count)++; \
+}
+
+static void vulkan_flush_descriptor_writes(VkDevice device,
+      VkWriteDescriptorSet *writes, unsigned *write_count)
+{
+   if (*write_count > 0)
+   {
+      vkUpdateDescriptorSets(device, *write_count, writes, 0, NULL);
+      *write_count = 0;
+   }
 }
 
 
@@ -357,10 +378,14 @@ class Pass
 
       void set_semantic_texture(VkDescriptorSet set,
             slang_texture_semantic semantic,
-            const Texture &texture);
+            const Texture &texture,
+            VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
+            unsigned &write_count);
       void set_semantic_texture_array(VkDescriptorSet set,
             slang_texture_semantic semantic, unsigned index,
-            const Texture &texture);
+            const Texture &texture,
+            VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
+            unsigned &write_count);
 
       slang_reflection reflection;
       void build_semantics(VkDescriptorSet set, uint8_t *buffer,
@@ -379,9 +404,13 @@ class Pass
             slang_texture_semantic semantic, unsigned index,
             unsigned width, unsigned height);
       void build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
-            slang_texture_semantic semantic, const Texture &texture);
+            slang_texture_semantic semantic, const Texture &texture,
+            VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
+            unsigned &write_count);
       void build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
-            slang_texture_semantic semantic, unsigned index, const Texture &texture);
+            slang_texture_semantic semantic, unsigned index, const Texture &texture,
+            VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
+            unsigned &write_count);
 
       uint64_t frame_count        = 0;
       int32_t frame_direction     = 1;
@@ -962,14 +991,11 @@ void vulkan_filter_chain::flush()
 
 void vulkan_filter_chain::update_history_info()
 {
-   unsigned i = 0;
+   unsigned i;
 
    for (i = 0; i < original_history.size(); i++)
    {
-      Texture *source = (Texture*)&common.original_history[i];
-
-      if (!source)
-         continue;
+      Texture *source = &common.original_history[i];
 
       source->texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -996,9 +1022,6 @@ void vulkan_filter_chain::update_feedback_info()
          continue;
 
       Texture *source         = &common.fb_feedback[i];
-
-      if (!source)
-         continue;
 
       source->texture.image   = fb->get_image();
       source->texture.view    = fb->get_view();
@@ -1130,14 +1153,6 @@ void vulkan_filter_chain::build_viewport_pass(
 {
    unsigned i;
    Texture source;
-
-   /* First frame, make sure our history and
-    * feedback textures are in a clean state. */
-   if (require_clear)
-   {
-      clear_history_and_feedback(cmd);
-      require_clear = false;
-   }
 
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
    const Texture original = {
@@ -2343,22 +2358,30 @@ bool Pass::build()
 }
 
 void Pass::set_semantic_texture(VkDescriptorSet set,
-      slang_texture_semantic semantic, const Texture &texture)
+      slang_texture_semantic semantic, const Texture &texture,
+      VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
+      unsigned &write_count)
 {
    if (reflection.semantic_textures[semantic][0].texture)
    {
-      VULKAN_PASS_SET_TEXTURE(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address], reflection.semantic_textures[semantic][0].binding, texture.texture.view, texture.texture.layout);
+      if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
+         vulkan_flush_descriptor_writes(device, writes, &write_count);
+      VULKAN_PASS_SET_TEXTURE_BATCHED(set, common->samplers[texture.filter][texture.mip_filter][texture.address], reflection.semantic_textures[semantic][0].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
    }
 }
 
 void Pass::set_semantic_texture_array(VkDescriptorSet set,
       slang_texture_semantic semantic, unsigned index,
-      const Texture &texture)
+      const Texture &texture,
+      VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
+      unsigned &write_count)
 {
    if (index < reflection.semantic_textures[semantic].size() &&
          reflection.semantic_textures[semantic][index].texture)
    {
-      VULKAN_PASS_SET_TEXTURE(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address],  reflection.semantic_textures[semantic][index].binding, texture.texture.view, texture.texture.layout);
+      if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
+         vulkan_flush_descriptor_writes(device, writes, &write_count);
+      VULKAN_PASS_SET_TEXTURE_BATCHED(set, common->samplers[texture.filter][texture.mip_filter][texture.address],  reflection.semantic_textures[semantic][index].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
    }
 }
 
@@ -2482,25 +2505,35 @@ void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
 
 
 void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
-      slang_texture_semantic semantic, const Texture &texture)
+      slang_texture_semantic semantic, const Texture &texture,
+      VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
+      unsigned &write_count)
 {
    build_semantic_texture_vec4(buffer, semantic,
          texture.texture.width, texture.texture.height);
-   set_semantic_texture(set, semantic, texture);
+   set_semantic_texture(set, semantic, texture,
+         image_infos, writes, write_count);
 }
 
 void Pass::build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
-      slang_texture_semantic semantic, unsigned index, const Texture &texture)
+      slang_texture_semantic semantic, unsigned index, const Texture &texture,
+      VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
+      unsigned &write_count)
 {
    build_semantic_texture_array_vec4(buffer, semantic, index,
          texture.texture.width, texture.texture.height);
-   set_semantic_texture_array(set, semantic, index, texture);
+   set_semantic_texture_array(set, semantic, index, texture,
+         image_infos, writes, write_count);
 }
 
 void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       const float *mvp, const Texture &original, const Texture &source)
 {
    unsigned i;
+   /* Batch arrays for descriptor writes - flushed once at the end. */
+   VkDescriptorImageInfo batch_image_infos[VULKAN_MAX_DESCRIPTOR_WRITES];
+   VkWriteDescriptorSet  batch_writes[VULKAN_MAX_DESCRIPTOR_WRITES];
+   unsigned              batch_count = 0;
 
    /* MVP */
    if (buffer && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
@@ -2594,12 +2627,15 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    }
 
    /* Standard inputs */
-   build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
-   build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
+   build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original,
+         batch_image_infos, batch_writes, batch_count);
+   build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source,
+         batch_image_infos, batch_writes, batch_count);
 
    /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
    build_semantic_texture_array(set, buffer,
-         SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
+         SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original,
+         batch_image_infos, batch_writes, batch_count);
 
    /* Parameters. */
    for (i = 0; i < filtered_parameters.size(); i++)
@@ -2612,25 +2648,32 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    for (i = 0; i < common->original_history.size(); i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
-            common->original_history[i]);
+            common->original_history[i],
+            batch_image_infos, batch_writes, batch_count);
 
    /* Previous passes. */
    for (i = 0; i < common->pass_outputs.size(); i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
-            common->pass_outputs[i]);
+            common->pass_outputs[i],
+            batch_image_infos, batch_writes, batch_count);
 
    /* Feedback FBOs. */
    for (i = 0; i < common->fb_feedback.size(); i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
-            common->fb_feedback[i]);
+            common->fb_feedback[i],
+            batch_image_infos, batch_writes, batch_count);
 
    /* LUTs. */
    for (i = 0; i < common->luts.size(); i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_USER, i,
-            common->luts[i]->get_texture());
+            common->luts[i]->get_texture(),
+            batch_image_infos, batch_writes, batch_count);
+
+   /* Flush all batched descriptor writes in a single driver call. */
+   vulkan_flush_descriptor_writes(device, batch_writes, &batch_count);
 }
 
 void Pass::build_commands(
