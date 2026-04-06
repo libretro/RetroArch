@@ -1337,11 +1337,16 @@ static int d3d12_font_get_message_width(void* data,
    int delta_x                      = 0;
    const struct font_glyph* glyph_q = NULL;
    d3d12_font_t* font               = (d3d12_font_t*)data;
+   /* Hoist function pointer and data pointer out of the loop to avoid
+    * repeated dependent loads through font->font_driver->get_glyph. */
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                    = font->font_driver->get_glyph;
+   void *font_data                  = font->font_data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   glyph_q = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -1354,7 +1359,7 @@ static int d3d12_font_get_message_width(void* data,
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -1388,6 +1393,11 @@ static void d3d12_font_render_line(
    d3d12_sprite_t* vbo_start        = NULL;
    int x                            = pre_x;
    int y                            = roundf((1.0 - pos_y) * height);
+   /* Hoist function pointer and data pointer out of the loop to avoid
+    * repeated dependent loads through font->font_driver->get_glyph. */
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                    = font->font_driver->get_glyph;
+   void *font_data                  = font->font_data;
 
    if (d3d12->sprites.offset + msg_len > (unsigned)d3d12->sprites.capacity)
       d3d12->sprites.offset = 0;
@@ -1415,7 +1425,7 @@ static void d3d12_font_render_line(
       if (skip > 1)
          i += skip - 1;
 
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 

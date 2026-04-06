@@ -1779,13 +1779,18 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
    vulkan_raster_t *font = (vulkan_raster_t*)data;
    const char* msg_end   = msg + msg_len;
    int delta_x           = 0;
+   /* Hoist function pointer and data pointer out of the loop to avoid
+    * repeated dependent loads through font->font_driver->get_glyph. */
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                    = font->font_driver->get_glyph;
+   void *font_data                  = font->font_data;
 
    if (     !font
          || !font->font_driver
          || !font->font_data )
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   glyph_q = get_glyph(font_data, '?');
 
    while (msg < msg_end)
    {
@@ -1793,8 +1798,7 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
       uint32_t code                  = utf8_walk(&msg);
 
       /* Do something smarter here ... */
-      if (!(glyph = font->font_driver->get_glyph(
-                  font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -1831,6 +1835,11 @@ static void vulkan_font_render_line(vk_t *vk,
    int y                            = roundf((1.0f - pos_y) * vk->vp.height);
    int delta_x                      = 0;
    int delta_y                      = 0;
+   /* Hoist function pointer and data pointer out of the loop to avoid
+    * repeated dependent loads through font->font_driver->get_glyph. */
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                    = font->font_driver->get_glyph;
+   void *font_data                  = font->font_data;
 
    vk_color.r                       = color[0];
    vk_color.g                       = color[1];
@@ -1850,7 +1859,7 @@ static void vulkan_font_render_line(vk_t *vk,
       {
          const struct font_glyph *glyph;
          uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = get_glyph(font_data, code)))
             if (!(glyph = glyph_q))
                continue;
          width_accum += glyph->advance_x;
@@ -1869,8 +1878,7 @@ static void vulkan_font_render_line(vk_t *vk,
       unsigned code = utf8_walk(&msg);
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
