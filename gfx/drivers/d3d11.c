@@ -1798,7 +1798,7 @@ static void d3d11_update_viewport(d3d11_video_t *d3d11, bool force_full)
    d3d11->frame.viewport.TopLeftY = d3d11->vp.y;
    d3d11->frame.viewport.Width    = d3d11->vp.width;
    d3d11->frame.viewport.Height   = d3d11->vp.height;
-   d3d11->frame.viewport.MaxDepth = 0.0f;
+   d3d11->frame.viewport.MinDepth = 0.0f;
    d3d11->frame.viewport.MaxDepth = 1.0f;
 
    if (d3d11->shader_preset
@@ -3275,6 +3275,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
       {
          d3d11->pass[i].viewport.Width    = width;
          d3d11->pass[i].viewport.Height   = height;
+         d3d11->pass[i].viewport.MinDepth = 0.0;
          d3d11->pass[i].viewport.MaxDepth = 1.0;
          d3d11->pass[i].rt.desc.Width     = width;
          d3d11->pass[i].rt.desc.Height    = height;
