@@ -59,7 +59,7 @@ RETRO_BEGIN_DECLS
 
 static INLINE bool string_is_empty(const char *data)
 {
-   return !data || (*data == '\0');
+   return !data || !*data;
 }
 
 static INLINE bool string_is_equal(const char *a, const char *b)

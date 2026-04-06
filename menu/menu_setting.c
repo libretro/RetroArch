@@ -514,7 +514,7 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
    if (str && *str)
    {
       const char *ptr = str;
-      /* Reject negative numbers (sscanf %u would silently overflow) */
+      /* Reject negative numbers */
       while (*ptr == ' ')
          ptr++;
       if (*ptr >= '0' && *ptr <= '9')
@@ -1063,8 +1063,8 @@ void setting_generic_handle_change(rarch_setting_t *setting)
       command_event(setting->cmd_trigger_idx, NULL);
 }
 
-
-static size_t setting_get_string_representation_int_gpu_index(rarch_setting_t *setting,
+static size_t setting_get_string_representation_int_gpu_index(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
    size_t _len = 0;
@@ -1073,8 +1073,10 @@ static size_t setting_get_string_representation_int_gpu_index(rarch_setting_t *s
       struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
       _len = snprintf(s, len, "%d", *setting->value.target.integer);
       if (      list
+            && (*setting->value.target.integer >= 0)
             && (*setting->value.target.integer < (int)list->size)
-            && !string_is_empty(list->elems[*setting->value.target.integer].data))
+            && list->elems[*setting->value.target.integer].data
+            && *list->elems[*setting->value.target.integer].data)
       {
          _len += strlcpy(s + _len, " - ", len - _len);
          _len += strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
@@ -3131,7 +3133,7 @@ static size_t setting_get_string_representation_video_font_path(
 {
    if (!setting)
       return 0;
-   if (string_is_empty(setting->value.target.string))
+   if (!setting->value.target.string || !*setting->value.target.string)
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    return fill_pathname(s, path_basename(setting->value.target.string),
          "", len);
@@ -3243,7 +3245,8 @@ static size_t setting_get_string_representation_password(
 {
    if (setting)
    {
-      if (!string_is_empty(setting->value.target.string))
+      if (   setting->value.target.string 
+          && setting->value.target.string[0] != '\0')
          return strlcpy(s, "********", len);
       if (config_get_ptr()->arrays.cheevos_token[0])
          return strlcpy(s, "********", len);
@@ -5120,7 +5123,7 @@ static size_t setting_get_string_representation_string_audio_device(rarch_settin
 {
    if (!setting)
       return 0;
-   if (string_is_empty(setting->value.target.string))
+   if (!setting->value.target.string || !*setting->value.target.string)
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    return strlcpy(s, setting->value.target.string, len);
 }
@@ -5829,9 +5832,11 @@ static bool setting_action_input_device_index_prevent(
    /* Prevent accidental port 1 device index removal */
    if (setting->index_offset == 0)
    {
+      const char *name_cur = input_config_get_device_name(setting->index_offset);
+      const char *name_new = input_config_get_device_name(p_new);
       if (     p == setting->index_offset
-            && !string_is_empty(input_config_get_device_name(setting->index_offset))
-            && string_is_empty(input_config_get_device_name(p_new)))
+            && name_cur && *name_cur
+            && (!name_new || !*name_new))
          return true;
    }
    return false;
@@ -7204,12 +7209,11 @@ static size_t setting_get_string_representation_android_physical_keyboard(
 {
     if (setting)
     {
-       int keyboard_vendor_id;
-       int keyboard_product_id;
-       if (sscanf(setting->value.target.string, "%04x:%04x ",
-                &keyboard_vendor_id, &keyboard_product_id) != 2)
-          return strlcpy(s, setting->value.target.string, len);
-       return strlcpy(s, &setting->value.target.string[10], len);
+       const char *str = setting->value.target.string;
+       if (   str[4] == ':'
+           && str[9] == ' ')
+          return strlcpy(s, &str[10], len);
+       return strlcpy(s, str, len);
     }
     return 0;
 }
@@ -7644,21 +7648,19 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             info.list                     = menu_stack;
 
             /* Menu background image */
-            if (string_is_equal(info.label, MENU_ENUM_LABEL_MENU_WALLPAPER_STR))
+            if (  string_is_equal(info.label,
+                  MENU_ENUM_LABEL_MENU_WALLPAPER_STR)
+               && settings->paths.path_menu_wallpaper[0] != '\0')
             {
-               /* Start from current wallpaper instead if available */
-               if (!string_is_empty(settings->paths.path_menu_wallpaper))
-               {
-                  free(info.path);
-                  info.path = strdup(settings->paths.path_menu_wallpaper);
-               }
+               free(info.path);
+               info.path = strdup(settings->paths.path_menu_wallpaper);
             }
 
             /* Browse basedir instead and set selection to file if available */
-            if (!string_is_empty(info.path) && !path_is_directory(info.path))
+            if (info.path && info.path[0] != '\0' && !path_is_directory(info.path))
             {
                const char *selection_path = path_basename(info.path);
-               if (!string_is_empty(selection_path))
+               if (selection_path && selection_path[0] != '\0')
                   menu_driver_set_pending_selection(selection_path);
                path_basedir(info.path);
             }
@@ -7740,30 +7742,25 @@ int menu_action_handle_setting(rarch_setting_t *setting,
  **/
 rarch_setting_t *menu_setting_find(const char *label)
 {
-   rarch_setting_t *setting   = NULL;
-   rarch_setting_t **list     = &setting;
+   rarch_setting_t *setting;
    struct menu_state *menu_st;
 
    if (!label)
       return NULL;
 
-   menu_st                    = menu_state_get_ptr();
-   setting                    = menu_st->entries.list_settings;
+   menu_st = menu_state_get_ptr();
+   setting = menu_st->entries.list_settings;
 
    if (!setting)
       return NULL;
 
-   for (; setting->type != ST_NONE; (*list = *list + 1))
+   for (; setting->type != ST_NONE; setting++)
    {
-      const char *name              = setting->name;
-      const char *short_description = setting->short_description;
-
-      if (
-                string_is_equal(label, name)
-            && (setting->type <= ST_GROUP))
+      if (  setting->type <= ST_GROUP
+         && string_is_equal(label, setting->name))
       {
-         if (string_is_empty(short_description))
-            break;
+         if (!setting->short_description || !*setting->short_description)
+            return NULL;
 
          if (setting->read_handler)
             setting->read_handler(setting);
@@ -7791,11 +7788,12 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
       return NULL;
    for (; setting->type != ST_NONE; (*list = *list + 1))
    {
-      if (  setting->enum_idx == enum_idx &&
-            setting->type <= ST_GROUP)
+      if (
+             setting->type <= ST_GROUP
+          && setting->enum_idx == enum_idx)
       {
          const char *short_description = setting->short_description;
-         if (string_is_empty(short_description))
+         if (!short_description || !*short_description)
             return NULL;
 
          if (setting->read_handler)
@@ -7864,7 +7862,8 @@ static int setting_action_start_input_device_reservation_type(rarch_setting_t *s
    return 0;
 }
 
-static int setting_action_start_input_device_reserved_device_name(rarch_setting_t *setting)
+static int setting_action_start_input_device_reserved_device_name(
+   rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
 
@@ -8209,7 +8208,7 @@ static size_t setting_get_string_representation_smb_password(
    if (!setting)
       return 0;
 
-   if (string_is_empty(setting->value.target.string))
+   if (!setting->value.target.string || !*setting->value.target.string)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    else
    {
@@ -8329,15 +8328,24 @@ static size_t get_string_representation_input_device_reservation_type(
 
 static size_t setting_get_string_representation_input_device_reserved_device_name(rarch_setting_t *setting, char *s, size_t len)
 {
-   unsigned int dev_vendor_id;
-   unsigned int dev_product_id;
+   const char *str;
    if (!setting)
       return 0;
-   if (string_is_empty(setting->value.target.string))
+   if (!setting->value.target.string || !*setting->value.target.string)
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
-   else if (sscanf(setting->value.target.string, "%04x:%04x ", &dev_vendor_id, &dev_product_id) != 2)
-      return strlcpy(s, setting->value.target.string, len);
-   return strlcpy(s, &setting->value.target.string[10], len);
+   str = setting->value.target.string;
+   if (   ((str[0] >= '0' && str[0] <= '9') || (str[0] >= 'a' && str[0] <= 'f') || (str[0] >= 'A' && str[0] <= 'F'))
+       && ((str[1] >= '0' && str[1] <= '9') || (str[1] >= 'a' && str[1] <= 'f') || (str[1] >= 'A' && str[1] <= 'F'))
+       && ((str[2] >= '0' && str[2] <= '9') || (str[2] >= 'a' && str[2] <= 'f') || (str[2] >= 'A' && str[2] <= 'F'))
+       && ((str[3] >= '0' && str[3] <= '9') || (str[3] >= 'a' && str[3] <= 'f') || (str[3] >= 'A' && str[3] <= 'F'))
+       && str[4] == ':'
+       && ((str[5] >= '0' && str[5] <= '9') || (str[5] >= 'a' && str[5] <= 'f') || (str[5] >= 'A' && str[5] <= 'F'))
+       && ((str[6] >= '0' && str[6] <= '9') || (str[6] >= 'a' && str[6] <= 'f') || (str[6] >= 'A' && str[6] <= 'F'))
+       && ((str[7] >= '0' && str[7] <= '9') || (str[7] >= 'a' && str[7] <= 'f') || (str[7] >= 'A' && str[7] <= 'F'))
+       && ((str[8] >= '0' && str[8] <= '9') || (str[8] >= 'a' && str[8] <= 'f') || (str[8] >= 'A' && str[8] <= 'F'))
+       && str[9] == ' ')
+      return strlcpy(s, &str[10], len);
+   return strlcpy(s, str, len);
 }
 
 static size_t get_string_representation_input_mouse_index(
