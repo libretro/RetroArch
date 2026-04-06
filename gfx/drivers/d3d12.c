@@ -2049,7 +2049,7 @@ static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
    d3d12->frame.viewport.TopLeftY = d3d12->vp.y;
    d3d12->frame.viewport.Width    = d3d12->vp.width;
    d3d12->frame.viewport.Height   = d3d12->vp.height;
-   d3d12->frame.viewport.MaxDepth = 0.0f;
+   d3d12->frame.viewport.MinDepth = 0.0f;
    d3d12->frame.viewport.MaxDepth = 1.0f;
 
    /* Needed for UWP to be happy */
