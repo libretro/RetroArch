@@ -2584,6 +2584,7 @@ static bool d3d10_gfx_frame(
       for (i = 0; i < d3d10->shader_preset->passes; i++)
       {
          int j;
+         uint32_t rot;
 
          d3d10_set_shader(context, &d3d10->pass[i].shader);
 
@@ -2605,7 +2606,7 @@ static bool d3d10_gfx_frame(
          d3d10->pass[i].core_aspect      = video_driver_get_core_aspect();
          /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
          d3d10->pass[i].core_aspect_rot  = video_driver_get_core_aspect();
-         uint32_t rot = retroarch_get_rotation();
+         rot = retroarch_get_rotation();
          if (rot == 1 || rot == 3)
             d3d10->pass[i].core_aspect_rot = 1/d3d10->pass[i].core_aspect_rot;
 
