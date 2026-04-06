@@ -7671,7 +7671,9 @@ unsigned menu_displaylist_build_list(
                   {
                      const char *device = device_list->elems[i].data;
                      if (menu_entries_append(list,
-                              device, msg_connect_bluetooth,
+                              device,
+                              msg_hash_to_str(
+                                 MENU_ENUM_LABEL_CONNECT_BLUETOOTH),
                               MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
                               MENU_BLUETOOTH, 0, 0, NULL))
                         count++;
