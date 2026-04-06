@@ -1163,31 +1163,54 @@ int cue_find_track(const char *cue_path, bool first,
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
-         if (sscanf(tmp_token, "%02d:%02d:%02d", &_m, &_s, &_f) < 3)
          {
+            const char *ptr = tmp_token;
+            char *end       = NULL;
+
+            _m = (int)strtol(ptr, &end, 10);
+            if (!end || *end != ':')
+            {
 #ifdef DEBUG
-            RARCH_LOG("[Scanner] Error parsing time stamp \"%s\".\n", tmp_token);
+               RARCH_LOG("[Scanner] Error parsing time stamp \"%s\".\n", tmp_token);
 #endif
-            goto error;
+               goto error;
+            }
+
+            ptr = end + 1;
+            _s  = (int)strtol(ptr, &end, 10);
+            if (!end || *end != ':')
+            {
+#ifdef DEBUG
+               RARCH_LOG("[Scanner] Error parsing time stamp \"%s\".\n", tmp_token);
+#endif
+               goto error;
+            }
+
+            ptr = end + 1;
+            _f  = (int)strtol(ptr, &end, 10);
+            if (!end || (*end != '\0' && *end != ' ' && *end != '\t'))
+            {
+#ifdef DEBUG
+               RARCH_LOG("[Scanner] Error parsing time stamp \"%s\".\n", tmp_token);
+#endif
+               goto error;
+            }
          }
 
          last_index = (size_t)(((_m * 60 + _s) * 75) + _f) * 2352;
-
          /* If we've changed tracks since the candidate, update it */
          if (     (cand_track != -1)
                && (track != cand_track)
                && update_cand(&cand_index, &last_index, &largest,
-                last_file, offset,
-                size, s, len))
+                  last_file, offset,
+                  size, s, len))
          {
             rv = 0;
             if (first)
                goto clean;
          }
-
          if (!is_data)
             continue;
-
          if (cand_index == -1)
          {
             cand_index = last_index;

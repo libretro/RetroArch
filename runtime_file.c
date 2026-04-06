@@ -46,9 +46,6 @@
 
 #include "runtime_file.h"
 
-#define LOG_FILE_RUNTIME_FORMAT_STR "%u:%02u:%02u"
-#define LOG_FILE_LAST_PLAYED_FORMAT_STR "%04u-%02u-%02u %02u:%02u:%02u"
-
 /* JSON Stuff... */
 
 typedef struct
@@ -184,52 +181,108 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    /* Runtime */
    if (context.runtime_string)
    {
-      if (sscanf(context.runtime_string,
-               LOG_FILE_RUNTIME_FORMAT_STR,
-               &runtime_hours,
-               &runtime_minutes,
-               &runtime_seconds) != 3)
+      const char *str = context.runtime_string;
+      char *end       = NULL;
+      unsigned long val;
+
+      /* Hours */
+      val           = strtoul(str, &end, 10);
+      if (end == str || *end != ':')
       {
          RARCH_ERR("[Runtime] Invalid \"runtime\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
       }
+      runtime_hours = (unsigned)val;
+      str           = end + 1;
+
+      /* Minutes */
+      val             = strtoul(str, &end, 10);
+      if (end == str || *end != ':')
+      {
+         RARCH_ERR("[Runtime] Invalid \"runtime\" entry detected: \"%s\".\n", runtime_log->path);
+         goto end;
+      }
+      runtime_minutes = (unsigned)val;
+      str             = end + 1;
+
+      /* Seconds */
+      val             = strtoul(str, &end, 10);
+      if (end == str || (*end != '\0' && *end != '\n'))
+      {
+         RARCH_ERR("[Runtime] Invalid \"runtime\" entry detected: \"%s\".\n", runtime_log->path);
+         goto end;
+      }
+      runtime_seconds = (unsigned)val;
    }
 
    /* Last played */
    if (context.last_played_string)
    {
-      if (sscanf(context.last_played_string,
-               LOG_FILE_LAST_PLAYED_FORMAT_STR,
-               &last_played_year,
-               &last_played_month,
-               &last_played_day,
-               &last_played_hour,
-               &last_played_minute,
-               &last_played_second) != 6)
-      {
-         RARCH_ERR("[Runtime] Invalid \"last played\" entry detected: \"%s\".\n", runtime_log->path);
-         goto end;
-      }
+      const char *str  = context.last_played_string;
+      char *end        = NULL;
+
+      last_played_year = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != '-')
+         goto invalid;
+      str = end + 1;
+
+      last_played_month = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != '-')
+         goto invalid;
+      str = end + 1;
+
+      last_played_day   = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != ' ')
+         goto invalid;
+      str = end + 1;
+
+      last_played_hour  = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != ':')
+         goto invalid;
+      str = end + 1;
+
+      last_played_minute = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != ':')
+         goto invalid;
+      str = end + 1;
+
+      last_played_second = (unsigned)strtoul(str, &end, 10);
+      if (!end || (*end != '\0' && *end != ' '))
+         goto invalid;
+
+      goto parsed;
+
+invalid:
+      RARCH_ERR("[Runtime] Invalid \"last played\" entry detected: \"%s\".\n", runtime_log->path);
+      goto end;
+
+parsed:
+      ; /* continue normal flow */
    }
 
    /* Play count */
    if (context.play_count)
    {
-      if (sscanf(context.play_count, "%u", &play_count) != 1)
+      char *endptr      = NULL;
+      unsigned long val = strtoul(context.play_count, &endptr, 10);
+      if (*endptr != '\0' || errno == ERANGE)
       {
          RARCH_ERR("[Runtime] Invalid \"play count\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
       }
+      play_count = (unsigned)val;
    }
-
    /* State slot */
    if (context.state_slot)
    {
-      if (sscanf(context.state_slot, "%u", &state_slot) != 1)
+      char *endptr      = NULL;
+      unsigned long val = strtoul(context.state_slot, &endptr, 10);
+      if (*endptr != '\0' || errno == ERANGE)
       {
          RARCH_ERR("[Runtime] Invalid \"state slot\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
       }
+      state_slot = (unsigned)val;
    }
 
    if (     state_slot > 0
@@ -1168,7 +1221,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    /* > Runtime entry */
    snprintf(value_string,
          sizeof(value_string),
-         LOG_FILE_RUNTIME_FORMAT_STR,
+         "%u:%02u:%02u",
          runtime_log->runtime.hours, runtime_log->runtime.minutes,
          runtime_log->runtime.seconds);
 
@@ -1183,7 +1236,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    /* > Last played entry */
    value_string[0] = '\0';
    snprintf(value_string, sizeof(value_string),
-         LOG_FILE_LAST_PLAYED_FORMAT_STR,
+         "%04u-%02u-%02u %02u:%02u:%02u",
          runtime_log->last_played.year, runtime_log->last_played.month,
          runtime_log->last_played.day,
          runtime_log->last_played.hour, runtime_log->last_played.minute,
