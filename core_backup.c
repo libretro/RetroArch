@@ -191,12 +191,10 @@ enum core_backup_type core_backup_get_backup_type(const char *backup_path)
          {
             bool ret = false;
             struct string_list *metadata_list = NULL;
-            const char *backup_filename = NULL;
             const char *src_ext         = NULL;
-
             /* Split the backup filename into its various
              * metadata components */
-            backup_filename = path_basename(backup_path);
+            const char *backup_filename = path_basename(backup_path);
 
             if (string_is_empty(backup_filename))
                return CORE_BACKUP_TYPE_INVALID;
@@ -404,10 +402,7 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
 
    backup_filename = strdup(path_basename(backup_path));
    if (string_is_empty(backup_filename))
-   {
-      free(backup_filename);
       return false;
-   }
 
    /* Ensure base backup filename matches core */
    if (!string_starts_with(backup_filename, core_filename))
@@ -449,21 +444,33 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
       memcpy(buf, p, 4);
       buf[4] = '\0';
       entry->date.year = (unsigned)strtoul(buf, &endptr, 10);
-      if (*endptr != '\0') { free(backup_filename); return false; }
+      if (*endptr != '\0')
+      {
+         free(backup_filename);
+         return false;
+      }
       p += 4;
 
       /* Month (2 digits) */
       memcpy(buf, p, 2);
       buf[2] = '\0';
       entry->date.month = (unsigned)strtoul(buf, &endptr, 10);
-      if (*endptr != '\0') { free(backup_filename); return false; }
+      if (*endptr != '\0')
+      {
+         free(backup_filename);
+         return false;
+      }
       p += 2;
 
       /* Day (2 digits) */
       memcpy(buf, p, 2);
       buf[2] = '\0';
       entry->date.day = (unsigned)strtoul(buf, &endptr, 10);
-      if (*endptr != '\0') { free(backup_filename); return false; }
+      if (*endptr != '\0')
+      {
+         free(backup_filename);
+         return false;
+      }
       p += 2;
 
       /* Skip 'T' separator */
@@ -473,21 +480,33 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
       memcpy(buf, p, 2);
       buf[2] = '\0';
       entry->date.hour = (unsigned)strtoul(buf, &endptr, 10);
-      if (*endptr != '\0') { free(backup_filename); return false; }
+      if (*endptr != '\0')
+      {
+         free(backup_filename);
+         return false;
+      }
       p += 2;
 
       /* Minute (2 digits) */
       memcpy(buf, p, 2);
       buf[2] = '\0';
       entry->date.minute = (unsigned)strtoul(buf, &endptr, 10);
-      if (*endptr != '\0') { free(backup_filename); return false; }
+      if (*endptr != '\0')
+      {
+         free(backup_filename);
+         return false;
+      }
       p += 2;
 
       /* Second (2 digits) */
       memcpy(buf, p, 2);
       buf[2] = '\0';
       entry->date.second = (unsigned)strtoul(buf, &endptr, 10);
-      if (*endptr != '\0') { free(backup_filename); return false; }
+      if (*endptr != '\0')
+      {
+         free(backup_filename);
+         return false;
+      }
       p += 2;
    }
 
