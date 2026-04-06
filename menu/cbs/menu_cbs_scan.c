@@ -46,6 +46,7 @@ void handle_dbscan_finished(retro_task_t *task,
             NULL, menu_st->userdata);
 }
 
+#ifdef HAVE_LIBRETRODB
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -77,6 +78,7 @@ int action_scan_file(const char *path,
 
    return 0;
 }
+#endif
 
 int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
