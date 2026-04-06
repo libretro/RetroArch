@@ -391,6 +391,8 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
 {
    char *backup_filename           = NULL;
    core_backup_list_entry_t *entry = NULL;
+   const char *p                   = NULL;
+   char *endptr                    = NULL;
    unsigned long crc               = 0;
    unsigned backup_mode            = 0;
 
@@ -401,9 +403,11 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
       return false;
 
    backup_filename = strdup(path_basename(backup_path));
-
    if (string_is_empty(backup_filename))
+   {
+      free(backup_filename);
       return false;
+   }
 
    /* Ensure base backup filename matches core */
    if (!string_starts_with(backup_filename, core_filename))
@@ -420,11 +424,93 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
     * - timestamp: YYYYMMDDTHHMMSS */
    entry = &backup_list->entries[backup_list->size];
 
-   if (sscanf(backup_filename + strlen(core_filename),
-       ".%04u%02u%02uT%02u%02u%02u.%08lx.%u",
-       &entry->date.year, &entry->date.month, &entry->date.day,
-       &entry->date.hour, &entry->date.minute, &entry->date.second,
-       &crc, &backup_mode) != 8)
+   p = backup_filename + strlen(core_filename);
+
+   /* Expect '.' separator before timestamp */
+   if (*p != '.')
+   {
+      free(backup_filename);
+      return false;
+   }
+   p++;
+
+   /* Timestamp must be exactly 15 characters: YYYYMMDDTHHMMSS */
+   if (strlen(p) < 15 || p[8] != 'T')
+   {
+      free(backup_filename);
+      return false;
+   }
+
+   /* Parse date/time components */
+   {
+      char buf[5];
+
+      /* Year (4 digits) */
+      memcpy(buf, p, 4);
+      buf[4] = '\0';
+      entry->date.year = (unsigned)strtoul(buf, &endptr, 10);
+      if (*endptr != '\0') { free(backup_filename); return false; }
+      p += 4;
+
+      /* Month (2 digits) */
+      memcpy(buf, p, 2);
+      buf[2] = '\0';
+      entry->date.month = (unsigned)strtoul(buf, &endptr, 10);
+      if (*endptr != '\0') { free(backup_filename); return false; }
+      p += 2;
+
+      /* Day (2 digits) */
+      memcpy(buf, p, 2);
+      buf[2] = '\0';
+      entry->date.day = (unsigned)strtoul(buf, &endptr, 10);
+      if (*endptr != '\0') { free(backup_filename); return false; }
+      p += 2;
+
+      /* Skip 'T' separator */
+      p++;
+
+      /* Hour (2 digits) */
+      memcpy(buf, p, 2);
+      buf[2] = '\0';
+      entry->date.hour = (unsigned)strtoul(buf, &endptr, 10);
+      if (*endptr != '\0') { free(backup_filename); return false; }
+      p += 2;
+
+      /* Minute (2 digits) */
+      memcpy(buf, p, 2);
+      buf[2] = '\0';
+      entry->date.minute = (unsigned)strtoul(buf, &endptr, 10);
+      if (*endptr != '\0') { free(backup_filename); return false; }
+      p += 2;
+
+      /* Second (2 digits) */
+      memcpy(buf, p, 2);
+      buf[2] = '\0';
+      entry->date.second = (unsigned)strtoul(buf, &endptr, 10);
+      if (*endptr != '\0') { free(backup_filename); return false; }
+      p += 2;
+   }
+
+   /* Expect '.' separator before CRC */
+   if (*p != '.')
+   {
+      free(backup_filename);
+      return false;
+   }
+   p++;
+
+   /* Parse 8-character hex CRC */
+   crc = strtoul(p, &endptr, 16);
+   if (endptr != p + 8 || *endptr != '.')
+   {
+      free(backup_filename);
+      return false;
+   }
+   p = endptr + 1;
+
+   /* Parse backup mode */
+   backup_mode = (unsigned)strtoul(p, &endptr, 10);
+   if (endptr == p || *endptr != '\0')
    {
       free(backup_filename);
       return false;
@@ -438,7 +524,6 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
    backup_list->size++;
 
    free(backup_filename);
-
    return true;
 }
 
