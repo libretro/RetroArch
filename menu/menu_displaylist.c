@@ -2681,9 +2681,9 @@ static int menu_displaylist_parse_playlist(
          if (show_inline_core_name)
          {
             /* Both core name and core path must be valid */
-            if (     !string_is_empty(entry->core_name)
+            if (     entry->core_name
                   && memcmp(entry->core_name, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT) + 1)
-                  && !string_is_empty(entry->core_path)
+                  && entry->core_path
                   && memcmp(entry->core_path, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT) + 1))
             {
                _len += strlcpy(
