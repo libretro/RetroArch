@@ -2681,9 +2681,9 @@ static int menu_displaylist_parse_playlist(
          if (show_inline_core_name)
          {
             /* Both core name and core path must be valid */
-            if (     entry->core_name[0] != '\0'
+            if (     !string_is_empty(entry->core_name)
                   && memcmp(entry->core_name, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT) + 1)
-                  && entry->core_path[0] != '\0'
+                  && !string_is_empty(entry->core_path)
                   && memcmp(entry->core_path, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT) + 1))
             {
                _len += strlcpy(
@@ -3686,7 +3686,8 @@ static int menu_displaylist_parse_load_content_settings(
             if (!string_is_empty(playlist_path))
                playlist_file = path_basename_nocompression(playlist_path);
 
-            if (memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, strlen(FILE_PATH_CONTENT_FAVORITES)) == 0)
+            if (  playlist_file
+                && memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, strlen(FILE_PATH_CONTENT_FAVORITES)) == 0)
                add_to_favorites_enabled = false;
          }
 

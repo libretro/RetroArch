@@ -7757,6 +7757,7 @@ rarch_setting_t *menu_setting_find(const char *label)
    for (; setting->type != ST_NONE; setting++)
    {
       if (  setting->type <= ST_GROUP
+         && setting->name
          && string_is_equal(label, setting->name))
       {
          if (!setting->short_description || !*setting->short_description)
