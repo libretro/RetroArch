@@ -1,9 +1,7 @@
 #ifndef MSG_HASH_LBL_STR_H__
 #define MSG_HASH_LBL_STR_H__
 
-#ifdef HAVE_LIBNX
 #define MENU_ENUM_LABEL_SWITCH_CPU_PROFILE_STR "switch_cpu_profile"
-#endif
 #define MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME_STR "accounts_cheevos_username"
 #define MENU_ENUM_LABEL_ACCOUNTS_LIST_STR "accounts_list"
 #define MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS_STR "retro_achievements"
@@ -90,7 +88,6 @@
 #define MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE_STR "audio_wasapi_exclusive_mode"
 #define MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT_STR "audio_wasapi_float_format"
 #define MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH_STR "audio_wasapi_sh_buffer_length"
-#ifdef HAVE_MICROPHONE
 #define MENU_ENUM_LABEL_MICROPHONE_ENABLE_STR "microphone_enable"
 #define MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER_STR "microphone_resampler_driver"
 #define MENU_ENUM_LABEL_MICROPHONE_DEVICE_STR "microphone_device"
@@ -103,7 +100,6 @@
 #define MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT_STR "microphone_wasapi_float_format"
 #define MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH_STR "microphone_wasapi_sh_buffer_length"
 #define MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY_STR "microphone_resampler_quality"
-#endif
 #define MENU_ENUM_LABEL_AUTOSAVE_INTERVAL_STR "autosave_interval"
 #define MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL_STR "replay_checkpoint_interval"
 #define MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE_STR "replay_checkpoint_deserialize"
@@ -113,10 +109,8 @@
 #define MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS_STR "global_core_options"
 #define MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE_STR "auto_shaders_enable"
 #define MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE_STR "block_sram_overwrite"
-#ifdef HAVE_LAKKA
 #define MENU_ENUM_LABEL_BLUETOOTH_ENABLE_STR "bluetooth_enable"
 #define MENU_ENUM_LABEL_TIMEZONE_STR "timezone"
-#endif
 #define MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL_STR "buildbot_assets_url"
 #define MENU_ENUM_LABEL_CACHE_DIRECTORY_STR "cache_directory"
 #define MENU_ENUM_LABEL_CAMERA_ALLOW_STR "camera_allow"
@@ -225,13 +219,11 @@
 #define MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL_STR "core_updater_buildbot_url"
 #define MENU_ENUM_LABEL_CORE_UPDATER_LIST_STR "core_updater_list"
 #define MENU_ENUM_LABEL_CORE_MANAGER_LIST_STR "core_manager_list"
-#ifdef HAVE_MIST
 #define MENU_ENUM_LABEL_CORE_STEAM_INSTALL_STR "core_steam_install"
 #define MENU_ENUM_LABEL_CORE_STEAM_UNINSTALL_STR "core_steam_uninstall"
 #define MENU_ENUM_LABEL_STEAM_SETTINGS_STR "steam_settings"
 #define MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_ENABLE_STR "steam_rich_presence_enable"
 #define MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_FORMAT_STR "steam_rich_presence_format"
-#endif
 #define MENU_ENUM_LABEL_CPU_ARCHITECTURE_STR "system_information_cpu_architecture"
 #define MENU_ENUM_LABEL_CPU_CORES_STR "system_information_cpu_cores"
 #define MENU_ENUM_LABEL_CUSTOM_BIND_STR "custom_bind"
@@ -258,18 +250,14 @@
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND_STR "deferred_dropdown_box_list_input_retropad_bind"
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE_STR "deferred_dropdown_box_list_input_device_type"
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE_STR "deferred_dropdown_box_list_input_select_reserved_device"
-#ifdef ANDROID
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD_STR "deferred_dropdown_box_list_input_select_physical_keyboard"
-#endif
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_STR "deferred_dropdown_box_list_input_description"
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD_STR "deferred_dropdown_box_list_input_description_kbd"
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER_STR "deferred_dropdown_box_list_netplay_mitm_server"
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE_STR "deferred_dropdown_box_list_audio_device"
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MIDI_DEVICE_STR "deferred_dropdown_box_list_midi_device"
-#ifdef HAVE_MICROPHONE
 #define MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE_STR "deferred_dropdown_box_list_microphone_device"
 #define MENU_ENUM_LABEL_DEFERRED_MICROPHONE_SETTINGS_LIST_STR "deferred_microphone_settings_list"
-#endif
 #define MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST_STR "deferred_configurations_list"
 #define MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR "deferred_playlist_list"
 #define MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR "deferred_favorites_list"
@@ -303,15 +291,11 @@
 #define MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET_STR "deferred_core_list_set"
 #define MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST_STR "deferred_core_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST_STR "deferred_core_information_list"
-#ifdef HAVE_MIST
 #define MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_STEAM_LIST_STR "deferred_core_information_steam_list"
-#endif
 #define MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST_STR "deferred_core_updater_list"
 #define MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST_STR "deferred_core_manager_list"
-#ifdef HAVE_MIST
 #define MENU_ENUM_LABEL_DEFERRED_STEAM_SETTINGS_LIST_STR "deferred_steam_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_STEAM_LIST_STR "deferred_core_manager_steam_list"
-#endif
 #define MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR "deferred_database_manager_list"
 #define MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST_STR "deferred_directory_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST_STR "deferred_driver_settings_list"
@@ -335,9 +319,7 @@
 #define MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST_STR "deferred_menu_file_browser_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST_STR "deferred_menu_settings_list"
 #define MENU_ENUM_LABEL_APPICON_SETTINGS_STR "appicon_settings"
-#ifdef _3DS
 #define MENU_ENUM_LABEL_DEFERRED_MENU_BOTTOM_SETTINGS_LIST_STR "deferred_menu_bottom_settings"
-#endif
 #define MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST_STR "deferred_menu_views_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_VIEWS_SETTINGS_LIST_STR "deferred_quick_menu_views_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_SETTINGS_VIEWS_SETTINGS_LIST_STR "deferred_settings_views_settings_list"
@@ -413,9 +395,7 @@
 #define MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE_STR "core_info_cache_enable"
 #define MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS_STR "core_info_savestate_bypass"
 #define MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN_STR "dummy_on_core_shutdown"
-#ifndef HAVE_DYNAMIC
 #define MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT_STR "always_reload_core_on_run_content"
-#endif
 #define MENU_ENUM_LABEL_DYNAMIC_WALLPAPER_STR "menu_dynamic_wallpaper_enable"
 #define MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY_STR "dynamic_wallpapers_directory"
 #define MENU_ENUM_LABEL_FASTFORWARD_RATIO_STR "fastforward_ratio"
@@ -463,12 +443,8 @@
 #define MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL_STR "menu_swap_ok_cancel"
 #define MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL_STR "menu_swap_scroll"
 #define MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE_STR "input_autodetect_enable"
-#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #define MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE_STR "input_nowinkey_enable"
-#endif
-#ifdef ANDROID
 #define MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD_STR "input_android_physical_keyboard"
-#endif
 #define MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE_STR "input_sensors_enable"
 #define MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB_STR "input_auto_mouse_grab"
 #define MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS_STR "input_auto_game_focus"
@@ -478,17 +454,13 @@
 #define MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY_STR "input_sensor_accelerometer_sensitivity"
 #define MENU_ENUM_LABEL_INPUT_SENSOR_ORIENTATION_STR "input_sensor_orientation"
 #define MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY_STR "input_sensor_gyroscope_sensitivity"
-#ifdef GEKKO
 #define MENU_ENUM_LABEL_INPUT_MOUSE_SCALE_STR "input_mouse_scale"
-#endif
 #define MENU_ENUM_LABEL_INPUT_TOUCH_SCALE_STR "input_touch_scale"
-#ifdef UDEV_TOUCH_SUPPORT
 #define MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_POINTER_STR "input_touch_vmouse_pointer"
 #define MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_MOUSE_STR "input_touch_vmouse_mouse"
 #define MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD_STR "input_touch_vmouse_touchpad"
 #define MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TRACKBALL_STR "input_touch_vmouse_trackball"
 #define MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_GESTURE_STR "input_touch_vmouse_gesture"
-#endif
 #define MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT_STR "input_bind_timeout"
 #define MENU_ENUM_LABEL_INPUT_BIND_HOLD_STR "input_bind_hold"
 #define MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT_STR "input_block_timeout"
@@ -584,9 +556,7 @@
 #define MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR "load_recent"
 #define MENU_ENUM_LABEL_LOAD_DISC_STR "load_disc"
 #define MENU_ENUM_LABEL_DUMP_DISC_STR "dump_disc"
-#ifdef HAVE_LAKKA
 #define MENU_ENUM_LABEL_EJECT_DISC_STR "eject_disc"
-#endif
 #define MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL_STR "load_special"
 #define MENU_ENUM_LABEL_LOAD_CONTENT_LIST_STR "load_content"
 #define MENU_ENUM_LABEL_LOAD_STATE_STR "load_state"
@@ -619,9 +589,7 @@
 #define MENU_ENUM_LABEL_MENU_LINEAR_FILTER_STR "menu_linear_filter"
 #define MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION_STR "menu_horizontal_animation"
 #define MENU_ENUM_LABEL_MENU_SETTINGS_STR "menu_settings"
-#ifdef _3DS
 #define MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS_STR "menu_bottom_settings"
-#endif
 #define MENU_ENUM_LABEL_MENU_WALLPAPER_STR "menu_wallpaper"
 #define MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY_STR "menu_wallpaper_opacity"
 #define MENU_ENUM_LABEL_MOUSE_ENABLE_STR "menu_mouse_enable"
@@ -769,9 +737,7 @@
 #define MENU_ENUM_LABEL_RDB_ENTRY_DESCRIPTION_STR "rdb_entry_description"
 #define MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST_STR "deferred_dump_disc_list"
 #define MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST_STR "deferred_load_disc_list"
-#ifdef HAVE_LAKKA
 #define MENU_ENUM_LABEL_DEFERRED_EJECT_DISC_STR "deferred_eject_disc"
-#endif
 #define MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER_STR "rdb_entry_developer"
 #define MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE_STR "rdb_entry_edge_magazine_issue"
 #define MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING_STR "rdb_entry_edge_magazine_rating"
@@ -873,9 +839,7 @@
 #define MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS_STR "download_pl_entry_thumbnails"
 #define MENU_ENUM_LABEL_RUN_STR "collection"
 #define MENU_ENUM_LABEL_RUN_MUSIC_STR "collection_music"
-#ifdef HAVE_LAKKA
 #define MENU_ENUM_LABEL_SAMBA_ENABLE_STR "samba_enable"
-#endif
 #define MENU_ENUM_LABEL_SAVEFILE_DIRECTORY_STR "savefile_directory"
 #define MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX_STR "savestate_auto_index"
 #define MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD_STR "savestate_auto_load"
@@ -957,19 +921,13 @@
 #define MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE_STR "savestates_in_content_dir_enable"
 #define MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE_STR "systemfiles_in_content_dir_enable"
 #define MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE_STR "screenshots_in_content_dir_enable"
-#ifdef HAVE_LAKKA
 #define MENU_ENUM_LABEL_SSH_ENABLE_STR "ssh_enable"
-#ifdef HAVE_RETROFLAG
 #define MENU_ENUM_LABEL_SAFESHUTDOWN_ENABLE_STR "safeshutdown_enable"
-#endif
-#endif
-#ifdef HAVE_LAKKA_SWITCH
 #define MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST_STR "deferred_lakka_switch_options_list"
 #define MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS_STR "Switch_Options"
 #define MENU_ENUM_LABEL_SWITCH_OC_ENABLE_STR "Switch_OC_enable"
 #define MENU_ENUM_LABEL_SWITCH_CEC_ENABLE_STR "Switch_CEC_enable"
 #define MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE_STR "Switch_ERTM_Disable"
-#endif
 #define MENU_ENUM_LABEL_START_CORE_STR "start_core"
 #define MENU_ENUM_LABEL_START_NET_RETROPAD_STR "menu_start_net_retropad"
 #define MENU_ENUM_LABEL_START_VIDEO_PROCESSOR_STR "menu_start_video_processor"
@@ -1043,20 +1001,12 @@
 #define MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX_STR "aspect_ratio_index"
 #define MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X_STR "video_viewport_bias_x"
 #define MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y_STR "video_viewport_bias_y"
-#if defined(RARCH_MOBILE)
 #define MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X_STR "video_viewport_bias_portrait_x"
 #define MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y_STR "video_viewport_bias_portrait_y"
-#endif
-#if defined(DINGUX)
 #define MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT_STR "video_dingux_ipu_keep_aspect"
 #define MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE_STR "video_dingux_ipu_filter_type"
-#if defined(DINGUX_BETA)
 #define MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE_STR "video_dingux_refresh_rate"
-#endif
-#if defined(RS90) || defined(MIYOO)
 #define MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE_STR "video_dingux_rs90_softfilter_type"
-#endif
-#endif
 #define MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION_STR "video_black_frame_insertion"
 #define MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES_STR "video_bfi_dark_frames"
 #define MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES_STR "video_shader_subframes"
@@ -1124,9 +1074,7 @@
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X_STR "video_message_pos_x"
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y_STR "video_message_pos_y"
 #define MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX_STR "video_monitor_index"
-#if defined(WIIU)
 #define MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC_STR "video_wiiu_prefer_drc"
-#endif
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X_STR "video_window_offset_x"
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y_STR "video_window_offset_y"
 #define MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD_STR "video_post_filter_record"
@@ -1294,9 +1242,7 @@
 #define MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_STR "menu_show_load_content"
 #define MENU_ENUM_LABEL_MENU_SHOW_LOAD_DISC_STR "menu_show_load_disc"
 #define MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC_STR "menu_show_dump_disc"
-#ifdef HAVE_LAKKA
 #define MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC_STR "menu_show_eject_disc"
-#endif
 #define MENU_ENUM_LABEL_MENU_SHOW_INFORMATION_STR "menu_show_information"
 #define MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS_STR "menu_show_configurations"
 #define MENU_ENUM_LABEL_MENU_SHOW_HELP_STR "menu_show_help"
@@ -1507,7 +1453,6 @@
 #define MENU_ENUM_LABEL_NO_VIDEOS_AVAILABLE_STR "no_videos"
 #define MENU_ENUM_LABEL_NO_IMAGES_AVAILABLE_STR "no_images"
 #define MENU_ENUM_LABEL_NO_FAVORITES_AVAILABLE_STR "no_favorites"
-#ifdef _3DS
 #define MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE_STR "new3ds_speedup_enable"
 #define MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM_STR "video_3ds_lcd_bottom"
 #define MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE_STR "video_3ds_display_mode"
@@ -1518,7 +1463,6 @@
 #define MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE_STR "bottom_font_color_blue"
 #define MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY_STR "bottom_font_color_opacity"
 #define MENU_ENUM_LABEL_BOTTOM_FONT_SCALE_STR "bottom_font_scale"
-#endif
 #define MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT_STR "playlist_use_old_format"
 #define MENU_ENUM_LABEL_PLAYLIST_COMPRESSION_STR "playlist_compression"
 #define MENU_ENUM_LABEL_MENU_SOUND_OK_STR "menu_sound_ok"
@@ -1604,16 +1548,12 @@
 #define MENU_ENUM_LABEL_SETTINGS_SHOW_PLAYLISTS_STR "settings_show_playlists"
 #define MENU_ENUM_LABEL_SETTINGS_SHOW_USER_STR "settings_show_user"
 #define MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY_STR "settings_show_directory"
-#ifdef HAVE_MIST
 #define MENU_ENUM_LABEL_SETTINGS_SHOW_STEAM_STR "settings_show_steam"
-#endif
 #define MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING_STR "frame_time_counter_reset_after_fastforwarding"
 #define MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE_STR "frame_time_counter_reset_after_load_state"
 #define MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE_STR "frame_time_counter_reset_after_save_state"
 #define MENU_ENUM_LABEL_DELETE_PLAYLIST_STR "delete_playlist"
-#ifdef HAVE_LAKKA
 #define MENU_ENUM_LABEL_LOCALAP_ENABLE_STR "localap_enable"
-#endif
 #define MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE_STR "driver_switch_enable"
 #define MENU_ENUM_LABEL_AI_SERVICE_PAUSE_STR "ai_service_pause"
 #define MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST_STR "deferred_manual_content_scan_list"
@@ -1663,14 +1603,11 @@
 #define MENU_ENUM_LABEL_MIXER_ACTION_REMOVE_STR "mixer_action_remove"
 #define MENU_ENUM_LABEL_MIXER_ACTION_VOLUME_STR "mixer_action_volume"
 #define MENU_ENUM_LABEL_GAMEMODE_ENABLE_STR "game_mode_enable"
-#ifdef HAVE_GAME_AI
 #define MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS_STR "core_game_ai_options"
 #define MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI_STR "quick_menu_show_game_ai"
 #define MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1_STR "game_ai_override_p1"
 #define MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P2_STR "game_ai_override_p2"
 #define MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG_STR "game_ai_show_debug"
-#endif
-#ifdef HAVE_SMBCLIENT
 #define MENU_ENUM_LABEL_SETTINGS_SHOW_SMB_CLIENT_STR "settings_show_smb_client"
 #define MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR "smb_client_settings"
 #define MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST_STR "deferred_smb_client_settings_list"
@@ -1685,6 +1622,5 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS_STR "smb_client_num_contexts"
 #define MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT_STR "smb_client_timeout"
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
-#endif
 
 #endif /* MSG_HASH_LBL_STR_H__ */
