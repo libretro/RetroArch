@@ -996,7 +996,7 @@ static const struct font_glyph *rsx_font_get_glyph(
 {
    rsx_font_t *font = (rsx_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 

@@ -453,7 +453,7 @@ static const struct font_glyph* ps2_font_get_glyph(
 {
    ps2_font_t* font = (ps2_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 

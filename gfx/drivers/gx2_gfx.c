@@ -977,7 +977,7 @@ static const struct font_glyph* gx2_font_get_glyph(void* data, uint32_t code)
 {
    gx2_font_t* font = (gx2_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 

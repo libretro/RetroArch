@@ -356,7 +356,7 @@ static const struct font_glyph *switch_font_get_glyph(
 {
    switch_font_t *font = (switch_font_t *)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void *)font->font_driver, code);
+      return font->font_driver->get_glyph((void *)font->font_data, code);
    return NULL;
 }
 
