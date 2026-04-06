@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
