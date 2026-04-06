@@ -1079,30 +1079,45 @@ static void d3d11_font_render_line(
       unsigned            height,
       unsigned            text_align)
 {
-   size_t i;
    unsigned count;
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+   HRESULT hr;
    const char* msg_end              = msg + msg_len;
    d3d11_sprite_t *v                = NULL;
    int x                            = pre_x;
-   int y                            = roundf((1.0 - pos_y) * height);
+   int y                            = roundf((1.0f - pos_y) * height);
 
+   /* Hoist function pointer and data pointer out of the loop to avoid
+    * repeated dependent loads through font->font_driver->get_glyph. */
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                    = font->font_driver->get_glyph;
+   void *font_data                  = font->font_data;
+
+   /* Precompute reciprocals -- replaces 8 per-glyph divisions with
+    * multiplications (~3-5x faster per op on most hardware). */
+   const float inv_vp_w             = 1.0f / (float)d3d11->viewport.Width;
+   const float inv_vp_h             = 1.0f / (float)d3d11->viewport.Height;
+   const float inv_tex_w            = 1.0f / (float)font->texture.desc.Width;
+   const float inv_tex_h            = 1.0f / (float)font->texture.desc.Height;
+
+   /* msg_len is byte length, which is >= the actual glyph count for
+    * multi-byte UTF-8 sequences.  This makes the capacity check
+    * conservatively safe. */
    if (d3d11->sprites.offset + msg_len > (unsigned)d3d11->sprites.capacity)
       d3d11->sprites.offset = 0;
 
    /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * that only accumulates advance_x -- avoids the redundant glyph lookups
     * and atlas dirty checks that d3d11_font_get_message_width would repeat. */
    if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      int width_accum     = 0;
-      const char *scan    = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
+      int width_accum      = 0;
+      const char *scan     = msg;
+      while (scan < msg_end)
       {
          const struct font_glyph *glyph;
          uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = get_glyph(font_data, code)))
             if (!(glyph = glyph_q))
                continue;
          width_accum += glyph->advance_x;
@@ -1114,51 +1129,59 @@ static void d3d11_font_render_line(
          x -= (int)(width_accum * scale) / 2;
    }
 
-   d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+   hr = d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->sprites.vbo,
+         0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+
+   if (FAILED(hr))
+      return;
+
    v       = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
-   for (i = 0; i < msg_len; i++)
+   /* Walk the string by pointer using utf8_walk -- cleaner and faster than
+    * the old byte-index loop with manual skip adjustment. */
    {
-      const struct font_glyph* glyph;
-      const char *msg_tmp= &msg[i];
-      unsigned   code    = utf8_walk(&msg_tmp);
-      unsigned   skip    = msg_tmp - &msg[i];
+      const char *scan     = msg;
+      d3d11_sprite_t *v_start = v;
 
-      if (skip > 1)
-         i              += skip - 1;
+      while (scan < msg_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
 
-      /* Do something smarter here ... */
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
+         if (!(glyph = get_glyph(font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
 
-      v->pos.x           = (x + (glyph->draw_offset_x * scale)) / (float)d3d11->viewport.Width;
-      v->pos.y           = (y + (glyph->draw_offset_y * scale)) / (float)d3d11->viewport.Height;
-      v->pos.w           = glyph->width               * scale   / (float)d3d11->viewport.Width;
-      v->pos.h           = glyph->height              * scale   / (float)d3d11->viewport.Height;
+         v->pos.x           = (x + (glyph->draw_offset_x * scale)) * inv_vp_w;
+         v->pos.y           = (y + (glyph->draw_offset_y * scale)) * inv_vp_h;
+         v->pos.w           = glyph->width  * scale * inv_vp_w;
+         v->pos.h           = glyph->height * scale * inv_vp_h;
 
-      v->coords.u        = glyph->atlas_offset_x / (float)font->texture.desc.Width;
-      v->coords.v        = glyph->atlas_offset_y / (float)font->texture.desc.Height;
-      v->coords.w        = glyph->width          / (float)font->texture.desc.Width;
-      v->coords.h        = glyph->height         / (float)font->texture.desc.Height;
+         v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
+         v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
+         v->coords.w        = glyph->width           * inv_tex_w;
+         v->coords.h        = glyph->height          * inv_tex_h;
 
-      v->params.scaling  = 1;
-      v->params.rotation = 0;
+         v->params.scaling  = 1;
+         v->params.rotation = 0;
 
-      v->colors[0]       = color;
-      v->colors[1]       = color;
-      v->colors[2]       = color;
-      v->colors[3]       = color;
+         v->colors[0]       = color;
+         v->colors[1]       = color;
+         v->colors[2]       = color;
+         v->colors[3]       = color;
 
-      v++;
+         v++;
 
-      x                 += glyph->advance_x * scale;
-      y                 += glyph->advance_y * scale;
+         x                 += glyph->advance_x * scale;
+         y                 += glyph->advance_y * scale;
+      }
+
+      count = (unsigned)(v - v_start);
    }
 
-   count = v - ((d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset);
-   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
+   d3d11->context->lpVtbl->Unmap(
+         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
 
    if (!count)
       return;
@@ -1184,9 +1207,12 @@ static void d3d11_font_render_line(
    d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable,
          NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
-   d3d11->context->lpVtbl->PSSetShader(d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
-   d3d11->context->lpVtbl->Draw(d3d11->context, count, d3d11->sprites.offset);
-   d3d11->context->lpVtbl->PSSetShader(d3d11->context, d3d11->sprites.shader.ps, NULL, 0);
+   d3d11->context->lpVtbl->PSSetShader(
+         d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
+   d3d11->context->lpVtbl->Draw(
+         d3d11->context, count, d3d11->sprites.offset);
+   d3d11->context->lpVtbl->PSSetShader(
+         d3d11->context, d3d11->sprites.shader.ps, NULL, 0);
 
    d3d11->sprites.offset += count;
 }
