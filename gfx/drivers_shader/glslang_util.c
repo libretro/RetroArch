@@ -314,24 +314,34 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
       const char *name, const char **names, unsigned *index)
 {
    unsigned i;
-   size_t name_len = strlen(name);
 
    for (i = 0; *names; i++, names++)
    {
       enum slang_texture_semantic semantic = (enum slang_texture_semantic)i;
-      size_t _len = strlen(*names);
+      const char *n = name;
+      const char *s = *names;
+
+      /* Compare characters until the name string is exhausted */
+      while (*s && *n == *s)
+      {
+         n++;
+         s++;
+      }
+
+      /* If we didn't reach the end of *names, it's not a match */
+      if (*s)
+         continue;
 
       if (slang_texture_semantic_is_array(semantic))
       {
-         if (name_len >= _len && memcmp(*names, name, _len) == 0)
-         {
-            *index = (unsigned)strtoul(name + _len, NULL, 10);
-            return semantic;
-         }
+         /* Prefix matched — remainder is the array index */
+         *index = (unsigned)strtoul(n, NULL, 10);
+         return semantic;
       }
       else
       {
-         if (name_len == _len && memcmp(name, *names, _len) == 0)
+         /* Exact match required — name must also be exhausted */
+         if (*n == '\0')
          {
             *index = 0;
             return semantic;
@@ -459,7 +469,7 @@ bool glslang_read_shader_file(const char *path,
                }
 
                if (!shader_line_buf_append(output, line_start,
-                        strlen(line_start)))
+                        (size_t)(newline - line_start)))
                {
                   *newline = saved;
                   goto cleanup;
