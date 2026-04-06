@@ -608,10 +608,14 @@ size_t fill_str_dated_filename(char *s,
    size_t _len     = 0;
    time_t cur_time = time(NULL);
    rtime_localtime(&cur_time, &tm_);
-   _len  = strlcpy(s, in_str, len);
-   _len += strftime(s + _len, len - _len, "-%y%m%d-%H%M%S", &tm_);
-   if (ext && *ext != '\0')
-      _len  += strlcpy(s + _len, ext, len - _len);
+   _len      = strlcpy(s, in_str, len);
+   if (!ext || ext[0] == '\0')
+      _len += strftime(s + _len, len - _len, "-%y%m%d-%H%M%S", &tm_);
+   else
+   {
+      _len  += strftime(s + _len, len - _len, "-%y%m%d-%H%M%S.", &tm_);
+      _len  += strlcpy(s + _len, ext,    len - _len);
+   }
    return _len;
 }
 
