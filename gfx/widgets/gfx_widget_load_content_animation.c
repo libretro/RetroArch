@@ -49,6 +49,7 @@ enum gfx_widget_load_content_animation_status
 
 struct gfx_widget_load_content_animation_state
 {
+   /* Hot fields - accessed every frame in _frame() */
    gfx_display_t *p_disp;
    uintptr_t icon_texture;
    unsigned bg_shadow_height;
@@ -94,12 +95,19 @@ struct gfx_widget_load_content_animation_state
 
    enum gfx_widget_load_content_animation_status status;
 
+   size_t content_name_len;
+   size_t system_name_len;
+
+   bool has_icon;
+
+   /* Cold fields - only touched at startup/layout, not per-frame.
+    * Kept at end to avoid polluting cache lines used by _frame(). */
    char content_name[512];
    char system_name[512];
    char icon_directory[DIR_MAX_LENGTH];
    char icon_file[NAME_MAX_LENGTH];
 
-   bool has_icon;
+   char icon_path[PATH_MAX_LENGTH];
 };
 
 typedef struct gfx_widget_load_content_animation_state gfx_widget_load_content_animation_state_t;
@@ -150,12 +158,16 @@ static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st =
 
    GFX_WIDGET_LOAD_CONTENT_IDLE,       /* status */
 
+   0,                                  /* content_name_len */
+   0,                                  /* system_name_len */
+
+   false,                              /* has_icon */
+
    {'\0'},                             /* content_name */
    {'\0'},                             /* system_name */
    {'\0'},                             /* icon_directory */
    {'\0'},                             /* icon_file */
-
-   false                               /* has_icon */
+   {'\0'}                              /* icon_path */
 };
 
 /* Utilities */
@@ -182,6 +194,8 @@ static void gfx_widget_load_content_animation_reset(void)
    state->has_icon           = false;
    state->content_name_width = 0;
    state->system_name_width  = 0;
+   state->content_name_len   = 0;
+   state->system_name_len    = 0;
 
    /* Unload any icon texture */
    if (state->icon_texture)
@@ -290,8 +304,6 @@ bool gfx_widget_start_load_content_animation(void)
    bool has_system                                  = false;
    bool has_db_name                                 = false;
 
-   char icon_path[PATH_MAX_LENGTH];
-
    /* To ensure we leave the widget in a well defined
     * state, perform a reset before parsing variables */
    gfx_widget_load_content_animation_reset();
@@ -366,8 +378,8 @@ bool gfx_widget_start_load_content_animation(void)
          /* Get entry label */
          if (!string_is_empty(entry->label))
          {
-            strlcpy(state->content_name, entry->label,
-                  sizeof(state->content_name));
+            state->content_name_len = strlcpy(state->content_name,
+                  entry->label, sizeof(state->content_name));
             has_content = true;
          }
 
@@ -376,6 +388,7 @@ bool gfx_widget_start_load_content_animation(void)
          {
             fill_pathname(state->system_name, entry->db_name, "",
                   sizeof(state->system_name));
+            state->system_name_len = strlen(state->system_name);
 
             has_system  = true;
             has_db_name = true;
@@ -410,6 +423,7 @@ bool gfx_widget_start_load_content_animation(void)
             /* Check whether a valid system name was found */
             if (!string_is_empty(state->system_name))
             {
+               state->system_name_len = system_name_len;
                has_system  = true;
                has_db_name = true;
             }
@@ -420,8 +434,11 @@ bool gfx_widget_start_load_content_animation(void)
    /* If we haven't yet set the content name,
     * use content file name as a fallback */
    if (!has_content)
+   {
       fill_pathname(state->content_name, path_basename(content_path),
             "", sizeof(state->content_name));
+      state->content_name_len = strlen(state->content_name);
+   }
 
    /* Check whether system name has been set or if the name
     * is a copy of info file database with multiple entries */
@@ -429,17 +446,22 @@ bool gfx_widget_start_load_content_animation(void)
    {
       /* Use core display name, if available */
       if (!string_is_empty(core_info->display_name))
-         strlcpy(state->system_name, core_info->display_name,
-               sizeof(state->system_name));
+         state->system_name_len = strlcpy(state->system_name,
+               core_info->display_name, sizeof(state->system_name));
       /* Otherwise, just use 'RetroArch' as a fallback */
       else
-         strlcpy(state->system_name, "RetroArch",
-               sizeof(state->system_name));
+         state->system_name_len = strlcpy(state->system_name,
+               "RetroArch", sizeof(state->system_name));
    }
 
    /* > Content name has been determined
     * > System name has been determined
     * All that remains is the icon */
+
+   /* Skip all icon filesystem checks if no icon directory
+    * is set */
+   if (string_is_empty(state->icon_directory))
+      goto icon_done;
 
    /* Get icon filename
     * > Use db_name, if available */
@@ -450,11 +472,11 @@ bool gfx_widget_start_load_content_animation(void)
             ".png",
             sizeof(state->icon_file));
 
-      fill_pathname_join_special(icon_path,
+      fill_pathname_join_special(state->icon_path,
             state->icon_directory, state->icon_file,
-            sizeof(icon_path));
+            sizeof(state->icon_path));
 
-      state->has_icon = path_is_valid(icon_path);
+      state->has_icon = path_is_valid(state->icon_path);
    }
 
    /* > If db_name is unavailable (or was extracted
@@ -481,11 +503,11 @@ bool gfx_widget_start_load_content_animation(void)
                ".png",
                sizeof(state->icon_file));
 
-         fill_pathname_join_special(icon_path,
+         fill_pathname_join_special(state->icon_path,
                state->icon_directory, state->icon_file,
-               sizeof(icon_path));
+               sizeof(state->icon_path));
 
-         state->has_icon = path_is_valid(icon_path);
+         state->has_icon = path_is_valid(state->icon_path);
       }
    }
 
@@ -494,20 +516,23 @@ bool gfx_widget_start_load_content_animation(void)
    if (!state->has_icon)
    {
       strlcpy(state->icon_file, "retroarch.png", sizeof(state->icon_file));
-      fill_pathname_join_special(icon_path,
+      fill_pathname_join_special(state->icon_path,
             state->icon_directory, state->icon_file,
-            sizeof(icon_path));
+            sizeof(state->icon_path));
 
-      state->has_icon = path_is_valid(icon_path);
+      state->has_icon = path_is_valid(state->icon_path);
    }
 
+icon_done:
+
    /* Truncate long system names */
-   if (strlen(state->system_name) > 54)
+   if (state->system_name_len > 54)
    {
-      state->system_name[51] = '.';
-      state->system_name[52] = '.';
-      state->system_name[53] = '.';
-      state->system_name[54] = '\0';
+      state->system_name[51]  = '.';
+      state->system_name[52]  = '.';
+      state->system_name[53]  = '.';
+      state->system_name[54]  = '\0';
+      state->system_name_len  = 54;
    }
 
    /* All parameters are initialised
@@ -533,13 +558,14 @@ static void gfx_widget_load_content_animation_calculate(
    gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
    gfx_widget_font_data_t *font_bold    = &p_dispwidget->gfx_widget_fonts.bold;
 
-   /* Get overall text width */
+   /* Get overall text width
+    * > Uses cached string lengths to avoid per-call strlen() */
    content_name_width = font_driver_get_message_width(
          font_bold->font, state->content_name,
-         strlen(state->content_name), 1.0f);
+         state->content_name_len, 1.0f);
    system_name_width = font_driver_get_message_width(
          font_regular->font, state->system_name,
-         strlen(state->system_name), 1.0f);
+         state->system_name_len, 1.0f);
 
    state->content_name_width = (content_name_width > 0) ?
          (unsigned)content_name_width : 0;
@@ -638,6 +664,16 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       /* Calculate positions */
       gfx_widget_load_content_animation_calculate(p_dispwidget, state);
 
+      /* Pre-set color alpha values for the bg_alpha == 1.0
+       * case (FADE_IN, SLIDE, WAIT states). The _frame() function
+       * will only recalculate these when bg_alpha < 1.0 (FADE_OUT). */
+      state->bg_shadow_top_color[3]     = state->bg_shadow_alpha;
+      state->bg_shadow_top_color[7]     = state->bg_shadow_alpha;
+      state->bg_shadow_bottom_color[11] = state->bg_shadow_alpha;
+      state->bg_shadow_bottom_color[15] = state->bg_shadow_alpha;
+      gfx_display_set_alpha(state->bg_color, state->bg_alpha);
+      gfx_display_set_alpha(state->bg_underlay_color, state->bg_underlay_alpha);
+
       /* Trigger fade in animation */
       state->alpha                 = 0.0f;
 
@@ -702,7 +738,11 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
             bg_alpha   = 1.0f;
             icon_alpha = 1.0f;
             /* Use 'slide_offset' as the alpha value
-             * > Saves having to trigger two animations */
+             * > Saves having to trigger two animations
+             * NOTE: This couples text opacity to the slide position
+             * (EASING_IN_OUT_QUAD curve). If a different fade-in curve
+             * for text is ever needed, a separate animation must be
+             * added with its own float target. */
             text_alpha = state->slide_offset;
             icon_x     = state->icon_x_start + (state->slide_offset *
                   (state->icon_x_end - state->icon_x_start));
@@ -736,15 +776,23 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
       /* Draw background */
       if (bg_alpha > 0.0f)
       {
-         /* > Set opacity */
-         state->bg_shadow_top_color[3]     = bg_alpha * state->bg_shadow_alpha;
-         state->bg_shadow_top_color[7]     = bg_alpha * state->bg_shadow_alpha;
-         state->bg_shadow_bottom_color[11] = bg_alpha * state->bg_shadow_alpha;
-         state->bg_shadow_bottom_color[15] = bg_alpha * state->bg_shadow_alpha;
+         /* > Set opacity
+          * Only recompute alpha values when bg_alpha < 1.0
+          * (FADE_OUT state). During FADE_IN, SLIDE, WAIT and BEGIN,
+          * bg_alpha is 1.0 and the default color values already
+          * have the correct opacity from layout/init. */
+         if (bg_alpha < 1.0f)
+         {
+            float shadow_a = bg_alpha * state->bg_shadow_alpha;
+            state->bg_shadow_top_color[3]     = shadow_a;
+            state->bg_shadow_top_color[7]     = shadow_a;
+            state->bg_shadow_bottom_color[11] = shadow_a;
+            state->bg_shadow_bottom_color[15] = shadow_a;
 
-         gfx_display_set_alpha(state->bg_color, bg_alpha * state->bg_alpha);
-         gfx_display_set_alpha(state->bg_underlay_color,
-               bg_alpha * state->bg_underlay_alpha);
+            gfx_display_set_alpha(state->bg_color, bg_alpha * state->bg_alpha);
+            gfx_display_set_alpha(state->bg_underlay_color,
+                  bg_alpha * state->bg_underlay_alpha);
+         }
 
          /* > Background underlay */
          gfx_display_draw_quad(
@@ -853,9 +901,13 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
       }
 
       /* Draw text */
-      if (text_alpha > 0.0f)
+      /* Use a minimum threshold that maps to at least 1/255
+       * alpha. Values below this produce text_alpha_int == 0,
+       * meaning fully transparent text - skip the draw entirely. */
+      if (text_alpha > (1.0f / 255.0f))
       {
          unsigned text_alpha_int = (unsigned)(text_alpha * 255.0f);
+         bool text_drawn         = false;
 
          /* > Set opacity */
          state->content_name_color = COLOR_TEXT_ALPHA(state->content_name_color,
@@ -864,48 +916,60 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                text_alpha_int);
 
          /* > Content name */
-         gfx_widgets_draw_text(
-               font_bold,
-               state->content_name,
-               text_x,
-               state->content_name_y,
-               video_width,
-               video_height,
-               state->content_name_color,
-               TEXT_ALIGN_LEFT,
-               true);
+         if (state->content_name_len > 0)
+         {
+            gfx_widgets_draw_text(
+                  font_bold,
+                  state->content_name,
+                  text_x,
+                  state->content_name_y,
+                  video_width,
+                  video_height,
+                  state->content_name_color,
+                  TEXT_ALIGN_LEFT,
+                  true);
+            text_drawn = true;
+         }
 
          /* > System name */
-         gfx_widgets_draw_text(
-               font_regular,
-               state->system_name,
-               text_x,
-               state->system_name_y,
-               video_width,
-               video_height,
-               state->system_name_color,
-               TEXT_ALIGN_LEFT,
-               true);
-
-         /* If the message queue is active, must flush the
-          * text here to avoid overlaps */
-         if (msg_queue_size > 0)
+         if (state->system_name_len > 0)
          {
-            gfx_widgets_flush_text(video_width, video_height, font_regular);
-            gfx_widgets_flush_text(video_width, video_height, font_bold);
+            gfx_widgets_draw_text(
+                  font_regular,
+                  state->system_name,
+                  text_x,
+                  state->system_name_y,
+                  video_width,
+                  video_height,
+                  state->system_name_color,
+                  TEXT_ALIGN_LEFT,
+                  true);
+            text_drawn = true;
          }
-         /* Must also flush text if it overlaps the edge of
-          * the screen (otherwise it will bleed through the
-          * 'margin' shadows) */
-         else
-         {
-            if (state->system_name_width > video_width -
-                  (unsigned)text_x - state->margin_shadow_width)
-               gfx_widgets_flush_text(video_width, video_height, font_regular);
 
-            if (state->content_name_width > video_width -
-                  (unsigned)text_x - state->margin_shadow_width)
+         /* Only flush text if we actually drew something */
+         if (text_drawn)
+         {
+            /* If the message queue is active, must flush the
+             * text here to avoid overlaps */
+            if (msg_queue_size > 0)
+            {
+               gfx_widgets_flush_text(video_width, video_height, font_regular);
                gfx_widgets_flush_text(video_width, video_height, font_bold);
+            }
+            /* Must also flush text if it overlaps the edge of
+             * the screen (otherwise it will bleed through the
+             * 'margin' shadows) */
+            else
+            {
+               if (state->system_name_width > video_width -
+                     (unsigned)text_x - state->margin_shadow_width)
+                  gfx_widgets_flush_text(video_width, video_height, font_regular);
+
+               if (state->content_name_width > video_width -
+                     (unsigned)text_x - state->margin_shadow_width)
+                  gfx_widgets_flush_text(video_width, video_height, font_bold);
+            }
          }
       }
 
