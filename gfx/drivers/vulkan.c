@@ -1772,7 +1772,7 @@ static void *vulkan_font_init(void *data,
    return font;
 }
 
-static int vulkan_get_message_width(void *data, const char *msg,
+static int vulkan_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
    const struct font_glyph* glyph_q = NULL;
@@ -1839,7 +1839,8 @@ static void vulkan_font_render_line(vk_t *vk,
 
    /* For right/center alignment, compute width with a lightweight pass
     * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that vulkan_get_message_width would repeat. */
+    * and atlas dirty checks that vulkan_font_get_message_width 
+    * would repeat. */
    if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
       int width_accum     = 0;
@@ -2101,7 +2102,7 @@ static const struct font_glyph *vulkan_font_get_glyph(
    return glyph;
 }
 
-static bool vulkan_get_line_metrics(void* data,
+static bool vulkan_font_get_line_metrics(void* data,
       struct font_line_metrics **metrics)
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
@@ -2121,8 +2122,8 @@ font_renderer_t vulkan_raster_font = {
    vulkan_font_get_glyph,
    NULL,                            /* bind_block */
    NULL,                            /* flush_block */
-   vulkan_get_message_width,
-   vulkan_get_line_metrics
+   vulkan_font_get_message_width,
+   vulkan_font_get_line_metrics
 };
 
 /*

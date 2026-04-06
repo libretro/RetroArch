@@ -851,14 +851,29 @@ static void gl2_raster_font_render_line(gl2_t *gl,
    float inv_win_width  = 1.0f / gl->vp.width;
    float inv_win_height = 1.0f / gl->vp.height;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that gl2_raster_font_get_message_width 
+    * would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= gl2_raster_font_get_message_width(font, msg, msg_len, scale);
-         break;
-      case TEXT_ALIGN_CENTER:
-         x -= gl2_raster_font_get_message_width(font, msg, msg_len, scale) / 2.0;
-         break;
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
+
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    glyph_q = font->font_driver->get_glyph(font->font_data, '?');
@@ -3205,7 +3220,7 @@ static void gl2_render_osd_background(gl2_t *gl, bool video_scale_integer, const
    settings_t *settings    = config_get_ptr();
    float video_font_size   = settings->floats.video_font_size;
    int msg_width           =
-      font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
+      gl2_raster_font_get_message_width(gl, msg, strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
    float x                 = settings->floats.video_msg_pos_x;

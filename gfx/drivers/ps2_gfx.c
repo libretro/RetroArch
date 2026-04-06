@@ -232,40 +232,58 @@ static int ps2_font_get_message_width(void* data, const char* msg,
 
 static void ps2_font_render_line(
       ps2_video_t *ps2,
-      ps2_font_t* font, const char* msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
+      ps2_font_t* font,
+      const struct font_glyph* glyph_q,
+      const char* msg,
+      size_t msg_len,
+      float scale,
+      const unsigned int color,
+      float pos_x,
       float pos_y,
-      unsigned width, unsigned height, unsigned text_align)
+      unsigned width,
+      unsigned height,
+      unsigned text_align)
 {
    int i;
-   const struct font_glyph* glyph_q = NULL;
-   int x            = roundf(pos_x * width);
-   int y            = roundf((1.0f - pos_y) * height);
-   int delta_x      = 0;
-   int delta_y      = 0;
+   const char* msg_end = msg + msg_len;
+   int x               = roundf(pos_x * width);
+   int y               = roundf((1.0f - pos_y) * height);
+   int delta_x         = 0;
+   int delta_y         = 0;
    /* We need to >> 1, because GS_SETREG_RGBAQ expects 0x80 as max color */
-   int color_a      = (int)(((color & 0xFF000000) >> 24) >> 2);
-   int color_b      = (int)(((color & 0x00FF0000) >> 16) >> 1);
-   int color_g      = (int)(((color & 0x0000FF00) >> 8)  >> 1);
-   int color_r      = (int)(((color & 0x000000FF) >> 0)  >> 1);
+   int color_a         = (int)(((color & 0xFF000000) >> 24) >> 2);
+   int color_b         = (int)(((color & 0x00FF0000) >> 16) >> 1);
+   int color_g         = (int)(((color & 0x0000FF00) >> 8)  >> 1);
+   int color_r         = (int)(((color & 0x000000FF) >> 0)  >> 1);
 
    /* Enable Alpha for font */
    gsKit_set_primalpha(ps2->gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
    ps2->gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
    gsKit_set_test(ps2->gsGlobal, GS_ATEST_ON);
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that ps2_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= ps2_font_get_message_width(font, msg, msg_len, scale);
-         break;
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-      case TEXT_ALIGN_CENTER:
-         x -= ps2_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
-
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -330,15 +348,17 @@ static void ps2_font_render_message(
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    int lines                              = 0;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = (float)line_metrics->height * scale / (float)height;
+
    for (;;)
    {
       const char* scan = msg;
       while (*scan && *scan != '\n')
          scan++;
-      ps2_font_render_line(ps2, font, msg, (size_t)(scan - msg),
+      ps2_font_render_line(ps2, font, glyph_q, msg, (size_t)(scan - msg),
             scale, color, pos_x, pos_y - (float)lines * line_height,
             width, height, text_align);
       if (!*scan)

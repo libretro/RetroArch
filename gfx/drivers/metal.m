@@ -1038,6 +1038,7 @@ font_renderer_t metal_raster_font = {
 - (void)_renderMessage:(const char *)msg
                   data:(void*)data
 {
+   MetalRaster *r           = (__bridge_transfer MetalRaster *)data;
    settings_t *settings     = config_get_ptr();
    bool msg_bgcolor_enable  = settings->bools.video_msg_bgcolor_enable;
 
@@ -1045,7 +1046,7 @@ font_renderer_t metal_raster_font = {
    {
       float r, g, b, a;
       int msg_width         =
-         font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
+         metal_raster_font_get_message_width(r, msg, strlen(msg), 1.0f);
       float font_size       = settings->floats.video_font_size;
       unsigned bgcolor_red
                             = settings->uints.video_msg_bgcolor_red;

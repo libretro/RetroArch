@@ -925,8 +925,8 @@ static int gl3_raster_font_get_message_width(void *data, const char *msg,
 {
    const struct font_glyph* glyph_q = NULL;
    gl3_raster_t *font   = (gl3_raster_t*)data;
-   const char* msg_end = msg + msg_len;
-   int delta_x         = 0;
+   const char* msg_end  = msg + msg_len;
+   int delta_x          = 0;
 
    if (     !font
          || !font->font_driver
@@ -1042,14 +1042,29 @@ static void gl3_raster_font_render_line(gl3_t *gl,
    int delta_x          = 0;
    int delta_y          = 0;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that gl3_raster_font_get_message_width 
+    * would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= gl3_raster_font_get_message_width(font, msg, msg_len, scale);
-         break;
-      case TEXT_ALIGN_CENTER:
-         x -= gl3_raster_font_get_message_width(font, msg, msg_len, scale) / 2.0;
-         break;
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
+
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    while (msg < msg_end)

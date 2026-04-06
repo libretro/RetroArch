@@ -174,12 +174,18 @@ static int switch_font_get_message_width(void *data, const char *msg,
 
 static void switch_font_render_line(
       switch_video_t *sw,
-      switch_font_t *font, const char *msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
-      float pos_y, unsigned text_align)
+      switch_font_t *font,
+      const struct font_glyph* glyph_q,
+      const char *msg,
+      size_t msg_len,
+      float scale,
+      const unsigned int color,
+      float pos_x,
+      float pos_y,
+      unsigned text_align)
 {
    int i;
-   const struct font_glyph* glyph_q = NULL;
+   const char* msg_end              = msg + msg_len;
    int delta_x                      = 0;
    int delta_y                      = 0;
    unsigned fb_width                = sw->vp.full_width;
@@ -187,17 +193,30 @@ static void switch_font_render_line(
    int x                            = roundf(pos_x * fb_width);
    int y                            = roundf((1.0f - pos_y) * fb_height);
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that switch_font_get_message_width 
+    * would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= switch_font_get_message_width(font, msg, msg_len, scale);
-         break;
-      case TEXT_ALIGN_CENTER:
-         x -= switch_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
-   }
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
+   }
 
    for (i = 0; i < msg_len; i++)
    {
@@ -254,6 +273,8 @@ static void switch_font_render_message(
    float line_height;
    const char *start                      = msg;
    struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph* glyph_q       =
+font->font_driver->get_glyph(font->font_data, '?');
    int lines                              = 0;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = scale / line_metrics->height;
@@ -263,7 +284,7 @@ static void switch_font_render_message(
       {
          size_t msg_len = (size_t)(msg - start);
          if (msg_len <= AVG_GLPYH_LIMIT)
-            switch_font_render_line(sw, font, start, msg_len,
+            switch_font_render_line(sw, font, glyph_q, start, msg_len,
                   scale, color, pos_x, pos_y - (float)lines * line_height,
                   text_align);
          if (*msg == '\0')

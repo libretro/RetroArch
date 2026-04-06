@@ -520,36 +520,53 @@ static int ctr_font_get_message_width(void* data, const char* msg,
 
 static void ctr_font_render_line(
       ctr_video_t *ctr,
-      ctr_font_t* font, const char* msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
+      ctr_font_t* font,
+      const struct font_glyph* glyph_q,
+      const char* msg,
+      size_t msg_len,
+      float scale,
+      const unsigned int color,
+      float pos_x,
       float pos_y,
-      unsigned width, unsigned height, unsigned text_align)
+      unsigned width,
+      unsigned height,
+      unsigned text_align)
 {
    unsigned int i;
-   const struct font_glyph* glyph_q = NULL;
    ctr_vertex_t* v  = NULL;
    int delta_x      = 0;
    int delta_y      = 0;
    int x            = roundf(pos_x * width);
    int y            = roundf((1.0f - pos_y) * height);
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that ctr_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x += width - ctr_font_get_message_width(font, msg, msg_len, scale);
-         break;
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-      case TEXT_ALIGN_CENTER:
-         x += width / 2 -
-            ctr_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    if ((ctr->vertex_cache.size - (ctr->vertex_cache.current - ctr->vertex_cache.buffer)) < msg_len)
       ctr->vertex_cache.current = ctr->vertex_cache.buffer;
 
    v       = ctr->vertex_cache.current;
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -661,6 +678,7 @@ static void ctr_font_render_message(
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    int lines                              = 0;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = (float)line_metrics->height * scale / (float)height;
@@ -670,7 +688,7 @@ static void ctr_font_render_message(
       while (*end && *end != '\n')
          end++;
 
-      ctr_font_render_line(ctr, font, msg, (size_t)(end - msg),
+      ctr_font_render_line(ctr, font, glyph_q, msg, (size_t)(end - msg),
             scale, color, pos_x, pos_y - (float)lines * line_height,
             width, height, text_align);
       if (!*end)

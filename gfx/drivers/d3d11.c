@@ -1082,6 +1082,7 @@ static void d3d11_font_render_line(
    size_t i;
    unsigned count;
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+   const char* msg_end              = msg + msg_len;
    d3d11_sprite_t *v                = NULL;
    int x                            = pre_x;
    int y                            = roundf((1.0 - pos_y) * height);
@@ -1089,15 +1090,28 @@ static void d3d11_font_render_line(
    if (d3d11->sprites.offset + msg_len > (unsigned)d3d11->sprites.capacity)
       d3d11->sprites.offset = 0;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that d3d11_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= d3d11_font_get_message_width(font, msg, msg_len, scale);
-         break;
+      int width_accum     = 0;
+      const char *scan    = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-      case TEXT_ALIGN_CENTER:
-         x -= d3d11_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    d3d11->context->lpVtbl->Map(
