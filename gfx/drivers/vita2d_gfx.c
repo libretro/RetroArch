@@ -381,6 +381,7 @@ static void vita2d_font_render_line(
    int y           = roundf((1.0f - pos_y) * height);
    int delta_x     = 0;
    int delta_y     = 0;
+   const char* msg_end = msg + msg_len;
 
    /* For right/center alignment, compute width with a lightweight pass
     * that only accumulates advance_x — avoids the redundant glyph lookups
