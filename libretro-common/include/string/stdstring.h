@@ -117,11 +117,20 @@ static INLINE size_t strlen_size(const char *str, size_t len)
 static INLINE bool string_is_equal_case_insensitive(const char *a,
       const char *b)
 {
-   if (a == b)
-      return true;
+   int result              = 0;
+   const unsigned char *p1 = (const unsigned char*)a;
+   const unsigned char *p2 = (const unsigned char*)b;
+
    if (!a || !b)
       return false;
-   return strcasecmp(a, b) == 0;
+   if (p1 == p2)
+      return true;
+
+   while ((result = tolower (*p1) - tolower (*p2++)) == 0)
+      if (*p1++ == '\0')
+         break;
+
+   return (result == 0);
 }
 
 static INLINE bool string_starts_with_case_insensitive(const char *str,
