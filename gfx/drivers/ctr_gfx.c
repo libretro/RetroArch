@@ -533,11 +533,12 @@ static void ctr_font_render_line(
       unsigned text_align)
 {
    unsigned int i;
-   ctr_vertex_t* v  = NULL;
-   int delta_x      = 0;
-   int delta_y      = 0;
-   int x            = roundf(pos_x * width);
-   int y            = roundf((1.0f - pos_y) * height);
+   const char* msg_end = msg + msg_len;
+   ctr_vertex_t* v     = NULL;
+   int delta_x         = 0;
+   int delta_y         = 0;
+   int x               = roundf(pos_x * width);
+   int y               = roundf((1.0f - pos_y) * height);
 
    /* For right/center alignment, compute width with a lightweight pass
     * that only accumulates advance_x — avoids the redundant glyph lookups
