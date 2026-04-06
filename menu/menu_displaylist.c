@@ -6227,7 +6227,7 @@ static void bluetooth_scan_callback(retro_task_t *task,
    unsigned i;
    struct string_list *device_list   = NULL;
    const char *msg_connect_bluetooth =
-      MENU_ENUM_LABEL_CONNECT_BLUETOOTH_STR;
+      msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_BLUETOOTH);
    const char *path                  = NULL;
    const char *label                 = NULL;
    unsigned menu_type                = 0;
@@ -7671,8 +7671,7 @@ unsigned menu_displaylist_build_list(
                   {
                      const char *device = device_list->elems[i].data;
                      if (menu_entries_append(list,
-                              device,
-                              MENU_ENUM_LABEL_CONNECT_BLUETOOTH_STR,
+                              device, msg_connect_bluetooth,
                               MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
                               MENU_BLUETOOTH, 0, 0, NULL))
                         count++;
