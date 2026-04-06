@@ -1340,6 +1340,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    "ระบบ"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "จังหวะเวลา"
+   )
 
 #ifdef HAVE_MIST
 MSG_HASH(
@@ -1358,49 +1362,921 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
    "ไดรเวอร์อินพุตที่ใช้ ไดรเวอร์วิดีโอบางตัวอาจบังคับให้ต้องใช้ไดรเวอร์อินพุตที่ต่างออกไป (ต้องเริ่มระบบใหม่)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "ไดรเวอร์ udev ใช้อ่านข้อมูล evdev เพื่อรองรับคีย์บอร์ด รวมถึงรองรับคีย์บอร์ดคอลแบ็ก เมาส์ และทัชแพด\nโดยค่าเริ่มต้นในหลาย Distro ไฟล์ใน /dev/input จะเข้าถึงได้เฉพาะ root (โหมด 600) คุณสามารถตั้งกฎ udev เพ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "ไดรเวอร์อินพุต linuxraw จำเป็นต้องใช้งานผ่าน TTY\nระบบจะอ่านข้อมูลคีย์บอร์ดโดยตรงจาก TTY ซึ่งใช้งานง่ายแต่ไม่ยืดหยุ่นเท่า udev และไม่รองรับเมาส์\nไดรเวอร์นี้ใช้จอยสติ๊ก API รุ่นเก่า (/dev/input/js)*ฉบ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "ไดรเวอร์อินพุต\nไดรเวอร์วิดีโออาจบังคับให้ต้องใช้ไดรเวอร์อินพุตที่ต่างออกไปฉบับย่อ:ไดรเวอร์อินพุต\nไดรเวอร์วิดีโอบางตัวอาจบังคับเปลี่ยนตามความเหมาะสม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   "คอนโทรลเลอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   "ไดรเวอร์คอนโทรลเลอร์ที่ใช้ (จำเป็นต้องเริ่มระบบใหม่)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "ไดรเวอร์คอนโทรลเลอร์ DirectInput"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "ไดรเวอร์อุปกรณ์ควบคุม (HID) แบบเข้าถึงฮาร์ดแวร์โดยตรง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "ไดรเวอร์ Linux แบบ Raw ใช้จอยสติ๊ก API รุ่นเก่า ควรใช้ udev แทนหากทำได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "ไดรเวอร์ Linux สำหรับคอนโทรลเลอร์ที่เชื่อมต่อผ่านพอร์ตขนานโดยใช้อะแดปเตอร์พิเศษ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "ไดรเวอร์คอนโทรลเลอร์ที่ทำงานบนไลบรารี SDL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "ไดรเวอร์คอนโทรลเลอร์ที่ใช้ร่วมกับอินเทอร์เฟซ udev ซึ่งโดยทั่วไปแนะนำให้ใช้งาน ไดรเวอร์นี้ใช้ evdev joypad API รุ่นล่าสุดเพื่อรองรับจอยสติ๊ก รวมถึงรองรับการเสียบเข้า-ถอดออกทันที (Hotplugging) และ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "ไดรเวอร์คอนโทรลเลอร์ XInput ส่วนใหญ่ใช้สำหรับคอนโทรลเลอร์ Xbox"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "วิดีโอ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   "ไดรเวอร์วิดีโอที่จะใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "ไดรเวอร์ OpenGL 1.x เวอร์ชันขั้นต่ำที่ต้องการ: OpenGL 1.1 ไม่รองรับแชเดอร์ (Shaders) ควรใช้ไดรเวอร์ OpenGL เวอร์ชันที่ใหม่กว่าแทน หากทำได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "ไดรเวอร์ OpenGL 2.x ไดรเวอร์นี้อนุญาตให้ใช้งาน libretro GL cores ร่วมกับซอฟต์แวร์เรนเดอร์คอร์ได้ เวอร์ชันขั้นต่ำที่ต้องการ: OpenGL 2.0 หรือ OpenGLES 2.0 รองรับรูปแบบแชเดอร์ GLSL ควรใช้ไดรเวอร์ glcore แทน หากทำได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "ไดรเวอร์ OpenGL 3.x ไดรเวอร์นี้อนุญาตให้ใช้งาน libretro GL cores ร่วมกับซอฟต์แวร์เรนเดอร์คอร์ได้ เวอร์ชันขั้นต่ำที่ต้องการ: OpenGL 3.2 หรือ OpenGLES 3.0+ รองรับรูปแบบแชเดอร์ Slang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "ไดรเวอร์ Vulkan ไดรเวอร์นี้อนุญาตให้ใช้งาน libretro Vulkan cores ร่วมกับซอฟต์แวร์เรนเดอร์คอร์ได้ เวอร์ชันขั้นต่ำที่ต้องการ: Vulkan 1.0 รองรับ HDR และแชเดอร์ Slang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "ไดรเวอร์ซอฟต์แวร์เรนเดอร์ SDL 1.2 ประสิทธิภาพถูกมองว่าอยู่ในระดับที่ไม่เหมาะสม ควรพิจารณาใช้ตัวเลือกนี้เป็นทางเลือกสุดท้ายเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "ไดรเวอร์ซอฟต์แวร์เรนเดอร์ SDL 2 ประสิทธิภาพสำหรับการประมวลผล libretro core ด้วยซอฟต์แวร์จะขึ้นอยู่กับการทำงานของ SDL บนแพลตฟอร์มที่คุณใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "ไดรเวอร์ Metal สำหรับแพลตฟอร์มของ Apple รองรับรูปแบบ Shader แบบ Slang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "ไดรเวอร์ Direct3D 8 (ไม่รองรับ Shader)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "ไดรเวอร์ Direct3D 9 รองรับรูปแบบ Shader แบบ Cg รุ่นเก่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "ไดรเวอร์ Direct3D 9 รองรับรูปแบบ Shader แบบ HLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "ไดรเวอร์ Direct3D 10 รองรับรูปแบบ Shader แบบ Slang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "ไดรเวอร์ Direct3D 11 รองรับ HDR และรูปแบบ Shader แบบ Slang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "ไดรเวอร์ Direct3D 12 รองรับ HDR และรูปแบบ Shader แบบ Slang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "ไดรเวอร์ DispmanX ใช้ API ของ DispmanX สำหรับ GPU Videocore IV ใน Raspberry Pi 0 ถึง 3 ไม่รองรับ Overlay หรือ Shader"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "ไดรเวอร์ LibCACA จะแสดงผลเป็น ตัวอักษร แทนที่ภาพกราฟิก ไม่แนะนำให้ใช้งานจริง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "ไดรเวอร์ Exynos ระดับล่างที่ใช้บล็อก G2D ใน Samsung Exynos SoC สำหรับการประมวลผล Blit ประสิทธิภาพสำหรับ Core ที่ใช้ซอฟต์แวร์เรนเดอร์จะอยู่ในระดับดีเยี่ยม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "ไดรเวอร์วิดีโอ DRM แบบพื้นฐาน เป็นไดรเวอร์ระดับล่างที่ใช้ libdrm ในการขยายขนาดด้วยฮาร์ดแวร์โดยใช้ GPU overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "ไดรเวอร์วิดีโอ Sunxi ระดับล่างที่ใช้บล็อก G2D ใน Allwinner SoC"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "ไดรเวอร์ Wii U รองรับรูปแบบ Shader แบบ Slang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "ไดรเวอร์ Switch รองรับรูปแบบ Shader แบบ GLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "ไดรเวอร์ OpenVG ใช้ API กราฟิกเวกเตอร์ 2D แบบเร่งความเร็วด้วยฮาร์ดแวร์ของ OpenVG"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "ไดรเวอร์ GDI ใช้ส่วนประสานงานของ Windows รุ่นเก่า ไม่แนะนำให้ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "ไดรเวอร์วิดีโอปัจจุบัน"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "เสียง"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+   "ไดรเวอร์เสียงที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "ไดรเวอร์ RSound สำหรับระบบเสียงผ่านเครือข่าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "ไดรเวอร์ Open Sound System รุ่นเก่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "ไดรเวอร์ ALSA มาตรฐาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   "ไดรเวอร์ ALSA ที่รองรับการทำงานแบบ Threading"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   "ไดรเวอร์ ALSA ที่ทำงานโดยไม่มีส่วนที่ขึ้นต่อกัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   "ไดรเวอร์ระบบเสียง RoarAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "ไดรเวอร์ OpenAL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "ไดรเวอร์ OpenSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "ไดรเวอร์ DirectSound ที่ใช้งานเป็นหลักบน Windows 95 จนถึง Windows XP"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "ไดรเวอร์ Windows Audio Session API ซึ่ง WASAPI ใช้งานเป็นหลักบน Windows 7 ขึ้นไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   "ไดรเวอร์ PulseAudio หากระบบใช้ PulseAudio ควรเลือกใช้ไดรเวอร์นี้แทนไดรเวอร์อื่นอย่างเช่น ALSA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "ไดรเวอร์ PipeWire หากระบบใช้ PipeWire ควรเลือกใช้ไดรเวอร์นี้แทนไดรเวอร์อื่นอย่างเช่น PulseAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "ไดรเวอร์ Jack Audio Connection Kit"
+   )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "ไมโครโฟน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "ไดรเวอร์ไมโครโฟนที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "ความถี่สัญญาณเสียงไมโครโฟน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "ไดรเวอร์ตัวเลือกการเปลี่ยนความถี่สัญญาณเสียงไมโครโฟนที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "ขนาดบล็อกข้อมูลไมโครโฟน"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   "เปลี่ยนความถี่สัญญาณเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   "ไดรเวอร์การเปลี่ยนความถี่สัญญาณเสียงที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "การประมวลผลแบบ Windowed Sinc"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "การประมวลผลแบบ Convoluted Cosine"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   "การประมวลผลแบบ Nearest ซึ่งตัวปรับความถี่สัญญาณนี้จะละเว้นการตั้งค่าคุณภาพทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   "กล้อง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   "ไดรเวอร์กล้องที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
+   "บลูทูธ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "ไดรเวอร์บลูทูธที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "ไดรเวอร์ Wi-Fi ที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   "พิกัดตำแหน่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "ไดรเวอร์พิกัดตำแหน่งที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+   "เมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "ไดรเวอร์เมนูที่ใช้งาน (ต้องรีสตาร์ท)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "XMB คือหน้าเมนู RetroArch ที่มีรูปแบบเหมือนเมนูเครื่องคอนโซลยุคที่ 7 รองรับคุณสมบัติต่างๆ ได้เช่นเดียวกับ Ozone"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "Ozone คือหน้าเมนูหลักของ RetroArch ในเกือบทุกแพลตฟอร์ม ซึ่งถูกปรับแต่งมาเพื่อให้ควบคุมได้ง่ายด้วยจอยคอนโทรลเลอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "RGUI คือหน้าเมนูพื้นฐานของ RetroArch ที่กินทรัพยากรเครื่องต่ำที่สุด และสามารถใช้งานร่วมกับจอภาพที่มีความละเอียดต่ำได้ดี"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "บนอุปกรณ์มือถือ RetroArch จะใช้ MaterialUI เป็นหน้าเมนูหลัก โดยถูกออกแบบมาเพื่อรองรับหน้าจอสัมผัสและอุปกรณ์ชี้ตำแหน่งอย่างเมาส์หรือแทร็กบอลโดยเฉพาะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   "บันทึกวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "ไดรเวอร์การบันทึกที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "ไดรเวอร์ MIDI ที่ใช้งาน"
+   )
 
 /* Settings > Video */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   "ปรับความละเอียดจอ CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   "ส่งสัญญาณความละเอียดต่ำแบบ Native เพื่อใช้กับหน้าจอ CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   "ขาออก"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    "เปลี่ยน drivers ที่ระบบใช้งาน"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "โหมดเต็มจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "เปลี่ยนการตั้งค่าโหมดเต็มจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "โหมดหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   "เปลี่ยนการตั้งค่าโหมดหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   "สัดส่วนภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   "เปลี่ยนการตั้งค่าการปรับสัดส่วนภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "เปลี่ยนการตั้งค่า HDR ของวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "ซิงโครไนซ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "เปลี่ยนการตั้งค่าการซิงโครไนซ์วิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   "ไม่พักหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   "ป้องกันการเปิดใช้งานโปรแกรมพักหน้าจอของระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "ระงับการทำงานของโปรแกรมพักหน้าจอ ซึ่งเป็นเพียงคำสั่งแนะนำที่ไดรเวอร์วิดีโอไม่จำเป็นต้องปฏิบัติตามเสมอไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   "วิดีโอแบบแยกเธรด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   "เพิ่มประสิทธิภาพโดยแลกกับความหน่วงและอาการภาพกระตุกที่มากขึ้น ควรใช้เมื่อไม่สามารถทำความเร็วได้เต็มสปีดด้วยวิธีอื่นเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "ใช้งานไดรเวอร์วิดีโอแบบแยกเธรด การใช้งานส่วนนี้อาจช่วยเพิ่มประสิทธิภาพ แต่ต้องแลกกับความหน่วงและอาการภาพกระตุกที่อาจเพิ่มมากขึ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   "แทรกเฟรมดำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "คำเตือน: การกระพริบอย่างรวดเร็วอาจทำให้เกิดอาการภาพค้างหน้าจอในจอภาพบางรุ่น โปรดใช้งานด้วยความระมัดระวัง // แทรกเฟรมดำระหว่างเฟรมภาพ ช่วยลดความเบลอขณะเคลื่อนไหวได้อย่างมากโ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "แทรกเฟรมดำระหว่างเฟรมภาพเพื่อเพิ่มความคมชัดของการเคลื่อนไหว ให้เลือกใช้ตัวเลือกที่กำหนดไว้สำหรับอัตราการรีเฟรชหน้าจอที่ใช้อยู่ในขณะนี้เท่านั้น ห้ามใช้กับอัตราการรีเฟรชท[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "แทรกเฟรมดำ - จำนวนเฟรมมืด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "ปรับจำนวนเฟรมดำในลำดับการสแกน BFI ทั้งหมด ยิ่งมากยิ่งเพิ่มความคมชัดของการเคลื่อนไหว ยิ่งน้อยยิ่งได้ความสว่างที่สูงขึ้น ไม่สามารถใช้ได้ที่ 120Hz เนื่องจากมีเฟรม BFI ให้ใช้งานได้เพีย[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "ปรับจำนวนเฟรมมืดที่แสดงในลำดับ BFI ยิ่งเฟรมมืดมากจะยิ่งเพิ่มความคมชัดของการเคลื่อนไหวแต่จะลดความสว่างลง ไม่สามารถใช้ได้ที่ 120Hz เนื่องจากมีเฟรมส่วนเกินเพียงเฟรมเดียวจากฐาน 60Hz ซ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "คำเตือน: การกะพริบอย่างรวดเร็วอาจทำให้เกิดอาการภาพค้างในจอภาพบางรุ่น โปรดใช้งานด้วยความเสี่ยงของท่านเอง // จำลองการสแกนภาพแบบ Rolling Scanline พื้นฐานผ่านซับเฟรมหลายชุด โดยการแบ่งหน้าจ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "แทรกเชดเดอร์เฟรมส่วนเกินระหว่างเฟรมภาพ สำหรับเอฟเฟกต์เชดเดอร์ใดก็ตามที่ออกแบบมาให้ทำงานด้วยความเร็วที่สูงกว่าอัตราเฟรมของเนื้อหา ให้เลือกใช้ตัวเลือกที่กำหนดไว้สำหรับอัต[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "จำลองเส้นสแกนแบบเลื่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "คำเตือน: การกระพริบอย่างรวดเร็วอาจทำให้เกิดอาการภาพค้างหน้าจอในจอภาพบางรุ่น โปรดใช้งานด้วยความระมัดระวัง // จำลองการสแกนภาพแบบ Rolling Scanline พื้นฐานผ่านซับเฟรมหลายชุด โดยการแบ่งหน้า[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "จำลองการสแกนภาพแบบ Rolling Scanline พื้นฐานผ่านซับเฟรมหลายชุด โดยการแบ่งหน้าจอตามแนวตั้งและเรนเดอร์หน้าจอแต่ละส่วนไล่จากด้านบนลงมาตามจำนวนของซับเฟรมที่มีอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   "กรองภาพแบบไบลิเนียร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "เพิ่มความเบลอเล็กน้อยให้กับภาพเพื่อลดความคมของขอบพิกเซล ตัวเลือกนี้ส่งผลกระทบต่อประสิทธิภาพการทำงานน้อยมาก และควรปิดการใช้งานหากมีการใช้เชดเดอร์ร่วมด้วย"
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "ประมาณค่าพิกเซล"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "ระบุวิธีการประมาณค่าพิกเซล เมื่อมีการปรับขนาดภาพผ่านหน่วยประมวลผลภาพภายใน (IPU) แนะนำให้ใช้แบบ 'Bicubic' หรือ 'Bilinear' หากมีการใช้ฟิลเตอร์วิดีโอที่ทำงานผ่าน CPU ตัวเลือกนี้ไม่ส่งผลกระทบต่อ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "ไบคิวบิก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "ไบลิเนียร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "เนียร์เรสต์ เนเบอร์"
+   )
 #if defined(RS90) || defined(MIYOO)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "ประมาณค่าพิกเซล"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "ระบุวิธีการประมาณค่าพิกเซลที่จะใช้งานเมื่อปิดการใช้งาน 'การขยายขนาดแบบเลขจำนวนเต็ม' โดยการเลือกแบบ 'จุดที่ใกล้ที่สุด'จะส่งผลกระทบต่อประสิทธิภาพการทำงานน้อยที่สุด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "จุดที่ใกล้ที่สุด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "กึ่งเชิงเส้น"
+   )
 #endif
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "การหน่วงเวลาเชดเดอร์อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "หน่วงเวลาการโหลดเชดเดอร์อัตโนมัติ (หน่วยเป็นมิลลิวินาที) ซึ่งช่วยแก้ปัญหาการแสดงผลผิดปกติเมื่อใช้ซอฟต์แวร์บันทึกหน้าจอได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   "ตัวกรองวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "ใช้ตัวกรองวิดีโอที่ประมวลผลผ่านหน่วยประมวลผลกลาง ซึ่งอาจทำให้ประสิทธิภาพการทำงานลดลงอย่างมาก โดยตัวกรองวิดีโอบางประเภทอาจรองรับเฉพาะแกนประมวลผลที่ใช้ระบบสีแบบ 32 บิต หรือ 16 [...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "ใช้ตัวกรองวิดีโอที่ประมวลผลผ่านหน่วยประมวลผลกลาง ซึ่งอาจทำให้ประสิทธิภาพการทำงานลดลงอย่างมาก โดยตัวกรองวิดีโอบางประเภทอาจรองรับเฉพาะแกนประมวลผลที่ใช้ระบบสีแบบ 32 บิต หรือ 16 [...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "ใช้ตัวกรองวิดีโอที่ประมวลผลผ่านหน่วยประมวลผลกลาง ซึ่งอาจทำให้ประสิทธิภาพการทำงานลดลงอย่างมาก โดยตัวกรองวิดีโอบางประเภทอาจรองรับเฉพาะแกนประมวลผลที่ใช้ระบบสีแบบ 32 บิต หรือ 16 [...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "ยกเลิกตัวกรองวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "ยกเลิกการโหลดตัวกรองวิดีโอที่กำลังใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "เปิดใช้งานการแสดงผลเต็มหน้าจอทับส่วนรอยบากในอุปกรณ์ Android และ iOS"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "ใช้งานเมทัลอาร์กิวเมนต์บัฟเฟอร์ (ต้องเริ่มระบบใหม่)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "พยายามเพิ่มประสิทธิภาพการทำงานโดยใช้งานเมทัลอาร์กิวเมนต์บัฟเฟอร์ ซึ่งจำเป็นสำหรับแกนประมวลผลบางตัว แต่อาจทำให้เชดเดอร์บางส่วนทำงานผิดปกติ โดยเฉพาะบนฮาร์ดแวร์หรือระบบปฏิ[...]"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   "ปรับความละเอียดจอ CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "สำหรับจอแสดงผลแบบ CRT เท่านั้น โดยจะพยายามใช้ความละเอียดและอัตราการรีเฟรชที่ตรงตามค่าเริ่มต้นของแกนประมวลผลหรือเกมนั้นๆ ออกมาให้แม่นยำที่สุด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   "ความละเอียดระดับซูเปอร์สำหรับจอ CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   "สลับระหว่างความละเอียดดั้งเดิมและความละเอียดระดับซูเปอร์แบบกว้างพิเศษ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "จัดวางกึ่งกลางแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "เลือกสลับตัวเลือกเหล่านี้ หากภาพแสดงผลไม่ตรงกึ่งกลางหน้าจออย่างเหมาะสม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "ขนาดแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "เลือกสลับตัวเลือกเหล่านี้เพื่อปรับค่าแนวนอนในการเปลี่ยนขนาดภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "จัดวางกึ่งกลางแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "ลองสลับตัวเลือกเหล่านี้ดู หากภาพบนหน้าจอแสดงผลไม่ตรงกึ่งกลาง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "ใช้เมนูความละเอียดสูง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "สลับไปใช้ Modeline ความละเอียดสูง เพื่อใช้งานกับเมนูที่มีความละเอียดสูงในขณะที่ยังไม่ได้โหลดเนื้อหาใดๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "กำหนดอัตราการรีเฟรชเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "ใช้ค่ารีเฟรชหน้าจอตามที่กำหนดไว้ในไฟล์ตั้งค่าหากจำเป็น"
+   )
 
 /* Settings > Video > Output */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   "ลำดับจอภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   "เลือกจอภาพที่ต้องการใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   "เลือกจอภาพที่ต้องการใช้งาน โดย 0 (ค่าเริ่มต้น) หมายถึงไม่ระบุเจาะจง, 1 ขึ้นไป (1 คือจอภาพแรก) จะเป็นการกำหนดให้ RetroArch ใช้จอภาพนั้นๆ"
+   )
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "ปรับแต่งสำหรับ Wii U GamePad (จำเป็นต้องเริ่มระบบใหม่)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+   "ใช้ขนาดหน้าจอ GamePad แบบ 2x เป็นพอร์ตการมองเห็น ปิดใช้งานเพื่อแสดงผลที่ความละเอียดค่าเดิมของทีวี"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   "การหมุนวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   "บังคับการหมุนวิดีโอ โดยการหมุนนี้จะถูกเพิ่มเข้าไปในการหมุนที่ Core กำหนดไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   "การจัดวางหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   "บังคับการจัดวางหน้าจอจากระบบปฏิบัติการโดยเฉพาะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   "ลำดับ GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "เลือกลำดับ GPU ที่ต้องการใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   "การชดเชยหน้าจอแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   "การชดเชยหน้าจอแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "บังคับการชดเชยตำแหน่งวิดีโอในแนวตั้ง โดยการชดเชยนี้จะถูกนำไปใช้กับทุกส่วนของระบบ Global"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   "อัตราการรีเฟรชแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "อัตราการรีเฟรชแนวตั้งของหน้าจอ ใช้สำหรับคำนวณอัตราอินพุตเสียงที่เหมาะสม\nค่านี้จะถูกละเว้นหากเปิดใช้งาน 'วิดีโอแบบแยกเธรด' อยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   "อัตราการรีเฟรชหน้าจอโดยประมาณ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   "ค่ารีเฟรชหน้าจอโดยประมาณที่แม่นยำในหน่วย Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   "อัตราการรีเฟรชที่แม่นยำของหน้าจอ (Hz) ค่านี้ใช้สำหรับคำนวณอัตราอินพุตเสียงด้วยสูตร:\naudio_input_rate = game input rate * display refresh rate / game refresh rate\nหากแกนประมวลผลไม่รายงานค่าใดๆ จะมีการใช้ค่าเริ่มต้นแบบ NTSC เพื่อค[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "ตั้งค่าอัตราการรีเฟรชตามที่หน้าจอตรวจพบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "อัตราการรีเฟรชตามที่ไดรเวอร์จอแสดงผลตรวจพบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "สลับอัตราการรีเฟรชโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "สลับอัตราการรีเฟรชหน้าจอโดยอัตโนมัติตามเนื้อหาปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
+   "เฉพาะในโหมดเต็มหน้าจอแบบ Exclusive เท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   "ทุกโหมดเต็มหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "เกณฑ์การสลับอัตราการรีเฟรชอัตโนมัติสำหรับ PAL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "อัตราการรีเฟรชสูงสุดที่จะถือว่าเป็น PAL"
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "อัตราการรีเฟรชแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "ตั้งค่าอัตราการรีเฟรชแนวตั้งของหน้าจอ การตั้งค่าเป็น '50 Hz' จะช่วยให้วิดีโอไหลลื่นเมื่อรันเนื้อหาที่เป็น PAL"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   "บังคับปิดใช้งาน sRGB FBO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "บังคับปิดใช้งานการรองรับ sRGB FBO เนื่องจากไดรเวอร์ Intel OpenGL บางตัวบน Windows มีปัญหาในการแสดงผลวิดีโอเมื่อใช้ sRGB FBO การเปิดตัวเลือกนี้จะช่วยเลี่ยงปัญหาดังกล่าวได้"
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "การแสดงผลแบบเต็มหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "แสดงผลแบบเต็มหน้าจอ สามารถเปลี่ยนได้ในขณะที่โปรแกรมทำงาน และสามารถเขียนทับได้ด้วยคำสั่งผ่าน command line"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   "โหมดหน้าต่างเต็มหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "หากอยู่ในโหมดเต็มหน้าจอ จะเลือกใช้หน้าต่างแบบเต็มหน้าจอเพื่อป้องกันไม่ให้เกิดการสลับโหมดการแสดงผล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "ความกว้างเต็มหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   "กำหนดความกว้างแบบกำหนดเองสำหรับโหมดเต็มหน้าจอที่ไม่ใช่แบบหน้าต่าง หากปล่อยว่างไว้จะใช้ความละเอียดตามหน้าจอเดสก์ท็อป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "ความสูงเต็มหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   "กำหนดความสูงแบบกำหนดเองสำหรับโหมดเต็มหน้าจอที่ไม่ใช่แบบหน้าต่าง หากปล่อยว่างไว้จะใช้ความละเอียดตามหน้าจอเดสก์ท็อป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "บังคับความละเอียดบน UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "บังคับความละเอียดให้เป็นขนาดเต็มหน้าจอ หากตั้งค่าเป็น 0 จะใช้ค่าคงที่ที่ 3840 x 2160"
+   )
 
 /* Settings > Video > Windowed Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   "ขนาดสัดส่วนหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   "ความโปร่งใสของหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "ตั้งค่าความโปร่งใสของหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "แสดงแถบเครื่องมือหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "แสดงแถบชื่อและขอบหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   "แสดงแถบเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "แสดงแถบเมนูหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   "จำตำแหน่งและขนาดหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "แสดงเนื้อหาทั้งหมดในหน้าต่างที่มีขนาดคงที่ตามความกว้างและความสูงที่กำหนดไว้ และบันทึกขนาดกับตำแหน่งของหน้าต่างล่าสุดเมื่อปิด RetroArch หากปิดการใช้งาน ขนาดหน้าต่างจะถูกปรับเปล[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "ใช้ขนาดหน้าต่างแบบกำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "แสดงเนื้อหาทั้งหมดในหน้าต่างที่มีขนาดคงที่ตามความกว้างและความสูงที่กำหนดไว้ หากปิดการใช้งาน ขนาดหน้าต่างจะถูกปรับตาม \"ขนาดสัดส่วนหน้าต่าง\" โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   "ความกว้างหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   "ตั้งค่าความกว้างหน้าต่างแบบกำหนดเองสำหรับหน้าจอแสดงผล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   "ความสูงหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   "ตั้งค่าความสูงหน้าต่างแบบกำหนดเองสำหรับหน้าจอแสดงผล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "ความกว้างหน้าต่างสูงสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "ตั้งค่าความกว้างสูงสุดของหน้าต่างแสดงผล เมื่อมีการปรับขนาดโดยอัตโนมัติตาม \"ขนาดสัดส่วนหน้าต่าง\""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "ความสูงหน้าต่างสูงสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "ตั้งค่าความสูงสูงสุดของหน้าต่างแสดงผล เมื่อมีการปรับขนาดโดยอัตโนมัติตาม \"ขนาดสัดส่วนหน้าต่าง\""
+   )
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "ขยายขนาดวิดีโอเป็นขั้นแบบจำนวนเต็มเท่านั้น โดยขนาดเริ่มต้นจะขึ้นอยู่กับค่าเรขาคณิตและอัตราส่วนภาพที่ Core รายงานมา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "ขยายสเกลทั้งความสูงหรือความกว้าง หรือทั้งความสูงและความกว้าง โดยการปรับแบบครึ่งขั้น (Half steps) จะใช้ได้กับแหล่งข้อมูลความละเอียดสูงเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "ปัดลงหรือปัดขึ้นเป็นจำนวนเต็มถัดไป 'โหมดอัจฉริยะ' จะลดขนาดลงมา เมื่อภาพถูกตัดขอบมากเกินไป และสุดท้ายจะย้อนกลับไปใช้การขยายแบบไม่ใช่จำนวนเต็ม หากขอบที่เกิดจากการลดขนาดนั้นก[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "การลดขนาด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "การขยายเกินขนาด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "อัจฉริยะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   "อัตราส่วนภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "ตั้งค่าอัตราส่วนภาพการแสดงผล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   "อัตราส่วนภาพตามค่าปรับแต่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "ค่าตัวเลขทศนิยมสำหรับอัตราส่วนภาพวิดีโอ (ความกว้าง / ความสูง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   "ค่าปรับแต่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
+   "Core เป็นตัวกำหนด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
+   "เต็มจอ"
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "คงอัตราส่วนภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "คงอัตราส่วนพิกเซลแบบ 1:1 เมื่อปรับขนาดเนื้อหาผ่าน IPU ภายใน หากปิดใช้งาน ภาพจะถูกดึงให้เต็มหน้าจอ"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   "กำหนดอัตราส่วนภาพเอง (ตำแหน่ง X)"
+   )
 #if defined(RARCH_MOBILE)
 #endif
 
@@ -1410,11 +2286,195 @@ MSG_HASH(
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   "VSync แบบปรับเปลี่ยนตามความเหมาะสม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "'VSync' จะถูกเปิดใช้งานจนกว่าประสิทธิภาพจะลดลงต่ำกว่าอัตราการรีเฟรชเป้าหมาย สามารถช่วยลดอาการภาพกระตุกเมื่อประสิทธิภาพลดลงต่ำกว่าเวลาจริง และช่วยประหยัดพลังงานได้มากขึ้น ไม่ส[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "การหน่วงเฟรม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "ช่วยลดความหน่วงโดยแลกกับความเสี่ยงที่ภาพจะกระตุกมากขึ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "กำหนดจำนวนมิลลิวินาทีที่จะหยุดพักก่อนเริ่มการทำงานของ 'Core เป็นตัวกำหนด' หลังจากแสดงผลภาพ ช่วยลดความหน่วงโดยแลกกับความเสี่ยงที่จะเกิดภาพกระตุกมากขึ้น\nค่าตั้งแต่ 20 ขึ้นไปจะถูก[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "การหน่วงเฟรมอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "ปรับค่า 'การหน่วงเฟรม' ที่ใช้งานอยู่โดยอัตโนมัติแบบไดนามิก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "พยายามรักษาเป้าหมาย 'การหน่วงเฟรม' ที่ต้องการและลดการข้ามเฟรมให้เหลือน้อยที่สุด จุดเริ่มต้นคือ 3/4 ของเวลาเฟรมเมื่อ 'การหน่วงเฟรม' ถูกตั้งค่าเป็น 0 (อัตโนมัติ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "มีผล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   "การซิงค์ GPU อย่างเข้มงวด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   "ซิงค์ CPU และ GPU อย่างเข้มงวด ช่วยลดความหน่วงโดยแลกกับประสิทธิภาพที่ลดลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   "เฟรมการซิงค์ GPU อย่างเข้มงวด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   "กำหนดจำนวนเฟรมที่ CPU สามารถทำงานล่วงหน้า GPU ได้ เมื่อใช้งาน 'การซิงค์ GPU อย่างเข้มงวด'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   "กำหนดจำนวนเฟรมที่ CPU สามารถทำงานล่วงหน้า GPU ได้ เมื่อใช้งาน 'การซิงค์ GPU อย่างเข้มงวด' โดยตั้งค่าได้สูงสุด 3\n 0: ซิงค์กับ GPU ทันที\n 1: ซิงค์กับเฟรมก่อนหน้า\n 2: และอื่นๆ ..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   "ซิงค์กับเฟรมเรตที่แท้จริงของเนื้อหา (G-Sync, FreeSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   "ไม่มีการเบี่ยงเบนจากจังหวะเวลาหลักที่ต้องการ ใช้สำหรับหน้าจอที่มีอัตรารีเฟรชแบบผันแปร (G-Sync, FreeSync, HDMI 2.1 VRR)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "ซิงค์กับเฟรมเรตที่แท้จริงของเนื้อหา ตัวเลือกนี้เทียบเท่ากับการบังคับความเร็ว x1 โดยที่ยังสามารถเร่งความเร็วไปข้างหน้าได้ ไม่มีการเบี่ยงเบนจากอัตรารีเฟรชที่ Core ต้องการ และไม่[...]"
+   )
 
 /* Settings > Audio */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   "ขาออก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   "เปลี่ยนการตั้งค่าสัญญาณเสียงออก"
+   )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "ไมโครโฟน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "เปลี่ยนการตั้งค่าสัญญาณเสียงเข้า"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "ซิงโครไนซ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "เปลี่ยนการตั้งค่าการซิงค์สัญญาณเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+   "เปลี่ยนการตั้งค่าสัญญาณ MIDI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   "เปลี่ยนการตั้งค่าตัวผสมสัญญาณเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   "เสียงเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "เปลี่ยนเสียงเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   "ปิดเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   "ปิดสัญญาณเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+   "ปิดเสียง Mixer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   "ปิดเสียงตัวผสมสัญญาณเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "ให้ความสำคัญกับโหมดเงียบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "ปิดเสียงทั้งหมดในโหมดเงียบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "ปิดเสียงขณะเร่งความเร็วไปข้างหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "ปิดเสียงโดยอัตโนมัติเมื่อใช้การเร่งความเร็วไปข้างหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "เร่งความเร็วเสียงขณะ เร่งความเร็ว-ไปข้างหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "เร่งความเร็วเสียงขณะ เร่งความเร็ว-ไปข้างหน้า ช่วยป้องกันเสียงแตก แต่ระดับเสียงสูงต่ำจะเปลี่ยนไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "ปิดเสียงขณะย้อนกลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "ปิดเสียงโดยอัตโนมัติเมื่อมีการถอยหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   "ระดับการขยายเสียง (เดซิเบล)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   "ระดับความดังของเสียง (หน่วย dB) โดย 0 dB คือระดับเสียงปกติและไม่มีการเพิ่มการขยายเสียงใดๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "ระดับความดังของเสียงในหน่วย dB โดยที่ 0 dB คือระดับเสียงปกติซึ่งไม่มีการเพิ่มการขยายเสียง สามารถควบคุมการขยายเสียงได้ในขณะใช้งานด้วยคำสั่งเพิ่มระดับเสียงเข้าหรือลดระดับเสียงเ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+   "ระดับการขยายเสียงของ Mixer (dB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   "ระดับการขยายเสียงรวมของ Mixer (dB) โดย 0 dB คือระดับเสียงปกติและไม่มีการเพิ่มการขยายเสียงใดๆ"
+   )
 
 /* Settings > Audio > Output */
 
@@ -1425,6 +2485,10 @@ MSG_HASH(
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "ไมโครโฟน"
+   )
 #endif
 
 /* Settings > Audio > Resampler */
@@ -1432,12 +2496,20 @@ MSG_HASH(
 
 /* Settings > Audio > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   "ซิงโครไนซ์"
+   )
 
 /* Settings > Audio > MIDI */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    "การควบคุม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "ขาออก"
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
@@ -1774,6 +2846,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "อัตราส่วนภาพ"
+   )
 
 /* RGUI: Settings Options */
 
@@ -1835,6 +2911,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "ผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "ซิงค์ CPU และ GPU อย่างเข้มงวด ช่วยลดความหน่วงโดยแลกกับประสิทธิภาพที่ลดลง"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
