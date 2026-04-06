@@ -539,8 +539,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       str     = key->val.string.buff;
       str_len = strlen(str);
 
-      /* Only read val as string when it actually is one */
-      val_string = (val->type == RDT_STRING) ? val->val.string.buff : NULL;
+      val_string = val->val.string.buff;
 
       switch (str_len)
       {
