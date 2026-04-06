@@ -428,12 +428,12 @@ static void reallocate_port_if_needed(
    char settings_value[NAME_MAX_LENGTH];
    char settings_value_device_name[NAME_MAX_LENGTH];
    unsigned prev_assigned_player_slots[MAX_USERS] = {0};
-   unsigned int settings_value_vendor_id;
-   unsigned int settings_value_product_id;
-   unsigned first_free_player_slot = MAX_USERS + 1;
-   bool device_has_reserved_slot   = false;
-   bool no_reservation_at_all      = true;
-   settings_t *settings            = config_get_ptr();
+   unsigned int settings_value_vendor_id  = 0;
+   unsigned int settings_value_product_id = 0;
+   unsigned first_free_player_slot        = MAX_USERS + 1;
+   bool device_has_reserved_slot          = false;
+   bool no_reservation_at_all             = true;
+   settings_t *settings                   = config_get_ptr();
 
    for (player = 0; player < MAX_USERS; player++)
    {
@@ -473,15 +473,40 @@ static void reallocate_port_if_needed(
 
       if (!string_is_empty(settings_value))
       {
+         char *endptr;
+         char *colon;
+         unsigned long parsed_vid;
+         unsigned long parsed_pid;
+
          RARCH_DBG("[Autoconf] Examining reserved device for player %d "
                    "type %d: \"%s\" against \"%04x:%04x\".\n",
                    player+1,
                    settings->uints.input_device_reservation_type[player],
                    settings_value, vendor_id, product_id);
 
-         if (sscanf(settings_value, "%04x:%04x ",
-             &settings_value_vendor_id,
-             &settings_value_product_id) != 2)
+         colon      = strchr(settings_value, ':');
+         parsed_vid = strtoul(settings_value, &endptr, 16);
+
+         if (colon && endptr == colon)
+         {
+            parsed_pid = strtoul(colon + 1, &endptr, 16);
+            if (endptr != colon + 1 && (*endptr == ' ' || *endptr == '\0'))
+            {
+               settings_value_vendor_id  = (unsigned int)parsed_vid;
+               settings_value_product_id = (unsigned int)parsed_pid;
+               device_has_reserved_slot  = (  vendor_id  == settings_value_vendor_id
+                                           && product_id == settings_value_product_id);
+            }
+            else
+            {
+               strlcpy(settings_value_device_name, settings_value,
+                       sizeof(settings_value_device_name));
+               device_has_reserved_slot =
+                     string_is_equal(device_name, settings_value_device_name)
+                  || string_is_equal(device_display_name, settings_value_device_name);
+            }
+         }
+         else
          {
             strlcpy(settings_value_device_name, settings_value,
                     sizeof(settings_value_device_name));
@@ -489,9 +514,6 @@ static void reallocate_port_if_needed(
                   string_is_equal(device_name, settings_value_device_name)
                || string_is_equal(device_display_name, settings_value_device_name);
          }
-         else
-            device_has_reserved_slot = (  vendor_id  == settings_value_vendor_id
-                                       && product_id == settings_value_product_id);
 
          if (device_has_reserved_slot)
          {
@@ -556,9 +578,6 @@ static void reallocate_port_if_needed(
       RARCH_DBG("[Autoconf] Device \"%s\" (%x:%x) is not reserved for "
             "any player slot.\n",
             device_name, vendor_id, product_id);
-      /* Fallback in case no reservation is set up at all - to preserve
-       * any previous setup where input_joypad_index may have been
-       * customized. */
       if (   no_reservation_at_all
             || prev_assigned_player_slots[detected_port] == first_free_player_slot)
          return;
