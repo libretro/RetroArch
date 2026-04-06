@@ -180,7 +180,7 @@ static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
    return true;
 }
 
-bool shader_line_buf_append(struct shader_line_buf *buf,
+static bool shader_line_buf_append(struct shader_line_buf *buf,
       const char *line, size_t line_len)
 {
    /* Need line_len + 1 bytes for the line content plus '\0' terminator */
@@ -267,22 +267,9 @@ bool shader_line_buf_append(struct shader_line_buf *buf,
    return true;
 }
 
-bool shader_line_buf_append_str(struct shader_line_buf *buf, const char *line)
-{
-   return shader_line_buf_append(buf, line, strlen(line));
-}
-
 const char *shader_line_buf_get(const struct shader_line_buf *buf, size_t index)
 {
    return buf->data + buf->line_offsets[index];
-}
-
-size_t shader_line_buf_line_len(const struct shader_line_buf *buf, size_t index)
-{
-   if (index + 1 < buf->num_lines)
-      return buf->line_offsets[index + 1] - buf->line_offsets[index] - 1;
-   /* Last line: distance from offset to end of data minus the \0 */
-   return buf->len - buf->line_offsets[index] - 1;
 }
 
 /* -------------------------------------------------------------------
@@ -332,10 +319,10 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
    for (i = 0; *names; i++, names++)
    {
       enum slang_texture_semantic semantic = (enum slang_texture_semantic)i;
+      size_t _len = strlen(*names);
 
       if (slang_texture_semantic_is_array(semantic))
       {
-         size_t _len = strlen(*names);
          if (name_len >= _len && memcmp(*names, name, _len) == 0)
          {
             *index = (unsigned)strtoul(name + _len, NULL, 10);
@@ -344,7 +331,6 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
       }
       else
       {
-         size_t _len = strlen(*names);
          if (name_len == _len && memcmp(name, *names, _len) == 0)
          {
             *index = 0;
@@ -435,6 +421,7 @@ bool glslang_read_shader_file(const char *path,
    {
       char *cursor     = (char*)buf;
       size_t line_idx  = 0;
+      size_t line_len  = 0;
       bool first_line  = true;
 
       /* If this is the 'parent' shader file and a slang file,
@@ -458,7 +445,8 @@ bool glslang_read_shader_file(const char *path,
 
          if (first_line)
          {
-            first_line = false;
+            size_t line_len = 0;
+            first_line      = false;
 
             if (check_version)
             {
@@ -470,7 +458,8 @@ bool glslang_read_shader_file(const char *path,
                   goto cleanup;
                }
 
-               if (!shader_line_buf_append_str(output, line_start))
+               if (!shader_line_buf_append(output, line_start,
+                        strlen(line_start)))
                {
                   *newline = saved;
                   goto cleanup;
@@ -491,8 +480,9 @@ bool glslang_read_shader_file(const char *path,
                   goto cleanup;
                }
 
-               snprintf(tmp, sizeof(tmp), "#line 2 \"%s\"", basename);
-               if (!shader_line_buf_append_str(output, tmp))
+               line_len = snprintf(tmp, sizeof(tmp),
+                     "#line 2 \"%s\"", basename);
+               if (!shader_line_buf_append(output, tmp, line_len))
                {
                   *newline = saved;
                   goto cleanup;
@@ -512,9 +502,9 @@ bool glslang_read_shader_file(const char *path,
                goto cleanup;
             }
 
-            snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+            line_len = snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
                   root_file ? 2u : 1u, basename);
-            if (!shader_line_buf_append_str(output, tmp))
+            if (!shader_line_buf_append(output, tmp, line_len))
             {
                *newline = saved;
                goto cleanup;
@@ -569,9 +559,9 @@ bool glslang_read_shader_file(const char *path,
                         include_path);
                }
 
-               snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+               line_len = snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
                      (unsigned)(line_idx + 1), basename);
-               if (!shader_line_buf_append_str(output, tmp))
+               if (!shader_line_buf_append(output, tmp, line_len))
                   goto cleanup;
             }
             else if (  ((cur_line_len >= sizeof("#endif")-1)
@@ -584,10 +574,10 @@ bool glslang_read_shader_file(const char *path,
                   *newline = saved;
                   goto cleanup;
                }
-               snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+               line_len = snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
                      (unsigned)(line_idx + 2), basename);
                *newline = saved;
-               if (!shader_line_buf_append_str(output, tmp))
+               if (!shader_line_buf_append(output, tmp, line_len))
                   goto cleanup;
             }
             else
@@ -666,11 +656,11 @@ const char *glslang_format_to_string(enum glslang_format fmt)
 
 enum glslang_format glslang_find_format(const char *fmt)
 {
-   size_t len = strlen(fmt);
+   size_t _len = strlen(fmt);
 #undef FMT
 #define FMT(x) do { \
    static const char s[] = #x; \
-   if (sizeof(s) - 1 == len && memcmp(fmt, s, sizeof(s) - 1) == 0) \
+   if (sizeof(s) - 1 == _len && memcmp(fmt, s, sizeof(s) - 1) == 0) \
       return SLANG_FORMAT_ ## x; \
 } while(0)
 
@@ -688,7 +678,7 @@ enum glslang_format glslang_find_format(const char *fmt)
                }
                else /* R8G8... */
                {
-                  if (len <= 11) /* R8G8_xxx */
+                  if (_len <= 11) /* R8G8_xxx */
                   {
                      FMT(R8G8_UNORM);
                      FMT(R8G8_UINT);
@@ -712,7 +702,7 @@ enum glslang_format glslang_find_format(const char *fmt)
                }
                else /* R16G16... */
                {
-                  if (len <= 13)
+                  if (_len <= 13)
                   {
                      FMT(R16G16_UINT);
                      FMT(R16G16_SINT);
@@ -735,7 +725,7 @@ enum glslang_format glslang_find_format(const char *fmt)
                }
                else
                {
-                  if (len <= 13)
+                  if (_len <= 13)
                   {
                      FMT(R32G32_UINT);
                      FMT(R32G32_SINT);

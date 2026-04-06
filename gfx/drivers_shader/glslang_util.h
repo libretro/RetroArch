@@ -185,21 +185,9 @@ bool shader_line_buf_init(struct shader_line_buf *buf);
 /* Free all memory owned by a shader_line_buf. */
 void shader_line_buf_free(struct shader_line_buf *buf);
 
-/* Append a line of known length into the buffer.
- * The line is copied and null-terminated within the buffer.
- * Returns false on alloc failure. */
-bool shader_line_buf_append(struct shader_line_buf *buf,
-      const char *line, size_t line_len);
-
-/* Convenience: append a C string (strlen computed internally). */
-bool shader_line_buf_append_str(struct shader_line_buf *buf, const char *line);
-
 /* Return pointer to the null-terminated line at the given index.
  * Valid until the next append (which may realloc). */
 const char *shader_line_buf_get(const struct shader_line_buf *buf, size_t index);
-
-/* Return length of line at the given index (excluding the '\0'). */
-size_t shader_line_buf_line_len(const struct shader_line_buf *buf, size_t index);
 
 /* Reads a shader file and outputs its contents into a shader_line_buf.
    Takes the path of the shader file and appends each line of the file
