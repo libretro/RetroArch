@@ -37,6 +37,27 @@
 #include "../../msg_hash.h"
 #include "../../input/input_driver.h"
 
+#define VULKAN_PASS_SET_TEXTURE(device, set, _sampler, binding, image_view, image_layout) \
+{ \
+   VkDescriptorImageInfo image_info; \
+   VkWriteDescriptorSet write; \
+   image_info.sampler         = _sampler; \
+   image_info.imageView       = image_view; \
+   image_info.imageLayout     = image_layout; \
+   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
+   write.pNext                = NULL; \
+   write.dstSet               = set; \
+   write.dstBinding           = binding; \
+   write.dstArrayElement      = 0; \
+   write.descriptorCount      = 1; \
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; \
+   write.pImageInfo           = &image_info; \
+   write.pBufferInfo          = NULL; \
+   write.pTexelBufferView     = NULL; \
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
+}
+
+
 static const uint32_t opaque_vert[] =
 #include "../drivers/vulkan_shaders/opaque.vert.inc"
 ;

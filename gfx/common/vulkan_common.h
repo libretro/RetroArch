@@ -46,34 +46,6 @@
 #include "../drivers_shader/shader_vulkan.h"
 #include "../include/vulkan/vulkan.h"
 
-#define VK_BUFFER_CHAIN_DISCARD(chain) \
-{ \
-   chain->current = chain->head; \
-   chain->offset  = 0; \
-}
-
-#define VULKAN_SYNC_TEXTURE_TO_GPU(device, tex_memory) \
-{ \
-   VkMappedMemoryRange range; \
-   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
-   range.pNext  = NULL; \
-   range.memory = tex_memory; \
-   range.offset = 0; \
-   range.size   = VK_WHOLE_SIZE; \
-   vkFlushMappedMemoryRanges(device, 1, &range); \
-}
-
-#define VULKAN_SYNC_TEXTURE_TO_CPU(device, tex_memory) \
-{ \
-   VkMappedMemoryRange range; \
-   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
-   range.pNext  = NULL; \
-   range.memory = tex_memory; \
-   range.offset = 0; \
-   range.size   = VK_WHOLE_SIZE; \
-   vkInvalidateMappedMemoryRanges(device, 1, &range); \
-}
-
 #define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, src_queue_family_idx, dst_queue_family_idx) \
 { \
    VkImageMemoryBarrier barrier; \
@@ -94,37 +66,7 @@
    vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
 }
 
-#define VULKAN_TRANSFER_IMAGE_OWNERSHIP(cmd, img, layout, src_stages, dst_stages, src_queue_family, dst_queue_family) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, layout, layout, 0, 0, src_stages, dst_stages, src_queue_family, dst_queue_family)
-
 #define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED)
-
-#define VK_DESCRIPTOR_MANAGER_RESTART(manager) \
-{ \
-   manager->current = manager->head; \
-   manager->count = 0; \
-}
-
-#define VK_MAP_PERSISTENT_TEXTURE(device, texture) vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped)
-
-#define VULKAN_PASS_SET_TEXTURE(device, set, _sampler, binding, image_view, image_layout) \
-{ \
-   VkDescriptorImageInfo image_info; \
-   VkWriteDescriptorSet write; \
-   image_info.sampler         = _sampler; \
-   image_info.imageView       = image_view; \
-   image_info.imageLayout     = image_layout; \
-   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
-   write.pNext                = NULL; \
-   write.dstSet               = set; \
-   write.dstBinding           = binding; \
-   write.dstArrayElement      = 0; \
-   write.descriptorCount      = 1; \
-   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; \
-   write.pImageInfo           = &image_info; \
-   write.pBufferInfo          = NULL; \
-   write.pTexelBufferView     = NULL; \
-   vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
-}
 
 #define VULKAN_SET_UNIFORM_BUFFER(_device, _set, _binding, _buffer, _offset, _range) \
 { \
@@ -145,79 +87,6 @@
    write.pTexelBufferView     = NULL; \
    vkUpdateDescriptorSets(_device, 1, &write, 0, NULL); \
 }
-
-#define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, vulkan_color) \
-{ \
-   float r        = (vulkan_color)->r; \
-   float g        = (vulkan_color)->g; \
-   float b        = (vulkan_color)->b; \
-   float a        = (vulkan_color)->a; \
-   pv[0].x        = (_x)     + 0.0f * (_width); \
-   pv[0].y        = (_y)     + 0.0f * (_height); \
-   pv[0].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[0].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
-   pv[0].color.r  = r; \
-   pv[0].color.g  = g; \
-   pv[0].color.b  = b; \
-   pv[0].color.a  = a; \
-   pv[1].x        = (_x)     + 0.0f * (_width); \
-   pv[1].y        = (_y)     + 1.0f * (_height); \
-   pv[1].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[1].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
-   pv[1].color.r  = r; \
-   pv[1].color.g  = g; \
-   pv[1].color.b  = b; \
-   pv[1].color.a  = a; \
-   pv[2].x        = (_x)     + 1.0f * (_width); \
-   pv[2].y        = (_y)     + 0.0f * (_height); \
-   pv[2].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[2].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
-   pv[2].color.r  = r; \
-   pv[2].color.g  = g; \
-   pv[2].color.b  = b; \
-   pv[2].color.a  = a; \
-   pv[3].x        = (_x)     + 1.0f * (_width); \
-   pv[3].y        = (_y)     + 1.0f * (_height); \
-   pv[3].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[3].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
-   pv[3].color.r  = r; \
-   pv[3].color.g  = g; \
-   pv[3].color.b  = b; \
-   pv[3].color.a  = a; \
-   pv[4].x        = (_x)     + 1.0f * (_width); \
-   pv[4].y        = (_y)     + 0.0f * (_height); \
-   pv[4].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[4].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
-   pv[4].color.r  = r; \
-   pv[4].color.g  = g; \
-   pv[4].color.b  = b; \
-   pv[4].color.a  = a; \
-   pv[5].x        = (_x)     + 0.0f * (_width); \
-   pv[5].y        = (_y)     + 1.0f * (_height); \
-   pv[5].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[5].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
-   pv[5].color.r  = r; \
-   pv[5].color.g  = g; \
-   pv[5].color.b  = b; \
-   pv[5].color.a  = a; \
-}
-
-/* We don't have to sync against previous TRANSFER,
- * since we observed the completion by fences.
- *
- * If we have a single texture_optimal, we would need to sync against
- * previous transfers to avoid races.
- *
- * We would also need to optionally maintain extra textures due to
- * changes in resolution, so this seems like the sanest and
- * simplest solution. */
-#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, tex) \
-   if (((tex)->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex)->memory != VK_NULL_HANDLE) \
-      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex)->memory) \
-
-#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, tex) \
-   if (((tex).flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex).memory != VK_NULL_HANDLE) \
-      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex).memory) \
 
 RETRO_BEGIN_DECLS
 
@@ -240,7 +109,6 @@ enum vk_flags
    VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
    VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15)
 };
-
 
 enum vk_texture_type
 {
