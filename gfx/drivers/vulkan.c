@@ -77,50 +77,50 @@
    float g        = (vulkan_color)->g; \
    float b        = (vulkan_color)->b; \
    float a        = (vulkan_color)->a; \
-   pv[0].x        = (_x)     + 0.0f * (_width); \
-   pv[0].y        = (_y)     + 0.0f * (_height); \
-   pv[0].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[0].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
+   pv[0].x        = (_x); \
+   pv[0].y        = (_y); \
+   pv[0].tex_x    = (_tex_x); \
+   pv[0].tex_y    = (_tex_y); \
    pv[0].color.r  = r; \
    pv[0].color.g  = g; \
    pv[0].color.b  = b; \
    pv[0].color.a  = a; \
-   pv[1].x        = (_x)     + 0.0f * (_width); \
-   pv[1].y        = (_y)     + 1.0f * (_height); \
-   pv[1].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[1].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
+   pv[1].x        = (_x); \
+   pv[1].y        = (_y) + (_height); \
+   pv[1].tex_x    = (_tex_x); \
+   pv[1].tex_y    = (_tex_y) + (_tex_height); \
    pv[1].color.r  = r; \
    pv[1].color.g  = g; \
    pv[1].color.b  = b; \
    pv[1].color.a  = a; \
-   pv[2].x        = (_x)     + 1.0f * (_width); \
-   pv[2].y        = (_y)     + 0.0f * (_height); \
-   pv[2].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[2].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
+   pv[2].x        = (_x) + (_width); \
+   pv[2].y        = (_y); \
+   pv[2].tex_x    = (_tex_x) + (_tex_width); \
+   pv[2].tex_y    = (_tex_y); \
    pv[2].color.r  = r; \
    pv[2].color.g  = g; \
    pv[2].color.b  = b; \
    pv[2].color.a  = a; \
-   pv[3].x        = (_x)     + 1.0f * (_width); \
-   pv[3].y        = (_y)     + 1.0f * (_height); \
-   pv[3].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[3].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
+   pv[3].x        = (_x) + (_width); \
+   pv[3].y        = (_y) + (_height); \
+   pv[3].tex_x    = (_tex_x) + (_tex_width); \
+   pv[3].tex_y    = (_tex_y) + (_tex_height); \
    pv[3].color.r  = r; \
    pv[3].color.g  = g; \
    pv[3].color.b  = b; \
    pv[3].color.a  = a; \
-   pv[4].x        = (_x)     + 1.0f * (_width); \
-   pv[4].y        = (_y)     + 0.0f * (_height); \
-   pv[4].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[4].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
+   pv[4].x        = (_x) + (_width); \
+   pv[4].y        = (_y); \
+   pv[4].tex_x    = (_tex_x) + (_tex_width); \
+   pv[4].tex_y    = (_tex_y); \
    pv[4].color.r  = r; \
    pv[4].color.g  = g; \
    pv[4].color.b  = b; \
    pv[4].color.a  = a; \
-   pv[5].x        = (_x)     + 0.0f * (_width); \
-   pv[5].y        = (_y)     + 1.0f * (_height); \
-   pv[5].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[5].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
+   pv[5].x        = (_x); \
+   pv[5].y        = (_y) + (_height); \
+   pv[5].tex_x    = (_tex_x); \
+   pv[5].tex_y    = (_tex_y) + (_tex_height); \
    pv[5].color.r  = r; \
    pv[5].color.g  = g; \
    pv[5].color.b  = b; \
@@ -514,40 +514,46 @@ static void vulkan_write_quad_descriptors(
       const struct vk_texture *texture,
       VkSampler sampler)
 {
-   VkWriteDescriptorSet write;
+   VkWriteDescriptorSet writes[2];
    VkDescriptorBufferInfo buffer_info;
+   VkDescriptorImageInfo image_info;
+   uint32_t write_count                = 1;
 
-   buffer_info.buffer              = buffer;
-   buffer_info.offset              = offset;
-   buffer_info.range               = range;
+   buffer_info.buffer                  = buffer;
+   buffer_info.offset                  = offset;
+   buffer_info.range                   = range;
 
-   write.sType                     = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-   write.pNext                     = NULL;
-   write.dstSet                    = set;
-   write.dstBinding                = 0;
-   write.dstArrayElement           = 0;
-   write.descriptorCount           = 1;
-   write.descriptorType            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-   write.pImageInfo                = NULL;
-   write.pBufferInfo               = &buffer_info;
-   write.pTexelBufferView          = NULL;
-   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+   writes[0].sType                     = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+   writes[0].pNext                     = NULL;
+   writes[0].dstSet                    = set;
+   writes[0].dstBinding                = 0;
+   writes[0].dstArrayElement           = 0;
+   writes[0].descriptorCount           = 1;
+   writes[0].descriptorType            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   writes[0].pImageInfo                = NULL;
+   writes[0].pBufferInfo               = &buffer_info;
+   writes[0].pTexelBufferView          = NULL;
 
    if (texture)
    {
-      VkDescriptorImageInfo image_info;
+      image_info.sampler               = sampler;
+      image_info.imageView             = texture->view;
+      image_info.imageLayout           = texture->layout;
 
-      image_info.sampler              = sampler;
-      image_info.imageView            = texture->view;
-      image_info.imageLayout          = texture->layout;
-
-      write.dstSet                    = set;
-      write.dstBinding                = 1;
-      write.descriptorCount           = 1;
-      write.descriptorType            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      write.pImageInfo                = &image_info;
-      vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+      writes[1].sType                  = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      writes[1].pNext                  = NULL;
+      writes[1].dstSet                 = set;
+      writes[1].dstBinding             = 1;
+      writes[1].dstArrayElement        = 0;
+      writes[1].descriptorCount        = 1;
+      writes[1].descriptorType         = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      writes[1].pImageInfo             = &image_info;
+      writes[1].pBufferInfo            = NULL;
+      writes[1].pTexelBufferView       = NULL;
+      write_count                      = 2;
    }
+
+   vkUpdateDescriptorSets(device, write_count, writes, 0, NULL);
 }
 
 
@@ -1511,7 +1517,12 @@ static void gfx_display_vk_draw_pipeline(
          break;
    }
 
-   t += 0.01;
+   t += 0.01f;
+   /* Wrap to maintain float precision over long sessions.
+    * Period of 2*pi*100 ensures trig-based shader animations
+    * (sin(t), cos(t)) cycle seamlessly. */
+   if (t > 628.0f)
+      t = fmodf(t, 628.318530f);
 }
 #endif
 
@@ -1826,14 +1837,28 @@ static void vulkan_font_render_line(vk_t *vk,
    vk_color.b                       = color[2];
    vk_color.a                       = color[3];
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that vulkan_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= vulkan_get_message_width(font, msg, msg_len, scale);
-         break;
-      case TEXT_ALIGN_CENTER:
-         x -= vulkan_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      int width_accum     = 0;
+      const char *scan    = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
+
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    while (msg < msg_end)
@@ -1940,60 +1965,17 @@ static void vulkan_font_flush(vk_t *vk, vulkan_raster_t *font)
 
    if (font->needs_update)
    {
-      VkCommandBuffer staging;
-      VkSubmitInfo submit_info;
-      VkCommandBufferAllocateInfo cmd_info;
-      VkCommandBufferBeginInfo begin_info;
-      struct vk_texture *dynamic_tex  = NULL;
-      struct vk_texture *staging_tex  = NULL;
-
-      cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-      cmd_info.pNext              = NULL;
-      cmd_info.commandPool        = vk->staging_pool;
-      cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-      cmd_info.commandBufferCount = 1;
-      vkAllocateCommandBuffers(vk->context->device, &cmd_info, &staging);
-
-      begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-      begin_info.pNext            = NULL;
-      begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-      begin_info.pInheritanceInfo = NULL;
-      vkBeginCommandBuffer(staging, &begin_info);
+      struct vk_texture *dynamic_tex  = &font->texture_optimal;
+      struct vk_texture *staging_tex  = &font->texture;
 
       VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, font->texture);
 
-      dynamic_tex                 = &font->texture_optimal;
-      staging_tex                 = &font->texture;
-
-      vulkan_copy_staging_to_dynamic(vk, staging,
+      /* Record the staging-to-dynamic copy into the main per-frame
+       * command buffer instead of a separate submit + vkQueueWaitIdle.
+       * The pipeline barriers inside vulkan_copy_staging_to_dynamic
+       * ensure the transfer completes before the fragment shader reads. */
+      vulkan_copy_staging_to_dynamic(vk, vk->cmd,
             dynamic_tex, staging_tex);
-
-      vkEndCommandBuffer(staging);
-
-#ifdef HAVE_THREADS
-      slock_lock(vk->context->queue_lock);
-#endif
-
-      submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-      submit_info.pNext                = NULL;
-      submit_info.waitSemaphoreCount   = 0;
-      submit_info.pWaitSemaphores      = NULL;
-      submit_info.pWaitDstStageMask    = NULL;
-      submit_info.commandBufferCount   = 1;
-      submit_info.pCommandBuffers      = &staging;
-      submit_info.signalSemaphoreCount = 0;
-      submit_info.pSignalSemaphores    = NULL;
-      vkQueueSubmit(vk->context->queue,
-            1, &submit_info, VK_NULL_HANDLE);
-
-      vkQueueWaitIdle(vk->context->queue);
-
-#ifdef HAVE_THREADS
-      slock_unlock(vk->context->queue_lock);
-#endif
-
-      vkFreeCommandBuffers(vk->context->device,
-            vk->staging_pool, 1, &staging);
 
       font->needs_update = false;
    }
