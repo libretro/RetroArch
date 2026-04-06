@@ -12342,11 +12342,10 @@ static void ozone_set_header(ozone_handle_t *ozone)
             size_t tab_texture = ozone->tabs[ozone->categories_selection_ptr];
             ozone->header_icon = ozone->tab_textures[tab_texture];
 
-            /* TODO/FIXME - cannot turn this one into memcmp -
-             * probably because label can be shorter than 
-             * MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR */
-            if (string_is_equal(label,
-                MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
+            if (label && memcmp(label,
+                     MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR,
+                     sizeof(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)) 
+                  == 0)
                ozone_get_playlist_index_header_icon(ozone);
             else if (ozone->depth > 1)
                ozone_search_header_icon(ozone, &enum_idx, path, label, type);
