@@ -4232,12 +4232,6 @@ int action_ok_path_use_directory(const char *path,
 }
 
 #ifdef HAVE_LIBRETRODB
-static int action_ok_scan_file(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return action_scan_file(path, label, type, idx);
-}
-
 static int action_ok_path_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
