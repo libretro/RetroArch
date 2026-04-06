@@ -3221,7 +3221,7 @@ void input_overlay_auto_rotate_(
       screen_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
 
    /* Get orientation of active overlay */
-   if (!string_is_empty(ol->active->name))
+   if (ol->active->name && *ol_active->name)
    {
       if (strstr(ol->active->name, "landscape"))
          active_overlay_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
@@ -3247,7 +3247,7 @@ void input_overlay_auto_rotate_(
       if (!desc)
          continue;
 
-      if (!string_is_empty(desc->next_index_name))
+      if (desc->next_index_name && *desc->next_index_name)
       {
          bool next_overlay_found = false;
          if (active_overlay_orientation == OVERLAY_ORIENTATION_LANDSCAPE)
@@ -4245,7 +4245,7 @@ size_t input_config_get_bind_string_joykey(
             (unsigned)bind->joykey);
    }
 
-   if (!string_is_empty(suffix))
+   if (suffix && *suffix)
       _len += snprintf(s + _len, len - _len, " %s", suffix);
 
    return _len;
@@ -4273,7 +4273,7 @@ size_t input_config_get_bind_string_joyaxis(
       _len += snprintf(s + _len, len - _len, "+%u",
             (unsigned)AXIS_POS_GET(bind->joyaxis));
 
-   if (!string_is_empty(suffix))
+   if (suffix && *suffix)
       _len += snprintf(s + _len, len - _len, " %s", suffix);
 
    return _len;
@@ -5261,7 +5261,7 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
       {
          const char *next_device_name = input_config_get_device_name(j);
 
-         if (string_is_empty(next_device_name))
+         if (!next_device_name || !*next_device_name)
             continue;
 
          /* Check if names match */
@@ -5356,7 +5356,7 @@ size_t input_config_get_device_name_size(unsigned port)
 void input_config_set_device_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(name))
+   if (!name || !*name)
       return;
 
    strlcpy(input_st->input_device_info[port].name, name,
@@ -5368,7 +5368,7 @@ void input_config_set_device_name(unsigned port, const char *name)
 void input_config_set_device_display_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (!string_is_empty(name))
+   if (name && *name)
       strlcpy(input_st->input_device_info[port].display_name, name,
             sizeof(input_st->input_device_info[port].display_name));
 }
@@ -5376,7 +5376,7 @@ void input_config_set_device_display_name(unsigned port, const char *name)
 void input_config_set_device_config_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (!string_is_empty(name))
+   if (name && *name)
       strlcpy(input_st->input_device_info[port].config_name, name,
             sizeof(input_st->input_device_info[port].config_name));
 }
@@ -5384,7 +5384,7 @@ void input_config_set_device_config_name(unsigned port, const char *name)
 void input_config_set_device_joypad_driver(unsigned port, const char *driver)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (!string_is_empty(driver))
+   if (driver && *driver)
       strlcpy(input_st->input_device_info[port].joypad_driver, driver,
             sizeof(input_st->input_device_info[port].joypad_driver));
 }
@@ -5454,13 +5454,13 @@ void input_config_set_mouse_display_name(unsigned port, const char *name)
    name_ascii[0] = '\0';
 
    /* Strip non-ASCII characters */
-   if (!string_is_empty(name))
+   if (name && *name)
    {
       string_copy_only_ascii(name_ascii, name);
       string_trim_whitespace(name_ascii);
    }
 
-   if (!string_is_empty(name_ascii))
+   if (name_ascii && *name_ascii)
       strlcpy(input_st->input_mouse_info[port].display_name, name_ascii,
             sizeof(input_st->input_mouse_info[port].display_name));
 }
@@ -5514,7 +5514,9 @@ void config_read_keybinds_conf(void *data)
          prefix[0]                  = '\0';
          input_config_get_prefix(prefix, sizeof(prefix), i, meta);
 
-         if (!btn || string_is_empty(prefix))
+         if (!prefix || !*prefix)
+            continue;
+         if (!btn)
             continue;
 
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
@@ -5524,7 +5526,7 @@ void config_read_keybinds_conf(void *data)
             input_keyboard_mapping_bits(0, bind->key);
 
          entry                      = config_get_entry(conf, str);
-         if (entry && !string_is_empty(entry->value))
+         if (entry && entry->value && *entry->value)
             bind->key               = input_config_translate_str_to_rk(
                   entry->value, strlen(entry->value));
 
@@ -5951,7 +5953,7 @@ static const char *input_overlay_path(bool want_osk)
    /* try based on the playlist entry first */
    if (playlist)
    {
-      if (!string_is_empty(content_path))
+      if (content_path && *content_path)
       {
          const struct playlist_entry *entry = NULL;
          playlist_get_index_by_path(playlist, content_path, &entry);
@@ -5994,7 +5996,7 @@ static const char *input_overlay_path(bool want_osk)
    }
 
    /* maybe based on the content's directory name */
-   if (!string_is_empty(content_path))
+   if (content_path && *content_path)
    {
       char dirname[DIR_MAX_LENGTH];
       fill_pathname_parent_dir_name(dirname, content_path, sizeof(dirname));
