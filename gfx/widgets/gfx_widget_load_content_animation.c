@@ -386,9 +386,9 @@ bool gfx_widget_start_load_content_animation(void)
          /* Get entry db_name, */
          if (!string_is_empty(entry->db_name))
          {
-            fill_pathname(state->system_name, entry->db_name, "",
+            state->system_name_len = fill_pathname(
+                  state->system_name, entry->db_name, "",
                   sizeof(state->system_name));
-            state->system_name_len = strlen(state->system_name);
 
             has_system  = true;
             has_db_name = true;
@@ -434,11 +434,9 @@ bool gfx_widget_start_load_content_animation(void)
    /* If we haven't yet set the content name,
     * use content file name as a fallback */
    if (!has_content)
-   {
-      fill_pathname(state->content_name, path_basename(content_path),
+      state->content_name_len = fill_pathname(
+            state->content_name, path_basename(content_path),
             "", sizeof(state->content_name));
-      state->content_name_len = strlen(state->content_name);
-   }
 
    /* Check whether system name has been set or if the name
     * is a copy of info file database with multiple entries */
