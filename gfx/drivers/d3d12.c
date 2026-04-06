@@ -1383,8 +1383,8 @@ static void d3d12_font_render_line(
    size_t i;
    D3D12_RANGE     range;
    unsigned        count;
-   const char* msg_end              = msg + msg_len;
    d3d12_sprite_t* v                = NULL;
+   d3d12_sprite_t* v_first          = NULL;
    d3d12_sprite_t* vbo_start        = NULL;
    int x                            = pre_x;
    int y                            = roundf((1.0 - pos_y) * height);
@@ -1392,37 +1392,19 @@ static void d3d12_font_render_line(
    if (d3d12->sprites.offset + msg_len > (unsigned)d3d12->sprites.capacity)
       d3d12->sprites.offset = 0;
 
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that d3d12_get_message_width would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum     = 0;
-      const char *scan    = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
    range.Begin = 0;
    range.End   = 0;
    D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
 
    v           = vbo_start + d3d12->sprites.offset;
+   v_first     = v;
    range.Begin = (uintptr_t)v - (uintptr_t)vbo_start;
 
+   /* Single-pass: build all vertices with x starting at pre_x.
+    * If alignment is right/center, retroactively shift pos.x
+    * for all emitted sprites after the loop — avoids a redundant
+    * measurement pass that would re-decode UTF-8 and re-lookup
+    * every glyph. */
    for (i = 0; i < msg_len; i++)
    {
       const struct font_glyph* glyph;
@@ -1433,7 +1415,6 @@ static void d3d12_font_render_line(
       if (skip > 1)
          i += skip - 1;
 
-      /* Do something smarter here ... */
       if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
          if (!(glyph = glyph_q))
             continue;
@@ -1460,6 +1441,25 @@ static void d3d12_font_render_line(
 
       x                 += glyph->advance_x * scale;
       y                 += glyph->advance_y * scale;
+   }
+
+   /* Retroactive x-shift for right/center alignment.
+    * total_advance = x - pre_x gives the pixel width that would have
+    * been computed by the old measurement pass, but we already have it
+    * for free from the vertex-building loop above. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
+   {
+      float shift;
+      int total_advance     = x - pre_x;
+      d3d12_sprite_t* s;
+
+      if (text_align == TEXT_ALIGN_RIGHT)
+         shift = (float)total_advance / (float)d3d12->chain.viewport.Width;
+      else
+         shift = (float)(total_advance / 2) / (float)d3d12->chain.viewport.Width;
+
+      for (s = v_first; s < v; s++)
+         s->pos.x -= shift;
    }
 
    range.End = (uintptr_t)v - (uintptr_t)vbo_start;
