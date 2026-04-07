@@ -398,7 +398,7 @@ static int general_push(menu_displaylist_info_t *info,
             if (!valid_extensions)
                valid_extensions = info->exts;
 
-            if (*valid_extensions)
+            if (valid_extensions && *valid_extensions)
             {
                CHECK_SIZE(strlen(valid_extensions) + 12);
                _len += strlcpy(newstr2 + _len, valid_extensions, size - _len);

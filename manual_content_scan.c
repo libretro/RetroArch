@@ -1290,7 +1290,10 @@ bool manual_content_scan_get_task_config(
       return false;
 
    if (!path_is_directory(scan_settings.content_dir))
+   {
       scan_settings.scan_single_file = true;
+      scan_settings.search_recursively = false;
+   }
    else
       scan_settings.scan_single_file = false;
 
