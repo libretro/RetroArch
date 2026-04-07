@@ -437,7 +437,7 @@ static bool smb_free(const char *path,
       char new_path[PATH_MAX_LENGTH];
       time_t t;
       struct tm tm_buf;
-      char ts[16];
+      char ts[32];
 
       time(&t);
       rtime_localtime(&t, &tm_buf);
