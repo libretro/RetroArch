@@ -191,7 +191,8 @@ enum db_flags_enum
    DB_HANDLE_FLAG_SCAN_STARTED            = (1 << 1),
    DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH = (1 << 2),
    DB_HANDLE_FLAG_SHOW_HIDDEN_FILES       = (1 << 3),
-   DB_HANDLE_FLAG_USE_FIRST_MATCH_ONLY    = (1 << 4)
+   DB_HANDLE_FLAG_USE_FIRST_MATCH_ONLY    = (1 << 4),
+   DB_HANDLE_FLAG_DO_MENU_REFRESH         = (1 << 5)
 };
 
 enum manual_scan_status
@@ -1651,7 +1652,7 @@ bool task_push_dbscan(
 {
    manual_content_scan_set_menu_content_dir(fullpath);
    /*manual_content_scan_set_menu_scan_method(MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);*/
-   return task_push_manual_content_scan(NULL,NULL);
+   return task_push_manual_content_scan(false);
 }
 
 #endif
@@ -1783,7 +1784,12 @@ static void cb_task_manual_content_scan(
 end:
    /* When creating playlists, the playlist tabs of
     * any active menu driver must be refreshed */
-   if (menu_st->driver_ctx->environ_cb)
+   if (   
+#ifdef HAVE_LIBRETRODB
+         (!manual_scan || 
+         (manual_scan->flags & DB_HANDLE_FLAG_DO_MENU_REFRESH)) && 
+#endif
+       menu_st->driver_ctx->environ_cb)
       menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
             NULL, menu_st->userdata);
 #endif
@@ -2441,8 +2447,7 @@ static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
 }
 
 bool task_push_manual_content_scan(
-      const playlist_config_t *playlist_config,
-      const char *playlist_directory)
+      bool do_menu_refresh)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -2489,6 +2494,9 @@ bool task_push_manual_content_scan(
 
    if (settings->bools.show_hidden_files)
       manual_scan->flags |= DB_HANDLE_FLAG_SHOW_HIDDEN_FILES;
+
+   if (do_menu_refresh)
+      manual_scan->flags |= DB_HANDLE_FLAG_DO_MENU_REFRESH;
 
    manual_scan->content_database_path               = strdup(settings->paths.path_content_database);
 #endif
