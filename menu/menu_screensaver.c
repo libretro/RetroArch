@@ -461,7 +461,7 @@ static bool menu_screensaver_update_state(
 #if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
       char pkg_path[PATH_MAX_LENGTH];
       /* Get font file path */
-      if (!string_is_empty(dir_assets))
+      if (dir_assets && *dir_assets)
          fill_pathname_join_special(pkg_path, dir_assets, MENU_SS_PKG_DIR, sizeof(pkg_path));
       else
          strlcpy(pkg_path, MENU_SS_PKG_DIR, sizeof(pkg_path));

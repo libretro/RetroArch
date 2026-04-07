@@ -210,7 +210,7 @@ static int filebrowser_parse(
    enum menu_displaylist_ctl_state type         = (enum menu_displaylist_ctl_state)type_data;
    enum filebrowser_enums filebrowser_type      = filebrowser_get_type();
    bool allow_parent_directory                  = true;
-   bool path_is_compressed                      = !string_is_empty(path)
+   bool path_is_compressed                      = path && *path
          && path_is_compressed_file(path);
    menu_search_terms_t *search_terms            = menu_entries_search_get_terms();
 #ifdef IOS
@@ -249,7 +249,7 @@ static int filebrowser_parse(
          ret = file_archive_get_file_list_noalloc(&str_list,
                path, filter_ext ? exts : NULL);
    }
-   else if (!string_is_empty(path))
+   else if (path && *path)
    {
       if (   type_default == FILE_TYPE_SHADER_PRESET
           || type_default == FILE_TYPE_SHADER
@@ -351,7 +351,7 @@ static int filebrowser_parse(
       const char *file_path             = str_list.elems[i].data;
       int attr                          = str_list.elems[i].attr.i; /* [8] cache attr — read twice below */
 
-      if (string_is_empty(file_path))
+      if (!file_path || !*file_path)
          continue;
 
       dir_only_mode      = (   filebrowser_type == FILEBROWSER_SELECT_DIR
@@ -364,7 +364,7 @@ static int filebrowser_parse(
       if (!path_is_compressed)
       {
          file_path = path_basename_nocompression(file_path);
-         if (string_is_empty(file_path))
+         if (!file_path || !*file_path)
             continue;
       }
 
@@ -376,7 +376,8 @@ static int filebrowser_parse(
          for (j = 0; j < search_terms->size; j++)
          {
             const char *search_term = search_terms->terms[j];
-            if (!string_is_empty(search_term) && !strcasestr(file_path, search_term))
+            if (search_term && *search_term 
+                && !strcasestr(file_path, search_term))
             {
                skip_entry = true;
                break;
@@ -854,7 +855,7 @@ static int menu_displaylist_parse_core_info(
                sizeof(tmp_path));
 
          /* If content path is empty, fall back to global system dir path */
-         if (string_is_empty(tmp_path))
+         if (!*tmp_path)
             firmware_info.directory.system = settings->paths.directory_system;
          else
          {
@@ -1050,7 +1051,7 @@ end:
 #endif
 
 #if !defined(IOS) || !IOS /* should this be allowed on jailbroken iOS devices? */
-      if (!string_is_empty(core_path))
+      if (core_path && *core_path)
       {
          /* Check whether core is currently locked */
          bool core_locked = core_info_get_core_lock(core_path, true);
@@ -1447,14 +1448,10 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    /* Fetch options */
    retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
-   if (!coreopts)
-      return 0;
-
    /* Path string has the format core_option_<opt_idx>
     * > Extract option index */
-   if (string_is_empty(info_path))
+   if (!coreopts || !info_path || !*info_path)
       return 0;
-
    if (!(opt = strrchr(info_path, '_')))
       return 0;
 
@@ -1466,7 +1463,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    option = (struct core_option*)&coreopts->opts[option_index];
    val    = core_option_manager_get_val(coreopts, option_index);
 
-   if (!option || string_is_empty(val))
+   if (!option || !val || !*val)
       return 0;
 
    lbl_enabled  = msg_hash_to_str(MENU_ENUM_LABEL_ENABLED);
@@ -1480,7 +1477,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
       const char *val_str       = option->vals->elems[j].data;
       const char *val_label_str = option->val_labels->elems[j].data;
 
-      if (!string_is_empty(val_label_str))
+      if (val_label_str && *val_label_str)
       {
          if (string_is_equal(val_label_str, lbl_enabled))
             val_label_str = val_on_str;
@@ -1771,8 +1768,8 @@ static unsigned menu_displaylist_parse_supported_cores(
          const char *core_path        = core_info->path;
          const char *core_name        = core_info->display_name;
 
-         if (   string_is_empty(core_path)
-             || string_is_empty(core_name))
+         if (   (!core_path || !*core_path)
+             || (!core_name || !*core_name))
             continue;
 
          /* If the content is supported by the currently
@@ -1862,7 +1859,7 @@ static unsigned menu_displaylist_parse_supported_cores(
          const char *core_path             = core_path_current;
          const char *core_name             = sysinfo ? sysinfo->library_name : NULL;
 
-         if (!string_is_empty(core_path))
+         if (core_path && *core_path)
          {
             /* If we have a valid 'currently running' core
              * path, add an entry for this core to the list */
@@ -1985,7 +1982,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
             sizeof(entry));
       _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
-      if (string_is_empty(cpu_model))
+      if (!cpu_model || !*cpu_model)
          strlcpy(entry + _len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                sizeof(entry) - _len);
@@ -14108,7 +14105,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                core_info                          = playlist_entry_get_core_info(entry);
 
                if (     core_info
-                     && !string_is_empty(core_info->display_name))
+                     && (core_info->display_name && *core_info->display_name))
                {
                   size_t selection_idx            = 0;
 
@@ -14377,7 +14374,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   bool game_specific_options      = settings->bools.game_specific_options;
                   const char *category            = info->path;
-                  bool is_category                = !string_is_empty(category);
+                  bool is_category                = category && *category;
                   core_option_manager_t *coreopts = NULL;
 
                   if (game_specific_options && !is_category)
@@ -14442,7 +14439,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                * have to use nested_list_item_get_address() here */
 
                               if (      category_visible
-                                    && !string_is_empty(category_id))
+                                    && (category_id && *category_id))
                               {
                                  if (menu_entries_append(info->list,
                                           category_id,
@@ -15647,7 +15644,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_DATABASES:
             menu_entries_clear(info->list);
             filebrowser_clear_type();
-            if (!string_is_empty(info->exts))
+            if (info->exts && *info->exts)
                free(info->exts);
             if (info->path)
                free(info->path);
@@ -15717,7 +15714,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      break;
                }
 
-               if (!string_is_empty(info->exts))
+               if (info->exts && *info->exts)
                   free(info->exts);
                info->exts         = strdup(new_exts);
                use_filebrowser    = true;
@@ -15755,7 +15752,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                   strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
                }
-               if (!string_is_empty(info->exts))
+               if (info->exts && *info->exts)
                   free(info->exts);
                info->exts         = strdup(new_exts);
                use_filebrowser    = true;
@@ -15793,7 +15790,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
 #endif
-               if (!string_is_empty(info->exts))
+               if (info->exts && *info->exts)
                   free(info->exts);
                info->exts = strdup(new_exts);
             }
@@ -15880,7 +15877,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
             menu_entries_clear(info->list);
             filebrowser_clear_type();
-            if (!string_is_empty(info->exts))
+            if (info->exts && *info->exts)
                free(info->exts);
             switch (type)
             {
@@ -15992,7 +15989,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                if (frontend_driver_get_core_extension(
                         ext_name, sizeof(ext_name)))
                {
-                  if (!string_is_empty(info->exts))
+                  if (info->exts && *info->exts)
                      free(info->exts);
                   info->exts = strdup(ext_name);
                }
@@ -16730,7 +16727,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
       if (use_filebrowser)
       {
-         if (string_is_empty(info->path))
+         if (!info->path || !*info->path)
          {
             if (frontend_driver_parse_drive_list(info->list, load_content) != 0)
                if (menu_entries_append(info->list, "/", "",
@@ -16756,7 +16753,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   );
 
             /* Apply pending selection */
-            if (!string_is_empty(pending_selection))
+            if (pending_selection && *pending_selection)
             {
                size_t selection_idx = 0;
 

@@ -1081,7 +1081,7 @@ static void xmb_draw_text(
 static void xmb_messagebox(void *data, const char *message)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
-   if (xmb && !string_is_empty(message))
+   if (xmb && message && *message)
       xmb->box_message = strdup(message);
 }
 
@@ -1139,7 +1139,7 @@ static void xmb_render_messagebox_internal(
    {
       const char *msg = list.elems[i].data;
 
-      if (!string_is_empty(msg))
+      if (msg && *msg)
       {
          int width = font_driver_get_message_width(xmb->font, msg, strlen(msg), 1.0f);
          if (width > longest_width)
@@ -1228,9 +1228,9 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
       strlcpy(s + _len, ".png", len - _len);
    }
 
-   if (!string_is_empty(s) && path_is_valid(s))
+   if (s && *s && path_is_valid(s))
       ;/* no-op */
-   else if (!string_is_empty(path_menu_wallpaper))
+   else if (path_menu_wallpaper && *path_menu_wallpaper)
       strlcpy(s, path_menu_wallpaper, len);
    else if (xmb_color_theme == XMB_THEME_WALLPAPER)
       fill_pathname_application_special(s, len,
@@ -1245,7 +1245,7 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
 #endif
       )
    {
-      if (!string_is_empty(xmb->bg_file_path) && !path_is_valid(s))
+      if ((xmb->bg_file_path && *xmb->bg_file_path) && !path_is_valid(s))
          strlcpy(s, xmb->bg_file_path, len);
    }
 }
@@ -1309,7 +1309,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
       entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
       menu_entry_get(&entry, 0, i, NULL, true);
 
-      if (!string_is_empty(entry.label))
+      if (*entry.label)
       {
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
@@ -1369,7 +1369,7 @@ static void xmb_update_thumbnail_image(void *data)
 
    /* imageviewer content requires special treatment... */
    if (
-            !string_is_empty(menu_st->thumbnail_path_data->content_core_name)
+            *menu_st->thumbnail_path_data->content_core_name
          &&  string_is_equal(menu_st->thumbnail_path_data->content_core_name,
             "imageviewer"))
    {
@@ -1493,7 +1493,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    if (xmb->is_playlist)
    {
       /* Playlist content */
-      if (string_is_empty(s))
+      if (s && *s)
       {
          menu_list_t *menu_list = menu_st->entries.list;
          size_t list_size       = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
@@ -1519,14 +1519,14 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    else if (xmb->is_db_manager_list)
    {
       /* Database list content */
-      if (string_is_empty(s))
+      if (!s || !*s)
       {
          menu_entry_t entry;
          MENU_ENTRY_INITIALIZE(entry);
          entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
          menu_entry_get(&entry, 0, selection, NULL, true);
 
-         if (!string_is_empty(entry.path))
+         if (*entry.path)
          {
             gfx_thumbnail_set_content(menu_st->thumbnail_path_data, entry.path);
             xmb->fullscreen_thumbnails_available = true;
@@ -1537,7 +1537,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    else if (xmb->is_explore_list)
    {
       /* Explore list */
-      if (string_is_empty(s))
+      if (!s || !*s)
       {
          /* Selected entry */
          menu_entry_t entry;
@@ -1564,8 +1564,8 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
          menu_entry_get(&entry, 0, selection, NULL, true);
 
-         if (     !string_is_empty(entry.path)
-               && !string_is_empty(node->fullpath)
+         if (     *entry.path
+               && (node->fullpath && *node->fullpath)
                && entry.type == FILE_TYPE_IMAGEVIEWER)
          {
             gfx_thumbnail_set_content_image(menu_st->thumbnail_path_data,
@@ -1574,7 +1574,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          }
       }
    }
-   else if (!string_is_empty(s))
+   else if (s && *s)
    {
       /* Annoying leftovers...
        * This is required to ensure that thumbnails are
@@ -1635,7 +1635,7 @@ static bool gfx_thumbnail_set_icon_playlist(
    db_name       = entry->db_name;
 
    /* Content without a path is invalid by definition */
-   if (string_is_empty(content_path))
+   if (!content_path || !*content_path)
       return false;
 
    /* Cache content path
@@ -1645,12 +1645,12 @@ static bool gfx_thumbnail_set_icon_playlist(
 
    /* Cache core name
     * (This is required for imageviewer content) */
-   if (!string_is_empty(core_name))
+   if (core_name && *core_name)
       strlcpy(path_data->content_core_name,
             core_name, sizeof(path_data->content_core_name));
 
    /* Get content label */
-   if (!string_is_empty(content_label))
+   if (content_label && *content_label)
       path_data->content_label_len = strlcpy(path_data->content_label,
             content_label, sizeof(path_data->content_label));
    else
@@ -1682,14 +1682,14 @@ static bool gfx_thumbnail_set_icon_playlist(
    path_data->playlist_index = idx;
 
    /* Redundant error check... */
-   if (string_is_empty(path_data->content_img))
+   if (!*path_data->content_img)
       return false;
 
    /* Thumbnail image name is done -> now check if
     * per-content database name is defined */
-   if (string_is_empty(db_name))
+   if (!db_name || !*db_name)
       playlist_get_db_name(playlist, idx, &db_name);
-   if (!string_is_empty(db_name))
+   if (db_name && *db_name)
    {
       /* Hack: There is only one MAME thumbnail repo,
        * so filter any input starting with 'MAME...' */
@@ -1736,7 +1736,7 @@ static void xmb_set_dynamic_icon_content(
       return;
 
    /* Playlist content */
-   if (string_is_empty(s))
+   if (!s || !*s)
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       menu_list_t *menu_list     = menu_st->entries.list;
@@ -1768,7 +1768,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       return;
 
    /* If path is empty, just reset thumbnail */
-   if (string_is_empty(xmb->savestate_thumbnail_file_path))
+   if (!*xmb->savestate_thumbnail_file_path)
       gfx_thumbnail_reset(&xmb->thumbnails.savestate);
    else if (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       gfx_thumbnail_request_file(
@@ -2281,7 +2281,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
    while ((scrub_char_ptr = strchr(xmb->title_name, ':')))
       *scrub_char_ptr = '_';
 
-   if (!string_is_empty(xmb->title_name))
+   if (*xmb->title_name)
    {
       int sub = string_find_index_substring_string(xmb->title_name, " (");
       if (sub > 0)
@@ -2462,7 +2462,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
             playlist_get_index(playlist_get_cached(), entry_idx, &pl_entry);
 
             if (     pl_entry
-                  && !string_is_empty(pl_entry->db_name)
+                  && (pl_entry->db_name && *pl_entry->db_name)
                   && (db_node = RHMAP_GET_STR(xmb->playlist_db_node_map, pl_entry->db_name)))
                texture = (enum_idx == MENU_ENUM_LABEL_HORIZONTAL_MENU) ? db_node->icon : db_node->content_icon;
             else
@@ -2822,7 +2822,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.type_default                = FILE_TYPE_PLAIN;
    info.enum_idx                    = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
-   if (!string_is_empty(info.path))
+   if (info.path && *info.path)
    {
       size_t i;
 
@@ -3433,7 +3433,7 @@ static void xmb_populate_entries(void *data,
          && !(xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && xmb->depth > 2);
 
    if (     (xmb->is_quick_menu || xmb->is_state_slot)
-         && !string_is_empty(xmb->savestate_thumbnail_file_path))
+         && *xmb->savestate_thumbnail_file_path)
    {
       xmb->fullscreen_thumbnails_available = true;
    }
@@ -4024,7 +4024,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   playlist_get_index(playlist_get_cached(), 0, &pl_entry);
 
                   if (      pl_entry
-                        && !string_is_empty(pl_entry->db_name)
+                        && (pl_entry->db_name && *pl_entry->db_name)
                         && (db_node = RHMAP_GET_STR(xmb->playlist_db_node_map, pl_entry->db_name)))
                   {
                      switch (type)
@@ -4353,7 +4353,7 @@ static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx
    if (!line_ticker)
       return false;
 
-   if (    string_is_empty(line_ticker->str)
+   if (    (!line_ticker->str || !*line_ticker->str)
        || (line_ticker->line_len  < 1)
        || (line_ticker->max_lines < 1))
       goto end;
@@ -4373,7 +4373,7 @@ static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx
          (int)line_ticker->line_len,
          100, 0);
 
-   if (string_is_empty(wrapped_str))
+   if (!wrapped_str || !*wrapped_str)
       goto end;
 
    /* Split into component lines */
@@ -4658,7 +4658,7 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
       return false;
 
    if (  !line_ticker->font
-       || string_is_empty(line_ticker->src_str)
+       || (!line_ticker->src_str || !*line_ticker->src_str)
        || (line_ticker->field_width < 1)
        || (line_ticker->field_height < 1))
       goto end;
@@ -4717,7 +4717,7 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
          (int)line_len,
          wideglyph_width, 0);
 
-   if (string_is_empty(wrapped_str))
+   if (!wrapped_str || !*wrapped_str)
       goto end;
 
    string_list_initialize(&lines);
@@ -4941,7 +4941,7 @@ static int xmb_draw_item(
       strlcpy(entry_path, entry.path, sizeof(entry_path));
       fill_pathname(entry_path, path_basename(entry_path), "",
             sizeof(entry_path));
-      if (!string_is_empty(entry_path))
+      if (*entry_path)
          strlcpy(entry.path, entry_path, sizeof(entry.path));
    }
 
@@ -4969,7 +4969,7 @@ static int xmb_draw_item(
    }
    else
    {
-      if (!string_is_empty(entry.value))
+      if (*entry.value)
       {
          bool found = false;
          if (memcmp(entry.value, "...", 4) == 0)
@@ -5036,7 +5036,7 @@ static int xmb_draw_item(
                   (unsigned)(ticker_scale_factor * 10.0f * xmb_scale_mod[3]);
          }
       }
-      else if (!draw_text_value || string_is_empty(entry.value))
+      else if (!draw_text_value || !*entry.value)
          ticker_limit                   = ((xmb->use_ps3_layout) ? 75 : 65) * xmb_scale_mod[2];
    }
 
@@ -5072,7 +5072,7 @@ static int xmb_draw_item(
    else
       xmb->ticker_limit         = ticker_limit;
 
-   if (!string_is_empty(entry.rich_label))
+   if (*entry.rich_label)
       ticker_str                = entry.rich_label;
    else
       ticker_str                = entry.path;
@@ -5136,7 +5136,7 @@ static int xmb_draw_item(
    {
       if (     i == current
             && width > 320 && height > 240
-            && !string_is_empty(entry.sublabel))
+            && *entry.sublabel)
       {
          char entry_sublabel[MENU_LABEL_MAX_LENGTH];
          char entry_sublabel_top_fade[MENU_LABEL_MAX_LENGTH >> 2];
@@ -5220,7 +5220,7 @@ static int xmb_draw_item(
          /* Draw top/bottom line fade effect, if required */
          if (use_smooth_ticker)
          {
-            if (     !string_is_empty(entry_sublabel_top_fade)
+            if (     *entry_sublabel_top_fade
                   && ticker_top_fade_alpha > 0.0f)
                xmb_draw_text(shadows_enable, xmb, settings,
                      entry_sublabel_top_fade,
@@ -5228,7 +5228,7 @@ static int xmb_draw_item(
                      1, ticker_top_fade_alpha * node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
                      width, height, xmb->font2);
 
-            if (     !string_is_empty(entry_sublabel_bottom_fade)
+            if (     *entry_sublabel_bottom_fade
                   && ticker_bottom_fade_alpha > 0.0f)
                xmb_draw_text(shadows_enable, xmb, settings,
                      entry_sublabel_bottom_fade,
@@ -5242,7 +5242,7 @@ static int xmb_draw_item(
    /* Draw entry index of current selection */
    if (     i == current
          && xmb->entry_idx_enabled
-         && !string_is_empty(xmb->entry_index_str))
+         && *xmb->entry_index_str)
    {
       float entry_idx_margin = 12 * xmb->last_scale_factor;
       float x_position       = video_width - entry_idx_margin;
@@ -5276,7 +5276,7 @@ static int xmb_draw_item(
       ticker_smooth.dst_str     = tmp;
       ticker_smooth.dst_str_len = sizeof(tmp);
 
-      if (!string_is_empty(entry.value))
+      if (*entry.value)
          gfx_animation_ticker_smooth(&ticker_smooth);
    }
    else
@@ -5286,7 +5286,7 @@ static int xmb_draw_item(
       ticker.selected           = (i == current);
       ticker.str                = entry.value;
 
-      if (!string_is_empty(entry.value))
+      if (*entry.value)
          gfx_animation_ticker(&ticker);
    }
 
@@ -5414,7 +5414,7 @@ static int xmb_draw_item(
                   playlist_get_index(playlist_get_cached(), entry.entry_idx, &pl_entry);
 
                   if (    pl_entry
-                      && !string_is_empty(pl_entry->db_name)
+                      && (pl_entry->db_name && *pl_entry->db_name)
                       && (db_node = RHMAP_GET_STR(xmb->playlist_db_node_map, pl_entry->db_name)))
                   {
                      switch (show_history_icons)
@@ -5914,7 +5914,7 @@ static enum menu_action xmb_parse_menu_entry_action(
 
          if (     !xmb->show_fullscreen_thumbnails
                && (  (xmb->is_state_slot)
-                  || (xmb->is_quick_menu && !string_is_empty(xmb->savestate_thumbnail_file_path))))
+                  || (xmb->is_quick_menu && *xmb->savestate_thumbnail_file_path)))
          {
             xmb_hide_fullscreen_thumbnails(xmb, false);
             xmb_show_fullscreen_thumbnails(xmb, menu_st, menu_st->selection_ptr);
@@ -7148,7 +7148,7 @@ static void xmb_render(void *data,
          }
 
          if (     thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN
-               && !string_is_empty(thumbnail_icon->thumbnail_path_data.icon_path))
+               && *thumbnail_icon->thumbnail_path_data.icon_path)
          {
             node->icon_hide = false;
             if (!xmb_load_dynamic_icon(
@@ -7320,7 +7320,7 @@ static void xmb_draw_bg(
    /* Draw background wallpaper */
    if (     draw.texture
          && (  xmb_color_theme == XMB_THEME_WALLPAPER
-            || (!string_is_empty(bg_file_path) && !strstr(bg_file_path, FILE_PATH_BACKGROUND_IMAGE))))
+            || ((bg_file_path && *bg_file_path) && !strstr(bg_file_path, FILE_PATH_BACKGROUND_IMAGE))))
    {
       draw.color = &coord_white[0];
 
@@ -7560,7 +7560,7 @@ static void xmb_draw_fullscreen_thumbnails(
       bool menu_ticker_smooth           = settings->bools.menu_ticker_smooth;
       enum gfx_animation_ticker_type menu_ticker_type
                                         = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-      bool show_header                  = !string_is_empty(xmb->fullscreen_thumbnail_label);
+      bool show_header                  = *xmb->fullscreen_thumbnail_label;
       bool show_right_thumbnail         = false;
       bool show_left_thumbnail          = false;
 
@@ -7581,7 +7581,7 @@ static void xmb_draw_fullscreen_thumbnails(
             (  left_thumbnail->status  == GFX_THUMBNAIL_STATUS_AVAILABLE
             || left_thumbnail->status  == GFX_THUMBNAIL_STATUS_PENDING);
 
-      if (     (xmb->is_quick_menu && !string_is_empty(xmb->savestate_thumbnail_file_path))
+      if (     (xmb->is_quick_menu && *xmb->savestate_thumbnail_file_path)
             || (xmb->is_state_slot))
       {
          left_thumbnail       = &xmb->thumbnails.savestate;
@@ -8321,7 +8321,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Save state thumbnail, right side in PS3 layout, left in PSP layout */
    if (     (xmb->is_quick_menu || xmb->is_state_slot)
-         && (!string_is_empty(xmb->savestate_thumbnail_file_path))
+         && *xmb->savestate_thumbnail_file_path
          && (!xmb->show_fullscreen_thumbnails)
       )
    {
@@ -8834,7 +8834,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Use alternative title if available */
    strlcpy(title_truncated,
-          !string_is_empty(xmb->title_name_alt)
+          (xmb->title_name_alt && *xmb->title_name_alt)
          ? xmb->title_name_alt
          : xmb->title_name,
          sizeof(title_truncated));
@@ -8971,7 +8971,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       render_background           = true;
    }
 
-   if (!string_is_empty(xmb->box_message))
+   if (xmb->box_message && *xmb->box_message)
    {
       strlcpy(msg, xmb->box_message, sizeof(msg));
       free(xmb->box_message);
@@ -8985,7 +8985,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb_draw_dark_layer(xmb, p_disp, dispctx,
                userdata, video_width, video_height,
                (input_dialog_display_kb) ? 0.95f : 0.75f);
-      if (xmb->font && !string_is_empty(msg))
+      if (xmb->font && *msg)
          xmb_render_messagebox_internal(userdata, p_disp,
                dispctx,
                video_width, video_height,
@@ -9295,7 +9295,7 @@ static void xmb_list_insert(void *userdata,
 
    current           = (int)selection;
 
-   if (!string_is_empty(fullpath))
+   if (fullpath && *fullpath)
    {
       if (node->fullpath)
          free(node->fullpath);

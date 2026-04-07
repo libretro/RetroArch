@@ -199,7 +199,7 @@ static int action_get_title_thumbnails(
 #endif
 #endif
    title = msg_hash_to_str(label_value);
-   if (s && !string_is_empty(title))
+   if (s && title && *title)
    {
       sanitize_to_string(s, title, len);
       return 1;
@@ -234,7 +234,7 @@ static int action_get_title_left_thumbnails(
 
    title = msg_hash_to_str(label_value);
 
-   if (s && !string_is_empty(title))
+   if (s && title && *title)
    {
       sanitize_to_string(s, title, len);
       return 1;
@@ -252,7 +252,7 @@ static int action_get_title_core_options_list(
 
    /* If this is an options subcategory, fetch
     * the category description */
-   if (!string_is_empty(category))
+   if (category && *category)
    {
       core_option_manager_t *coreopts = NULL;
 
@@ -264,10 +264,10 @@ static int action_get_title_core_options_list(
    /* If this isn't a subcategory (or something
     * went wrong...), use top level core options
     * menu label */
-   if (string_is_empty(title))
+   if (!title || !*title)
       title = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS);
 
-   if (s && !string_is_empty(title))
+   if (s && title && *title)
    {
       strlcpy(s, title, len);
       return 1;
@@ -370,11 +370,11 @@ static int action_get_title_mixer_stream_actions(const char *path, const char *l
 
 static int action_get_title_deferred_playlist_list(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       const char *playlist_file = path_basename_nocompression(path);
 
-      if (!string_is_empty(playlist_file))
+      if (playlist_file && *playlist_file)
       {
          if (string_is_equal_noncase(path_get_extension(playlist_file),
                   "lpl"))
@@ -411,7 +411,7 @@ static int action_get_title_deferred_core_backup_list(
    size_t _len;
    core_info_t *core_info = NULL;
 
-   if (string_is_empty(core_path) || string_is_empty(prefix))
+   if (!core_path || !*core_path || !prefix || !*prefix)
       return 0;
 
    _len      = strlcpy(s, prefix, len);
@@ -426,7 +426,7 @@ static int action_get_title_deferred_core_backup_list(
    {
       /* > If not, use core file name */
       const char *core_filename = path_basename_nocompression(core_path);
-      if (!string_is_empty(core_filename))
+      if (core_filename && *core_filename)
          strlcpy(s + _len, core_filename, len - _len);
    }
 
@@ -461,7 +461,7 @@ static int action_get_core_information_list(
    {
       core_info_t *core_info_menu = NULL;
 
-      if (string_is_empty(path))
+      if (!path || !*path)
          goto error;
 
       /* Core updater/manager entry - search for
@@ -472,7 +472,7 @@ static int action_get_core_information_list(
    else
       core_info_get_current_core(&core_info);
 
-   if (!core_info || string_is_empty(core_info->display_name))
+   if (!core_info || !core_info->display_name || !*core_info->display_name)
       goto error;
 
    /* Copy display name */
@@ -504,7 +504,7 @@ static int action_get_title_dropdown_input_description_common(
    size_t _len;
    const char *input_label_ptr = input_name;
 
-   if (!string_is_empty(input_label_ptr))
+   if (input_label_ptr && *input_label_ptr)
    {
       /* Strip off 'Auto:' prefix, if required */
       if (string_starts_with_size(input_label_ptr, "Auto:",
@@ -519,7 +519,7 @@ static int action_get_title_dropdown_input_description_common(
    /* Build title string */
    _len  = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
    _len += snprintf(s + _len, len - _len, " %u - ", port + 1);
-   if (!string_is_empty(input_label_ptr))
+   if (input_label_ptr && *input_label_ptr)
       strlcpy(s + _len, input_label_ptr, len - _len);
    else
       strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -809,7 +809,7 @@ static int action_get_sideload_core_list(const char *path, const char *label,
 {
    size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST), len);
    _len = safe_strbuf_append(s, len, _len, " ", STRLEN_CONST(" "));
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s + _len, path, len - _len);
    return 0;
 }
@@ -819,7 +819,7 @@ static int action_get_title_default(const char *path, const char *label,
 {
    size_t _len = strlcpy(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       _len = safe_strbuf_append(s, len, _len, ": ", STRLEN_CONST(": "));
 #if IOS
@@ -878,7 +878,7 @@ static int action_get_title_group_settings(const char *path, const char *label,
    }
 
    /* Split label on '|' without heap allocation */
-   if (!string_is_empty(label))
+   if (label && *label)
    {
       const char *sep = strchr(label, '|');
       if (sep)
