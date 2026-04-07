@@ -649,7 +649,7 @@ enum manual_content_scan_playlist_refresh_status
    if (!manual_content_scan_set_menu_content_dir(content_dir))
       return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR;
 
-   if (!manual_content_scan_set_menu_scan_use_db(db_usage))
+   if (!manual_content_scan_set_menu_scan_use_db((enum manual_content_scan_db_usage)db_usage))
       return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_MISSING_CONFIG;
 
    scan_settings.db_selection = MANUAL_CONTENT_SCAN_SELECT_DB_AUTO;
