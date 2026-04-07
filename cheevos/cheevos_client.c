@@ -118,13 +118,13 @@ void rcheevos_get_user_agent(rcheevos_locals_t *locals,
    ptr = s + strlcpy(s, locals->user_agent_prefix, len);
 
    /* if a core is loaded, append its information */
-   if (sysinfo && !string_is_empty(sysinfo->library_name))
+   if (sysinfo && sysinfo->library_name && *sysinfo->library_name)
    {
       char *stop = s + len - 1;
       const char *path = path_get(RARCH_PATH_CORE);
       *ptr++ = ' ';
 
-      if (!string_is_empty(path))
+      if (path && *path)
       {
          append_no_spaces(ptr, stop, path_basename(path));
          path_remove_extension(ptr);

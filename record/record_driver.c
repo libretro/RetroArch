@@ -154,7 +154,7 @@ bool recording_deinit(void)
    /* Push recording to video history playlist */
 #ifdef HAVE_FFMPEG
    if (     history_list_enable
-         && !string_is_empty(recording_st->path))
+         && *recording_st->path)
    {
       struct playlist_entry entry = {0};
 
@@ -221,7 +221,7 @@ bool recording_init(void)
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
 
-   if (!string_is_empty(recording_st->path))
+   if (*recording_st->path)
       strlcpy(output, recording_st->path, sizeof(output));
    else
    {
@@ -230,7 +230,7 @@ bool recording_init(void)
       unsigned video_stream_port    = settings->uints.video_stream_port;
       if (recording_st->streaming_enable)
       {
-         if (!string_is_empty(stream_url))
+         if (stream_url && *stream_url)
             strlcpy(output, stream_url, sizeof(output));
          else
          {
@@ -246,8 +246,8 @@ bool recording_init(void)
          if (!path_is_directory(recording_st->output_dir))
             path_mkdir(recording_st->output_dir);
          /* Fallback to core name if started without content */
-         if (string_is_empty(game_name))
-            game_name          = runloop_st->system.info.library_name;
+         if (!game_name || !*game_name)
+            game_name = runloop_st->system.info.library_name;
 
          {
             const char *ext = "mkv";
@@ -272,7 +272,7 @@ bool recording_init(void)
          }
 
          /* Cache path for playlist saving */
-         if (!string_is_empty(output))
+         if (*output)
             strlcpy(recording_st->path, output, sizeof(recording_st->path));
       }
    }
@@ -298,7 +298,7 @@ bool recording_init(void)
       : FFEMU_PIX_RGB565;
    params.config                    = NULL;
 
-   if (!string_is_empty(recording_st->config))
+   if (*recording_st->config)
       params.config                 = recording_st->config;
    else
    {
@@ -427,7 +427,7 @@ void recording_driver_update_streaming_url(void)
    switch (settings->uints.streaming_mode)
    {
       case STREAMING_MODE_TWITCH:
-         if (!string_is_empty(settings->arrays.twitch_stream_key))
+         if (*settings->arrays.twitch_stream_key)
          {
             size_t _len = strlcpy(settings->paths.path_stream_url,
                   twitch_url,
@@ -438,7 +438,7 @@ void recording_driver_update_streaming_url(void)
          }
          break;
       case STREAMING_MODE_YOUTUBE:
-         if (!string_is_empty(settings->arrays.youtube_stream_key))
+         if (*settings->arrays.youtube_stream_key)
          {
             size_t _len = strlcpy(settings->paths.path_stream_url,
                   youtube_url,
@@ -459,7 +459,7 @@ void recording_driver_update_streaming_url(void)
          }
          break;
       case STREAMING_MODE_FACEBOOK:
-         if (!string_is_empty(settings->arrays.facebook_stream_key))
+         if (*settings->arrays.facebook_stream_key)
          {
             size_t _len = strlcpy(settings->paths.path_stream_url,
                   facebook_url,

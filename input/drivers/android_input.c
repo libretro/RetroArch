@@ -362,7 +362,7 @@ bool android_input_can_be_keyboard(void *data, int port)
         return false;
 
     state_device_t *device = &android->pad_states[port];
-    if (!device->id && string_is_empty(device->name))
+    if (!device->id && (!device->name || !*device->name))
         return false;
 
     return android_input_can_be_keyboard_jni(device->id);
@@ -1451,7 +1451,7 @@ static void handle_hotplug(android_input_t *android,
 
    /* if device was not keyboard only, yet did not match any of the devices
     * then try to autoconfigure as gamepad based on device_name. */
-   else if (!string_is_empty(device_name))
+   else if (*device_name)
       strlcpy(name_buf, device_name, sizeof(name_buf));
 
    if (strstr(android_app->current_ime, "net.obsidianx.android.mogaime"))

@@ -1750,7 +1750,7 @@ bool rcheevos_load(const void *data)
       return false;
    }
 
-   if (string_is_empty(settings->arrays.cheevos_username))
+   if (!*settings->arrays.cheevos_username)
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login (no username)\n");
       runloop_msg_queue_push(
