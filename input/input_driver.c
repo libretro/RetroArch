@@ -6226,15 +6226,14 @@ static void input_keys_pressed(
       }
    }
 
-   /* Read autoconf menu toggle regardless of 'enable_hotkey'
-    * unless 'enable_hotkey' is set in autoconf. */
+   /* Allow menu toggle to bypass 'enable_hotkey' when it is
+    * not part of the usual buttons, unless 'enable_hotkey'
+    * is set in autoconf. */
    if (     !any_pressed
          && !(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
-         && (input_autoconf_binds[joy_idx][RARCH_MENU_TOGGLE].joykey != NO_BTN)
-         && (  input_autoconf_binds[joy_idx][RARCH_ENABLE_HOTKEY].joykey == input_autoconf_binds[joy_idx][RARCH_MENU_TOGGLE].joykey
-            || input_autoconf_binds[joy_idx][RARCH_ENABLE_HOTKEY].joykey == NO_BTN)
-         && (  binds[port][RARCH_MENU_TOGGLE].joykey == input_autoconf_binds[joy_idx][RARCH_MENU_TOGGLE].joykey
-            || binds[port][RARCH_MENU_TOGGLE].joykey == NO_BTN))
+         && (binds[port][RARCH_MENU_TOGGLE].joykey != NO_BTN)
+         && (  input_autoconf_binds[joy_idx][RARCH_ENABLE_HOTKEY].joykey == binds[port][RARCH_MENU_TOGGLE].joykey
+            || input_autoconf_binds[joy_idx][RARCH_ENABLE_HOTKEY].joykey == NO_BTN))
    {
       /* Ignore keyboard menu toggle button and check
        * joypad menu toggle button for pressing
