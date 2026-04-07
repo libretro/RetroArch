@@ -56,6 +56,7 @@
 #define MENU_ENUM_LABEL_AUDIO_DRIVER_WIIU_STR "AX"
 #if defined(VITA)
 #define MENU_ENUM_LABEL_AUDIO_DRIVER_PSP_STR "vita"
+#elif defined(ORBIS)
 #define MENU_ENUM_LABEL_AUDIO_DRIVER_PSP_STR "orbis"
 #else
 #define MENU_ENUM_LABEL_AUDIO_DRIVER_PSP_STR "psp"
