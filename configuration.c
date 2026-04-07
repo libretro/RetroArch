@@ -7250,7 +7250,7 @@ void config_load_file_salamander(void)
 
    if (config_get_path(config, "libretro_path",
          config_path, sizeof(config_path))
-       && (config_path && *config_path)
+       && *config_path
        && !string_is_equal(config_path, "builtin"))
       path_set(RARCH_PATH_CORE, config_path);
 
