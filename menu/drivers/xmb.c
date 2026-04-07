@@ -1493,7 +1493,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    if (xmb->is_playlist)
    {
       /* Playlist content */
-      if (s && *s)
+      if (!s || !*s)
       {
          menu_list_t *menu_list = menu_st->entries.list;
          size_t list_size       = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
