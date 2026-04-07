@@ -3,6 +3,7 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2013-2014 - Steven Crowe
+ *  Copyright (C) 2026      - Adam "TideGear" Milecki
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -170,33 +171,68 @@ static void android_input_set_rumble_internal(
       int8_t   id,
       enum retro_rumble_effect effect)
 {
-   JNIEnv *env           = (JNIEnv*)jni_thread_getenv();
-   uint16_t new_strength = 0;
+   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
       return;
 
+   /* Update the per-channel state independently. */
    if (effect == RETRO_RUMBLE_STRONG)
-   {
-      new_strength          = strength | *last_strength_weak;
       *last_strength_strong = strength;
-   }
    else if (effect == RETRO_RUMBLE_WEAK)
-   {
-      new_strength         = strength | *last_strength_strong;
       *last_strength_weak  = strength;
+
+   /* Controller dual-motor path (Android 12+):
+    *
+    * doVibrateJoypad receives both channels separately so the Java side
+    * can drive each controller motor independently via VibratorManager.
+    *
+    * The old code OR-merged strong | weak into a single amplitude before
+    * calling doVibrate, which destroyed motor separation and made the
+    * weak (small/high-freq) and strong (large/low-freq) motors feel
+    * identical. */
+   if (id >= 0 && g_android->doVibrateJoypad)
+   {
+      /* Normalize the 0–65535 libretro range into 0–255 Android amplitude.
+       * Storing first avoids the JNI zero-value bug noted below. */
+      int strong_final = (int)((255.0f / 65535.0f) * (float)*last_strength_strong);
+      int weak_final   = (int)((255.0f / 65535.0f) * (float)*last_strength_weak);
+
+      /* Pack both 0–255 amplitudes into the uint16_t for change detection:
+       * high byte = strong amplitude, low byte = weak amplitude. */
+      uint16_t new_combined = (uint16_t)((strong_final << 8) | weak_final);
+
+      if (new_combined != *last_strength)
+      {
+         CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+               g_android->doVibrateJoypad, (jint)id,
+               (jint)strong_final, (jint)weak_final, (jint)0);
+
+         *last_strength = new_combined;
+      }
+      return;
    }
 
-   if (new_strength != *last_strength)
+   /* Legacy single-vibrator fallback:
+    * - Device vibration path (id == -1)
+    * - Android < 12 builds where doVibrateJoypad is unavailable
+    * OR-merge preserves the original behavior for these cases so that
+    * controllers still rumble rather than going completely silent. */
    {
-      /* trying to send this value as a JNI param without
-       * storing it first was causing 0 to be seen on the other side ?? */
-      int strength_final   = (255.0f / 65535.0f) * (float)new_strength;
+      uint16_t new_strength = *last_strength_strong | *last_strength_weak;
 
-      CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
-            g_android->doVibrate, (jint)id, (jint)RETRO_RUMBLE_STRONG, (jint)strength_final, (jint)0);
+      if (new_strength != *last_strength)
+      {
+         /* trying to send this value as a JNI param without
+          * storing it first was causing 0 to be seen on the other side ?? */
+         int strength_final   = (255.0f / 65535.0f) * (float)new_strength;
 
-      *last_strength = new_strength;
+         CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+               g_android->doVibrate, (jint)id, (jint)RETRO_RUMBLE_STRONG,
+               (jint)strength_final, (jint)0);
+
+         *last_strength = new_strength;
+      }
    }
 }
 
