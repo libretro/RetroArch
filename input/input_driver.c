@@ -4205,7 +4205,7 @@ size_t input_config_get_bind_string_joykey(
    if (GET_HAT_DIR(bind->joykey))
    {
       if (      bind->joykey_label
-            && !string_is_empty(bind->joykey_label)
+            && (bind->joykey_label && *bind->joykey_label)
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
                bind->joykey_label, suffix, ' ', len);
@@ -4234,7 +4234,7 @@ size_t input_config_get_bind_string_joykey(
    else
    {
       if (      bind->joykey_label
-            && !string_is_empty(bind->joykey_label)
+            && (bind->joykey_label && *bind->joykey_label)
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
                bind->joykey_label, suffix, ' ', len);
@@ -4258,7 +4258,7 @@ size_t input_config_get_bind_string_joyaxis(
 {
    size_t _len = 0;
    if (      bind->joyaxis_label
-         && !string_is_empty(bind->joyaxis_label)
+         && (bind->joyaxis_label && *bind->joyaxis_label)
          && input_descriptor_label_show)
       return fill_pathname_join_delim(s,
             bind->joyaxis_label, suffix, ' ', len);
@@ -5090,10 +5090,10 @@ bool video_driver_init_input(
    input_driver_t    **input   = &input_driver_st.current_driver;
    if (*input)
 #if HAVE_TEST_DRIVERS
+      /* Test driver not in use, keep selected driver */
       if (strcmp(settings->arrays.input_driver, "test") != 0)
-         /* Test driver not in use, keep selected driver */
          return true;
-      else if (string_is_empty(settings->paths.test_input_file_general))
+      else if (!*settings->paths.test_input_file_general)
       {
          RARCH_LOG("[Input] Test input driver selected, but no input file provided - falling back.\n");
          return true;
@@ -5245,7 +5245,7 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
        * name index has already been assigned, continue
        * to the next device */
       if (
-               string_is_empty(device_name)
+               (!device_name || !*device_name)
             || input_st->input_device_info[i].name_index != 0)
          continue;
 
@@ -5284,7 +5284,7 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
 const char *input_config_get_device_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].name))
+   if (!*input_st->input_device_info[port].name)
       return NULL;
    return input_st->input_device_info[port].name;
 }
@@ -5292,7 +5292,7 @@ const char *input_config_get_device_name(unsigned port)
 const char *input_config_get_device_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].display_name))
+   if (!*input_st->input_device_info[port].display_name)
       return NULL;
    return input_st->input_device_info[port].display_name;
 }
@@ -5300,7 +5300,7 @@ const char *input_config_get_device_display_name(unsigned port)
 const char *input_config_get_device_config_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].config_name))
+   if (!*input_st->input_device_info[port].config_name)
       return NULL;
    return input_st->input_device_info[port].config_name;
 }
@@ -5308,7 +5308,7 @@ const char *input_config_get_device_config_name(unsigned port)
 const char *input_config_get_device_joypad_driver(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].joypad_driver))
+   if (!*input_st->input_device_info[port].joypad_driver)
       return NULL;
    return input_st->input_device_info[port].joypad_driver;
 }
@@ -5441,7 +5441,7 @@ void input_config_clear_device_joypad_driver(unsigned port)
 const char *input_config_get_mouse_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_mouse_info[port].display_name))
+   if (!*input_st->input_mouse_info[port].display_name)
       return NULL;
    return input_st->input_mouse_info[port].display_name;
 }
@@ -5920,6 +5920,8 @@ static void input_overlay_loaded(retro_task_t *task,
 #endif
 }
 
+#define SYSTEM_OVERLAY_DIR "gamepads/Named_Overlays"
+
 static const char *input_overlay_path(bool want_osk)
 {
    static char   system_overlay_path[PATH_MAX_LENGTH] = {0};
@@ -5931,24 +5933,21 @@ static const char *input_overlay_path(bool want_osk)
 
    if (want_osk)
       return settings->paths.path_osk_overlay;
-   /* if the option is set to turn this off, just return default */
+   /* If the option is set to turn this off, just return default */
    if (!settings->bools.input_overlay_enable_autopreferred)
        return settings->paths.path_overlay;
-   /* if there's an override, use it */
+   /* If there's an override, use it */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL))
        return settings->paths.path_overlay;
-   /* if there's no core, just return the default */
+   /* If there's no core, just return the default */
    if (string_is_empty(path_get(RARCH_PATH_CORE)))
       return settings->paths.path_overlay;
-
-   /* let's go hunting */
+   /* Let's go hunting */
    fill_pathname_expand_special(overlay_directory,
          settings->paths.directory_overlay,
          sizeof(overlay_directory));
 
-#define SYSTEM_OVERLAY_DIR "gamepads/Named_Overlays"
-
-   /* try based on the playlist entry first */
+   /* Try based on the playlist entry first */
    if (playlist)
    {
       if (content_path && *content_path)
@@ -5970,7 +5969,7 @@ static const char *input_overlay_path(bool want_osk)
       }
    }
 
-   /* maybe the core info will have some clues */
+   /* Maybe the core info will have some clues... */
    core_info_get_current_core(&core_info);
    if (core_info)
    {
@@ -5993,7 +5992,7 @@ static const char *input_overlay_path(bool want_osk)
       }
    }
 
-   /* maybe based on the content's directory name */
+   /* Maybe based on the content's directory name... */
    if (content_path && *content_path)
    {
       char dirname[DIR_MAX_LENGTH];
@@ -6017,7 +6016,7 @@ void input_overlay_init(void)
    input_overlay_t *ol_cache      = input_st->overlay_cache_ptr;
    bool want_osk                  =
             (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
-         && !string_is_empty(settings->paths.path_osk_overlay);
+         && *settings->paths.path_osk_overlay;
    const char *path_overlay       = input_overlay_path(want_osk);
    bool want_hidden               = input_overlay_want_hidden();
    bool overlay_shown             = ol

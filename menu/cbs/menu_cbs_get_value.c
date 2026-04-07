@@ -79,7 +79,7 @@ static size_t menu_action_setting_audio_mixer_stream_name(
 {
    unsigned offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN);
    *w                   = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return 0;
@@ -97,7 +97,7 @@ static size_t menu_action_setting_audio_mixer_stream_volume(
    size_t _len;
    unsigned offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
    *w              = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return 0;
@@ -117,7 +117,7 @@ static size_t menu_action_setting_disp_set_label_cheevos_entry(
    char *s2, size_t len2)
 {
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return rcheevos_menu_get_state(type - MENU_SETTINGS_CHEEVOS_START, s, len);
 }
@@ -134,9 +134,9 @@ static size_t menu_action_setting_disp_set_label_remap_file_info(
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *remap_path      = runloop_st->name.remapfile;
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-   if (!string_is_empty(remap_path))
+   if (remap_path && *remap_path)
       return strlcpy(s, path_basename_nocompression(remap_path), len);
    return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
@@ -151,9 +151,9 @@ static size_t menu_action_setting_disp_set_label_override_file_info(
 {
    const char *override_path   = path_get(RARCH_PATH_CONFIG_OVERRIDE);
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-   if (!string_is_empty(override_path))
+   if (override_path && *override_path)
       return strlcpy(s, path_basename_nocompression(override_path), len);
    return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
@@ -169,9 +169,9 @@ static size_t menu_action_setting_disp_set_label_shader_preset_file_info(
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    const char *current_path = video_shader_get_current_shader_preset();
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-   if (!string_is_empty(current_path))
+   if (current_path && *current_path)
       return strlcpy(s, path_basename_nocompression(current_path), len);
 #endif
    return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
@@ -186,7 +186,7 @@ static size_t menu_action_setting_disp_set_label_configurations(
       char *s2, size_t len2)
 {
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    if (!path_is_empty(RARCH_PATH_CONFIG))
       return fill_pathname_base(s, path_get(RARCH_PATH_CONFIG),
@@ -208,7 +208,7 @@ static size_t menu_action_setting_disp_set_label_shader_filter_pass(
       ? &shader->pass[type - MENU_SETTINGS_SHADER_PASS_FILTER_0] : NULL;
    *s = '\0';
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    if (shader_pass)
    {
@@ -239,7 +239,7 @@ static size_t menu_action_setting_disp_set_label_shader_watch_for_changes(
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       list->list[i].actiondata;
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    if (cbs && cbs->setting && *cbs->setting->value.target.boolean)
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), len);
@@ -257,7 +257,7 @@ static size_t menu_action_setting_disp_set_label_shader_num_passes(
    struct video_shader *shader = menu_shader_get();
    unsigned pass_count         = shader ? shader->passes : 0;
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return snprintf(s, len, "%u", pass_count);
 }
@@ -274,9 +274,9 @@ static size_t menu_action_setting_disp_set_label_shader_pass(
    struct video_shader_pass *shader_pass = shader
       ? &shader->pass[type - MENU_SETTINGS_SHADER_PASS_0] : NULL;
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-   if (shader_pass && !string_is_empty(shader_pass->source.path))
+   if (shader_pass && *shader_pass->source.path)
       return fill_pathname_base(s, shader_pass->source.path, len);
    return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
@@ -309,7 +309,7 @@ static size_t menu_action_setting_disp_set_label_shader_parameter_internal(
    video_shader_ctx_t shader_info;
    const struct video_shader_parameter *param = NULL;
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    video_shader_driver_get_current_shader(&shader_info);
    if (shader_info.data && (param = &shader_info.data->parameters[type - offset]))
@@ -360,7 +360,7 @@ static size_t menu_action_setting_disp_set_label_shader_scale_pass(
    struct video_shader_pass *shader_pass = shader ? &shader->pass[type - MENU_SETTINGS_SHADER_PASS_SCALE_0] : NULL;
    *s = '\0';
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    if (!shader_pass)
       return 0;
@@ -381,12 +381,12 @@ static size_t menu_action_setting_disp_set_label_netplay_mitm_server(
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
    *w = 19;
    *s = '\0';
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    if (cbs && cbs->setting)
    {
       const char *netplay_mitm_server = cbs->setting->value.target.string;
-      if (!string_is_empty(netplay_mitm_server))
+      if (netplay_mitm_server && *netplay_mitm_server)
       {
          for (j = 0; j < ARRAY_SIZE(netplay_mitm_server_list); j++)
          {
@@ -439,7 +439,7 @@ static size_t menu_action_setting_disp_set_label_core_updater_entry(
    /* Search for specified core */
    if (   core_list
        && core_updater_list_get_filename(core_list, path, &entry)
-       && !string_is_empty(entry->local_core_path))
+       && (entry->local_core_path && *entry->local_core_path))
    {
       core_info_t *core_info = NULL;
 
@@ -511,7 +511,7 @@ static size_t menu_action_setting_disp_set_label_core_manager_steam_entry(
    if (!MIST_IS_ERROR(steam_get_core_dlcs(&core_dlc_list, true)))
    {
       steam_core_dlc_t *core_dlc = NULL;
-      if (!string_is_empty(path))
+      if (path && *path)
          strlcpy(s2, path, len2);
 
       if ((core_dlc = steam_get_core_dlc_by_name(core_dlc_list, path)))
@@ -786,7 +786,7 @@ static size_t menu_action_setting_disp_set_label_input_desc(
    if (!settings)
       return 0;
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
 
    if ((remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx]) !=
@@ -795,7 +795,7 @@ static size_t menu_action_setting_disp_set_label_input_desc(
       unsigned mapped_port   = settings->uints.input_remap_ports[user_idx];
       const char *descriptor = runloop_state_get_ptr()->
          system.input_desc_btn[mapped_port][remap_idx];
-      if (!string_is_empty(descriptor))
+      if (descriptor && *descriptor)
       {
          size_t _len = strlcpy(s, descriptor, len);
          if (remap_idx < RARCH_FIRST_CUSTOM_BIND)
@@ -852,7 +852,7 @@ static size_t menu_action_setting_disp_set_label_input_desc_kbd(
 
    *w = 19;
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -878,7 +878,7 @@ static size_t menu_action_setting_disp_set_label_cheat(
 
    *w = 19;
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -902,7 +902,7 @@ static size_t menu_action_setting_disp_set_label_cheat_match(
    /* TODO/FIXME - localize */
    _len = snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -935,7 +935,7 @@ static size_t general_disp_set_label_perf_counters(
    gfx_animation_t *p_anim     = anim_get_ptr();
    *s = '\0';
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    _len = menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
@@ -981,7 +981,7 @@ static size_t menu_action_setting_disp_set_label_menu_more(
 {
    size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -996,7 +996,7 @@ static size_t menu_action_setting_disp_set_label_db_entry(
 {
    size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
    *w = 10;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -1015,9 +1015,9 @@ static size_t menu_action_setting_disp_set_label_entry_url(
    *s = '\0';
    *w = 8;
 
-   if (!string_is_empty(representation_label))
+   if (representation_label && *representation_label)
       strlcpy(s2, representation_label, len2);
-   else if (!string_is_empty(path))
+   else if (path && *path)
       strlcpy(s2, path, len2);
    return 0;
 }
@@ -1032,7 +1032,7 @@ static size_t menu_action_setting_disp_set_label_entry(
 {
    *s = '\0';
    *w = 8;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return 0;
 }
@@ -1047,9 +1047,8 @@ static size_t menu_action_setting_disp_set_label_bluetooth_is_connected(
       char *s2, size_t len2)
 {
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-
    if (driver_bluetooth_device_is_connected(i))
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BT_CONNECTED), len);
    return 0;
@@ -1066,7 +1065,7 @@ static size_t menu_action_setting_disp_set_label_wifi_is_online(
       char *s2, size_t len2)
 {
    *w = 19;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    if (driver_wifi_ssid_is_online(i))
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE), len);
@@ -1094,7 +1093,7 @@ static size_t menu_action_setting_disp_set_label_menu_disk_index(
 
    *w = 19;
    *s = '\0';
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
 
    images  = disk_control_get_num_images(&sys_info->disk_control);
@@ -1119,7 +1118,7 @@ static size_t menu_action_setting_disp_set_label_menu_video_resolution(
    *w = 19;
    *s = '\0';
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
 
    if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
@@ -1130,7 +1129,7 @@ static size_t menu_action_setting_disp_set_label_menu_video_resolution(
       else
 #endif
       {
-         if (!string_is_empty(desc))
+         if (*desc)
             _len = snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_DESC),
                width, height, desc);
          else
@@ -1147,7 +1146,7 @@ static size_t menu_action_setting_disp_set_label_menu_video_resolution(
    strlcpy(s, label, len); \
    *w = label_size; \
    out_len = (label_size < len) ? label_size : (len ? len - 1 : 0); \
-   if (!string_is_empty(path)) \
+   if (path && *path) \
       strlcpy(s2, path, len2)
 
 static size_t menu_action_setting_disp_set_label_menu_file_plain(
@@ -1237,7 +1236,7 @@ static size_t menu_action_setting_disp_set_label_generic(
 {
    *s = '\0';
    *w = 0;
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return 0;
 }
@@ -1398,20 +1397,20 @@ static size_t menu_action_setting_disp_set_label_core_option_override_info(
    *s = '\0';
    *w = 19;
 
-   if (!string_is_empty(override_path))
+   if (override_path && *override_path)
       options_file = path_basename_nocompression(override_path);
    else if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
       const char *options_path = coreopts->conf_path;
-      if (!string_is_empty(options_path))
+      if (options_path && *options_path)
          options_file = path_basename_nocompression(options_path);
    }
 
-   if (!string_is_empty(options_file))
+   if (options_file && *options_file)
       _len = strlcpy(s, options_file, len);
    else
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -1429,9 +1428,8 @@ static size_t menu_action_setting_disp_set_label_playlist_associations(file_list
    *s = '\0';
    *w = 19;
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-
    if (!playlist)
       return 0;
 
@@ -1459,7 +1457,7 @@ static size_t menu_action_setting_disp_set_label_playlist_label_display_mode(
 
       *w = 19;
 
-      if (!string_is_empty(path))
+      if (path && *path)
          strlcpy(s2, path, len2);
 
       switch (label_display_mode)
@@ -1520,7 +1518,7 @@ static size_t menu_action_setting_disp_set_label_playlist_right_thumbnail_mode(
 
    *w = 19;
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
 
    if (playlist)
@@ -1544,7 +1542,7 @@ static size_t menu_action_setting_disp_set_label_playlist_left_thumbnail_mode(
 
    *w = 19;
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
 
    if (playlist)
@@ -1571,7 +1569,7 @@ static size_t menu_action_setting_disp_set_label_playlist_sort_mode(
       enum playlist_sort_mode sort_mode = playlist_get_sort_mode(playlist);
       *w        = 19;
 
-      if (!string_is_empty(path))
+      if (path && *path)
          strlcpy(s2, path, len2);
 
       switch (sort_mode)
@@ -1605,7 +1603,7 @@ static size_t menu_action_setting_disp_set_label_core_options(
 
    /* If this is an options subcategory, fetch
     * the category description */
-   if (!string_is_empty(category))
+   if (category && *category)
    {
       core_option_manager_t *coreopts = NULL;
 
@@ -1617,10 +1615,9 @@ static size_t menu_action_setting_disp_set_label_core_options(
    /* If this isn't a subcategory (or something
     * went wrong...), use top level core options
     * menu label */
-   if (string_is_empty(desc))
+   if (!desc || !*desc)
       desc = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS);
-
-   if (!string_is_empty(desc))
+   if (desc && *desc)
       strlcpy(s2, desc, len2);
    return _len;
 }
@@ -1643,10 +1640,10 @@ static size_t menu_action_setting_disp_set_label_core_option(
    {
       const char *coreopt_label    = core_option_manager_get_val_label(coreopts,
             type - MENU_SETTINGS_CORE_OPTION_START);
-      if (!string_is_empty(coreopt_label))
+      if (coreopt_label && *coreopt_label)
          _len = strlcpy(s, coreopt_label, len);
    }
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -1670,7 +1667,7 @@ static size_t menu_action_setting_disp_set_label_achievement_information(
    else
       *s                     = '\0';
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -1685,10 +1682,8 @@ static size_t menu_action_setting_disp_set_label_manual_content_scan_dir(
 {
    const char *content_dir = NULL;
    *w = 19;
-
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-
    if (manual_content_scan_get_menu_content_dir(&content_dir))
       return strlcpy(s, content_dir, len);
    *s = '\0';
@@ -1707,9 +1702,8 @@ static size_t menu_action_setting_disp_set_label_scan_method(
 
    *w = 19;
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-
    if (manual_content_scan_get_menu_scan_method(&tmp))
       return strlcpy(s, tmp, len);
    *s = '\0';
@@ -1728,7 +1722,7 @@ static size_t menu_action_setting_disp_set_label_scan_use_db(
 
    *w = 19;
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
 
    if (manual_content_scan_get_menu_scan_use_db(&tmp))
@@ -1749,9 +1743,8 @@ static size_t menu_action_setting_disp_set_label_scan_db_select(
 
    *w = 19;
 
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-
    if (manual_content_scan_get_menu_scan_db_select(&tmp))
       return strlcpy(s, tmp, len);
    *s = '\0';
@@ -1767,12 +1760,9 @@ static size_t menu_action_setting_disp_set_label_manual_content_scan_system_name
       char *s2, size_t len2)
 {
    const char *system_name = NULL;
-
    *w = 19;
-
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-
    if (manual_content_scan_get_menu_system_name(&system_name))
       return strlcpy(s, system_name, len);
    *s = '\0';
@@ -1789,10 +1779,8 @@ static size_t menu_action_setting_disp_set_label_manual_content_scan_core_name(f
    const char *core_name = NULL;
 
    *w = 19;
-
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
-
    if (manual_content_scan_get_menu_core_name(&core_name))
       return strlcpy(s, core_name, len);
    *s = '\0';
@@ -1809,8 +1797,7 @@ static size_t menu_action_setting_disp_set_label_no_items(
 {
    *s = '\0';
    *w = 19;
-
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return 0;
 }
@@ -1833,8 +1820,7 @@ static size_t menu_action_setting_disp_set_label(file_list_t* list,
       _len = setting->get_string_representation(setting, s, len);
    else
       *s                     = '\0';
-
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -1862,8 +1848,7 @@ static size_t menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
    }
    else
       *s = '\0';
-
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -1882,7 +1867,7 @@ static size_t menu_action_setting_disp_set_label_setting_string(file_list_t* lis
    *w                        = 19;
    if (setting && setting->value.target.string)
       _len = strlcpy(s, setting->value.target.string, len);
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }
@@ -1900,9 +1885,9 @@ static size_t menu_action_setting_disp_set_label_setting_path(file_list_t* list,
    rarch_setting_t *setting  = cbs->setting;
    const char *basename      = setting ? path_basename(setting->value.target.string) : NULL;
    *w                        = 19;
-   if (!string_is_empty(basename))
+   if (basename && *basename)
       _len = strlcpy(s, basename, len);
-   if (!string_is_empty(path))
+   if (path && *path)
       strlcpy(s2, path, len2);
    return _len;
 }

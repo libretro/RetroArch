@@ -162,7 +162,7 @@ void menu_contentless_cores_set_runtime(const char *core_id,
    if (   !contentless_cores_state
        || !contentless_cores_state->info_entries
        || !runtime_info
-       || string_is_empty(core_id))
+       || (!core_id || !*core_id))
       return;
 
    info_entry = RHMAP_GET_STR(contentless_cores_state->info_entries, core_id);
@@ -170,7 +170,7 @@ void menu_contentless_cores_set_runtime(const char *core_id,
    if (!info_entry)
       return;
 
-   if (!string_is_empty(runtime_info->runtime_str))
+   if (runtime_info->runtime_str && *runtime_info->runtime_str)
    {
       if (info_entry->runtime.runtime_str)
          free(info_entry->runtime.runtime_str);
@@ -178,7 +178,7 @@ void menu_contentless_cores_set_runtime(const char *core_id,
       info_entry->runtime.runtime_str = strdup(runtime_info->runtime_str);
    }
 
-   if (!string_is_empty(runtime_info->last_played_str))
+   if (runtime_info->last_played_str && *runtime_info->last_played_str)
    {
       if (info_entry->runtime.last_played_str)
          free(info_entry->runtime.last_played_str);
@@ -197,7 +197,7 @@ void menu_contentless_cores_get_info(const char *core_id,
 
    if (   !contentless_cores_state
        || !contentless_cores_state->info_entries
-       || string_is_empty(core_id))
+       || (!core_id || !*core_id))
       *info = NULL;
 
    *info = RHMAP_GET_STR(contentless_cores_state->info_entries, core_id);
@@ -280,7 +280,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          sizeof(icon_directory),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS);
 
-   if (string_is_empty(icon_directory))
+   if (!*icon_directory)
       return;
 
    /* Load fallback icon */
@@ -371,7 +371,7 @@ uintptr_t menu_contentless_cores_get_entry_icon(const char *core_id)
    if (   !state
        || !state->icons_enabled
        || !state->icons
-       || string_is_empty(core_id))
+       || (!core_id || !*core_id))
       return 0;
    if ((icon = RHMAP_GET_STR(state->icons->system, core_id)))
       return *icon;

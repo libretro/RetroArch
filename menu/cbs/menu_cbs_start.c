@@ -148,7 +148,7 @@ static int action_start_video_filter_file_load(
    if (!settings)
       return -1;
 
-   if (!string_is_empty(settings->paths.path_softfilter_plugin))
+   if (*settings->paths.path_softfilter_plugin)
    {
       struct menu_state *menu_st      = menu_state_get_ptr();
       /* Unload video filter */
@@ -172,7 +172,7 @@ static int action_start_audio_dsp_plugin_file_load(
    if (!settings)
       return -1;
 
-   if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
+   if (*settings->paths.path_audio_dsp_plugin)
    {
       struct menu_state *menu_st      = menu_state_get_ptr();
       /* Unload DSP plugin filter */
@@ -237,7 +237,7 @@ static int action_start_input_desc(
          return 0;
 
       /* Check whether core has defined this input */
-      if (!string_is_empty(sys_info->input_desc_btn[mapped_port][btn_idx]))
+      if (sys_info->input_desc_btn[mapped_port][btn_idx] && *sys_info->input_desc_btn[mapped_port][btn_idx])
       {
          const struct retro_keybind *keyptr = &input_config_binds[user_idx][btn_idx];
          settings->uints.input_remap_ids[user_idx][btn_idx] = keyptr->id;
@@ -614,7 +614,7 @@ static int action_start_video_resolution(
       else
 #endif
       {
-         if (!string_is_empty(desc))
+         if (*desc)
             _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_DESC),
                width, height, desc);
          else
@@ -700,7 +700,7 @@ static int action_start_core_updater_entry(
     * information menu */
    if (   core_list
        && core_updater_list_get_filename(core_list, path, &entry)
-       && !string_is_empty(entry->local_core_path)
+       && (entry->local_core_path && *entry->local_core_path)
        && path_is_valid(entry->local_core_path))
       return action_ok_push_core_information_list(
             entry->local_core_path, label, type, idx, entry_idx);
@@ -717,10 +717,8 @@ static int action_start_core_lock(
    const char *core_path      = path;
    struct menu_state *menu_st = menu_state_get_ptr();
    int ret                    = 0;
-
-   if (string_is_empty(core_path))
+   if (!core_path || !*core_path)
       return -1;
-
    /* Core should be unlocked by default
     * > If it is currently unlocked, do nothing */
    if (!core_info_get_core_lock(core_path, true))
@@ -747,7 +745,7 @@ static int action_start_core_lock(
       /* Build error message */
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_UNLOCK_FAILED), sizeof(msg));
 
-      if (!string_is_empty(core_name))
+      if (core_name && *core_name)
          _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
@@ -774,10 +772,8 @@ static int action_start_core_set_standalone_exempt(
       unsigned type, size_t idx, size_t entry_idx)
 {
    const char *core_path = path;
-
-   if (string_is_empty(core_path))
+   if (!core_path || !*core_path)
       return -1;
-
    /* Core should not be exempt by default
     * > If it is currently 'not exempt', do nothing */
    if (core_info_get_core_standalone_exempt(core_path))
@@ -805,7 +801,7 @@ static int action_start_core_set_standalone_exempt(
                msg_hash_to_str(MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED),
                sizeof(msg));
 
-         if (!string_is_empty(core_name))
+         if (core_name && *core_name)
             _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
          /* Generate log + notification */

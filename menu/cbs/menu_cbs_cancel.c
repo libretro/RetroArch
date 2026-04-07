@@ -67,7 +67,7 @@ int action_cancel_pop_default(const char *path,
       return 0;
    }
 
-   if (!string_is_empty(menu_label))
+   if (menu_label && *menu_label)
    {
       if (
             string_is_equal(menu_label,

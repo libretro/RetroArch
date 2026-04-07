@@ -175,7 +175,7 @@ static int action_left_input_desc(unsigned type, const char *label,
          settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
 
          /* Skip empty descs */
-         if (string_is_empty(sys_info->input_desc_btn[mapped_port][bind_idx]))
+         if ((!sys_info->input_desc_btn[mapped_port][bind_idx] || !*sys_info->input_desc_btn[mapped_port][bind_idx]))
             return action_left_input_desc(type, NULL, wraparound);
       }
       else
@@ -390,11 +390,11 @@ static int playlist_association_left(unsigned type, const char *label,
       return -1;
 
    /* Get current core path association */
-   if (!string_is_empty(default_core_path) &&
-       !string_is_equal(default_core_path, "DETECT"))
+   if ((default_core_path && *default_core_path)
+       && !string_is_equal(default_core_path, "DETECT"))
    {
       const char *default_core_filename = path_basename(default_core_path);
-      if (!string_is_empty(default_core_filename))
+      if (default_core_filename && *default_core_filename)
       {
          strlcpy(core_filename, default_core_filename, sizeof(core_filename));
          default_core_set = true;
