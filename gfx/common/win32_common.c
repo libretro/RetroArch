@@ -667,7 +667,7 @@ static bool win32_browser(
       new_file[0]  = '\0';
       new_dir[0]   = '\0';
 
-      if (!string_is_empty(title))
+      if (title && *title)
          strlcpy(new_title, title, sizeof(new_title));
 
       if (filename && *filename)

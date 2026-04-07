@@ -3478,7 +3478,7 @@ static bool vulkan_init_filter_chain(vk_t *vk)
    const char     *shader_path = video_shader_get_current_shader_preset();
    enum rarch_shader_type type = video_shader_parse_type(shader_path);
 
-   if (string_is_empty(shader_path))
+   if (!shader_path || !*shader_path)
    {
       RARCH_LOG("[Vulkan] Loading stock shader.\n");
 
@@ -4308,13 +4308,13 @@ static bool vulkan_set_shader(void *data,
       vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain);
    vk->filter_chain = NULL;
 
-   if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+   if (path && *path && type != RARCH_SHADER_SLANG)
    {
       RARCH_WARN("[Vulkan] Only Slang shaders are supported. Falling back to stock.\n");
       path = NULL;
    }
 
-   if (string_is_empty(path))
+   if (!path || !*path)
    {
       vulkan_init_default_filter_chain(vk);
       return true;
@@ -5424,7 +5424,7 @@ static bool vulkan_frame(void *data, const void *frame,
          end_main_pass = false;
       }
 
-      const bool message_visible = !string_is_empty(msg);
+      const bool message_visible = msg && *msg;
 
 #ifdef HAVE_GFX_WIDGETS
       const bool widgets_visible = gfx_widgets_visible(video_info);

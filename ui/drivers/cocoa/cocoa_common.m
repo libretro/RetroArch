@@ -1074,12 +1074,12 @@ static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gf
    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
       @"id": [NSString stringWithUTF8String:entry->path],
       @"title": [NSString stringWithUTF8String:
-                             (string_is_empty(entry->label) ? path_basename(entry->path) : entry->label)],
+                             ((!entry->label || !*entry->label) ? path_basename(entry->path) : entry->label)],
    }];
-   if (!string_is_empty(path_data->content_db_name))
+   if (path_data->content_db_name && *path_data->content_db_name)
    {
       const char *img_name = path_data->content_img;
-      if (!string_is_empty(img_name))
+      if (img_name && *img_name)
          dict[@"img"] = [NSString stringWithFormat:@"https://thumbnails.libretro.com/%s/Named_Boxarts/%s",
                          path_data->content_db_name, img_name];
    }

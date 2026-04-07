@@ -126,7 +126,7 @@ static void caca_font_render_msg(
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
 
-   if (!font || string_is_empty(msg))
+   if (!font || !msg || !*msg)
       return;
 
    if (params)

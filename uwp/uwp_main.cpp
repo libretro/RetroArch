@@ -498,7 +498,7 @@ void App::OnSuspending(IInspectable const& sender, SuspendingEventArgs const& ar
          if (!path_is_empty(RARCH_PATH_CONFIG))
          {
          const char* config_path = path_get(RARCH_PATH_CONFIG);
-         bool path_exists        = !string_is_empty(config_path);
+         bool path_exists        = config_path && *config_path;
 
          if (path_exists)
          {

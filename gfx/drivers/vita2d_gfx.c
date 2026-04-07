@@ -839,8 +839,7 @@ static bool vita2d_frame(void *data, const void *frame,
    if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
-
-   if (!string_is_empty(msg))
+   if (msg && *msg)
       font_driver_render_msg(vita, msg, NULL, NULL);
 
    vita2d_end_drawing();

@@ -3221,7 +3221,7 @@ void input_overlay_auto_rotate_(
       screen_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
 
    /* Get orientation of active overlay */
-   if (ol->active->name && *ol_active->name)
+   if (*ol->active->name)
    {
       if (strstr(ol->active->name, "landscape"))
          active_overlay_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
@@ -3247,7 +3247,7 @@ void input_overlay_auto_rotate_(
       if (!desc)
          continue;
 
-      if (desc->next_index_name && *desc->next_index_name)
+      if (*desc->next_index_name)
       {
          bool next_overlay_found = false;
          if (active_overlay_orientation == OVERLAY_ORIENTATION_LANDSCAPE)
@@ -5460,7 +5460,7 @@ void input_config_set_mouse_display_name(unsigned port, const char *name)
       string_trim_whitespace(name_ascii);
    }
 
-   if (name_ascii && *name_ascii)
+   if (*name_ascii)
       strlcpy(input_st->input_mouse_info[port].display_name, name_ascii,
             sizeof(input_st->input_mouse_info[port].display_name));
 }
@@ -5514,9 +5514,7 @@ void config_read_keybinds_conf(void *data)
          prefix[0]                  = '\0';
          input_config_get_prefix(prefix, sizeof(prefix), i, meta);
 
-         if (!prefix || !*prefix)
-            continue;
-         if (!btn)
+         if (!*prefix || !btn)
             continue;
 
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));

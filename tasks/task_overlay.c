@@ -620,7 +620,7 @@ static bool task_overlay_resolve_targets(struct overlay *ol,
       const char *next          = desc->next_index_name;
       ssize_t         next_idx  = (idx + 1) % len;
 
-      if (!string_is_empty(next))
+      if (next && *next)
       {
          next_idx = task_overlay_find_index(ol, next, len);
 
@@ -857,7 +857,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
          strlcpy(overlay->config.paths.path,
                tmp_str, sizeof(overlay->config.paths.path));
 
-      if (!string_is_empty(overlay->config.paths.path))
+      if (*overlay->config.paths.path)
       {
          char overlay_resolved_path[PATH_MAX_LENGTH];
 
@@ -1146,7 +1146,7 @@ bool task_push_overlay_load_default(
    overlay_loader_t *loader       = NULL;
    struct string_list *image_list = NULL;
 
-   if (string_is_empty(overlay_path))
+   if (!overlay_path || !*overlay_path)
       return false;
 
    /* Expand ~ so archive reads get an absolute path */

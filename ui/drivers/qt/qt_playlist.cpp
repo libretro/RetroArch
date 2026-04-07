@@ -981,7 +981,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
             key = coreListIterator.key();
             core = coreList.value(key);
 
-            if (string_is_empty(core->core_name))
+            if (!core->core_name || !*core->core_name)
                name = core->display_name;
             else
                name = core->core_name;
@@ -1479,7 +1479,7 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
 		   settings->bools.playlist_portable_paths
 		 ? settings->paths.directory_menu_content : NULL);
 
-   if (!settings || string_is_empty(plNameCString))
+   if (!settings || !plNameCString || !*plNameCString)
       return corePath;
 
    /* Get playlist path */
@@ -1511,7 +1511,7 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
       const char *defaultCorePath = playlist_get_default_core_path(playlist);
 
       /* Get default core path */
-      if (   !string_is_empty(defaultCorePath)
+      if (   (defaultCorePath && *defaultCorePath)
           && !string_is_equal(defaultCorePath, "DETECT"))
          corePath = QString::fromUtf8(defaultCorePath);
 
@@ -1553,7 +1553,7 @@ void PlaylistModel::getPlaylistItems(QString path)
 
    pathArray.append(path.toUtf8());
    pathData              = pathArray.constData();
-   if (!string_is_empty(pathData))
+   if (pathData && *pathData)
       playlistName       = path_basename(pathData);
 
    playlist_config_set_path(&playlist_config, pathData);
@@ -1567,13 +1567,13 @@ void PlaylistModel::getPlaylistItems(QString path)
 
       playlist_get_index(playlist, i, &entry);
 
-      if (string_is_empty(entry->path))
+      if (!entry->path || !*entry->path)
          continue;
 
       hash["path"]           = entry->path;
       hash["index"]          = QString::number(i);
 
-      if (string_is_empty(entry->label))
+      if (!entry->label || !*entry->label)
       {
          hash["label"]       = entry->path;
          hash["label_noext"] = entry->path;
@@ -1584,22 +1584,22 @@ void PlaylistModel::getPlaylistItems(QString path)
          hash["label_noext"] = entry->label;
       }
 
-      if (!string_is_empty(entry->core_path))
+      if (entry->core_path && *entry->core_path)
          hash["core_path"]   = entry->core_path;
 
-      if (!string_is_empty(entry->core_name))
+      if (entry->core_name && *entry->core_name)
          hash["core_name"]   = entry->core_name;
 
-      if (!string_is_empty(entry->crc32))
+      if (entry->crc32 && *entry->crc32)
          hash["crc32"]       = entry->crc32;
 
-      if (!string_is_empty(entry->db_name))
+      if (entry->db_name && *entry->db_name)
       {
          hash["db_name"]     = entry->db_name;
          hash["db_name"].remove(".lpl");
       }
 
-      if (!string_is_empty(playlistName))
+      if (playlistName && *playlistName)
       {
          hash["pl_name"]     = playlistName;
          hash["pl_name"].remove(".lpl");

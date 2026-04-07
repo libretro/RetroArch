@@ -355,8 +355,8 @@ bool gfx_widget_start_load_content_animation(void)
          playlist_get_index_by_path(playlist, content_path,
                &entry);
 
-         if (entry &&
-             !string_is_empty(entry->core_path))
+         if (   entry
+             && entry->core_path && *entry->core_path)
          {
             const char *entry_core_file = path_basename_nocompression(
                   entry->core_path);
@@ -376,7 +376,7 @@ bool gfx_widget_start_load_content_animation(void)
          playlist_entry_found = true;
 
          /* Get entry label */
-         if (!string_is_empty(entry->label))
+         if (entry->label && *entry->label)
          {
             state->content_name_len = strlcpy(state->content_name,
                   entry->label, sizeof(state->content_name));
@@ -384,7 +384,7 @@ bool gfx_widget_start_load_content_animation(void)
          }
 
          /* Get entry db_name, */
-         if (!string_is_empty(entry->db_name))
+         if (entry->db_name && *entry->db_name)
          {
             state->system_name_len = fill_pathname(
                   state->system_name, entry->db_name, "",
@@ -403,7 +403,7 @@ bool gfx_widget_start_load_content_animation(void)
       {
          const char *playlist_path = playlist_get_conf_path(playlist);
 
-         if (!string_is_empty(playlist_path))
+         if (playlist_path && *playlist_path)
          {
             size_t system_name_len;
             char new_system_name[512];
@@ -421,7 +421,7 @@ bool gfx_widget_start_load_content_animation(void)
                state->system_name[0] = '\0';
 
             /* Check whether a valid system name was found */
-            if (!string_is_empty(state->system_name))
+            if (*state->system_name)
             {
                state->system_name_len = system_name_len;
                has_system  = true;
@@ -443,7 +443,7 @@ bool gfx_widget_start_load_content_animation(void)
    if (!has_system || strchr(state->system_name, '|'))
    {
       /* Use core display name, if available */
-      if (!string_is_empty(core_info->display_name))
+      if (core_info->display_name && *core_info->display_name)
          state->system_name_len = strlcpy(state->system_name,
                core_info->display_name, sizeof(state->system_name));
       /* Otherwise, just use 'RetroArch' as a fallback */
@@ -458,7 +458,7 @@ bool gfx_widget_start_load_content_animation(void)
 
    /* Skip all icon filesystem checks if no icon directory
     * is set */
-   if (string_is_empty(state->icon_directory))
+   if (!*state->icon_directory)
       goto icon_done;
 
    /* Get icon filename

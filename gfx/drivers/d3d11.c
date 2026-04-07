@@ -1935,7 +1935,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    d3d11->context->lpVtbl->Flush(d3d11->context);
    d3d11_free_shader_preset(d3d11);
 
-   if (string_is_empty(path))
+   if (!path || !*path)
    {
 #ifdef HAVE_DXGI_HDR
       if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)

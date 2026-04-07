@@ -237,7 +237,7 @@ static bool gx2_set_shader(void *data,
    if (wiiu->shader_preset)
       gx2_free_shader_preset(wiiu);
 
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       if (type != RARCH_SHADER_SLANG)
       {

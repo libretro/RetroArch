@@ -41,7 +41,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY), len);
              break;
           default:
-             if (string_is_empty(s))
+             if (!s || !*s)
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
              break;
        }
@@ -507,7 +507,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              }
              break;
           default:
-             if (string_is_empty(s))
+             if (!s || !*s)
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
              return -1;
        }

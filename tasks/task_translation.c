@@ -875,7 +875,7 @@ bool run_translation_service(settings_t *settings, bool paused)
          playlist_get_index_by_path(
             current_playlist, path_get(RARCH_PATH_CONTENT), &entry);
 
-         if (entry && !string_is_empty(entry->label))
+         if (entry && entry->label && *entry->label)
             lbl = entry->label;
       }
 
@@ -1319,7 +1319,7 @@ static bool http_translate(
             separator = '&';
 
          /* source lang */
-         if (!string_is_empty(source_lang))
+         if (source_lang && *source_lang)
          {
             new_ai_service_url[  _len] = separator;
             new_ai_service_url[++_len] = '\0';
@@ -1333,7 +1333,7 @@ static bool http_translate(
          }
 
          /* target lang */
-         if (!string_is_empty(target_lang))
+         if (target_lang && *target_lang)
          {
             new_ai_service_url[  _len] = separator;
             new_ai_service_url[++_len] = '\0';

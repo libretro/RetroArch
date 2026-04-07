@@ -475,10 +475,10 @@ char* string_tokenize(char **str, const char *delim)
    size_t delim_len = 0;
 
    /* Sanity checks */
-   if (!str || string_is_empty(delim))
+   if (!str || !delim || !*delim)
       return NULL;
 
-   /* Note: we don't check string_is_empty() here,
+   /* Note: we don't check if string is empty here,
     * empty strings are valid */
    if (!(str_ptr = *str))
       return NULL;
@@ -556,7 +556,7 @@ unsigned string_to_unsigned(const char *str)
 {
    const char *ptr = NULL;
 
-   if (string_is_empty(str))
+   if (!str || !*str)
       return 0;
 
    for (ptr = str; *ptr != '\0'; ptr++)
@@ -582,7 +582,7 @@ unsigned string_hex_to_unsigned(const char *str)
    const char *hex_str = str;
    const char *ptr     = NULL;
 
-   if (string_is_empty(str))
+   if (!str || !*str)
       return 0;
 
    /* Remove leading '0x', if present */
@@ -590,7 +590,7 @@ unsigned string_hex_to_unsigned(const char *str)
        && (str[1] == 'x' || str[1] == 'X'))
    {
       hex_str = str + 2;
-      if (string_is_empty(hex_str))
+      if (!hex_str || !*hex_str)
          return 0;
    }
 

@@ -241,7 +241,7 @@ static void gdi_font_render_msg(
    SIZE text_size                   = {0};
    struct string_list msg_list      = {0};
 
-   if (!font || string_is_empty(msg) || !gdi)
+   if (!font || !msg || !*msg || !gdi)
       return;
 
    if (params)

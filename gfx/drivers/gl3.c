@@ -1204,7 +1204,7 @@ static void gl3_raster_font_render_msg(
    float video_msg_color_g          = settings->floats.video_msg_color_g;
    float video_msg_color_b          = settings->floats.video_msg_color_b;
 
-   if (!font || string_is_empty(msg) || !gl)
+   if (!font || !msg || !*msg || !gl)
       return;
 
    if (params)
@@ -1252,7 +1252,7 @@ static void gl3_raster_font_render_msg(
    else
       gl3_raster_font_setup_viewport(gl, width, height, font, full_screen);
 
-   if (!string_is_empty(msg)
+   if (  (msg && *msg)
          && font->font_data  && font->font_driver)
    {
       if (drop_x || drop_y)
@@ -2571,7 +2571,7 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
 
    if (type != parse_type)
    {
-      if (!string_is_empty(shader_path))
+      if (shader_path && *shader_path)
          RARCH_WARN("[GLCore] Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
             shader_path, video_shader_type_to_str(parse_type), video_shader_type_to_str(type));
 
@@ -2602,7 +2602,7 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
          return false;
       }
 
-      if (string_is_empty(shader_path))
+      if (!shader_path || !*shader_path)
       {
          RARCH_LOG("[GLCore] Loading stock shader.\n");
          return gl3_init_default_filter_chain(gl);
@@ -2910,7 +2910,7 @@ static void *gl3_init(const video_info_t *video,
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
-   if (!string_is_empty(version))
+   if (version && *version)
    {
       if (string_starts_with(version, "OpenGL ES "))
          sscanf(version, "OpenGL ES %u.%u", &gl->version_major, &gl->version_minor);
@@ -4177,7 +4177,7 @@ static bool gl3_frame(void *data, const void *frame,
       gfx_widgets_frame(video_info);
 #endif
 
-   if (!string_is_empty(msg))
+   if (msg && *msg)
    {
 #if 0
       if (msg_bgcolor_enable)

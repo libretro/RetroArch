@@ -112,7 +112,7 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
    }
 
    /* Sanity check: should only trigger on bug */
-   if (string_is_empty(font_file))
+   if (!font_file || !*font_file)
       goto error;
 
    /* Get font path */

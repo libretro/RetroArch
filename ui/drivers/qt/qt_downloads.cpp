@@ -56,7 +56,7 @@ static void cb_extract_thumbnail_pack(retro_task_t *task,
       free(dec);
    }
 
-   mainwindow->onThumbnailPackExtractFinished(string_is_empty(err));
+   mainwindow->onThumbnailPackExtractFinished(!err || !*err);
 }
 
 void MainWindow::onThumbnailPackDownloadNetworkError(

@@ -1568,7 +1568,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    pass->fbo.type_x                      = pass->fbo.type_y;
    pass->fbo.flags                      |= FBO_SCALE_FLAG_VALID;
 
-   if (!string_is_empty(d3d->shader_path))
+   if (d3d->shader_path && *d3d->shader_path)
       strlcpy(pass->source.path, d3d->shader_path,
             sizeof(pass->source.path));
 
@@ -1671,7 +1671,7 @@ static void d3d8_free(void *data)
 
    d3d8_deinitialize(d3d);
 
-   if (!string_is_empty(d3d->shader_path))
+   if (d3d->shader_path && *d3d->shader_path)
       free(d3d->shader_path);
 
    IDirect3DDevice8_Release(d3d->dev);
@@ -1939,7 +1939,7 @@ static bool d3d8_frame(void *data, const void *frame,
    }
 #endif
 
-   if (!string_is_empty(msg))
+   if (msg && *msg)
    {
       IDirect3DDevice8_SetViewport(d3d->dev, (D3DVIEWPORT8*)&screen_vp);
       IDirect3DDevice8_BeginScene(d3d->dev);

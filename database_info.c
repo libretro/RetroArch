@@ -873,8 +873,9 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    if (!db)
       return NULL;
 
-   /* File list will include all supported files, unless extension list is given */
-   if (string_is_empty(file_exts))
+   /* File list will include all supported files, 
+    * unless extension list is given */
+   if (!file_exts || !*file_exts)
       core_info_get_list(&core_info_list);
 
    if (!(list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : file_exts,

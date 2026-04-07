@@ -1557,7 +1557,7 @@ static bool d3d10_gfx_set_shader(void* data,
    d3d10->device->lpVtbl->Flush(d3d10->device);
    d3d10_free_shader_preset(d3d10);
 
-   if (string_is_empty(path))
+   if (!path || !*path)
       return true;
 
    if (type != RARCH_SHADER_SLANG)
@@ -2095,6 +2095,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
          goto error;
    }
 
+#ifdef HAVE_XMB
    if (string_is_equal(settings->arrays.menu_driver, "xmb"))
    {
       {
@@ -2161,6 +2162,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
             goto error;
       }
    }
+#endif
 
    {
       D3D10_BLEND_DESC blend_desc = { 0 };

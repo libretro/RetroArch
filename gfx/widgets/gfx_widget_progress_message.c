@@ -136,7 +136,7 @@ void gfx_widget_set_progress_message(
    uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Ensure we have a valid message string */
-   if (string_is_empty(message))
+   if (!message || !*message)
       return;
 
    /* If widget is currently active, ignore new

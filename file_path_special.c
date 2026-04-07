@@ -200,7 +200,7 @@ size_t fill_pathname_application_special(char *s,
 
             /* Try config directory setting first,
              * fallback to the location of the current configuration file. */
-            if (!string_is_empty(dir_menu_config))
+            if (dir_menu_config && *dir_menu_config)
                _len = strlcpy(s, dir_menu_config, len);
             else if (!path_is_empty(RARCH_PATH_CONFIG))
                _len = fill_pathname_basedir(s, path_get(RARCH_PATH_CONFIG), len);
@@ -225,7 +225,7 @@ size_t fill_pathname_application_special(char *s,
             settings_t *settings            = config_get_ptr();
             const char *path_menu_wallpaper = settings->paths.path_menu_wallpaper;
 
-            if (!string_is_empty(path_menu_wallpaper))
+            if (path_menu_wallpaper && *path_menu_wallpaper)
                _len = strlcpy(s, path_menu_wallpaper, len);
             else
             {
@@ -375,7 +375,7 @@ size_t fill_pathname_application_special(char *s,
             settings_t           *settings = config_get_ptr();
             const char *path_menu_xmb_font = settings->paths.path_menu_xmb_font;
 
-            if (!string_is_empty(path_menu_xmb_font))
+            if (path_menu_xmb_font && *path_menu_xmb_font)
                _len = strlcpy(s, path_menu_xmb_font, len);
             else
             {

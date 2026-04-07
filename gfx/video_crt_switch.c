@@ -330,7 +330,7 @@ static void switch_res_crt(
 
       /* Check for core and content changes in case we need
          to make any adjustments */
-      if (string_is_empty(_core_name))
+      if (!_core_name || !*_core_name)
          current_core_name[0] = '\0';
       else
          strlcpy(current_core_name, _core_name, sizeof(current_core_name));

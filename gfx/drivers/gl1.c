@@ -782,7 +782,7 @@ static void gl1_raster_font_render_msg(
    gl1_raster_t               *font = (gl1_raster_t*)data;
    gl1_t *gl                        = (gl1_t*)userdata;
 
-   if (!font || string_is_empty(msg) || !gl)
+   if (!font || !msg || !*msg || !gl)
       return;
 
    if (params)
@@ -844,7 +844,7 @@ static void gl1_raster_font_render_msg(
       if (!font->block)
          gl1_raster_font_setup_viewport(gl, width, height, font, full_screen);
 
-      if (!string_is_empty(msg)
+      if (msg && *msg
             && font->font_data  && font->font_driver)
       {
          if (drop_x || drop_y)
@@ -1210,17 +1210,17 @@ static void *gl1_init(const video_info_t *video,
    version  = (const char*)glGetString(GL_VERSION);
    extensions = (const char*)glGetString(GL_EXTENSIONS);
 
-   if (!string_is_empty(version))
+   if (version && *version)
       sscanf(version, "%d.%d", &gl1->version_major, &gl1->version_minor);
 
-   if (!string_is_empty(extensions))
+   if (extensions && *extensions)
       gl1->extensions = string_split(extensions, " ");
 
    RARCH_LOG("[GL1] Vendor: %s, Renderer: %s.\n", vendor, renderer);
    RARCH_LOG("[GL1] Version: %s.\n", version);
    RARCH_LOG("[GL1] Extensions: %s.\n", extensions);
 
-   if (!string_is_empty(version))
+   if (version && *version)
       video_driver_set_gpu_api_version_string(version);
 
    if (gl1->ctx_driver->input_driver)

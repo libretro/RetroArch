@@ -1176,7 +1176,7 @@ void CoreOptionsDialog::buildLayout()
             connect(resetButton, SIGNAL(clicked()),
                   this, SLOT(onCoreOptionResetClicked()));
 
-            if (!string_is_empty(option->info))
+            if (option->info && *option->info)
             {
                char *new_info;
                size_t option_info_len = strlen(option->info);
@@ -2284,7 +2284,7 @@ void ShaderParamsDialog::buildLayout()
     */
    if (video_shader)
    {
-      if (!string_is_empty(video_shader->path))
+      if (*video_shader->path)
       {
          shader_path = video_shader->path;
          setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
@@ -2292,7 +2292,7 @@ void ShaderParamsDialog::buildLayout()
    }
    else if (menu_shader)
    {
-      if (!string_is_empty(menu_shader->path))
+      if (*menu_shader->path)
       {
          shader_path = menu_shader->path;
          setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());

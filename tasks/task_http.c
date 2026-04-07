@@ -316,7 +316,7 @@ void* task_push_http_transfer(const char *url, bool mute,
       const char *type,
       retro_task_callback_t cb, void *user_data)
 {
-   if (!string_is_empty(url))
+   if (url && *url)
       return task_push_http_transfer_generic(
             net_http_connection_new(url, type ? type : "GET", NULL),
             url, mute, false, cb, user_data);
@@ -328,7 +328,7 @@ void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
 {
    struct http_connection_t *conn;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, "OPTIONS", NULL)))
@@ -346,7 +346,7 @@ void* task_push_webdav_mkdir(const char *url, bool mute,
 {
    struct http_connection_t *conn;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, "MKCOL", NULL)))
@@ -366,7 +366,7 @@ void* task_push_webdav_put(const char *url,
    char                      expect[1024]; /* TODO/FIXME - check size */
    size_t                    _len;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, "PUT", NULL)))
@@ -391,7 +391,7 @@ void* task_push_webdav_delete(const char *url, bool mute,
 {
    struct http_connection_t *conn;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, "DELETE", NULL)))
@@ -411,7 +411,7 @@ void *task_push_webdav_move(const char *url,
    struct http_connection_t *conn;
    char dest_header[PATH_MAX_LENGTH + 512];
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, "MOVE", NULL)))
@@ -438,7 +438,7 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    char tmp[NAME_MAX_LENGTH]   = "";
    retro_task_t *t             = NULL;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(t = (retro_task_t*)task_push_http_transfer_generic(
@@ -473,7 +473,7 @@ void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
 {
    struct http_connection_t *conn;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, type ? type : "GET", NULL)))
@@ -491,7 +491,7 @@ void* task_push_http_transfer_with_headers(const char *url, bool mute,
 {
    struct http_connection_t *conn;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, type ? type : "GET", NULL)))
@@ -507,7 +507,7 @@ void* task_push_http_post_transfer(const char *url,
       const char *post_data, bool mute,
       const char *type, retro_task_callback_t cb, void *user_data)
 {
-   if (!string_is_empty(url))
+   if (url && *url)
       return task_push_http_transfer_generic(
             net_http_connection_new(url, type ? type : "POST", post_data),
             url, mute, false, cb, user_data);
@@ -521,7 +521,7 @@ void* task_push_http_post_transfer_with_user_agent(const char *url,
 {
    struct http_connection_t* conn;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, type ? type : "POST", post_data)))
@@ -540,7 +540,7 @@ void* task_push_http_post_transfer_with_headers(const char *url,
 {
    struct http_connection_t* conn;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, type ? type : "POST", post_data)))
@@ -559,7 +559,7 @@ void *task_push_http_transfer_with_content(const char *url,
 {
    struct http_connection_t *conn;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(conn = net_http_connection_new(url, method, NULL)))

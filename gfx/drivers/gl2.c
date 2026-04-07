@@ -991,7 +991,7 @@ static void gl2_raster_font_render_msg(
    unsigned height                   = gl->video_height;
    bool video_scale_integer          = config_get_ptr()->bools.video_scale_integer;
 
-   if (!font || string_is_empty(msg) || !gl)
+   if (!font || !msg || !*msg || !gl)
       return;
 
    if (params)
@@ -1046,7 +1046,7 @@ static void gl2_raster_font_render_msg(
       gl2_raster_font_setup_viewport(gl, font, width, height, full_screen,
             video_scale_integer);
 
-   if (    !string_is_empty(msg)
+   if (    (msg && *msg)
          && font->font_data
          && font->font_driver)
    {
@@ -2957,7 +2957,7 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
 
    if (type != parse_type)
    {
-      if (!string_is_empty(shader_path))
+      if (shader_path && *shader_path)
          RARCH_WARN("[GL] Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
             shader_path, video_shader_type_to_str(parse_type), video_shader_type_to_str(type));
 
@@ -3682,7 +3682,7 @@ static bool gl2_frame(void *data, const void *frame,
       gfx_widgets_frame(video_info);
 #endif
 
-   if (!string_is_empty(msg))
+   if (msg && *msg)
    {
       if (msg_bgcolor_enable)
          gl2_render_osd_background(gl, video_scale_integer, msg);
@@ -4387,7 +4387,7 @@ static void *gl2_init(const video_info_t *video,
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
-   if (!string_is_empty(version))
+   if (version && *version)
    {
       if (string_starts_with(version, "OpenGL ES "))
          sscanf(version, "OpenGL ES %d.%d", &gl->version_major, &gl->version_minor);
@@ -4400,17 +4400,17 @@ static void *gl2_init(const video_info_t *video,
    {
       size_t _len = 0;
 
-      if (!string_is_empty(vendor))
+      if (vendor && *vendor)
       {
         _len                   = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
         gl->device_str[  _len]  = ' ';
         gl->device_str[++_len]  = '\0';
       }
 
-      if (!string_is_empty(renderer))
+      if (renderer && *renderer)
         strlcpy(gl->device_str + _len, renderer, sizeof(gl->device_str) - _len);
 
-      if (!string_is_empty(version))
+      if (version && *version)
         video_driver_set_gpu_api_version_string(version);
    }
 

@@ -133,7 +133,7 @@ static void sdl_dingux_blit_text16(
          screen_height - vid->frame_padding_y)
       return;
 
-   while (!string_is_empty(str))
+   while (str && *str)
    {
       /* Check for out of bounds x coordinates */
       if (x_pos + FONT_WIDTH_STRIDE + 1 >=
@@ -216,7 +216,7 @@ static void sdl_dingux_blit_text32(
          screen_height - vid->frame_padding_y)
       return;
 
-   while (!string_is_empty(str))
+   while (str && *str)
    {
       /* Check for out of bounds x coordinates */
       if (x_pos + FONT_WIDTH_STRIDE + 1 >=
@@ -349,7 +349,7 @@ static void sdl_dingux_input_driver_init(
 
    /* If input driver name is empty, cannot
     * initialise anything... */
-   if (string_is_empty(input_drv_name))
+   if (!input_drv_name || !*input_drv_name)
       return;
 
    if (string_is_equal(input_drv_name, "sdl_dingux"))

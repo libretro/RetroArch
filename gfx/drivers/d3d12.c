@@ -2196,7 +2196,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    D3D12_GFX_SYNC();
    d3d12_free_shader_preset(d3d12);
 
-   if (string_is_empty(path))
+   if (!path || !*path)
    {
 #ifdef HAVE_DXGI_HDR
       if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)

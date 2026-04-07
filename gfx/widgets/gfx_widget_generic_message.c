@@ -173,7 +173,7 @@ void gfx_widget_set_generic_message(
    gfx_widget_font_data_t *font_msg_queue    = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
    /* Ensure we have a valid message string */
-   if (string_is_empty(msg))
+   if (!msg || !*msg)
       return;
 
    /* Cache message parameters */
@@ -274,7 +274,7 @@ static void gfx_widget_generic_message_layout(
    /* Set background width */
    state->bg_width     = state->text_padding * 2;
 
-   if (!string_is_empty(state->message))
+   if (*state->message)
    {
       text_width       = font_driver_get_message_width(
             font_msg_queue->font, state->message,

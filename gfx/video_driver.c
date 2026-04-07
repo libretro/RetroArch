@@ -1154,7 +1154,7 @@ void* video_display_server_init(enum rarch_display_type type)
       if (current_display_server->init)
          video_st->current_display_server_data = current_display_server->init();
 
-      if (!string_is_empty(current_display_server->ident))
+      if (current_display_server->ident && *current_display_server->ident)
       {
          RARCH_LOG("[Video] Found display server: \"%s\".\n",
                current_display_server->ident);
@@ -3502,7 +3502,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 
    /* Init video filter only when game is running */
    if ((     runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED)
-         && !string_is_empty(path_softfilter_plugin))
+         && (path_softfilter_plugin && *path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt, settings);
 #endif
 
@@ -4109,7 +4109,7 @@ void video_driver_frame(const void *data, unsigned width,
          __len = strlcpy(video_st->window_title, video_st->title_buf,
                sizeof(video_st->window_title));
 
-         if (!string_is_empty(status_text))
+         if (*status_text)
          {
             video_st->window_title[  __len  ] = ' ';
             video_st->window_title[++__len  ] = '|';
@@ -4172,7 +4172,7 @@ void video_driver_frame(const void *data, unsigned width,
       {
          /* If status text is already set, add status
           * message at the end */
-         if (!string_is_empty(status_text))
+         if (*status_text)
          {
             status_text[  _len] = ' ';
             status_text[++_len] = '|';

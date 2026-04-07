@@ -173,7 +173,7 @@ joypad_connection_t *pad_connection_init(unsigned pads)
 joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, const char *name)
 {
    unsigned i;
-   const bool has_name = !string_is_empty(name);
+   const bool has_name = name && *name;
    size_t name_len     = strlen(name);
 
    for (i = 0; pad_map[i].name != NULL; i++)

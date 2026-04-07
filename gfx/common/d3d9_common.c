@@ -740,7 +740,7 @@ static void d3d9_init_singlepass(d3d9_video_t *d3d)
    pass->fbo.scale_x                = pass->fbo.scale_y;
    pass->fbo.type_x                 = pass->fbo.type_y;
 
-   if (!string_is_empty(d3d->shader_path))
+   if (d3d->shader_path && *d3d->shader_path)
       strlcpy(pass->source.path, d3d->shader_path,
             sizeof(pass->source.path));
 }
@@ -798,7 +798,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 bool d3d9_process_shader(d3d9_video_t *d3d)
 {
    const char *shader_path = d3d->shader_path;
-   if (!string_is_empty(shader_path))
+   if (shader_path && *shader_path)
    {
       RARCH_ERR("[D3D9] Failed to parse shader preset.\n");
       return d3d9_init_multipass(d3d, shader_path);

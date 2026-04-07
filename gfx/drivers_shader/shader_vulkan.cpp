@@ -1445,9 +1445,9 @@ bool vulkan_filter_chain::init()
 #ifdef VULKAN_DEBUG
       const char *name = passes[i]->get_name().c_str();
       RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", i,
-            string_is_empty(name) ?
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-            name);
+            (name && *name)
+            ? name 
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 #endif
       source = passes[i]->set_pass_info(max_input_size,
             source, swapchain_info, pass_info[i]);

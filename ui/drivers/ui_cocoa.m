@@ -151,7 +151,7 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 {
    NSOpenPanel *panel = [NSOpenPanel openPanel];
 
-   if (!string_is_empty(state->filters))
+   if (state->filters && *state->filters)
    {
 #ifdef HAVE_COCOA_METAL
       [panel setAllowedFileTypes:@[BOXSTRING(state->filters), BOXSTRING(state->filters_title)]];
@@ -205,7 +205,7 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
    NSAlert* alert = [[NSAlert new] autorelease];
 #endif
 
-   if (!string_is_empty(state->title))
+   if (state->title && *state->title)
       [alert setMessageText:BOXSTRING(state->title)];
    [alert setInformativeText:BOXSTRING(state->text)];
 
@@ -907,7 +907,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
    settings_t           *settings   = config_get_ptr();
    bool set_supports_no_game_enable =
       settings->bools.set_supports_no_game_enable;
-   if (!state || string_is_empty(state->result))
+   if (!state || !state->result || !*state->result)
       return;
    if (!result)
       return;
@@ -935,7 +935,7 @@ static void open_document_handler(
    struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
    const char            *core_name  = sysinfo ? sysinfo->library_name : NULL;
 
-   if (!state || string_is_empty(state->result))
+   if (!state || !state->result || !*state->result)
       return;
    if (!result)
       return;
@@ -946,7 +946,7 @@ static void open_document_handler(
    {
       path_set(RARCH_PATH_CONTENT, state->result);
 
-      if (!string_is_empty(core_name))
+      if (core_name && *core_name)
       {
          content_ctx_info_t content_info = {0};
          task_push_load_content_with_current_core_from_companion_ui(

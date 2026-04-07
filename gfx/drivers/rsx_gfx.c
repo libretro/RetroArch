@@ -907,7 +907,7 @@ static void rsx_font_render_msg(
    float video_msg_color_b          = settings->floats.video_msg_color_b;
    rsx_t *rsx                       = (rsx_t*)userdata;
 
-   if (!font || string_is_empty(msg) || !rsx)
+   if (!font || !msg || !*msg || !rsx)
       return;
 
    width                            = rsx->width;
@@ -958,7 +958,7 @@ static void rsx_font_render_msg(
    else
       rsx_font_setup_viewport(rsx, font, width, height, full_screen);
 
-   if (    !string_is_empty(msg)
+   if (     (msg && *msg)
          && font->font_data
          && font->font_driver)
    {

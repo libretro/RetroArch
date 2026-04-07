@@ -250,7 +250,7 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
       }
       else
 #endif
-      if (!string_is_empty(content))
+      if (content && *content)
       {
          param->argc    = 2;
          param->argv[1] = arg;

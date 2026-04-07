@@ -2570,7 +2570,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
                sizeof(tmp_path));
 
          /* If content path is empty, fall back to global system dir path */
-         if (string_is_empty(tmp_path))
+         if (!*tmp_path)
             firmware_info.directory.system = settings->paths.directory_system;
          else
          {
@@ -3019,7 +3019,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    /* Search for specified core - ensures path
     * is 'sanitised' */
    if (    core_info_find(core_path, &coreInfo)
-       && !string_is_empty(coreInfo->path))
+       && (coreInfo->path && *coreInfo->path))
       core_path = coreInfo->path;
 
    /* If a core is currently running, the following
@@ -3028,11 +3028,11 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
     * in turn free the pointer referenced by coreInfo->path.
     * This will invalidate core_path, so we have to cache
     * its current value here. */
-   if (!string_is_empty(core_path))
+   if (core_path && *core_path)
       strlcpy(core_path_cached, core_path, sizeof(core_path_cached));
 
    /* Add lpl extension to db_name, if required */
-   if (!string_is_empty(content_db_name))
+   if (content_db_name && *content_db_name)
       fill_pathname(content_db_name_full, content_db_name,
             ".lpl", sizeof(content_db_name_full));
 
@@ -3827,7 +3827,8 @@ void MainWindow::setCurrentCoreLabel()
             && !libraryName.isEmpty())
       {
          m_currentCore        = sysinfo->library_name;
-         m_currentCoreVersion = (string_is_empty(sysinfo->library_version)
+         m_currentCoreVersion = 
+		 ((!sysinfo->library_version || !*sysinfo->library_version)
                ? "" : sysinfo->library_version);
          update = true;
       }
@@ -5542,7 +5543,7 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
          QTableWidgetItem *version_item = new QTableWidgetItem(core->display_version);
          const char               *name = core->display_name;
 
-         if (string_is_empty(name))
+         if (!name || !*name)
             name                        = path_basename(core->path);
 
          name_item                      = new QTableWidgetItem(name);
