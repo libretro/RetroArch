@@ -2506,7 +2506,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       }
    }
 
-   if (base_path && *base_path)
+   if (*base_path)
    {
       menu_entries_append(list, base_path,
             MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
