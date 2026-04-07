@@ -242,6 +242,11 @@ struct gfx_thumbnail_state
    /* When true, 'fade in' animation will also be
     * triggered for missing thumbnails */
    bool fade_missing;
+
+   /* LOW-MEMORY FIX: Maximum number of concurrent thumbnail load tasks
+    * Helps prevent memory exhaustion on low-memory devices (RPi, Switch, etc.) */
+   unsigned max_concurrent_loads;
+   unsigned current_loads;
 };
 
 typedef struct gfx_thumbnail_state gfx_thumbnail_state_t;
@@ -265,6 +270,20 @@ void gfx_thumbnail_set_fade_duration(float duration);
  * > When 'true', allows menu driver to animate
  *   any 'thumbnail unavailable' notifications */
 void gfx_thumbnail_set_fade_missing(bool fade_missing);
+
+/* LOW-MEMORY FIX: Concurrent load management API */
+
+/* Sets maximum number of concurrent thumbnail load tasks
+ * allowed at any time. Helps prevent memory exhaustion on
+ * low-memory devices.
+ * > Use 0 for unlimited (default behavior) */
+void gfx_thumbnail_set_max_concurrent_loads(unsigned max_loads);
+
+/* Returns current number of active thumbnail load tasks */
+unsigned gfx_thumbnail_get_concurrent_loads(void);
+
+/* Returns whether a new thumbnail load can be started */
+bool gfx_thumbnail_can_start_load(void);
 
 /* Core interface */
 
