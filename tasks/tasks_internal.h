@@ -193,8 +193,7 @@ bool task_push_dbscan(
 #endif
 
 bool task_push_manual_content_scan(
-      const playlist_config_t *playlist_config,
-      const char *playlist_directory);
+      bool do_menu_refresh);
 
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(

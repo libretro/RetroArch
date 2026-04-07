@@ -1991,13 +1991,6 @@ static bool menu_content_find_first_core(
    return true;
 }
 
-#ifdef HAVE_LIBRETRODB
-void handle_dbscan_finished(retro_task_t *task,
-      void *task_data, void *user_data, const char *err);
-#endif
-
-
-
 static int file_load_with_detect_core_wrapper(
       enum msg_hash_enums enum_label_idx,
       size_t idx, size_t entry_idx,
@@ -8456,7 +8449,7 @@ static int action_ok_manual_content_scan_start(const char *path,
          settings->bools.playlist_portable_paths ?
                settings->paths.directory_menu_content : NULL);
 
-   task_push_manual_content_scan(&playlist_config, directory_playlist);
+   task_push_manual_content_scan(true);
    return 0;
 }
 
@@ -9031,8 +9024,7 @@ static int action_ok_playlist_refresh(const char *path,
             settings->bools.playlist_portable_paths ?
             settings->paths.directory_menu_content : NULL);
 
-      task_push_manual_content_scan(playlist_config,
-            settings->paths.directory_playlist);
+      task_push_manual_content_scan(true);
    }
    return 0;
 }
