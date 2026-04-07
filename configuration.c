@@ -3331,12 +3331,12 @@ void config_set_defaults(void *data)
             g_defaults.dirs[DEFAULT_DIR_OVERLAY],
             sizeof(settings->paths.directory_overlay));
 #ifdef RARCH_MOBILE
-      if (!settings->paths.path_overlay || !*settings->paths.path_overlay)
+      if (!*settings->paths.path_overlay)
          fill_pathname_join_special(settings->paths.path_overlay,
                settings->paths.directory_overlay,
                FILE_PATH_DEFAULT_OVERLAY,
                sizeof(settings->paths.path_overlay));
-      if (!settings->paths.path_osk_overlay || !*settings->paths.path_osk_overlay)
+      if (!*settings->paths.path_osk_overlay)
          fill_pathname_join_special(settings->paths.path_osk_overlay,
                settings->paths.directory_overlay,
                FILE_PATH_DEFAULT_OSK_OVERLAY,

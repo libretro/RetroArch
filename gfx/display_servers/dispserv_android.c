@@ -53,7 +53,7 @@ static void android_display_dpi_get_density(char *s, size_t len)
       inited_once = true;
    }
 
-   if (string && *string)
+   if (*string)
    {
       strlcpy(s, string, len);
       return;
@@ -83,7 +83,7 @@ bool android_display_get_metrics(void *data,
          {
             char density[PROP_VALUE_MAX];
             android_display_dpi_get_density(density, sizeof(density));
-            if (!density || !*density)
+            if (!*density)
                goto dpi_fallback;
             if ((dpi = atoi(density)) <= 0)
                goto dpi_fallback;

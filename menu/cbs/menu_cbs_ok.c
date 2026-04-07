@@ -8744,7 +8744,7 @@ static int action_ok_core_delete(const char *path,
       strlcpy(backup_core_path + _len, FILE_PATH_BACKUP_EXTENSION,
             sizeof(backup_core_path) - _len);
 
-      if (  (backup_core_path && *backup_core_path)
+      if (  *backup_core_path
           && path_is_valid(backup_core_path))
          filestream_delete(backup_core_path);
    }
@@ -9024,7 +9024,7 @@ static int action_ok_smb_browse(const char *path,
       return -1;
    }
 
-   if (!settings->arrays.smb_client_server_address || !*settings->arrays.smb_client_server_address)
+   if (!*settings->arrays.smb_client_server_address)
    {
       runloop_msg_queue_push(
             "SMB server address not configured.",
@@ -9043,8 +9043,7 @@ static int action_ok_smb_browse(const char *path,
    remaining -= len;
 
    /* Append /<share> if set */
-   if (remaining > 1
-         && (settings->arrays.smb_client_share && *settings->arrays.smb_client_share))
+   if (remaining > 1 && *settings->arrays.smb_client_share)
    {
       *ptr++ = '/';
       remaining--;
@@ -9056,8 +9055,7 @@ static int action_ok_smb_browse(const char *path,
    }
 
    /* Append /<subdir> if set */
-   if (remaining > 1
-         && (settings->arrays.smb_client_subdir && *settings->arrays.smb_client_subdir))
+   if (remaining > 1 && *settings->arrays.smb_client_subdir)
    {
       if (settings->arrays.smb_client_subdir[0] != '/')
       {

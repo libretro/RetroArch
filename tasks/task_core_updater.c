@@ -1646,7 +1646,7 @@ static void task_play_feature_delivery_core_install_handler(
                      FILE_PATH_BACKUP_EXTENSION,
                      sizeof(backup_core_path) - _len);
 
-               if (backup_core_path && *backup_core_path)
+               if (*backup_core_path)
                {
                   int ret;
 

@@ -5856,7 +5856,7 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
        return 0;
 
     val_disabled = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
-    if (!settings->arrays.input_android_physical_keyboard || !*settings->arrays.input_android_physical_keyboard)
+    if (!*settings->arrays.input_android_physical_keyboard)
         strlcpy(keyboard, val_disabled, sizeof(keyboard));
     else
     {
@@ -5901,7 +5901,7 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
             }
         }
 
-        if (device_lbl && *device_lbl)
+        if (*device_lbl)
         {
             size_t previous_position;
             if (file_list_search(info_list, device_lbl, &previous_position))

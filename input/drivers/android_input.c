@@ -362,7 +362,7 @@ bool android_input_can_be_keyboard(void *data, int port)
         return false;
 
     state_device_t *device = &android->pad_states[port];
-    if (!device->id && (!device->name || !*device->name))
+    if (!device->id && !*device->name)
         return false;
 
     return android_input_can_be_keyboard_jni(device->id);

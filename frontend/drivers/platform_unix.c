@@ -1604,7 +1604,7 @@ static void frontend_unix_get_env(int *argc,
          strlcpy(path, argv, sizeof(path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (path && *path)
+      if (*path)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Auto-start game \"%s\".\n", path);
@@ -1629,7 +1629,7 @@ static void frontend_unix_get_env(int *argc,
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (internal_storage_path && *internal_storage_path)
+      if (*internal_storage_path)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Android internal storage location: \"%s\".\n",
@@ -1651,7 +1651,7 @@ static void frontend_unix_get_env(int *argc,
          strlcpy(apk_dir, argv, sizeof(apk_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (apk_dir && *apk_dir)
+      if (*apk_dir)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] APK location \"%s\".\n", apk_dir);
@@ -1673,7 +1673,7 @@ static void frontend_unix_get_env(int *argc,
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (internal_storage_app_path && *internal_storage_app_path)
+      if (*internal_storage_app_path)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Android external files location \"%s\".\n",
@@ -1701,12 +1701,12 @@ static void frontend_unix_get_env(int *argc,
       /* set paths depending on the ability to write
        * to internal_storage_path */
 
-      if (internal_storage_path && *internal_storage_path)
+      if (*internal_storage_path)
       {
          if (test_permissions(internal_storage_path))
             storage_permissions = INTERNAL_STORAGE_WRITABLE;
       }
-      else if (internal_storage_app_path && *internal_storage_app_path)
+      else if (*internal_storage_app_path)
       {
          if (test_permissions(internal_storage_app_path))
             storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
@@ -1715,7 +1715,7 @@ static void frontend_unix_get_env(int *argc,
          storage_permissions = INTERNAL_STORAGE_NOT_WRITABLE;
 
       /* code to populate default paths*/
-      if (app_dir && *app_dir)
+      if (*app_dir)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Application location: \"%s\".\n", app_dir);
@@ -2361,7 +2361,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    if (!g_android->is_play_store_build)
    {
-      if (internal_storage_path && *internal_storage_path)
+      if (*internal_storage_path)
       {
          if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
          {
@@ -2397,7 +2397,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             msg_hash_to_str(MSG_REMOVABLE_STORAGE),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   if (internal_storage_app_path && *internal_storage_app_path)
+   if (*internal_storage_app_path)
    {
       if (g_android->is_play_store_build)
       {
@@ -2419,7 +2419,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
-   if (app_dir && *app_dir)
+   if (*app_dir)
       menu_entries_append(list,
             app_dir,
             msg_hash_to_str(MSG_APPLICATION_DIR),
@@ -2447,7 +2447,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   sizeof(aux_path));
 
          (*env)->ReleaseStringUTFChars(env, jstr, str);
-         if (aux_path && *aux_path)
+         if (*aux_path)
             menu_entries_append(list,
                   aux_path,
                   msg_hash_to_str(MSG_APPLICATION_DIR),

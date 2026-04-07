@@ -366,7 +366,7 @@ struct string_list *play_feature_delivery_available_cores(void)
                "_libretro_android.so",
                sizeof(core_file) - _len);
          /* Add entry to list */
-         if (core_file && *core_file)
+         if (*core_file)
             string_list_append(core_list, core_file, attr);
       }
 
