@@ -1,3 +1,17 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2026 - Adam "TideGear" Milecki
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.retroarch.browser.retroactivity;
 
 import com.retroarch.BuildConfig;
@@ -27,8 +41,10 @@ import android.app.UiModeManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.PowerManager;
+import android.os.CombinedVibration;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
+import android.os.VibratorManager;
 import android.util.Log;
 
 
@@ -147,6 +163,118 @@ public class RetroActivityCommon extends NativeActivity
     }else{
       vibrator.vibrate(pattern, repeat);
     }
+  }
+
+  /**
+   * Vibrates a controller's motors independently for dual-rumble gamepads.
+   *
+   * On Android 12+ (API 31) this uses VibratorManager to address each
+   * controller motor separately, preserving the RETRO_RUMBLE_STRONG /
+   * RETRO_RUMBLE_WEAK distinction that the legacy single-vibrator path lost
+   * by OR-merging both channels into one amplitude value.
+   *
+   * Falls back to doVibrate (single-vibrator) on Android < 12 or when the
+   * controller does not expose multiple vibrators.
+   *
+   * @param id             InputDevice ID of the controller
+   * @param strongStrength  Large / low-frequency motor amplitude (0–255)
+   * @param weakStrength    Small / high-frequency motor amplitude (0–255)
+   * @param unused          Reserved; always pass 0
+   */
+  public void doVibrateJoypad(int id, int strongStrength, int weakStrength, int unused)
+  {
+    /* Android 12+ (API 31): attempt the multi-vibrator path. */
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+    {
+      if (doVibrateJoypadApi31(id, strongStrength, weakStrength))
+        return;
+    }
+
+    /* Fallback for Android < 12 or when VibratorManager cannot be used:
+     * drive the single vibrator with the stronger channel value so the
+     * controller still rumbles rather than staying silent. */
+    int fallbackStrength = Math.max(strongStrength, weakStrength);
+    doVibrate(id, RETRO_RUMBLE_STRONG, fallbackStrength, 0);
+  }
+
+  /**
+   * Inner implementation of doVibrateJoypad for Android 12+ (API 31).
+   *
+   * Uses InputDevice.getVibratorManager() to enumerate the controller's
+   * vibrator IDs and drive them independently via CombinedVibration so each
+   * motor receives its own amplitude.
+   *
+   * The mapping assumes vibratorIds[0] is the large / low-frequency
+   * (strong) motor and vibratorIds[1] is the small / high-frequency (weak)
+   * motor.  This ordering has been observed consistently for DualShock 4,
+   * DualSense, and Xbox controllers on Android 12+, but is NOT guaranteed
+   * by the Android API — treat this as a best-effort heuristic and code
+   * defensively.
+   *
+   * @return true if vibration was handled, false to trigger fallback
+   */
+  @TargetApi(Build.VERSION_CODES.S)
+  private boolean doVibrateJoypadApi31(int id, int strongStrength, int weakStrength)
+  {
+    InputDevice dev = InputDevice.getDevice(id);
+    if (dev == null)
+      return false;
+
+    VibratorManager vm  = dev.getVibratorManager();
+    int[]  vibratorIds  = vm.getVibratorIds();
+
+    if (vibratorIds.length == 0)
+      return false;
+
+    if (vibratorIds.length == 1)
+    {
+      /* Single-motor controller: use the stronger channel value so the
+       * controller still rumbles rather than going silent. */
+      int singleStrength = Math.max(strongStrength, weakStrength);
+      Vibrator singleVibrator = vm.getVibrator(vibratorIds[0]);
+
+      if (singleStrength == 0)
+      {
+        singleVibrator.cancel();
+        return true;
+      }
+
+      long[] timings = {0, 1000};
+      int[]  amps    = {0, singleStrength};
+      singleVibrator.vibrate(
+          VibrationEffect.createWaveform(timings, amps, 0),
+          new AudioAttributes.Builder()
+              .setUsage(AudioAttributes.USAGE_GAME)
+              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+              .build());
+      return true;
+    }
+
+    /* Dual-motor (or more) path: cancel cleanly when both are zero. */
+    if (strongStrength == 0 && weakStrength == 0)
+    {
+      vm.cancel();
+      return true;
+    }
+
+    /* Drive both motors with independent looping waveforms. */
+    long[]          timings     = {0, 1000};
+    VibrationEffect strongEffect = VibrationEffect.createWaveform(
+        timings, new int[]{0, strongStrength}, 0);
+    VibrationEffect weakEffect   = VibrationEffect.createWaveform(
+        timings, new int[]{0, weakStrength},   0);
+
+    CombinedVibration combined = CombinedVibration.startParallel()
+        .addVibrator(vibratorIds[0], strongEffect)
+        .addVibrator(vibratorIds[1], weakEffect)
+        .combine();
+
+    vm.vibrate(combined);
+
+    Log.i("RetroActivity", "doVibrateJoypad id=" + id
+        + " strong=" + strongStrength + " weak=" + weakStrength
+        + " vibrators=" + vibratorIds.length);
+    return true;
   }
 
   public void doHapticFeedback(int effect)

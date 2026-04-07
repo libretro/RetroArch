@@ -173,6 +173,7 @@ struct android_app
    jmethodID setScreenOrientation;
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
+   jmethodID doVibrateJoypad;
    jmethodID doHapticFeedback;
 
    jmethodID isPlayStoreBuild;
