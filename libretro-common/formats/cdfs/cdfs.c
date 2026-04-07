@@ -468,8 +468,16 @@ static cdfs_track_t* cdfs_open_cue_track(
                --file_end;
             }
 
-            memcpy(current_track_path, file, file_end - file);
-            current_track_path[file_end - file] = '\0';
+            if (file_end - file < PATH_MAX_LENGTH)
+            {
+               memcpy(current_track_path, file, file_end - file);
+               current_track_path[file_end - file] = '\0';
+            }
+            else
+            {
+               memcpy(current_track_path, file, PATH_MAX_LENGTH - 1);
+               current_track_path[PATH_MAX_LENGTH - 1] = '\0';
+            }
          }
 
          previous_sector_size = 0;
