@@ -8164,7 +8164,7 @@ static int action_ok_video_resolution(const char *path,
       else
 #endif
       {
-         if (desc && *desc)
+         if (*desc)
             _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DESC),
                   width, height, desc);
