@@ -453,7 +453,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
          {
             /* Update progress display */
             task_free_title(task);
-            if (pl_thumb->thumbnail_path_data->content_label)
+            if (*pl_thumb->thumbnail_path_data->content_label)
                task_set_title(task, strdup(pl_thumb->thumbnail_path_data->content_label));
             else
                task_set_title(task, strdup(""));
