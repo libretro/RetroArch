@@ -7664,10 +7664,6 @@ MSG_HASH(
    "Оновити список відтворення"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Додавайте новий вміст та видаляйте неприпустимі записи, повторюючи операцію 'Ручний скан' востаннє використовується для створення або редагування плейліста."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Вилучити список відтворення"
    )
@@ -8253,14 +8249,6 @@ MSG_HASH(
    "Сканує файл для вмісту, який відповідає базі даних."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Ручне сканування"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Сканування файлів що налаштовується на основі назв файлів. Не вимагає вмісту для відповідності базі даних."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Сканування товару"
    )
@@ -8292,32 +8280,8 @@ MSG_HASH(
    "Додати до Мікшеру та Грати"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Каталог вмісту"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Виберіть теку для сканування вмісту."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Назва системи"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Вкажіть \"системне ім'я\", яким для зв'язку відсканованого вмісту. Використовується для назви згенерованого файлу плейлиста та для ідентифікації ескізів плейліста."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Власне ім'я системи"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Вручну вкажіть «ім’я системи» для сканованого вмісту. Використовується лише тоді, коли для параметра «Назва системи» встановлено значення «<Custom>»."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Типове ядро"

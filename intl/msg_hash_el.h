@@ -3360,14 +3360,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_FILE,
    "Σαρώνει ένα συμβατό αρχείο"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Χειροκίνητη Σάρωση"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Σάρωση με δυνατότητα ρύθμισης παραμέτρων με βάση τα ονόματα αρχείων του περιεχομένου. Το περιεχόμενο δεν είναι απαραίτητο να ταιριάζει με τη βάση δεδομένων."
-   )
 
 /* Import Content > Scan File */
 
@@ -3380,12 +3372,8 @@ MSG_HASH(
    "Προσθήκη στον μίκτη και αναπαραγωγή"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Όνομα συστήματος"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Προκαθορισμένος Πυρήνας"

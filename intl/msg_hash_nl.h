@@ -4716,12 +4716,8 @@ MSG_HASH(
    "Aan audio mixer toevoegen en afspelen"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Systeem naam"
-   )
 
 /* Explore tab */
 MSG_HASH(

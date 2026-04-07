@@ -4544,14 +4544,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_FILE,
    "فحص الملف بحثًا عن محتوى يطابق قاعدة البيانات."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "فحص يدوي"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "فحص قابل للتكوين يعتمد على أسماء ملفات المحتوى. لا يتطلب تطابق المحتوى مع قاعدة البيانات."
-   )
 
 /* Import Content > Scan File */
 
@@ -4564,32 +4556,8 @@ MSG_HASH(
    "إضافة إلى Mixer واللعب"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "مسار المحتوى"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "حدد مسار لفحصه بحثًا عن المحتوى."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "اسم النظام"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "حدد 'اسم النظام' الذي سيتم الربط به بين المحتوى الممسح. يستخدم للاسم لملف قائمة التشغيل الذي تم إنشاؤه وتحديد الصور المصغرة لقائمة التشغيل."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "اسم النظام المخصص"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "حدد 'اسم النظام' يدويا للمحتوى الذي تم مسحه. يستخدم فقط عندما يتم تعيين 'اسم النظام' إلى '<Custom>'."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "النواة الافتراضية"

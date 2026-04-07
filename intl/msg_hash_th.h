@@ -2475,6 +2475,42 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
    "ระดับการขยายเสียงรวมของ Mixer (dB) โดย 0 dB คือระดับเสียงปกติและไม่มีการเพิ่มการขยายเสียงใดๆ"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   "ปลั๊กอิน Audio DSP ที่ประมวลผลเสียงก่อนที่จะถูกส่งไปยังไดรเวอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "ลบปลั๊กอิน DSP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "ยกเลิกการโหลดปลั๊กอิน Audio DSP ที่กำลังใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   "โหมด WASAPI Exclusive"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   "อนุญาตให้ไดรเวอร์ WASAPI เข้าควบคุมอุปกรณ์เสียงแบบเอกสิทธิ์ หากปิดใช้งาน จะใช้โหมดใช้งานร่วมแทน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   "รูปแบบ Float ของ WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   "ใช้รูปแบบ float สำหรับไดรเวอร์ WASAPI หากอุปกรณ์เสียงของคุณรองรับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "ความยาวบัฟเฟอร์โหมดใช้งานร่วมของ WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "ความยาวบัฟเฟอร์กลาง (หน่วยเป็นเฟรม) เมื่อใช้ไดรเวอร์ WASAPI ในโหมดใช้งานร่วม"
+   )
 
 /* Settings > Audio > Output */
 
@@ -2482,12 +2518,108 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "เสียง"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   "เปิดใช้งานเอาต์พุตเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+   "อุปกรณ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   "แทนที่อุปกรณ์เสียงเริ่มต้นที่ไดรเวอร์เสียงใช้งาน โดยขึ้นอยู่กับไดรเวอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   "แทนที่อุปกรณ์เสียงค่าเริ่มต้นที่ไดรเวอร์เสียงใช้ โดยขึ้นอยู่กับไดรเวอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "ค่ากำหนดอุปกรณ์ PCM แบบกำหนดเองสำหรับไดรเวอร์ ALSA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "ค่าพาธแบบกำหนดเองสำหรับไดรเวอร์ OSS (เช่น /dev/dsp)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "ค่าชื่อพอร์ตแบบกำหนดเองสำหรับไดรเวอร์ JACK (เช่น system:playback1,system:playback_2)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "ที่อยู่ IP แบบกำหนดเองของเซิร์ฟเวอร์ RSound สำหรับไดรเวอร์ RSound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   "ความหน่วงเสียง (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   "ความหน่วงเสียงสูงสุดในหน่วยมิลลิวินาที ไดรเวอร์จะพยายามรักษาความหน่วงจริงไว้ที่ 50% ของค่านี้ อาจไม่เป็นไปตามนี้หากไดรเวอร์เสียงไม่สามารถให้ค่าความหน่วงตามที่กำหนดได้"
+   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
    "ไมโครโฟน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "เปิดใช้งานอินพุตเสียงใน Core ที่รองรับ โดยไม่มีภาระเพิ่มเติมหาก Core ไม่ได้ใช้ไมโครโฟน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "อุปกรณ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "แทนที่อุปกรณ์อินพุตค่าเริ่มต้นที่ไดรเวอร์ไมโครโฟนใช้ โดยขึ้นอยู่กับไดรเวอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "แทนที่อุปกรณ์อินพุตค่าเริ่มต้นที่ไดรเวอร์ไมโครโฟนใช้งาน โดยขึ้นอยู่กับไดรเวอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "คุณภาพตัวแปลงสัญญาณตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "ลดค่านี้เพื่อเน้นประสิทธิภาพ/ความหน่วงต่ำมากกว่าคุณภาพเสียง และเพิ่มค่าเพื่อให้ได้คุณภาพตัวแปลงสัญญาณตัวอย่างที่ดีขึ้นโดยแลกกับประสิทธิภาพ/ความหน่วงต่ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "อัตราอินพุตเริ่มต้น (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "อัตราการสุ่มตัวอย่างอินพุตเสียง ใช้เมื่อ Core ไม่ได้ร้องขอค่าที่กำหนดไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "ความหน่วงอินพุตเสียง (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "ความหน่วงอินพุตเสียงที่ต้องการในหน่วยมิลลิวินาที อาจไม่เป็นไปตามนี้หากไดรเวอร์ไมโครโฟนไม่สามารถให้ค่าความหน่วงตามที่กำหนดได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "โหมด WASAPI Exclusive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "รูปแบบ Float ของ WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "ความยาวบัฟเฟอร์โหมดใช้งานร่วมของ WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "ความยาวบัฟเฟอร์กลาง (หน่วยเป็นเฟรม) เมื่อใช้ไดรเวอร์ WASAPI ในโหมดใช้งานร่วม"
    )
 #endif
 
@@ -2525,6 +2657,46 @@ MSG_HASH(
 #ifdef ANDROID
 #endif
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+   "ปุ่มลัด:"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   "เปลี่ยนการตั้งค่าและกำหนดปุ่มลัด เช่น ปุ่มเรียกเมนูระหว่างการเล่นเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "การกำหนดปุ่ม RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "เปลี่ยนวิธีตั้งค่าปุ่ม RetroPad เสมือนเข้ากับอุปกรณ์จริง หากอุปกรณ์ถูกตรวจพบและตั้งค่าอัตโนมัติถูกต้องแล้ว ปกติไม่จำเป็นต้องใช้เมนูนี้\nหมายเหตุ: สำหรับการเปลี่ยนปุ่มเฉพาะ core ให้ใ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro ใช้จอยจำลองที่เรียกว่า 'RetroPad' เป็นตัวกลางสื่อสารระหว่างหน้าจอหลัก (เช่น RetroArch) และ Core ต่างๆ เมนูนี้ใช้กำหนดว่า RetroPad เสมือนจะจับคู่กับอุปกรณ์ควบคุมจริงอย่างไร และอุปกรณ์เหล่านั้นจะ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   "การควบคุม Port %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "เปลี่ยนวิธีตั้งค่าปุ่ม RetroPad เสมือนเข้ากับอุปกรณ์จริงสำหรับพอร์ตเสมือนนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "เปลี่ยนการตั้งค่าปุ่มกดเฉพาะ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "วิธีแก้ปัญหาจอยหลุดบน Android"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "วิธีแก้ปัญหาชั่วคราวสำหรับคอนโทรลเลอร์ที่หลุดแล้วเชื่อมต่อใหม่ ซึ่งส่งผลกระทบต่อการเล่น 2 คนที่ใช้คอนโทรลเลอร์รุ่นเดียวกัน"
+   )
 
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -2582,6 +2754,30 @@ MSG_HASH(
 
 /* Settings > Logging */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
+   "ความละเอียดการบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+   "บันทึก Events log ลงหน้าต่างคำสั่งหรือไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+   "บันทึกไฟล์ Log"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+   "เปลี่ยนเส้นทางข้อความบันทึก log ระบบไปยังไฟล์ จำเป็นต้องเปิดใช้งาน 'ความละเอียดการบันทึก' ก่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+   "บันทึกเวลาในไฟล์ Log"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+   "เมื่อบันทึกลงไฟล์ ให้บันทึกแยกเป็นไฟล์ใหม่ตามเวลาที่เริ่มใช้งาน หากปิดไว้ ไฟล์บันทึกเดิมจะถูกเขียนทับทุกครั้งที่เริ่ม RetroArch ใหม่"
+   )
 
 /* Settings > File Browser */
 
@@ -2756,8 +2952,12 @@ MSG_HASH(
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
+   "เลือกไฟล์ Logiqx หรือ MAME List XML DAT เพื่อเปิดใช้งานการตั้งชื่อเนื้อหาอาร์เขตที่สแกนโดยอัตโนมัติ (MAME, FinalBurn Neo และอื่น ๆ)"
+   )
 
 /* Explore tab */
 

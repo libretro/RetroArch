@@ -4561,6 +4561,18 @@ MSG_HASH(
    "Lưu thay đổi vào file cấu hình khi thoát. Hữu ích cho các thay đổi thực hiện trong menu. Ghi đè file cấu hình, #include và các chú thích sẽ không được giữ lại."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Lưu Cấu Hình Tối Thiểu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Chỉ lưu những thiết lập khác với mặc định."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Khi bật, chỉ lưu các giá trị cấu hình đã thay đổi so với giá trị mặc định. Giúp tạo ra một tệp cấu hình nhỏ gọn và dễ quản lý hơn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "Lưu tệp gán phím khi thoát"
    )
@@ -7969,7 +7981,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Thêm trò chơi mới và xóa các mục không hợp lệ bằng cách lặp lại thao tác 'Quét Thủ Công' được sử dụng lần cuối để tạo hoặc chỉnh sửa danh sách phát."
+   "Thêm nội dung mới và xóa các mục không hợp lệ bằng cách lặp lại thao tác quét nội dung đã dùng để tạo hoặc chỉnh sửa danh sách phát lần cuối."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -8554,11 +8566,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Quét Thủ Công"
+   "Quét trò chơi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Quét có thể cấu hình dựa trên tên file trò chơi. Không yêu cầu nội dung phải khớp với cơ sở dữ liệu."
+   "Quét có thể tùy chỉnh dựa trên tên tệp trò chơi và/hoặc khớp cơ sở dữ liệu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -8624,31 +8636,31 @@ MSG_HASH(
    "Thêm vào Bộ trộn và Phát"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Thư mục trò chơi"
+   "Vị Trí trò chơi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Chọn một thư mục để quét trò chơi."
+   "Chọn thư mục (hoặc tệp) để quét nội dung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Tên hệ thống"
+   "Danh sách phát mục tiêu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Chỉ định ‘tên hệ thống’ để liên kết với trò chơi đã quét. Dùng để đặt tên file danh sách phát tạo ra và nhận diện hình thu nhỏ của danh sách phát."
+   "Tên tệp danh sách phát được tạo, cũng dùng để nhận diện hình thu nhỏ của danh sách phát. Thiết lập tự động sẽ sử dụng cùng tên với cơ sở dữ liệu hoặc thư mục nội dung tương ứng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Tên hệ thống tùy chỉnh"
+   "Tên danh sách phát tùy chỉnh"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Chỉ định thủ công ‘tên hệ thống’ cho trò chơi đã quét. Chỉ dùng khi ‘Tên hệ thống’ được đặt là ‘<Tùy chỉnh>’."
+   "Tên danh sách phát tùy chỉnh cho nội dung đã quét."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,

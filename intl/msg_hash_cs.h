@@ -7284,10 +7284,6 @@ MSG_HASH(
    "Obnovit playlist"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Přidejte nový obsah a odstraňte neplatné položky opakováním operace \"Ruční skenování\", která byla naposledy použita při vytváření nebo úpravě playlistu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Vymazání playlistu"
    )
@@ -7865,14 +7861,6 @@ MSG_HASH(
    "Vyhledá obsah souboru, který odpovídá databázi."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Manuální skener"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Konfigurovatelné skenování na základě názvů souborů s obsahem. Nevyžaduje shodu obsahu s databází."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Skenovat"
    )
@@ -7888,32 +7876,8 @@ MSG_HASH(
    "Přidat do mixéru a přehrát"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Adresář obsahu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Vyberte adresář, ve kterém chcete vyhledat obsah."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Název systému"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Zadejte 'název systému', ke kterému se přiřadí vyhledaný obsah. Slouží k pojmenování vygenerovaného souboru s playlistu a k identifikaci miniatur playlistu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Vlastní název systému"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Ruční zadání 'systémového názvu' pro skenovaný obsah. Používá se pouze v případě, že je položka 'Název systému' nastavena na hodnotu '<Vlastní>'."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Výchozí jádro"

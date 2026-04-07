@@ -328,7 +328,7 @@ other than `msg_hash_us.h` will be rejected.
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 
 /* Explore tab */
