@@ -201,7 +201,7 @@ retry:
                   strlcpy(path + _len, event->name, sizeof(path) - _len);
                   RARCH_DBG("[LinuxRaw] Reconnecting \"%s\".\n",path);
 
-                  if (     string_is_empty(linuxraw_pads[idx].ident)
+                  if (     (!linuxraw_pads[idx].ident || !*linuxraw_pads[idx].ident)
                         && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
                   {
                      input_autoconfigure_connect(

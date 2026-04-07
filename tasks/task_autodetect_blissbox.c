@@ -389,7 +389,7 @@ done:
    {
       const blissbox_pad_type_t *pad = &blissbox_pad_types[i];
 
-      if (!pad || string_is_empty(pad->name))
+      if (!pad || !pad->name || !*pad->name)
          continue;
 
       if (pad->index == report[0])
@@ -461,7 +461,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
    {
       const blissbox_pad_type_t *pad = &blissbox_pad_types[i];
 
-      if (!pad || string_is_empty(pad->name))
+      if (!pad || !pad->name || !*pad->name)
          continue;
 
       if (pad->index == answer[0])
@@ -515,7 +515,7 @@ void input_autoconfigure_blissbox_override_handler(int vid, int pid,
       else
          pad = input_autoconfigure_get_blissbox_pad_type(vid, pid);
 
-      if (pad && !string_is_empty(pad->name))
+      if (pad && pad->name && *pad->name)
       {
          RARCH_LOG("[Autoconf] Found Bliss-Box pad type: %s (%d) in port#%d.\n", pad->name, pad->index, index);
 

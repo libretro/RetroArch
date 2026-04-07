@@ -317,8 +317,8 @@ bool gfx_widget_start_load_content_animation(void)
     *   core is started (this higher level behaviour is
     *   deeply ingrained in RetroArch, and too difficult
     *   to change...) */
-   if (   string_is_empty(content_path)
-       || string_is_empty(core_path)
+   if (   (!content_path || !*content_path)
+       || (!core_path || !*core_path)
        || memcmp(core_path, "builtin", 7) == 0)
       return false;
 
@@ -362,7 +362,7 @@ bool gfx_widget_start_load_content_animation(void)
                   entry->core_path);
 
             /* Check whether core matches... */
-            if (    string_is_empty(entry_core_file)
+            if (    (!entry_core_file || !*entry_core_file)
                 || !string_starts_with(entry_core_file,
                      core_info->core_file_id.str))
                entry = NULL;
@@ -493,7 +493,7 @@ bool gfx_widget_start_load_content_animation(void)
           && (databases_list->size == 1))
          core_db_name = databases_list->elems[0].data;
 
-      if (   !string_is_empty(core_db_name)
+      if (   (core_db_name && *core_db_name)
           && !string_is_equal(core_db_name, state->system_name))
       {
          fill_pathname(state->icon_file,
@@ -1028,7 +1028,7 @@ static void gfx_widget_load_content_animation_context_reset(
    gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
    /* Cache icon directory */
-   if (string_is_empty(menu_png_path))
+   if (!menu_png_path || !*menu_png_path)
       state->icon_directory[0] = '\0';
    else
       strlcpy(state->icon_directory, menu_png_path,

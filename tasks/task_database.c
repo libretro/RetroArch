@@ -333,7 +333,7 @@ static enum scan_verdict task_database_iterate_start(retro_task_t *task,
       const char *name)
 {
    char msg[128];
-   const char *basename_path = !string_is_empty(name)
+   const char *basename_path = (name && *name)
          ? path_basename_nocompression(name) : "";
    manual_scan_handle_t *manual_scan = NULL;
 
@@ -345,14 +345,14 @@ static enum scan_verdict task_database_iterate_start(retro_task_t *task,
    if (!(manual_scan = (manual_scan_handle_t*)task->state))
       return SCAN_VERDICT_ERROR;
 
-   if (!string_is_empty(basename_path))
+   if (basename_path && *basename_path)
       snprintf(msg, sizeof(msg),
          STRING_REP_USIZE "/" STRING_REP_USIZE ": \"%s\"...\n",
          manual_scan->content_list_index + 1,
          (size_t)manual_scan->content_list->size,
          basename_path);
 
-   if (!string_is_empty(msg))
+   if (*msg)
    {
       task_free_title(task);
       task_set_title(task, strdup(msg));
@@ -549,7 +549,7 @@ static void task_database_iterate_m3u(
          continue;
 
       ref_path = entry->full_path;
-      if (string_is_empty(ref_path))
+      if (!ref_path || !*ref_path)
          continue;
 
       /* Look for this file in scan results */
@@ -801,7 +801,7 @@ static bool add_files_from_archive(manual_scan_handle_t *_db,
    bool archive_added = false;
    struct string_list *archive_list =
       file_archive_get_file_list(path, 
-         string_is_empty(_db->task_config->file_exts) ? NULL : _db->task_config->file_exts);
+         (*_db->task_config->file_exts) ? _db->task_config->file_exts : NULL);
 
    if (archive_list && archive_list->size > 0)
    {
@@ -917,7 +917,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
    fill_pathname(db_playlist_base_str,
          path_basename_nocompression(db_path), ".lpl", sizeof(db_playlist_base_str));
 
-   if (!string_is_empty(db_state->serial))
+   if (*db_state->serial)
    {
       size_t _len = strlcpy(db_crc, db_state->serial, str_len);
       strlcpy(db_crc  + _len,
@@ -933,7 +933,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
 
    /* Use database name for label if found,
     * otherwise use filename without extension */
-   if (!string_is_empty(db_info_entry->name))
+   if (db_info_entry->name && *db_info_entry->name)
    {
       /* Use the archive as path instead of the file inside the archive
        * if the file is a multidisk game, because database entry
@@ -945,7 +945,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
 
       strlcpy(entry_lbl, db_info_entry->name, sizeof(entry_lbl));
    }
-   else if (!string_is_empty(entry_path))
+   else if (entry_path && *entry_path)
    {
       char *delim = (char*)strchr(entry_path, '#');
 
@@ -957,7 +957,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
       RARCH_LOG("[Scanner] Faulty match for: \"%s\", CRC: 0x%08X.\n", entry_path_str, db_state->crc);
    }
 
-   if (!string_is_empty(archive_name))
+   if (archive_name && *archive_name)
       fill_pathname_join_delim(entry_path_str,
             entry_path_str, archive_name, '#', str_len);
 
@@ -1507,11 +1507,11 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
          }
 
          /* Open new playlist - if not fixed, use database name */
-         if (string_is_empty(manual_scan->task_config->playlist_file))
+         if (!*manual_scan->task_config->playlist_file)
          {
             current_playlist = result->db_name;
             db_playlist_path[0] = '\0';
-            if (!string_is_empty(manual_scan->playlist_directory))
+            if (manual_scan->playlist_directory && *manual_scan->playlist_directory)
                fill_pathname_join_special(db_playlist_path, manual_scan->playlist_directory,
                      result->db_name, str_len);
             playlist_config_set_path(&manual_scan->playlist_config, db_playlist_path);
@@ -1701,7 +1701,7 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    /* Free accumulated scan results */
    scan_results_free(&manual_scan->scan_results);
 
-   if (!string_is_empty(manual_scan->playlist_directory))
+   if (manual_scan->playlist_directory && *manual_scan->playlist_directory)
       free(manual_scan->playlist_directory);
 
 #ifdef HAVE_LIBRETRODB
@@ -1715,7 +1715,8 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
             dir_list_free(dbstate->list);
       }
 
-      if (!string_is_empty(manual_scan->content_database_path))
+      if (    manual_scan->content_database_path 
+          && *manual_scan->content_database_path)
          free(manual_scan->content_database_path);
       if (manual_scan->state.buf)
          free(manual_scan->state.buf);
@@ -1856,7 +1857,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             {
                manual_scan->flags       |= DB_HANDLE_FLAG_SCAN_STARTED;
 
-               if (!string_is_empty(manual_scan->task_config->content_dir))
+               if (*manual_scan->task_config->content_dir)
                {
                   /* cue, gdi prioritization in sorting */
                   if (manual_scan->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
@@ -1884,7 +1885,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 
                if (dbstate && !dbstate->list)
                {
-                  if (!string_is_empty(manual_scan->content_database_path))
+                  if (manual_scan->content_database_path && *manual_scan->content_database_path)
                   {
                      if (manual_scan->task_config->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
                      {
@@ -1932,7 +1933,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 #endif
             {
                /* Get allowed file extensions list */
-               if (!string_is_empty(manual_scan->task_config->file_exts))
+               if (*manual_scan->task_config->file_exts)
                   manual_scan->file_exts_list = string_split(
                         manual_scan->task_config->file_exts, "|");
 
@@ -1951,7 +1952,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             /* Load DAT file, if required */
             if ((manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT ||
                  manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE) &&
-                !string_is_empty(manual_scan->task_config->dat_file_path))
+                *manual_scan->task_config->dat_file_path)
             {
                if (!(manual_scan->dat_file =
                      logiqx_dat_init(
@@ -2054,7 +2055,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP),
                      sizeof(task_title));
 
-               if (   !string_is_empty(entry->path)
+               if (   (entry->path && *entry->path)
                    && (entry_file = path_basename(entry->path)))
                   strlcpy(task_title       + _len,
                         entry_file,
@@ -2202,7 +2203,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             int content_type         = manual_scan->content_list->elems[
                   manual_scan->content_list_index].attr.i;
 
-            if (!string_is_empty(content_path))
+            if (content_path && *content_path)
             {
                size_t _len;
                char task_title[128];
@@ -2218,7 +2219,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS),
                      sizeof(task_title));
 
-               if (!string_is_empty(content_file))
+               if (content_file && *content_file)
                   strlcpy(task_title       + _len,
                         content_file,
                         sizeof(task_title) - _len);
@@ -2235,9 +2236,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                 * archive addition. */
                if (manual_scan->task_config->search_archives &&
                    path_is_compressed_file(content_path) && 
-                   ((!string_is_empty(manual_scan->task_config->file_exts) &&
-                    string_find_index_substring_string(manual_scan->task_config->file_exts,path_get_extension(content_file)) < 0) ||
-                   manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_NONE))
+                   ((*manual_scan->task_config->file_exts
+                   && string_find_index_substring_string(manual_scan->task_config->file_exts,path_get_extension(content_file)) < 0)
+                   || manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_NONE))
                {
                   add_files_from_archive(manual_scan,content_path);
                }
@@ -2257,9 +2258,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   {
                      /* Get entry label */
                      const char *db_name = 
-                        string_is_empty(manual_scan->task_config->database_name) ?
-                        manual_scan->task_config->dat_file_path :
-                        manual_scan->task_config->database_name;
+                        *manual_scan->task_config->database_name
+                        ? manual_scan->task_config->database_name
+                        : manual_scan->task_config->dat_file_path;
                      label[0] = '\0';
                      if (!manual_content_scan_get_playlist_content_label(
                            content_path, manual_scan->dat_file,
@@ -2322,7 +2323,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             const char *m3u_path = manual_scan->m3u_list->elems[
                   manual_scan->m3u_index].data;
 
-            if (!string_is_empty(m3u_path))
+            if (m3u_path && *m3u_path)
             {
                size_t _len;
                char task_title[128];
@@ -2335,7 +2336,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP),
                      sizeof(task_title));
 
-               if (!string_is_empty(m3u_name))
+               if (m3u_name && *m3u_name)
                   strlcpy(task_title       + _len,
                         m3u_name,
                         sizeof(task_title) - _len);
@@ -2453,7 +2454,7 @@ bool task_push_manual_content_scan(
    const char *playlist_dir          = settings->paths.directory_playlist;
 
    /* Sanity check */
-   if (string_is_empty(playlist_dir))
+   if (!playlist_dir || !*playlist_dir)
       return false;
 
    if (!(manual_scan = (manual_scan_handle_t*)

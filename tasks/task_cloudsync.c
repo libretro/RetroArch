@@ -646,7 +646,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
       pathname_conform_slashes_to_os(filename);
       break;
    }
-   if (string_is_empty(filename))
+   if (!*filename)
    {
       /* how did this end up here? we don't know where to put it... */
       RARCH_WARN(CSPFX "Don't know where to put %s!\n", key);

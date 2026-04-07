@@ -190,7 +190,7 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
                goto finished;
             }
 
-            if (string_is_empty(device.desc))
+            if (!*device.desc)
                break;
             if (!find_local_address(&device, &data->request))
                break;
@@ -210,7 +210,7 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
 
       case NAT_TRAVERSAL_STATUS_EXTERNAL_ADDRESS:
          {
-            if (string_is_empty(device.service_type))
+            if (!*device.service_type)
             {
                data->status = NAT_TRAVERSAL_STATUS_SELECT_DEVICE;
                break;

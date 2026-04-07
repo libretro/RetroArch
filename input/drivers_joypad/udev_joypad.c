@@ -459,7 +459,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    const char *device_name              = input_config_get_device_name(p);
    size_t physlen                       = 0;
 
-   if (string_is_empty(device_name))
+   if (!device_name || !*device_name)
       pad->ident[0] = '\0';
    else
       strlcpy(pad->ident, device_name, sizeof(pad->ident));
@@ -546,7 +546,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    /* Look for a sibling sensor (IMU) evdev node under the same HID parent */
    udev_find_sensor_sibling(dev, p);
 
-   if (!string_is_empty(pad->ident))
+   if (pad->ident && *pad->ident)
    {
       input_autoconfigure_connect(
                pad->ident,
@@ -633,7 +633,7 @@ static void udev_free_pad(unsigned pad)
    if (udev_pads[pad].sensor_path)
       free(udev_pads[pad].sensor_path);
    udev_pads[pad].path = NULL;
-   if (!string_is_empty(udev_pads[pad].ident))
+   if (udev_pads[pad].ident && *udev_pads[pad].ident)
       udev_pads[pad].ident[0] = '\0';
 
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
@@ -648,7 +648,7 @@ static void udev_joypad_remove_device(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if (     !string_is_empty(udev_pads[i].path)
+      if (     (udev_pads[i].path && *udev_pads[i].path)
             &&  string_is_equal(udev_pads[i].path, path))
       {
          input_autoconfigure_disconnect(i, udev_pads[i].ident);
@@ -1198,7 +1198,7 @@ static bool udev_joypad_query_pad(unsigned pad)
 
 static const char *udev_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS || string_is_empty(udev_pads[pad].ident))
+   if (pad >= MAX_USERS || (!udev_pads[pad].ident || !*udev_pads[pad].ident))
       return NULL;
 
    return udev_pads[pad].ident;

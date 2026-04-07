@@ -480,7 +480,7 @@ static bool d3d9_cg_load_program(cg_renderchain_t *chain,
    RARCH_LOG("[D3D9 Cg] Fragment profile: %s.\n",
          cgGetProfileString(fragment_profile));
 
-   if (path_is_file && !string_is_empty(prog))
+   if (path_is_file && prog && *prog)
       pass->fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             prog, fragment_profile, "main_fragment", fragment_opts);
    else
@@ -491,7 +491,7 @@ static bool d3d9_cg_load_program(cg_renderchain_t *chain,
    if (list)
       listing_f = strdup(list);
 
-   if (path_is_file && !string_is_empty(prog))
+   if (path_is_file && prog && *prog)
       pass->vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             prog, vertex_profile, "main_vertex", vertex_opts);
    else
@@ -1798,7 +1798,7 @@ static bool d3d9_cg_set_shader(void *data,
    if (!d3d)
       return false;
 
-   if (!string_is_empty(d3d->shader_path))
+   if (d3d->shader_path && *d3d->shader_path)
       free(d3d->shader_path);
    d3d->shader_path = NULL;
 
@@ -1806,7 +1806,7 @@ static bool d3d9_cg_set_shader(void *data,
    {
       case RARCH_SHADER_CG:
       case RARCH_SHADER_HLSL:
-         if (!string_is_empty(path))
+         if (path && *path)
             d3d->shader_path = strdup(path);
          break;
       case RARCH_SHADER_NONE:
@@ -2010,7 +2010,7 @@ static void d3d9_cg_free(void *data)
 
    d3d9_cg_deinitialize(d3d);
 
-   if (!string_is_empty(d3d->shader_path))
+   if (d3d->shader_path && *d3d->shader_path)
       free(d3d->shader_path);
 
    IDirect3DDevice9_Release(d3d->dev);

@@ -441,7 +441,7 @@ static bool d3d9_hlsl_load_program_from_file(
    ID3DXBuffer *code_f                       = NULL;
    ID3DXBuffer *code_v                       = NULL;
 
-   if (string_is_empty(prog))
+   if (!prog || !*prog)
       return false;
 
    if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
@@ -1390,7 +1390,7 @@ static bool d3d9_hlsl_set_shader(void *data,
    if (!d3d)
       return false;
 
-   if (!string_is_empty(d3d->shader_path))
+   if ((d3d->shader_path && *d3d->shader_path))
       free(d3d->shader_path);
    d3d->shader_path = NULL;
 
@@ -1398,7 +1398,7 @@ static bool d3d9_hlsl_set_shader(void *data,
    {
       case RARCH_SHADER_CG:
       case RARCH_SHADER_HLSL:
-         if (!string_is_empty(path))
+         if (path && *path)
             d3d->shader_path = strdup(path);
 
          break;
@@ -1605,7 +1605,7 @@ static void d3d9_hlsl_free(void *data)
 
    d3d9_hlsl_deinitialize(d3d);
 
-   if (!string_is_empty(d3d->shader_path))
+   if (d3d->shader_path && *d3d->shader_path)
       free(d3d->shader_path);
 
    IDirect3DDevice9_Release(d3d->dev);

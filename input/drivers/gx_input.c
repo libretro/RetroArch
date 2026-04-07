@@ -216,7 +216,7 @@ static INLINE int rvl_count_mouse(gx_input_t *gx)
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       const char *joypad_name = joypad_driver_name(i);
-      if (!string_is_empty(joypad_name))
+      if (joypad_name && *joypad_name)
          if (string_is_equal(joypad_name, "Wiimote Controller"))
             count++;
    }

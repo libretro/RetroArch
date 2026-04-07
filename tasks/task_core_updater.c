@@ -218,7 +218,7 @@ static void cb_http_task_core_updater_get_list(
 {
    file_transfer_t *transf    = (file_transfer_t*)user_data;
    http_transfer_data_t *data = (http_transfer_data_t*)task_data;
-   bool ret                   = data && string_is_empty(err);
+   bool ret                   = data && (!err || !*err);
 
    if (transf)
    {
@@ -292,7 +292,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
 
             net_buildbot_url = settings->paths.network_buildbot_url;
 
-            if (string_is_empty(net_buildbot_url))
+            if (!net_buildbot_url || !*net_buildbot_url)
                goto task_finished;
 
             fill_pathname_join_special(
@@ -311,7 +311,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                      buildbot_url, tmp_url, sizeof(buildbot_url));
             }
 
-            if (string_is_empty(buildbot_url))
+            if (!*buildbot_url)
                goto task_finished;
 
             /* Configure file transfer object */
@@ -537,7 +537,7 @@ static void cb_decompress_task_core_updater_download(
    /* Remove original archive file */
    if (decompress_data)
    {
-      if (!string_is_empty(decompress_data->source_file))
+      if (*decompress_data->source_file)
          if (path_is_valid(decompress_data->source_file))
             filestream_delete(decompress_data->source_file);
 
@@ -548,7 +548,7 @@ static void cb_decompress_task_core_updater_download(
    }
 
    /* Log any error messages */
-   if (!string_is_empty(err))
+   if (err && *err)
       RARCH_ERR("[Core Updater] %s", err);
 }
 
@@ -563,7 +563,7 @@ void cb_http_task_core_updater_download(
 
    if (!data || !transf)
       goto finish;
-   if (!data->data || string_is_empty(transf->path))
+   if (!data->data || !*transf->path)
       goto finish;
 
    if (!(download_handle = (core_updater_download_handle_t*)transf->user_data))
@@ -626,7 +626,7 @@ void cb_http_task_core_updater_download(
 
 finish:
    /* Log any error messages */
-   if (!string_is_empty(err))
+   if (err && *err)
    {
       RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
             (transf ? transf->path: "unknown"), err);
@@ -691,7 +691,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
                const char *local_core_path =
                   download_handle->local_core_path;
                if (
-                       !string_is_empty(local_core_path)
+                       (local_core_path && *local_core_path)
                      && path_is_valid  (local_core_path)
                   )
                   download_handle->local_crc =
@@ -1026,7 +1026,7 @@ void *task_push_core_updater_download(
 
    /* Sanity check */
    if (   !core_list
-       || string_is_empty(filename)
+       || (!filename || !*filename)
        || !download_handle)
       goto error;
 
@@ -1035,9 +1035,9 @@ void *task_push_core_updater_download(
          core_list, filename, &list_entry))
       goto error;
 
-   if (   string_is_empty(list_entry->remote_core_path)
-       || string_is_empty(list_entry->local_core_path)
-       || string_is_empty(list_entry->display_name))
+   if (   (!list_entry->remote_core_path || !*list_entry->remote_core_path)
+       || (!list_entry->local_core_path || !*list_entry->local_core_path)
+       || (!list_entry->display_name || !*list_entry->display_name))
       goto error;
 
    /* Check whether core is locked
@@ -1064,7 +1064,7 @@ void *task_push_core_updater_download(
    }
 
    /* Get local file download path */
-   if (string_is_empty(path_dir_libretro))
+   if (!path_dir_libretro || !*path_dir_libretro)
       goto error;
 
    fill_pathname_join_special(
@@ -1077,7 +1077,7 @@ void *task_push_core_updater_download(
    download_handle->auto_backup              = auto_backup;
    download_handle->auto_backup_history_size = auto_backup_history_size;
    download_handle->path_dir_libretro        = strdup(path_dir_libretro);
-   download_handle->path_dir_core_assets     = string_is_empty(path_dir_core_assets) ? NULL : strdup(path_dir_core_assets);
+   download_handle->path_dir_core_assets     = (path_dir_core_assets && *path_dir_core_assets) ? strdup(path_dir_core_assets) : NULL ;
    download_handle->remote_filename          = strdup(list_entry->remote_filename);
    download_handle->remote_core_path         = strdup(list_entry->remote_core_path);
    download_handle->local_download_path      = strdup(local_download_path);
@@ -1327,7 +1327,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             {
                const char *local_core_path = list_entry->local_core_path;
                if (
-                       !string_is_empty(local_core_path)
+                       (local_core_path && *local_core_path)
                      && path_is_valid  (local_core_path)
                   )
                   local_crc = task_core_updater_get_core_crc(
@@ -1509,14 +1509,14 @@ void task_push_update_installed_cores(
 
    /* Sanity check */
    if (  !update_installed_handle
-       || string_is_empty(path_dir_libretro))
+       || (!path_dir_libretro || !*path_dir_libretro))
       goto error;
 
    /* Configure handle */
    update_installed_handle->auto_backup              = auto_backup;
    update_installed_handle->auto_backup_history_size = auto_backup_history_size;
    update_installed_handle->path_dir_libretro        = strdup(path_dir_libretro);
-   update_installed_handle->path_dir_core_assets     = string_is_empty(path_dir_core_assets) ?
+   update_installed_handle->path_dir_core_assets     = (!path_dir_core_assets || !*path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);
    update_installed_handle->core_list                = core_updater_list_init();
    update_installed_handle->list_task                = NULL;
@@ -1646,7 +1646,7 @@ static void task_play_feature_delivery_core_install_handler(
                      FILE_PATH_BACKUP_EXTENSION,
                      sizeof(backup_core_path) - _len);
 
-               if (!string_is_empty(backup_core_path))
+               if (backup_core_path && *backup_core_path)
                {
                   int ret;
 
@@ -1757,7 +1757,7 @@ static void task_play_feature_delivery_core_install_handler(
             task_set_title(task, strdup(task_title));
 
             /* Check whether a core backup file was created */
-            if (  !string_is_empty(pfd_install_handle->backup_core_path)
+            if (  (pfd_install_handle->backup_core_path && *pfd_install_handle->backup_core_path)
                 && path_is_valid(pfd_install_handle->backup_core_path))
             {
                /* If install was successful, delete backup */
@@ -1824,7 +1824,7 @@ void *task_push_play_feature_delivery_core_install(
 
    /* Sanity check */
    if (   !core_list
-       ||  string_is_empty(filename)
+       ||  (!filename || !*filename)
        || !pfd_install_handle
        || !play_feature_delivery_enabled())
       goto error;
@@ -1834,8 +1834,8 @@ void *task_push_play_feature_delivery_core_install(
          core_list, filename, &list_entry))
       goto error;
 
-   if (   string_is_empty(list_entry->local_core_path)
-       || string_is_empty(list_entry->display_name))
+   if (   (!list_entry->local_core_path || !*list_entry->local_core_path)
+       || (!list_entry->display_name || !*list_entry->display_name))
       goto error;
 
    /* Only one core may be downloaded at a time */
@@ -2129,7 +2129,7 @@ static void task_play_feature_delivery_switch_cores_handler(
             /* Check for installation errors
              * > These should be considered 'serious', and
              *   will trigger the task to end early */
-            if (!string_is_empty(err_msg))
+            if (err_msg && *err_msg)
             {
                pfd_switch_cores_handle->err_msg      = strdup(err_msg);
                pfd_switch_cores_handle->install_task = NULL;
@@ -2161,7 +2161,7 @@ static void task_play_feature_delivery_switch_cores_handler(
             if (pfd_switch_cores_handle->list_size > 0)
             {
                /* Check whether any installation errors occurred */
-               if (!string_is_empty(pfd_switch_cores_handle->err_msg))
+               if (pfd_switch_cores_handle->err_msg && *pfd_switch_cores_handle->err_msg)
                   task_title = pfd_switch_cores_handle->err_msg;
                else
                   task_title = msg_hash_to_str(MSG_ALL_CORES_SWITCHED_PFD);
@@ -2203,8 +2203,8 @@ void task_push_play_feature_delivery_switch_installed_cores(
                calloc(1, sizeof(play_feature_delivery_switch_cores_handle_t));
 
    /* Sanity check */
-   if (    string_is_empty(path_dir_libretro)
-       ||  string_is_empty(path_libretro_info)
+   if (    (!path_dir_libretro || !*path_dir_libretro)
+       ||  (!path_libretro_info || !*path_libretro_info)
        || !pfd_switch_cores_handle
        || !play_feature_delivery_enabled())
       goto error;

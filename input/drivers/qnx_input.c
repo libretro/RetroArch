@@ -236,7 +236,7 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
            strlcpy(name_buf, "QNX Gamepad", sizeof(name_buf));
    }
 
-   if (!string_is_empty(name_buf))
+   if (name_buf && *name_buf)
    {
       controller->port = qnx->pads_connected;
 

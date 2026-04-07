@@ -602,13 +602,13 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
       RARCH_LOG("[Cg] Found semantic \"%s\" in prog #%u.\n", semantic, i);
 
       if (
-            string_is_equal(semantic, "TEXCOORD") ||
-            string_is_equal(semantic, "TEXCOORD0")
+               string_is_equal(semantic, "TEXCOORD")
+            || string_is_equal(semantic, "TEXCOORD0")
          )
          cg->prg[i].tex     = param;
       else if (
-            string_is_equal(semantic, "COLOR") ||
-            string_is_equal(semantic, "COLOR0")
+               string_is_equal(semantic, "COLOR")
+            || string_is_equal(semantic, "COLOR0")
             )
             cg->prg[i].color   = param;
       else if (string_is_equal(semantic, "POSITION"))
@@ -660,7 +660,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
 
    cg->shader->passes = 1;
 
-   if (string_is_empty(path))
+   if (!path || !*path)
    {
       RARCH_LOG("[Cg] Loading stock Cg file.\n");
       cg->prg[1] = cg->prg[0];
@@ -1001,13 +1001,13 @@ static void *gl_cg_init(void *data, const char *path)
       enum rarch_shader_type type =
          video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
 
-      if (!string_is_empty(path) && type != RARCH_SHADER_CG)
+      if (path && *path && type != RARCH_SHADER_CG)
       {
          RARCH_ERR("[Cg] Invalid shader type, falling back to stock.\n");
          path = NULL;
       }
 
-      if (!string_is_empty(path) && is_preset)
+      if (path && *path && is_preset)
       {
          if (!gl_cg_load_preset(cg, path))
             goto error;

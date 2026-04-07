@@ -246,20 +246,20 @@ static bool gfx_thumbnail_get_path(
       switch (thumbnail_id)
       {
          case GFX_THUMBNAIL_RIGHT:
-            if (!string_is_empty(path_data->right_path))
+            if (*path_data->right_path)
             {
                *path          = path_data->right_path;
                return true;
             }
             break;
          case GFX_THUMBNAIL_LEFT:
-            if (!string_is_empty(path_data->left_path))
+            if (*path_data->left_path)
             {
                *path          = path_data->left_path;
                return true;
             }
          case GFX_THUMBNAIL_ICON:
-            if (!string_is_empty(path_data->icon_path))
+            if (*path_data->icon_path)
             {
                *path          = path_data->icon_path;
                return true;
@@ -355,14 +355,14 @@ void gfx_thumbnail_request(
                 *   checks required for this involve significant
                 *   overheads. We can avoid this entirely with
                 *   a simple string comparison) */
-               if ((!string_is_empty(path_data->content_img)))
+               if (*path_data->content_img)
                   if (string_is_equal(path_data->content_img, last_img_name))
                      goto end;
 
                strlcpy(last_img_name, path_data->content_img, sizeof(last_img_name));
 
                /* Get system name */
-               if (string_is_empty(path_data->system))
+               if (!*path_data->system)
                   goto end;
 
                /* Since task_push_pl_entry_download will shift the flag, do not attempt if it is already
@@ -419,7 +419,7 @@ void gfx_thumbnail_request_file(
    thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
 
    /* Check if file path is valid */
-   if (   string_is_empty(file_path)
+   if (   (!file_path || !*file_path)
        || !path_is_valid(file_path))
       return;
 
@@ -1323,7 +1323,7 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
    path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
 
-   if (string_is_empty(system))
+   if (!system || !*system)
       return false;
 
    /* Hack: There is only one MAME thumbnail repo,
@@ -1342,12 +1342,12 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
 
       /* Note: This is not considered an error
        * (just means that input playlist is ignored) */
-      if (!string_is_empty(playlist_path))
+      if (playlist_path && *playlist_path)
       {
          const char *playlist_file = path_basename_nocompression(playlist_path);
          /* Note: This is not considered an error
           * (just means that input playlist is ignored) */
-         if (!string_is_empty(playlist_file))
+         if (playlist_file && *playlist_file)
          {
             /* Check for history/favourites playlists */
             bool playlist_valid =
@@ -1412,7 +1412,7 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
    path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_index       = 0;
 
-   if (string_is_empty(label))
+   if (!label || !*label)
       return false;
 
    /* Cache content label */
@@ -1432,7 +1432,7 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
    strlcpy(path_data->content_path, label, sizeof(path_data->content_path));
 
    /* Redundant error check... */
-   return !string_is_empty(path_data->content_img);
+   return *path_data->content_img;
 }
 
 /* Sets current thumbnail content to the specified image.
@@ -1464,7 +1464,7 @@ bool gfx_thumbnail_set_content_image(
    path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_index       = 0;
 
-   if (string_is_empty(img_dir) || string_is_empty(img_name))
+   if ((!img_dir || !*img_dir) || (!img_name || !*img_name))
       return false;
 
    if (path_is_media_type(img_name) != RARCH_CONTENT_IMAGE)
@@ -1495,7 +1495,7 @@ bool gfx_thumbnail_set_content_image(
          "_images_", sizeof(path_data->content_db_name));
 
    /* Redundant error check */
-   return !string_is_empty(path_data->content_path);
+   return *path_data->content_path;
 }
 
 /* Sets current thumbnail content to the specified playlist entry.
@@ -1555,7 +1555,7 @@ bool gfx_thumbnail_set_content_playlist(
    db_name       = entry->db_name;
 
    /* Content without a path is invalid by definition */
-   if (string_is_empty(content_path))
+   if (!content_path || !*content_path)
       return false;
 
    /* Cache content path
@@ -1565,12 +1565,12 @@ bool gfx_thumbnail_set_content_playlist(
 
    /* Cache core name
     * (This is required for imageviewer content) */
-   if (!string_is_empty(core_name))
+   if (core_name && *core_name)
       strlcpy(path_data->content_core_name,
             core_name, sizeof(path_data->content_core_name));
 
    /* Get content label */
-   if (!string_is_empty(content_label))
+   if (content_label && *content_label)
       path_data->content_label_len = strlcpy(path_data->content_label,
             content_label, sizeof(path_data->content_label));
    else
@@ -1603,14 +1603,14 @@ bool gfx_thumbnail_set_content_playlist(
    path_data->playlist_index = idx;
 
    /* Redundant error check... */
-   if (string_is_empty(path_data->content_img))
+   if (!*path_data->content_img)
       return false;
 
    /* Thumbnail image name is done -> now check if
     * per-content database name is defined */
-   if (string_is_empty(db_name))
+   if (!db_name || !*db_name)
       playlist_get_db_name(playlist, idx, &db_name);
-   if (!string_is_empty(db_name))
+   if (db_name && *db_name)
    {
       /* Hack: There is only one MAME thumbnail repo,
        * so filter any input starting with 'MAME...' */
@@ -1697,7 +1697,7 @@ bool gfx_thumbnail_update_path(
    content_dir[0]    = '\0';
 
    /* Sundry error checking */
-   if (string_is_empty(dir_thumbnails))
+   if (!dir_thumbnails || !*dir_thumbnails)
       return false;
 
    if (!gfx_thumbnail_is_enabled(path_data, thumbnail_id))
@@ -1706,14 +1706,14 @@ bool gfx_thumbnail_update_path(
    /* Generate new path */
 
    /* > Check path_data for empty strings */
-   if (       string_is_empty(path_data->content_path)
-       ||     string_is_empty(path_data->content_img)
-       || (   string_is_empty(path_data->system)
-           && string_is_empty(path_data->content_db_name)))
+   if (       (!*path_data->content_path)
+       ||     (!*path_data->content_img)
+       || (   (!*path_data->system)
+           && (!*path_data->content_db_name)))
       return false;
 
    /* > Get current system */
-   if (string_is_empty(path_data->content_db_name))
+   if (!*path_data->content_db_name)
    {
       /* If this is a content history or favorites playlist
        * then the current 'path_data->system' string is
@@ -1763,13 +1763,13 @@ bool gfx_thumbnail_update_path(
       thumbnail_path[0] = '\0';
 
       /* >> Add content image - first try with label (database name) */
-      if (!string_is_empty(path_data->content_img))
+      if (*path_data->content_img)
       {
          fill_pathname_join_special(thumbnail_path, tmp_buf,
                path_data->content_img, PATH_MAX_LENGTH * sizeof(char));
          thumbnail_found = path_is_valid(thumbnail_path);
 
-         if (playlist_allow_non_png && !string_is_empty(thumbnail_path))
+         if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
          {
             for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
             {
@@ -1784,14 +1784,15 @@ bool gfx_thumbnail_update_path(
       }
 
       /* >> Add content image - second try with full file name */
-      if (!thumbnail_found && !string_is_empty(path_data->content_img_full))
+      if (   !thumbnail_found 
+          && *path_data->content_img_full)
       {
          thumbnail_path[0] = '\0';
          fill_pathname_join_special(thumbnail_path, tmp_buf,
                path_data->content_img_full, PATH_MAX_LENGTH * sizeof(char));
          thumbnail_found = path_is_valid(thumbnail_path);
 
-         if (playlist_allow_non_png && !string_is_empty(thumbnail_path))
+         if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
          {
             for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
             {
@@ -1806,14 +1807,14 @@ bool gfx_thumbnail_update_path(
       }
 
       /* >> Add content image - third try with shortened name (title only) */
-      if (!thumbnail_found && !string_is_empty(path_data->content_img_short))
+      if (!thumbnail_found && *path_data->content_img_short)
       {
          thumbnail_path[0] = '\0';
          fill_pathname_join_special(thumbnail_path, tmp_buf,
                path_data->content_img_short, PATH_MAX_LENGTH * sizeof(char));
          thumbnail_found = path_is_valid(thumbnail_path);
 
-         if (playlist_allow_non_png && !string_is_empty(thumbnail_path))
+         if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
          {
             for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
             {
@@ -1831,7 +1832,7 @@ bool gfx_thumbnail_update_path(
    }
 
    /* Final error check - is cached path empty? */
-   return !string_is_empty(thumbnail_path);
+   return thumbnail_path && *thumbnail_path;
 }
 
 /* Getters */
@@ -1844,7 +1845,7 @@ size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data,
    size_t _len;
    char *last_slash;
    char tmp_buf[NAME_MAX_LENGTH];
-   if (!path_data || string_is_empty(path_data->content_path))
+   if (!path_data || !*path_data->content_path)
       return 0;
    if (!(last_slash = find_last_slash(path_data->content_path)))
       return 0;
@@ -1865,7 +1866,7 @@ void gfx_savestate_thumbnail_get_path(
 
    s[0] = '\0';
 
-   if (string_is_empty(state_name))
+   if (!state_name || !*state_name)
       return;
 
    _len = strlcpy(s, state_name, len);

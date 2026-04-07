@@ -2516,12 +2516,12 @@ static bool metal_set_shader(void *data,
    {
       if (type != RARCH_SHADER_SLANG)
       {
-         if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+         if (path && *path && type != RARCH_SHADER_SLANG)
             RARCH_WARN("[Metal] Only Slang shaders are supported. Falling back to stock.\n");
          path = NULL;
       }
 
-      if (string_is_empty(path))
+      if (!path || !*path)
       {
          [md.frameView clearShader];
          return true;

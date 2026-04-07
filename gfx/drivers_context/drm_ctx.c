@@ -385,7 +385,7 @@ static bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
    settings_t *settings     = config_get_ptr();
    char *crt_switch_timings = settings->arrays.crt_switch_timings;
 
-   if (modeInfo && !string_is_empty(crt_switch_timings))
+   if (modeInfo && crt_switch_timings && *crt_switch_timings)
    {
       hdmi_timings_t timings;
       int ret = sscanf(crt_switch_timings, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",

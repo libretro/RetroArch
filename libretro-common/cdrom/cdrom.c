@@ -1351,7 +1351,7 @@ struct string_list* cdrom_get_available_drives(void)
          dev_index = '0' + dev_index;
          attr.i    = dev_index;
 
-         if (drive_model && *drive_model)
+         if (*drive_model)
             strlcpy(drive_string, drive_model, sizeof(drive_string));
          else
             strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));

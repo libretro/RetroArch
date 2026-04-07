@@ -670,14 +670,14 @@ static bool video_shader_parse_pass(config_file_t *conf,
    _len  = strlcpy(shader_var, "wrap_mode", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if ((entry = config_get_entry(conf, shader_var))
-         && !string_is_empty(entry->value))
+         && (entry->value && *entry->value))
       pass->wrap = video_shader_wrap_str_to_mode(entry->value);
 
    /* Frame count mod */
    _len  = strlcpy(shader_var, "frame_count_mod", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if ((entry = config_get_entry(conf, shader_var))
-         && !string_is_empty(entry->value))
+         && (entry->value && *entry->value))
       pass->frame_count_mod = (unsigned)strtoul(entry->value, NULL, 0);
 
    /* FBO types and mipmapping */
@@ -888,7 +888,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
       texture_path[0] = '\0';
 
       if (  !(entry = config_get_entry(conf, id_buf))
-          || string_is_empty(entry->value))
+          || (!entry->value || !*entry->value))
       {
          RARCH_ERR("[Shaders] Cannot find path to texture \"%s\".\n",
                id_buf);
@@ -924,7 +924,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
       strlcpy(idx + id_len, "_wrap_mode", sizeof(idx) - id_len);
       entry = NULL;
       if (  (entry = config_get_entry(conf, idx))
-          && !string_is_empty(entry->value))
+          && (entry->value && *entry->value))
          shader->lut[shader->luts].wrap = video_shader_wrap_str_to_mode(entry->value);
       entry = NULL;
 
@@ -984,7 +984,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
    for (i = 0; i < shader->passes; i++)
    {
       const char *path          = shader->pass[i].source.path;
-      if (string_is_empty(path) || !path_is_valid(path))
+      if (!path || !*path || !path_is_valid(path))
          continue;
       /* Now uses the same slang parsing for parameters since
        * it should be the same implementation, but supporting
@@ -1000,7 +1000,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
          uint8_t *buf                 = NULL;
          int64_t buf_len              = 0;
 
-         if (string_is_empty(path) || !path_is_valid(path))
+         if (!path || !*path || !path_is_valid(path))
             continue;
 
          /* Read file contents */
@@ -1558,7 +1558,7 @@ static bool video_shader_write_referenced_preset(
    fill_pathname_application_special(config_dir, DIR_MAX_LENGTH,
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   if (string_is_empty(shader->loaded_preset_path))
+   if (!*shader->loaded_preset_path)
    {
       RARCH_WARN("[Shaders] Saving full preset because the loaded shader "
             "does not have "
@@ -2186,7 +2186,7 @@ bool video_shader_write_preset(const char *path,
       const struct video_shader *shader,
       bool reference)
 {
-   if (!shader || string_is_empty(path))
+   if (!shader || !path || !*path)
       return false;
 
    /* If we should still save a referenced preset do it now */
@@ -2427,7 +2427,7 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
 enum rarch_shader_type video_shader_get_type_from_ext(
       const char *ext, bool *is_preset)
 {
-   if (string_is_empty(ext))
+   if (!ext || !*ext)
       return RARCH_SHADER_NONE;
 
    if ((ext[0] != '\0') && (ext[0] == '.') && (ext[1] != '\0'))
@@ -2494,7 +2494,7 @@ static bool video_shader_dir_init_shader_internal(
    struct string_list *new_list       = dir_list_new_special(
          shader_dir, DIR_LIST_SHADERS, NULL, show_hidden_files);
    bool search_file_name              = shader_remember_last_dir
-         && !string_is_empty(shader_file_name);
+         && shader_file_name && *shader_file_name;
 
    if (!new_list)
       return false;
@@ -2520,7 +2520,7 @@ static bool video_shader_dir_init_shader_internal(
          const char *file_name = NULL;
          const char *file_path = new_list->elems[i].data;
 
-         if (string_is_empty(file_path))
+         if (!file_path || !*file_path)
             continue;
 
          /* If a shader file name has been provided,
@@ -2528,7 +2528,7 @@ static bool video_shader_dir_init_shader_internal(
           * index if found */
          file_name = path_basename(file_path);
 
-         if (    !string_is_empty(file_name)
+         if (    (file_name && *file_name)
                && string_is_equal(file_name, shader_file_name))
          {
             RARCH_LOG("[Shaders] %s \"%s\".\n",
@@ -2572,7 +2572,7 @@ static void video_shader_dir_init_shader(
    /* Try directory of last selected shader preset */
    if (    shader_remember_last_dir
        && (last_shader_preset_type != RARCH_SHADER_NONE)
-       && !string_is_empty(last_shader_preset_dir)
+       && (last_shader_preset_dir && *last_shader_preset_dir)
        && video_shader_dir_init_shader_internal(
           video_shader_remember_last_dir,
           dir_list,
@@ -2582,7 +2582,7 @@ static void video_shader_dir_init_shader(
       return;
 
    /* Try directory of shader given as command line parameter */
-   if (!string_is_empty(video_st->cli_shader_path))
+   if (*video_st->cli_shader_path)
    {
       char cli_path[DIR_MAX_LENGTH];
       fill_pathname_basedir(cli_path, video_st->cli_shader_path, sizeof(cli_path));
@@ -2594,7 +2594,7 @@ static void video_shader_dir_init_shader(
    }
 
    /* Try video shaders directory */
-   if (  !string_is_empty(directory_video_shader)
+   if (  (directory_video_shader && *directory_video_shader)
        && video_shader_dir_init_shader_internal(
             video_shader_remember_last_dir,
             dir_list,
@@ -2602,7 +2602,7 @@ static void video_shader_dir_init_shader(
       return;
 
    /* Try config directory */
-   if (  !string_is_empty(directory_menu_config)
+   if (  (directory_menu_config && *directory_menu_config)
        && video_shader_dir_init_shader_internal(
             video_shader_remember_last_dir,
             dir_list,
@@ -2616,7 +2616,7 @@ static void video_shader_dir_init_shader(
       char *rarch_config_directory = strdup(path_get(RARCH_PATH_CONFIG));
       path_basedir(rarch_config_directory);
 
-      if (!string_is_empty(rarch_config_directory))
+      if (rarch_config_directory && *rarch_config_directory)
          video_shader_dir_init_shader_internal(
                video_shader_remember_last_dir,
                dir_list,
@@ -2686,7 +2686,7 @@ void video_shader_dir_check_shader(
    if (    video_shader_remember_last_dir
        && (last_shader_preset_type != RARCH_SHADER_NONE)
        && string_is_equal(dir_list->directory, last_shader_preset_dir)
-       && !string_is_empty(last_shader_preset_file_name))
+       && (last_shader_preset_file_name && *last_shader_preset_file_name))
    {
       /* Ensure that we start with a dir_list selection
        * index matching the last used shader */
@@ -2698,10 +2698,10 @@ void video_shader_dir_check_shader(
          if (dir_list->selection < dir_list->shader_list->size)
             current_file_path = dir_list->shader_list->elems[dir_list->selection].data;
 
-         if (!string_is_empty(current_file_path))
+         if (current_file_path && *current_file_path)
             current_file_name = path_basename(current_file_path);
 
-         if (   !string_is_empty(current_file_name)
+         if (   (current_file_name && *current_file_name)
              && !string_is_equal(current_file_name, last_shader_preset_file_name))
          {
             size_t i;
@@ -2710,12 +2710,12 @@ void video_shader_dir_check_shader(
                const char *file_path = dir_list->shader_list->elems[i].data;
                const char *file_name = NULL;
 
-               if (string_is_empty(file_path))
+               if (!file_path || !*file_path)
                   continue;
 
                file_name = path_basename(file_path);
 
-               if (string_is_empty(file_name))
+               if (!file_name || !*file_name)
                   continue;
 
                if (string_is_equal(file_name, last_shader_preset_file_name))
@@ -2734,7 +2734,7 @@ void video_shader_dir_check_shader(
       {
          struct video_shader *shader = menu_shader_get();
 
-         if (shader && !string_is_empty(shader->loaded_preset_path))
+         if (shader && *shader->loaded_preset_path)
          {
             char last_shader_path[DIR_MAX_LENGTH];
             fill_pathname_join(last_shader_path,
@@ -2807,7 +2807,7 @@ static bool video_shader_load_shader_preset_internal(
             continue;
 
       /* Concatenate strings into full paths */
-      if (!string_is_empty(core_name))
+      if (core_name && *core_name)
          fill_pathname_join_special_ext(s,
                shader_directory, core_name,
                special_name,
@@ -2816,7 +2816,7 @@ static bool video_shader_load_shader_preset_internal(
       else
       {
          size_t _len;
-         if (string_is_empty(special_name))
+         if (!special_name || !*special_name)
             break;
 
          _len = fill_pathname_join(s, shader_directory, special_name, len);
@@ -2860,7 +2860,7 @@ static size_t video_shader_load_auto_shader_preset(
 {
    size_t i;
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
-   bool has_content                   = !string_is_empty(rarch_path_basename);
+   bool has_content                   = rarch_path_basename && *rarch_path_basename;
 
    const char *game_name              = NULL;
    const char *dirs[3]                = {0};
@@ -2894,7 +2894,7 @@ static size_t video_shader_load_auto_shader_preset(
       fill_pathname_basedir(config_file_directory,
             path_get(RARCH_PATH_CONFIG), DIR_MAX_LENGTH);
 
-   if (!string_is_empty(video_shader_directory))
+   if (video_shader_directory && *video_shader_directory)
       fill_pathname_join(old_presets_directory,
          video_shader_directory, "presets", DIR_MAX_LENGTH);
 
@@ -2904,7 +2904,7 @@ static size_t video_shader_load_auto_shader_preset(
 
    for (i = 0; i < ARRAY_SIZE(dirs); i++)
    {
-      if (string_is_empty(dirs[i]))
+      if (!dirs[i] || !*dirs[i])
          continue;
 
       if (has_content)
@@ -3026,10 +3026,10 @@ bool video_shader_apply_shader(
 #endif
 
    /* Disallow loading shaders when no core is loaded */
-   if (string_is_empty(core_name))
+   if (!core_name || !*core_name)
       return false;
 
-   if (!string_is_empty(preset_path))
+   if (preset_path && *preset_path)
       preset_file = path_basename_nocompression(preset_path);
 
    /* TODO/FIXME - This loads the shader into the video driver
@@ -3040,7 +3040,7 @@ bool video_shader_apply_shader(
       if ((video_st->current_video->set_shader(
                   video_st->data, type, preset_path)))
       {
-         if (!string_is_empty(preset_path))
+         if (preset_path && *preset_path)
          {
             if (runloop_st->runtime_shader_preset_path != preset_path)
                strlcpy(runloop_st->runtime_shader_preset_path, preset_path,
@@ -3133,10 +3133,10 @@ const char *video_shader_get_current_shader_preset(void)
       return NULL;
 
    /* Disallow loading auto-shaders when no core is loaded */
-   if (string_is_empty(core_name))
+   if (!core_name || !*core_name)
       return NULL;
 
-   if (!string_is_empty(runloop_st->runtime_shader_preset_path))
+   if (*runloop_st->runtime_shader_preset_path)
       return runloop_st->runtime_shader_preset_path;
 
    /* load auto-shader once, --set-shader works like a global auto-shader */
