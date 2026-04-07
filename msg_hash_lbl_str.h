@@ -1,6 +1,10 @@
 #ifndef MSG_HASH_LBL_STR_H__
 #define MSG_HASH_LBL_STR_H__
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #define MENU_ENUM_LABEL_SWITCH_CPU_PROFILE_STR "switch_cpu_profile"
 #define MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME_STR "accounts_cheevos_username"
 #define MENU_ENUM_LABEL_ACCOUNTS_LIST_STR "accounts_list"
