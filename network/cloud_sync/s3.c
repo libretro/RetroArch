@@ -366,14 +366,14 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
        * - path-style: endpoint/bucket */
       if (*first_path_seg)
          strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
-      else if (first_label && *first_label)
+      else if (*first_label)
          strlcpy(bucket, first_label, NAME_MAX_LENGTH);
    }
 
    if (!region || !*region)
       strlcpy(region, "us-east-1", NAME_MAX_LENGTH);
 
-   if (!bucket || *!bucket)
+   if (!*bucket)
       RARCH_WARN(S3_PFX "Could not extract bucket from URL: %s\n", url);
 
    RARCH_LOG(S3_PFX "Extracted bucket: %s, region: %s, host: %s\n",
