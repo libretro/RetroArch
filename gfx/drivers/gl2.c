@@ -1185,9 +1185,9 @@ static void gl2_size_format(GLint* internalFormat)
 #endif
 }
 
+#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !defined(IOS)
 static bool gl2_tex_storage_allowed(void)
 {
-#if defined(HAVE_OPENGLES) && defined(ANDROID)
    static int allowed = -1;
 
    if (allowed < 0)
@@ -1222,10 +1222,8 @@ static bool gl2_tex_storage_allowed(void)
    }
 
    return allowed == 1;
-#else
-   return true;
-#endif
 }
+#endif
 
 /* This function should only be used without mipmaps
    and when data == NULL */
@@ -1246,7 +1244,7 @@ static void gl2_load_texture_image(GLenum target,
    enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE;
 #endif
 
-   if (gl2_tex_storage_allowed()
+   if (     gl2_tex_storage_allowed()
          && gl_check_capability(cap)
          && internalFormat != GL_BGRA_EXT)
    {
