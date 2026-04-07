@@ -391,7 +391,7 @@ static int general_push(menu_displaylist_info_t *info,
             if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
             {
                struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
-               if (sysinfo && *sysinfo->valid_extensions)
+               if (sysinfo && sysinfo->valid_extensions && *sysinfo->valid_extensions)
                   valid_extensions = sysinfo->valid_extensions;
             }
 
