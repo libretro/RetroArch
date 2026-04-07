@@ -197,7 +197,13 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 
                      if (strlen(track_mode) == 10)
                      {
-                        sscanf(track_mode, "MODE%d/%d", (int*)&track_mode_number, (int*)&track_sector_size);
+                        if (!strncasecmp(track_mode, "MODE", 4))
+                        {
+                           char *ptr = NULL;
+                           track_mode_number  = (unsigned)strtol(track_mode + 4, &ptr, 10);
+                           if (ptr && *ptr == '/')
+                              track_sector_size = (unsigned)strtol(ptr + 1, NULL, 10);
+                        }
 #ifdef MEDIA_CUE_PARSE_DEBUG
                         printf("Found track mode %d with sector size %d\n", track_mode_number, track_sector_size);
                         fflush(stdout);
@@ -207,7 +213,16 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
                            unsigned min = 0;
                            unsigned sec = 0;
                            unsigned frame = 0;
-                           sscanf(pregap, "%02d:%02d:%02d", (int*)&min, (int*)&sec, (int*)&frame);
+                           {
+                              char *ptr = NULL;
+                              min   = (unsigned)strtol(pregap, &ptr, 10);
+                              if (ptr && *ptr == ':')
+                              {
+                                 sec   = (unsigned)strtol(ptr + 1, &ptr, 10);
+                                 if (ptr && *ptr == ':')
+                                    frame = (unsigned)strtol(ptr + 1, NULL, 10);
+                              }
+                           }
 
                            if (min || sec || frame || strstr(pregap, "00:00:00"))
                            {

@@ -903,7 +903,12 @@ bool command_read_ram(command_t *cmd, const char *arg)
    unsigned int nbytes        = 0;
    unsigned int addr          = -1;
 
-   if (sscanf(arg, "%x %u", &addr, &nbytes) == 2)
+   char *end          = NULL;
+   addr               = (unsigned int)strtoul(arg, &end, 16);
+   if (end && *end == ' ')
+      nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
+
+   if (end && *end == ' ' && nbytes > 0)
    {
       size_t _len             = 0;
       char *reply_at          = NULL;
@@ -1139,8 +1144,15 @@ bool command_read_memory(command_t *cmd, const char *arg)
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    const rarch_system_info_t* sys_info= &runloop_st->system;
 
-   if (sscanf(arg, "%x %u", &address, &nbytes) != 2)
-      return false;
+   {
+      char *end       = NULL;
+      address         = (unsigned int)strtoul(arg, &end, 16);
+      if (!(end && *end == ' '))
+         return false;
+      nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
+      if (nbytes == 0)
+         return false;
+   }
 
    /* Ensure large enough to return all requested bytes or an error message */
    alloc_size = 64 + nbytes * 3;
