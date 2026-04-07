@@ -1223,7 +1223,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    for (i = 0; i < shader->passes; i++)
    {
       size_t _len;
-      char formatted_num[8];
+      char formatted_num[12];
       const struct video_shader_pass *pass = &shader->pass[i];
 
       formatted_num[0]                     = '\0';
