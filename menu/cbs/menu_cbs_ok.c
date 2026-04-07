@@ -8408,8 +8408,6 @@ static int action_ok_manual_content_scan_start(const char *path,
 {
    playlist_config_t playlist_config;
    settings_t *settings                = config_get_ptr();
-   const char *directory_playlist      = settings->paths.directory_playlist;
-
    /* Note: playlist_config.path will set by the
     * task itself */
    playlist_config.capacity            = COLLECTION_SIZE;

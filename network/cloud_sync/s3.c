@@ -227,13 +227,13 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
          }
 
          /* Path-style endpoint (accountid.r2...) carries bucket in first path segment. */
-         if ((!bucket || !*bucket) && (first_path_seg && *first_path_seg))
+         if ((!bucket || !*bucket) && *first_path_seg)
          {
             RARCH_LOG(S3_PFX "Cloudflare R2 style: path-style\n");
             strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
          }
       }
-      else if (first_label && *first_label)
+      else if (*first_label)
       {
          /* Compatibility fallback for other cloudflarestorage host variants. */
          RARCH_LOG(S3_PFX "Cloudflare R2 style: fallback-host-label\n");
@@ -295,7 +295,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
       else
       {
          /* Path-style fallback: s3.<region>.amazonaws.com/<bucket>/... */
-         if (first_path_seg && *first_path_seg)
+         if (*first_path_seg)
             strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
       }
    }
@@ -337,7 +337,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
                strlcpy(region, s3pos, region_len + 1);
          }
       }
-      else if (first_path_seg && *first_path_seg)
+      else if (*first_path_seg)
       {
          RARCH_LOG(S3_PFX "Backblaze B2 style: path-style\n");
          strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
@@ -345,7 +345,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
    }
    else if (strstr(host, ".digitaloceanspaces.com") || strstr(host, ".linodeobjects.com"))
    {
-      if (first_label && *first_label)
+      if (*first_label)
          strlcpy(bucket, first_label, NAME_MAX_LENGTH);
       if (first_dot)
       {
@@ -364,7 +364,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
       /* Generic fallback:
        * - virtual-host: bucket.endpoint
        * - path-style: endpoint/bucket */
-      if (first_path_seg && *first_path_seg)
+      if (*first_path_seg)
          strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
       else if (first_label && *first_label)
          strlcpy(bucket, first_label, NAME_MAX_LENGTH);
@@ -1020,7 +1020,7 @@ static bool s3_build_request_url(char *url, size_t url_size, s3_state_t *s3_st, 
    char *encoded_path = NULL;
    size_t base_len = 0;
 
-   if (!url || !s3_st || (!s3_st->url || !*s3_st->url))
+   if (!url || !s3_st || !*s3_st->url)
       return false;
 
    if (!path || !*path)
@@ -1781,9 +1781,9 @@ static bool s3_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
       RARCH_WARN(S3_PFX "Could not parse bucket/region from URL, using defaults\n");
 
    /* Validate configuration */
-   if (   (!s3_st->url || !*s3_st->url)
-       || (!s3_st->access_key_id || !*s3_st->access_key_id)
-       || (!s3_st->secret_access_key || !*s3_st->secret_access_key))
+   if (   !*s3_st->url
+       || !*s3_st->access_key_id
+       || !*s3_st->secret_access_key)
    {
       RARCH_ERR(S3_PFX "Missing S3 configuration\n");
       return false;
