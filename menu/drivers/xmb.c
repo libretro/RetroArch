@@ -8834,7 +8834,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Use alternative title if available */
    strlcpy(title_truncated,
-          (xmb->title_name_alt && *xmb->title_name_alt)
+          *xmb->title_name_alt
          ? xmb->title_name_alt
          : xmb->title_name,
          sizeof(title_truncated));
