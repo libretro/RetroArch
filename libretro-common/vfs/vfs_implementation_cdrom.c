@@ -168,8 +168,10 @@ void retro_vfs_file_open_cdrom(
       {
          if (!memcmp(path + 6, "-track", (sizeof("-track")-1)))
          {
-            if (sscanf(path + 12, "%02u", (unsigned*)&stream->cdrom.cur_track))
+            if (     path[12] >= '0' && path[12] <= '9'
+                  && path[13] >= '0' && path[13] <= '9')
             {
+               stream->cdrom.cur_track = (path[12] - '0') * 10 + (path[13] - '0');
 #ifdef CDROM_DEBUG
                printf("[CDROM] Opening track %d\n", stream->cdrom.cur_track);
                fflush(stdout);
@@ -244,8 +246,10 @@ void retro_vfs_file_open_cdrom(
    {
       if (!memcmp(path + 1, ":/drive-track", (sizeof(":/drive-track")-1)))
       {
-         if (sscanf(path + 14, "%02u", (unsigned*)&stream->cdrom.cur_track))
+         if (   path[14] >= '0' && path[14] <= '9'
+             && path[15] >= '0' && path[15] <= '9')
          {
+            stream->cdrom.cur_track = (path[14] - '0') * 10 + (path[15] - '0');
 #ifdef CDROM_DEBUG
             printf("[CDROM] Opening track %d\n", stream->cdrom.cur_track);
             fflush(stdout);

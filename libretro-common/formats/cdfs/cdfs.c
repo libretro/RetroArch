@@ -518,12 +518,21 @@ static cdfs_track_t* cdfs_open_cue_track(
          const char *index     = line + 5;
 
          cdfs_skip_spaces(&index);
-         sscanf(index, "%u", &index_number);
+         index_number = (unsigned)strtol(index, NULL, 10);
          while (*index && *index != ' ' && *index != '\n')
             ++index;
          cdfs_skip_spaces(&index);
 
-         sscanf(index, "%u:%u:%u", &min, &sec, &frame);
+         {
+            char *end;
+            min   = (unsigned)strtol(index, &end, 10);
+            if (*end == ':')
+               ++end;
+            sec   = (unsigned)strtol(end, &end, 10);
+            if (*end == ':')
+               ++end;
+            frame = (unsigned)strtol(end, NULL, 10);
+         }
          sector_offset                 = ((min * 60) + sec) * 75 + frame;
          sector_offset                -= previous_index_sector_offset;
          track_offset                 += sector_offset * previous_sector_size;

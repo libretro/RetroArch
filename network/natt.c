@@ -474,9 +474,12 @@ static bool natt_parse_open_port_node(rxml_node_t *node,
       if (!node->data || !*node->data)
          return false;
 
-      sscanf(node->data, "%hu", &ext_port);
-      if (!ext_port)
-         return false;
+      {
+         unsigned long tmp = strtoul(node->data, NULL, 10);
+         if (tmp == 0 || tmp > 0xFFFF)
+            return false;
+         ext_port = (uint16_t)tmp;
+      }
 
       request->addr.sin_port = htons(ext_port);
       request->success = true;
