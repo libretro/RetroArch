@@ -3920,15 +3920,6 @@ static bool gl3_frame(void *data, const void *frame,
    {
       if (!(gl->flags & GL3_FLAG_HW_RENDER_ENABLE))
          gl3_update_input_size(gl, frame_width, frame_height);
-
-      /* No point regenerating mipmaps
-       * if there are no new frames. */
-      if (gl->chain.mipmap_active)
-      {
-         glBindTexture(GL_TEXTURE_2D, texture.image);
-         glGenerateMipmap(GL_TEXTURE_2D);
-         glBindTexture(GL_TEXTURE_2D, 0);
-      }
    }
 
    texture.image            = 0;
@@ -3956,6 +3947,15 @@ static bool gl3_frame(void *data, const void *frame,
       texture.format        = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
       texture.padded_width  = streamed->width;
       texture.padded_height = streamed->height;
+   }
+
+   /* No point regenerating mipmaps
+    * if there are no new frames. */
+   if (frame && gl->chain.active && gl->chain.mipmap_active)
+   {
+      glBindTexture(GL_TEXTURE_2D, texture.image);
+      glGenerateMipmap(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, 0);
    }
 
    if (gl->chain.active)
