@@ -222,6 +222,18 @@ static void sdl_pad_connect(unsigned id)
       RARCH_LOG("[SDL] Falling back to joystick rumble.\n");
    }
 #endif
+#if SDL_SUPPORTS_SENSORS
+   if (pad->controller)
+   {
+      bool has_accel = SDL_GameControllerHasSensor(pad->controller, SDL_SENSOR_ACCEL);
+      bool has_gyro  = SDL_GameControllerHasSensor(pad->controller, SDL_SENSOR_GYRO);
+      if (has_accel || has_gyro)
+         RARCH_LOG("[SDL] Pad #%u: found sensors (accel=%s, gyro=%s).\n",
+               id,
+               has_accel ? "yes" : "no",
+               has_gyro  ? "yes" : "no");
+   }
+#endif
 #else
    pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
    pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
