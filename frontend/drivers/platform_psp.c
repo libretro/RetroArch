@@ -184,7 +184,7 @@ static void frontend_psp_get_env_settings(int *argc, char *argv[],
 #endif
 
 #ifndef IS_SALAMANDER
-   if (params && *argc > 1 && !string_is_empty(argv[1]))
+   if (params && *argc > 1 && (argv[1] && *argv[1]))
 #ifdef HAVE_NETWORKING
    /* If the process was forked for netplay purposes,
       DO NOT touch the arguments. */
@@ -303,8 +303,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    if (args < sizeof(argp) && should_load_game)
    {
       const char *content = path_get(RARCH_PATH_CONTENT);
-
-      if (!string_is_empty(content))
+      if (content && *content)
          args += strlcpy(argp + args, content, sizeof(argp) - args) + 1;
    }
 #endif
@@ -338,7 +337,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
       if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
             (void*)arg_data))
 #endif
-      if (!string_is_empty(content))
+      if (content && *content)
       {
          strlcpy(game_path, content, sizeof(game_path));
          arg_data[0] = game_path;
@@ -366,11 +365,11 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
          if (delim)
             *delim = '\0';
 
-         if (!string_is_empty(param1))
+         if (param1 && *param1)
          {
             path = param1;
 
-            if (!string_is_empty(param2))
+            if (param2 && *param2)
             {
                arg_data[0] = param2;
                arg_data[1] = NULL;

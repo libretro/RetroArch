@@ -158,7 +158,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
    params          = (struct rarch_main_wrap*)params_data;
    params->flags  |=   RARCH_MAIN_WRAP_FLAG_VERBOSE;
 
-   if (!string_is_empty(argv[CONTENT_PATH_ARG_INDEX]))
+   if (argv[CONTENT_PATH_ARG_INDEX] && *argv[CONTENT_PATH_ARG_INDEX])
    {
       static char path[PATH_MAX_LENGTH] = {0};
       struct rarch_main_wrap      *args =

@@ -294,7 +294,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    device_name   = (const char*)adapter->name;
 
-   if (string_is_empty((const char*)adapter->name))
+   if ((!(const char*)adapter->name || !*(const char*)adapter->name))
       goto error;
 
    adapter->send_control_lock = slock_new();

@@ -79,13 +79,13 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
    /* Check whether file exists
     * > If path is empty, then an error
     *   has occurred... */
-   if (string_is_empty(m3u_file->path))
+   if (!m3u_file->path || !*m3u_file->path)
       goto end;
 
    /* > File must have the correct extension */
    file_ext = path_get_extension(m3u_file->path);
 
-   if (    string_is_empty(file_ext)
+   if (    (!file_ext || !*file_ext)
        || !string_is_equal_noncase(file_ext, M3U_FILE_EXT))
       goto end;
 
@@ -127,7 +127,7 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
    {
       const char *line = lines->elems[i].data;
 
-      if (string_is_empty(line))
+      if (!line || !*line)
          continue;
 
       /* Determine line 'type' */
@@ -140,7 +140,7 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
           * of '#LABEL:' */
          const char *label = line + STRLEN_CONST(M3U_FILE_NONSTD_LABEL);
 
-         if (!string_is_empty(label))
+         if (label && *label)
          {
             strlcpy(
                   entry_label, line + STRLEN_CONST(M3U_FILE_NONSTD_LABEL),
@@ -159,10 +159,10 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
                line + STRLEN_CONST(M3U_FILE_EXTSTD_LABEL),
                M3U_FILE_EXTSTD_LABEL_TOKEN);
 
-         if (!string_is_empty(label_ptr))
+         if (label_ptr && *label_ptr)
          {
             label_ptr++;
-            if (!string_is_empty(label_ptr))
+            if (label_ptr && *label_ptr)
             {
                strlcpy(entry_label, label_ptr, sizeof(entry_label));
                string_trim_whitespace_right(entry_label);
@@ -218,8 +218,8 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
           *   can fail here is if we run out of memory.
           *   This is a critical error, and m3u_file must
           *   be considered invalid in this case */
-         if (!string_is_empty(entry_path) &&
-             !m3u_file_add_entry(m3u_file, entry_path, entry_label))
+         if (*entry_path
+             && !m3u_file_add_entry(m3u_file, entry_path, entry_label))
             goto end;
 
          /* Reset entry_path/entry_label */
@@ -261,14 +261,14 @@ m3u_file_t *m3u_file_init(const char *path)
    char m3u_path[PATH_MAX_LENGTH];
 
    /* Sanity check */
-   if (string_is_empty(path))
+   if (!path || !*path)
       return NULL;
 
    /* Get 'real' file path */
    strlcpy(m3u_path, path, sizeof(m3u_path));
    path_resolve_realpath(m3u_path, sizeof(m3u_path), false);
 
-   if (string_is_empty(m3u_path))
+   if (!*m3u_path)
       return NULL;
 
    /* Create m3u_file_t object */
@@ -395,7 +395,7 @@ bool m3u_file_add_entry(
 
    full_path[0] = '\0';
 
-   if (!m3u_file || string_is_empty(path))
+   if (!m3u_file || (!path || !*path))
       return false;
 
    /* Get current number of file entries */
@@ -416,7 +416,7 @@ bool m3u_file_add_entry(
    /* Copy path and label */
    entry->path = strdup(path);
 
-   if (!string_is_empty(label))
+   if (label && *label)
       entry->label = strdup(label);
 
    /* Populate 'full_path' field */
@@ -431,7 +431,7 @@ bool m3u_file_add_entry(
             sizeof(full_path));
 
    /* Handle unforeseen errors... */
-   if (string_is_empty(full_path))
+   if (!*full_path)
    {
       m3u_file_free_entry(entry);
       return false;
@@ -480,7 +480,7 @@ bool m3u_file_save(
       return false;
 
    /* This should never happen */
-   if (string_is_empty(m3u_file->path))
+   if (!m3u_file->path || !*m3u_file->path)
       return false;
 
    /* Get M3U file base directory */
@@ -503,12 +503,12 @@ bool m3u_file_save(
 
       entry_path[0] = '\0';
 
-      if (!entry || string_is_empty(entry->full_path))
+      if (!entry || (!entry->full_path || !*entry->full_path))
          continue;
 
       /* When writing M3U files, entry paths are
        * always relative */
-      if (string_is_empty(base_dir))
+      if (!*base_dir)
          strlcpy(
                entry_path, entry->full_path,
                sizeof(entry_path));
@@ -517,11 +517,11 @@ bool m3u_file_save(
                entry_path, entry->full_path, base_dir,
                sizeof(entry_path));
 
-      if (string_is_empty(entry_path))
+      if (!*entry_path)
          continue;
 
       /* Check if we need to write a label */
-      if (!string_is_empty(entry->label))
+      if (entry->label && *entry->label)
       {
          switch (label_type)
          {
@@ -570,7 +570,7 @@ static int m3u_file_qsort_func(
    if (!a || !b)
       return 0;
 
-   if (string_is_empty(a->full_path) || string_is_empty(b->full_path))
+   if ((!a->full_path || !*a->full_path) || (!b->full_path || !*b->full_path))
       return 0;
 
    return strcasecmp(a->full_path, b->full_path);
@@ -600,11 +600,11 @@ void m3u_file_qsort(m3u_file_t *m3u_file)
 bool m3u_file_is_m3u(const char *path)
 {
    const char *file_ext = NULL;
-   if (string_is_empty(path))
+   if (!path || !*path)
       return false;
    /* Check file extension */
    file_ext = path_get_extension(path);
-   if (string_is_empty(file_ext))
+   if (!file_ext || !*file_ext)
       return false;
    if (!string_is_equal_noncase(file_ext, M3U_FILE_EXT))
       return false;

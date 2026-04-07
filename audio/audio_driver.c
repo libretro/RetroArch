@@ -687,7 +687,7 @@ const char *audio_driver_mixer_get_stream_name(unsigned i)
 {
    if (i > (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1))
       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
-   if (!string_is_empty(audio_driver_st.mixer_streams[i].name))
+   if (audio_driver_st.mixer_streams[i].name && *audio_driver_st.mixer_streams[i].name)
       return audio_driver_st.mixer_streams[i].name;
    return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 }
@@ -837,7 +837,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.src_ratio_curr =
       (double)settings->uints.audio_output_sample_rate / audio_driver_st.input;
 
-   if (!string_is_empty(settings->arrays.audio_resampler))
+   if (*settings->arrays.audio_resampler)
       strlcpy(audio_driver_st.resampler_ident,
             settings->arrays.audio_resampler,
             sizeof(audio_driver_st.resampler_ident));
@@ -1164,7 +1164,7 @@ static void audio_mixer_play_stop_cb(
          {
             unsigned i = (unsigned)idx;
 
-            if (!string_is_empty(audio_driver_st.mixer_streams[i].name))
+            if (*audio_driver_st.mixer_streams[i].name)
                free(audio_driver_st.mixer_streams[i].name);
 
             audio_driver_st.mixer_streams[i].name    = NULL;
@@ -1222,7 +1222,7 @@ static void audio_mixer_play_stop_sequential_cb(
          {
             unsigned i = (unsigned)idx;
 
-            if (!string_is_empty(audio_driver_st.mixer_streams[i].name))
+            if (*audio_driver_st.mixer_streams[i].name)
                free(audio_driver_st.mixer_streams[i].name);
 
             if (i < AUDIO_MIXER_MAX_STREAMS)
@@ -1379,7 +1379,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_driver_st.flags |= AUDIO_FLAG_MIXER_ACTIVE;
 
    audio_driver_st.mixer_streams[free_slot].name        =
-      !string_is_empty(params->basename) ? strdup(params->basename) : NULL;
+      (params->basename && *params->basename) ? strdup(params->basename) : NULL;
    audio_driver_st.mixer_streams[free_slot].buf         = buf;
    audio_driver_st.mixer_streams[free_slot].handle      = handle;
    audio_driver_st.mixer_streams[free_slot].voice       = voice;
@@ -1684,7 +1684,7 @@ void audio_driver_mixer_remove_stream(unsigned i)
             if (handle)
                audio_mixer_destroy(handle);
 
-            if (!string_is_empty(audio_driver_st.mixer_streams[i].name))
+            if (*audio_driver_st.mixer_streams[i].name)
                free(audio_driver_st.mixer_streams[i].name);
 
             audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
@@ -2292,7 +2292,7 @@ bool microphone_driver_init_internal(void *settings_data)
    if (!(mic_st->driver_context = mic_st->driver->init()))
       goto error;
 
-   if (!string_is_empty(settings->arrays.microphone_resampler))
+   if (*settings->arrays.microphone_resampler)
       strlcpy(mic_st->resampler_ident,
             settings->arrays.microphone_resampler,
             sizeof(mic_st->resampler_ident));
@@ -2700,7 +2700,7 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
 
    if (        !mic_driver
             && (string_is_equal(settings->arrays.microphone_driver, "null")
-            || string_is_empty(settings->arrays.microphone_driver)))
+            || !*settings->arrays.microphone_driver))
    { /* If the mic driver hasn't been initialized, but it's not going to be... */
       RARCH_ERR("[Microphone] Cannot open microphone as the driver won't be initialized.\n");
       return NULL;

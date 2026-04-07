@@ -1461,7 +1461,7 @@ const char *config_get_default_menu(void)
 #ifdef HAVE_MENU
    enum menu_driver_enum default_driver = MENU_DEFAULT_DRIVER;
 
-   if (!string_is_empty(g_defaults.settings_menu))
+   if (*g_defaults.settings_menu)
       return g_defaults.settings_menu;
 
    switch (default_driver)
@@ -2857,7 +2857,7 @@ static void video_driver_default_settings(global_t *global)
       else \
          new_file[0] = '\0'; \
    } \
-   if (!string_is_empty(new_file)) \
+   if (*new_file) \
       strlcpy(playlist_path, new_file, sizeof(playlist_path)); \
 } \
 
@@ -3243,113 +3243,113 @@ void config_set_defaults(void *data)
 
    video_driver_default_settings(global);
 
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]))
+   if (*g_defaults.dirs[DEFAULT_DIR_WALLPAPERS])
       configuration_set_string(settings,
             settings->paths.directory_dynamic_wallpapers,
             g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]))
+   if (*g_defaults.dirs[DEFAULT_DIR_THUMBNAILS])
       configuration_set_string(settings,
             settings->paths.directory_thumbnails,
             g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_REMAP]))
+   if (*g_defaults.dirs[DEFAULT_DIR_REMAP])
       configuration_set_string(settings,
             settings->paths.directory_input_remapping,
             g_defaults.dirs[DEFAULT_DIR_REMAP]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CACHE]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CACHE])
       configuration_set_string(settings,
             settings->paths.directory_cache,
             g_defaults.dirs[DEFAULT_DIR_CACHE]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_ASSETS]))
+   if (*g_defaults.dirs[DEFAULT_DIR_ASSETS])
       configuration_set_string(settings,
             settings->paths.directory_assets,
             g_defaults.dirs[DEFAULT_DIR_ASSETS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS])
       configuration_set_string(settings,
             settings->paths.directory_core_assets,
             g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]))
+   if (*g_defaults.dirs[DEFAULT_DIR_PLAYLIST])
       configuration_set_string(settings,
             settings->paths.directory_playlist,
             g_defaults.dirs[DEFAULT_DIR_PLAYLIST]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_FAVORITES]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CONTENT_FAVORITES])
       configuration_set_string(settings,
             settings->paths.directory_content_favorites,
             g_defaults.dirs[DEFAULT_DIR_CONTENT_FAVORITES]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY])
       configuration_set_string(settings,
             settings->paths.directory_content_history,
             g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_IMAGE_HISTORY]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CONTENT_IMAGE_HISTORY])
       configuration_set_string(settings,
             settings->paths.directory_content_image_history,
             g_defaults.dirs[DEFAULT_DIR_CONTENT_IMAGE_HISTORY]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_MUSIC_HISTORY]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CONTENT_MUSIC_HISTORY])
       configuration_set_string(settings,
             settings->paths.directory_content_music_history,
             g_defaults.dirs[DEFAULT_DIR_CONTENT_MUSIC_HISTORY]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_VIDEO_HISTORY]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CONTENT_VIDEO_HISTORY])
       configuration_set_string(settings,
             settings->paths.directory_content_video_history,
             g_defaults.dirs[DEFAULT_DIR_CONTENT_VIDEO_HISTORY]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CORE])
       fill_pathname_expand_special(settings->paths.directory_libretro,
             g_defaults.dirs[DEFAULT_DIR_CORE],
             sizeof(settings->paths.directory_libretro));
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]))
+   if (*g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER])
       configuration_set_string(settings,
             settings->paths.directory_audio_filter,
             g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]))
+   if (*g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER])
       configuration_set_string(settings,
             settings->paths.directory_video_filter,
             g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SHADER]))
+   if (*g_defaults.dirs[DEFAULT_DIR_SHADER])
       fill_pathname_expand_special(settings->paths.directory_video_shader,
             g_defaults.dirs[DEFAULT_DIR_SHADER],
             sizeof(settings->paths.directory_video_shader));
 
-   if (!string_is_empty(g_defaults.path_buildbot_server_url))
+   if (*g_defaults.path_buildbot_server_url)
       configuration_set_string(settings,
             settings->paths.network_buildbot_url,
             g_defaults.path_buildbot_server_url);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_DATABASE]))
+   if (*g_defaults.dirs[DEFAULT_DIR_DATABASE])
       configuration_set_string(settings,
             settings->paths.path_content_database,
             g_defaults.dirs[DEFAULT_DIR_DATABASE]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CHEATS]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CHEATS])
       configuration_set_string(settings,
             settings->paths.path_cheat_database,
             g_defaults.dirs[DEFAULT_DIR_CHEATS]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]))
+   if (*g_defaults.dirs[DEFAULT_DIR_CORE_INFO])
       fill_pathname_expand_special(settings->paths.path_libretro_info,
             g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
             sizeof(settings->paths.path_libretro_info));
 #ifdef HAVE_OVERLAY
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_OVERLAY]))
+   if (*g_defaults.dirs[DEFAULT_DIR_OVERLAY])
    {
       fill_pathname_expand_special(settings->paths.directory_overlay,
             g_defaults.dirs[DEFAULT_DIR_OVERLAY],
             sizeof(settings->paths.directory_overlay));
 #ifdef RARCH_MOBILE
-      if (string_is_empty(settings->paths.path_overlay))
+      if (!settings->paths.path_overlay || !*settings->paths.path_overlay)
          fill_pathname_join_special(settings->paths.path_overlay,
                settings->paths.directory_overlay,
                FILE_PATH_DEFAULT_OVERLAY,
                sizeof(settings->paths.path_overlay));
-      if (string_is_empty(settings->paths.path_osk_overlay))
+      if (!settings->paths.path_osk_overlay || !*settings->paths.path_osk_overlay)
          fill_pathname_join_special(settings->paths.path_osk_overlay,
                settings->paths.directory_overlay,
                FILE_PATH_DEFAULT_OSK_OVERLAY,
                sizeof(settings->paths.path_osk_overlay));
 #endif
    }
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]))
+   if (*g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY])
       fill_pathname_expand_special(settings->paths.directory_osk_overlay,
             g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
             sizeof(settings->paths.directory_osk_overlay));
 #endif
 
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]))
+   if (*g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG])
    {
       configuration_set_string(settings,
             settings->paths.directory_menu_config,
@@ -3367,45 +3367,45 @@ void config_set_defaults(void *data)
 #endif
    }
 
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]))
+   if (*g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT])
       configuration_set_string(settings,
             settings->paths.directory_menu_content,
             g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]);
 
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]))
+   if (*g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG])
       configuration_set_string(settings,
             settings->paths.directory_autoconfig,
             g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]);
 
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]))
+   if (*g_defaults.dirs[DEFAULT_DIR_SAVESTATE])
       dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
 
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SRAM]))
+   if (*g_defaults.dirs[DEFAULT_DIR_SRAM])
       dir_set(RARCH_DIR_SAVEFILE, g_defaults.dirs[DEFAULT_DIR_SRAM]);
 
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SYSTEM]))
+   if (*g_defaults.dirs[DEFAULT_DIR_SYSTEM])
       configuration_set_string(settings,
             settings->paths.directory_system,
             g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]))
+   if (*g_defaults.dirs[DEFAULT_DIR_SCREENSHOT])
       configuration_set_string(settings,
             settings->paths.directory_screenshot,
             g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
+   if (*g_defaults.dirs[DEFAULT_DIR_LOGS])
       configuration_set_string(settings,
             settings->paths.log_dir,
             g_defaults.dirs[DEFAULT_DIR_LOGS]);
 
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]))
+   if (*g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT])
       fill_pathname_expand_special(recording_st->output_dir,
             g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
             sizeof(recording_st->output_dir));
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]))
+   if (*g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG])
       fill_pathname_expand_special(recording_st->config_dir,
             g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
             sizeof(recording_st->config_dir));
 
-   if (!string_is_empty(g_defaults.path_config))
+   if (*g_defaults.path_config)
    {
       char temp_str[PATH_MAX_LENGTH];
 
@@ -3431,11 +3431,11 @@ void config_set_defaults(void *data)
       if (!path_is_directory(new_path))
          path_mkdir(new_path);
 
-      if (string_is_empty(settings->paths.path_content_favorites))
+      if (!*settings->paths.path_content_favorites)
          strlcpy(settings->paths.directory_content_favorites, "default",
                sizeof(settings->paths.directory_content_favorites));
 
-      if (     string_is_empty(settings->paths.directory_content_favorites)
+      if (     !*settings->paths.directory_content_favorites
             || string_is_equal(settings->paths.directory_content_favorites, "default"))
          fill_pathname_join_special(
                settings->paths.path_content_favorites,
@@ -3449,11 +3449,11 @@ void config_set_defaults(void *data)
                FILE_PATH_CONTENT_FAVORITES,
                sizeof(settings->paths.path_content_favorites));
 
-      if (string_is_empty(settings->paths.path_content_history))
+      if (!*settings->paths.path_content_history)
          strlcpy(settings->paths.directory_content_history, "default",
                sizeof(settings->paths.directory_content_history));
 
-      if (     string_is_empty(settings->paths.directory_content_history)
+      if (     !*settings->paths.directory_content_history
             || string_is_equal(settings->paths.directory_content_history, "default"))
          fill_pathname_join_special(
                settings->paths.path_content_history,
@@ -3467,11 +3467,11 @@ void config_set_defaults(void *data)
                FILE_PATH_CONTENT_HISTORY,
                sizeof(settings->paths.path_content_history));
 
-      if (string_is_empty(settings->paths.path_content_image_history))
+      if (!*settings->paths.path_content_image_history)
          strlcpy(settings->paths.directory_content_image_history, "default",
                sizeof(settings->paths.directory_content_image_history));
 
-      if (     string_is_empty(settings->paths.directory_content_image_history)
+      if (     !*settings->paths.directory_content_image_history
             || string_is_equal(settings->paths.directory_content_image_history, "default"))
          fill_pathname_join_special(
                settings->paths.path_content_image_history,
@@ -3485,11 +3485,11 @@ void config_set_defaults(void *data)
                FILE_PATH_CONTENT_IMAGE_HISTORY,
                sizeof(settings->paths.path_content_image_history));
 
-      if (string_is_empty(settings->paths.path_content_music_history))
+      if (!*settings->paths.path_content_music_history)
          strlcpy(settings->paths.directory_content_music_history, "default",
                sizeof(settings->paths.directory_content_music_history));
 
-      if (     string_is_empty(settings->paths.directory_content_music_history)
+      if (     !*settings->paths.directory_content_music_history
             || string_is_equal(settings->paths.directory_content_music_history, "default"))
          fill_pathname_join_special(
                settings->paths.path_content_music_history,
@@ -3503,11 +3503,11 @@ void config_set_defaults(void *data)
                FILE_PATH_CONTENT_MUSIC_HISTORY,
                sizeof(settings->paths.path_content_music_history));
 
-      if (string_is_empty(settings->paths.path_content_video_history))
+      if (!*settings->paths.path_content_video_history)
          strlcpy(settings->paths.directory_content_video_history, "default",
                sizeof(settings->paths.directory_content_video_history));
 
-      if (     string_is_empty(settings->paths.directory_content_video_history)
+      if (     !*settings->paths.directory_content_video_history
             || string_is_equal(settings->paths.directory_content_video_history, "default"))
          fill_pathname_join_special(
                settings->paths.path_content_video_history,
@@ -4271,11 +4271,11 @@ static bool config_load_file(global_t *global,
       if (!path_is_directory(new_path))
          path_mkdir(new_path);
 
-      if (string_is_empty(settings->paths.path_content_favorites))
+      if (!*settings->paths.path_content_favorites)
          strlcpy(settings->paths.directory_content_favorites, "default",
                sizeof(settings->paths.directory_content_favorites));
 
-      if (     string_is_empty(settings->paths.directory_content_favorites)
+      if (     !*settings->paths.directory_content_favorites
             || string_is_equal(settings->paths.directory_content_favorites, "default"))
       {
          CONFIG_PLAYLIST_MIGRATION(settings->paths.path_content_favorites,
@@ -4288,11 +4288,11 @@ static bool config_load_file(global_t *global,
                FILE_PATH_CONTENT_FAVORITES,
                sizeof(settings->paths.path_content_favorites));
 
-      if (string_is_empty(settings->paths.path_content_history))
+      if (!*settings->paths.path_content_history)
          strlcpy(settings->paths.directory_content_history, "default",
                sizeof(settings->paths.directory_content_history));
 
-      if (     string_is_empty(settings->paths.directory_content_history)
+      if (     !*settings->paths.directory_content_history
             || string_is_equal(settings->paths.directory_content_history, "default"))
       {
          CONFIG_PLAYLIST_MIGRATION(settings->paths.path_content_history,
@@ -4305,11 +4305,11 @@ static bool config_load_file(global_t *global,
                FILE_PATH_CONTENT_HISTORY,
                sizeof(settings->paths.path_content_history));
 
-      if (string_is_empty(settings->paths.path_content_image_history))
+      if (!*settings->paths.path_content_image_history)
          strlcpy(settings->paths.directory_content_image_history, "default",
                sizeof(settings->paths.directory_content_image_history));
 
-      if (     string_is_empty(settings->paths.directory_content_image_history)
+      if (     !*settings->paths.directory_content_image_history
             || string_is_equal(settings->paths.directory_content_image_history, "default"))
       {
          CONFIG_PLAYLIST_MIGRATION(settings->paths.path_content_image_history,
@@ -4322,11 +4322,11 @@ static bool config_load_file(global_t *global,
                FILE_PATH_CONTENT_IMAGE_HISTORY,
                sizeof(settings->paths.path_content_image_history));
 
-      if (string_is_empty(settings->paths.path_content_music_history))
+      if (*settings->paths.path_content_music_history)
          strlcpy(settings->paths.directory_content_music_history, "default",
                sizeof(settings->paths.directory_content_music_history));
 
-      if (     string_is_empty(settings->paths.directory_content_music_history)
+      if (     !*settings->paths.directory_content_music_history
             || string_is_equal(settings->paths.directory_content_music_history, "default"))
       {
          CONFIG_PLAYLIST_MIGRATION(settings->paths.path_content_music_history,
@@ -4339,11 +4339,11 @@ static bool config_load_file(global_t *global,
                FILE_PATH_CONTENT_MUSIC_HISTORY,
                sizeof(settings->paths.path_content_music_history));
 
-      if (string_is_empty(settings->paths.path_content_video_history))
+      if (!*settings->paths.path_content_video_history)
          strlcpy(settings->paths.directory_content_video_history, "default",
                sizeof(settings->paths.directory_content_video_history));
 
-      if (     string_is_empty(settings->paths.directory_content_video_history)
+      if (     !*settings->paths.directory_content_video_history
             || string_is_equal(settings->paths.directory_content_video_history, "default"))
       {
          CONFIG_PLAYLIST_MIGRATION(settings->paths.path_content_video_history,
@@ -4357,7 +4357,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_video_history));
    }
 
-   if (!string_is_empty(settings->paths.directory_screenshot))
+   if (*settings->paths.directory_screenshot)
    {
       if (string_is_equal(settings->paths.directory_screenshot, "default"))
          *settings->paths.directory_screenshot = '\0';
@@ -4399,8 +4399,9 @@ static bool config_load_file(global_t *global,
    if (libretro_video_filter_directory)
    {
       /* override configuration value */
-       configuration_set_string(settings, settings->paths.directory_video_filter,
-				libretro_video_filter_directory);
+       configuration_set_string(settings,
+		       settings->paths.directory_video_filter,
+		       libretro_video_filter_directory);
    }
    else if (string_is_equal(settings->paths.directory_video_filter, "default"))
       *settings->paths.directory_video_filter = '\0';
@@ -4466,7 +4467,7 @@ static bool config_load_file(global_t *global,
     * directly... */
    if (string_is_equal(settings->paths.log_dir, "default"))
    {
-      if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
+      if (*g_defaults.dirs[DEFAULT_DIR_LOGS])
       {
          configuration_set_string(settings,
                settings->paths.log_dir,
@@ -4485,7 +4486,7 @@ static bool config_load_file(global_t *global,
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
 
 #ifdef HAVE_CHEEVOS
-   if (!string_is_empty(settings->arrays.cheevos_leaderboards_enable))
+   if (*settings->arrays.cheevos_leaderboards_enable)
    {
       if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "true"))
       {
@@ -4719,7 +4720,7 @@ bool config_load_override(void *data)
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = NULL;
    settings_t *settings                   = config_st;
-   bool has_content                       = !string_is_empty(rarch_path_basename);
+   bool has_content                       = (rarch_path_basename && *rarch_path_basename);
 
    core_path[0]        = '\0';
    game_path[0]        = '\0';
@@ -4729,7 +4730,7 @@ bool config_load_override(void *data)
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
 
    /* Cannot load an override if we have no core */
-   if (string_is_empty(core_name))
+   if (!core_name || !*core_name)
       return false;
 
    /* Get base config directory */
@@ -5016,8 +5017,8 @@ bool config_load_remap(const char *directory_input_remapping,
 
    /* > Cannot load remaps if we have no core
     * > Cannot load remaps if remap directory is unset */
-   if (   string_is_empty(core_name)
-       || string_is_empty(directory_input_remapping))
+   if (   (!core_name || !*core_name)
+       || (!directory_input_remapping || !*directory_input_remapping))
       return false;
 
    core_path[0]    = '\0';
@@ -5030,7 +5031,7 @@ bool config_load_remap(const char *directory_input_remapping,
    {
       const char *input_device_name = input_config_get_device_display_name(joypad_port);
 
-      if (!string_is_empty(input_device_name))
+      if (input_device_name && *input_device_name)
       {
          /* Ensure directory does not contain special chars */
          const char *input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
@@ -5039,7 +5040,7 @@ bool config_load_remap(const char *directory_input_remapping,
       }
    }
 
-   if (!string_is_empty(rarch_path_basename))
+   if (rarch_path_basename && *rarch_path_basename)
    {
       char content_dir_name[DIR_MAX_LENGTH];
 
@@ -5291,7 +5292,7 @@ static void save_keybind_joykey_label(config_file_t *conf,
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
    _len += strlcpy(key + _len, "_btn", sizeof(key) - _len);
-   if (!string_is_empty(bind->joykey_label))
+   if (bind->joykey_label && *bind->joykey_label)
    {
       strlcpy(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, bind->joykey_label);
@@ -5337,7 +5338,7 @@ static void save_keybind_axis_label(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
    _len += strlcpy(key + _len, "_axis", sizeof(key) - _len);
-   if (!string_is_empty(bind->joyaxis_label))
+   if (bind->joyaxis_label && *bind->joyaxis_label)
    {
       strlcpy(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, bind->joyaxis_label);
@@ -5426,7 +5427,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
       prefix[0]                            = '\0';
       input_config_get_prefix(prefix, sizeof(prefix), user, meta);
 
-      if (string_is_empty(prefix) || !bind->valid || !keybind)
+      if (!*prefix || !bind->valid || !keybind)
          continue;
 
       base                                 = keybind->base;
@@ -5473,7 +5474,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
       prefix[0]                            = '\0';
       input_config_get_prefix(prefix, sizeof(prefix), user, meta);
 
-      if (string_is_empty(prefix) || !bind->valid || !keybind)
+      if (!*prefix || !bind->valid || !keybind)
          return;
 
       base                                 = keybind->base;
@@ -5525,7 +5526,7 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
       prefix[0]                            = '\0';
       input_config_get_prefix(prefix, sizeof(prefix), user, meta);
 
-      if (string_is_empty(prefix) || !bind->valid || !keybind)
+      if (!*prefix || !bind->valid || !keybind)
          continue;
 
       base                                 = keybind->base;
@@ -5580,7 +5581,7 @@ void config_get_autoconf_profile_filename(
    size_t i;
    size_t _len;
    char sanitised_name[PATH_MAX_LENGTH];
-   if (string_is_empty(device_name))
+   if (!device_name || !*device_name)
       return;
    strlcpy(sanitised_name, device_name, sizeof(sanitised_name));
    /* Remove invalid filename characters from
@@ -5616,19 +5617,19 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
    const char *joypad_driver            = NULL;
 
-   if (string_is_empty(device_name))
+   if (!device_name || !*device_name)
       return false;
 
    /* Get currently set joypad driver */
    joypad_driver = input_config_get_device_joypad_driver(user);
-   if (string_is_empty(joypad_driver))
+   if (!joypad_driver || !*joypad_driver)
    {
       /* This cannot happen, but if we reach this
        * point without a driver being set for the
        * current input device then use the value
        * from the settings struct as a fallback */
       joypad_driver = joypad_driver_fallback;
-      if (string_is_empty(joypad_driver))
+      if (!joypad_driver || !*joypad_driver)
          return false;
    }
 
@@ -5655,14 +5656,14 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
       if (bind->joykey == NO_BTN && auto_bind->joykey != NO_BTN)
       {
          bind->joykey = auto_bind->joykey;
-         if (!string_is_empty(auto_bind->joykey_label))
+         if (auto_bind->joykey_label && *auto_bind->joykey_label)
             bind->joykey_label = strdup(auto_bind->joykey_label);
       }
 
       if (bind->joyaxis == AXIS_NONE && auto_bind->joyaxis != AXIS_NONE)
       {
          bind->joyaxis = auto_bind->joyaxis;
-         if (!string_is_empty(auto_bind->joyaxis_label))
+         if (auto_bind->joyaxis_label && *auto_bind->joyaxis_label)
             bind->joyaxis_label = strdup(auto_bind->joyaxis_label);
       }
    }
@@ -5734,13 +5735,13 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
 
       if (bind->valid)
       {
-         if (!string_is_empty(bind->joykey_label))
+         if (bind->joykey_label && *bind->joykey_label)
          {
             save_keybind_joykey_label(conf, "input", input_config_bind_map_get_base(id), bind);
             free(bind->joykey_label);
          }
 
-         if (!string_is_empty(bind->joyaxis_label))
+         if (bind->joyaxis_label && *bind->joyaxis_label)
          {
             save_keybind_axis_label(conf, "input", input_config_bind_map_get_base(id), bind);
             free(bind->joyaxis_label);
@@ -5973,9 +5974,9 @@ bool config_save_file(const char *path)
 
          if (path_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
          {
-            if (string_is_empty(path_settings[i].ptr))
+            if (!path_settings[i].ptr || !*path_settings[i].ptr)
                value = "default";
-            if (minimal && string_is_empty(default_value))
+            if (minimal && (!default_value || !*default_value))
                default_value = "default";
          }
 
@@ -5996,10 +5997,10 @@ bool config_save_file(const char *path)
 #ifdef HAVE_MENU
    /* xmb_font */
    {
-      const char *xmb_font_value = !string_is_empty(settings->paths.path_menu_xmb_font)
+      const char *xmb_font_value = *settings->paths.path_menu_xmb_font
          ? settings->paths.path_menu_xmb_font : "";
       const char *xmb_font_default = (minimal && defaults)
-         ? (!string_is_empty(defaults->paths.path_menu_xmb_font)
+         ? ( *defaults->paths.path_menu_xmb_font
             ? defaults->paths.path_menu_xmb_font : "")
          : "";
 
@@ -6016,10 +6017,11 @@ bool config_save_file(const char *path)
 
    /* ozone_font */
    {
-      const char *ozone_font_value = !string_is_empty(settings->paths.path_menu_ozone_font)
+      const char *ozone_font_value =
+          *settings->paths.path_menu_ozone_font
          ? settings->paths.path_menu_ozone_font : "";
       const char *ozone_font_default = (minimal && defaults)
-         ? (!string_is_empty(defaults->paths.path_menu_ozone_font)
+         ? ( *defaults->paths.path_menu_ozone_font
             ? defaults->paths.path_menu_ozone_font : "")
          : "";
 
@@ -6472,14 +6474,14 @@ int8_t config_save_overrides(enum override_type type,
    const char *core_name                       = sys_info ? sys_info->info.library_name : NULL;
    const char *rarch_path_basename             = path_get(RARCH_PATH_BASENAME);
    const char *game_name                       = NULL;
-   bool has_content                            = !string_is_empty(rarch_path_basename);
+   bool has_content                            = (rarch_path_basename && *rarch_path_basename);
 
    override_path[0]      = '\0';
 
    /* > Cannot save an override if we have no core
     * > Cannot save a per-game or per-content-directory
     *   override if we have no content */
-   if (     string_is_empty(core_name)
+   if (   (!core_name || !*core_name)
        || (!has_content && (type != OVERRIDE_CORE)))
       return false;
 
@@ -6750,7 +6752,7 @@ int8_t config_save_overrides(enum override_type type,
       if (!(conf->flags & CONF_FILE_FLG_MODIFIED) && !remove)
          ret = -1;
 
-      if (!string_is_empty(override_path))
+      if (*override_path)
       {
          if (!(conf->flags & CONF_FILE_FLG_MODIFIED) && !remove)
             if (path_is_valid(override_path))
@@ -6873,11 +6875,11 @@ bool input_remapping_load_file(void *data, const char *path)
       "r_x+",   "r_x-",   "r_y+",   "r_y-"
    };
 
-   if (    !conf
-         || string_is_empty(path))
+   if (      !conf
+         || (!path || !*path))
       return false;
 
-   if (!string_is_empty(runloop_st->name.remapfile))
+   if (runloop_st->name.remapfile && *runloop_st->name.remapfile)
       input_remapping_deinit(false);
 
    input_remapping_set_defaults(false);
@@ -7021,14 +7023,14 @@ bool input_remapping_save_file(const char *path)
    settings_t        *settings = config_st;
    unsigned          max_users = settings->uints.input_max_users;
 
-   if (string_is_empty(path))
+   if (!path || !*path)
       return false;
 
    /* Create output directory, if required */
    fill_pathname_parent_dir(remap_file_dir, path,
          sizeof(remap_file_dir));
 
-   if (   !string_is_empty(remap_file_dir)
+   if (   *remap_file_dir
        && !path_is_directory(remap_file_dir)
        && !path_mkdir(remap_file_dir))
       return false;
@@ -7102,7 +7104,8 @@ bool input_remapping_save_file(const char *path)
          {
             if (remap_id == RARCH_UNMAPPED)
             {
-               if (string_is_empty(runloop_st->system.input_desc_btn[i][j]))
+               if (!runloop_st->system.input_desc_btn[i][j] ||
+!*runloop_st->system.input_desc_btn[i][j])
                   config_unset(conf, _ident);
                else
                   config_set_int(conf, _ident, -1);
@@ -7140,7 +7143,8 @@ bool input_remapping_save_file(const char *path)
          {
             if (remap_id == RARCH_UNMAPPED)
             {
-               if (string_is_empty(runloop_st->system.input_desc_btn[i][j]))
+               if (!runloop_st->system.input_desc_btn[i][j] 
+                || !*runloop_st->system.input_desc_btn[i][j])
                   config_unset(conf, _ident);
                else
                   config_set_int(conf, _ident, -1);
@@ -7212,7 +7216,7 @@ static bool config_file_salamander_get_path(char *s, size_t len)
 {
    const char *rarch_config_path = g_defaults.path_config;
 
-   if (!string_is_empty(rarch_config_path))
+   if (rarch_config_path && *rarch_config_path)
       fill_pathname_resolve_relative(s,
             rarch_config_path,
             FILE_PATH_SALAMANDER_CONFIG,
@@ -7220,7 +7224,7 @@ static bool config_file_salamander_get_path(char *s, size_t len)
    else
       strlcpy(s, FILE_PATH_SALAMANDER_CONFIG, len);
 
-   return !string_is_empty(s);
+   return (s && *s);
 }
 
 void config_load_file_salamander(void)
@@ -7246,7 +7250,7 @@ void config_load_file_salamander(void)
 
    if (config_get_path(config, "libretro_path",
          config_path, sizeof(config_path))
-       && !string_is_empty(config_path)
+       && (config_path && *config_path)
        && !string_is_equal(config_path, "builtin"))
       path_set(RARCH_PATH_CORE, config_path);
 
@@ -7261,7 +7265,7 @@ void config_save_file_salamander(void)
 
    config_path[0] = '\0';
 
-   if (   string_is_empty(libretro_path)
+   if (   (!libretro_path || !*libretro_path)
        || string_is_equal(libretro_path, "builtin"))
       return;
 
@@ -7548,9 +7552,9 @@ void input_config_parse_joy_axis(char *s,
 
    tmp_a = config_get_entry(conf, key);
 
-   if (tmp_a && !string_is_empty(tmp_a->value))
+   if (tmp_a && tmp_a->value && *tmp_a->value)
    {
-      if (!string_is_empty(bind->joyaxis_label))
+      if (bind->joyaxis_label && *bind->joyaxis_label)
          free(bind->joyaxis_label);
       bind->joyaxis_label = strdup(tmp_a->value);
    }
@@ -7635,9 +7639,9 @@ void input_config_parse_joy_button(
    fill_pathname_join_delim(key, s,
          "btn_label", '_', sizeof(key));
    tmp_a = config_get_entry(conf, key);
-   if (tmp_a && !string_is_empty(tmp_a->value))
+   if (tmp_a && tmp_a->value && *tmp_a->value)
    {
-      if (!string_is_empty(bind->joykey_label))
+      if (bind->joykey_label && *bind->joykey_label)
          free(bind->joykey_label);
       bind->joykey_label = strdup(tmp_a->value);
    }

@@ -110,7 +110,7 @@ static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
          break;
    }
 
-   if (!string_is_empty(arch))
+   if (arch && *arch)
    {
       _len += strlcpy(s + _len, " ",  len - _len);
       _len += strlcpy(s + _len, arch, len - _len);
@@ -119,13 +119,13 @@ static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    _len += strlcpy(s + _len, " Build ", len - _len);
    _len += strlcpy(s + _len, build_str, len - _len);
 
-   if (!string_is_empty(vi.szCSDVersion))
+   if (vi.szCSDVersion && *vi.szCSDVersion)
    {
       _len += strlcpy(s + _len, " ", len - _len);
       _len += strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
 
-   if (!string_is_empty(uwp_device_family))
+   if (uwp_device_family && *uwp_device_family)
    {
       _len += strlcpy(s + _len, " ", len - _len);
       strlcpy(s + _len, uwp_device_family, len - _len);

@@ -78,10 +78,10 @@ static char *webdav_create_basic_auth(void)
    char        userpass[512];
    settings_t *settings  = config_get_ptr();
    size_t      _len      = 0;
-   if (!string_is_empty(settings->arrays.webdav_username))
+   if (*settings->arrays.webdav_username)
       _len += strlcpy(userpass + _len, settings->arrays.webdav_username, sizeof(userpass) - _len);
    userpass[_len++] = ':';
-   if (!string_is_empty(settings->arrays.webdav_password))
+   if (*settings->arrays.webdav_password)
       _len += strlcpy(userpass + _len, settings->arrays.webdav_password, sizeof(userpass) - _len);
    userpass[_len]   = '\0';
    base64auth = base64(userpass, (int)_len, &flen);
@@ -152,8 +152,8 @@ static bool webdav_create_digest_auth(char *digest)
    char           *ptr       = digest + (sizeof("WWW-Authenticate: Digest")-1);
    char           *end       = ptr + strlen(ptr);
 
-   if (   string_is_empty(settings->arrays.webdav_username)
-       && string_is_empty(settings->arrays.webdav_password))
+   if (   !*settings->arrays.webdav_username
+       && !*settings->arrays.webdav_password)
       return false;
 
    webdav_cleanup_digest();
@@ -428,8 +428,8 @@ static char *webdav_get_auth_header(const char *method, const char *url)
    webdav_state_t *webdav_st = webdav_state_get_ptr();
    settings_t     *settings  = config_get_ptr();
 
-   if (   string_is_empty(settings->arrays.webdav_username)
-       && string_is_empty(settings->arrays.webdav_password))
+   if (   !*settings->arrays.webdav_username
+       && !*settings->arrays.webdav_password)
       return NULL;
 
    if (webdav_st->basic)
@@ -512,7 +512,7 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    const char        *url       = settings->arrays.webdav_url;
    webdav_state_t    *webdav_st = webdav_state_get_ptr();
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return false;
 
 #ifndef HAVE_SSL

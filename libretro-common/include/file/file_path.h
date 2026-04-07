@@ -119,7 +119,6 @@ const char *path_get_archive_delim(const char *path);
  * after the last slash are considered.
  *
  * Hidden non-leaf function cost:
- * - calls string_is_empty()
  * - calls strrchr
  *
  * @return extension part from the path.
@@ -297,7 +296,7 @@ size_t fill_pathname(char *s, const char *in_path,
  * Hidden non-leaf function cost:
  * - Calls rtime_localtime()
  * - Calls strftime
- * - Calls strlcat
+ * - Calls strlcpy
  *
  **/
 size_t fill_dated_filename(char *s, const char *ext, size_t len);
@@ -318,10 +317,8 @@ size_t fill_dated_filename(char *s, const char *ext, size_t len);
  * Hidden non-leaf function cost:
  * - Calls time
  * - Calls rtime_localtime()
- * - Calls strlcpy 2x
- * - Calls string_is_empty()
+ * - Calls strlcpy (at least once)
  * - Calls strftime
- * - Calls strlcat
  *
  * @return Length of the string copied into @s
  **/
@@ -408,7 +405,6 @@ size_t fill_pathname_basedir(char *s, const char *in_path, size_t len);
  * The two buffers must not overlap. Removes trailing '/'.
  *
  * Hidden non-leaf function cost:
- * - Calls strdup
  * - Can call strlcpy
  *
  * @return Length of the string copied into @s

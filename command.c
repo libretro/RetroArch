@@ -1333,7 +1333,7 @@ static size_t command_event_save_config(const char *config_path,
    char *s, size_t len)
 {
    size_t _len      = 0;
-   bool path_exists = !string_is_empty(config_path);
+   bool path_exists = *config_path;
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
 
@@ -1358,7 +1358,7 @@ static size_t command_event_save_config(const char *config_path,
       return _len;
    }
 
-   if (!string_is_empty(str))
+   if (str && *str)
    {
       _len = snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
@@ -1622,7 +1622,7 @@ static void command_scan_states(
       const char *end      = NULL;
       const char *dir_elem = dir_list->elems[i].data;
 
-      if (string_is_empty(dir_elem))
+      if (!dir_elem || !*dir_elem)
          continue;
 
       _len = strlen(dir_elem);
@@ -1631,7 +1631,7 @@ static void command_scan_states(
       /* Only consider files with a '.state' extension
        * > i.e. Ignore '.state.auto', '.state.bak', etc. */
       ext = path_get_extension(elem_base);
-      if (    string_is_empty(ext)
+      if (    (!ext || !*ext)
           || !string_starts_with_size(ext, "state", STRLEN_CONST("state")))
          continue;
 
@@ -1830,7 +1830,7 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
     * > Conservative behaviour, designed to minimise
     *   the risk of deleting multiple incorrect files
     *   in case of accident */
-   if (!string_is_empty(state_to_delete))
+   if (*state_to_delete)
    {
       filestream_delete(state_to_delete);
       RARCH_DBG("[State] Garbage collect, deleting \"%s\".\n",state_to_delete);
@@ -1937,7 +1937,7 @@ void command_event_set_replay_garbage_collect(
       const char *end                 = NULL;
       const char *dir_elem            = dir_list->elems[i].data;
 
-      if (string_is_empty(dir_elem))
+      if (!dir_elem || !*dir_elem)
          continue;
 
       _len = fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
@@ -1945,7 +1945,7 @@ void command_event_set_replay_garbage_collect(
       /* Only consider files with a '.replayXX' extension
        * > i.e. Ignore '.replay.auto', '.replay.bak', etc. */
       ext = path_get_extension(elem_base);
-      if (    string_is_empty(ext)
+      if (    (!ext || !*ext)
           || !string_starts_with_size(ext, "replay", STRLEN_CONST("REPLAY")))
          continue;
 
@@ -1977,7 +1977,7 @@ void command_event_set_replay_garbage_collect(
     * > Conservative behaviour, designed to minimise
     *   the risk of deleting multiple incorrect files
     *   in case of accident */
-   if (!string_is_empty(oldest_save) && (cnt > max_to_keep))
+   if (oldest_save && *oldest_save && (cnt > max_to_keep))
       filestream_delete(oldest_save);
 
    dir_list_free(dir_list);
@@ -1988,7 +1988,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
 {
    enum  rarch_shader_type type = video_shader_parse_type(arg);
    settings_t  *settings        = config_get_ptr();
-   bool apply_new_shader        = !string_is_empty(arg);
+   bool apply_new_shader        = arg && *arg;
 
    configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
    if (apply_new_shader)
@@ -2031,9 +2031,9 @@ bool command_event_save_core_config(
 
    msg[0]                          = '\0';
 
-   if (!string_is_empty(dir_menu_config))
+   if (dir_menu_config && *dir_menu_config)
       _len = strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
-   else if (!string_is_empty(rarch_path_config)) /* Fallback */
+   else if (rarch_path_config && *rarch_path_config) /* Fallback */
       _len = fill_pathname_basedir(config_dir, rarch_path_config,
             sizeof(config_dir));
 

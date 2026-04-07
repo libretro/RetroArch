@@ -171,7 +171,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
       extracted_path = (char*)&ptr.Data;
 
       if (
-            !string_is_empty(extracted_path)
+            (extracted_path && *extracted_path)
             && (!strstr(extracted_path, "Pool"))
             /* Hack. Unknown problem */)
       {
@@ -191,14 +191,14 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
       strlcpy(extracted_path, pLaunchData, dwLaunchDataSize);
 
       /* Auto-start game */
-      if (!string_is_empty(extracted_path))
+      if (extracted_path && *extracted_path)
          strlcpy(path, extracted_path, sizeof(path));
 
       if (pLaunchData)
          free(pLaunchData);
    }
 #endif
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
 
@@ -258,7 +258,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
 #endif
 
 #ifdef IS_SALAMANDER
-   if (!string_is_empty(path))
+   if (path && *path)
 #ifdef _XBOX360
       XLaunchNewImage(path, 0);
 #else
@@ -271,8 +271,8 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
    if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
       strlcpy((char*)ptr.Data, path_get(RARCH_PATH_CONTENT), sizeof(ptr.Data));
 
-   if (!string_is_empty(path))
-      XLaunchNewImage(path, !string_is_empty((const char*)ptr.Data) ? &ptr : NULL);
+   if (path && *path)
+      XLaunchNewImage(path, ((const char*)ptr.Data && *(const char*)ptr.Data) ? &ptr : NULL);
 #elif defined(_XBOX360)
    if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
    {
@@ -280,7 +280,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
       XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
    }
 
-   if (!string_is_empty(path))
+   if (path && *path)
       XLaunchNewImage(path, 0);
 #endif
 #endif

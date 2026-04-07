@@ -94,7 +94,7 @@ static bool smb_init()
    if (!network_init())
       return false;
 
-   if (!smb_cfg || string_is_empty(smb_cfg->server_address))
+   if (!smb_cfg || (!smb_cfg->server_address || !*smb_cfg->server_address))
       return false;
 
    unsigned max_smb_contexts = smb_cfg->num_contexts;
@@ -116,19 +116,19 @@ static bool smb_init()
       strlcpy(server, smb_cfg->server_address, sizeof(server));
 
       /* Set credentials */
-      if (!string_is_empty(smb_cfg->username))
+      if (smb_cfg->username && *smb_cfg->username)
       {
          username = (char*)smb_cfg->username;
          smb2_set_user(smb_context, username);
       }
 
-      if (!string_is_empty(smb_cfg->password))
+      if (smb_cfg->password && *smb_cfg->password)
          smb2_set_password(smb_context, smb_cfg->password);
 
-      if (!string_is_empty(smb_cfg->workgroup))
+      if (smb_cfg->workgroup && *smb_cfg->workgroup)
          smb2_set_domain(smb_context, smb_cfg->workgroup);
 
-      if (!string_is_empty(smb_cfg->share))
+      if (smb_cfg->share && *smb_cfg->share)
          strlcpy(share, smb_cfg->share, sizeof(share));
       else
          share[0] = '\0';
@@ -175,9 +175,9 @@ static bool smb_init()
                }
 
                smb2_set_user(smb_context, username);
-               if (!string_is_empty(smb_cfg->password))
+               if (smb_cfg->password && *smb_cfg->password)
                   smb2_set_password(smb_context, smb_cfg->password);
-               if (!string_is_empty(smb_cfg->workgroup))
+               if (smb_cfg->workgroup && *smb_cfg->workgroup)
                   smb2_set_domain(smb_context, smb_cfg->workgroup);
                smb2_set_timeout(smb_context, smb_cfg->timeout);
             }
@@ -259,7 +259,7 @@ static bool smb_build_path(char *dest, size_t dest_size, const char *relative_pa
    temp_path[0] = '\0';
 
    /* Add base folder if specified */
-   if (!string_is_empty(smb_cfg->subdir))
+   if (smb_cfg->subdir && *smb_cfg->subdir)
    {
       strlcpy(temp_path, smb_cfg->subdir, sizeof(temp_path));
       if (temp_path[0] != '\0' && temp_path[strlen(temp_path) - 1] != '/')

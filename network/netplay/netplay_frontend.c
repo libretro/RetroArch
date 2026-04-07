@@ -631,7 +631,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          const char *basename = path_basename(path_get(RARCH_PATH_BASENAME));
 
          strlcpy(ad_packet_buffer.content,
-            !string_is_empty(basename) ? basename : "N/A",
+            (basename && *basename) ? basename : "N/A",
             sizeof(ad_packet_buffer.content));
          strlcpy(ad_packet_buffer.subsystem_name, "N/A",
             sizeof(ad_packet_buffer.subsystem_name));
@@ -639,9 +639,9 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          ad_packet_buffer.content_crc = (int32_t)htonl(content_get_crc());
       }
 
-      if (!string_is_empty(settings->paths.netplay_password))
+      if (*settings->paths.netplay_password)
          has_password |= 1;
-      if (!string_is_empty(settings->paths.netplay_spectate_password))
+      if (*settings->paths.netplay_spectate_password)
          has_password |= 2;
       ad_packet_buffer.has_password = htonl(has_password);
 
@@ -775,8 +775,8 @@ static bool netplay_handshake_init_send(netplay_t *netplay,
 
    if (netplay->is_server)
    {
-      if (     !string_is_empty(settings->paths.netplay_password)
-            || !string_is_empty(settings->paths.netplay_spectate_password))
+      if (     *settings->paths.netplay_password
+            || *settings->paths.netplay_spectate_password)
       {
          /* Demand a password */
          if (netplay->simple_rand_next == 1)
@@ -832,7 +832,7 @@ static void handshake_password(void *userdata, const char *line)
    connection = &netplay->connections[0];
    _len       = snprintf(password, sizeof(password),
          "%08lX", (unsigned long)connection->salt);
-   if (!string_is_empty(line))
+   if (line && *line)
       strlcpy(password       + _len,
             line,
             sizeof(password) - _len);
@@ -1475,8 +1475,8 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
          return false;
 
       /* There's a password, so just put them in PRE_PASSWORD mode */
-      if (     !string_is_empty(settings->paths.netplay_password)
-            || !string_is_empty(settings->paths.netplay_spectate_password))
+      if (     *settings->paths.netplay_password
+            || *settings->paths.netplay_spectate_password)
          connection->mode = NETPLAY_CONNECTION_PRE_PASSWORD;
       else
       {
@@ -1527,7 +1527,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
    /* Calculate the correct password hash(es) and compare */
    snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
 
-   if (!string_is_empty(settings->paths.netplay_password))
+   if (*settings->paths.netplay_password)
    {
       strlcpy(password + 8, settings->paths.netplay_password,
          sizeof(password) - 8);
@@ -1540,7 +1540,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
       }
    }
    if (     !correct
-         && !string_is_empty(settings->paths.netplay_spectate_password))
+         && *settings->paths.netplay_spectate_password)
    {
       strlcpy(password + 8, settings->paths.netplay_spectate_password,
          sizeof(password) - 8);
@@ -4197,7 +4197,7 @@ static void netplay_hangup(netplay_t *netplay,
    /* Report this disconnection */
    if (netplay->is_server)
    {
-      if (!string_is_empty(connection->nick))
+      if (*connection->nick)
       {
          snprintf(msg, sizeof(msg),
             msg_hash_to_str(MSG_NETPLAY_SERVER_NAMED_HANGUP),
@@ -5160,11 +5160,8 @@ static void netplay_show_chat(netplay_t *netplay, const char *nick, const char *
 #ifdef HAVE_MENU
 static bool netplay_chat_check(netplay_t *netplay)
 {
-   if (!netplay)
-      return false;
-
    /* Do nothing if we don't have a nickname. */
-   if (string_is_empty(netplay->nick))
+   if (!netplay || !*netplay->nick)
       return false;
 
    /* Do nothing if we are not playing. */
@@ -5215,7 +5212,7 @@ static void netplay_send_chat(void *userdata, const char *line)
 
    /* We perform the same checks,
       just in case something has changed. */
-   if (    !string_is_empty(line)
+   if (    (line && *line)
          && netplay_chat_check(netplay))
    {
       /* Truncate line to NETPLAY_CHAT_MAX_SIZE. */
@@ -5272,8 +5269,8 @@ static bool netplay_handle_chat(netplay_t *netplay,
       const char *nick, const char *msg)
 {
    if (    (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE))
-         || string_is_empty(nick)
-         || string_is_empty(msg))
+         || (!nick || !*nick)
+         || (!msg || !*msg))
       return false;
 
    REQUIRE_PROTOCOL_VERSION(connection, 6)
@@ -7337,7 +7334,7 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
    netplay->simple_rand_next = 1;
 
    strlcpy(netplay->nick,
-      !string_is_empty(nick) ? nick : RARCH_DEFAULT_NICK,
+      (nick && *nick) ? nick : RARCH_DEFAULT_NICK,
       sizeof(netplay->nick));
 
    netplay_key_init(netplay);
@@ -7397,7 +7394,7 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
 
       netplay->connections[0].fd = -1;
 
-      if (!string_is_empty(mitm_session))
+      if (mitm_session && *mitm_session)
       {
          int           flen = 0;
          unsigned char *buf =
@@ -8429,7 +8426,7 @@ bool init_netplay_deferred(const char *server, unsigned port, const char *mitm_s
 {
    net_driver_state_t *net_st = &networking_driver_st;
 
-   if (string_is_empty(server) || !port)
+   if ((!server || !*server) || !port)
    {
       net_st->flags &= ~NET_DRIVER_ST_FLAG_NETPLAY_CLIENT_DEFERRED;
       return false;
@@ -8534,7 +8531,7 @@ static void netplay_announce_cb(retro_task_t *task, void *task_data,
          key    = buf_data;
          value  = delim + 1;
 
-         if (!string_is_empty(key) && !string_is_empty(value))
+         if ((key && *key) && (value && *value))
          {
             if (string_is_equal(key, "id"))
                host_room->id = (int)strtol(value, NULL, 10);
@@ -8664,7 +8661,7 @@ static void netplay_announce(netplay_t *netplay)
    {
       const char *basename = path_basename(path_get(RARCH_PATH_BASENAME));
 
-      if (!string_is_empty(basename))
+      if (basename && *basename)
       {
          strlcpy(buf, basename, sizeof(host_room->gamename));
          net_http_urlencode(&gamename, buf);
@@ -8689,7 +8686,7 @@ static void netplay_announce(netplay_t *netplay)
    else
       net_http_urlencode(&frontend_ident, "N/A");
 
-   if (!string_is_empty(host_room->mitm_session))
+   if (*host_room->mitm_session)
    {
       is_mitm = 1;
       net_http_urlencode(&mitm_session, host_room->mitm_session);
@@ -8741,8 +8738,8 @@ static void netplay_announce(netplay_t *netplay)
       (unsigned long)content_crc,
       (int)netplay->ext_tcp_port,
       host_room->mitm_handle,
-      !string_is_empty(settings->paths.netplay_password) ? 1 : 0,
-      !string_is_empty(settings->paths.netplay_spectate_password) ? 1 : 0,
+      (*settings->paths.netplay_password) ? 1 : 0,
+      (*settings->paths.netplay_spectate_password) ? 1 : 0,
       is_mitm,
       PACKAGE_VERSION,
       frontend_ident,
@@ -8809,7 +8806,7 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
          key    = buf_data;
          value  = delim + 1;
 
-         if (!string_is_empty(key) && !string_is_empty(value))
+         if ((key && *key) && (value && *value))
          {
             if (string_is_equal(key, "tunnel_addr"))
                strlcpy(host_room->mitm_address, value,
@@ -8830,10 +8827,8 @@ static bool netplay_mitm_query(const char *handle)
 {
    net_driver_state_t  *net_st    = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
-
-   if (string_is_empty(handle))
+   if (!handle || !*handle)
       return false;
-
    /* We don't need to query,
       if we are using a custom relay server. */
    if (string_is_equal(handle, "custom"))
@@ -8866,7 +8861,7 @@ static bool netplay_mitm_query(const char *handle)
       task_queue_wait(NULL, NULL);
    }
 
-   return !string_is_empty(host_room->mitm_address) && host_room->mitm_port;
+   return *host_room->mitm_address && host_room->mitm_port;
 }
 
 int16_t input_state_net(unsigned port, unsigned device,
@@ -9707,12 +9702,12 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
                ret = false;
                break;
             }
-            if (client->id >= 0 && !string_is_empty(client->name))
+            if (client->id >= 0 && *client->name)
                ret = kick_client_by_id_and_name(netplay,
                   client->id, client->name, false);
             else if (client->id >= 0)
                ret = kick_client_by_id(netplay, client->id, false);
-            else if (!string_is_empty(client->name))
+            else if (*client->name)
                ret = kick_client_by_name(netplay, client->name, false);
             else
                ret = false;
@@ -9731,12 +9726,12 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
                ret = false;
                break;
             }
-            if (client->id >= 0 && !string_is_empty(client->name))
+            if (client->id >= 0 && *client->name)
                ret = kick_client_by_id_and_name(netplay,
                   client->id, client->name, true);
             else if (client->id >= 0)
                ret = kick_client_by_id(netplay, client->id, true);
-            else if (!string_is_empty(client->name))
+            else if (*client->name)
                ret = kick_client_by_name(netplay, client->name, true);
             else
                ret = false;
@@ -9840,8 +9835,7 @@ bool netplay_decode_hostname(const char *hostname,
       char *address, unsigned *port, char *session, size_t len)
 {
    struct string_list hostname_data;
-
-   if (string_is_empty(hostname))
+   if (!hostname || !*hostname)
       return false;
    if (!string_list_initialize(&hostname_data))
       return false;
@@ -9851,14 +9845,14 @@ bool netplay_decode_hostname(const char *hostname,
       return false;
    }
 
-   if (hostname_data.size >= 1 &&
-         !string_is_empty(hostname_data.elems[0].data))
+   if (hostname_data.size >= 1
+       && (hostname_data.elems[0].data && *hostname_data.elems[0].data))
    {
       if (address)
          strlcpy(address, hostname_data.elems[0].data, len);
    }
-   if (hostname_data.size >= 2 &&
-         !string_is_empty(hostname_data.elems[1].data))
+   if (hostname_data.size >= 2
+       && (hostname_data.elems[1].data && *hostname_data.elems[1].data))
    {
       if (port)
       {
@@ -9869,8 +9863,8 @@ bool netplay_decode_hostname(const char *hostname,
             *port = (unsigned)tmp_port;
       }
    }
-   if (hostname_data.size >= 3 &&
-         !string_is_empty(hostname_data.elems[2].data))
+   if (hostname_data.size >= 3
+       && (hostname_data.elems[2].data && *hostname_data.elems[2].data))
    {
       if (session)
          strlcpy(session, hostname_data.elems[2].data, len);
@@ -10059,7 +10053,7 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
       const char *nick = chat_buffer->messages[i].nick;
       const char *msg  = chat_buffer->messages[i].msg;
 
-      if (!alpha || string_is_empty(nick) || string_is_empty(msg))
+      if (!alpha || (!nick || !*nick) || (!msg || !*msg))
          continue;
 
       /* Truncate the message, if necessary. */
@@ -10196,9 +10190,9 @@ static bool gfx_widget_netplay_chat_visible(void)
    struct netplay_chat_buffer *chat_buffer = &net_st->chat_buffer;
    for (i = 0; i < ARRAY_SIZE(chat_buffer->messages); i++)
    {
-      if (chat_buffer->messages[i].alpha
-            && !string_is_empty(chat_buffer->messages[i].nick)
-            && !string_is_empty(chat_buffer->messages[i].msg))
+      if (      chat_buffer->messages[i].alpha
+            && *chat_buffer->messages[i].nick
+            && *chat_buffer->messages[i].msg)
          return true;
    }
    return false;

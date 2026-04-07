@@ -1604,7 +1604,7 @@ static void frontend_unix_get_env(int *argc,
          strlcpy(path, argv, sizeof(path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (!string_is_empty(path))
+      if (path && *path)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Auto-start game \"%s\".\n", path);
@@ -1629,7 +1629,7 @@ static void frontend_unix_get_env(int *argc,
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (!string_is_empty(internal_storage_path))
+      if (internal_storage_path && *internal_storage_path)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Android internal storage location: \"%s\".\n",
@@ -1651,7 +1651,7 @@ static void frontend_unix_get_env(int *argc,
          strlcpy(apk_dir, argv, sizeof(apk_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (!string_is_empty(apk_dir))
+      if (apk_dir && *apk_dir)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] APK location \"%s\".\n", apk_dir);
@@ -1673,7 +1673,7 @@ static void frontend_unix_get_env(int *argc,
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (!string_is_empty(internal_storage_app_path))
+      if (internal_storage_app_path && *internal_storage_app_path)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Android external files location \"%s\".\n",
@@ -1701,12 +1701,12 @@ static void frontend_unix_get_env(int *argc,
       /* set paths depending on the ability to write
        * to internal_storage_path */
 
-      if (!string_is_empty(internal_storage_path))
+      if (internal_storage_path && *internal_storage_path)
       {
          if (test_permissions(internal_storage_path))
             storage_permissions = INTERNAL_STORAGE_WRITABLE;
       }
-      else if (!string_is_empty(internal_storage_app_path))
+      else if (internal_storage_app_path && *internal_storage_app_path)
       {
          if (test_permissions(internal_storage_app_path))
             storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
@@ -1715,7 +1715,7 @@ static void frontend_unix_get_env(int *argc,
          storage_permissions = INTERNAL_STORAGE_NOT_WRITABLE;
 
       /* code to populate default paths*/
-      if (!string_is_empty(app_dir))
+      if (app_dir && *app_dir)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Application location: \"%s\".\n", app_dir);
@@ -1897,7 +1897,7 @@ static void frontend_unix_get_env(int *argc,
       strlcpy(base_path, "retroarch", sizeof(base_path));
 #endif
 
-   if (!string_is_empty(libretro_directory))
+   if (libretro_directory && *libretro_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], libretro_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    else
@@ -1917,14 +1917,14 @@ static void frontend_unix_get_env(int *argc,
             "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    else
 #endif
-   if (!string_is_empty(libretro_directory))
+   if (libretro_directory && *libretro_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    else
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
             "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 #endif
-   if (!string_is_empty(libretro_autoconfig_directory))
+   if (libretro_autoconfig_directory && *libretro_autoconfig_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
 	    libretro_autoconfig_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
@@ -1938,7 +1938,7 @@ static void frontend_unix_get_env(int *argc,
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else
 #endif
-   if (!string_is_empty(libretro_assets_directory))
+   if (libretro_assets_directory && *libretro_assets_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_ASSETS], libretro_assets_directory,
 	      sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else if (path_is_directory("/usr/local/share/retroarch/assets"))
@@ -2001,7 +2001,7 @@ static void frontend_unix_get_env(int *argc,
             "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else
 #endif
-   if (!string_is_empty(libretro_video_filter_directory))
+   if (libretro_video_filter_directory && *libretro_video_filter_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
 	      libretro_video_filter_directory,
 	      sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
@@ -2037,21 +2037,21 @@ static void frontend_unix_get_env(int *argc,
          "records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], base_path,
          "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
-   if (!string_is_empty(libretro_database_directory))
+   if (libretro_database_directory && *libretro_database_directory)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_DATABASE],
 	       libretro_database_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
              "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   if (!string_is_empty(libretro_video_shader_directory))
+   if (libretro_video_shader_directory && *libretro_video_shader_directory)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
 	       libretro_video_shader_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
              "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-   if (!string_is_empty(libretro_cheats_directory))
+   if (libretro_cheats_directory && *libretro_cheats_directory)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_CHEATS],
 	       libretro_cheats_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
@@ -2074,7 +2074,7 @@ static void frontend_unix_get_env(int *argc,
          "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], base_path,
          "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   if (!string_is_empty(libretro_system_directory))
+   if (libretro_system_directory && *libretro_system_directory)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
 	       libretro_system_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
@@ -2361,7 +2361,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    if (!g_android->is_play_store_build)
    {
-      if (!string_is_empty(internal_storage_path))
+      if (internal_storage_path && *internal_storage_path)
       {
          if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
          {
@@ -2397,7 +2397,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             msg_hash_to_str(MSG_REMOVABLE_STORAGE),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   if (!string_is_empty(internal_storage_app_path))
+   if (internal_storage_app_path && *internal_storage_app_path)
    {
       if (g_android->is_play_store_build)
       {
@@ -2419,7 +2419,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
-   if (!string_is_empty(app_dir))
+   if (app_dir && *app_dir)
       menu_entries_append(list,
             app_dir,
             msg_hash_to_str(MSG_APPLICATION_DIR),
@@ -2447,7 +2447,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   sizeof(aux_path));
 
          (*env)->ReleaseStringUTFChars(env, jstr, str);
-         if (!string_is_empty(aux_path))
+         if (aux_path && *aux_path)
             menu_entries_append(list,
                   aux_path,
                   msg_hash_to_str(MSG_APPLICATION_DIR),
@@ -2506,14 +2506,14 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       }
    }
 
-   if (!string_is_empty(base_path))
+   if (base_path && *base_path)
    {
       menu_entries_append(list, base_path,
             MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
-   if (!string_is_empty(home))
+   if (home && *home)
    {
       menu_entries_append(list, home,
             MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,

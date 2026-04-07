@@ -280,7 +280,7 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
    create_path_names();
 
 #ifndef IS_SALAMANDER
-   if (!string_is_empty(argv[1]))
+   if (argv[1] && *argv[1])
    {
       static char path[FILENAME_MAX] = {0};
       struct rarch_main_wrap      *args =

@@ -196,7 +196,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
    DEBUG_VAR(path);
    DEBUG_STR(path);
 
-   if (!string_is_empty(path))
+   if (path && *path)
    {
 #ifndef IS_SALAMANDER
 #ifdef HAVE_NETWORKING
@@ -221,7 +221,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
                (void*)&arg_data[1]))
 #endif
-         if (!string_is_empty(content))
+         if (content && *content)
          {
             strlcpy(game_path, content, sizeof(game_path));
             arg_data[1] = game_path;
@@ -235,10 +235,8 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
          if (stat(path, &sbuff))
          {
             char core_path[PATH_MAX];
-
             get_first_valid_core(core_path, sizeof(core_path));
-
-            if (string_is_empty(core_path))
+            if (!core_path || !*core_path)
                error_and_quit("There are no cores installed, install a core to continue.");
          }
       }

@@ -298,7 +298,7 @@ static void frontend_switch_get_env(
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
       const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
+      if (dir_path && *dir_path)
          path_mkdir(dir_path);
    }
 
@@ -347,7 +347,7 @@ static void frontend_switch_deinit(void *data)
 #ifdef HAVE_LIBNX
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       char args[PATH_MAX];
 
@@ -372,7 +372,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
          }
          else
 #endif
-         if (!string_is_empty(content))
+         if (content && *content)
             snprintf(args, sizeof(args), "%s \"%s\"", path, content);
       }
 #else
@@ -382,10 +382,8 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
          if (stat(path, &sbuff))
          {
             char core_path[PATH_MAX];
-
             get_first_valid_core(core_path, sizeof(core_path));
-
-            if (string_is_empty(core_path))
+            if (!core_path || !*core_path)
                svcExitProcess();
          }
       }

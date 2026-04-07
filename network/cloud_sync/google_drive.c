@@ -1137,7 +1137,7 @@ static bool gdrive_sync_begin(cloud_sync_complete_handler_t cb,
 {
    settings_t *settings = config_get_ptr();
 
-   if (!string_is_empty(settings->arrays.google_drive_refresh_token))
+   if (*settings->arrays.google_drive_refresh_token)
    {
       /* Have a refresh token - use it to get an access token */
       char post_data[4096];

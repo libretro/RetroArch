@@ -2274,7 +2274,7 @@ static void materialui_context_reset_playlist_icons(
       materialui_handle_t *mui)
 {
    size_t i;
-   if (string_is_empty(mui->sysicons_path))
+   if (!*mui->sysicons_path)
       return;
 
    /* Load icons
@@ -2283,10 +2283,8 @@ static void materialui_context_reset_playlist_icons(
    {
       const char *image_file =
             mui->textures.playlist.icons[i].image_file;
-
-      if (string_is_empty(image_file))
+      if (!image_file || !*image_file)
          continue;
-
       gfx_display_reset_textures_list(
             image_file, mui->sysicons_path,
             &mui->textures.playlist.icons[i].image,
@@ -2341,7 +2339,7 @@ static void materialui_refresh_playlist_icon_list(
       goto end;
 
    /* Get list of .lpl files in playlists directory */
-   if (string_is_empty(dir_playlist))
+   if (!dir_playlist || !*dir_playlist)
       goto end;
 
    file_list = dir_list_new_special(dir_playlist,
@@ -2380,12 +2378,12 @@ static void materialui_refresh_playlist_icon_list(
        * - It will only return .lpl files
        * Only basic sanity checks are therefore
        * required */
-      if (string_is_empty(path))
+      if (!path || !*path)
          continue;
 
       playlist_file = path_basename_nocompression(path);
 
-      if (string_is_empty(playlist_file))
+      if (!playlist_file || !*playlist_file)
          continue;
 
       /* > Ignore history/favourites playlists */
@@ -2421,7 +2419,7 @@ static void materialui_set_node_playlist_icon(
       const char *icon_playlist_file =
             mui->textures.playlist.icons[i].playlist_file;
 
-      if (string_is_empty(icon_playlist_file))
+      if (!icon_playlist_file || !*icon_playlist_file)
          continue;
 
       if (string_is_equal(playlist_file, icon_playlist_file))
@@ -2494,7 +2492,7 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
       entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
       menu_entry_get(&entry, 0, i, NULL, true);
 
-      if (!string_is_empty(entry.label))
+      if (*entry.label)
       {
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
@@ -2536,7 +2534,7 @@ static void materialui_update_savestate_thumbnail_image(void *data)
       return;
 
    /* If path is empty, just reset thumbnail */
-   if (string_is_empty(mui->savestate_thumbnail_file_path))
+   if (!*mui->savestate_thumbnail_file_path)
    {
       gfx_thumbnail_reset(&mui->thumbnails.savestate);
       /* Allow showing missing thumbnail placeholder */
@@ -2741,17 +2739,17 @@ static void materialui_draw_thumbnail(
    }
 }
 
-static void materialui_get_message(void *data, const char *message)
+static void materialui_get_message(void *data, const char *msg)
 {
    materialui_handle_t *mui   = (materialui_handle_t*)data;
 
-   if (!mui || !message || !*message)
+   if (!mui || !msg || !*msg)
       return;
 
    mui->msgbox[0] = '\0';
 
-   if (!string_is_empty(message))
-      strlcpy(mui->msgbox, message, sizeof(mui->msgbox));
+   if (msg && *msg)
+      strlcpy(mui->msgbox, msg, sizeof(mui->msgbox));
 }
 
 static void materialui_render_messagebox(
@@ -2760,7 +2758,7 @@ static void materialui_render_messagebox(
       void *userdata,
       unsigned video_width,
       unsigned video_height,
-      int y_centre, const char *message)
+      int y_centre, const char *msg)
 {
    int i;
    int x                    = 0;
@@ -2768,12 +2766,12 @@ static void materialui_render_messagebox(
    int usable_width         = 0;
    int longest_width        = 0;
    struct string_list list  = {0};
-   char wrapped_message[MENU_LABEL_MAX_LENGTH];
+   char wrapped_msg[MENU_LABEL_MAX_LENGTH];
 
-   wrapped_message[0] = '\0';
+   wrapped_msg[0] = '\0';
 
    /* Sanity check */
-   if (    string_is_empty(message)
+   if (  (!msg || !*msg)
        || !mui
        || !mui->font_data.list.font)
       return;
@@ -2783,14 +2781,14 @@ static void materialui_render_messagebox(
 
    /* Split message into lines */
    (mui->word_wrap)(
-         wrapped_message, sizeof(wrapped_message),
-         message, strlen(message),
+         wrapped_msg, sizeof(wrapped_msg),
+         msg, strlen(msg),
          usable_width / (int)mui->font_data.list.glyph_width,
          mui->font_data.list.wideglyph_width, 0);
 
    string_list_initialize(&list);
    if (
-            !string_split_noalloc(&list, wrapped_message, "\n")
+            !string_split_noalloc(&list, wrapped_msg, "\n")
          || list.elems == 0)
    {
       string_list_deinitialize(&list);
@@ -2808,8 +2806,7 @@ static void materialui_render_messagebox(
    for (i = 0; i < (int)list.size; i++)
    {
       const char *line = list.elems[i].data;
-
-      if (!string_is_empty(line))
+      if (line && *line)
       {
          int width     = font_driver_get_message_width(
                mui->font_data.list.font, line, strlen(line), 1.0f);
@@ -2840,8 +2837,7 @@ static void materialui_render_messagebox(
    for (i = 0; i < (int)list.size; i++)
    {
       const char *line = list.elems[i].data;
-
-      if (!string_is_empty(line))
+      if (line && *line)
          gfx_display_draw_text(
                mui->font_data.list.font, line,
                x - longest_width / 2.0f,
@@ -2920,7 +2916,7 @@ static uint8_t materialui_count_lines(const char *str)
 static bool materialui_show_sublabel_for_entry(menu_entry_t *entry)
 {
    settings_t *settings = config_get_ptr();
-   return (settings->bools.menu_show_sublabels && !string_is_empty(entry->sublabel));
+   return settings->bools.menu_show_sublabels && *entry->sublabel;
 }
 
 /* > Returns number of lines required to display
@@ -3675,7 +3671,7 @@ static bool materialui_render_process_entry_playlist_desktop(
             }
 
             /* Get core name */
-            if (   string_is_empty(entry->core_name)
+            if (   (!entry->core_name || !*entry->core_name)
                 || string_is_equal(entry->core_name, FILE_PATH_DETECT))
                core_name = msg_hash_to_str(MSG_AUTODETECT);
             else
@@ -3693,18 +3689,18 @@ static bool materialui_render_process_entry_playlist_desktop(
                         runtime_last_played_style,
                         runtime_date_separator);
 
-               if (!string_is_empty(entry->runtime_str))
+               if (entry->runtime_str && *entry->runtime_str)
                   runtime_str = entry->runtime_str;
 
-               if (!string_is_empty(entry->last_played_str))
+               if (entry->last_played_str && *entry->last_played_str)
                   last_played_str = entry->last_played_str;
             }
 
             /* Set fallback strings, if required */
-            if (string_is_empty(runtime_str))
+            if (!runtime_str || !*runtime_str)
                runtime_str = mui->status_bar.runtime_fallback_str;
 
-            if (string_is_empty(last_played_str))
+            if (!last_played_str || !*last_played_str)
                last_played_str = mui->status_bar.last_played_fallback_str;
 
             /* Generate metadata string */
@@ -4147,7 +4143,7 @@ static enum materialui_entry_value_type materialui_get_entry_value_type(
    enum materialui_entry_value_type value_type = MUI_ENTRY_VALUE_NONE;
 
    /* Check entry value string */
-   if (!string_is_empty(entry_value))
+   if (entry_value && *entry_value)
    {
       settings_t *settings       = config_get_ptr();
       bool menu_switch_icons     = settings->bools.menu_materialui_switch_icons;
@@ -4329,7 +4325,7 @@ static void materialui_render_menu_entry_default(
       mui->ticker.selected = entry_selected;
 
    /* Read entry parameters */
-   if (!string_is_empty(entry->rich_label))
+   if (*entry->rich_label)
       entry_label          = entry->rich_label;
    else
       entry_label          = entry->path;
@@ -4660,7 +4656,7 @@ static void materialui_render_menu_entry_default(
    }
 
    /* Draw entry label */
-   if (!string_is_empty(entry_label))
+   if (entry_label && *entry_label)
    {
       int label_width = usable_width;
       char label_buf[NAME_MAX_LENGTH];
@@ -4759,7 +4755,7 @@ static void materialui_render_menu_entry_playlist_list(
       mui->ticker.selected        = entry_selected;
 
    /* Read entry parameters */
-   if (!string_is_empty(entry->rich_label))
+   if (*entry->rich_label)
       entry_label          = entry->rich_label;
    else
       entry_label          = entry->path;
@@ -4893,7 +4889,7 @@ static void materialui_render_menu_entry_playlist_list(
       label_y = entry_y + (node->entry_height / 2.0f) + mui->font_data.list.line_centre_offset;
 
    /* Draw entry label */
-   if (!string_is_empty(entry_label))
+   if (entry_label && *entry_label)
    {
       char label_buf[NAME_MAX_LENGTH];
 
@@ -5023,7 +5019,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
       mui->ticker.selected = entry_selected;
 
    /* Read entry parameters */
-   if (!string_is_empty(entry->rich_label))
+   if (*entry->rich_label)
       entry_label          = entry->rich_label;
    else
       entry_label          = entry->path;
@@ -5063,7 +5059,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
          &mymat);
 
    /* Draw entry label */
-   if (!string_is_empty(entry_label))
+   if (entry_label && *entry_label)
    {
       float label_x          = 0.0f;
       /* Label is drawn beneath thumbnails,
@@ -5174,13 +5170,13 @@ static void materialui_render_menu_entry_playlist_desktop(
                (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
 
    /* Read entry parameters */
-   if (!string_is_empty(entry->rich_label))
+   if (*entry->rich_label)
       entry_label          = entry->rich_label;
    else
       entry_label          = entry->path;
 
    /* Draw entry label */
-   if (!string_is_empty(entry_label))
+   if (entry_label && *entry_label)
    {
       if (usable_width > 0)
       {
@@ -5290,7 +5286,7 @@ static void materialui_render_menu_entry_savestate_list(
                (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
 
    /* Read entry parameters */
-   if (!string_is_empty(entry->rich_label))
+   if (*entry->rich_label)
       entry_label          = entry->rich_label;
    else
       entry_label          = entry->path;
@@ -5501,7 +5497,7 @@ static void materialui_render_menu_entry_savestate_list(
    }
 
    /* Draw entry label */
-   if (!string_is_empty(entry_label))
+   if (entry_label && *entry_label)
    {
       int label_width = usable_width;
       char label_buf[NAME_MAX_LENGTH];
@@ -5781,7 +5777,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
             NULL);
 
       /* Text */
-      if ((text_width > 0) && !string_is_empty(mui->status_bar.str))
+      if ((text_width > 0) && *mui->status_bar.str)
       {
          bool draw_text_outside = (x_offset != 0);
          uint32_t text_color    = mui->colors.status_bar_text;
@@ -8057,7 +8053,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Draw message box */
-   if (!string_is_empty(mui->msgbox))
+   if (*mui->msgbox)
    {
       /* Darken screen */
       gfx_display_set_alpha(
@@ -11270,7 +11266,7 @@ static void materialui_list_insert(void *userdata,
             node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             if (mui->textures.playlist.size >= 1)
-               if (!string_is_empty(path))
+               if (path && *path)
                   materialui_set_node_playlist_icon(mui, node, path);
             break;
          case FILE_TYPE_RDB:
@@ -11944,7 +11940,7 @@ static void materialui_list_insert(void *userdata,
                node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
                if (     mui->textures.playlist.size >= 1
-                     && !string_is_empty(path))
+                     && (path && *path))
                {
                   if (string_ends_with_size(path, "_history.lpl",
                         path_size, STRLEN_CONST("_history.lpl")))
@@ -12080,7 +12076,7 @@ static void materialui_toggle(void *userdata, bool menu_on)
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
     * 'save state' option */
-   if (!string_is_empty(mui->savestate_thumbnail_file_path))
+   if (*mui->savestate_thumbnail_file_path)
       gfx_thumbnail_reset(&mui->thumbnails.savestate);
 }
 

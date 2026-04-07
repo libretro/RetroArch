@@ -59,13 +59,13 @@ bool logiqx_dat_path_is_valid(const char *path, uint64_t *file_size)
    const char *file_ext = NULL;
    int32_t file_size_int;
 
-   if (string_is_empty(path))
+   if (!path || !*path)
       return false;
 
    /* Check file extension */
    file_ext = path_get_extension(path);
 
-   if (string_is_empty(file_ext))
+   if (!file_ext || !*file_ext)
       return false;
 
    if (   !string_is_equal_noncase(file_ext, "dat")
@@ -122,7 +122,7 @@ logiqx_dat_t *logiqx_dat_init(const char *path)
    if (!root_node)
       goto error;
 
-   if (string_is_empty(root_node->name))
+   if (!root_node->name || !*root_node->name)
       goto error;
 
    /* > Logiqx XML uses:           'datafile'
@@ -178,7 +178,7 @@ static bool logiqx_dat_is_game_node(rxml_node_t *node)
    /* Check node name */
    node_name = node->name;
 
-   if (string_is_empty(node_name))
+   if (!node_name || !*node_name)
       return false;
 
    /* > Logiqx XML uses:           'game'
@@ -196,17 +196,13 @@ static bool logiqx_dat_game_node_matches_name(
       rxml_node_t *node, const char *game_name)
 {
    const char *node_game_name = NULL;
-
    if (  !logiqx_dat_is_game_node(node)
-       || string_is_empty(game_name))
+       || (!game_name || !*game_name))
       return false;
-
    /* Get 'name' attribute of XML node */
    node_game_name = rxml_node_attrib(node, "name");
-
-   if (string_is_empty(node_game_name))
+   if (!node_game_name || !*node_game_name)
       return false;
-
    return string_is_equal(node_game_name, game_name);
 }
 
@@ -219,22 +215,16 @@ static void logiqx_dat_sanitise_element_data(
 {
    char sanitised_data[PATH_MAX_LENGTH];
    size_t i;
-
    sanitised_data[0] = '\0';
-
-   if (string_is_empty(data))
+   if (!data || !*data)
       return;
-
    strlcpy(sanitised_data, data, sizeof(sanitised_data));
-
    /* Element data includes leading/trailing
     * newline characters - trim them away */
    string_trim_whitespace_right(sanitised_data);
    string_trim_whitespace_left(sanitised_data);
-
-   if (string_is_empty(sanitised_data))
+   if (!*sanitised_data)
       return;
-
    /* XML has a number of special characters that
     * are handled using a HTML formatting codes.
     * All of these have to be replaced...
@@ -259,19 +249,18 @@ static void logiqx_dat_sanitise_element_data(
                find_string,    strlen(find_string),
                replace_string, strlen(replace_string));
 
-         if (!string_is_empty(tmp))
-            strlcpy(sanitised_data, tmp, sizeof(sanitised_data));
-
          if (tmp)
+         {
+            if (*tmp)
+               strlcpy(sanitised_data, tmp, sizeof(sanitised_data));
             free(tmp);
+         }
       }
    }
 
-   if (string_is_empty(sanitised_data))
-      return;
-
    /* All is well - can copy result */
-   strlcpy(str, sanitised_data, len);
+   if (*sanitised_data)
+      strlcpy(str, sanitised_data, len);
 }
 
 /* Extracts game information from specified node.
@@ -304,13 +293,13 @@ static bool logiqx_dat_parse_game_node(
    /* Get game name */
    game_name = rxml_node_attrib(node, "name");
 
-   if (!string_is_empty(game_name))
+   if (game_name && *game_name)
       strlcpy(game_info->name, game_name, sizeof(game_info->name));
 
    /* Get 'is bios' status */
    is_bios = rxml_node_attrib(node, "isbios");
 
-   if (!string_is_empty(is_bios))
+   if (is_bios && *is_bios)
       game_info->is_bios = string_is_equal(is_bios, "yes");
 
    /* Get 'is runnable' status
@@ -320,7 +309,7 @@ static bool logiqx_dat_parse_game_node(
     *   'is runnable' is just the inverse of 'is bios' */
    is_runnable = rxml_node_attrib(node, "runnable");
 
-   if (!string_is_empty(is_runnable))
+   if (is_runnable && *is_runnable)
       game_info->is_runnable = string_is_equal(is_runnable, "yes");
    else
       game_info->is_runnable = !game_info->is_bios;
@@ -331,7 +320,7 @@ static bool logiqx_dat_parse_game_node(
       const char *info_node_name = info_node->name;
       const char *info_node_data = info_node->data;
 
-      if (string_is_empty(info_node_name))
+      if (!info_node_name || !*info_node_name)
          continue;
 
       /* Check description */
@@ -434,7 +423,7 @@ bool logiqx_dat_search(
    rxml_node_t *root_node = NULL;
    rxml_node_t *game_node = NULL;
 
-   if (!dat_file || !game_info || string_is_empty(game_name))
+   if (!dat_file || !game_info || (!game_name || !*game_name))
       return false;
 
    if (!dat_file->data)

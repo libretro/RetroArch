@@ -107,7 +107,7 @@ static bool JTifJSONObjectEndHandler(void* context)
    input_test_steps[current_test_step].param_num = pCtx->param_num;
    input_test_steps[current_test_step].handled   = false;
 
-   if (!string_is_empty(pCtx->param_str))
+   if (pCtx->param_str && *pCtx->param_str)
       strlcpy(
             input_test_steps[current_test_step].param_str, pCtx->param_str,
             sizeof(input_test_steps[current_test_step].param_str));
@@ -148,7 +148,7 @@ static bool JTifJSONNumberHandler(void* context, const char *pValue, size_t len)
 {
    JTifJSONContext *pCtx = (JTifJSONContext*)context;
 
-   if (pCtx->current_entry_uint_val && len && !string_is_empty(pValue))
+   if (pCtx->current_entry_uint_val && len && pValue && *pValue)
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
    /* ignore unknown members */
 
@@ -161,7 +161,7 @@ static bool JTifJSONStringHandler(void* context, const char *pValue, size_t len)
 {
    JTifJSONContext *pCtx = (JTifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && len && !string_is_empty(pValue))
+   if (pCtx->current_entry_str_val && len && pValue && *pValue)
    {
       if (*pCtx->current_entry_str_val)
          free(*pCtx->current_entry_str_val);
@@ -185,7 +185,7 @@ static bool input_test_file_read(const char* file_path)
    rjson_t* parser;
 
    /* Sanity check */
-   if (    string_is_empty(file_path)
+   if (  (!file_path || !*file_path)
        || !path_is_valid(file_path)
       )
    {
@@ -279,13 +279,12 @@ end:
 
 static const char *test_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS || string_is_empty(test_joypads[pad].name))
+   if (pad >= MAX_USERS || (!test_joypads[pad].name
+       || !*test_joypads[pad].name))
       return NULL;
-
    if (strstr(test_joypads[pad].name, ") "))
       return strstr(test_joypads[pad].name, ") ") + 2;
-   else
-      return test_joypads[pad].name;
+   return test_joypads[pad].name;
 }
 
 static void test_joypad_autodetect_add(unsigned autoconf_pad)

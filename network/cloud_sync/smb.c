@@ -51,7 +51,7 @@ static void smb_sync_build_path(char *dest, size_t dest_size,
 {
    dest[0] = '\0';
 
-   if (!string_is_empty(subdir))
+   if (subdir && *subdir)
    {
       strlcpy(dest, subdir, dest_size);
       if (dest[0] && dest[strlen(dest) - 1] != '/')
@@ -143,7 +143,7 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    struct smb2_context *ctx;
    int rc;
 
-   if (string_is_empty(server) || string_is_empty(share))
+   if ((!server || !*server) || (!share || !*share))
    {
       RARCH_ERR(SMBPFX "Server address and share must be configured\n");
       cb(user_data, NULL, false, NULL);
@@ -158,11 +158,11 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
       return true;
    }
 
-   if (!string_is_empty(user))
+   if (user && *user)
       smb2_set_user(ctx, user);
-   if (!string_is_empty(password))
+   if (password && *password)
       smb2_set_password(ctx, password);
-   if (!string_is_empty(workgroup))
+   if (workgroup && *workgroup)
       smb2_set_domain(ctx, workgroup);
    if (timeout > 0)
       smb2_set_timeout(ctx, (int)timeout);
@@ -170,10 +170,10 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    smb2_set_authentication(ctx, (int)auth_mode);
 
    RARCH_LOG(SMBPFX "Connecting to %s/%s as %s\n",
-         server, share, string_is_empty(user) ? "(anonymous)" : user);
+         server, share, (!user || !*user) ? "(anonymous)" : user);
 
    rc = smb2_connect_share(ctx, server, share,
-         string_is_empty(user) ? NULL : user);
+         (!user || !*user) ? NULL : user);
    if (rc < 0)
    {
       RARCH_ERR(SMBPFX "Connect failed: %s\n", smb2_get_error(ctx));
@@ -186,7 +186,7 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 
    /* Build cloud sync subdir: {smb_client_subdir}/cloud_sync */
    smb_st.subdir[0] = '\0';
-   if (!string_is_empty(subdir))
+   if (subdir && *subdir)
    {
       strlcpy(smb_st.subdir, subdir, sizeof(smb_st.subdir));
       strlcat(smb_st.subdir, "/", sizeof(smb_st.subdir));

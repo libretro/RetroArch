@@ -135,10 +135,7 @@ bool natt_device_next(struct natt_discovery *discovery,
    struct sockaddr_storage addr = {0};
    socklen_t addr_size          = sizeof(addr);
 
-   if (!discovery || !device)
-      return false;
-
-   if (discovery->fd < 0)
+   if (!discovery || !device || discovery->fd < 0)
       return false;
 
    /* This is faster than memsetting the whole thing. */
@@ -156,7 +153,6 @@ bool natt_device_next(struct natt_discovery *discovery,
       /* If there was no data, check for timeout. */
       if (isagain((int)recvd))
          return cpu_features_get_time_usec() < discovery->timeout;
-
       return false;
    }
    /* Zero-length datagrams are valid, but we can't do anything with them.
@@ -227,7 +223,7 @@ static bool natt_build_control_url(
       rxml_node_t *control_url,
       struct natt_device *device)
 {
-   if (string_is_empty(control_url->data))
+   if (!control_url->data || !*control_url->data)
       return false;
 
    /* Do we already have the full url? */
@@ -364,13 +360,7 @@ done:
 
 bool natt_query_device(struct natt_device *device, bool block)
 {
-   if (!device)
-      return false;
-
-   if (string_is_empty(device->desc))
-      return false;
-
-   if (device->busy)
+   if (!device || !*device->desc || device->busy)
       return false;
 
    device->busy = true;
@@ -395,7 +385,7 @@ static bool natt_parse_external_address_node(rxml_node_t *node,
       struct addrinfo *addr = NULL;
       struct addrinfo hints = {0};
 
-      if (string_is_empty(node->data))
+      if (!node->data || !*node->data)
          return false;
 
       hints.ai_family = AF_INET;
@@ -481,7 +471,7 @@ static bool natt_parse_open_port_node(rxml_node_t *node,
    {
       uint16_t ext_port = 0;
 
-      if (string_is_empty(node->data))
+      if (!node->data || !*node->data)
          return false;
 
       sscanf(node->data, "%hu", &ext_port);
@@ -585,7 +575,7 @@ static bool natt_action(struct natt_device *device,
    char headers[512];
    void *obj;
 
-   if (string_is_empty(device->control))
+   if (!*device->control)
       return false;
 
    snprintf(headers, sizeof(headers), headers_tmpl,

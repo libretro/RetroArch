@@ -257,7 +257,7 @@ static NetplayBonjourMan *nbm_instance;
     else
     {
         const char *basename = path_basename(path_get(RARCH_PATH_BASENAME));
-        if (string_is_empty(basename))
+        if (!basename || !*basename)
             basename = "N/A";
         return [[NSData alloc] initWithBytes:basename length:strlen(basename)];
     }
@@ -278,14 +278,14 @@ static NetplayBonjourMan *nbm_instance;
 - (NSData *)has_password
 {
     settings_t *settings = config_get_ptr();
-    const char *has_password = string_is_empty(settings->paths.netplay_password) ? "false" : "true";
+    const char *has_password = (!settings->paths.netplay_password || !*settings->paths.netplay_password) ? "false" : "true";
     return [[NSData alloc] initWithBytes:has_password length:strlen(has_password)];
 }
 
 - (NSData *)has_spectate_password
 {
     settings_t *settings = config_get_ptr();
-    const char *has_password = string_is_empty(settings->paths.netplay_spectate_password) ? "false" : "true";
+    const char *has_password = (!settings->paths.netplay_spectate_password || !*settings->paths.netplay_spectate_password) ? "false" : "true";
     return [[NSData alloc] initWithBytes:has_password length:strlen(has_password)];
 }
 

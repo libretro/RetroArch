@@ -245,7 +245,7 @@ static bool play_feature_delivery_get_core_name(
 {
    size_t core_file_len;
 
-   if (string_is_empty(core_file))
+   if (!core_file || !*core_file)
       return false;
 
    core_file_len = strlen(core_file);
@@ -357,7 +357,7 @@ struct string_list *play_feature_delivery_available_cores(void)
       /* Convert Java-style string to a proper char array */
       core_name = (*env)->GetStringUTFChars(env, core_name_jni, NULL);
 
-      if (!string_is_empty(core_name))
+      if (core_name && *core_name)
       {
          char core_file[256];
          /* Generate core file name */
@@ -366,7 +366,7 @@ struct string_list *play_feature_delivery_available_cores(void)
                "_libretro_android.so",
                sizeof(core_file) - _len);
          /* Add entry to list */
-         if (!string_is_empty(core_file))
+         if (core_file && *core_file)
             string_list_append(core_list, core_file, attr);
       }
 
@@ -426,8 +426,8 @@ bool play_feature_delivery_core_installed(const char *core_file)
             env, installed_core_name_jni, NULL);
 
       /* Check for a match */
-      if (!string_is_empty(installed_core_name) &&
-          string_is_equal(core_name, installed_core_name))
+      if (  (installed_core_name && *installed_core_name)
+          && string_is_equal(core_name, installed_core_name))
       {
          /* Must always 'release' the converted string */
          (*env)->ReleaseStringUTFChars(env,

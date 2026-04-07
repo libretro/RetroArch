@@ -157,7 +157,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
 
    scheme_sep = strstr(url, "://");
    authority  = scheme_sep ? scheme_sep + 3 : url;
-   if (string_is_empty(authority))
+   if (!authority || !*authority)
       return false;
 
    authority_end = strchr(authority, '/');
@@ -172,7 +172,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
       strlcpy(host, authority, host_len + 1);
    }
 
-   if (string_is_empty(host))
+   if (!host || !*host)
       return false;
 
    if (*authority_end == '/')
@@ -227,13 +227,13 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
          }
 
          /* Path-style endpoint (accountid.r2...) carries bucket in first path segment. */
-         if (string_is_empty(bucket) && !string_is_empty(first_path_seg))
+         if ((!bucket || !*bucket) && (first_path_seg && *first_path_seg))
          {
             RARCH_LOG(S3_PFX "Cloudflare R2 style: path-style\n");
             strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
          }
       }
-      else if (!string_is_empty(first_label))
+      else if (first_label && *first_label)
       {
          /* Compatibility fallback for other cloudflarestorage host variants. */
          RARCH_LOG(S3_PFX "Cloudflare R2 style: fallback-host-label\n");
@@ -295,7 +295,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
       else
       {
          /* Path-style fallback: s3.<region>.amazonaws.com/<bucket>/... */
-         if (!string_is_empty(first_path_seg))
+         if (first_path_seg && *first_path_seg)
             strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
       }
    }
@@ -337,7 +337,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
                strlcpy(region, s3pos, region_len + 1);
          }
       }
-      else if (!string_is_empty(first_path_seg))
+      else if (first_path_seg && *first_path_seg)
       {
          RARCH_LOG(S3_PFX "Backblaze B2 style: path-style\n");
          strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
@@ -345,7 +345,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
    }
    else if (strstr(host, ".digitaloceanspaces.com") || strstr(host, ".linodeobjects.com"))
    {
-      if (!string_is_empty(first_label))
+      if (first_label && *first_label)
          strlcpy(bucket, first_label, NAME_MAX_LENGTH);
       if (first_dot)
       {
@@ -364,22 +364,22 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
       /* Generic fallback:
        * - virtual-host: bucket.endpoint
        * - path-style: endpoint/bucket */
-      if (!string_is_empty(first_path_seg))
+      if (first_path_seg && *first_path_seg)
          strlcpy(bucket, first_path_seg, NAME_MAX_LENGTH);
-      else if (!string_is_empty(first_label))
+      else if (first_label && *first_label)
          strlcpy(bucket, first_label, NAME_MAX_LENGTH);
    }
 
-   if (string_is_empty(region))
+   if (!region || !*region)
       strlcpy(region, "us-east-1", NAME_MAX_LENGTH);
 
-   if (string_is_empty(bucket))
+   if (!bucket || *!bucket)
       RARCH_WARN(S3_PFX "Could not extract bucket from URL: %s\n", url);
 
    RARCH_LOG(S3_PFX "Extracted bucket: %s, region: %s, host: %s\n",
-             string_is_empty(bucket) ? "(none)" : bucket, region, host);
+             (!bucket || !*bucket) ? "(none)" : bucket, region, host);
 
-   return !string_is_empty(host) && !string_is_empty(bucket);
+   return (host && *host) && (bucket && *bucket);
 }
 
 /* Calculate SHA256 hash */
@@ -981,7 +981,7 @@ static char* s3_normalize_object_key(const char *path)
    size_t out = 0;
    bool prev_slash = false;
 
-   if (string_is_empty(path))
+   if (!path || !*path)
       return strdup("");
 
    while (*src == '/')
@@ -1020,10 +1020,10 @@ static bool s3_build_request_url(char *url, size_t url_size, s3_state_t *s3_st, 
    char *encoded_path = NULL;
    size_t base_len = 0;
 
-   if (!url || !s3_st || string_is_empty(s3_st->url))
+   if (!url || !s3_st || (!s3_st->url || !*s3_st->url))
       return false;
 
-   if (string_is_empty(path))
+   if (!path || !*path)
    {
       strlcpy(url, s3_st->url, url_size);
       return true;
@@ -1045,7 +1045,7 @@ static bool s3_build_request_url(char *url, size_t url_size, s3_state_t *s3_st, 
    while (base_len > 0 && base_url[base_len - 1] == '/')
       base_url[--base_len] = '\0';
 
-   if (string_is_empty(encoded_path))
+   if (!encoded_path || !*encoded_path)
       strlcpy(url, base_url, url_size);
    else
       snprintf(url, url_size, "%s/%s", base_url, encoded_path);
@@ -1066,12 +1066,12 @@ static bool s3_build_canonical_uri_from_url(const char *url, char *canonical_uri
    const char *path_end = NULL;
    size_t path_len = 0;
 
-   if (string_is_empty(url) || !canonical_uri || canonical_uri_size == 0)
+   if ((!url || !*url) || !canonical_uri || canonical_uri_size == 0)
       return false;
 
    scheme_sep = strstr(url, "://");
    authority  = scheme_sep ? scheme_sep + 3 : url;
-   if (string_is_empty(authority))
+   if (!authority || !*authority)
       return false;
 
    path_start = strchr(authority, '/');
@@ -1137,10 +1137,10 @@ static char* s3_build_url_with_query(const char *url, const char *query)
    size_t total = 0;
    char *result = NULL;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
-   total = strlen(url) + (query ? strlen(query) : 0) + 2;
+   total  = strlen(url) + (query ? strlen(query) : 0) + 2;
    result = (char*)malloc(total);
    if (!result)
       return NULL;
@@ -1162,7 +1162,7 @@ static char* s3_extract_xml_tag_value(const char *xml, const char *tag_name)
    size_t len = 0;
    char *value = NULL;
 
-   if (string_is_empty(xml) || string_is_empty(tag_name))
+   if ((!xml || !*xml) || (!tag_name || !*tag_name))
       return NULL;
 
    snprintf(open_tag, sizeof(open_tag), "<%s>", tag_name);
@@ -1192,7 +1192,7 @@ static char* s3_extract_header_value(http_transfer_data_t *data, const char *hea
    size_t i;
    char prefix[64];
 
-   if (!data || !data->headers || string_is_empty(header_name))
+   if (!data || !data->headers || (!header_name || !*header_name))
       return NULL;
 
    snprintf(prefix, sizeof(prefix), "%s:", header_name);
@@ -1205,7 +1205,7 @@ static char* s3_extract_header_value(http_transfer_data_t *data, const char *hea
       size_t len = 0;
       char *out = NULL;
 
-      if (string_is_empty(line))
+      if (!line || !*line)
          continue;
       if (!string_starts_with_case_insensitive(line, prefix))
          continue;
@@ -1370,7 +1370,7 @@ static void s3_multipart_fail(s3_multipart_state_t *mp_st, http_transfer_data_t 
    else
       RARCH_WARN(S3_PFX "Multipart upload failed during %s\n", phase ? phase : "unknown phase");
 
-   if (!string_is_empty(mp_st->upload_id) && !mp_st->aborting)
+   if (mp_st->upload_id && *mp_st->upload_id && !mp_st->aborting)
       s3_multipart_abort(mp_st);
    else
       s3_multipart_finish(mp_st, false);
@@ -1402,7 +1402,7 @@ static void s3_multipart_abort(s3_multipart_state_t *mp_st)
    char *url_with_query = NULL;
    char *auth_header = NULL;
 
-   if (!mp_st || string_is_empty(mp_st->upload_id))
+   if (!mp_st || (!mp_st->upload_id || !*mp_st->upload_id))
    {
       s3_multipart_finish(mp_st, false);
       return;
@@ -1487,7 +1487,7 @@ static void s3_multipart_complete(s3_multipart_state_t *mp_st)
    size_t xml_len = 0;
    size_t xml_cap = 128;
 
-   if (!mp_st || string_is_empty(mp_st->upload_id))
+   if (!mp_st || (!mp_st->upload_id || !*mp_st->upload_id))
    {
       s3_multipart_finish(mp_st, false);
       return;
@@ -1495,7 +1495,7 @@ static void s3_multipart_complete(s3_multipart_state_t *mp_st)
 
    for (i = 0; i < mp_st->part_count; i++)
    {
-      if (string_is_empty(mp_st->part_etags[i]))
+      if (!mp_st->part_etags[i] || !*mp_st->part_etags[i])
       {
          s3_multipart_fail(mp_st, NULL, "complete missing ETag");
          return;
@@ -1693,7 +1693,7 @@ static void s3_multipart_initiate_cb(retro_task_t *task, void *task_data, void *
       return;
    }
 
-   if (!data || string_is_empty(data->data))
+   if (!data || (!data->data || !*data->data))
    {
       s3_multipart_fail(mp_st, data, "initiate empty response");
       return;
@@ -1710,7 +1710,7 @@ static void s3_multipart_initiate_cb(retro_task_t *task, void *task_data, void *
 
    mp_st->upload_id = s3_extract_xml_tag_value(response_xml, "UploadId");
    free(response_xml);
-   if (string_is_empty(mp_st->upload_id))
+   if (!mp_st->upload_id || !*mp_st->upload_id)
    {
       RARCH_WARN(S3_PFX "Multipart initiation response missing UploadId\n");
       s3_multipart_fail(mp_st, data, "initiate missing upload id");
@@ -1781,8 +1781,9 @@ static bool s3_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
       RARCH_WARN(S3_PFX "Could not parse bucket/region from URL, using defaults\n");
 
    /* Validate configuration */
-   if (string_is_empty(s3_st->url) || string_is_empty(s3_st->access_key_id) ||
-       string_is_empty(s3_st->secret_access_key))
+   if (   (!s3_st->url || !*s3_st->url)
+       || (!s3_st->access_key_id || !*s3_st->access_key_id)
+       || (!s3_st->secret_access_key || !*s3_st->secret_access_key))
    {
       RARCH_ERR(S3_PFX "Missing S3 configuration\n");
       return false;

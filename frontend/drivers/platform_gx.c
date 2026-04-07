@@ -204,8 +204,8 @@ static void frontend_gx_get_env(int *argc, char *argv[],
       }
    }
 #ifdef HW_RVL
-   else if (*argc > 2 &&
-         !string_is_empty(argv[1]) && !string_is_empty(argv[2]))
+   else if (*argc > 2
+         && (argv[1] && *argv[1]) && (argv[2] && *argv[2]))
    {
 #ifdef HAVE_NETWORKING
       /* If the process was forked for netplay purposes,
@@ -252,8 +252,8 @@ static void frontend_gx_get_env(int *argc, char *argv[],
    }
 #endif
 #else
-   if (*argc > 2 && argv &&
-         !string_is_empty(argv[1]) && !string_is_empty(argv[2]))
+   if (*argc > 2 && argv
+         && (argv[1] && *argv[1]) && (argv[2] && *argv[2]))
       fill_pathname_join(gx_rom_path, argv[1], argv[2], sizeof(gx_rom_path));
    else
       *gx_rom_path = '\0';
@@ -409,7 +409,7 @@ static void frontend_gx_exitspawn(char *s, size_t len, char *args)
 {
    bool should_load_game = false;
 #if defined(IS_SALAMANDER)
-   if (!string_is_empty(gx_rom_path))
+   if (gx_rom_path && *gx_rom_path)
       should_load_game = true;
 #elif defined(HW_RVL)
    char salamander_basename[NAME_MAX_LENGTH];

@@ -61,10 +61,11 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
         const char *path = str_list.elems[i].data;
         const char *playlist_file = path_basename(path);
 
-        if (string_is_empty(playlist_file))
+        if (!playlist_file || !*playlist_file)
             continue;
 
-        // Only include .lpl files (same logic as menu_displaylist_parse_playlists)
+        /* Only include .lpl files (same logic as 
+         * menu_displaylist_parse_playlists) */
         if (!string_is_equal_noncase(path_get_extension(playlist_file), "lpl"))
             continue;
 
@@ -171,11 +172,11 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
         const char *filename = path_basename(entry->path);
         game.filename = [NSString stringWithUTF8String:filename];
 
-        if (!string_is_empty(entry->core_path) && !string_is_equal(entry->core_path, FILE_PATH_DETECT))
+        if (entry->core_path && *entry->core_path && !string_is_equal(entry->core_path, FILE_PATH_DETECT))
             game.corePath = [NSString stringWithUTF8String:entry->core_path];
         else if (!string_is_empty(playlist_get_default_core_path(playlist)))
             game.corePath = [NSString stringWithUTF8String:playlist_get_default_core_path(playlist)];
-        if (!string_is_empty(entry->core_name) && !string_is_equal(entry->core_name, FILE_PATH_DETECT))
+        if (entry->core_name && *entry->core_name && !string_is_equal(entry->core_name, FILE_PATH_DETECT))
             game.coreName = [NSString stringWithUTF8String:entry->core_name];
         else if (!string_is_empty(playlist_get_default_core_name(playlist)))
             game.coreName = [NSString stringWithUTF8String:playlist_get_default_core_name(playlist)];

@@ -56,7 +56,7 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
 
    getcwd(workdir, sizeof(workdir));
 
-   if (!string_is_empty(workdir))
+   if (workdir && *workdir)
    {
       assets_path[0]               = '\0';
       data_path[0]                 = '\0';

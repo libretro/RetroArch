@@ -218,7 +218,7 @@ void retro_vfs_file_open_cdrom(
       cdrom_get_timeouts(stream, &vfs_cdrom_toc.timeouts);
 
 #ifdef CDROM_DEBUG
-      if (string_is_empty(stream->cdrom.cue_buf))
+      if (!stream->cdrom.cue_buf || !*stream->cdrom.cue_buf)
       {
          printf("[CDROM] Error writing cue sheet.\n");
          fflush(stdout);
@@ -300,7 +300,7 @@ void retro_vfs_file_open_cdrom(
             &vfs_cdrom_toc.timeouts);
 
 #ifdef CDROM_DEBUG
-      if (string_is_empty(stream->cdrom.cue_buf))
+      if (!stream->cdrom.cue_buf || !*stream->cdrom.cue_buf)
       {
          printf("[CDROM] Error writing cue sheet.\n");
          fflush(stdout);
