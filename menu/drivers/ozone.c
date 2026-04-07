@@ -3881,7 +3881,7 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
       entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
       menu_entry_get(&entry, 0, i, NULL, true);
 
-      if (!string_is_empty(entry.label))
+      if (*entry.label)
       {
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
@@ -3937,7 +3937,7 @@ static void ozone_update_savestate_thumbnail_image(void *data)
       return;
 
    /* If path is empty, just reset thumbnail */
-   if (string_is_empty(ozone->savestate_thumbnail_file_path))
+   if (!*ozone->savestate_thumbnail_file_path)
       gfx_thumbnail_reset(&ozone->thumbnails.savestate);
    else if (ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       gfx_thumbnail_request_file(
@@ -4261,7 +4261,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
     * content even when not using a playlist, otherwise
     * file browser image updates are mishandled */
 
-   if (!string_is_empty(menu_st->thumbnail_path_data->content_core_name))
+   if (*menu_st->thumbnail_path_data->content_core_name)
    {
       if (     memcmp(
                menu_st->thumbnail_path_data->content_core_name,
@@ -4372,7 +4372,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       }
       else
       {
-         if (     string_is_empty(menu_st->thumbnail_path_data->content_core_name)
+         if (     !*menu_st->thumbnail_path_data->content_core_name
                || string_is_equal(menu_st->thumbnail_path_data->content_core_name, "DETECT"))
             core_label = msg_hash_to_str(MSG_AUTODETECT);
          else
@@ -4420,9 +4420,9 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
                   runtime_last_played_style,
                   runtime_date_separator);
 
-         if (!string_is_empty(entry->runtime_str))
+         if (entry->runtime_str && *entry->runtime_str)
             strlcpy(ozone->selection_playtime, entry->runtime_str, sizeof(ozone->selection_playtime));
-         if (!string_is_empty(entry->last_played_str))
+         if (entry->last_played_str && *entry->last_played_str)
             strlcpy(ozone->selection_lastplayed, entry->last_played_str, sizeof(ozone->selection_lastplayed));
       }
       else
@@ -4599,9 +4599,9 @@ static void ozone_list_deep_copy(const file_list_t *src,
       void     *src_adata = s->actiondata;
 
       *d       = *s;
-      d->alt   = string_is_empty(d->alt)   ? NULL : strdup(d->alt);
-      d->path  = string_is_empty(d->path)  ? NULL : strdup(d->path);
-      d->label = string_is_empty(d->label) ? NULL : strdup(d->label);
+      d->alt   = (!d->alt   || !*d->alt)   ? NULL : strdup(d->alt);
+      d->path  = (!d->path  || !*d->path)  ? NULL : strdup(d->path);
+      d->label = (!d->label || !*d->label) ? NULL : strdup(d->label);
 
       if (src_udata)
          dst->list[j].userdata = (void*)ozone_copy_node((const ozone_node_t*)src_udata);
@@ -4977,7 +4977,7 @@ static void ozone_init_horizontal_list(ozone_handle_t *ozone, settings_t *settin
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
-   if (!string_is_empty(info.path))
+   if (info.path && *info.path)
    {
       if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info, settings))
          menu_displaylist_process(&info);
@@ -5329,7 +5329,7 @@ static void ozone_draw_entry_value(
          dispctx->blend_end(userdata);
       return;
    }
-   else if (string_is_empty(value))
+   else if (!value || !*value)
       return;
 
    /* Text value */
@@ -5340,7 +5340,7 @@ static void ozone_draw_entry_value(
          || string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))) { }
    else
    {
-      if (!string_is_empty(entry->value))
+      if (*entry->value)
       {
          if (memcmp(entry->value, "...", 3) == 0 && entry->value[3] == '\0')
             return;
@@ -5698,7 +5698,7 @@ compute_sublabel:
 
       if (menu_show_sublabels)
       {
-         if (!string_is_empty(entry.sublabel))
+         if (*entry.sublabel)
          {
             char wrapped_sublabel_str[MENU_LABEL_MAX_LENGTH];
 
@@ -5992,7 +5992,7 @@ border_iterate:
          entry_value         = entry.value;
 
       /* Prepare text */
-      if (!string_is_empty(entry.rich_label))
+      if (*entry.rich_label)
          entry_rich_label  = entry.rich_label;
       else
          entry_rich_label  = entry.path;
@@ -6030,7 +6030,7 @@ border_iterate:
 
       if (menu_show_sublabels)
       {
-         if (node->wrap && !string_is_empty(sublabel_str))
+         if (node->wrap && (sublabel_str && *sublabel_str))
          {
             wrapped_sublabel_str[0] = '\0';
 
@@ -6117,7 +6117,7 @@ border_iterate:
                      entry.entry_idx, &pl_entry);
 
                if (pl_entry
-                     && !string_is_empty(pl_entry->db_name)
+                     && (pl_entry->db_name && *pl_entry->db_name)
                      && (db_node = RHMAP_GET_STR(ozone->playlist_db_node_map, pl_entry->db_name)))
                {
                   if (     string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB))
@@ -6168,7 +6168,7 @@ border_iterate:
                            entry.entry_idx, &pl_entry);
 
                      if (pl_entry
-                           && !string_is_empty(pl_entry->db_name)
+                           && (pl_entry->db_name && *pl_entry->db_name)
                            && (db_node = RHMAP_GET_STR(ozone->playlist_db_node_map, pl_entry->db_name)))
                      {
                         switch (show_history_icons)
@@ -6261,7 +6261,7 @@ border_iterate:
 
       if (menu_show_sublabels)
       {
-         if (!string_is_empty(sublabel_str))
+         if (sublabel_str && *sublabel_str)
             gfx_display_draw_text(
                   ozone->fonts.entries_sublabel.font,
                   sublabel_str,
@@ -6442,7 +6442,7 @@ static void ozone_draw_thumbnail_bar(
          && gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT);
 
    /* Special "viewer" mode for savestate thumbnails */
-   if (     ((ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) && !string_is_empty(ozone->savestate_thumbnail_file_path))
+   if (     ((ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) && *ozone->savestate_thumbnail_file_path)
          || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT))
    {
       ozone->flags2                  |= OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
@@ -7063,7 +7063,7 @@ static void ozone_draw_osk(
    unsigned padding               = 10 * scale_factor;
    unsigned bottom_end            = video_height / 2;
    unsigned y_offset              = 0;
-   bool draw_placeholder          = string_is_empty(str);
+   bool draw_placeholder          = !str || !*str;
    retro_time_t current_time      = menu_driver_get_current_time();
    const char *line               = NULL;
    const char *next               = NULL;
@@ -7284,7 +7284,7 @@ static void ozone_draw_messagebox(
    wrapped_message[0]       = '\0';
 
    /* Sanity check */
-   if (string_is_empty(message) || !font_data.font)
+   if ((!message || !*message) || !font_data.font)
       return;
 
    scale_factor             = ozone->last_scale_factor;
@@ -7323,8 +7323,7 @@ static void ozone_draw_messagebox(
    for (i = 0; i < list.size; i++)
    {
       const char *msg = list.elems[i].data;
-
-      if (!string_is_empty(msg))
+      if (msg && *msg)
       {
          int width = font_driver_get_message_width(font_data.font, msg, strlen(msg), 1.0f);
 
@@ -7562,7 +7561,7 @@ static void ozone_draw_fullscreen_thumbnails(
             (  left_thumbnail->status  == GFX_THUMBNAIL_STATUS_AVAILABLE
             || left_thumbnail->status  == GFX_THUMBNAIL_STATUS_PENDING);
 
-      if (((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && !string_is_empty(ozone->savestate_thumbnail_file_path))
+      if (((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && *ozone->savestate_thumbnail_file_path)
             || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT))
       {
          left_thumbnail       = &ozone->thumbnails.savestate;
@@ -7857,7 +7856,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
    if (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
    {
       /* Playlist content */
-      if (string_is_empty(s))
+      if (!s || !*s)
       {
          size_t selection      = menu_st->selection_ptr;
          size_t list_size      = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
@@ -7900,15 +7899,14 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
    else if (ozone->flags & OZONE_FLAG_IS_DB_MANAGER_LIST)
    {
       /* Database list content */
-      if (string_is_empty(s))
+      if (!s || !*s)
       {
          menu_entry_t entry;
 
          MENU_ENTRY_INITIALIZE(entry);
          entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
          menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-
-         if (!string_is_empty(entry.path))
+         if (*entry.path)
             gfx_thumbnail_set_content(menu_st->thumbnail_path_data, entry.path);
       }
    }
@@ -7916,7 +7914,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
    else if (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
    {
       /* Explore list */
-      if (string_is_empty(s))
+      if (!s || !*s)
       {
          /* Selected entry */
          menu_entry_t entry;
@@ -7952,11 +7950,11 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
          entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
          menu_entry_get(&entry, 0, selection, NULL, true);
 
-         if (!string_is_empty(entry.path) && !string_is_empty(node->fullpath))
+         if (*entry.path && node->fullpath && *node->fullpath)
             gfx_thumbnail_set_content_image(menu_st->thumbnail_path_data, node->fullpath, entry.path);
       }
    }
-   else if (!string_is_empty(s))
+   else if (s && *s)
    {
       /* Annoying leftovers...
        * This is required to ensure that thumbnails are
@@ -8056,7 +8054,7 @@ static INLINE bool ozone_fullscreen_thumbnails_available(ozone_handle_t *ozone,
          && (   gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
             ||  gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT));
 
-   if (     !string_is_empty(ozone->savestate_thumbnail_file_path)
+   if (    *ozone->savestate_thumbnail_file_path
          && ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
       ret = true;
 
@@ -8074,7 +8072,7 @@ static bool ozone_help_available(ozone_handle_t *ozone, size_t current_selection
    menu_entry_get(&last_entry, 0, current_selection, NULL, true);
 
    /* If sublabels are not visible, they can be displayed as help. */
-   if (!menu_show_sublabels && !string_is_empty(last_entry.sublabel))
+   if (!menu_show_sublabels && *last_entry.sublabel)
       return true;
 
    /* Otherwise check if actual help is available. */
@@ -8210,7 +8208,7 @@ static bool ozone_is_current_entry_settings(size_t current_selection)
    entry_type      = last_entry.type;
 
    /* Logic below taken from materialui_pointer_up_swipe_horz_default */
-   if (!string_is_empty(entry_value))
+   if (entry_value && *entry_value)
    {
       /* Toggle switch off */
       if (   string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
@@ -8427,7 +8425,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                      break;
                }
 
-               if (string_is_empty(playlist_path))
+               if (!*playlist_path)
                   break;
             }
             else
@@ -8558,7 +8556,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
          if (     (!(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS))
                && (  (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)
-                  || ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && !string_is_empty(ozone->savestate_thumbnail_file_path))))
+                  || ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && *ozone->savestate_thumbnail_file_path)))
          {
             ozone->flags2 |= OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
             ozone_show_fullscreen_thumbnails(ozone);
@@ -9386,7 +9384,7 @@ static void ozone_free(void *data)
       file_list_deinitialize(&ozone->horizontal_list);
       RHMAP_FREE(ozone->playlist_db_node_map);
 
-      if (!string_is_empty(ozone->pending_message))
+      if (ozone->pending_message && *ozone->pending_message)
          free(ozone->pending_message);
 
       menu_screensaver_free(ozone->screensaver);
@@ -9705,7 +9703,7 @@ static void ozone_set_layout(
          break;
    }
 
-   if (!string_is_empty(path_menu_font))
+   if (path_menu_font && *path_menu_font)
       strlcpy(font_path, path_menu_font, sizeof(font_path));
 
    font_inited = ozone_init_font(&ozone->fonts.title,
@@ -9734,7 +9732,7 @@ static void ozone_set_layout(
          break;
    }
 
-   if (!string_is_empty(path_menu_font))
+   if (path_menu_font && *path_menu_font)
       strlcpy(font_path, path_menu_font, sizeof(font_path));
 
    ozone->font_unicode = (memcmp(path_menu_font, FILE_PATH_UNKNOWN, STRLEN_CONST(FILE_PATH_UNKNOWN)) == 0) ? false : true;
@@ -10938,7 +10936,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.fullscreen_thumbnails.show
          && ((ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS) || (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS))
          && !(ozone->flags & OZONE_FLAG_IS_FILE_LIST)
-         && string_is_empty(ozone->savestate_thumbnail_file_path);
+         && !*ozone->savestate_thumbnail_file_path;
 
    ozone->footer_labels.clear_setting.show         =
             !ozone->footer_labels.cycle_thumbnails.show
@@ -11205,7 +11203,7 @@ static void ozone_draw_footer(
                   video_height,
                   icon_size,
                   icon_size,
-                  (!string_is_empty(ozone->savestate_thumbnail_file_path))
+                  (*ozone->savestate_thumbnail_file_path)
                         ? ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L]
                         : ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START],
                   ozone->footer_labels.fullscreen_thumbnails.x,
@@ -12205,7 +12203,7 @@ static void ozone_get_playlist_index_header_icon(ozone_handle_t *ozone)
    playlist_get_index(playlist_get_cached(), ozone->playlist_index, &pl_entry);
 
    if (     pl_entry
-         && !string_is_empty(pl_entry->db_name)
+         && (pl_entry->db_name && *pl_entry->db_name)
          && (db_node = RHMAP_GET_STR(ozone->playlist_db_node_map, pl_entry->db_name)))
       ozone->header_icon = db_node->icon;
 }
@@ -12909,7 +12907,7 @@ static void ozone_list_insert(void *userdata,
          return;
    }
 
-   if (!string_is_empty(fullpath))
+   if (fullpath && *fullpath)
    {
       if (node->fullpath)
          free(node->fullpath);
@@ -12956,7 +12954,7 @@ static void ozone_messagebox(void *data, const char *message)
 {
    ozone_handle_t *ozone = (ozone_handle_t*) data;
 
-   if (!ozone || string_is_empty(message))
+   if (!ozone || !message || !*message)
       return;
 
    if (ozone->pending_message)

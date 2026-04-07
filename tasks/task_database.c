@@ -2327,7 +2327,6 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                size_t _len;
                char task_title[128];
                const char *m3u_name = path_basename_nocompression(m3u_path);
-               m3u_file_t *m3u_file = NULL;
 
                /* Update progress display */
                task_free_title(task);
@@ -2356,8 +2355,6 @@ static void task_manual_content_scan_handler(retro_task_t *task)
          break;
       case MANUAL_SCAN_END:
          {
-            size_t _len;
-            char task_title[128];
             const char *msg = NULL;
 
             /* Batch update all playlists with accumulated results */

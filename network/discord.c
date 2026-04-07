@@ -114,7 +114,7 @@ static bool discord_download_avatar(
    if (path_is_valid(full_path))
       return true;
 
-   if (string_is_empty(avatar_id))
+   if (!avatar_id || !*avatar_id)
       return false;
 
    snprintf(url, sizeof(url), "%s/%s/%s" FILE_PATH_PNG_EXTENSION, CDN_URL, user_id, avatar_id);
@@ -289,7 +289,7 @@ void discord_update(enum presence presence)
                         path_get(RARCH_PATH_CONTENT),
                         &entry);
 
-                  if (entry && !string_is_empty(entry->label))
+                  if (entry && (entry->label && *entry->label))
                      label = entry->label;
                }
 

@@ -540,7 +540,7 @@ static cdfs_track_t* cdfs_open_cue_track(
 
    free(cue_contents);
 
-   if (string_is_empty(track_path))
+   if (!*track_path)
       return NULL;
 
    /* NOTE: previous_index_sector_offset will only be valid if all tracks are in the same BIN file.

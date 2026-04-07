@@ -139,7 +139,7 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
    if (!p_value || !len)
       return true;
 
-   if (p_ctx->state == STATE_OBJECT_START && !string_is_empty(p_value)
+   if (p_ctx->state == STATE_OBJECT_START && (p_value && *p_value)
          && string_is_equal(p_value, "fields"))
       p_ctx->state = STATE_FIELDS_START;
 
@@ -150,7 +150,7 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
       p_ctx->cur_member_inthex = NULL;
       p_ctx->cur_member_string = NULL;
 
-      if (!string_is_empty(p_value))
+      if (p_value && *p_value)
       {
          if (string_is_equal(p_value, "username"))
          {

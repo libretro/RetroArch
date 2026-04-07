@@ -67,7 +67,7 @@ static bool DCifJSONNumberHandler(void* context, const char *pValue, size_t len)
 {
    DCifJSONContext *pCtx = (DCifJSONContext*)context;
 
-   if (pCtx->current_entry_uint_val && len && !string_is_empty(pValue))
+   if (pCtx->current_entry_uint_val && len && (pValue && *pValue))
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
    /* ignore unknown members */
 
@@ -80,7 +80,7 @@ static bool DCifJSONStringHandler(void* context, const char *pValue, size_t len)
 {
    DCifJSONContext *pCtx = (DCifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && len && !string_is_empty(pValue))
+   if (pCtx->current_entry_str_val && len && (pValue && *pValue))
    {
       free(*pCtx->current_entry_str_val);
 
@@ -114,7 +114,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
 
    file_path = disk_index_file->file_path;
 
-   if (    string_is_empty(file_path)
+   if (  (!file_path || !*file_path)
        || !path_is_valid(file_path)
       )
       return false;
@@ -175,7 +175,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    /* Copy values read from JSON file */
    disk_index_file->image_index = context.image_index;
 
-   if (!string_is_empty(context.image_path))
+   if (context.image_path && *context.image_path)
       strlcpy(
             disk_index_file->image_path, context.image_path,
             sizeof(disk_index_file->image_path));
@@ -214,17 +214,17 @@ bool disk_index_file_init(
    /* Disk index records are only valid when loading
     * content (i.e. they do not apply to contentless
     * cores) */
-   if (string_is_empty(content_path))
+   if (!content_path || !*content_path)
       goto error;
 
    /* Build disk index file path */
    fill_pathname(content_name, path_basename(content_path), "",
          sizeof(content_name));
-   if (string_is_empty(content_name))
+   if (!*content_name)
       goto error;
 
    /* > Get disk index file directory */
-   if (!string_is_empty(dir_savefile))
+   if (dir_savefile && *dir_savefile)
       strlcpy(disk_index_file_dir, dir_savefile, sizeof(disk_index_file_dir));
    else /* Use content directory */
       fill_pathname_basedir(disk_index_file_dir, content_path,
@@ -292,7 +292,7 @@ void disk_index_file_set(
    }
 
    /* Check whether image path should be updated */
-   if (!string_is_empty(image_path))
+   if (image_path && *image_path)
    {
       if (!string_is_equal(disk_index_file->image_path, image_path))
       {
@@ -302,7 +302,7 @@ void disk_index_file_set(
          disk_index_file->modified   = true;
       }
    }
-   else if (!string_is_empty(disk_index_file->image_path))
+   else if (*disk_index_file->image_path)
    {
       disk_index_file->image_path[0] = '\0';
       disk_index_file->modified      = true;
@@ -334,7 +334,7 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
 
    file_path = disk_index_file->file_path;
 
-   if (string_is_empty(file_path))
+   if (!file_path || !*file_path)
       return false;
 
    RARCH_LOG(

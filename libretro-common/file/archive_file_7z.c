@@ -159,7 +159,7 @@ static int64_t sevenzip_file_read(
       lookStream.bufSize = 0;
 
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       wchar_t *path_w = utf8_to_utf16_string_alloc(path);
       if (path_w)
@@ -362,7 +362,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    state->context = sevenzip_context;
 
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
-   if (!string_is_empty(file))
+   if (file && *file)
    {
       wchar_t *file_w = utf8_to_utf16_string_alloc(file);
 

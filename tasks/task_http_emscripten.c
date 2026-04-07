@@ -294,7 +294,7 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    char tmp[NAME_MAX_LENGTH]   = "";
    retro_task_t *t             = NULL;
 
-   if (string_is_empty(url))
+   if (!url || !*url)
       return NULL;
 
    if (!(t = (retro_task_t*)task_push_http_transfer_generic(

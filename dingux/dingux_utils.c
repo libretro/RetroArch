@@ -431,7 +431,7 @@ size_t dingux_get_base_path(char *s, size_t len)
 
          /* Skip files and invalid entries */
          if (  (dir_type != RARCH_DIRECTORY)
-             || string_is_empty(dir_path)
+             || (!dir_path || !*dir_path)
              || string_is_equal(dir_path, DINGUX_RS90_DATA_PATH))
             continue;
 

@@ -69,7 +69,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
    unsigned first_data_track            = 0;
    uint64_t data_track_pregap_bytes     = 0;
 
-   if (string_is_empty(path) || !info)
+   if (!path || !*path || !info)
       return false;
 
    if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0)))
@@ -86,7 +86,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
       size_t _len = 0;
       const char *command = NULL;
 
-      if (string_is_empty(line))
+      if (!line || !*line)
       {
          free(line);
          continue;
@@ -102,7 +102,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
          const char *file = command + 4;
          media_skip_spaces(&file, _len - 4);
 
-         if (!string_is_empty(file))
+         if (file && *file)
          {
             const char *file_end = NULL;
             size_t file_len      = 0;
@@ -136,7 +136,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
          const char *track = command + 5;
          media_skip_spaces(&track, _len - 5);
 
-         if (!string_is_empty(track))
+         if (track && *track)
          {
             char *ptr             = NULL;
             unsigned track_number = (unsigned)strtol(track, &ptr, 10);
@@ -149,7 +149,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
             if (track[0] && track[0] != ' ' && track[0] != '\t')
                track++;
 
-            if (!string_is_empty(track))
+            if (track && *track)
             {
                media_skip_spaces(&track, strlen(track));
 #ifdef MEDIA_CUE_PARSE_DEBUG
@@ -172,7 +172,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
          const char *index = command + 5;
          media_skip_spaces(&index, _len - 5);
 
-         if (!string_is_empty(index))
+         if (index && *index)
          {
             char *ptr             = NULL;
             unsigned index_number = (unsigned)strtol(index, &ptr, 10);
@@ -184,13 +184,13 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
                if (pregap[0] && pregap[0] != ' ' && pregap[0] != '\t')
                   pregap++;
 
-               if (!string_is_empty(pregap))
+               if (pregap && *pregap)
                {
                   media_skip_spaces(&pregap, strlen(pregap));
                   found_file  = false;
                   found_track = false;
 
-                  if (first_data_track && !string_is_empty(track_mode))
+                  if (first_data_track && *track_mode)
                   {
                      unsigned track_sector_size = 0;
                      unsigned track_mode_number = 0;
@@ -231,7 +231,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 
    filestream_close(file);
 
-   if (!string_is_empty(track_path))
+   if (*track_path)
    {
       size_t _len;
       if (strchr(track_path, '/') || strchr(track_path, '\\'))
@@ -260,7 +260,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
 {
    RFILE *file;
 
-   if (string_is_empty(path) || !info)
+   if (!path || !*path || !info)
       return false;
 
    if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0)))

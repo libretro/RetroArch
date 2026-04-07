@@ -358,7 +358,8 @@ bool file_archive_extract_file(
          && userdata.found_file
       )
    {
-      if (!string_is_empty(userdata.first_extracted_file_path))
+      if (    userdata.first_extracted_file_path 
+          && *userdata.first_extracted_file_path)
          strlcpy(s, userdata.first_extracted_file_path, len);
       return true;
    }

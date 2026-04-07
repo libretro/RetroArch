@@ -73,7 +73,7 @@ static void free_pl_manager_handle(pl_manager_handle_t *pl_manager)
       pl_manager->m3u_list = NULL;
    }
 
-   if (!string_is_empty(pl_manager->playlist_name))
+   if (pl_manager->playlist_name && *pl_manager->playlist_name)
    {
       free(pl_manager->playlist_name);
       pl_manager->playlist_name = NULL;
@@ -204,9 +204,9 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_PLAYLIST_MANAGER_RESETTING_CORES),
                      sizeof(task_title));
 
-               if (!string_is_empty(entry->label))
+               if (entry->label && *entry->label)
                   strlcpy(task_title + _len, entry->label, sizeof(task_title) - _len);
-               else if (!string_is_empty(entry->path))
+               else if (entry->path && *entry->path)
                   fill_pathname(task_title + _len, path_basename(entry->path), "",
                         sizeof(task_title) - _len);
 
@@ -285,16 +285,14 @@ bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
       calloc(1, sizeof(pl_manager_handle_t));
    /* Sanity check */
-   if (!playlist_config || !task || !pl_manager)
-      goto error;
-   if (string_is_empty(playlist_config->path))
+   if (!playlist_config || !task || !pl_manager || !*playlist_config->path)
       goto error;
 
    fill_pathname(playlist_name,
          path_basename(playlist_config->path), "",
          sizeof(playlist_name));
 
-   if (string_is_empty(playlist_name))
+   if (!*playlist_name)
       goto error;
 
    /* Concurrent management of the same playlist
@@ -367,7 +365,7 @@ static void pl_manager_validate_core_association(
    if (entry_index >= playlist_size(playlist))
       return;
 
-   if (string_is_empty(core_path))
+   if (!core_path || !*core_path)
       goto reset_core;
 
    /* Handle 'DETECT' entries */
@@ -379,7 +377,7 @@ static void pl_manager_validate_core_association(
    /* Handle 'builtin' entries */
    else if (memcmp(core_path, "builtin", 8) == 0)
    {
-      if (string_is_empty(core_name))
+      if (!core_name || !*core_name)
          goto reset_core;
    }
    /* Handle file path entries */
@@ -392,7 +390,7 @@ static void pl_manager_validate_core_association(
 
       /* Search core info */
       if (    core_info_find(core_path, &core_info)
-          && !string_is_empty(core_info->display_name))
+          && (core_info->display_name && *core_info->display_name))
          strlcpy(core_display_name, core_info->display_name,
                sizeof(core_display_name));
       else
@@ -400,7 +398,7 @@ static void pl_manager_validate_core_association(
 
       /* If core_display_name string is empty, it means the
        * core wasn't found -> reset association */
-      if (string_is_empty(core_display_name))
+      if (!*core_display_name)
          goto reset_core;
 
       /* ...Otherwise, check that playlist entry
@@ -617,7 +615,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             const char *m3u_path =
                   pl_manager->m3u_list->elems[pl_manager->m3u_index].data;
 
-            if (!string_is_empty(m3u_path))
+            if (m3u_path && *m3u_path)
             {
                m3u_file_t *m3u_file = NULL;
 
@@ -730,16 +728,14 @@ bool task_push_pl_manager_clean_playlist(
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
       calloc(1, sizeof(pl_manager_handle_t));
    /* Sanity check */
-   if (!playlist_config || !task || !pl_manager)
-      goto error;
-   if (string_is_empty(playlist_config->path))
+   if (!playlist_config || !task || !pl_manager || !*playlist_config->path)
       goto error;
 
    fill_pathname(playlist_name,
          path_basename(playlist_config->path), "",
          sizeof(playlist_name));
 
-   if (string_is_empty(playlist_name))
+   if (!*playlist_name)
       goto error;
 
    /* Concurrent management of the same playlist

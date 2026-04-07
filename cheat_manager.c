@@ -98,7 +98,7 @@ void cheat_manager_apply_cheats(bool notification_show_cheats_applied)
          cheat_info.enabled = true;
          cheat_info.code    = cheat_st->cheats[i].code;
 
-         if (!string_is_empty(cheat_info.code))
+         if (cheat_info.code && *cheat_info.code)
             core_set_cheat(&cheat_info);
       }
    }
@@ -121,7 +121,7 @@ void cheat_manager_apply_cheats(bool notification_show_cheats_applied)
 void cheat_manager_set_code(unsigned i, const char *str)
 {
    cheat_manager_t *cheat_st = &cheat_manager_state;
-   if (!cheat_st->cheats || string_is_empty(str))
+   if (!cheat_st->cheats || !str || !*str)
       return;
 
    if (cheat_st->cheats[i].code)
@@ -207,7 +207,7 @@ bool cheat_manager_save(
       size_t _len = snprintf(var_key, sizeof(var_key), "cheat%u_", i);
 
       strlcpy(var_key + _len, "desc", sizeof(var_key) - _len);
-      if (!string_is_empty(cheat_st->cheats[i].desc))
+      if (cheat_st->cheats[i].desc && *cheat_st->cheats[i].desc)
          config_set_string(conf, var_key, cheat_st->cheats[i].desc);
       else
          config_set_string(conf, var_key, cheat_st->cheats[i].code);
@@ -721,9 +721,9 @@ static size_t cheat_manager_get_game_specific_filename(
       return 0;
    core_name = sysinfo.library_name;
    game_name = path_basename_nocompression(runloop_st->name.cheatfile);
-   if (     string_is_empty(path_cheat_database)
-         || string_is_empty(core_name)
-         || string_is_empty(game_name))
+   if (     (!path_cheat_database || !*path_cheat_database)
+         || (!core_name || !*core_name)
+         || (!game_name || !*game_name))
       return 0;
    fill_pathname_join_special(s1, path_cheat_database, core_name,
          sizeof(s1));

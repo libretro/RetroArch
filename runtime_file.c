@@ -349,15 +349,15 @@ runtime_log_t *runtime_log_init(
    content_name[0]            = '\0';
    core_name[0]               = '\0';
 
-   if (     string_is_empty(dir_runtime_log)
-         && string_is_empty(dir_playlist))
+   if (     (!dir_runtime_log || !*dir_runtime_log)
+         && (!dir_playlist || !*dir_playlist))
    {
       RARCH_ERR("[Runtime] Runtime log directory is undefined - cannot save"
             " runtime log files.\n");
       return NULL;
    }
 
-   if (     string_is_empty(core_path)
+   if (     (!core_path || !*core_path)
          || !memcmp(core_path, "builtin", 8)
          || !memcmp(core_path, "DETECT", 7))
       return NULL;
@@ -373,17 +373,17 @@ runtime_log_t *runtime_log_init(
    if (core_info_find(core_path, &core_info))
    {
       supports_no_game = (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
-      if (!string_is_empty(core_info->core_name))
+      if (core_info->core_name && *core_info->core_name)
          strlcpy(core_name, core_info->core_name, sizeof(core_name));
    }
 
-   if (string_is_empty(core_name))
+   if (!*core_name)
       return NULL;
 
    /* Get runtime log directory
     * If 'custom' runtime log path is undefined,
     * use default 'playlists/logs' directory... */
-   if (string_is_empty(dir_runtime_log))
+   if (!dir_runtime_log || !*dir_runtime_log)
       fill_pathname_join_special(
             tmp_buf,
             dir_playlist,
@@ -392,7 +392,7 @@ runtime_log_t *runtime_log_init(
    else
       strlcpy(tmp_buf, dir_runtime_log, sizeof(tmp_buf));
 
-   if (string_is_empty(tmp_buf))
+   if (!*tmp_buf)
       return NULL;
 
    if (log_per_core)
@@ -404,7 +404,7 @@ runtime_log_t *runtime_log_init(
    else
       strlcpy(log_file_dir, tmp_buf, sizeof(log_file_dir));
 
-   if (string_is_empty(log_file_dir))
+   if (!*log_file_dir)
       return NULL;
 
    /* Create directory, if required */
@@ -419,7 +419,7 @@ runtime_log_t *runtime_log_init(
    }
 
    /* Get content name */
-   if (string_is_empty(content_path))
+   if (!content_path || !*content_path)
    {
       /* If core supports contentless operation and
        * no content is provided, 'content' is simply
@@ -456,14 +456,14 @@ runtime_log_t *runtime_log_init(
             FILE_PATH_RUNTIME_EXTENSION,
             sizeof(content_name));
 
-   if (string_is_empty(content_name))
+   if (!*content_name)
       return NULL;
 
    /* Build final log file path */
    fill_pathname_join_special(log_file_path, log_file_dir,
          content_name, sizeof(log_file_path));
 
-   if (string_is_empty(log_file_path))
+   if (!*log_file_path)
       return NULL;
 
    /* Phew... If we get this far then all is well.
@@ -1432,7 +1432,7 @@ void runtime_update_contentless_core(
    contentless_core_runtime_info_t runtime_info = {0};
 
    /* Sanity check */
-   if (    string_is_empty(core_path)
+   if (    (!core_path || !*core_path)
        || !core_info_find(core_path, &core_info)
        || !(core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
       return;

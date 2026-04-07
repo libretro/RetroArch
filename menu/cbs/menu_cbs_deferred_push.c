@@ -351,10 +351,10 @@ static int general_push(menu_displaylist_info_t *info,
             menu->scratch_buf, sizeof(tmp_str));
 #endif
 
-      if (!string_is_empty(info->path))
+      if (*info->path)
          free(info->path);
       info->path      = strdup(tmp_str);
-      if (!string_is_empty(info->label))
+      if (*info->label)
          free(info->label);
       info->label     = strdup(tmp_str);
    }
@@ -377,7 +377,7 @@ static int general_push(menu_displaylist_info_t *info,
          {
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
-            if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
+            if (sysinfo && *sysinfo->valid_extensions)
             {
                CHECK_SIZE(strlen(sysinfo->valid_extensions));
                _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions, size - _len);
@@ -391,14 +391,14 @@ static int general_push(menu_displaylist_info_t *info,
             if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
             {
                struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
-               if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
+               if (sysinfo && *sysinfo->valid_extensions)
                   valid_extensions = sysinfo->valid_extensions;
             }
 
             if (!valid_extensions)
                valid_extensions = info->exts;
 
-            if (!string_is_empty(valid_extensions))
+            if (*valid_extensions)
             {
                CHECK_SIZE(strlen(valid_extensions) + 12);
                _len += strlcpy(newstr2 + _len, valid_extensions, size - _len);
@@ -415,7 +415,7 @@ static int general_push(menu_displaylist_info_t *info,
                &runloop_state_get_ptr()->system.info;
             bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
-            if (sysinfo && !string_is_empty(sysinfo->valid_extensions)
+            if (sysinfo && *sysinfo->valid_extensions
                 && filter_by_current_core)
             {
                CHECK_SIZE(strlen(sysinfo->valid_extensions));
@@ -425,7 +425,7 @@ static int general_push(menu_displaylist_info_t *info,
             {
                core_info_list_t *list = NULL;
                core_info_get_list(&list);
-               if (list && !string_is_empty(list->all_ext))
+               if (list && *list->all_ext)
                {
                   CHECK_SIZE(strlen(list->all_ext));
                   _len += strlcpy(newstr2 + _len, list->all_ext, size - _len);
@@ -465,7 +465,7 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
       libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-      if (!string_is_empty(sysinfo.valid_extensions))
+      if (*sysinfo.valid_extensions)
       {
          CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
          if (_len > 0)
@@ -480,7 +480,7 @@ static int general_push(menu_displaylist_info_t *info,
    {
       struct retro_system_info sysinfo = {0};
       libretro_imageviewer_retro_get_system_info(&sysinfo);
-      if (!string_is_empty(sysinfo.valid_extensions))
+      if (*sysinfo.valid_extensions)
       {
          CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
          if (_len > 0)
@@ -490,7 +490,7 @@ static int general_push(menu_displaylist_info_t *info,
    }
 #endif
 
-   if (!string_is_empty(newstr2))
+   if (*newstr2)
    {
       if (info->exts)
          free(info->exts);

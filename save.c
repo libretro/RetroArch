@@ -473,7 +473,7 @@ static bool content_load_ram_file(unsigned slot)
     * not exist. This is a common enough occurrence
     * that we should check before attempting to
     * invoke the relevant read_file() function */
-   if (    string_is_empty(ram.path)
+   if (    (!ram.path || !*ram.path)
        || !path_is_valid(ram.path))
       return false;
 
@@ -579,7 +579,7 @@ static bool content_save_ram_file(unsigned slot, bool compress)
    /* Quick check: if the file already exists and matches
     * current memory contents, skip the write entirely.
     * This is the common case when autosave has been running. */
-   if (   !string_is_empty(ram.path)
+   if (   ram.path && *ram.path
        &&  path_is_valid(ram.path))
    {
 #if defined(HAVE_ZLIB)

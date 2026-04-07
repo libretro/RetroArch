@@ -411,7 +411,7 @@ void steam_update_presence(enum presence presence, bool force)
                      path_get(RARCH_PATH_CONTENT),
                      &entry);
 
-               if (entry && !string_is_empty(entry->label))
+               if (entry && entry->label && *entry->label)
                   label = entry->label;
             }
 
