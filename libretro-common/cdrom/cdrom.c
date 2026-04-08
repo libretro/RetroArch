@@ -28,6 +28,7 @@
 #include <libretro.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <compat/strl.h>
 #include <compat/strcasestr.h>
 #include <retro_math.h>
@@ -1345,8 +1346,9 @@ struct string_list* cdrom_get_available_drives(void)
          if (!is_cdrom)
             continue;
 
-         sscanf(dir_list->elems[i].data + STRLEN_CONST("/dev/sg"),
-               "%d", &dev_index);
+         dev_index = (int)strtol(
+               dir_list->elems[i].data + STRLEN_CONST("/dev/sg"),
+               NULL, 10);
 
          dev_index = '0' + dev_index;
          attr.i    = dev_index;

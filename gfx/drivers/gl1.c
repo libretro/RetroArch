@@ -1211,7 +1211,12 @@ static void *gl1_init(const video_info_t *video,
    extensions = (const char*)glGetString(GL_EXTENSIONS);
 
    if (version && *version)
-      sscanf(version, "%d.%d", &gl1->version_major, &gl1->version_minor);
+   {
+      char *end           = NULL;
+      gl1->version_major  = (int)strtol(version, &end, 10);
+      if (end && *end == '.')
+         gl1->version_minor = (int)strtol(end + 1, NULL, 10);
+   }
 
    if (extensions && *extensions)
       gl1->extensions = string_split(extensions, " ");

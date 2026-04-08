@@ -20,10 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdint.h>
-#include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <boolean.h>
 
@@ -108,16 +107,34 @@ bool gl_check_error(char **err_string)
 bool gl_check_capability(enum gl_capability_enum enum_idx)
 {
    unsigned major       = 0;
-   unsigned minor       = 0;
    const char *vendor   = (const char*)glGetString(GL_VENDOR);
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
 #ifdef HAVE_OPENGLES
-   if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+   if (version)
+   {
+      /* Skip "OpenGL ES " prefix */
+      const char *v = strstr(version, "OpenGL ES ");
+      if (v)
+      {
+         char *end  = NULL;
+         v         += strlen("OpenGL ES ");
+         major      = (unsigned)strtol(v, &end, 10);
+         if (end && *end == '.') { }
+         else
+            major   = 0;
+      }
+   }
 #else
-   if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
+   if (version)
+   {
+      char *end  = NULL;
+      major      = (unsigned)strtol(version, &end, 10);
+      if (end && *end == '.') { }
+      else
+         major   = 0;
+   }
 #endif
-      major = minor = 0;
 
    (void)vendor;
    (void)renderer;

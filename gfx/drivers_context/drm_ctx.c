@@ -19,6 +19,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
@@ -388,17 +389,54 @@ static bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
    if (modeInfo && crt_switch_timings && *crt_switch_timings)
    {
       hdmi_timings_t timings;
-      int ret = sscanf(crt_switch_timings, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-                   &timings.h_active_pixels, &timings.h_sync_polarity, &timings.h_front_porch,
-                   &timings.h_sync_pulse, &timings.h_back_porch,
-                   &timings.v_active_lines, &timings.v_sync_polarity, &timings.v_front_porch,
-                   &timings.v_sync_pulse, &timings.v_back_porch,
-                   &timings.v_sync_offset_a, &timings.v_sync_offset_b, &timings.pixel_rep, &timings.frame_rate,
-                   &timings.interlaced, &timings.pixel_freq, &timings.aspect_ratio);
-      if (ret != 17)
+      int *timings_fields[17];
+      int i;
+      char *p = crt_switch_timings;
+      char *endptr;
+
+      timings_fields[0]  = &timings.h_active_pixels;
+      timings_fields[1]  = &timings.h_sync_polarity;
+      timings_fields[2]  = &timings.h_front_porch;
+      timings_fields[3]  = &timings.h_sync_pulse;
+      timings_fields[4]  = &timings.h_back_porch;
+      timings_fields[5]  = &timings.v_active_lines;
+      timings_fields[6]  = &timings.v_sync_polarity;
+      timings_fields[7]  = &timings.v_front_porch;
+      timings_fields[8]  = &timings.v_sync_pulse;
+      timings_fields[9]  = &timings.v_back_porch;
+      timings_fields[10] = &timings.v_sync_offset_a;
+      timings_fields[11] = &timings.v_sync_offset_b;
+      timings_fields[12] = &timings.pixel_rep;
+      timings_fields[13] = &timings.frame_rate;
+      timings_fields[14] = &timings.interlaced;
+      timings_fields[15] = &timings.pixel_freq;
+      timings_fields[16] = &timings.aspect_ratio;
+
+      for (i = 0; i < 17; i++)
       {
-         RARCH_ERR("[KMS] Malformed mode requested: %s.\n", crt_switch_timings);
-         return false;
+         long val;
+
+         /* Skip whitespace */
+         while (*p == ' ' || *p == '\t')
+            p++;
+
+         if (*p == '\0')
+         {
+            RARCH_ERR("[KMS] Malformed mode requested: %s.\n", crt_switch_timings);
+            return false;
+         }
+
+         endptr = NULL;
+         val    = strtol(p, &endptr, 10);
+
+         if (endptr == p)
+         {
+            RARCH_ERR("[KMS] Malformed mode requested: %s.\n", crt_switch_timings);
+            return false;
+         }
+
+         *timings_fields[i] = (int)val;
+         p = endptr;
       }
 
       memset(modeInfo, 0, sizeof(drmModeModeInfo));

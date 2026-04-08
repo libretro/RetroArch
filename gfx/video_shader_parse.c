@@ -1031,8 +1031,11 @@ void video_shader_resolve_parameters(struct video_shader *shader)
             while ((shader->num_parameters < ARRAY_SIZE(shader->parameters))
                   && (line_index < lines.size))
             {
-               int ret;
+               int n_parsed;
                const char *line = lines.elems[line_index].data;
+               const char *p    = NULL;
+               const char *end  = NULL;
+               char *endptr     = NULL;
                line_index++;
 
                /* Check if this is a '#pragma parameter' line */
@@ -1040,16 +1043,83 @@ void video_shader_resolve_parameters(struct video_shader *shader)
                         STRLEN_CONST("#pragma parameter")))
                   continue;
 
-               /* Parse line */
-               if ((ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
-                           param->id,        param->desc,    &param->initial,
-                           &param->minimum, &param->maximum, &param->step)) < 5)
+               /* Parse line
+                * Expected format:
+                *   #pragma parameter ID "Description" initial min max [step]
+                */
+               p = line + STRLEN_CONST("#pragma parameter");
+
+               /* Skip whitespace before ID */
+               while (*p == ' ' || *p == '\t')
+                  p++;
+               if (*p == '\0')
                   continue;
 
-               param->id[63]   = '\0';
-               param->desc[63] = '\0';
+               /* Extract ID (up to 63 chars, no spaces) */
+               end = p;
+               while (*end && *end != ' ' && *end != '\t')
+                  end++;
+               if (end == p)
+                  continue;
+               {
+                  size_t id_len = (size_t)(end - p);
+                  if (id_len > 63)
+                     id_len = 63;
+                  memcpy(param->id, p, id_len);
+                  param->id[id_len] = '\0';
+               }
+               p = end;
 
-               if (ret == 5)
+               /* Skip whitespace before opening quote */
+               while (*p == ' ' || *p == '\t')
+                  p++;
+               if (*p != '"')
+                  continue;
+               p++; /* skip opening quote */
+
+               /* Extract description (up to 63 chars, until closing quote) */
+               end = strchr(p, '"');
+               if (!end)
+                  continue;
+               {
+                  size_t desc_len = (size_t)(end - p);
+                  if (desc_len > 63)
+                     desc_len = 63;
+                  memcpy(param->desc, p, desc_len);
+                  param->desc[desc_len] = '\0';
+               }
+               p = end + 1; /* skip closing quote */
+
+               /* Parse initial value */
+               param->initial = (float)strtod(p, &endptr);
+               if (endptr == p)
+                  continue;
+               p = endptr;
+               n_parsed = 1;
+
+               /* Parse minimum */
+               param->minimum = (float)strtod(p, &endptr);
+               if (endptr == p)
+                  continue;
+               p = endptr;
+               n_parsed = 2;
+
+               /* Parse maximum */
+               param->maximum = (float)strtod(p, &endptr);
+               if (endptr == p)
+                  continue;
+               p = endptr;
+               n_parsed = 3;
+
+               /* Parse optional step */
+               param->step = (float)strtod(p, &endptr);
+               if (endptr != p)
+                  n_parsed = 4;
+
+               if (n_parsed < 3)
+                  continue;
+
+               if (n_parsed < 4)
                   param->step  = 0.1f * (param->maximum - param->minimum);
 
                param->pass     = (int)i;

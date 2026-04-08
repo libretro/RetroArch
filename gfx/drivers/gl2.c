@@ -4387,12 +4387,15 @@ static void *gl2_init(const video_info_t *video,
 
    if (version && *version)
    {
-      if (string_starts_with(version, "OpenGL ES "))
-         sscanf(version, "OpenGL ES %d.%d", &gl->version_major, &gl->version_minor);
-      else if (string_starts_with(version, "OpenGL "))
-         sscanf(version, "OpenGL %d.%d", &gl->version_major, &gl->version_minor);
-      else
-         sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
+      const char *v = version;
+      char *end     = NULL;
+      if (string_starts_with(v, "OpenGL ES "))
+         v += STRLEN_CONST("OpenGL ES ");
+      else if (string_starts_with(v, "OpenGL "))
+         v += STRLEN_CONST("OpenGL ");
+      gl->version_major = (int)strtol(v, &end, 10);
+      if (end && *end == '.')
+         gl->version_minor = (int)strtol(end + 1, NULL, 10);
    }
 
    {

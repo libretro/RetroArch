@@ -378,6 +378,53 @@ GLuint gl3_compile_shader(GLenum stage, const char *source)
    return shader;
 }
 
+/**
+ * gl3_parse_version:
+ * @version : GL_VERSION string (e.g. "4.6", "OpenGL ES 3.0", "OpenGL 4.5 …")
+ * @major   : pointer receiving the major version number
+ * @minor   : pointer receiving the minor version number
+ *
+ * Returns true if both major and minor were parsed successfully.
+ */
+static bool gl3_parse_version(const char *version,
+      unsigned *major, unsigned *minor)
+{
+   const char *p = version;
+   unsigned val;
+
+   if (!p)
+      return false;
+
+   /* Skip any leading non-digit prefix
+    * ("OpenGL ES ", "OpenGL ", etc.) */
+   while (*p && (*p < '0' || *p > '9'))
+      p++;
+
+   if (*p < '0' || *p > '9')
+      return false;
+
+   /* Parse major */
+   val = 0;
+   while (*p >= '0' && *p <= '9')
+      val = val * 10 + (*p++ - '0');
+   *major = val;
+
+   if (*p != '.')
+      return false;
+   p++;
+
+   if (*p < '0' || *p > '9')
+      return false;
+
+   /* Parse minor */
+   val = 0;
+   while (*p >= '0' && *p <= '9')
+      val = val * 10 + (*p++ - '0');
+   *minor = val;
+
+   return true;
+}
+
 uint32_t gl3_get_cross_compiler_target_version(void)
 {
    const char *version = (const char*)glGetString(GL_VERSION);
@@ -385,13 +432,13 @@ uint32_t gl3_get_cross_compiler_target_version(void)
    unsigned minor      = 0;
 
 #ifdef HAVE_OPENGLES3
-   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+   if (!gl3_parse_version(version, &major, &minor))
       return 300;
 
    if (major == 2 && minor == 0)
       return 100;
 #else
-   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
+   if (!gl3_parse_version(version, &major, &minor))
       return 150;
 
    if (major == 3)
@@ -2911,14 +2958,7 @@ static void *gl3_init(const video_info_t *video,
       goto error;
 
    if (version && *version)
-   {
-      if (string_starts_with(version, "OpenGL ES "))
-         sscanf(version, "OpenGL ES %u.%u", &gl->version_major, &gl->version_minor);
-      else if (string_starts_with(version, "OpenGL "))
-         sscanf(version, "OpenGL %u.%u", &gl->version_major, &gl->version_minor);
-      else
-         sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
-   }
+      gl3_parse_version(version, &gl->version_major, &gl->version_minor);
 
    video_driver_set_gpu_api_version_string(version);
 

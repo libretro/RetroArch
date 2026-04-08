@@ -291,8 +291,17 @@ static void test_joypad_autodetect_add(unsigned autoconf_pad)
 {
    unsigned int vid = 0;
    unsigned int pid = 0;
+   const char *tmp  = test_joypads[autoconf_pad].name
+                    ? strstr(test_joypads[autoconf_pad].name, "(")
+                    : NULL;
 
-   sscanf(strstr(test_joypads[autoconf_pad].name, "(") + 1, "%04x:%04x", &vid, &pid);
+   if (tmp)
+   {
+      vid = (unsigned int)strtoul(tmp + 1, NULL, 16);
+      tmp = strchr(tmp + 1, ':');
+      if (tmp)
+         pid = (unsigned int)strtoul(tmp + 1, NULL, 16);
+   }
    RARCH_DBG("[Test input] Autoconf vid/pid %x:%x.\n", vid, pid);
 
    input_autoconfigure_connect(

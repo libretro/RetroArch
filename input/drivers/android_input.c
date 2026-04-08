@@ -1122,16 +1122,36 @@ static bool is_configured_as_physical_keyboard(int vendor_id, int product_id, co
     char keyboard_name[256];
     settings_t *settings = config_get_ptr();
 
-    if (sscanf(settings->arrays.input_android_physical_keyboard, "%04x:%04x ", &keyboard_vendor_id, &keyboard_product_id) != 2)
     {
-        strlcpy(keyboard_name, settings->arrays.input_android_physical_keyboard, sizeof(keyboard_name));
-        is_keyboard   = string_is_equal(device_name, keyboard_name);
-        compare_by_id = false;
-    }
-    else
-    {
-        is_keyboard   = (vendor_id == keyboard_vendor_id && product_id == keyboard_product_id);
-        compare_by_id = true;
+        const char *str = settings->arrays.input_android_physical_keyboard;
+        char *end       = NULL;
+        long vid, pid;
+
+        vid = strtol(str, &end, 16);
+        if (end && end != str && *end == ':')
+        {
+            const char *pid_start = end + 1;
+            pid = strtol(pid_start, &end, 16);
+            if (end && end != pid_start && (*end == ' ' || *end == '\0'))
+            {
+                keyboard_vendor_id  = (int)vid;
+                keyboard_product_id = (int)pid;
+                is_keyboard         = (vendor_id == keyboard_vendor_id && product_id == keyboard_product_id);
+                compare_by_id       = true;
+            }
+            else
+            {
+                strlcpy(keyboard_name, str, sizeof(keyboard_name));
+                is_keyboard   = string_is_equal(device_name, keyboard_name);
+                compare_by_id = false;
+            }
+        }
+        else
+        {
+            strlcpy(keyboard_name, str, sizeof(keyboard_name));
+            is_keyboard   = string_is_equal(device_name, keyboard_name);
+            compare_by_id = false;
+        }
     }
 
     if (is_keyboard)

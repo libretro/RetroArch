@@ -425,15 +425,21 @@ static bool check_egl_version(int min_major_version, int min_minor_version)
 
    if (str)
    {
-      int major, minor;
-      if (sscanf(str, "%d.%d", &major, &minor) == 2)
+      char *endptr;
+      int major = (int)strtol(str, &endptr, 10);
+      if (endptr != str && *endptr == '.')
       {
-         if (major >= min_major_version)
+         const char *minor_str = endptr + 1;
+         int minor = (int)strtol(minor_str, &endptr, 10);
+         if (endptr != minor_str)
          {
-            if (major > min_major_version)
-               return true;
-            else if (minor >= min_minor_version)
-               return true;
+            if (major >= min_major_version)
+            {
+               if (major > min_major_version)
+                  return true;
+               else if (minor >= min_minor_version)
+                  return true;
+            }
          }
       }
    }
