@@ -27,7 +27,6 @@
 #include <compat/strl.h>
 #include <formats/image.h>
 #include <string/stdstring.h>
-#include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
 #include <streams/file_stream.h>
 #include <encodings/utf.h>
@@ -4313,46 +4312,19 @@ static size_t xmb_animation_line_ticker_generic(uint64_t idx,
    return (excess_lines * 2) - phase;
 }
 
-static size_t xmb_animation_build_line_ticker_string(
-      size_t num_display_lines, size_t line_offset,
-      struct string_list *lines, size_t lines_size,
-      char *s, size_t len)
-{
-   size_t i;
-   size_t _len = 0;
-   for (i = 0; i < (num_display_lines-1); i++)
-   {
-      size_t offset     = i + line_offset;
-      size_t line_index = offset % (lines_size + 1);
-      /* Is line valid? */
-      if (line_index < lines_size)
-         _len += strlcpy(s + _len, lines->elems[line_index].data, len - _len);
-      _len    += strlcpy(s + _len, "\n", len - _len);
-   }
-   {
-      size_t offset     = (num_display_lines-1) + line_offset;
-      size_t line_index = offset % (lines_size + 1);
-      /* Is line valid? */
-      if (line_index < lines_size)
-         _len += strlcpy(s + _len, lines->elems[line_index].data, len - _len);
-   }
-   return _len;
-}
-
 static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_t *line_ticker)
 {
    char *wrapped_str            = NULL;
    size_t wrapped_str_len       = 0;
    size_t line_ticker_str_len   = 0;
-   struct string_list lines     = {0};
    size_t line_offset           = 0;
+   size_t total_lines           = 0;
    bool ret                     = false;
    bool is_active               = false;
 
    /* Sanity check */
    if (!line_ticker)
       return false;
-
    if (    (!line_ticker->str || !*line_ticker->str)
        || (line_ticker->line_len  < 1)
        || (line_ticker->max_lines < 1))
@@ -4363,6 +4335,7 @@ static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx
    wrapped_str_len     = line_ticker_str_len + 1 + 10; /* 10 bytes use for inserting '\n' */
    if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
       goto end;
+
    wrapped_str[0] = '\0';
 
    word_wrap(
@@ -4376,14 +4349,28 @@ static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx
    if (!wrapped_str || !*wrapped_str)
       goto end;
 
-   /* Split into component lines */
-   string_list_initialize(&lines);
-   if (!string_split_noalloc(&lines, wrapped_str, "\n"))
-      goto end;
+   /* Count total number of lines */
+   {
+      size_t slen      = strlen(wrapped_str);
+      const char *p    = wrapped_str;
+      size_t remaining = slen;
+      total_lines      = 1;
+
+      while (remaining > 0)
+      {
+         const char *nl = (const char *)memchr(p, '\n', remaining);
+         if (!nl)
+            break;
+         total_lines++;
+         nl++;
+         remaining -= (size_t)(nl - p);
+         p = nl;
+      }
+   }
 
    /* Check whether total number of lines fits within
     * the set limit */
-   if (lines.size <= line_ticker->max_lines)
+   if (total_lines <= line_ticker->max_lines)
    {
       strlcpy(line_ticker->s, wrapped_str, line_ticker->len);
       ret = true;
@@ -4397,7 +4384,7 @@ static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx
          line_offset = xmb_animation_line_ticker_loop(
                line_ticker->idx,
                line_ticker->line_len,
-               lines.size);
+               total_lines);
          break;
       case TICKER_TYPE_BOUNCE:
       default:
@@ -4405,29 +4392,76 @@ static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx
                line_ticker->idx,
                line_ticker->line_len,
                line_ticker->max_lines,
-               lines.size);
-
+               total_lines);
          break;
    }
 
    /* Build output string from required lines */
-   xmb_animation_build_line_ticker_string(
-      line_ticker->max_lines, line_offset, &lines, lines.size,
-      line_ticker->s, line_ticker->len);
+   {
+      const char *p    = wrapped_str;
+      size_t remaining = strlen(wrapped_str);
+      size_t cur_line  = 0;
+
+      /* Skip to the starting line */
+      while (cur_line < line_offset && remaining > 0)
+      {
+         const char *nl = (const char *)memchr(p, '\n', remaining);
+         if (!nl)
+            break;
+         nl++;
+         remaining -= (size_t)(nl - p);
+         p = nl;
+         cur_line++;
+      }
+
+      /* Find the end of the visible window */
+      {
+         const char *end_p    = p;
+         size_t end_remaining = remaining;
+         size_t lines_found   = 0;
+
+         while (lines_found < line_ticker->max_lines && end_remaining > 0)
+         {
+            const char *nl = (const char *)memchr(end_p, '\n', end_remaining);
+            if (!nl)
+            {
+               end_p = end_p + end_remaining;
+               break;
+            }
+            lines_found++;
+            if (lines_found >= line_ticker->max_lines)
+            {
+               end_p = nl;
+               break;
+            }
+            nl++;
+            end_remaining -= (size_t)(nl - end_p);
+            end_p = nl;
+         }
+
+         /* Single memcpy for the whole block */
+         {
+            size_t copy_len = (size_t)(end_p - p);
+            size_t max_copy = line_ticker->len - 1;
+            if (copy_len > max_copy)
+               copy_len = max_copy;
+            memcpy(line_ticker->s, p, copy_len);
+            line_ticker->s[copy_len] = '\0';
+         }
+      }
+   }
 
    ret                      = true;
    is_active                = true;
    p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
-
    if (wrapped_str)
    {
       free(wrapped_str);
       wrapped_str = NULL;
    }
 
-   string_list_deinitialize(&lines);
    if (!ret)
       if (line_ticker->len > 0)
          line_ticker->s[0] = '\0';
@@ -4629,14 +4663,12 @@ static void xmb_animation_line_ticker_smooth_loop(uint64_t idx,
             bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
 }
 
-
 static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
 {
    char *wrapped_str              = NULL;
    const char *wideglyph_str      = NULL;
    size_t line_ticker_src_len     = 0;
    size_t wrapped_str_len         = 0;
-   struct string_list lines       = {0};
    int glyph_width                = 0;
    int glyph_height               = 0;
    size_t line_len                = 0;
@@ -4649,6 +4681,12 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
    bool ret                       = false;
    bool is_active                 = false;
    int wideglyph_width            = 100;
+
+   /* Line pointers (replaces string_list) */
+   const char **line_starts       = NULL;
+   size_t *line_lengths           = NULL;
+   size_t num_lines               = 0;
+
    size_t (*word_wrap_func)(char *dst, size_t dst_size,
          const char *src, size_t src_len,
          int line_width, int wideglyph_width, unsigned max_lines);
@@ -4664,14 +4702,6 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
       goto end;
 
    /* Get font dimensions */
-
-   /* > Width
-    *   This is a bit of a fudge. Performing a 'font aware'
-    *   (i.e. character display width) word wrap is too CPU
-    *   intensive, so we just sample the width of a common
-    *   character and hope for the best. (We choose 'a' because
-    *   this is what Ozone uses for spacing calculations, and
-    *   it is proven to work quite well) */
    if ((glyph_width = font_driver_get_message_width(
          line_ticker->font, "a", 1, line_ticker->font_scale)) <= 0)
       goto end;
@@ -4703,7 +4733,6 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
 
    /* Line wrap input string */
    line_ticker_src_len = strlen(line_ticker->src_str);
-   /* 10 bytes use for inserting '\n' */
    wrapped_str_len     = line_ticker_src_len + 1 + 10;
    if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
       goto end;
@@ -4720,19 +4749,61 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
    if (!wrapped_str || !*wrapped_str)
       goto end;
 
-   string_list_initialize(&lines);
-   /* Split into component lines */
-   if (!string_split_noalloc(&lines, wrapped_str, "\n"))
+   /* Split into lines using memchr */
+   {
+      const char *p   = wrapped_str;
+      const char *end_ptr = wrapped_str + strlen(wrapped_str);
+      size_t capacity = 16;
+
+      line_starts  = (const char**)malloc(capacity * sizeof(*line_starts));
+      line_lengths = (size_t*)malloc(capacity * sizeof(*line_lengths));
+      if (!line_starts || !line_lengths)
+         goto end;
+
+      while (p < end_ptr)
+      {
+         const char *nl = (const char*)memchr(p, '\n', end_ptr - p);
+         if (!nl)
+            nl = end_ptr;
+
+         if (num_lines >= capacity)
+         {
+            const char **new_starts;
+            size_t *new_lengths;
+            capacity *= 2;
+            new_starts  = (const char**)realloc(line_starts,  capacity * sizeof(*line_starts));
+            new_lengths = (size_t*)realloc(line_lengths, capacity * sizeof(*line_lengths));
+            if (!new_starts || !new_lengths)
+            {
+               /* If only one realloc failed, keep the original pointers valid for cleanup */
+               if (new_starts)
+                  line_starts = new_starts;
+               if (new_lengths)
+                  line_lengths = new_lengths;
+               goto end;
+            }
+            line_starts  = new_starts;
+            line_lengths = new_lengths;
+         }
+
+         line_starts[num_lines]  = p;
+         line_lengths[num_lines] = (size_t)(nl - p);
+         num_lines++;
+
+         p = nl + 1;
+      }
+   }
+
+   if (num_lines < 1)
       goto end;
 
    /* Check whether total number of lines fits within
     * the set field limit */
-   if (lines.size <= max_display_lines)
+   if (num_lines <= max_display_lines)
    {
       strlcpy(line_ticker->dst_str, wrapped_str, line_ticker->dst_str_len);
       *line_ticker->y_offset = 0.0f;
 
-      /* No fade animation is required */
       if (line_ticker->fade_enabled)
       {
          if (line_ticker->top_fade_str_len > 0)
@@ -4761,12 +4832,11 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
                line_ticker->idx,
                line_ticker->fade_enabled,
                line_len, (size_t)glyph_height,
-               max_display_lines, lines.size,
+               max_display_lines, num_lines,
                &num_display_lines, &line_offset, line_ticker->y_offset,
                &fade_active,
                &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
                &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
-
          break;
       case TICKER_TYPE_BOUNCE:
       default:
@@ -4774,12 +4844,11 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
                line_ticker->idx,
                line_ticker->fade_enabled,
                line_len, (size_t)glyph_height,
-               max_display_lines, lines.size,
+               max_display_lines, num_lines,
                &num_display_lines, &line_offset, line_ticker->y_offset,
                &fade_active,
                &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
                &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
-
          break;
    }
 
@@ -4787,24 +4856,57 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
       goto end;
 
    /* Build output string from required lines */
-   xmb_animation_build_line_ticker_string(
-         num_display_lines, line_offset, &lines, lines.size,
-         line_ticker->dst_str, line_ticker->dst_str_len);
+   {
+      size_t i;
+      size_t dst_offset = 0;
+
+      for (i = 0; i < num_display_lines; i++)
+      {
+         size_t line_idx = (line_offset + i) % num_lines;
+         size_t copy_len = line_lengths[line_idx];
+
+         if (dst_offset + copy_len + 2 > line_ticker->dst_str_len)
+            break;
+
+         if (i > 0)
+            line_ticker->dst_str[dst_offset++] = '\n';
+
+         memcpy(line_ticker->dst_str + dst_offset,
+               line_starts[line_idx], copy_len);
+         dst_offset += copy_len;
+      }
+
+      if (dst_offset < line_ticker->dst_str_len)
+         line_ticker->dst_str[dst_offset] = '\0';
+      else if (line_ticker->dst_str_len > 0)
+         line_ticker->dst_str[line_ticker->dst_str_len - 1] = '\0';
+   }
 
    /* Extract top/bottom fade strings, if required */
    if (fade_active)
    {
-      size_t top_fade_line_index    = top_fade_line_offset    % (lines.size + 1);
-      size_t bottom_fade_line_index = bottom_fade_line_offset % (lines.size + 1);
-      /* Is line valid? */
-      if (top_fade_line_index < lines.size)
-         strlcpy(line_ticker->top_fade_str,
-               lines.elems[top_fade_line_index].data,
-               line_ticker->top_fade_str_len);
-      if (bottom_fade_line_index < lines.size)
-         strlcpy(line_ticker->bottom_fade_str,
-               lines.elems[bottom_fade_line_index].data,
-               line_ticker->bottom_fade_str_len);
+      size_t top_fade_line_index    = top_fade_line_offset    % (num_lines + 1);
+      size_t bottom_fade_line_index = bottom_fade_line_offset % (num_lines + 1);
+
+      if (top_fade_line_index < num_lines)
+      {
+         size_t copy_len = line_lengths[top_fade_line_index];
+         if (copy_len >= line_ticker->top_fade_str_len)
+            copy_len = line_ticker->top_fade_str_len - 1;
+         memcpy(line_ticker->top_fade_str,
+               line_starts[top_fade_line_index], copy_len);
+         line_ticker->top_fade_str[copy_len] = '\0';
+      }
+
+      if (bottom_fade_line_index < num_lines)
+      {
+         size_t copy_len = line_lengths[bottom_fade_line_index];
+         if (copy_len >= line_ticker->bottom_fade_str_len)
+            copy_len = line_ticker->bottom_fade_str_len - 1;
+         memcpy(line_ticker->bottom_fade_str,
+               line_starts[bottom_fade_line_index], copy_len);
+         line_ticker->bottom_fade_str[copy_len] = '\0';
+      }
    }
 
    ret                      = true;
@@ -4819,7 +4921,10 @@ end:
       wrapped_str = NULL;
    }
 
-   string_list_deinitialize(&lines);
+   if (line_starts)
+      free(line_starts);
+   if (line_lengths)
+      free(line_lengths);
 
    if (!ret)
    {
@@ -4841,7 +4946,6 @@ end:
 
    return is_active;
 }
-
 
 static int xmb_draw_item(
       struct menu_state *menu_st,
