@@ -369,6 +369,7 @@ size_t fill_pathname(char *s, const char *in_path,
  **/
 char *find_last_slash(const char *str)
 {
+#ifdef _WIN32
    char *s1 = strrchr(str, '/');
    char *s2 = strrchr(str, '\\');
    if (!s1)
@@ -376,6 +377,9 @@ char *find_last_slash(const char *str)
    if (!s2)
       return s1;
    return (s2 > s1) ? s2 : s1;
+#else
+   return strrchr(str, '/');
+#endif
 }
 
 /**
@@ -796,10 +800,10 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
       return s;
    }
    t       = 0;
-   buf_end = s + strlen(s);
    if (!path_is_absolute(s))
    {
       size_t _len;
+      size_t s_len;
       if (!getcwd(tmp, PATH_MAX_LENGTH - 1))
          return NULL;
       _len  = strlen(tmp);
@@ -812,15 +816,17 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
          strlcpy(s, tmp, len);
          return s;
       }
-      /* Check that cwd + '/' + path fits in tmp */
-      if (t + strlen(s) >= PATH_MAX_LENGTH)
+      s_len = strlen(s);
+      if (t + s_len >= PATH_MAX_LENGTH)
          return NULL;
+      buf_end = s + s_len;
       p = s;
    }
    else
    {
       for (p = s; *p == '/'; p++)
          tmp[t++] = '/';
+      buf_end = p + strlen(p);
    }
    do
    {
@@ -1000,26 +1006,7 @@ size_t fill_pathname_join_special(char *s,
    size_t _len = strlcpy(s, dir, len);
 
    if (*s)
-   {
-      char *last_slash = find_last_slash(s);
-      if (!last_slash)
-      {
-         if (_len + 2 <= len)
-         {
-            s[  _len]     = PATH_DEFAULT_SLASH_C();
-            s[++_len]     = '\0';
-         }
-      }
-      else if (last_slash != (s + _len - 1))
-      {
-         /* Try to preserve slash type. */
-         if (_len + 2 <= len)
-         {
-            s[  _len]     = last_slash[0];
-            s[++_len]     = '\0';
-         }
-      }
-   }
+      _len = fill_pathname_slash(s, len);
 
    _len += strlcpy(s + _len, path, len - _len);
    return _len;
