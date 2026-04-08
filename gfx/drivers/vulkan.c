@@ -71,6 +71,11 @@
 
 #define VK_MAP_PERSISTENT_TEXTURE(device, texture) vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped)
 
+/* Write 4 unique vertices per quad for use with indexed drawing.
+ * Vertex layout:  0(TL)---2(TR)
+ *                  |  / |
+ *                 1(BL)---3(BR)
+ * Index pattern:  0,1,2, 2,1,3  (provided by shared quad_ibo). */
 #define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, vulkan_color) \
 { \
    float r        = (vulkan_color)->r; \
@@ -109,22 +114,6 @@
    pv[3].color.g  = g; \
    pv[3].color.b  = b; \
    pv[3].color.a  = a; \
-   pv[4].x        = (_x) + (_width); \
-   pv[4].y        = (_y); \
-   pv[4].tex_x    = (_tex_x) + (_tex_width); \
-   pv[4].tex_y    = (_tex_y); \
-   pv[4].color.r  = r; \
-   pv[4].color.g  = g; \
-   pv[4].color.b  = b; \
-   pv[4].color.a  = a; \
-   pv[5].x        = (_x); \
-   pv[5].y        = (_y) + (_height); \
-   pv[5].tex_x    = (_tex_x); \
-   pv[5].tex_y    = (_tex_y) + (_tex_height); \
-   pv[5].color.r  = r; \
-   pv[5].color.g  = g; \
-   pv[5].color.b  = b; \
-   pv[5].color.a  = a; \
 }
 
 
@@ -279,6 +268,10 @@ struct vk_draw_triangles
    VkSampler sampler;            /* ptr alignment */
    size_t uniform_size;
    unsigned vertices;
+   /* When true, vertices are groups of 4 (quads) and will be
+    * drawn with the shared index buffer via vkCmdDrawIndexed.
+    * When false, vertices are drawn directly via vkCmdDraw. */
+   bool indexed_quads;
 };
 
 typedef struct vk
@@ -359,6 +352,17 @@ typedef struct vk
       VkPipeline pipelines[8 * 2];
       struct vk_texture blank_texture;
    } display;
+
+   /* Shared index buffer for quad rendering (fix #8).
+    * Contains repeating [0,1,2,2,1,3] patterns so quads
+    * can be drawn with 4 vertices instead of 6, reducing
+    * VBO bandwidth by 33% for text-heavy frames. */
+   struct
+   {
+      VkBuffer buffer;               /* ptr alignment */
+      VkDeviceMemory memory;         /* ptr alignment */
+      unsigned num_quads;            /* max quads this IBO can index */
+   } quad_ibo;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    struct
@@ -556,6 +560,113 @@ static void vulkan_write_quad_descriptors(
    vkUpdateDescriptorSets(device, write_count, writes, 0, NULL);
 }
 
+/* Batched descriptor write infrastructure.
+ * Instead of calling vkUpdateDescriptorSets per draw, callers can
+ * stage writes into a batch and flush once. This reduces Vulkan
+ * driver overhead when issuing many draws with different descriptors
+ * (e.g. overlay rendering, menu display draws). */
+#define VK_DESC_BATCH_MAX_WRITES  64
+#define VK_DESC_BATCH_MAX_BUFFERS 32
+#define VK_DESC_BATCH_MAX_IMAGES  32
+
+struct vk_descriptor_batch
+{
+   VkWriteDescriptorSet    writes[VK_DESC_BATCH_MAX_WRITES];
+   VkDescriptorBufferInfo  buffer_infos[VK_DESC_BATCH_MAX_BUFFERS];
+   VkDescriptorImageInfo   image_infos[VK_DESC_BATCH_MAX_IMAGES];
+   unsigned write_count;
+   unsigned buffer_count;
+   unsigned image_count;
+};
+
+static INLINE void vulkan_descriptor_batch_init(
+      struct vk_descriptor_batch *batch)
+{
+   batch->write_count  = 0;
+   batch->buffer_count = 0;
+   batch->image_count  = 0;
+}
+
+/* Stage descriptor writes for one draw call into the batch.
+ * Returns false if the batch is full and needs flushing first. */
+static bool vulkan_descriptor_batch_add(
+      struct vk_descriptor_batch *batch,
+      VkDescriptorSet set,
+      VkBuffer buffer,
+      VkDeviceSize offset,
+      VkDeviceSize range,
+      const struct vk_texture *texture,
+      VkSampler sampler)
+{
+   unsigned writes_needed = texture ? 2 : 1;
+   unsigned bufs_needed   = 1;
+   unsigned imgs_needed   = texture ? 1 : 0;
+   VkDescriptorBufferInfo *buf_info;
+   VkDescriptorImageInfo  *img_info;
+
+   if (     batch->write_count  + writes_needed > VK_DESC_BATCH_MAX_WRITES
+         || batch->buffer_count + bufs_needed   > VK_DESC_BATCH_MAX_BUFFERS
+         || batch->image_count  + imgs_needed   > VK_DESC_BATCH_MAX_IMAGES)
+      return false;
+
+   buf_info                                 = &batch->buffer_infos[batch->buffer_count++];
+   buf_info->buffer                         = buffer;
+   buf_info->offset                         = offset;
+   buf_info->range                          = range;
+
+   {
+      VkWriteDescriptorSet *w               = &batch->writes[batch->write_count++];
+      w->sType                              = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      w->pNext                              = NULL;
+      w->dstSet                             = set;
+      w->dstBinding                         = 0;
+      w->dstArrayElement                    = 0;
+      w->descriptorCount                    = 1;
+      w->descriptorType                     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      w->pImageInfo                         = NULL;
+      w->pBufferInfo                        = buf_info;
+      w->pTexelBufferView                   = NULL;
+   }
+
+   if (texture)
+   {
+      img_info                              = &batch->image_infos[batch->image_count++];
+      img_info->sampler                     = sampler;
+      img_info->imageView                   = texture->view;
+      img_info->imageLayout                 = texture->layout;
+
+      {
+         VkWriteDescriptorSet *w            = &batch->writes[batch->write_count++];
+         w->sType                           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+         w->pNext                           = NULL;
+         w->dstSet                          = set;
+         w->dstBinding                      = 1;
+         w->dstArrayElement                 = 0;
+         w->descriptorCount                 = 1;
+         w->descriptorType                  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+         w->pImageInfo                      = img_info;
+         w->pBufferInfo                     = NULL;
+         w->pTexelBufferView                = NULL;
+      }
+   }
+
+   return true;
+}
+
+static INLINE void vulkan_descriptor_batch_flush(
+      VkDevice device,
+      struct vk_descriptor_batch *batch)
+{
+   if (batch->write_count > 0)
+   {
+      vkUpdateDescriptorSets(device, batch->write_count,
+            batch->writes, 0, NULL);
+      batch->write_count  = 0;
+      batch->buffer_count = 0;
+      batch->image_count  = 0;
+   }
+}
+
 
 static void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture)
 {
@@ -644,7 +755,6 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
       VkDescriptorSet set;
       /* Upload UBO */
       struct vk_buffer_range range;
-      float *mvp_data_ptr          = NULL;
 
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
                call->uniform_size, &range))
@@ -672,19 +782,28 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
 
       vk->tracker.view    = VK_NULL_HANDLE;
       vk->tracker.sampler = VK_NULL_HANDLE;
-      for (
-              mvp_data_ptr = &vk->tracker.mvp.data[0]
-            ; mvp_data_ptr < vk->tracker.mvp.data + 16
-            ; mvp_data_ptr++)
-         *mvp_data_ptr = 0.0f;
+      memset(vk->tracker.mvp.data, 0, sizeof(vk->tracker.mvp.data));
    }
 
    /* VBO is already uploaded. */
    vkCmdBindVertexBuffers(vk->cmd, 0, 1,
          &call->vbo->buffer, &call->vbo->offset);
 
-   /* Draw the quad */
-   vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
+   /* Use indexed draw for quad-based geometry.
+    * Quads use 4 vertices each with the shared index buffer,
+    * saving 33% VBO bandwidth compared to 6 vertices per quad. */
+   if (call->indexed_quads && vk->quad_ibo.buffer != VK_NULL_HANDLE)
+   {
+      unsigned num_quads  = call->vertices / 4;
+      unsigned index_count = num_quads * 6;
+      vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
+            0, VK_INDEX_TYPE_UINT16);
+      vkCmdDrawIndexed(vk->cmd, index_count, 1, 0, 0, 0);
+   }
+   else
+   {
+      vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
+   }
 }
 
 
@@ -1605,6 +1724,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
             call.uniform_size = draw->backend_data_size;
             call.vbo          = &range;
             call.vertices     = draw->coords->vertices;
+            call.indexed_quads = false;
 
             vulkan_draw_triangles(vk, &call);
          }
@@ -1630,6 +1750,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
             call.uniform_size = sizeof(math_matrix_4x4);
             call.vbo          = &range;
             call.vertices     = draw->coords->vertices;
+            call.indexed_quads = false;
 
             vulkan_draw_triangles(vk, &call);
          }
@@ -1914,7 +2035,7 @@ static void vulkan_font_render_line(vk_t *vk,
                _tex_x, _tex_y, _tex_width, _tex_height, _color);
       }
 
-      font->vertices += 6;
+      font->vertices += 4;
 
       delta_x        += glyph->advance_x;
       delta_y        += glyph->advance_y;
@@ -1964,13 +2085,14 @@ static void vulkan_font_flush(vk_t *vk, vulkan_raster_t *font)
 {
    struct vk_draw_triangles call;
 
-   call.pipeline     = vk->pipelines.font;
-   call.texture      = &font->texture_optimal;
-   call.sampler      = vk->samplers.mipmap_linear;
-   call.uniform      = &vk->mvp;
-   call.uniform_size = sizeof(vk->mvp);
-   call.vbo          = &font->range;
-   call.vertices     = font->vertices;
+   call.pipeline      = vk->pipelines.font;
+   call.texture       = &font->texture_optimal;
+   call.sampler       = vk->samplers.mipmap_linear;
+   call.uniform       = &vk->mvp;
+   call.uniform_size  = sizeof(vk->mvp);
+   call.vbo           = &font->range;
+   call.vertices      = font->vertices;
+   call.indexed_quads = true;  /* Font glyphs are quads */
 
    if (font->needs_update)
    {
@@ -2066,7 +2188,7 @@ static void vulkan_font_render_msg(
       max_glyphs *= 2;
 
    if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-         6 * sizeof(struct vk_vertex) * max_glyphs, &font->range))
+         4 * sizeof(struct vk_vertex) * max_glyphs, &font->range))
       return;
 
    font->vertices   = 0;
@@ -3515,6 +3637,85 @@ static bool vulkan_init_filter_chain(vk_t *vk)
    return true;
 }
 
+/* Shared quad index buffer.
+ * Pre-generates a repeating [0,1,2,2,1,3] index pattern offset per quad
+ * so that quads can be drawn with 4 unique vertices + indexed draw
+ * instead of 6 duplicated vertices. This saves 33% VBO bandwidth
+ * for text-heavy frames (hundreds of glyphs). */
+#define VULKAN_QUAD_IBO_DEFAULT_QUADS 2048
+
+static void vulkan_init_quad_ibo(vk_t *vk, unsigned max_quads)
+{
+   unsigned i;
+   uint16_t *indices;
+   void *mapped                            = NULL;
+   VkDevice device                         = vk->context->device;
+   VkDeviceSize ibo_size                   = max_quads * 6 * sizeof(uint16_t);
+   VkBufferCreateInfo buffer_info;
+   VkMemoryRequirements mem_reqs;
+   VkMemoryAllocateInfo alloc;
+
+   buffer_info.sType                       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   buffer_info.pNext                       = NULL;
+   buffer_info.flags                       = 0;
+   buffer_info.size                        = ibo_size;
+   buffer_info.usage                       = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+   buffer_info.sharingMode                 = VK_SHARING_MODE_EXCLUSIVE;
+   buffer_info.queueFamilyIndexCount       = 0;
+   buffer_info.pQueueFamilyIndices         = NULL;
+
+   vkCreateBuffer(device, &buffer_info, NULL, &vk->quad_ibo.buffer);
+   vkGetBufferMemoryRequirements(device, vk->quad_ibo.buffer, &mem_reqs);
+
+   alloc.sType                             = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext                             = NULL;
+   alloc.allocationSize                    = mem_reqs.size;
+   alloc.memoryTypeIndex                   = vulkan_find_memory_type_fallback(
+         &vk->context->memory_properties,
+         mem_reqs.memoryTypeBits,
+           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+   vkAllocateMemory(device, &alloc, NULL, &vk->quad_ibo.memory);
+   vkBindBufferMemory(device, vk->quad_ibo.buffer, vk->quad_ibo.memory, 0);
+
+   vkMapMemory(device, vk->quad_ibo.memory, 0, ibo_size, 0, &mapped);
+   indices = (uint16_t*)mapped;
+
+   /* Pattern per quad: 0,1,2, 2,1,3  (two triangles from 4 unique verts)
+    *   0---2          TL---TR
+    *   | / |    =>    |  /  |
+    *   1---3          BL---BR
+    */
+   for (i = 0; i < max_quads; i++)
+   {
+      unsigned base          = i * 4;
+      unsigned idx           = i * 6;
+      indices[idx + 0]       = (uint16_t)(base + 0);
+      indices[idx + 1]       = (uint16_t)(base + 1);
+      indices[idx + 2]       = (uint16_t)(base + 2);
+      indices[idx + 3]       = (uint16_t)(base + 2);
+      indices[idx + 4]       = (uint16_t)(base + 1);
+      indices[idx + 5]       = (uint16_t)(base + 3);
+   }
+
+   vkUnmapMemory(device, vk->quad_ibo.memory);
+   vk->quad_ibo.num_quads = max_quads;
+}
+
+static void vulkan_deinit_quad_ibo(vk_t *vk)
+{
+   VkDevice device = vk->context->device;
+   if (vk->quad_ibo.buffer != VK_NULL_HANDLE)
+      vkDestroyBuffer(device, vk->quad_ibo.buffer, NULL);
+   if (vk->quad_ibo.memory != VK_NULL_HANDLE)
+      vkFreeMemory(device, vk->quad_ibo.memory, NULL);
+   vk->quad_ibo.buffer     = VK_NULL_HANDLE;
+   vk->quad_ibo.memory     = VK_NULL_HANDLE;
+   vk->quad_ibo.num_quads  = 0;
+}
+
 static void vulkan_init_static_resources(vk_t *vk)
 {
    int i;
@@ -3546,6 +3747,9 @@ static void vulkan_init_static_resources(vk_t *vk)
    vk->display.blank_texture = vulkan_create_texture(vk, NULL,
          4, 4, VK_FORMAT_B8G8R8A8_UNORM,
          blank, NULL, VULKAN_TEXTURE_STATIC);
+
+   /* Create shared quad index buffer. */
+   vulkan_init_quad_ibo(vk, VULKAN_QUAD_IBO_DEFAULT_QUADS);
 }
 
 static void vulkan_deinit_static_resources(vk_t *vk)
@@ -3556,6 +3760,9 @@ static void vulkan_deinit_static_resources(vk_t *vk)
    vulkan_destroy_texture(
          vk->context->device,
          &vk->display.blank_texture);
+
+   /* Destroy shared quad index buffer. */
+   vulkan_deinit_quad_ibo(vk);
 
    vkDestroyCommandPool(vk->context->device,
          vk->staging_pool, NULL);
@@ -4641,20 +4848,16 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
    /* Upload descriptors */
    {
-      VkDescriptorSet set;
-      struct vk_buffer_range range;
-
-      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
-               sizeof(*quad->mvp), &range))
-         return;
-
+      /* Only allocate and update descriptors when state actually changed.
+       * Previously, a UBO was allocated unconditionally before this check,
+       * wasting buffer chain space every frame (fix #1). */
       if (
-               (memcmp(quad->mvp,
-                  &vk->tracker.mvp, sizeof(*quad->mvp)) == 0)
+               memcmp(quad->mvp,
+                  &vk->tracker.mvp, sizeof(*quad->mvp)) != 0
             || quad->texture->view != vk->tracker.view
             || quad->sampler != vk->tracker.sampler)
       {
-         /* Upload UBO */
+         VkDescriptorSet set;
          struct vk_buffer_range range;
 
          if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
@@ -4686,11 +4889,11 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       }
    }
 
-   /* Upload VBO */
+   /* Upload VBO — 4 unique vertices per quad, indexed draw. */
    {
       struct vk_buffer_range range;
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-               6 * sizeof(struct vk_vertex), &range))
+               4 * sizeof(struct vk_vertex), &range))
          return;
 
       {
@@ -4704,8 +4907,10 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
             &range.buffer, &range.offset);
    }
 
-   /* Draw the quad */
-   vkCmdDraw(vk->cmd, 6, 1, 0, 0);
+   /* Draw the quad using shared index buffer. */
+   vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
+         0, VK_INDEX_TYPE_UINT16);
+   vkCmdDrawIndexed(vk->cmd, 6, 1, 0, 0, 0);
 }
 #endif
 
@@ -4912,28 +5117,23 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
       vkCmdSetScissor(vk->cmd,  0, 1, &sci);
    }
 
-   /* Upload VBO */
+   /* Upload VBO — 4 unique vertices, indexed draw. */
    {
       struct vk_buffer_range range;
 
-      if (vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo, 6 * sizeof(struct vk_vertex), &range))
+      if (vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo, 4 * sizeof(struct vk_vertex), &range))
       {
          struct vk_vertex *pv = (struct vk_vertex*)range.data;
          int i;
 
-         /* Explicitly define the quad vertices to avoid macro issues.
-            Triangle 1: TL, BL, TR
-            Triangle 2: TR, BL, BR */
-            
+         /* 4 unique vertices:  0(TL), 1(BL), 2(TR), 3(BR)
+          * Index buffer provides: 0,1,2, 2,1,3 */
          pv[0].x = 0.0f; pv[0].y = 0.0f; pv[0].tex_x = 0.0f; pv[0].tex_y = 0.0f;
          pv[1].x = 0.0f; pv[1].y = 1.0f; pv[1].tex_x = 0.0f; pv[1].tex_y = 1.0f;
          pv[2].x = 1.0f; pv[2].y = 0.0f; pv[2].tex_x = 1.0f; pv[2].tex_y = 0.0f;
+         pv[3].x = 1.0f; pv[3].y = 1.0f; pv[3].tex_x = 1.0f; pv[3].tex_y = 1.0f;
 
-         pv[3].x = 1.0f; pv[3].y = 0.0f; pv[3].tex_x = 1.0f; pv[3].tex_y = 0.0f;
-         pv[4].x = 0.0f; pv[4].y = 1.0f; pv[4].tex_x = 0.0f; pv[4].tex_y = 1.0f;
-         pv[5].x = 1.0f; pv[5].y = 1.0f; pv[5].tex_x = 1.0f; pv[5].tex_y = 1.0f;
-
-         for (i = 0; i < 6; i++)
+         for (i = 0; i < 4; i++)
          {
             pv[i].color.r = 1.0f;
             pv[i].color.g = 1.0f;
@@ -4943,8 +5143,10 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
 
          vkCmdBindVertexBuffers(vk->cmd, 0, 1,
                &range.buffer, &range.offset);
-         
-         vkCmdDraw(vk->cmd, 6, 1, 0, 0);
+
+         vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
+               0, VK_INDEX_TYPE_UINT16);
+         vkCmdDrawIndexed(vk->cmd, 6, 1, 0, 0, 0);
       }
    }
 
@@ -5077,8 +5279,7 @@ static bool vulkan_frame(void *data, const void *frame,
    vk->tracker.pipeline              = VK_NULL_HANDLE;
    vk->tracker.view                  = VK_NULL_HANDLE;
    vk->tracker.sampler               = VK_NULL_HANDLE;
-   for (i = 0; i < 16; i++)
-      vk->tracker.mvp.data[i]        = 0.0f;
+   memset(vk->tracker.mvp.data, 0, sizeof(vk->tracker.mvp.data));
 
    waits_for_semaphores              =
           (vk->flags & VK_FLAG_HW_ENABLE)
@@ -6589,27 +6790,136 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
          ((vk->flags & VK_FLAG_OVERLAY_FULLSCREEN) > 0),
          false);
 
-   for (i = 0; i < (int) vk->overlay.count; i++)
+   /* Pre-allocate all UBOs and descriptor sets for overlays,
+    * then batch-write all descriptors in a single vkUpdateDescriptorSets
+    * call before issuing any draw commands. This eliminates N separate
+    * vkUpdateDescriptorSets calls when rendering N overlays. */
    {
-      struct vk_draw_triangles call;
-      struct vk_buffer_range range;
+      int count = (int)vk->overlay.count;
+      /* Stack-allocate for typical overlay counts; these are small structs. */
+      struct vk_buffer_range  ubo_ranges[16];
+      struct vk_buffer_range  vbo_ranges[16];
+      VkDescriptorSet         sets[16];
+      struct vk_descriptor_batch batch;
 
-      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-               4 * sizeof(struct vk_vertex), &range))
-         break;
+      /* Clamp to stack array size */
+      if (count > 16)
+         count = 16;
 
-      memcpy(range.data, &vk->overlay.vertex[i * 4],
-            4 * sizeof(struct vk_vertex));
+      vulkan_descriptor_batch_init(&batch);
 
-      call.vertices     = 4;
-      call.uniform_size = sizeof(vk->mvp);
-      call.uniform      = &vk->mvp;
-      call.vbo          = &range;
-      call.texture      = &vk->overlay.images[i];
-      call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
-      call.sampler      = (call.texture->flags & VK_TEX_FLAG_MIPMAP)
-         ? vk->samplers.mipmap_linear : vk->samplers.linear;
-      vulkan_draw_triangles(vk, &call);
+      /* Phase 1: Allocate UBOs, descriptor sets, VBOs and stage writes. */
+      for (i = 0; i < count; i++)
+      {
+         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+                  sizeof(vk->mvp), &ubo_ranges[i]))
+         {
+            count = i;
+            break;
+         }
+
+         memcpy(ubo_ranges[i].data, &vk->mvp, sizeof(vk->mvp));
+
+         sets[i] = vulkan_descriptor_manager_alloc(
+               vk->context->device,
+               &vk->chain->descriptor_manager);
+
+         if (!vulkan_descriptor_batch_add(&batch, sets[i],
+                  ubo_ranges[i].buffer,
+                  ubo_ranges[i].offset,
+                  sizeof(vk->mvp),
+                  &vk->overlay.images[i],
+                  (vk->overlay.images[i].flags & VK_TEX_FLAG_MIPMAP)
+                     ? vk->samplers.mipmap_linear : vk->samplers.linear))
+         {
+            /* Batch full — flush what we have and add again. */
+            vulkan_descriptor_batch_flush(vk->context->device, &batch);
+            vulkan_descriptor_batch_add(&batch, sets[i],
+                  ubo_ranges[i].buffer,
+                  ubo_ranges[i].offset,
+                  sizeof(vk->mvp),
+                  &vk->overlay.images[i],
+                  (vk->overlay.images[i].flags & VK_TEX_FLAG_MIPMAP)
+                     ? vk->samplers.mipmap_linear : vk->samplers.linear);
+         }
+
+         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+                  4 * sizeof(struct vk_vertex), &vbo_ranges[i]))
+         {
+            count = i;
+            break;
+         }
+
+         memcpy(vbo_ranges[i].data, &vk->overlay.vertex[i * 4],
+               4 * sizeof(struct vk_vertex));
+      }
+
+      /* Single batched flush for all overlay descriptors. */
+      vulkan_descriptor_batch_flush(vk->context->device, &batch);
+
+      /* Phase 2: Issue draw commands using pre-allocated resources. */
+      for (i = 0; i < count; i++)
+      {
+         struct vk_texture *tex = &vk->overlay.images[i];
+         VkPipeline pipeline    = vk->display.pipelines[3]; /* Strip with blend */
+
+         if (tex->image)
+            vulkan_transition_texture(vk, vk->cmd, tex);
+
+         if (pipeline != vk->tracker.pipeline)
+         {
+            VkRect2D sci;
+            vkCmdBindPipeline(vk->cmd,
+                  VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+            vk->tracker.pipeline = pipeline;
+            vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+
+            if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+               sci               = vk->tracker.scissor;
+            else
+            {
+               sci.offset.x      = vk->vp.x;
+               sci.offset.y      = vk->vp.y;
+               sci.extent.width  = vk->vp.width;
+               sci.extent.height = vk->vp.height;
+            }
+
+            vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+            vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+            vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+         }
+         else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
+         {
+            VkRect2D sci;
+            if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+               sci               = vk->tracker.scissor;
+            else
+            {
+               sci.offset.x      = vk->vp.x;
+               sci.offset.y      = vk->vp.y;
+               sci.extent.width  = vk->vp.width;
+               sci.extent.height = vk->vp.height;
+            }
+
+            vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+            vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+            vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+         }
+
+         vkCmdBindDescriptorSets(vk->cmd,
+               VK_PIPELINE_BIND_POINT_GRAPHICS,
+               vk->pipelines.layout, 0,
+               1, &sets[i], 0, NULL);
+
+         vkCmdBindVertexBuffers(vk->cmd, 0, 1,
+               &vbo_ranges[i].buffer, &vbo_ranges[i].offset);
+
+         vkCmdDraw(vk->cmd, 4, 1, 0, 0);
+      }
+
+      vk->tracker.view    = VK_NULL_HANDLE;
+      vk->tracker.sampler = VK_NULL_HANDLE;
+      memset(vk->tracker.mvp.data, 0, sizeof(vk->tracker.mvp.data));
    }
 
    /* Restore the viewport so we don't mess with recording. */
