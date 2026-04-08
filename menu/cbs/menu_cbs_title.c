@@ -44,21 +44,6 @@
    return action_get_title_generic(s, len, path, msg_hash_to_str(lbl)); \
 } \
 
-/* Safely append a short suffix (e.g. ": " or " - ") to s at offset _len.
- * Returns the new write position. If there is not enough room, the buffer
- * is left untouched and the original _len is returned. */
-static size_t safe_strbuf_append(char *s, size_t len, size_t _len,
-      const char *suffix, size_t suffix_len)
-{
-   if (_len + suffix_len < len)
-   {
-      memcpy(s + _len, suffix, suffix_len);
-      _len        += suffix_len;
-      s[_len]      = '\0';
-   }
-   return _len;
-}
-
 static void sanitize_to_string(char *s, const char *lbl, size_t len)
 {
    const char *src = lbl;
@@ -94,10 +79,15 @@ static void sanitize_to_string(char *s, const char *lbl, size_t len)
    size_t _len = 0; \
    const char *title = msg_hash_to_str(lbl); \
    if (title && *title) \
-      _len = strlcpy(s, title, len); \
-   if (path && *path) \
    { \
-      _len = safe_strbuf_append(s, len, _len, ": ", STRLEN_CONST(": ")); \
+      _len = strlcpy(s, title, len); \
+      if (_len >= len) \
+         _len = len - 1; \
+   } \
+   if (path && *path && _len + STRLEN_CONST(": ") < len) \
+   { \
+      memcpy(s + _len, ": ", STRLEN_CONST(": ")); \
+      _len += STRLEN_CONST(": "); \
       strlcpy(s + _len, path, len - _len); \
    } \
    return 1; \
@@ -132,11 +122,23 @@ static void action_get_title_fill_path_search_filter_default(
 {
    size_t _len       = 0;
    const char *title = msg_hash_to_str(lbl);
+
    if (title && *title != '\0')
-      _len           = strlcpy(s, title, len);
-   _len = safe_strbuf_append(s, len, _len, " ", STRLEN_CONST(" "));
+   {
+      _len = strlcpy(s, title, len);
+      if (_len >= len)
+         _len = len - 1;
+      if (_len + 1 < len)
+      {
+         s[_len]     = ' ';
+         s[_len + 1] = '\0';
+         _len++;
+      }
+   }
+
    if (path && *path != '\0')
-      strlcpy(s + _len, path, len - _len);
+      _len += strlcpy(s + _len, path, len - _len);
+
    menu_entries_search_append_terms_string(s, len);
 }
 
@@ -414,17 +416,21 @@ static int action_get_title_deferred_core_backup_list(
    if (!core_path || !*core_path || !prefix || !*prefix)
       return 0;
 
-   _len      = strlcpy(s, prefix, len);
-   _len      = safe_strbuf_append(s, len, _len, ": ", STRLEN_CONST(": "));
+   _len = strlcpy(s, prefix, len);
 
-   /* Search for specified core
-    * > If core is found, add display name */
+   if (_len + 2 < len)
+   {
+      s[_len]     = ':';
+      s[_len + 1] = ' ';
+      _len       += 2;
+      s[_len]     = '\0';
+   }
+
    if (   core_info_find(core_path, &core_info)
        && core_info->display_name)
       strlcpy(s + _len, core_info->display_name, len - _len);
    else
    {
-      /* > If not, use core file name */
       const char *core_filename = path_basename_nocompression(core_path);
       if (core_filename && *core_filename)
          strlcpy(s + _len, core_filename, len - _len);
@@ -491,9 +497,18 @@ static int action_get_core_information_steam_list(
       const char *path, const char *label, unsigned menu_type,
       char *s, size_t len)
 {
-   size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), len);
-   _len = safe_strbuf_append(s, len, _len, " - ", STRLEN_CONST(" - "));
-   strlcpy(s + _len, path, len - _len);
+   const char *info = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION);
+   size_t info_len  = strlen(info);
+
+   if (info_len + 3 < len)
+   {
+      memcpy(s, info, info_len);
+      memcpy(s + info_len, " - ", 3);
+      strlcpy(s + info_len + 3, path, len - info_len - 3);
+   }
+   else
+      strlcpy(s, info, len);
+
    return 1;
 }
 #endif
@@ -807,10 +822,29 @@ static int action_get_title_deferred_database_manager_list(
 static int action_get_sideload_core_list(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST), len);
-   _len = safe_strbuf_append(s, len, _len, " ", STRLEN_CONST(" "));
-   if (path && *path)
-      strlcpy(s + _len, path, len - _len);
+   const char *str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST);
+   size_t str_len  = strlen(str);
+
+   if (str_len + 1 < len)
+   {
+      memcpy(s, str, str_len);
+      s[str_len] = ' ';
+      size_t _len = str_len + 1;
+
+      if (path && *path)
+      {
+         size_t path_len = strlen(path);
+         if (_len + path_len >= len)
+            path_len = len - _len - 1;
+         memcpy(s + _len, path, path_len);
+         _len += path_len;
+      }
+
+      s[_len] = '\0';
+   }
+   else
+      strlcpy(s, str, len);
+
    return 0;
 }
 
@@ -819,18 +853,24 @@ static int action_get_title_default(const char *path, const char *label,
 {
    size_t _len = strlcpy(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
+   if (_len >= len)
+      _len = len - 1;
    if (path && *path)
    {
-      _len = safe_strbuf_append(s, len, _len, ": ", STRLEN_CONST(": "));
+      if (_len + STRLEN_CONST(": ") < len)
+      {
+         s[_len]     = ':';
+         s[_len + 1] = ' ';
+         _len       += 2;
+         s[_len]     = '\0';
+      }
 #if IOS
       fill_pathname_abbreviate_special(s + _len, path, len - _len);
 #else
       strlcpy(s + _len, path, len - _len);
 #endif
    }
-
    menu_entries_search_append_terms_string(s, len);
-
    return 0;
 }
 
@@ -844,7 +884,6 @@ static int action_get_title_group_settings(const char *path, const char *label,
       enum msg_hash_enums val;
       bool is_playlist_tab;
    } title_info_list_t;
-
    /* Note: MENU_ENUM_LABEL_HORIZONTAL_MENU *is* a playlist
     * tab, but its actual title is set elsewhere - so treat
     * it as a generic top-level item */
@@ -863,7 +902,6 @@ static int action_get_title_group_settings(const char *path, const char *label,
       {MENU_ENUM_LABEL_NETPLAY_TAB,           MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,           false },
       {MENU_ENUM_LABEL_HORIZONTAL_MENU,       MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,       false },
    };
-
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
    {
       if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
@@ -876,7 +914,6 @@ static int action_get_title_group_settings(const char *path, const char *label,
          return 0;
       }
    }
-
    /* Split label on '|' without heap allocation */
    if (label && *label)
    {
@@ -892,14 +929,18 @@ static int action_get_title_group_settings(const char *path, const char *label,
          _len = first_len;
          if (sep[1] != '\0')
          {
-            _len = safe_strbuf_append(s, len, _len, " - ", STRLEN_CONST(" - "));
+            if (_len + STRLEN_CONST(" - ") < len)
+            {
+               memcpy(s + _len, " - ", STRLEN_CONST(" - "));
+               _len        += STRLEN_CONST(" - ");
+               s[_len]      = '\0';
+            }
             strlcpy(s + _len, sep + 1, len - _len);
          }
       }
       else
          strlcpy(s, label, len);
    }
-
    return 0;
 }
 
