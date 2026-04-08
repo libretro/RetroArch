@@ -1310,7 +1310,7 @@ static void explore_load_view(explore_state_t *state, const char* path)
 unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
 {
    unsigned i;
-   char tmp[512];
+   char tmp[1024];
    struct explore_state *state  = explore_state;
    struct menu_state   *menu_st = menu_state_get_ptr();
    menu_handle_t *menu          = menu_st->driver_data;

@@ -2772,19 +2772,17 @@ static int create_string_list_rdb_entry_int(
       int actual_int, const char *path, file_list_t *list)
 {
    size_t _len;
-   char str[16];
    char tmp[128];
-   char out_lbl[NAME_MAX_LENGTH];
-   str[0]          = '\0';
-   snprintf(str, sizeof(str), "%d", actual_int);
+   char out_lbl[NAME_MAX_LENGTH*2];
    _len            = strlcpy(out_lbl, label, sizeof(out_lbl));
-   _len           += strlcpy(out_lbl + _len, "|", sizeof(out_lbl) - _len);
-   _len           += strlcpy(out_lbl + _len, str,  sizeof(out_lbl) - _len);
-   _len           += strlcpy(out_lbl + _len, "|", sizeof(out_lbl) - _len);
+   out_lbl[_len++] = '|';
+   _len           += snprintf(out_lbl + _len, sizeof(out_lbl) - _len, "%d", actual_int);
+   out_lbl[_len++] = '|';
    strlcpy(out_lbl + _len, path, sizeof(out_lbl) - _len);
-   _len            = strlcpy(tmp, desc, sizeof(tmp));
-   _len          += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
-   strlcpy(tmp + _len, str, sizeof(tmp) - _len);
+   _len        = strlcpy(tmp, desc, sizeof(tmp));
+   tmp[_len++] = ':';
+   tmp[_len++] = ' ';
+   _len       += snprintf(tmp + _len, sizeof(tmp) - _len, "%d", actual_int);
    menu_entries_append(list, tmp, out_lbl,
          enum_idx,
          0, 0, 0, NULL);
