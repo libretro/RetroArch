@@ -4665,7 +4665,7 @@ static void xmb_animation_line_ticker_smooth_loop(uint64_t idx,
 
 static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
 {
-   char *wrapped_str              = NULL;
+   char wrapped_str[PATH_MAX_LENGTH];
    const char *wideglyph_str      = NULL;
    size_t line_ticker_src_len     = 0;
    size_t wrapped_str_len         = 0;
@@ -4678,13 +4678,11 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
    size_t top_fade_line_offset    = 0;
    size_t bottom_fade_line_offset = 0;
    bool fade_active               = false;
-   bool ret                       = false;
-   bool is_active                 = false;
    int wideglyph_width            = 100;
 
-   /* Line pointers (replaces string_list) */
-   const char **line_starts       = NULL;
-   size_t *line_lengths           = NULL;
+#define XMB_LINE_TICKER_MAX_LINES 256
+   const char *line_starts[XMB_LINE_TICKER_MAX_LINES];
+   size_t line_lengths[XMB_LINE_TICKER_MAX_LINES];
    size_t num_lines               = 0;
 
    size_t (*word_wrap_func)(char *dst, size_t dst_size,
@@ -4699,12 +4697,29 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
        || (!line_ticker->src_str || !*line_ticker->src_str)
        || (line_ticker->field_width < 1)
        || (line_ticker->field_height < 1))
-      goto end;
+   {
+      if (line_ticker->dst_str_len > 0)
+         line_ticker->dst_str[0] = '\0';
+
+      if (line_ticker->fade_enabled)
+      {
+         if (line_ticker->top_fade_str_len > 0)
+            line_ticker->top_fade_str[0] = '\0';
+
+         if (line_ticker->bottom_fade_str_len > 0)
+            line_ticker->bottom_fade_str[0] = '\0';
+
+         *line_ticker->top_fade_alpha = 0.0f;
+         *line_ticker->bottom_fade_alpha = 0.0f;
+      }
+
+      return false;
+   }
 
    /* Get font dimensions */
    if ((glyph_width = font_driver_get_message_width(
          line_ticker->font, "a", 1, line_ticker->font_scale)) <= 0)
-      goto end;
+      goto fail;
 
    if ((wideglyph_str = msg_hash_get_wideglyph_str()))
    {
@@ -4722,20 +4737,22 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
    /* > Height */
    if ((glyph_height = font_driver_get_line_height(
          line_ticker->font, line_ticker->font_scale)) <= 0)
-      goto end;
+      goto fail;
 
    /* Determine line wrap parameters */
    line_len          = (size_t)(line_ticker->field_width  / glyph_width);
    max_display_lines = (size_t)(line_ticker->field_height / glyph_height);
 
    if ((line_len < 1) || (max_display_lines < 1))
-      goto end;
+      goto fail;
 
    /* Line wrap input string */
    line_ticker_src_len = strlen(line_ticker->src_str);
-   wrapped_str_len     = line_ticker_src_len + 1 + 10;
-   if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
-      goto end;
+   wrapped_str_len     = sizeof(wrapped_str);
+
+   if (line_ticker_src_len + 11 > wrapped_str_len)
+      goto fail;
+
    wrapped_str[0] = '\0';
 
    (word_wrap_func)(
@@ -4746,19 +4763,13 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
          (int)line_len,
          wideglyph_width, 0);
 
-   if (!wrapped_str || !*wrapped_str)
-      goto end;
+   if (!*wrapped_str)
+      goto fail;
 
    /* Split into lines using memchr */
    {
-      const char *p   = wrapped_str;
+      const char *p       = wrapped_str;
       const char *end_ptr = wrapped_str + strlen(wrapped_str);
-      size_t capacity = 16;
-
-      line_starts  = (const char**)malloc(capacity * sizeof(*line_starts));
-      line_lengths = (size_t*)malloc(capacity * sizeof(*line_lengths));
-      if (!line_starts || !line_lengths)
-         goto end;
 
       while (p < end_ptr)
       {
@@ -4766,25 +4777,8 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
          if (!nl)
             nl = end_ptr;
 
-         if (num_lines >= capacity)
-         {
-            const char **new_starts;
-            size_t *new_lengths;
-            capacity *= 2;
-            new_starts  = (const char**)realloc(line_starts,  capacity * sizeof(*line_starts));
-            new_lengths = (size_t*)realloc(line_lengths, capacity * sizeof(*line_lengths));
-            if (!new_starts || !new_lengths)
-            {
-               /* If only one realloc failed, keep the original pointers valid for cleanup */
-               if (new_starts)
-                  line_starts = new_starts;
-               if (new_lengths)
-                  line_lengths = new_lengths;
-               goto end;
-            }
-            line_starts  = new_starts;
-            line_lengths = new_lengths;
-         }
+         if (num_lines >= XMB_LINE_TICKER_MAX_LINES)
+            break;
 
          line_starts[num_lines]  = p;
          line_lengths[num_lines] = (size_t)(nl - p);
@@ -4795,7 +4789,7 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
    }
 
    if (num_lines < 1)
-      goto end;
+      goto fail;
 
    /* Check whether total number of lines fits within
     * the set field limit */
@@ -4819,8 +4813,7 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
          *line_ticker->bottom_fade_alpha    = 0.0f;
       }
 
-      ret = true;
-      goto end;
+      return true;
    }
 
    /* Determine which lines should be shown, along with
@@ -4853,7 +4846,7 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
    }
 
    if (!num_display_lines)
-      goto end;
+      goto fail;
 
    /* Build output string from required lines */
    {
@@ -4909,42 +4902,27 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
       }
    }
 
-   ret                      = true;
-   is_active                = true;
-   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
+   p_anim->flags     |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
-end:
+   return true;
 
-   if (wrapped_str)
+fail:
+   if (line_ticker->dst_str_len > 0)
+      line_ticker->dst_str[0] = '\0';
+
+   if (line_ticker->fade_enabled)
    {
-      free(wrapped_str);
-      wrapped_str = NULL;
+      if (line_ticker->top_fade_str_len > 0)
+         line_ticker->top_fade_str[0] = '\0';
+
+      if (line_ticker->bottom_fade_str_len > 0)
+         line_ticker->bottom_fade_str[0] = '\0';
+
+      *line_ticker->top_fade_alpha = 0.0f;
+      *line_ticker->bottom_fade_alpha = 0.0f;
    }
 
-   if (line_starts)
-      free(line_starts);
-   if (line_lengths)
-      free(line_lengths);
-
-   if (!ret)
-   {
-      if (line_ticker->dst_str_len > 0)
-         line_ticker->dst_str[0] = '\0';
-
-      if (line_ticker->fade_enabled)
-      {
-         if (line_ticker->top_fade_str_len > 0)
-            line_ticker->top_fade_str[0] = '\0';
-
-         if (line_ticker->bottom_fade_str_len > 0)
-            line_ticker->bottom_fade_str[0] = '\0';
-
-         *line_ticker->top_fade_alpha = 0.0f;
-         *line_ticker->bottom_fade_alpha = 0.0f;
-      }
-   }
-
-   return is_active;
+   return false;
 }
 
 static int xmb_draw_item(
