@@ -117,7 +117,7 @@ extern "C" {
       vkCreateRenderPass(device, &rp_info, NULL, render_pass);
    }
 
-   void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
+   static void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
    {
       VkClearColorValue color;
       VkImageSubresourceRange range;
