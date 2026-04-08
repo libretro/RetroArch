@@ -1268,44 +1268,38 @@ size_t fill_pathname_abbreviated_or_relative(char *s,
       const char *in_refpath, const char *in_path, size_t len)
 {
    size_t _len;
-   char in_path_conformed[PATH_MAX_LENGTH];
-   char in_refpath_conformed[PATH_MAX_LENGTH];
-   char absolute_path[PATH_MAX_LENGTH];
-   char relative_path[PATH_MAX_LENGTH];
+   char buf_a[PATH_MAX_LENGTH];
+   char buf_b[PATH_MAX_LENGTH];
 
-   absolute_path[0]        = '\0';
-   relative_path[0]        = '\0';
+   strlcpy(buf_a, in_path,    sizeof(buf_a));
+   strlcpy(buf_b, in_refpath, sizeof(buf_b));
 
-   strlcpy(in_path_conformed,    in_path,    sizeof(in_path_conformed));
-   strlcpy(in_refpath_conformed, in_refpath, sizeof(in_refpath_conformed));
+   pathname_conform_slashes_to_os(buf_a);
+   pathname_conform_slashes_to_os(buf_b);
 
-   pathname_conform_slashes_to_os(in_path_conformed);
-   pathname_conform_slashes_to_os(in_refpath_conformed);
-
-   /* Expand paths which start with :\ to an absolute path */
-   fill_pathname_expand_special(absolute_path,
-         in_path_conformed, sizeof(absolute_path));
+   /* Expand paths which start with :\ to an absolute path.
+    * Write into s (used as scratch for the absolute path). */
+   s[0] = '\0';
+   fill_pathname_expand_special(s, buf_a, len);
 
    /* Get the absolute path if it is not already */
-   if (!path_is_absolute(absolute_path))
-      fill_pathname_resolve_relative(absolute_path,
-            in_refpath_conformed, in_path_conformed,
-            sizeof(absolute_path));
-   pathname_conform_slashes_to_os(absolute_path);
+   if (!path_is_absolute(s))
+      fill_pathname_resolve_relative(s, buf_b, buf_a, len);
+   pathname_conform_slashes_to_os(s);
 
-   /* Get the relative path and see 
-    * how many directories long it is */
-   path_relative_to(relative_path, absolute_path,
-         in_refpath_conformed, sizeof(relative_path));
+   /* s now holds the absolute path, buf_a is free.
+    * Compute the relative path into buf_a. */
+   path_relative_to(buf_a, s, buf_b, sizeof(buf_a));
 
-   /* Get the abbreviated path and see 
-    * how many directories long it is */
-   _len = fill_pathname_abbreviate_special(s, absolute_path, len);
+   /* buf_b is now also free. Save the absolute path there so we can
+    * pass non-overlapping pointers to fill_pathname_abbreviate_special. */
+   strlcpy(buf_b, s, sizeof(buf_b));
+   _len = fill_pathname_abbreviate_special(s, buf_b, len);
 
-   /* Use the shortest path, preferring the relative path*/
-   if (     get_pathname_num_slashes(relative_path)
+   /* Use the shortest path, preferring the relative path */
+   if (     get_pathname_num_slashes(buf_a)
          <= get_pathname_num_slashes(s))
-      return strlcpy(s, relative_path, len);
+      return strlcpy(s, buf_a, len);
    return _len;
 }
 
