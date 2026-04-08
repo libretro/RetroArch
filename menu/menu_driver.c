@@ -4790,25 +4790,8 @@ static bool menu_input_key_bind_iterate(
    if (_binds->timer_timeout.timeout_us <= 0)
    {
       input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
-
-#if 1
       /* Give up on first timeout */
       return true;
-#else
-      /* Skip to next bind */
-      _binds->begin++;
-      _binds->output++;
-
-      _binds->timer_hold   .timeout_us  = input_bind_hold_us;
-      _binds->timer_hold   .current     = current_time;
-      _binds->timer_hold   .timeout_end = current_time + input_bind_hold_us;
-
-      _binds->timer_timeout.timeout_us  = input_bind_timeout_us;
-      _binds->timer_timeout.current     = current_time;
-      _binds->timer_timeout.timeout_end = current_time + input_bind_timeout_us;
-
-      timed_out = true;
-#endif
    }
 
    /* binds.begin is updated in keyboard_press callback. */

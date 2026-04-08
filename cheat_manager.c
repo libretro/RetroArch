@@ -873,12 +873,6 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 
    cheat_st->num_matches = (cheat_st->total_memory_size * 8) / (1 << cheat_st->search_bit_size);
 
-#if 0
-   /* Ensure we're aligned on 4-byte boundary */
-   if (meminfo.size % 4 > 0)
-      cheat_st->total_memory_size = cheat_st->total_memory_size + (4 - (meminfo.size % 4));
-#endif
-
    if (is_search_initialization)
    {
       if (cheat_st->prev_memory_buf)
