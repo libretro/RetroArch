@@ -546,7 +546,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    /* Look for a sibling sensor (IMU) evdev node under the same HID parent */
    udev_find_sensor_sibling(dev, p);
 
-   if (pad->ident && *pad->ident)
+   if (*pad->ident)
    {
       input_autoconfigure_connect(
                pad->ident,
@@ -633,7 +633,7 @@ static void udev_free_pad(unsigned pad)
    if (udev_pads[pad].sensor_path)
       free(udev_pads[pad].sensor_path);
    udev_pads[pad].path = NULL;
-   if (udev_pads[pad].ident && *udev_pads[pad].ident)
+   if (*udev_pads[pad].ident)
       udev_pads[pad].ident[0] = '\0';
 
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
@@ -1198,9 +1198,8 @@ static bool udev_joypad_query_pad(unsigned pad)
 
 static const char *udev_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS || (!udev_pads[pad].ident || !*udev_pads[pad].ident))
+   if (pad >= MAX_USERS || !*udev_pads[pad].ident)
       return NULL;
-
    return udev_pads[pad].ident;
 }
 
