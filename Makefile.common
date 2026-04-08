@@ -588,6 +588,9 @@ ifeq ($(HAVE_LIBRETRODB), 1)
       OBJ += menu/menu_explore.o \
              tasks/task_menu_explore.o
    endif
+   ifeq ($(HAVE_VFS), 1)
+      OBJ += menu/menu_vfs_browser.o
+   endif
 endif
 
 ifeq ($(HAVE_BUILTINBEARSSL), 1)
