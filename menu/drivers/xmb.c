@@ -1102,36 +1102,35 @@ static void xmb_render_messagebox_internal(
    int usable_width                    = 0;
    unsigned y_position                 = 0;
    bool input_dialog_display_kb        = false;
+   size_t wrapped_len                  = 0;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
    char *lines[512];
    char *start, *nl, *end;
-
-   wrapped_message[0]                  = '\0';
 
    if ((usable_width = (int)video_width - (xmb->margins_dialog * 8)) < 1)
       return;
    usable_width = (usable_width < 300) ? 300 : usable_width;
 
-   (xmb->word_wrap)(
+   wrapped_len = (xmb->word_wrap)(
          wrapped_message, sizeof(wrapped_message),
          message, strlen(message),
          usable_width / (xmb->font_size * 0.85f),
          xmb->wideglyph_width, 0);
 
+   if (wrapped_len == 0)
+      return;
+
    /* Single-pass: find lines, null-terminate, measure width */
    start = wrapped_message;
-   end   = wrapped_message + strlen(wrapped_message);
+   end   = wrapped_message + wrapped_len;
 
    while (start <= end && line_count < 512)
    {
       int width;
       nl = (char *)memchr(start, '\n', end - start);
-
       if (nl)
          *nl = '\0';
-
       lines[line_count++] = start;
-
       if (*start)
       {
          width = font_driver_get_message_width(
@@ -1141,7 +1140,6 @@ static void xmb_render_messagebox_internal(
          if (longest_width > usable_width)
             longest_width = usable_width;
       }
-
       start = nl ? nl + 1 : end + 1;
    }
 

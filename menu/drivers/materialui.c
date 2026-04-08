@@ -2771,33 +2771,26 @@ static void materialui_render_messagebox(
    const char *lines[64];
    int lengths[64];
    wrapped_msg[0] = '\0';
-
    /* Sanity check */
    if (  (!msg || !*msg)
        || !mui
        || !mui->font_data.list.font)
       return;
-
    if ((usable_width = (int)video_width - (mui->margin * 4.0)) < 1)
       return;
-
    /* Split message into lines */
-   (mui->word_wrap)(
+   wrapped_len = (mui->word_wrap)(
          wrapped_msg, sizeof(wrapped_msg),
          msg, strlen(msg),
          usable_width / (int)mui->font_data.list.glyph_width,
          mui->font_data.list.wideglyph_width, 0);
-
-   wrapped_len = strlen(wrapped_msg);
    if (wrapped_len == 0)
       return;
-
    /* Replace newlines with null terminators,
     * record line pointers and lengths */
    {
       char *s          = wrapped_msg;
       size_t remaining = wrapped_len;
-
       lines[0] = wrapped_msg;
       while (remaining > 0)
       {
@@ -2820,14 +2813,11 @@ static void materialui_render_messagebox(
          }
       }
    }
-
    /* Get coordinates of message box centre */
    x = video_width / 2;
    y = (int)(y_centre - (line_count * mui->font_data.list.line_height) / 2);
-
    /* TODO/FIXME: Reduce text scale if width or height
     * are too large to fit on screen */
-
    /* Find the longest line width */
    for (i = 0; i < line_count; i++)
    {
@@ -2840,7 +2830,6 @@ static void materialui_render_messagebox(
                width : longest_width;
       }
    }
-
    /* Draw message box background */
    gfx_display_set_alpha(
          mui->colors.surface_background, mui->transition_alpha);
@@ -2857,7 +2846,6 @@ static void materialui_render_messagebox(
          video_height,
          mui->colors.surface_background,
          NULL);
-
    /* Print each line of the message */
    for (i = 0; i < line_count; i++)
    {

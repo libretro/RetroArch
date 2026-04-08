@@ -248,7 +248,7 @@ size_t word_wrap(
          if (src_end - src <= line_width)
          {
             _len = len - (size_t)(s - s_start);
-            return strlcpy(s, src, _len);
+            return (size_t)(s - s_start) + strlcpy(s, src, _len);
          }
       }
 
@@ -275,14 +275,14 @@ size_t word_wrap(
             if (src_end - src < line_width)
             {
                _len = len - (size_t)(s - s_start);
-               return strlcpy(s, src, _len);
+               return (size_t)(s - s_start) + strlcpy(s, src, _len);
             }
          }
       }
    }
 
    *s = '\0';
-   return 0;
+   return (size_t)(s - s_start);
 }
 
 /**
@@ -381,7 +381,7 @@ size_t word_wrap_wideglyph(char *s, size_t len,
          if (src_end - src <= line_width)
          {
             remaining = len - (size_t)(s - s_start);
-            return strlcpy(s, src, remaining);
+            return (size_t)(s - s_start) + strlcpy(s, src, remaining);
          }
       }
       else if (char_len >= 3)
@@ -417,7 +417,7 @@ size_t word_wrap_wideglyph(char *s, size_t len,
             if (src_end - src <= line_width)
             {
                remaining = len - (size_t)(s - s_start);
-               return strlcpy(s, src, remaining);
+               return (size_t)(s - s_start) + strlcpy(s, src, remaining);
             }
          }
          else if (lastspace)
@@ -435,14 +435,14 @@ size_t word_wrap_wideglyph(char *s, size_t len,
             if (src_end - src < line_width)
             {
                remaining = len - (size_t)(s - s_start);
-               return strlcpy(s, src, remaining);
+               return (size_t)(s - s_start) + strlcpy(s, src, remaining);
             }
          }
       }
    }
 
    *s = '\0';
-   return 0;
+   return (size_t)(s - s_start);
 }
 
 /**

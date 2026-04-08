@@ -7301,7 +7301,7 @@ static void ozone_draw_messagebox(
       return;
 
    /* Split message into lines */
-   (ozone->word_wrap)(
+   remaining = (ozone->word_wrap)(
          wrapped_message,
          sizeof(wrapped_message),
          message,
@@ -7310,8 +7310,7 @@ static void ozone_draw_messagebox(
          font_data.wideglyph_width,
          0);
 
-   line      = wrapped_message;
-   remaining = strlen(wrapped_message);
+   line = wrapped_message;
    while (line && *line && line_count < 256)
    {
       char *next = (char*)memchr(line, '\n', remaining);

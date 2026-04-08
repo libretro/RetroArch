@@ -4552,13 +4552,11 @@ static void rgui_render_messagebox(
    msg_len                  = strlen(message);
 
    /* Split message into lines */
-   word_wrap(
+   wrapped_len              = word_wrap(
          wrapped_message, sizeof(wrapped_message),
          message, msg_len,
          rgui->term_layout.width,
          100, 0);
-
-   wrapped_len              = strlen(wrapped_message);
 
    /* Tokenize wrapped message by newlines in-place */
    {
