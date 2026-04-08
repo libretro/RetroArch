@@ -102,17 +102,20 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 
       while (remaining)
       {
+         size_t klen, vlen;
+         const char *val;
+         const char *end;
          const char *key = ptr;
          const char *sep = (const char *)memchr(key, ':', remaining);
          if (!sep)
             break;
 
-         size_t klen = sep - key;
-         const char *val = sep + 1;
+         klen       = sep - key;
+         val        = sep + 1;
          remaining -= klen + 1;
 
-         const char *end = (const char *)memchr(val, ' ', remaining);
-         size_t vlen = end ? (size_t)(end - val) : remaining;
+         end        = (const char *)memchr(val, ' ', remaining);
+         vlen       = end ? (size_t)(end - val) : remaining;
 
          if (klen == 5 && !memcmp(key, "TRACK", 5))
             md->track = (unsigned)strtoul(val, NULL, 10);
@@ -144,6 +147,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 
    if (err == CHDERR_NONE)
    {
+      size_t len;
+      const char *start;
       const char *p = meta;
 
       if (strncmp(p, "TRACK:", 6) != 0)
@@ -153,11 +158,11 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 
       if (*p++ != ' ' || strncmp(p, "TYPE:", 5) != 0)
          return false;
-      p += 5;
-      const char *start = p;
+      p     += 5;
+      start  = p;
       while (*p && *p != ' ')
          p++;
-      size_t len = p - start;
+      len = p - start;
       if (len == 0 || len >= sizeof(md->type))
          return false;
       memcpy(md->type, start, len);
@@ -197,8 +202,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
             md->track = strtoul(p + 6, &p, 10);
          else if (strncmp(p, "TYPE:", 5) == 0)
          {
-            p += 5;
-            len = 0;
+            p   += 5;
+            len  = 0;
             while (p[len] && p[len] != ' ')
                len++;
             memcpy(md->type, p, len);
@@ -207,8 +212,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
          }
          else if (strncmp(p, "SUBTYPE:", 8) == 0)
          {
-            p += 8;
-            len = 0;
+            p   += 8;
+            len  = 0;
             while (p[len] && p[len] != ' ')
                len++;
             memcpy(md->subtype, p, len);
@@ -223,8 +228,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
             md->pregap = strtoul(p + 7, &p, 10);
          else if (strncmp(p, "PGTYPE:", 7) == 0)
          {
-            p += 7;
-            len = 0;
+            p   += 7;
+            len  = 0;
             while (p[len] && p[len] != ' ')
                len++;
             memcpy(md->pgtype, p, len);
@@ -233,8 +238,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
          }
          else if (strncmp(p, "PGSUB:", 6) == 0)
          {
-            p += 6;
-            len = 0;
+            p   += 6;
+            len  = 0;
             while (p[len] && p[len] != ' ')
                len++;
             memcpy(md->pgsub, p, len);
