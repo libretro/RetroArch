@@ -287,7 +287,7 @@ void gfx_widgets_msg_queue_push(
                if ((text_width - (text_width >> 2)) < rect_width)
                   rect_width = text_width - (text_width >> 2);
 
-               word_wrap(msg_new, msg_len, msg_title, len,
+               msg_widget->msg_len      = word_wrap(msg_new, msg_len, msg_title, len,
                      (int)((len * rect_width) / text_width),
                      100, 2);
 
@@ -308,7 +308,6 @@ void gfx_widgets_msg_queue_push(
                }
 
                msg_widget->text_height *= 2;
-               msg_widget->msg_len      = strlen(msg_new);
             }
             else
             {
