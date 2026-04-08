@@ -1702,10 +1702,10 @@ static void video_driver_set_viewport_config(
 }
 
 static void video_driver_set_viewport_square_pixel(
-   struct retro_game_geometry *geom)
+   struct retro_game_geometry *geom,
+   unsigned int rotation)
 {
    unsigned _len, i, aspect_x, aspect_y;
-   unsigned int rotation             = 0;
    unsigned highest                  = 1;
    unsigned width                    = geom->base_width;
    unsigned height                   = geom->base_height;
@@ -1713,7 +1713,6 @@ static void video_driver_set_viewport_square_pixel(
    if (width == 0 || height == 0)
       return;
 
-   rotation                          = retroarch_get_rotation();
    _len                              = MIN(width, height);
 
    for (i = 1; i < _len; i++)
@@ -1966,7 +1965,6 @@ float video_driver_get_core_aspect(void)
    /* Flip rotated aspect */
    if ((retroarch_get_rotation() + retroarch_get_core_requested_rotation()) % 2)
       return (1.0f / out_aspect);
-
    return out_aspect;
 }
 
@@ -2123,11 +2121,13 @@ void video_driver_set_aspect_ratio(void)
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
    unsigned  aspect_ratio_idx         = settings->uints.video_aspect_ratio_idx;
+   unsigned int rotation              = retroarch_get_rotation();
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel(&video_st->av_info.geometry);
+         video_driver_set_viewport_square_pixel(&video_st->av_info.geometry,
+         rotation);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -2264,15 +2264,17 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
  * Gets viewport scaling dimensions based on
  * scaled integer aspect ratio.
  **/
-static void video_viewport_get_scaled_integer(struct video_viewport *vp,
+static void video_viewport_get_scaled_integer(
+      video_driver_state_t *video_st,
+      settings_t *settings,
+      struct video_viewport *vp,
       unsigned width, unsigned height,
       float aspect_ratio, bool keep_aspect,
-      bool y_down)
+      bool y_down,
+      unsigned int rotation)
 {
    int x                           = 0;
    int y                           = 0;
-   settings_t *settings            = config_get_ptr();
-   video_driver_state_t *video_st  = &video_driver_st;
    unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
    unsigned scaling                = settings->uints.video_scale_integer_scaling;
    unsigned axis                   = settings->uints.video_scale_integer_axis;
@@ -2282,7 +2284,6 @@ static void video_viewport_get_scaled_integer(struct video_viewport *vp,
    float vp_bias_y                 = settings->floats.video_vp_bias_y;
    unsigned content_width          = video_st->frame_cache_width;
    unsigned content_height         = video_st->frame_cache_height;
-   unsigned int rotation           = retroarch_get_rotation();
 #if defined(RARCH_MOBILE)
    if (width < height)
    {
@@ -2623,6 +2624,7 @@ void video_driver_update_viewport(
    const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
    void *ctx_data                  = (void*)video_st->context_data;
    float video_driver_aspect_ratio = video_st->aspect_ratio;
+   unsigned int rotation           = retroarch_get_rotation();
 
    vp->x                           = 0;
    vp->y                           = 0;
@@ -2685,11 +2687,12 @@ void video_driver_update_viewport(
 #endif
 
    if (video_scale_integer && !force_full)
-      video_viewport_get_scaled_integer(
+      video_viewport_get_scaled_integer(video_st,
+            settings,
             vp,
             vp->full_width,
             vp->full_height,
-            video_driver_aspect_ratio, keep_aspect, y_down);
+            video_driver_aspect_ratio, keep_aspect, y_down, rotation);
    else if (keep_aspect && !force_full)
    {
       /* Calculate device_aspect, using translate_aspect if available
@@ -3502,6 +3505,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    struct retro_game_geometry *geom       = &video_st->av_info.geometry;
    const enum retro_pixel_format
       video_driver_pix_fmt                = video_st->pix_fmt;
+   unsigned int rotation                  = retroarch_get_rotation();
 #ifdef HAVE_VIDEO_FILTER
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 
@@ -3534,7 +3538,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          sizeof(aspectratio_lut[ASPECT_RATIO_FULL].name));
 
    /* Update core-dependent aspect ratio values. */
-   video_driver_set_viewport_square_pixel(geom);
+   video_driver_set_viewport_square_pixel(geom, rotation);
    video_driver_set_viewport_core();
    video_driver_set_viewport_config(geom,
          settings->floats.video_aspect_ratio,
@@ -3620,7 +3624,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 
             /* rotated games send unrotated width/height and
              * require special handling here because of it */
-            if ((retroarch_get_rotation() % 2))
+            if (rotation % 2)
             {
                 /* Determine nominal window size based on
                  * core geometry */
@@ -3798,7 +3802,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       video_st->current_video->viewport_info(video_st->data, custom_vp);
    }
 
-   video_driver_set_rotation(retroarch_get_rotation() % 4);
+   video_driver_set_rotation(rotation % 4);
 
    video_st->current_video->suppress_screensaver(video_st->data,
          settings->bools.ui_suspend_screensaver_enable);
@@ -3884,6 +3888,7 @@ void video_driver_frame(const void *data, unsigned width,
    video_driver_state_t *video_st = &video_driver_st;
    const video_driver_t *vid      = video_st->current_video;
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   unsigned int rotation          = retroarch_get_rotation();
    const enum retro_pixel_format
       video_driver_pix_fmt        = video_st->pix_fmt;
    bool runloop_idle              = (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false;
@@ -4313,7 +4318,6 @@ void video_driver_frame(const void *data, unsigned width,
       float scale                            = ((float)video_info.height / 480)
             * 0.50f * (DEFAULT_FONT_SIZE / video_info.font_size);
       struct retro_system_av_info *av_info   = &video_st->av_info;
-      unsigned rotation                      = retroarch_get_rotation();
       unsigned red                           = 235;
       unsigned green                         = 235;
       unsigned blue                          = 235;
@@ -4530,7 +4534,7 @@ void video_driver_frame(const void *data, unsigned width,
             native_width, width,
             height,
             video_st->core_hz,
-            retroarch_get_rotation() & 1,
+            rotation & 1,
             video_info.crt_switch_resolution,
             video_info.crt_switch_center_adjust,
             video_info.crt_switch_porch_adjust,
