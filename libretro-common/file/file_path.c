@@ -1070,21 +1070,18 @@ size_t fill_pathname_join_delim(char *s, const char *dir,
 size_t fill_pathname_expand_special(char *s, const char *in_path, size_t len)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
-   char *app_dir = NULL;
-   if (in_path[0] == '~')
+   if (in_path[0] == '~' || in_path[0] == ':')
    {
-      app_dir    = (char*)malloc(DIR_MAX_LENGTH * sizeof(char));
-      fill_pathname_home_dir(app_dir, DIR_MAX_LENGTH * sizeof(char));
-   }
-   else if (in_path[0] == ':')
-   {
-      app_dir    = (char*)malloc(DIR_MAX_LENGTH * sizeof(char));
-      app_dir[0] = '\0';
-      fill_pathname_application_dir(app_dir, DIR_MAX_LENGTH * sizeof(char));
-   }
+      char app_dir[DIR_MAX_LENGTH];
 
-   if (app_dir)
-   {
+      if (in_path[0] == '~')
+         fill_pathname_home_dir(app_dir, sizeof(app_dir));
+      else
+      {
+         app_dir[0] = '\0';
+         fill_pathname_application_dir(app_dir, sizeof(app_dir));
+      }
+
       if (*app_dir)
       {
          size_t _len  = strlcpy(s, app_dir, len);
@@ -1102,8 +1099,6 @@ size_t fill_pathname_expand_special(char *s, const char *in_path, size_t len)
 
          in_path += 2;
       }
-
-      free(app_dir);
    }
 #endif
    return strlcpy(s, in_path, len);
