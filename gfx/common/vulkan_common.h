@@ -314,14 +314,6 @@ struct vk_descriptor_manager
    unsigned num_sizes;
 };
 
-bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
-      struct vk_buffer_chain *chain, size_t len,
-      struct vk_buffer_range *range);
-
-struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
-      VkDevice device,
-      const struct vk_descriptor_manager *manager);
-
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs);
@@ -332,18 +324,6 @@ uint32_t vulkan_find_memory_type_fallback(
       uint32_t host_reqs_second);
 
 void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
-
-struct vk_buffer vulkan_create_buffer(
-      const struct vulkan_context *context,
-      size_t len, VkBufferUsageFlags usage);
-
-void vulkan_destroy_buffer(
-      VkDevice device,
-      struct vk_buffer *buffer);
-
-VkDescriptorSet vulkan_descriptor_manager_alloc(
-      VkDevice device,
-      struct vk_descriptor_manager *manager);
 
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type);
@@ -371,24 +351,6 @@ void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 #ifdef VULKAN_HDR_SWAPCHAIN
 bool vulkan_is_hdr10_format(VkFormat format);
 #endif /* VULKAN_HDR_SWAPCHAIN */
-
-void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
-      VkRenderPass *render_pass);
-
-void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
-
-void vulkan_framebuffer_generate_mips(
-      VkFramebuffer framebuffer,
-      VkImage image,
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      unsigned levels
-      );
-
-void vulkan_framebuffer_copy(VkImage image,
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      VkImage src_image, VkImageLayout src_layout);
 
 RETRO_END_DECLS
 

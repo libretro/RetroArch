@@ -509,6 +509,122 @@ static unsigned vulkan_num_miplevels(unsigned width, unsigned height)
    return levels;
 }
 
+static struct vk_buffer vulkan_create_buffer(
+      const struct vulkan_context *context,
+      size_t len, VkBufferUsageFlags usage)
+{
+   struct vk_buffer buffer;
+   VkMemoryRequirements mem_reqs;
+   VkBufferCreateInfo info;
+   VkMemoryAllocateInfo alloc;
+
+   info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   info.pNext                 = NULL;
+   info.flags                 = 0;
+   info.size                  = len;
+   info.usage                 = usage;
+   info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+   info.queueFamilyIndexCount = 0;
+   info.pQueueFamilyIndices   = NULL;
+   vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
+   vulkan_debug_mark_buffer(context->device, buffer.buffer);
+
+   vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
+
+   alloc.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext                = NULL;
+   alloc.allocationSize       = mem_reqs.size;
+   alloc.memoryTypeIndex      = vulkan_find_memory_type(
+         &context->memory_properties,
+         mem_reqs.memoryTypeBits,
+           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+   vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
+   vulkan_debug_mark_memory(context->device, buffer.memory);
+   vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
+
+   buffer.size                = len;
+
+   vkMapMemory(context->device,
+         buffer.memory, 0, buffer.size, 0, &buffer.mapped);
+   return buffer;
+}
+
+static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
+      const struct vulkan_context *context,
+      size_t len, VkBufferUsageFlags usage)
+{
+   struct vk_buffer_node *node = (struct vk_buffer_node*)
+      malloc(sizeof(*node));
+   if (!node)
+      return NULL;
+   node->buffer = vulkan_create_buffer(
+         context, len, usage);
+   node->next   = NULL;
+   return node;
+}
+
+static bool vulkan_buffer_chain_suballoc(struct vk_buffer_chain *chain,
+      size_t len, struct vk_buffer_range *range)
+{
+   VkDeviceSize next_offset = chain->offset + len;
+   if (next_offset <= chain->current->buffer.size)
+   {
+      range->data   = (uint8_t*)chain->current->buffer.mapped + chain->offset;
+      range->buffer = chain->current->buffer.buffer;
+      range->offset = chain->offset;
+      chain->offset = (next_offset + chain->alignment - 1)
+         & ~(chain->alignment - 1);
+      return true;
+   }
+   return false;
+}
+
+
+static bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
+      struct vk_buffer_chain *chain,
+      size_t len, struct vk_buffer_range *range)
+{
+   if (!chain->head)
+   {
+      if (!(chain->head = vulkan_buffer_chain_alloc_node(context,
+            chain->block_size, chain->usage)))
+         return false;
+
+      chain->current = chain->head;
+      chain->offset  = 0;
+   }
+
+   if (!vulkan_buffer_chain_suballoc(chain, len, range))
+   {
+      /* We've exhausted the current chain, traverse list until we
+       * can find a block we can use. Usually, we just step once. */
+      while (chain->current->next)
+      {
+         chain->current = chain->current->next;
+         chain->offset  = 0;
+         if (vulkan_buffer_chain_suballoc(chain, len, range))
+            return true;
+      }
+
+      /* We have to allocate a new node, might allocate larger
+       * buffer here than block_size in case we have
+       * a very large allocation. */
+      if (len < chain->block_size)
+         len = chain->block_size;
+
+      if (!(chain->current->next = vulkan_buffer_chain_alloc_node(
+                  context, len, chain->usage)))
+         return false;
+
+      chain->current = chain->current->next;
+      chain->offset  = 0;
+      /* This cannot possibly fail. */
+      retro_assert(vulkan_buffer_chain_suballoc(chain, len, range));
+   }
+   return true;
+}
+
 static void vulkan_write_quad_descriptors(
       VkDevice device,
       VkDescriptorSet set,
@@ -695,6 +811,67 @@ static void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_t
          break;
    }
    texture->layout = VK_IMAGE_LAYOUT_GENERAL;
+}
+
+static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
+      VkDevice device,
+      const struct vk_descriptor_manager *manager)
+{
+   unsigned i;
+   VkDescriptorPoolCreateInfo pool_info;
+   VkDescriptorSetAllocateInfo alloc_info;
+   struct vk_descriptor_pool *pool =
+      (struct vk_descriptor_pool*)malloc(sizeof(*pool));
+   if (!pool)
+      return NULL;
+
+   pool_info.sType                 = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+   pool_info.pNext                 = NULL;
+   pool_info.flags                 = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+   pool_info.maxSets               = VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS;
+   pool_info.poolSizeCount         = manager->num_sizes;
+   pool_info.pPoolSizes            = manager->sizes;
+
+   pool->pool                      = VK_NULL_HANDLE;
+   for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
+      pool->sets[i]                = VK_NULL_HANDLE;
+   pool->next                      = NULL;
+
+   vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool);
+
+   /* Just allocate all descriptor sets up front. */
+   alloc_info.sType                = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+   alloc_info.pNext                = NULL;
+   alloc_info.descriptorPool       = pool->pool;
+   alloc_info.descriptorSetCount   = 1;
+   alloc_info.pSetLayouts          = &manager->set_layout;
+
+   for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
+      vkAllocateDescriptorSets(device, &alloc_info, &pool->sets[i]);
+
+   return pool;
+}
+
+
+static VkDescriptorSet vulkan_descriptor_manager_alloc(
+      VkDevice device, struct vk_descriptor_manager *manager)
+{
+   if (manager->count >= VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
+   {
+      while (manager->current->next)
+      {
+         manager->current = manager->current->next;
+         manager->count   = 0;
+         return manager->current->sets[manager->count++];
+      }
+
+      manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
+      retro_assert(manager->current->next);
+
+      manager->current = manager->current->next;
+      manager->count   = 0;
+   }
+   return manager->current->sets[manager->count++];
 }
 
 /* The VBO needs to be written to before calling this.
@@ -3100,6 +3277,16 @@ static void vulkan_init_samplers(vk_t *vk)
          &info, NULL, &vk->samplers.mipmap_linear);
 }
 
+static void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer)
+{
+   vkUnmapMemory(device, buffer->memory);
+   vkFreeMemory(device, buffer->memory, NULL);
+
+   vkDestroyBuffer(device, buffer->buffer, NULL);
+
+   memset(buffer, 0, sizeof(*buffer));
+}
+
 static void vulkan_buffer_chain_free(
       VkDevice device,
       struct vk_buffer_chain *chain)
@@ -3115,7 +3302,6 @@ static void vulkan_buffer_chain_free(
    }
    memset(chain, 0, sizeof(*chain));
 }
-
 
 static void vulkan_deinit_buffers(vk_t *vk)
 {
