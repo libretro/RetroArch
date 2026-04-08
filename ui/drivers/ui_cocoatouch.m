@@ -761,7 +761,7 @@ enum
    config.reportStoreConfiguration = storeConfig;
 
    /* Set appropriate monitors */
-   if (jit_available())
+   if (jit_available() || jit_possible())
       config.monitors = KSCrashMonitorTypeDebuggerSafe;
    else
       config.monitors = KSCrashMonitorTypeProductionSafe;
@@ -1578,12 +1578,11 @@ void ios_keyboard_end(void)
 
 int main(int argc, char *argv[])
 {
-#if TARGET_OS_IOS
+#if !TARGET_OS_TV
     if (jb_enable_ptrace_hack())
         RARCH_LOG("[Cocoa] Ptrace hack complete, JIT support is enabled.\n");
-    else
-        RARCH_WARN("[Cocoa] Ptrace hack NOT available; Please use an app like Jitterbug.\n");
 #endif
+    exec_mem_pool_init();
 #ifdef HAVE_SDL2
     SDL_SetMainReady();
 #endif

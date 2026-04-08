@@ -7803,7 +7803,8 @@ struct retro_exec_mem_alloc
  */
 struct retro_exec_mem_free
 {
-   void *rx;  /**< The \c rx pointer returned by a previous alloc call. */
+   void *rx;  /**< The \c rx pointer returned by a previous alloc call.
+                   The matching \c rw pointer is also accepted. */
 };
 
 /** @} */
