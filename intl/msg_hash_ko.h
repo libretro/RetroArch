@@ -4569,6 +4569,18 @@ MSG_HASH(
    "종료 시 구성 파일에 변경사항을 저장합니다. 메뉴에서 설정을 변경할 경우 유용합니다. 구성 파일을 덮어쓰며, #include와 주석은 보존되지 않습니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "구성 저장 최소화하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "기본값에서 변경된 설정만을 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "사용할 경우, 구성을 저장할 때 기본값에서 다른 값으로 변경된 설정들만을 기록합니다. 구성 파일의 크기가 작아지고, 직접 관리가 용이해집니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "종료 시 입력설정 파일 저장하기"
    )
@@ -7976,6 +7988,10 @@ MSG_HASH(
    "실행목록 새로 고침"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "실행목록에 마지막으로 수행한 콘텐츠 검색 작업을 반복하여 새로운 콘텐츠를 추가하고 올바르지 않은 항목을 제거합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "실행목록 삭제"
    )
@@ -8549,6 +8565,14 @@ MSG_HASH(
    "파일에서 데이터베이스에 일치하는 콘텐츠를 검색합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "콘텐츠 검색"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+   "콘텐츠 파일명 또는 데이터베이스 일치에 기반한 구성 가능한 검색을 수행합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "스캔"
    )
@@ -8614,6 +8638,30 @@ MSG_HASH(
 
 /* Import Content > Content Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+   "콘텐츠 경로"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+   "콘텐츠를 검색할 디렉토리(또는 파일)입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "대상 실행목록"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "생성될 재생목록의 파일명이자, 재생목록의 미리보기를 판별하는 데 사용될 이름입니다. 자동으로 설정할 경우 데이터베이스 이름 또는 콘텐츠 디렉토리 이름을 사용합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "커스텀 재생목록 이름"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "검색된 콘텐츠를 저장할 커스텀 재생목록의 이름입니다."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "기본 코어"

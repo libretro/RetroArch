@@ -4537,6 +4537,18 @@ MSG_HASH(
    "Guarda los cambios en el archivo de configuración en disco al salir. Ideal para cualquier cambio que hagas en el menú. Sobrescribirá el archivo de configuración existente sin preservar los #include y los comentarios."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Guardar configuración mínima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Guarda únicamente aquellos ajustes que hayan cambiado respecto a los valores predeterminados."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Al activar esta opción, se guardarán solo aquellos valores de los ajutes que hayan cambiado respecto a sus valores predeterminados. Producirá un archivo de configuración más pequeño y manejable."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "Guardar archivos de reasignación al salir"
    )

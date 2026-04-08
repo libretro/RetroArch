@@ -52,7 +52,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "เล่นออนไลน์"
+   "เล่นออนไลน์ Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
@@ -60,7 +60,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Core ที่ไม่ต้องใช้ไฟล์เกม"
+   "Core ที่ไม่มีเนื้อหา"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -71,7 +71,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   "เมนูด่วน"
+   "ทางลัด"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
@@ -177,7 +177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "เล่นออนไลน์"
+   "เล่นออนไลน์ Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
@@ -354,7 +354,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Core ที่ไม่ต้องใช้ไฟล์เกม"
+   "Core ที่ไม่มีเนื้อหา"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -2658,6 +2658,14 @@ MSG_HASH(
 #endif
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+   "การควบคุมเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+   "เปลี่ยนการตั้งค่า การควบคุมเมนู"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "ปุ่มลัด:"
    )
@@ -2720,10 +2728,50 @@ MSG_HASH(
 
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+   "คีย์บอร์ดเสมือน (เปิด/ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "เปิด/ปิดการแสดงคีย์บอร์ดเสมือนบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
+   "โอเวอร์เลย์ถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
+   "เปลี่ยนเป็นผังปุ่มถัดไปที่มีให้ใช้งาน ของโอเวอร์เลย์บนหน้าจอ ที่เปิดใช้อยู่ในปัจจุบัน"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "บริการ AI"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
+   "จับภาพหน้าจอของเนื้อหาปัจจุบัน เพื่อแปลภาษา และ/หรือ อ่านออกเสียงข้อความใดๆ ที่ปรากฏบนหน้าจอ ทั้งนี้ต้องเปิดใช้งานและตั้งค่า 'บริการ AI' ไว้ก่อน"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "ปิง Netplay (เปิด/ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "เปิด/ปิด การแสดงตัวนับค่าปิง สำหรับห้อง Netplay ที่ใช้งานอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+   "โฮสต์ Netplay (เปิด/ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
+   "เปิด/ปิด การเป็นโฮสต์ Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
+   "โหมดการเล่น/รับชม Netplay (เปิด/ปิด)"
+   )
 
 /* Settings > Input > Port # Controls */
 
@@ -2822,11 +2870,95 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   "กำหนดค่าสีเขียวของสีพื้นหลัง OSD โดยค่าที่ใช้งานได้จะอยู่ระหว่าง 0 ถึง 255"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   "สีพื้นหลังการแจ้งเตือน (สีน้ำเงิน)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   "กำหนดค่าสีน้ำเงินของสีพื้นหลัง OSD โดยค่าที่ใช้งานได้จะอยู่ระหว่าง 0 ถึง 255"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "ความโปร่งใสของพื้นหลังการแจ้งเตือน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "กำหนดความโปร่งใสของสีพื้นหลัง OSD โดยค่าที่ใช้งานได้จะอยู่ระหว่าง 0.0 ถึง 1.0"
+   )
 
 /* Settings > User Interface */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+   "รูปลักษณ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+   "ปรับแต่งการตั้งค่ารูปลักษณ์หน้าจอเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "การแสดงผลรายการเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "เปิด/ปิด การแสดงผลรายการเมนูต่างๆ ใน RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "หยุดเนื้อหาเมื่อเปิดใช้งานเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   "หยุดเนื้อหาชั่วคราว หากมีการเปิดใช้งานเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   "หยุดเนื้อหา เมื่อไม่ได้ใช้งานเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+   "ส่วนเสริม UI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+   "เริ่มใช้งานส่วนเสริม UI เมื่อบูต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
+   "เริ่มใช้งานไดรเวอร์ส่วนเสริม ส่วนติดต่อผู้ใช้ เมื่อบูต (หากมี)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   "เมนูเดสก์ท็อป (ต้องรีสตาร์ท)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+   "เปิดเมนูเดสก์ท็อปเมื่อเริ่มต้นระบบ"
+   )
 #ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "รูปลักษณ์หน้าจอด้านล่าง 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "ปรับแต่งการตั้งค่ารูปลักษณ์หน้าจอด้านล่าง"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "ไอคอนแอป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "เปลี่ยนไอคอนแอป"
+   )
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -2835,8 +2967,24 @@ MSG_HASH(
    "ทางลัด"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
+   "เปิด/ปิด การแสดงรายการ ในเมนูทางลัด"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "ตั้งค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
+   "เปิด/ปิด การแสดงผลรายการต่างๆ ในเมนูการตั้งค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
+   "แสดง 'โหลด Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
+   "แสดงตัวเลือก 'Load Core' ในเมนูหลัก"
    )
 #ifdef HAVE_LAKKA
 #endif
@@ -2854,9 +3002,97 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+   "ภาพตัวอย่างหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS,
+   "ประเภทของภาพตัวอย่างที่จะแสดง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+   "ขีดจำกัด การขยายขนาดภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+   "ขยายขนาดภาพตัวอย่างที่มีความกว้าง/ความสูงต่ำกว่าค่าที่กำหนดโดยอัตโนมัติ เพื่อเพิ่มคุณภาพของภาพ แต่อาจส่งผลต่อประสิทธิภาพการทำงานเล็กน้อย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "พื้นหลังภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "เปิดใช้งานการเติมพื้นที่ว่างในภาพตัวอย่างด้วยสีพื้นหลัง เพื่อให้ภาพทั้งหมดมีขนาดการแสดงผลที่เท่ากัน ช่วยให้เมนูดูสวยงามและเป็นระเบียบเมื่อมีภาพตัวอย่างที่มีสัดส่วนแตกต่[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+   "ภาพเคลื่อนไหวข้อความวิ่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
+   "เลือกรูปแบบการเลื่อนข้อความแนวนอน สำหรับข้อความเมนูที่ยาว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
+   "ความเร็วข้อความวิ่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
+   "ความเร็วของภาพเคลื่อนไหว เมื่อเลื่อนข้อความเมนูที่ยาว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
+   "ข้อความเลื่อนแบบสมูท"
+   )
 
 /* Settings > AI Service */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "แสดงคำแปลแบบภาพซ้อนทับบนหน้าจอ (โหมดรูปภาพ), เล่นเป็นเสียงอ่านจากข้อความ (เสียงพูด), หรือใช้โปรแกรมอ่านหน้าจอของระบบอย่างเช่น NVDA (โปรแกรมอ่านหน้าจอ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "ผู้ให้บริการ AI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "เลือกว่าจะใช้ผู้ให้บริการรายใดในการแปลภาษา โดยแบบ HTTP จะใช้เซิร์ฟเวอร์ภายนอกตาม URL ที่ตั้งค่าไว้ ส่วนแบบ Apple จะใช้ระบบ OCR และการแปลภาษาภายในเครื่อง (macOS/iOS)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   "URL ผู้ให้บริการ AI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
+   "ที่อยู่ URL http:// ของผู้ให้บริการแปลภาษาที่จะใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
+   "เปิดใช้งาน ผู้ให้บริการ AI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
+   "เปิดใช้งานบริการ AI ให้ทำงาน เมื่อมีการกด ปุ่มลัด บริการ AI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
+   "พักการทำงานระหว่างแปลภาษา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
+   "หยุด Core ในขณะที่กำลังแปลหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
+   "ภาษาต้นทาง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
+   "ภาษาต้นทางที่ต้องการแปล หากตั้งค่าเป็น 'ค่าพื้นฐาน' ระบบจะพยายามตรวจหาภาษาโดยอัตโนมัติ การระบุภาษาที่ชัดเจนจะช่วยให้แปลได้แม่นยำยิ่งขึ้น"
+   )
 
 /* Settings > Accessibility */
 
@@ -2869,12 +3105,116 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "ความสำเร็จ"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "ข้อความวิ่งแบบสมูท"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+   "บันทึกภาพหน้าจออัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
+   "บันทึกภาพหน้าจออัตโนมัติ เมื่อปลดล็อกความสำเร็จ"
+   )
+MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "โหมดเล่นซ้ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
+   "เริ่มเซสชันโดยเปิดใช้งานความสำเร็จทั้งหมด (รวมถึงอันที่เคยปลดล็อกไปแล้วก่อนหน้านี้)"
+   )
 
 /* Settings > Achievements > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "รูปลักษณ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
+   "เปลี่ยนตำแหน่งและระยะขอบของการแจ้งเตือนความสำเร็จบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
+   "ตำแหน่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
+   "ตั้งค่ามุมหรือขอบของหน้าจอ ที่จะใช้สำหรับการแสดงการแจ้งเตือนความสำเร็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
+   "ด้านบนซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
+   "ด้านบนกลาง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT,
+   "ด้านบนขวา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT,
+   "ด้านล่างซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   "ตรงกลางด้านล่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
+   "ด้านล่างขวา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "เติมช่องว่างให้ตรงกัน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "กำหนดว่าต้องการให้การแจ้งเตือนความสำเร็จ จัดวางในตำแหน่งเดียวกับการแจ้งเตือนบนหน้าจอประเภทอื่นๆ หรือไม่ หากปิดใช้งานจะสามารถตั้งค่าระยะขอบและตำแหน่งด้วยตนเองได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
+   "ระยะขอบแนวนอน กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   "ระยะห่างจากขอบจอซ้าย/ขวา ซึ่งสามารถใช้ชดเชยส่วนที่ล้นขอบจอได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
+   "ระยะขอบแนวตั้ง กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
+   "ระยะห่างจากขอบจอบน/ล่าง ซึ่งสามารถใช้ชดเชยส่วนที่ล้นขอบจอได้"
+   )
 
 /* Settings > Achievements > Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   "การแสดงผล"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   "เปลี่ยนการแสดงข้อความและองค์ประกอบต่าง ๆ บนหน้าจอ ไม่ส่งผลต่อการปิดการทำงานของระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
+   "รายการสรุปเมื่อเริ่มระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "แสดงข้อมูลเกี่ยวกับเกมที่กำลังโหลดและลำดับความคืบหน้าปัจจุบันของผู้ใช้\n'ทุกเกมที่ระบุได้' จะแสดงข้อมูลสรุปสำหรับเกมที่ไม่มีรายการความสำเร็จ เผยแพร่อยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
+   "ทุกเกมที่ระบุได้"
+   )
 
 /* Settings > Network */
 
@@ -3056,20 +3396,72 @@ MSG_HASH(
 
 /* XMB: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+   "รูปตัวอย่างรอง"
+   )
 
 /* XMB: Settings Options */
 
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "รูปตัวอย่างรอง"
+   )
 
 
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+   "มุมมองรูปตัวอย่างแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+   "กำหนดโหมดการแสดงรูปตัวอย่างใน รายการเล่น เมื่อใช้งานหน้าจอในแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+   "แสดงรูปตัวอย่างรอง ในมุมมองรายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+   "แสดงรูปตัวอย่างลำดับรอง เมื่อใช้โหมดมุมมองรายการเล่นแบบ 'รายการ' โดยการตั้งค่านี้จะมีผลก็ต่อเมื่อหน้าจอมีความกว้างเพียงพอที่จะแสดงรูปตัวอย่างสองรูปพร้อมกันเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   "พื้นหลังภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   "เพิ่มระยะขอบในพื้นที่ว่างของรูปตัวอย่างด้วยสีพื้นหลัง เพื่อให้รูปภาพทั้งหมดมีขนาดการแสดงผลที่สม่ำเสมอ ช่วยให้เมนูดูสวยงามยิ่งขึ้นเมื่อแสดงรูปตัวอย่างที่มีขนาดแตกต่างกัน[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
+   "ภาพตัวอย่างหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
+   "ประเภทหลักของรูปตัวอย่างสำหรับแต่ละรายการในรายการเล่น โดยปกติจะใช้เป็นไอคอนของเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
+   "รูปตัวอย่างรอง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
+   "ประเภทรูปตัวอย่างเสริม สำหรับแต่ละรายการในรายการเล่น โดยการใช้งานจะขึ้นอยู่กับโหมดมุมมองรูปตัวอย่างที่เลือกใช้ในขณะนั้น"
+   )
 
 /* MaterialUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
+   "น้ำเงิน"
+   )
 
 /* Qt (Desktop Menu) */
 
