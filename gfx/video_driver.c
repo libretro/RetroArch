@@ -1674,7 +1674,7 @@ void video_driver_free_internal(void)
       video_monitor_compute_fps_statistics(video_st->frame_time_count);
 }
 
-void video_driver_set_viewport_config(
+static void video_driver_set_viewport_config(
       struct retro_game_geometry *geom,
       float video_aspect_ratio,
       bool video_aspect_ratio_auto)
@@ -1701,7 +1701,8 @@ void video_driver_set_viewport_config(
       aspectratio_lut[ASPECT_RATIO_CONFIG].value = video_aspect_ratio;
 }
 
-void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom)
+static void video_driver_set_viewport_square_pixel(
+   struct retro_game_geometry *geom)
 {
    unsigned _len, i, aspect_x, aspect_y;
    unsigned int rotation             = 0;

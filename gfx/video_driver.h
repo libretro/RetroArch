@@ -1325,13 +1325,6 @@ bool video_driver_find_driver(
 
 void video_driver_restore_cached(void *settings_data);
 
-void video_driver_set_viewport_config(
-      struct retro_game_geometry *geom,
-      float video_aspect_ratio,
-      bool video_aspect_ratio_auto);
-
-void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom);
-
 bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled);
 
 /**
