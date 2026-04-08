@@ -827,9 +827,10 @@ static int action_get_sideload_core_list(const char *path, const char *label,
 
    if (str_len + 1 < len)
    {
+      size_t _len;
       memcpy(s, str, str_len);
       s[str_len] = ' ';
-      size_t _len = str_len + 1;
+      _len       = str_len + 1;
 
       if (path && *path)
       {
