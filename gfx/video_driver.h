@@ -1034,36 +1034,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
       void *group_data, void *subgroup_data, const char *parent_group);
 
 /**
- * video_viewport_get_scaled_integer:
- * @vp            : Viewport handle.
- * @width         : Width.
- * @height        : Height.
- * @aspect_ratio  : Aspect ratio (in float).
- * @keep_aspect   : Preserve aspect ratio?
- * @ydown         : Positive y goes "down".
- *
- * Gets viewport scaling dimensions based on
- * scaled integer aspect ratio.
- **/
-void video_viewport_get_scaled_integer(struct video_viewport *vp,
-      unsigned width, unsigned height,
-      float aspect_ratio, bool keep_aspect,
-      bool ydown);
-
-/**
- * video_viewport_get_scaled_aspect:
- * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.
- * @width         : Viewport width.
- * @height        : Viewport height.
- * @ydown         : Positive y goes "down".
- *
- * Gets viewport scaling dimensions based on
- * scaled non-integer aspect ratio.
- **/
-void video_viewport_get_scaled_aspect(struct video_viewport *vp,
-      unsigned width, unsigned height, bool ydown);
-
-/**
  * video_viewport_get_scaled_aspect2:
  * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.
  * @width         : Viewport width.
@@ -1170,9 +1140,6 @@ void video_driver_set_threaded(bool val);
 void video_frame_delay(video_driver_state_t *video_st,
       settings_t *settings);
 
-void video_frame_delay_auto(video_driver_state_t *video_st,
-      video_frame_delay_auto_t *vfda);
-
 /**
  * video_context_driver_init:
  * @core_set_shared_context : Boolean value that tells us whether shared context
@@ -1239,7 +1206,6 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 float video_driver_get_refresh_rate(void);
 
-
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
 bool video_driver_test_all_flags(enum display_flags testflag);
@@ -1262,18 +1228,6 @@ const char *hw_render_context_name(
 
 video_driver_t *hw_render_context_driver(
       enum retro_hw_context_type type, int major, int minor);
-
-void video_driver_pixel_converter_free(
-      video_pixel_scaler_t *scalr);
-
-video_pixel_scaler_t *video_driver_pixel_converter_init(
-      const enum retro_pixel_format video_driver_pix_fmt,
-      struct retro_hw_render_callback *hwr,
-      unsigned size);
-
-void recording_dump_frame(
-      const void *data, unsigned width,
-      unsigned height, size_t pitch, bool is_idle);
 
 void video_driver_gpu_record_deinit(void);
 
