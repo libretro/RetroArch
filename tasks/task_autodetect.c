@@ -518,11 +518,12 @@ static void reallocate_port_if_needed(
          if (device_has_reserved_slot)
          {
             unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
+            const char *a = input_config_get_device_name(prev_assigned_port);
             if (     detected_port != prev_assigned_port
-                 && !string_is_empty(input_config_get_device_name(prev_assigned_port))
+                 && (a && *a)
                  && (( settings_value_vendor_id  == input_config_get_device_vid(prev_assigned_port)
                  && settings_value_product_id == input_config_get_device_pid(prev_assigned_port))
-                 || strcmp(input_config_get_device_name(prev_assigned_port), settings_value_device_name) == 0))
+                 || strcmp(a, settings_value_device_name) == 0))
             {
                RARCH_DBG("[Autoconf] Same type of device already took this slot, continuing search...\n");
                device_has_reserved_slot = false;

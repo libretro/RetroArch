@@ -2627,6 +2627,7 @@ bool path_set(enum rarch_path_type type, const char *path)
 
 bool path_is_empty(enum rarch_path_type type)
 {
+   const char *a = NULL;
    struct rarch_state *p_rarch = &rarch_st;
 
    switch (type)
@@ -2668,11 +2669,13 @@ bool path_is_empty(enum rarch_path_type type)
             return true;
          break;
       case RARCH_PATH_BASENAME:
-         if (string_is_empty(runloop_state_get_ptr()->runtime_content_path_basename))
+         a = runloop_state_get_ptr()->runtime_content_path_basename;
+         if (!a || !*a)
             return true;
          break;
       case RARCH_PATH_SUBSYSTEM:
-         if (string_is_empty(runloop_state_get_ptr()->subsystem_path))
+         a = runloop_state_get_ptr()->subsystem_path;
+         if (!a || !*a)
             return true;
          break;
       case RARCH_PATH_NONE:

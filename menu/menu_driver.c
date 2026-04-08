@@ -8039,14 +8039,16 @@ int generic_menu_entry_action(
    }
    else if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
    {
+#ifdef HAVE_DYNAMIC
+      const char *a = path_get(RARCH_PATH_CORE_LAST);
+#endif
       menu_st->flags &= ~MENU_ST_FLAG_PENDING_RELOAD_CORE;
 
 #ifdef HAVE_DYNAMIC
-      if (!string_is_empty(path_get(RARCH_PATH_CORE_LAST)))
+      if (a && *a)
       {
          content_ctx_info_t content_info = {0};
-         if (task_push_load_new_core(
-                     path_get(RARCH_PATH_CORE_LAST),
+         if (task_push_load_new_core(a,
                      NULL,
                      &content_info,
                      CORE_TYPE_PLAIN,

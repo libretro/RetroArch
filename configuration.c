@@ -4709,6 +4709,7 @@ static bool config_load_file(global_t *global,
  */
 bool config_load_override(void *data)
 {
+   const char *a = NULL;
    char core_path[PATH_MAX_LENGTH];
    char game_path[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
@@ -4774,15 +4775,13 @@ bool config_load_override(void *data)
    /* Create a new config file from core_path */
    if (path_is_valid(core_path))
    {
+      const char *a = path_get(RARCH_PATH_CONFIG_OVERRIDE);
       RARCH_LOG("[Override] Core-specific overrides found at \"%s\".\n",
             core_path);
-
-      if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
+      if (should_append && a && *a)
       {
          char tmp_path[PATH_MAX_LENGTH];
-         size_t _len      = strlcpy(tmp_path,
-               path_get(RARCH_PATH_CONFIG_OVERRIDE),
-               sizeof(tmp_path) - 2);
+         size_t _len      = strlcpy(tmp_path, a, sizeof(tmp_path) - 2);
          tmp_path[  _len] = '|';
          tmp_path[++_len] = '\0';
          strlcpy(tmp_path + _len, core_path, sizeof(tmp_path) - _len);
@@ -4801,15 +4800,14 @@ bool config_load_override(void *data)
       /* Create a new config file from content_path */
       if (path_is_valid(content_path))
       {
+         const char *a = path_get(RARCH_PATH_CONFIG_OVERRIDE);
          RARCH_LOG("[Override] Content dir-specific overrides found at \"%s\".\n",
                content_path);
 
-         if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
+         if (should_append && a && *a)
          {
             char tmp_path[PATH_MAX_LENGTH];
-            size_t _len      = strlcpy(tmp_path,
-                  path_get(RARCH_PATH_CONFIG_OVERRIDE),
-                  sizeof(tmp_path) - 2);
+            size_t _len      = strlcpy(tmp_path, a, sizeof(tmp_path) - 2);
             tmp_path[  _len] = '|';
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, content_path, sizeof(tmp_path) - _len);
@@ -4826,15 +4824,14 @@ bool config_load_override(void *data)
       /* Create a new config file from game_path */
       if (path_is_valid(game_path))
       {
+         const char *a = path_get(RARCH_PATH_CONFIG_OVERRIDE);
          RARCH_LOG("[Override] Game-specific overrides found at \"%s\".\n",
                game_path);
 
-         if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
+         if (should_append && a && *a)
          {
             char tmp_path[PATH_MAX_LENGTH];
-            size_t _len      = strlcpy(tmp_path,
-                  path_get(RARCH_PATH_CONFIG_OVERRIDE),
-                  sizeof(tmp_path) - 2);
+            size_t _len      = strlcpy(tmp_path, a, sizeof(tmp_path) - 2);
             tmp_path[  _len] = '|';
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, game_path, sizeof(tmp_path) - _len);
@@ -4861,8 +4858,9 @@ bool config_load_override(void *data)
    if (!config_load_file(global_get_ptr(), path_get(RARCH_PATH_CONFIG), settings))
       return false;
 
+   a = path_get(RARCH_PATH_CONFIG_OVERRIDE);
    if (     settings->bools.notification_show_config_override_load
-         && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
+         && a && *a)
    {
       char msg[128];
       size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED), sizeof(msg));
@@ -4874,7 +4872,8 @@ bool config_load_override(void *data)
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   if (!string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
+   a = path_get(RARCH_PATH_CONFIG_OVERRIDE);
+   if (a && *a)
       runloop_state_get_ptr()->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
    else
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
@@ -4884,7 +4883,8 @@ bool config_load_override(void *data)
 
 bool config_load_override_file(const char *config_path)
 {
-   settings_t *settings   = config_st;
+   const char *a        = NULL;
+   settings_t *settings = config_st;
 
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
 
@@ -4915,7 +4915,8 @@ bool config_load_override_file(const char *config_path)
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   if (!string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
+   a = path_get(RARCH_PATH_CONFIG_OVERRIDE);
+   if (a && *a)
       runloop_state_get_ptr()->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
    else
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
@@ -5607,6 +5608,7 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    unsigned i;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
+   const char *a = NULL;
    config_file_t *conf                  = NULL;
    int32_t pid_user                     = 0;
    int32_t vid_user                     = 0;
@@ -5702,9 +5704,11 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
          joypad_driver);
    config_set_string(conf, "input_device",
          input_config_get_device_name(settings->uints.input_joypad_index[user]));
+   a =
+input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
    config_set_string(conf, "input_device_display_name",
-         !string_is_empty(input_config_get_device_display_name(settings->uints.input_joypad_index[user]))
-            ? input_config_get_device_display_name(settings->uints.input_joypad_index[user])
+         (a && *a)
+            ? a
             : input_config_get_device_name(settings->uints.input_joypad_index[user]));
 
    pid_user = input_config_get_device_pid(settings->uints.input_joypad_index[user]);

@@ -1651,6 +1651,7 @@ static bool content_load(content_ctx_info_t *info,
 void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   const char *a = NULL;
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
    runloop_state_t       *runloop_st = runloop_state_get_ptr();
    rarch_system_info_t   *sys_info   = &runloop_st->system;
@@ -1676,17 +1677,20 @@ void menu_content_environment_get(int *argc, char *argv[],
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
       wrap_args->config_path   = path_get(RARCH_PATH_CONFIG);
-   if (!string_is_empty(dir_get_ptr(RARCH_DIR_SAVEFILE)))
+   a = dir_get_ptr(RARCH_DIR_SAVEFILE);
+   if (a && *a)
       wrap_args->sram_path     = dir_get_ptr(RARCH_DIR_SAVEFILE);
-   if (!string_is_empty(dir_get_ptr(RARCH_DIR_SAVESTATE)))
+   a = dir_get_ptr(RARCH_DIR_SAVESTATE);
+   if (a && *a)
       wrap_args->state_path    = dir_get_ptr(RARCH_DIR_SAVESTATE);
    if (!path_is_empty(RARCH_PATH_CONTENT))
       wrap_args->content_path  = path_get(RARCH_PATH_CONTENT);
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
-      wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE))
-         ? NULL
-         : path_get(RARCH_PATH_CORE);
+   {
+      a = path_get(RARCH_PATH_CORE);
+      wrap_args->libretro_path = (a && *a) ? a : NULL;
+   }
 }
 
 /**

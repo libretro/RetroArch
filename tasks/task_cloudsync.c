@@ -38,7 +38,6 @@
 
 #define CS_FILE_HASH(item_file) ((char*)((item_file) ? ((item_file)->userdata) : (NULL)))
 #define CS_FILE_KEY(item_file) ((item_file) ? ((item_file)->alt) : (NULL))
-#define CS_FILE_DELETED(item_file) (string_is_empty(CS_FILE_HASH(item_file)))
 
 enum task_cloud_sync_phase
 {
@@ -859,7 +858,7 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
       task_cloud_sync_resolve_conflict(sync_state);
    else if (current_changed)
       task_cloud_sync_upload_current_file(sync_state);
-   else if (!CS_FILE_DELETED(server_file))
+   else if (!string_is_empty(CS_FILE_HASH(server_file)))
       task_cloud_sync_fetch_server_file(sync_state);
    else
    {
@@ -1019,7 +1018,7 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
       if (server_current_key_cmp < 0)
       {
          /* the server has a file we don't have, we check the hash */
-         if (!CS_FILE_DELETED(server_file))
+         if (!string_is_empty(CS_FILE_HASH(server_file)))
             task_cloud_sync_fetch_server_file(sync_state);
          else
          {
@@ -1065,9 +1064,9 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
       else
       {
          /* the file has been deleted locally */
-         if (!CS_FILE_DELETED(server_file))
+         if (!string_is_empty(CS_FILE_HASH(server_file)))
          {
-            if (CS_FILE_DELETED(local_file))
+            if (string_is_empty(CS_FILE_HASH(local_file)))
                /* previously saw the delete, now it's resurrected */
                task_cloud_sync_fetch_server_file(sync_state);
             else if (string_is_equal(CS_FILE_HASH(server_file), CS_FILE_HASH(local_file)))

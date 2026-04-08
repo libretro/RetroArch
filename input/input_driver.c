@@ -5984,6 +5984,7 @@ static const char *input_overlay_path(bool want_osk)
 {
    static char   system_overlay_path[PATH_MAX_LENGTH] = {0};
    char          overlay_directory[PATH_MAX_LENGTH];
+   const char *a = NULL;
    settings_t   *settings                             = config_get_ptr();
    playlist_t   *playlist                             = playlist_get_cached();
    core_info_t  *core_info                            = NULL;
@@ -5998,7 +5999,8 @@ static const char *input_overlay_path(bool want_osk)
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL))
        return settings->paths.path_overlay;
    /* If there's no core, just return the default */
-   if (string_is_empty(path_get(RARCH_PATH_CORE)))
+   a = path_get(RARCH_PATH_CORE);
+   if (!a || !*a)
       return settings->paths.path_overlay;
    /* Let's go hunting */
    fill_pathname_expand_special(overlay_directory,

@@ -1443,10 +1443,12 @@ size_t command_event_save_auto_state(void)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *name_savestate  = runloop_st->name.savestate;
    char savestate_name_auto[PATH_MAX_LENGTH];
+   const char *a = NULL;
 
    if (!core_info_current_supports_savestate())
       return 0;
-   if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
+   a = path_basename(path_get(RARCH_PATH_BASENAME));
+   if (!a || !*a)
       return 0;
    _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));

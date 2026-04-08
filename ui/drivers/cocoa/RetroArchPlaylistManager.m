@@ -163,23 +163,26 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
     [self enumerateAllPlaylistEntries:^(const struct playlist_entry *entry, playlist_t *playlist, NSString *playlistName, uint32_t index) {
         RetroArchPlaylistGame *game = [[RetroArchPlaylistGame alloc] init];
 
-        // Create a unique ID from path and playlist
+        /* Create a unique ID from path and playlist */
         game.gameId = [NSString stringWithFormat:@"%@:%@", playlistName, @(index)];
         game.title = [NSString stringWithUTF8String:entry->label];
         game.fullPath = [NSString stringWithUTF8String:entry->path];
 
-        // Extract filename from path
+        /* Extract filename from path */
         const char *filename = path_basename(entry->path);
         game.filename = [NSString stringWithUTF8String:filename];
+       
+        const char *a = playlist_get_default_core_path(playlist);
+        const char *b = playlist_get_default_core_name(playlist);
 
         if (entry->core_path && *entry->core_path && !string_is_equal(entry->core_path, FILE_PATH_DETECT))
             game.corePath = [NSString stringWithUTF8String:entry->core_path];
-        else if (!string_is_empty(playlist_get_default_core_path(playlist)))
-            game.corePath = [NSString stringWithUTF8String:playlist_get_default_core_path(playlist)];
+        else if (a && *a)
+            game.corePath = [NSString stringWithUTF8String:a];
         if (entry->core_name && *entry->core_name && !string_is_equal(entry->core_name, FILE_PATH_DETECT))
             game.coreName = [NSString stringWithUTF8String:entry->core_name];
-        else if (!string_is_empty(playlist_get_default_core_name(playlist)))
-            game.coreName = [NSString stringWithUTF8String:playlist_get_default_core_name(playlist)];
+        else if (b && *b)
+            game.coreName = [NSString stringWithUTF8String:b];
 
         [games addObject:game];
     }];

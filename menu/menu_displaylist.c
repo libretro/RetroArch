@@ -1523,14 +1523,14 @@ static unsigned menu_displaylist_parse_core_option_override_list(file_list_t *li
                                && (runloop_st->core_options);
    bool game_options_active     = (flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE)   ? true : false;
    bool folder_options_active   = (flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE) ? true : false;
+   const char *a = path_get(RARCH_PATH_CONTENT);
 
    /* Sanity check - cannot handle core option
     * overrides if:
     * - Core is 'dummy'
     * - Core has no options
     * - No content has been loaded */
-   if (  !core_has_options
-       || string_is_empty(path_get(RARCH_PATH_CONTENT)))
+   if (!core_has_options || (!a || !*a))
       goto end;
 
    /* Show currently active core options file */
@@ -1611,7 +1611,8 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(file_list_t *list
 {
    unsigned count                = 0;
    uint32_t flags                = runloop_get_flags();
-   bool has_content              = !string_is_empty(path_get(RARCH_PATH_CONTENT));
+   const char *a                 = path_get(RARCH_PATH_CONTENT);
+   bool has_content              = a && *a;
    bool core_remap_active        = (flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE) ? true : false;
    bool content_dir_remap_active = (flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE) ? true : false;
    bool game_remap_active        = (flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE) ? true : false;
@@ -7069,7 +7070,8 @@ unsigned menu_displaylist_build_list(
 
             const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
             const char *core_name            = sys_info ? sys_info->info.library_name : NULL;
-            bool has_content                 = !string_is_empty(path_get(RARCH_PATH_CONTENT));
+            const char *a                    = path_get(RARCH_PATH_CONTENT);
+            bool has_content                 = (a && *a);
             bool core_override_remove        = false;
             bool content_dir_override_remove = false;
             bool game_override_remove        = false;
@@ -7475,7 +7477,8 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SHADER_PRESET_MANAGER:
          {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            bool has_content = !string_is_empty(path_get(RARCH_PATH_CONTENT));
+            const char *a                 = path_get(RARCH_PATH_CONTENT);
+            bool has_content              = (a && *a);
             const char *dir_video_shader  = settings->paths.directory_video_shader;
             const char *dir_menu_config   = settings->paths.directory_menu_config;
 

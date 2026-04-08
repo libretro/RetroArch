@@ -648,6 +648,7 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
       void *user_data, const char *err)
 {
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+   const char *a = NULL;
    pl_thumb_handle_t *pl_thumb     = NULL;
    bool do_refresh                 = false;
    playlist_t *current_playlist    = playlist_get_cached();
@@ -674,21 +675,20 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
     * it displays multiple thumbnails at a time... */
    if (!current_playlist || !menu)
       return;
-   if (string_is_empty(playlist_get_conf_path(current_playlist)))
+   a = playlist_get_conf_path(current_playlist);
+   if (!a || !*a)
       return;
 
 #ifdef HAVE_MATERIALUI
    if (menu_driver && memcmp(menu_driver, "glui", sizeof("glui")) == 0)
    {
-      if (!string_is_equal(pl_thumb->playlist_path,
-            playlist_get_conf_path(current_playlist)))
+      if (!string_is_equal(pl_thumb->playlist_path, a))
          return;
    }
    else
 #endif
    {
-      if (!string_is_equal(pl_thumb->playlist_path,
-            playlist_get_conf_path(current_playlist)))
+      if (!string_is_equal(pl_thumb->playlist_path, a))
          return;
    }
 
@@ -861,6 +861,7 @@ bool task_push_pl_entry_thumbnail_download(
       bool mute)
 {
    task_finder_data_t find_data;
+   const char *a = NULL;
    settings_t *settings          = config_get_ptr();
    retro_task_t *task            = task_init();
    pl_thumb_handle_t *pl_thumb   = (pl_thumb_handle_t*)calloc(1, sizeof(pl_thumb_handle_t));
@@ -877,9 +878,10 @@ bool task_push_pl_entry_thumbnail_download(
 
    dir_thumbnails                = settings->paths.directory_thumbnails;
 
+   a = playlist_get_conf_path(playlist);
    if (   (!system || !*system)
        || (!dir_thumbnails || !*dir_thumbnails)
-       || string_is_empty(playlist_get_conf_path(playlist)))
+       || (!a || !*a))
       goto error;
 
    if (idx >= playlist_size(playlist))
@@ -894,7 +896,7 @@ bool task_push_pl_entry_thumbnail_download(
 
    /* Copy playlist path
     * (required for task finder and menu refresh functionality) */
-   playlist_path                 = strdup(playlist_get_conf_path(playlist));
+   playlist_path                 = strdup(a);
 
    /* Concurrent download of thumbnails for the same
     * playlist entry is not allowed */

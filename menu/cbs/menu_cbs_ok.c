@@ -664,11 +664,12 @@ static const char *menu_driver_get_last_start_directory(void)
    settings_t *settings          = config_get_ptr();
    bool use_last                 = settings->bools.use_last_start_directory;
    const char *default_directory = settings->paths.directory_menu_content;
+   const char *a = path_get(RARCH_PATH_CONTENT);
 
    /* Also treat content launched from CLI as last start content */
    if (menu && use_last && !*menu->last_start_content.file_name
-         && !string_is_empty(path_get(RARCH_PATH_CONTENT)))
-      menu_driver_set_last_start_content(menu_st, path_get(RARCH_PATH_CONTENT));
+         && a && *a)
+      menu_driver_set_last_start_content(menu_st, a);
 
    /* Return default directory if there is no
     * last directory or it's invalid */
@@ -1390,9 +1391,9 @@ int generic_action_ok_displaylist_push(
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          {
+            const char *a = path_get(RARCH_PATH_CONTENT);
             filebrowser_clear_type();
-            fill_pathname_basedir(tmp,
-                  path_get(RARCH_PATH_CONTENT), sizeof(tmp));
+            fill_pathname_basedir(tmp, a, sizeof(tmp));
 
             info.type          = type;
             info.directory_ptr = idx;
@@ -1403,7 +1404,7 @@ int generic_action_ok_displaylist_push(
             /* Focus on current content entry */
             {
                char path_content[PATH_MAX_LENGTH];
-               strlcpy(path_content, path_get(RARCH_PATH_CONTENT), sizeof(path_content));
+               strlcpy(path_content, a, sizeof(path_content));
                /* Remove archive browsed file from the path */
                {
                   char *delim = path_content;
@@ -5961,13 +5962,13 @@ static int action_ok_add_to_favorites(const char *path,
       /* > core_path + core_name */
       if (sysinfo)
       {
-         if (!string_is_empty(path_get(RARCH_PATH_CORE)))
+         const char *a = path_get(RARCH_PATH_CORE);
+         if (a && *a)
          {
             core_info_t *core_info = NULL;
 
             /* >> core_path */
-            strlcpy(core_path, path_get(RARCH_PATH_CORE),
-                  sizeof(core_path));
+            strlcpy(core_path, a, sizeof(core_path));
             /* >> core_name
              * (always use display name, if available) */
             if (core_info_find(core_path, &core_info))
@@ -6083,13 +6084,12 @@ static int action_ok_add_entry_to_playlist_quickmenu(const char *path,
       /* > core_path + core_name */
       if (sysinfo)
       {
-         if (!string_is_empty(path_get(RARCH_PATH_CORE)))
+         const char *a = path_get(RARCH_PATH_CORE);
+         if (a && *a)
          {
             core_info_t *core_info = NULL;
-
             /* >> core_path */
-            strlcpy(core_path, path_get(RARCH_PATH_CORE),
-                  sizeof(core_path));
+            strlcpy(core_path, a, sizeof(core_path));
             /* >> core_name
              * (always use display name, if available) */
             if (core_info_find(core_path, &core_info))
