@@ -244,6 +244,31 @@ struct CommonResources
    std::unique_ptr<video_shader> shader_preset;
 
    VkDevice device;
+
+   /* Shared per-frame state: written once per frame by the filter chain,
+    * read by every pass in build_semantics().  Eliminates N per-pass
+    * copies of identical data and the O(passes) broadcast loops. */
+   uint64_t frame_count        = 0;
+   int32_t frame_direction     = 1;
+   uint32_t frame_time_delta   = 0;
+   float original_fps          = 0;
+   uint32_t rotation           = 0;
+   float core_aspect           = 0;
+   float core_aspect_rot       = 0;
+   uint32_t total_subframes    = 1;
+   uint32_t current_subframe   = 1;
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+   bool simulate_scanline      = false;
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
+#ifdef VULKAN_HDR_SWAPCHAIN
+   unsigned hdr_mode           = 0;
+   float paper_white_nits      = 0.0f;
+   unsigned expand_gamut       = 0;
+   float scanlines             = 0.0f;
+   unsigned subpixel_layout    = 0;
+   float inverse_tonemap       = 0.0f;
+   float hdr10                 = 0.0f;
+#endif /* VULKAN_HDR_SWAPCHAIN */
 };
 
 class Pass
@@ -257,9 +282,6 @@ class Pass
          cache(cache),
          num_sync_indices(num_sync_indices),
          final_pass(final_pass)
-#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-         ,simulate_scanline(false)
-#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       {}
 
       ~Pass();
@@ -294,27 +316,6 @@ class Pass
       void notify_sync_index(unsigned index) { sync_index = index; }
       void set_frame_count(uint64_t count) { frame_count = count; }
       void set_frame_count_period(unsigned p) { frame_count_period = p; }
-      void set_shader_subframes(uint32_t ts) { total_subframes = ts; }
-      void set_current_shader_subframe(uint32_t cs) { current_subframe = cs; }
-#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-      void set_simulate_scanline(bool simulate) { simulate_scanline = simulate; }
-#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
-      void set_frame_direction(int32_t dir) { frame_direction = dir; }
-      void set_frame_time_delta(uint32_t time_delta) { frame_time_delta = time_delta; }
-      void set_original_fps(float fps) { original_fps = fps; }
-      void set_rotation(uint32_t rot) { rotation = rot; }
-      void set_core_aspect(float coreaspect) { core_aspect = coreaspect; }
-      void set_core_aspect_rot(float coreaspectrot) { core_aspect_rot = coreaspectrot; }
-
-#ifdef VULKAN_HDR_SWAPCHAIN
-      void set_hdr_mode(unsigned hdr_mode_) { hdr_mode = hdr_mode_; }
-      void set_paper_white_nits(float paper_white_nits_) { paper_white_nits = paper_white_nits_; }
-      void set_expand_gamut(unsigned expand_gamut_) { expand_gamut = expand_gamut_; }
-      void set_scanlines(float scanlines_) { scanlines = scanlines_; }
-      void set_subpixel_layout(unsigned subpixel_layout_ ) { subpixel_layout = subpixel_layout_; }
-      void set_inverse_tonemap(float inverse_tonemap_) { inverse_tonemap = inverse_tonemap_; }
-      void set_hdr10(float hdr10_) { hdr10 = hdr10_; }
-#endif /* VULKAN_HDR_SWAPCHAIN */
 
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
@@ -347,9 +348,6 @@ class Pass
       unsigned num_sync_indices;
       unsigned sync_index;
       bool final_pass;
-#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-      bool simulate_scanline;
-#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
       Size2D get_output_size(const Size2D &original_size,
             const Size2D &max_source) const;
@@ -412,28 +410,10 @@ class Pass
             VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
             unsigned &write_count);
 
-      uint64_t frame_count        = 0;
-      int32_t frame_direction     = 1;
-      uint32_t frame_time_delta   = 0;
-      float original_fps          = 0;
-      uint32_t rotation           = 0;
-      float core_aspect           = 0;
-      float core_aspect_rot       = 0;
+      uint64_t frame_count        = 0;   /* shadow: may differ from common due to frame_count_period */
       unsigned frame_count_period = 0;
       unsigned pass_number        = 0;
-      uint32_t total_subframes    = 1;
-      uint32_t current_subframe   = 1;
       
-#ifdef VULKAN_HDR_SWAPCHAIN
-      unsigned hdr_mode           = 0;
-      float paper_white_nits      = 0.0f;
-      unsigned expand_gamut       = 0;
-      float scanlines             = 0.0f;
-      unsigned subpixel_layout    = 0;
-      float inverse_tonemap       = 0.0f;
-      float hdr10                 = 0.0f;
-#endif /* VULKAN_HDR_SWAPCHAIN */ 
-
       size_t ubo_offset           = 0;
       std::string pass_name;
 
@@ -543,6 +523,7 @@ struct vulkan_filter_chain
       unsigned current_sync_index;
 
       std::vector<std::unique_ptr<Framebuffer>> original_history;
+      unsigned history_ring_index    = 0;
       bool require_clear        = false;
       bool emits_hdr_colorspace = false;
       bool emits_hdr16_output   = false;
@@ -905,8 +886,21 @@ static bool vulkan_filter_chain_load_luts(
    submit_info.pCommandBuffers      = &cmd;
    submit_info.signalSemaphoreCount = 0;
    submit_info.pSignalSemaphores    = NULL;
-   vkQueueSubmit(info->queue, 1, &submit_info, VK_NULL_HANDLE);
-   vkQueueWaitIdle(info->queue);
+
+   {
+      VkFenceCreateInfo fence_info;
+      VkFence fence                = VK_NULL_HANDLE;
+
+      fence_info.sType             = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+      fence_info.pNext             = NULL;
+      fence_info.flags             = 0;
+
+      vkCreateFence(info->device, &fence_info, nullptr, &fence);
+      vkQueueSubmit(info->queue, 1, &submit_info, fence);
+      vkWaitForFences(info->device, 1, &fence, VK_TRUE, UINT64_MAX);
+      vkDestroyFence(info->device, fence, nullptr);
+   }
+
    vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
    chain->release_staging_buffers();
    return true;
@@ -992,17 +986,20 @@ void vulkan_filter_chain::flush()
 void vulkan_filter_chain::update_history_info()
 {
    unsigned i;
+   unsigned hist_size = (unsigned)original_history.size();
 
-   for (i = 0; i < original_history.size(); i++)
+   for (i = 0; i < hist_size; i++)
    {
+      /* Map logical index i (0 = most recent) to the ring buffer slot. */
+      unsigned ring_slot = (history_ring_index + i) % hist_size;
       Texture *source = &common.original_history[i];
 
       source->texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-      source->texture.view     = original_history[i]->get_view();
-      source->texture.image    = original_history[i]->get_image();
-      source->texture.width    = original_history[i]->get_size().width;
-      source->texture.height   = original_history[i]->get_size().height;
+      source->texture.view     = original_history[ring_slot]->get_view();
+      source->texture.image    = original_history[ring_slot]->get_image();
+      source->texture.width    = original_history[ring_slot]->get_size().width;
+      source->texture.height   = original_history[ring_slot]->get_size().height;
       source->filter           = passes.front()->get_source_filter();
       source->mip_filter       = passes.front()->get_mip_filter();
       source->address          = passes.front()->get_address_mode();
@@ -1083,8 +1080,8 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
 void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
       VkCommandBuffer cmd)
 {
-   std::unique_ptr<Framebuffer> tmp;
    VkImageLayout src_layout = input_texture.layout;
+   unsigned hist_size       = (unsigned)original_history.size();
 
    /* Transition input texture to something appropriate. */
    if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
@@ -1103,16 +1100,21 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
       src_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    }
 
-   std::unique_ptr<Framebuffer> &back = original_history.back();
-   swap(back, tmp);
+   /* Advance ring index backwards: the oldest slot becomes the newest.
+    * This replaces the O(N) move_backward with O(1) index arithmetic. */
+   history_ring_index = (history_ring_index == 0)
+      ? hist_size - 1
+      : history_ring_index - 1;
 
-   if   (    input_texture.width  != tmp->get_size().width
-         ||  input_texture.height != tmp->get_size().height
+   auto &target = original_history[history_ring_index];
+
+   if   (    input_texture.width  != target->get_size().width
+         ||  input_texture.height != target->get_size().height
          || (input_texture.format != VK_FORMAT_UNDEFINED
-         &&  input_texture.format != tmp->get_format()))
-      tmp->set_size(disposer, { input_texture.width, input_texture.height }, input_texture.format);
+         &&  input_texture.format != target->get_format()))
+      target->set_size(disposer, { input_texture.width, input_texture.height }, input_texture.format);
 
-   vulkan_framebuffer_copy(tmp->get_image(), tmp->get_size(),
+   vulkan_framebuffer_copy(target->get_image(), target->get_size(),
          cmd, input_texture.image, src_layout);
 
    /* Transition input texture back. */
@@ -1129,10 +1131,6 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
             VK_QUEUE_FAMILY_IGNORED,
             VK_QUEUE_FAMILY_IGNORED);
    }
-
-   /* Should ring buffer, but we don't have *that* many passes. */
-   move_backward(begin(original_history), end(original_history) - 1, end(original_history));
-   swap(original_history.front(), tmp);
 }
 
 void vulkan_filter_chain::end_frame(VkCommandBuffer cmd)
@@ -1198,6 +1196,7 @@ bool vulkan_filter_chain::init_history()
 
    original_history.clear();
    common.original_history.clear();
+   history_ring_index = 0;
 
    for (i = 0; i < passes.size(); i++)
    {
@@ -1284,54 +1283,50 @@ bool vulkan_filter_chain::init_feedback()
 
 bool vulkan_filter_chain::init_alias()
 {
-   int i;
+   unsigned i;
 
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
-   for (i = 0; i < (int)passes.size(); i++)
+   for (i = 0; i < (unsigned)passes.size(); i++)
    {
-      unsigned j;
       const std::string name = passes[i]->get_name();
       if (name.empty())
          continue;
 
-      j = (unsigned)(&passes[i] - passes.data());
-
       if (!slang_set_unique_map(
                common.texture_semantic_map, name,
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
          return false;
 
       if (!slang_set_unique_map(
                common.texture_semantic_uniform_map, name + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
          return false;
 
       if (!slang_set_unique_map(
                common.texture_semantic_map, name + "Feedback",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
          return false;
 
       if (!slang_set_unique_map(
                common.texture_semantic_uniform_map, name + "FeedbackSize",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
          return false;
    }
 
-   for (i = 0; i < (int)common.luts.size(); i++)
+   for (i = 0; i < (unsigned)common.luts.size(); i++)
    {
-      unsigned j = (unsigned)(&common.luts[i] - common.luts.data());
       if (!slang_set_unique_map(
                common.texture_semantic_map,
                common.luts[i]->get_id(),
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
          return false;
 
       if (!slang_set_unique_map(
                common.texture_semantic_uniform_map,
                common.luts[i]->get_id() + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
          return false;
    }
 
@@ -1493,6 +1488,7 @@ void vulkan_filter_chain::add_static_texture(
 
 void vulkan_filter_chain::set_frame_count(uint64_t count)
 {
+   common.frame_count = count;
    unsigned i;
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_frame_count(count);
@@ -1506,119 +1502,87 @@ void vulkan_filter_chain::set_frame_count_period(
 
 void vulkan_filter_chain::set_shader_subframes(uint32_t total_subframes)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_shader_subframes(total_subframes);
+   common.total_subframes = total_subframes;
 }
 
 void vulkan_filter_chain::set_current_shader_subframe(uint32_t current_subframe)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_current_shader_subframe(current_subframe);
+   common.current_subframe = current_subframe;
 }
 
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
 void vulkan_filter_chain::set_simulate_scanline(bool simulate_scanline)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_simulate_scanline(simulate_scanline);
+   common.simulate_scanline = simulate_scanline;
 }
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
 void vulkan_filter_chain::set_frame_direction(int32_t direction)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_frame_direction(direction);
+   common.frame_direction = direction;
 }
 
 void vulkan_filter_chain::set_frame_time_delta(uint32_t time_delta)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_frame_time_delta(time_delta);
+   common.frame_time_delta = time_delta;
 }
 
 void vulkan_filter_chain::set_original_fps(float fps)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_original_fps(fps);
+   common.original_fps = fps;
 }
 
 void vulkan_filter_chain::set_rotation(uint32_t rot)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_rotation(rot);
+   common.rotation = rot;
 }
 
 void vulkan_filter_chain::set_core_aspect(float coreaspect)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_core_aspect(coreaspect);
+   common.core_aspect = coreaspect;
 }
 
 void vulkan_filter_chain::set_core_aspect_rot(float coreaspectrot)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_core_aspect_rot(coreaspectrot);
+   common.core_aspect_rot = coreaspectrot;
 }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
 void vulkan_filter_chain::set_hdr_mode(unsigned hdr_mode)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_hdr_mode(hdr_mode);
+   common.hdr_mode = hdr_mode;
 }
 
 void vulkan_filter_chain::set_paper_white_nits(float paper_white_nits)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_paper_white_nits(paper_white_nits);
+   common.paper_white_nits = paper_white_nits;
 }
 
 
 
 void vulkan_filter_chain::set_expand_gamut(unsigned expand_gamut)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_expand_gamut(expand_gamut);
+   common.expand_gamut = expand_gamut;
 }
 
 void vulkan_filter_chain::set_scanlines(float scanlines)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_scanlines(scanlines);
+   common.scanlines = scanlines;
 }
 
-void vulkan_filter_chain::set_subpixel_layout(unsigned subpixel_layout )
+void vulkan_filter_chain::set_subpixel_layout(unsigned subpixel_layout)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_subpixel_layout(subpixel_layout);
+   common.subpixel_layout = subpixel_layout;
 }
 
 void vulkan_filter_chain::set_inverse_tonemap(float inverse_tonemap)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_inverse_tonemap(inverse_tonemap);
+   common.inverse_tonemap = inverse_tonemap;
 }
 
 void vulkan_filter_chain::set_hdr10(float hdr10)
 {
-   unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_hdr10(hdr10);
+   common.hdr10 = hdr10;
 }
 
 #endif /* VULKAN_HDR_SWAPCHAIN */
@@ -2568,50 +2532,50 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
                        : uint32_t(frame_count));
 
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
-                      frame_direction);
+                      common->frame_direction);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
-                      total_subframes);
+                      common->total_subframes);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
-                      current_subframe);
+                      common->current_subframe);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
-                      frame_time_delta);
+                      common->frame_time_delta);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
-                      original_fps);
+                      common->original_fps);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
-                      rotation);
+                      common->rotation);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT,
-                      core_aspect);
+                      common->core_aspect);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
-                      core_aspect_rot);
+                      common->core_aspect_rot);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    build_semantic_uint(buffer, SLANG_SEMANTIC_HDR,
-                      hdr_mode);
+                      common->hdr_mode);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
-                      paper_white_nits);
+                      common->paper_white_nits);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_SCANLINES,
-                      scanlines);
+                      common->scanlines);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_SUBPIXEL_LAYOUT,
-                      subpixel_layout);
+                      common->subpixel_layout);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
-                      expand_gamut);
+                      common->expand_gamut);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_INVERSE_TONEMAP,
-                      inverse_tonemap);
+                      common->inverse_tonemap);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_HDR10,
-                      hdr10);
+                      common->hdr10);
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Sensor uniforms — per-frame snapshot cached
@@ -2730,7 +2694,7 @@ void Pass::build_commands(
             0,
             VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_QUEUE_FAMILY_IGNORED,
             VK_QUEUE_FAMILY_IGNORED);
@@ -2773,17 +2737,17 @@ void Pass::build_commands(
       vkCmdSetViewport(cmd, 0, 1, &curr_vp);
 
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-      if (simulate_scanline)
+      if (common->simulate_scanline)
       {
          const VkRect2D sci = {
             {
                int32_t(curr_vp.x),
-               int32_t((curr_vp.height / float(total_subframes))
-                        * float(current_subframe - 1))
+               int32_t((curr_vp.height / float(common->total_subframes))
+                        * float(common->current_subframe - 1))
             },
             {
                uint32_t(curr_vp.width),
-               uint32_t(curr_vp.height / float(total_subframes))
+               uint32_t(curr_vp.height / float(common->total_subframes))
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -2816,17 +2780,17 @@ void Pass::build_commands(
       vkCmdSetViewport(cmd, 0, 1, &_vp);
 
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-      if (simulate_scanline)
+      if (common->simulate_scanline)
       {
          const VkRect2D sci = {
             {
                0,
-               int32_t((float(current_framebuffer_size.height) / float(total_subframes))
-                        * float(current_subframe - 1))
+               int32_t((float(current_framebuffer_size.height) / float(common->total_subframes))
+                        * float(common->current_subframe - 1))
             },
             {
                uint32_t(current_framebuffer_size.width),
-               uint32_t(float(current_framebuffer_size.height) / float(total_subframes))
+               uint32_t(float(current_framebuffer_size.height) / float(common->total_subframes))
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -2869,7 +2833,7 @@ void Pass::build_commands(
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                VK_ACCESS_SHADER_READ_BIT,
-               VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                VK_QUEUE_FAMILY_IGNORED,
                VK_QUEUE_FAMILY_IGNORED);

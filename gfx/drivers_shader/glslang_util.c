@@ -375,11 +375,9 @@ bool glslang_read_shader_file(const char *path,
          char saved;
          char *line_start;
          char *newline;
-         char *rd, *wr;
-
          /* Strip \r from this line in-place while finding newline/end */
-         rd = cursor;
-         wr = cursor;
+         char *rd = cursor;
+         char *wr = cursor;
          while (*rd != '\n' && *rd != '\0')
          {
             if (*rd != '\r')
