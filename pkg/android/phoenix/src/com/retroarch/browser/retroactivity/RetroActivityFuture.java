@@ -14,6 +14,12 @@ import android.os.Looper;
 import android.os.Message;
 import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -58,12 +64,77 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    
+
     isRunning = true;
     mDecorView = getWindow().getDecorView();
 
+    // Copy external core .so to internal cores directory if needed
+    copyExternalCoreIfNeeded();
+
     // If QUITFOCUS parameter is provided then enable that Retroarch quits when focus is lost
     quitfocus = getIntent().hasExtra("QUITFOCUS");
+  }
+
+  private void copyExternalCoreIfNeeded() {
+    String libretroPath = getIntent().getStringExtra("LIBRETRO");
+    if (libretroPath == null || !libretroPath.endsWith(".so"))
+      return;
+
+    String dataDir = getApplicationInfo().dataDir;
+
+    // Normalize /data/data/ symlink to real dataDir path (/data/user/0/...)
+    String datadataPrefix = "/data/data/" + getPackageName();
+    if (libretroPath.startsWith(datadataPrefix)) {
+      libretroPath = dataDir + libretroPath.substring(datadataPrefix.length());
+      getIntent().putExtra("LIBRETRO", libretroPath);
+      return;
+    }
+
+    // Already using the real dataDir path
+    if (libretroPath.startsWith(dataDir))
+      return;
+
+    // External core — copy to internal cores directory
+    File srcFile = new File(libretroPath);
+    if (!srcFile.isFile())
+      return;
+
+    File coresDir = new File(dataDir, "cores");
+    if (!coresDir.exists())
+      coresDir.mkdirs();
+
+    File destFile = new File(coresDir, srcFile.getName());
+
+    // Avoid self-copy if source and destination resolve to the same file
+    try {
+      if (srcFile.getCanonicalPath().equals(destFile.getCanonicalPath())) {
+        getIntent().putExtra("LIBRETRO", destFile.getAbsolutePath());
+        return;
+      }
+    } catch (IOException e) {
+      // If we can't resolve, proceed with copy
+    }
+
+    try {
+      InputStream in = new FileInputStream(srcFile);
+      try {
+        OutputStream out = new FileOutputStream(destFile);
+        try {
+          byte[] buf = new byte[8192];
+          int len;
+          while ((len = in.read(buf)) > 0)
+            out.write(buf, 0, len);
+        } finally {
+          out.close();
+        }
+      } finally {
+        in.close();
+      }
+      getIntent().putExtra("LIBRETRO", destFile.getAbsolutePath());
+      Log.i("RetroActivityFuture", "Copied external core to: " + destFile.getAbsolutePath());
+    } catch (IOException e) {
+      Log.e("RetroActivityFuture", "Failed to copy external core: " + e.getMessage());
+    }
   }
 
   @Override
