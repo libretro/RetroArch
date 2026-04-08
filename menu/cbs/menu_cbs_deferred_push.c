@@ -294,29 +294,11 @@ GENERIC_DEFERRED_PUSH(deferred_push_smb_client_settings_list,       DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_smb_client_options,             DISPLAYLIST_OPTIONS_SMB_CLIENT)
 #endif
 
-#define CHECK_SIZE(desired_size) \
-    do { \
-      char *reallocated; \
-      size_t grow; \
-      size_t dsize = (desired_size); \
-      if (_len + dsize < size) \
-         break; \
-      grow = (dsize > (size_t)-1 / 2) ? dsize : dsize * 2; \
-      reallocated = (char*)realloc(newstr2, size += grow); \
-      if (!reallocated) \
-      { \
-         free(newstr2); \
-         return -1; \
-      } \
-      newstr2 = reallocated; \
-    } while (0);
-
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
    size_t _len                                = 0;
-   size_t size                                = PATH_MAX_LENGTH;
-   char *newstr2                              = NULL;
+   char newstr2[PATH_MAX_LENGTH];
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
@@ -326,8 +308,6 @@ static int general_push(menu_displaylist_info_t *info,
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
 #endif
    if (!menu)
-      return -1;
-   if (!(newstr2 = (char*)malloc(size)))
       return -1;
 
    if (   (id == PUSH_ARCHIVE_OPEN_DETECT_CORE)
@@ -369,19 +349,15 @@ static int general_push(menu_displaylist_info_t *info,
    {
       case PUSH_ARCHIVE_OPEN:
          if (filebrowser_get_type() == FILEBROWSER_SELECT_OVERLAY)
-         {
-            CHECK_SIZE(3);
-            _len += strlcpy(newstr2 + _len, "cfg", size - _len);
-         }
+            _len += strlcpy(newstr2 + _len, "cfg", sizeof(newstr2) - _len);
          else
          {
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
-            if (sysinfo && *sysinfo->valid_extensions)
-            {
-               CHECK_SIZE(strlen(sysinfo->valid_extensions));
-               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions, size - _len);
-            }
+            if (    sysinfo 
+                &&  sysinfo->valid_extensions 
+                && *sysinfo->valid_extensions)
+               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions, sizeof(newstr2) - _len);
          }
          break;
       case PUSH_DEFAULT:
@@ -391,7 +367,9 @@ static int general_push(menu_displaylist_info_t *info,
             if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
             {
                struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
-               if (sysinfo && sysinfo->valid_extensions && *sysinfo->valid_extensions)
+               if (    sysinfo 
+                   &&  sysinfo->valid_extensions 
+                   && *sysinfo->valid_extensions)
                   valid_extensions = sysinfo->valid_extensions;
             }
 
@@ -400,10 +378,9 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (valid_extensions && *valid_extensions)
             {
-               CHECK_SIZE(strlen(valid_extensions) + 12);
-               _len += strlcpy(newstr2 + _len, valid_extensions, size - _len);
+               _len += strlcpy(newstr2 + _len, valid_extensions, sizeof(newstr2) - _len);
 #ifdef HAVE_IBXM
-               _len += strlcpy(newstr2 + _len, "|s3m|mod|xm", size - _len);
+               _len += strlcpy(newstr2 + _len, "|s3m|mod|xm", sizeof(newstr2) - _len);
 #endif
             }
          }
@@ -415,40 +392,33 @@ static int general_push(menu_displaylist_info_t *info,
                &runloop_state_get_ptr()->system.info;
             bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
-            if (sysinfo && *sysinfo->valid_extensions
+            if (sysinfo && sysinfo->valid_extensions && *sysinfo->valid_extensions
                 && filter_by_current_core)
-            {
-               CHECK_SIZE(strlen(sysinfo->valid_extensions));
-               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions, size - _len);
-            }
+               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions, sizeof(newstr2) - _len);
             else
             {
                core_info_list_t *list = NULL;
                core_info_get_list(&list);
                if (list && *list->all_ext)
-               {
-                  CHECK_SIZE(strlen(list->all_ext));
-                  _len += strlcpy(newstr2 + _len, list->all_ext, size - _len);
-               }
+                  _len += strlcpy(newstr2 + _len, list->all_ext, sizeof(newstr2) - _len);
             }
 #if defined(HAVE_AUDIOMIXER)
             if (multimedia_builtin_mediaplayer_enable)
             {
-               CHECK_SIZE(28);
 #if defined(HAVE_DR_MP3)
-               _len += strlcpy(newstr2 + _len, "|mp3", size - _len);
+               _len += strlcpy(newstr2 + _len, "|mp3", sizeof(newstr2) - _len);
 #endif
 #if defined(HAVE_STB_VORBIS)
-               _len += strlcpy(newstr2 + _len, "|ogg", size - _len);
+               _len += strlcpy(newstr2 + _len, "|ogg", sizeof(newstr2) - _len);
 #endif
 #if defined(HAVE_DR_FLAC)
-               _len += strlcpy(newstr2 + _len, "|flac", size - _len);
+               _len += strlcpy(newstr2 + _len, "|flac", sizeof(newstr2) - _len);
 #endif
 #if defined(HAVE_RWAV)
-               _len += strlcpy(newstr2 + _len, "|wav", size - _len);
+               _len += strlcpy(newstr2 + _len, "|wav", sizeof(newstr2) - _len);
 #endif
 #ifdef HAVE_IBXM
-               _len += strlcpy(newstr2 + _len, "|s3m|mod|xm", size - _len);
+               _len += strlcpy(newstr2 + _len, "|s3m|mod|xm", sizeof(newstr2) - _len);
 #endif
             }
 #endif
@@ -467,10 +437,9 @@ static int general_push(menu_displaylist_info_t *info,
 #endif
       if (*sysinfo.valid_extensions)
       {
-         CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
          if (_len > 0)
             newstr2[_len++] = '|';
-         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, sizeof(newstr2) - _len);
       }
    }
 #endif
@@ -482,10 +451,9 @@ static int general_push(menu_displaylist_info_t *info,
       libretro_imageviewer_retro_get_system_info(&sysinfo);
       if (*sysinfo.valid_extensions)
       {
-         CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
          if (_len > 0)
             newstr2[_len++] = '|';
-         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, sizeof(newstr2) - _len);
       }
    }
 #endif
@@ -494,15 +462,11 @@ static int general_push(menu_displaylist_info_t *info,
    {
       if (info->exts)
          free(info->exts);
-      info->exts = newstr2;
+      info->exts = strdup(newstr2);
    }
-   else
-      free(newstr2);
 
    return deferred_push_dlist(info, state, settings);
 }
-
-#undef CHECK_SIZE
 
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_detect_core_list, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_archive_open_detect_core, PUSH_ARCHIVE_OPEN_DETECT_CORE, DISPLAYLIST_DEFAULT)
