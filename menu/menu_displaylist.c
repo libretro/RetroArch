@@ -5771,18 +5771,20 @@ static int menu_displaylist_parse_input_select_reserved_device_list(
         {
             if (*settings->arrays.input_reserved_devices[i-MAX_INPUT_DEVICES])
             {
-                unsigned int vendor_id;
-                unsigned int product_id;
-                if (sscanf(settings->arrays.input_reserved_devices[i-MAX_INPUT_DEVICES],
-                         "%04x:%04x ", &vendor_id, &product_id) != 2)
-                    strlcpy(device_lbl,
-                          settings->arrays.input_reserved_devices[i-MAX_INPUT_DEVICES],
-                          sizeof(reserved_device_name));
-                else
-                    /* If the vendor_id:product_id is encoded in the name, ignore them. */
-                    strlcpy(device_lbl,
-                          &settings->arrays.input_reserved_devices[i-MAX_INPUT_DEVICES][10],
-                          sizeof(reserved_device_name));
+               const char *str = settings->arrays.input_reserved_devices[i-MAX_INPUT_DEVICES];
+               if (((str[0] >= '0' && str[0] <= '9') || (str[0] >= 'a' && str[0] <= 'f') || (str[0] >= 'A' && str[0] <= 'F'))
+                     && ((str[1] >= '0' && str[1] <= '9') || (str[1] >= 'a' && str[1] <= 'f') || (str[1] >= 'A' && str[1] <= 'F'))
+                     && ((str[2] >= '0' && str[2] <= '9') || (str[2] >= 'a' && str[2] <= 'f') || (str[2] >= 'A' && str[2] <= 'F'))
+                     && ((str[3] >= '0' && str[3] <= '9') || (str[3] >= 'a' && str[3] <= 'f') || (str[3] >= 'A' && str[3] <= 'F'))
+                     && str[4] == ':'
+                     && ((str[5] >= '0' && str[5] <= '9') || (str[5] >= 'a' && str[5] <= 'f') || (str[5] >= 'A' && str[5] <= 'F'))
+                     && ((str[6] >= '0' && str[6] <= '9') || (str[6] >= 'a' && str[6] <= 'f') || (str[6] >= 'A' && str[6] <= 'F'))
+                     && ((str[7] >= '0' && str[7] <= '9') || (str[7] >= 'a' && str[7] <= 'f') || (str[7] >= 'A' && str[7] <= 'F'))
+                     && ((str[8] >= '0' && str[8] <= '9') || (str[8] >= 'a' && str[8] <= 'f') || (str[8] >= 'A' && str[8] <= 'F'))
+                     && str[9] == ' ')
+                  strlcpy(device_lbl, &str[10], sizeof(reserved_device_name));
+               else
+                  strlcpy(device_lbl, str, sizeof(reserved_device_name));
             }
         }
 
@@ -5840,7 +5842,7 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
     size_t menu_index             = 0;
     unsigned count                = 0;
     int i                         = 0;
-    char keyboard[sizeof(settings->arrays.input_android_physical_keyboard)]; /* TODO/FIXME - C99 VLA */
+    char keyboard[sizeof(settings->arrays.input_android_physical_keyboard)];
     bool keyboard_added           = false;
     input_driver_state_t *st      = input_state_get_ptr();
     input_driver_t *current_input = st->current_driver;
@@ -5856,13 +5858,23 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
         strlcpy(keyboard, val_disabled, sizeof(keyboard));
     else
     {
-        unsigned int vendor_id;
-        unsigned int product_id;
-        if (sscanf(settings->arrays.input_android_physical_keyboard, "%04x:%04x ", &vendor_id, &product_id) != 2)
-            strlcpy(keyboard, settings->arrays.input_android_physical_keyboard, sizeof(keyboard));
-        else
-            /* If the vendor_id:product_id is encoded in the name, ignore them. */
-            strlcpy(keyboard, &settings->arrays.input_android_physical_keyboard[10], sizeof(keyboard));
+       const char *name = settings->arrays.input_android_physical_keyboard;
+       size_t len = strlen(name);
+
+       if (len > 10
+             && ((name[0] >= '0' && name[0] <= '9') || (name[0] >= 'a' && name[0] <= 'f') || (name[0] >= 'A' && name[0] <= 'F'))
+             && ((name[1] >= '0' && name[1] <= '9') || (name[1] >= 'a' && name[1] <= 'f') || (name[1] >= 'A' && name[1] <= 'F'))
+             && ((name[2] >= '0' && name[2] <= '9') || (name[2] >= 'a' && name[2] <= 'f') || (name[2] >= 'A' && name[2] <= 'F'))
+             && ((name[3] >= '0' && name[3] <= '9') || (name[3] >= 'a' && name[3] <= 'f') || (name[3] >= 'A' && name[3] <= 'F'))
+             && name[4] == ':'
+             && ((name[5] >= '0' && name[5] <= '9') || (name[5] >= 'a' && name[5] <= 'f') || (name[5] >= 'A' && name[5] <= 'F'))
+             && ((name[6] >= '0' && name[6] <= '9') || (name[6] >= 'a' && name[6] <= 'f') || (name[6] >= 'A' && name[6] <= 'F'))
+             && ((name[7] >= '0' && name[7] <= '9') || (name[7] >= 'a' && name[7] <= 'f') || (name[7] >= 'A' && name[7] <= 'F'))
+             && ((name[8] >= '0' && name[8] <= '9') || (name[8] >= 'a' && name[8] <= 'f') || (name[8] >= 'A' && name[8] <= 'F'))
+             && name[9] == ' ')
+          strlcpy(keyboard, &name[10], sizeof(keyboard));
+       else
+          strlcpy(keyboard, name, sizeof(keyboard));
     }
 
     for (i = MAX_INPUT_DEVICES; i >= -1; --i)

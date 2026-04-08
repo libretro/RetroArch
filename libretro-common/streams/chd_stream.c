@@ -97,11 +97,44 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, CDROM_TRACK_METADATA2_FORMAT,
-            &md->track, md->type,
-            md->subtype, &md->frames, &md->pregap,
-            md->pgtype, md->pgsub,
-            &md->postgap);
+      const char *ptr = meta;
+      size_t remaining = strlen(meta);
+
+      while (remaining)
+      {
+         const char *key = ptr;
+         const char *sep = (const char *)memchr(key, ':', remaining);
+         if (!sep)
+            break;
+
+         size_t klen = sep - key;
+         const char *val = sep + 1;
+         remaining -= klen + 1;
+
+         const char *end = (const char *)memchr(val, ' ', remaining);
+         size_t vlen = end ? (size_t)(end - val) : remaining;
+
+         if (klen == 5 && !memcmp(key, "TRACK", 5))
+            md->track = (unsigned)strtoul(val, NULL, 10);
+         else if (klen == 4 && !memcmp(key, "TYPE", 4))
+            strlcpy(md->type, val, vlen + 1 < sizeof(md->type) ? vlen + 1 : sizeof(md->type));
+         else if (klen == 7 && !memcmp(key, "SUBTYPE", 7))
+            strlcpy(md->subtype, val, vlen + 1 < sizeof(md->subtype) ? vlen + 1 : sizeof(md->subtype));
+         else if (klen == 6 && !memcmp(key, "FRAMES", 6))
+            md->frames = (unsigned)strtoul(val, NULL, 10);
+         else if (klen == 6 && !memcmp(key, "PREGAP", 6))
+            md->pregap = (unsigned)strtoul(val, NULL, 10);
+         else if (klen == 6 && !memcmp(key, "PGTYPE", 6))
+            strlcpy(md->pgtype, val, vlen + 1 < sizeof(md->pgtype) ? vlen + 1 : sizeof(md->pgtype));
+         else if (klen == 5 && !memcmp(key, "PGSUB", 5))
+            strlcpy(md->pgsub, val, vlen + 1 < sizeof(md->pgsub) ? vlen + 1 : sizeof(md->pgsub));
+         else if (klen == 7 && !memcmp(key, "POSTGAP", 7))
+            md->postgap = (unsigned)strtoul(val, NULL, 10);
+
+         ptr = end ? end + 1 : val + vlen;
+         remaining -= end ? vlen + 1 : vlen;
+      }
+
       md->extra = padding_frames(md->frames);
       return true;
    }
@@ -111,9 +144,42 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, CDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
-             md->subtype, &md->frames);
-      md->extra = padding_frames(md->frames);
+      const char *p = meta;
+
+      if (strncmp(p, "TRACK:", 6) != 0)
+         return false;
+      p += 6;
+      md->track = strtoul(p, (char **)&p, 10);
+
+      if (*p++ != ' ' || strncmp(p, "TYPE:", 5) != 0)
+         return false;
+      p += 5;
+      const char *start = p;
+      while (*p && *p != ' ')
+         p++;
+      size_t len = p - start;
+      if (len == 0 || len >= sizeof(md->type))
+         return false;
+      memcpy(md->type, start, len);
+      md->type[len] = '\0';
+
+      if (*p++ != ' ' || strncmp(p, "SUBTYPE:", 8) != 0)
+         return false;
+      p += 8;
+      start = p;
+      while (*p && *p != ' ')
+         p++;
+      len = p - start;
+      if (len == 0 || len >= sizeof(md->subtype))
+         return false;
+      memcpy(md->subtype, start, len);
+      md->subtype[len] = '\0';
+
+      if (*p++ != ' ' || strncmp(p, "FRAMES:", 7) != 0)
+         return false;
+      p += 7;
+      md->frames = strtoul(p, NULL, 10);
+      md->extra  = padding_frames(md->frames);
       return true;
    }
 
@@ -122,9 +188,64 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, GDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
-             md->subtype, &md->frames, &md->pad, &md->pregap, md->pgtype,
-             md->pgsub, &md->postgap);
+      char *p = meta;
+      while (*p)
+      {
+         size_t len;
+
+         if (strncmp(p, "TRACK:", 6) == 0)
+            md->track = strtoul(p + 6, &p, 10);
+         else if (strncmp(p, "TYPE:", 5) == 0)
+         {
+            p += 5;
+            len = 0;
+            while (p[len] && p[len] != ' ')
+               len++;
+            memcpy(md->type, p, len);
+            md->type[len] = '\0';
+            p += len;
+         }
+         else if (strncmp(p, "SUBTYPE:", 8) == 0)
+         {
+            p += 8;
+            len = 0;
+            while (p[len] && p[len] != ' ')
+               len++;
+            memcpy(md->subtype, p, len);
+            md->subtype[len] = '\0';
+            p += len;
+         }
+         else if (strncmp(p, "FRAMES:", 7) == 0)
+            md->frames = strtoul(p + 7, &p, 10);
+         else if (strncmp(p, "PAD:", 4) == 0)
+            md->pad = strtoul(p + 4, &p, 10);
+         else if (strncmp(p, "PREGAP:", 7) == 0)
+            md->pregap = strtoul(p + 7, &p, 10);
+         else if (strncmp(p, "PGTYPE:", 7) == 0)
+         {
+            p += 7;
+            len = 0;
+            while (p[len] && p[len] != ' ')
+               len++;
+            memcpy(md->pgtype, p, len);
+            md->pgtype[len] = '\0';
+            p += len;
+         }
+         else if (strncmp(p, "PGSUB:", 6) == 0)
+         {
+            p += 6;
+            len = 0;
+            while (p[len] && p[len] != ' ')
+               len++;
+            memcpy(md->pgsub, p, len);
+            md->pgsub[len] = '\0';
+            p += len;
+         }
+         else if (strncmp(p, "POSTGAP:", 8) == 0)
+            md->postgap = strtoul(p + 8, &p, 10);
+         else
+            p++;
+      }
       md->extra = padding_frames(md->frames);
       return true;
    }
