@@ -2765,9 +2765,11 @@ static void materialui_render_messagebox(
    int y                    = 0;
    int usable_width         = 0;
    int longest_width        = 0;
-   struct string_list list  = {0};
+   int line_count           = 0;
+   size_t wrapped_len       = 0;
    char wrapped_msg[MENU_LABEL_MAX_LENGTH];
-
+   const char *lines[64];
+   int lengths[64];
    wrapped_msg[0] = '\0';
 
    /* Sanity check */
@@ -2786,30 +2788,54 @@ static void materialui_render_messagebox(
          usable_width / (int)mui->font_data.list.glyph_width,
          mui->font_data.list.wideglyph_width, 0);
 
-   string_list_initialize(&list);
-   if (
-            !string_split_noalloc(&list, wrapped_msg, "\n")
-         || list.elems == 0)
-   {
-      string_list_deinitialize(&list);
+   wrapped_len = strlen(wrapped_msg);
+   if (wrapped_len == 0)
       return;
+
+   /* Replace newlines with null terminators,
+    * record line pointers and lengths */
+   {
+      char *s          = wrapped_msg;
+      size_t remaining = wrapped_len;
+
+      lines[0] = wrapped_msg;
+      while (remaining > 0)
+      {
+         char *nl = (char *)memchr(s, '\n', remaining);
+         if (nl)
+         {
+            lengths[line_count] = (int)(nl - s);
+            *nl = '\0';
+            if (++line_count >= 64)
+               break;
+            lines[line_count] = nl + 1;
+            remaining         = wrapped_len - (size_t)(nl + 1 - wrapped_msg);
+            s                 = nl + 1;
+         }
+         else
+         {
+            lengths[line_count] = (int)remaining;
+            line_count++;
+            break;
+         }
+      }
    }
 
    /* Get coordinates of message box centre */
    x = video_width / 2;
-   y = (int)(y_centre - (list.size * mui->font_data.list.line_height) / 2);
+   y = (int)(y_centre - (line_count * mui->font_data.list.line_height) / 2);
 
    /* TODO/FIXME: Reduce text scale if width or height
     * are too large to fit on screen */
 
    /* Find the longest line width */
-   for (i = 0; i < (int)list.size; i++)
+   for (i = 0; i < line_count; i++)
    {
-      const char *line = list.elems[i].data;
-      if (line && *line)
+      if (lengths[i] > 0)
       {
          int width     = font_driver_get_message_width(
-               mui->font_data.list.font, line, strlen(line), 1.0f);
+               mui->font_data.list.font,
+               lines[i], lengths[i], 1.0f);
          longest_width = (width > longest_width) ?
                width : longest_width;
       }
@@ -2818,7 +2844,6 @@ static void materialui_render_messagebox(
    /* Draw message box background */
    gfx_display_set_alpha(
          mui->colors.surface_background, mui->transition_alpha);
-
    gfx_display_draw_quad(
          p_disp,
          userdata,
@@ -2827,26 +2852,24 @@ static void materialui_render_messagebox(
          x - longest_width / 2.0 - mui->margin * 2.0,
          y - mui->margin * 2.0,
          longest_width + mui->margin * 4.0,
-         mui->font_data.list.line_height * list.size + mui->margin * 4.0,
+         mui->font_data.list.line_height * line_count + mui->margin * 4.0,
          video_width,
          video_height,
          mui->colors.surface_background,
          NULL);
 
    /* Print each line of the message */
-   for (i = 0; i < (int)list.size; i++)
+   for (i = 0; i < line_count; i++)
    {
-      const char *line = list.elems[i].data;
-      if (line && *line)
+      if (lengths[i] > 0)
          gfx_display_draw_text(
-               mui->font_data.list.font, line,
+               mui->font_data.list.font, lines[i],
                x - longest_width / 2.0f,
-               y + (i * mui->font_data.list.line_height) + mui->font_data.list.line_ascender,
+               y + (i * mui->font_data.list.line_height)
+                  + mui->font_data.list.line_ascender,
                video_width, video_height, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
    }
-
-   string_list_deinitialize(&list);
 }
 
 /* Initialises scrollbar parameters (width/height) */

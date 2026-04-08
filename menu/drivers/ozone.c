@@ -7267,12 +7267,13 @@ static void ozone_draw_messagebox(
 {
    size_t x, y;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
+   size_t msg_len;
    int longest_width        = 0;
    int usable_width         = 0;
-   struct string_list list  = {0};
    float scale_factor       = 0.0f;
    float line_height        = 0;
    unsigned i               = 0;
+   unsigned line_count       = 0;
    unsigned y_position      = 0;
    unsigned width           = video_width;
    unsigned height          = video_height;
@@ -7280,6 +7281,10 @@ static void ozone_draw_messagebox(
                             = ozone->fonts.entries_label;
    gfx_display_ctx_driver_t
          *dispctx           = p_disp->dispctx;
+   char *lines[256];
+   size_t line_lengths[256];
+   char *line;
+   size_t remaining;
 
    wrapped_message[0]       = '\0';
 
@@ -7287,6 +7292,7 @@ static void ozone_draw_messagebox(
    if ((!message || !*message) || !font_data.font)
       return;
 
+   msg_len                  = strlen(message);
    scale_factor             = ozone->last_scale_factor;
    usable_width             = (int)width - (150 * 8 * scale_factor) / ((float)width / (float)height * 2.0f);
    line_height              = font_data.line_height * 1.10f;
@@ -7299,33 +7305,46 @@ static void ozone_draw_messagebox(
          wrapped_message,
          sizeof(wrapped_message),
          message,
-         strlen(message),
+         msg_len,
          usable_width / (int)font_data.glyph_width,
          font_data.wideglyph_width,
          0);
 
-   string_list_initialize(&list);
-   if (     !string_split_noalloc(&list, wrapped_message, "\n")
-         || list.elems == 0)
+   line      = wrapped_message;
+   remaining = strlen(wrapped_message);
+   while (line && *line && line_count < 256)
    {
-      string_list_deinitialize(&list);
-      return;
+      char *next = (char*)memchr(line, '\n', remaining);
+      if (next)
+      {
+         *next                    = '\0';
+         line_lengths[line_count] = (size_t)(next - line);
+         remaining               -= (size_t)(next - line + 1);
+         next++;
+      }
+      else
+         line_lengths[line_count] = remaining;
+      lines[line_count++] = line;
+      line = next;
    }
+
+   if (line_count == 0)
+      return;
 
    y_position       = height / 2;
    if (menu_input_dialog_get_display_kb())
       y_position    = height / 4;
 
    x                = width  / 2;
-   y                = y_position - (list.size * line_height) / 2;
+   y                = y_position - (line_count * line_height) / 2;
 
    /* find the longest line width */
-   for (i = 0; i < list.size; i++)
+   for (i = 0; i < line_count; i++)
    {
-      const char *msg = list.elems[i].data;
+      const char *msg = lines[i];
       if (msg && *msg)
       {
-         int width = font_driver_get_message_width(font_data.font, msg, strlen(msg), 1.0f);
+         int width = font_driver_get_message_width(font_data.font, msg, line_lengths[i], 1.0f);
 
          if (width > longest_width)
             longest_width = width;
@@ -7347,7 +7366,7 @@ static void ozone_draw_messagebox(
        *   size, draw size and scale factor... */
       unsigned slice_margin = 50 * scale_factor;
       unsigned slice_new_w  = longest_width + (slice_margin * 2);
-      unsigned slice_new_h  = line_height * (list.size + 2) + (slice_margin / 2);
+      unsigned slice_new_h  = line_height * (line_count + 2) + (slice_margin / 2);
       unsigned slice_w      = 256;
       int slice_x           = x - (longest_width / 2) - slice_margin;
       int slice_y           = y - line_height - (slice_margin / 4)
@@ -7376,9 +7395,9 @@ static void ozone_draw_messagebox(
             );
    }
 
-   for (i = 0; i < list.size; i++)
+   for (i = 0; i < line_count; i++)
    {
-      const char *msg = list.elems[i].data;
+      const char *msg = lines[i];
 
       if (msg)
          gfx_display_draw_text(
@@ -7395,8 +7414,6 @@ static void ozone_draw_messagebox(
                1.0f,
                false);
    }
-
-   string_list_deinitialize(&list);
 }
 
 static void ozone_set_thumbnail_delay(ozone_handle_t *ozone, bool on)

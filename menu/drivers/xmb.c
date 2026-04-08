@@ -1095,59 +1095,65 @@ static void xmb_render_messagebox_internal(
       const char *message,
       math_matrix_4x4 *mymat)
 {
-   unsigned i, y_position            = 0;
-   int x, y                          = 0;
-   float line_height                 = 0;
-   int longest_width                 = 0;
-   int usable_width                  = 0;
-   struct string_list list           = {0};
-   bool input_dialog_display_kb      = false;
+   unsigned i, line_count              = 0;
+   int x, y                            = 0;
+   float line_height                   = 0;
+   int longest_width                   = 0;
+   int usable_width                    = 0;
+   unsigned y_position                 = 0;
+   bool input_dialog_display_kb        = false;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
+   char *lines[512];
+   char *start, *nl, *end;
 
-   wrapped_message[0]                = '\0';
+   wrapped_message[0]                  = '\0';
 
    if ((usable_width = (int)video_width - (xmb->margins_dialog * 8)) < 1)
       return;
-
    usable_width = (usable_width < 300) ? 300 : usable_width;
 
-   /* Split message into lines */
    (xmb->word_wrap)(
          wrapped_message, sizeof(wrapped_message),
          message, strlen(message),
          usable_width / (xmb->font_size * 0.85f),
          xmb->wideglyph_width, 0);
 
-   string_list_initialize(&list);
+   /* Single-pass: find lines, null-terminate, measure width */
+   start = wrapped_message;
+   end   = wrapped_message + strlen(wrapped_message);
 
-   if (     !string_split_noalloc(&list, wrapped_message, "\n")
-         || (list.elems == 0)
-      )
+   while (start <= end && line_count < 512)
    {
-      string_list_deinitialize(&list);
-      return;
+      int width;
+      nl = (char *)memchr(start, '\n', end - start);
+
+      if (nl)
+         *nl = '\0';
+
+      lines[line_count++] = start;
+
+      if (*start)
+      {
+         width = font_driver_get_message_width(
+               xmb->font, start, (nl ? nl : end) - start, 1.0f);
+         if (width > longest_width)
+            longest_width = width;
+         if (longest_width > usable_width)
+            longest_width = usable_width;
+      }
+
+      start = nl ? nl + 1 : end + 1;
    }
+
+   if (line_count == 0)
+      return;
 
    input_dialog_display_kb = menu_input_dialog_get_display_kb();
    line_height             = xmb->font->size * 1.30f;
-   y_position              = (input_dialog_display_kb) ? video_height / 4 : video_height / 2;
+   y_position              = (input_dialog_display_kb)
+                           ? video_height / 4 : video_height / 2;
    x                       = video_width / 2;
-   y                       = y_position - (list.size - 1) * line_height / 2;
-
-   /* Find the longest line width */
-   for (i = 0; i < list.size; i++)
-   {
-      const char *msg = list.elems[i].data;
-
-      if (msg && *msg)
-      {
-         int width = font_driver_get_message_width(xmb->font, msg, strlen(msg), 1.0f);
-         if (width > longest_width)
-            longest_width = width;
-         if (longest_width > (int)usable_width)
-            longest_width = usable_width;
-      }
-   }
+   y                       = y_position - (line_count - 1) * line_height / 2;
 
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
@@ -1161,17 +1167,16 @@ static void xmb_render_messagebox_internal(
          y + xmb->margins_slice - xmb->margins_dialog,
          256, 256,
          longest_width + (xmb->margins_dialog * 2),
-         (line_height * list.size) + (xmb->margins_dialog * 2),
+         (line_height * line_count) + (xmb->margins_dialog * 2),
          video_width, video_height,
          NULL,
          xmb->margins_slice, xmb->last_scale_factor,
          xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE],
          mymat);
 
-   for (i = 0; i < list.size; i++)
+   for (i = 0; i < line_count; i++)
    {
-      const char *msg = list.elems[i].data;
-
+      const char *msg = lines[i];
       if (msg)
          gfx_display_draw_text(xmb->font, msg,
                x - (longest_width / 2.0),
@@ -1194,8 +1199,6 @@ static void xmb_render_messagebox_internal(
             input_st->osk_ptr,
             0xffffffff);
    }
-
-   string_list_deinitialize(&list);
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -4337,7 +4340,6 @@ static size_t xmb_animation_build_line_ticker_string(
    }
    return _len;
 }
-
 
 static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_t *line_ticker)
 {

@@ -24,7 +24,6 @@
 
 #include <string/stdstring.h>
 #include <lists/file_list.h>
-#include <lists/string_list.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <encodings/utf.h>
@@ -4542,36 +4541,56 @@ static void rgui_render_messagebox(
    unsigned width           = 0;
    unsigned glyphs_width    = 0;
    unsigned height          = 0;
-   struct string_list list  = {0};
+   unsigned line_count      = 0;
+   char *lines[128];
+   size_t msg_len;
+   size_t wrapped_len;
    uint16_t *frame_buf_data = rgui->frame_buf.data;
 
    wrapped_message[0]       = '\0';
 
+   msg_len                  = strlen(message);
+
    /* Split message into lines */
    word_wrap(
          wrapped_message, sizeof(wrapped_message),
-         message, strlen(message),
+         message, msg_len,
          rgui->term_layout.width,
          100, 0);
 
-   string_list_initialize(&list);
-   if (     !string_split_noalloc(&list, wrapped_message, "\n")
-         || list.elems == 0)
+   wrapped_len              = strlen(wrapped_message);
+
+   /* Tokenize wrapped message by newlines in-place */
    {
-      string_list_deinitialize(&list);
-      return;
+      char *p   = wrapped_message;
+      char *end = p + wrapped_len;
+      while (p < end && line_count < ARRAY_SIZE(lines))
+      {
+         char *nl = (char*)memchr(p, '\n', end - p);
+         lines[line_count++] = p;
+         if (nl)
+         {
+            *nl = '\0';
+            p   = nl + 1;
+         }
+         else
+            break;
+      }
    }
 
-   for (i = 0; i < list.size; i++)
+   if (line_count == 0)
+      return;
+
+   for (i = 0; i < line_count; i++)
    {
-      char     *msg         = list.elems[i].data;
+      char     *msg         = lines[i];
       unsigned msglen       = (unsigned)utf8len(msg);
       unsigned line_width   = msglen * rgui->font_width_stride - 1 + 6 + 10;
       width                 = MAX(width, line_width);
       glyphs_width          = MAX(glyphs_width, msglen);
    }
 
-   height                   = (unsigned)(rgui->font_height_stride * list.size + 6 + 10);
+   height                   = (unsigned)(rgui->font_height_stride * line_count + 6 + 10);
    x                        = ((int)fb_width  - (int)width) / 2;
    y                        = ((int)fb_height - (int)height) / 2;
 
@@ -4629,9 +4648,9 @@ static void rgui_render_messagebox(
             border_dark_color, border_light_color, border_thickness);
 
       /* Draw text */
-      for (i = 0; i < list.size; i++)
+      for (i = 0; i < line_count; i++)
       {
-         const char *msg = list.elems[i].data;
+         const char *msg = lines[i];
          int offset_x    = (int)(rgui->font_width_stride * (glyphs_width - utf8len(msg)) / 2);
          int offset_y    = (int)(rgui->font_height_stride * i);
          int text_x      = x + 8 + offset_x;
@@ -4646,8 +4665,6 @@ static void rgui_render_messagebox(
                rgui->colors.normal_color, rgui->colors.shadow_color);
       }
    }
-
-   string_list_deinitialize(&list);
 }
 
 static int rgui_osk_ptr_at_pos(
