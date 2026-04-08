@@ -7683,7 +7683,7 @@ unsigned menu_displaylist_build_list(
             bool wifi_enabled = settings->bools.wifi_enabled;
             bool connected    = driver_wifi_connection_info(NULL);
 
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_WIFI_ENABLED,              PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_WIFI_NETWORK_SCAN,         PARSE_ACTION,    false},
                {MENU_ENUM_LABEL_WIFI_DISCONNECT,           PARSE_ACTION,    false},
@@ -7883,7 +7883,7 @@ unsigned menu_displaylist_build_list(
 #endif
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_AUDIO_SYNC,                      PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,           PARSE_ONLY_FLOAT,    true  },
                {MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,        PARSE_ONLY_FLOAT,    true  },
@@ -7903,7 +7903,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
       {
-         menu_displaylist_build_info_selective_t build_list[] = {
+         static menu_displaylist_build_info_selective_t build_list[] = {
             {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true },
 #ifdef HAVE_MICROPHONE
             {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,             PARSE_ACTION,     true },
@@ -8139,7 +8139,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_INPUT_MENU_SETTINGS_LIST:
          {
             const char *menu_driver     = menu_driver_ident();
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MOUSE_ENABLE,                       PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_POINTER_ENABLE,                     PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,          PARSE_ONLY_BOOL, true},
@@ -8183,7 +8183,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,                  PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,             PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,                    PARSE_ACTION,     true},
@@ -8278,7 +8278,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST:
          {
             bool accessibility_enable      = settings->bools.accessibility_enable;
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,               PARSE_ONLY_BOOL, true },
                {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED, PARSE_ONLY_UINT, false },
                {MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,                 PARSE_ACTION,    true },
@@ -8313,7 +8313,7 @@ unsigned menu_displaylist_build_list(
          {
             bool ai_service_enable         = settings->bools.ai_service_enable;
 
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_AI_SERVICE_ENABLE,        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_AI_SERVICE_MODE,          PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_AI_SERVICE_URL,           PARSE_ONLY_STRING, false},
@@ -9198,8 +9198,7 @@ unsigned menu_displaylist_build_list(
             bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
             bool network_cmd_enable      = settings->bools.network_cmd_enable;
             bool network_remote_enable   = settings->bools.network_remote_enable;
-
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
 #ifdef HAVE_SMBCLIENT
                {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,                PARSE_ACTION,      true},
 #endif
@@ -9308,7 +9307,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,     PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_INSTALLED_CORES, PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,           PARSE_ONLY_BOOL, true},
@@ -9534,7 +9533,7 @@ unsigned menu_displaylist_build_list(
             bool has_video          = is_ffmpeg
                || memcmp(
                      settings->arrays.record_driver, "avfoundation", 13) == 0;
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_RECORD_DRIVER,                                         PARSE_ONLY_STRING_OPTIONS, true},
                {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,           false},
                {MENU_ENUM_LABEL_RECORD_CONFIG,                                         PARSE_ONLY_PATH,           false},
@@ -9600,7 +9599,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
          {
             bool cheevos_enable       = settings->bools.cheevos_enable;
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_CHEEVOS_ENABLE,                                        PARSE_ONLY_BOOL,   true   },
                {MENU_ENUM_LABEL_CHEEVOS_USERNAME,                                      PARSE_ONLY_STRING, false  },
                {MENU_ENUM_LABEL_CHEEVOS_PASSWORD,                                      PARSE_ONLY_STRING, false  },
@@ -9645,7 +9644,7 @@ unsigned menu_displaylist_build_list(
             bool     cheevos_autopad = settings->bools.cheevos_appearance_padding_auto;
             bool     gfx_widgets     = settings->bools.menu_enable_widgets;
 #endif
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_ANCHOR,                             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,                          PARSE_ONLY_FLOAT,  false},
@@ -9684,7 +9683,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_CHEEVOS_VISIBILITY_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SUMMARY,                            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_UNLOCK,                             PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_MASTERY,                            PARSE_ONLY_BOOL,   true},
@@ -9736,7 +9735,7 @@ unsigned menu_displaylist_build_list(
 #endif
             uico_driver_state_t *uico_st    = uico_state_get_ptr();
 
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_SETTINGS,                                         PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,                                   PARSE_ACTION,      true},
@@ -9867,7 +9866,7 @@ unsigned menu_displaylist_build_list(
 #else
             bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
 #endif
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
     (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
                {MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,      PARSE_ONLY_BOOL,  true },
@@ -9921,7 +9920,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_FULLSCREEN,                  PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,         PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,                PARSE_ONLY_UINT,     true  },
@@ -10371,7 +10370,7 @@ unsigned menu_displaylist_build_list(
 #endif
       case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,                             PARSE_ACTION, true     },
                {MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,                               PARSE_ACTION, true     },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,                                   PARSE_ONLY_BOOL, true  },
@@ -10500,7 +10499,7 @@ unsigned menu_displaylist_build_list(
                   input_overlay_show_inputs = (enum overlay_show_input_type)
                         settings->uints.input_overlay_show_inputs;
 
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                      PARSE_ONLY_BOOL,  true  },
                {MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,                PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_OVERLAY_PRESET,                            PARSE_ONLY_PATH,  false },
@@ -10699,7 +10698,7 @@ unsigned menu_displaylist_build_list(
             bool runahead_enabled         = settings->bools.run_ahead_enabled;
             bool preempt_enabled          = settings->bools.preemptive_frames_enable;
 #endif
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,                PARSE_ONLY_BOOL, true },
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT, true },
 #ifdef HAVE_RUNAHEAD
@@ -10825,7 +10824,7 @@ unsigned menu_displaylist_build_list(
 #else
             bool widgets_active           = false;
 #endif
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS, PARSE_ACTION,      false },
                {MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,                     PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,                   PARSE_ONLY_BOOL,   false },
@@ -10927,7 +10926,7 @@ unsigned menu_displaylist_build_list(
 #else
             bool notifications_active         = video_font_enable;
 #endif
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_FPS_SHOW,                                PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,                     PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,                         PARSE_ONLY_BOOL,  false },
@@ -11093,7 +11092,7 @@ unsigned menu_displaylist_build_list(
             bool savestate_auto_index = settings->bools.savestate_auto_index;
             bool replay_auto_index    = settings->bools.replay_auto_index;
 
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
 #if HAVE_CLOUDSYNC
                {MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,                PARSE_ACTION,    true},
 #endif
@@ -11164,7 +11163,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_CLOUD_SYNC_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,             PARSE_ONLY_BOOL,           true},
                {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE,          PARSE_ONLY_UINT,           true},
                {MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,        PARSE_ONLY_BOOL,           true},
@@ -11244,7 +11243,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_MIST
       case DISPLAYLIST_STEAM_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_ENABLE, PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_FORMAT, PARSE_ONLY_UINT, false},
             };
@@ -11280,7 +11279,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_TRANSLATE
             bool settings_show_ai_service = settings->bools.settings_show_ai_service;
 #endif
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,     PARSE_ACTION, true},
                {MENU_ENUM_LABEL_VIDEO_SETTINGS,              PARSE_ACTION, true},
                {MENU_ENUM_LABEL_AUDIO_SETTINGS,              PARSE_ACTION, true},
@@ -11799,7 +11798,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
          {
             bool log_to_file              = settings->bools.log_to_file;
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_LOG_VERBOSITY,         PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL,    PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,    PARSE_ONLY_UINT, false},
@@ -11840,7 +11839,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_FRAME_TIME_COUNTER_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO, PARSE_ONLY_FLOAT, true},
                {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING, PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE, PARSE_ONLY_BOOL, true},
@@ -11858,7 +11857,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_REWIND_ENABLE,           PARSE_ONLY_BOOL, true },
                {MENU_ENUM_LABEL_REWIND_GRANULARITY,      PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_REWIND_BUFFER_SIZE,      PARSE_ONLY_SIZE, true },
@@ -11883,7 +11882,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_REWIND
             bool rewind_supported = true;
 #endif
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
 #ifdef HAVE_REWIND
                {MENU_ENUM_LABEL_REWIND_SETTINGS,             PARSE_ACTION,     false},
 #endif
@@ -11953,7 +11952,7 @@ unsigned menu_displaylist_build_list(
             unsigned menu_screensaver_timeout          = settings->uints.menu_screensaver_timeout;
             unsigned ozone_font_scale                  = settings->uints.menu_ozone_font_scale;
 
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_SCALE_FACTOR,                            PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_OZONE_PADDING_FACTOR,                         PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY,                     PARSE_ONLY_FLOAT,  true},
@@ -12126,7 +12125,7 @@ unsigned menu_displaylist_build_list(
          {
             bool video_3ds_lcd_bottom = settings->bools.video_3ds_lcd_bottom;
 
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,      PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY,   PARSE_ONLY_DIR,   false},
                {MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE,        PARSE_ONLY_BOOL,  false},
@@ -12208,7 +12207,7 @@ unsigned menu_displaylist_build_list(
          {
             bool smb_enable = settings->bools.smb_client_enable;
 
-            menu_displaylist_build_info_selective_t build_list[] = {
+            static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_SMB_CLIENT_ENABLE,    PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_SMB_CLIENT_SERVER,    PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_SMB_CLIENT_SHARE,     PARSE_ONLY_STRING, false},
@@ -12525,7 +12524,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                bool netplay_allow_slaves    = settings->bools.netplay_allow_slaves;
                bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
 
-               menu_displaylist_build_info_selective_t build_list[] = {
+               static menu_displaylist_build_info_selective_t build_list[] = {
                   {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,       PARSE_ONLY_UINT,   true},
                   {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,    PARSE_ONLY_UINT,   true},
                   {MENU_ENUM_LABEL_NETPLAY_MAX_PING,           PARSE_ONLY_UINT,   true},
