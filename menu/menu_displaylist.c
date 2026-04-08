@@ -565,7 +565,7 @@ static int menu_displaylist_parse_core_info(
       const char *info_path,
       settings_t *settings)
 {
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[NAME_MAX_LENGTH];
 #if IOS
    char shortened_path[NAME_MAX_LENGTH] = {0};
 #endif
@@ -891,9 +891,6 @@ static int menu_displaylist_parse_core_info(
 
          /* Show the path that was checked */
          {
-            char tmp_desc[PATH_MAX_LENGTH];
-
-
 #ifdef IOS
             shortened_path[0] = '\0';
             fill_pathname_abbreviate_special(shortened_path,
