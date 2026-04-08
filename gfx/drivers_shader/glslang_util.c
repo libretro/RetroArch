@@ -183,88 +183,7 @@ static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
 static bool shader_line_buf_append(struct shader_line_buf *buf,
       const char *line, size_t line_len)
 {
-   /* Need line_len + 1 bytes for the line content plus '\0' terminator */
-   size_t needed = buf->len + line_len + 1;
-   if (needed > buf->cap)
-   {
-      size_t new_cap = buf->cap;
-      char  *tmp;
-      while (new_cap < needed)
-         new_cap *= 2;
-
-      if (buf->_single_alloc)
-      {
-         size_t *old_offsets = buf->line_offsets;
-         size_t  off_bytes  = buf->lines_cap * sizeof(size_t);
-         tmp = (char*)malloc(new_cap);
-         if (!tmp)
-            return false;
-         memcpy(tmp, buf->data, buf->len);
-         buf->line_offsets = (size_t*)malloc(off_bytes);
-         if (!buf->line_offsets)
-         {
-            free(tmp);
-            buf->line_offsets = old_offsets;
-            return false;
-         }
-         memcpy(buf->line_offsets, old_offsets, buf->num_lines * sizeof(size_t));
-         free(buf->data); /* frees old combined block */
-         buf->data          = tmp;
-         buf->cap           = new_cap;
-         buf->_single_alloc = false;
-      }
-      else
-      {
-         tmp = (char*)realloc(buf->data, new_cap);
-         if (!tmp)
-            return false;
-         buf->data = tmp;
-         buf->cap  = new_cap;
-      }
-   }
-
-   /* Grow line_offsets if needed */
-   if (buf->num_lines >= buf->lines_cap)
-   {
-      size_t  new_lcap = buf->lines_cap * 2;
-      if (buf->_single_alloc)
-      {
-         size_t *new_off = (size_t*)malloc(new_lcap * sizeof(size_t));
-         if (!new_off)
-            return false;
-         memcpy(new_off, buf->line_offsets, buf->num_lines * sizeof(size_t));
-         {
-            char *new_data = (char*)malloc(buf->cap);
-            if (!new_data)
-            {
-               free(new_off);
-               return false;
-            }
-            memcpy(new_data, buf->data, buf->len);
-            free(buf->data);
-            buf->data = new_data;
-         }
-         buf->line_offsets  = new_off;
-         buf->lines_cap     = new_lcap;
-         buf->_single_alloc = false;
-      }
-      else
-      {
-         size_t *tmp = (size_t*)realloc(buf->line_offsets,
-               new_lcap * sizeof(size_t));
-         if (!tmp)
-            return false;
-         buf->line_offsets = tmp;
-         buf->lines_cap   = new_lcap;
-      }
-   }
-
-   /* Record offset, copy data, null-terminate the line */
-   buf->line_offsets[buf->num_lines++] = buf->len;
-   memcpy(buf->data + buf->len, line, line_len);
-   buf->len               += line_len;
-   buf->data[buf->len++]   = '\0';
-   return true;
+   return shader_line_buf_append_batch(buf, &line, &line_len, 1);
 }
 
 const char *shader_line_buf_get(const struct shader_line_buf *buf, size_t index)
@@ -379,6 +298,21 @@ static bool emit_feature_defines(struct shader_line_buf *output)
    return shader_line_buf_append_batch(output, lines, lens, 3);
 }
 
+/* Build a "#line N \"file\"" directive into tmp using a precomputed suffix.
+ * Returns the total length written. */
+static size_t build_line_directive(char *tmp, size_t tmp_size,
+      unsigned lineno, const char *suffix, size_t suffix_len)
+{
+   size_t n = (size_t)snprintf(tmp, tmp_size, "#line %u", lineno);
+   if (n + suffix_len < tmp_size)
+   {
+      memcpy(tmp + n, suffix, suffix_len);
+      n += suffix_len;
+      tmp[n] = '\0';
+   }
+   return n;
+}
+
 /* -------------------------------------------------------------------
  * glslang_read_shader_file
  * ------------------------------------------------------------------- */
@@ -386,6 +320,8 @@ bool glslang_read_shader_file(const char *path,
       struct shader_line_buf *output, bool root_file, bool is_optional)
 {
    char tmp[PATH_MAX_LENGTH];
+   char line_suffix[PATH_MAX_LENGTH]; /* precomputed: " \"basename\"" */
+   size_t line_suffix_len = 0;
    const char *basename      = NULL;
    uint8_t *buf              = NULL;
    int64_t buf_len           = 0;
@@ -402,6 +338,11 @@ bool glslang_read_shader_file(const char *path,
    if (!basename || basename[0] == '\0')
       return false;
 
+   /* Precompute the #line directive suffix: ' "basename"'
+    * so the inner loop only needs to write the line number. */
+   line_suffix_len = (size_t)snprintf(line_suffix, sizeof(line_suffix),
+         " \"%s\"", basename);
+
    /* Read file contents */
    if (!filestream_read_file(path, (void**)&buf, &buf_len))
    {
@@ -413,20 +354,10 @@ bool glslang_read_shader_file(const char *path,
    if (buf_len <= 0)
       goto cleanup;
 
-   /* Inline \r removal */
-   {
-      char *rd = (char*)buf;
-      char *wr = (char*)buf;
-      char *end = (char*)buf + buf_len;
-      while (rd < end)
-      {
-         if (*rd != '\r')
-            *wr++ = *rd;
-         rd++;
-      }
-      *wr = '\0';
-      /* buf_len is no longer needed; we work with null-terminated data */
-   }
+   /* Null-terminate the buffer so we can work with it as a C string.
+    * \r removal is folded into the line-scanning loop below to avoid
+    * a separate O(n) pass over the data. */
+   ((char*)buf)[buf_len] = '\0';
 
    {
       char *cursor     = (char*)buf;
@@ -442,13 +373,24 @@ bool glslang_read_shader_file(const char *path,
       while (*cursor != '\0')
       {
          char saved;
-         char *line_start = cursor;
-         char *newline    = cursor;
+         char *line_start;
+         char *newline;
+         char *rd, *wr;
 
-         /* Find newline / end */
-         while (*newline != '\n' && *newline != '\0')
-            newline++;
-         saved            = *newline;
+         /* Strip \r from this line in-place while finding newline/end */
+         rd = cursor;
+         wr = cursor;
+         while (*rd != '\n' && *rd != '\0')
+         {
+            if (*rd != '\r')
+               *wr++ = *rd;
+            rd++;
+         }
+         line_start = cursor;
+         newline    = wr;    /* points to where the logical line ends */
+         saved      = *rd;   /* save the real delimiter (\n or \0)   */
+         /* Shift the delimiter to the compacted position */
+         *wr        = *rd;
 
          /* Temporarily terminate the line */
          *newline = '\0';
@@ -464,69 +406,48 @@ bool glslang_read_shader_file(const char *path,
                {
                   RARCH_ERR("[Slang] First line of the shader must contain a valid "
                         "#version string.\n");
-                  *newline = saved;
                   goto cleanup;
                }
 
                if (!shader_line_buf_append(output, line_start,
                         (size_t)(newline - line_start)))
-               {
-                  *newline = saved;
                   goto cleanup;
-               }
 
                /* Allows us to use #line to make dealing with shader
                 * errors easier. */
                if (!shader_line_buf_append(output,
                      _ext_line_directive, EXT_LINE_DIRECTIVE_LEN))
-               {
-                  *newline = saved;
                   goto cleanup;
-               }
 
                if (!emit_feature_defines(output))
-               {
-                  *newline = saved;
                   goto cleanup;
-               }
 
-               line_len = snprintf(tmp, sizeof(tmp),
-                     "#line 2 \"%s\"", basename);
+               line_len = build_line_directive(tmp, sizeof(tmp),
+                     2u, line_suffix, line_suffix_len);
                if (!shader_line_buf_append(output, tmp, line_len))
-               {
-                  *newline = saved;
                   goto cleanup;
-               }
 
-               /* Advance to line 2 for processing below */
-               *newline = saved;
-               cursor   = (*newline == '\n') ? newline + 1 : newline;
+               /* Advance past this line in the real buffer */
+               cursor = (saved == '\n') ? rd + 1 : rd;
                line_idx++;
                continue;
             }
 
             /* Non-root or non-slang: emit feature defines + #line once */
             if (!emit_feature_defines(output))
-            {
-               *newline = saved;
                goto cleanup;
-            }
 
-            line_len = snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
-                  root_file ? 2u : 1u, basename);
+            line_len = build_line_directive(tmp, sizeof(tmp),
+                  root_file ? 2u : 1u, line_suffix, line_suffix_len);
             if (!shader_line_buf_append(output, tmp, line_len))
-            {
-               *newline = saved;
                goto cleanup;
-            }
          }
 
          /* Skip line 0 (the #version line) for root slang files —
           * already handled above */
          if (root_file && check_version && line_idx == 0)
          {
-            *newline = saved;
-            cursor   = (*newline == '\n') ? newline + 1 : newline;
+            cursor = (saved == '\n') ? rd + 1 : rd;
             line_idx++;
             continue;
          }
@@ -550,15 +471,12 @@ bool glslang_read_shader_file(const char *path,
                {
                   RARCH_ERR("[Slang] Invalid include statement \"%s\".\n",
                         line_start);
-                  *newline = saved;
                   goto cleanup;
                }
 
                include_path[0] = '\0';
                fill_pathname_resolve_relative(
                      include_path, path, include_file, sizeof(include_path));
-
-               *newline = saved;
 
                if (!glslang_read_shader_file(include_path, output,
                      false, include_optional))
@@ -569,8 +487,8 @@ bool glslang_read_shader_file(const char *path,
                         include_path);
                }
 
-               line_len = snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
-                     (unsigned)(line_idx + 1), basename);
+               line_len = build_line_directive(tmp, sizeof(tmp),
+                     (unsigned)(line_idx + 1), line_suffix, line_suffix_len);
                if (!shader_line_buf_append(output, tmp, line_len))
                   goto cleanup;
             }
@@ -580,32 +498,23 @@ bool glslang_read_shader_file(const char *path,
                      && !memcmp("#pragma", line_start, sizeof("#pragma")-1)))
             {
                if (!shader_line_buf_append(output, line_start, cur_line_len))
-               {
-                  *newline = saved;
                   goto cleanup;
-               }
-               line_len = snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
-                     (unsigned)(line_idx + 2), basename);
-               *newline = saved;
+               line_len = build_line_directive(tmp, sizeof(tmp),
+                     (unsigned)(line_idx + 2), line_suffix, line_suffix_len);
                if (!shader_line_buf_append(output, tmp, line_len))
                   goto cleanup;
             }
             else
             {
                if (!shader_line_buf_append(output, line_start, cur_line_len))
-               {
-                  *newline = saved;
                   goto cleanup;
-               }
-               *newline = saved;
             }
 
-            cursor = (*newline == '\n') ? newline + 1 : newline;
+            cursor = (saved == '\n') ? rd + 1 : rd;
             line_idx++;
             continue;
          }
 
-         *newline = saved;
          goto cleanup;
       }
    }
@@ -661,16 +570,17 @@ const char *glslang_format_to_string(enum glslang_format fmt)
       "R32G32B32A32_SINT",
       "R32G32B32A32_SFLOAT",
    };
+   if ((unsigned)fmt >= sizeof(glslang_formats) / sizeof(glslang_formats[0]))
+      return glslang_formats[0]; /* "UNKNOWN" */
    return glslang_formats[fmt];
 }
 
 enum glslang_format glslang_find_format(const char *fmt)
 {
-   size_t _len = strlen(fmt);
 #undef FMT
 #define FMT(x) do { \
    static const char s[] = #x; \
-   if (sizeof(s) - 1 == _len && memcmp(fmt, s, sizeof(s) - 1) == 0) \
+   if (memcmp(fmt, s, sizeof(s) - 1) == 0 && fmt[sizeof(s) - 1] == '\0') \
       return SLANG_FORMAT_ ## x; \
 } while(0)
 
@@ -688,7 +598,7 @@ enum glslang_format glslang_find_format(const char *fmt)
                }
                else /* R8G8... */
                {
-                  if (_len <= 11) /* R8G8_xxx */
+                  if (fmt[4] == '_') /* R8G8_xxx */
                   {
                      FMT(R8G8_UNORM);
                      FMT(R8G8_UINT);
@@ -712,13 +622,13 @@ enum glslang_format glslang_find_format(const char *fmt)
                }
                else /* R16G16... */
                {
-                  if (_len <= 13)
+                  if (fmt[5] == '_') /* R16G16_xxx */
                   {
                      FMT(R16G16_UINT);
                      FMT(R16G16_SINT);
                      FMT(R16G16_SFLOAT);
                   }
-                  else
+                  else /* R16G16B16A16_xxx */
                   {
                      FMT(R16G16B16A16_UINT);
                      FMT(R16G16B16A16_SINT);
@@ -735,13 +645,13 @@ enum glslang_format glslang_find_format(const char *fmt)
                }
                else
                {
-                  if (_len <= 13)
+                  if (fmt[5] == '_') /* R32G32_xxx */
                   {
                      FMT(R32G32_UINT);
                      FMT(R32G32_SINT);
                      FMT(R32G32_SFLOAT);
                   }
-                  else
+                  else /* R32G32B32A32_xxx */
                   {
                      FMT(R32G32B32A32_UINT);
                      FMT(R32G32B32A32_SINT);
