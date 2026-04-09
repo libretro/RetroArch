@@ -384,7 +384,7 @@ typedef struct
 
    /* Dirty rectangle for partial atlas uploads.
     * Tracks the bounding box of modified glyphs so that
-    * vulkan_font_flush only copies the changed region
+    * vulkan_font_render_msg only copies the changed region
     * instead of the entire atlas texture. */
    unsigned dirty_x_min, dirty_y_min;
    unsigned dirty_x_max, dirty_y_max;
@@ -2085,183 +2085,6 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void vulkan_font_flush(vk_t *vk, vulkan_raster_t *font)
-{
-   struct vk_draw_triangles call;
-
-   call.pipeline      = vk->pipelines.font;
-   call.texture       = &font->texture_optimal;
-   call.sampler       = vk->samplers.mipmap_linear;
-   call.uniform       = &vk->mvp;
-   call.uniform_size  = sizeof(vk->mvp);
-   call.vbo           = &font->range;
-   call.vertices      = font->vertices;
-   call.indexed_quads = true;  /* Font glyphs are quads */
-
-   if (font->needs_update)
-   {
-      struct vk_texture *dynamic_tex  = &font->texture_optimal;
-      struct vk_texture *staging_tex  = &font->texture;
-
-      if ((font->texture.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && font->texture.memory != VK_NULL_HANDLE)
-      {
-         VkMappedMemoryRange range;
-         range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-         range.pNext  = NULL;
-         range.memory = font->texture.memory;
-         range.offset = 0;
-         range.size   = VK_WHOLE_SIZE;
-         vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
-      }
-
-      /* Dirty-rect partial upload: only copy the bounding box of
-       * modified glyphs instead of the entire atlas texture.
-       * For the font atlas, staging is a VkBuffer and dynamic is
-       * a VkImage, so we must use vkCmdCopyBufferToImage with a
-       * targeted region.  If the dirty rect covers the full atlas
-       * (initial upload or many scattered glyphs), this degrades
-       * gracefully to a full copy. */
-      {
-         unsigned dx = font->dirty_x_min;
-         unsigned dy = font->dirty_y_min;
-         unsigned dw = font->dirty_x_max - dx;
-         unsigned dh = font->dirty_y_max - dy;
-
-         /* Clamp to atlas bounds. */
-         if (dx + dw > staging_tex->width)
-            dw = staging_tex->width - dx;
-         if (dy + dh > staging_tex->height)
-            dh = staging_tex->height - dy;
-
-         if (dw > 0 && dh > 0)
-         {
-            /* Use the same format (R8_UNORM, bpp=1) for offset math. */
-            unsigned bpp = 1;
-            VkBufferImageCopy region;
-
-            VULKAN_IMAGE_LAYOUT_TRANSITION(
-                  vk->cmd,
-                  dynamic_tex->image,
-                  VK_IMAGE_LAYOUT_UNDEFINED,
-                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  0,
-                  VK_ACCESS_TRANSFER_WRITE_BIT,
-                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                  VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-            region.bufferOffset                    = (VkDeviceSize)dy * staging_tex->stride + dx * bpp;
-            region.bufferRowLength                 = (uint32_t)(staging_tex->stride / bpp); /* texels per row in buffer */
-            region.bufferImageHeight               = 0; /* tightly packed rows in the region */
-            region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-            region.imageSubresource.mipLevel       = 0;
-            region.imageSubresource.baseArrayLayer = 0;
-            region.imageSubresource.layerCount     = 1;
-            region.imageOffset.x                   = (int32_t)dx;
-            region.imageOffset.y                   = (int32_t)dy;
-            region.imageOffset.z                   = 0;
-            region.imageExtent.width               = dw;
-            region.imageExtent.height              = dh;
-            region.imageExtent.depth               = 1;
-
-            vkCmdCopyBufferToImage(
-                  vk->cmd,
-                  staging_tex->buffer,
-                  dynamic_tex->image,
-                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  1,
-                  &region);
-
-            VULKAN_IMAGE_LAYOUT_TRANSITION(
-                  vk->cmd,
-                  dynamic_tex->image,
-                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  VK_ACCESS_TRANSFER_WRITE_BIT,
-                  VK_ACCESS_SHADER_READ_BIT,
-                  VK_PIPELINE_STAGE_TRANSFER_BIT,
-                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-
-            dynamic_tex->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-         }
-      }
-
-      /* Reset dirty rect for next frame. */
-      font->dirty_x_min  = font->atlas->width;
-      font->dirty_y_min  = font->atlas->height;
-      font->dirty_x_max  = 0;
-      font->dirty_y_max  = 0;
-      font->needs_update = false;
-   }
-
-   vulkan_draw_triangles(vk, &call);
-}
-
-/* Render glyphs for a single line directly into the VBO.
- * Alignment width is computed inline to avoid a separate glyph walk.
- * Parameters that were formerly passed per-line are now shared
- * across all lines via the enclosing scope in vulkan_font_render_msg. */
-#define VULKAN_FONT_EMIT_LINE(vk, font, glyph_q, line_start, line_len, \
-      scale, vk_color_ptr, pos_y, base_x, \
-      inv_tex_size_x, inv_tex_size_y, inv_win_w, inv_win_h, \
-      text_align, get_glyph_fn, font_data_ptr) \
-do { \
-   const char *_msg     = (line_start); \
-   const char *_msg_end = _msg + (line_len); \
-   int _x               = (base_x); \
-   int _y               = roundf((1.0f - (pos_y)) * (vk)->vp.height); \
-   int _dx              = 0; \
-   int _dy              = 0; \
-   if ((text_align) == TEXT_ALIGN_RIGHT || (text_align) == TEXT_ALIGN_CENTER) \
-   { \
-      int _wacc         = 0; \
-      const char *_s    = _msg; \
-      while (_s < _msg_end) \
-      { \
-         const struct font_glyph *_g; \
-         uint32_t _c    = utf8_walk(&_s); \
-         if (!(_g = (get_glyph_fn)((font_data_ptr), _c))) \
-            if (!(_g = (glyph_q))) \
-               continue; \
-         _wacc += _g->advance_x; \
-      } \
-      if ((text_align) == TEXT_ALIGN_RIGHT) \
-         _x -= (int)(_wacc * (scale)); \
-      else \
-         _x -= (int)(_wacc * (scale)) / 2; \
-      _msg = (line_start); \
-   } \
-   while (_msg < _msg_end) \
-   { \
-      const struct font_glyph *_g; \
-      uint32_t _c = utf8_walk(&_msg); \
-      if (!(_g = (get_glyph_fn)((font_data_ptr), _c))) \
-         if (!(_g = (glyph_q))) \
-            continue; \
-      if ((font)->atlas->dirty) \
-      { \
-         vulkan_font_update_glyph((font), _g); \
-         (font)->atlas->dirty = false; \
-         (font)->needs_update = true; \
-      } \
-      { \
-         struct vk_vertex *_pv = (font)->pv + (font)->vertices; \
-         float _fx  = (_x + (_g->draw_offset_x + _dx) * (scale)) * (inv_win_w); \
-         float _fy  = (_y + (_g->draw_offset_y + _dy) * (scale)) * (inv_win_h); \
-         float _fw  = _g->width  * (scale) * (inv_win_w); \
-         float _fh  = _g->height * (scale) * (inv_win_h); \
-         float _ftx = _g->atlas_offset_x * (inv_tex_size_x); \
-         float _fty = _g->atlas_offset_y * (inv_tex_size_y); \
-         float _ftw = _g->width  * (inv_tex_size_x); \
-         float _fth = _g->height * (inv_tex_size_y); \
-         VULKAN_WRITE_QUAD_VBO(_pv, _fx, _fy, _fw, _fh, \
-               _ftx, _fty, _ftw, _fth, (vk_color_ptr)); \
-      } \
-      (font)->vertices += 4; \
-      _dx += _g->advance_x; \
-      _dy += _g->advance_y; \
-   } \
-} while (0)
-
 static void vulkan_font_render_msg(
       void *userdata,
       void *data,
@@ -2273,14 +2096,15 @@ static void vulkan_font_render_msg(
    float color[4];
    int drop_x, drop_y;
    bool full_screen;
-   size_t max_glyphs;
    unsigned width, height;
    enum text_alignment text_align;
-   const struct font_glyph* glyph_q;
+   const struct font_glyph *glyph_q;
    float x, y, scale, drop_mod, drop_alpha;
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t);
+   float scale_iww, scale_iwh;           /* pre-multiplied scale * inv_win */
+   const struct font_glyph *(*get_glyph)(void*, uint32_t);
    void *font_data;
+   int has_drop, needs_align;
    vulkan_raster_t *font            = (vulkan_raster_t*)data;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
@@ -2337,13 +2161,18 @@ static void vulkan_font_render_msg(
 
    vulkan_set_viewport(vk, width, height, full_screen, false);
 
-   max_glyphs = strlen(msg);
-   if (drop_x || drop_y)
-      max_glyphs *= 2;
+   /* Compute max glyphs for VBO allocation.
+    * Line scan below discovers actual length; this uses strlen
+    * only for the allocation upper bound. */
+   {
+      size_t max_glyphs = strlen(msg);
+      if (drop_x || drop_y)
+         max_glyphs *= 2;
 
-   if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-         4 * sizeof(struct vk_vertex) * max_glyphs, &font->range))
-      return;
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+            4 * sizeof(struct vk_vertex) * max_glyphs, &font->range))
+         return;
+   }
 
    font->vertices   = 0;
    font->pv         = (struct vk_vertex*)font->range.data;
@@ -2352,41 +2181,173 @@ static void vulkan_font_render_msg(
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height      = line_metrics->height * scale / vk->vp.height;
 
-   /* Hoist reciprocals and function pointer once for all lines. */
+   /* Hoist reciprocals, function pointer, and pre-multiplied factors. */
    inv_tex_size_x   = 1.0f / font->texture.width;
    inv_tex_size_y   = 1.0f / font->texture.height;
    inv_win_width    = 1.0f / vk->vp.width;
    inv_win_height   = 1.0f / vk->vp.height;
+   scale_iww        = scale * inv_win_width;
+   scale_iwh        = scale * inv_win_height;
    get_glyph        = font->font_driver->get_glyph;
    font_data        = font->font_data;
 
-   /* Drop-shadow pass. */
-   if (drop_x || drop_y)
-   {
-      struct vk_color vk_color_dark;
-      float pos_x_dark    = x + scale * drop_x * inv_win_width;
-      float pos_y_dark    = y + scale * drop_y * inv_win_height;
-      int pixel_x_dark    = roundf(pos_x_dark * vk->vp.width);
-      int line_num        = 0;
-      const char *m       = msg;
+   has_drop         = (drop_x || drop_y);
+   needs_align      = (text_align != TEXT_ALIGN_LEFT);
 
-      vk_color_dark.r     = color[0] * drop_mod;
-      vk_color_dark.g     = color[1] * drop_mod;
-      vk_color_dark.b     = color[2] * drop_mod;
-      vk_color_dark.a     = color[3] * drop_alpha;
+   /* Pre-compute per-pass constants: base X in NDC (pixel-snapped),
+    * shadow color, and shadow Y origin. */
+   {
+      struct vk_color vk_color, vk_color_dark = {0.0f, 0.0f, 0.0f, 0.0f};
+      float fg_base_x, sh_base_x, sh_y_origin;
+      int line_num;
+      const char *m;
+
+      vk_color.r       = color[0];
+      vk_color.g       = color[1];
+      vk_color.b       = color[2];
+      vk_color.a       = color[3];
+
+      fg_base_x        = roundf(x * vk->vp.width) * inv_win_width;
+
+      sh_base_x        = 0.0f;
+      sh_y_origin      = 0.0f;
+      if (has_drop)
+      {
+         vk_color_dark.r = color[0] * drop_mod;
+         vk_color_dark.g = color[1] * drop_mod;
+         vk_color_dark.b = color[2] * drop_mod;
+         vk_color_dark.a = color[3] * drop_alpha;
+         sh_base_x       = roundf((x + scale * drop_x
+                              * inv_win_width) * vk->vp.width)
+                              * inv_win_width;
+         sh_y_origin     = y + scale * drop_y * inv_win_height;
+      }
+
+      /* Single pass over the string: for each line, emit interleaved
+       * shadow + foreground quads from one glyph lookup.  This halves
+       * cache/TLB pressure on the glyph table compared to two separate
+       * passes, and shares tex-coord and glyph-size computations. */
+      m        = msg;
+      line_num = 0;
 
       for (;;)
       {
-         const char *delim = m;
+         const char *delim       = m;
+         const char *line_start;
+         size_t line_len;
+         float align_ndc, fg_y, fg_x, sh_y, sh_x;
+         int delta_x, delta_y;
+
          while (*delim != '\n' && *delim != '\0')
             delim++;
-         VULKAN_FONT_EMIT_LINE(vk, font, glyph_q, m, (size_t)(delim - m),
-               scale, &vk_color_dark,
-               pos_y_dark - (float)line_num * line_height,
-               pixel_x_dark,
-               inv_tex_size_x, inv_tex_size_y,
-               inv_win_width, inv_win_height,
-               text_align, get_glyph, font_data);
+         line_start = m;
+         line_len   = (size_t)(delim - m);
+
+         /* Alignment: skip the width pre-scan for TEXT_ALIGN_LEFT,
+          * which is the overwhelmingly common case (OSD, notifications). */
+         align_ndc = 0.0f;
+         if (needs_align)
+         {
+            int width_accum  = 0;
+            const char *scan = line_start;
+            const char *scan_end = scan + line_len;
+            while (scan < scan_end)
+            {
+               const struct font_glyph *glyph;
+               uint32_t code = utf8_walk(&scan);
+               if (!(glyph = get_glyph(font_data, code)))
+                  if (!(glyph = glyph_q))
+                     continue;
+               width_accum += glyph->advance_x;
+            }
+            {
+               float total = width_accum * scale_iww;
+               align_ndc   = (text_align == TEXT_ALIGN_RIGHT)
+                  ? total : total * 0.5f;
+            }
+         }
+
+         /* Per-line Y in NDC (pixel-snapped), X adjusted for alignment. */
+         {
+            float fg_pos_y = y - (float)line_num * line_height;
+            fg_y = roundf((1.0f - fg_pos_y) * vk->vp.height)
+               * inv_win_height;
+            fg_x = fg_base_x - align_ndc;
+         }
+
+         sh_y = 0.0f;
+         sh_x = 0.0f;
+         if (has_drop)
+         {
+            float sh_pos_y = sh_y_origin - (float)line_num * line_height;
+            sh_y = roundf((1.0f - sh_pos_y) * vk->vp.height)
+               * inv_win_height;
+            sh_x = sh_base_x - align_ndc;
+         }
+
+         /* Emit glyphs: 1 lookup → shadow quad + foreground quad.
+          * Tex coords and glyph dimensions are computed once and
+          * shared between both quads. */
+         delta_x = 0;
+         delta_y = 0;
+         {
+            const char *gm  = line_start;
+            const char *gme = gm + line_len;
+
+            while (gm < gme)
+            {
+               const struct font_glyph *glyph;
+               uint32_t code = utf8_walk(&gm);
+
+               if (!(glyph = get_glyph(font_data, code)))
+                  if (!(glyph = glyph_q))
+                     continue;
+
+               if (font->atlas->dirty)
+               {
+                  vulkan_font_update_glyph(font, glyph);
+                  font->atlas->dirty = false;
+                  font->needs_update = true;
+               }
+
+               {
+                  /* Texture coordinates — shared between shadow and fg. */
+                  float ftx = glyph->atlas_offset_x * inv_tex_size_x;
+                  float fty = glyph->atlas_offset_y * inv_tex_size_y;
+                  float ftw = glyph->width  * inv_tex_size_x;
+                  float fth = glyph->height * inv_tex_size_y;
+
+                  /* Pre-scaled glyph size and per-glyph offset. */
+                  float fw  = glyph->width  * scale_iww;
+                  float fh  = glyph->height * scale_iwh;
+                  float gox = (glyph->draw_offset_x + delta_x) * scale_iww;
+                  float goy = (glyph->draw_offset_y + delta_y) * scale_iwh;
+
+                  if (has_drop)
+                  {
+                     struct vk_vertex *pv = font->pv + font->vertices;
+                     VULKAN_WRITE_QUAD_VBO(pv,
+                           sh_x + gox, sh_y + goy,
+                           fw, fh, ftx, fty, ftw, fth,
+                           &vk_color_dark);
+                     font->vertices += 4;
+                  }
+
+                  {
+                     struct vk_vertex *pv = font->pv + font->vertices;
+                     VULKAN_WRITE_QUAD_VBO(pv,
+                           fg_x + gox, fg_y + goy,
+                           fw, fh, ftx, fty, ftw, fth,
+                           &vk_color);
+                     font->vertices += 4;
+                  }
+               }
+
+               delta_x += glyph->advance_x;
+               delta_y += glyph->advance_y;
+            }
+         }
+
          if (*delim == '\0')
             break;
          m = delim + 1;
@@ -2394,41 +2355,203 @@ static void vulkan_font_render_msg(
       }
    }
 
-   /* Foreground pass. */
+   /* ── Flush: atlas upload + draw ─────────────────────────────────
+    * Inlined from the former vulkan_font_flush().  By issuing the
+    * Vulkan commands directly we eliminate:
+    *   - packing/unpacking through struct vk_draw_triangles
+    *   - the generic vulkan_draw_triangles() indirection
+    *   - the runtime branch on indexed_quads (always true for fonts)
+    *   - the null-check on texture->image (always valid for fonts)
+    */
+
+   /* Upload dirty atlas region to the GPU before the draw. */
+   if (font->needs_update)
    {
-      struct vk_color vk_color;
-      int pixel_x    = roundf(x * vk->vp.width);
-      int line_num   = 0;
-      const char *m  = msg;
+      struct vk_texture *dynamic_tex = &font->texture_optimal;
+      struct vk_texture *staging_tex = &font->texture;
 
-      vk_color.r     = color[0];
-      vk_color.g     = color[1];
-      vk_color.b     = color[2];
-      vk_color.a     = color[3];
-
-      for (;;)
+      if (  (staging_tex->flags
+               & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+            && staging_tex->memory != VK_NULL_HANDLE)
       {
-         const char *delim = m;
-         while (*delim != '\n' && *delim != '\0')
-            delim++;
-         VULKAN_FONT_EMIT_LINE(vk, font, glyph_q, m, (size_t)(delim - m),
-               scale, &vk_color,
-               y - (float)line_num * line_height,
-               pixel_x,
-               inv_tex_size_x, inv_tex_size_y,
-               inv_win_width, inv_win_height,
-               text_align, get_glyph, font_data);
-         if (*delim == '\0')
-            break;
-         m = delim + 1;
-         line_num++;
+         VkMappedMemoryRange mem_range;
+         mem_range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+         mem_range.pNext  = NULL;
+         mem_range.memory = staging_tex->memory;
+         mem_range.offset = 0;
+         mem_range.size   = VK_WHOLE_SIZE;
+         vkFlushMappedMemoryRanges(vk->context->device, 1, &mem_range);
       }
+
+      {
+         unsigned dx = font->dirty_x_min;
+         unsigned dy = font->dirty_y_min;
+         unsigned dw = font->dirty_x_max - dx;
+         unsigned dh = font->dirty_y_max - dy;
+
+         if (dx + dw > staging_tex->width)
+            dw = staging_tex->width - dx;
+         if (dy + dh > staging_tex->height)
+            dh = staging_tex->height - dy;
+
+         if (dw > 0 && dh > 0)
+         {
+            VkBufferImageCopy region;
+
+            VULKAN_IMAGE_LAYOUT_TRANSITION(
+                  vk->cmd,
+                  dynamic_tex->image,
+                  VK_IMAGE_LAYOUT_UNDEFINED,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  0,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+            /* R8_UNORM ⇒ bpp = 1; stride is already in bytes. */
+            region.bufferOffset                    =
+               (VkDeviceSize)dy * staging_tex->stride + dx;
+            region.bufferRowLength                 =
+               (uint32_t)staging_tex->stride;
+            region.bufferImageHeight               = 0;
+            region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.imageSubresource.mipLevel       = 0;
+            region.imageSubresource.baseArrayLayer = 0;
+            region.imageSubresource.layerCount     = 1;
+            region.imageOffset.x                   = (int32_t)dx;
+            region.imageOffset.y                   = (int32_t)dy;
+            region.imageOffset.z                   = 0;
+            region.imageExtent.width               = dw;
+            region.imageExtent.height              = dh;
+            region.imageExtent.depth               = 1;
+
+            vkCmdCopyBufferToImage(
+                  vk->cmd,
+                  staging_tex->buffer,
+                  dynamic_tex->image,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  1,
+                  &region);
+
+            VULKAN_IMAGE_LAYOUT_TRANSITION(
+                  vk->cmd,
+                  dynamic_tex->image,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_ACCESS_SHADER_READ_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+            dynamic_tex->layout =
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+         }
+      }
+
+      font->dirty_x_min  = font->atlas->width;
+      font->dirty_y_min  = font->atlas->height;
+      font->dirty_x_max  = 0;
+      font->dirty_y_max  = 0;
+      font->needs_update = false;
    }
 
-   vulkan_font_flush(vk, font);
+   /* Transition the font atlas texture for shader reads.
+    * The font texture_optimal is always a valid VkImage. */
+   if (font->texture_optimal.image)
+      vulkan_transition_texture(vk, vk->cmd, &font->texture_optimal);
+
+   /* Pipeline and dynamic state. */
+   if (vk->pipelines.font != vk->tracker.pipeline)
+   {
+      VkRect2D sci;
+      vkCmdBindPipeline(vk->cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS, vk->pipelines.font);
+      vk->tracker.pipeline = vk->pipelines.font;
+      vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+   }
+   else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
+   {
+      VkRect2D sci;
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+   }
+
+   /* Descriptor set: UBO (mvp) + combined image sampler (font atlas). */
+   {
+      VkDescriptorSet set;
+      struct vk_buffer_range ubo_range;
+
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+               sizeof(vk->mvp), &ubo_range))
+         return;
+
+      memcpy(ubo_range.data, &vk->mvp, sizeof(vk->mvp));
+
+      set = vulkan_descriptor_manager_alloc(
+            vk->context->device,
+            &vk->chain->descriptor_manager);
+
+      vulkan_write_quad_descriptors(
+            vk->context->device,
+            set,
+            ubo_range.buffer,
+            ubo_range.offset,
+            sizeof(vk->mvp),
+            &font->texture_optimal,
+            vk->samplers.mipmap_linear);
+
+      vkCmdBindDescriptorSets(vk->cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vk->pipelines.layout, 0,
+            1, &set, 0, NULL);
+
+      vk->tracker.view    = VK_NULL_HANDLE;
+      vk->tracker.sampler = VK_NULL_HANDLE;
+      memset(vk->tracker.mvp.data, 0, sizeof(vk->tracker.mvp.data));
+   }
+
+   /* Bind VBO and issue indexed draw.
+    * Font glyphs are always quads (4 verts each) drawn via the
+    * shared index buffer — no need for the generic branch. */
+   vkCmdBindVertexBuffers(vk->cmd, 0, 1,
+         &font->range.buffer, &font->range.offset);
+
+   if (vk->quad_ibo.buffer != VK_NULL_HANDLE)
+   {
+      unsigned num_quads   = font->vertices / 4;
+      unsigned index_count = num_quads * 6;
+      vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
+            0, VK_INDEX_TYPE_UINT16);
+      vkCmdDrawIndexed(vk->cmd, index_count, 1, 0, 0, 0);
+   }
+   else
+      vkCmdDraw(vk->cmd, font->vertices, 1, 0, 0);
 }
-
-#undef VULKAN_FONT_EMIT_LINE
 
 static const struct font_glyph *vulkan_font_get_glyph(
       void *data, uint32_t code)

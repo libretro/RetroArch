@@ -1092,6 +1092,9 @@ static void d3d11_font_render_msg(
    const struct font_glyph* (*get_glyph)(void*, uint32_t) = NULL;
    void *font_data                  = NULL;
    float inv_vp_w, inv_vp_h, inv_tex_w, inv_tex_h;
+   float scale_inv_vp_w, scale_inv_vp_h;
+   int   drop_x_px, drop_y_px;
+   int   base_lx;
 
    if (!font || !msg || !*msg)
       return;
@@ -1160,22 +1163,43 @@ static void d3d11_font_render_msg(
       color_dark         = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_drk);
    }
 
-   /* Precompute reciprocals once for all lines -- replaces 8 per-glyph
-    * divisions with multiplications (~3-5x faster per op). */
-   inv_vp_w    = 1.0f / (float)d3d11->viewport.Width;
-   inv_vp_h    = 1.0f / (float)d3d11->viewport.Height;
-   inv_tex_w   = 1.0f / (float)font->texture.desc.Width;
-   inv_tex_h   = 1.0f / (float)font->texture.desc.Height;
+   /* Precompute reciprocals and scale*reciprocal products once. */
+   inv_vp_w        = 1.0f / (float)d3d11->viewport.Width;
+   inv_vp_h        = 1.0f / (float)d3d11->viewport.Height;
+   inv_tex_w       = 1.0f / (float)font->texture.desc.Width;
+   inv_tex_h       = 1.0f / (float)font->texture.desc.Height;
+   scale_inv_vp_w  = scale * inv_vp_w;
+   scale_inv_vp_h  = scale * inv_vp_h;
 
-   /* Count total bytes in the message to do a single capacity check
-    * and a single Map for all lines (shadow + foreground).  msg_len
-    * is an upper bound on glyph count (multi-byte UTF-8 sequences
+   /* Precompute the drop-shadow pixel offset once.  The shadow
+    * sprite positions are the foreground positions shifted by this constant,
+    * so both can be emitted from a single glyph lookup. */
+   drop_x_px = have_drop
+      ? (int)roundf((x + scale * drop_x / width) * width)
+        - (int)roundf(x * width)
+      : 0;
+   drop_y_px = have_drop
+      ? (int)roundf((1.0f - (y + scale * drop_y / height)) * height)
+        - (int)roundf((1.0f - y) * height)
+      : 0;
+
+   /* Base lx depends only on x and width — constant across lines. */
+   base_lx = (int)roundf(x * width);
+
+   /* Capacity check without strlen: scan the message once to
+    * count bytes while also finding newlines.  The byte count is a
+    * conservative upper bound on glyph count (UTF-8 multi-byte sequences
     * produce fewer glyphs than bytes). */
    {
-      size_t total_bytes  = strlen(msg);
-      /* Shadow pass doubles the glyph count. */
-      size_t need         = have_drop ? total_bytes * 2 : total_bytes;
-
+      const char *p  = msg;
+      size_t total_bytes = 0;
+      size_t need;
+      while (*p)
+      {
+         p++;
+         total_bytes++;
+      }
+      need = have_drop ? total_bytes * 2 : total_bytes;
       if (d3d11->sprites.offset + need > (unsigned)d3d11->sprites.capacity)
          d3d11->sprites.offset = 0;
    }
@@ -1191,114 +1215,165 @@ static void d3d11_font_render_msg(
    v             = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
    start_offset  = d3d11->sprites.offset;
 
-   /* ------ Emit glyphs for each pass (shadow, then foreground) ------ */
+   /* Prepare a sprite template for the constant fields.
+    * params.scaling (1.0f) and params.rotation (0.0f) are identical for
+    * every glyph; colors are identical within a pass.  We memcpy this
+    * template per glyph instead of doing 6 individual stores. */
+
+   /* Single-pass emit: walk the message once, emitting
+    * shadow + foreground glyphs together per line.
+    *
+    * For RIGHT/CENTER alignment, emit glyphs at the base lx
+    * first, then retroactively shift pos.x for the line.  This fuses
+    * the measurement and emit passes — each glyph is looked up once. */
    {
-      int pass;
-      int passes = have_drop ? 2 : 1;
+      const char *line_start = msg;
+      int lines              = 0;
+      int capacity           = d3d11->sprites.capacity;
+      bool need_align        = (text_align == TEXT_ALIGN_RIGHT
+                                 || text_align == TEXT_ALIGN_CENTER);
 
-      for (pass = 0; pass < passes; pass++)
+      for (;;)
       {
-         const char *line_start = msg;
-         int lines              = 0;
-         float pass_x, pass_y;
-         unsigned pass_color;
+         const char *delim   = line_start;
+         const char *line_end;
+         size_t line_len;
 
-         if (pass == 0 && have_drop)
+         while (*delim && *delim != '\n')
+            delim++;
+         line_len = (size_t)(delim - line_start);
+         line_end = line_start + line_len;
+
+         if (line_len > 0 && line_len <= (unsigned)capacity)
          {
-            pass_x     = x + scale * drop_x / width;
-            pass_y     = y + scale * drop_y / height;
-            pass_color = color_dark;
-         }
-         else
-         {
-            pass_x     = x;
-            pass_y     = y;
-            pass_color = color;
-         }
+            float fg_pos_y  = y - (float)lines * line_height;
+            int   fg_ly     = (int)roundf((1.0f - fg_pos_y) * height);
+            int   lx        = base_lx;
 
-         for (;;)
-         {
-            const char *delim   = line_start;
-            const char *line_end;
-            size_t line_len;
-            int lx, ly;
-
-            while (*delim && *delim != '\n')
-               delim++;
-            line_len = (size_t)(delim - line_start);
-            line_end = line_start + line_len;
-
-            if (line_len > 0
-                  && line_len <= (unsigned)d3d11->sprites.capacity)
+            /* Emit shadow glyphs for this line (if drop shadow enabled).
+             * Uses the same glyph lookup as the foreground pass
+             * below — but only when need_align is false.  When alignment
+             * is needed, we defer shadow to after the alignment shift. */
+            if (have_drop && !need_align)
             {
-               float cur_pos_y = pass_y - (float)lines * line_height;
-               lx              = roundf(pass_x * width);
-               ly              = roundf((1.0f - cur_pos_y) * height);
-
-               /* Right/center alignment -- lightweight advance_x accumulation. */
-               if (text_align == TEXT_ALIGN_RIGHT
-                     || text_align == TEXT_ALIGN_CENTER)
+               const char *scan = line_start;
+               int sx           = lx + drop_x_px;
+               int sy           = fg_ly + drop_y_px;
+               while (scan < line_end)
                {
-                  int width_accum  = 0;
-                  const char *scan = line_start;
-                  while (scan < line_end)
-                  {
-                     const struct font_glyph *glyph;
-                     uint32_t code  = utf8_walk(&scan);
-                     if (!(glyph = get_glyph(font_data, code)))
-                        if (!(glyph = glyph_q))
-                           continue;
-                     width_accum += glyph->advance_x;
-                  }
-                  if (text_align == TEXT_ALIGN_RIGHT)
-                     lx -= (int)(width_accum * scale);
-                  else
-                     lx -= (int)(width_accum * scale) / 2;
-               }
+                  const struct font_glyph *glyph;
+                  uint32_t code  = utf8_walk(&scan);
 
-               /* Emit glyph quads for this line. */
-               {
-                  const char *scan = line_start;
-                  while (scan < line_end)
-                  {
-                     const struct font_glyph *glyph;
-                     uint32_t code  = utf8_walk(&scan);
+                  if (!(glyph = get_glyph(font_data, code)))
+                     if (!(glyph = glyph_q))
+                        continue;
 
-                     if (!(glyph = get_glyph(font_data, code)))
-                        if (!(glyph = glyph_q))
-                           continue;
+                  v->pos.x           = (sx + glyph->draw_offset_x * scale) * inv_vp_w;
+                  v->pos.y           = (sy + glyph->draw_offset_y * scale) * inv_vp_h;
+                  v->pos.w           = glyph->width  * scale_inv_vp_w;
+                  v->pos.h           = glyph->height * scale_inv_vp_h;
+                  v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
+                  v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
+                  v->coords.w        = glyph->width  * inv_tex_w;
+                  v->coords.h        = glyph->height * inv_tex_h;
+                  v->params.scaling  = 1;
+                  v->params.rotation = 0;
+                  v->colors[0]       = color_dark;
+                  v->colors[1]       = color_dark;
+                  v->colors[2]       = color_dark;
+                  v->colors[3]       = color_dark;
 
-                     v->pos.x           = (lx + (glyph->draw_offset_x * scale)) * inv_vp_w;
-                     v->pos.y           = (ly + (glyph->draw_offset_y * scale)) * inv_vp_h;
-                     v->pos.w           = glyph->width  * scale * inv_vp_w;
-                     v->pos.h           = glyph->height * scale * inv_vp_h;
+                  v++;
 
-                     v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
-                     v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
-                     v->coords.w        = glyph->width           * inv_tex_w;
-                     v->coords.h        = glyph->height          * inv_tex_h;
-
-                     v->params.scaling  = 1;
-                     v->params.rotation = 0;
-
-                     v->colors[0]       = pass_color;
-                     v->colors[1]       = pass_color;
-                     v->colors[2]       = pass_color;
-                     v->colors[3]       = pass_color;
-
-                     v++;
-
-                     lx                += glyph->advance_x * scale;
-                     ly                += glyph->advance_y * scale;
-                  }
+                  sx                += glyph->advance_x * scale;
+                  sy                += glyph->advance_y * scale;
                }
             }
 
-            if (!*delim)
-               break;
-            line_start = delim + 1;
-            lines++;
+            /* Emit foreground glyphs for this line. */
+            {
+               const char *scan       = line_start;
+               d3d11_sprite_t *v_line = v;
+               int fx                 = lx;
+               int fy                 = fg_ly;
+               while (scan < line_end)
+               {
+                  const struct font_glyph *glyph;
+                  uint32_t code  = utf8_walk(&scan);
+
+                  if (!(glyph = get_glyph(font_data, code)))
+                     if (!(glyph = glyph_q))
+                        continue;
+
+                  v->pos.x           = (fx + glyph->draw_offset_x * scale) * inv_vp_w;
+                  v->pos.y           = (fy + glyph->draw_offset_y * scale) * inv_vp_h;
+                  v->pos.w           = glyph->width  * scale_inv_vp_w;
+                  v->pos.h           = glyph->height * scale_inv_vp_h;
+                  v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
+                  v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
+                  v->coords.w        = glyph->width  * inv_tex_w;
+                  v->coords.h        = glyph->height * inv_tex_h;
+                  v->params.scaling  = 1;
+                  v->params.rotation = 0;
+                  v->colors[0]       = color;
+                  v->colors[1]       = color;
+                  v->colors[2]       = color;
+                  v->colors[3]       = color;
+
+                  v++;
+
+                  fx                += glyph->advance_x * scale;
+                  fy                += glyph->advance_y * scale;
+               }
+
+               /* Retroactive alignment shift — avoids a separate
+                * measurement pass.  The total advance is fx - lx (pixels).
+                * Shift every foreground sprite's pos.x in this line. */
+               if (need_align)
+               {
+                  float shift_vp;
+                  int advance_px = fx - lx;
+                  if (text_align == TEXT_ALIGN_RIGHT)
+                     shift_vp = -(float)(int)(advance_px * scale) * inv_vp_w;
+                  else /* TEXT_ALIGN_CENTER */
+                     shift_vp = -(float)((int)(advance_px * scale) / 2) * inv_vp_w;
+
+                  if (shift_vp != 0.0f)
+                  {
+                     d3d11_sprite_t *s;
+                     for (s = v_line; s < v; s++)
+                        s->pos.x += shift_vp;
+                  }
+
+                  /* Now emit shadow glyphs for this aligned line.  We clone
+                   * the foreground sprites and adjust position + color. */
+                  if (have_drop)
+                  {
+                     float dx_vp = (float)drop_x_px * inv_vp_w;
+                     float dy_vp = (float)drop_y_px * inv_vp_h;
+                     d3d11_sprite_t *s;
+                     for (s = v_line; s < v; s++)
+                     {
+                        /* Avoid v_line pointer aliasing: read then write. */
+                        d3d11_sprite_t tmp = *s;
+                        tmp.pos.x   += dx_vp;
+                        tmp.pos.y   += dy_vp;
+                        tmp.colors[0] = color_dark;
+                        tmp.colors[1] = color_dark;
+                        tmp.colors[2] = color_dark;
+                        tmp.colors[3] = color_dark;
+                        *v = tmp;
+                        v++;
+                     }
+                  }
+               }
+            }
          }
+
+         if (!*delim)
+            break;
+         line_start = delim + 1;
+         lines++;
       }
    }
 
