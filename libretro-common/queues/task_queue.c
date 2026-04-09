@@ -201,11 +201,23 @@ static void retro_task_internal_gather(void)
       if (task->cleanup)
           task->cleanup(task);
 
+#ifdef HAVE_THREADS
+      slock_lock(property_lock);
+#endif
       if (task->error)
+      {
          free(task->error);
+         task->error = NULL;
+      }
 
       if (task->title)
+      {
          free(task->title);
+         task->title = NULL;
+      }
+#ifdef HAVE_THREADS
+      slock_unlock(property_lock);
+#endif
 
       free(task);
    }
