@@ -132,7 +132,7 @@ static const char *find_token(const char *haystack, const char *token,
    return NULL;
 }
 
-#define WILDCARD_ENTRY(id, str) { sizeof(str) - 1, (id), (str) }
+#define WILDCARD_ENTRY(id, str) { sizeof(str) - 1, (id), str }
 
 /* Heavy lifter — only called when at least one '$' is present.
  * All large buffers and global lookups live here so the early-exit
