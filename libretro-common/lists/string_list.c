@@ -141,27 +141,20 @@ bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr)
 {
    char *data_dup = NULL;
-   size_t elem_len;
 
-   /* Grow first - if this fails we haven't wasted a strdup. */
    if (      list->size >= list->cap
          && !string_list_capacity(list,
                (list->cap > 0) ? (list->cap * 2) : 32))
       return false;
 
-   /* Manual strdup: single traversal of elem to get length,
-    * then malloc + memcpy (avoids the hidden strlen inside
-    * libc strdup on some platforms that do strlen+malloc+memcpy
-    * as two passes). */
-   elem_len = strlen(elem);
-   data_dup = (char*)malloc(elem_len + 1);
+   data_dup = strdup(elem);
    if (!data_dup)
       return false;
-   memcpy(data_dup, elem, elem_len + 1);
 
    list->elems[list->size].data = data_dup;
    list->elems[list->size].attr = attr;
    list->size++;
+
    return true;
 }
 

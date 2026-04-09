@@ -82,6 +82,7 @@ enum wildcard_type
 
 struct wildcard_token
 {
+   size_t token_len;
    enum wildcard_type token_id;
    char token_name[24];
 };
@@ -131,6 +132,8 @@ static const char *find_token(const char *haystack, const char *token,
    return NULL;
 }
 
+#define WILDCARD_ENTRY(id, str) { sizeof(str) - 1, (id), (str) }
+
 /* Heavy lifter — only called when at least one '$' is present.
  * All large buffers and global lookups live here so the early-exit
  * wrapper never touches them. */
@@ -138,21 +141,21 @@ static void video_shader_replace_wildcards_impl(
       char *s, size_t len, char *in_preset_path)
 {
    static const struct wildcard_token wildcard_tokens[SHADER_NUM_WILDCARDS] = {
-      {RARCH_WILDCARD_CONTENT_DIR,                 "$CONTENT-DIR$"},
-      {RARCH_WILDCARD_CORE,                        "$CORE$"},
-      {RARCH_WILDCARD_GAME,                        "$GAME$"},
-      {RARCH_WILDCARD_VIDEO_DRIVER,                "$VID-DRV$"},
-      {RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT,     "$VID-DRV-PRESET-EXT$"},
-      {RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT,     "$VID-DRV-SHADER-EXT$"},
-      {RARCH_WILDCARD_CORE_REQUESTED_ROTATION,     "$CORE-REQ-ROT$"},
-      {RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION,   "$VID-ALLOW-CORE-ROT$"},
-      {RARCH_WILDCARD_VIDEO_USER_ROTATION,         "$VID-USER-ROT$"},
-      {RARCH_WILDCARD_VIDEO_FINAL_ROTATION,        "$VID-FINAL-ROT$"},
-      {RARCH_WILDCARD_SCREEN_ORIENTATION,          "$SCREEN-ORIENT$"},
-      {RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION, "$VIEW-ASPECT-ORIENT$"},
-      {RARCH_WILDCARD_CORE_ASPECT_ORIENTATION,     "$CORE-ASPECT-ORIENT$"},
-      {RARCH_WILDCARD_PRESET_DIR,                  "$PRESET-DIR$"},
-      {RARCH_WILDCARD_PRESET,                      "$PRESET$"},
+      WILDCARD_ENTRY(RARCH_WILDCARD_CONTENT_DIR,                 "$CONTENT-DIR$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_CORE,                        "$CORE$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_GAME,                        "$GAME$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_VIDEO_DRIVER,                "$VID-DRV$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT,     "$VID-DRV-PRESET-EXT$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT,     "$VID-DRV-SHADER-EXT$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_CORE_REQUESTED_ROTATION,     "$CORE-REQ-ROT$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION,   "$VID-ALLOW-CORE-ROT$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_VIDEO_USER_ROTATION,         "$VID-USER-ROT$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_VIDEO_FINAL_ROTATION,        "$VID-FINAL-ROT$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_SCREEN_ORIENTATION,          "$SCREEN-ORIENT$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION, "$VIEW-ASPECT-ORIENT$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_CORE_ASPECT_ORIENTATION,     "$CORE-ASPECT-ORIENT$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_PRESET_DIR,                  "$PRESET-DIR$"),
+      WILDCARD_ENTRY(RARCH_WILDCARD_PRESET,                      "$PRESET$"),
    };
    int i = 0;
    gfx_ctx_flags_t ctx_flags;
@@ -172,7 +175,6 @@ static void video_shader_replace_wildcards_impl(
 
    strlcpy(src, s, PATH_MAX_LENGTH);
 
-
    ctx_flags.flags = 0;
    video_context_driver_get_flags(&ctx_flags);
 
@@ -181,7 +183,7 @@ static void video_shader_replace_wildcards_impl(
     */
    for (i = 0; (i < SHADER_NUM_WILDCARDS) && (strchr(src, '$')); i++)
    {
-      size_t token_len = strlen(wildcard_tokens[i].token_name);
+      size_t token_len = wildcard_tokens[i].token_len;
       const char *found = find_token(src, wildcard_tokens[i].token_name,
          token_len);
       if (!found)

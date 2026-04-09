@@ -118,7 +118,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
       if (v)
       {
          char *end  = NULL;
-         v         += strlen("OpenGL ES ");
+         v         += sizeof("OpenGL ES ")-1;
          major      = (unsigned)strtol(v, &end, 10);
          if (end && *end == '.') { }
          else
