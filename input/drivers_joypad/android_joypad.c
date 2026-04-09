@@ -168,7 +168,7 @@ static void android_input_set_rumble_internal(
       uint16_t *last_strength_strong,
       uint16_t *last_strength_weak,
       uint16_t *last_strength,
-      int8_t   id,
+      int      id,
       enum retro_rumble_effect effect)
 {
    JNIEnv *env = (JNIEnv*)jni_thread_getenv();
@@ -181,6 +181,47 @@ static void android_input_set_rumble_internal(
       *last_strength_strong = strength;
    else if (effect == RETRO_RUMBLE_WEAK)
       *last_strength_weak  = strength;
+
+   /* USB HID raw-output path.
+    *
+    * doVibrateUSB sends an output report directly to the controller via
+    * UsbManager, bypassing the Android HID driver stack. This is required
+    * for USB-connected DS4/DualSense controllers where the HID driver exposes
+    * only 1 vibrator instead of the 2 the hardware has.
+    *
+    * Returns true if the HID report was sent successfully, in which case we
+    * skip the VibratorManager path. Falls back gracefully on unknown VID/PID,
+    * permission denial, or transfer failure.
+    *
+    * id == -1 is the device-vibration sentinel (not a controller); skip it. */
+   if (id != -1 && g_android->doVibrateUSB)
+   {
+      int      strong_usb;
+      int      weak_usb;
+      uint16_t new_combined_usb;
+      jboolean usb_handled;
+
+      strong_usb      = (int)((255.0f / 65535.0f) * (float)*last_strength_strong);
+      weak_usb        = (int)((255.0f / 65535.0f) * (float)*last_strength_weak);
+      new_combined_usb = (uint16_t)((strong_usb << 8) | weak_usb);
+
+      if (new_combined_usb != *last_strength)
+      {
+         CALL_BOOLEAN_METHOD_PARAM(env, usb_handled,
+               g_android->activity->clazz,
+               g_android->doVibrateUSB,
+               (jint)id, (jint)strong_usb, (jint)weak_usb);
+
+         if (usb_handled != JNI_FALSE)
+         {
+            *last_strength = new_combined_usb;
+            return;
+         }
+      }
+      else
+         return; /* No change; assume last USB send is still active. */
+      /* Fall through to VibratorManager path. */
+   }
 
    /* Controller dual-motor path (Android 12+):
     *

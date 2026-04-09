@@ -174,6 +174,7 @@ struct android_app
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
    jmethodID doVibrateJoypad;
+   jmethodID doVibrateUSB;
    jmethodID doHapticFeedback;
 
    jmethodID isPlayStoreBuild;
@@ -365,6 +366,10 @@ enum
 
 #define CALL_BOOLEAN_METHOD(env, var, clazz_obj, methodId) \
    var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_BOOLEAN_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
+   var = (*env)->CallBooleanMethod(env, clazz_obj, methodId, __VA_ARGS__); \
    JNI_EXCEPTION(env)
 
 #define CALL_DOUBLE_METHOD(env, var, clazz_obj, methodId) \
