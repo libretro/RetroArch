@@ -2052,11 +2052,9 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
    vulkan_raster_t *font = (vulkan_raster_t*)data;
    const char* msg_end   = msg + msg_len;
    int delta_x           = 0;
-   /* Hoist function pointer and data pointer out of the loop to avoid
-    * repeated dependent loads through font->font_driver->get_glyph. */
    const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                                    = font->font_driver->get_glyph;
-   void *font_data                  = font->font_data;
+                         = font->font_driver->get_glyph;
+   void *font_data       = font->font_data;
 
    if (     !font
          || !font->font_driver
@@ -2108,8 +2106,6 @@ static void vulkan_font_render_line(vk_t *vk,
    int y                            = roundf((1.0f - pos_y) * vk->vp.height);
    int delta_x                      = 0;
    int delta_y                      = 0;
-   /* Hoist function pointer and data pointer out of the loop to avoid
-    * repeated dependent loads through font->font_driver->get_glyph. */
    const struct font_glyph* (*get_glyph)(void*, uint32_t)
                                     = font->font_driver->get_glyph;
    void *font_data                  = font->font_data;

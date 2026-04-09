@@ -1362,8 +1362,6 @@ static int d3d12_font_get_message_width(void* data,
    int delta_x                      = 0;
    const struct font_glyph* glyph_q = NULL;
    d3d12_font_t* font               = (d3d12_font_t*)data;
-   /* Hoist function pointer and data pointer out of the loop to avoid
-    * repeated dependent loads through font->font_driver->get_glyph. */
    const struct font_glyph* (*get_glyph)(void*, uint32_t);
    void *font_data;
 
@@ -1419,8 +1417,6 @@ static void d3d12_font_render_line(
    d3d12_sprite_t* vbo_start        = NULL;
    int x                            = pre_x;
    int y                            = roundf((1.0 - pos_y) * height);
-   /* Hoist function pointer and data pointer out of the loop to avoid
-    * repeated dependent loads through font->font_driver->get_glyph. */
    const struct font_glyph* (*get_glyph)(void*, uint32_t)
                                     = font->font_driver->get_glyph;
    void *font_data                  = font->font_data;

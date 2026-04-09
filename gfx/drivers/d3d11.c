@@ -1036,8 +1036,6 @@ static int d3d11_font_get_message_width(void* data, const char* msg, size_t msg_
    int delta_x                      = 0;
    const struct font_glyph* glyph_q = NULL;
    d3d11_font_t* font               = (d3d11_font_t*)data;
-   /* Hoist function pointer and data pointer out of the loop to avoid
-    * repeated dependent loads through font->font_driver->get_glyph. */
    const struct font_glyph* (*get_glyph)(void*, uint32_t)
                                     = font->font_driver->get_glyph;
    void *font_data                  = font->font_data;
@@ -1090,9 +1088,6 @@ static void d3d11_font_render_line(
    d3d11_sprite_t *v                = NULL;
    int x                            = pre_x;
    int y                            = roundf((1.0f - pos_y) * height);
-
-   /* Hoist function pointer and data pointer out of the loop to avoid
-    * repeated dependent loads through font->font_driver->get_glyph. */
    const struct font_glyph* (*get_glyph)(void*, uint32_t)
                                     = font->font_driver->get_glyph;
    void *font_data                  = font->font_data;
@@ -1237,7 +1232,10 @@ static void d3d11_font_render_message(
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
    int x                                  = roundf(pos_x * width);
-   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                          = font->font_driver->get_glyph;
+   void *font_data                        = font->font_data;
+   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
    for (;;)

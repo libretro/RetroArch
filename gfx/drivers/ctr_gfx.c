@@ -489,11 +489,14 @@ static int ctr_font_get_message_width(void* data, const char* msg,
    int delta_x = 0;
    const struct font_glyph* glyph_q = NULL;
    ctr_font_t* font                 = (ctr_font_t*)data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                    = font->font_driver->get_glyph;
+   void *font_data                  = font->font_data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   glyph_q = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -507,8 +510,7 @@ static int ctr_font_get_message_width(void* data, const char* msg,
 
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -539,6 +541,9 @@ static void ctr_font_render_line(
    int delta_y         = 0;
    int x               = roundf(pos_x * width);
    int y               = roundf((1.0f - pos_y) * height);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                       = font->font_driver->get_glyph;
+   void *font_data     = font->font_data;
 
    /* For right/center alignment, compute width with a lightweight pass
     * that only accumulates advance_x — avoids the redundant glyph lookups
@@ -552,7 +557,7 @@ static void ctr_font_render_line(
       {
          const struct font_glyph *glyph;
          uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = get_glyph(font_data, code)))
             if (!(glyph = glyph_q))
                continue;
          width_accum += glyph->advance_x;
@@ -581,8 +586,7 @@ static void ctr_font_render_line(
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -679,9 +683,12 @@ static void ctr_font_render_message(
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
-   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                          = font->font_driver->get_glyph;
+   void *font_data                        = font->font_data;
+   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
    int lines                              = 0;
-   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   font->font_driver->get_line_metrics(font_data, &line_metrics);
    line_height = (float)line_metrics->height * scale / (float)height;
    for (;;)
    {
