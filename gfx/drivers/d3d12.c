@@ -617,6 +617,7 @@ d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffe
 {
    D3D12_RESOURCE_DESC   resource_desc;
    D3D12_HEAP_PROPERTIES heap_props;
+   HRESULT               hr;
 
    heap_props.Type                     = D3D12_HEAP_TYPE_UPLOAD;
    heap_props.CPUPageProperty          = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -636,9 +637,16 @@ d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffe
    resource_desc.Layout                = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
    resource_desc.Flags                 = D3D12_RESOURCE_FLAG_NONE;
 
-   device->lpVtbl->CreateCommittedResource(
+   hr = device->lpVtbl->CreateCommittedResource(
          device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
          D3D12_RESOURCE_STATE_GENERIC_READ, NULL, uuidof(ID3D12Resource), (void**)buffer);
+
+   if (FAILED(hr) || !*buffer)
+   {
+      RARCH_ERR("[D3D12] Failed to create buffer of %u bytes (0x%08X).\n",
+            size_in_bytes, (unsigned)hr);
+      return 0;
+   }
 
    return D3D12GetGPUVirtualAddress(*buffer);
 }
@@ -753,6 +761,8 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    {
       D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support;
       D3D12_HEAP_PROPERTIES heap_props;
+      D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+      HRESULT               hr;
 
       format_support.Format          = texture->desc.Format;
       format_support.Support1        = D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE;
@@ -771,8 +781,6 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
          format_support.Support2    |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
       }
 
-      D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-
       if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
       {
          format_support.Support1    |= D3D12_FORMAT_SUPPORT1_RENDER_TARGET;
@@ -784,9 +792,18 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       texture->desc.SampleDesc.Count = 1;
       texture->desc.Format           = d3d12_get_closest_match(device, &format_support);
 
-      device->lpVtbl->CreateCommittedResource(
+      hr = device->lpVtbl->CreateCommittedResource(
             device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
             initial_state, NULL, uuidof(ID3D12Resource), (void**)&texture->handle);
+
+      if (FAILED(hr) || !texture->handle)
+      {
+         RARCH_ERR("[D3D12] Failed to create texture %ux%u (0x%08X).\n",
+               (unsigned)texture->desc.Width,
+               (unsigned)texture->desc.Height,
+               (unsigned)hr);
+         return;
+      }
    }
 
    {
@@ -1347,14 +1364,15 @@ static int d3d12_font_get_message_width(void* data,
    d3d12_font_t* font               = (d3d12_font_t*)data;
    /* Hoist function pointer and data pointer out of the loop to avoid
     * repeated dependent loads through font->font_driver->get_glyph. */
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                                    = font->font_driver->get_glyph;
-   void *font_data                  = font->font_data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
+   void *font_data;
 
    if (!font)
       return 0;
 
-   glyph_q = get_glyph(font_data, '?');
+   get_glyph = font->font_driver->get_glyph;
+   font_data = font->font_data;
+   glyph_q   = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -1409,6 +1427,22 @@ static void d3d12_font_render_line(
 
    if (d3d12->sprites.offset + msg_len > (unsigned)d3d12->sprites.capacity)
       d3d12->sprites.offset = 0;
+
+   /* Stage atlas pixel data into the upload buffer before building
+    * vertices.  d3d12_update_texture is CPU-only (Map/memcpy/Unmap
+    * on the upload heap), so it is safe to call before the sprite
+    * VBO is mapped.  Doing this early ensures the atlas is in a
+    * consistent state — dimensions and glyph offsets won't shift
+    * underneath the vertex-building loop that follows. */
+   if (font->atlas->dirty)
+   {
+      if (font->texture.upload_buffer)
+         d3d12_update_texture(
+               font->atlas->width, font->atlas->height,
+               font->atlas->width, DXGI_FORMAT_A8_UNORM,
+               font->atlas->buffer, &font->texture);
+      font->atlas->dirty = false;
+   }
 
    range.Begin = 0;
    range.End   = 0;
@@ -1487,16 +1521,6 @@ static void d3d12_font_render_line(
 
    if (!count)
       return;
-
-   if (font->atlas->dirty)
-   {
-      if (font->texture.upload_buffer)
-         d3d12_update_texture(
-               font->atlas->width, font->atlas->height,
-               font->atlas->width, DXGI_FORMAT_A8_UNORM,
-               font->atlas->buffer, &font->texture);
-      font->atlas->dirty = false;
-   }
 
    if (font->texture.dirty)
       d3d12_upload_texture(cmd, &font->texture, d3d12);
@@ -4033,6 +4057,9 @@ static bool d3d12_gfx_frame(
    bool nonblock_state            = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
    bool runloop_is_paused         = video_info->runloop_is_paused;
+   /* Cache settings pointer once per frame to avoid repeated
+    * config_get_ptr() calls in the shader pass loop. */
+   settings_t *frame_settings     = config_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
@@ -4413,6 +4440,33 @@ static bool d3d12_gfx_frame(
          }
       }
 
+      /* Hoist loop-invariant per-frame values so that function calls
+       * (retroarch_get_rotation, video_driver_get_core_aspect, etc.)
+       * and settings reads execute once instead of once per pass. */
+      {
+         uint32_t pass_frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
+         float    pass_original_fps     = video_driver_get_original_fps();
+         uint32_t pass_rotation         = retroarch_get_rotation();
+         float    pass_core_aspect      = video_driver_get_core_aspect();
+         float    pass_core_aspect_rot  = pass_core_aspect;
+#ifdef HAVE_REWIND
+         int32_t  pass_frame_direction  = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+         int32_t  pass_frame_direction  = 1;
+#endif
+#ifdef HAVE_DXGI_HDR
+         unsigned pass_hdr_mode           = video_info->hdr_mode;
+         float    pass_paper_white_nits   = frame_settings->floats.video_hdr_paper_white_nits;
+         float    pass_hdr_scanlines      = frame_settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
+         unsigned pass_subpixel_layout    = frame_settings->uints.video_hdr_subpixel_layout;
+         unsigned pass_expand_gamut       = frame_settings->uints.video_hdr_expand_gamut;
+#endif
+
+         /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
+         if (     pass_rotation == VIDEO_ROTATION_90_DEG
+               || pass_rotation == VIDEO_ROTATION_270_DEG)
+            pass_core_aspect_rot = 1.0f / pass_core_aspect_rot;
+
       for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          unsigned j;
@@ -4424,20 +4478,12 @@ static bool d3d12_gfx_frame(
          else
             d3d12->pass[i].frame_count = frame_count;
 
-#ifdef HAVE_REWIND
-         d3d12->pass[i].frame_direction  = state_manager_frame_is_reversed() ? -1 : 1;
-#else
-         d3d12->pass[i].frame_direction  = 1;
-#endif
-         d3d12->pass[i].frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
-         d3d12->pass[i].original_fps     = video_driver_get_original_fps();
-         d3d12->pass[i].rotation         = retroarch_get_rotation();
-         d3d12->pass[i].core_aspect      = video_driver_get_core_aspect();
-         /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
-         d3d12->pass[i].core_aspect_rot  = d3d12->pass[i].core_aspect;
-         if (     d3d12->pass[i].rotation == VIDEO_ROTATION_90_DEG
-               || d3d12->pass[i].rotation == VIDEO_ROTATION_270_DEG)
-            d3d12->pass[i].core_aspect_rot = 1 / d3d12->pass[i].core_aspect_rot;
+         d3d12->pass[i].frame_direction  = pass_frame_direction;
+         d3d12->pass[i].frame_time_delta = pass_frame_time_delta;
+         d3d12->pass[i].original_fps     = pass_original_fps;
+         d3d12->pass[i].rotation         = pass_rotation;
+         d3d12->pass[i].core_aspect      = pass_core_aspect;
+         d3d12->pass[i].core_aspect_rot  = pass_core_aspect_rot;
 
          /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */
@@ -4456,16 +4502,14 @@ static bool d3d12_gfx_frame(
          }
 
 #ifdef HAVE_DXGI_HDR   
-         settings_t*    settings = config_get_ptr();
-         
-         d3d12->pass[i].hdr_mode              = video_info->hdr_mode;
+         d3d12->pass[i].hdr_mode              = pass_hdr_mode;
 
          if(d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
          {
-            d3d12->pass[i].paper_white_nits     = settings->floats.video_hdr_paper_white_nits;
-            d3d12->pass[i].scanlines            = settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
-            d3d12->pass[i].subpixel_layout      = settings->uints.video_hdr_subpixel_layout;
-            d3d12->pass[i].expand_gamut         = settings->uints.video_hdr_expand_gamut;
+            d3d12->pass[i].paper_white_nits     = pass_paper_white_nits;
+            d3d12->pass[i].scanlines            = pass_hdr_scanlines;
+            d3d12->pass[i].subpixel_layout      = pass_subpixel_layout;
+            d3d12->pass[i].expand_gamut         = pass_expand_gamut;
          }
 #endif /* HAVE_DXGI_HDR */ 
 
@@ -4686,6 +4730,7 @@ static bool d3d12_gfx_frame(
             break;
          }
       }
+      } /* end hoisted loop-invariant scope */
    }
 
    if (texture)
@@ -4706,8 +4751,7 @@ static bool d3d12_gfx_frame(
             d3d12->hdr.ubo_values.output_size.width   = d3d12->frame.output_size.x;
             d3d12->hdr.ubo_values.output_size.height  = d3d12->frame.output_size.y;
 
-            settings_t* settings                      = config_get_ptr();
-            d3d12->hdr.ubo_values.scanlines           = settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
+            d3d12->hdr.ubo_values.scanlines           = frame_settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
 
             if (video_info->hdr_mode == 2) /* scRGB */
             {
