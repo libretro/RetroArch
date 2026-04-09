@@ -663,16 +663,16 @@ static INLINE unsigned font_get_arabic_replacement(
 }
 /* clang-format on */
 
-static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, size_t buffer_size)
+static char* font_driver_reshape_msg(const char* msg, unsigned char *s, size_t len)
 {
    const unsigned char *src;
    bool                 reverse    = false;
    size_t               msg_len    = strlen(msg);
    /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
    size_t               _len       = (msg_len * 2) + 1;
-   unsigned char       *dst        = buffer;
+   unsigned char       *dst        = s;
 
-   if (buffer_size < _len)
+   if (len < _len)
    {
       /* Input too long for the buffer: truncate to fit.
        * With a 512-byte caller buffer the limit is 255 source bytes,
@@ -680,18 +680,18 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
        * is effectively dead code for normal HUD/OSD rendering.
        *
        * Place the truncated, null-terminated copy in the upper half
-       * of the buffer (offset buffer_size/2).  The output grows forward
-       * from buffer[0] at most 2x the source consumption rate, so
+       * of the buffer (offset len/2).  The output grows forward
+       * from s[0] at most 2x the source consumption rate, so
        * dst can never overtake src: after consuming k source bytes,
-       * dst <= 2k while src = buffer_size/2 + k, and 2k < buffer_size/2 + k
-       * holds for all k < buffer_size/2, which is guaranteed since
-       * msg_len < buffer_size/2. */
+       * dst <= 2k while src = len/2 + k, and 2k < len/2 + k
+       * holds for all k < len/2, which is guaranteed since
+       * msg_len < len/2. */
       unsigned char *copy_dst;
-      msg_len = (buffer_size / 2) - 1;
+      msg_len = (len / 2) - 1;
       /* Back up to a UTF-8 character boundary */
       while (msg_len > 0 && IS_MBCONT((const unsigned char*)&msg[msg_len]))
          msg_len--;
-      copy_dst = buffer + (buffer_size / 2);
+      copy_dst = s + (len / 2);
       memcpy(copy_dst, msg, msg_len);
       copy_dst[msg_len] = '\0';
       msg = (const char*)copy_dst;
@@ -781,8 +781,7 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
    }
 
    *dst = '\0';
-
-   return (char*)buffer;
+   return (char*)s;
 }
 #endif
 
