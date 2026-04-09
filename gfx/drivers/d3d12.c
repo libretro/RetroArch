@@ -414,6 +414,15 @@ typedef struct
 #endif /* HAVE_DXGI_HDR */    
       D3D12_GPU_DESCRIPTOR_HANDLE     textures;
       D3D12_GPU_DESCRIPTOR_HANDLE     samplers;
+      /* Descriptor cache: avoids recreating SRVs and samplers every
+       * frame when the underlying resources have not changed. */
+      struct
+      {
+         D3D12Resource srv_resource[SLANG_NUM_BINDINGS];
+         DXGI_FORMAT   srv_format[SLANG_NUM_BINDINGS];
+         UINT          srv_mip_levels[SLANG_NUM_BINDINGS];
+         bool          samplers_valid;
+      } desc_cache;
    } pass[GFX_MAX_SHADERS];
 
    struct video_shader* shader_preset;
@@ -3986,10 +3995,13 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
 
 static INLINE void d3d12_wait_for_vblank(d3d12_video_t* d3d12)
 {
-   IDXGIOutput *pOutput;
-   DXGIGetContainingOutput(d3d12->chain.handle, &pOutput);
-   DXGIWaitForVBlank(pOutput);
-   Release(pOutput);
+   IDXGIOutput *pOutput = NULL;
+   if (SUCCEEDED(DXGIGetContainingOutput(d3d12->chain.handle, &pOutput))
+         && pOutput)
+   {
+      DXGIWaitForVBlank(pOutput);
+      Release(pOutput);
+   }
 }
 
 static bool d3d12_gfx_frame(
@@ -4317,7 +4329,24 @@ static bool d3d12_gfx_frame(
       }
 
       if (d3d12->flags & D3D12_ST_FLAG_RESIZE_RTS)
+      {
          d3d12_init_render_targets(d3d12, width, height);
+
+         /* d3d12_init_texture creates render-target resources in
+          * D3D12_RESOURCE_STATE_RENDER_TARGET.  The shader pass loop
+          * expects them in PIXEL_SHADER_RESOURCE (their "resting"
+          * state) and will transition to RT before each use.
+          * Transition them now so the first frame is consistent. */
+         for (k = 0; k < d3d12->shader_preset->passes; k++)
+         {
+            if (d3d12->pass[k].rt.handle)
+               D3D12_RESOURCE_TRANSITION(
+                     cmd,
+                     d3d12->pass[k].rt.handle,
+                     D3D12_RESOURCE_STATE_RENDER_TARGET,
+                     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+         }
+      }
 
       if (frame == RETRO_HW_FRAME_BUFFER_VALID)
       {
@@ -4479,27 +4508,44 @@ static bool d3d12_gfx_frame(
             texture_sem_t* texture_sem = d3d12->pass[i].semantics.textures;
             while (texture_sem->stage_mask)
             {
+               /* SRV: only recreate when the underlying resource,
+                * format, or mip count has changed. */
                {
-                  D3D12_CPU_DESCRIPTOR_HANDLE handle   = {
-                          d3d12->pass[i].textures.ptr
-                        - d3d12->desc.srv_heap.gpu.ptr
-                        + d3d12->desc.srv_heap.cpu.ptr
-                        + texture_sem->binding * d3d12->desc.srv_heap.stride
-                  };
-                  d3d12_texture_t*                tex  =
+                  d3d12_texture_t* tex =
                      (d3d12_texture_t*)texture_sem->texture_data;
-                  D3D12_SHADER_RESOURCE_VIEW_DESC desc = { tex->desc.Format };
+                  unsigned binding     = texture_sem->binding;
 
-                  desc.Shader4ComponentMapping         =
-                     D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-                  desc.ViewDimension                   =
-                     D3D12_SRV_DIMENSION_TEXTURE2D;
-                  desc.Texture2D.MipLevels             = tex->desc.MipLevels;
+                  if (   d3d12->pass[i].desc_cache.srv_resource[binding]   != tex->handle
+                      || d3d12->pass[i].desc_cache.srv_format[binding]     != tex->desc.Format
+                      || d3d12->pass[i].desc_cache.srv_mip_levels[binding] != tex->desc.MipLevels)
+                  {
+                     D3D12_CPU_DESCRIPTOR_HANDLE handle   = {
+                             d3d12->pass[i].textures.ptr
+                           - d3d12->desc.srv_heap.gpu.ptr
+                           + d3d12->desc.srv_heap.cpu.ptr
+                           + binding * d3d12->desc.srv_heap.stride
+                     };
+                     D3D12_SHADER_RESOURCE_VIEW_DESC desc = { tex->desc.Format };
 
-                  d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device,
-                        tex->handle, &desc, handle);
+                     desc.Shader4ComponentMapping         =
+                        D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+                     desc.ViewDimension                   =
+                        D3D12_SRV_DIMENSION_TEXTURE2D;
+                     desc.Texture2D.MipLevels             = tex->desc.MipLevels;
+
+                     d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device,
+                           tex->handle, &desc, handle);
+
+                     d3d12->pass[i].desc_cache.srv_resource[binding]   = tex->handle;
+                     d3d12->pass[i].desc_cache.srv_format[binding]     = tex->desc.Format;
+                     d3d12->pass[i].desc_cache.srv_mip_levels[binding] = tex->desc.MipLevels;
+                  }
                }
 
+               /* Samplers: filter and wrap modes are static for the
+                * lifetime of a shader preset, so create them once and
+                * skip on subsequent frames. */
+               if (!d3d12->pass[i].desc_cache.samplers_valid)
                {
                   D3D12_SAMPLER_DESC desc;
                   D3D12_CPU_DESCRIPTOR_HANDLE handle = {
@@ -4553,6 +4599,11 @@ static bool d3d12_gfx_frame(
                texture_sem++;
             }
 
+            /* Mark samplers as cached after processing all bindings
+             * for this pass on the first frame. */
+            if (!d3d12->pass[i].desc_cache.samplers_valid)
+               d3d12->pass[i].desc_cache.samplers_valid = true;
+
             cmd->lpVtbl->SetGraphicsRootDescriptorTable(
                   cmd, ROOT_ID_TEXTURE_T,
                   d3d12->pass[i].textures);
@@ -4564,6 +4615,15 @@ static bool d3d12_gfx_frame(
          if (d3d12->pass[i].rt.handle)
          {
             UINT start_vertex_location = 4;
+
+            /* Transition RT to RENDER_TARGET — it was left in
+             * PIXEL_SHADER_RESOURCE at the end of the previous
+             * frame (or initialized in that state). */
+            D3D12_RESOURCE_TRANSITION(
+                  cmd,
+                  d3d12->pass[i].rt.handle,
+                  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                  D3D12_RESOURCE_STATE_RENDER_TARGET);
 
             cmd->lpVtbl->OMSetRenderTargets(cmd, 1,
                   &d3d12->pass[i].rt.rt_view, FALSE, NULL);
@@ -4606,17 +4666,17 @@ static bool d3d12_gfx_frame(
                start_vertex_location = 0;
 
             cmd->lpVtbl->DrawInstanced(cmd, 4, 1, start_vertex_location, 0);
+
+            /* Transition RT to shader resource so subsequent passes can
+             * sample from it.  Do NOT transition back to RENDER_TARGET
+             * here — that was a redundant no-op barrier pair.  The RT
+             * will be transitioned back when it is next used as a render
+             * target (either in d3d12_init_render_targets or next frame). */
             D3D12_RESOURCE_TRANSITION(
                   cmd,
                   d3d12->pass[i].rt.handle,
                   D3D12_RESOURCE_STATE_RENDER_TARGET,
                   D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-            D3D12_RESOURCE_TRANSITION(
-                  cmd,
-                  d3d12->pass[i].rt.handle,
-                  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-                  D3D12_RESOURCE_STATE_RENDER_TARGET);
 
             texture = &d3d12->pass[i].rt;
          }
