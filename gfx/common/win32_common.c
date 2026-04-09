@@ -473,7 +473,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
       }
    }
 
-   if (hm_to_use)
+   if (*hm_to_use)
    {
       memset(mon, 0, sizeof(*mon));
       mon->cbSize = sizeof(MONITORINFOEX);
@@ -2177,8 +2177,8 @@ static void win32_localize_menu(HMENU menu)
       label_enum = menu_id_to_label_enum(menu_item_info.wID);
       if (label_enum != MSG_UNKNOWN)
       {
-         size_t ___len;
-         size_t __len;
+         size_t final_len;
+         size_t key_name_len;
 #ifndef LEGACY_WIN32
          wchar_t* new_label_unicode = NULL;
 #else
@@ -2198,54 +2198,54 @@ static void win32_localize_menu(HMENU menu)
                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
          {
             meta_key_name = "Ctrl+O";
-            __len         = STRLEN_CONST("Ctrl+O");
+            key_name_len  = STRLEN_CONST("Ctrl+O");
          }
          else if (label_enum ==
                MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
          {
             meta_key_name = "Alt+Enter";
-            __len        = STRLEN_CONST("Alt+Enter");
+            key_name_len  = STRLEN_CONST("Alt+Enter");
          }
          else if (meta_key != 0)
          {
             meta_key_name = win32_meta_key_to_name(meta_key,
                   key_name_buf, sizeof(key_name_buf));
-            __len         = meta_key_name ? strlen(meta_key_name) : 0;
+            key_name_len  = meta_key_name ? strlen(meta_key_name) : 0;
          }
 
          /* Append localized name, tab character, and Shortcut Key */
          if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
-            size_t _len     = strlen(new_label);
-            size_t buf_size = _len + __len + 2;
-            new_label_text  = (char*)malloc(buf_size);
+            size_t label_len = strlen(new_label);
+            size_t buf_size  = label_len + key_name_len + 2;
+            new_label_text   = (char*)malloc(buf_size);
 
             if (new_label_text)
             {
-               size_t __len;
+               size_t copy_len;
                new_label2              = new_label_text;
-               __len                   = strlcpy(new_label_text, new_label,
+               copy_len                = strlcpy(new_label_text, new_label,
                      buf_size);
-               new_label_text[  __len] = '\t';
-               new_label_text[++__len] = '\0';
-               strlcpy(new_label_text + __len, meta_key_name, buf_size - __len);
+               new_label_text[  copy_len] = '\t';
+               new_label_text[++copy_len] = '\0';
+               strlcpy(new_label_text + copy_len, meta_key_name, buf_size - copy_len);
                /* Make first character of shortcut name uppercase */
-               new_label_text[_len + 1] = toupper(new_label_text[_len + 1]);
+               new_label_text[label_len + 1] = toupper(new_label_text[label_len + 1]);
             }
          }
 
 #ifndef LEGACY_WIN32
          /* Convert string from UTF-8, then assign menu text */
          new_label_unicode         = utf8_to_utf16_string_alloc(new_label2);
-         ___len                    = wcslen(new_label_unicode);
-         menu_item_info.cch        = ___len;
+         final_len                 = wcslen(new_label_unicode);
+         menu_item_info.cch        = final_len;
          menu_item_info.dwTypeData = new_label_unicode;
          SetMenuItemInfoW(menu, index, true, &menu_item_info);
          free(new_label_unicode);
 #else
          new_label_ansi            = utf8_to_local_string_alloc(new_label2);
-         ___len                    = strlen(new_label_ansi);
-         menu_item_info.cch        = ___len;
+         final_len                 = strlen(new_label_ansi);
+         menu_item_info.cch        = final_len;
          menu_item_info.dwTypeData = new_label_ansi;
          SetMenuItemInfoA(menu, index, true, &menu_item_info);
          free(new_label_ansi);
