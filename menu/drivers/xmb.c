@@ -2925,6 +2925,9 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
    char icons_path_default[PATH_MAX_LENGTH];
    int depth                       = 1; /* keep this integer */
    size_t list_size                = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
+   uintptr_t tag                   = (uintptr_t)&xmb->x;
+
+   gfx_animation_kill_by_tag(&tag);
 
    xmb->categories_x_pos           = xmb->icon_spacing_horizontal * -(float)xmb->categories_selection_ptr;
 
@@ -3152,6 +3155,7 @@ static void xmb_list_open(xmb_handle_t *xmb,
       bool st_thumbnail_enable)
 {
    gfx_animation_ctx_entry_t entry;
+   uintptr_t tag;
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
@@ -3175,8 +3179,8 @@ static void xmb_list_open(xmb_handle_t *xmb,
    /* Align icon size with left thumbnail area */
    entry.target_value = xmb->icon_size * (xmb->use_ps3_layout ? 1.1f : 0.7f) * -(xmb->depth * 2 - 2);
    entry.subject      = &xmb->x;
-   /* TODO/FIXME - integer conversion resulted in change of sign */
-   entry.tag          = -1;
+   tag                = (uintptr_t)&xmb->x;
+   entry.tag          = tag;
    entry.cb           = NULL;
 
    switch (animation_opening_main_menu)
