@@ -2199,18 +2199,16 @@ static void vulkan_font_render_message(
       const float color[4],
       float pos_x,
       float pos_y,
+      float line_height,
       unsigned text_align)
 {
-   float line_height;
-   struct font_line_metrics *line_metrics = NULL;
    int x                                  = roundf(pos_x * vk->vp.width);
    int lines                              = 0;
    float inv_tex_size_x                   = 1.0f / font->texture.width;
    float inv_tex_size_y                   = 1.0f / font->texture.height;
    float inv_win_width                    = 1.0f / vk->vp.width;
    float inv_win_height                   = 1.0f / vk->vp.height;
-   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / vk->vp.height;
+
    for (;;)
    {
       const char *delim = msg;
@@ -2351,6 +2349,8 @@ static void vulkan_font_render_msg(
       const char *msg,
       const struct font_params *params)
 {
+   float line_height;
+   struct font_line_metrics *line_metrics = NULL;
    float color[4];
    int drop_x, drop_y;
    bool full_screen;
@@ -2427,6 +2427,8 @@ static void vulkan_font_render_msg(
    font->pv         = (struct vk_vertex*)font->range.data;
    glyph_q          = (font->font_driver) 
 	   ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   line_height = line_metrics->height * scale / vk->vp.height;
 
    if (drop_x || drop_y)
    {
@@ -2438,11 +2440,11 @@ static void vulkan_font_render_msg(
 
       vulkan_font_render_message(vk, font, glyph_q, msg, scale, color_dark,
             x + scale * drop_x / vk->vp.width, y +
-            scale * drop_y / vk->vp.height, text_align);
+            scale * drop_y / vk->vp.height, line_height, text_align);
    }
 
    vulkan_font_render_message(vk, font, glyph_q, msg, scale,
-         color, x, y, text_align);
+         color, x, y, line_height, text_align);
    vulkan_font_flush(vk, font);
 }
 

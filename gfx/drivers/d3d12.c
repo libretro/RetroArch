@@ -1541,6 +1541,7 @@ static void d3d12_font_render_line(
 static void d3d12_font_render_message(
       d3d12_video_t *d3d12,
       d3d12_font_t*       font,
+      const struct font_glyph* glyph_q,
       const char*         msg,
       float               scale,
       const unsigned int  color,
@@ -1548,16 +1549,13 @@ static void d3d12_font_render_message(
       float               pos_y,
       unsigned            width,
       unsigned            height,
+      float               line_height,
       unsigned            text_align)
 {
-   float line_height;
    D3D12GraphicsCommandList cmd           = d3d12->queue.cmd;
-   struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
    int x                                  = roundf(pos_x * width);
-   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
-   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / height;
+
    for (;;)
    {
       const char *p;
@@ -1585,9 +1583,12 @@ static void d3d12_font_render_msg(
       const char* msg,
       const struct font_params *params)
 {
+   float line_height;
+   struct font_line_metrics *line_metrics = NULL;
    float                     x, y, scale, drop_mod, drop_alpha;
    int                       drop_x, drop_y;
    enum text_alignment       text_align;
+   const struct font_glyph* glyph_q;
    unsigned                  color, r, g, b, alpha;
    d3d12_video_t           *d3d12   = (d3d12_video_t*)userdata;
    d3d12_font_t*             font   = (d3d12_font_t*)data;
@@ -1641,6 +1642,11 @@ static void d3d12_font_render_msg(
       drop_alpha                = 1.0f;
    }
 
+   glyph_q          = (font->font_driver) 
+	   ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   line_height = line_metrics->height * scale / height;
+
    if (drop_x || drop_y)
    {
       unsigned r_dark           = r * drop_mod;
@@ -1650,15 +1656,15 @@ static void d3d12_font_render_msg(
       unsigned color_dark       = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
 
       d3d12_font_render_message(d3d12,
-            font, msg, scale, color_dark,
+            font, glyph_q, msg, scale, color_dark,
             x + scale * drop_x / width,
             y + scale * drop_y / height,
-            width, height, text_align);
+            width, height, line_height, text_align);
    }
 
-   d3d12_font_render_message(d3d12, font,
+   d3d12_font_render_message(d3d12, font, glyph_q,
          msg, scale, color, x, y,
-         width, height, text_align);
+         width, height, line_height, text_align);
 }
 
 static const struct font_glyph* d3d12_font_get_glyph(

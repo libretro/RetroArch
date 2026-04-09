@@ -1068,14 +1068,12 @@ static void d3d10_font_render_message(
       float               pos_y,
       unsigned            width,
       unsigned            height,
+      float               line_height,
       unsigned            text_align)
 {
-   float line_height;
-   struct font_line_metrics *line_metrics = NULL;
-   int lines                              = 0;
-   int x                                  = roundf(pos_x * width);
-   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / height;
+   int lines = 0;
+   int x     = roundf(pos_x * width);
+
    for (;;)
    {
       const char *end = msg;
@@ -1103,6 +1101,8 @@ static void d3d10_font_render_msg(
       const char* msg,
       const struct font_params *params)
 {
+   float line_height;
+   struct font_line_metrics *line_metrics = NULL;
    int drop_x, drop_y;
    enum text_alignment text_align;
    const struct font_glyph* glyph_q;
@@ -1163,6 +1163,8 @@ static void d3d10_font_render_msg(
 
    glyph_q          = (font->font_driver)
       ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   line_height = line_metrics->height * scale / height;
 
    if (drop_x || drop_y)
    {
@@ -1176,11 +1178,11 @@ static void d3d10_font_render_msg(
             font, glyph_q, msg, scale, color_dark,
             x + scale * drop_x / width,
             y + scale * drop_y / height,
-            width, height, text_align);
+            width, height, line_height, text_align);
    }
 
    d3d10_font_render_message(d3d10, font, glyph_q,
-         msg, scale, color, x, y, width, height, text_align);
+         msg, scale, color, x, y, width, height, line_height, text_align);
 }
 
 static const struct font_glyph* d3d10_font_get_glyph(void *data,

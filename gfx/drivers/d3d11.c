@@ -1219,6 +1219,7 @@ static void d3d11_font_render_line(
 static void d3d11_font_render_message(
       d3d11_video_t *d3d11,
       d3d11_font_t*       font,
+      const struct font_glyph* glyph_q,
       const char*         msg,
       float               scale,
       const unsigned int  color,
@@ -1226,18 +1227,12 @@ static void d3d11_font_render_message(
       float               pos_y,
       unsigned            width,
       unsigned            height,
+      float               line_height,
       unsigned            text_align)
 {
-   float line_height;
-   struct font_line_metrics *line_metrics = NULL;
-   int lines                              = 0;
-   int x                                  = roundf(pos_x * width);
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                                          = font->font_driver->get_glyph;
-   void *font_data                        = font->font_data;
-   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
-   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / height;
+   int lines = 0;
+   int x     = roundf(pos_x * width);
+
    for (;;)
    {
       const char* delim = msg;
@@ -1265,8 +1260,11 @@ static void d3d11_font_render_msg(
       const char* msg,
       const struct font_params *params)
 {
+   float line_height;
    int drop_x, drop_y;
+   struct font_line_metrics *line_metrics = NULL;
    enum text_alignment text_align;
+   const struct font_glyph* glyph_q;
    unsigned color, r, g, b, alpha;
    float x, y, scale, drop_mod, drop_alpha;
    d3d11_font_t *font         = (d3d11_font_t*)data;
@@ -1322,6 +1320,11 @@ static void d3d11_font_render_msg(
       drop_alpha              = 1.0f;
    }
 
+   glyph_q     = (font->font_driver) 
+	   ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   line_height = line_metrics->height * scale / height;
+
    if (drop_x || drop_y)
    {
       unsigned r_dark         = r * drop_mod;
@@ -1332,14 +1335,14 @@ static void d3d11_font_render_msg(
 
       if (d3d11->flags & D3D11_ST_FLAG_SPRITES_ENABLE)
          d3d11_font_render_message(d3d11,
-               font, msg, scale, color_dark,
+               font, glyph_q, msg, scale, color_dark,
                x + scale * drop_x / width,
                y + scale * drop_y / height,
-               width, height, text_align);
+               width, height, line_height, text_align);
    }
 
-   d3d11_font_render_message(d3d11, font, msg, scale,
-         color, x, y, width, height, text_align);
+   d3d11_font_render_message(d3d11, font, glyph_q, msg, scale,
+         color, x, y, width, height, line_height, text_align);
 }
 
 static const struct font_glyph* d3d11_font_get_glyph(void *data, uint32_t code)
