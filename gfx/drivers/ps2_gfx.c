@@ -202,11 +202,14 @@ static int ps2_font_get_message_width(void* data, const char* msg,
    const struct font_glyph* glyph_q = NULL;
    int delta_x      = 0;
    ps2_font_t* font = (ps2_font_t*)data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                    = font->font_driver->get_glyph;
+   void *font_data  = font->font_data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   glyph_q = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -219,8 +222,7 @@ static int ps2_font_get_message_width(void* data, const char* msg,
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-         font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -255,6 +257,9 @@ static void ps2_font_render_line(
    int color_b         = (int)(((color & 0x00FF0000) >> 16) >> 1);
    int color_g         = (int)(((color & 0x0000FF00) >> 8)  >> 1);
    int color_r         = (int)(((color & 0x000000FF) >> 0)  >> 1);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                       = font->font_driver->get_glyph;
+   void *font_data     = font->font_data;
 
    /* Enable Alpha for font */
    gsKit_set_primalpha(ps2->gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
@@ -273,7 +278,7 @@ static void ps2_font_render_line(
       {
          const struct font_glyph *glyph;
          uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = get_glyph(font_data, code)))
             if (!(glyph = glyph_q))
                continue;
          width_accum += glyph->advance_x;
@@ -298,8 +303,7 @@ static void ps2_font_render_line(
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 

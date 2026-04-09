@@ -712,13 +712,17 @@ static int gx2_font_get_message_width(void* data, const char* msg,
 {
    int i;
    int delta_x = 0;
+   void *font_data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
    const struct font_glyph* glyph_q = NULL;
    gx2_font_t                *font  = (gx2_font_t*)data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   get_glyph = font->font_driver->get_glyph;
+   font_data = font->font_data;
+   glyph_q   = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -731,8 +735,7 @@ static int gx2_font_get_message_width(void* data, const char* msg,
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -759,6 +762,8 @@ static void gx2_font_render_line(
    const char* msg_end              = msg + msg_len;
    int x                            = pre_x;
    int y                            = roundf((1.0 - pos_y) * height);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t) = font->font_driver->get_glyph;
+   void *font_data      = font->font_data;
 
    /* For right/center alignment, compute width with a lightweight pass
     * that only accumulates advance_x — avoids the redundant glyph lookups
@@ -772,7 +777,7 @@ static void gx2_font_render_line(
       {
          const struct font_glyph *glyph;
          uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = get_glyph(font_data, code)))
             if (!(glyph = glyph_q))
                continue;
          width_accum += glyph->advance_x;
@@ -797,8 +802,7 @@ static void gx2_font_render_line(
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph  = glyph_q))
             continue;
 

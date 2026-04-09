@@ -526,6 +526,8 @@ static void *gl1_raster_font_init(void *data,
 static int gl1_raster_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
+   void *font_data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
    const struct font_glyph* glyph_q = NULL;
    gl1_raster_t *font  = (gl1_raster_t*)data;
    const char* msg_end = msg + msg_len;
@@ -536,16 +538,17 @@ static int gl1_raster_font_get_message_width(void *data, const char *msg,
          || !font->font_data )
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   get_glyph = font->font_driver->get_glyph;
+   font_data = font->font_data;
+   glyph_q   = get_glyph(font_data, '?');
 
    while (msg < msg_end)
    {
       const struct font_glyph *glyph;
-      unsigned code                  = utf8_walk(&msg);
+      unsigned code = utf8_walk(&msg);
 
       /* Do something smarter here ... */
-      if (!(glyph = font->font_driver->get_glyph(
-            font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -641,6 +644,8 @@ static void gl1_raster_font_render_line(gl1_t *gl,
    int y                = roundf(pos_y * gl->vp.height);
    int delta_x          = 0;
    int delta_y          = 0;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t) = font->font_driver->get_glyph;
+   void *font_data      = font->font_data;
 
    /* For right/center alignment, compute width with a lightweight pass
     * that only accumulates advance_x — avoids the redundant glyph lookups
@@ -655,7 +660,7 @@ static void gl1_raster_font_render_line(gl1_t *gl,
       {
          const struct font_glyph *glyph;
          uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = get_glyph(font_data, code)))
             if (!(glyph = glyph_q))
                continue;
          width_accum += glyph->advance_x;
@@ -677,8 +682,7 @@ static void gl1_raster_font_render_line(gl1_t *gl,
          unsigned                  code = utf8_walk(&msg);
 
          /* Do something smarter here ... */
-         if (!(glyph = font->font_driver->get_glyph(
-               font->font_data, code)))
+         if (!(glyph = get_glyph(font_data, code)))
             if (!(glyph = glyph_q))
                continue;
 
