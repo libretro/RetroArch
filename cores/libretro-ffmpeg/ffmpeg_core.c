@@ -810,13 +810,207 @@ static ffmpeg_core_ctx_t g_ctx;
 /* ---- GL FFT implementation (merged from ffmpeg_fft.c) ---- */
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 
-#include "gl_shaders/fft_heightmap.glsl.vert.h"
-#include "gl_shaders/fft_heightmap.glsl.frag.h"
-#include "gl_shaders/fft_vertex_program.glsl.vert.h"
-#include "gl_shaders/fft_fragment_program_resolve.glsl.frag.h"
-#include "gl_shaders/fft_fragment_program_real.glsl.frag.h"
-#include "gl_shaders/fft_fragment_program_complex.glsl.frag.h"
-#include "gl_shaders/fft_fragment_program_blur.glsl.frag.h"
+#if defined(HAVE_OPENGLES)
+#define CG(src)   "" #src
+#define GLSL(src) "precision mediump float;\n" #src
+#define GLSL_300(src)   "#version 300 es\n"   #src
+#else
+#define CG(src)   "" #src
+#define GLSL(src) "" #src
+#define GLSL_300(src)   "#version 300 es\n"   #src
+#endif
+
+static const char *fft_vertex_program_heightmap = GLSL_300(
+   layout(location = 0) in vec2 aVertex;
+   uniform sampler2D sHeight;
+   uniform mat4 uMVP;
+   uniform ivec2 uOffset;
+   uniform vec4 uHeightmapParams;
+   uniform float uAngleScale;
+   out vec3 vWorldPos;
+   out vec3 vHeight;
+
+   void main() {
+     vec2 tex_coord = vec2(aVertex.x + float(uOffset.x) + 0.5, -aVertex.y + float(uOffset.y) + 0.5) / vec2(textureSize(sHeight, 0));
+
+     vec3 world_pos = vec3(aVertex.x, 0.0, aVertex.y);
+     world_pos.xz += uHeightmapParams.xy;
+
+     float angle = world_pos.x * uAngleScale;
+     world_pos.xz *= uHeightmapParams.zw;
+
+     float lod = log2(world_pos.z + 1.0) - 6.0;
+     vec4 heights = textureLod(sHeight, tex_coord, lod);
+
+     float cangle = cos(angle);
+     float sangle = sin(angle);
+
+     int c = int(-sign(world_pos.x) + 1.0);
+     float height = mix(heights[c], heights[1], abs(angle) / 3.141592653);
+     height = height * 80.0 - 40.0;
+
+     vec3 up = vec3(-sangle, cangle, 0.0);
+
+     float base_y = 80.0 - 80.0 * cangle;
+     float base_x = 80.0 * sangle;
+     world_pos.xy = vec2(base_x, base_y);
+     world_pos += up * height;
+
+     vWorldPos = world_pos;
+     vHeight = vec3(height, heights.yw * 80.0 - 40.0);
+     gl_Position = uMVP * vec4(world_pos, 1.0);
+   }
+);
+static const char *fft_fragment_program_heightmap = GLSL_300(
+   precision mediump float;
+   out vec4 FragColor;
+   in vec3 vWorldPos;
+   in vec3 vHeight;
+
+   vec3 colormap(vec3 height) {
+      return 1.0 / (1.0 + exp(-0.08 * height));
+   }
+
+   void main() {
+      vec3 color = mix(vec3(1.0, 0.7, 0.7) * colormap(vHeight), vec3(0.1, 0.15, 0.1), clamp(vWorldPos.z / 400.0, 0.0, 1.0));
+      color = mix(color, vec3(0.1, 0.15, 0.1), clamp(1.0 - vWorldPos.z / 2.0, 0.0, 1.0));
+      FragColor = vec4(color, 1.0);
+   }
+);
+static const char *fft_vertex_program = GLSL_300(
+   precision mediump float;
+   layout(location = 0) in vec2 aVertex;
+   layout(location = 1) in vec2 aTexCoord;
+   uniform vec4 uOffsetScale;
+   out vec2 vTex;
+   void main() {
+      vTex = uOffsetScale.xy + aTexCoord * uOffsetScale.zw;
+      gl_Position = vec4(aVertex, 0.0, 1.0);
+   }
+);
+static const char *fft_fragment_program_resolve = GLSL_300(
+   precision mediump float;
+   precision highp int;
+   precision highp usampler2D;
+   precision highp isampler2D;
+   in vec2 vTex;
+   out vec4 FragColor;
+   uniform usampler2D sFFT;
+
+   vec4 get_heights(highp uvec2 h) {
+     vec2 l = unpackHalf2x16(h.x);
+     vec2 r = unpackHalf2x16(h.y);
+     vec2 channels[4] = vec2[4](
+        l, 0.5 * (l + r), r, 0.5 * (l - r));
+     vec4 amps;
+     for (int i = 0; i < 4; i++)
+        amps[i] = dot(channels[i], channels[i]);
+
+     return 9.0 * log(amps + 0.0001) - 22.0;
+   }
+
+   void main() {
+      uvec2 h = textureLod(sFFT, vTex, 0.0).rg;
+      vec4 height = get_heights(h);
+      height = (height + 40.0) / 80.0;
+      FragColor = height;
+   }
+);
+static const char *fft_fragment_program_real = GLSL_300(
+   precision mediump float;
+   precision highp int;
+   precision highp usampler2D;
+   precision highp isampler2D;
+
+   in vec2 vTex;
+   uniform isampler2D sTexture;
+   uniform usampler2D sParameterTexture;
+   uniform usampler2D sWindow;
+   uniform int uViewportOffset;
+   out uvec2 FragColor;
+
+   vec2 compMul(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
+
+   void main() {
+      uvec2 params = texture(sParameterTexture, vec2(vTex.x, 0.5)).rg;
+      uvec2 coord  = uvec2((params.x >> 16u) & 0xffffu, params.x & 0xffffu);
+      int ycoord   = int(gl_FragCoord.y) - uViewportOffset;
+      vec2 twiddle = unpackHalf2x16(params.y);
+
+      float window_a = float(texelFetch(sWindow, ivec2(coord.x, 0), 0).r) / float(0x10000);
+      float window_b = float(texelFetch(sWindow, ivec2(coord.y, 0), 0).r) / float(0x10000);
+
+      vec2 a = window_a * vec2(texelFetch(sTexture, ivec2(int(coord.x), ycoord), 0).rg) / vec2(0x8000);
+      vec2 a_l = vec2(a.x, 0.0);
+      vec2 a_r = vec2(a.y, 0.0);
+      vec2 b = window_b * vec2(texelFetch(sTexture, ivec2(int(coord.y), ycoord), 0).rg) / vec2(0x8000);
+      vec2 b_l = vec2(b.x, 0.0);
+      vec2 b_r = vec2(b.y, 0.0);
+      b_l = compMul(b_l, twiddle);
+      b_r = compMul(b_r, twiddle);
+
+      vec2 res_l = a_l + b_l;
+      vec2 res_r = a_r + b_r;
+      FragColor = uvec2(packHalf2x16(res_l), packHalf2x16(res_r));
+   }
+);
+static const char *fft_fragment_program_complex = GLSL_300(
+   precision mediump float;
+   precision highp int;
+   precision highp usampler2D;
+   precision highp isampler2D;
+
+   in vec2 vTex;
+   uniform usampler2D sTexture;
+   uniform usampler2D sParameterTexture;
+   uniform int uViewportOffset;
+   out uvec2 FragColor;
+
+   vec2 compMul(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
+
+   void main() {
+      uvec2 params = texture(sParameterTexture, vec2(vTex.x, 0.5)).rg;
+      uvec2 coord  = uvec2((params.x >> 16u) & 0xffffu, params.x & 0xffffu);
+      int ycoord   = int(gl_FragCoord.y) - uViewportOffset;
+      vec2 twiddle = unpackHalf2x16(params.y);
+
+      uvec2 x = texelFetch(sTexture, ivec2(int(coord.x), ycoord), 0).rg;
+      uvec2 y = texelFetch(sTexture, ivec2(int(coord.y), ycoord), 0).rg;
+      vec4 a = vec4(unpackHalf2x16(x.x), unpackHalf2x16(x.y));
+      vec4 b = vec4(unpackHalf2x16(y.x), unpackHalf2x16(y.y));
+      b.xy = compMul(b.xy, twiddle);
+      b.zw = compMul(b.zw, twiddle);
+
+      vec4 res = a + b;
+      FragColor = uvec2(packHalf2x16(res.xy), packHalf2x16(res.zw));
+   }
+);
+static const char *fft_fragment_program_blur = GLSL_300(
+   precision mediump float;
+   precision highp int;
+   precision highp usampler2D;
+   precision highp isampler2D;
+   in vec2 vTex;
+   out vec4 FragColor;
+   uniform sampler2D sHeight;
+
+   void main() {
+      float k = 0.0;
+      float t;
+      vec4 res = vec4(0.0);
+      \n#define kernel(x, y) t = exp(-0.35 * float((x) * (x) + (y) * (y))); k += t; res += t * textureLodOffset(sHeight, vTex, 0.0, ivec2(x, y))\n
+       kernel(-1, -2);
+       kernel(-1, -1);
+       kernel(-1,  0);
+       kernel( 0, -2);
+       kernel( 0, -1);
+       kernel( 0,  0);
+       kernel( 1, -2);
+       kernel( 1, -1);
+       kernel( 1,  0);
+       FragColor = res / k;
+   }
+);
 
 static GLuint fft_compile_shader(fft_t *fft, GLenum type, const char *source)
 {
@@ -3293,15 +3487,41 @@ static void context_destroy(void)
    }
 }
 
-#include "gl_shaders/ffmpeg.glsl.vert.h"
+static const char *vertex_source = GLSL(
+      attribute vec2 aVertex;
+      attribute vec2 aTexCoord;
+      varying vec2 vTex;
+
+      void main() {
+         gl_Position = vec4(aVertex, 0.0, 1.0); vTex = aTexCoord;
+      }
+);
 
 /* OpenGL ES note about main() -  Get format as GL_RGBA/GL_UNSIGNED_BYTE.
  * Assume little endian, so we get ARGB -> BGRA byte order, and
  * we have to swizzle to .BGR. */
 #ifdef HAVE_OPENGLES
-#include "gl_shaders/ffmpeg_es.glsl.frag.h"
+static const char *fragment_source = GLSL(
+      varying vec2 vTex;
+      uniform sampler2D sTex0;
+      uniform sampler2D sTex1;
+      uniform float uMix;
+
+      void main() {
+         gl_FragColor = vec4(pow(mix(pow(texture2D(sTex0, vTex).bgr, vec3(2.2)), pow(texture2D(sTex1, vTex).bgr, vec3(2.2)), uMix), vec3(1.0 / 2.2)), 1.0);
+      }
+);
 #else
-#include "gl_shaders/ffmpeg.glsl.frag.h"
+static const char *fragment_source = GLSL(
+      varying vec2 vTex;
+      uniform sampler2D sTex0;
+      uniform sampler2D sTex1;
+      uniform float uMix;
+
+      void main() {
+         gl_FragColor = vec4(pow(mix(pow(texture2D(sTex0, vTex).rgb, vec3(2.2)), pow(texture2D(sTex1, vTex).rgb, vec3(2.2)), uMix), vec3(1.0 / 2.2)), 1.0);
+     }
+);
 #endif
 
 static void context_reset(void)
