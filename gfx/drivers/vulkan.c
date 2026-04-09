@@ -5986,9 +5986,18 @@ static bool vulkan_frame(void *data, const void *frame,
       else if (statistics_show)
       {
          if (osd_params)
-            font_driver_render_msg(vk,
-                  stat_text,
-                  osd_params, NULL);
+         {
+#ifdef HAVE_LANGEXTRA
+            char tmp[512];
+            char *_msg = font_driver_reshape_msg(stat_text,
+                  tmp, sizeof(tmp));
+            vulkan_font_render_msg(vk, video_font_driver,
+                  _msg, osd_params);
+#else
+            vulkan_font_render_msg(vk, video_font_driver, 
+                  stat_text, osd_params);
+#endif
+         }
       }
 #endif
 
@@ -5998,7 +6007,16 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
       if (message_visible)
-          font_driver_render_msg(vk, msg, NULL, NULL);
+      {
+#ifdef HAVE_LANGEXTRA
+         char tmp[512];
+         char *_msg = font_driver_reshape_msg(msg,
+               tmp, sizeof(tmp));
+         vulkan_font_render_msg(vk, video_font_driver, _msg, NULL);
+#else
+         vulkan_font_render_msg(vk, video_font_driver, msg, NULL);
+#endif
+      }
 
 #ifdef HAVE_GFX_WIDGETS
       if (widgets_active)

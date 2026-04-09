@@ -26,7 +26,7 @@
 #include "video_thread_wrapper.h"
 
 /* TODO/FIXME - global */
-static void *video_font_driver = NULL;
+void *video_font_driver = NULL;
 
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
@@ -663,14 +663,14 @@ static INLINE unsigned font_get_arabic_replacement(
 }
 /* clang-format on */
 
-static char* font_driver_reshape_msg(const char* msg, unsigned char *s, size_t len)
+char* font_driver_reshape_msg(const char* msg, char *s, size_t len)
 {
    const unsigned char *src;
    bool                 reverse    = false;
    size_t               msg_len    = strlen(msg);
    /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
    size_t               _len       = (msg_len * 2) + 1;
-   unsigned char       *dst        = s;
+   char                *dst        = s;
 
    if (len < _len)
    {
@@ -686,7 +686,7 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *s, size_t l
        * dst <= 2k while src = len/2 + k, and 2k < len/2 + k
        * holds for all k < len/2, which is guaranteed since
        * msg_len < len/2. */
-      unsigned char *copy_dst;
+      char *copy_dst;
       msg_len = (len / 2) - 1;
       /* Back up to a UTF-8 character boundary */
       while (msg_len > 0 && IS_MBCONT((const unsigned char*)&msg[msg_len]))
@@ -796,14 +796,14 @@ void font_driver_render_msg(void *data, const char *msg,
    if (renderer && renderer->render_msg)
    {
 #ifdef HAVE_LANGEXTRA
-      unsigned char tmp_buffer[512];
-      char *new_msg = font_driver_reshape_msg(msg,
-            tmp_buffer, sizeof(tmp_buffer));
+      char tmp[512];
+      char *_msg = font_driver_reshape_msg(msg,
+            tmp, sizeof(tmp));
 #else
-      char *new_msg = (char*)msg;
+      char *_msg = (char*)msg;
 #endif
       renderer->render_msg(data,
-            font->renderer_data, new_msg, params);
+            font->renderer_data, _msg, params);
    }
 }
 
