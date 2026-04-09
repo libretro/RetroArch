@@ -2679,11 +2679,15 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    unsigned xmb_system_tab          = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
    bool xmb_main_tab_selected       = false;
    bool horizontal_animation        = settings->bools.menu_horizontal_animation;
+   int list_delta                   = 0;
    unsigned animation_horizontal_highlight
                                     = settings->uints.menu_xmb_animation_horizontal_highlight;
 
    if (xmb->categories_selection_ptr > xmb->categories_selection_ptr_old)
       dir = 1;
+
+   list_delta = (int)xmb->categories_selection_ptr
+         - (int)xmb->categories_selection_ptr_old;
 
    xmb->categories_active_idx += dir;
 
@@ -2718,17 +2722,11 @@ static void xmb_list_switch(xmb_handle_t *xmb)
          gfx_animation_push(&anim_entry);
    }
    else
-   {
       xmb->categories_x_pos = xmb->icon_spacing_horizontal * -(float)xmb->categories_selection_ptr;
-   }
-
-   dir = -1;
-   if (xmb->categories_selection_ptr > xmb->categories_selection_ptr_old)
-      dir = 1;
 
    /* Check if we are to have horizontal animations. */
    if (horizontal_animation)
-      xmb_list_switch_new(xmb, selection_buf, dir, selection);
+      xmb_list_switch_new(xmb, selection_buf, list_delta, selection);
 
    xmb->categories_active_idx_old = (unsigned)xmb->categories_selection_ptr;
 
