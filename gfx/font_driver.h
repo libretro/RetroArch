@@ -135,8 +135,6 @@ void font_driver_init_osd(
 
 void font_driver_free_osd(void);
 
-char* font_driver_reshape_msg(const char* msg, char *s, size_t len);
-
 int font_driver_get_line_height(font_data_t *font, float scale);
 int font_driver_get_line_ascender(font_data_t *font, float scale);
 int font_driver_get_line_descender(font_data_t *font, float scale);
@@ -167,9 +165,6 @@ extern font_renderer_driver_t stb_unicode_font_renderer;
 extern font_renderer_driver_t freetype_font_renderer;
 extern font_renderer_driver_t coretext_font_renderer;
 extern font_renderer_driver_t bitmap_font_renderer;
-
-/* TODO/FIXME - global */
-extern void *video_font_driver;
 
 RETRO_END_DECLS
 
