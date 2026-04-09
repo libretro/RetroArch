@@ -7204,128 +7204,146 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
    /* Pre-allocate all UBOs and descriptor sets for overlays,
     * then batch-write all descriptors in a single vkUpdateDescriptorSets
     * call before issuing any draw commands. This eliminates N separate
-    * vkUpdateDescriptorSets calls when rendering N overlays. */
+    * vkUpdateDescriptorSets calls when rendering N overlays.
+    *
+    * Process in batches of 16 to stay within stack-allocated arrays
+    * while still rendering all overlays (neoretropad can exceed 16). */
    {
-      int count = (int)vk->overlay.count;
-      /* Stack-allocate for typical overlay counts; these are small structs. */
-      struct vk_buffer_range  ubo_ranges[16];
-      struct vk_buffer_range  vbo_ranges[16];
-      VkDescriptorSet         sets[16];
-      struct vk_descriptor_batch batch;
+      int total     = (int)vk->overlay.count;
+      int base      = 0;
 
-      /* Clamp to stack array size */
-      if (count > 16)
-         count = 16;
-
-      vulkan_descriptor_batch_init(&batch);
-
-      /* Phase 1: Allocate UBOs, descriptor sets, VBOs and stage writes. */
-      for (i = 0; i < count; i++)
+      while (base < total)
       {
-         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
-                  sizeof(vk->mvp), &ubo_ranges[i]))
+         int batch_count = total - base;
+         /* Stack-allocate for typical overlay counts; these are small structs. */
+         struct vk_buffer_range  ubo_ranges[16];
+         struct vk_buffer_range  vbo_ranges[16];
+         VkDescriptorSet         sets[16];
+         struct vk_descriptor_batch batch;
+
+         /* Clamp this batch to stack array size */
+         if (batch_count > 16)
+            batch_count = 16;
+
+         vulkan_descriptor_batch_init(&batch);
+
+         /* Phase 1: Allocate UBOs, descriptor sets, VBOs and stage writes. */
+         for (i = 0; i < batch_count; i++)
          {
-            count = i;
-            break;
-         }
+            int idx = base + i;
 
-         memcpy(ubo_ranges[i].data, &vk->mvp, sizeof(vk->mvp));
-
-         sets[i] = vulkan_descriptor_manager_alloc(
-               vk->context->device,
-               &vk->chain->descriptor_manager);
-
-         if (!vulkan_descriptor_batch_add(&batch, sets[i],
-                  ubo_ranges[i].buffer,
-                  ubo_ranges[i].offset,
-                  sizeof(vk->mvp),
-                  &vk->overlay.images[i],
-                  (vk->overlay.images[i].flags & VK_TEX_FLAG_MIPMAP)
-                     ? vk->samplers.mipmap_linear : vk->samplers.linear))
-         {
-            /* Batch full — flush what we have and add again. */
-            vulkan_descriptor_batch_flush(vk->context->device, &batch);
-            vulkan_descriptor_batch_add(&batch, sets[i],
-                  ubo_ranges[i].buffer,
-                  ubo_ranges[i].offset,
-                  sizeof(vk->mvp),
-                  &vk->overlay.images[i],
-                  (vk->overlay.images[i].flags & VK_TEX_FLAG_MIPMAP)
-                     ? vk->samplers.mipmap_linear : vk->samplers.linear);
-         }
-
-         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-                  4 * sizeof(struct vk_vertex), &vbo_ranges[i]))
-         {
-            count = i;
-            break;
-         }
-
-         memcpy(vbo_ranges[i].data, &vk->overlay.vertex[i * 4],
-               4 * sizeof(struct vk_vertex));
-      }
-
-      /* Single batched flush for all overlay descriptors. */
-      vulkan_descriptor_batch_flush(vk->context->device, &batch);
-
-      /* Phase 2: Issue draw commands using pre-allocated resources. */
-      for (i = 0; i < count; i++)
-      {
-         struct vk_texture *tex = &vk->overlay.images[i];
-         VkPipeline pipeline    = vk->display.pipelines[3]; /* Strip with blend */
-
-         if (tex->image)
-            vulkan_transition_texture(vk, vk->cmd, tex);
-
-         if (pipeline != vk->tracker.pipeline)
-         {
-            VkRect2D sci;
-            vkCmdBindPipeline(vk->cmd,
-                  VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-            vk->tracker.pipeline = pipeline;
-            vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
-
-            if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
-               sci               = vk->tracker.scissor;
-            else
+            if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+                     sizeof(vk->mvp), &ubo_ranges[i]))
             {
-               sci.offset.x      = vk->vp.x;
-               sci.offset.y      = vk->vp.y;
-               sci.extent.width  = vk->vp.width;
-               sci.extent.height = vk->vp.height;
+               batch_count = i;
+               break;
             }
 
-            vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
-            vkCmdSetScissor (vk->cmd, 0, 1, &sci);
-            vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
-         }
-         else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
-         {
-            VkRect2D sci;
-            if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
-               sci               = vk->tracker.scissor;
-            else
+            memcpy(ubo_ranges[i].data, &vk->mvp, sizeof(vk->mvp));
+
+            sets[i] = vulkan_descriptor_manager_alloc(
+                  vk->context->device,
+                  &vk->chain->descriptor_manager);
+
+            if (!vulkan_descriptor_batch_add(&batch, sets[i],
+                     ubo_ranges[i].buffer,
+                     ubo_ranges[i].offset,
+                     sizeof(vk->mvp),
+                     &vk->overlay.images[idx],
+                     (vk->overlay.images[idx].flags & VK_TEX_FLAG_MIPMAP)
+                        ? vk->samplers.mipmap_linear : vk->samplers.linear))
             {
-               sci.offset.x      = vk->vp.x;
-               sci.offset.y      = vk->vp.y;
-               sci.extent.width  = vk->vp.width;
-               sci.extent.height = vk->vp.height;
+               /* Batch full — flush what we have and add again. */
+               vulkan_descriptor_batch_flush(vk->context->device, &batch);
+               vulkan_descriptor_batch_add(&batch, sets[i],
+                     ubo_ranges[i].buffer,
+                     ubo_ranges[i].offset,
+                     sizeof(vk->mvp),
+                     &vk->overlay.images[idx],
+                     (vk->overlay.images[idx].flags & VK_TEX_FLAG_MIPMAP)
+                        ? vk->samplers.mipmap_linear : vk->samplers.linear);
             }
 
-            vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
-            vkCmdSetScissor (vk->cmd, 0, 1, &sci);
-            vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+            if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+                     4 * sizeof(struct vk_vertex), &vbo_ranges[i]))
+            {
+               batch_count = i;
+               break;
+            }
+
+            memcpy(vbo_ranges[i].data, &vk->overlay.vertex[idx * 4],
+                  4 * sizeof(struct vk_vertex));
          }
 
-         vkCmdBindDescriptorSets(vk->cmd,
-               VK_PIPELINE_BIND_POINT_GRAPHICS,
-               vk->pipelines.layout, 0,
-               1, &sets[i], 0, NULL);
+         /* Single batched flush for this batch of overlay descriptors. */
+         vulkan_descriptor_batch_flush(vk->context->device, &batch);
 
-         vkCmdBindVertexBuffers(vk->cmd, 0, 1,
-               &vbo_ranges[i].buffer, &vbo_ranges[i].offset);
+         /* Phase 2: Issue draw commands using pre-allocated resources. */
+         for (i = 0; i < batch_count; i++)
+         {
+            int idx                = base + i;
+            struct vk_texture *tex = &vk->overlay.images[idx];
+            VkPipeline pipeline    = vk->display.pipelines[3]; /* Strip with blend */
 
-         vkCmdDraw(vk->cmd, 4, 1, 0, 0);
+            if (tex->image)
+               vulkan_transition_texture(vk, vk->cmd, tex);
+
+            if (pipeline != vk->tracker.pipeline)
+            {
+               VkRect2D sci;
+               vkCmdBindPipeline(vk->cmd,
+                     VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+               vk->tracker.pipeline = pipeline;
+               vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+
+               if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+                  sci               = vk->tracker.scissor;
+               else
+               {
+                  sci.offset.x      = vk->vp.x;
+                  sci.offset.y      = vk->vp.y;
+                  sci.extent.width  = vk->vp.width;
+                  sci.extent.height = vk->vp.height;
+               }
+
+               vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+               vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+               vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+            }
+            else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
+            {
+               VkRect2D sci;
+               if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+                  sci               = vk->tracker.scissor;
+               else
+               {
+                  sci.offset.x      = vk->vp.x;
+                  sci.offset.y      = vk->vp.y;
+                  sci.extent.width  = vk->vp.width;
+                  sci.extent.height = vk->vp.height;
+               }
+
+               vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+               vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+               vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+            }
+
+            vkCmdBindDescriptorSets(vk->cmd,
+                  VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  vk->pipelines.layout, 0,
+                  1, &sets[i], 0, NULL);
+
+            vkCmdBindVertexBuffers(vk->cmd, 0, 1,
+                  &vbo_ranges[i].buffer, &vbo_ranges[i].offset);
+
+            vkCmdDraw(vk->cmd, 4, 1, 0, 0);
+         }
+
+         base += batch_count;
+
+         /* If allocation failed mid-batch, stop processing. */
+         if (batch_count == 0)
+            break;
       }
 
       vk->tracker.view    = VK_NULL_HANDLE;
