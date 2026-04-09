@@ -8305,7 +8305,7 @@ static size_t get_string_representation_input_device_index(
       }
    }
 
-   if (s && *s)
+   if (!s || !*s)
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
    return _len;
 }
@@ -8375,7 +8375,7 @@ static size_t get_string_representation_input_mouse_index(
                         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE));
    }
 
-   if (s && *s)
+   if (!s || !*s)
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
    return _len;
 }

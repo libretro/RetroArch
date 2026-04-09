@@ -20,12 +20,18 @@ import com.retroarch.playcore.PlayCoreManager;
 
 import android.annotation.TargetApi;
 import android.app.NativeActivity;
+import android.app.PendingIntent;
 import android.content.res.Configuration;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.hardware.input.InputManager;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Bundle;
@@ -51,7 +57,9 @@ import android.util.Log;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.Locale;
 
@@ -59,6 +67,7 @@ import java.util.Locale;
  * Class which provides common methods for RetroActivity related classes.
  */
 public class RetroActivityCommon extends NativeActivity
+        implements InputManager.InputDeviceListener
 {
   static {
     System.loadLibrary("retroarch-activity");
@@ -79,17 +88,70 @@ public class RetroActivityCommon extends NativeActivity
   public boolean sustainedPerformanceMode = true;
   public int screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
+  /* USB HID rumble: action string for the runtime permission broadcast. */
+  private static final String ACTION_USB_PERMISSION = "com.retroarch.USB_PERMISSION";
+
+  /* Supported USB VID/PID constants for Sony controllers (controlTransfer rumble). */
+  private static final int VID_SONY      = 0x054C;
+  private static final int PID_DS4_V1    = 0x05C4;
+  private static final int PID_DS4_V2    = 0x09CC;
+  private static final int PID_DUALSENSE = 0x0CE6;
+
+  /* Pooled USB connections keyed by Android InputDevice ID.
+   * Opened on first successful permission grant; closed on error or destroy.
+   * Access only from the native JNI thread — no locking needed. */
+  private final Map<Integer, UsbDeviceConnection> mUsbConnections =
+          new HashMap<Integer, UsbDeviceConnection>();
+
+  /* Guards against permission request storms — one in-flight request per device. */
+  private final Map<Integer, Boolean> mUsbPermissionPending =
+          new HashMap<Integer, Boolean>();
+
+  /* Clears the in-flight permission flag when the user responds to the system dialog. */
+  private BroadcastReceiver mUsbPermissionReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+      if (!ACTION_USB_PERMISSION.equals(intent.getAction()))
+        return;
+      UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+      if (device == null)
+        return;
+      /* Clear the pending flag by matching on VID/PID so the next rumble
+       * call will proceed without re-requesting permission. */
+      for (Map.Entry<Integer, Boolean> entry :
+              new ArrayList<Map.Entry<Integer, Boolean>>(mUsbPermissionPending.entrySet()))
+      {
+        InputDevice inputDevice = InputDevice.getDevice(entry.getKey());
+        if (inputDevice != null
+                && inputDevice.getVendorId()  == device.getVendorId()
+                && inputDevice.getProductId() == device.getProductId())
+          mUsbPermissionPending.remove(entry.getKey());
+      }
+      Log.i("RetroActivity", "USB permission "
+              + (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                      ? "granted" : "denied")
+              + " for " + device.getProductName());
+    }
+  };
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     cleanupSymlinks();
     updateSymlinks();
 
+    registerReceiver(mUsbPermissionReceiver, new IntentFilter(ACTION_USB_PERMISSION));
+    ((InputManager) getSystemService(Context.INPUT_SERVICE))
+            .registerInputDeviceListener(this, null);
     PlayCoreManager.getInstance().onCreate(this);
     super.onCreate(savedInstanceState);
   }
 
   @Override
   protected void onDestroy() {
+    ((InputManager) getSystemService(Context.INPUT_SERVICE))
+            .unregisterInputDeviceListener(this);
+    unregisterReceiver(mUsbPermissionReceiver);
+    closeAllUsbConnections();
     PlayCoreManager.getInstance().onDestroy();
     super.onDestroy();
   }
@@ -275,6 +337,267 @@ public class RetroActivityCommon extends NativeActivity
         + " strong=" + strongStrength + " weak=" + weakStrength
         + " vibrators=" + vibratorIds.length);
     return true;
+  }
+
+  /**
+   * Sends a dual-motor rumble report to a USB HID controller.
+   *
+   * Called from the native JNI thread during the rumble update cycle.
+   * Returns true if the USB HID report was successfully sent so the C
+   * caller can skip the VibratorManager fallback path.
+   * Returns false if the device is not a supported USB HID target,
+   * permission has not yet been granted, or the transfer failed.
+   *
+   * @param deviceId  Android InputDevice ID (from InputDevice.getId())
+   * @param strong    Large/low-frequency motor amplitude (0–255)
+   * @param weak      Small/high-frequency motor amplitude (0–255)
+   * @return true if the HID report was sent successfully
+   */
+  public boolean doVibrateUSB(int deviceId, int strong, int weak)
+  {
+    UsbDevice usbDevice = findUsbDeviceForInputDevice(deviceId);
+    if (usbDevice == null)
+      return false;
+
+    UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+    if (usbManager == null)
+      return false;
+
+    if (!usbManager.hasPermission(usbDevice))
+    {
+      requestUsbPermission(usbManager, usbDevice, deviceId);
+      return false;
+    }
+
+    return sendUsbRumble(usbManager, usbDevice, deviceId, strong, weak);
+  }
+
+  /**
+   * Finds the UsbDevice corresponding to the given Android InputDevice ID
+   * by matching VID/PID. Returns null if the controller is not connected
+   * via USB or is not a supported HID target.
+   */
+  private UsbDevice findUsbDeviceForInputDevice(int deviceId)
+  {
+    InputDevice inputDevice = InputDevice.getDevice(deviceId);
+    if (inputDevice == null)
+      return null;
+
+    int vid = inputDevice.getVendorId();
+    int pid = inputDevice.getProductId();
+
+    if (!isSupportedUsbHidController(vid, pid))
+      return null;
+
+    UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+    if (usbManager == null)
+      return null;
+
+    for (UsbDevice device : usbManager.getDeviceList().values())
+    {
+      if (device.getVendorId() == vid && device.getProductId() == pid)
+        return device;
+    }
+
+    return null;
+  }
+
+  /** Returns true for controllers whose USB HID output report format is known. */
+  private boolean isSupportedUsbHidController(int vid, int pid)
+  {
+    return vid == VID_SONY
+            && (pid == PID_DS4_V1 || pid == PID_DS4_V2 || pid == PID_DUALSENSE);
+  }
+
+  /**
+   * Requests USB permission from the system. Shows a one-time dialog to the
+   * user. The pending-flag guard ensures we only issue one request at a time
+   * per device. The BroadcastReceiver clears the flag when the user responds.
+   */
+  private void requestUsbPermission(UsbManager usbManager,
+          UsbDevice usbDevice, int deviceId)
+  {
+    Integer key = Integer.valueOf(deviceId);
+    if (Boolean.TRUE.equals(mUsbPermissionPending.get(key)))
+      return;
+    mUsbPermissionPending.put(key, Boolean.TRUE);
+    PendingIntent pi = PendingIntent.getBroadcast(this, 0,
+            new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE);
+    usbManager.requestPermission(usbDevice, pi);
+    Log.i("RetroActivity", "doVibrateUSB: requested USB permission for "
+            + usbDevice.getProductName() + " (inputDeviceId=" + deviceId + ")");
+  }
+
+  /**
+   * Dispatches to the per-controller HID report builder. On transfer failure
+   * the cached connection is closed so the next call will reopen it.
+   */
+  private boolean sendUsbRumble(UsbManager usbManager, UsbDevice usbDevice,
+          int deviceId, int strong, int weak)
+  {
+    UsbDeviceConnection conn = getOrOpenUsbConnection(usbManager, usbDevice, deviceId);
+    if (conn == null)
+      return false;
+
+    int vid = usbDevice.getVendorId();
+    int pid = usbDevice.getProductId();
+
+    try
+    {
+      if (vid == VID_SONY && (pid == PID_DS4_V1 || pid == PID_DS4_V2))
+        return sendDs4Rumble(conn, strong, weak);
+      if (vid == VID_SONY && pid == PID_DUALSENSE)
+        return sendDualSenseRumble(conn, strong, weak);
+    }
+    catch (Exception e)
+    {
+      Log.e("RetroActivity", "doVibrateUSB: transfer failed, closing connection", e);
+      closeUsbConnection(deviceId);
+    }
+
+    return false;
+  }
+
+  /** Returns the cached connection for this device, or opens a new one. */
+  private UsbDeviceConnection getOrOpenUsbConnection(UsbManager usbManager,
+          UsbDevice usbDevice, int deviceId)
+  {
+    Integer key = Integer.valueOf(deviceId);
+    UsbDeviceConnection conn = mUsbConnections.get(key);
+    if (conn != null)
+      return conn;
+
+    conn = usbManager.openDevice(usbDevice);
+    if (conn == null)
+    {
+      Log.e("RetroActivity", "doVibrateUSB: failed to open USB device");
+      return null;
+    }
+
+    mUsbConnections.put(key, conn);
+    Log.i("RetroActivity", "doVibrateUSB: opened connection for inputDeviceId=" + deviceId);
+    return conn;
+  }
+
+  private void closeUsbConnection(int deviceId)
+  {
+    UsbDeviceConnection conn = mUsbConnections.remove(Integer.valueOf(deviceId));
+    if (conn != null)
+      conn.close();
+  }
+
+  private void closeAllUsbConnections()
+  {
+    for (UsbDeviceConnection conn : mUsbConnections.values())
+      conn.close();
+    mUsbConnections.clear();
+  }
+
+  /* InputManager.InputDeviceListener — request USB permission as soon as a
+   * supported controller is connected, before any rumble call can occur. */
+
+  @Override
+  public void onInputDeviceAdded(int deviceId)
+  {
+    UsbDevice usbDevice = findUsbDeviceForInputDevice(deviceId);
+    if (usbDevice == null)
+      return;
+    UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+    if (usbManager == null || usbManager.hasPermission(usbDevice))
+      return;
+    requestUsbPermission(usbManager, usbDevice, deviceId);
+  }
+
+  /**
+   * Proactively requests USB permission for any DS4/DualSense already connected.
+   *
+   * InputDeviceListener.onInputDeviceAdded() only fires for devices that connect
+   * AFTER the listener is registered — it does not fire for devices that were
+   * already connected at startup or while the activity was backgrounded.  This
+   * method fills that gap by iterating all current InputDevice IDs and requesting
+   * permission for any supported USB HID controller that does not yet have it.
+   *
+   * Safe to call multiple times; the mUsbPermissionPending guard ensures at most
+   * one in-flight permission request per device at any time.
+   */
+  private void requestPermissionForConnectedSonyControllers()
+  {
+    UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+    if (usbManager == null)
+      return;
+    for (int deviceId : InputDevice.getDeviceIds())
+    {
+      UsbDevice usbDevice = findUsbDeviceForInputDevice(deviceId);
+      if (usbDevice == null)
+        continue;
+      if (usbManager.hasPermission(usbDevice))
+        continue;
+      requestUsbPermission(usbManager, usbDevice, deviceId);
+    }
+  }
+
+  @Override
+  protected void onResume()
+  {
+    super.onResume();
+    /* Covers controllers connected at startup or while the activity was
+     * backgrounded — cases where onInputDeviceAdded() never fires. */
+    requestPermissionForConnectedSonyControllers();
+  }
+
+  @Override
+  public void onInputDeviceChanged(int deviceId) { }
+
+  @Override
+  public void onInputDeviceRemoved(int deviceId)
+  {
+    /* Close any cached USB connection so we don't hold a stale handle. */
+    closeUsbConnection(deviceId);
+    mUsbPermissionPending.remove(Integer.valueOf(deviceId));
+  }
+
+  /**
+   * DS4 USB rumble: 48-byte HID SET_REPORT (class request).
+   * Report ID 0x05; rumble bytes at offsets 3 (right/weak) and 4 (left/strong).
+   */
+  private boolean sendDs4Rumble(UsbDeviceConnection conn, int strong, int weak)
+  {
+    byte[] report = new byte[48];
+    report[0] = 0x05;                   /* Report ID */
+    report[1] = 0x01;                   /* Flags: enable rumble */
+    report[3] = (byte)(weak   & 0xFF);  /* Right motor (weak / high-freq) */
+    report[4] = (byte)(strong & 0xFF);  /* Left  motor (strong / low-freq) */
+
+    int result = conn.controlTransfer(
+            0x21,    /* bmRequestType: Host→Device, Class, Interface */
+            0x09,    /* bRequest: SET_REPORT */
+            0x0305,  /* wValue: Report Type = Output (0x03), Report ID = 0x05 */
+            0x0000,  /* wIndex: Interface 0 */
+            report, report.length, 1000);
+
+    return result == report.length;
+  }
+
+  /**
+   * DualSense USB rumble: 48-byte HID SET_REPORT.
+   * Report ID 0x02; rumble bytes at offsets 3 (right/weak) and 4 (left/strong).
+   */
+  private boolean sendDualSenseRumble(UsbDeviceConnection conn, int strong, int weak)
+  {
+    byte[] report = new byte[48];
+    report[0] = 0x02;                   /* Report ID */
+    report[1] = (byte)0xFF;             /* Enable compatible rumble */
+    report[3] = (byte)(weak   & 0xFF);  /* Right motor */
+    report[4] = (byte)(strong & 0xFF);  /* Left  motor */
+
+    int result = conn.controlTransfer(
+            0x21,
+            0x09,
+            0x0302,  /* wValue: Output report, ID 0x02 */
+            0x0000,
+            report, report.length, 1000);
+
+    return result == report.length;
   }
 
   public void doHapticFeedback(int effect)
