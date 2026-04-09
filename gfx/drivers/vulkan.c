@@ -382,6 +382,13 @@ typedef struct
    struct vk_buffer_range range;
    unsigned vertices;
 
+   /* Dirty rectangle for partial atlas uploads.
+    * Tracks the bounding box of modified glyphs so that
+    * vulkan_font_flush only copies the changed region
+    * instead of the entire atlas texture. */
+   unsigned dirty_x_min, dirty_y_min;
+   unsigned dirty_x_max, dirty_y_max;
+
    bool needs_update;
 } vulkan_raster_t;
 
@@ -1957,12 +1964,23 @@ static INLINE void vulkan_font_update_glyph(
       vulkan_raster_t *font, const struct font_glyph *glyph)
 {
    unsigned row;
-   for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
+   unsigned gx_min = glyph->atlas_offset_x;
+   unsigned gy_min = glyph->atlas_offset_y;
+   unsigned gx_max = gx_min + glyph->width;
+   unsigned gy_max = gy_min + glyph->height;
+
+   for (row = gy_min; row < gy_max; row++)
    {
-      uint8_t *src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
-      uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
+      uint8_t *src = font->atlas->buffer + row * font->atlas->width + gx_min;
+      uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + gx_min;
       memcpy(dst, src, glyph->width);
    }
+
+   /* Expand the dirty bounding box. */
+   if (gx_min < font->dirty_x_min) font->dirty_x_min = gx_min;
+   if (gy_min < font->dirty_y_min) font->dirty_y_min = gy_min;
+   if (gx_max > font->dirty_x_max) font->dirty_x_max = gx_max;
+   if (gy_max > font->dirty_y_max) font->dirty_y_max = gy_max;
 }
 
 static void vulkan_font_free(void *data, bool is_threaded)
@@ -2017,6 +2035,11 @@ static void *vulkan_font_init(void *data,
          font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, NULL,
          NULL, VULKAN_TEXTURE_DYNAMIC);
 
+   /* Initial upload is full atlas. */
+   font->dirty_x_min  = 0;
+   font->dirty_y_min  = 0;
+   font->dirty_x_max  = font->atlas->width;
+   font->dirty_y_max  = font->atlas->height;
    font->needs_update = true;
 
    return font;
@@ -2239,13 +2262,82 @@ static void vulkan_font_flush(vk_t *vk, vulkan_raster_t *font)
          vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
       }
 
-      /* Record the staging-to-dynamic copy into the main per-frame
-       * command buffer instead of a separate submit + vkQueueWaitIdle.
-       * The pipeline barriers inside vulkan_copy_staging_to_dynamic
-       * ensure the transfer completes before the fragment shader reads. */
-      vulkan_copy_staging_to_dynamic(vk, vk->cmd,
-            dynamic_tex, staging_tex);
+      /* Dirty-rect partial upload: only copy the bounding box of
+       * modified glyphs instead of the entire atlas texture.
+       * For the font atlas, staging is a VkBuffer and dynamic is
+       * a VkImage, so we must use vkCmdCopyBufferToImage with a
+       * targeted region.  If the dirty rect covers the full atlas
+       * (initial upload or many scattered glyphs), this degrades
+       * gracefully to a full copy. */
+      {
+         unsigned dx = font->dirty_x_min;
+         unsigned dy = font->dirty_y_min;
+         unsigned dw = font->dirty_x_max - dx;
+         unsigned dh = font->dirty_y_max - dy;
 
+         /* Clamp to atlas bounds. */
+         if (dx + dw > staging_tex->width)
+            dw = staging_tex->width - dx;
+         if (dy + dh > staging_tex->height)
+            dh = staging_tex->height - dy;
+
+         if (dw > 0 && dh > 0)
+         {
+            /* Use the same format (R8_UNORM, bpp=1) for offset math. */
+            unsigned bpp = 1;
+            VkBufferImageCopy region;
+
+            VULKAN_IMAGE_LAYOUT_TRANSITION(
+                  vk->cmd,
+                  dynamic_tex->image,
+                  VK_IMAGE_LAYOUT_UNDEFINED,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  0,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+            region.bufferOffset                    = (VkDeviceSize)dy * staging_tex->stride + dx * bpp;
+            region.bufferRowLength                 = (uint32_t)(staging_tex->stride / bpp); /* texels per row in buffer */
+            region.bufferImageHeight               = 0; /* tightly packed rows in the region */
+            region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.imageSubresource.mipLevel       = 0;
+            region.imageSubresource.baseArrayLayer = 0;
+            region.imageSubresource.layerCount     = 1;
+            region.imageOffset.x                   = (int32_t)dx;
+            region.imageOffset.y                   = (int32_t)dy;
+            region.imageOffset.z                   = 0;
+            region.imageExtent.width               = dw;
+            region.imageExtent.height              = dh;
+            region.imageExtent.depth               = 1;
+
+            vkCmdCopyBufferToImage(
+                  vk->cmd,
+                  staging_tex->buffer,
+                  dynamic_tex->image,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  1,
+                  &region);
+
+            VULKAN_IMAGE_LAYOUT_TRANSITION(
+                  vk->cmd,
+                  dynamic_tex->image,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_ACCESS_SHADER_READ_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+            dynamic_tex->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+         }
+      }
+
+      /* Reset dirty rect for next frame. */
+      font->dirty_x_min  = font->atlas->width;
+      font->dirty_y_min  = font->atlas->height;
+      font->dirty_x_max  = 0;
+      font->dirty_y_max  = 0;
       font->needs_update = false;
    }
 
@@ -5490,13 +5582,20 @@ static bool vulkan_frame(void *data, const void *frame,
       if (frame != chain->texture.mapped)
       {
          dst = (uint8_t*)chain->texture.mapped;
-         if (     (chain->texture.stride == pitch )
-               && pitch == frame_width * bpp)
-            memcpy(dst, src, frame_width * frame_height * bpp);
+         if (chain->texture.stride == pitch)
+            /* Stride matches pitch — single contiguous copy regardless
+             * of whether pitch == frame_width * bpp (there may be
+             * trailing padding per row, but the layout is identical). */
+            memcpy(dst, src, (size_t)chain->texture.stride * frame_height);
          else
+         {
+            /* Stride and pitch differ — copy each row.
+             * Use the tight pixel width to avoid copying garbage. */
+            unsigned row_bytes = frame_width * bpp;
             for (y = 0; y < frame_height; y++,
                   dst += chain->texture.stride, src += pitch)
-               memcpy(dst, src, frame_width * bpp);
+               memcpy(dst, src, row_bytes);
+         }
       }
 
       if ((chain->texture.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && chain->texture.memory != VK_NULL_HANDLE)
