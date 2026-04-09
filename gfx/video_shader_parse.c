@@ -119,13 +119,14 @@ static void fill_pathname_expanded_and_absolute(char *s, size_t len,
    pathname_conform_slashes_to_os(s);
 }
 
-static const char *find_token(const char *haystack, const char *token,
-      size_t token_len)
+static const char *find_token(const char *haystack, size_t haystack_len,
+      const char *token, size_t token_len)
 {
-   const char *p = haystack;
-   while ((p = strchr(p, '$')) != NULL)
+   const char *p   = haystack;
+   const char *end = haystack + haystack_len;
+   while (p < end && (p = (const char*)memchr(p, '$', end - p)) != NULL)
    {
-      if (memcmp(p, token, token_len) == 0)
+      if ((size_t)(end - p) >= token_len && memcmp(p, token, token_len) == 0)
          return p;
       p++;
    }
@@ -181,11 +182,12 @@ static void video_shader_replace_wildcards_impl(
    /* Step through the wildcards while we can still find the
     * delimiter in the source path
     */
-   for (i = 0; (i < SHADER_NUM_WILDCARDS) && (strchr(src, '$')); i++)
+   for (i = 0; (i < SHADER_NUM_WILDCARDS) && (memchr(src, '$', strlen(src))); i++)
    {
+      size_t src_len   = strlen(src);
       size_t token_len = wildcard_tokens[i].token_len;
-      const char *found = find_token(src, wildcard_tokens[i].token_name,
-         token_len);
+      const char *found = find_token(src, src_len,
+         wildcard_tokens[i].token_name, token_len);
       if (!found)
          continue;
 
