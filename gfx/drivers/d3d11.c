@@ -54,7 +54,6 @@
 #include "../font_driver.h"
 #include "../common/win32_common.h"
 #include "../video_shader_parse.h"
-#include "../drivers_shader/slang_process.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -1493,10 +1492,10 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
       return false;
 
    d3d11_free_overlays(d3d11);
-   d3d11->overlays.count    = num_images;
    d3d11->overlays.textures = (d3d11_texture_t*)calloc(
          num_images, sizeof(d3d11_texture_t));
 
+   d3d11->overlays.count    = num_images;
    desc.ByteWidth           = sizeof(d3d11_sprite_t) * num_images;
    desc.Usage               = D3D11_USAGE_DYNAMIC;
    desc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;

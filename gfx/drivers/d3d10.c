@@ -51,10 +51,12 @@
 #include "../common/d3d_common.h"
 #include "../common/win32_common.h"
 #include "../video_shader_parse.h"
-#include "../drivers_shader/slang_process.h"
 #include "../common/dxgi_common.h"
 #include <d3d10.h>
 #include "../common/d3dcompiler_common.h"
+#ifdef HAVE_SLANG
+#include "../drivers_shader/slang_process.h"
+#endif
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -1307,10 +1309,10 @@ static bool d3d10_overlay_load(void* data,
       return false;
 
    d3d10_free_overlays(d3d10);
-   d3d10->overlays.count    = num_images;
    d3d10->overlays.textures = (d3d10_texture_t*)calloc(
          num_images, sizeof(d3d10_texture_t));
 
+   d3d10->overlays.count    = num_images;
    desc.ByteWidth           = sizeof(d3d10_sprite_t) * num_images;
    desc.Usage               = D3D10_USAGE_DYNAMIC;
    desc.BindFlags           = D3D10_BIND_VERTEX_BUFFER;

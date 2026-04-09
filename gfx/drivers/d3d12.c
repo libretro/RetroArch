@@ -60,7 +60,6 @@
 #include "../../performance_counters.h"
 #include "../../menu/menu_driver.h"
 #include "../video_shader_parse.h"
-#include "../drivers_shader/slang_process.h"
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
 #endif
@@ -1780,11 +1779,10 @@ static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_
    D3D12_GFX_SYNC();
 
    d3d12_free_overlays(d3d12);
-   d3d12->overlays.count    = num_images;
    d3d12->overlays.textures = (d3d12_texture_t*)calloc(num_images, sizeof(d3d12_texture_t));
 
    d3d12->overlays.count                   = num_images;
-   d3d12->overlays.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * d3d12->overlays.count;
+   d3d12->overlays.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * num_images;
    d3d12->overlays.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
    d3d12->overlays.vbo_view.BufferLocation = d3d12_create_buffer(
          d3d12->device, d3d12->overlays.vbo_view.SizeInBytes, &d3d12->overlays.vbo);
