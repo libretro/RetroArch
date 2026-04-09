@@ -215,8 +215,12 @@ extern "C" {
       barriers[1].subresourceRange.baseArrayLayer = 0;
       barriers[1].subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
 
+      /* The source mip was produced by a color-attachment write, so
+       * COLOR_ATTACHMENT_OUTPUT is the precise stage to wait on.
+       * ALL_GRAPHICS would force an unnecessary flush of earlier
+       * pipeline stages on tile-based GPUs. */
       vkCmdPipelineBarrier(cmd,
-            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             0,
             0,
@@ -326,6 +330,10 @@ extern "C" {
    {
       VkImageCopy region;
 
+      /* The destination transitions from UNDEFINED (contents discarded),
+       * so there is no data dependency on prior fragment work.
+       * TOP_OF_PIPE_BIT with srcAccessMask 0 is the correct minimal
+       * barrier — same pattern used by vulkan_framebuffer_clear(). */
       VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
             cmd,
             image,
@@ -334,7 +342,7 @@ extern "C" {
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             0,
             VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_QUEUE_FAMILY_IGNORED,
             VK_QUEUE_FAMILY_IGNORED);
