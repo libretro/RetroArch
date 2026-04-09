@@ -55,22 +55,6 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-#define VK_BUFFER_CHAIN_DISCARD(chain) \
-{ \
-   chain->current = chain->head; \
-   chain->offset  = 0; \
-}
-
-#define VK_DESCRIPTOR_MANAGER_RESTART(manager) \
-{ \
-   manager->current = manager->head; \
-   manager->count = 0; \
-}
-
-#define VULKAN_TRANSFER_IMAGE_OWNERSHIP(cmd, img, layout, src_stages, dst_stages, src_queue_family, dst_queue_family) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, layout, layout, 0, 0, src_stages, dst_stages, src_queue_family, dst_queue_family)
-
-#define VK_MAP_PERSISTENT_TEXTURE(device, texture) vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped)
-
 /* Write 4 unique vertices per quad for use with indexed drawing.
  * Vertex layout:  0(TL)---2(TR)
  *                  |  / |
@@ -115,46 +99,6 @@
    pv[3].color.b  = b; \
    pv[3].color.a  = a; \
 }
-
-
-#define VULKAN_SYNC_TEXTURE_TO_GPU(device, tex_memory) \
-{ \
-   VkMappedMemoryRange range; \
-   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
-   range.pNext  = NULL; \
-   range.memory = tex_memory; \
-   range.offset = 0; \
-   range.size   = VK_WHOLE_SIZE; \
-   vkFlushMappedMemoryRanges(device, 1, &range); \
-}
-
-#define VULKAN_SYNC_TEXTURE_TO_CPU(device, tex_memory) \
-{ \
-   VkMappedMemoryRange range; \
-   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
-   range.pNext  = NULL; \
-   range.memory = tex_memory; \
-   range.offset = 0; \
-   range.size   = VK_WHOLE_SIZE; \
-   vkInvalidateMappedMemoryRanges(device, 1, &range); \
-}
-
-/* We don't have to sync against previous TRANSFER,
- * since we observed the completion by fences.
- *
- * If we have a single texture_optimal, we would need to sync against
- * previous transfers to avoid races.
- *
- * We would also need to optionally maintain extra textures due to
- * changes in resolution, so this seems like the sanest and
- * simplest solution. */
-#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, tex) \
-   if (((tex)->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex)->memory != VK_NULL_HANDLE) \
-      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex)->memory) \
-
-#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, tex) \
-   if (((tex).flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex).memory != VK_NULL_HANDLE) \
-      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex).memory) \
 
 
 #define VK_REMAP_TO_TEXFMT(fmt) ((fmt == VK_FORMAT_R5G6B5_UNORM_PACK16) ? VK_FORMAT_R8G8B8A8_UNORM : fmt)
@@ -1365,7 +1309,15 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
 
                if (     (tex.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
                      && (tex.memory != VK_NULL_HANDLE))
-                  VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, tex.memory);
+               {
+                  VkMappedMemoryRange range;
+                  range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+                  range.pNext  = NULL;
+                  range.memory = tex.memory;
+                  range.offset = 0;
+                  range.size   = VK_WHOLE_SIZE;
+                  vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
+               }
                vkUnmapMemory(device, tex.memory);
             }
             break;
@@ -2058,7 +2010,7 @@ static void *vulkan_font_init(void *data,
 
    {
       struct vk_texture *texture = &font->texture;
-      VK_MAP_PERSISTENT_TEXTURE(font->vk->context->device, texture);
+      vkMapMemory(font->vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
    }
 
    font->texture_optimal = vulkan_create_texture(font->vk, NULL,
@@ -2276,7 +2228,16 @@ static void vulkan_font_flush(vk_t *vk, vulkan_raster_t *font)
       struct vk_texture *dynamic_tex  = &font->texture_optimal;
       struct vk_texture *staging_tex  = &font->texture;
 
-      VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, font->texture);
+      if ((font->texture.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && font->texture.memory != VK_NULL_HANDLE)
+      {
+         VkMappedMemoryRange range;
+         range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+         range.pNext  = NULL;
+         range.memory = font->texture.memory;
+         range.offset = 0;
+         range.size   = VK_WHOLE_SIZE;
+         vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
+      }
 
       /* Record the staging-to-dynamic copy into the main per-frame
        * command buffer instead of a separate submit + vkQueueWaitIdle.
@@ -3339,7 +3300,7 @@ static void vulkan_init_textures(vk_t *vk)
 
          {
             struct vk_texture *texture = &vk->swapchain[i].texture;
-            VK_MAP_PERSISTENT_TEXTURE(vk->context->device, texture);
+            vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
          }
 
          if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
@@ -5438,9 +5399,14 @@ static bool vulkan_frame(void *data, const void *frame,
    vk->chain                                     = chain;
    vk->backbuffer                                = backbuffer;
 
-   VK_DESCRIPTOR_MANAGER_RESTART(manager);
-   VK_BUFFER_CHAIN_DISCARD(buff_chain_vbo);
-   VK_BUFFER_CHAIN_DISCARD(buff_chain_ubo);
+   manager->current = manager->head;
+   manager->count = 0;
+
+   buff_chain_vbo->current = buff_chain_vbo->head;
+   buff_chain_vbo->offset  = 0;
+
+   buff_chain_ubo->current = buff_chain_ubo->head;
+   buff_chain_ubo->offset  = 0;
 
    /* Start recording the command buffer. */
    vk->cmd                                       = chain->cmd;
@@ -5478,9 +5444,12 @@ static bool vulkan_frame(void *data, const void *frame,
        && (vk->hw.src_queue_family != vk->context->graphics_queue_index))
    {
       /* Acquire ownership of image from other queue family. */
-      VULKAN_TRANSFER_IMAGE_OWNERSHIP(vk->cmd,
+      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(vk->cmd,
             vk->hw.image->create_info.image,
+            VK_REMAINING_MIP_LEVELS,
             vk->hw.image->image_layout,
+            vk->hw.image->image_layout,
+            0, 0,
             /* Create a dependency chain from semaphore wait. */
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
@@ -5506,7 +5475,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
          {
             struct vk_texture *texture = &chain->texture;
-            VK_MAP_PERSISTENT_TEXTURE(vk->context->device, texture);
+            vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
          }
 
          if (chain->texture.type == VULKAN_TEXTURE_STAGING)
@@ -5530,7 +5499,16 @@ static bool vulkan_frame(void *data, const void *frame,
                memcpy(dst, src, frame_width * bpp);
       }
 
-      VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, chain->texture);
+      if ((chain->texture.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && chain->texture.memory != VK_NULL_HANDLE)
+      {
+         VkMappedMemoryRange range;
+         range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+         range.pNext  = NULL;
+         range.memory = chain->texture.memory;
+         range.offset = 0;
+         range.size   = VK_WHOLE_SIZE;
+         vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
+      }
 
       /* If we have an optimal texture, copy to that now. */
       if (chain->texture_optimal.memory != VK_NULL_HANDLE)
@@ -5718,7 +5696,16 @@ static bool vulkan_frame(void *data, const void *frame,
                {
                   struct vk_texture *dynamic = optimal;
                   struct vk_texture *staging = texture;
-                  VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, staging);
+                  if ((staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && staging->memory != VK_NULL_HANDLE)
+                  {
+                     VkMappedMemoryRange range;
+                     range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+                     range.pNext  = NULL;
+                     range.memory = staging->memory;
+                     range.offset = 0;
+                     range.size   = VK_WHOLE_SIZE;
+                     vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
+                  }
                   vulkan_copy_staging_to_dynamic(vk, vk->cmd,
                         dynamic, staging);
                   vk->menu.dirty[vk->menu.last_index] = false;
@@ -6052,9 +6039,12 @@ static bool vulkan_frame(void *data, const void *frame,
        && (vk->hw.src_queue_family != vk->context->graphics_queue_index))
    {
       /* Release ownership of image back to other queue family. */
-      VULKAN_TRANSFER_IMAGE_OWNERSHIP(vk->cmd,
+      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(vk->cmd,
             vk->hw.image->create_info.image,
+            VK_REMAINING_MIP_LEVELS,
             vk->hw.image->image_layout,
+            vk->hw.image->image_layout,
+            0, 0,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
             vk->context->graphics_queue_index, vk->hw.src_queue_family);
@@ -6380,7 +6370,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);
       {
          struct vk_texture *texture = &chain->texture;
-         VK_MAP_PERSISTENT_TEXTURE(vk->context->device, texture);
+         vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
       }
 
       if (chain->texture.type == VULKAN_TEXTURE_STAGING)
@@ -6531,7 +6521,16 @@ static void vulkan_set_texture_frame(void *data,
             VULKAN_TEXTURE_DYNAMIC);
    else
    {
-      VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, texture);
+      if ((texture->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && texture->memory != VK_NULL_HANDLE)
+      {
+         VkMappedMemoryRange range;
+         range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+         range.pNext  = NULL;
+         range.memory = texture->memory;
+         range.offset = 0;
+         range.size   = VK_WHOLE_SIZE;
+         vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
+      }
    }
 
    vkUnmapMemory(vk->context->device, texture->memory);
@@ -6801,7 +6800,15 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
          if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
                && (staging->memory != VK_NULL_HANDLE))
-            VULKAN_SYNC_TEXTURE_TO_CPU(vk->context->device, staging->memory);
+         {
+            VkMappedMemoryRange range;
+            range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+            range.pNext  = NULL;
+            range.memory = staging->memory;
+            range.offset = 0;
+            range.size   = VK_WHOLE_SIZE;
+            vkInvalidateMappedMemoryRanges(vk->context->device, 1, &range);
+         }
 
          ctx->in_stride  =  (int)staging->stride;
          ctx->out_stride = -(int)vk->vp.width * 3;
@@ -6839,12 +6846,20 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
       if (!staging->mapped)
       {
-         VK_MAP_PERSISTENT_TEXTURE(vk->context->device, staging);
+         vkMapMemory(vk->context->device, staging->memory, staging->offset, staging->size, 0, &staging->mapped);
       }
 
       if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
             && (staging->memory != VK_NULL_HANDLE))
-         VULKAN_SYNC_TEXTURE_TO_CPU(vk->context->device, staging->memory);
+      {
+         VkMappedMemoryRange range;
+         range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+         range.pNext  = NULL;
+         range.memory = staging->memory;
+         range.offset = 0;
+         range.size   = VK_WHOLE_SIZE;
+         vkInvalidateMappedMemoryRanges(vk->context->device, 1, &range);
+      }
 
       {
          int y;
