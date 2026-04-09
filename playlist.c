@@ -210,41 +210,46 @@ playlist_config_t *playlist_get_config(playlist_t *playlist)
 static void path_replace_base_path_and_convert_to_local_file_system(
       char *s,
       const char *in_path,
-      const char *in_oldrefpath, const char *in_refpath,
+      const char *in_oldrefpath, size_t in_oldrefpath_length,
+      const char *in_refpath,    size_t in_refpath_length,
       size_t len)
 {
-   size_t in_oldrefpath_length = strlen(in_oldrefpath);
-   /* If entry path is inside playlist base path,
-    * replace it with new base content directory */
-   if (string_starts_with_size(in_path, in_oldrefpath, in_oldrefpath_length))
+   if (  in_oldrefpath_length > 0
+      && memcmp(in_path, in_oldrefpath, in_oldrefpath_length) == 0)
    {
-      size_t in_refpath_length  = strlen(in_refpath);
-      size_t in_path_length     = strlen(in_path);
-      size_t suffix_length      = in_path_length - in_oldrefpath_length;
-      size_t required           = in_refpath_length + suffix_length + 1;
+      const char *suffix        = in_path + in_oldrefpath_length;
+      size_t      suffix_length = strlen(suffix);
+      size_t      required      = in_refpath_length + suffix_length + 1;
 
-      /* Bounds check: fall back to strlcpy if result doesn't fit */
       if (required > len)
       {
-         strlcpy(s, in_path, len);
+         size_t in_path_length = in_oldrefpath_length + suffix_length;
+         size_t copy_len       = in_path_length < (len - 1)
+                               ? in_path_length : (len - 1);
+         memcpy(s, in_path, copy_len);
+         s[copy_len] = '\0';
          return;
       }
 
+      /* Copy new base path prefix (already in local format) */
       memcpy(s, in_refpath, in_refpath_length);
-      memcpy(s + in_refpath_length,
-            in_path + in_oldrefpath_length,
-            suffix_length + 1);
+
+      /* Single fused pass: copy suffix while fixing
+       * path delimiters */
+      {
+         char  *dst = s + in_refpath_length;
+         size_t i;
 #ifdef _WIN32
-      /* If we are running under a Windows filesystem,
-       * '/' characters are not allowed anywhere.
-       * We replace with '\' and hope for the best... */
-      string_replace_all_chars(s,
-            POSIX_PATH_DELIMITER, WINDOWS_PATH_DELIMITER);
+         for (i = 0; i < suffix_length; i++)
+            dst[i] = (suffix[i] == POSIX_PATH_DELIMITER)
+                   ? WINDOWS_PATH_DELIMITER : suffix[i];
 #else
-      /* Under POSIX filesystem, we replace '\' characters with '/' */
-      string_replace_all_chars(s,
-            WINDOWS_PATH_DELIMITER, POSIX_PATH_DELIMITER);
+         for (i = 0; i < suffix_length; i++)
+            dst[i] = (suffix[i] == WINDOWS_PATH_DELIMITER)
+                   ? POSIX_PATH_DELIMITER : suffix[i];
 #endif
+         dst[suffix_length] = '\0';
+      }
    }
    else
       strlcpy(s, in_path, len);
@@ -2934,6 +2939,8 @@ playlist_t *playlist_init(const playlist_config_t *config)
       if (playlist->base_content_directory && *playlist->base_content_directory)
       {
          size_t i, j, _len;
+         size_t oldref_len = strlen(playlist->base_content_directory);
+         size_t newref_len = strlen(playlist->config.base_content_directory);
          char tmp_entry_path[PATH_MAX_LENGTH];
 
          for (i = 0, _len = RBUF_LEN(playlist->entries); i < _len; i++)
@@ -2947,8 +2954,8 @@ playlist_t *playlist_init(const playlist_config_t *config)
             tmp_entry_path[0] = '\0';
             path_replace_base_path_and_convert_to_local_file_system(
                   tmp_entry_path, entry->path,
-                  playlist->base_content_directory,
-                  playlist->config.base_content_directory,
+                  playlist->base_content_directory, oldref_len,
+                  playlist->config.base_content_directory, newref_len,
                   sizeof(tmp_entry_path));
 
             free(entry->path);
@@ -2975,8 +2982,8 @@ playlist_t *playlist_init(const playlist_config_t *config)
                   path_replace_base_path_and_convert_to_local_file_system(
                         tmp_entry_path,
                         subsystem_rom_path,
-                        playlist->base_content_directory,
-                        playlist->config.base_content_directory,
+                        playlist->base_content_directory, oldref_len,
+                        playlist->config.base_content_directory, newref_len,
                         sizeof(tmp_entry_path));
                   string_list_append(subsystem_roms_new_paths, tmp_entry_path, attributes);
                }
@@ -2993,8 +3000,8 @@ playlist_t *playlist_init(const playlist_config_t *config)
             path_replace_base_path_and_convert_to_local_file_system(
                   tmp_entry_path,
                   playlist->scan_record.content_dir,
-                  playlist->base_content_directory,
-                  playlist->config.base_content_directory,
+                  playlist->base_content_directory, oldref_len,
+                  playlist->config.base_content_directory, newref_len,
                   sizeof(tmp_entry_path));
 
             free(playlist->scan_record.content_dir);
@@ -3008,8 +3015,8 @@ playlist_t *playlist_init(const playlist_config_t *config)
             path_replace_base_path_and_convert_to_local_file_system(
                   tmp_entry_path,
                   playlist->scan_record.dat_file_path,
-                  playlist->base_content_directory,
-                  playlist->config.base_content_directory,
+                  playlist->base_content_directory, oldref_len,
+                  playlist->config.base_content_directory, newref_len,
                   sizeof(tmp_entry_path));
 
             free(playlist->scan_record.dat_file_path);
