@@ -796,7 +796,9 @@ void font_driver_render_msg(void *data, const char *msg,
    if (renderer && renderer->render_msg)
    {
 #ifdef HAVE_LANGEXTRA
-      unsigned char tmp_buffer[512];
+      /* It needs to be this big because of the Statistics text
+       * unfortunately */
+      unsigned char tmp_buffer[1536];
       char *new_msg = font_driver_reshape_msg(msg,
             tmp_buffer, sizeof(tmp_buffer));
 #else
