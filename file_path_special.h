@@ -126,6 +126,10 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_CORE_INFO_CACHE "core_info.cache"
 #define FILE_PATH_CORE_INFO_CACHE_REFRESH "core_info.refresh"
 
+/* sizes of zip plus decompression space required rounded up to nearest 50MB */
+#define ASSETS_ZIP_PLUS_DECOMPRESSION_SIZE 209715200 /* 200MB */
+#define DATABASE_RDB_ZIP_PLUS_DECOMPRESSION_SIZE 262144000 /* 250MB */
+
 #ifdef HAVE_LAKKA
  #ifdef HAVE_LAKKA_SERVER
   #define FILE_PATH_LAKKA_URL HAVE_LAKKA_SERVER
