@@ -668,13 +668,9 @@ static uint32_t netplay_impl_magic(void)
    size_t i;
    uint32_t res    = 0;
    const char *ver = PACKAGE_VERSION;
-   size_t _len     = strlen(ver);
-
-   for (i = 0; i < _len; i++)
+   for (i = 0; ver[i]; i++)
       res ^= ver[i] << (i & 0xf);
-
    res ^= NETPLAY_PROTOCOL_VERSION << (i & 0xf);
-
    return res;
 }
 
@@ -833,13 +829,13 @@ static void handshake_password(void *userdata, const char *line)
    _len       = snprintf(password, sizeof(password),
          "%08lX", (unsigned long)connection->salt);
    if (line && *line)
-      strlcpy(password       + _len,
-            line,
-            sizeof(password) - _len);
+      _len += strlcpy(password         + _len,
+                      line,
+                      sizeof(password) - _len);
 
    password_buf.cmd[0] = htonl(NETPLAY_CMD_PASSWORD);
    password_buf.cmd[1] = htonl(sizeof(password_buf.password));
-   sha256_hash(hash, (uint8_t *) password, strlen(password));
+   sha256_hash(hash, (uint8_t *) password, _len);
    memcpy(password_buf.password, hash, NETPLAY_PASS_HASH_LEN);
 
    /* We have no way to handle an error here, so we'll let the next function error out */
@@ -1162,8 +1158,9 @@ static void netplay_handshake_ready(netplay_t *netplay,
    {
       unsigned slot = (unsigned)(connection - netplay->connections);
 
-      _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
-         connection->nick);
+      _len = snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
+            connection->nick);
 
       RARCH_LOG("[Netplay] %s %u\n", msg_hash_to_str(MSG_CONNECTION_SLOT),
          slot);
@@ -1876,7 +1873,6 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
       char msg[512];
 
       memcpy(netplay->nick, new_nick, sizeof(netplay->nick));
-
       _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_CHANGED_NICK), new_nick);
       RARCH_LOG("[Netplay] %s\n", msg);
@@ -5089,7 +5085,8 @@ bool netplay_cmd_mode(netplay_t *netplay,
       cmd, payload, cmd_size);
 }
 
-static void netplay_relay_chat(netplay_t *netplay, const char *nick, const char *msg)
+static void netplay_relay_chat(netplay_t *netplay, const char *nick,
+   const char *msg)
 {
    size_t i;
    char data[NETPLAY_NICK_LEN + NETPLAY_CHAT_MAX_SIZE];

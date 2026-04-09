@@ -815,8 +815,6 @@ int font_driver_get_message_width(void *font_data,
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    const font_renderer_t *renderer = font ? font->renderer : NULL;
-   if (len == 0 && msg)
-      len = strlen(msg);
    if (renderer && renderer->get_message_width)
       return renderer->get_message_width(font->renderer_data, msg, len, scale);
    return -1;
