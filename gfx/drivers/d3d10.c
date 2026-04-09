@@ -933,168 +933,6 @@ static int d3d10_font_get_message_width(void* data,
    return delta_x * scale;
 }
 
-static void d3d10_font_render_line(
-      d3d10_video_t *d3d10,
-      d3d10_font_t*       font,
-      const struct font_glyph* glyph_q,
-      const char*         msg,
-      size_t              msg_len,
-      float               scale,
-      const unsigned int  color,
-      float               pos_x,
-      float               pos_y,
-      int pre_x,
-      unsigned            width,
-      unsigned            height,
-      unsigned            text_align)
-{
-   unsigned i, count;
-   void *mapped_vbo;
-   d3d10_sprite_t *v;
-   const char* msg_end      = msg + msg_len;
-   int x                    = pre_x;
-   int y                    = roundf((1.0 - pos_y) * height);
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                            = font->font_driver->get_glyph;
-   void *font_data          = font->font_data;
-
-   if (d3d10->sprites.offset + msg_len > (unsigned)d3d10->sprites.capacity)
-      d3d10->sprites.offset = 0;
-
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that d3d10_font_get_message_width would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum      = 0;
-      const char *scan     = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = get_glyph(font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
-   d3d10->sprites.vbo->lpVtbl->Map(d3d10->sprites.vbo,
-         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
-
-   v       = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph *glyph;
-      const char *msg_tmp = &msg[i];
-      unsigned   code     = utf8_walk(&msg_tmp);
-      unsigned   skip     = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      v->pos.x           = (x + (glyph->draw_offset_x * scale)) / (float)d3d10->viewport.Width;
-      v->pos.y           = (y + (glyph->draw_offset_y * scale)) / (float)d3d10->viewport.Height;
-      v->pos.w           = glyph->width * scale  / (float)d3d10->viewport.Width;
-      v->pos.h           = glyph->height * scale / (float)d3d10->viewport.Height;
-
-      v->coords.u        = glyph->atlas_offset_x / (float)font->texture.desc.Width;
-      v->coords.v        = glyph->atlas_offset_y / (float)font->texture.desc.Height;
-      v->coords.w        = glyph->width  / (float)font->texture.desc.Width;
-      v->coords.h        = glyph->height / (float)font->texture.desc.Height;
-
-      v->params.scaling  = 1;
-      v->params.rotation = 0;
-
-      v->colors[0]       = color;
-      v->colors[1]       = color;
-      v->colors[2]       = color;
-      v->colors[3]       = color;
-
-      v++;
-
-      x                 += glyph->advance_x * scale;
-      y                 += glyph->advance_y * scale;
-   }
-
-   count = v - ((d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset);
-   d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
-
-   if (!count)
-      return;
-
-   if (font->atlas->dirty)
-   {
-      if (font->texture.staging)
-         d3d10_update_texture(
-               d3d10->device,
-               font->atlas->width, font->atlas->height, font->atlas->width,
-               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
-      font->atlas->dirty = false;
-   }
-
-   d3d10_set_texture_and_sampler(d3d10->device, 0, &font->texture);
-   d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
-         d3d10->blend_enable,
-         NULL, D3D10_DEFAULT_SAMPLE_MASK);
-
-   d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader_font.ps);
-   d3d10->device->lpVtbl->Draw(d3d10->device, count, d3d10->sprites.offset);
-   d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader.ps);
-
-   d3d10->sprites.offset += count;
-}
-
-static void d3d10_font_render_message(
-      d3d10_video_t *d3d10,
-      d3d10_font_t*       font,
-      const struct font_glyph* glyph_q,
-      const char*         msg,
-      float               scale,
-      const unsigned int  color,
-      float               pos_x,
-      float               pos_y,
-      unsigned            width,
-      unsigned            height,
-      float               line_height,
-      unsigned            text_align)
-{
-   int lines = 0;
-   int x     = roundf(pos_x * width);
-
-   for (;;)
-   {
-      const char *end = msg;
-      while (*end && *end != '\n')
-         end++;
-      size_t msg_len = (size_t)(end - msg);
-      /* Draw the line */
-      if (msg_len <= (unsigned)d3d10->sprites.capacity)
-         d3d10_font_render_line(d3d10,
-               font, glyph_q,
-               msg, msg_len, scale, color, pos_x,
-               pos_y - (float)lines * line_height,
-               x,
-               width, height, text_align);
-      if (*end != '\n')
-         break;
-      msg = end + 1;
-      lines++;
-   }
-}
-
 static void d3d10_font_render_msg(
       void *userdata,
       void* data,
@@ -1107,7 +945,20 @@ static void d3d10_font_render_msg(
    enum text_alignment text_align;
    const struct font_glyph* glyph_q;
    unsigned color, r, g, b, alpha;
+   unsigned color_dark;
    float x, y, scale, drop_mod, drop_alpha;
+   bool has_drop;
+   float drop_pos_x, drop_pos_y;
+   int pre_x;
+   int drop_pre_x;
+   void *mapped_vbo;
+   d3d10_sprite_t *v;
+   d3d10_sprite_t *v_begin;
+   unsigned count;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
+   void *font_data;
+   float inv_viewport_w, inv_viewport_h;
+   float inv_tex_w, inv_tex_h;
    d3d10_font_t *font          = (d3d10_font_t*)data;
    d3d10_video_t *d3d10        = (d3d10_video_t*)userdata;
    unsigned width              = d3d10->vp.full_width;
@@ -1164,25 +1015,219 @@ static void d3d10_font_render_msg(
    glyph_q          = (font->font_driver)
       ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / height;
+   line_height       = line_metrics->height * scale / height;
 
-   if (drop_x || drop_y)
+   get_glyph         = font->font_driver->get_glyph;
+   font_data         = font->font_data;
+   inv_viewport_w    = 1.0f / (float)d3d10->viewport.Width;
+   inv_viewport_h    = 1.0f / (float)d3d10->viewport.Height;
+   inv_tex_w         = 1.0f / (float)font->texture.desc.Width;
+   inv_tex_h         = 1.0f / (float)font->texture.desc.Height;
+
+   has_drop          = drop_x || drop_y;
+   color_dark        = 0;
+   drop_pos_x        = 0.0f;
+   drop_pos_y        = 0.0f;
+   drop_pre_x        = 0;
+   pre_x             = roundf(x * width);
+
+   if (has_drop)
    {
-      unsigned r_dark          = r * drop_mod;
-      unsigned g_dark          = g * drop_mod;
-      unsigned b_dark          = b * drop_mod;
-      unsigned alpha_dark      = alpha * drop_alpha;
-      unsigned color_dark      = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
-
-      d3d10_font_render_message(d3d10,
-            font, glyph_q, msg, scale, color_dark,
-            x + scale * drop_x / width,
-            y + scale * drop_y / height,
-            width, height, line_height, text_align);
+      unsigned r_dark     = r * drop_mod;
+      unsigned g_dark     = g * drop_mod;
+      unsigned b_dark     = b * drop_mod;
+      unsigned alpha_dark = alpha * drop_alpha;
+      color_dark          = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
+      drop_pos_x          = x + scale * drop_x / width;
+      drop_pos_y          = y + scale * drop_y / height;
+      drop_pre_x          = roundf(drop_pos_x * width);
    }
 
-   d3d10_font_render_message(d3d10, font, glyph_q,
-         msg, scale, color, x, y, width, height, line_height, text_align);
+   /* Single VBO map for all geometry (drop shadow + main text) */
+   if (d3d10->sprites.offset + strlen(msg) * (has_drop ? 2 : 1)
+         > (unsigned)d3d10->sprites.capacity)
+      d3d10->sprites.offset = 0;
+
+   d3d10->sprites.vbo->lpVtbl->Map(d3d10->sprites.vbo,
+         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
+
+   v_begin  = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
+   v        = v_begin;
+
+   /* Unified line loop: emit drop shadow + main glyphs per line
+    * in a single pass with one VBO map/unmap. */
+   {
+      int lines       = 0;
+      const char *m   = msg;
+
+      for (;;)
+      {
+         unsigned i;
+         const char *end = m;
+         size_t msg_len;
+         while (*end && *end != '\n')
+            end++;
+         msg_len = (size_t)(end - m);
+
+         if (msg_len <= (unsigned)d3d10->sprites.capacity)
+         {
+            /* Drop shadow pass for this line */
+            if (has_drop)
+            {
+               int lx = drop_pre_x;
+               int ly = roundf((1.0 - (drop_pos_y - (float)lines * line_height)) * height);
+
+               if (text_align == TEXT_ALIGN_RIGHT
+                     || text_align == TEXT_ALIGN_CENTER)
+               {
+                  int width_accum    = 0;
+                  const char *scan   = m;
+                  const char *scan_e = end;
+                  while (scan < scan_e)
+                  {
+                     const struct font_glyph *glyph;
+                     uint32_t code    = utf8_walk(&scan);
+                     if (!(glyph = get_glyph(font_data, code)))
+                        if (!(glyph = glyph_q))
+                           continue;
+                     width_accum += glyph->advance_x;
+                  }
+                  if (text_align == TEXT_ALIGN_RIGHT)
+                     lx -= (int)(width_accum * scale);
+                  else
+                     lx -= (int)(width_accum * scale) / 2;
+               }
+
+               for (i = 0; i < msg_len; i++)
+               {
+                  const struct font_glyph *glyph;
+                  const char *msg_tmp = &m[i];
+                  unsigned   code     = utf8_walk(&msg_tmp);
+                  unsigned   skip     = msg_tmp - &m[i];
+
+                  if (skip > 1)
+                     i += skip - 1;
+
+                  if (!(glyph = get_glyph(font_data, code)))
+                     if (!(glyph = glyph_q))
+                        continue;
+
+                  v->pos.x           = (lx + (glyph->draw_offset_x * scale)) * inv_viewport_w;
+                  v->pos.y           = (ly + (glyph->draw_offset_y * scale)) * inv_viewport_h;
+                  v->pos.w           = glyph->width  * scale * inv_viewport_w;
+                  v->pos.h           = glyph->height * scale * inv_viewport_h;
+                  v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
+                  v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
+                  v->coords.w        = glyph->width  * inv_tex_w;
+                  v->coords.h        = glyph->height * inv_tex_h;
+                  v->params.scaling  = 1;
+                  v->params.rotation = 0;
+                  v->colors[0]       = color_dark;
+                  v->colors[1]       = color_dark;
+                  v->colors[2]       = color_dark;
+                  v->colors[3]       = color_dark;
+                  v++;
+
+                  lx                += glyph->advance_x * scale;
+                  ly                += glyph->advance_y * scale;
+               }
+            }
+
+            /* Main text pass for this line */
+            {
+               int lx = pre_x;
+               int ly = roundf((1.0 - (y - (float)lines * line_height)) * height);
+
+               if (text_align == TEXT_ALIGN_RIGHT
+                     || text_align == TEXT_ALIGN_CENTER)
+               {
+                  int width_accum    = 0;
+                  const char *scan   = m;
+                  const char *scan_e = end;
+                  while (scan < scan_e)
+                  {
+                     const struct font_glyph *glyph;
+                     uint32_t code    = utf8_walk(&scan);
+                     if (!(glyph = get_glyph(font_data, code)))
+                        if (!(glyph = glyph_q))
+                           continue;
+                     width_accum += glyph->advance_x;
+                  }
+                  if (text_align == TEXT_ALIGN_RIGHT)
+                     lx -= (int)(width_accum * scale);
+                  else
+                     lx -= (int)(width_accum * scale) / 2;
+               }
+
+               for (i = 0; i < msg_len; i++)
+               {
+                  const struct font_glyph *glyph;
+                  const char *msg_tmp = &m[i];
+                  unsigned   code     = utf8_walk(&msg_tmp);
+                  unsigned   skip     = msg_tmp - &m[i];
+
+                  if (skip > 1)
+                     i += skip - 1;
+
+                  if (!(glyph = get_glyph(font_data, code)))
+                     if (!(glyph = glyph_q))
+                        continue;
+
+                  v->pos.x           = (lx + (glyph->draw_offset_x * scale)) * inv_viewport_w;
+                  v->pos.y           = (ly + (glyph->draw_offset_y * scale)) * inv_viewport_h;
+                  v->pos.w           = glyph->width  * scale * inv_viewport_w;
+                  v->pos.h           = glyph->height * scale * inv_viewport_h;
+                  v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
+                  v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
+                  v->coords.w        = glyph->width  * inv_tex_w;
+                  v->coords.h        = glyph->height * inv_tex_h;
+                  v->params.scaling  = 1;
+                  v->params.rotation = 0;
+                  v->colors[0]       = color;
+                  v->colors[1]       = color;
+                  v->colors[2]       = color;
+                  v->colors[3]       = color;
+                  v++;
+
+                  lx                += glyph->advance_x * scale;
+                  ly                += glyph->advance_y * scale;
+               }
+            }
+         }
+
+         if (*end != '\n')
+            break;
+         m = end + 1;
+         lines++;
+      }
+   }
+
+   count = v - v_begin;
+   d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
+
+   if (!count)
+      return;
+
+   if (font->atlas->dirty)
+   {
+      if (font->texture.staging)
+         d3d10_update_texture(
+               d3d10->device,
+               font->atlas->width, font->atlas->height, font->atlas->width,
+               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+      font->atlas->dirty = false;
+   }
+
+   d3d10_set_texture_and_sampler(d3d10->device, 0, &font->texture);
+   d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
+         d3d10->blend_enable,
+         NULL, D3D10_DEFAULT_SAMPLE_MASK);
+
+   d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader_font.ps);
+   d3d10->device->lpVtbl->Draw(d3d10->device, count, d3d10->sprites.offset);
+   d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader.ps);
+
+   d3d10->sprites.offset += count;
 }
 
 static const struct font_glyph* d3d10_font_get_glyph(void *data,

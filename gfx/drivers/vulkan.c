@@ -2085,153 +2085,6 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void vulkan_font_render_line(vk_t *vk,
-      vulkan_raster_t *font,
-      const struct font_glyph* glyph_q,
-      const char *msg, size_t msg_len,
-      float scale,
-      const float color[4],
-      float pos_x,
-      float pos_y,
-      int pre_x,
-      float inv_tex_size_x,
-      float inv_tex_size_y,
-      float inv_win_width,
-      float inv_win_height,
-      unsigned text_align)
-{
-   struct vk_color vk_color;
-   const char* msg_end              = msg + msg_len;
-   int x                            = pre_x;
-   int y                            = roundf((1.0f - pos_y) * vk->vp.height);
-   int delta_x                      = 0;
-   int delta_y                      = 0;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                                    = font->font_driver->get_glyph;
-   void *font_data                  = font->font_data;
-
-   vk_color.r                       = color[0];
-   vk_color.g                       = color[1];
-   vk_color.b                       = color[2];
-   vk_color.a                       = color[3];
-
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that vulkan_font_get_message_width 
-    * would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum     = 0;
-      const char *scan    = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = get_glyph(font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
-   while (msg < msg_end)
-   {
-      const struct font_glyph *glyph;
-      int off_x, off_y, tex_x, tex_y, width, height;
-      unsigned code = utf8_walk(&msg);
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      if (font->atlas->dirty)
-      {
-         vulkan_font_update_glyph(font, glyph);
-         font->atlas->dirty = false;
-         font->needs_update = true;
-      }
-
-      off_x  = glyph->draw_offset_x;
-      off_y  = glyph->draw_offset_y;
-      tex_x  = glyph->atlas_offset_x;
-      tex_y  = glyph->atlas_offset_y;
-      width  = glyph->width;
-      height = glyph->height;
-
-      {
-         struct vk_vertex *pv          = font->pv + font->vertices;
-         float _x                      = (x + (off_x + delta_x) * scale)
-            * inv_win_width;
-         float _y                      = (y + (off_y + delta_y) * scale)
-            * inv_win_height;
-         float _width                  = width  * scale * inv_win_width;
-         float _height                 = height * scale * inv_win_height;
-         float _tex_x                  = tex_x * inv_tex_size_x;
-         float _tex_y                  = tex_y * inv_tex_size_y;
-         float _tex_width              = width * inv_tex_size_x;
-         float _tex_height             = height * inv_tex_size_y;
-         const struct vk_color *_color = &vk_color;
-
-         VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height,
-               _tex_x, _tex_y, _tex_width, _tex_height, _color);
-      }
-
-      font->vertices += 4;
-
-      delta_x        += glyph->advance_x;
-      delta_y        += glyph->advance_y;
-   }
-}
-
-static void vulkan_font_render_message(
-      vk_t *vk,
-      vulkan_raster_t *font,
-      const struct font_glyph* glyph_q,
-      const char *msg,
-      float scale,
-      const float color[4],
-      float pos_x,
-      float pos_y,
-      float line_height,
-      unsigned text_align)
-{
-   int x                                  = roundf(pos_x * vk->vp.width);
-   int lines                              = 0;
-   float inv_tex_size_x                   = 1.0f / font->texture.width;
-   float inv_tex_size_y                   = 1.0f / font->texture.height;
-   float inv_win_width                    = 1.0f / vk->vp.width;
-   float inv_win_height                   = 1.0f / vk->vp.height;
-
-   for (;;)
-   {
-      const char *delim = msg;
-      while (*delim != '\n' && *delim != '\0')
-         delim++;
-      /* Draw the line */
-      vulkan_font_render_line(vk, font, glyph_q, msg, (size_t)(delim - msg),
-            scale, color,
-            pos_x,
-            pos_y - (float)lines * line_height,
-            x,
-            inv_tex_size_x,
-            inv_tex_size_y,
-            inv_win_width,
-            inv_win_height,
-            text_align);
-      if (*delim == '\0')
-         break;
-      msg = delim + 1;
-      lines++;
-   }
-}
-
 static void vulkan_font_flush(vk_t *vk, vulkan_raster_t *font)
 {
    struct vk_draw_triangles call;
@@ -2343,6 +2196,72 @@ static void vulkan_font_flush(vk_t *vk, vulkan_raster_t *font)
    vulkan_draw_triangles(vk, &call);
 }
 
+/* Render glyphs for a single line directly into the VBO.
+ * Alignment width is computed inline to avoid a separate glyph walk.
+ * Parameters that were formerly passed per-line are now shared
+ * across all lines via the enclosing scope in vulkan_font_render_msg. */
+#define VULKAN_FONT_EMIT_LINE(vk, font, glyph_q, line_start, line_len, \
+      scale, vk_color_ptr, pos_y, base_x, \
+      inv_tex_size_x, inv_tex_size_y, inv_win_w, inv_win_h, \
+      text_align, get_glyph_fn, font_data_ptr) \
+do { \
+   const char *_msg     = (line_start); \
+   const char *_msg_end = _msg + (line_len); \
+   int _x               = (base_x); \
+   int _y               = roundf((1.0f - (pos_y)) * (vk)->vp.height); \
+   int _dx              = 0; \
+   int _dy              = 0; \
+   if ((text_align) == TEXT_ALIGN_RIGHT || (text_align) == TEXT_ALIGN_CENTER) \
+   { \
+      int _wacc         = 0; \
+      const char *_s    = _msg; \
+      while (_s < _msg_end) \
+      { \
+         const struct font_glyph *_g; \
+         uint32_t _c    = utf8_walk(&_s); \
+         if (!(_g = (get_glyph_fn)((font_data_ptr), _c))) \
+            if (!(_g = (glyph_q))) \
+               continue; \
+         _wacc += _g->advance_x; \
+      } \
+      if ((text_align) == TEXT_ALIGN_RIGHT) \
+         _x -= (int)(_wacc * (scale)); \
+      else \
+         _x -= (int)(_wacc * (scale)) / 2; \
+      _msg = (line_start); \
+   } \
+   while (_msg < _msg_end) \
+   { \
+      const struct font_glyph *_g; \
+      uint32_t _c = utf8_walk(&_msg); \
+      if (!(_g = (get_glyph_fn)((font_data_ptr), _c))) \
+         if (!(_g = (glyph_q))) \
+            continue; \
+      if ((font)->atlas->dirty) \
+      { \
+         vulkan_font_update_glyph((font), _g); \
+         (font)->atlas->dirty = false; \
+         (font)->needs_update = true; \
+      } \
+      { \
+         struct vk_vertex *_pv = (font)->pv + (font)->vertices; \
+         float _fx  = (_x + (_g->draw_offset_x + _dx) * (scale)) * (inv_win_w); \
+         float _fy  = (_y + (_g->draw_offset_y + _dy) * (scale)) * (inv_win_h); \
+         float _fw  = _g->width  * (scale) * (inv_win_w); \
+         float _fh  = _g->height * (scale) * (inv_win_h); \
+         float _ftx = _g->atlas_offset_x * (inv_tex_size_x); \
+         float _fty = _g->atlas_offset_y * (inv_tex_size_y); \
+         float _ftw = _g->width  * (inv_tex_size_x); \
+         float _fth = _g->height * (inv_tex_size_y); \
+         VULKAN_WRITE_QUAD_VBO(_pv, _fx, _fy, _fw, _fh, \
+               _ftx, _fty, _ftw, _fth, (vk_color_ptr)); \
+      } \
+      (font)->vertices += 4; \
+      _dx += _g->advance_x; \
+      _dy += _g->advance_y; \
+   } \
+} while (0)
+
 static void vulkan_font_render_msg(
       void *userdata,
       void *data,
@@ -2359,6 +2278,9 @@ static void vulkan_font_render_msg(
    enum text_alignment text_align;
    const struct font_glyph* glyph_q;
    float x, y, scale, drop_mod, drop_alpha;
+   float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
+   void *font_data;
    vulkan_raster_t *font            = (vulkan_raster_t*)data;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
@@ -2425,28 +2347,88 @@ static void vulkan_font_render_msg(
 
    font->vertices   = 0;
    font->pv         = (struct vk_vertex*)font->range.data;
-   glyph_q          = (font->font_driver) 
-	   ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
+   glyph_q          = (font->font_driver)
+      ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / vk->vp.height;
+   line_height      = line_metrics->height * scale / vk->vp.height;
 
+   /* Hoist reciprocals and function pointer once for all lines. */
+   inv_tex_size_x   = 1.0f / font->texture.width;
+   inv_tex_size_y   = 1.0f / font->texture.height;
+   inv_win_width    = 1.0f / vk->vp.width;
+   inv_win_height   = 1.0f / vk->vp.height;
+   get_glyph        = font->font_driver->get_glyph;
+   font_data        = font->font_data;
+
+   /* Drop-shadow pass. */
    if (drop_x || drop_y)
    {
-      float color_dark[4];
-      color_dark[0] = color[0] * drop_mod;
-      color_dark[1] = color[1] * drop_mod;
-      color_dark[2] = color[2] * drop_mod;
-      color_dark[3] = color[3] * drop_alpha;
+      struct vk_color vk_color_dark;
+      float pos_x_dark    = x + scale * drop_x * inv_win_width;
+      float pos_y_dark    = y + scale * drop_y * inv_win_height;
+      int pixel_x_dark    = roundf(pos_x_dark * vk->vp.width);
+      int line_num        = 0;
+      const char *m       = msg;
 
-      vulkan_font_render_message(vk, font, glyph_q, msg, scale, color_dark,
-            x + scale * drop_x / vk->vp.width, y +
-            scale * drop_y / vk->vp.height, line_height, text_align);
+      vk_color_dark.r     = color[0] * drop_mod;
+      vk_color_dark.g     = color[1] * drop_mod;
+      vk_color_dark.b     = color[2] * drop_mod;
+      vk_color_dark.a     = color[3] * drop_alpha;
+
+      for (;;)
+      {
+         const char *delim = m;
+         while (*delim != '\n' && *delim != '\0')
+            delim++;
+         VULKAN_FONT_EMIT_LINE(vk, font, glyph_q, m, (size_t)(delim - m),
+               scale, &vk_color_dark,
+               pos_y_dark - (float)line_num * line_height,
+               pixel_x_dark,
+               inv_tex_size_x, inv_tex_size_y,
+               inv_win_width, inv_win_height,
+               text_align, get_glyph, font_data);
+         if (*delim == '\0')
+            break;
+         m = delim + 1;
+         line_num++;
+      }
    }
 
-   vulkan_font_render_message(vk, font, glyph_q, msg, scale,
-         color, x, y, line_height, text_align);
+   /* Foreground pass. */
+   {
+      struct vk_color vk_color;
+      int pixel_x    = roundf(x * vk->vp.width);
+      int line_num   = 0;
+      const char *m  = msg;
+
+      vk_color.r     = color[0];
+      vk_color.g     = color[1];
+      vk_color.b     = color[2];
+      vk_color.a     = color[3];
+
+      for (;;)
+      {
+         const char *delim = m;
+         while (*delim != '\n' && *delim != '\0')
+            delim++;
+         VULKAN_FONT_EMIT_LINE(vk, font, glyph_q, m, (size_t)(delim - m),
+               scale, &vk_color,
+               y - (float)line_num * line_height,
+               pixel_x,
+               inv_tex_size_x, inv_tex_size_y,
+               inv_win_width, inv_win_height,
+               text_align, get_glyph, font_data);
+         if (*delim == '\0')
+            break;
+         m = delim + 1;
+         line_num++;
+      }
+   }
+
    vulkan_font_flush(vk, font);
 }
+
+#undef VULKAN_FONT_EMIT_LINE
 
 static const struct font_glyph *vulkan_font_get_glyph(
       void *data, uint32_t code)

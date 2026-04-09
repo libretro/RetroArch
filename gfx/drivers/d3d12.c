@@ -1393,190 +1393,6 @@ static int d3d12_font_get_message_width(void* data,
    return delta_x * scale;
 }
 
-static void d3d12_font_render_line(
-      d3d12_video_t *d3d12,
-      D3D12GraphicsCommandList cmd,
-      d3d12_font_t*       font,
-      const struct font_glyph* glyph_q,
-      const char*         msg,
-      size_t              msg_len,
-      float               scale,
-      const unsigned int  color,
-      float               pos_x,
-      float               pos_y,
-      int pre_x,
-      unsigned            width,
-      unsigned            height,
-      unsigned            text_align)
-{
-   size_t i;
-   D3D12_RANGE     range;
-   unsigned        count;
-   d3d12_sprite_t* v                = NULL;
-   d3d12_sprite_t* v_first          = NULL;
-   d3d12_sprite_t* vbo_start        = NULL;
-   int x                            = pre_x;
-   int y                            = roundf((1.0 - pos_y) * height);
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                                    = font->font_driver->get_glyph;
-   void *font_data                  = font->font_data;
-
-   if (d3d12->sprites.offset + msg_len > (unsigned)d3d12->sprites.capacity)
-      d3d12->sprites.offset = 0;
-
-   /* Stage atlas pixel data into the upload buffer before building
-    * vertices.  d3d12_update_texture is CPU-only (Map/memcpy/Unmap
-    * on the upload heap), so it is safe to call before the sprite
-    * VBO is mapped.  Doing this early ensures the atlas is in a
-    * consistent state — dimensions and glyph offsets won't shift
-    * underneath the vertex-building loop that follows. */
-   if (font->atlas->dirty)
-   {
-      if (font->texture.upload_buffer)
-         d3d12_update_texture(
-               font->atlas->width, font->atlas->height,
-               font->atlas->width, DXGI_FORMAT_A8_UNORM,
-               font->atlas->buffer, &font->texture);
-      font->atlas->dirty = false;
-   }
-
-   range.Begin = 0;
-   range.End   = 0;
-   D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
-
-   v           = vbo_start + d3d12->sprites.offset;
-   v_first     = v;
-   range.Begin = (uintptr_t)v - (uintptr_t)vbo_start;
-
-   /* Single-pass: build all vertices with x starting at pre_x.
-    * If alignment is right/center, retroactively shift pos.x
-    * for all emitted sprites after the loop — avoids a redundant
-    * measurement pass that would re-decode UTF-8 and re-lookup
-    * every glyph. */
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph* glyph;
-      const char *msg_tmp= &msg[i];
-      unsigned   code    = utf8_walk(&msg_tmp);
-      unsigned   skip    = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      v->pos.x           = (x + (glyph->draw_offset_x * scale)) / (float)d3d12->chain.viewport.Width;
-      v->pos.y           = (y + (glyph->draw_offset_y * scale)) / (float)d3d12->chain.viewport.Height;
-      v->pos.w           = glyph->width * scale  / (float)d3d12->chain.viewport.Width;
-      v->pos.h           = glyph->height * scale / (float)d3d12->chain.viewport.Height;
-
-      v->coords.u        = glyph->atlas_offset_x / (float)font->texture.desc.Width;
-      v->coords.v        = glyph->atlas_offset_y / (float)font->texture.desc.Height;
-      v->coords.w        = glyph->width          / (float)font->texture.desc.Width;
-      v->coords.h        = glyph->height         / (float)font->texture.desc.Height;
-
-      v->params.scaling  = 1;
-      v->params.rotation = 0;
-
-      v->colors[0]       = color;
-      v->colors[1]       = color;
-      v->colors[2]       = color;
-      v->colors[3]       = color;
-
-      v++;
-
-      x                 += glyph->advance_x * scale;
-      y                 += glyph->advance_y * scale;
-   }
-
-   /* Retroactive x-shift for right/center alignment.
-    * total_advance = x - pre_x gives the pixel width that would have
-    * been computed by the old measurement pass, but we already have it
-    * for free from the vertex-building loop above. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      float shift;
-      int total_advance     = x - pre_x;
-      d3d12_sprite_t* s;
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         shift = (float)total_advance / (float)d3d12->chain.viewport.Width;
-      else
-         shift = (float)(total_advance / 2) / (float)d3d12->chain.viewport.Width;
-
-      for (s = v_first; s < v; s++)
-         s->pos.x -= shift;
-   }
-
-   range.End = (uintptr_t)v - (uintptr_t)vbo_start;
-   D3D12Unmap(d3d12->sprites.vbo, 0, &range);
-
-   count = v - vbo_start - d3d12->sprites.offset;
-
-   if (!count)
-      return;
-
-   if (font->texture.dirty)
-      d3d12_upload_texture(cmd, &font->texture, d3d12);
-
-#ifdef HAVE_DXGI_HDR      
-   if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
-      cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe_font_hdr);
-   else
-#endif       
-      cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe_font);
-   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
-         font->texture.gpu_descriptor[0]);
-   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
-         font->texture.sampler);
-   cmd->lpVtbl->DrawInstanced(cmd, count, 1, d3d12->sprites.offset, 0);
-
-   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
-
-   d3d12->sprites.offset += count;
-}
-
-static void d3d12_font_render_message(
-      d3d12_video_t *d3d12,
-      d3d12_font_t*       font,
-      const struct font_glyph* glyph_q,
-      const char*         msg,
-      float               scale,
-      const unsigned int  color,
-      float               pos_x,
-      float               pos_y,
-      unsigned            width,
-      unsigned            height,
-      float               line_height,
-      unsigned            text_align)
-{
-   D3D12GraphicsCommandList cmd           = d3d12->queue.cmd;
-   int lines                              = 0;
-   int x                                  = roundf(pos_x * width);
-
-   for (;;)
-   {
-      const char *p;
-      size_t msg_len;
-      for (p = msg; *p && *p != '\n'; p++)
-         ;
-      msg_len = (size_t)(p - msg);
-      /* Draw the line */
-      if (msg_len <= (size_t)d3d12->sprites.capacity)
-         d3d12_font_render_line(d3d12, cmd,
-               font, glyph_q, msg, msg_len, scale, color, pos_x,
-               pos_y - (float)lines * line_height,
-               x,
-               width, height, text_align);
-      if (!*p)
-         break;
-      msg += msg_len + 1;
-      lines++;
-   }
-}
-
 static void d3d12_font_render_msg(
       void *userdata,
       void* data,
@@ -1588,17 +1404,32 @@ static void d3d12_font_render_msg(
    float                     x, y, scale, drop_mod, drop_alpha;
    int                       drop_x, drop_y;
    enum text_alignment       text_align;
-   const struct font_glyph* glyph_q;
+   const struct font_glyph  *glyph_q;
    unsigned                  color, r, g, b, alpha;
    d3d12_video_t           *d3d12   = (d3d12_video_t*)userdata;
    d3d12_font_t*             font   = (d3d12_font_t*)data;
-   unsigned                  width  = d3d12->vp.full_width;
-   unsigned                  height = d3d12->vp.full_height;
+   unsigned                  width;
+   unsigned                  height;
+   D3D12GraphicsCommandList  cmd;
+   D3D12_RANGE               range;
+   d3d12_sprite_t           *vbo_start = NULL;
+   d3d12_sprite_t           *v         = NULL;
+   d3d12_sprite_t           *v_batch_start;
+   unsigned                  total_count;
+   size_t                    total_len;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
+   void                     *font_data;
+   float                     inv_vp_w, inv_vp_h;
+   float                     inv_tex_w, inv_tex_h;
 
    if (!font || !msg || !*msg)
       return;
    if (!d3d12 || (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)))
       return;
+
+   width  = d3d12->vp.full_width;
+   height = d3d12->vp.full_height;
+   cmd    = d3d12->queue.cmd;
 
    if (params)
    {
@@ -1642,29 +1473,261 @@ static void d3d12_font_render_msg(
       drop_alpha                = 1.0f;
    }
 
-   glyph_q          = (font->font_driver) 
-	   ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
+   glyph_q          = (font->font_driver)
+      ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
 
-   if (drop_x || drop_y)
-   {
-      unsigned r_dark           = r * drop_mod;
-      unsigned g_dark           = g * drop_mod;
-      unsigned b_dark           = b * drop_mod;
-      unsigned alpha_dark       = alpha * drop_alpha;
-      unsigned color_dark       = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
+   get_glyph  = font->font_driver->get_glyph;
+   font_data  = font->font_data;
 
-      d3d12_font_render_message(d3d12,
-            font, glyph_q, msg, scale, color_dark,
-            x + scale * drop_x / width,
-            y + scale * drop_y / height,
-            width, height, line_height, text_align);
+   /* Pre-compute reciprocals to replace per-glyph divisions
+    * with multiplications in the inner loop. */
+   inv_vp_w   = 1.0f / (float)d3d12->chain.viewport.Width;
+   inv_vp_h   = 1.0f / (float)d3d12->chain.viewport.Height;
+   inv_tex_w  = 1.0f / (float)font->texture.desc.Width;
+   inv_tex_h  = 1.0f / (float)font->texture.desc.Height;
+
+   /* Stage atlas pixel data into the upload buffer once before
+    * building any vertices.  d3d12_update_texture is CPU-only
+    * (Map/memcpy/Unmap on the upload heap), so it is safe to call
+    * before the sprite VBO is mapped. */
+   if (font->atlas->dirty)
+   {
+      if (font->texture.upload_buffer)
+         d3d12_update_texture(
+               font->atlas->width, font->atlas->height,
+               font->atlas->width, DXGI_FORMAT_A8_UNORM,
+               font->atlas->buffer, &font->texture);
+      font->atlas->dirty = false;
    }
 
-   d3d12_font_render_message(d3d12, font, glyph_q,
-         msg, scale, color, x, y,
-         width, height, line_height, text_align);
+   /* Estimate total glyph count: strlen(msg) covers the foreground
+    * pass; double it if a drop shadow is active.  Each character
+    * produces at most one sprite. */
+   total_len = strlen(msg);
+   if (drop_x || drop_y)
+      total_len *= 2;
+
+   if (d3d12->sprites.offset + total_len > (unsigned)d3d12->sprites.capacity)
+      d3d12->sprites.offset = 0;
+
+   /* Single Map/Unmap for ALL lines (foreground + drop shadow). */
+   range.Begin = 0;
+   range.End   = 0;
+   D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
+
+   v              = vbo_start + d3d12->sprites.offset;
+   v_batch_start  = v;
+   range.Begin    = (uintptr_t)v - (uintptr_t)vbo_start;
+
+   /* --- Drop shadow pass --- */
+   if (drop_x || drop_y)
+   {
+      unsigned       r_dark     = r * drop_mod;
+      unsigned       g_dark     = g * drop_mod;
+      unsigned       b_dark     = b * drop_mod;
+      unsigned       alpha_dark = alpha * drop_alpha;
+      unsigned       color_dark = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
+      float          drop_pos_x = x + scale * drop_x / width;
+      float          drop_pos_y = y + scale * drop_y / height;
+      int            drop_xi    = roundf(drop_pos_x * width);
+      const char    *line_start = msg;
+      int            line_idx   = 0;
+
+      while (*line_start)
+      {
+         const char        *p;
+         size_t             line_len;
+         size_t             i;
+         int                lx, ly;
+         d3d12_sprite_t    *line_v_first;
+
+         for (p = line_start; *p && *p != '\n'; p++)
+            ;
+         line_len = (size_t)(p - line_start);
+
+         if (line_len > (size_t)d3d12->sprites.capacity)
+            goto drop_next_line;
+
+         lx          = drop_xi;
+         ly          = roundf((1.0f - (drop_pos_y - (float)line_idx * line_height)) * height);
+         line_v_first = v;
+
+         for (i = 0; i < line_len; i++)
+         {
+            const struct font_glyph *glyph;
+            const char *msg_tmp = &line_start[i];
+            unsigned    code    = utf8_walk(&msg_tmp);
+            unsigned    skip    = msg_tmp - &line_start[i];
+
+            if (skip > 1)
+               i += skip - 1;
+
+            if (!(glyph = get_glyph(font_data, code)))
+               if (!(glyph = glyph_q))
+                  continue;
+
+            v->pos.x           = (lx + (glyph->draw_offset_x * scale)) * inv_vp_w;
+            v->pos.y           = (ly + (glyph->draw_offset_y * scale)) * inv_vp_h;
+            v->pos.w           = glyph->width  * scale * inv_vp_w;
+            v->pos.h           = glyph->height * scale * inv_vp_h;
+
+            v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
+            v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
+            v->coords.w        = glyph->width          * inv_tex_w;
+            v->coords.h        = glyph->height         * inv_tex_h;
+
+            v->params.scaling  = 1;
+            v->params.rotation = 0;
+
+            v->colors[0]       = color_dark;
+            v->colors[1]       = color_dark;
+            v->colors[2]       = color_dark;
+            v->colors[3]       = color_dark;
+
+            v++;
+
+            lx                += glyph->advance_x * scale;
+            ly                += glyph->advance_y * scale;
+         }
+
+         if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
+         {
+            int             total_advance = lx - drop_xi;
+            float           shift;
+            d3d12_sprite_t *s;
+
+            if (text_align == TEXT_ALIGN_RIGHT)
+               shift = (float)total_advance * inv_vp_w;
+            else
+               shift = (float)(total_advance / 2) * inv_vp_w;
+
+            for (s = line_v_first; s < v; s++)
+               s->pos.x -= shift;
+         }
+
+drop_next_line:
+         if (!*p)
+            break;
+         line_start = p + 1;
+         line_idx++;
+      }
+   }
+
+   /* --- Foreground pass --- */
+   {
+      const char     *line_start = msg;
+      int             line_idx   = 0;
+      int             xi         = roundf(x * width);
+
+      while (*line_start)
+      {
+         const char        *p;
+         size_t             line_len;
+         size_t             i;
+         int                lx, ly;
+         d3d12_sprite_t    *line_v_first;
+
+         for (p = line_start; *p && *p != '\n'; p++)
+            ;
+         line_len = (size_t)(p - line_start);
+
+         if (line_len > (size_t)d3d12->sprites.capacity)
+            goto fg_next_line;
+
+         lx          = xi;
+         ly          = roundf((1.0f - (y - (float)line_idx * line_height)) * height);
+         line_v_first = v;
+
+         for (i = 0; i < line_len; i++)
+         {
+            const struct font_glyph *glyph;
+            const char *msg_tmp = &line_start[i];
+            unsigned    code    = utf8_walk(&msg_tmp);
+            unsigned    skip    = msg_tmp - &line_start[i];
+
+            if (skip > 1)
+               i += skip - 1;
+
+            if (!(glyph = get_glyph(font_data, code)))
+               if (!(glyph = glyph_q))
+                  continue;
+
+            v->pos.x           = (lx + (glyph->draw_offset_x * scale)) * inv_vp_w;
+            v->pos.y           = (ly + (glyph->draw_offset_y * scale)) * inv_vp_h;
+            v->pos.w           = glyph->width  * scale * inv_vp_w;
+            v->pos.h           = glyph->height * scale * inv_vp_h;
+
+            v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
+            v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
+            v->coords.w        = glyph->width          * inv_tex_w;
+            v->coords.h        = glyph->height         * inv_tex_h;
+
+            v->params.scaling  = 1;
+            v->params.rotation = 0;
+
+            v->colors[0]       = color;
+            v->colors[1]       = color;
+            v->colors[2]       = color;
+            v->colors[3]       = color;
+
+            v++;
+
+            lx                += glyph->advance_x * scale;
+            ly                += glyph->advance_y * scale;
+         }
+
+         if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
+         {
+            int             total_advance = lx - xi;
+            float           shift;
+            d3d12_sprite_t *s;
+
+            if (text_align == TEXT_ALIGN_RIGHT)
+               shift = (float)total_advance * inv_vp_w;
+            else
+               shift = (float)(total_advance / 2) * inv_vp_w;
+
+            for (s = line_v_first; s < v; s++)
+               s->pos.x -= shift;
+         }
+
+fg_next_line:
+         if (!*p)
+            break;
+         line_start = p + 1;
+         line_idx++;
+      }
+   }
+
+   range.End = (uintptr_t)v - (uintptr_t)vbo_start;
+   D3D12Unmap(d3d12->sprites.vbo, 0, &range);
+
+   total_count = v - v_batch_start;
+
+   if (!total_count)
+      return;
+
+   if (font->texture.dirty)
+      d3d12_upload_texture(cmd, &font->texture, d3d12);
+
+#ifdef HAVE_DXGI_HDR
+   if (   (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+       || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+      cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe_font_hdr);
+   else
+#endif
+      cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe_font);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+         font->texture.gpu_descriptor[0]);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+         font->texture.sampler);
+   cmd->lpVtbl->DrawInstanced(cmd, total_count, 1, d3d12->sprites.offset, 0);
+
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+
+   d3d12->sprites.offset += total_count;
 }
 
 static const struct font_glyph* d3d12_font_get_glyph(

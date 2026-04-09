@@ -1066,194 +1066,6 @@ static int d3d11_font_get_message_width(void* data, const char* msg, size_t msg_
    return delta_x * scale;
 }
 
-static void d3d11_font_render_line(
-      d3d11_video_t* d3d11,
-      d3d11_font_t*       font,
-      const struct font_glyph* glyph_q,
-      const char*         msg,
-      size_t              msg_len,
-      float               scale,
-      const unsigned int  color,
-      float               pos_x,
-      float               pos_y,
-      int                 pre_x,
-      unsigned            width,
-      unsigned            height,
-      unsigned            text_align)
-{
-   unsigned count;
-   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
-   HRESULT hr;
-   const char* msg_end              = msg + msg_len;
-   d3d11_sprite_t *v                = NULL;
-   int x                            = pre_x;
-   int y                            = roundf((1.0f - pos_y) * height);
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                                    = font->font_driver->get_glyph;
-   void *font_data                  = font->font_data;
-
-   /* Precompute reciprocals -- replaces 8 per-glyph divisions with
-    * multiplications (~3-5x faster per op on most hardware). */
-   const float inv_vp_w             = 1.0f / (float)d3d11->viewport.Width;
-   const float inv_vp_h             = 1.0f / (float)d3d11->viewport.Height;
-   const float inv_tex_w            = 1.0f / (float)font->texture.desc.Width;
-   const float inv_tex_h            = 1.0f / (float)font->texture.desc.Height;
-
-   /* msg_len is byte length, which is >= the actual glyph count for
-    * multi-byte UTF-8 sequences.  This makes the capacity check
-    * conservatively safe. */
-   if (d3d11->sprites.offset + msg_len > (unsigned)d3d11->sprites.capacity)
-      d3d11->sprites.offset = 0;
-
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x -- avoids the redundant glyph lookups
-    * and atlas dirty checks that d3d11_font_get_message_width would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum      = 0;
-      const char *scan     = msg;
-      while (scan < msg_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = get_glyph(font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
-   hr = d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->sprites.vbo,
-         0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
-
-   if (FAILED(hr))
-      return;
-
-   v       = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
-
-   /* Walk the string by pointer using utf8_walk -- cleaner and faster than
-    * the old byte-index loop with manual skip adjustment. */
-   {
-      const char *scan     = msg;
-      d3d11_sprite_t *v_start = v;
-
-      while (scan < msg_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-
-         if (!(glyph = get_glyph(font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-
-         v->pos.x           = (x + (glyph->draw_offset_x * scale)) * inv_vp_w;
-         v->pos.y           = (y + (glyph->draw_offset_y * scale)) * inv_vp_h;
-         v->pos.w           = glyph->width  * scale * inv_vp_w;
-         v->pos.h           = glyph->height * scale * inv_vp_h;
-
-         v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
-         v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
-         v->coords.w        = glyph->width           * inv_tex_w;
-         v->coords.h        = glyph->height          * inv_tex_h;
-
-         v->params.scaling  = 1;
-         v->params.rotation = 0;
-
-         v->colors[0]       = color;
-         v->colors[1]       = color;
-         v->colors[2]       = color;
-         v->colors[3]       = color;
-
-         v++;
-
-         x                 += glyph->advance_x * scale;
-         y                 += glyph->advance_y * scale;
-      }
-
-      count = (unsigned)(v - v_start);
-   }
-
-   d3d11->context->lpVtbl->Unmap(
-         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
-
-   if (!count)
-      return;
-
-   if (font->atlas->dirty)
-   {
-      if (font->texture.staging)
-         d3d11_update_texture(
-               d3d11->context,
-               font->atlas->width, font->atlas->height, font->atlas->width,
-               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
-      font->atlas->dirty = false;
-   }
-
-   {
-      d3d11_texture_t *texture = (d3d11_texture_t*)&font->texture;
-      d3d11->context->lpVtbl->PSSetShaderResources(
-            d3d11->context, 0, 1, &texture->view);
-      d3d11->context->lpVtbl->PSSetSamplers(
-            d3d11->context, 0, 1,
-            (D3D11SamplerState*)&texture->sampler);
-   }
-   d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable,
-         NULL, D3D11_DEFAULT_SAMPLE_MASK);
-
-   d3d11->context->lpVtbl->PSSetShader(
-         d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
-   d3d11->context->lpVtbl->Draw(
-         d3d11->context, count, d3d11->sprites.offset);
-   d3d11->context->lpVtbl->PSSetShader(
-         d3d11->context, d3d11->sprites.shader.ps, NULL, 0);
-
-   d3d11->sprites.offset += count;
-}
-
-static void d3d11_font_render_message(
-      d3d11_video_t *d3d11,
-      d3d11_font_t*       font,
-      const struct font_glyph* glyph_q,
-      const char*         msg,
-      float               scale,
-      const unsigned int  color,
-      float               pos_x,
-      float               pos_y,
-      unsigned            width,
-      unsigned            height,
-      float               line_height,
-      unsigned            text_align)
-{
-   int lines = 0;
-   int x     = roundf(pos_x * width);
-
-   for (;;)
-   {
-      const char* delim = msg;
-      size_t msg_len;
-      while (*delim && *delim != '\n')
-         delim++;
-      msg_len = (size_t)(delim - msg);
-      /* Draw the line */
-      if (msg_len <= (unsigned)d3d11->sprites.capacity)
-         d3d11_font_render_line(d3d11,
-               font, glyph_q, msg, msg_len, scale, color, pos_x,
-               pos_y - (float)lines * line_height,
-               x,
-               width, height, text_align);
-      if (!*delim)
-         break;
-      msg = delim + 1;
-      lines++;
-   }
-}
-
 static void d3d11_font_render_msg(
       void *userdata,
       void* data,
@@ -1265,12 +1077,21 @@ static void d3d11_font_render_msg(
    struct font_line_metrics *line_metrics = NULL;
    enum text_alignment text_align;
    const struct font_glyph* glyph_q;
-   unsigned color, r, g, b, alpha;
+   unsigned color, color_dark, r, g, b, alpha;
    float x, y, scale, drop_mod, drop_alpha;
-   d3d11_font_t *font         = (d3d11_font_t*)data;
-   d3d11_video_t *d3d11       = (d3d11_video_t*)userdata;
-   unsigned width             = d3d11->vp.full_width;
-   unsigned height            = d3d11->vp.full_height;
+   bool have_drop;
+   unsigned total_count;
+   unsigned start_offset;
+   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+   HRESULT hr;
+   d3d11_sprite_t *v                = NULL;
+   d3d11_font_t *font               = (d3d11_font_t*)data;
+   d3d11_video_t *d3d11             = (d3d11_video_t*)userdata;
+   unsigned width                   = d3d11->vp.full_width;
+   unsigned height                  = d3d11->vp.full_height;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t) = NULL;
+   void *font_data                  = NULL;
+   float inv_vp_w, inv_vp_h, inv_tex_w, inv_tex_h;
 
    if (!font || !msg || !*msg)
       return;
@@ -1320,29 +1141,207 @@ static void d3d11_font_render_msg(
       drop_alpha              = 1.0f;
    }
 
-   glyph_q     = (font->font_driver) 
-	   ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
-   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   get_glyph                  = font->font_driver->get_glyph;
+   font_data                  = font->font_data;
+
+   glyph_q     = font->font_driver
+      ? get_glyph(font_data, '?') : NULL;
+   font->font_driver->get_line_metrics(font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
 
-   if (drop_x || drop_y)
+   have_drop   = (drop_x || drop_y);
+   color_dark  = 0;
+   if (have_drop)
    {
-      unsigned r_dark         = r * drop_mod;
-      unsigned g_dark         = g * drop_mod;
-      unsigned b_dark         = b * drop_mod;
-      unsigned alpha_dark     = alpha * drop_alpha;
-      unsigned color_dark     = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
-
-      if (d3d11->flags & D3D11_ST_FLAG_SPRITES_ENABLE)
-         d3d11_font_render_message(d3d11,
-               font, glyph_q, msg, scale, color_dark,
-               x + scale * drop_x / width,
-               y + scale * drop_y / height,
-               width, height, line_height, text_align);
+      unsigned r_dark    = r * drop_mod;
+      unsigned g_dark    = g * drop_mod;
+      unsigned b_dark    = b * drop_mod;
+      unsigned alpha_drk = alpha * drop_alpha;
+      color_dark         = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_drk);
    }
 
-   d3d11_font_render_message(d3d11, font, glyph_q, msg, scale,
-         color, x, y, width, height, line_height, text_align);
+   /* Precompute reciprocals once for all lines -- replaces 8 per-glyph
+    * divisions with multiplications (~3-5x faster per op). */
+   inv_vp_w    = 1.0f / (float)d3d11->viewport.Width;
+   inv_vp_h    = 1.0f / (float)d3d11->viewport.Height;
+   inv_tex_w   = 1.0f / (float)font->texture.desc.Width;
+   inv_tex_h   = 1.0f / (float)font->texture.desc.Height;
+
+   /* Count total bytes in the message to do a single capacity check
+    * and a single Map for all lines (shadow + foreground).  msg_len
+    * is an upper bound on glyph count (multi-byte UTF-8 sequences
+    * produce fewer glyphs than bytes). */
+   {
+      size_t total_bytes  = strlen(msg);
+      /* Shadow pass doubles the glyph count. */
+      size_t need         = have_drop ? total_bytes * 2 : total_bytes;
+
+      if (d3d11->sprites.offset + need > (unsigned)d3d11->sprites.capacity)
+         d3d11->sprites.offset = 0;
+   }
+
+   /* Single Map for the entire message (all lines, shadow + foreground). */
+   hr = d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->sprites.vbo,
+         0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+
+   if (FAILED(hr))
+      return;
+
+   v             = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
+   start_offset  = d3d11->sprites.offset;
+
+   /* ------ Emit glyphs for each pass (shadow, then foreground) ------ */
+   {
+      int pass;
+      int passes = have_drop ? 2 : 1;
+
+      for (pass = 0; pass < passes; pass++)
+      {
+         const char *line_start = msg;
+         int lines              = 0;
+         float pass_x, pass_y;
+         unsigned pass_color;
+
+         if (pass == 0 && have_drop)
+         {
+            pass_x     = x + scale * drop_x / width;
+            pass_y     = y + scale * drop_y / height;
+            pass_color = color_dark;
+         }
+         else
+         {
+            pass_x     = x;
+            pass_y     = y;
+            pass_color = color;
+         }
+
+         for (;;)
+         {
+            const char *delim   = line_start;
+            const char *line_end;
+            size_t line_len;
+            int lx, ly;
+
+            while (*delim && *delim != '\n')
+               delim++;
+            line_len = (size_t)(delim - line_start);
+            line_end = line_start + line_len;
+
+            if (line_len > 0
+                  && line_len <= (unsigned)d3d11->sprites.capacity)
+            {
+               float cur_pos_y = pass_y - (float)lines * line_height;
+               lx              = roundf(pass_x * width);
+               ly              = roundf((1.0f - cur_pos_y) * height);
+
+               /* Right/center alignment -- lightweight advance_x accumulation. */
+               if (text_align == TEXT_ALIGN_RIGHT
+                     || text_align == TEXT_ALIGN_CENTER)
+               {
+                  int width_accum  = 0;
+                  const char *scan = line_start;
+                  while (scan < line_end)
+                  {
+                     const struct font_glyph *glyph;
+                     uint32_t code  = utf8_walk(&scan);
+                     if (!(glyph = get_glyph(font_data, code)))
+                        if (!(glyph = glyph_q))
+                           continue;
+                     width_accum += glyph->advance_x;
+                  }
+                  if (text_align == TEXT_ALIGN_RIGHT)
+                     lx -= (int)(width_accum * scale);
+                  else
+                     lx -= (int)(width_accum * scale) / 2;
+               }
+
+               /* Emit glyph quads for this line. */
+               {
+                  const char *scan = line_start;
+                  while (scan < line_end)
+                  {
+                     const struct font_glyph *glyph;
+                     uint32_t code  = utf8_walk(&scan);
+
+                     if (!(glyph = get_glyph(font_data, code)))
+                        if (!(glyph = glyph_q))
+                           continue;
+
+                     v->pos.x           = (lx + (glyph->draw_offset_x * scale)) * inv_vp_w;
+                     v->pos.y           = (ly + (glyph->draw_offset_y * scale)) * inv_vp_h;
+                     v->pos.w           = glyph->width  * scale * inv_vp_w;
+                     v->pos.h           = glyph->height * scale * inv_vp_h;
+
+                     v->coords.u        = glyph->atlas_offset_x * inv_tex_w;
+                     v->coords.v        = glyph->atlas_offset_y * inv_tex_h;
+                     v->coords.w        = glyph->width           * inv_tex_w;
+                     v->coords.h        = glyph->height          * inv_tex_h;
+
+                     v->params.scaling  = 1;
+                     v->params.rotation = 0;
+
+                     v->colors[0]       = pass_color;
+                     v->colors[1]       = pass_color;
+                     v->colors[2]       = pass_color;
+                     v->colors[3]       = pass_color;
+
+                     v++;
+
+                     lx                += glyph->advance_x * scale;
+                     ly                += glyph->advance_y * scale;
+                  }
+               }
+            }
+
+            if (!*delim)
+               break;
+            line_start = delim + 1;
+            lines++;
+         }
+      }
+   }
+
+   total_count = (unsigned)(v
+         - ((d3d11_sprite_t*)mapped_vbo.pData + start_offset));
+
+   /* Single Unmap for the entire message. */
+   d3d11->context->lpVtbl->Unmap(
+         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
+
+   if (!total_count)
+      return;
+
+   if (font->atlas->dirty)
+   {
+      if (font->texture.staging)
+         d3d11_update_texture(
+               d3d11->context,
+               font->atlas->width, font->atlas->height, font->atlas->width,
+               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+      font->atlas->dirty = false;
+   }
+
+   {
+      d3d11_texture_t *texture = (d3d11_texture_t*)&font->texture;
+      d3d11->context->lpVtbl->PSSetShaderResources(
+            d3d11->context, 0, 1, &texture->view);
+      d3d11->context->lpVtbl->PSSetSamplers(
+            d3d11->context, 0, 1,
+            (D3D11SamplerState*)&texture->sampler);
+   }
+   d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable,
+         NULL, D3D11_DEFAULT_SAMPLE_MASK);
+
+   /* Single draw call + single shader swap for all lines combined. */
+   d3d11->context->lpVtbl->PSSetShader(
+         d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
+   d3d11->context->lpVtbl->Draw(
+         d3d11->context, total_count, start_offset);
+   d3d11->context->lpVtbl->PSSetShader(
+         d3d11->context, d3d11->sprites.shader.ps, NULL, 0);
+
+   d3d11->sprites.offset = start_offset + total_count;
 }
 
 static const struct font_glyph* d3d11_font_get_glyph(void *data, uint32_t code)
