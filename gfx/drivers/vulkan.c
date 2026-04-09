@@ -6947,6 +6947,7 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
 
 static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
+   VkFormat format;
    struct vk_texture *staging       = NULL;
    vk_t *vk                         = (vk_t*)data;
 
@@ -6969,14 +6970,11 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    }
 
    staging = &vk->readback.staging[vk->context->current_frame_index];
-
-   VkFormat format = vk->context->swapchain_format;
+   format  = vk->context->swapchain_format;
 #ifdef VULKAN_HDR_SWAPCHAIN
+   /* HDR readback is implemented through format conversion on the GPU */
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
-   {
-      /* Hdr readback is implemented through format conversion on the GPU */
       format = VK_FORMAT_B8G8R8A8_UNORM;
-   }
 #endif /* VULKAN_HDR_SWAPCHAIN */
    if (vk->flags & VK_FLAG_READBACK_STREAMED)
    {
