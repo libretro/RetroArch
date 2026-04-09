@@ -1123,7 +1123,7 @@ static void xmb_render_messagebox_internal(
    start = wrapped_message;
    end   = wrapped_message + wrapped_len;
 
-   while (start <= end && line_count < 512)
+   while (start < end && line_count < 512)
    {
       int width;
       nl = (char *)memchr(start, '\n', end - start);
@@ -4588,7 +4588,7 @@ static void xmb_animation_line_ticker_smooth_generic(uint64_t idx,
    else
    {
       /* Scroll animation is active */
-      *num_display_lines = max_display_lines - 1;
+      *num_display_lines = (max_display_lines > 1) ? max_display_lines - 1 : 1;
       *fade_active       = fade_enabled;
 
       if (scroll_up)
@@ -4644,7 +4644,7 @@ static void xmb_animation_line_ticker_smooth_loop(uint64_t idx,
    }
    else
    {
-      *num_display_lines = max_display_lines - 1;
+      *num_display_lines = (max_display_lines > 1) ? max_display_lines - 1 : 1;
       *fade_active       = fade_enabled;
    }
 
@@ -4852,11 +4852,21 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
    {
       size_t i;
       size_t dst_offset = 0;
+      bool is_loop      = (line_ticker->type_enum == TICKER_TYPE_LOOP);
 
       for (i = 0; i < num_display_lines; i++)
       {
-         size_t line_idx = (line_offset + i) % num_lines;
-         size_t copy_len = line_lengths[line_idx];
+         size_t line_idx = line_offset + i;
+         size_t copy_len;
+
+         /* Only wrap around for loop ticker mode;
+          * for bounce/generic mode, clamp to valid range */
+         if (is_loop)
+            line_idx %= num_lines;
+         else if (line_idx >= num_lines)
+            break;
+
+         copy_len = line_lengths[line_idx];
 
          if (dst_offset + copy_len + 2 > line_ticker->dst_str_len)
             break;
@@ -4878,8 +4888,22 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
    /* Extract top/bottom fade strings, if required */
    if (fade_active)
    {
-      size_t top_fade_line_index    = top_fade_line_offset    % (num_lines + 1);
-      size_t bottom_fade_line_index = bottom_fade_line_offset % (num_lines + 1);
+      size_t top_fade_line_index        = top_fade_line_offset;
+      size_t bottom_fade_line_index     = bottom_fade_line_offset;
+
+      if (line_ticker->type_enum == TICKER_TYPE_LOOP)
+      {
+         /* For the top fade, use (num_lines + 1) so that the
+          * sentinel value 'num_lines' (set when line_offset == 0)
+          * correctly maps to >= num_lines and suppresses the
+          * fade string during the loop gap */
+         top_fade_line_index    %= (num_lines + 1);
+         /* For the bottom fade, use num_lines so that the index
+          * wraps to the correct next line at the loop boundary
+          * instead of duplicating a line already in the main
+          * display */
+         bottom_fade_line_index %= num_lines;
+      }
 
       if (top_fade_line_index < num_lines)
       {
