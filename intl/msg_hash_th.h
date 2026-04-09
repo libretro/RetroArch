@@ -137,7 +137,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "รายการเล่น"
+   "เพลย์ลิสต์"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
@@ -149,7 +149,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "สร้างและอัปเดตรายการเล่นโดยการสแกนเกม"
+   "สร้างและอัปเดตเพลย์ลิสต์โดยการสแกนเกม"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -967,10 +967,6 @@ MSG_HASH(
    "เปลี่ยนการตั้งค่าตัวควบคุม คีย์บอร์ด และเมาส์"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   "ความหน่วง"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
    "เปลี่ยนการตั้งค่าความหน่วงของวิดีโอ เสียง และการควบคุม"
    )
@@ -1244,7 +1240,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   "เปลี่ยนการตั้งค่าส่วนติดต่อผู้ใช้"
+   "เปลี่ยนการตั้งค่า User Interface"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
@@ -1288,7 +1284,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   "รายการเล่น"
+   "เพลย์ลิสต์"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
@@ -2005,6 +2001,10 @@ MSG_HASH(
    "การชดเชยหน้าจอแนวนอน"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "บังคับออฟเซ็ตวิดีโอในแนวนอน โดยจะมีผลย้อนหลังทั้งหมด"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    "การชดเชยหน้าจอแนวตั้ง"
    )
@@ -2051,6 +2051,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "เฉพาะในโหมดเต็มหน้าจอแบบ Exclusive เท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   "เฉพาะในโหมดหน้าต่างเต็มจอเท่านั้น"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
@@ -2131,6 +2135,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    "ขนาดสัดส่วนหน้าต่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "ตั้งค่าขนาดหน้าต่างตามจำนวนเท่า ของขนาดช่องมองภาพ Core ที่กำหนด"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -2277,15 +2285,179 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "กำหนดอัตราส่วนภาพเอง (ตำแหน่ง X)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "ระยะออฟเซ็ตช่องมองภาพสำหรับกำหนดตำแหน่งแกน X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   "อัตราส่วนภาพที่กำหนดเอง (ตำแหน่งแกน Y)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "ระยะออฟเซ็ตช่องมองภาพ สำหรับกำหนดตำแหน่งแกน Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "จุดยึดตำแหน่งช่องมองภาพบนแกน X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "จุดยึดตำแหน่งช่องมองภาพบนแกน X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "จุดยึดตำแหน่งช่องมองภาพบนแกน Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "จุดยึดตำแหน่งช่องมองภาพบนแกน Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "ตำแหน่งแนวนอนของเนื้อหา เมื่อช่องมองภาพกว้างกว่าความกว้างของเนื้อหา โดย 0.0 คือชิดซ้ายสุด, 0.5 คือกึ่งกลาง และ 1.0 คือชิดขวาสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "ตำแหน่งแนวตั้งของเนื้อหา เมื่อช่องมองภาพสูงกว่าความสูงของเนื้อหา โดย 0.0 คือด้านบนสุด, 0.5 คือกึ่งกลาง และ 1.0 คือด้านล่างสุด"
+   )
 #if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "จุดยึดตำแหน่งช่องมองภาพบนแกน X (แนวตั้ง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "จุดยึดตำแหน่งช่องมองภาพบนแกน X (แนวตั้ง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "จุดยึดตำแหน่งช่องมองภาพบนแกน Y (แนวตั้ง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "จุดยึดตำแหน่งช่องมองภาพบนแกน Y (แนวตั้ง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "ตำแหน่งแนวนอนของเนื้อหา เมื่อช่องมองภาพกว้างกว่าความกว้างของเนื้อหา (แนวตั้ง) โดย 0.0 คือชิดซ้ายสุด, 0.5 คือกึ่งกลาง และ 1.0 คือชิดขวาสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "ตำแหน่งแนวตั้งของเนื้อหา เมื่อช่องมองภาพสูงกว่าความสูงของเนื้อหา (แนวตั้ง) โดย 0.0 คือด้านบนสุด, 0.5 คือกึ่งกลาง และ 1.0 คือด้านล่างสุด"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "อัตราส่วนภาพที่กำหนดเอง (ความกว้าง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "ความกว้างของช่องมองภาพที่กำหนดเอง ซึ่งจะถูกใช้เมื่อตั้งค่าอัตราส่วนภาพเป็น 'อัตราส่วนภาพที่กำหนดเอง'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "อัตราส่วนภาพที่กำหนดเอง (ความสูง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "ความสูงของช่องมองภาพที่กำหนดเอง ซึ่งจะถูกใช้เมื่อตั้งค่าอัตราส่วนภาพเป็น 'อัตราส่วนภาพที่กำหนดเอง'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "ตัดขอบส่วนเกิน (ต้องรีสตาร์ท)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   "ตัดส่วนขอบของภาพออกเล็กน้อย ซึ่งโดยปกติผู้พัฒนาจะเว้นว่างไว้หรือบางครั้งอาจมีพิกเซลขยะ ปรากฏอยู่"
+   )
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "กำหนดโหมดการแสดงผลแบบ HDR หากหน้าจอรองรับ หมายเหตุ: การเลือกใช้ scRGB อาจทำให้ฟิลเตอร์ CRT shader ดูซอฟต์ลง เนื่องจากตัวจัดการหน้าจอของระบบปฏิบัติการจะแปลงค่าเป็น HDR10 หลังจากที่ใช้ฟิลเตอร์[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "ความสว่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "ความสว่างของเมนูในหน่วย cd/m2 (nits) เมื่อใช้งานหน้าจอแบบ HDR จะปรากฏให้เห็นเฉพาะเมื่อเปิดใช้งาน HDR ในส่วนของ การตั้งค่า > วิดีโอ > HDR เท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "ความสว่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "กำหนดระดับความสว่าง HDR ในหน่วย nits โดยใช้ร่วมกับการตั้งค่าความสว่างทางกายภาพของหน้าจอ สำหรับจุดเริ่มต้นแนะนำให้ตั้งค่านี้ไว้ที่ 80 และปรับความสว่างของหน้าจอไปที่ระดับสูงสุด หรื[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "เร่งสี"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "ใช้ช่วงสีทั้งหมดของหน้าจอเพื่อสร้างภาพที่สว่างและมีความอิ่มตัวของสีมากขึ้น หากต้องการสีสันที่ซื่อตรงต่อการออกแบบดั้งเดิมของเกม ให้ตั้งค่านี้เป็น แม่นยำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "แม่นยำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "ขยายเต็มจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "กว้าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
+   "ใหญ่พิเศษ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "แสกนไลน์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "เปิดใช้งาน HDR scanlines ซึ่งเป็นเหตุผลหลักในการใช้งาน HDR บน RetroArch เนื่องจากมวลรวมของเส้นสแกนไลน์ที่แม่นยำจะทำให้หน้าจอส่วนใหญ่ดับลง แต่ระบบ HDR จะช่วยชดเชยความสว่างที่สูญเสียไปในส่วนนั้[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "การจัดวางพิกเซลย่อย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "เลือกรูปแบบการจัดวางพิกเซลย่อยของหน้าจอคุณ ซึ่งจะมีผลต่อการแสดงผลของสแกนไลน์เท่านั้น หากคุณไม่ทราบว่าหน้าจอของคุณใช้รูปแบบใด สามารถตรวจสอบข้อมูล 'subpixel layout' ของรุ่นที่คุณใช้ได[...]"
+   )
 
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "ซิงค์แนวตั้ง (VSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   "ซิงค์การส่งสัญญาณภาพจากการ์ดจอ ให้ตรงกับอัตราการรีเฟรชของหน้าจอ (แนะนำ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   "ช่วงเวลาสลับ VSync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "ใช้ช่วงเวลาสลับ VSync แบบกำหนดเอง ซึ่งจะลดอัตราการรีเฟรชของหน้าจอลงตาม x ที่ระบุ หากตั้งค่าเป็น 'อัตโนมัติ' ระบบจะเลือกตัวคูณตามเฟรมเรตที่ Core รายงาน ซึ่งช่วยให้จังหวะการแสดงผลเฟรม [...]"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    "อัตโนมัติ"
@@ -2646,6 +2818,10 @@ MSG_HASH(
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   "ลบออก"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -2995,9 +3171,65 @@ MSG_HASH(
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+   "แสดงตัวเลือก 'เชดเดอร์'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   "แสดงตัวเลือก 'เพิ่มในรายการโปรด'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   "แสดงตัวเลือก 'เพิ่มในรายการโปรด'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "แสดงตัวเลือก 'เพิ่มลงในเพลย์ลิสต์'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "แสดงตัวเลือก 'เพิ่มลงในเพลย์ลิสต์'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   "แสดงตัวเลือก 'กำหนด Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   "แสดงตัวเลือก 'กำหนด Core' เมื่อไม่ได้รันเนื้อหาอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   "แสดงตัวเลือก 'ล้างการกำหนด Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   "แสดงตัวเลือก 'ล้างการกำหนด Core' เมื่อไม่ได้รันเนื้อหาอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   "แสดงตัวเลือก 'ดาวน์โหลดรูปตัวอย่าง'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   "แสดงตัวเลือก 'ดาวน์โหลดรูปตัวอย่าง' เมื่อไม่ได้รันเนื้อหาอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+   "แสดงตัวเลือก 'ข้อมูล'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   "แสดงตัวเลือก 'ข้อมูล'"
+   )
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+   "แสดงตัวเลือก 'ไดรเวอร์'"
+   )
 
 
 /* Settings > User Interface > Appearance */
@@ -3228,6 +3460,42 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
    "ประวัติ"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+   "อนุญาตให้เปลี่ยนชื่อรายการได้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+   "อนุญาตให้เปลี่ยนชื่อรายการในเพลย์ลิสต์ได้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   "เมื่อค้นหาไฟล์บีบอัดในเพลย์ลิสต์ ให้จับคู่เฉพาะ ชื่อไฟล์บีบอัด แทนการใช้ [ชื่อไฟล์บีบอัด]+[ชื่อไฟล์ภายใน] เปิดใช้งานตัวเลือกนี้เพื่อป้องกันไม่ให้เกิดรายการประวัติการใช้งานที[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+   "สแกนโดยไม่จับคู่กับ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+   "อนุญาตให้สแกนเนื้อหาและเพิ่มลงในเพลย์ลิสต์ได้ แม้ว่าจะยังไม่มีการติดตั้ง Core ที่รองรับเนื้อหานั้นก็ตาม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "ตรวจสอบ CRC เมื่อพบรายการซ้ำขณะสแกน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "บางครั้งไฟล์ ISO อาจจะมีเลข Serial ที่ซ้ำกัน โดยเฉพาะกับเกม PSP หรือ PSN ซึ่งการพึ่งพาเพียงเลขซีเรียลเพียงอย่างเดียวอาจทำให้ระบบสแกนจัดกลุ่มเกมไปไว้ในระบบที่ผิดได้ หากเปิดใช้งานตัวเลื[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   "จัดการ เพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   "จัดระเบียบ เพลย์ลิสต์"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -3265,7 +3533,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "รายการเล่น"
+   "เพลย์ลิสต์"
    )
 
 #ifdef HAVE_MIST
@@ -3288,6 +3556,10 @@ MSG_HASH(
 
 /* Import Content */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "สแกนเนื้อหา"
+   )
 
 /* Import Content > Scan File */
 
@@ -3304,8 +3576,44 @@ MSG_HASH(
 /* Playlist > Playlist Item */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN,
+   "เล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN,
+   "เริ่มเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+   "เปลี่ยนชื่อ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RENAME_ENTRY,
+   "เปลี่ยนชื่อรายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   "ลบออก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+   "เพิ่มในรายการโปรด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
+   "กำหนด Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
+   "ล้าง Core ที่เลือกไว้"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "ข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "ดาวน์โหลดรูปตัวอย่าง"
    )
 
 /* Playlist Item > Set Core Association */
@@ -3317,9 +3625,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
    "ชื่อ"
    )
+MSG_HASH( /* FIXME Unused? */
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
+   "เล่นไปแล้ว"
+   )
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+   "เพิ่มในรายการโปรด"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "ความสำเร็จ"
@@ -3380,9 +3696,29 @@ MSG_HASH(
 
 /* Miscellaneous UI Items */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+   "ไม่มีรายการโปรดที่ใช้งานได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+   "ไม่มีรูปภาพที่ใช้งานได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE,
+   "ไม่มี Core"
+   )
 
 /* Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
+   "แยกตาม Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
+   "ใช้สูตรถัดไปหาก ค่า > หน่วยความจำ"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 
@@ -3407,6 +3743,14 @@ MSG_HASH(
 /* Ozone: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+   "ตัดชื่อรายการเพลย์ลิสต์ให้สั้นลง (ต้องรีสตาร์ท)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
+   "เอาชื่อผู้ผลิตออกจากเพลย์ลิสต์ เช่น จาก 'Sony - PlayStation' จะกลายเป็น 'PlayStation'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "รูปตัวอย่างรอง"
    )
@@ -3421,7 +3765,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "กำหนดโหมดการแสดงรูปตัวอย่างใน รายการเล่น เมื่อใช้งานหน้าจอในแนวตั้ง"
+   "กำหนดโหมดการแสดงรูปตัวอย่างในเพลย์ลิสต์ เมื่อใช้งานหน้าจอในแนวตั้ง"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
@@ -3429,7 +3773,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "แสดงรูปตัวอย่างลำดับรอง เมื่อใช้โหมดมุมมองรายการเล่นแบบ 'รายการ' โดยการตั้งค่านี้จะมีผลก็ต่อเมื่อหน้าจอมีความกว้างเพียงพอที่จะแสดงรูปตัวอย่างสองรูปพร้อมกันเท่านั้น"
+   "แสดงรูปตัวอย่างลำดับรอง เมื่อใช้โหมดมุมมองเพลย์ลิสต์แบบ 'รายการ' โดยการตั้งค่านี้จะมีผลก็ต่อเมื่อหน้าจอมีความกว้างเพียงพอที่จะแสดงรูปตัวอย่างสองรูปพร้อมกันเท่านั้น"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -3445,7 +3789,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
-   "ประเภทหลักของรูปตัวอย่างสำหรับแต่ละรายการในรายการเล่น โดยปกติจะใช้เป็นไอคอนของเนื้อหา"
+   "ประเภทหลักของรูปตัวอย่างสำหรับแต่ละรายการในเพลย์ลิสต์ โดยปกติจะใช้เป็นไอคอนของเนื้อหา"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
@@ -3453,7 +3797,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
-   "ประเภทรูปตัวอย่างเสริม สำหรับแต่ละรายการในรายการเล่น โดยการใช้งานจะขึ้นอยู่กับโหมดมุมมองรูปตัวอย่างที่เลือกใช้ในขณะนั้น"
+   "ประเภทรูปตัวอย่างเสริม สำหรับแต่ละรายการในเพลย์ลิสต์ โดยการใช้งานจะขึ้นอยู่กับโหมดมุมมองรูปตัวอย่างที่เลือกใช้ในขณะนั้น"
    )
 
 /* MaterialUI: Settings Options */
@@ -3461,6 +3805,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
    "น้ำเงิน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
+   "เทาฟ้า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
+   "น้ำเงินเข้ม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
+   "เขียว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD,
+   "เขียวมรกต"
    )
 
 /* Qt (Desktop Menu) */
@@ -3483,7 +3843,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   "รายการเล่น"
+   "เพลย์ลิสต์"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
@@ -3492,6 +3852,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "ข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
+   "เปลี่ยนชื่อเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
+   "ไม่สามารถเปลี่ยนชื่อไฟล์ได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   "ลบออก"
    )
 
 /* Unsorted */
@@ -3523,6 +3895,10 @@ MSG_HASH(
 /* Notifications */
 
 
+MSG_HASH(
+   MSG_INPUT_RENAME_ENTRY,
+   "เปลี่ยนชื่อหัวข้อ"
+   )
 
 /* Lakka */
 

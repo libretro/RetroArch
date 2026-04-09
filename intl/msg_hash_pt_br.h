@@ -4485,6 +4485,18 @@ MSG_HASH(
    "Salva alterações no arquivo de configuração ao sair. Útil para mudanças feitas no menu. Sobrescreve o arquivo de configuração, inclusões (#include) e comentários não são preservados."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Salvar Configuração Mínima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Salvar apenas as configurações que diferem dos padrões."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Quando ativado, salva apenas os valores de configuração alterados em relação aos padrões. Isso resulta em um arquivo de configuração menor e mais fácil de gerenciar."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "Salvar arquivos de remapeamento ao sair"
    )
