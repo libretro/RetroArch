@@ -308,17 +308,12 @@ bool gfx_widget_start_load_content_animation(void)
     * state, perform a reset before parsing variables */
    gfx_widget_load_content_animation_reset();
 
-   /* Sanity check - we require both content and
-    * core path
-    * > Note that we would prefer to enable the load
-    *   content animation for 'content-less' cores as
-    *   well, but allowing no content would mean we
-    *   trigger a false positive every time the dummy
-    *   core is started (this higher level behaviour is
-    *   deeply ingrained in RetroArch, and too difficult
-    *   to change...) */
-   if (   (!content_path || !*content_path)
-       || (!core_path || !*core_path)
+   /* Sanity check - we require a valid core path,
+    * and must reject the dummy/builtin core.
+    * Content-less cores are allowed: the absence of
+    * content alone is not a reason to skip the animation,
+    * only the builtin dummy core must be filtered out. */
+   if (   (!core_path || !*core_path)
        || memcmp(core_path, "builtin", 7) == 0)
       return false;
 
@@ -330,8 +325,9 @@ bool gfx_widget_start_load_content_animation(void)
 
    /* Parse content path
     * > If we have a cached playlist, attempt to find
-    *   the entry label for the current content */
-   if (playlist)
+    *   the entry label for the current content
+    * > Skip playlist lookup for content-less cores */
+   if (playlist && content_path && *content_path)
    {
       const struct playlist_entry *entry = NULL;
 #ifdef HAVE_MENU
@@ -432,11 +428,21 @@ bool gfx_widget_start_load_content_animation(void)
    }
 
    /* If we haven't yet set the content name,
-    * use content file name as a fallback */
+    * use content file name as a fallback, or
+    * the core display name for content-less cores */
    if (!has_content)
-      state->content_name_len = fill_pathname(
-            state->content_name, path_basename(content_path),
-            "", sizeof(state->content_name));
+   {
+      if (content_path && *content_path)
+         state->content_name_len = fill_pathname(
+               state->content_name, path_basename(content_path),
+               "", sizeof(state->content_name));
+      else if (core_info->display_name && *core_info->display_name)
+         state->content_name_len = strlcpy(state->content_name,
+               core_info->display_name, sizeof(state->content_name));
+      else
+         state->content_name_len = strlcpy(state->content_name,
+               "RetroArch", sizeof(state->content_name));
+   }
 
    /* Check whether system name has been set or if the name
     * is a copy of info file database with multiple entries */
