@@ -286,12 +286,6 @@ VIDEO CONTEXT
 #include "../gfx/display_servers/dispserv_win32.c"
 #endif
 
-#if defined(HAVE_FFMPEG)
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
-#include "../cores/libretro-ffmpeg/ffmpeg_fft.c"
-#endif
-#endif
-
 #endif
 
 #if defined(ANDROID)

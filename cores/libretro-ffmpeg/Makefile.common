@@ -166,11 +166,6 @@ ifeq ($(platform), unix)
                  $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
                  $(LIBRETRO_COMM_DIR)/time/rtime.c
 endif
-
-ifeq ($(HAVE_GL_FFT), 1)
-   DEFINES    += -DHAVE_GL_FFT
-   FFT_SOURCE += $(CORE_DIR)/ffmpeg_fft.c
-endif
 endif
 
 ifeq ($(HAVE_PTHREADS),1)
@@ -184,7 +179,6 @@ SOURCES_C += 	$(GL_SOURCE) \
                 $(LIBAVFORMAT_SOURCE) \
                 $(LIBSWSCALE_SOURCE) \
                 $(LIBAVCODEC_SOURCE) \
-					 $(FFT_SOURCE) \
                 $(LIBSWRESAMPLE_SOURCE)
 
 SOURCES_CXX :=
