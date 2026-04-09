@@ -634,7 +634,7 @@ static int menu_displaylist_parse_core_info(
          core_info = core_info_menu;
    }
 
-   if (   !core_info 
+   if (   !core_info
        || !(core_info->flags & CORE_INFO_FLAG_HAS_INFO))
    {
       if (menu_entries_append(list,
@@ -838,6 +838,7 @@ static int menu_displaylist_parse_core_info(
    {
       char tmp_path[PATH_MAX_LENGTH];
       char tmp_desc[PATH_MAX_LENGTH];
+      size_t tmp_desc_len;
       core_info_ctx_firmware_t firmware_info;
       uint8_t flags                   = content_get_flags();
       bool update_missing_firmware    = false;
@@ -891,19 +892,26 @@ static int menu_displaylist_parse_core_info(
 
          /* Show the path that was checked */
          {
+            int _snprintf_ret;
 #ifdef IOS
             shortened_path[0] = '\0';
             fill_pathname_abbreviate_special(shortened_path,
                   firmware_info.directory.system,
                   sizeof(shortened_path));
-            snprintf(tmp_desc, sizeof(tmp_desc),
+            _snprintf_ret = snprintf(tmp_desc, sizeof(tmp_desc),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
                   shortened_path);
 #else
-            snprintf(tmp_desc, sizeof(tmp_desc),
+            _snprintf_ret = snprintf(tmp_desc, sizeof(tmp_desc),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
                   firmware_info.directory.system);
 #endif
+            if (_snprintf_ret < 0)
+               tmp_desc_len = 0;
+            else if ((size_t)_snprintf_ret >= sizeof(tmp_desc))
+               tmp_desc_len = sizeof(tmp_desc) - 1;
+            else
+               tmp_desc_len = (size_t)_snprintf_ret;
 
             if (!settings->bools.menu_show_sublabels)
             {
@@ -913,7 +921,8 @@ static int menu_displaylist_parse_core_info(
 
                __len = strlcpy(tmp, "- ", sizeof(tmp));
                strlcpy(tmp + __len, tmp_desc, sizeof(tmp) - __len);
-               tmp_desc[0] = '\0';
+               tmp_desc[0]  = '\0';
+               tmp_desc_len = 0;
             }
 
             /* If 'System Files are in Content Directory' is enabled, let's add a note about it. */
@@ -932,11 +941,10 @@ static int menu_displaylist_parse_core_info(
                }
                else
                {
-                  size_t ___len = strlen(tmp_desc);
-                  ___len += strlcpy(tmp_desc + ___len, "\n", sizeof(tmp_desc) - ___len);
-                  strlcpy(tmp_desc    + ___len,
+                  tmp_desc_len += strlcpy(tmp_desc + tmp_desc_len, "\n", sizeof(tmp_desc) - tmp_desc_len);
+                  strlcpy(tmp_desc    + tmp_desc_len,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
-                     sizeof(tmp_desc) - ___len);
+                     sizeof(tmp_desc) - tmp_desc_len);
                }
             }
 
@@ -3680,7 +3688,7 @@ static int menu_displaylist_parse_load_content_settings(
                playlist_file = path_basename_nocompression(playlist_path);
 
             if (  playlist_file
-                && memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, strlen(FILE_PATH_CONTENT_FAVORITES)) == 0)
+                && memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, STRLEN_CONST(FILE_PATH_CONTENT_FAVORITES)) == 0)
                add_to_favorites_enabled = false;
          }
 
@@ -4616,7 +4624,7 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(file_list_t *list,
           * > content_history + favorites are handled separately
           * > music/video/image_history are ignored */
          if (     string_ends_with_size(path, "_history.lpl", strlen(path), STRLEN_CONST("_history.lpl"))
-               || memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, strlen(FILE_PATH_CONTENT_FAVORITES)) == 0)
+               || memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, STRLEN_CONST(FILE_PATH_CONTENT_FAVORITES)) == 0)
             continue;
 
          fill_pathname(playlist_display_name, playlist_file, "",
@@ -12392,7 +12400,6 @@ static unsigned menu_displaylist_build_shader_parameter(
 static size_t print_buf_lines(file_list_t *list, const char *label,
       char *s, size_t len, enum msg_file_type type, bool append)
 {
-   char c;
    size_t i;
    size_t count     = 0;
    char *line_start = s;
@@ -12402,23 +12409,13 @@ static size_t print_buf_lines(file_list_t *list, const char *label,
 
    for (i = 0; i < len; i++)
    {
-      size_t _len;
-
-      /* The end of the buffer, print the last bit */
       if (*(s + i) == '\0')
          break;
 
       if (*(s + i) != '\n')
          continue;
 
-      /* Found a line ending, print the line and compute new line_start */
-      c            = *(s + i + 1); /* Save the next character  */
-      *(s + i + 1) = '\0';         /* Replace with \0          */
-
-      /* We need to strip the newline. */
-      _len = strlen(line_start) - 1;
-      if (line_start[_len] == '\n')
-         line_start[_len] = '\0';
+      *(s + i) = '\0';
 
       if (append)
       {
@@ -12433,15 +12430,13 @@ static size_t print_buf_lines(file_list_t *list, const char *label,
          count++;
       }
 
-      /* Restore the saved character */
-      *(s + i + 1) = c;
-      line_start   = s + i + 1;
+      *(s + i)   = '\n';
+      line_start = s + i + 1;
    }
 
    if (append && type != FILE_TYPE_DOWNLOAD_LAKKA)
       file_list_sort_on_alt(list);
-   /* If the buffer was completely full, and didn't end
-    * with a newline, just ignore the partial last line. */
+
    return count;
 }
 
