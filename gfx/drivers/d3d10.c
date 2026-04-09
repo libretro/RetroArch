@@ -1064,6 +1064,7 @@ static void d3d10_font_render_line(
 static void d3d10_font_render_message(
       d3d10_video_t *d3d10,
       d3d10_font_t*       font,
+      const struct font_glyph* glyph_q,
       const char*         msg,
       float               scale,
       const unsigned int  color,
@@ -1076,8 +1077,6 @@ static void d3d10_font_render_message(
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   const struct font_glyph* glyph_q       =
-      font->font_driver->get_glyph(font->font_data, '?');
    int x                                  = roundf(pos_x * width);
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
@@ -1110,6 +1109,7 @@ static void d3d10_font_render_msg(
 {
    int drop_x, drop_y;
    enum text_alignment text_align;
+   const struct font_glyph* glyph_q;
    unsigned color, r, g, b, alpha;
    float x, y, scale, drop_mod, drop_alpha;
    d3d10_font_t *font          = (d3d10_font_t*)data;
@@ -1165,6 +1165,9 @@ static void d3d10_font_render_msg(
       drop_alpha               = 1.0f;
    }
 
+   glyph_q          = (font->font_driver)
+      ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
+
    if (drop_x || drop_y)
    {
       unsigned r_dark          = r * drop_mod;
@@ -1174,15 +1177,14 @@ static void d3d10_font_render_msg(
       unsigned color_dark      = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
 
       d3d10_font_render_message(d3d10,
-            font, msg, scale, color_dark,
+            font, glyph_q, msg, scale, color_dark,
             x + scale * drop_x / width,
             y + scale * drop_y / height,
             width, height, text_align);
    }
 
-   d3d10_font_render_message(d3d10, font, msg, scale,
-         color, x, y,
-         width, height, text_align);
+   d3d10_font_render_message(d3d10, font, glyph_q,
+         msg, scale, color, x, y, width, height, text_align);
 }
 
 static const struct font_glyph* d3d10_font_get_glyph(void *data,

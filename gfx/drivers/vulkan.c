@@ -2194,14 +2194,19 @@ static void vulkan_font_render_line(vk_t *vk,
    }
 }
 
-static void vulkan_font_render_message(vk_t *vk,
-      vulkan_raster_t *font, const char *msg, float scale,
-      const float color[4], float pos_x, float pos_y,
+static void vulkan_font_render_message(
+      vk_t *vk,
+      vulkan_raster_t *font,
+      const struct font_glyph* glyph_q,
+      const char *msg,
+      float scale,
+      const float color[4],
+      float pos_x,
+      float pos_y,
       unsigned text_align)
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
-   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    int x                                  = roundf(pos_x * vk->vp.width);
    int lines                              = 0;
    float inv_tex_size_x                   = 1.0f / font->texture.width;
@@ -2356,6 +2361,7 @@ static void vulkan_font_render_msg(
    size_t max_glyphs;
    unsigned width, height;
    enum text_alignment text_align;
+   const struct font_glyph* glyph_q;
    float x, y, scale, drop_mod, drop_alpha;
    vulkan_raster_t *font            = (vulkan_raster_t*)data;
    settings_t *settings             = config_get_ptr();
@@ -2423,6 +2429,8 @@ static void vulkan_font_render_msg(
 
    font->vertices   = 0;
    font->pv         = (struct vk_vertex*)font->range.data;
+   glyph_q          = (font->font_driver) 
+	   ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
 
    if (drop_x || drop_y)
    {
@@ -2432,12 +2440,12 @@ static void vulkan_font_render_msg(
       color_dark[2] = color[2] * drop_mod;
       color_dark[3] = color[3] * drop_alpha;
 
-      vulkan_font_render_message(vk, font, msg, scale, color_dark,
+      vulkan_font_render_message(vk, font, glyph_q, msg, scale, color_dark,
             x + scale * drop_x / vk->vp.width, y +
             scale * drop_y / vk->vp.height, text_align);
    }
 
-   vulkan_font_render_message(vk, font, msg, scale,
+   vulkan_font_render_message(vk, font, glyph_q, msg, scale,
          color, x, y, text_align);
    vulkan_font_flush(vk, font);
 }
