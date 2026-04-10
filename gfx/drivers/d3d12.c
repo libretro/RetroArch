@@ -108,7 +108,8 @@ enum d3d12_video_flags
    D3D12_ST_FLAG_VSYNC                 = (1 << 12),
    D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
    D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 14),
-   D3D12_ST_FLAG_FRAME_DUPE_LOCK       = (1 << 15)
+   D3D12_ST_FLAG_FRAME_DUPE_LOCK       = (1 << 15),
+   D3D12_ST_FLAG_SW_FRAMEBUFFER_READY  = (1 << 16)
 };
 
 typedef enum
@@ -970,6 +971,31 @@ static void d3d12_update_texture(
    uint8_t *dst;
    D3D12_RANGE read_range;
    ID3D12Resource *resource = (ID3D12Resource*)texture->upload_buffer;
+
+   if (!data || !resource)
+      return;
+
+   /* When pitch is 0, compute it from width and format bpp.
+    * Some cores pass pitch=0 expecting the driver to infer it. */
+   if (pitch == 0)
+   {
+      switch (format)
+      {
+         case DXGI_FORMAT_B8G8R8X8_UNORM:
+         case DXGI_FORMAT_B8G8R8A8_UNORM:
+         case DXGI_FORMAT_R8G8B8A8_UNORM:
+            pitch = width * 4;
+            break;
+         case DXGI_FORMAT_B5G6R5_UNORM:
+            pitch = width * 2;
+            break;
+         default:
+            /* A4R4G4B4 and other 16-bit formats */
+            pitch = width * 2;
+            break;
+      }
+   }
+
    read_range.Begin         = 0;
    read_range.End           = 0;
    resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst);
@@ -4380,6 +4406,14 @@ static bool d3d12_gfx_frame(
                   d3d12->frame.texture[k] = d3d12->frame.texture[k - 1];
                d3d12->frame.texture[0] = tmp;
             }
+
+            /* History rotation moved texture[0] to a history slot.
+             * If the core wrote directly into its upload buffer via
+             * get_current_software_framebuffer, that data now lives in
+             * frame.texture[1].  The recycled texture[0] has no valid
+             * data, so clear the flag and let the normal copy run. */
+            if (d3d12->flags & D3D12_ST_FLAG_SW_FRAMEBUFFER_READY)
+               d3d12->flags &= ~D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
          }
       }
 
@@ -4392,6 +4426,10 @@ static bool d3d12_gfx_frame(
          d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
          d3d12_release_texture(&d3d12->frame.texture[0]);
          d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
+
+         /* Texture was recreated — upload buffer the core wrote to
+          * via get_current_software_framebuffer has been freed. */
+         d3d12->flags &= ~D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
       }
 
       if (d3d12->flags & D3D12_ST_FLAG_RESIZE_RTS)
@@ -4453,7 +4491,16 @@ static bool d3d12_gfx_frame(
       }
       else
       {
-         if (d3d12->frame.texture[0].upload_buffer)
+         if (d3d12->flags & D3D12_ST_FLAG_SW_FRAMEBUFFER_READY)
+         {
+            /* Core wrote directly into the upload buffer via
+             * get_current_software_framebuffer — skip the
+             * redundant Map/dxgi_copy/Unmap in d3d12_update_texture
+             * and just mark dirty for the GPU copy. */
+            d3d12->frame.texture[0].dirty = true;
+            d3d12->flags &= ~D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
+         }
+         else if (d3d12->frame.texture[0].upload_buffer)
             d3d12_update_texture(width, height, pitch, d3d12->format,
                   frame, &d3d12->frame.texture[0]);
 
@@ -5580,6 +5627,75 @@ static void d3d12_get_video_output_next(void *data)
 }
 #endif
 
+static bool d3d12_get_current_software_framebuffer(
+      void* data, struct retro_framebuffer* fb)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+   D3D12_RANGE read_range;
+   uint8_t *mapped_ptr = NULL;
+
+   if (!d3d12 || !fb)
+      return false;
+
+   /* Ensure the frame texture is large enough for the requested size */
+   if (     d3d12->frame.texture[0].desc.Width  != fb->width
+         || d3d12->frame.texture[0].desc.Height != fb->height)
+   {
+      d3d12->frame.texture[0].desc.Width  = fb->width;
+      d3d12->frame.texture[0].desc.Height = fb->height;
+      d3d12->frame.texture[0].desc.Format = d3d12->format;
+      d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
+      d3d12_release_texture(&d3d12->frame.texture[0]);
+      d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
+   }
+
+   if (!d3d12->frame.texture[0].upload_buffer)
+      return false;
+
+   /* The SW framebuffer optimisation only works when the core's
+    * natural pitch (width * bytes-per-pixel) equals the upload
+    * buffer's RowPitch.  D3D12 aligns RowPitch to 256 bytes, so
+    * for many resolutions there is padding at the end of each row.
+    * Most cores render with width*bpp stride regardless of what
+    * fb.pitch reports, which silently corrupts the layout.
+    * When the pitches don't match, return false so the core falls
+    * back to its own buffer and d3d12_update_texture handles the
+    * pitch conversion efficiently via dxgi_copy. */
+   {
+      int bpp        = (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM) ? 4 : 2;
+      int tight_pitch = (int)fb->width * bpp;
+      if (tight_pitch != (int)d3d12->frame.texture[0].layout.Footprint.RowPitch)
+         return false;
+   }
+
+   /* Map the upload buffer so the core can write directly into it.
+    * D3D12 upload heaps are persistently mappable — the pointer
+    * remains valid after Unmap, so the core can safely use it. */
+   read_range.Begin = 0;
+   read_range.End   = 0;
+
+   if (FAILED(d3d12->frame.texture[0].upload_buffer->lpVtbl->Map(
+               d3d12->frame.texture[0].upload_buffer,
+               0, &read_range, (void**)&mapped_ptr)))
+      return false;
+
+   d3d12->frame.texture[0].upload_buffer->lpVtbl->Unmap(
+         d3d12->frame.texture[0].upload_buffer, 0, NULL);
+
+   fb->data         = mapped_ptr + d3d12->frame.texture[0].layout.Offset;
+   fb->pitch        = d3d12->frame.texture[0].layout.Footprint.RowPitch;
+   fb->format       = (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM)
+                    ? RETRO_PIXEL_FORMAT_XRGB8888
+                    : RETRO_PIXEL_FORMAT_RGB565;
+   fb->memory_flags = RETRO_MEMORY_ACCESS_WRITE;
+
+   /* Signal d3d12_gfx_frame that the core will write directly
+    * into the upload buffer, so dxgi_copy can be skipped. */
+   d3d12->flags    |= D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
+
+   return true;
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
    d3d12_gfx_load_texture,
@@ -5611,7 +5727,7 @@ static const video_poke_interface_t d3d12_poke_interface = {
    win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    d3d12_gfx_get_current_shader,
-   NULL, /* get_current_software_framebuffer */
+   d3d12_get_current_software_framebuffer,
    d3d12_get_hw_render_interface,
 #ifdef HAVE_DXGI_HDR
    d3d12_set_hdr_menu_nits,
