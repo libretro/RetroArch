@@ -103,7 +103,12 @@ static LPDIRECT3DVERTEXBUFFER9 d3d9_hlsl_menu_pipeline_vbo = NULL;
 /* Forward declarations for functions used by display driver
  * but defined in the video driver section below. */
 static INLINE void d3d9_hlsl_bind_program(LPDIRECT3DDEVICE9 dev,
-      struct shader_pass *pass);
+      struct shader_pass *pass)
+{
+   IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)pass->vprg);
+   IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)pass->fprg);
+}
+
 static INLINE void d3d9_hlsl_set_param_1f(void* prog,
       LPDIRECT3DDEVICE9 userdata, const char *name, const void *value);
 
@@ -557,7 +562,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
    }
 }
 
-void gfx_display_d3d9_hlsl_scissor_begin(
+static void gfx_display_d3d9_hlsl_scissor_begin(
       void *data,
       unsigned video_width, unsigned video_height,
       int x, int y, unsigned width, unsigned height)
@@ -576,7 +581,7 @@ void gfx_display_d3d9_hlsl_scissor_begin(
    IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
 }
 
-void gfx_display_d3d9_hlsl_scissor_end(void *data,
+static void gfx_display_d3d9_hlsl_scissor_end(void *data,
       unsigned video_width, unsigned video_height)
 {
    RECT rect;
@@ -1158,13 +1163,6 @@ static INLINE void d3d9_hlsl_set_param_1f(void* prog, LPDIRECT3DDEVICE9 userdata
    float *val               = (float*)value;
    if (param)
       d3d9_hlsl_constant_table_set_float(prog, userdata, (void*)param, *val);
-}
-
-static INLINE void d3d9_hlsl_bind_program(LPDIRECT3DDEVICE9 dev,
-      struct shader_pass *pass)
-{
-   IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)pass->vprg);
-   IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)pass->fprg);
 }
 
 static INLINE void d3d9_hlsl_set_param_matrix(void* prog, LPDIRECT3DDEVICE9 userdata,
