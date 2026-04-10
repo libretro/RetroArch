@@ -587,7 +587,7 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
    }
 }
 
-void gfx_display_d3d9_cg_scissor_begin(
+static void gfx_display_d3d9_cg_scissor_begin(
       void *data,
       unsigned video_width, unsigned video_height,
       int x, int y, unsigned width, unsigned height)
@@ -606,7 +606,7 @@ void gfx_display_d3d9_cg_scissor_begin(
    IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
 }
 
-void gfx_display_d3d9_cg_scissor_end(void *data,
+static void gfx_display_d3d9_cg_scissor_end(void *data,
       unsigned video_width, unsigned video_height)
 {
    RECT rect;
