@@ -854,10 +854,14 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
       if (c)
       {
-         col[0] = D3DCOLOR_ARGB((int)(c[ 3]*0xFF), (int)(c[ 0]*0xFF), (int)(c[ 1]*0xFF), (int)(c[ 2]*0xFF));
-         col[1] = D3DCOLOR_ARGB((int)(c[ 7]*0xFF), (int)(c[ 4]*0xFF), (int)(c[ 5]*0xFF), (int)(c[ 6]*0xFF));
-         col[2] = D3DCOLOR_ARGB((int)(c[11]*0xFF), (int)(c[ 8]*0xFF), (int)(c[ 9]*0xFF), (int)(c[10]*0xFF));
-         col[3] = D3DCOLOR_ARGB((int)(c[15]*0xFF), (int)(c[12]*0xFF), (int)(c[13]*0xFF), (int)(c[14]*0xFF));
+         /* The color array is laid out for bottom-up coordinates
+          * (vertex 0,1 = bottom, vertex 2,3 = top) as used by d3d10/d3d11.
+          * Since this path un-flips Y (top-down ortho), swap the top and
+          * bottom vertex color pairs so gradients render correctly. */
+         col[0] = D3DCOLOR_ARGB((int)(c[11]*0xFF), (int)(c[ 8]*0xFF), (int)(c[ 9]*0xFF), (int)(c[10]*0xFF));
+         col[1] = D3DCOLOR_ARGB((int)(c[15]*0xFF), (int)(c[12]*0xFF), (int)(c[13]*0xFF), (int)(c[14]*0xFF));
+         col[2] = D3DCOLOR_ARGB((int)(c[ 3]*0xFF), (int)(c[ 0]*0xFF), (int)(c[ 1]*0xFF), (int)(c[ 2]*0xFF));
+         col[3] = D3DCOLOR_ARGB((int)(c[ 7]*0xFF), (int)(c[ 4]*0xFF), (int)(c[ 5]*0xFF), (int)(c[ 6]*0xFF));
       }
       else
       {
@@ -908,6 +912,13 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
          };
          cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
          d3d9_cg_set_mvp(_chain, topdown_ortho);
+         /* Re-bind programs to commit the updated MVP to the GPU.
+          * cgD3D9BindProgram pushes the parameter values that were
+          * set via cgD3D9SetUniformMatrix into the hardware registers;
+          * without this, the GPU keeps using whatever matrix was
+          * active when the programs were last bound. */
+         cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
+         cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
       }
 
       gfx_display_d3d9_cg_bind_texture(draw, d3d);
@@ -982,6 +993,8 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       };
       cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
       d3d9_cg_set_mvp(_chain, bottomup_ortho);
+      cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
+      cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
    }
 
    gfx_display_d3d9_cg_bind_texture(draw, d3d);
@@ -3930,12 +3943,12 @@ static void d3d9_cg_overlay_render(
           0.0f,  0.0f, 0.0f,  1.0f
       };
       cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      d3d9_cg_set_mvp(_chain, bottomup_ortho);
       if (_chain)
       {
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
       }
-      d3d9_cg_set_mvp(_chain, bottomup_ortho);
    }
 
    /* Build a quad from the overlay's normalised coordinates.
