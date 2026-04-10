@@ -43,6 +43,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
+
 #include <retro_inline.h>
 
 #include <defines/d3d_defines.h>
@@ -221,6 +225,95 @@ static void gfx_display_d3d9_cg_blend_end(void *data)
       return;
 
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, false);
+}
+
+struct d3d9_texture_info
+{
+   void *userdata;
+   void *data;
+   enum texture_filter_type type;
+};
+
+static void d3d9_video_texture_load_d3d(
+      struct d3d9_texture_info *info,
+      uintptr_t *id)
+{
+   D3DLOCKED_RECT d3dlr;
+   LPDIRECT3DTEXTURE9 tex   = NULL;
+   unsigned usage           = 0;
+   bool want_mipmap         = false;
+   d3d9_video_t *d3d        = (d3d9_video_t*)info->userdata;
+   struct texture_image *ti = (struct texture_image*)info->data;
+
+   if (!ti)
+      return;
+
+   if (  (info->type == TEXTURE_FILTER_MIPMAP_LINEAR)
+      || (info->type == TEXTURE_FILTER_MIPMAP_NEAREST))
+      want_mipmap        = true;
+
+   if (!(tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(d3d->dev,
+               ti->width, ti->height, 1,
+               usage, D3D9_ARGB8888_FORMAT,
+               D3DPOOL_MANAGED, 0, 0, 0,
+               NULL, NULL, want_mipmap)))
+      return;
+
+   IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   {
+      unsigned i;
+      uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
+      const uint32_t *src = ti->pixels;
+      unsigned      pitch = d3dlr.Pitch >> 2;
+      for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
+         memcpy(dst, src, ti->width << 2);
+   }
+   IDirect3DTexture9_UnlockRect(tex, 0);
+
+   *id = (uintptr_t)tex;
+}
+
+#ifdef HAVE_THREADS
+static int d3d9_cg_video_texture_load_wrap_d3d(void *data)
+{
+   uintptr_t id = 0;
+   struct d3d9_texture_info *info = (struct d3d9_texture_info*)data;
+   if (!info)
+      return 0;
+   d3d9_video_texture_load_d3d(info, &id);
+   return id;
+}
+#endif
+
+static uintptr_t d3d9_cg_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   uintptr_t id = 0;
+   struct d3d9_texture_info info;
+
+   info.userdata = video_data;
+   info.data     = data;
+   info.type     = filter_type;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+      return video_thread_texture_handle(&info,
+            d3d9_cg_video_texture_load_wrap_d3d);
+#endif
+
+   d3d9_video_texture_load_d3d(&info, &id);
+   return id;
+}
+
+static void d3d9_cg_unload_texture(void *data,
+      bool threaded, uintptr_t id)
+{
+   LPDIRECT3DTEXTURE9 texid;
+   if (!id)
+      return;
+
+   texid = (LPDIRECT3DTEXTURE9)id;
+   IDirect3DTexture9_Release(texid);
 }
 
 static void gfx_display_d3d9_cg_bind_texture(gfx_display_ctx_draw_t *draw,
@@ -2136,6 +2229,35 @@ static void d3d9_cg_renderchain_render_pass(
    d3d9_renderchain_unbind_all(chain);
 }
 
+static void d3d9_cg_blit_to_texture(
+      LPDIRECT3DTEXTURE9 tex, const void *frame,
+      unsigned tex_width,  unsigned tex_height,
+      unsigned width,      unsigned height,
+      unsigned last_width, unsigned last_height,
+      unsigned pitch, unsigned pixel_size)
+{
+   unsigned y;
+   D3DLOCKED_RECT d3dlr;
+   d3dlr.Pitch  = 0;
+   d3dlr.pBits  = NULL;
+
+   if ((last_width != width || last_height != height))
+   {
+      IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      memset(d3dlr.pBits, 0, tex_height * d3dlr.Pitch);
+      IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)tex, 0);
+   }
+
+   IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, 0);
+   for (y = 0; y < height; y++)
+   {
+      const uint8_t *in = (const uint8_t*)frame + y * pitch;
+      uint8_t      *out = (uint8_t*)d3dlr.pBits   + y * d3dlr.Pitch;
+      memcpy(out, in, width * pixel_size);
+   }
+   IDirect3DTexture9_UnlockRect(tex, 0);
+}
+
 static void d3d9_cg_renderchain_render(
       d3d9_video_t *d3d,
       const void *frame_data,
@@ -2161,7 +2283,7 @@ static void d3d9_cg_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->out_vp);
 
-   d3d9_blit_to_texture(first_pass->tex,
+   d3d9_cg_blit_to_texture(first_pass->tex,
          frame_data,
          first_pass->info.tex_w,
          first_pass->info.tex_h,
@@ -2311,7 +2433,7 @@ static bool d3d9_cg_init_base(d3d9_video_t *d3d, const video_info_t *info)
 
    memset(&d3dpp, 0, sizeof(d3dpp));
 
-   g_pD3D9            = (LPDIRECT3D9)d3d9_create();
+   g_pD3D9 = (LPDIRECT3D9)d3d9_create();
 
    /* this needs g_pD3D9 created first */
    d3d9_make_d3dpp(d3d, info, &d3dpp);
@@ -2353,6 +2475,127 @@ static bool renderchain_d3d_cg_init_first(
    return false;
 }
 
+static void d3d9_cg_log_info(const struct LinkInfo *info)
+{
+   RARCH_LOG("[D3D9] Render pass info:\n");
+   RARCH_LOG("\tTexture width: %u\n", info->tex_w);
+   RARCH_LOG("\tTexture height: %u\n", info->tex_h);
+
+   RARCH_LOG("\tScale type (X): ");
+
+   switch (info->pass->fbo.type_x)
+   {
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_x);
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_x);
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
+         break;
+   }
+
+   RARCH_LOG("\tScale type (Y): ");
+
+   switch (info->pass->fbo.type_y)
+   {
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_y);
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_y);
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
+         break;
+   }
+
+   RARCH_LOG("\tBilinear filter: %s\n",
+         info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
+}
+
+static bool d3d9_cg_init_multipass(d3d9_video_t *d3d, const char *shader_path)
+{
+   unsigned i;
+   struct video_shader_pass *pass = NULL;
+
+   memset(&d3d->shader, 0, sizeof(d3d->shader));
+
+   if (!video_shader_load_preset_into_shader(shader_path, &d3d->shader))
+      return false;
+
+   RARCH_LOG("[D3D9] Found %u shaders.\n", d3d->shader.passes);
+
+   for (i = 0; i < d3d->shader.passes; i++)
+   {
+      if (d3d->shader.pass[i].fbo.flags & FBO_SCALE_FLAG_VALID)
+         continue;
+
+      d3d->shader.pass[i].fbo.scale_y = 1.0f;
+      d3d->shader.pass[i].fbo.scale_x = 1.0f;
+      d3d->shader.pass[i].fbo.type_x  = RARCH_SCALE_INPUT;
+      d3d->shader.pass[i].fbo.type_y  = RARCH_SCALE_INPUT;
+   }
+
+   if (d3d->shader.passes < GFX_MAX_SHADERS &&
+      (d3d->shader.pass[d3d->shader.passes - 1].fbo.flags & FBO_SCALE_FLAG_VALID))
+   {
+      d3d->shader.passes++;
+      pass              = (struct video_shader_pass*)
+         &d3d->shader.pass[d3d->shader.passes - 1];
+
+      pass->fbo.scale_x = 1.0f;
+      pass->fbo.scale_y = 1.0f;
+      pass->fbo.type_x  = RARCH_SCALE_VIEWPORT;
+      pass->fbo.type_y  = RARCH_SCALE_VIEWPORT;
+      pass->filter      = RARCH_FILTER_UNSPEC;
+   }
+   else
+   {
+      pass              = (struct video_shader_pass*)
+         &d3d->shader.pass[d3d->shader.passes - 1];
+
+      pass->fbo.scale_x = 1.0f;
+      pass->fbo.scale_y = 1.0f;
+      pass->fbo.type_x  = RARCH_SCALE_VIEWPORT;
+      pass->fbo.type_y  = RARCH_SCALE_VIEWPORT;
+   }
+
+   return true;
+}
+
+static bool d3d9_cg_process_shader(d3d9_video_t *d3d)
+{
+   struct video_shader_pass *pass   = NULL;
+   const char *shader_path = d3d->shader_path;
+   if (shader_path && *shader_path)
+   {
+      RARCH_ERR("[D3D9] Failed to parse shader preset.\n");
+      return d3d9_cg_init_multipass(d3d, shader_path);
+   }
+
+   memset(&d3d->shader, 0, sizeof(d3d->shader));
+   d3d->shader.passes               = 1;
+
+   pass = (struct video_shader_pass*)&d3d->shader.pass[0];
+
+   pass->fbo.flags                 |= FBO_SCALE_FLAG_VALID;
+   pass->fbo.scale_y                = 1.0;
+   pass->fbo.type_y                 = RARCH_SCALE_VIEWPORT;
+   pass->fbo.scale_x                = pass->fbo.scale_y;
+   pass->fbo.type_x                 = pass->fbo.type_y;
+
+   if (d3d->shader_path && *d3d->shader_path)
+      strlcpy(pass->source.path, d3d->shader_path,
+            sizeof(pass->source.path));
+   return true;
+}
+
 static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
       unsigned input_scale,
       bool rgb32)
@@ -2388,7 +2631,7 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
       return false;
    }
 
-   d3d9_log_info(&link_info);
+   d3d9_cg_log_info(&link_info);
 
    current_width  = link_info.tex_w;
    current_height = link_info.tex_h;
@@ -2415,7 +2658,7 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
          RARCH_ERR("[D3D9 Cg] Failed to add pass.\n");
          return false;
       }
-      d3d9_log_info(&link_info);
+      d3d9_cg_log_info(&link_info);
    }
 
    {
@@ -2701,7 +2944,7 @@ static bool d3d9_cg_set_shader(void *data,
          RARCH_WARN("[D3D9] Only Cg shaders are supported. Falling back to stock.\n");
    }
 
-   if (!d3d9_process_shader(d3d) || !d3d9_cg_restore(d3d))
+   if (!d3d9_cg_process_shader(d3d) || !d3d9_cg_restore(d3d))
    {
       RARCH_ERR("[D3D9 Cg] Failed to set shader.\n");
       return false;
@@ -3498,11 +3741,21 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
    IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex, 0);
 }
 
+static void d3d9_cg_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen)
+{
+#ifndef _XBOX
+   /* TODO/FIXME - why is this called here? */
+   win32_show_cursor(data, !fullscreen);
+#endif
+}
+
 static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_cg_get_flags,
-   d3d9_load_texture,
-   d3d9_unload_texture,
-   d3d9_set_video_mode,
+   d3d9_cg_load_texture,
+   d3d9_cg_unload_texture,
+   d3d9_cg_set_video_mode,
 #if defined(__WINRT__)
    NULL, /* get_refresh_rate */
 #else
@@ -3699,6 +3952,15 @@ end:
    return ret;
 }
 
+static bool d3d9_cg_has_windowed(void *data)
+{
+#ifdef _XBOX
+   return false;
+#else
+   return true;
+#endif
+}
+
 video_driver_t video_d3d9_cg = {
    d3d9_cg_init,
    d3d9_cg_frame,
@@ -3706,7 +3968,7 @@ video_driver_t video_d3d9_cg = {
    d3d9_cg_alive,
    NULL, /* focus */
    win32_suspend_screensaver,
-   d3d9_has_windowed,
+   d3d9_cg_has_windowed,
    d3d9_cg_set_shader,
    d3d9_cg_free,
    "d3d9_cg",
