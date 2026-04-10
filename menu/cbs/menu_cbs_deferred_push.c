@@ -298,7 +298,7 @@ static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
    size_t _len                                = 0;
-   char newstr2[PATH_MAX_LENGTH];
+   char newstr2[PATH_MAX_LENGTH * 2];
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
