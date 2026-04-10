@@ -109,13 +109,6 @@ void *d3d9_texture_new(void *dev,
       INT32 color_key, void *src_info,
       PALETTEENTRY *palette, bool want_mipmap);
 
-void *d3d9_texture_new_from_file(void *dev,
-      const char *path, unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, INT32 format,
-      INT32 pool, unsigned filter, unsigned mipfilter,
-      INT32 color_key, void *src_info,
-      PALETTEENTRY *palette, bool want_mipmap);
-
 static INLINE bool d3d9_vertex_declaration_new(
       LPDIRECT3DDEVICE9 dev,
       const void *vertex_data, void **decl_data)

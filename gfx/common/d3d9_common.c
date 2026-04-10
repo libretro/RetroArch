@@ -40,11 +40,6 @@
 
 #include "d3d9_common.h"
 
-#ifdef HAVE_D3DX
-#include <d3dx9core.h>
-#include <d3dx9tex.h>
-#endif
-
 #ifdef _XBOX
 #include <xgraphics.h>
 #endif
@@ -57,9 +52,6 @@
 LPDIRECT3D9 g_pD3D9;
 #ifdef HAVE_DYNAMIC_D3D
 static dylib_t g_d3d9_dll;
-#ifdef HAVE_D3DX
-static dylib_t g_d3d9x_dll;
-#endif
 static bool d3d9_dylib_initialized = false;
 #endif
 
@@ -71,61 +63,6 @@ struct d3d9_texture_info
 };
 
 typedef IDirect3D9 *(__stdcall *D3D9Create_t)(UINT);
-#ifdef HAVE_D3DX
-typedef HRESULT (__stdcall
-      *D3D9CompileShader_t)(
-         LPCSTR              pSrcData,
-         UINT                srcDataLen,
-         const D3DXMACRO     *pDefines,
-         LPD3DXINCLUDE       pInclude,
-         LPCSTR              pFunctionName,
-         LPCSTR              pProfile,
-         DWORD               Flags,
-         LPD3DXBUFFER        *ppShader,
-         LPD3DXBUFFER        *ppErrorMsgs,
-         LPD3DXCONSTANTTABLE *ppConstantTable);
-typedef HRESULT (__stdcall
-      *D3D9CompileShaderFromFile_t)(
-          LPCTSTR             pSrcFile,
-    const D3DXMACRO           *pDefines,
-          LPD3DXINCLUDE       pInclude,
-          LPCSTR              pFunctionName,
-          LPCSTR              pProfile,
-          DWORD               Flags,
-         LPD3DXBUFFER        *ppShader,
-         LPD3DXBUFFER        *ppErrorMsgs,
-         LPD3DXCONSTANTTABLE *ppConstantTable);
-
-typedef HRESULT (__stdcall
-    *D3D9CreateTextureFromFile_t)(
-        LPDIRECT3DDEVICE9         pDevice,
-        LPCSTR                    pSrcFile,
-        UINT                      Width,
-        UINT                      Height,
-        UINT                      MipLevels,
-        DWORD                     Usage,
-        D3DFORMAT                 Format,
-        D3DPOOL                   Pool,
-        DWORD                     Filter,
-        DWORD                     MipFilter,
-        D3DCOLOR                  ColorKey,
-        D3DXIMAGE_INFO*           pSrcInfo,
-        PALETTEENTRY*             pPalette,
-        LPDIRECT3DTEXTURE9*       ppTexture);
-
-typedef HRESULT (__stdcall
-    *D3D9XCreateFontIndirect_t)(
-        LPDIRECT3DDEVICE9       pDevice,
-        D3DXFONT_DESC*   pDesc,
-        LPD3DXFONT*             ppFont);
-#endif
-
-#ifdef HAVE_D3DX
-static D3D9XCreateFontIndirect_t    D3D9CreateFontIndirect;
-static D3D9CreateTextureFromFile_t  D3D9CreateTextureFromFile;
-static D3D9CompileShaderFromFile_t  D3D9CompileShaderFromFile;
-static D3D9CompileShader_t          D3D9CompileShader;
-#endif
 static D3D9Create_t D3D9Create;
 
 void *d3d9_create(void)
@@ -139,46 +76,6 @@ void *d3d9_create(void)
 }
 
 #ifdef HAVE_DYNAMIC_D3D
-
-#ifdef HAVE_D3DX
-static const char *d3dx9_dll_list[] =
-{
-   "d3dx9_24.dll",
-   "d3dx9_25.dll",
-   "d3dx9_26.dll",
-   "d3dx9_27.dll",
-   "d3dx9_28.dll",
-   "d3dx9_29.dll",
-   "d3dx9_30.dll",
-   "d3dx9_31.dll",
-   "d3dx9_32.dll",
-   "d3dx9_33.dll",
-   "d3dx9_34.dll",
-   "d3dx9_35.dll",
-   "d3dx9_36.dll",
-   "d3dx9_37.dll",
-   "d3dx9_38.dll",
-   "d3dx9_39.dll",
-   "d3dx9_40.dll",
-   "d3dx9_41.dll",
-   "d3dx9_42.dll",
-   "d3dx9_43.dll",
-   NULL
-};
-
-static dylib_t dylib_load_d3d9x(void)
-{
-   dylib_t dll           = NULL;
-
-   const char **dll_name = d3dx9_dll_list;
-
-   while (!dll && *dll_name)
-      dll = dylib_load(*dll_name++);
-
-   return dll;
-}
-#endif
-
 #endif
 
 bool d3d9_initialize_symbols(enum gfx_ctx_api api)
@@ -186,34 +83,14 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
 #ifdef HAVE_DYNAMIC_D3D
    if (d3d9_dylib_initialized)
       return true;
-#ifdef HAVE_D3DX
-   if (!(g_d3d9x_dll = dylib_load_d3d9x()))
-      return false;
-#endif
 #if defined(DEBUG) || defined(_DEBUG)
    if (!(g_d3d9_dll  = dylib_load("d3d9d.dll")))
 #endif
    if (!(g_d3d9_dll  = dylib_load("d3d9.dll")))
       return false;
    D3D9Create                 = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9");
-#ifdef HAVE_D3DX
-   D3D9CompileShaderFromFile  = (D3D9CompileShaderFromFile_t)dylib_proc(g_d3d9x_dll, "D3DXCompileShaderFromFile");
-   D3D9CompileShader          = (D3D9CompileShader_t)dylib_proc(g_d3d9x_dll, "D3DXCompileShader");
-#ifdef UNICODE
-   D3D9CreateFontIndirect     = (D3D9XCreateFontIndirect_t)dylib_proc(g_d3d9x_dll, "D3DXCreateFontIndirectW");
-#else
-   D3D9CreateFontIndirect     = (D3D9XCreateFontIndirect_t)dylib_proc(g_d3d9x_dll, "D3DXCreateFontIndirectA");
-#endif
-   D3D9CreateTextureFromFile  = (D3D9CreateTextureFromFile_t)dylib_proc(g_d3d9x_dll, "D3DXCreateTextureFromFileExA");
-#endif
 #else
    D3D9Create                 = Direct3DCreate9;
-#ifdef HAVE_D3DX
-   D3D9CompileShaderFromFile  = D3DXCompileShaderFromFile;
-   D3D9CompileShader          = D3DXCompileShader;
-   D3D9CreateFontIndirect     = D3DXCreateFontIndirect;
-   D3D9CreateTextureFromFile  = D3DXCreateTextureFromFileExA;
-#endif
 #endif
 
    if (!D3D9Create)
@@ -234,35 +111,10 @@ void d3d9_deinitialize_symbols(void)
 #ifdef HAVE_DYNAMIC_D3D
    if (g_d3d9_dll)
       dylib_close(g_d3d9_dll);
-#ifdef HAVE_D3DX
-   if (g_d3d9x_dll)
-      dylib_close(g_d3d9x_dll);
-   g_d3d9x_dll        = NULL;
-#endif
    g_d3d9_dll         = NULL;
 
    d3d9_dylib_initialized = false;
 #endif
-}
-
-void *d3d9_texture_new_from_file(void *_dev,
-      const char *path, unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, INT32 format,
-      INT32 pool, unsigned filter, unsigned mipfilter,
-      INT32 color_key, void *src_info_data,
-      PALETTEENTRY *palette, bool want_mipmap)
-{
-#ifdef HAVE_D3DX
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-   void *buf             = NULL;
-   if (SUCCEEDED(D3D9CreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
-               path, width, height, miplevels, usage, (D3DFORMAT)format,
-               (D3DPOOL)pool, filter, mipfilter, color_key,
-               (D3DXIMAGE_INFO*)src_info_data,
-               palette, (struct IDirect3DTexture9**)&buf)))
-      return buf;
-#endif
-   return NULL;
 }
 
 void *d3d9_texture_new(void *_dev,
@@ -394,14 +246,8 @@ bool d3d9_reset(void *data, void *d3dpp)
 bool d3d9x_create_font_indirect(void *_dev,
       void *desc, void **font_data)
 {
-#ifdef HAVE_D3DX
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-   return (SUCCEEDED(D3D9CreateFontIndirect(
-               dev, (D3DXFONT_DESC*)desc,
-               (struct ID3DXFont**)font_data)));
-#else
+   /* D3DX font is not used — the HLSL driver has its own font renderer. */
    return false;
-#endif
 }
 
 bool d3d9x_compile_shader(
@@ -416,21 +262,9 @@ bool d3d9x_compile_shader(
       void *pp_err_msgs,
       void *ppconstanttable)
 {
-#if defined(HAVE_D3DX)
-   return (D3D9CompileShader && D3D9CompileShader(
-               (LPCTSTR)src,
-               (UINT)src_data_len,
-               (const D3DXMACRO*)pdefines,
-               (LPD3DXINCLUDE)pinclude,
-               (LPCSTR)pfunctionname,
-               (LPCSTR)pprofile,
-               (DWORD)flags,
-               (LPD3DXBUFFER*)ppshader,
-               (LPD3DXBUFFER*)pp_err_msgs,
-               (LPD3DXCONSTANTTABLE*)ppconstanttable) >= 0);
-#else
+   /* Shader compilation now uses d3dcompiler (D3DCompile) directly
+    * in d3d9hlsl.c. This stub exists for API compatibility. */
    return false;
-#endif
 }
 
 bool d3d9x_compile_shader_from_file(
@@ -444,86 +278,48 @@ bool d3d9x_compile_shader_from_file(
       void *pp_err_msgs,
       void *ppconstanttable)
 {
-#if defined(HAVE_D3DX)
-   if (D3D9CompileShaderFromFile)
-      if (D3D9CompileShaderFromFile(
-               (LPCTSTR)src,
-               (const D3DXMACRO*)pdefines,
-               (LPD3DXINCLUDE)pinclude,
-               (LPCSTR)pfunctionname,
-               (LPCSTR)pprofile,
-               (DWORD)flags,
-               (LPD3DXBUFFER*)ppshader,
-               (LPD3DXBUFFER*)pp_err_msgs,
-               (LPD3DXCONSTANTTABLE*)ppconstanttable) >= 0)
-         return true;
-#endif
+   /* Shader compilation from file now uses d3dcompiler directly
+    * in d3d9hlsl.c. This stub exists for API compatibility. */
    return false;
 }
+
+/* D3DX constant table stubs.
+ *
+ * The HLSL renderchain previously used LPD3DXCONSTANTTABLE to set shader
+ * uniforms. Without D3DX, these are no-ops. The stock shader's MVP and
+ * other parameters are now set via SetVertexShaderConstantF / 
+ * SetPixelShaderConstantF directly in d3d9hlsl.c. */
 
 void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
       void *_handle, void *_name)
 {
-#if defined(HAVE_D3DX)
-   D3DXHANDLE        handle     = (D3DXHANDLE)_handle;
-   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)_tbl;
-   LPCSTR              name     = (LPCSTR)_name;
-   if (consttbl && handle && name)
-      return (void*)consttbl->lpVtbl->GetConstantByName(consttbl,
-            handle, name);
-#endif
    return NULL;
 }
 
 void d3d9x_constant_table_set_float_array(LPDIRECT3DDEVICE9 dev,
       void *p, void *_handle, const void *_pf, unsigned count)
 {
-#if defined(HAVE_D3DX)
-   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
-   D3DXHANDLE           handle  = (D3DXHANDLE)_handle;
-   CONST FLOAT              *pf = (CONST FLOAT*)_pf;
-   if (consttbl && dev)
-      consttbl->lpVtbl->SetFloatArray(consttbl, dev, handle, pf,
-            (UINT)count);
-#endif
+   (void)dev; (void)p; (void)_handle; (void)_pf; (void)count;
 }
 
 void d3d9x_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
       void *p)
 {
-#if defined(HAVE_D3DX)
-   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
-   if (consttbl && dev && consttbl->lpVtbl->SetDefaults)
-      consttbl->lpVtbl->SetDefaults(consttbl, dev);
-#endif
+   (void)dev; (void)p;
 }
 
 void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
       void *p,
       void *data, const void *_matrix)
 {
-#if defined(HAVE_D3DX)
-   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
-   D3DXHANDLE        handle     = (D3DXHANDLE)data;
-   const D3DXMATRIX  *matrix    = (const D3DXMATRIX*)_matrix;
-   if (consttbl && dev && handle)
-      consttbl->lpVtbl->SetMatrix(consttbl, dev, handle, matrix);
-#endif
+   (void)dev; (void)p; (void)data; (void)_matrix;
 }
 
 const bool d3d9x_constant_table_set_float(void *p,
       void *a, void *b, float val)
 {
-#if defined(HAVE_D3DX)
-   LPDIRECT3DDEVICE9    dev     = (LPDIRECT3DDEVICE9)a;
-   D3DXHANDLE        handle     = (D3DXHANDLE)b;
-   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
-   return (   consttbl && dev && handle
-           && consttbl->lpVtbl->SetFloat(
-            consttbl, dev, handle, val) == D3D_OK);
-#else
+   (void)p; (void)a; (void)b; (void)val;
    return false;
-#endif
 }
 
 #ifdef _XBOX
@@ -1177,7 +973,7 @@ static void d3d9_video_texture_load_d3d(
       want_mipmap        = true;
 
    if (!(tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(d3d->dev,
-               ti->width, ti->height, 0,
+               ti->width, ti->height, 1,
                usage, D3D9_ARGB8888_FORMAT,
                D3DPOOL_MANAGED, 0, 0, 0,
                NULL, NULL, want_mipmap)))

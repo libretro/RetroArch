@@ -23,12 +23,12 @@
 #include <boolean.h>
 
 #include <d3d9.h>
+#include <formats/image.h>
 #include "../common/d3d9_common.h"
 #include "../../verbosity.h"
 
 RETRO_BEGIN_DECLS
 
-#define D3D_DEFAULT_NONPOW2         ((UINT)-2)
 #define D3D_FILTER_LINEAR           (3 << 0)
 #define D3D_FILTER_POINT            (2 << 0)
 
@@ -139,25 +139,48 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
       const char *id, const char *path, bool smooth)
 {
    struct lut_info info;
-   LPDIRECT3DTEXTURE9 lut    = (LPDIRECT3DTEXTURE9)
-      d3d9_texture_new_from_file(
-            chain->dev,
-            path,
-            D3D_DEFAULT_NONPOW2,
-            D3D_DEFAULT_NONPOW2,
-            0,
-            0,
-            ((D3DFORMAT)-3), /* D3DFMT_FROM_FILE */
-            D3DPOOL_MANAGED,
-            smooth ? D3D_FILTER_LINEAR : D3D_FILTER_POINT,
-            0,
-            0,
-            NULL,
-            NULL,
-            false
-            );
-   if (!lut)
+   struct texture_image image;
+   LPDIRECT3DTEXTURE9 lut    = NULL;
+
+   image.pixels              = NULL;
+   image.width               = 0;
+   image.height              = 0;
+   image.supports_rgba       = true;
+
+   if (!image_texture_load(&image, path))
+   {
+      RARCH_ERR("[D3D9] Failed to load LUT image: %s.\n", path);
       return false;
+   }
+
+   lut = (LPDIRECT3DTEXTURE9)d3d9_texture_new(
+         chain->dev,
+         image.width, image.height, 1,
+         0, D3D9_ARGB8888_FORMAT,
+         D3DPOOL_MANAGED, 0, 0, 0,
+         NULL, NULL, false);
+
+   if (!lut)
+   {
+      image_texture_free(&image);
+      return false;
+   }
+
+   {
+      D3DLOCKED_RECT lr;
+      if (SUCCEEDED(IDirect3DTexture9_LockRect(lut, 0, &lr, NULL, 0)))
+      {
+         unsigned y;
+         uint32_t       *dst   = (uint32_t*)lr.pBits;
+         const uint32_t *src   = image.pixels;
+         unsigned        pitch = lr.Pitch >> 2;
+         for (y = 0; y < image.height; y++, dst += pitch, src += image.width)
+            memcpy(dst, src, image.width << 2);
+         IDirect3DTexture9_UnlockRect(lut, 0);
+      }
+   }
+
+   image_texture_free(&image);
 
    RARCH_LOG("[D3D9] LUT texture loaded: %s.\n", path);
 

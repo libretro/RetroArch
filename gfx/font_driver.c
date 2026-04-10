@@ -178,28 +178,16 @@ static bool font_init_first(
 #endif
 #ifdef HAVE_D3D9
       case FONT_DRIVER_RENDER_D3D9_API:
-      {
-         static const font_renderer_t *d3d9_font_backends[] = {
-#if defined(_WIN32) && defined(HAVE_D3DX)
-            &d3d9x_win32_font,
-#endif
-            NULL
-         };
-         unsigned i;
-
-         for (i = 0; i < ARRAY_SIZE(d3d9_font_backends); i++)
          {
-            void *data = d3d9_font_backends[i] ? d3d9_font_backends[i]->init(
-                  video_data, font_path, font_size, is_threaded) : NULL;
+            void *data = d3d9_font.init(video_data,
+                  font_path, font_size, is_threaded);
             if (data)
             {
-               *font_driver = d3d9_font_backends[i];
+               *font_driver = &d3d9_font;
                *font_handle = data;
-
                return true;
             }
          }
-      }
       break;
 #endif
 #ifdef HAVE_D3D10
