@@ -102,57 +102,6 @@ void d3d9_deinitialize_symbols(void)
 #endif
 }
 
-void *d3d9_texture_new(void *_dev,
-      unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, INT32 format,
-      INT32 pool, unsigned filter, unsigned mipfilter,
-      INT32 color_key, void *src_info_data,
-      PALETTEENTRY *palette, bool want_mipmap)
-{
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-   void *buf             = NULL;
-#ifndef _XBOX
-   if (want_mipmap)
-      usage |= D3DUSAGE_AUTOGENMIPMAP;
-#endif
-   return (SUCCEEDED(IDirect3DDevice9_CreateTexture(dev,
-               width, height, miplevels, usage,
-               (D3DFORMAT)format,
-               (D3DPOOL)pool,
-               (struct IDirect3DTexture9**)&buf, NULL))) ? buf : NULL;
-}
-
-void *d3d9_vertex_buffer_new(void *_dev,
-      unsigned length, unsigned usage,
-      unsigned fvf, INT32 pool, void *handle)
-{
-   void              *buf = NULL;
-   LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-   return (SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
-               dev, length, usage, fvf,
-               (D3DPOOL)pool,
-               (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL))) ? buf : NULL;
-}
-
-void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
-{
-   if (vertex_data)
-   {
-      LPDIRECT3DVERTEXBUFFER9 buf =
-         (LPDIRECT3DVERTEXBUFFER9)vertex_data;
-      IDirect3DVertexBuffer9_Release(buf);
-      buf = NULL;
-   }
-
-   if (vertex_declaration)
-   {
-      LPDIRECT3DVERTEXDECLARATION9 vertex_decl =
-         (LPDIRECT3DVERTEXDECLARATION9)vertex_declaration;
-      IDirect3DVertexDeclaration9_Release(vertex_decl);
-      vertex_decl = NULL;
-   }
-}
-
 static bool d3d9_create_device_internal(
       void *data,
       D3DPRESENT_PARAMETERS *d3dpp,

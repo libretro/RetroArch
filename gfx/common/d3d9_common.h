@@ -95,29 +95,6 @@ typedef struct d3d9_video
    bool widescreen_mode;
 } d3d9_video_t;
 
-void *d3d9_vertex_buffer_new(void *dev,
-      unsigned length, unsigned usage, unsigned fvf,
-      INT32 pool, void *handle);
-
-void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
-
-void *d3d9_texture_new(void *dev,
-      unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, INT32 format,
-      INT32 pool, unsigned filter, unsigned mipfilter,
-      INT32 color_key, void *src_info,
-      PALETTEENTRY *palette, bool want_mipmap);
-
-static INLINE bool d3d9_vertex_declaration_new(
-      LPDIRECT3DDEVICE9 dev,
-      const void *vertex_data, void **decl_data)
-{
-   const D3DVERTEXELEMENT9   *vertex_elements = (const D3DVERTEXELEMENT9*)vertex_data;
-   LPDIRECT3DVERTEXDECLARATION9 **vertex_decl = (LPDIRECT3DVERTEXDECLARATION9**)decl_data;
-   return (SUCCEEDED(IDirect3DDevice9_CreateVertexDeclaration(dev,
-               vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)));
-}
-
 static INLINE bool d3d9_device_get_render_target(
       LPDIRECT3DDEVICE9 dev,
       unsigned idx, void **data)
