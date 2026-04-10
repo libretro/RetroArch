@@ -288,6 +288,20 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
       x2 = (draw->x + draw->width)  / (float)video_width;
       y2 = ((float)video_height - draw->y) / (float)video_height;
 
+      /* Apply scale_factor: scale the quad around its center,
+       * matching D3D10's geometry shader params.scaling behavior. */
+      if (draw->scale_factor && draw->scale_factor != 1.0f)
+      {
+         float cx = (x1 + x2) * 0.5f;
+         float cy = (y1 + y2) * 0.5f;
+         float hw = (x2 - x1) * 0.5f * draw->scale_factor;
+         float hh = (y2 - y1) * 0.5f * draw->scale_factor;
+         x1 = cx - hw;
+         y1 = cy - hh;
+         x2 = cx + hw;
+         y2 = cy + hh;
+      }
+
       quad[0].x = x1; quad[0].y = y1; quad[0].z = 0.5f;
       quad[0].u = 0.0f; quad[0].v = 0.0f; quad[0].color = col[0];
 
