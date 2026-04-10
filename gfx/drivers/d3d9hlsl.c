@@ -367,18 +367,19 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
    IDirect3DVertexBuffer9_Unlock((LPDIRECT3DVERTEXBUFFER9)
          d3d->menu_display.buffer);
 
-   /* With interleaved_primitives, vertex coords are already in
-    * screen-normalized [0,1] space. Just apply the top-down ortho. */
+   /* Multi-vertex coords from gfx_display are in bottom-up [0,1] space
+    * (Y=0 at bottom), matching D3D10's VIDEO_SHADER_STOCK_BLEND ortho.
+    * Use a bottom-up ortho: X [0,1]→[-1,1], Y [0,1]→[-1,1]. */
    {
       /* Row-major layout for mul(vector, matrix) in the stock HLSL vertex shader. */
-      static const float topdown_ortho[16] = {
+      static const float bottomup_ortho[16] = {
           2.0f,  0.0f, 0.0f, 0.0f,
-          0.0f, -2.0f, 0.0f, 0.0f,
+          0.0f,  2.0f, 0.0f, 0.0f,
           0.0f,  0.0f, 1.0f, 0.0f,
-         -1.0f,  1.0f, 0.0f, 1.0f
+         -1.0f, -1.0f, 0.0f, 1.0f
       };
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
-            0, topdown_ortho, 4);
+            0, bottomup_ortho, 4);
    }
 
    if (draw && draw->texture)
