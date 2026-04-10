@@ -31,6 +31,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
+#include <encodings/utf.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <d3d9.h>
@@ -102,6 +103,69 @@ typedef struct cg_renderchain
    CGcontext cgCtx;
 } cg_renderchain_t;
 
+/* Pipeline vertex buffer for menu shader effects (VIDEO_SHADER_MENU, etc.).
+ * Stored as a file-static since the d3d9 menu_display struct
+ * does not have a pipeline_vbo member like d3d10_video_t does. */
+static LPDIRECT3DVERTEXBUFFER9 d3d9_cg_menu_pipeline_vbo = NULL;
+
+static LPDIRECT3DTEXTURE9 d3d9_cg_white_texture = NULL;
+
+/* Bind the stock Cg vertex and pixel shaders.
+ * This is the CG equivalent of d3d9_hlsl_bind_program. */
+static INLINE void d3d9_cg_bind_program(cg_renderchain_t *chain)
+{
+   if (chain)
+   {
+      cgD3D9BindProgram((CGprogram)chain->stock_shader.fprg);
+      cgD3D9BindProgram((CGprogram)chain->stock_shader.vprg);
+   }
+}
+
+/* Set the modelViewProj matrix on the stock Cg vertex shader
+ * via its named parameter. The Cg runtime assigns hardware
+ * registers at compile time, so SetVertexShaderConstantF(0,...)
+ * won't necessarily hit the right register — we must go through
+ * cgD3D9SetUniformMatrix instead.
+ *
+ * NOTE: the matrix must already be in the column-major layout
+ * expected by the Cg shader's mul(matrix, vector).  Callers
+ * coming from D3D row-major matrices should use the _transposed
+ * variant below instead. */
+static INLINE void d3d9_cg_set_mvp(cg_renderchain_t *chain,
+      const float *matrix)
+{
+   if (chain)
+   {
+      CGparameter cgp = cgGetNamedParameter(
+            (CGprogram)chain->stock_shader.vprg, "modelViewProj");
+      if (cgp)
+         cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)matrix);
+   }
+}
+
+/* Transpose a D3D row-major matrix into the column-major order
+ * the Cg stock shader expects (mul(matrix, vector)), then upload
+ * it via cgD3D9SetUniformMatrix.
+ *
+ * Use this whenever the source matrix is in standard D3D / row-major
+ * layout (e.g. d3d->mvp, d3d->mvp_transposed, or any matrix built
+ * with d3d_matrix_ortho_off_center_lh without a manual transpose). */
+static INLINE void d3d9_cg_set_mvp_transpose(cg_renderchain_t *chain,
+      const void *matrix)
+{
+   if (chain)
+   {
+      struct d3d_matrix transposed;
+      CGparameter cgp = cgGetNamedParameter(
+            (CGprogram)chain->stock_shader.vprg, "modelViewProj");
+      if (cgp)
+      {
+         d3d_matrix_transpose(&transposed, (const struct d3d_matrix*)matrix);
+         cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)&transposed);
+      }
+   }
+}
+
 /*
  * DISPLAY DRIVER
  */
@@ -119,26 +183,6 @@ static const float d3d9_cg_tex_coords[8] = {
    0, 0,
    1, 0
 };
-
-static const float *gfx_display_d3d9_cg_get_default_vertices(void)
-{
-   return &d3d9_cg_vertexes[0];
-}
-
-static const float *gfx_display_d3d9_cg_get_default_tex_coords(void)
-{
-   return &d3d9_cg_tex_coords[0];
-}
-
-static void *gfx_display_d3d9_cg_get_default_mvp(void *data)
-{
-   static float id[16] =       { 1.0f, 0.0f, 0.0f, 0.0f,
-                                 0.0f, 1.0f, 0.0f, 0.0f,
-                                 0.0f, 0.0f, 1.0f, 0.0f,
-                                 0.0f, 0.0f, 0.0f, 1.0f
-                               };
-   return &id;
-}
 
 static INT32 gfx_display_prim_to_d3d9_cg_enum(
       enum gfx_display_prim_type prim_type)
@@ -179,32 +223,181 @@ static void gfx_display_d3d9_cg_blend_end(void *data)
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, false);
 }
 
+static void gfx_display_d3d9_cg_bind_texture(gfx_display_ctx_draw_t *draw,
+      d3d9_video_t *d3d)
+{
+   LPDIRECT3DDEVICE9 dev = d3d->dev;
+
+   if (draw->texture)
+      IDirect3DDevice9_SetTexture(dev, 0,
+            (IDirect3DBaseTexture9*)draw->texture);
+   else if (d3d9_cg_white_texture)
+      IDirect3DDevice9_SetTexture(dev, 0,
+            (IDirect3DBaseTexture9*)d3d9_cg_white_texture);
+   else
+      IDirect3DDevice9_SetTexture(dev, 0, NULL);
+
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+   IDirect3DDevice9_SetSamplerState(dev, 0,
+         D3DSAMP_MIPFILTER, D3DTEXF_COMM_LINEAR);
+}
+
 static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
    unsigned i;
-   math_matrix_4x4 mop, m1, m2;
    LPDIRECT3DDEVICE9 dev;
    D3DPRIMITIVETYPE type;
+   bool has_vertex_data;
    unsigned start                = 0;
    unsigned count                = 0;
+   unsigned vertex_count         = 4;
    d3d9_video_t *d3d             = (d3d9_video_t*)data;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
    const float *color            = NULL;
 
-   if (!d3d || !draw || draw->pipeline_id)
+   if (!d3d || !draw)
       return;
 
    dev                           = d3d->dev;
 
-   if ((d3d->menu_display.offset + draw->coords->vertices )
-         > (unsigned)d3d->menu_display.size)
+   switch (draw->pipeline_id)
+   {
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+      {
+         cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+
+         if (_chain)
+         {
+            d3d9_cg_bind_program(_chain);
+
+            IDirect3DDevice9_DrawPrimitive(dev, D3DPT_COMM_TRIANGLESTRIP,
+                  0, draw->coords->vertices - 2);
+         }
+
+         /* Re-enable alpha blending after pipeline draw */
+         IDirect3DDevice9_SetRenderState(dev,
+               D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+         IDirect3DDevice9_SetRenderState(dev,
+               D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+         IDirect3DDevice9_SetRenderState(dev,
+               D3DRS_ALPHABLENDENABLE, true);
+
+         /* Restore menu display vertex buffer state */
+         IDirect3DDevice9_SetStreamSource(dev, 0,
+               (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+               0, sizeof(Vertex));
+         IDirect3DDevice9_SetVertexDeclaration(dev,
+               (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
+         return;
+      }
+      default:
+         break;
+   }
+
+   has_vertex_data = draw->coords->vertex
+      && draw->coords->tex_coord && draw->coords->color;
+
+   if (has_vertex_data)
+      vertex_count = draw->coords->vertices;
+
+   if (!has_vertex_data)
+   {
+      /* Single-sprite path: build a quad from draw->x/y/width/height
+       * in normalized [0,1] space, using DrawPrimitiveUP. */
+      D3DCOLOR col[4];
+      Vertex quad[4];
+      float x1, y1, x2, y2;
+      const float *c = draw->coords->color;
+
+      if (c)
+      {
+         col[0] = D3DCOLOR_ARGB((int)(c[ 3]*0xFF), (int)(c[ 0]*0xFF), (int)(c[ 1]*0xFF), (int)(c[ 2]*0xFF));
+         col[1] = D3DCOLOR_ARGB((int)(c[ 7]*0xFF), (int)(c[ 4]*0xFF), (int)(c[ 5]*0xFF), (int)(c[ 6]*0xFF));
+         col[2] = D3DCOLOR_ARGB((int)(c[11]*0xFF), (int)(c[ 8]*0xFF), (int)(c[ 9]*0xFF), (int)(c[10]*0xFF));
+         col[3] = D3DCOLOR_ARGB((int)(c[15]*0xFF), (int)(c[12]*0xFF), (int)(c[13]*0xFF), (int)(c[14]*0xFF));
+      }
+      else
+      {
+         col[0] = col[1] = col[2] = col[3] = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+      }
+
+      x1 = draw->x / (float)video_width;
+      y1 = ((float)video_height - draw->y - draw->height) / (float)video_height;
+      x2 = (draw->x + draw->width)  / (float)video_width;
+      y2 = ((float)video_height - draw->y) / (float)video_height;
+
+      if (draw->scale_factor && draw->scale_factor != 1.0f)
+      {
+         float cx = (x1 + x2) * 0.5f;
+         float cy = (y1 + y2) * 0.5f;
+         float hw = (x2 - x1) * 0.5f * draw->scale_factor;
+         float hh = (y2 - y1) * 0.5f * draw->scale_factor;
+         x1 = cx - hw;
+         y1 = cy - hh;
+         x2 = cx + hw;
+         y2 = cy + hh;
+      }
+
+      quad[0].x = x1; quad[0].y = y1; quad[0].z = 0.5f;
+      quad[0].u = 0.0f; quad[0].v = 0.0f; quad[0].color = col[0];
+
+      quad[1].x = x2; quad[1].y = y1; quad[1].z = 0.5f;
+      quad[1].u = 1.0f; quad[1].v = 0.0f; quad[1].color = col[1];
+
+      quad[2].x = x1; quad[2].y = y2; quad[2].z = 0.5f;
+      quad[2].u = 0.0f; quad[2].v = 1.0f; quad[2].color = col[2];
+
+      quad[3].x = x2; quad[3].y = y2; quad[3].z = 0.5f;
+      quad[3].u = 1.0f; quad[3].v = 1.0f; quad[3].color = col[3];
+
+      /* Bottom-up ortho: maps X [0,1]->[-1,1], Y [0,1]->[-1,1].
+       * Transposed for the Cg stock shader which uses
+       * mul(matrix, vector) (column-major order).
+       * Matches the multi-vertex path and the HLSL driver's
+       * d3d_matrix_ortho_off_center_lh(0, 1, 0, 1, 0, 1). */
+      {
+         static const float bottomup_ortho[16] = {
+             2.0f,  0.0f, 0.0f, -1.0f,
+             0.0f,  2.0f, 0.0f, -1.0f,
+             0.0f,  0.0f, 1.0f,  0.0f,
+             0.0f,  0.0f, 0.0f,  1.0f
+         };
+         cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+         d3d9_cg_set_mvp(_chain, bottomup_ortho);
+      }
+
+      gfx_display_d3d9_cg_bind_texture(draw, d3d);
+
+      IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_COMM_TRIANGLESTRIP,
+            2, quad, sizeof(Vertex));
+
+      /* DrawPrimitiveUP unbinds the stream source, re-bind it */
+      IDirect3DDevice9_SetStreamSource(dev, 0,
+            (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+            0, sizeof(Vertex));
       return;
+   }
+
+   /* Multi-vertex path: explicit vertex/tex_coord/color arrays */
+   if ((d3d->menu_display.offset + vertex_count)
+         > (unsigned)d3d->menu_display.size)
+      d3d->menu_display.offset = 0;
 
    IDirect3DVertexBuffer9_Lock((LPDIRECT3DVERTEXBUFFER9)
-            d3d->menu_display.buffer, 0, 0, (void**)&pv, 0);
+            d3d->menu_display.buffer, 0, 0, (void**)&pv,
+            D3DLOCK_NOOVERWRITE);
    if (!pv)
       return;
 
@@ -244,45 +437,20 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
    IDirect3DVertexBuffer9_Unlock((LPDIRECT3DVERTEXBUFFER9)
          d3d->menu_display.buffer);
 
-   if (!draw->matrix_data)
-      draw->matrix_data = gfx_display_d3d9_cg_get_default_mvp(d3d);
-
-   /* ugh */
-   matrix_4x4_scale(m1,       2.0,  2.0, 0);
-   matrix_4x4_translate(mop, -1.0, -1.0, 0);
-   matrix_4x4_multiply(m2, mop, m1);
-   matrix_4x4_multiply(m1,
-         *((math_matrix_4x4*)draw->matrix_data), m2);
-   matrix_4x4_scale(mop,
-         (draw->width  / 2.0) / video_width,
-         (draw->height / 2.0) / video_height, 0);
-   matrix_4x4_multiply(m2, mop, m1);
-   matrix_4x4_translate(mop,
-         (draw->x + (draw->width  / 2.0)) / video_width,
-         (draw->y + (draw->height / 2.0)) / video_height,
-         0);
-   matrix_4x4_multiply(m1, mop, m2);
-   matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
-   d3d_matrix_transpose(&m1, &m2);
-
-   IDirect3DDevice9_SetVertexShaderConstantF(dev,
-         0, (const float*)&m1, 4);
-
-   if (draw->texture)
+   /* Bottom-up ortho: X [0,1]->[-1,1], Y [0,1]->[-1,1].
+    * Transposed for column-major Cg mul(matrix, vector). */
    {
-      IDirect3DDevice9_SetTexture(dev, 0,
-         (IDirect3DBaseTexture9*)draw->texture);
-      IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
-      IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
-      IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
-      IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
-      IDirect3DDevice9_SetSamplerState(dev, 0,
-         D3DSAMP_MIPFILTER, D3DTEXF_COMM_LINEAR);
+      static const float bottomup_ortho[16] = {
+          2.0f,  0.0f, 0.0f, -1.0f,
+          0.0f,  2.0f, 0.0f, -1.0f,
+          0.0f,  0.0f, 1.0f,  0.0f,
+          0.0f,  0.0f, 0.0f,  1.0f
+      };
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      d3d9_cg_set_mvp(_chain, bottomup_ortho);
    }
+
+   gfx_display_d3d9_cg_bind_texture(draw, d3d);
 
    type  = (D3DPRIMITIVETYPE)gfx_display_prim_to_d3d9_cg_enum(draw->prim_type);
    start = d3d->menu_display.offset;
@@ -290,9 +458,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
          ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP)
           ? 2 : 0);
 
-   IDirect3DDevice9_BeginScene(dev);
    IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
-   IDirect3DDevice9_EndScene(dev);
 
    d3d->menu_display.offset += draw->coords->vertices;
 }
@@ -301,43 +467,115 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data, unsigned video_width, unsigned video_height)
 {
-   static float t                    = 0;
-   video_coord_array_t *ca           = NULL;
+   static float t                        = 0.0f;
+   video_coord_array_t *ca               = NULL;
+   d3d9_video_t *d3d                     = (d3d9_video_t*)data;
 
-   if (!draw)
+   if (!d3d || !draw)
       return;
 
-   ca                                = &p_disp->dispca;
+   ca                                    = &p_disp->dispca;
 
-   draw->x                           = 0;
-   draw->y                           = 0;
-   draw->coords                      = NULL;
-   draw->matrix_data                 = NULL;
+   draw->x                               = 0;
+   draw->y                               = 0;
+   draw->coords                          = NULL;
+   draw->matrix_data                     = NULL;
 
    if (ca)
-      draw->coords                   = (struct video_coords*)&ca->coords;
+      draw->coords                       = (struct video_coords*)&ca->coords;
 
    switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
+      {
+         /* Create a pipeline vertex buffer from the coordinate
+          * array data if it doesn't already exist. */
+         if (!d3d9_cg_menu_pipeline_vbo && ca->coords.vertices)
          {
-            struct uniform_info uniform_param  = {0};
-            t                                 += 0.01;
+            unsigned i;
+            Vertex *verts    = NULL;
+            unsigned vcount  = ca->coords.vertices;
 
-            (void)uniform_param;
+            d3d9_cg_menu_pipeline_vbo = (LPDIRECT3DVERTEXBUFFER9)
+                  d3d9_vertex_buffer_new(
+                  d3d->dev,
+                  vcount * sizeof(Vertex),
+                  D3DUSAGE_WRITEONLY,
+                  0,
+                  D3DPOOL_DEFAULT,
+                  NULL);
 
-            uniform_param.enabled              = true;
-            uniform_param.lookup.enable        = true;
-            uniform_param.lookup.add_prefix    = true;
-            uniform_param.lookup.idx           = draw->pipeline_id;
-            uniform_param.lookup.type          = SHADER_PROGRAM_VERTEX;
-            uniform_param.type                 = UNIFORM_1F;
-            uniform_param.lookup.ident         = "time";
-            uniform_param.result.f.v0          = t;
+            if (d3d9_cg_menu_pipeline_vbo)
+            {
+               IDirect3DVertexBuffer9_Lock(
+                     (LPDIRECT3DVERTEXBUFFER9)d3d9_cg_menu_pipeline_vbo,
+                     0, 0, (void**)&verts, 0);
+
+               if (verts)
+               {
+                  for (i = 0; i < vcount; i++)
+                  {
+                     verts[i].x     = ca->coords.vertex[i * 2 + 0];
+                     verts[i].y     = ca->coords.vertex[i * 2 + 1];
+                     verts[i].z     = 0.5f;
+                     verts[i].u     = 0.0f;
+                     verts[i].v     = 0.0f;
+                     verts[i].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+                  }
+
+                  IDirect3DVertexBuffer9_Unlock(
+                        (LPDIRECT3DVERTEXBUFFER9)d3d9_cg_menu_pipeline_vbo);
+               }
+            }
          }
+
+         if (d3d9_cg_menu_pipeline_vbo)
+         {
+            IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+                  (LPDIRECT3DVERTEXBUFFER9)d3d9_cg_menu_pipeline_vbo,
+                  0, sizeof(Vertex));
+         }
+
+         draw->coords->vertices = ca->coords.vertices;
+
+         /* Set pipeline blend state */
+         IDirect3DDevice9_SetRenderState(d3d->dev,
+               D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+         IDirect3DDevice9_SetRenderState(d3d->dev,
+               D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+         IDirect3DDevice9_SetRenderState(d3d->dev,
+               D3DRS_ALPHABLENDENABLE, true);
          break;
+      }
+
+      case VIDEO_SHADER_MENU_3:
+      {
+         draw->coords->vertices = 4;
+         break;
+      }
+
+      default:
+         return;
+   }
+
+   /* Update time uniform via Cg named parameter */
+   t += 0.01f;
+
+   {
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      if (_chain)
+      {
+         CGparameter param;
+         param = cgGetNamedParameter(
+               (CGprogram)_chain->stock_shader.vprg, "IN.frame_count");
+         if (param)
+            cgD3D9SetUniform(param, &t);
+         param = cgGetNamedParameter(
+               (CGprogram)_chain->stock_shader.fprg, "IN.frame_count");
+         if (param)
+            cgD3D9SetUniform(param, &t);
+      }
    }
 }
 
@@ -382,15 +620,531 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
    gfx_display_d3d9_cg_draw_pipeline,
    gfx_display_d3d9_cg_blend_begin,
    gfx_display_d3d9_cg_blend_end,
-   gfx_display_d3d9_cg_get_default_mvp,
-   gfx_display_d3d9_cg_get_default_vertices,
-   gfx_display_d3d9_cg_get_default_tex_coords,
-   FONT_DRIVER_RENDER_D3D9_API,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   FONT_DRIVER_RENDER_D3D9_CG_API,
    GFX_VIDEO_DRIVER_DIRECT3D9_CG,
    "d3d9_cg",
-   false,
+   true,
    gfx_display_d3d9_cg_scissor_begin,
    gfx_display_d3d9_cg_scissor_end
+};
+
+/*
+ * FONT DRIVER
+ */
+
+typedef struct
+{
+   LPDIRECT3DTEXTURE9            texture;
+   const font_renderer_driver_t *font_driver;
+   void                         *font_data;
+   struct font_atlas             *atlas;
+   unsigned                      tex_width;
+   unsigned                      tex_height;
+} d3d9_cg_font_t;
+
+static void *d3d9_cg_font_init(void *data,
+      const char *font_path, float font_size,
+      bool is_threaded)
+{
+   unsigned i, j;
+   d3d9_video_t    *d3d  = (d3d9_video_t*)data;
+   d3d9_cg_font_t *font = (d3d9_cg_font_t*)calloc(1, sizeof(*font));
+
+   if (!font)
+      return NULL;
+
+   if (!font_renderer_create_default(
+            &font->font_driver, &font->font_data,
+            font_path, font_size))
+   {
+      free(font);
+      return NULL;
+   }
+
+   font->atlas      = font->font_driver->get_atlas(font->font_data);
+   font->tex_width  = font->atlas->width;
+   font->tex_height = font->atlas->height;
+
+   /* Create an A8R8G8B8 texture from the A8 atlas buffer.
+    * D3D9 doesn't universally support D3DFMT_A8
+    * as a texture format, so we expand it. */
+   font->texture    = (LPDIRECT3DTEXTURE9)
+      d3d9_texture_new(d3d->dev,
+            font->tex_width, font->tex_height, 1,
+            0, (INT32)D3DFMT_A8R8G8B8,
+            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
+
+   if (font->texture)
+   {
+      D3DLOCKED_RECT lr;
+
+      if (SUCCEEDED(IDirect3DTexture9_LockRect(
+                  font->texture, 0, &lr, NULL, 0)))
+      {
+         for (j = 0; j < font->atlas->height; j++)
+         {
+            uint32_t       *dst = (uint32_t*)((uint8_t*)lr.pBits + j * lr.Pitch);
+            const uint8_t  *src = font->atlas->buffer + j * font->atlas->width;
+            for (i = 0; i < font->atlas->width; i++)
+               dst[i] = D3DCOLOR_ARGB(src[i], 0xFF, 0xFF, 0xFF);
+         }
+         IDirect3DTexture9_UnlockRect(font->texture, 0);
+      }
+   }
+
+   font->atlas->dirty = false;
+   return font;
+}
+
+static void d3d9_cg_font_free(void *data, bool is_threaded)
+{
+   d3d9_cg_font_t *font = (d3d9_cg_font_t*)data;
+
+   if (!font)
+      return;
+
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
+
+   if (font->texture)
+      IDirect3DTexture9_Release(font->texture);
+
+   free(font);
+}
+
+static int d3d9_cg_font_get_message_width(void *data,
+      const char *msg, size_t msg_len, float scale)
+{
+   size_t i;
+   int delta_x = 0;
+   const struct font_glyph *glyph_q = NULL;
+   d3d9_cg_font_t *font           = (d3d9_cg_font_t*)data;
+
+   if (!font)
+      return 0;
+
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
+   for (i = 0; i < msg_len; i++)
+   {
+      const struct font_glyph *glyph;
+      const char *msg_tmp = &msg[i];
+      unsigned    code    = utf8_walk(&msg_tmp);
+      unsigned    skip    = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
+
+      delta_x += glyph->advance_x;
+   }
+
+   return delta_x * scale;
+}
+
+/* Emit a single glyph quad (6 vertices for two triangles)
+ * into the output vertex array. Returns the number of
+ * vertices written (always 6). */
+static INLINE unsigned d3d9_cg_font_emit_quad(
+      Vertex *pv,
+      float x, float y, float w, float h,
+      float tex_u, float tex_v, float tex_w, float tex_h,
+      D3DCOLOR color)
+{
+   /* Triangle 1: top-left, top-right, bottom-left */
+   pv[0].x     = x;
+   pv[0].y     = y;
+   pv[0].z     = 0.5f;
+   pv[0].u     = tex_u;
+   pv[0].v     = tex_v;
+   pv[0].color = color;
+
+   pv[1].x     = x + w;
+   pv[1].y     = y;
+   pv[1].z     = 0.5f;
+   pv[1].u     = tex_u + tex_w;
+   pv[1].v     = tex_v;
+   pv[1].color = color;
+
+   pv[2].x     = x;
+   pv[2].y     = y + h;
+   pv[2].z     = 0.5f;
+   pv[2].u     = tex_u;
+   pv[2].v     = tex_v + tex_h;
+   pv[2].color = color;
+
+   /* Triangle 2: top-right, bottom-right, bottom-left */
+   pv[3].x     = x + w;
+   pv[3].y     = y;
+   pv[3].z     = 0.5f;
+   pv[3].u     = tex_u + tex_w;
+   pv[3].v     = tex_v;
+   pv[3].color = color;
+
+   pv[4].x     = x + w;
+   pv[4].y     = y + h;
+   pv[4].z     = 0.5f;
+   pv[4].u     = tex_u + tex_w;
+   pv[4].v     = tex_v + tex_h;
+   pv[4].color = color;
+
+   pv[5].x     = x;
+   pv[5].y     = y + h;
+   pv[5].z     = 0.5f;
+   pv[5].u     = tex_u;
+   pv[5].v     = tex_v + tex_h;
+   pv[5].color = color;
+
+   return 6;
+}
+
+static void d3d9_cg_font_render_line(
+      d3d9_video_t *d3d,
+      d3d9_cg_font_t *font,
+      const char *msg, size_t msg_len,
+      float scale, D3DCOLOR color,
+      float pos_x, float pos_y,
+      enum text_alignment text_align)
+{
+   unsigned i;
+   float inv_viewport_w, inv_viewport_h;
+   float inv_tex_w, inv_tex_h;
+   const struct font_glyph *glyph_q = NULL;
+   unsigned width                   = 0;
+   unsigned height                  = 0;
+   int x, y;
+   unsigned vert_count              = 0;
+   Vertex *verts                    = NULL;
+
+   video_driver_get_size(&width, &height);
+   if (!width || !height)
+      return;
+
+   verts = (Vertex*)calloc(msg_len * 6, sizeof(Vertex));
+
+   if (!verts)
+      return;
+
+   inv_viewport_w = 1.0f / (float)width;
+   inv_viewport_h = 1.0f / (float)height;
+   inv_tex_w      = 1.0f / (float)font->tex_width;
+   inv_tex_h      = 1.0f / (float)font->tex_height;
+   glyph_q        = font->font_driver->get_glyph(font->font_data, '?');
+
+   /* Handle text alignment */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
+   {
+      int width_accum = 0;
+      const char *scan = msg;
+      const char *scan_end = msg + msg_len;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
+      if (text_align == TEXT_ALIGN_RIGHT)
+         pos_x -= (float)(width_accum * scale) / (float)width;
+      else
+         pos_x -= (float)(width_accum * scale) / (float)width / 2.0f;
+   }
+
+   x = roundf(pos_x * width);
+   y = roundf((1.0f - pos_y) * height);
+
+   for (i = 0; i < msg_len; i++)
+   {
+      const struct font_glyph *glyph;
+      const char *msg_tmp = &msg[i];
+      unsigned    code    = utf8_walk(&msg_tmp);
+      unsigned    skip    = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
+
+      vert_count += d3d9_cg_font_emit_quad(
+            &verts[vert_count],
+            (x + glyph->draw_offset_x * scale) * inv_viewport_w,
+            (y + glyph->draw_offset_y * scale) * inv_viewport_h,
+            glyph->width  * scale * inv_viewport_w,
+            glyph->height * scale * inv_viewport_h,
+            glyph->atlas_offset_x * inv_tex_w,
+            glyph->atlas_offset_y * inv_tex_h,
+            glyph->width  * inv_tex_w,
+            glyph->height * inv_tex_h,
+            color);
+
+      x += glyph->advance_x * scale;
+      y += glyph->advance_y * scale;
+   }
+
+   if (vert_count > 0)
+   {
+      IDirect3DDevice9_SetTexture(d3d->dev, 0,
+            (IDirect3DBaseTexture9*)font->texture);
+      IDirect3DDevice9_SetSamplerState(d3d->dev,
+            0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+      IDirect3DDevice9_SetSamplerState(d3d->dev,
+            0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+      IDirect3DDevice9_SetSamplerState(d3d->dev,
+            0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+      IDirect3DDevice9_SetSamplerState(d3d->dev,
+            0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+
+      IDirect3DDevice9_DrawPrimitiveUP(d3d->dev,
+            D3DPT_TRIANGLELIST,
+            vert_count / 3,
+            verts,
+            sizeof(Vertex));
+
+      /* DrawPrimitiveUP unbinds stream source, re-bind for
+       * subsequent display draws in the same frame */
+      IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+            (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+            0, sizeof(Vertex));
+   }
+
+   free(verts);
+}
+
+static void d3d9_cg_font_render_msg(
+      void *userdata, void *data,
+      const char *msg,
+      const struct font_params *params)
+{
+   float x, y, scale, drop_mod, drop_alpha;
+   enum text_alignment text_align;
+   int drop_x, drop_y;
+   unsigned r, g, b, alpha;
+   D3DCOLOR color, color_dark;
+   struct font_line_metrics *line_metrics = NULL;
+   float line_height;
+   d3d9_cg_font_t *font  = (d3d9_cg_font_t*)data;
+   d3d9_video_t     *d3d   = (d3d9_video_t*)userdata;
+   unsigned          width  = 0;
+   unsigned          height = 0;
+
+   if (!font || !msg || !*msg)
+      return;
+   if (!d3d)
+      return;
+
+   video_driver_get_size(&width, &height);
+   if (!width || !height)
+      return;
+
+   if (params)
+   {
+      x          = params->x;
+      y          = params->y;
+      scale      = params->scale;
+      text_align = params->text_align;
+      drop_x     = params->drop_x;
+      drop_y     = params->drop_y;
+      drop_mod   = params->drop_mod;
+      drop_alpha = params->drop_alpha;
+
+      r          = FONT_COLOR_GET_RED(params->color);
+      g          = FONT_COLOR_GET_GREEN(params->color);
+      b          = FONT_COLOR_GET_BLUE(params->color);
+      alpha      = FONT_COLOR_GET_ALPHA(params->color);
+
+      color      = D3DCOLOR_ARGB(alpha, r, g, b);
+   }
+   else
+   {
+      settings_t *settings    = config_get_ptr();
+      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
+      float video_msg_color_r = settings->floats.video_msg_color_r;
+      float video_msg_color_g = settings->floats.video_msg_color_g;
+      float video_msg_color_b = settings->floats.video_msg_color_b;
+
+      x          = video_msg_pos_x;
+      y          = video_msg_pos_y;
+      scale      = 1.0f;
+      text_align = TEXT_ALIGN_LEFT;
+
+      r          = (unsigned)(video_msg_color_r * 255);
+      g          = (unsigned)(video_msg_color_g * 255);
+      b          = (unsigned)(video_msg_color_b * 255);
+      alpha      = 255;
+      color      = D3DCOLOR_ARGB(alpha, r, g, b);
+
+      drop_x     = -2;
+      drop_y     = -2;
+      drop_mod   = 0.3f;
+      drop_alpha = 1.0f;
+   }
+
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   line_height = line_metrics->height * scale / height;
+
+   /* Enable alpha blending for font rendering */
+   IDirect3DDevice9_SetRenderState(d3d->dev,
+         D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+   IDirect3DDevice9_SetRenderState(d3d->dev,
+         D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   IDirect3DDevice9_SetRenderState(d3d->dev,
+         D3DRS_ALPHABLENDENABLE, true);
+
+   /* Use top-down ortho: Y=0->top, Y=1->bottom, matching Ozone coords.
+    * Transposed for the Cg stock shader's mul(matrix, vector) order. */
+   {
+      static const float topdown_ortho[16] = {
+          2.0f,  0.0f, 0.0f, -1.0f,
+          0.0f, -2.0f, 0.0f,  1.0f,
+          0.0f,  0.0f, 1.0f,  0.0f,
+          0.0f,  0.0f, 0.0f,  1.0f
+      };
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      d3d9_cg_set_mvp(_chain, topdown_ortho);
+   }
+
+   /* Update atlas texture if dirty */
+   if (font->atlas->dirty)
+   {
+      if (   font->atlas->width  != font->tex_width
+          || font->atlas->height != font->tex_height)
+      {
+         if (font->texture)
+            IDirect3DTexture9_Release(font->texture);
+
+         font->tex_width  = font->atlas->width;
+         font->tex_height = font->atlas->height;
+         font->texture    = (LPDIRECT3DTEXTURE9)
+            d3d9_texture_new(d3d->dev,
+                  font->tex_width, font->tex_height, 1,
+                  0, (INT32)D3DFMT_A8R8G8B8,
+                  D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
+      }
+
+      if (font->texture)
+      {
+         unsigned i, j;
+         D3DLOCKED_RECT lr;
+
+         if (SUCCEEDED(IDirect3DTexture9_LockRect(
+                     font->texture, 0, &lr, NULL, 0)))
+         {
+            for (j = 0; j < font->atlas->height; j++)
+            {
+               uint32_t       *dst = (uint32_t*)((uint8_t*)lr.pBits + j * lr.Pitch);
+               const uint8_t  *src = font->atlas->buffer + j * font->atlas->width;
+               for (i = 0; i < font->atlas->width; i++)
+                  dst[i] = D3DCOLOR_ARGB(src[i], 0xFF, 0xFF, 0xFF);
+            }
+            IDirect3DTexture9_UnlockRect(font->texture, 0);
+         }
+      }
+      font->atlas->dirty = false;
+   }
+
+   /* Set vertex declaration and stock Cg shader for DrawPrimitiveUP */
+   IDirect3DDevice9_SetVertexDeclaration(d3d->dev,
+         (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
+   {
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      d3d9_cg_bind_program(_chain);
+   }
+
+   {
+      int lines       = 0;
+      bool has_drop   = drop_x || drop_y;
+      const char *m   = msg;
+
+      if (has_drop)
+      {
+         unsigned r_dark     = r * drop_mod;
+         unsigned g_dark     = g * drop_mod;
+         unsigned b_dark     = b * drop_mod;
+         unsigned alpha_dark = alpha * drop_alpha;
+         color_dark          = D3DCOLOR_ARGB(alpha_dark, r_dark, g_dark, b_dark);
+      }
+
+      for (;;)
+      {
+         const char *end = m;
+         size_t msg_len;
+
+         while (*end && *end != '\n')
+            end++;
+         msg_len = (size_t)(end - m);
+
+         if (msg_len > 0)
+         {
+            float line_y = y - (float)lines * line_height;
+
+            /* Drop shadow pass */
+            if (has_drop)
+            {
+               float drop_pos_x = x + scale * drop_x / (float)width;
+               float drop_pos_y = line_y + scale * drop_y / (float)height;
+               d3d9_cg_font_render_line(d3d, font,
+                     m, msg_len, scale, color_dark,
+                     drop_pos_x, drop_pos_y, text_align);
+            }
+
+            /* Main text pass */
+            d3d9_cg_font_render_line(d3d, font,
+                  m, msg_len, scale, color,
+                  x, line_y, text_align);
+         }
+
+         if (*end != '\n')
+            break;
+         m = end + 1;
+         lines++;
+      }
+   }
+
+}
+
+static const struct font_glyph *d3d9_cg_font_get_glyph(
+      void *data, uint32_t code)
+{
+   d3d9_cg_font_t *font = (d3d9_cg_font_t*)data;
+   if (font && font->font_driver)
+      return font->font_driver->get_glyph(
+            (void*)font->font_data, code);
+   return NULL;
+}
+
+static bool d3d9_cg_font_get_line_metrics(
+      void *data, struct font_line_metrics **metrics)
+{
+   d3d9_cg_font_t *font = (d3d9_cg_font_t*)data;
+   if (font && font->font_driver && font->font_data)
+   {
+      font->font_driver->get_line_metrics(font->font_data, metrics);
+      return true;
+   }
+   return false;
+}
+
+font_renderer_t d3d9_cg_font = {
+   d3d9_cg_font_init,
+   d3d9_cg_font_free,
+   d3d9_cg_font_render_msg,
+   "d3d9_cg",
+   d3d9_cg_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d9_cg_font_get_message_width,
+   d3d9_cg_font_get_line_metrics
 };
 
 /*
@@ -1487,8 +2241,7 @@ static void d3d9_cg_renderchain_render(
       IDirect3DSurface9_Release(back_buffer);
 
    d3d9_renderchain_end_render(chain);
-   cgD3D9BindProgram((CGprogram)&_chain->stock_shader.fprg);
-   cgD3D9BindProgram((CGprogram)&_chain->stock_shader.vprg);
+   d3d9_cg_bind_program(_chain);
    d3d9_cg_renderchain_calc_and_set_shader_mvp(
          (CGprogram)_chain->stock_shader.vprg,
          chain->out_vp->Width,
@@ -1529,6 +2282,18 @@ static void d3d9_cg_deinitialize(d3d9_video_t *d3d)
 
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl   = NULL;
+
+   if (d3d9_cg_menu_pipeline_vbo)
+   {
+      IDirect3DVertexBuffer9_Release(d3d9_cg_menu_pipeline_vbo);
+      d3d9_cg_menu_pipeline_vbo = NULL;
+   }
+
+   if (d3d9_cg_white_texture)
+   {
+      IDirect3DTexture9_Release(d3d9_cg_white_texture);
+      d3d9_cg_white_texture = NULL;
+   }
 }
 
 static bool d3d9_cg_init_base(d3d9_video_t *d3d, const video_info_t *info)
@@ -1679,17 +2444,7 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
    else if (d3d->needs_restore)
    {
       D3DPRESENT_PARAMETERS d3dpp;
-
       d3d9_make_d3dpp(d3d, info, &d3dpp);
-
-      /* the D3DX font driver uses POOL_DEFAULT resources
-       * and will prevent a clean reset here
-       * another approach would be to keep track of all created D3D
-       * font objects and free/realloc them around the d3d_reset call  */
-#ifdef HAVE_MENU
-      menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
-#endif
-
       if (!d3d9_reset(d3d->dev, &d3dpp))
       {
          d3d9_cg_deinitialize(d3d);
@@ -1722,7 +2477,7 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
    font_driver_init_osd(d3d, info,
          false,
          info->is_threaded,
-         FONT_DRIVER_RENDER_D3D9_API);
+         FONT_DRIVER_RENDER_D3D9_CG_API);
 
    {
       static const D3DVERTEXELEMENT9 VertexElements[4] = {
@@ -1750,6 +2505,30 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
 
    if (!d3d->menu_display.buffer)
       return false;
+
+   /* Create a 1x1 opaque-white fallback texture for untextured draws
+    * (solid-color rectangles, dividers, etc.).  Without this, draw
+    * calls that have no texture would sample from whatever texture
+    * happened to be bound last, producing visual artefacts. */
+   if (!d3d9_cg_white_texture)
+   {
+      d3d9_cg_white_texture = (LPDIRECT3DTEXTURE9)
+         d3d9_texture_new(d3d->dev,
+               1, 1, 1,
+               0, (INT32)D3DFMT_A8R8G8B8,
+               D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
+
+      if (d3d9_cg_white_texture)
+      {
+         D3DLOCKED_RECT lr;
+         if (SUCCEEDED(IDirect3DTexture9_LockRect(
+                     d3d9_cg_white_texture, 0, &lr, NULL, 0)))
+         {
+            *((uint32_t*)lr.pBits) = 0xFFFFFFFF;
+            IDirect3DTexture9_UnlockRect(d3d9_cg_white_texture, 0);
+         }
+      }
+   }
 
    d3d_matrix_identity(&d3d->mvp_transposed);
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
@@ -1988,6 +2767,28 @@ static void *d3d9_cg_init(const video_info_t *info,
    return d3d;
 }
 
+/* Release the texture owned by a single overlay. */
+static void d3d9_cg_free_overlay(overlay_t *overlay)
+{
+   if (!overlay)
+      return;
+   if (overlay->tex)
+   {
+      IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)overlay->tex);
+      overlay->tex = NULL;
+   }
+}
+
+/* Release textures for every entry in the overlay array. */
+static void d3d9_cg_free_overlays(d3d9_video_t *d3d)
+{
+   unsigned i;
+   if (!d3d)
+      return;
+   for (i = 0; i < d3d->overlays_size; i++)
+      d3d9_cg_free_overlay(&d3d->overlays[i]);
+}
+
 static void d3d9_cg_free(void *data)
 {
    d3d9_video_t   *d3d = (d3d9_video_t*)data;
@@ -1996,14 +2797,14 @@ static void d3d9_cg_free(void *data)
       return;
 
 #ifdef HAVE_OVERLAY
-   d3d9_free_overlays(d3d);
+   d3d9_cg_free_overlays(d3d);
    if (d3d->overlays)
       free(d3d->overlays);
    d3d->overlays      = NULL;
    d3d->overlays_size = 0;
 #endif
 
-   d3d9_free_overlay(d3d, d3d->menu);
+   d3d9_cg_free_overlay(d3d->menu);
    if (d3d->menu)
       free(d3d->menu);
    d3d->menu          = NULL;
@@ -2024,6 +2825,119 @@ static void d3d9_cg_free(void *data)
    win32_monitor_from_window();
    win32_destroy_window();
    free(d3d);
+}
+
+/* Standalone overlay render for the D3D9 Cg driver.
+ *
+ * The common d3d9_overlay_render() sets its MVP via
+ * SetVertexShaderConstantF which does not work with Cg shaders
+ * (the Cg runtime manages its own constant register mapping).
+ * This reimplementation uses the Cg API to set the MVP correctly
+ * and avoids any dependency on the common overlay renderer. */
+static void d3d9_cg_overlay_render(
+      d3d9_video_t *d3d,
+      unsigned video_width,
+      unsigned video_height,
+      overlay_t *overlay,
+      bool force_linear)
+{
+   Vertex quad[4];
+   LPDIRECT3DDEVICE9 dev;
+   float x, y, w, h;
+   D3DCOLOR color;
+
+   if (!d3d || !overlay || !overlay->tex)
+      return;
+
+   if (!overlay->enabled)
+      return;
+
+   dev   = d3d->dev;
+   x     = overlay->vert_coords[0];
+   y     = overlay->vert_coords[1];
+   w     = overlay->vert_coords[2];
+   h     = overlay->vert_coords[3];
+   color = D3DCOLOR_ARGB(
+         (int)(overlay->alpha_mod * 0xFF),
+         0xFF, 0xFF, 0xFF);
+
+   /* Set the stock Cg program and the MVP via the Cg API.
+    * Use the same bottom-up [0,1] ortho as the menu display draw. */
+   {
+      static const float bottomup_ortho[16] = {
+          2.0f,  0.0f, 0.0f, -1.0f,
+          0.0f,  2.0f, 0.0f, -1.0f,
+          0.0f,  0.0f, 1.0f,  0.0f,
+          0.0f,  0.0f, 0.0f,  1.0f
+      };
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      d3d9_cg_bind_program(_chain);
+      d3d9_cg_set_mvp(_chain, bottomup_ortho);
+   }
+
+   /* Build a quad from the overlay's normalised coordinates.
+    * vert_coords: [0]=x  [1]=y  [2]=w  [3]=h
+    * tex_coords:  [0]=u  [1]=v  [2]=tw [3]=th */
+   quad[0].x = x;
+   quad[0].y = y;
+   quad[0].z = 0.5f;
+   quad[0].u = overlay->tex_coords[0];
+   quad[0].v = overlay->tex_coords[1];
+   quad[0].color = color;
+
+   quad[1].x = x + w;
+   quad[1].y = y;
+   quad[1].z = 0.5f;
+   quad[1].u = overlay->tex_coords[0] + overlay->tex_coords[2];
+   quad[1].v = overlay->tex_coords[1];
+   quad[1].color = color;
+
+   quad[2].x = x;
+   quad[2].y = y + h;
+   quad[2].z = 0.5f;
+   quad[2].u = overlay->tex_coords[0];
+   quad[2].v = overlay->tex_coords[1] + overlay->tex_coords[3];
+   quad[2].color = color;
+
+   quad[3].x = x + w;
+   quad[3].y = y + h;
+   quad[3].z = 0.5f;
+   quad[3].u = overlay->tex_coords[0] + overlay->tex_coords[2];
+   quad[3].v = overlay->tex_coords[1] + overlay->tex_coords[3];
+   quad[3].color = color;
+
+   /* Render state: alpha blending on, texture filtering */
+   IDirect3DDevice9_SetRenderState(dev,
+         D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+   IDirect3DDevice9_SetRenderState(dev,
+         D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   IDirect3DDevice9_SetRenderState(dev,
+         D3DRS_ALPHABLENDENABLE, true);
+
+   IDirect3DDevice9_SetTexture(dev, 0,
+         (IDirect3DBaseTexture9*)overlay->tex);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MINFILTER, force_linear
+         ? D3DTEXF_COMM_LINEAR : D3DTEXF_POINT);
+   IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MAGFILTER, force_linear
+         ? D3DTEXF_COMM_LINEAR : D3DTEXF_POINT);
+
+   IDirect3DDevice9_SetVertexDeclaration(dev,
+         (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
+
+   IDirect3DDevice9_DrawPrimitiveUP(dev,
+         D3DPT_COMM_TRIANGLESTRIP, 2,
+         quad, sizeof(Vertex));
+
+   /* DrawPrimitiveUP unbinds the stream source, re-bind it */
+   IDirect3DDevice9_SetStreamSource(dev, 0,
+         (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+         0, sizeof(Vertex));
 }
 
 static bool d3d9_cg_frame(void *data, const void *frame,
@@ -2095,8 +3009,10 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
          0, 1, 0);
 
-   IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
-         0, (const float*)&d3d->mvp, 4);
+   {
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      d3d9_cg_set_mvp_transpose(_chain, &d3d->mvp);
+   }
    d3d9_cg_renderchain_render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation);
@@ -2118,19 +3034,15 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && overlay_behind_menu)
    {
-      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
-         0, (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
+         d3d9_cg_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
 #endif
 
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
-         0, (const float*)&d3d->mvp, 4);
-      d3d9_overlay_render(d3d, width, height, d3d->menu, false);
+      d3d9_cg_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
       IDirect3DDevice9_SetVertexDeclaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
@@ -2138,6 +3050,10 @@ static bool d3d9_cg_frame(void *data, const void *frame,
             (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
             0, sizeof(Vertex));
       IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
+      {
+         cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+         d3d9_cg_bind_program(_chain);
+      }
       menu_driver_frame(menu_is_alive, video_info);
    }
    else if (statistics_show)
@@ -2156,10 +3072,8 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && !overlay_behind_menu)
    {
-      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
-         0, (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
+         d3d9_cg_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
 #endif
 
@@ -2225,7 +3139,7 @@ static void d3d9_cg_get_poke_interface(void *data,
 #ifdef HAVE_GFX_WIDGETS
 static bool d3d9_cg_gfx_widgets_enabled(void *data)
 {
-   return false; /* currently disabled due to memory issues */
+   return true;
 }
 #endif
 
