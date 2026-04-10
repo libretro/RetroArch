@@ -61,7 +61,76 @@
 #endif
 
 #include <defines/d3d_defines.h>
+#include <math.h>
 #include "../common/d3d_common.h"
+
+static INLINE void d3d_matrix_identity(void *_pout)
+{
+   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
+   pout->m[0][0] = 1.0f;
+   pout->m[0][1] = 0.0f;
+   pout->m[0][2] = 0.0f;
+   pout->m[0][3] = 0.0f;
+   pout->m[1][0] = 0.0f;
+   pout->m[1][1] = 1.0f;
+   pout->m[1][2] = 0.0f;
+   pout->m[1][3] = 0.0f;
+   pout->m[2][0] = 0.0f;
+   pout->m[2][1] = 0.0f;
+   pout->m[2][2] = 1.0f;
+   pout->m[2][3] = 0.0f;
+   pout->m[3][0] = 0.0f;
+   pout->m[3][1] = 0.0f;
+   pout->m[3][2] = 0.0f;
+   pout->m[3][3] = 1.0f;
+}
+
+static INLINE void d3d_matrix_transpose(void *_pout, const void *_pm)
+{
+   unsigned i, j;
+   struct d3d_matrix       *pout = (struct d3d_matrix*)_pout;
+   const struct d3d_matrix *pm   = (const struct d3d_matrix*)_pm;
+   for (i = 0; i < 4; i++)
+      for (j = 0; j < 4; j++)
+         pout->m[i][j] = pm->m[j][i];
+}
+
+static INLINE void d3d_matrix_ortho_off_center_lh(void *_pout,
+      float l, float r, float b, float t, float zn, float zf)
+{
+   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
+   pout->m[0][0] = 2.0f / (r - l);
+   pout->m[1][1] = 2.0f / (t - b);
+   pout->m[2][2] = 1.0f / (zf - zn);
+   pout->m[3][0] = -1.0f - 2.0f * l / (r - l);
+   pout->m[3][1] =  1.0f + 2.0f * t / (b - t);
+   pout->m[3][2] = zn / (zn - zf);
+}
+
+static INLINE void d3d_matrix_multiply(void *_pout,
+      const void *_pm1, const void *_pm2)
+{
+   unsigned i, j;
+   struct d3d_matrix      *pout = (struct d3d_matrix*)_pout;
+   const struct d3d_matrix *pm1 = (const struct d3d_matrix*)_pm1;
+   const struct d3d_matrix *pm2 = (const struct d3d_matrix*)_pm2;
+   for (i = 0; i < 4; i++)
+      for (j = 0; j < 4; j++)
+         pout->m[i][j] = pm1->m[i][0] * pm2->m[0][j]
+                        + pm1->m[i][1] * pm2->m[1][j]
+                        + pm1->m[i][2] * pm2->m[2][j]
+                        + pm1->m[i][3] * pm2->m[3][j];
+}
+
+static INLINE void d3d_matrix_rotation_z(void *_pout, float angle)
+{
+   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
+   pout->m[0][0] =  cosf(angle);
+   pout->m[1][1] =  cosf(angle);
+   pout->m[0][1] =  sinf(angle);
+   pout->m[1][0] = -sinf(angle);
+}
+
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../frontend/frontend_driver.h"
