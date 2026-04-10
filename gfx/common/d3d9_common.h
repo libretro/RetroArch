@@ -180,12 +180,6 @@ void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
 void d3d9_make_d3dpp(d3d9_video_t *d3d,
       const video_info_t *info, void *_d3dpp);
 
-void d3d9_calculate_rect(d3d9_video_t *d3d,
-      unsigned *width, unsigned *height,
-      int *x, int *y,
-      bool force_full,
-      bool allow_rotate);
-
 void d3d9_log_info(const struct LinkInfo *info);
 
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)

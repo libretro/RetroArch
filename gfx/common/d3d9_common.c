@@ -608,7 +608,6 @@ static void d3d9_set_font_rect(
    d3d->font_rect_shifted.bottom += 2;
 }
 
-
 void d3d9_set_viewport(void *data,
       unsigned width, unsigned height,
       bool force_full,
@@ -619,9 +618,18 @@ void d3d9_set_viewport(void *data,
    float translate_y   = d3d->translate_y;
    int x               = 0;
    int y               = 0;
+   struct video_viewport vp;
 
-   d3d9_calculate_rect(d3d, &width, &height, &x, &y,
-         force_full, allow_rotate);
+   video_driver_get_size(&width, &height);
+
+   vp.full_width  = width;
+   vp.full_height = height;
+   video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
+
+   x      = vp.x;
+   y      = vp.y;
+   width  = vp.width;
+   height = vp.height;
 
    /* D3D doesn't support negative X/Y viewports ... */
    if (x < 0)
@@ -1074,26 +1082,6 @@ end:
    if (dest)
       IDirect3DSurface9_Release(dest);
    return ret;
-}
-
-void d3d9_calculate_rect(d3d9_video_t *d3d,
-      unsigned *width, unsigned *height,
-      int *x, int *y,
-      bool force_full,
-      bool allow_rotate)
-{
-   struct video_viewport vp;
-
-   video_driver_get_size(width, height);
-
-   vp.full_width  = *width;
-   vp.full_height = *height;
-   video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
-
-   *x      = vp.x;
-   *y      = vp.y;
-   *width  = vp.width;
-   *height = vp.height;
 }
 
 void d3d9_set_rotation(void *data, unsigned rot)
