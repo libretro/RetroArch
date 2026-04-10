@@ -584,10 +584,6 @@ FONTS
 
 #include "../gfx/font_driver.c"
 
-#if defined(HAVE_D3D9) && defined(HAVE_D3DX)
-#include "../gfx/drivers_font/d3d9x_w32_font.c"
-#endif
-
 #if defined(HAVE_STB_FONT)
 #include "../gfx/drivers_font_renderer/stb_unicode.c"
 #include "../gfx/drivers_font_renderer/stb.c"
