@@ -2649,6 +2649,18 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("split_joycon_p8",               &settings->uints.input_split_joycon[7], true, 0, false);
 #endif
 
+   /* Co-pilot accessibility: assistant joypad index per player port.
+    * COPILOT_PORT_DISABLED (255) = feature off. Persisted unconditionally
+    * so users do not lose their accessibility configuration on restart. */
+   SETTING_UINT("input_copilot_port_p1", &settings->uints.input_copilot_port[0], true, COPILOT_PORT_DISABLED, false);
+   SETTING_UINT("input_copilot_port_p2", &settings->uints.input_copilot_port[1], true, COPILOT_PORT_DISABLED, false);
+   SETTING_UINT("input_copilot_port_p3", &settings->uints.input_copilot_port[2], true, COPILOT_PORT_DISABLED, false);
+   SETTING_UINT("input_copilot_port_p4", &settings->uints.input_copilot_port[3], true, COPILOT_PORT_DISABLED, false);
+   SETTING_UINT("input_copilot_port_p5", &settings->uints.input_copilot_port[4], true, COPILOT_PORT_DISABLED, false);
+   SETTING_UINT("input_copilot_port_p6", &settings->uints.input_copilot_port[5], true, COPILOT_PORT_DISABLED, false);
+   SETTING_UINT("input_copilot_port_p7", &settings->uints.input_copilot_port[6], true, COPILOT_PORT_DISABLED, false);
+   SETTING_UINT("input_copilot_port_p8", &settings->uints.input_copilot_port[7], true, COPILOT_PORT_DISABLED, false);
+
 #ifdef HAVE_SCREENSHOTS
    SETTING_UINT("notification_show_screenshot_duration", &settings->uints.notification_show_screenshot_duration, true, DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_DURATION, false);
    SETTING_UINT("notification_show_screenshot_flash",    &settings->uints.notification_show_screenshot_flash, true, DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH, false);
@@ -3166,6 +3178,8 @@ void config_set_defaults(void *data)
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
       input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = (unsigned)i;
+      /* Co-pilot disabled by default for every port */
+      settings->uints.input_copilot_port[i] = COPILOT_PORT_DISABLED;
    }
 
    custom_vp->width  = 0;
