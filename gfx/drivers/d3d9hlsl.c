@@ -260,39 +260,50 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
        * Build a quad directly from draw->x/y/width/height in
        * normalized [0,1] space, using DrawPrimitiveUP to avoid
        * any vertex buffer offset/locking issues. */
-      D3DCOLOR col;
-      int colors[4];
+      D3DCOLOR col[4];
       Vertex quad[4];
       float x1, y1, x2, y2;
+      const float *c = draw->coords->color;
 
-      colors[0] = draw->coords->color ? draw->coords->color[0]  * 0xFF : 0xFF;
-      colors[1] = draw->coords->color ? draw->coords->color[1]  * 0xFF : 0xFF;
-      colors[2] = draw->coords->color ? draw->coords->color[2]  * 0xFF : 0xFF;
-      colors[3] = draw->coords->color ? draw->coords->color[3]  * 0xFF : 0xFF;
-      col = D3DCOLOR_ARGB(colors[3], colors[0], colors[1], colors[2]);
+      /* Per-vertex colors matching D3D10 geometry shader corner mapping.
+       * D3D10 sprite colors: [3]=color[0..3], [2]=color[4..7],
+       * [1]=color[8..11], [0]=color[12..15].
+       * After Y-flip, quad layout: [0]=top-left, [1]=top-right,
+       * [2]=bottom-left, [3]=bottom-right.
+       * D3D10: top-left=colors[2], top-right=colors[3],
+       * bottom-left=colors[0], bottom-right=colors[1]. */
+      if (c)
+      {
+         col[0] = D3DCOLOR_ARGB((int)(c[ 7]*0xFF), (int)(c[ 4]*0xFF), (int)(c[ 5]*0xFF), (int)(c[ 6]*0xFF)); /* top-left  = color[4..7]  */
+         col[1] = D3DCOLOR_ARGB((int)(c[ 3]*0xFF), (int)(c[ 0]*0xFF), (int)(c[ 1]*0xFF), (int)(c[ 2]*0xFF)); /* top-right = color[0..3]  */
+         col[2] = D3DCOLOR_ARGB((int)(c[15]*0xFF), (int)(c[12]*0xFF), (int)(c[13]*0xFF), (int)(c[14]*0xFF)); /* bot-left  = color[12..15]*/
+         col[3] = D3DCOLOR_ARGB((int)(c[11]*0xFF), (int)(c[ 8]*0xFF), (int)(c[ 9]*0xFF), (int)(c[10]*0xFF)); /* bot-right = color[8..11] */
+      }
+      else
+      {
+         col[0] = col[1] = col[2] = col[3] = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+      }
 
       /* Normalize to [0,1] range.
-       * Ozone and other menu drivers provide draw->y in bottom-up pixel
-       * coordinates (pre-flipped with height - y - h for GL/D3D10).
-       * D3D10's single-sprite path undoes this flip before its bottom-up
-       * ortho. We must do the same before our top-down ortho so the
-       * double flip yields the correct screen position. */
+       * Both ozone_draw_icon and gfx_display_draw_quad pre-flip Y
+       * (draw.y = height - y - h). The Y-flip here undoes that,
+       * then topdown_ortho applies the correct top-down mapping. */
       x1 = draw->x / (float)video_width;
       y1 = ((float)video_height - draw->y - draw->height) / (float)video_height;
       x2 = (draw->x + draw->width)  / (float)video_width;
       y2 = ((float)video_height - draw->y) / (float)video_height;
 
       quad[0].x = x1; quad[0].y = y1; quad[0].z = 0.5f;
-      quad[0].u = 0.0f; quad[0].v = 0.0f; quad[0].color = col;
+      quad[0].u = 0.0f; quad[0].v = 0.0f; quad[0].color = col[0];
 
       quad[1].x = x2; quad[1].y = y1; quad[1].z = 0.5f;
-      quad[1].u = 1.0f; quad[1].v = 0.0f; quad[1].color = col;
+      quad[1].u = 1.0f; quad[1].v = 0.0f; quad[1].color = col[1];
 
       quad[2].x = x1; quad[2].y = y2; quad[2].z = 0.5f;
-      quad[2].u = 0.0f; quad[2].v = 1.0f; quad[2].color = col;
+      quad[2].u = 0.0f; quad[2].v = 1.0f; quad[2].color = col[2];
 
       quad[3].x = x2; quad[3].y = y2; quad[3].z = 0.5f;
-      quad[3].u = 1.0f; quad[3].v = 1.0f; quad[3].color = col;
+      quad[3].u = 1.0f; quad[3].v = 1.0f; quad[3].color = col[3];
 
       /* Top-down ortho: maps X [0,1]→[-1,1], Y [0,1]→[1,-1] (Y=0 at top).
        * Row-major layout for mul(vector, matrix) in the stock HLSL vertex shader.
@@ -367,9 +378,10 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
    IDirect3DVertexBuffer9_Unlock((LPDIRECT3DVERTEXBUFFER9)
          d3d->menu_display.buffer);
 
-   /* Multi-vertex coords from gfx_display are in bottom-up [0,1] space
-    * (Y=0 at bottom), matching D3D10's VIDEO_SHADER_STOCK_BLEND ortho.
-    * Use a bottom-up ortho: X [0,1]→[-1,1], Y [0,1]→[-1,1]. */
+   /* Multi-vertex coords from gfx_display_draw_texture_slice and
+    * similar are in bottom-up [0,1] space (Y=0 at bottom), matching
+    * D3D10's VIDEO_SHADER_STOCK_BLEND ortho.
+    * Use bottom-up ortho: X [0,1]→[-1,1], Y [0,1]→[-1,1]. */
    {
       /* Row-major layout for mul(vector, matrix) in the stock HLSL vertex shader. */
       static const float bottomup_ortho[16] = {
