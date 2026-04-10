@@ -30,4 +30,8 @@
 #define GLSL_STANDARD_DERIVATIVES(src) "" #src
 #endif
 
+#ifndef GLSL_300
+#define GLSL_300(src)   "#version 300 es\n"   #src
+#endif
+
 #endif

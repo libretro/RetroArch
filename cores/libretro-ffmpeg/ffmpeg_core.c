@@ -546,7 +546,7 @@ struct media_info
  * all hidden global state.
  */
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
 
 #if GL_DEBUG
 #define GL_CHECK_ERROR() do { \
@@ -618,9 +618,9 @@ struct GLFFT
    unsigned depth;
 };
 
-typedef struct GLFFT fft_t;
+typedef struct GLFFT glfft_t;
 
-#endif /* HAVE_OPENGL || HAVE_OPENGLES */
+#endif /* HAVE_OPENGL || HAVE_OPENGLES3 */
 
 typedef struct ffmpeg_core_ctx
 {
@@ -671,8 +671,8 @@ typedef struct ffmpeg_core_ctx
    struct attachment *attachments;
    size_t attachments_size;
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-   fft_t *fft;
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+   glfft_t *fft;
    unsigned fft_width;
    unsigned fft_height;
    unsigned fft_multisample;
@@ -764,7 +764,7 @@ static ffmpeg_core_ctx_t g_ctx;
 #endif
 #define ATTACHMENTS_STR            (g_ctx.attachments)
 #define ATTACHMENTS_SIZE_STR       (g_ctx.attachments_size)
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
 #define FFT_STR                    (g_ctx.fft)
 #define FFT_WIDTH_STR              (g_ctx.fft_width)
 #define FFT_HEIGHT_STR             (g_ctx.fft_height)
@@ -808,15 +808,25 @@ static ffmpeg_core_ctx_t g_ctx;
 #define MEDIA_STR                  (g_ctx.media)
 
 /* ---- GL FFT implementation (merged from ffmpeg_fft.c) ---- */
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
 
+#ifndef CG
 #if defined(HAVE_OPENGLES)
 #define CG(src)   "" #src
-#define GLSL(src) "precision mediump float;\n" #src
-#define GLSL_300(src)   "#version 300 es\n"   #src
 #else
 #define CG(src)   "" #src
+#endif
+#endif
+
+#ifndef GLSL
+#if defined(HAVE_OPENGLES)
+#define GLSL(src) "precision mediump float;\n" #src
+#else
 #define GLSL(src) "" #src
+#endif
+#endif
+
+#ifndef GLSL_300
 #define GLSL_300(src)   "#version 300 es\n"   #src
 #endif
 
@@ -1012,7 +1022,7 @@ static const char *fft_fragment_program_blur = GLSL_300(
    }
 );
 
-static GLuint fft_compile_shader(fft_t *fft, GLenum type, const char *source)
+static GLuint glfft_compile_shader(glfft_t *fft, GLenum type, const char *source)
 {
    GLint status  = 0;
    GLuint shader = glCreateShader(type);
@@ -1036,13 +1046,13 @@ static GLuint fft_compile_shader(fft_t *fft, GLenum type, const char *source)
    return shader;
 }
 
-static GLuint fft_compile_program(fft_t *fft,
+static GLuint glfft_compile_program(glfft_t *fft,
       const char *vertex_source, const char *fragment_source)
 {
    GLint status = 0;
    GLuint prog  = glCreateProgram();
-   GLuint vert  = fft_compile_shader(fft, GL_VERTEX_SHADER, vertex_source);
-   GLuint frag  = fft_compile_shader(fft, GL_FRAGMENT_SHADER, fragment_source);
+   GLuint vert  = glfft_compile_shader(fft, GL_VERTEX_SHADER, vertex_source);
+   GLuint frag  = glfft_compile_shader(fft, GL_FRAGMENT_SHADER, fragment_source);
 
    glAttachShader(prog, vert);
    glAttachShader(prog, frag);
@@ -1087,7 +1097,7 @@ static INLINE unsigned bitinverse(unsigned x, unsigned size)
    return ret;
 }
 
-static fft_complex_t exp_imag(float phase)
+static fft_complex_t glfft_exp_imag(float phase)
 {
    fft_complex_t out;
    out.real = cosf(phase);
@@ -1095,7 +1105,7 @@ static fft_complex_t exp_imag(float phase)
    return out;
 }
 
-void fft_build_params(fft_t *fft, GLuint *buffer,
+void glfft_build_params(glfft_t *fft, GLuint *buffer,
       unsigned step, unsigned size)
 {
    unsigned i, j;
@@ -1110,7 +1120,7 @@ void fft_build_params(fft_t *fft, GLuint *buffer,
          float phase           = -1.0f * (float)s / step_size;
          unsigned a            = j;
          unsigned b            = j + step_size;
-         fft_complex_t twiddle = exp_imag(M_PI * phase);
+         fft_complex_t twiddle = glfft_exp_imag(M_PI * phase);
 
          unsigned read_a       = (step == 0) ? bitinverse(a, size) : a;
          unsigned read_b       = (step == 0) ? bitinverse(b, size) : b;
@@ -1126,7 +1136,7 @@ void fft_build_params(fft_t *fft, GLuint *buffer,
    }
 }
 
-static void fft_init_quad_vao(fft_t *fft)
+static void glfft_init_quad_vao(glfft_t *fft)
 {
    static const GLbyte quad_buffer[] = {
       -1, -1, 1, -1, -1, 1, 1, 1,
@@ -1150,7 +1160,7 @@ static void fft_init_quad_vao(fft_t *fft)
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-static void fft_init_texture(fft_t *fft, GLuint *tex, GLenum format,
+static void glfft_init_texture(glfft_t *fft, GLuint *tex, GLenum format,
       unsigned width, unsigned height, unsigned levels, GLenum mag, GLenum min)
 {
    glGenTextures(1, tex);
@@ -1161,10 +1171,10 @@ static void fft_init_texture(fft_t *fft, GLuint *tex, GLenum format,
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static void fft_init_target(fft_t *fft, struct target *target, GLenum format,
+static void glfft_init_target(glfft_t *fft, struct target *target, GLenum format,
       unsigned width, unsigned height, unsigned levels, GLenum mag, GLenum min)
 {
-   fft_init_texture(fft, &target->tex, format, width, height, levels, mag, min);
+   glfft_init_texture(fft, &target->tex, format, width, height, levels, mag, min);
    glGenFramebuffers(1, &target->fbo);
    glBindFramebuffer(GL_FRAMEBUFFER, target->fbo);
 
@@ -1191,17 +1201,17 @@ static void fft_init_target(fft_t *fft, struct target *target, GLenum format,
 
 #define KAISER_BETA 12.0
 
-static void fft_init(fft_t *fft)
+static void glfft_init(glfft_t *fft)
 {
    unsigned i;
    double window_mod;
    GLushort *window             = NULL;
    static const GLfloat unity[] = { 0.0f, 0.0f, 1.0f, 1.0f };
 
-   fft->prog_real    = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_real);
-   fft->prog_complex = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_complex);
-   fft->prog_resolve = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_resolve);
-   fft->prog_blur    = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_blur);
+   fft->prog_real    = glfft_compile_program(fft, fft_vertex_program, fft_fragment_program_real);
+   fft->prog_complex = glfft_compile_program(fft, fft_vertex_program, fft_fragment_program_complex);
+   fft->prog_resolve = glfft_compile_program(fft, fft_vertex_program, fft_fragment_program_resolve);
+   fft->prog_blur    = glfft_compile_program(fft, fft_vertex_program, fft_fragment_program_blur);
    GL_CHECK_ERROR();
 
    glUseProgram(fft->prog_real);
@@ -1225,7 +1235,7 @@ static void fft_init(fft_t *fft)
 
    GL_CHECK_ERROR();
 
-   fft_init_texture(fft, &fft->window_tex, GL_R16UI,
+   glfft_init_texture(fft, &fft->window_tex, GL_R16UI,
          fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
    GL_CHECK_ERROR();
 
@@ -1245,13 +1255,13 @@ static void fft_init(fft_t *fft)
    glBindTexture(GL_TEXTURE_2D, 0);
 
    GL_CHECK_ERROR();
-   fft_init_texture(fft, &fft->input_tex, GL_RG16I,
+   glfft_init_texture(fft, &fft->input_tex, GL_RG16I,
          fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
-   fft_init_target(fft, &fft->output, GL_RG32UI,
+   glfft_init_target(fft, &fft->output, GL_RG32UI,
          fft->size, fft->depth, 1, GL_NEAREST, GL_NEAREST);
-   fft_init_target(fft, &fft->resolve, GL_RGBA8,
+   glfft_init_target(fft, &fft->resolve, GL_RGBA8,
          fft->size, fft->depth, 1, GL_NEAREST, GL_NEAREST);
-   fft_init_target(fft, &fft->blur, GL_RGBA8,
+   glfft_init_target(fft, &fft->blur, GL_RGBA8,
          fft->size, fft->depth,
          log2i(MAX(fft->size, fft->depth)) + 1,
          GL_NEAREST, GL_LINEAR_MIPMAP_LINEAR);
@@ -1261,14 +1271,14 @@ static void fft_init(fft_t *fft)
    for (i = 0; i < fft->steps; i++)
    {
       GLuint *param_buffer = NULL;
-      fft_init_target(fft, &fft->passes[i].target,
+      glfft_init_target(fft, &fft->passes[i].target,
             GL_RG32UI, fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
-      fft_init_texture(fft, &fft->passes[i].parameter_tex,
+      glfft_init_texture(fft, &fft->passes[i].parameter_tex,
             GL_RG32UI, fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
 
       param_buffer = (GLuint*)calloc(2 * fft->size, sizeof(GLuint));
 
-      fft_build_params(fft, &param_buffer[0], i, fft->size);
+      glfft_build_params(fft, &param_buffer[0], i, fft->size);
 
       glBindTexture(GL_TEXTURE_2D, fft->passes[i].parameter_tex);
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
@@ -1288,7 +1298,7 @@ static void fft_init(fft_t *fft)
    free(window);
 }
 
-static void fft_init_block(fft_t *fft)
+static void glfft_init_block(glfft_t *fft)
 {
    unsigned x, y;
    unsigned block_vertices_size = 0;
@@ -1298,7 +1308,7 @@ static void fft_init_block(fft_t *fft)
    GLushort *block_vertices     = NULL;
    GLuint   *block_indices      = NULL;
 
-   fft->block.prog              = fft_compile_program(fft,
+   fft->block.prog              = glfft_compile_program(fft,
          fft_vertex_program_heightmap, fft_fragment_program_heightmap);
 
    glUseProgram(fft->block.prog);
@@ -1362,7 +1372,7 @@ static void fft_init_block(fft_t *fft)
    free(block_indices);
 }
 
-static bool fft_context_reset(fft_t *fft, unsigned fft_steps,
+static bool glfft_context_reset(glfft_t *fft, unsigned fft_steps,
       rglgen_proc_address_t proc, unsigned fft_depth)
 {
    rglgen_resolve_symbols(proc);
@@ -1385,11 +1395,11 @@ static bool fft_context_reset(fft_t *fft, unsigned fft_steps,
       return false;
 
    GL_CHECK_ERROR();
-   fft_init_quad_vao(fft);
+   glfft_init_quad_vao(fft);
    GL_CHECK_ERROR();
-   fft_init(fft);
+   glfft_init(fft);
    GL_CHECK_ERROR();
-   fft_init_block(fft);
+   glfft_init_block(fft);
    GL_CHECK_ERROR();
 
    return true;
@@ -1397,9 +1407,9 @@ static bool fft_context_reset(fft_t *fft, unsigned fft_steps,
 
 /* GLFFT requires either GLES3 or
  * desktop GL with ES3_compat (supported by MESA on Linux) extension. */
-static fft_t *fft_new(unsigned fft_steps, rglgen_proc_address_t proc)
+static glfft_t *glfft_new(unsigned fft_steps, rglgen_proc_address_t proc)
 {
-   fft_t *fft    = NULL;
+   glfft_t *fft    = NULL;
 #ifdef HAVE_OPENGLES3
    const char *ver = (const char*)(glGetString(GL_VERSION));
    if (ver)
@@ -1415,12 +1425,12 @@ static fft_t *fft_new(unsigned fft_steps, rglgen_proc_address_t proc)
    if (!exts || !strstr(exts, "ARB_ES3_compatibility"))
       return NULL;
 #endif
-   fft = (fft_t*)calloc(1, sizeof(*fft));
+   fft = (glfft_t*)calloc(1, sizeof(*fft));
 
    if (!fft)
       return NULL;
 
-   if (!fft_context_reset(fft, fft_steps, proc, 256))
+   if (!glfft_context_reset(fft, fft_steps, proc, 256))
       goto error;
 
    return fft;
@@ -1431,7 +1441,7 @@ error:
    return NULL;
 }
 
-static void fft_init_multisample(fft_t *fft, unsigned width, unsigned height, unsigned samples)
+static void glfft_init_multisample(glfft_t *fft, unsigned width, unsigned height, unsigned samples)
 {
    if (fft->ms_rb_color)
       glDeleteRenderbuffers(1, &fft->ms_rb_color);
@@ -1463,15 +1473,15 @@ static void fft_init_multisample(fft_t *fft, unsigned width, unsigned height, un
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
             GL_RENDERBUFFER, fft->ms_rb_ds);
       if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-         fft_init_multisample(fft, 0, 0, 0);
+         glfft_init_multisample(fft, 0, 0, 0);
    }
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-static void fft_context_destroy(fft_t *fft)
+static void glfft_context_destroy(glfft_t *fft)
 {
-   fft_init_multisample(fft, 0, 0, 0);
+   glfft_init_multisample(fft, 0, 0, 0);
    if (fft->passes)
       free(fft->passes);
    fft->passes = NULL;
@@ -1480,18 +1490,18 @@ static void fft_context_destroy(fft_t *fft)
    fft->sliding = NULL;
 }
 
-static void fft_free(fft_t *fft)
+static void glfft_free(glfft_t *fft)
 {
    if (!fft)
       return;
 
-   fft_context_destroy(fft);
+   glfft_context_destroy(fft);
    if (fft)
       free(fft);
    fft = NULL;
 }
 
-static void fft_step_fft(fft_t *fft, const GLshort *audio_buffer, unsigned frames)
+static void glfft_step(glfft_t *fft, const GLshort *audio_buffer, unsigned frames)
 {
    unsigned i;
    GLfloat resolve_offset[4];
@@ -1600,7 +1610,7 @@ static void fft_step_fft(fft_t *fft, const GLshort *audio_buffer, unsigned frame
    GL_CHECK_ERROR();
 }
 
-static void fft_render(fft_t *fft, GLuint backbuffer, unsigned width, unsigned height)
+static void glfft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned height)
 {
    vec3_t eye, center, up;
    stub_matrix4x4 mvp_real;
@@ -1683,7 +1693,7 @@ static void fft_render(fft_t *fft, GLuint backbuffer, unsigned width, unsigned h
    GL_CHECK_ERROR();
 }
 
-#endif /* HAVE_OPENGL || HAVE_OPENGLES */
+#endif /* HAVE_OPENGL || HAVE_OPENGLES3 */
 
 #ifdef HAVE_SSA
 static void render_ass_img(AVFrame *conv_frame, ASS_Image *img);
@@ -1777,7 +1787,7 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
    info->timing.fps = MEDIA_STR.interpolate_fps;
    info->timing.sample_rate = ACTX_STR[0] ? MEDIA_STR.sample_rate : 32000.0;
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    if (AUDIO_STREAMS_NUM_STR > 0 && VIDEO_STREAM_INDEX_STR < 0)
    {
       width = FFT_WIDTH_STR;
@@ -1803,6 +1813,8 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
       { "ffmpeg_sw_decoder_threads", "Software decoder thread count (restart); auto|1|2|4|6|8|10|12|14|16" },
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; disabled|enabled" },
+#endif
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
       { "ffmpeg_fft_resolution", "FFT Resolution; 1280x720|1920x1080|2560x1440|3840x2160|640x360|320x180" },
       { "ffmpeg_fft_multisample", "FFT Multisample; 1x|2x|4x" },
 #endif
@@ -1869,6 +1881,8 @@ static void check_variables(bool firststart)
    struct retro_variable color_var  = {0};
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    struct retro_variable var        = {0};
+#endif
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    struct retro_variable fft_var    = {0};
    struct retro_variable fft_ms_var = {0};
 #endif
@@ -1883,7 +1897,9 @@ static void check_variables(bool firststart)
       else if (memcmp(var.value, "disabled", 8) == 0)
          TEMPORAL_INTERPOLATION_STR = false;
    }
+#endif
 
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    fft_var.key = "ffmpeg_fft_resolution";
 
    FFT_WIDTH_STR       = 1280;
@@ -2114,7 +2130,7 @@ void CORE_PREFIX(retro_run)(void)
    size_t to_read_frames        = 0;
    int seek_frames              = 0;
    bool updated                 = false;
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    unsigned old_fft_width       = FFT_WIDTH_STR;
    unsigned old_fft_height      = FFT_HEIGHT_STR;
    unsigned old_fft_multisample = FFT_MULTISAMPLE_STR;
@@ -2123,7 +2139,7 @@ void CORE_PREFIX(retro_run)(void)
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables(false);
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    if (FFT_WIDTH_STR != old_fft_width || FFT_HEIGHT_STR != old_fft_height)
    {
       struct retro_system_av_info info;
@@ -2136,7 +2152,7 @@ void CORE_PREFIX(retro_run)(void)
    }
 
    if (FFT_STR && (old_fft_multisample != FFT_MULTISAMPLE_STR))
-      fft_init_multisample(FFT_STR, FFT_WIDTH_STR, FFT_HEIGHT_STR, FFT_MULTISAMPLE_STR);
+      glfft_init_multisample(FFT_STR, FFT_WIDTH_STR, FFT_HEIGHT_STR, FFT_MULTISAMPLE_STR);
 #endif
 
    CORE_PREFIX(input_poll_cb)();
@@ -2483,7 +2499,7 @@ void CORE_PREFIX(retro_run)(void)
                MEDIA_STR.width, MEDIA_STR.height, MEDIA_STR.width * sizeof(uint32_t));
       }
    }
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    else if (FFT_STR)
    {
       unsigned       fft_frames = to_read_frames;
@@ -2498,11 +2514,11 @@ void CORE_PREFIX(retro_run)(void)
          if (to_read > (1 << 11))
             to_read = 1 << 11;
 
-         fft_step_fft(FFT_STR, buffer, to_read);
+         glfft_step(FFT_STR, buffer, to_read);
          buffer += to_read * 2;
          fft_frames -= to_read;
       }
-      fft_render(FFT_STR, HW_RENDER_STR.get_current_framebuffer(), FFT_WIDTH_STR, FFT_HEIGHT_STR);
+      glfft_render(FFT_STR, HW_RENDER_STR.get_current_framebuffer(), FFT_WIDTH_STR, FFT_HEIGHT_STR);
       CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID,
             FFT_WIDTH_STR, FFT_HEIGHT_STR, FFT_WIDTH_STR * sizeof(uint32_t));
    }
@@ -3480,11 +3496,13 @@ static void decode_thread(void *data)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 static void context_destroy(void)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    if (FFT_STR)
    {
-      fft_free(FFT_STR);
+      glfft_free(FFT_STR);
       FFT_STR = NULL;
    }
+#endif
 }
 
 static const char *vertex_source = GLSL(
@@ -3535,15 +3553,17 @@ static void context_reset(void)
    GLuint vert, frag;
    unsigned i;
 
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    if (AUDIO_STREAMS_NUM_STR > 0 && VIDEO_STREAM_INDEX_STR < 0)
    {
-      FFT_STR = fft_new(11, HW_RENDER_STR.get_proc_address);
+      FFT_STR = glfft_new(11, HW_RENDER_STR.get_proc_address);
       if (FFT_STR)
-         fft_init_multisample(FFT_STR, FFT_WIDTH_STR, FFT_HEIGHT_STR, FFT_MULTISAMPLE_STR);
+         glfft_init_multisample(FFT_STR, FFT_WIDTH_STR, FFT_HEIGHT_STR, FFT_MULTISAMPLE_STR);
    }
 
    /* Already inits symbols. */
    if (!FFT_STR)
+#endif
       rglgen_resolve_symbols(HW_RENDER_STR.get_proc_address);
 
    PROG_STR = glCreateProgram();
@@ -3776,7 +3796,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       goto error;
    }
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    is_fft = VIDEO_STREAM_INDEX_STR < 0 && AUDIO_STREAMS_NUM_STR > 0;
 #endif
 
@@ -3790,7 +3810,8 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       HW_RENDER_STR.depth              = is_fft;
       HW_RENDER_STR.stencil            = is_fft;
 #if defined(HAVE_OPENGLES)
-      HW_RENDER_STR.context_type = RETRO_HW_CONTEXT_OPENGLES2;
+      HW_RENDER_STR.context_type = is_fft
+         ? RETRO_HW_CONTEXT_OPENGLES3 : RETRO_HW_CONTEXT_OPENGLES2;
 #else
       HW_RENDER_STR.context_type = RETRO_HW_CONTEXT_OPENGL;
 #endif
