@@ -125,6 +125,8 @@ static const float d3d9_hlsl_tex_coords[8] = {
    1, 0
 };
 
+static LPDIRECT3DTEXTURE9 d3d9_hlsl_white_texture = NULL;
+
 static INT32 gfx_display_prim_to_d3d9_hlsl_enum(
       enum gfx_display_prim_type prim_type)
 {
@@ -167,8 +169,15 @@ static void gfx_display_d3d9_bind_texture(gfx_display_ctx_draw_t *draw,
 {
    LPDIRECT3DDEVICE9 dev = d3d->dev;
 
-   IDirect3DDevice9_SetTexture(dev, 0,
-         (IDirect3DBaseTexture9*)draw->texture);
+   if (draw->texture)
+      IDirect3DDevice9_SetTexture(dev, 0,
+            (IDirect3DBaseTexture9*)draw->texture);
+   else if (d3d9_hlsl_white_texture)
+      IDirect3DDevice9_SetTexture(dev, 0,
+            (IDirect3DBaseTexture9*)d3d9_hlsl_white_texture);
+   else
+      IDirect3DDevice9_SetTexture(dev, 0, NULL);
+
    IDirect3DDevice9_SetSamplerState(dev,
          0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
    IDirect3DDevice9_SetSamplerState(dev,
@@ -240,9 +249,6 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
       default:
          break;
    }
-
-   if (!draw->texture)
-      return;
 
    /* Determine whether caller provides explicit vertex arrays or
     * expects us to build the quad from draw->x/y/width/height
@@ -2032,6 +2038,25 @@ static bool d3d9_hlsl_initialize(
    if (!d3d->menu_display.buffer)
       return false;
 
+   /* Create a 1x1 white fallback texture for draws with no texture
+    * (e.g. widget background quads when gfx_white_texture is not loaded) */
+   if (!d3d9_hlsl_white_texture)
+   {
+      IDirect3DDevice9_CreateTexture(d3d->dev, 1, 1, 1,
+            0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
+            (LPDIRECT3DTEXTURE9*)&d3d9_hlsl_white_texture, NULL);
+      if (d3d9_hlsl_white_texture)
+      {
+         D3DLOCKED_RECT lr;
+         if (SUCCEEDED(IDirect3DTexture9_LockRect(
+                     d3d9_hlsl_white_texture, 0, &lr, NULL, 0)))
+         {
+            *((DWORD*)lr.pBits) = 0xFFFFFFFF; /* ARGB white */
+            IDirect3DTexture9_UnlockRect(d3d9_hlsl_white_texture, 0);
+         }
+      }
+   }
+
    d3d_matrix_identity(&d3d->mvp_transposed);
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
    d3d->mvp = d3d->mvp_transposed;
@@ -2294,6 +2319,12 @@ static void d3d9_hlsl_free(void *data)
 
    d3d9_hlsl_deinitialize(d3d);
 
+   if (d3d9_hlsl_white_texture)
+   {
+      IDirect3DTexture9_Release(d3d9_hlsl_white_texture);
+      d3d9_hlsl_white_texture = NULL;
+   }
+
    if (d3d->shader_path && *d3d->shader_path)
       free(d3d->shader_path);
 
@@ -2461,6 +2492,38 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 #ifdef HAVE_GFX_WIDGETS
    if (widgets_active)
    {
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      RECT scissor_rect;
+
+      d3d->menu_display.offset = 0;
+      IDirect3DDevice9_SetVertexDeclaration(d3d->dev,
+            (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
+      IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+            (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+            0, sizeof(Vertex));
+      IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
+
+      /* Reset scissor rect to full screen */
+      scissor_rect.left   = 0;
+      scissor_rect.top    = 0;
+      scissor_rect.right  = width;
+      scissor_rect.bottom = height;
+      IDirect3DDevice9_SetScissorRect(d3d->dev, &scissor_rect);
+
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_ALPHABLENDENABLE, true);
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_ZENABLE, false);
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_CULLMODE, D3DCULL_NONE);
+      if (_chain)
+         d3d9_hlsl_bind_program(d3d->dev, &_chain->stock_shader);
+      IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
+            (const float*)&d3d->mvp, 4);
       IDirect3DDevice9_BeginScene(d3d->dev);
       gfx_widgets_frame(video_info);
       IDirect3DDevice9_EndScene(d3d->dev);
