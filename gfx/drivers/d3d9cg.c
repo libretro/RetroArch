@@ -2441,6 +2441,105 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
    return true;
 }
 
+static void d3d9_set_font_rect(
+      d3d9_video_t *d3d,
+      const struct font_params *params)
+{
+   settings_t *settings           = config_get_ptr();
+   float pos_x                    = settings->floats.video_msg_pos_x;
+   float pos_y                    = settings->floats.video_msg_pos_y;
+   float font_size                = settings->floats.video_font_size;
+
+   if (params)
+   {
+      pos_x                       = params->x;
+      pos_y                       = params->y;
+      font_size                  *= params->scale;
+   }
+
+   d3d->font_rect.left            = d3d->video_info.width * pos_x;
+   d3d->font_rect.right           = d3d->video_info.width;
+   d3d->font_rect.top             = (1.0f - pos_y) * d3d->video_info.height - font_size;
+   d3d->font_rect.bottom          = d3d->video_info.height;
+
+   d3d->font_rect_shifted         = d3d->font_rect;
+   d3d->font_rect_shifted.left   -= 2;
+   d3d->font_rect_shifted.right  -= 2;
+   d3d->font_rect_shifted.top    += 2;
+   d3d->font_rect_shifted.bottom += 2;
+}
+
+static void d3d9_cg_set_osd_msg(void *data,
+      const char *msg,
+      const struct font_params *params, void *font)
+{
+   d3d9_video_t          *d3d = (d3d9_video_t*)data;
+   LPDIRECT3DDEVICE9     dev  = d3d->dev;
+
+   d3d9_set_font_rect(d3d, params);
+   IDirect3DDevice9_BeginScene(dev);
+   font_driver_render_msg(d3d, msg, params, font);
+   IDirect3DDevice9_EndScene(dev);
+}
+
+static void d3d9_cg_set_viewport(void *data,
+      unsigned width, unsigned height,
+      bool force_full,
+      bool allow_rotate)
+{
+   d3d9_video_t *d3d   = (d3d9_video_t*)data;
+   float translate_x   = d3d->translate_x;
+   float translate_y   = d3d->translate_y;
+   int x               = 0;
+   int y               = 0;
+   struct video_viewport vp;
+
+   video_driver_get_size(&width, &height);
+
+   vp.full_width  = width;
+   vp.full_height = height;
+   video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
+
+   x      = vp.x;
+   y      = vp.y;
+   width  = vp.width;
+   height = vp.height;
+
+   /* D3D doesn't support negative X/Y viewports ... */
+   if (x < 0)
+   {
+      if (!force_full)
+         d3d->translate_x = x * 2;
+      x = 0;
+   }
+   else if (!force_full)
+      d3d->translate_x = 0;
+
+   if (y < 0)
+   {
+      if (!force_full)
+         d3d->translate_y = y * 2;
+      y = 0;
+   }
+   else if (!force_full)
+      d3d->translate_y = 0;
+
+   if (!force_full)
+   {
+      if (translate_x != d3d->translate_x || translate_y != d3d->translate_y)
+         d3d->needs_restore = true;
+   }
+
+   d3d->out_vp.X      = x;
+   d3d->out_vp.Y      = y;
+   d3d->out_vp.Width  = width;
+   d3d->out_vp.Height = height;
+   d3d->out_vp.MinZ   = 0.0f;
+   d3d->out_vp.MaxZ   = 1.0f;
+
+   d3d9_set_font_rect(d3d, NULL);
+}
+
 static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
 {
    unsigned width, height;
@@ -2479,7 +2578,7 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
    }
 
    video_driver_get_size(&width, &height);
-   d3d9_set_viewport(d3d,
+   d3d9_cg_set_viewport(d3d,
       width, height, false, true);
 
    font_driver_init_osd(d3d, info,
@@ -2775,6 +2874,165 @@ static void *d3d9_cg_init(const video_info_t *info,
    return d3d;
 }
 
+#ifdef HAVE_OVERLAY
+static void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
+{
+   if ((LPDIRECT3DTEXTURE9)overlay->tex)
+      IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)overlay->tex);
+   d3d9_vertex_buffer_free(overlay->vert_buf, NULL);
+}
+
+static void d3d9_cg_free_overlays(d3d9_video_t *d3d)
+{
+   unsigned i;
+
+   for (i = 0; i < d3d->overlays_size; i++)
+      d3d9_free_overlay(d3d, &d3d->overlays[i]);
+   free(d3d->overlays);
+   d3d->overlays      = NULL;
+   d3d->overlays_size = 0;
+}
+
+static void d3d9_overlay_tex_geom(
+      void *data,
+      unsigned index,
+      float x, float y,
+      float w, float h)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return;
+
+   d3d->overlays[index].tex_coords[0] = x;
+   d3d->overlays[index].tex_coords[1] = y;
+   d3d->overlays[index].tex_coords[2] = w;
+   d3d->overlays[index].tex_coords[3] = h;
+}
+
+static void d3d9_overlay_vertex_geom(
+      void *data,
+      unsigned index,
+      float x, float y,
+      float w, float h)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return;
+
+   y                                   = 1.0f - y;
+   h                                   = -h;
+   d3d->overlays[index].vert_coords[0] = x;
+   d3d->overlays[index].vert_coords[1] = y;
+   d3d->overlays[index].vert_coords[2] = w;
+   d3d->overlays[index].vert_coords[3] = h;
+}
+
+static bool d3d9_overlay_load(void *data,
+      const void *image_data, unsigned num_images)
+{
+   unsigned i, y;
+   d3d9_video_t *d3d                  = (d3d9_video_t*)data;
+   const struct texture_image *images = (const struct texture_image*)
+      image_data;
+
+   if (!d3d)
+      return false;
+
+   d3d9_cg_free_overlays(d3d);
+   d3d->overlays      = (overlay_t*)calloc(num_images, sizeof(*d3d->overlays));
+   d3d->overlays_size = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      D3DLOCKED_RECT d3dlr;
+      unsigned width     = images[i].width;
+      unsigned height    = images[i].height;
+      overlay_t *overlay = (overlay_t*)&d3d->overlays[i];
+
+      overlay->tex       = d3d9_texture_new(d3d->dev,
+                  width, height, 1,
+                  0,
+                  D3D9_ARGB8888_FORMAT,
+                  D3DPOOL_MANAGED, 0, 0, 0,
+                  NULL, NULL, false);
+
+      if (!overlay->tex)
+      {
+         RARCH_ERR("[D3D9] Failed to create overlay texture.\n");
+         return false;
+      }
+
+      IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      {
+         uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
+         const uint32_t *src = images[i].pixels;
+         unsigned      pitch = d3dlr.Pitch >> 2;
+         for (y = 0; y < height; y++, dst += pitch, src += width)
+            memcpy(dst, src, width << 2);
+      }
+      IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0);
+
+      overlay->tex_w         = width;
+      overlay->tex_h         = height;
+
+      /* Default. Stretch to whole screen. */
+      d3d9_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
+      d3d9_overlay_vertex_geom(d3d, i, 0, 0, 1, 1);
+   }
+
+   return true;
+}
+
+static void d3d9_overlay_enable(void *data, bool state)
+{
+   unsigned i;
+   d3d9_video_t            *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return;
+
+   for (i = 0; i < d3d->overlays_size; i++)
+      d3d->overlays_enabled = state;
+
+#ifndef XBOX
+   win32_show_cursor(d3d, state);
+#endif
+}
+
+static void d3d9_overlay_full_screen(void *data, bool enable)
+{
+   unsigned i;
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   for (i = 0; i < d3d->overlays_size; i++)
+      d3d->overlays[i].fullscreen = enable;
+}
+
+static void d3d9_overlay_set_alpha(void *data, unsigned index, float mod)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   if (d3d)
+      d3d->overlays[index].alpha_mod = mod;
+}
+
+static const video_overlay_interface_t d3d9_overlay_interface = {
+   d3d9_overlay_enable,
+   d3d9_overlay_load,
+   d3d9_overlay_tex_geom,
+   d3d9_overlay_vertex_geom,
+   d3d9_overlay_full_screen,
+   d3d9_overlay_set_alpha,
+};
+
+void d3d9_cg_get_overlay_interface(void *data,
+      const video_overlay_interface_t **iface)
+{
+   *iface = &d3d9_overlay_interface;
+}
+#endif
+
 /* Release the texture owned by a single overlay. */
 static void d3d9_cg_free_overlay(overlay_t *overlay)
 {
@@ -2785,16 +3043,6 @@ static void d3d9_cg_free_overlay(overlay_t *overlay)
       IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)overlay->tex);
       overlay->tex = NULL;
    }
-}
-
-/* Release textures for every entry in the overlay array. */
-static void d3d9_cg_free_overlays(d3d9_video_t *d3d)
-{
-   unsigned i;
-   if (!d3d)
-      return;
-   for (i = 0; i < d3d->overlays_size; i++)
-      d3d9_cg_free_overlay(&d3d->overlays[i]);
 }
 
 static void d3d9_cg_free(void *data)
@@ -2995,7 +3243,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       cg_renderchain_t   *_chain = (cg_renderchain_t*)
          d3d->renderchain_data;
       d3d9_renderchain_t *chain  = (d3d9_renderchain_t*)&_chain->chain;
-      d3d9_set_viewport(d3d, width, height, false, true);
+      d3d9_cg_set_viewport(d3d, width, height, false, true);
 
       if (chain)
          chain->out_vp = (D3DVIEWPORT9*)&d3d->out_vp;
@@ -3140,6 +3388,116 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    return true;
 }
 
+static void d3d9_cg_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return;
+
+   d3d->keep_aspect   = true;
+   d3d->should_resize = true;
+}
+
+static void d3d9_cg_apply_state_changes(void *data)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   if (d3d)
+      d3d->should_resize = true;
+}
+
+void d3d9_cg_set_menu_texture_enable(void *data,
+      bool state, bool full_screen)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d || !d3d->menu)
+      return;
+
+   d3d->menu->enabled            = state;
+   d3d->menu->fullscreen         = full_screen;
+}
+
+static void d3d9_cg_set_menu_texture_frame(void *data,
+      const void *frame, bool rgb32, unsigned width, unsigned height,
+      float alpha)
+{
+   D3DLOCKED_RECT d3dlr;
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d || !d3d->menu)
+      return;
+
+   if (       (!d3d->menu->tex)
+            || (d3d->menu->tex_w != width)
+            || (d3d->menu->tex_h != height))
+   {
+      if (d3d->menu->tex)
+         IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+
+      d3d->menu->tex = d3d9_texture_new(d3d->dev,
+            width, height, 1,
+            0, D3D9_ARGB8888_FORMAT,
+            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
+
+      if (!d3d->menu->tex)
+      {
+         RARCH_ERR("[D3D9] Failed to create menu texture.\n");
+         return;
+      }
+
+      d3d->menu->tex_w          = width;
+      d3d->menu->tex_h          = height;
+   }
+
+   d3d->menu->alpha_mod = alpha;
+
+   IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex,
+         0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   {
+      unsigned h, w;
+
+      if (rgb32)
+      {
+         uint8_t        *dst = (uint8_t*)d3dlr.pBits;
+         const uint32_t *src = (const uint32_t*)frame;
+
+         for (h = 0; h < height; h++, dst += d3dlr.Pitch, src += width)
+         {
+            memcpy(dst, src, width * sizeof(uint32_t));
+            memset(dst + width * sizeof(uint32_t), 0,
+                  d3dlr.Pitch - width * sizeof(uint32_t));
+         }
+      }
+      else
+      {
+         uint32_t       *dst = (uint32_t*)d3dlr.pBits;
+         const uint16_t *src = (const uint16_t*)frame;
+
+         for (h = 0; h < height; h++,
+               dst += d3dlr.Pitch >> 2,
+               src += width)
+         {
+            for (w = 0; w < width; w++)
+            {
+               uint16_t c = src[w];
+               uint32_t r = (c >> 12) & 0xf;
+               uint32_t g = (c >>  8) & 0xf;
+               uint32_t b = (c >>  4) & 0xf;
+               uint32_t a = (c >>  0) & 0xf;
+               r          = ((r << 4) | r) << 16;
+               g          = ((g << 4) | g) <<  8;
+               b          = ((b << 4) | b) <<  0;
+               a          = ((a << 4) | a) << 24;
+               dst[w]     = r | g | b | a;
+            }
+         }
+      }
+   }
+
+   IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex, 0);
+}
+
 static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_cg_get_flags,
    d3d9_load_texture,
@@ -3157,11 +3515,11 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   d3d9_set_aspect_ratio,
-   d3d9_apply_state_changes,
-   d3d9_set_menu_texture_frame,
-   d3d9_set_menu_texture_enable,
-   d3d9_set_osd_msg,
+   d3d9_cg_set_aspect_ratio,
+   d3d9_cg_apply_state_changes,
+   d3d9_cg_set_menu_texture_frame,
+   d3d9_cg_set_menu_texture_enable,
+   d3d9_cg_set_osd_msg,
    win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
@@ -3247,6 +3605,100 @@ static void d3d9_cg_set_nonblock_state(void *data, bool state,
    d3d9_cg_restore(d3d);
 }
 
+void d3d9_cg_set_rotation(void *data, unsigned rot)
+{
+   d3d9_video_t        *d3d = (d3d9_video_t*)data;
+   if (d3d)
+      d3d->dev_rotation = rot;
+}
+
+void d3d9_cg_viewport_info(void *data, struct video_viewport *vp)
+{
+   unsigned width, height;
+   d3d9_video_t *d3d   = (d3d9_video_t*)data;
+
+   video_driver_get_size(&width, &height);
+
+   vp->x               = d3d->out_vp.X;
+   vp->y               = d3d->out_vp.Y;
+   vp->width           = d3d->out_vp.Width;
+   vp->height          = d3d->out_vp.Height;
+
+   vp->full_width      = width;
+   vp->full_height     = height;
+}
+
+static INLINE bool d3d9_cg_device_get_render_target_data(
+      LPDIRECT3DDEVICE9 dev,
+      LPDIRECT3DSURFACE9 src, LPDIRECT3DSURFACE9 dst)
+{
+#ifndef _XBOX
+   return (   dev
+           && SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
+               dev, src, dst)));
+#else
+   return false;
+#endif
+}
+
+bool d3d9_cg_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   unsigned width, height;
+   D3DLOCKED_RECT rect;
+   LPDIRECT3DSURFACE9 target = NULL;
+   LPDIRECT3DSURFACE9 dest   = NULL;
+   bool ret                  = true;
+   d3d9_video_t *d3d         = (d3d9_video_t*)data;
+   LPDIRECT3DDEVICE9 d3dr    = d3d->dev;
+
+   video_driver_get_size(&width, &height);
+
+   if (
+            !d3d9_device_get_render_target(d3dr, 0, (void**)&target)
+         || !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
+            D3D9_XRGB8888_FORMAT,
+            D3DPOOL_SYSTEMMEM, (void**)&dest, NULL)
+         || !d3d9_cg_device_get_render_target_data(d3dr, target, dest)
+         )
+   {
+      ret = false;
+      goto end;
+   }
+
+   IDirect3DSurface9_LockRect(dest, &rect, NULL, D3DLOCK_READONLY);
+
+   {
+      unsigned x, y;
+      unsigned vp_width       = (d3d->out_vp.Width  > width)  ? width  : d3d->out_vp.Width;
+      unsigned vp_height      = (d3d->out_vp.Height > height) ? height : d3d->out_vp.Height;
+      unsigned pitchpix       = rect.Pitch / 4;
+      const uint32_t *pixels  = (const uint32_t*)rect.pBits;
+
+      pixels                 += d3d->out_vp.X;
+      pixels                 += (vp_height - 1) * pitchpix;
+      pixels                 -= d3d->out_vp.Y * pitchpix;
+
+      for (y = 0; y < vp_height; y++, pixels -= pitchpix)
+      {
+         for (x = 0; x < vp_width; x++)
+         {
+            *buffer++ = (pixels[x] >>  0) & 0xff;
+            *buffer++ = (pixels[x] >>  8) & 0xff;
+            *buffer++ = (pixels[x] >> 16) & 0xff;
+         }
+      }
+
+      IDirect3DSurface9_UnlockRect(dest);
+   }
+
+end:
+   if (target)
+      IDirect3DSurface9_Release(target);
+   if (dest)
+      IDirect3DSurface9_Release(dest);
+   return ret;
+}
+
 video_driver_t video_d3d9_cg = {
    d3d9_cg_init,
    d3d9_cg_frame,
@@ -3258,13 +3710,13 @@ video_driver_t video_d3d9_cg = {
    d3d9_cg_set_shader,
    d3d9_cg_free,
    "d3d9_cg",
-   d3d9_set_viewport,
-   d3d9_set_rotation,
-   d3d9_viewport_info,
-   d3d9_read_viewport,
+   d3d9_cg_set_viewport,
+   d3d9_cg_set_rotation,
+   d3d9_cg_viewport_info,
+   d3d9_cg_read_viewport,
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   d3d9_get_overlay_interface,
+   d3d9_cg_get_overlay_interface,
 #endif
    d3d9_cg_get_poke_interface,
    NULL, /* wrap_type_to_enum */
