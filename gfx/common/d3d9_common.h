@@ -162,46 +162,10 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api);
 
 void d3d9_deinitialize_symbols(void);
 
-void d3d9x_constant_table_set_float_array(LPDIRECT3DDEVICE9 dev,
-      void *p, void *_handle, const void *_pf, unsigned count);
-
-void d3d9x_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
-      void *p);
-
-void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
-      void *p, void *data, const void *matrix);
-
-const bool d3d9x_constant_table_set_float(void *p,
-      void *a, void *b, float val);
-
-void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
-      void *_handle, void *_name);
-
 void d3d9_make_d3dpp(d3d9_video_t *d3d,
       const video_info_t *info, void *_d3dpp);
 
 void d3d9_log_info(const struct LinkInfo *info);
-
-#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay);
-
-void d3d9_overlay_render(d3d9_video_t *d3d,
-      unsigned width,
-      unsigned height,
-      overlay_t *overlay, bool force_linear);
-#endif
-
-#if defined(HAVE_OVERLAY)
-void d3d9_free_overlays(d3d9_video_t *d3d);
-void d3d9_get_overlay_interface(void *data,
-      const video_overlay_interface_t **iface);
-#endif
-
-void d3d9_set_rotation(void *data, unsigned rot);
-
-void d3d9_viewport_info(void *data, struct video_viewport *vp);
-
-bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle);
 
 bool d3d9_has_windowed(void *data);
 
@@ -210,30 +174,12 @@ bool d3d9_process_shader(d3d9_video_t *d3d);
 uintptr_t d3d9_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type);
 
-void d3d9_set_osd_msg(void *data,
-      const char *msg,
-      const struct font_params *params, void *font);
-
 void d3d9_unload_texture(void *data,
       bool threaded, uintptr_t id);
 
 void d3d9_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen);
-
-void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx);
-
-void d3d9_set_menu_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
-      float alpha);
-
-void d3d9_set_viewport(void *data,
-      unsigned width, unsigned height,
-      bool force_full,
-      bool allow_rotate);
-
-void d3d9_set_menu_texture_enable(void *data,
-      bool state, bool full_screen);
 
 void d3d9_blit_to_texture(
       LPDIRECT3DTEXTURE9 tex,
@@ -242,8 +188,6 @@ void d3d9_blit_to_texture(
       unsigned width,      unsigned height,
       unsigned last_width, unsigned last_height,
       unsigned pitch, unsigned pixel_size);
-
-void d3d9_apply_state_changes(void *data);
 
 extern LPDIRECT3D9 g_pD3D9;
 
