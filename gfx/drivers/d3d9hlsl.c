@@ -3363,7 +3363,7 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
    if (!overlay->vert_buf)
    {
       overlay->vert_buf = NULL;
-      if (!SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
+      if (FAILED(IDirect3DDevice9_CreateVertexBuffer(
                   dev, sizeof(vert), D3DUSAGE_WRITEONLY,
 #ifdef _XBOX
                   0,
