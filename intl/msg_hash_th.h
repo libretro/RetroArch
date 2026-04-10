@@ -2782,8 +2782,16 @@ MSG_HASH(
    "โหมด WASAPI Exclusive"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "อนุญาตให้ RetroArch ควบคุมอุปกรณ์ไมโครโฟนแต่เพียงผู้เดียว เมื่อใช้งานไดรเวอร์ไมโครโฟน WASAPI หากปิดใช้งาน RetroArch จะใช้งานในโหมดแชร์แทน"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
    "รูปแบบ Float ของ WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "ใช้อินพุต Floating-point สำหรับไดรเวอร์ WASAPI หากอุปกรณ์เสียงของคุณรองรับ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
@@ -2797,12 +2805,36 @@ MSG_HASH(
 
 /* Settings > Audio > Resampler */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   "คุณภาพการสุ่มสัญญาณใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   "ลดค่านี้ลงเพื่อให้ความสำคัญกับประสิทธิภาพ/เวลาแฝงที่ต่ำกว่าเมื่อเทียบกับคุณภาพเสียง เพิ่มค่าเพื่อให้ได้คุณภาพเสียงที่ดีขึ้นโดยต้องแลกกับประสิทธิภาพ/เวลาแฝงที่ต่ำลง"
+   )
 
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    "ซิงโครไนซ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   "ซิงโครไนซ์เสียง แนะนำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+   "ความคลาดเคลื่อนของเวลาสูงสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   "การเปลี่ยนแปลงสูงสุดของอัตราอินพุตเสียง การเพิ่มค่านี้จะช่วยให้สามารถเปลี่ยนแปลงเวลาได้อย่างมาก แต่ต้องแลกมาด้วยระดับเสียงที่ไม่ถูกต้อง (เช่น การใช้งาน PAL cores บนจอแสดงผล NTSC)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
+   "ค่าความคลาดเคลื่อนของเวลาเสียงสูงสุด\nกำหนดการเปลี่ยนแปลงสูงสุดของอัตราอินพุต คุณอาจต้องการเพิ่มค่านี้เพื่อให้สามารถเปลี่ยนแปลงเวลาได้มาก เช่น การเรียกใช้คอร์ PAL บนจอแสดงผล [...]"
    )
 
 /* Settings > Audio > MIDI */
@@ -3028,6 +3060,22 @@ MSG_HASH(
 
 /* Settings > On-Screen Display */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "แสดงตัวเลือก การแจ้งเตือนบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "ปรับแต่งการแจ้งเตือนบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "การมองเห็นการแจ้งเตือน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "เปิด-ปิด การมองเห็นของการแจ้งเตือนแต่ละประเภท"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
@@ -3046,6 +3094,14 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
+   "แสดงตัวเลือก การแจ้งเตือนบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
+   "แสดงข้อความบนหน้าจอ"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
    "กำหนดค่าสีเขียวของสีพื้นหลัง OSD โดยค่าที่ใช้งานได้จะอยู่ระหว่าง 0 ถึง 255"
