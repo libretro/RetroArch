@@ -189,6 +189,20 @@ static bool font_init_first(
             }
          }
       break;
+#ifdef HAVE_CG
+      case FONT_DRIVER_RENDER_D3D9_CG_API:
+         {
+            void *data = d3d9_cg_font.init(video_data,
+                  font_path, font_size, is_threaded);
+            if (data)
+            {
+               *font_driver = &d3d9_cg_font;
+               *font_handle = data;
+               return true;
+            }
+         }
+      break;
+#endif
 #endif
 #ifdef HAVE_D3D10
       case FONT_DRIVER_RENDER_D3D10_API:
