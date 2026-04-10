@@ -1228,123 +1228,6 @@ static INLINE unsigned d3d9_font_emit_quad(
    return 6;
 }
 
-static void d3d9_font_render_line(
-      d3d9_video_t *d3d,
-      d3d9_font_t *font,
-      const char *msg, size_t msg_len,
-      float scale, D3DCOLOR color,
-      float pos_x, float pos_y,
-      enum text_alignment text_align)
-{
-   unsigned i;
-   float inv_viewport_w, inv_viewport_h;
-   float inv_tex_w, inv_tex_h;
-   const struct font_glyph *glyph_q = NULL;
-   unsigned width                   = 0;
-   unsigned height                  = 0;
-   int x, y;
-   unsigned vert_count              = 0;
-   /* Maximum 6 verts per character (2 triangles) */
-   Vertex *verts                    = NULL;
-
-   video_driver_get_size(&width, &height);
-   if (!width || !height)
-      return;
-
-   verts = (Vertex*)calloc(msg_len * 6, sizeof(Vertex));
-
-   if (!verts)
-      return;
-
-   inv_viewport_w = 1.0f / (float)width;
-   inv_viewport_h = 1.0f / (float)height;
-   inv_tex_w      = 1.0f / (float)font->tex_width;
-   inv_tex_h      = 1.0f / (float)font->tex_height;
-   glyph_q        = font->font_driver->get_glyph(font->font_data, '?');
-
-   /* Handle text alignment */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum = 0;
-      const char *scan = msg;
-      const char *scan_end = msg + msg_len;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-      if (text_align == TEXT_ALIGN_RIGHT)
-         pos_x -= (float)(width_accum * scale) / (float)width;
-      else
-         pos_x -= (float)(width_accum * scale) / (float)width / 2.0f;
-   }
-
-   x = roundf(pos_x * width);
-   y = roundf((1.0f - pos_y) * height);
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph *glyph;
-      const char *msg_tmp = &msg[i];
-      unsigned    code    = utf8_walk(&msg_tmp);
-      unsigned    skip    = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      vert_count += d3d9_font_emit_quad(
-            &verts[vert_count],
-            (x + glyph->draw_offset_x * scale) * inv_viewport_w,
-            (y + glyph->draw_offset_y * scale) * inv_viewport_h,
-            glyph->width  * scale * inv_viewport_w,
-            glyph->height * scale * inv_viewport_h,
-            glyph->atlas_offset_x * inv_tex_w,
-            glyph->atlas_offset_y * inv_tex_h,
-            glyph->width  * inv_tex_w,
-            glyph->height * inv_tex_h,
-            color);
-
-      x += glyph->advance_x * scale;
-      y += glyph->advance_y * scale;
-   }
-
-   if (vert_count > 0)
-   {
-      IDirect3DDevice9_SetTexture(d3d->dev, 0,
-            (IDirect3DBaseTexture9*)font->texture);
-      IDirect3DDevice9_SetSamplerState(d3d->dev,
-            0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
-      IDirect3DDevice9_SetSamplerState(d3d->dev,
-            0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
-      IDirect3DDevice9_SetSamplerState(d3d->dev,
-            0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
-      IDirect3DDevice9_SetSamplerState(d3d->dev,
-            0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
-
-      IDirect3DDevice9_DrawPrimitiveUP(d3d->dev,
-            D3DPT_TRIANGLELIST,
-            vert_count / 3,
-            verts,
-            sizeof(Vertex));
-
-      /* DrawPrimitiveUP unbinds stream source, re-bind for
-       * subsequent display draws in the same frame */
-      IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
-            (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
-            0, sizeof(Vertex));
-   }
-
-   free(verts);
-}
-
 static void d3d9_font_render_msg(
       void *userdata, void *data,
       const char *msg,
@@ -1521,22 +1404,194 @@ static void d3d9_font_render_msg(
 
          if (msg_len > 0)
          {
+            unsigned i;
+            float inv_viewport_w = 1.0f / (float)width;
+            float inv_viewport_h = 1.0f / (float)height;
+            float inv_tex_w      = 1.0f / (float)font->tex_width;
+            float inv_tex_h      = 1.0f / (float)font->tex_height;
+            const struct font_glyph *glyph_q = font->font_driver->get_glyph(font->font_data, '?');
             float line_y = y - (float)lines * line_height;
 
             /* Drop shadow pass */
             if (has_drop)
             {
-               float drop_pos_x = x + scale * drop_x / (float)width;
-               float drop_pos_y = line_y + scale * drop_y / (float)height;
-               d3d9_font_render_line(d3d, font,
-                     m, msg_len, scale, color_dark,
-                     drop_pos_x, drop_pos_y, text_align);
+               float drop_pos_x    = x + scale * drop_x / (float)width;
+               float drop_pos_y    = line_y + scale * drop_y / (float)height;
+               int lx              = roundf(drop_pos_x * width);
+               int ly              = roundf((1.0f - drop_pos_y) * height);
+               unsigned vert_count = 0;
+               Vertex *verts       = (Vertex*)calloc(msg_len * 6, sizeof(Vertex));
+
+               if (verts)
+               {
+                  if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
+                  {
+                     int width_accum     = 0;
+                     const char *scan    = m;
+                     const char *scan_end = m + msg_len;
+                     while (scan < scan_end)
+                     {
+                        const struct font_glyph *glyph;
+                        uint32_t code = utf8_walk(&scan);
+                        if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+                           if (!(glyph = glyph_q))
+                              continue;
+                        width_accum += glyph->advance_x;
+                     }
+                     if (text_align == TEXT_ALIGN_RIGHT)
+                        drop_pos_x -= (float)(width_accum * scale) / (float)width;
+                     else
+                        drop_pos_x -= (float)(width_accum * scale) / (float)width / 2.0f;
+                     lx = roundf(drop_pos_x * width);
+                  }
+
+                  for (i = 0; i < msg_len; i++)
+                  {
+                     const struct font_glyph *glyph;
+                     const char *msg_tmp = &m[i];
+                     unsigned    code    = utf8_walk(&msg_tmp);
+                     unsigned    skip    = msg_tmp - &m[i];
+
+                     if (skip > 1)
+                        i += skip - 1;
+
+                     if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+                        if (!(glyph = glyph_q))
+                           continue;
+
+                     vert_count += d3d9_font_emit_quad(
+                           &verts[vert_count],
+                           (lx + glyph->draw_offset_x * scale) * inv_viewport_w,
+                           (ly + glyph->draw_offset_y * scale) * inv_viewport_h,
+                           glyph->width  * scale * inv_viewport_w,
+                           glyph->height * scale * inv_viewport_h,
+                           glyph->atlas_offset_x * inv_tex_w,
+                           glyph->atlas_offset_y * inv_tex_h,
+                           glyph->width  * inv_tex_w,
+                           glyph->height * inv_tex_h,
+                           color_dark);
+
+                     lx += glyph->advance_x * scale;
+                     ly += glyph->advance_y * scale;
+                  }
+
+                  if (vert_count > 0)
+                  {
+                     IDirect3DDevice9_SetTexture(d3d->dev, 0,
+                           (IDirect3DBaseTexture9*)font->texture);
+                     IDirect3DDevice9_SetSamplerState(d3d->dev,
+                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+                     IDirect3DDevice9_SetSamplerState(d3d->dev,
+                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+                     IDirect3DDevice9_SetSamplerState(d3d->dev,
+                           0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+                     IDirect3DDevice9_SetSamplerState(d3d->dev,
+                           0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+
+                     IDirect3DDevice9_DrawPrimitiveUP(d3d->dev,
+                           D3DPT_TRIANGLELIST,
+                           vert_count / 3,
+                           verts,
+                           sizeof(Vertex));
+
+                     IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+                           (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+                           0, sizeof(Vertex));
+                  }
+
+                  free(verts);
+               }
             }
 
             /* Main text pass */
-            d3d9_font_render_line(d3d, font,
-                  m, msg_len, scale, color,
-                  x, line_y, text_align);
+            {
+               float pos_x          = x;
+               float pos_y          = line_y;
+               int lx               = roundf(pos_x * width);
+               int ly               = roundf((1.0f - pos_y) * height);
+               unsigned vert_count  = 0;
+               Vertex *verts        = (Vertex*)calloc(msg_len * 6, sizeof(Vertex));
+
+               if (verts)
+               {
+                  if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
+                  {
+                     int width_accum     = 0;
+                     const char *scan    = m;
+                     const char *scan_end = m + msg_len;
+                     while (scan < scan_end)
+                     {
+                        const struct font_glyph *glyph;
+                        uint32_t code = utf8_walk(&scan);
+                        if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+                           if (!(glyph = glyph_q))
+                              continue;
+                        width_accum += glyph->advance_x;
+                     }
+                     if (text_align == TEXT_ALIGN_RIGHT)
+                        pos_x -= (float)(width_accum * scale) / (float)width;
+                     else
+                        pos_x -= (float)(width_accum * scale) / (float)width / 2.0f;
+                     lx = roundf(pos_x * width);
+                  }
+
+                  for (i = 0; i < msg_len; i++)
+                  {
+                     const struct font_glyph *glyph;
+                     const char *msg_tmp = &m[i];
+                     unsigned    code    = utf8_walk(&msg_tmp);
+                     unsigned    skip    = msg_tmp - &m[i];
+
+                     if (skip > 1)
+                        i += skip - 1;
+
+                     if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+                        if (!(glyph = glyph_q))
+                           continue;
+
+                     vert_count += d3d9_font_emit_quad(
+                           &verts[vert_count],
+                           (lx + glyph->draw_offset_x * scale) * inv_viewport_w,
+                           (ly + glyph->draw_offset_y * scale) * inv_viewport_h,
+                           glyph->width  * scale * inv_viewport_w,
+                           glyph->height * scale * inv_viewport_h,
+                           glyph->atlas_offset_x * inv_tex_w,
+                           glyph->atlas_offset_y * inv_tex_h,
+                           glyph->width  * inv_tex_w,
+                           glyph->height * inv_tex_h,
+                           color);
+
+                     lx += glyph->advance_x * scale;
+                     ly += glyph->advance_y * scale;
+                  }
+
+                  if (vert_count > 0)
+                  {
+                     IDirect3DDevice9_SetTexture(d3d->dev, 0,
+                           (IDirect3DBaseTexture9*)font->texture);
+                     IDirect3DDevice9_SetSamplerState(d3d->dev,
+                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+                     IDirect3DDevice9_SetSamplerState(d3d->dev,
+                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+                     IDirect3DDevice9_SetSamplerState(d3d->dev,
+                           0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+                     IDirect3DDevice9_SetSamplerState(d3d->dev,
+                           0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+
+                     IDirect3DDevice9_DrawPrimitiveUP(d3d->dev,
+                           D3DPT_TRIANGLELIST,
+                           vert_count / 3,
+                           verts,
+                           sizeof(Vertex));
+
+                     IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+                           (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+                           0, sizeof(Vertex));
+                  }
+
+                  free(verts);
+               }
+            }
          }
 
          if (*end != '\n')
