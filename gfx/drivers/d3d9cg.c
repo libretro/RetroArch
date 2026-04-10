@@ -315,7 +315,12 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
    if (!has_vertex_data)
    {
       /* Single-sprite path: build a quad from draw->x/y/width/height
-       * in normalized [0,1] space, using DrawPrimitiveUP. */
+       * in normalized [0,1] space, using DrawPrimitiveUP.
+       *
+       * Callers like ozone_draw_icon pre-flip Y (draw.y = height - y - h).
+       * We undo that flip here so that the top-down ortho matrix produces
+       * the correct screen position with correct texture orientation
+       * (v=0 at screen top, v=1 at screen bottom). */
       D3DCOLOR col[4];
       Vertex quad[4];
       float x1, y1, x2, y2;
@@ -333,6 +338,8 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
          col[0] = col[1] = col[2] = col[3] = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
       }
 
+      /* Undo the Y pre-flip, then let topdown_ortho handle the mapping.
+       * This matches the HLSL driver's single-sprite coordinate path. */
       x1 = draw->x / (float)video_width;
       y1 = ((float)video_height - draw->y - draw->height) / (float)video_height;
       x2 = (draw->x + draw->width)  / (float)video_width;
@@ -362,20 +369,19 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       quad[3].x = x2; quad[3].y = y2; quad[3].z = 0.5f;
       quad[3].u = 1.0f; quad[3].v = 1.0f; quad[3].color = col[3];
 
-      /* Bottom-up ortho: maps X [0,1]->[-1,1], Y [0,1]->[-1,1].
-       * Transposed for the Cg stock shader which uses
-       * mul(matrix, vector) (column-major order).
-       * Matches the multi-vertex path and the HLSL driver's
-       * d3d_matrix_ortho_off_center_lh(0, 1, 0, 1, 0, 1). */
+      /* Top-down ortho: maps X [0,1]->[-1,1], Y [0,1]->[1,-1] (Y=0 at top).
+       * Column-major (transposed) layout for the Cg stock shader which
+       * uses mul(matrix, vector).  This is the transpose of the HLSL
+       * driver's row-major topdown_ortho. */
       {
-         static const float bottomup_ortho[16] = {
+         static const float topdown_ortho[16] = {
              2.0f,  0.0f, 0.0f, -1.0f,
-             0.0f,  2.0f, 0.0f, -1.0f,
+             0.0f, -2.0f, 0.0f,  1.0f,
              0.0f,  0.0f, 1.0f,  0.0f,
              0.0f,  0.0f, 0.0f,  1.0f
          };
          cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
-         d3d9_cg_set_mvp(_chain, bottomup_ortho);
+         d3d9_cg_set_mvp(_chain, topdown_ortho);
       }
 
       gfx_display_d3d9_cg_bind_texture(draw, d3d);
@@ -438,7 +444,9 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
          d3d->menu_display.buffer);
 
    /* Bottom-up ortho: X [0,1]->[-1,1], Y [0,1]->[-1,1].
-    * Transposed for column-major Cg mul(matrix, vector). */
+    * gfx_display provides explicit vertex coordinates in bottom-up
+    * normalised space (see gfx_display_draw_texture_slice comment:
+    * "vertex coords are specified bottom-up"). */
    {
       static const float bottomup_ortho[16] = {
           2.0f,  0.0f, 0.0f, -1.0f,
@@ -3054,7 +3062,9 @@ static bool d3d9_cg_frame(void *data, const void *frame,
          cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
          d3d9_cg_bind_program(_chain);
       }
+      IDirect3DDevice9_BeginScene(d3d->dev);
       menu_driver_frame(menu_is_alive, video_info);
+      IDirect3DDevice9_EndScene(d3d->dev);
    }
    else if (statistics_show)
    {
@@ -3079,7 +3089,41 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 
 #ifdef HAVE_GFX_WIDGETS
    if (widgets_active)
+   {
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      RECT scissor_rect;
+
+      d3d->menu_display.offset = 0;
+      IDirect3DDevice9_SetVertexDeclaration(d3d->dev,
+            (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
+      IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+            (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+            0, sizeof(Vertex));
+      IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
+
+      /* Reset scissor rect to full screen */
+      scissor_rect.left   = 0;
+      scissor_rect.top    = 0;
+      scissor_rect.right  = width;
+      scissor_rect.bottom = height;
+      IDirect3DDevice9_SetScissorRect(d3d->dev, &scissor_rect);
+
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_ALPHABLENDENABLE, true);
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_ZENABLE, false);
+      IDirect3DDevice9_SetRenderState(d3d->dev,
+            D3DRS_CULLMODE, D3DCULL_NONE);
+      if (_chain)
+         d3d9_cg_bind_program(_chain);
+      IDirect3DDevice9_BeginScene(d3d->dev);
       gfx_widgets_frame(video_info);
+      IDirect3DDevice9_EndScene(d3d->dev);
+   }
 #endif
 
    if (msg && *msg)
