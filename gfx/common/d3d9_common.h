@@ -164,30 +164,6 @@ void d3d9_deinitialize_symbols(void);
 void d3d9_make_d3dpp(d3d9_video_t *d3d,
       const video_info_t *info, void *_d3dpp);
 
-void d3d9_log_info(const struct LinkInfo *info);
-
-bool d3d9_has_windowed(void *data);
-
-bool d3d9_process_shader(d3d9_video_t *d3d);
-
-uintptr_t d3d9_load_texture(void *video_data, void *data,
-      bool threaded, enum texture_filter_type filter_type);
-
-void d3d9_unload_texture(void *data,
-      bool threaded, uintptr_t id);
-
-void d3d9_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen);
-
-void d3d9_blit_to_texture(
-      LPDIRECT3DTEXTURE9 tex,
-      const void *frame,
-      unsigned tex_width,  unsigned tex_height,
-      unsigned width,      unsigned height,
-      unsigned last_width, unsigned last_height,
-      unsigned pitch, unsigned pixel_size);
-
 extern LPDIRECT3D9 g_pD3D9;
 
 RETRO_END_DECLS
