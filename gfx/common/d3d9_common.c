@@ -243,46 +243,6 @@ bool d3d9_reset(void *data, void *d3dpp)
    return false;
 }
 
-bool d3d9x_create_font_indirect(void *_dev,
-      void *desc, void **font_data)
-{
-   /* D3DX font is not used — the HLSL driver has its own font renderer. */
-   return false;
-}
-
-bool d3d9x_compile_shader(
-      const char *src,
-      unsigned src_data_len,
-      const void *pdefines,
-      void *pinclude,
-      const char *pfunctionname,
-      const char *pprofile,
-      unsigned flags,
-      void *ppshader,
-      void *pp_err_msgs,
-      void *ppconstanttable)
-{
-   /* Shader compilation now uses d3dcompiler (D3DCompile) directly
-    * in d3d9hlsl.c. This stub exists for API compatibility. */
-   return false;
-}
-
-bool d3d9x_compile_shader_from_file(
-      const char *src,
-      const void *pdefines,
-      void *pinclude,
-      const char *pfunctionname,
-      const char *pprofile,
-      unsigned flags,
-      void *ppshader,
-      void *pp_err_msgs,
-      void *ppconstanttable)
-{
-   /* Shader compilation from file now uses d3dcompiler directly
-    * in d3d9hlsl.c. This stub exists for API compatibility. */
-   return false;
-}
-
 /* D3DX constant table stubs.
  *
  * The HLSL renderchain previously used LPD3DXCONSTANTTABLE to set shader

@@ -162,32 +162,6 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api);
 
 void d3d9_deinitialize_symbols(void);
 
-bool d3d9x_create_font_indirect(void *dev,
-      void *desc, void **font_data);
-
-bool d3d9x_compile_shader(
-      const char *src,
-      unsigned src_data_len,
-      const void *pdefines,
-      void *pinclude,
-      const char *pfunctionname,
-      const char *pprofile,
-      unsigned flags,
-      void *ppshader,
-      void *pp_err_msgs,
-      void *ppconstanttable);
-
-bool d3d9x_compile_shader_from_file(
-      const char *src,
-      const void *pdefines,
-      void *pinclude,
-      const char *pfunctionname,
-      const char *pprofile,
-      unsigned flags,
-      void *ppshader,
-      void *pp_err_msgs,
-      void *ppconstanttable);
-
 void d3d9x_constant_table_set_float_array(LPDIRECT3DDEVICE9 dev,
       void *p, void *_handle, const void *_pf, unsigned count);
 
