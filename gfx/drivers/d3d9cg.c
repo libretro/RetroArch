@@ -3921,9 +3921,6 @@ static void d3d9_cg_overlay_render(
    if (!d3d || !overlay || !overlay->tex)
       return;
 
-   if (!overlay->enabled)
-      return;
-
    dev   = d3d->dev;
    x     = overlay->vert_coords[0];
    y     = overlay->vert_coords[1];
@@ -4006,9 +4003,23 @@ static void d3d9_cg_overlay_render(
    IDirect3DDevice9_SetVertexDeclaration(dev,
          (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
 
+   if (overlay->fullscreen)
+   {
+      D3DVIEWPORT9 vp_full;
+      vp_full.X      = 0;
+      vp_full.Y      = 0;
+      vp_full.Width  = video_width;
+      vp_full.Height = video_height;
+      vp_full.MinZ   = 0.0f;
+      vp_full.MaxZ   = 1.0f;
+      IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)&vp_full);
+   }
+
+   IDirect3DDevice9_BeginScene(dev);
    IDirect3DDevice9_DrawPrimitiveUP(dev,
          D3DPT_COMM_TRIANGLESTRIP, 2,
          quad, sizeof(Vertex));
+   IDirect3DDevice9_EndScene(dev);
 
    /* DrawPrimitiveUP unbinds the stream source, re-bind it */
    IDirect3DDevice9_SetStreamSource(dev, 0,
