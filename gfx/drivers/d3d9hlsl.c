@@ -3274,51 +3274,85 @@ static char *d3d9_hlsl_preprocess_includes(
             continue;
          }
 
-         /* #if defined(X) / #if !defined(X) */
+         /* #if defined(X) / #if !defined(X) / #if defined(X) || defined(Y) */
          if (strncmp(dir, "if", 2) == 0 && (dir[2] == ' ' || dir[2] == '\t'))
          {
             const char *expr = dir + 2;
-            bool negate = false;
-            const char *nm, *nm_end;
+            bool result = false;
 
             while (*expr == ' ' || *expr == '\t') expr++;
-            if (*expr == '!')
-            {
-               negate = true;
-               expr++;
-               while (*expr == ' ' || *expr == '\t') expr++;
-            }
 
-            if (strncmp(expr, "defined", 7) == 0)
+            /* Evaluate compound defined() expressions with || and && */
             {
-               expr += 7;
-               while (*expr == ' ' || *expr == '\t') expr++;
-               if (*expr == '(') expr++;
-               while (*expr == ' ' || *expr == '\t') expr++;
-               nm = expr;
-               nm_end = nm;
-               while (nm_end < line_end && d3d9_hlsl_is_ident_char(*nm_end))
-                  nm_end++;
+               bool have_result = false;
+               bool current_op_is_or = true; /* default: first term */
 
-               if (cond_depth < PREPROC_MAX_DEPTH - 1)
+               while (expr < line_end)
                {
-                  cond_depth++;
-                  if (output_enabled)
+                  bool negate = false;
+                  bool term_result = false;
+
+                  while (*expr == ' ' || *expr == '\t' || *expr == '(') expr++;
+                  if (*expr == '!')
                   {
-                     bool def = preproc_is_defined(&s_defines, nm, (size_t)(nm_end - nm));
-                     bool result = negate ? !def : def;
-                     cond_active[cond_depth] = result;
-                     cond_done[cond_depth]   = result;
-                     output_enabled          = result;
+                     negate = true;
+                     expr++;
+                     while (*expr == ' ' || *expr == '\t') expr++;
+                  }
+
+                  if (strncmp(expr, "defined", 7) == 0)
+                  {
+                     const char *nm, *nm_end;
+                     expr += 7;
+                     while (*expr == ' ' || *expr == '\t') expr++;
+                     if (*expr == '(') expr++;
+                     while (*expr == ' ' || *expr == '\t') expr++;
+                     nm = expr;
+                     nm_end = nm;
+                     while (nm_end < line_end && d3d9_hlsl_is_ident_char(*nm_end))
+                        nm_end++;
+                     term_result = preproc_is_defined(&s_defines, nm, (size_t)(nm_end - nm));
+                     if (negate) term_result = !term_result;
+                     expr = nm_end;
+                     while (*expr == ')' || *expr == ' ' || *expr == '\t') expr++;
+                     have_result = true;
                   }
                   else
-                  {
-                     cond_active[cond_depth] = false;
-                     cond_done[cond_depth]   = true;
-                  }
+                     break; /* Can't parse further */
+
+                  if (current_op_is_or)
+                     result = have_result ? (result || term_result) : term_result;
+                  else
+                     result = result && term_result;
+
+                  /* Check for || or && */
+                  if (expr + 1 < line_end && expr[0] == '|' && expr[1] == '|')
+                  { current_op_is_or = true; expr += 2; continue; }
+                  if (expr + 1 < line_end && expr[0] == '&' && expr[1] == '&')
+                  { current_op_is_or = false; expr += 2; continue; }
+                  break;
                }
-               p = line_end;
-               continue;
+
+               if (have_result)
+               {
+                  if (cond_depth < PREPROC_MAX_DEPTH - 1)
+                  {
+                     cond_depth++;
+                     if (output_enabled)
+                     {
+                        cond_active[cond_depth] = result;
+                        cond_done[cond_depth]   = result;
+                        output_enabled          = result;
+                     }
+                     else
+                     {
+                        cond_active[cond_depth] = false;
+                        cond_done[cond_depth]   = true;
+                     }
+                  }
+                  p = line_end;
+                  continue;
+               }
             }
 
             /* Unhandled #if expression — treat as unknown (skip block) */
@@ -3329,6 +3363,93 @@ static char *d3d9_hlsl_preprocess_includes(
                cond_done[cond_depth]   = false;
                if (output_enabled)
                   output_enabled = false;
+            }
+            p = line_end;
+            continue;
+         }
+
+         /* #elif defined(X) / #elif defined(X) || defined(Y) */
+         if (strncmp(dir, "elif", 4) == 0 && (dir[4] == ' ' || dir[4] == '\t'))
+         {
+            if (cond_depth > 0)
+            {
+               bool parent_active = (cond_depth <= 1) || cond_active[cond_depth - 1];
+               if (parent_active && !cond_done[cond_depth])
+               {
+                  /* Evaluate the elif condition */
+                  const char *expr = dir + 4;
+                  bool result = false;
+
+                  while (*expr == ' ' || *expr == '\t') expr++;
+
+                  /* Evaluate compound defined() expressions */
+                  {
+                     bool have_result = false;
+                     bool current_op_is_or = true;
+
+                     while (expr < line_end)
+                     {
+                        bool negate = false;
+                        bool term_result = false;
+
+                        while (*expr == ' ' || *expr == '\t' || *expr == '(') expr++;
+                        if (*expr == '!')
+                        {
+                           negate = true;
+                           expr++;
+                           while (*expr == ' ' || *expr == '\t') expr++;
+                        }
+
+                        if (strncmp(expr, "defined", 7) == 0)
+                        {
+                           const char *nm, *nm_end;
+                           expr += 7;
+                           while (*expr == ' ' || *expr == '\t') expr++;
+                           if (*expr == '(') expr++;
+                           while (*expr == ' ' || *expr == '\t') expr++;
+                           nm = expr;
+                           nm_end = nm;
+                           while (nm_end < line_end && d3d9_hlsl_is_ident_char(*nm_end))
+                              nm_end++;
+                           term_result = preproc_is_defined(&s_defines, nm, (size_t)(nm_end - nm));
+                           if (negate) term_result = !term_result;
+                           expr = nm_end;
+                           while (*expr == ')' || *expr == ' ' || *expr == '\t') expr++;
+                           have_result = true;
+                        }
+                        else
+                           break;
+
+                        if (current_op_is_or)
+                           result = have_result ? (result || term_result) : term_result;
+                        else
+                           result = result && term_result;
+
+                        if (expr + 1 < line_end && expr[0] == '|' && expr[1] == '|')
+                        { current_op_is_or = true; expr += 2; continue; }
+                        if (expr + 1 < line_end && expr[0] == '&' && expr[1] == '&')
+                        { current_op_is_or = false; expr += 2; continue; }
+                        break;
+                     }
+
+                     if (have_result && result)
+                     {
+                        cond_active[cond_depth] = true;
+                        cond_done[cond_depth]   = true;
+                        output_enabled          = true;
+                     }
+                     else
+                     {
+                        cond_active[cond_depth] = false;
+                        output_enabled          = false;
+                     }
+                  }
+               }
+               else
+               {
+                  cond_active[cond_depth] = false;
+                  output_enabled          = false;
+               }
             }
             p = line_end;
             continue;
