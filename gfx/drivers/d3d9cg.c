@@ -3927,9 +3927,7 @@ static void d3d9_cg_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays_enabled = state;
 
-#ifndef XBOX
    win32_show_cursor(d3d, state);
-#endif
 }
 
 static void d3d9_cg_overlay_full_screen(void *data, bool enable)
