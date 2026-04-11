@@ -5464,7 +5464,36 @@ static char *d3d9_hlsl_init_vs_output_members(const char *source)
       }
    }
 
-   /* Step 5: check which members are assigned (look for 'OUT.member' or 'OUT .member') */
+   /* Step 5: check for aggregate initialization (OUT = { ... } or
+    * ret_type OUT = { ... }).  If found, all members are initialized. */
+   {
+      const char *scan = func_body_start;
+      while (scan < func_body_end)
+      {
+         if (*scan == '=' && scan + 1 < func_body_end)
+         {
+            const char *after = scan + 1;
+            while (*after == ' ' || *after == '\t' || *after == '\n' || *after == '\r')
+               after++;
+            if (*after == '{')
+            {
+               /* Check that this is an assignment to the output variable,
+                * not some other variable.  Look backward for an identifier. */
+               const char *before = scan - 1;
+               while (before > func_body_start && (*before == ' ' || *before == '\t'))
+                  before--;
+               if (before >= func_body_start && d3d9_hlsl_is_ident_char(*before))
+               {
+                  /* Found identifier = { ... } — assume aggregate init */
+                  return NULL; /* No changes needed */
+               }
+            }
+         }
+         scan++;
+      }
+   }
+
+   /* Step 6: check which members are assigned (look for 'OUT.member' or 'OUT .member') */
    {
       unsigned i;
       for (i = 0; i < member_count; i++)
