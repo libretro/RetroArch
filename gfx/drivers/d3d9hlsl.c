@@ -4177,6 +4177,18 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
          continue;
       }
 
+      /* --- Fix 1e: whole-word 'mod' -> 'fmod' ---
+       * Cg has mod(x,y), HLSL uses fmod(x,y). */
+      if (strncmp(p, "mod", 3) == 0
+            && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
+            && !d3d9_hlsl_is_ident_char(p[3]))
+      {
+         if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "fmod", 4))
+            goto fail;
+         p += 3;
+         continue;
+      }
+
       /* --- Fix 1a: 'const' -> 'static const' at global scope ---
        * D3DCompile with backwards compat treats global 'const' as a CTAB
        * uniform instead of embedding the literal value. 'static const'
@@ -4320,6 +4332,60 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
 struct_ctor_done:
          if (si < struct_count)
             continue; /* constructor was replaced */
+      }
+
+      /* --- Fix 1d: expand float2/3/4(scalar) to float2/3/4(s,s,...) ---
+       * Cg supports float3(x) as a splat constructor. HLSL requires
+       * the correct number of arguments. */
+      if (strncmp(p, "float", 5) == 0
+            && (p[5] >= '2' && p[5] <= '4')
+            && p[6] == '('
+            && (p == source || !d3d9_hlsl_is_ident_char(p[-1])))
+      {
+         int n_components = p[5] - '0';
+         /* Check if this is a single-argument call (no comma at depth 0) */
+         const char *args_start = p + 7;
+         const char *scan = args_start;
+         int depth = 1;
+         bool has_comma = false;
+         while (*scan && depth > 0)
+         {
+            if (*scan == '(') depth++;
+            else if (*scan == ')') { if (--depth == 0) break; }
+            else if (*scan == ',' && depth == 1) { has_comma = true; break; }
+            scan++;
+         }
+
+         if (!has_comma && depth == 0 && scan > args_start)
+         {
+            /* Single argument — extract it and duplicate */
+            size_t arg_len = (size_t)(scan - args_start);
+            char arg[512];
+            if (arg_len < sizeof(arg))
+            {
+               int ci;
+               memcpy(arg, args_start, arg_len);
+               arg[arg_len] = '\0';
+
+               /* Output float<N>( */
+               if (!d3d9_hlsl_buf_append(&out, &pos, &cap, p, 7))
+                  goto fail;
+
+               for (ci = 0; ci < n_components; ci++)
+               {
+                  if (ci > 0)
+                     if (!d3d9_hlsl_buf_append(&out, &pos, &cap, ", ", 2))
+                        goto fail;
+                  if (!d3d9_hlsl_buf_append(&out, &pos, &cap, arg, arg_len))
+                     goto fail;
+               }
+               if (!d3d9_hlsl_buf_append(&out, &pos, &cap, ")", 1))
+                  goto fail;
+
+               p = scan + 1; /* skip past ')' */
+               continue;
+            }
+         }
       }
 
       /* Track braces for scope detection */
@@ -4698,8 +4764,19 @@ static bool d3d9_hlsl_compile_cg_compat(
       {
          if (error_blob)
          {
-            RARCH_ERR("[D3D9 HLSL] D3DCompile failed: %s\n",
-                  (const char*)error_blob->lpVtbl->GetBufferPointer(error_blob));
+            const char *err_str = (const char*)error_blob->lpVtbl->GetBufferPointer(error_blob);
+            RARCH_ERR("[D3D9 HLSL] D3DCompile failed: %s\n", err_str);
+            /* Write full error to file */
+            {
+               RFILE *ef = filestream_open("C:\\RetroArch\\hlsl_compile_error.txt",
+                     RETRO_VFS_FILE_ACCESS_WRITE,
+                     RETRO_VFS_FILE_ACCESS_HINT_NONE);
+               if (ef)
+               {
+                  filestream_write(ef, err_str, strlen(err_str));
+                  filestream_close(ef);
+               }
+            }
             error_blob->lpVtbl->Release(error_blob);
          }
          return false;
@@ -4797,6 +4874,10 @@ static bool d3d9_hlsl_load_program_from_file_ex(
    }
 
    src_len = strlen(resolved);
+
+   /* Debug: write preprocessed source */
+   {
+   }
 
    if (!d3d9_hlsl_compile_cg_compat(resolved, src_len, prog,
             "main_fragment", "ps_3_0", &code_f))
