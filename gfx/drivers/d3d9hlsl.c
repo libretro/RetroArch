@@ -582,13 +582,15 @@ static gfx_ctx_driver_t d3d9_hlsl_fake_context;
 
 static int d3d9_hlsl_ctab_find_register(
       const DWORD *bytecode, size_t bytecode_dwords,
-      const char *name, int *out_regset)
+      const char *name, int *out_regset, int *out_count)
 {
    size_t pos;
    const DWORD CTAB_TAG = 0x42415443; /* 'CTAB' */
 
    if (out_regset)
       *out_regset = -1;
+   if (out_count)
+      *out_count = 0;
    if (!bytecode || bytecode_dwords < 2 || !name || !*name)
       return CTAB_NOT_FOUND;
 
@@ -653,6 +655,8 @@ static int d3d9_hlsl_ctab_find_register(
                {
                   if (out_regset)
                      *out_regset = (int)reg_set;
+                  if (out_count)
+                     *out_count = (int)*(const WORD*)(entry + 8);
                   return (int)reg_index;
                }
             }
@@ -721,11 +725,11 @@ static void hlsl_uniform_map_from_bytecode(
    if (!bytecode)
       return;
 
-   map->mvp          = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "modelViewProj", NULL);
-   map->video_size   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.video_size", NULL);
-   map->texture_size = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.texture_size", NULL);
-   map->output_size  = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.output_size", NULL);
-   map->frame_count  = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.frame_count", NULL);
+   map->mvp          = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "modelViewProj", NULL, NULL);
+   map->video_size   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.video_size", NULL, NULL);
+   map->texture_size = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.texture_size", NULL, NULL);
+   map->output_size  = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.output_size", NULL, NULL);
+   map->frame_count  = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.frame_count", NULL, NULL);
 
    /* If individual IN.* lookups failed, check if the struct is
     * registered as a single "IN" entry. D3DCompile packs struct
@@ -735,41 +739,58 @@ static void hlsl_uniform_map_from_bytecode(
     */
    if (map->video_size < 0 && map->texture_size < 0)
    {
-      int in_reg = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN", NULL);
+      int in_cnt = 0;
+      int in_reg = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN", NULL, &in_cnt);
       if (in_reg >= 0)
       {
-         /* video_size and texture_size share c[N+0] */
-         map->video_size   = in_reg;
-         map->texture_size = in_reg; /* same register, .zw — handled at set time */
-         /* output_size and frame_count share c[N+1] */
-         map->output_size  = in_reg + 1;
-         map->frame_count  = in_reg + 1; /* same register, .z — handled at set time */
+         if (in_cnt >= 4)
+         {
+            /* Per-member packing: each float2 gets its own register
+             * c[N+0] = { video_size.x, video_size.y, 0, 0 }
+             * c[N+1] = { texture_size.x, texture_size.y, 0, 0 }
+             * c[N+2] = { output_size.x, output_size.y, 0, 0 }
+             * c[N+3] = { frame_count, frame_direction, 0, 0 } */
+            map->video_size   = in_reg;
+            map->texture_size = in_reg + 1;
+            map->output_size  = in_reg + 2;
+            map->frame_count  = in_reg + 3;
+         }
+         else
+         {
+            /* Tight packing (cnt <= 2):
+             * c[N+0] = { video_size.x, video_size.y, texture_size.x, texture_size.y }
+             * c[N+1] = { output_size.x, output_size.y, frame_count, frame_direction } */
+            map->video_size   = in_reg;
+            map->texture_size = in_reg;
+            map->output_size  = in_reg + 1;
+            map->frame_count  = in_reg + 1;
+         }
       }
    }
-   map->orig_video_size   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.video_size", NULL);
-   map->orig_texture_size = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.texture_size", NULL);
-   map->orig_texture      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.texture", NULL);
+   map->orig_video_size   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.video_size", NULL, NULL);
+   map->orig_texture_size = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.texture_size", NULL, NULL);
+   map->orig_texture      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.texture", NULL, NULL);
 
    for (i = 0; i < TEXTURES - 1; i++)
    {
       size_t _len = strlcpy(attr, prev_names[i], sizeof(attr));
       strlcpy(attr + _len, ".video_size",   sizeof(attr) - _len);
-      map->prev_video_size[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL);
+      map->prev_video_size[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       strlcpy(attr + _len, ".texture_size", sizeof(attr) - _len);
-      map->prev_texture_size[i] = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL);
+      map->prev_texture_size[i] = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       strlcpy(attr + _len, ".texture",      sizeof(attr) - _len);
-      map->prev_texture[i]      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL);
+      map->prev_texture[i]      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
    }
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       size_t _len = snprintf(attr, sizeof(attr), "PASS%u", i + 1);
       strlcpy(attr + _len, ".video_size",   sizeof(attr) - _len);
-      map->pass_video_size[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL);
+      map->pass_video_size[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       strlcpy(attr + _len, ".texture_size", sizeof(attr) - _len);
-      map->pass_texture_size[i] = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL);
+      map->pass_texture_size[i] = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       strlcpy(attr + _len, ".texture",      sizeof(attr) - _len);
-      map->pass_texture[i]      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL);
+      map->pass_texture[i]      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
    }
 }
 
@@ -2650,7 +2671,7 @@ static void hlsl_d3d9_renderchain_render_pass(
       {
          int ps_idx = d3d9_hlsl_ctab_find_register(
                pd->ps_bytecode, pd->ps_bytecode_dwords,
-               chain->chain.luts->data[i].id, NULL);
+               chain->chain.luts->data[i].id, NULL, NULL);
          if (ps_idx >= 0)
             d3d9_renderchain_add_lut_internal(&chain->chain, ps_idx, i);
       }
