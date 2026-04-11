@@ -34,6 +34,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
 #include <encodings/utf.h>
@@ -666,6 +667,70 @@ static int d3d9_hlsl_ctab_find_register(
    return CTAB_NOT_FOUND;
 }
 
+/* Debug: dump all CTAB entries to the log */
+static void d3d9_hlsl_ctab_dump(const DWORD *bytecode, size_t bytecode_dwords,
+      const char *label)
+{
+   size_t pos;
+   const DWORD CTAB_TAG = 0x42415443;
+
+   if (!bytecode || bytecode_dwords < 2)
+      return;
+
+   for (pos = 1; pos < bytecode_dwords; )
+   {
+      DWORD token  = bytecode[pos];
+      DWORD opcode = token & 0xFFFF;
+
+      if (opcode == 0xFFFF) break;
+
+      if (opcode == 0xFFFE)
+      {
+         DWORD comment_dwords = (token >> 16) & 0x7FFF;
+         if (pos + 1 + comment_dwords > bytecode_dwords) break;
+
+         if (comment_dwords >= 6 && bytecode[pos + 1] == CTAB_TAG)
+         {
+            const uint8_t *ctab_start = (const uint8_t*)&bytecode[pos + 1];
+            size_t ctab_total_bytes = comment_dwords * sizeof(DWORD);
+            const uint8_t *hdr = ctab_start + 4;
+            size_t hdr_avail = ctab_total_bytes - 4;
+            DWORD num_constants, const_info_offset, ci;
+
+            if (hdr_avail < 28) return;
+            num_constants = *(const DWORD*)(hdr + 12);
+            const_info_offset = *(const DWORD*)(hdr + 16);
+
+            RARCH_LOG("[D3D9 HLSL] CTAB dump for %s (%u constants):\n",
+                  label, (unsigned)num_constants);
+
+            for (ci = 0; ci < num_constants; ci++)
+            {
+               size_t entry_off = const_info_offset + ci * 20;
+               if (entry_off + 20 > hdr_avail) break;
+               {
+                  const uint8_t *entry = hdr + entry_off;
+                  DWORD name_offset = *(const DWORD*)(entry + 0);
+                  WORD reg_set   = *(const WORD*)(entry + 4);
+                  WORD reg_index = *(const WORD*)(entry + 6);
+                  WORD reg_count = *(const WORD*)(entry + 8);
+                  const char *cname = (name_offset < hdr_avail)
+                     ? (const char*)(hdr + name_offset) : "???";
+                  RARCH_LOG("  [%u] name='%s' regset=%u reg=c%u count=%u\n",
+                        ci, cname, (unsigned)reg_set, (unsigned)reg_index,
+                        (unsigned)reg_count);
+               }
+            }
+            return;
+         }
+
+         pos += 1 + comment_dwords;
+         continue;
+      }
+      pos++;
+   }
+}
+
 static INLINE void d3d9_hlsl_set_vs_const(LPDIRECT3DDEVICE9 dev,
       int reg, const float *data, unsigned float4_count)
 {
@@ -722,6 +787,26 @@ static void hlsl_uniform_map_from_bytecode(
    map->texture_size = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.texture_size", NULL);
    map->output_size  = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.output_size", NULL);
    map->frame_count  = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN.frame_count", NULL);
+
+   /* If individual IN.* lookups failed, check if the struct is
+    * registered as a single "IN" entry. D3DCompile packs struct
+    * members into consecutive float4 registers:
+    *   c[N+0] = { video_size.x, video_size.y, texture_size.x, texture_size.y }
+    *   c[N+1] = { output_size.x, output_size.y, frame_count, frame_direction }
+    */
+   if (map->video_size < 0 && map->texture_size < 0)
+   {
+      int in_reg = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN", NULL);
+      if (in_reg >= 0)
+      {
+         /* video_size and texture_size share c[N+0] */
+         map->video_size   = in_reg;
+         map->texture_size = in_reg; /* same register, .zw — handled at set time */
+         /* output_size and frame_count share c[N+1] */
+         map->output_size  = in_reg + 1;
+         map->frame_count  = in_reg + 1; /* same register, .z — handled at set time */
+      }
+   }
    map->orig_video_size   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.video_size", NULL);
    map->orig_texture_size = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.texture_size", NULL);
    map->orig_texture      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.texture", NULL);
@@ -2377,6 +2462,7 @@ static bool hlsl_d3d9_renderchain_init(
 }
 
 static void hlsl_d3d9_renderchain_render_pass(
+      d3d9_video_t *d3d,
       hlsl_renderchain_t *chain,
       struct shader_pass *pass,
       unsigned pass_index)
@@ -2422,32 +2508,77 @@ static void hlsl_d3d9_renderchain_render_pass(
    /* === Per-pass shader binding (only when we have compiled programs) === */
    if (pd)
    {
+      /* Set MVP matrix via CTAB.
+       * Use the same MVP matrix that the frame function computed
+       * (with viewport translation adjustments). */
+      if (pd->vs_map.mvp >= 0)
+         IDirect3DDevice9_SetVertexShaderConstantF(chain->chain.dev,
+               pd->vs_map.mvp, (const float*)&d3d->mvp, 4);
+
       /* Set shader uniforms via CTAB-discovered registers */
       {
-         float video_size[4]   = {
-            (float)pass->last_width, (float)pass->last_height, 0.0f, 0.0f };
-         float texture_size[4] = {
-            (float)pass->info.tex_w, (float)pass->info.tex_h, 0.0f, 0.0f };
-         float output_size[4]  = {
+         float video_size[2]   = {
+            (float)pass->last_width, (float)pass->last_height };
+         float texture_size[2] = {
+            (float)pass->info.tex_w, (float)pass->info.tex_h };
+         float output_size[2]  = {
             (float)chain->chain.out_vp->Width,
-            (float)chain->chain.out_vp->Height, 0.0f, 0.0f };
+            (float)chain->chain.out_vp->Height };
          float frame_cnt;
-         float fc[4];
-
-         d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.video_size,   video_size,   1);
-         d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.texture_size, texture_size, 1);
-         d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.output_size,  output_size,  1);
-         d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.video_size,   video_size,   1);
-         d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.texture_size, texture_size, 1);
-         d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.output_size,  output_size,  1);
 
          frame_cnt = (float)chain->chain.frame_count;
          if (pass->info.pass->frame_count_mod)
             frame_cnt = (float)(chain->chain.frame_count
                   % pass->info.pass->frame_count_mod);
-         fc[0] = frame_cnt; fc[1] = 0.0f; fc[2] = 0.0f; fc[3] = 0.0f;
-         d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.frame_count, fc, 1);
-         d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.frame_count, fc, 1);
+
+         /* Check if IN struct is packed (video_size and texture_size
+          * share the same register). If so, set as packed float4s:
+          *   c[N+0] = { video_size.x, video_size.y, texture_size.x, texture_size.y }
+          *   c[N+1] = { output_size.x, output_size.y, frame_count, frame_direction } */
+         if (pd->ps_map.video_size >= 0
+               && pd->ps_map.video_size == pd->ps_map.texture_size)
+         {
+            float packed0[4] = { video_size[0], video_size[1],
+               texture_size[0], texture_size[1] };
+            float packed1[4] = { output_size[0], output_size[1],
+               frame_cnt, 1.0f };
+            d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.video_size, packed0, 1);
+            d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.output_size, packed1, 1);
+         }
+         else
+         {
+            float vs4[4] = { video_size[0], video_size[1], 0.0f, 0.0f };
+            float ts4[4] = { texture_size[0], texture_size[1], 0.0f, 0.0f };
+            float os4[4] = { output_size[0], output_size[1], 0.0f, 0.0f };
+            float fc4[4] = { frame_cnt, 0.0f, 0.0f, 0.0f };
+            d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.video_size,   vs4, 1);
+            d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.texture_size, ts4, 1);
+            d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.output_size,  os4, 1);
+            d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.frame_count,  fc4, 1);
+         }
+
+         /* Same for VS */
+         if (pd->vs_map.video_size >= 0
+               && pd->vs_map.video_size == pd->vs_map.texture_size)
+         {
+            float packed0[4] = { video_size[0], video_size[1],
+               texture_size[0], texture_size[1] };
+            float packed1[4] = { output_size[0], output_size[1],
+               frame_cnt, 1.0f };
+            d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.video_size, packed0, 1);
+            d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.output_size, packed1, 1);
+         }
+         else
+         {
+            float vs4[4] = { video_size[0], video_size[1], 0.0f, 0.0f };
+            float ts4[4] = { texture_size[0], texture_size[1], 0.0f, 0.0f };
+            float os4[4] = { output_size[0], output_size[1], 0.0f, 0.0f };
+            float fc4[4] = { frame_cnt, 0.0f, 0.0f, 0.0f };
+            d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.video_size,   vs4, 1);
+            d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.texture_size, ts4, 1);
+            d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.output_size,  os4, 1);
+            d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.frame_count,  fc4, 1);
+         }
       }
 
       /* Bind ORIG texture */
@@ -2705,7 +2836,7 @@ static void hlsl_d3d9_renderchain_render(
             out_width, out_height,
             chain->chain.frame_count, 0);
 
-      hlsl_d3d9_renderchain_render_pass(chain,
+      hlsl_d3d9_renderchain_render_pass(d3d, chain,
             from_pass,
             i + 1);
 
@@ -2736,7 +2867,7 @@ static void hlsl_d3d9_renderchain_render(
          chain->chain.out_vp->Height,
          chain->chain.frame_count, rotation);
 
-   hlsl_d3d9_renderchain_render_pass(chain, last_pass,
+   hlsl_d3d9_renderchain_render_pass(d3d, chain, last_pass,
          chain->chain.passes->count);
 
    chain->chain.frame_count++;
@@ -2818,8 +2949,1106 @@ static DWORD *d3d9_hlsl_dup_bytecode(D3DBlob blob, size_t *out_dwords)
    return buf;
 }
 
+/* Read a file into a malloc'd null-terminated string. Caller frees. */
+static char *d3d9_hlsl_read_file(const char *path, size_t *out_len)
+{
+   int64_t len;
+   char *buf = NULL;
+   RFILE *fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!fp)
+      return NULL;
+
+   len = filestream_get_size(fp);
+   if (len <= 0)
+   {
+      filestream_close(fp);
+      return NULL;
+   }
+
+   buf = (char*)malloc((size_t)len + 1);
+   if (!buf)
+   {
+      filestream_close(fp);
+      return NULL;
+   }
+
+   filestream_read(fp, buf, (size_t)len);
+   buf[len] = '\0';
+   filestream_close(fp);
+
+   if (out_len)
+      *out_len = (size_t)len;
+   return buf;
+}
+
+/* Simple #include preprocessor for Cg/HLSL shader files.
+ *
+ * Scans the source for lines matching:
+ *   #include "filename"
+ * and replaces them with the contents of the referenced file,
+ * resolved relative to base_dir.  Handles recursive includes
+ * up to 16 levels deep. Returns a malloc'd string. */
+/* Simple preprocessor state for #ifdef/#ifndef/#else/#endif.
+ * Supports nesting up to 32 levels deep. */
+#define PREPROC_MAX_DEPTH 32
+
+typedef struct {
+   const char *names[64];
+   const char *values[64]; /* NULL = defined but no value (flag only) */
+   unsigned count;
+} preproc_defines_t;
+
+static void preproc_defines_init(preproc_defines_t *d)
+{
+   unsigned i;
+   for (i = 0; i < d->count; i++)
+   {
+      free((void*)d->names[i]);
+      d->names[i] = NULL;
+      d->values[i] = NULL;
+   }
+   d->count = 0;
+}
+
+static bool preproc_is_defined(const preproc_defines_t *d, const char *name, size_t name_len)
+{
+   unsigned i;
+   for (i = 0; i < d->count; i++)
+      if (strlen(d->names[i]) == name_len && strncmp(d->names[i], name, name_len) == 0)
+         return true;
+   return false;
+}
+
+
+static void preproc_add_define(preproc_defines_t *d, const char *name, const char *value)
+{
+   if (d->count < 64)
+   {
+      d->names[d->count]  = name;
+      d->values[d->count] = value;
+      d->count++;
+   }
+}
+
+static bool d3d9_hlsl_is_ident_char(char c);
+
+static preproc_defines_t s_defines = { {NULL}, {NULL}, 0 };
+
+static char *d3d9_hlsl_preprocess_includes(
+      const char *source, const char *base_dir, unsigned depth)
+{
+   size_t src_len = strlen(source);
+   size_t cap     = src_len * 2 + 1;
+   size_t pos     = 0;
+   char *out      = (char*)malloc(cap);
+   const char *p  = source;
+
+   /* Conditional compilation stack */
+   bool   cond_active[PREPROC_MAX_DEPTH]; /* is this level's branch active? */
+   bool   cond_done[PREPROC_MAX_DEPTH];   /* has any branch been taken? */
+   int    cond_depth = 0;
+   bool   output_enabled = true;
+
+   /* Reset defines at the top-level call (depth 0) so each shader
+    * file gets a fresh set of preprocessor definitions. */
+   if (depth == 0)
+      preproc_defines_init(&s_defines);
+
+   if (!out || depth > 16)
+      return out;
+
+   /* Initialize top-level as active */
+   cond_active[0] = true;
+   cond_done[0]   = true;
+
+   while (*p)
+   {
+      const char *line_end = strchr(p, '\n');
+      size_t line_len;
+      const char *s;
+
+      if (!line_end)
+         line_end = p + strlen(p);
+      else
+         line_end++;
+
+      line_len = (size_t)(line_end - p);
+
+      /* Skip leading whitespace to check for preprocessor directives */
+      s = p;
+      while (s < line_end && (*s == ' ' || *s == '\t'))
+         s++;
+
+      if (*s == '#')
+      {
+         const char *dir = s + 1;
+         while (dir < line_end && (*dir == ' ' || *dir == '\t'))
+            dir++;
+
+         /* #ifdef NAME */
+         if (strncmp(dir, "ifdef", 5) == 0 && (dir[5] == ' ' || dir[5] == '\t'))
+         {
+            const char *nm = dir + 5;
+            const char *nm_end;
+            while (*nm == ' ' || *nm == '\t') nm++;
+            nm_end = nm;
+            while (nm_end < line_end && *nm_end != ' ' && *nm_end != '\t'
+                  && *nm_end != '\r' && *nm_end != '\n')
+               nm_end++;
+
+            if (cond_depth < PREPROC_MAX_DEPTH - 1)
+            {
+               cond_depth++;
+               if (output_enabled)
+               {
+                  bool def = preproc_is_defined(&s_defines, nm, (size_t)(nm_end - nm));
+                  cond_active[cond_depth] = def;
+                  cond_done[cond_depth]   = def;
+                  output_enabled          = def;
+               }
+               else
+               {
+                  cond_active[cond_depth] = false;
+                  cond_done[cond_depth]   = true; /* parent inactive */
+               }
+            }
+            p = line_end;
+            continue;
+         }
+
+         /* #ifndef NAME */
+         if (strncmp(dir, "ifndef", 6) == 0 && (dir[6] == ' ' || dir[6] == '\t'))
+         {
+            const char *nm = dir + 6;
+            const char *nm_end;
+            while (*nm == ' ' || *nm == '\t') nm++;
+            nm_end = nm;
+            while (nm_end < line_end && *nm_end != ' ' && *nm_end != '\t'
+                  && *nm_end != '\r' && *nm_end != '\n')
+               nm_end++;
+
+            if (cond_depth < PREPROC_MAX_DEPTH - 1)
+            {
+               cond_depth++;
+               if (output_enabled)
+               {
+                  bool def = preproc_is_defined(&s_defines, nm, (size_t)(nm_end - nm));
+                  cond_active[cond_depth] = !def;
+                  cond_done[cond_depth]   = !def;
+                  output_enabled          = !def;
+               }
+               else
+               {
+                  cond_active[cond_depth] = false;
+                  cond_done[cond_depth]   = true;
+               }
+            }
+            p = line_end;
+            continue;
+         }
+
+         /* #if defined(X) / #if !defined(X) */
+         if (strncmp(dir, "if", 2) == 0 && (dir[2] == ' ' || dir[2] == '\t'))
+         {
+            const char *expr = dir + 2;
+            bool negate = false;
+            const char *nm, *nm_end;
+
+            while (*expr == ' ' || *expr == '\t') expr++;
+            if (*expr == '!')
+            {
+               negate = true;
+               expr++;
+               while (*expr == ' ' || *expr == '\t') expr++;
+            }
+
+            if (strncmp(expr, "defined", 7) == 0)
+            {
+               expr += 7;
+               while (*expr == ' ' || *expr == '\t') expr++;
+               if (*expr == '(') expr++;
+               while (*expr == ' ' || *expr == '\t') expr++;
+               nm = expr;
+               nm_end = nm;
+               while (nm_end < line_end && d3d9_hlsl_is_ident_char(*nm_end))
+                  nm_end++;
+
+               if (cond_depth < PREPROC_MAX_DEPTH - 1)
+               {
+                  cond_depth++;
+                  if (output_enabled)
+                  {
+                     bool def = preproc_is_defined(&s_defines, nm, (size_t)(nm_end - nm));
+                     bool result = negate ? !def : def;
+                     cond_active[cond_depth] = result;
+                     cond_done[cond_depth]   = result;
+                     output_enabled          = result;
+                  }
+                  else
+                  {
+                     cond_active[cond_depth] = false;
+                     cond_done[cond_depth]   = true;
+                  }
+               }
+               p = line_end;
+               continue;
+            }
+
+            /* Unhandled #if expression — treat as unknown (skip block) */
+            if (cond_depth < PREPROC_MAX_DEPTH - 1)
+            {
+               cond_depth++;
+               cond_active[cond_depth] = false;
+               cond_done[cond_depth]   = false;
+               if (output_enabled)
+                  output_enabled = false;
+            }
+            p = line_end;
+            continue;
+         }
+
+         /* #else */
+         if (strncmp(dir, "else", 4) == 0
+               && (dir[4] == '\r' || dir[4] == '\n' || dir[4] == ' '
+                  || dir[4] == '\t' || dir[4] == '\0'))
+         {
+            if (cond_depth > 0)
+            {
+               /* Check if parent is active */
+               bool parent_active = (cond_depth <= 1) || cond_active[cond_depth - 1];
+               if (parent_active && !cond_done[cond_depth])
+               {
+                  cond_active[cond_depth] = true;
+                  cond_done[cond_depth]   = true;
+                  output_enabled          = true;
+               }
+               else
+               {
+                  cond_active[cond_depth] = false;
+                  output_enabled          = false;
+               }
+            }
+            p = line_end;
+            continue;
+         }
+
+         /* #endif */
+         if (strncmp(dir, "endif", 5) == 0
+               && (dir[5] == '\r' || dir[5] == '\n' || dir[5] == ' '
+                  || dir[5] == '\t' || dir[5] == '\0'))
+         {
+            if (cond_depth > 0)
+               cond_depth--;
+            /* Recalculate output_enabled */
+            output_enabled = true;
+            {
+               int i;
+               for (i = 1; i <= cond_depth; i++)
+                  if (!cond_active[i])
+                  { output_enabled = false; break; }
+            }
+            p = line_end;
+            continue;
+         }
+
+         /* #define NAME [value] — parse and store for expansion */
+         if (output_enabled && strncmp(dir, "define", 6) == 0
+               && (dir[6] == ' ' || dir[6] == '\t'))
+         {
+            const char *nm = dir + 6;
+            const char *nm_end;
+            while (*nm == ' ' || *nm == '\t') nm++;
+            nm_end = nm;
+            while (nm_end < line_end && d3d9_hlsl_is_ident_char(*nm_end))
+               nm_end++;
+
+            /* Mark as defined for #ifdef checks */
+            if (*nm_end != '(')
+            {
+               size_t nlen = (size_t)(nm_end - nm);
+               char *name_copy = (char*)malloc(nlen + 1);
+               if (name_copy)
+               {
+                  memcpy(name_copy, nm, nlen);
+                  name_copy[nlen] = '\0';
+                  preproc_add_define(&s_defines, name_copy, NULL);
+               }
+            }
+            /* Line is output below by the regular output path */
+         }
+
+         /* #include handling (only when output is enabled) */
+         if (output_enabled && strncmp(dir, "include", 7) == 0)
+         {
+            const char *q = dir + 7;
+            while (q < line_end && (*q == ' ' || *q == '\t'))
+               q++;
+
+            if (*q == '"' || *q == '<')
+            {
+               char close_char    = (*q == '"') ? '"' : '>';
+               const char *name_start = q + 1;
+               const char *name_end   = strchr(name_start, close_char);
+
+               if (name_end && name_end < line_end)
+               {
+                  char inc_path[PATH_MAX_LENGTH];
+                  char inc_name[PATH_MAX_LENGTH];
+                  size_t name_len_n = (size_t)(name_end - name_start);
+                  char *inc_src;
+
+                  if (name_len_n >= sizeof(inc_name))
+                     name_len_n = sizeof(inc_name) - 1;
+                  memcpy(inc_name, name_start, name_len_n);
+                  inc_name[name_len_n] = '\0';
+
+                  fill_pathname_join(inc_path, base_dir, inc_name,
+                        sizeof(inc_path));
+
+                  inc_src = d3d9_hlsl_read_file(inc_path, NULL);
+                  if (inc_src)
+                  {
+                     char inc_dir[PATH_MAX_LENGTH];
+                     char *resolved_inc;
+                     strlcpy(inc_dir, inc_path, sizeof(inc_dir));
+                     path_basedir(inc_dir);
+
+                     resolved_inc = d3d9_hlsl_preprocess_includes(
+                           inc_src, inc_dir, depth + 1);
+                     free(inc_src);
+
+                     if (resolved_inc)
+                     {
+                        size_t resolved_len = strlen(resolved_inc);
+                        while (pos + resolved_len + 2 >= cap)
+                        {
+                           cap *= 2;
+                           out  = (char*)realloc(out, cap);
+                           if (!out) { free(resolved_inc); return NULL; }
+                        }
+                        memcpy(out + pos, resolved_inc, resolved_len);
+                        pos += resolved_len;
+                        if (resolved_len > 0 && resolved_inc[resolved_len - 1] != '\n')
+                           out[pos++] = '\n';
+                        free(resolved_inc);
+                     }
+
+                     p = line_end;
+                     continue;
+                  }
+               }
+            }
+         }
+      }
+
+      /* Output the line if enabled (and not a consumed preprocessor directive) */
+      if (output_enabled)
+      {
+         while (pos + line_len + 1 >= cap)
+         {
+            cap *= 2;
+            out  = (char*)realloc(out, cap);
+            if (!out) return NULL;
+         }
+         memcpy(out + pos, p, line_len);
+         pos += line_len;
+      }
+
+      p = line_end;
+   }
+
+   out[pos] = '\0';
+   return out;
+}
+
+/* =====================================================================
+ * Cg → HLSL source-level fixups
+ *
+ * 1. Whole-word rename 'texture' → '_texture' (HLSL reserved keyword)
+ * 2. Extract 'uniform <type> <name>' parameters from function signatures
+ *    and hoist them to global scope.  HLSL requires semantics on every
+ *    VS/PS input parameter; Cg's 'uniform' qualifier marks parameters
+ *    that are set by the runtime (not vertex-stream data) which have
+ *    no semantic.  Moving them to global scope makes them plain globals
+ *    that the HLSL compiler treats as constants (matching CTAB layout).
+ * ===================================================================== */
+
+static bool d3d9_hlsl_is_ident_char(char c)
+{
+   return (c >= 'A' && c <= 'Z')
+       || (c >= 'a' && c <= 'z')
+       || (c >= '0' && c <= '9')
+       || c == '_';
+}
+
+/* Append a string to a dynamic buffer, growing as needed. */
+static bool d3d9_hlsl_buf_append(char **buf, size_t *pos, size_t *cap,
+      const char *str, size_t len)
+{
+   while (*pos + len + 1 >= *cap)
+   {
+      *cap *= 2;
+      *buf  = (char*)realloc(*buf, *cap);
+      if (!*buf) return false;
+   }
+   memcpy(*buf + *pos, str, len);
+   *pos += len;
+   return true;
+}
+
+static char *d3d9_hlsl_fixup_cg_source(const char *source)
+{
+   size_t src_len     = strlen(source);
+   size_t cap         = src_len * 2 + 4096;
+   size_t pos         = 0;
+   char  *out         = (char*)malloc(cap);
+   const char *p      = source;
+   int    paren_depth = 0;
+   int    brace_depth = 0;  /* track { } to know when we're at global scope */
+   size_t last_func_start = 0;
+
+   if (!out)
+      return NULL;
+
+   while (*p)
+   {
+      /* Skip #define lines entirely — don't apply any fixups to
+       * preprocessor macro definitions. Check if we're at a line start. */
+      {
+         bool at_line_start = (p == source || p[-1] == '\n');
+         if (at_line_start)
+         {
+            const char *d = p;
+            while (*d == ' ' || *d == '\t') d++;
+            if (*d == '#')
+            {
+               const char *dir = d + 1;
+               while (*dir == ' ' || *dir == '\t') dir++;
+               if (strncmp(dir, "define", 6) == 0
+                     && (dir[6] == ' ' || dir[6] == '\t'))
+               {
+                  /* Find the macro name */
+                  const char *mname = dir + 6;
+                  const char *mname_end;
+                  const char *eol;
+
+                  while (*mname == ' ' || *mname == '\t') mname++;
+                  mname_end = mname;
+                  while (d3d9_hlsl_is_ident_char(*mname_end)) mname_end++;
+
+                  /* Find end of line (with continuation) */
+                  eol = p;
+                  while (*eol)
+                  {
+                     const char *nl = strchr(eol, '\n');
+                     if (!nl) { eol += strlen(eol); break; }
+                     if (nl > eol && nl[-1] == '\\')
+                     { eol = nl + 1; continue; }
+                     eol = nl + 1;
+                     break;
+                  }
+
+                  /* Check if this is COMPAT_IN_VERTEX or COMPAT_IN_FRAGMENT */
+                  {
+                     bool is_vertex = ((size_t)(mname_end - mname) == 16
+                           && strncmp(mname, "COMPAT_IN_VERTEX", 16) == 0);
+                     bool is_fragment = ((size_t)(mname_end - mname) == 18
+                           && strncmp(mname, "COMPAT_IN_FRAGMENT", 18) == 0);
+
+                  if (is_vertex || is_fragment)
+                  {
+                     /* Parse the macro value as a comma-separated param list.
+                      * Split into params WITH semantics (kept in #define) and
+                      * params WITHOUT (emitted as global declarations before). */
+                     const char *val_start = mname_end;
+                     while (*val_start == ' ' || *val_start == '\t') val_start++;
+
+                     /* Collect params */
+                     {
+                        const char *vp = val_start;
+                        const char *val_end = eol;
+                        char globals_buf[2048];
+                        char kept_buf[2048];
+                        size_t gpos = 0, kpos = 0;
+
+                        /* Trim trailing whitespace/newline from value */
+                        while (val_end > val_start
+                              && (val_end[-1] == '\n' || val_end[-1] == '\r'
+                                 || val_end[-1] == ' ' || val_end[-1] == '\t'))
+                           val_end--;
+
+                        while (vp < val_end)
+                        {
+                           const char *param_start = vp;
+                           const char *param_end;
+                           bool has_colon = false;
+
+                           /* Find end of this param */
+                           while (vp < val_end && *vp != ',')
+                           {
+                              if (*vp == ':') has_colon = true;
+                              vp++;
+                           }
+                           param_end = vp;
+                           if (vp < val_end) vp++; /* skip comma */
+
+                           /* Trim whitespace */
+                           while (param_start < param_end
+                                 && (*param_start == ' ' || *param_start == '\t'))
+                              param_start++;
+                           while (param_end > param_start
+                                 && (param_end[-1] == ' ' || param_end[-1] == '\t'))
+                              param_end--;
+
+                           if (param_end <= param_start)
+                              continue;
+
+                           if (has_colon)
+                           {
+                              /* Already has semantic — keep as-is */
+                              if (kpos > 0)
+                              { kept_buf[kpos++] = ','; kept_buf[kpos++] = ' '; }
+                              memcpy(kept_buf + kpos, param_start,
+                                    (size_t)(param_end - param_start));
+                              kpos += (size_t)(param_end - param_start);
+                           }
+                           else
+                           {
+                              /* No semantic. If 'uniform', extract as global.
+                               * Otherwise (struct param like 'in_vertex VIN'),
+                               * keep in #define but DO NOT add semantic —
+                               * just extract as a global uniform too. */
+                              const char *ds = param_start;
+                              bool is_uniform = false;
+                              if (strncmp(ds, "uniform", 7) == 0
+                                    && !d3d9_hlsl_is_ident_char(ds[7]))
+                              {
+                                 is_uniform = true;
+                                 ds += 7;
+                                 while (*ds == ' ' || *ds == '\t') ds++;
+                              }
+
+                              /* Check has two tokens (type + name) */
+                              {
+                                 const char *tk = ds;
+                                 while (tk < param_end && d3d9_hlsl_is_ident_char(*tk)) tk++;
+                                 while (tk < param_end && (*tk == ' ' || *tk == '\t')) tk++;
+                                 if (tk < param_end && d3d9_hlsl_is_ident_char(*tk))
+                                 {
+                                    if (is_uniform)
+                                    {
+                                       /* Uniform param — always extract as global */
+                                       gpos += snprintf(globals_buf + gpos,
+                                             sizeof(globals_buf) - gpos,
+                                             "uniform %.*s;\n",
+                                             (int)(param_end - ds), ds);
+                                    }
+                                    else if (is_vertex)
+                                    {
+                                       /* VS non-uniform struct param (in_vertex VIN)
+                                        * — extract as global since the struct has
+                                        * no meaningful semantics (just a dummy). */
+                                       gpos += snprintf(globals_buf + gpos,
+                                             sizeof(globals_buf) - gpos,
+                                             "static %.*s;\n",
+                                             (int)(param_end - ds), ds);
+                                    }
+                                    else
+                                    {
+                                       /* Non-uniform struct param (e.g. in_vertex VIN,
+                                        * out_vertex VOUT) — keep in #define as-is.
+                                        * These are vertex/rasterizer inputs with
+                                        * per-member semantics. */
+                                       if (kpos > 0)
+                                       { kept_buf[kpos++] = ','; kept_buf[kpos++] = ' '; }
+                                       memcpy(kept_buf + kpos, param_start,
+                                             (size_t)(param_end - param_start));
+                                       kpos += (size_t)(param_end - param_start);
+                                    }
+                                 }
+                                 else
+                                 {
+                                    /* Single token (macro?) — keep in #define */
+                                    if (kpos > 0)
+                                    { kept_buf[kpos++] = ','; kept_buf[kpos++] = ' '; }
+                                    memcpy(kept_buf + kpos, param_start,
+                                          (size_t)(param_end - param_start));
+                                    kpos += (size_t)(param_end - param_start);
+                                 }
+                              }
+                           }
+                        }
+                        kept_buf[kpos] = '\0';
+                        globals_buf[gpos] = '\0';
+
+                        /* Output: globals first (with dedup), then rewritten #define */
+                        if (gpos > 0)
+                        {
+                           /* Check each global line for duplicates before emitting */
+                           char *gl = globals_buf;
+                           while (*gl)
+                           {
+                              char *gl_end = strchr(gl, '\n');
+                              size_t gl_len;
+                              if (!gl_end) gl_end = gl + strlen(gl);
+                              else gl_end++;
+                              gl_len = (size_t)(gl_end - gl);
+
+                              /* Check if this declaration exists in output */
+                              out[pos] = '\0';
+                              if (!strstr(out, gl))
+                                 d3d9_hlsl_buf_append(&out, &pos, &cap, gl, gl_len);
+
+                              gl = gl_end;
+                           }
+                        }
+
+                        {
+                           char def_line[2048];
+                           size_t dl = snprintf(def_line, sizeof(def_line),
+                                 "#define %.*s %s\n",
+                                 (int)(mname_end - mname), mname,
+                                 kept_buf);
+                           d3d9_hlsl_buf_append(&out, &pos, &cap,
+                                 def_line, dl);
+                        }
+                     }
+
+                     p = eol;
+                     continue;
+                  }
+                  } /* is_vertex || is_fragment */
+
+                  /* Regular #define — copy verbatim */
+                  {
+                     size_t ll = (size_t)(eol - p);
+                     if (!d3d9_hlsl_buf_append(&out, &pos, &cap, p, ll))
+                        goto fail;
+                     p = eol;
+                     continue;
+                  }
+               }
+            }
+         }
+      }
+
+      /* --- Fix 1: whole-word 'texture' -> '_texture' --- */
+      if (strncmp(p, "texture", 7) == 0
+            && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
+            && !d3d9_hlsl_is_ident_char(p[7]))
+      {
+         if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "_texture", 8))
+            goto fail;
+         p += 7;
+         continue;
+      }
+
+      /* --- Fix 1b: strip 'uniform' from struct member declarations ---
+       * Cg allows 'uniform sampler2D tex' inside structs; HLSL doesn't. */
+      if (brace_depth > 0 && paren_depth == 0
+            && strncmp(p, "uniform", 7) == 0
+            && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
+            && !d3d9_hlsl_is_ident_char(p[7]))
+      {
+         /* Skip the 'uniform' keyword and trailing whitespace */
+         p += 7;
+         while (*p == ' ' || *p == '\t') p++;
+         continue;
+      }
+
+      /* Track braces for scope detection */
+      if (*p == '{')
+      {
+         brace_depth++;
+         if (!d3d9_hlsl_buf_append(&out, &pos, &cap, p, 1))
+            goto fail;
+         p++;
+         continue;
+      }
+      if (*p == '}')
+      {
+         if (brace_depth > 0) brace_depth--;
+         if (!d3d9_hlsl_buf_append(&out, &pos, &cap, p, 1))
+            goto fail;
+         p++;
+         continue;
+      }
+
+      /* Track paren depth — only for function definitions, not macro calls.
+       * A function definition '(' is preceded by the function name identifier
+       * and the line looks like: <type> <name>( ... )
+       * We detect this by checking that:
+       *  - we're at paren_depth 0
+       *  - the '(' is preceded by an identifier (function name)
+       *  - the line does NOT start with '#' (not a preprocessor line)
+       *  - the line does NOT start with 'uniform' (not a uniform declaration) */
+      if (*p == '(')
+      {
+         if (paren_depth == 0 && brace_depth == 0)
+         {
+            /* Check if this looks like a function definition */
+            bool is_func_sig = false;
+
+            /* Look at the line start to rule out preprocessor/uniform lines */
+            {
+               size_t ls = pos;
+               while (ls > 0 && out[ls - 1] != '\n')
+                  ls--;
+               /* Skip whitespace at line start */
+               {
+                  size_t cs = ls;
+                  while (cs < pos && (out[cs] == ' ' || out[cs] == '\t'))
+                     cs++;
+                  /* Not a preprocessor line and not 'uniform' */
+                  if (cs < pos && out[cs] != '#'
+                        && strncmp(out + cs, "uniform", 7) != 0)
+                  {
+                     /* Check that '(' is preceded by an identifier
+                      * AND the function is main_vertex or main_fragment
+                      * (don't extract params from helper functions) */
+                     if (pos > 0 && d3d9_hlsl_is_ident_char(out[pos - 1]))
+                     {
+                        /* Check function name */
+                        if ((pos >= 11 && strncmp(out + pos - 11, "main_vertex", 11) == 0
+                                 && (pos == 11 || !d3d9_hlsl_is_ident_char(out[pos - 12])))
+                              || (pos >= 13 && strncmp(out + pos - 13, "main_fragment", 13) == 0
+                                 && (pos == 13 || !d3d9_hlsl_is_ident_char(out[pos - 14]))))
+                           is_func_sig = true;
+                     }
+                  }
+               }
+               last_func_start = ls;
+            }
+
+            if (is_func_sig)
+               paren_depth++;
+            /* else: don't increment paren_depth for macro calls */
+         }
+         else
+            paren_depth++;
+
+         if (!d3d9_hlsl_buf_append(&out, &pos, &cap, p, 1))
+            goto fail;
+         p++;
+         continue;
+      }
+
+      if (*p == ')')
+      {
+         if (paren_depth > 0)
+            paren_depth--;
+         if (!d3d9_hlsl_buf_append(&out, &pos, &cap, p, 1))
+            goto fail;
+         p++;
+         continue;
+      }
+
+      /* --- Fix 2: remove params without semantics from function sigs ---
+       *
+       * Catches both 'uniform <type> <name>' and plain '<type> <name>'
+       * where <name> has no ': SEMANTIC' annotation. These are Cg-style
+       * runtime parameters that can't be vertex-stream inputs in HLSL.
+       *
+       * We detect: inside parens, after '(' or ',', skip whitespace,
+       * if we see 'uniform' consume it, then look for '<ident> <ident>'
+       * NOT followed by ':'. */
+      if (paren_depth > 0)
+      {
+         /* Check if we're at the start of a parameter (after '(' or ',') */
+         bool at_param_start = false;
+         {
+            /* Scan backwards in output for the last non-whitespace char */
+            size_t si = pos;
+            while (si > 0 && (out[si-1] == ' ' || out[si-1] == '\t'
+                        || out[si-1] == '\r' || out[si-1] == '\n'))
+               si--;
+            if (si > 0 && (out[si-1] == '(' || out[si-1] == ','))
+               at_param_start = true;
+         }
+
+         if (at_param_start && d3d9_hlsl_is_ident_char(*p))
+         {
+            /* We're at the start of a parameter. Scan ahead to determine
+             * if this is a '<type> <name>' without ': SEMANTIC'.
+             * 
+             * Find the end of this param (next ',' or ')' at depth 0) */
+            const char *param_start = p;
+            const char *param_end   = p;
+            bool has_semantic       = false;
+            {
+               int d = 0;
+               const char *s = p;
+               while (*s)
+               {
+                  if (*s == '(') d++;
+                  else if (*s == ')')
+                  { if (d == 0) break; d--; }
+                  else if (*s == ',' && d == 0)
+                     break;
+                  else if (*s == ':' && d == 0)
+                     has_semantic = true;
+                  s++;
+               }
+               param_end = s;
+            }
+
+            if (!has_semantic)
+            {
+               /* This param has no semantic — it's a Cg uniform-style param.
+                * Extract it, optionally strip leading 'uniform', hoist to global.
+                *
+                * IMPORTANT: only extract if the declaration has at least
+                * two whitespace-separated tokens (type + name). A single
+                * identifier is likely a macro (e.g. COMPAT_IN_VERTEX)
+                * that D3DCompile will expand. */
+               const char *decl_start = param_start;
+               const char *decl_end   = param_end;
+               const char *trim;
+               size_t decl_len;
+               char decl_buf[512];
+               char hoist[540];
+               size_t hoist_len;
+               bool already_global;
+               bool has_two_tokens = false;
+
+               /* Check and skip 'uniform' keyword */
+               if (strncmp(decl_start, "uniform", 7) == 0
+                     && !d3d9_hlsl_is_ident_char(decl_start[7]))
+               {
+                  decl_start += 7;
+                  while (*decl_start == ' ' || *decl_start == '\t'
+                        || *decl_start == '\r' || *decl_start == '\n')
+                     decl_start++;
+               }
+
+               /* Check for at least two tokens: skip first ident, skip space,
+                * check for second ident */
+               {
+                  const char *tk = decl_start;
+                  /* Skip first identifier */
+                  while (tk < decl_end && d3d9_hlsl_is_ident_char(*tk))
+                     tk++;
+                  /* Skip whitespace */
+                  while (tk < decl_end && (*tk == ' ' || *tk == '\t'
+                           || *tk == '\r' || *tk == '\n'))
+                     tk++;
+                  /* Check for second identifier */
+                  if (tk < decl_end && d3d9_hlsl_is_ident_char(*tk))
+                     has_two_tokens = true;
+               }
+
+               if (!has_two_tokens)
+                  goto skip_extraction;
+
+               /* Trim trailing whitespace */
+               trim = decl_end - 1;
+               while (trim > decl_start
+                     && (*trim == ' ' || *trim == '\t'
+                        || *trim == '\r' || *trim == '\n'))
+                  trim--;
+               decl_len = (size_t)(trim - decl_start + 1);
+
+               if (decl_len > 0 && decl_len < sizeof(decl_buf) - 1)
+               {
+                  memcpy(decl_buf, decl_start, decl_len);
+                  decl_buf[decl_len] = '\0';
+
+                  hoist_len = snprintf(hoist, sizeof(hoist),
+                        "uniform %s;\n", decl_buf);
+
+                  /* Check if already declared globally */
+                  out[pos] = '\0';
+                  {
+                     char decl_semi[520];
+                     snprintf(decl_semi, sizeof(decl_semi), "%s;", decl_buf);
+                     already_global = (strstr(out, hoist) != NULL)
+                                   || (strstr(out, decl_semi) != NULL);
+                  }
+
+                  if (!already_global)
+                  {
+                     while (pos + hoist_len + 1 >= cap)
+                     { cap *= 2; out = (char*)realloc(out, cap);
+                       if (!out) return NULL; }
+                     memmove(out + last_func_start + hoist_len,
+                           out + last_func_start, pos - last_func_start);
+                     memcpy(out + last_func_start, hoist, hoist_len);
+                     pos += hoist_len;
+                     last_func_start += hoist_len;
+                  }
+
+                  /* Remove param from source, handle commas */
+                  {
+                     const char *after = decl_end;
+                     if (*after == ',')
+                     {
+                        after++;
+                        while (*after == ' ' || *after == '\t'
+                              || *after == '\r' || *after == '\n')
+                           after++;
+                     }
+                     else if (*after == ')')
+                     {
+                        while (pos > 0 && (out[pos-1] == ' '
+                                 || out[pos-1] == '\t'
+                                 || out[pos-1] == '\r'
+                                 || out[pos-1] == '\n'))
+                           pos--;
+                        if (pos > 0 && out[pos-1] == ',')
+                           pos--;
+                     }
+                     p = after;
+                  }
+                  continue;
+               }
+            }
+skip_extraction:
+            ; /* label requires a statement */
+         }
+      }
+
+      /* Regular char */
+      if (!d3d9_hlsl_buf_append(&out, &pos, &cap, p, 1))
+         goto fail;
+      p++;
+   }
+
+   out[pos] = '\0';
+   return out;
+
+fail:
+   free(out);
+   return NULL;
+}
+
+/* Dynamically load D3DCompile and D3DPreprocess with
+ * D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY to accept Cg syntax. */
+
+typedef HRESULT (WINAPI *PFN_D3DCOMPILE)(
+      LPCVOID, SIZE_T, LPCSTR,
+      const void*, void*,
+      LPCSTR, LPCSTR, UINT, UINT,
+      void**, void**);
+
+typedef HRESULT (WINAPI *PFN_D3DPREPROCESS)(
+      LPCVOID, SIZE_T, LPCSTR,
+      const void*, void*,
+      void**, void**);
+
+#ifndef D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY
+#define D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY (1 << 12)
+#endif
+
+static PFN_D3DCOMPILE    d3d9_pCompile    = NULL;
+static PFN_D3DPREPROCESS d3d9_pPreprocess = NULL;
+static bool d3d9_compiler_tried           = false;
+
+static void d3d9_hlsl_ensure_compiler(void)
+{
+   HMODULE dll = NULL;
+   const char *names[] = {
+      "d3dcompiler_47.dll",
+      "d3dcompiler_46.dll",
+      "d3dcompiler_43.dll",
+      NULL
+   };
+   int i;
+
+   if (d3d9_compiler_tried)
+      return;
+   d3d9_compiler_tried = true;
+
+   for (i = 0; names[i]; i++)
+   {
+      dll = GetModuleHandleA(names[i]);
+      if (!dll)
+         dll = LoadLibraryA(names[i]);
+      if (dll)
+      {
+         d3d9_pCompile    = (PFN_D3DCOMPILE)GetProcAddress(dll, "D3DCompile");
+         d3d9_pPreprocess = (PFN_D3DPREPROCESS)GetProcAddress(dll, "D3DPreprocess");
+         if (d3d9_pCompile)
+         {
+            RARCH_LOG("[D3D9 HLSL] Loaded D3DCompile from %s.\n", names[i]);
+            break;
+         }
+      }
+   }
+   if (!d3d9_pCompile)
+      RARCH_WARN("[D3D9 HLSL] Could not find D3DCompile, falling back.\n");
+}
+
+/* Full Cg→HLSL compilation pipeline:
+ *  1. D3DPreprocess to expand all #define macros
+ *  2. d3d9_hlsl_fixup_cg_source to fix texture keyword + uniform params
+ *  3. D3DCompile with backwards compat flag
+ *
+ * If D3DPreprocess is unavailable, skips step 1 and tries fixup on the
+ * raw source (works for shaders that don't use macros for uniform params). */
+static bool d3d9_hlsl_compile_cg_compat(
+      const char *source, size_t source_len,
+      const char *source_name,
+      const char *entry, const char *target,
+      D3DBlob *out_blob)
+{
+   D3DBlob error_blob = NULL;
+   HRESULT hr;
+
+   /* D3D_SHADER_MACRO compatible: { Name, Definition }, null-terminated */
+   struct { const char *n; const char *d; } cg_defines[] = {
+      { "CG", "1" },
+      { NULL, NULL }
+   };
+
+   if (!out_blob)
+      return false;
+
+   d3d9_hlsl_ensure_compiler();
+
+   if (!d3d9_pCompile)
+      return d3d_compile(source, source_len, source_name,
+            entry, target, out_blob);
+
+   /* Our own preprocessor already handled #include, #ifdef, #ifndef,
+    * #else, #endif. Apply Cg→HLSL fixups and compile directly. */
+   {
+      char *fixed    = d3d9_hlsl_fixup_cg_source(source);
+      const char *compile_src = fixed ? fixed : source;
+      size_t compile_len      = fixed ? strlen(fixed) : source_len;
+
+      hr = d3d9_pCompile(
+            compile_src, compile_len,
+            source_name,
+            NULL, NULL,
+            entry, target,
+            D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY,
+            0,
+            (void**)out_blob,
+            (void**)&error_blob);
+
+      free(fixed);
+
+      if (FAILED(hr))
+      {
+         if (error_blob)
+         {
+            RARCH_ERR("[D3D9 HLSL] D3DCompile failed: %s\n",
+                  (const char*)error_blob->lpVtbl->GetBufferPointer(error_blob));
+            error_blob->lpVtbl->Release(error_blob);
+         }
+         return false;
+      }
+
+      if (error_blob)
+         error_blob->lpVtbl->Release(error_blob);
+      return true;
+   }
+}
+
 /* Load a shader from file AND populate pass_data with CTAB info.
- * Falls back gracefully: if pd is NULL, behaves like the original. */
+ * Reads the shader source, preprocesses #include directives,
+ * fixes Cg-isms, then compiles via d3d_compile. */
 static bool d3d9_hlsl_load_program_from_file_ex(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
@@ -2828,24 +4057,71 @@ static bool d3d9_hlsl_load_program_from_file_ex(
 {
    D3DBlob code_f = NULL;
    D3DBlob code_v = NULL;
-   wchar_t wpath[PATH_MAX_LENGTH];
+   char *source   = NULL;
+   char *resolved = NULL;
+   char base_dir[PATH_MAX_LENGTH];
+   size_t src_len = 0;
 
    if (!prog || !*prog)
       return false;
 
-   mbstowcs(wpath, prog, PATH_MAX_LENGTH);
+   /* Read source file */
+   source = d3d9_hlsl_read_file(prog, &src_len);
+   if (!source)
+   {
+      RARCH_ERR("[D3D9 HLSL] Could not read shader file: %s\n", prog);
+      return false;
+   }
 
-   if (!d3d_compile_from_file(wpath, "main_fragment", "ps_3_0", &code_f))
+   /* Extract directory for #include resolution */
+   strlcpy(base_dir, prog, sizeof(base_dir));
+   path_basedir(base_dir);
+
+   /* Resolve #include directives */
+   resolved = d3d9_hlsl_preprocess_includes(source, base_dir, 0);
+   free(source);
+
+   if (!resolved)
    {
-      RARCH_ERR("[D3D9 HLSL] Could not compile fragment shader program (%s).\n", prog);
+      RARCH_ERR("[D3D9 HLSL] Include preprocessing failed: %s\n", prog);
       return false;
    }
-   if (!d3d_compile_from_file(wpath, "main_vertex", "vs_3_0", &code_v))
+
+   /* Apply Cg→HLSL source-level fixes:
+    *  1. 'texture' as identifier → '_texture' (HLSL reserved keyword)
+    *  2. 'uniform <type> <name>' in function params → move to global scope
+    *     (HLSL requires semantics on all VS/PS input params; Cg 'uniform'
+    *      params are set via the runtime, not from vertex streams) */
    {
-      RARCH_ERR("[D3D9 HLSL] Could not compile vertex shader program (%s).\n", prog);
+      char *fixed = d3d9_hlsl_fixup_cg_source(resolved);
+      free(resolved);
+      resolved = fixed;
+      if (!resolved)
+      {
+         RARCH_ERR("[D3D9 HLSL] Source fixup failed: %s\n", prog);
+         return false;
+      }
+   }
+
+   src_len = strlen(resolved);
+
+   if (!d3d9_hlsl_compile_cg_compat(resolved, src_len, prog,
+            "main_fragment", "ps_3_0", &code_f))
+   {
+      RARCH_ERR("[D3D9 HLSL] Could not compile fragment shader (%s).\n", prog);
+      free(resolved);
+      return false;
+   }
+   if (!d3d9_hlsl_compile_cg_compat(resolved, src_len, prog,
+            "main_vertex", "vs_3_0", &code_v))
+   {
+      RARCH_ERR("[D3D9 HLSL] Could not compile vertex shader (%s).\n", prog);
       code_f->lpVtbl->Release(code_f);
+      free(resolved);
       return false;
    }
+
+   free(resolved);
 
    pass->ftable = NULL;
    pass->vtable = NULL;
@@ -4030,8 +5306,16 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
          0, 1, 0);
 
-   IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
-         (const float*)&d3d->mvp, 4);
+   /* Only write MVP to c0 if the first pass uses the stock shader.
+    * Per-pass shaders set MVP at the CTAB-discovered register. */
+   {
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      struct shader_pass *first  = _chain
+         ? (struct shader_pass*)&_chain->chain.passes->data[0] : NULL;
+      if (!first || !first->vprg)
+         IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
+               (const float*)&d3d->mvp, 4);
+   }
    hlsl_d3d9_renderchain_render(
          d3d, frame, frame_width, frame_height,
          pitch, d3d->dev_rotation);
