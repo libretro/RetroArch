@@ -3866,12 +3866,19 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
             && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
             && !d3d9_hlsl_is_ident_char(p[5]))
       {
-         /* Check it's not already 'static const' */
+         /* Check it's not already 'static const' or 'const static' */
+         bool already_static = false;
          if (p >= source + 7 && strncmp(p - 7, "static ", 7) == 0)
+            already_static = true;
+         /* Check for 'const static' — 'static' follows after 'const ' */
          {
-            /* Already has static — leave as-is */
+            const char *after = p + 5;
+            while (*after == ' ' || *after == '\t') after++;
+            if (strncmp(after, "static", 6) == 0
+                  && !d3d9_hlsl_is_ident_char(after[6]))
+               already_static = true;
          }
-         else
+         if (!already_static)
          {
             if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "static const", 12))
                goto fail;
