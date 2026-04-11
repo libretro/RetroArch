@@ -52,6 +52,7 @@
 #include <boolean.h>
 
 #include <defines/d3d_defines.h>
+#include <gfx/math/matrix_4x4.h>
 #include "../common/d3d_common.h"
 
 #include "../common/d3d9_common.h"
@@ -107,65 +108,6 @@ static const char *stock_cg_d3d9_program = CG(
        return color * tex2D(s0, tex);
     }
 );
-
-static INLINE void d3d_matrix_identity(void *_pout)
-{
-   static const float identity[16] = {
-      1.0f, 0.0f, 0.0f, 0.0f,
-      0.0f, 1.0f, 0.0f, 0.0f,
-      0.0f, 0.0f, 1.0f, 0.0f,
-      0.0f, 0.0f, 0.0f, 1.0f
-   };
-   memcpy(_pout, identity, sizeof(identity));
-}
-
-static INLINE void d3d_matrix_transpose(void *_pout, const void *_pm)
-{
-   unsigned i, j;
-   struct d3d_matrix       *pout = (struct d3d_matrix*)_pout;
-   const struct d3d_matrix *pm   = (const struct d3d_matrix*)_pm;
-   for (i = 0; i < 4; i++)
-      for (j = 0; j < 4; j++)
-         pout->m[i][j] = pm->m[j][i];
-}
-
-static INLINE void d3d_matrix_ortho_off_center_lh(void *_pout,
-      float l, float r, float b, float t, float zn, float zf)
-{
-   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
-   pout->m[0][0] = 2.0f / (r - l);
-   pout->m[1][1] = 2.0f / (t - b);
-   pout->m[2][2] = 1.0f / (zf - zn);
-   pout->m[3][0] = -1.0f - 2.0f * l / (r - l);
-   pout->m[3][1] =  1.0f + 2.0f * t / (b - t);
-   pout->m[3][2] = zn / (zn - zf);
-}
-
-static INLINE void d3d_matrix_multiply(void *_pout,
-      const void *_pm1, const void *_pm2)
-{
-   unsigned i, j;
-   struct d3d_matrix      *pout = (struct d3d_matrix*)_pout;
-   const struct d3d_matrix *pm1 = (const struct d3d_matrix*)_pm1;
-   const struct d3d_matrix *pm2 = (const struct d3d_matrix*)_pm2;
-   for (i = 0; i < 4; i++)
-      for (j = 0; j < 4; j++)
-         pout->m[i][j] = pm1->m[i][0] * pm2->m[0][j]
-                        + pm1->m[i][1] * pm2->m[1][j]
-                        + pm1->m[i][2] * pm2->m[2][j]
-                        + pm1->m[i][3] * pm2->m[3][j];
-}
-
-static INLINE void d3d_matrix_rotation_z(void *_pout, float angle)
-{
-   float c = cosf(angle);
-   float s = sinf(angle);
-   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
-   pout->m[0][0] =  c;
-   pout->m[1][1] =  c;
-   pout->m[0][1] =  s;
-   pout->m[1][0] = -s;
-}
 
 #define D3D_FILTER_LINEAR           (3 << 0)
 #define D3D_FILTER_POINT            (2 << 0)
@@ -665,18 +607,18 @@ static INLINE void d3d9_cg_set_mvp(cg_renderchain_t *chain,
  *
  * Use this whenever the source matrix is in standard D3D / row-major
  * layout (e.g. d3d->mvp, d3d->mvp_transposed, or any matrix built
- * with d3d_matrix_ortho_off_center_lh without a manual transpose). */
+ * with the D3D ortho setup without a manual transpose). */
 static INLINE void d3d9_cg_set_mvp_transpose(cg_renderchain_t *chain,
       const void *matrix)
 {
    if (chain)
    {
-      struct d3d_matrix transposed;
+      math_matrix_4x4 transposed;
       CGparameter cgp = cgGetNamedParameter(
             (CGprogram)chain->stock_shader.vprg, "modelViewProj");
       if (cgp)
       {
-         d3d_matrix_transpose(&transposed, (const struct d3d_matrix*)matrix);
+         matrix_4x4_transpose(transposed, (*(const math_matrix_4x4*)matrix));
          cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)&transposed);
       }
    }
@@ -2624,11 +2566,11 @@ static bool d3d9_cg_renderchain_create_first_pass(
 {
    unsigned i;
    struct shader_pass pass;
-   struct d3d_matrix ident;
+   math_matrix_4x4 ident;
    unsigned fmt = (_fmt == RETRO_PIXEL_FORMAT_RGB565) ?
       D3D9_RGB565_FORMAT : D3D9_XRGB8888_FORMAT;
 
-   d3d_matrix_identity(&ident);
+   matrix_4x4_identity(ident);
 
    IDirect3DDevice9_SetTransform(dev, D3DTS_WORLD, (D3DMATRIX*)&ident);
    IDirect3DDevice9_SetTransform(dev, D3DTS_VIEW,  (D3DMATRIX*)&ident);
@@ -2748,15 +2690,26 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
-   struct d3d_matrix proj, ortho, rot, matrix;
+   math_matrix_4x4 matrix;
    CGparameter cgp = cgGetNamedParameter(data, "modelViewProj");
 
-   d3d_matrix_identity(&ortho);
-   d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
-   d3d_matrix_identity(&rot);
-   d3d_matrix_rotation_z(&rot, rotation * (D3D_PI / 2.0));
-   d3d_matrix_multiply(&proj, &ortho, &rot);
-   d3d_matrix_transpose(&matrix, &proj);
+   /* Folded: transpose(ortho(0,W,0,H,0,1) * rot_z(angle)) */
+   {
+      float angle = rotation * (D3D_PI / 2.0);
+      float c     = cosf(angle);
+      float s     = sinf(angle);
+      float rw    = 2.0f / vp_width;
+      float rh    = 2.0f / vp_height;
+      memset(&matrix, 0, sizeof(matrix));
+      MAT_ELEM_4X4(matrix, 0, 0) =  rw * c;
+      MAT_ELEM_4X4(matrix, 1, 0) = -rh * s;
+      MAT_ELEM_4X4(matrix, 3, 0) = -c + s;
+      MAT_ELEM_4X4(matrix, 0, 1) =  rw * s;
+      MAT_ELEM_4X4(matrix, 1, 1) =  rh * c;
+      MAT_ELEM_4X4(matrix, 3, 1) = -s - c;
+      MAT_ELEM_4X4(matrix, 2, 2) =  1.0f;
+      MAT_ELEM_4X4(matrix, 3, 3) =  1.0f;
+   }
 
    if (cgp)
       cgD3D9SetUniformMatrix(cgp, (D3DMATRIX*)&matrix);
@@ -3608,22 +3561,25 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
       }
    }
 
-   d3d_matrix_identity(&d3d->mvp_transposed);
-   d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
-   d3d->mvp = d3d->mvp_transposed;
+   /* Pre-computed D3D left-handed orthographic projection (0,1,0,1,0,1) */
+   {
+      static const math_matrix_4x4 k_ortho = {{
+         2, 0, 0, 0,   0, 2, 0, 0,   0, 0, 1, 0,   -1, -1, 0, 1
+      }};
+      d3d->mvp_transposed = k_ortho;
+      d3d->mvp            = k_ortho;
+   }
 
    if (d3d->translate_x)
    {
-      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
       float vp_x = -(d3d->translate_x/(float)d3d->out_vp.Width);
-      pout->m[3][0] = -1.0f + vp_x - 2.0f * 1 / (0 - 1);
+      MAT_ELEM_4X4(d3d->mvp, 0, 3) = -1.0f + vp_x - 2.0f * 1 / (0 - 1);
    }
 
    if (d3d->translate_y)
    {
-      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
       float vp_y = -(d3d->translate_y/(float)d3d->out_vp.Height);
-      pout->m[3][1] = 1.0f + vp_y + 2.0f * 1 / (0 - 1);
+      MAT_ELEM_4X4(d3d->mvp, 1, 3) = 1.0f + vp_y + 2.0f * 1 / (0 - 1);
    }
 
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);

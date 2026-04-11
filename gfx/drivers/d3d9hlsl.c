@@ -61,7 +61,7 @@
 #endif
 
 #include <defines/d3d_defines.h>
-#include <math.h>
+#include <gfx/math/matrix_4x4.h>
 #include "../common/d3d_common.h"
 
 #include "../../configuration.h"
@@ -127,65 +127,6 @@ static const char *stock_hlsl_program = CG(
          return OUT;
       }
 );
-
-static INLINE void d3d_matrix_identity(void *_pout)
-{
-   static const float identity[16] = {
-      1.0f, 0.0f, 0.0f, 0.0f,
-      0.0f, 1.0f, 0.0f, 0.0f,
-      0.0f, 0.0f, 1.0f, 0.0f,
-      0.0f, 0.0f, 0.0f, 1.0f
-   };
-   memcpy(_pout, identity, sizeof(identity));
-}
-
-static INLINE void d3d_matrix_transpose(void *_pout, const void *_pm)
-{
-   unsigned i, j;
-   struct d3d_matrix       *pout = (struct d3d_matrix*)_pout;
-   const struct d3d_matrix *pm   = (const struct d3d_matrix*)_pm;
-   for (i = 0; i < 4; i++)
-      for (j = 0; j < 4; j++)
-         pout->m[i][j] = pm->m[j][i];
-}
-
-static INLINE void d3d_matrix_ortho_off_center_lh(void *_pout,
-      float l, float r, float b, float t, float zn, float zf)
-{
-   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
-   pout->m[0][0] = 2.0f / (r - l);
-   pout->m[1][1] = 2.0f / (t - b);
-   pout->m[2][2] = 1.0f / (zf - zn);
-   pout->m[3][0] = -1.0f - 2.0f * l / (r - l);
-   pout->m[3][1] =  1.0f + 2.0f * t / (b - t);
-   pout->m[3][2] = zn / (zn - zf);
-}
-
-static INLINE void d3d_matrix_multiply(void *_pout,
-      const void *_pm1, const void *_pm2)
-{
-   unsigned i, j;
-   struct d3d_matrix      *pout = (struct d3d_matrix*)_pout;
-   const struct d3d_matrix *pm1 = (const struct d3d_matrix*)_pm1;
-   const struct d3d_matrix *pm2 = (const struct d3d_matrix*)_pm2;
-   for (i = 0; i < 4; i++)
-      for (j = 0; j < 4; j++)
-         pout->m[i][j] = pm1->m[i][0] * pm2->m[0][j]
-                        + pm1->m[i][1] * pm2->m[1][j]
-                        + pm1->m[i][2] * pm2->m[2][j]
-                        + pm1->m[i][3] * pm2->m[3][j];
-}
-
-static INLINE void d3d_matrix_rotation_z(void *_pout, float angle)
-{
-   float c = cosf(angle);
-   float s = sinf(angle);
-   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
-   pout->m[0][0] =  c;
-   pout->m[1][1] =  c;
-   pout->m[0][1] =  s;
-   pout->m[1][0] = -s;
-}
 
 #ifdef __WINRT__
 #error "UWP does not support D3D9"
@@ -6976,22 +6917,25 @@ static bool d3d9_hlsl_initialize(
       }
    }
 
-   d3d_matrix_identity(&d3d->mvp_transposed);
-   d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
-   d3d->mvp = d3d->mvp_transposed;
+   /* Pre-computed D3D left-handed orthographic projection (0,1,0,1,0,1) */
+   {
+      static const math_matrix_4x4 k_ortho = {{
+         2, 0, 0, 0,   0, 2, 0, 0,   0, 0, 1, 0,   -1, -1, 0, 1
+      }};
+      d3d->mvp_transposed = k_ortho;
+      d3d->mvp            = k_ortho;
+   }
 
    if (d3d->translate_x)
    {
-      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
       float vp_x = -(d3d->translate_x/(float)d3d->out_vp.Width);
-      pout->m[3][0] = -1.0f + vp_x - 2.0f * 1 / (0 - 1);
+      MAT_ELEM_4X4(d3d->mvp, 0, 3) = -1.0f + vp_x - 2.0f * 1 / (0 - 1);
    }
 
    if (d3d->translate_y)
    {
-      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
       float vp_y = -(d3d->translate_y/(float)d3d->out_vp.Height);
-      pout->m[3][1] = 1.0f + vp_y + 2.0f * 1 / (0 - 1);
+      MAT_ELEM_4X4(d3d->mvp, 1, 3) = 1.0f + vp_y + 2.0f * 1 / (0 - 1);
    }
 
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
