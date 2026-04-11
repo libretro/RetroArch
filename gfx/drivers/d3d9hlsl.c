@@ -854,8 +854,10 @@ static void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 
 /* Forward declarations for functions used by display driver
  * but defined in the video driver section below. */
-static INLINE void d3d9_hlsl_set_param_1f(void* prog,
-      LPDIRECT3DDEVICE9 userdata, const char *name, const void *value);
+static INLINE void d3d9_hlsl_set_param_1f(
+      const DWORD *bytecode, size_t bytecode_dwords,
+      bool is_vertex,
+      LPDIRECT3DDEVICE9 dev, const char *name, const void *value);
 
 /*
  * DISPLAY DRIVER
@@ -876,25 +878,6 @@ static const float d3d9_hlsl_tex_coords[8] = {
 };
 
 static LPDIRECT3DTEXTURE9 d3d9_hlsl_white_texture = NULL;
-
-/* D3D constant table stubs.
- *
- * The HLSL renderchain previously used LPD3DXCONSTANTTABLE to set shader
- * uniforms. Without D3DX, these are no-ops. The stock shader's MVP and
- * other parameters are now set via SetVertexShaderConstantF / 
- * SetPixelShaderConstantF directly in d3d9hlsl.c. */
-
-static void *d3d9_hlsl_constant_table_get_constant_by_name(void *_tbl,
-      void *_handle, void *_name) { return NULL; }
-static void d3d9_hlsl_constant_table_set_float_array(LPDIRECT3DDEVICE9 dev,
-      void *p, void *_handle, const void *_pf, unsigned count) { }
-static void d3d9_hlsl_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
-      void *p) { }
-static void d3d9_hlsl_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
-      void *p,
-      void *data, const void *_matrix) { }
-static const bool d3d9_hlsl_constant_table_set_float(void *p,
-      void *a, void *b, float val) { return false; }
 
 static INT32 gfx_display_prim_to_d3d9_hlsl_enum(
       enum gfx_display_prim_type prim_type)
@@ -1304,10 +1287,12 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
       if (_chain)
       {
          d3d9_hlsl_set_param_1f(
-               (void*)_chain->stock_shader.vtable,
+               _chain->stock_data.vs_bytecode,
+               _chain->stock_data.vs_bytecode_dwords, true,
                d3d->dev, "IN.frame_count", &t);
          d3d9_hlsl_set_param_1f(
-               (void*)_chain->stock_shader.ftable,
+               _chain->stock_data.ps_bytecode,
+               _chain->stock_data.ps_bytecode_dwords, false,
                d3d->dev, "IN.frame_count", &t);
       }
    }
@@ -1969,35 +1954,68 @@ font_renderer_t d3d9_font = {
  * VIDEO DRIVER
  */
 
-static void *d3d9_hlsl_get_constant_by_name(void* prog, const char *name)
+/* Look up a shader uniform register from compiled bytecode CTAB.
+ * Returns the register index or -1 if not found. */
+static int d3d9_hlsl_find_uniform_reg(
+      const DWORD *bytecode, size_t bytecode_dwords,
+      const char *name)
 {
-   char lbl[64];
-   lbl[0] = '\0';
-   snprintf(lbl, sizeof(lbl), "$%s", name);
-   return d3d9_hlsl_constant_table_get_constant_by_name(prog, NULL, lbl);
+   if (!bytecode || !bytecode_dwords || !name || !*name)
+      return -1;
+   return d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, name, NULL, NULL);
 }
 
-static INLINE void d3d9_hlsl_set_param_2f(void* prog, LPDIRECT3DDEVICE9 userdata, const char *name, const void *values)
+/* Set a float2 shader uniform by name, uploading to the register
+ * found in the compiled bytecode CTAB.  Pads to float4 for the
+ * hardware constant register. */
+static INLINE void d3d9_hlsl_set_param_2f(
+      const DWORD *bytecode, size_t bytecode_dwords,
+      bool is_vertex,
+      LPDIRECT3DDEVICE9 dev, const char *name, const void *values)
 {
-   void* param         = (void*)d3d9_hlsl_get_constant_by_name(prog, name);
-   if (param)
-      d3d9_hlsl_constant_table_set_float_array(userdata, prog, (void*)param, values, 2);
+   int reg = d3d9_hlsl_find_uniform_reg(bytecode, bytecode_dwords, name);
+   if (reg >= 0)
+   {
+      const float *src = (const float*)values;
+      float v4[4]      = { src[0], src[1], 0.0f, 0.0f };
+      if (is_vertex)
+         d3d9_hlsl_set_vs_const(dev, reg, v4, 1);
+      else
+         d3d9_hlsl_set_ps_const(dev, reg, v4, 1);
+   }
 }
 
-static INLINE void d3d9_hlsl_set_param_1f(void* prog, LPDIRECT3DDEVICE9 userdata, const char *name, const void *value)
+/* Set a float shader uniform by name. */
+static INLINE void d3d9_hlsl_set_param_1f(
+      const DWORD *bytecode, size_t bytecode_dwords,
+      bool is_vertex,
+      LPDIRECT3DDEVICE9 dev, const char *name, const void *value)
 {
-   void* param         = (void*)d3d9_hlsl_get_constant_by_name(prog, name);
-   float *val               = (float*)value;
-   if (param)
-      d3d9_hlsl_constant_table_set_float(prog, userdata, (void*)param, *val);
+   int reg = d3d9_hlsl_find_uniform_reg(bytecode, bytecode_dwords, name);
+   if (reg >= 0)
+   {
+      float v4[4] = { *(const float*)value, 0.0f, 0.0f, 0.0f };
+      if (is_vertex)
+         d3d9_hlsl_set_vs_const(dev, reg, v4, 1);
+      else
+         d3d9_hlsl_set_ps_const(dev, reg, v4, 1);
+   }
 }
 
-static INLINE void d3d9_hlsl_set_param_matrix(void* prog, LPDIRECT3DDEVICE9 userdata,
-      const char *name, const void *values)
+/* Set a 4x4 matrix shader uniform by name. */
+static INLINE void d3d9_hlsl_set_param_matrix(
+      const DWORD *bytecode, size_t bytecode_dwords,
+      bool is_vertex,
+      LPDIRECT3DDEVICE9 dev, const char *name, const void *values)
 {
-   void* param         = (void*)d3d9_hlsl_get_constant_by_name(prog, name);
-   if (param)
-      d3d9_hlsl_constant_table_set_matrix(userdata, prog, (void*)param, ( void*)values);
+   int reg = d3d9_hlsl_find_uniform_reg(bytecode, bytecode_dwords, name);
+   if (reg >= 0)
+   {
+      if (is_vertex)
+         d3d9_hlsl_set_vs_const(dev, reg, (const float*)values, 4);
+      else
+         d3d9_hlsl_set_ps_const(dev, reg, (const float*)values, 4);
+   }
 }
 
 static bool d3d9_hlsl_load_program_from_file(
@@ -2042,10 +2060,13 @@ static bool d3d9_hlsl_load_program_from_file(
    return true;
 }
 
-static bool d3d9_hlsl_load_program(
+static DWORD *d3d9_hlsl_dup_bytecode(D3DBlob blob, size_t *out_dwords);
+
+static bool d3d9_hlsl_load_program_ex(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
-      const char *prog)
+      const char *prog,
+      hlsl_pass_data_t *pd)
 {
    D3DBlob code_f    = NULL;
    D3DBlob code_v    = NULL;
@@ -2066,6 +2087,14 @@ static bool d3d9_hlsl_load_program(
    pass->ftable = NULL;
    pass->vtable = NULL;
 
+   if (pd)
+   {
+      pd->ps_bytecode = d3d9_hlsl_dup_bytecode(code_f, &pd->ps_bytecode_dwords);
+      pd->vs_bytecode = d3d9_hlsl_dup_bytecode(code_v, &pd->vs_bytecode_dwords);
+      hlsl_uniform_map_from_bytecode(&pd->vs_map, pd->vs_bytecode, pd->vs_bytecode_dwords);
+      hlsl_uniform_map_from_bytecode(&pd->ps_map, pd->ps_bytecode, pd->ps_bytecode_dwords);
+   }
+
    IDirect3DDevice9_CreatePixelShader(dev,
          (const DWORD*)code_f->lpVtbl->GetBufferPointer(code_f),
          (LPDIRECT3DPIXELSHADER9*)&pass->fprg);
@@ -2078,10 +2107,19 @@ static bool d3d9_hlsl_load_program(
    return true;
 }
 
+static bool d3d9_hlsl_load_program(
+      LPDIRECT3DDEVICE9 dev,
+      struct shader_pass *pass,
+      const char *prog)
+{
+   return d3d9_hlsl_load_program_ex(dev, pass, prog, NULL);
+}
+
 static void hlsl_d3d9_renderchain_set_shader_params(
       d3d9_renderchain_t *chain,
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
+      const hlsl_pass_data_t *pd,
       unsigned video_w, unsigned video_h,
       unsigned tex_w, unsigned tex_h,
       unsigned vp_width, unsigned vp_height)
@@ -2090,8 +2128,9 @@ static void hlsl_d3d9_renderchain_set_shader_params(
    float video_size[2];
    float texture_size[2];
    float output_size[2];
-   void* fprg                 = (void*)pass->ftable;
-   void* vprg                 = (void*)pass->vtable;
+
+   if (!pd || !pd->vs_bytecode)
+      return;
 
    video_size[0]                            = video_w;
    video_size[1]                            = video_h;
@@ -2100,15 +2139,18 @@ static void hlsl_d3d9_renderchain_set_shader_params(
    output_size[0]                           = vp_width;
    output_size[1]                           = vp_height;
 
-   d3d9_hlsl_constant_table_set_defaults(dev, fprg);
-   d3d9_hlsl_constant_table_set_defaults(dev, vprg);
-
-   d3d9_hlsl_set_param_2f(vprg, dev, "IN.video_size",      &video_size);
-   d3d9_hlsl_set_param_2f(fprg, dev, "IN.video_size",      &video_size);
-   d3d9_hlsl_set_param_2f(vprg, dev, "IN.texture_size",    &texture_size);
-   d3d9_hlsl_set_param_2f(fprg, dev, "IN.texture_size",    &texture_size);
-   d3d9_hlsl_set_param_2f(vprg, dev, "IN.output_size",     &output_size);
-   d3d9_hlsl_set_param_2f(fprg, dev, "IN.output_size",     &output_size);
+   d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
+         dev, "IN.video_size",      &video_size);
+   d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
+         dev, "IN.video_size",      &video_size);
+   d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
+         dev, "IN.texture_size",    &texture_size);
+   d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
+         dev, "IN.texture_size",    &texture_size);
+   d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
+         dev, "IN.output_size",     &output_size);
+   d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
+         dev, "IN.output_size",     &output_size);
 
    frame_cnt = chain->frame_count;
 
@@ -2116,8 +2158,10 @@ static void hlsl_d3d9_renderchain_set_shader_params(
       frame_cnt         = chain->frame_count
          % pass->info.pass->frame_count_mod;
 
-   d3d9_hlsl_set_param_1f(fprg, dev, "IN.frame_count",     &frame_cnt);
-   d3d9_hlsl_set_param_1f(vprg, dev, "IN.frame_count",     &frame_cnt);
+   d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
+         dev, "IN.frame_count",     &frame_cnt);
+   d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
+         dev, "IN.frame_count",     &frame_cnt);
 }
 
 static bool hlsl_d3d9_renderchain_init_shader_fvf(
@@ -2270,22 +2314,23 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 
 static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
       hlsl_renderchain_t *chain,
-      struct shader_pass *pass,
-      unsigned vp_width, unsigned vp_height,
-      unsigned rotation)
+      const hlsl_pass_data_t *pd,
+      const void *mvp_data)
 {
-   struct d3d_matrix proj, ortho, rot, matrix;
+   /* Upload the pre-computed MVP to the register the compiled
+    * shader's CTAB reports for 'modelViewProj'.
+    *
+    * The MVP is already in row-major layout matching the stock
+    * shader's mul(position, matrix) convention — no transpose
+    * is needed.  d3d9_hlsl_frame() sets d3d->mvp via
+    * d3d_matrix_ortho_off_center_lh and writes it to c0 for
+    * the stock shader; per-pass shaders may have modelViewProj
+    * at a different register, which the CTAB lookup handles. */
+   if (!pd || !pd->vs_bytecode)
+      return;
 
-   d3d_matrix_identity(&ortho);
-   d3d_matrix_ortho_off_center_lh(&ortho, 0,
-         vp_width, 0, vp_height, 0, 1);
-   d3d_matrix_identity(&rot);
-   d3d_matrix_rotation_z(&rot, rotation * (D3D_PI / 2.0));
-   d3d_matrix_multiply(&proj, &ortho, &rot);
-   d3d_matrix_transpose(&matrix, &proj);
-
-   d3d9_hlsl_set_param_matrix((void*)pass->vtable,
-         chain->chain.dev, "modelViewProj", (const void*)&matrix);
+   d3d9_hlsl_set_param_matrix(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
+         chain->chain.dev, "modelViewProj", mvp_data);
 }
 
 static INLINE void d3d9_hlsl_renderchain_set_vertices_on_change(
@@ -2362,25 +2407,40 @@ static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_video_t *d3d,
       hlsl_renderchain_t *chain,
       struct shader_pass *pass,
+      unsigned pass_index,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
       uint64_t frame_count,
       unsigned rotation)
 {
+   const hlsl_pass_data_t *pd = NULL;
+
    if (pass->last_width != width || pass->last_height != height)
       d3d9_hlsl_renderchain_set_vertices_on_change(&chain->chain,
             pass, width, height, out_width, out_height,
             vp_width, vp_height, rotation);
 
-   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, pass,
-         vp_width, vp_height, rotation);
-   hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
-         chain->chain.dev,
-         pass,
-         width, height,
-         pass->info.tex_w, pass->info.tex_h,
-         vp_width, vp_height);
+   /* Determine the pass data to use for uniform upload.
+    * Per-pass compiled shaders use pass_data[pass_index - 1].
+    * The stock shader fallback skips these — its MVP is already
+    * set at c0 by d3d9_hlsl_frame(), and it has no IN.* uniforms. */
+   if (pass->vprg && pass->fprg
+         && pass_index > 0 && pass_index <= chain->pass_data_count)
+      pd = &chain->pass_data[pass_index - 1];
+
+   if (pd && pd->vs_bytecode)
+   {
+      hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, pd,
+            (const void*)&d3d->mvp);
+      hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
+            chain->chain.dev,
+            pass,
+            pd,
+            width, height,
+            pass->info.tex_w, pass->info.tex_h,
+            vp_width, vp_height);
+   }
 }
 
 static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
@@ -2462,7 +2522,13 @@ static bool hlsl_d3d9_renderchain_init(
 
    if (!hlsl_d3d9_renderchain_create_first_pass(dev, chain, info, fmt))
       return false;
-   if (!d3d9_hlsl_load_program(chain->chain.dev, &chain->stock_shader, stock_hlsl_program))
+
+   hlsl_uniform_map_init(&chain->stock_data.vs_map);
+   hlsl_uniform_map_init(&chain->stock_data.ps_map);
+   chain->stock_data.vs_bytecode = NULL;
+   chain->stock_data.ps_bytecode = NULL;
+   if (!d3d9_hlsl_load_program_ex(chain->chain.dev, &chain->stock_shader,
+            stock_hlsl_program, &chain->stock_data))
       return false;
 
    IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
@@ -2880,6 +2946,7 @@ static void hlsl_d3d9_renderchain_render(
       hlsl_d3d9_renderchain_set_vertices(
             d3d,
             chain, from_pass,
+            i + 1,
             current_width, current_height,
             out_width, out_height,
             out_width, out_height,
@@ -2911,6 +2978,7 @@ static void hlsl_d3d9_renderchain_render(
    hlsl_d3d9_renderchain_set_vertices(
          d3d,
          chain, last_pass,
+         chain->chain.passes->count,
          current_width, current_height,
          out_width, out_height,
          chain->chain.out_vp->Width,
@@ -2932,9 +3000,8 @@ static void hlsl_d3d9_renderchain_render(
 
    IDirect3DDevice9_SetPixelShader(chain->chain.dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
    hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
-         chain, &chain->stock_shader,
-         chain->chain.out_vp->Width,
-         chain->chain.out_vp->Height, 0);
+         chain, &chain->stock_data,
+         (const void*)&d3d->mvp);
 }
 
 static bool hlsl_d3d9_renderchain_add_pass(
@@ -4967,14 +5034,12 @@ static bool d3d9_hlsl_compile_cg_compat(
             entry, target, out_blob);
 
    /* Our own preprocessor already handled #include, #ifdef, #ifndef,
-    * #else, #endif. Apply Cg→HLSL fixups and compile directly. */
+    * #else, #endif.  The caller (load_program_from_file_ex) also applied
+    * Cg→HLSL fixups, struct semantic insertion, and sampler decomposition,
+    * so we compile directly without further source transformations. */
    {
-      char *fixed    = d3d9_hlsl_fixup_cg_source(source);
-      const char *compile_src = fixed ? fixed : source;
-      size_t compile_len      = fixed ? strlen(fixed) : source_len;
-
       hr = d3d9_pCompile(
-            compile_src, compile_len,
+            source, source_len,
             source_name,
             NULL, NULL,
             entry, target,
@@ -4982,8 +5047,6 @@ static bool d3d9_hlsl_compile_cg_compat(
             0,
             (void**)out_blob,
             (void**)&error_blob);
-
-      free(fixed);
 
       if (FAILED(hr))
       {
@@ -5041,6 +5104,143 @@ static bool d3d9_hlsl_load_program_from_file_ex(
    {
       RARCH_ERR("[D3D9 HLSL] Include preprocessing failed: %s\n", prog);
       return false;
+   }
+
+   /* Convert Cg '#pragma parameter' + '#define' pairs into HLSL uniforms.
+    *
+    * Cg shaders declare tweakable parameters like:
+    *   #pragma parameter AAOFFSET "description" 1.0 0.25 2.0 0.05
+    *   #define AAOFFSET 1.0
+    *
+    * The Cg runtime creates a uniform from #pragma parameter, but
+    * D3DCompile ignores #pragma and just expands #define — making
+    * AAOFFSET a compile-time constant with no CTAB entry.
+    *
+    * Fix: for each #pragma parameter NAME, find a matching
+    * '#define NAME <number>' and replace it with
+    * 'uniform float NAME = <number>;'  so D3DCompile creates a real
+    * uniform that appears in the CTAB and can be set at runtime. */
+   {
+      char *p = resolved;
+      while ((p = strstr(p, "#pragma parameter")) != NULL)
+      {
+         const char *line_start = p;
+         const char *pp = p + 17; /* skip "#pragma parameter" */
+         const char *name_start, *name_end;
+         size_t name_len;
+
+         /* Skip whitespace to get parameter name */
+         while (*pp == ' ' || *pp == '\t') pp++;
+         name_start = pp;
+         while (d3d9_hlsl_is_ident_char(*pp)) pp++;
+         name_end = pp;
+         name_len = (size_t)(name_end - name_start);
+
+         if (name_len > 0 && name_len < 128)
+         {
+            char name_buf[128];
+            char define_pattern[140];
+            char *def_loc;
+
+            memcpy(name_buf, name_start, name_len);
+            name_buf[name_len] = '\0';
+
+            /* Build pattern: "#define NAME " (with trailing space) */
+            snprintf(define_pattern, sizeof(define_pattern),
+                  "#define %s ", name_buf);
+
+            /* Search for matching #define */
+            def_loc = strstr(resolved, define_pattern);
+            if (!def_loc)
+            {
+               /* Try with tab separator */
+               snprintf(define_pattern, sizeof(define_pattern),
+                     "#define %s\t", name_buf);
+               def_loc = strstr(resolved, define_pattern);
+            }
+
+            if (def_loc)
+            {
+               /* Found "#define NAME <value>".
+                * Extract the value (rest of line). */
+               const char *val_start;
+               const char *val_end;
+               const char *def_line_end;
+               char replacement[256];
+               size_t def_line_len, repl_len, old_len, tail_len;
+
+               /* Find end of #define line */
+               def_line_end = def_loc;
+               while (*def_line_end && *def_line_end != '\n'
+                     && *def_line_end != '\r')
+                  def_line_end++;
+
+               def_line_len = (size_t)(def_line_end - def_loc);
+
+               /* Extract value: skip "#define NAME " to get value part */
+               val_start = def_loc + strlen(define_pattern);
+               /* Trim leading whitespace from value */
+               while (val_start < def_line_end
+                     && (*val_start == ' ' || *val_start == '\t'))
+                  val_start++;
+               val_end = def_line_end;
+               /* Trim trailing whitespace */
+               while (val_end > val_start
+                     && (val_end[-1] == ' ' || val_end[-1] == '\t'))
+                  val_end--;
+
+               if (val_end > val_start)
+               {
+                  char val_buf[64];
+                  size_t val_len = (size_t)(val_end - val_start);
+                  if (val_len >= sizeof(val_buf))
+                     val_len = sizeof(val_buf) - 1;
+                  memcpy(val_buf, val_start, val_len);
+                  val_buf[val_len] = '\0';
+
+                  /* Build replacement: "uniform float NAME = VALUE;" */
+                  repl_len = snprintf(replacement, sizeof(replacement),
+                        "uniform float %s = %s;", name_buf, val_buf);
+
+                  /* Replace the #define line in-place */
+                  old_len = strlen(resolved);
+                  tail_len = old_len - (size_t)(def_loc - resolved) - def_line_len;
+
+                  if (repl_len <= def_line_len)
+                  {
+                     /* Replacement fits — copy in place + shift tail */
+                     memcpy(def_loc, replacement, repl_len);
+                     memmove(def_loc + repl_len,
+                           def_loc + def_line_len, tail_len + 1);
+                  }
+                  else
+                  {
+                     /* Replacement is longer — realloc */
+                     size_t new_len = old_len - def_line_len + repl_len;
+                     size_t def_off = (size_t)(def_loc - resolved);
+                     char *new_buf  = (char*)malloc(new_len + 1);
+                     if (new_buf)
+                     {
+                        memcpy(new_buf, resolved, def_off);
+                        memcpy(new_buf + def_off, replacement, repl_len);
+                        memcpy(new_buf + def_off + repl_len,
+                              resolved + def_off + def_line_len,
+                              tail_len + 1);
+                        free(resolved);
+                        resolved = new_buf;
+                        /* Reset p to continue scanning in new buffer */
+                        p = resolved;
+                        continue;
+                     }
+                  }
+               }
+            }
+         }
+
+         /* Advance past this #pragma line */
+         while (*p && *p != '\n') p++;
+         if (*p) p++;
+      }
    }
 
    /* Add semantics to struct members that lack them.
