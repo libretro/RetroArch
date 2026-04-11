@@ -5346,8 +5346,15 @@ static char *d3d9_hlsl_init_vs_output_members(const char *source)
                         members[i].name, members[i].len) == 0
                      && !d3d9_hlsl_is_ident_char(scan[1 + members[i].len]))
                {
-                  /* Check it's an assignment (look for '=' after, not '==') */
+                  /* Check it's an assignment — look for '=' after the member,
+                   * possibly with a swizzle (.xy, .xyzw, etc.) in between */
                   const char *eq = scan + 1 + members[i].len;
+                  /* Skip optional swizzle: .x, .xy, .xyz, .xyzw, .rg, etc. */
+                  if (*eq == '.')
+                  {
+                     eq++;
+                     while (d3d9_hlsl_is_ident_char(*eq)) eq++;
+                  }
                   while (*eq == ' ' || *eq == '\t') eq++;
                   if (*eq == '=' && eq[1] != '=')
                   { found = true; break; }
