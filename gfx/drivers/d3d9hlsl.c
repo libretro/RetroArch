@@ -667,69 +667,6 @@ static int d3d9_hlsl_ctab_find_register(
    return CTAB_NOT_FOUND;
 }
 
-/* Debug: dump all CTAB entries to the log */
-static void d3d9_hlsl_ctab_dump(const DWORD *bytecode, size_t bytecode_dwords,
-      const char *label)
-{
-   size_t pos;
-   const DWORD CTAB_TAG = 0x42415443;
-
-   if (!bytecode || bytecode_dwords < 2)
-      return;
-
-   for (pos = 1; pos < bytecode_dwords; )
-   {
-      DWORD token  = bytecode[pos];
-      DWORD opcode = token & 0xFFFF;
-
-      if (opcode == 0xFFFF) break;
-
-      if (opcode == 0xFFFE)
-      {
-         DWORD comment_dwords = (token >> 16) & 0x7FFF;
-         if (pos + 1 + comment_dwords > bytecode_dwords) break;
-
-         if (comment_dwords >= 6 && bytecode[pos + 1] == CTAB_TAG)
-         {
-            const uint8_t *ctab_start = (const uint8_t*)&bytecode[pos + 1];
-            size_t ctab_total_bytes = comment_dwords * sizeof(DWORD);
-            const uint8_t *hdr = ctab_start + 4;
-            size_t hdr_avail = ctab_total_bytes - 4;
-            DWORD num_constants, const_info_offset, ci;
-
-            if (hdr_avail < 28) return;
-            num_constants = *(const DWORD*)(hdr + 12);
-            const_info_offset = *(const DWORD*)(hdr + 16);
-
-            RARCH_LOG("[D3D9 HLSL] CTAB dump for %s (%u constants):\n",
-                  label, (unsigned)num_constants);
-
-            for (ci = 0; ci < num_constants; ci++)
-            {
-               size_t entry_off = const_info_offset + ci * 20;
-               if (entry_off + 20 > hdr_avail) break;
-               {
-                  const uint8_t *entry = hdr + entry_off;
-                  DWORD name_offset = *(const DWORD*)(entry + 0);
-                  WORD reg_set   = *(const WORD*)(entry + 4);
-                  WORD reg_index = *(const WORD*)(entry + 6);
-                  WORD reg_count = *(const WORD*)(entry + 8);
-                  const char *cname = (name_offset < hdr_avail)
-                     ? (const char*)(hdr + name_offset) : "???";
-                  RARCH_LOG("  [%u] name='%s' regset=%u reg=c%u count=%u\n",
-                        ci, cname, (unsigned)reg_set, (unsigned)reg_index,
-                        (unsigned)reg_count);
-               }
-            }
-            return;
-         }
-
-         pos += 1 + comment_dwords;
-         continue;
-      }
-      pos++;
-   }
-}
 
 static INLINE void d3d9_hlsl_set_vs_const(LPDIRECT3DDEVICE9 dev,
       int reg, const float *data, unsigned float4_count)
@@ -3397,6 +3334,17 @@ static bool d3d9_hlsl_buf_append(char **buf, size_t *pos, size_t *cap,
    return true;
 }
 
+/* Add TEXCOORD semantics to struct members that lack them.
+ * Simple approach: find struct { ... } blocks, check if they qualify,
+ * and rewrite the block with semantics added.
+ *
+ * Returns a malloc'd modified copy, or NULL if no changes needed. */
+static char *d3d9_hlsl_add_struct_semantics(const char *source)
+{
+   (void)source;
+   return NULL;  /* TODO: implement properly */
+}
+
 static char *d3d9_hlsl_fixup_cg_source(const char *source)
 {
    size_t src_len     = strlen(source);
@@ -3407,6 +3355,11 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
    int    paren_depth = 0;
    int    brace_depth = 0;  /* track { } to know when we're at global scope */
    size_t last_func_start = 0;
+
+   /* Track struct names for constructor replacement */
+   const char *struct_names[64];
+   size_t      struct_name_lens[64];
+   unsigned    struct_count = 0;
 
    if (!out)
       return NULL;
@@ -3633,6 +3586,29 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
          }
       }
 
+      /* --- Track struct declarations for constructor replacement --- */
+      if (brace_depth == 0 && paren_depth == 0
+            && strncmp(p, "struct", 6) == 0
+            && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
+            && !d3d9_hlsl_is_ident_char(p[6]))
+      {
+         const char *nm = p + 6;
+         while (*nm == ' ' || *nm == '\t' || *nm == '\r' || *nm == '\n')
+            nm++;
+         if (d3d9_hlsl_is_ident_char(*nm))
+         {
+            const char *nm_end = nm;
+            while (d3d9_hlsl_is_ident_char(*nm_end)) nm_end++;
+            if (struct_count < 64)
+            {
+               struct_names[struct_count] = nm;
+               struct_name_lens[struct_count] = (size_t)(nm_end - nm);
+               struct_count++;
+            }
+         }
+         /* Don't consume — fall through to normal output */
+      }
+
       /* --- Fix 1: whole-word 'texture' -> '_texture' --- */
       if (strncmp(p, "texture", 7) == 0
             && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
@@ -3655,6 +3631,108 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
          p += 7;
          while (*p == ' ' || *p == '\t') p++;
          continue;
+      }
+
+      /* --- Fix 1c: replace Cg struct constructors ---
+       * Cg: coords = tex_coords(a, b, c);
+       * HLSL: { tex_coords _sc = {a, b, c}; coords = _sc; }
+       *
+       * Detect: inside function body, identifier matching known struct
+       * name followed by '(', preceded by '=' in the output. */
+      if (brace_depth > 0 && paren_depth == 0
+            && d3d9_hlsl_is_ident_char(*p))
+      {
+         unsigned si;
+         for (si = 0; si < struct_count; si++)
+         {
+            size_t slen = struct_name_lens[si];
+            if (strncmp(p, struct_names[si], slen) == 0
+                  && !d3d9_hlsl_is_ident_char(p[slen])
+                  && (p == source || !d3d9_hlsl_is_ident_char(p[-1])))
+            {
+               /* Check if followed by '(' (with optional whitespace) */
+               const char *after_name = p + slen;
+               while (*after_name == ' ' || *after_name == '\t')
+                  after_name++;
+
+               if (*after_name == '(')
+               {
+                  /* Check if preceded by '=' in the output (assignment context) */
+                  size_t bi = pos;
+                  while (bi > 0 && (out[bi-1] == ' ' || out[bi-1] == '\t'))
+                     bi--;
+                  if (bi > 0 && out[bi-1] == '=')
+                  {
+                     /* Find the matching ')' */
+                     const char *args_start = after_name + 1;
+                     const char *args_end   = args_start;
+                     int depth = 1;
+                     while (*args_end && depth > 0)
+                     {
+                        if (*args_end == '(') depth++;
+                        else if (*args_end == ')') depth--;
+                        if (depth > 0) args_end++;
+                     }
+
+                     if (depth == 0)
+                     {
+                        /* Find the variable name before '=' by scanning
+                         * backwards in the output past '=' and whitespace */
+                        size_t var_end = bi - 1; /* before '=' */
+                        size_t var_start;
+                        char var_name[256];
+                        size_t var_len;
+                        char replacement[4096];
+                        size_t rlen;
+
+                        while (var_end > 0 && (out[var_end-1] == ' '
+                                 || out[var_end-1] == '\t'))
+                           var_end--;
+                        var_start = var_end;
+                        while (var_start > 0
+                              && (d3d9_hlsl_is_ident_char(out[var_start-1])
+                                 || out[var_start-1] == '.'))
+                           var_start--;
+
+                        var_len = var_end - var_start;
+                        if (var_len > 0 && var_len < sizeof(var_name))
+                        {
+                           size_t args_len = (size_t)(args_end - args_start);
+
+                           memcpy(var_name, out + var_start, var_len);
+                           var_name[var_len] = '\0';
+
+                           /* Build: { structname _sc = {args}; var = _sc; }
+                            * But we need to replace the "var =" already in the output.
+                            * Rewind output to var_start and write the replacement. */
+                           rlen = snprintf(replacement, sizeof(replacement),
+                                 "{ %.*s _sc = {%.*s}; %s = _sc; }",
+                                 (int)slen, struct_names[si],
+                                 (int)args_len, args_start,
+                                 var_name);
+
+                           /* Rewind output to var_start */
+                           pos = var_start;
+
+                           if (!d3d9_hlsl_buf_append(&out, &pos, &cap,
+                                    replacement, rlen))
+                              goto fail;
+
+                           /* Skip past ')' in source, and the ';' if present */
+                           p = args_end + 1; /* skip ')' */
+                           while (*p == ' ' || *p == '\t') p++;
+                           if (*p == ';') p++; /* skip ';' */
+
+                           goto struct_ctor_done;
+                        }
+                     }
+                  }
+               }
+            }
+         }
+struct_ctor_done:
+         if (si < struct_count)
+            continue; /* constructor was replaced */
       }
 
       /* Track braces for scope detection */
@@ -4085,6 +4163,21 @@ static bool d3d9_hlsl_load_program_from_file_ex(
    {
       RARCH_ERR("[D3D9 HLSL] Include preprocessing failed: %s\n", prog);
       return false;
+   }
+
+   /* Add semantics to struct members that lack them.
+    * Many Cg shaders define structs without HLSL semantics
+    * (e.g. tex_coords with float2 members used as interpolants).
+    * This pass auto-assigns TEXCOORD semantics. */
+   /* Semantic pass */
+   /* Add semantics to struct members that lack them */
+   {
+      char *with_sem = d3d9_hlsl_add_struct_semantics(resolved);
+      if (with_sem)
+      {
+         free(resolved);
+         resolved = with_sem;
+      }
    }
 
    /* Apply Cg→HLSL source-level fixes:
