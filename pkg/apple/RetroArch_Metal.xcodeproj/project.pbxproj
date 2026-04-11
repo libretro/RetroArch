@@ -294,7 +294,6 @@
 		05A8C60920DB72F000FF7857 /* pipeline_xmb_ribbon_simple.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_xmb_ribbon_simple.cg.h; sourceTree = "<group>"; };
 		05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_alpha_blend.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_alpha_blend.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C60C20DB72F000FF7857 /* opaque.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opaque.cg.h; sourceTree = "<group>"; };
 		05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_snowflake.glsl.frag.h; sourceTree = "<group>"; };
@@ -338,13 +337,11 @@
 		05A8C63D20DB72F000FF7857 /* pipeline_ribbon_simple.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = pipeline_ribbon_simple.frag; sourceTree = "<group>"; };
 		05A8C63E20DB72F000FF7857 /* d3d10.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d10.c; sourceTree = "<group>"; };
 		05A8C64220DB72F000FF7857 /* shaders_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shaders_common.h; sourceTree = "<group>"; };
-		05A8C64320DB72F000FF7857 /* opaque.hlsl.d3d9.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opaque.hlsl.d3d9.h; sourceTree = "<group>"; };
 		05A8C64420DB72F000FF7857 /* sprite_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sprite_sm4.hlsl.h; sourceTree = "<group>"; };
 		05A8C64520DB72F000FF7857 /* snow_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = snow_sm4.hlsl.h; sourceTree = "<group>"; };
 		05A8C64620DB72F000FF7857 /* ribbon_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ribbon_sm4.hlsl.h; sourceTree = "<group>"; };
 		05A8C64720DB72F000FF7857 /* bokeh_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bokeh_sm4.hlsl.h; sourceTree = "<group>"; };
 		05A8C64820DB72F000FF7857 /* opaque_sm5.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opaque_sm5.hlsl.h; sourceTree = "<group>"; };
-		05A8C64920DB72F000FF7857 /* opaque.cg.d3d9.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opaque.cg.d3d9.h; sourceTree = "<group>"; };
 		05A8C64A20DB72F000FF7857 /* simple_snow_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = simple_snow_sm4.hlsl.h; sourceTree = "<group>"; };
 		05A8C64B20DB72F000FF7857 /* ribbon_simple_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ribbon_simple_sm4.hlsl.h; sourceTree = "<group>"; };
 		05A8C64C20DB72F000FF7857 /* snowflake_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = snowflake_sm4.hlsl.h; sourceTree = "<group>"; };
@@ -927,7 +924,6 @@
 				05A8C60920DB72F000FF7857 /* pipeline_xmb_ribbon_simple.cg.h */,
 				05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */,
 				05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */,
-				05A8C60C20DB72F000FF7857 /* opaque.cg.h */,
 				05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */,
 				05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */,
 				05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */,
@@ -984,13 +980,11 @@
 			isa = PBXGroup;
 			children = (
 				05A8C64220DB72F000FF7857 /* shaders_common.h */,
-				05A8C64320DB72F000FF7857 /* opaque.hlsl.d3d9.h */,
 				05A8C64420DB72F000FF7857 /* sprite_sm4.hlsl.h */,
 				05A8C64520DB72F000FF7857 /* snow_sm4.hlsl.h */,
 				05A8C64620DB72F000FF7857 /* ribbon_sm4.hlsl.h */,
 				05A8C64720DB72F000FF7857 /* bokeh_sm4.hlsl.h */,
 				05A8C64820DB72F000FF7857 /* opaque_sm5.hlsl.h */,
-				05A8C64920DB72F000FF7857 /* opaque.cg.d3d9.h */,
 				05A8C64A20DB72F000FF7857 /* simple_snow_sm4.hlsl.h */,
 				05A8C64B20DB72F000FF7857 /* ribbon_simple_sm4.hlsl.h */,
 				05A8C64C20DB72F000FF7857 /* snowflake_sm4.hlsl.h */,

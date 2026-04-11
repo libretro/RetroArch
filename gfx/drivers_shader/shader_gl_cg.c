@@ -52,6 +52,73 @@
 #include "../../state_manager.h"
 #endif
 
+#if defined(HAVE_OPENGLES)
+#define CG(src)   "" #src
+#define GLSL(src) "#extension GL_OES_standard_derivatives : enable\n" \
+                  "#ifdef GL_ES\n" \
+                  "  #ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
+                  "    precision highp float;\n" \
+                  "  #else\n" \
+                  "    precision mediump float;\n" \
+                  "  #endif\n" \
+                  "#else\n" \
+                  "  precision mediump float;\n" \
+                  "#endif\n" #src
+#define GLSL_STANDARD_DERIVATIVES(src) "#version 130\n" \
+                  "#extension GL_OES_standard_derivatives : enable\n" \
+                  "#ifdef GL_ES\n" \
+                  "  #ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
+                  "    precision highp float;\n" \
+                  "  #else\n" \
+                  "    precision mediump float;\n" \
+                  "  #endif\n" \
+                  "#else\n" \
+                  "  precision mediump float;\n" \
+                  "#endif\n" #src
+#else
+#define CG(src)   "" #src
+#define GLSL(src) "" #src
+#define GLSL_STANDARD_DERIVATIVES(src) "" #src
+#endif
+
+#ifndef GLSL_300
+#define GLSL_300(src)   "#version 300 es\n"   #src
+#endif
+
+static const char *stock_cg_gl_program = CG(
+      struct input
+      {
+        float2 tex_coord;
+        float4 color;
+        float4 vertex_coord;
+        uniform float4x4 mvp_matrix;
+        uniform sampler2D texture;
+      };
+
+      struct vertex_data
+      {
+        float2 tex;
+        float4 color;
+      };
+
+      void main_vertex
+      (
+        out float4 oPosition : POSITION,
+        input IN,
+        out vertex_data vert
+      )
+      {
+        oPosition = mul(IN.mvp_matrix, IN.vertex_coord);
+        vert = vertex_data(IN.tex_coord, IN.color);
+      }
+
+      float4 main_fragment(input IN, vertex_data vert, uniform sampler2D s0 : TEXUNIT0) : COLOR
+      {
+        return vert.color * tex2D(s0, vert.tex);
+      }
+);
+
+
 #define PREV_TEXTURES         (GFX_MAX_TEXTURES - 1)
 
 #define set_param_2f(param, x, y)    if (param) cgGLSetParameter2f(param, x, y)
@@ -137,8 +204,6 @@ struct uniform_cg
       cgGLSetTextureParameter(param, texture); \
       cgGLEnableTextureParameter(param); \
    }
-
-#include "../drivers/gl_shaders/opaque.cg.h"
 
 static void gl_cg_set_uniform_parameter(
       void *data,
