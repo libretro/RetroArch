@@ -3341,8 +3341,174 @@ static bool d3d9_hlsl_buf_append(char **buf, size_t *pos, size_t *cap,
  * Returns a malloc'd modified copy, or NULL if no changes needed. */
 static char *d3d9_hlsl_add_struct_semantics(const char *source)
 {
-   (void)source;
-   return NULL;  /* TODO: implement properly */
+   /* Known structs to skip */
+   static const char *skip_names[] = {
+      "input", "orig", "prev", "previous", "in_vertex", "out_vertex", NULL
+   };
+   const char *p = source;
+   int texcoord_counter = 2;
+
+   /* First pass: find if any struct qualifies. If not, return NULL early. */
+   bool any_qualify = false;
+   {
+      const char *s = source;
+      while ((s = strstr(s, "struct")) != NULL)
+      {
+         if ((s == source || !d3d9_hlsl_is_ident_char(s[-1]))
+               && !d3d9_hlsl_is_ident_char(s[6]))
+         {
+            const char *nm = s + 6;
+            const char *nm_end;
+            size_t nm_len;
+            bool skip = false;
+            int i;
+
+            while (*nm == ' ' || *nm == '\t' || *nm == '\n' || *nm == '\r') nm++;
+            nm_end = nm;
+            while (d3d9_hlsl_is_ident_char(*nm_end)) nm_end++;
+            nm_len = (size_t)(nm_end - nm);
+            if (nm_len == 0) { s++; continue; }
+
+            for (i = 0; skip_names[i]; i++)
+               if (strlen(skip_names[i]) == nm_len
+                     && strncmp(nm, skip_names[i], nm_len) == 0)
+               { skip = true; break; }
+
+            if (!skip)
+            {
+               /* Find { ... } */
+               const char *ob = nm_end;
+               while (*ob && *ob != '{' && *ob != ';') ob++;
+               if (*ob == '{')
+               {
+                  const char *cb = ob + 1;
+                  int d = 1;
+                  bool all_no_sem = true, has_sampler = false, any_mem = false;
+                  while (*cb && d > 0)
+                  {
+                     if (*cb == '{') d++;
+                     else if (*cb == '}') d--;
+                     else if (*cb == ':' && d == 1) all_no_sem = false;
+                     else if (d == 1 && strncmp(cb, "sampler", 7) == 0) has_sampler = true;
+                     else if (*cb == ';' && d == 1) any_mem = true;
+                     cb++;
+                  }
+                  if (any_mem && all_no_sem && !has_sampler)
+                     any_qualify = true;
+               }
+            }
+         }
+         s++;
+      }
+   }
+
+   if (!any_qualify)
+      return NULL;
+
+
+   /* Second pass: copy source, rewriting qualifying structs */
+   {
+      size_t src_len = strlen(source);
+      size_t cap = src_len + 1024;
+      size_t opos = 0;
+      char *out = (char*)malloc(cap);
+      if (!out) return NULL;
+
+      p = source;
+      while (*p)
+      {
+         if (strncmp(p, "struct", 6) == 0
+               && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
+               && !d3d9_hlsl_is_ident_char(p[6]))
+         {
+            const char *nm = p + 6;
+            const char *nm_end;
+            size_t nm_len;
+            bool skip = false;
+            int i;
+
+            while (*nm == ' ' || *nm == '\t' || *nm == '\n' || *nm == '\r') nm++;
+            nm_end = nm;
+            while (d3d9_hlsl_is_ident_char(*nm_end)) nm_end++;
+            nm_len = (size_t)(nm_end - nm);
+
+            if (nm_len == 0) { p++; continue; }
+            for (i = 0; skip_names[i]; i++)
+               if (strlen(skip_names[i]) == nm_len
+                     && strncmp(nm, skip_names[i], nm_len) == 0)
+               { skip = true; break; }
+
+            if (!skip)
+            {
+               const char *ob = nm_end;
+               while (*ob && *ob != '{' && *ob != ';') ob++;
+               if (*ob == '{')
+               {
+                  const char *cb = ob + 1;
+                  int d = 1;
+                  bool all_no_sem = true, has_sampler = false, any_mem = false;
+                  while (*cb && d > 0)
+                  {
+                     if (*cb == '{') d++;
+                     else if (*cb == '}') d--;
+                     else if (*cb == ':' && d == 1) all_no_sem = false;
+                     else if (d == 1 && strncmp(cb, "sampler", 7) == 0) has_sampler = true;
+                     else if (*cb == ';' && d == 1) any_mem = true;
+                     cb++;
+                  }
+
+                  if (any_mem && all_no_sem && !has_sampler)
+                  {
+                     /* Copy from p to ob (inclusive of '{') */
+                     {
+                        size_t len = (size_t)(ob + 1 - p);
+                        while (opos + len + 1 >= cap)
+                        { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                        memcpy(out + opos, p, len);
+                        opos += len;
+                     }
+
+                     /* Copy struct body, inserting TEXCOORD before each ';' */
+                     {
+                        const char *mp = ob + 1;
+                        while (mp < cb - 1) /* cb-1 is '}' */
+                        {
+                           if (*mp == ';')
+                           {
+                              char sem[32];
+                              size_t sl = snprintf(sem, sizeof(sem),
+                                    " : TEXCOORD%d", texcoord_counter++);
+                              while (opos + sl + 2 >= cap)
+                              { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                              memcpy(out + opos, sem, sl);
+                              opos += sl;
+                           }
+                           while (opos + 2 >= cap)
+                           { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                           out[opos++] = *mp++;
+                        }
+                     }
+
+                     /* Copy '}' and advance past struct */
+                     while (opos + 2 >= cap)
+                     { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                     out[opos++] = '}';
+                     p = cb;
+                     continue;
+                  }
+               }
+            }
+         }
+
+         /* Regular char */
+         while (opos + 2 >= cap)
+         { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+         out[opos++] = *p++;
+      }
+
+      out[opos] = '\0';
+      return out;
+   }
 }
 
 static char *d3d9_hlsl_fixup_cg_source(const char *source)
