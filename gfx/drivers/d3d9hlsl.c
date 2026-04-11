@@ -197,6 +197,27 @@ typedef struct d3d9_renderchain
    struct lut_info_vector_list *luts;
 } d3d9_renderchain_t;
 
+static INLINE bool d3d9_device_create_offscreen_plain_surface(
+      LPDIRECT3DDEVICE9 dev,
+      unsigned width,
+      unsigned height,
+      unsigned format,
+      unsigned pool,
+      void **surf_data,
+      void *data)
+{
+#ifndef _XBOX
+   return (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
+               width, height,
+               (D3DFORMAT)format, (D3DPOOL)pool,
+               (LPDIRECT3DSURFACE9*)surf_data,
+               (HANDLE*)data)));
+#else
+   return false;
+#endif
+}
+
+
 static void *d3d9_texture_new(void *_dev,
       unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, INT32 format,
@@ -2897,8 +2918,9 @@ static void hlsl_d3d9_renderchain_render(
          chain->chain.pixel_size);
 
    /* Grab back buffer. */
-   d3d9_device_get_render_target(
-         chain->chain.dev, 0, (void**)&back_buffer);
+   if (chain->chain.dev)
+      IDirect3DDevice9_GetRenderTarget(chain->chain.dev,
+            0, (LPDIRECT3DSURFACE9*)&back_buffer);
 
    /* In-between render target passes. */
    for (i = 0; i < chain->chain.passes->count - 1; i++)
@@ -8105,7 +8127,9 @@ static bool d3d9_hlsl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    video_driver_get_size(&width, &height);
 
    if (
-            !d3d9_device_get_render_target(d3dr, 0, (void**)&target)
+            !(d3dr &&
+               SUCCEEDED(IDirect3DDevice9_GetRenderTarget(d3dr,
+                     0, (LPDIRECT3DSURFACE9*)&target)))
          || !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
             D3D9_XRGB8888_FORMAT,
             D3DPOOL_SYSTEMMEM, (void**)&dest, NULL)

@@ -112,6 +112,10 @@ static const char *stock_cg_d3d9_program = CG(
 #define D3D_FILTER_LINEAR           (3 << 0)
 #define D3D_FILTER_POINT            (2 << 0)
 
+#define D3D9_DECL_FVF_TEXCOORD(stream, offset, index) \
+   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
+      D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
+
 struct lut_info
 {
    LPDIRECT3DTEXTURE9 tex;
@@ -219,7 +223,7 @@ static INLINE bool d3d9_renderchain_add_pass(d3d9_renderchain_t *chain,
          D3DUSAGE_RENDERTARGET,
          (chain->passes->data[
          chain->passes->count - 1].info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
-         ? D3DFMT_A32B32G32R32F : D3D9_ARGB8888_FORMAT,
+         ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
          D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL, false);
 
    if (!tex)
@@ -258,7 +262,7 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
    lut = (LPDIRECT3DTEXTURE9)d3d9_texture_new(
          chain->dev,
          image.width, image.height, 1,
-         0, D3D9_ARGB8888_FORMAT,
+         0, D3DFMT_A8R8G8B8,
          D3DPOOL_MANAGED, 0, 0, 0,
          NULL, NULL, false);
 
@@ -406,7 +410,7 @@ static INLINE bool d3d9_renderchain_set_pass_size(
             D3DUSAGE_RENDERTARGET,
             (pass2->info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
             ? D3DFMT_A32B32G32R32F
-            : D3D9_ARGB8888_FORMAT,
+            : D3DFMT_A8R8G8B8,
             D3DPOOL_DEFAULT, 0, 0, 0,
             NULL, NULL, false);
 
@@ -708,7 +712,7 @@ static void d3d9_video_texture_load_d3d(
 
    if (!(tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(d3d->dev,
                ti->width, ti->height, 1,
-               usage, D3D9_ARGB8888_FORMAT,
+               usage, D3DFMT_A8R8G8B8,
                D3DPOOL_MANAGED, 0, 0, 0,
                NULL, NULL, want_mipmap)))
       return;
@@ -2568,7 +2572,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
    struct shader_pass pass;
    math_matrix_4x4 ident;
    unsigned fmt = (_fmt == RETRO_PIXEL_FORMAT_RGB565) ?
-      D3D9_RGB565_FORMAT : D3D9_XRGB8888_FORMAT;
+      D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8;
 
    matrix_4x4_identity(ident);
 
@@ -2962,7 +2966,7 @@ static void d3d9_cg_renderchain_render(
          pitch, chain->pixel_size);
 
    /* Grab back buffer. */
-   d3d9_device_get_render_target(chain->dev, 0, (void**)&back_buffer);
+   IDirect3DDevice9_GetRenderTarget(chain->dev, 0, (LPDIRECT3DSURFACE9*)&back_buffer);
 
    /* In-between render target passes. */
    for (i = 0; i < chain->passes->count - 1; i++)
@@ -3881,7 +3885,7 @@ static bool d3d9_cg_overlay_load(void *data,
       overlay->tex       = d3d9_texture_new(d3d->dev,
                   width, height, 1,
                   0,
-                  D3D9_ARGB8888_FORMAT,
+                  D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED, 0, 0, 0,
                   NULL, NULL, false);
 
@@ -4386,7 +4390,7 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
 
       d3d->menu->tex = d3d9_texture_new(d3d->dev,
             width, height, 1,
-            0, D3D9_ARGB8888_FORMAT,
+            0, D3DFMT_A8R8G8B8,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!d3d->menu->tex)
@@ -4615,10 +4619,12 @@ bool d3d9_cg_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    video_driver_get_size(&width, &height);
 
    if (
-            !d3d9_device_get_render_target(d3dr, 0, (void**)&target)
-         || !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
-            D3D9_XRGB8888_FORMAT,
-            D3DPOOL_SYSTEMMEM, (void**)&dest, NULL)
+            !SUCCEEDED(IDirect3DDevice9_GetRenderTarget(d3dr, 0, (LPDIRECT3DSURFACE9*)&target))
+         || !SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(d3dr,
+            width, height,
+            D3DFMT_X8R8G8B8,
+            (D3DPOOL)D3DPOOL_SYSTEMMEM,
+            (LPDIRECT3DSURFACE9*)&dest, NULL))
          || !d3d9_cg_device_get_render_target_data(d3dr, target, dest)
          )
    {

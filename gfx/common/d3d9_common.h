@@ -29,10 +29,6 @@
 #include "d3d_common.h"
 #include "../../verbosity.h"
 
-#define D3D9_DECL_FVF_TEXCOORD(stream, offset, index) \
-   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
-      D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
-
 #ifdef _XBOX
 #define D3D9_RGB565_FORMAT D3DFMT_LIN_R5G6B5
 #define D3D9_ARGB8888_FORMAT D3DFMT_LIN_A8R8G8B8
@@ -94,35 +90,6 @@ typedef struct d3d9_video
    /* Only used for Xbox */
    bool widescreen_mode;
 } d3d9_video_t;
-
-static INLINE bool d3d9_device_get_render_target(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned idx, void **data)
-{
-   return (dev &&
-         SUCCEEDED(IDirect3DDevice9_GetRenderTarget(dev,
-               idx, (LPDIRECT3DSURFACE9*)data)));
-}
-
-static INLINE bool d3d9_device_create_offscreen_plain_surface(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned width,
-      unsigned height,
-      unsigned format,
-      unsigned pool,
-      void **surf_data,
-      void *data)
-{
-#ifndef _XBOX
-   return (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
-               width, height,
-               (D3DFORMAT)format, (D3DPOOL)pool,
-               (LPDIRECT3DSURFACE9*)surf_data,
-               (HANDLE*)data)));
-#else
-   return false;
-#endif
-}
 
 bool d3d9_create_device(void *dev,
       void *d3dpp,
