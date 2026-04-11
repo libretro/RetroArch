@@ -772,6 +772,9 @@ static void hlsl_uniform_map_from_bytecode(
    map->orig_video_size   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.video_size", NULL, NULL);
    map->orig_texture_size = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.texture_size", NULL, NULL);
    map->orig_texture      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG.texture", NULL, NULL);
+   /* Fallback: decomposed sampler names (ORIG__texture instead of ORIG.texture) */
+   if (map->orig_texture < 0)
+      map->orig_texture   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "ORIG__texture", NULL, NULL);
 
    for (i = 0; i < TEXTURES - 1; i++)
    {
@@ -782,6 +785,12 @@ static void hlsl_uniform_map_from_bytecode(
       map->prev_texture_size[i] = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       strlcpy(attr + _len, ".texture",      sizeof(attr) - _len);
       map->prev_texture[i]      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
+      /* Fallback: decomposed sampler name */
+      if (map->prev_texture[i] < 0)
+      {
+         strlcpy(attr + _len, "__texture",  sizeof(attr) - _len);
+         map->prev_texture[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
+      }
    }
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
@@ -793,6 +802,12 @@ static void hlsl_uniform_map_from_bytecode(
       map->pass_texture_size[i] = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       strlcpy(attr + _len, ".texture",      sizeof(attr) - _len);
       map->pass_texture[i]      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
+      /* Fallback: decomposed sampler name */
+      if (map->pass_texture[i] < 0)
+      {
+         strlcpy(attr + _len, "__texture",  sizeof(attr) - _len);
+         map->pass_texture[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
+      }
    }
 }
 
@@ -6011,6 +6026,67 @@ static bool d3d9_hlsl_load_program_from_file_ex(
       {
          free(resolved);
          resolved = decomposed;
+      }
+   }
+
+   /* Ensure sampler declarations exist for ORIG/PREV/PASSPREV textures.
+    * Multi-pass Cg shaders reference ORIG__texture, PREVn__texture, etc.
+    * via compat macros and struct sampler decomposition.  If the shader
+    * passes these as function parameters (e.g. 'in orig ORIG : TEXCOORD2')
+    * rather than global uniforms, the decomposition pass won't create
+    * standalone sampler declarations.  Scan for references and add
+    * missing declarations. */
+   {
+      static const char *sampler_names[] = {
+         "ORIG__texture", "PREV__texture",
+         "PREV1__texture", "PREV2__texture", "PREV3__texture",
+         "PREV4__texture", "PREV5__texture", "PREV6__texture",
+         "PASSPREV1__texture", "PASSPREV2__texture",
+         "PASSPREV3__texture", "PASSPREV4__texture",
+         NULL
+      };
+      char decl_buf[1024];
+      size_t dpos = 0;
+      int si;
+
+      for (si = 0; sampler_names[si]; si++)
+      {
+         const char *name = sampler_names[si];
+         size_t nlen = strlen(name);
+         /* Check if this name is referenced in the source */
+         const char *ref = strstr(resolved, name);
+         if (!ref)
+            continue;
+         /* Verify it's a whole-word match */
+         if (ref > resolved && d3d9_hlsl_is_ident_char(ref[-1]))
+            continue;
+         if (d3d9_hlsl_is_ident_char(ref[nlen]))
+            continue;
+         /* Check if it's already declared as sampler2D */
+         {
+            char decl_pattern[192];
+            snprintf(decl_pattern, sizeof(decl_pattern),
+                  "sampler2D %s", name);
+            if (strstr(resolved, decl_pattern))
+               continue; /* Already declared */
+         }
+         /* Add declaration */
+         dpos += snprintf(decl_buf + dpos, sizeof(decl_buf) - dpos,
+               "uniform sampler2D %s;\n", name);
+      }
+
+      if (dpos > 0)
+      {
+         /* Insert declarations at the beginning of the source */
+         size_t old_len = strlen(resolved);
+         char *nb = (char*)malloc(old_len + dpos + 1);
+         if (nb)
+         {
+            memcpy(nb, decl_buf, dpos);
+            memcpy(nb + dpos, resolved, old_len + 1);
+            free(resolved);
+            resolved = nb;
+         }
       }
    }
 
