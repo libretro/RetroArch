@@ -3882,6 +3882,9 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
    return out;
 }
 
+#ifdef _MSC_VER
+#pragma optimize("", off) /* Avoid MSVC ICE on complex function */
+#endif
 static char *d3d9_hlsl_fixup_cg_source(const char *source)
 {
    size_t src_len     = strlen(source);
@@ -4786,6 +4789,9 @@ fail:
    free(out);
    return NULL;
 }
+#ifdef _MSC_VER
+#pragma optimize("", on)
+#endif
 
 /* Dynamically load D3DCompile and D3DPreprocess with
  * D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY to accept Cg syntax. */
