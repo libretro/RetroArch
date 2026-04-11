@@ -4452,11 +4452,13 @@ struct_ctor_done:
             continue; /* constructor was replaced */
       }
 
-      /* --- Fix 1d: expand float2/3/4(scalar) to float2/3/4(s,s,...) ---
+      /* --- Fix 1d: expand float3/4(scalar) to float3/4(s,s,...) ---
        * Cg supports float3(x) as a splat constructor. HLSL requires
-       * the correct number of arguments. */
+       * the correct number of arguments.
+       * Note: float2(expr) is NOT expanded because it's usually
+       * float2(float2_expr) which is a valid HLSL cast. */
       if (strncmp(p, "float", 5) == 0
-            && (p[5] >= '2' && p[5] <= '4')
+            && (p[5] >= '3' && p[5] <= '4')
             && p[6] == '('
             && (p == source || !d3d9_hlsl_is_ident_char(p[-1])))
       {
