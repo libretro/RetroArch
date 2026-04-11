@@ -4207,6 +4207,18 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
          continue;
       }
 
+      /* --- Fix 1g: whole-word 'fract' -> 'frac' ---
+       * Cg has fract(x), HLSL uses frac(x). */
+      if (strncmp(p, "fract", 5) == 0
+            && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
+            && !d3d9_hlsl_is_ident_char(p[5]))
+      {
+         if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "frac", 4))
+            goto fail;
+         p += 5;
+         continue;
+      }
+
       /* --- Fix 1a: 'const' -> 'static const' at global scope ---
        * D3DCompile with backwards compat treats global 'const' as a CTAB
        * uniform instead of embedding the literal value. 'static const'
@@ -4234,6 +4246,67 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
                goto fail;
             p += 5;
             continue;
+         }
+      }
+
+      /* --- Fix 1a2: add 'static' to global float/int declarations with initializers ---
+       * D3DCompile treats global 'float x = val;' as a CTAB uniform,
+       * ignoring the initializer. 'static float x = val;' embeds it.
+       * Only at global scope, not preceded by 'uniform' or 'static'. */
+      if (brace_depth == 0 && paren_depth == 0
+            && (strncmp(p, "float", 5) == 0 || strncmp(p, "int", 3) == 0)
+            && (p == source || !d3d9_hlsl_is_ident_char(p[-1])))
+      {
+         /* Determine the type keyword length */
+         size_t tlen = 0;
+         if (strncmp(p, "float4x4", 8) == 0 && !d3d9_hlsl_is_ident_char(p[8]))
+            tlen = 8;
+         else if (strncmp(p, "float4", 6) == 0 && !d3d9_hlsl_is_ident_char(p[6]))
+            tlen = 6;
+         else if (strncmp(p, "float3x3", 8) == 0 && !d3d9_hlsl_is_ident_char(p[8]))
+            tlen = 8;
+         else if (strncmp(p, "float3", 6) == 0 && !d3d9_hlsl_is_ident_char(p[6]))
+            tlen = 6;
+         else if (strncmp(p, "float2", 6) == 0 && !d3d9_hlsl_is_ident_char(p[6]))
+            tlen = 6;
+         else if (strncmp(p, "float", 5) == 0 && !d3d9_hlsl_is_ident_char(p[5]))
+            tlen = 5;
+         else if (strncmp(p, "int", 3) == 0 && !d3d9_hlsl_is_ident_char(p[3]))
+            tlen = 3;
+
+         if (tlen > 0)
+         {
+            /* Check: skip whitespace, identifier, skip whitespace, '=' */
+            const char *tk = p + tlen;
+            while (*tk == ' ' || *tk == '\t') tk++;
+            if (d3d9_hlsl_is_ident_char(*tk))
+            {
+               while (d3d9_hlsl_is_ident_char(*tk)) tk++;
+               while (*tk == ' ' || *tk == '\t') tk++;
+               if (*tk == '=' && tk[1] != '=') /* '=' but not '==' */
+               {
+                  /* Check not already preceded by 'static' or 'uniform' */
+                  bool skip = false;
+                  if (p >= source + 7 && strncmp(p - 7, "static ", 7) == 0)
+                     skip = true;
+                  if (p >= source + 8 && strncmp(p - 8, "uniform ", 8) == 0)
+                     skip = true;
+                  /* Also check output buffer for 'static ' or 'uniform ' */
+                  if (!skip && pos >= 7 && strncmp(out + pos - 7, "static ", 7) == 0)
+                     skip = true;
+                  if (!skip && pos >= 8 && strncmp(out + pos - 8, "uniform ", 8) == 0)
+                     skip = true;
+                  if (!skip && pos >= 6 && strncmp(out + pos - 6, "const ", 6) == 0)
+                     skip = true;
+
+                  if (!skip)
+                  {
+                     if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "static ", 7))
+                        goto fail;
+                     /* Fall through to copy the type keyword normally */
+                  }
+               }
+            }
          }
       }
 
