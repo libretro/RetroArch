@@ -2836,6 +2836,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
    "ค่าความคลาดเคลื่อนของเวลาเสียงสูงสุด\nกำหนดการเปลี่ยนแปลงสูงสุดของอัตราอินพุต คุณอาจต้องการเพิ่มค่านี้เพื่อให้สามารถเปลี่ยนแปลงเวลาได้มาก เช่น การเรียกใช้คอร์ PAL บนจอแสดงผล [...]"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   "การควบคุมอัตราเสียงแบบไดนามิก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   "ช่วยให้การซิงก์เสียงและวิดีโอราบรื่นขึ้น โดยแก้ไขความไม่สมบูรณ์ของจังหวะ หากปิดใช้งาน การซิงก์ที่ถูกต้องแทบจะไม่สามารถทำได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "การตั้งค่านี้เป็น 0 จะปิดการควบคุมอัตราเสียง ค่าที่ไม่ใช่ศูนย์จะควบคุมค่าเดลตาของการควบคุมอัตราเสียง\nกำหนดว่าความถี่อินพุตสามารถปรับได้แบบไดนามิกมากน้อยเพียงใด โดยอินพุตเ[...]"
+   )
 
 /* Settings > Audio > MIDI */
 
@@ -2844,15 +2856,67 @@ MSG_HASH(
    "การควบคุม"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   "เลือกอุปกรณ์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   "ตั้งค่าอุปกรณ์อินพุต (ขึ้นอยู่กับไดรเวอร์) เมื่อเลือก 'ปิด' จะปิดการทำงานของ MIDI อินพุต สามารถพิมพ์ชื่ออุปกรณ์ได้เช่นกัน"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "ขาออก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   "เลือกอุปกรณ์เอาต์พุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   "ตั้งค่าอุปกรณ์เอาต์พุต (ขึ้นอยู่กับไดรเวอร์) เมื่อเลือก 'ปิด' จะปิดการทำงานของ MIDI เอาต์พุต สามารถพิมพ์ชื่ออุปกรณ์ได้เช่นกัน\nเมื่อเปิดใช้งาน MIDI เอาต์พุต และ Core รวมถึงเกม/แอป รองรับ MIDI [...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+   "ระดับเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   "ตั้งค่าระดับเสียงเอาต์พุต (%)."
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   "เล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   "จะเริ่มเล่นสตรีมเสียง เมื่อเล่นเสร็จแล้ว จะลบสตรีมเสียงปัจจุบันออกจากหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   "เล่น (วนซ้ำ)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+   "จะเริ่มเล่นสตรีมเสียง เมื่อเล่นเสร็จแล้ว จะวนซ้ำและเล่นแทร็กอีกครั้งตั้งแต่ต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "เล่น (ตามลำดับ)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "จะเริ่มเล่นสตรีมเสียง เมื่อเล่นเสร็จแล้ว จะข้ามไปยังสตรีมเสียงถัดไปตามลำดับ และทำซ้ำพฤติกรรมนี้ เหมาะสำหรับโหมดการเล่นแบบอัลบั้ม"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "ลบออก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   "ระดับเสียง"
    )
 
 /* Settings > Audio > Menu Sounds */

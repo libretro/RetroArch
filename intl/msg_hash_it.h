@@ -1099,6 +1099,26 @@ MSG_HASH(
    "La password per il tuo account di archiviazione cloud."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID chiave d'accesso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Il tuo ID chiave di accesso per il tuo account cloud storage."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Chiave d'accesso segreta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "La tua chiave di accesso segreto per il tuo account di archiviazione cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+   "URL S3"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Registrazione dei log"
    )
@@ -8364,6 +8384,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
    "Controllo database"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Scansiona File Singolo"
+   )
 
 /* Import Content > Scan File */
 
@@ -8378,6 +8402,10 @@ MSG_HASH(
 
 /* Import Content > Content Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+   "Posizione Contenuto"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Core Predefinito"
@@ -10454,6 +10482,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
    "<Non specificato>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Completamente Automatico"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
@@ -13052,6 +13084,10 @@ MSG_HASH(
    "Il core non supporta i salvataggi rapidi."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "Il core non supporta l'annullamento del salvataggio di stato."
+   )
+MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    "Il core non supporta il controllo del disco."
    )
@@ -14186,6 +14222,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Tutti i trucchi eliminati."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Tutti i trucchi ricaricati."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

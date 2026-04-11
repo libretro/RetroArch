@@ -4546,7 +4546,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
-   "Al activar esta opción, se guardarán solo aquellos valores de los ajutes que hayan cambiado respecto a sus valores predeterminados. Producirá un archivo de configuración más pequeño y manejable."
+   "Al activar esta opción, se guardarán solo aquellos valores de los ajustes que hayan cambiado respecto a sus valores predeterminados. Producirá un archivo de configuración más pequeño y manejable."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,

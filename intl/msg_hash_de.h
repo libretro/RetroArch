@@ -8444,7 +8444,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Name der erzeugten Wiedergabelistendatei, der auch zur Identifizierung der Miniaturansichten der Wiedergabeliste verwendet wird. Die automatischen Einstellung verwendet denselbe Namen wie für die zugehörige Datenbank oder das Inhaltsverzeichnis."
+   "Name der erzeugten Wiedergabelistendatei, der auch zur Identifizierung der Miniaturansichten der Wiedergabeliste verwendet wird. Die automatische Einstellung verwendet denselben Namen wie für die zugehörige Datenbank oder das Inhaltsverzeichnis."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
