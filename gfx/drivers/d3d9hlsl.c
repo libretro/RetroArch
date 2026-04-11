@@ -4553,24 +4553,23 @@ struct_ctor_done:
                      decl_start++;
                }
 
-               /* Skip 'in', 'out', 'inout' parameter qualifiers (Cg-specific) */
+               /* Skip 'in', 'out', 'inout' parameter qualifiers (Cg-specific).
+                * If present, this param is an interpolant, not a uniform —
+                * keep it in the function signature, don't extract. */
                if (strncmp(decl_start, "inout", 5) == 0
                      && !d3d9_hlsl_is_ident_char(decl_start[5]))
                {
-                  decl_start += 5;
-                  while (*decl_start == ' ' || *decl_start == '\t') decl_start++;
+                  goto skip_extraction;
                }
                else if (strncmp(decl_start, "in", 2) == 0
                      && !d3d9_hlsl_is_ident_char(decl_start[2]))
                {
-                  decl_start += 2;
-                  while (*decl_start == ' ' || *decl_start == '\t') decl_start++;
+                  goto skip_extraction;
                }
                else if (strncmp(decl_start, "out", 3) == 0
                      && !d3d9_hlsl_is_ident_char(decl_start[3]))
                {
-                  decl_start += 3;
-                  while (*decl_start == ' ' || *decl_start == '\t') decl_start++;
+                  goto skip_extraction;
                }
 
                /* Check for at least two tokens: skip first ident, skip space,
