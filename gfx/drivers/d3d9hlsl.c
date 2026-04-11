@@ -3836,6 +3836,29 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
          continue;
       }
 
+      /* --- Fix 1a: 'const' -> 'static const' at global scope ---
+       * D3DCompile with backwards compat treats global 'const' as a CTAB
+       * uniform instead of embedding the literal value. 'static const'
+       * forces the value to be embedded in the bytecode. */
+      if (brace_depth == 0 && paren_depth == 0
+            && strncmp(p, "const", 5) == 0
+            && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
+            && !d3d9_hlsl_is_ident_char(p[5]))
+      {
+         /* Check it's not already 'static const' */
+         if (p >= source + 7 && strncmp(p - 7, "static ", 7) == 0)
+         {
+            /* Already has static — leave as-is */
+         }
+         else
+         {
+            if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "static const", 12))
+               goto fail;
+            p += 5;
+            continue;
+         }
+      }
+
       /* --- Fix 1b: strip 'uniform' from struct member declarations ---
        * Cg allows 'uniform sampler2D tex' inside structs; HLSL doesn't. */
       if (brace_depth > 0 && paren_depth == 0
@@ -5615,16 +5638,8 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
          0, 1, 0);
 
-   /* Only write MVP to c0 if the first pass uses the stock shader.
-    * Per-pass shaders set MVP at the CTAB-discovered register. */
-   {
-      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
-      struct shader_pass *first  = _chain
-         ? (struct shader_pass*)&_chain->chain.passes->data[0] : NULL;
-      if (!first || !first->vprg)
-         IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
-               (const float*)&d3d->mvp, 4);
-   }
+   IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
+         (const float*)&d3d->mvp, 4);
    hlsl_d3d9_renderchain_render(
          d3d, frame, frame_width, frame_height,
          pitch, d3d->dev_rotation);
