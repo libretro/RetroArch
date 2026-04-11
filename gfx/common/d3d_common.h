@@ -40,12 +40,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct d3d_texture
-{
-   void *data;
-   int32_t pool;
-} d3d_texture_t;
-
 typedef struct
 {
    bool fullscreen;
@@ -65,16 +59,9 @@ typedef struct Vertex
    float u, v;
 } Vertex;
 
-#ifndef BYTE_CLAMP
-#define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
-#endif
-
 #define D3DTADDRESS_COMM_CLAMP           3
 #define D3DTEXF_COMM_LINEAR              2
 #define D3DPT_COMM_TRIANGLESTRIP         5
-
-/* Clear target surface */
-#define D3D_COMM_CLEAR_TARGET            0x00000001l
 
 int32_t d3d_translate_filter(unsigned type);
 
