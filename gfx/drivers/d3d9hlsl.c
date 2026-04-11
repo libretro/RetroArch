@@ -4553,6 +4553,26 @@ struct_ctor_done:
                      decl_start++;
                }
 
+               /* Skip 'in', 'out', 'inout' parameter qualifiers (Cg-specific) */
+               if (strncmp(decl_start, "inout", 5) == 0
+                     && !d3d9_hlsl_is_ident_char(decl_start[5]))
+               {
+                  decl_start += 5;
+                  while (*decl_start == ' ' || *decl_start == '\t') decl_start++;
+               }
+               else if (strncmp(decl_start, "in", 2) == 0
+                     && !d3d9_hlsl_is_ident_char(decl_start[2]))
+               {
+                  decl_start += 2;
+                  while (*decl_start == ' ' || *decl_start == '\t') decl_start++;
+               }
+               else if (strncmp(decl_start, "out", 3) == 0
+                     && !d3d9_hlsl_is_ident_char(decl_start[3]))
+               {
+                  decl_start += 3;
+                  while (*decl_start == ' ' || *decl_start == '\t') decl_start++;
+               }
+
                /* Check for at least two tokens: skip first ident, skip space,
                 * check for second ident */
                {
@@ -4766,17 +4786,6 @@ static bool d3d9_hlsl_compile_cg_compat(
          {
             const char *err_str = (const char*)error_blob->lpVtbl->GetBufferPointer(error_blob);
             RARCH_ERR("[D3D9 HLSL] D3DCompile failed: %s\n", err_str);
-            /* Write full error to file */
-            {
-               RFILE *ef = filestream_open("C:\\RetroArch\\hlsl_compile_error.txt",
-                     RETRO_VFS_FILE_ACCESS_WRITE,
-                     RETRO_VFS_FILE_ACCESS_HINT_NONE);
-               if (ef)
-               {
-                  filestream_write(ef, err_str, strlen(err_str));
-                  filestream_close(ef);
-               }
-            }
             error_blob->lpVtbl->Release(error_blob);
          }
          return false;
