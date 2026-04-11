@@ -4189,6 +4189,24 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
          continue;
       }
 
+      /* --- Fix 1f: standalone 'sampler' -> 'sampler2D' ---
+       * Cg uses 'sampler' as a generic type interchangeable with sampler2D.
+       * HLSL treats 'sampler' as SamplerState which is incompatible.
+       * Only match 'sampler' NOT followed by 1D/2D/3D/CUBE. */
+      if (strncmp(p, "sampler", 7) == 0
+            && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
+            && !d3d9_hlsl_is_ident_char(p[7])
+            && strncmp(p + 7, "2D", 2) != 0
+            && strncmp(p + 7, "1D", 2) != 0
+            && strncmp(p + 7, "3D", 2) != 0
+            && strncmp(p + 7, "CUBE", 4) != 0)
+      {
+         if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "sampler2D", 9))
+            goto fail;
+         p += 7;
+         continue;
+      }
+
       /* --- Fix 1a: 'const' -> 'static const' at global scope ---
        * D3DCompile with backwards compat treats global 'const' as a CTAB
        * uniform instead of embedding the literal value. 'static const'
