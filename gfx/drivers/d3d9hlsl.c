@@ -3814,6 +3814,26 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
 
                      /* Copy struct body, inserting TEXCOORD only before
                       * ';' on members that don't already have ':' */
+                     /* First, scan for existing TEXCOORD indices to avoid conflicts */
+                     {
+                        const char *scan_tc = ob + 1;
+                        while (scan_tc < cb - 1)
+                        {
+                           if (strncmp(scan_tc, "TEXCOORD", 8) == 0)
+                           {
+                              int idx = 0;
+                              const char *dp = scan_tc + 8;
+                              while (*dp >= '0' && *dp <= '9')
+                              {
+                                 idx = idx * 10 + (*dp - '0');
+                                 dp++;
+                              }
+                              if (idx >= texcoord_counter)
+                                 texcoord_counter = idx + 1;
+                           }
+                           scan_tc++;
+                        }
+                     }
                      {
                         const char *mp = ob + 1;
                         while (mp < cb - 1)
