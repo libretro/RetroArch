@@ -4431,6 +4431,14 @@ static void d3d9_cg_set_video_mode(void *data,
    win32_show_cursor(data, !fullscreen);
 }
 
+static struct video_shader *d3d9_cg_get_current_shader(void *data)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   if (!d3d)
+      return NULL;
+   return &d3d->shader;
+}
+
 static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_cg_get_flags,
    d3d9_cg_load_texture,
@@ -4455,7 +4463,7 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_cg_set_osd_msg,
    win32_show_cursor,
    NULL, /* grab_mouse_toggle */
-   NULL, /* get_current_shader */
+   d3d9_cg_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */
