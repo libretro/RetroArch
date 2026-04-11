@@ -2736,6 +2736,24 @@ static void hlsl_d3d9_renderchain_render_pass(
             }
          }
       }
+
+      /* Upload shader parameters from the preset.
+       * Each parameter is a named float uniform declared in the shader
+       * source.  Look up its hardware register in the compiled bytecode
+       * via CTAB and upload the current value (which the menu edits
+       * in-place on d3d->shader.parameters[].current). */
+      for (i = 0; i < d3d->shader.num_parameters; i++)
+      {
+         float val[4] = { d3d->shader.parameters[i].current, 0.0f, 0.0f, 0.0f };
+         int ps_reg   = d3d9_hlsl_ctab_find_register(
+               pd->ps_bytecode, pd->ps_bytecode_dwords,
+               d3d->shader.parameters[i].id, NULL, NULL);
+         int vs_reg   = d3d9_hlsl_ctab_find_register(
+               pd->vs_bytecode, pd->vs_bytecode_dwords,
+               d3d->shader.parameters[i].id, NULL, NULL);
+         d3d9_hlsl_set_ps_const(chain->chain.dev, ps_reg, val, 1);
+         d3d9_hlsl_set_vs_const(chain->chain.dev, vs_reg, val, 1);
+      }
    }
 
    IDirect3DDevice9_BeginScene(chain->chain.dev);
@@ -4351,6 +4369,36 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
                      skip = true;
                   if (!skip && pos >= 6 && strncmp(out + pos - 6, "const ", 6) == 0)
                      skip = true;
+
+                  /* Skip if this variable is a shader parameter declared
+                   * via '#pragma parameter'.  Making it static would bake
+                   * the default value into the bytecode and prevent the
+                   * menu from adjusting it at runtime. */
+                  if (!skip)
+                  {
+                     const char *vn = p + tlen;
+                     const char *vn_end;
+                     while (*vn == ' ' || *vn == '\t') vn++;
+                     vn_end = vn;
+                     while (d3d9_hlsl_is_ident_char(*vn_end)) vn_end++;
+                     if (vn_end > vn)
+                     {
+                        size_t vn_len = (size_t)(vn_end - vn);
+                        const char *sp = source;
+                        while ((sp = strstr(sp, "#pragma parameter")) != NULL)
+                        {
+                           const char *pp = sp + 17; /* strlen("#pragma parameter") */
+                           while (*pp == ' ' || *pp == '\t') pp++;
+                           if (strncmp(pp, vn, vn_len) == 0
+                                 && !d3d9_hlsl_is_ident_char(pp[vn_len]))
+                           {
+                              skip = true;
+                              break;
+                           }
+                           sp = pp;
+                        }
+                     }
+                  }
 
                   if (!skip)
                   {
@@ -6588,6 +6636,14 @@ static void d3d9_hlsl_unload_texture(void *data,
    IDirect3DTexture9_Release(texid);
 }
 
+static struct video_shader *d3d9_hlsl_get_current_shader(void *data)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   if (!d3d)
+      return NULL;
+   return &d3d->shader;
+}
+
 static const video_poke_interface_t d3d9_hlsl_poke_interface = {
    d3d9_hlsl_get_flags,
    d3d9_hlsl_load_texture,
@@ -6612,7 +6668,7 @@ static const video_poke_interface_t d3d9_hlsl_poke_interface = {
    d3d9_hlsl_set_osd_msg,
    win32_show_cursor,
    NULL, /* grab_mouse_toggle */
-   NULL, /* get_current_shader */
+   d3d9_hlsl_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */

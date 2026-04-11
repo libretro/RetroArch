@@ -2015,7 +2015,8 @@ static void d3d9_cg_renderchain_set_shader_params(
       struct shader_pass *pass,
       unsigned video_w,  unsigned video_h,
       unsigned tex_w,    unsigned tex_h,
-      unsigned vp_width, unsigned vp_height)
+      unsigned vp_width, unsigned vp_height,
+      struct video_shader *shader)
 {
    float frame_cnt;
    float video_size[2];
@@ -2070,6 +2071,22 @@ static void d3d9_cg_renderchain_set_shader_params(
       cgD3D9SetUniform(fp_output_size, &output_size);
    if (fp_frame_count)
       cgD3D9SetUniform(fp_frame_count, &frame_cnt);
+
+   /* User-defined shader parameters */
+   if (shader)
+   {
+      unsigned i;
+      for (i = 0; i < shader->num_parameters; i++)
+      {
+         CGparameter cgp_vp = cgGetNamedParameter(vprg, shader->parameters[i].id);
+         CGparameter cgp_fp = cgGetNamedParameter(fprg, shader->parameters[i].id);
+
+         if (cgp_vp)
+            cgD3D9SetUniform(cgp_vp, &shader->parameters[i].current);
+         if (cgp_fp)
+            cgD3D9SetUniform(cgp_fp, &shader->parameters[i].current);
+      }
+   }
 }
 
 static bool d3d9_cg_renderchain_init_shader_fvf(
@@ -2788,7 +2805,8 @@ static void d3d9_cg_renderchain_set_vertices(
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
-      unsigned rotation)
+      unsigned rotation,
+      struct video_shader *shader)
 {
    if (pass->last_width != width || pass->last_height != height)
       d3d9_cg_renderchain_set_vertices_on_change(chain,
@@ -2801,7 +2819,8 @@ static void d3d9_cg_renderchain_set_vertices(
          pass,
          width, height,
          pass->info.tex_w, pass->info.tex_h,
-         vp_width, vp_height);
+         vp_width, vp_height,
+         shader);
 }
 
 static void d3d9_cg_renderchain_render_pass(
@@ -2979,7 +2998,8 @@ static void d3d9_cg_renderchain_render(
             chain, from_pass,
             current_width, current_height,
             out_width, out_height,
-            out_width, out_height, 0);
+            out_width, out_height, 0,
+            &d3d->shader);
 
       d3d9_cg_renderchain_render_pass(chain,
             from_pass,
@@ -3008,7 +3028,8 @@ static void d3d9_cg_renderchain_render(
          out_width, out_height,
          chain->out_vp->Width,
          chain->out_vp->Height,
-         rotation);
+         rotation,
+         &d3d->shader);
 
    d3d9_cg_renderchain_render_pass(chain,
          last_pass,
