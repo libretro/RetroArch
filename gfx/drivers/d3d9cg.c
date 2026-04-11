@@ -1951,6 +1951,28 @@ static bool d3d9_cg_load_program(cg_renderchain_t *chain,
    const char **vertex_opts   = cgD3D9GetOptimalOptions(vertex_profile);
    CGcontext cgCtx            = chain->cgCtx;
 
+   /* Build new option arrays with -DPARAMETER_UNIFORM appended.
+    * Without this define, shaders that guard their uniform parameter
+    * declarations with #ifdef PARAMETER_UNIFORM (e.g. CRT-Caligari)
+    * fall through to #define constants, making the parameters
+    * impossible to change at runtime via cgD3D9SetUniform. */
+   const char *f_opts_with_param[64];
+   const char *v_opts_with_param[64];
+   unsigned f_count = 0;
+   unsigned v_count = 0;
+
+   if (fragment_opts)
+      for (; fragment_opts[f_count] && f_count < 62; f_count++)
+         f_opts_with_param[f_count] = fragment_opts[f_count];
+   f_opts_with_param[f_count++] = "-DPARAMETER_UNIFORM";
+   f_opts_with_param[f_count]   = NULL;
+
+   if (vertex_opts)
+      for (; vertex_opts[v_count] && v_count < 62; v_count++)
+         v_opts_with_param[v_count] = vertex_opts[v_count];
+   v_opts_with_param[v_count++] = "-DPARAMETER_UNIFORM";
+   v_opts_with_param[v_count]   = NULL;
+
    if (
             (fragment_profile == CG_PROFILE_UNKNOWN)
          || (vertex_profile   == CG_PROFILE_UNKNOWN))
@@ -1966,10 +1988,10 @@ static bool d3d9_cg_load_program(cg_renderchain_t *chain,
 
    if (path_is_file && prog && *prog)
       pass->fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
-            prog, fragment_profile, "main_fragment", fragment_opts);
+            prog, fragment_profile, "main_fragment", f_opts_with_param);
    else
       pass->fprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_d3d9_program,
-            fragment_profile, "main_fragment", fragment_opts);
+            fragment_profile, "main_fragment", f_opts_with_param);
 
    list = cgGetLastListing(cgCtx);
    if (list)
@@ -1977,10 +1999,10 @@ static bool d3d9_cg_load_program(cg_renderchain_t *chain,
 
    if (path_is_file && prog && *prog)
       pass->vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
-            prog, vertex_profile, "main_vertex", vertex_opts);
+            prog, vertex_profile, "main_vertex", v_opts_with_param);
    else
       pass->vprg = cgCreateProgram(cgCtx, CG_SOURCE, stock_cg_d3d9_program,
-            vertex_profile, "main_vertex", vertex_opts);
+            vertex_profile, "main_vertex", v_opts_with_param);
 
    list = cgGetLastListing(cgCtx);
    if (list)
