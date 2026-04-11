@@ -5102,6 +5102,217 @@ static bool d3d9_hlsl_compile_cg_compat(
    }
 }
 
+/* Ensure all members of the vertex shader output struct are initialized.
+ *
+ * D3DCompile requires every member of the return struct to be written.
+ * Cg allows partial initialization.  This pass finds `return OUT;` in
+ * main_vertex and inserts `OUT.member = 0;` for any member not assigned
+ * elsewhere in the function body.
+ *
+ * Returns a malloc'd modified copy, or NULL if no changes were made. */
+static char *d3d9_hlsl_init_vs_output_members(const char *source)
+{
+   /* Step 1: find 'main_vertex' function and its return type */
+   const char *mv = strstr(source, "main_vertex");
+   const char *ret_type_start, *ret_type_end;
+   char ret_type[128];
+   size_t ret_type_len;
+   const char *func_body_start, *func_body_end;
+   const char *struct_start, *struct_body_start, *struct_body_end;
+
+   /* Struct member info */
+   struct { const char *name; size_t len; } members[32];
+   unsigned member_count = 0;
+   unsigned unassigned_count = 0;
+   char unassigned_buf[2048];
+   size_t upos = 0;
+
+   if (!mv) return NULL;
+
+   /* Find return type: scan backwards from 'main_vertex' past whitespace */
+   ret_type_end = mv;
+   while (ret_type_end > source
+         && (ret_type_end[-1] == ' ' || ret_type_end[-1] == '\t'
+            || ret_type_end[-1] == '\n' || ret_type_end[-1] == '\r'))
+      ret_type_end--;
+   ret_type_start = ret_type_end;
+   while (ret_type_start > source && d3d9_hlsl_is_ident_char(ret_type_start[-1]))
+      ret_type_start--;
+
+   ret_type_len = (size_t)(ret_type_end - ret_type_start);
+   if (ret_type_len == 0 || ret_type_len >= sizeof(ret_type))
+      return NULL;
+   memcpy(ret_type, ret_type_start, ret_type_len);
+   ret_type[ret_type_len] = '\0';
+
+   /* Step 2: find the struct definition for the return type */
+   {
+      char pattern[140];
+      snprintf(pattern, sizeof(pattern), "struct %s", ret_type);
+      struct_start = strstr(source, pattern);
+      if (!struct_start) return NULL;
+      /* Verify it's a whole word match */
+      {
+         const char *after = struct_start + strlen(pattern);
+         if (d3d9_hlsl_is_ident_char(*after))
+            return NULL;
+      }
+   }
+
+   struct_body_start = strchr(struct_start, '{');
+   if (!struct_body_start) return NULL;
+   struct_body_start++;
+
+   /* Find matching '}' */
+   {
+      int depth = 1;
+      const char *s = struct_body_start;
+      while (*s && depth > 0)
+      {
+         if (*s == '{') depth++;
+         else if (*s == '}') depth--;
+         s++;
+      }
+      struct_body_end = s - 1;
+   }
+
+   /* Step 3: parse struct members — extract names */
+   {
+      const char *mp = struct_body_start;
+      while (mp < struct_body_end)
+      {
+         /* Find each ';' — the member name is the identifier before
+          * the optional ': SEMANTIC' before the ';' */
+         const char *semi = strchr(mp, ';');
+         if (!semi || semi >= struct_body_end) break;
+
+         /* Scan backwards from ';' past semantic if present */
+         {
+            const char *end = semi;
+            const char *name_end, *name_start;
+
+            /* Skip past ': SEMANTIC' */
+            {
+               const char *colon = NULL;
+               const char *scan = mp;
+               while (scan < semi)
+               {
+                  if (*scan == ':') colon = scan;
+                  scan++;
+               }
+               if (colon) end = colon;
+            }
+
+            /* Skip trailing whitespace */
+            while (end > mp && (end[-1] == ' ' || end[-1] == '\t')) end--;
+            name_end = end;
+
+            /* Scan backwards to find start of identifier */
+            name_start = name_end;
+            while (name_start > mp && d3d9_hlsl_is_ident_char(name_start[-1]))
+               name_start--;
+
+            if (name_end > name_start && member_count < 32)
+            {
+               members[member_count].name = name_start;
+               members[member_count].len = (size_t)(name_end - name_start);
+               member_count++;
+            }
+         }
+
+         mp = semi + 1;
+      }
+   }
+
+   if (member_count == 0) return NULL;
+
+   /* Step 4: find main_vertex function body */
+   {
+      const char *ob = mv;
+      int depth;
+      while (*ob && *ob != '{') ob++;
+      if (!*ob) return NULL;
+      func_body_start = ob + 1;
+      depth = 1;
+      {
+         const char *s = func_body_start;
+         while (*s && depth > 0)
+         {
+            if (*s == '{') depth++;
+            else if (*s == '}') depth--;
+            s++;
+         }
+         func_body_end = s;
+      }
+   }
+
+   /* Step 5: check which members are assigned (look for 'OUT.member' or 'OUT .member') */
+   {
+      unsigned i;
+      for (i = 0; i < member_count; i++)
+      {
+         char pattern[192];
+         bool found = false;
+         /* Build "OUT.membername" pattern and search within function body */
+         /* Try common output variable names: OUT, Out, output */
+         {
+            const char *scan = func_body_start;
+            while (scan < func_body_end)
+            {
+               /* Look for '.membername' preceded by an identifier */
+               if (*scan == '.' && strncmp(scan + 1,
+                        members[i].name, members[i].len) == 0
+                     && !d3d9_hlsl_is_ident_char(scan[1 + members[i].len]))
+               {
+                  /* Check it's an assignment (look for '=' after, not '==') */
+                  const char *eq = scan + 1 + members[i].len;
+                  while (*eq == ' ' || *eq == '\t') eq++;
+                  if (*eq == '=' && eq[1] != '=')
+                  { found = true; break; }
+               }
+               scan++;
+            }
+         }
+
+         if (!found)
+         {
+            /* This member is not assigned — add initialization */
+            size_t added = snprintf(unassigned_buf + upos,
+                  sizeof(unassigned_buf) - upos,
+                  "OUT.%.*s = 0;\n",
+                  (int)members[i].len, members[i].name);
+            upos += added;
+            unassigned_count++;
+         }
+      }
+   }
+
+   if (unassigned_count == 0) return NULL;
+
+   /* Step 6: insert initializations before 'return OUT;' */
+   {
+      const char *ret_stmt = strstr(func_body_start, "return ");
+      size_t src_len, pre_len, tail_len, new_len;
+      char *out;
+
+      if (!ret_stmt || ret_stmt >= func_body_end) return NULL;
+
+      src_len = strlen(source);
+      pre_len = (size_t)(ret_stmt - source);
+      tail_len = src_len - pre_len;
+      new_len = src_len + upos;
+
+      out = (char*)malloc(new_len + 1);
+      if (!out) return NULL;
+
+      memcpy(out, source, pre_len);
+      memcpy(out + pre_len, unassigned_buf, upos);
+      memcpy(out + pre_len + upos, ret_stmt, tail_len);
+      out[new_len] = '\0';
+      return out;
+   }
+}
+
 /* Convert consecutively-invoked single-parameter macros into [loop] for
  * loops.  Many Cg shaders unroll filter kernels via macros like:
  *
@@ -5623,6 +5834,18 @@ static bool d3d9_hlsl_load_program_from_file_ex(
    }
 
    src_len = strlen(resolved);
+
+   /* Zero-initialize any unassigned vertex shader output struct members.
+    * Cg allows partial struct initialization; HLSL does not. */
+   {
+      char *inited = d3d9_hlsl_init_vs_output_members(resolved);
+      if (inited)
+      {
+         free(resolved);
+         resolved = inited;
+         src_len = strlen(resolved);
+      }
+   }
 
    /* Convert consecutively-invoked macros into [loop] for loops.
     * This is critical for shaders with large unrolled filter kernels
