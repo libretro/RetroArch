@@ -5,11 +5,14 @@
 - ANDROID: Preserve OpenGL context when app is paused
 - ANDROID: Fix double launch issue when changing games from external launcher
 - ANDROID: Allow launchers to pass content:// URIs to RetroArch
+- ANDROID: Enable network commands
+- ANDROID: Fix dual-motor rumble for USB-connected DS4 and DualSense controllers
 - AUDIO/MICROPHONE: Fix resampling, apple drivers
 - APPLE: Use coreaudio3 resampling
 - APPLE: Add coreaudio3 driver to iOS/TVOS
 - APPLE: Add jollycv, skyemu, gearlynx, amiarcadia, o2em, uzem , applewin, azahar cores to App Store builds
 - APPLE: Add Apple on-device OCR / translation to AI service
+- APPLE: Add avfoundation record driver
 - COMMAND: Fix null pointer exception in COMMAND_GET_STATUS
 - COMMAND: Only allow pause when there is a core running
 - CHEEVOS: Update to rcheevos 12.3
@@ -43,6 +46,9 @@
 - LIBRETRO: RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO allows cores to disable frontend's save state undo feature to decrease memory usage
 - LIBRETRO: Performance improvements for nbio and archive handling in libretro-common
 - LIBRETRO: Performance improvements for utf encoding in libretro-common
+- LIBRETRO: Performance improvements for crc32 computation
+- LIBRETRO: Enable Linux ARM64 compilation for RetroArch (and several cores)
+- LIBRETRO: Fix CHD handling of MODE1/RAW MODE2/RAW tracks
 - LOCALIZATION: Add Thai language
 - MACOS: Fix OpenGL color on wide gamut displays
 - MENU: Do hard reset when pushing RetroPad Start on Restart menu item
@@ -68,6 +74,7 @@
 - MENU/OZONE: Fix occasional left mouse click selection error
 - MENU/XMB: Current menu icon refactor
 - MENU/XMB: Left thumbnail and handheld mode fixes
+- MENU/XMB: Tab change possible by gestures
 - OVERLAY: Allow overlays to position the viewport
 - OVERLAY: Hold button function
 - OVERLAY: Allow interaction during next overlay swap
@@ -83,10 +90,14 @@
 - SCAN: Improve Philips CD-i content recognition
 - SCAN: Improve scan performance by caching playlist updates
 - SCAN: Interpret M3U files during scanning
+- SCAN: Merge manual and automatic scan into a more flexible setup
+- SCAN: Improve GDI content recognition
 - SHADER: Display on-screen error when preset load fails
 - SHADER: Add gyroscope / accelerometer uniforms for shaders
+- VIDEO: Throttle framerate when VSync is enabled but window is not focused
 - VIDEO/GL: Fix some issues with GLSL shaders when using GLCore driver
 - VIDEO/SDL2: Add shared context
+- VIDEO/D3D9: Various rendering fixes and improvements
 - VIDEO/D3D11/D3D12/VULKAN: Major HDR update. Inverse tone mapping uses RGB maxing instead of luminance, better full-spectrum remapping of SDR space to HDR, Contrast option remove. Performance improved. HDR menu settings exposed to shaders, fast HDR single-pass scanline simulation added.
 - VIDEO/D3D11/D3D12/VULKAN: Multi-mode HDR Expand Gamut selection
 - VIDEO/D3D11/D3D12/VULKAN: scRGB (HDR16) support
@@ -106,6 +117,7 @@
 - WIN32: Fix Windows version detection
 - XBOX: Fix menu and achievement sounds
 - XBOX: Update UWP Mesa
+- XBOX: Add zstd support
 
 # 1.22.1
 - ANDROID: OnNewIntent handler to allow launchers start new content without closing first
