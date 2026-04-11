@@ -194,14 +194,21 @@ static void drm_surface_free(void *data, struct drm_surface **sp)
 {
    int i;
    struct drm_video *_drmvars = data;
-   struct drm_surface *surface = *sp;
+   struct drm_surface *surface;
 
-   for (i = 0; i < surface->numpages; i++)
-      surface->pages[i].used = false;
+   if (sp)
+      surface = *sp;
+   else
+      return;
 
-   free(surface->pages);
+   if (surface)
+   {
+      for (i = 0; surface && (i < surface->numpages); i++)
+         surface->pages[i].used = false;
 
-   free(surface);
+      free(surface->pages);
+      free(surface);
+   }
    *sp = NULL;
 }
 
