@@ -4219,6 +4219,30 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
          continue;
       }
 
+      /* --- Fix 1h: GLSL type renames ---
+       * Some Cg shaders use GLSL types. */
+      if ((p == source || !d3d9_hlsl_is_ident_char(p[-1])))
+      {
+         /* vec4 -> float4 */
+         if (strncmp(p, "vec4", 4) == 0 && !d3d9_hlsl_is_ident_char(p[4]))
+         { if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "float4", 6)) goto fail; p += 4; continue; }
+         /* vec3 -> float3 */
+         if (strncmp(p, "vec3", 4) == 0 && !d3d9_hlsl_is_ident_char(p[4]))
+         { if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "float3", 6)) goto fail; p += 4; continue; }
+         /* vec2 -> float2 */
+         if (strncmp(p, "vec2", 4) == 0 && !d3d9_hlsl_is_ident_char(p[4]))
+         { if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "float2", 6)) goto fail; p += 4; continue; }
+         /* mat4 -> float4x4 */
+         if (strncmp(p, "mat4", 4) == 0 && !d3d9_hlsl_is_ident_char(p[4]))
+         { if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "float4x4", 8)) goto fail; p += 4; continue; }
+         /* mat3 -> float3x3 */
+         if (strncmp(p, "mat3", 4) == 0 && !d3d9_hlsl_is_ident_char(p[4]))
+         { if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "float3x3", 8)) goto fail; p += 4; continue; }
+         /* mix -> lerp */
+         if (strncmp(p, "mix", 3) == 0 && !d3d9_hlsl_is_ident_char(p[3]))
+         { if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "lerp", 4)) goto fail; p += 3; continue; }
+      }
+
       /* --- Fix 1a: 'const' -> 'static const' at global scope ---
        * D3DCompile with backwards compat treats global 'const' as a CTAB
        * uniform instead of embedding the literal value. 'static const'
