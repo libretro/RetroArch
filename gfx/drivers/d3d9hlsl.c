@@ -4364,17 +4364,23 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
             && (p == source || !d3d9_hlsl_is_ident_char(p[-1]))
             && !d3d9_hlsl_is_ident_char(p[5]))
       {
-         /* Check it's not already 'static const' or 'const static' */
+         /* Check it's not already 'static const' */
          bool already_static = false;
          if (p >= source + 7 && strncmp(p - 7, "static ", 7) == 0)
             already_static = true;
-         /* Check for 'const static' — 'static' follows after 'const ' */
+         /* Check for 'const static' — swap to 'static const' */
          {
             const char *after = p + 5;
             while (*after == ' ' || *after == '\t') after++;
             if (strncmp(after, "static", 6) == 0
                   && !d3d9_hlsl_is_ident_char(after[6]))
-               already_static = true;
+            {
+               /* Emit 'static const' and skip past 'const static' */
+               if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "static const", 12))
+                  goto fail;
+               p = after + 6;
+               continue;
+            }
          }
          if (!already_static)
          {
@@ -4617,32 +4623,108 @@ struct_ctor_done:
 
          if (!has_comma && depth == 0 && scan > args_start)
          {
-            /* Single argument — extract it and duplicate */
+            /* Single argument — Cg splat constructor float4(x) → all components.
+             * Use a cast (float4)(x) which handles both scalar and bool args
+             * correctly in HLSL. */
             size_t arg_len = (size_t)(scan - args_start);
             char arg[512];
             if (arg_len < sizeof(arg))
             {
-               int ci;
+               char cast_buf[32];
+               size_t cast_len;
                memcpy(arg, args_start, arg_len);
                arg[arg_len] = '\0';
 
-               /* Output float<N>( */
-               if (!d3d9_hlsl_buf_append(&out, &pos, &cap, p, 7))
+               /* Emit ((floatN)(arg)) */
+               cast_len = snprintf(cast_buf, sizeof(cast_buf),
+                     "((float%d)(", n_components);
+               if (!d3d9_hlsl_buf_append(&out, &pos, &cap, cast_buf, cast_len))
                   goto fail;
-
-               for (ci = 0; ci < n_components; ci++)
-               {
-                  if (ci > 0)
-                     if (!d3d9_hlsl_buf_append(&out, &pos, &cap, ", ", 2))
-                        goto fail;
-                  if (!d3d9_hlsl_buf_append(&out, &pos, &cap, arg, arg_len))
-                     goto fail;
-               }
-               if (!d3d9_hlsl_buf_append(&out, &pos, &cap, ")", 1))
+               if (!d3d9_hlsl_buf_append(&out, &pos, &cap, arg, arg_len))
+                  goto fail;
+               if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "))", 2))
                   goto fail;
 
                p = scan + 1; /* skip past ')' */
                continue;
+            }
+         }
+
+         /* Check for floatN(X, X, X, X) where all args are identical.
+          * Cg allows float4(float4_val, float4_val, ...) taking first
+          * N components. HLSL does not. Replace with just X. */
+         if (has_comma)
+         {
+            /* Re-scan to collect all arguments */
+            const char *a_start[4];
+            size_t a_len[4];
+            int a_count = 0;
+            const char *as = args_start;
+            int d2 = 1;
+            bool all_same = true;
+
+            a_start[0] = as;
+            while (*as && d2 > 0 && a_count < 4)
+            {
+               if (*as == '(') d2++;
+               else if (*as == ')') { if (--d2 == 0) break; }
+               else if (*as == ',' && d2 == 1)
+               {
+                  /* Trim whitespace from current arg */
+                  const char *ae = as;
+                  while (ae > a_start[a_count]
+                        && (ae[-1] == ' ' || ae[-1] == '\t'))
+                     ae--;
+                  while (a_start[a_count] < ae
+                        && (*a_start[a_count] == ' '
+                           || *a_start[a_count] == '\t'))
+                     a_start[a_count]++;
+                  a_len[a_count] = (size_t)(ae - a_start[a_count]);
+                  a_count++;
+                  if (a_count < 4)
+                     a_start[a_count] = as + 1;
+               }
+               as++;
+            }
+            /* Last argument */
+            if (d2 == 0 && a_count < 4)
+            {
+               const char *ae = as;
+               while (ae > a_start[a_count]
+                     && (ae[-1] == ' ' || ae[-1] == '\t'))
+                  ae--;
+               while (a_start[a_count] < ae
+                     && (*a_start[a_count] == ' '
+                        || *a_start[a_count] == '\t'))
+                  a_start[a_count]++;
+               a_len[a_count] = (size_t)(ae - a_start[a_count]);
+               a_count++;
+            }
+
+            if (a_count == n_components && a_count >= 3)
+            {
+               int ai;
+               for (ai = 1; ai < a_count; ai++)
+               {
+                  if (a_len[ai] != a_len[0]
+                        || strncmp(a_start[0], a_start[ai], a_len[0]) != 0)
+                  { all_same = false; break; }
+               }
+
+               if (all_same && a_len[0] > 0
+                     && d3d9_hlsl_is_ident_char(a_start[0][0])
+                     && !(a_start[0][0] >= '0' && a_start[0][0] <= '9'))
+               {
+                  if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "(", 1))
+                     goto fail;
+                  if (!d3d9_hlsl_buf_append(&out, &pos, &cap,
+                           a_start[0], a_len[0]))
+                     goto fail;
+                  if (!d3d9_hlsl_buf_append(&out, &pos, &cap, ")", 1))
+                     goto fail;
+                  p = as + 1; /* skip past ')' */
+                  continue;
+               }
             }
          }
       }
@@ -5817,6 +5899,98 @@ static bool d3d9_hlsl_load_program_from_file_ex(
       {
          RARCH_ERR("[D3D9 HLSL] Source fixup failed: %s\n", prog);
          return false;
+      }
+   }
+
+   /* Collapse redundant floatN(X, X, ..., X) constructors where all
+    * arguments are identical identifiers.  Cg allows float4(float4_var,
+    * float4_var, float4_var, float4_var) taking the first N components;
+    * HLSL does not.  Replace with just (X). */
+   {
+      const char *search = resolved;
+      while ((search = strstr(search, "float")) != NULL)
+      {
+         const char *fp = search;
+         /* Check floatN( pattern */
+         if ((fp[5] == '3' || fp[5] == '4')
+               && fp[6] == '('
+               && (fp == resolved || !d3d9_hlsl_is_ident_char(fp[-1])))
+         {
+            int nc = fp[5] - '0';
+            const char *args = fp + 7;
+            /* Collect comma-separated args respecting parens */
+            const char *a_s[4];
+            size_t a_l[4];
+            int ac = 0, depth = 1;
+            const char *s = args;
+            bool ok = true;
+
+            a_s[0] = s;
+            while (*s && depth > 0)
+            {
+               if (*s == '(') depth++;
+               else if (*s == ')') { if (--depth == 0) break; }
+               else if (*s == ',' && depth == 1)
+               {
+                  const char *ae = s, *ab = a_s[ac];
+                  while (ae > ab && (ae[-1] == ' ' || ae[-1] == '\t')) ae--;
+                  while (ab < ae && (*ab == ' ' || *ab == '\t')) ab++;
+                  a_s[ac] = ab;
+                  a_l[ac] = (size_t)(ae - ab);
+                  ac++;
+                  if (ac >= nc) { ok = false; break; }
+                  a_s[ac] = s + 1;
+               }
+               s++;
+            }
+            if (ok && depth == 0 && ac == nc - 1)
+            {
+               /* Record last arg */
+               const char *ae = s, *ab = a_s[ac];
+               while (ae > ab && (ae[-1] == ' ' || ae[-1] == '\t')) ae--;
+               while (ab < ae && (*ab == ' ' || *ab == '\t')) ab++;
+               a_s[ac] = ab;
+               a_l[ac] = (size_t)(ae - ab);
+               ac++;
+
+               /* Check all args identical and start with letter/underscore */
+               if (ac == nc && a_l[0] > 0
+                     && d3d9_hlsl_is_ident_char(a_s[0][0])
+                     && !(a_s[0][0] >= '0' && a_s[0][0] <= '9'))
+               {
+                  bool same = true;
+                  int ai;
+                  for (ai = 1; ai < ac; ai++)
+                     if (a_l[ai] != a_l[0]
+                           || strncmp(a_s[0], a_s[ai], a_l[0]) != 0)
+                     { same = false; break; }
+
+                  if (same)
+                  {
+                     /* Replace float4(X, X, X, X) with (X) */
+                     size_t old_len = (size_t)(s + 1 - fp); /* includes closing ) */
+                     size_t new_len = a_l[0] + 2; /* (X) */
+                     size_t src_full = strlen(resolved);
+                     size_t off = (size_t)(fp - resolved);
+                     size_t tail = src_full - off - old_len;
+                     char *nb = (char*)malloc(src_full - old_len + new_len + 1);
+                     if (nb)
+                     {
+                        memcpy(nb, resolved, off);
+                        nb[off] = '(';
+                        memcpy(nb + off + 1, a_s[0], a_l[0]);
+                        nb[off + 1 + a_l[0]] = ')';
+                        memcpy(nb + off + new_len, fp + old_len, tail + 1);
+                        free(resolved);
+                        resolved = nb;
+                        search = resolved + off + new_len;
+                        continue;
+                     }
+                  }
+               }
+            }
+         }
+         search++;
       }
    }
 
