@@ -5955,6 +5955,16 @@ static bool d3d9_hlsl_load_program_from_file_ex(
                      && (*val_start == ' ' || *val_start == '\t'))
                   val_start++;
                val_end = def_line_end;
+               /* Strip // comment from value */
+               {
+                  const char *cmt = val_start;
+                  while (cmt < val_end - 1)
+                  {
+                     if (cmt[0] == '/' && cmt[1] == '/')
+                     { val_end = cmt; break; }
+                     cmt++;
+                  }
+               }
                /* Trim trailing whitespace */
                while (val_end > val_start
                      && (val_end[-1] == ' ' || val_end[-1] == '\t'))
