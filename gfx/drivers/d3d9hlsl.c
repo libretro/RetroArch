@@ -743,17 +743,19 @@ static void hlsl_uniform_map_from_bytecode(
       int in_reg = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, "IN", NULL, &in_cnt);
       if (in_reg >= 0)
       {
-         if (in_cnt >= 4)
+         if (in_cnt >= 3)
          {
-            /* Per-member packing: each float2 gets its own register
+            /* Per-member packing (cnt >= 3):
              * c[N+0] = { video_size.x, video_size.y, 0, 0 }
              * c[N+1] = { texture_size.x, texture_size.y, 0, 0 }
              * c[N+2] = { output_size.x, output_size.y, 0, 0 }
-             * c[N+3] = { frame_count, frame_direction, 0, 0 } */
+             * For cnt==4:
+             * c[N+3] = { frame_count, frame_direction, 0, 0 }
+             * For cnt==3, frame_count is packed into c[N+2].z */
             map->video_size   = in_reg;
             map->texture_size = in_reg + 1;
             map->output_size  = in_reg + 2;
-            map->frame_count  = in_reg + 3;
+            map->frame_count  = (in_cnt >= 4) ? in_reg + 3 : in_reg + 2;
          }
          else
          {
@@ -2473,7 +2475,9 @@ static void hlsl_d3d9_renderchain_render_pass(
       d3d9_video_t *d3d,
       hlsl_renderchain_t *chain,
       struct shader_pass *pass,
-      unsigned pass_index)
+      unsigned pass_index,
+      unsigned vp_width,
+      unsigned vp_height)
 {
    unsigned i;
    int32_t filter = d3d_translate_filter(pass->info.pass->filter);
@@ -2530,8 +2534,8 @@ static void hlsl_d3d9_renderchain_render_pass(
          float texture_size[2] = {
             (float)pass->info.tex_w, (float)pass->info.tex_h };
          float output_size[2]  = {
-            (float)chain->chain.out_vp->Width,
-            (float)chain->chain.out_vp->Height };
+            (float)vp_width,
+            (float)vp_height };
          float frame_cnt;
 
          frame_cnt = (float)chain->chain.frame_count;
@@ -2557,12 +2561,22 @@ static void hlsl_d3d9_renderchain_render_pass(
          {
             float vs4[4] = { video_size[0], video_size[1], 0.0f, 0.0f };
             float ts4[4] = { texture_size[0], texture_size[1], 0.0f, 0.0f };
-            float os4[4] = { output_size[0], output_size[1], 0.0f, 0.0f };
-            float fc4[4] = { frame_cnt, 0.0f, 0.0f, 0.0f };
             d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.video_size,   vs4, 1);
             d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.texture_size, ts4, 1);
-            d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.output_size,  os4, 1);
-            d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.frame_count,  fc4, 1);
+            /* If output_size and frame_count share a register, pack them */
+            if (pd->ps_map.output_size >= 0
+                  && pd->ps_map.output_size == pd->ps_map.frame_count)
+            {
+               float packed[4] = { output_size[0], output_size[1], frame_cnt, 1.0f };
+               d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.output_size, packed, 1);
+            }
+            else
+            {
+               float os4[4] = { output_size[0], output_size[1], 0.0f, 0.0f };
+               float fc4[4] = { frame_cnt, 0.0f, 0.0f, 0.0f };
+               d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.output_size,  os4, 1);
+               d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.frame_count,  fc4, 1);
+            }
          }
 
          /* Same for VS */
@@ -2580,12 +2594,21 @@ static void hlsl_d3d9_renderchain_render_pass(
          {
             float vs4[4] = { video_size[0], video_size[1], 0.0f, 0.0f };
             float ts4[4] = { texture_size[0], texture_size[1], 0.0f, 0.0f };
-            float os4[4] = { output_size[0], output_size[1], 0.0f, 0.0f };
-            float fc4[4] = { frame_cnt, 0.0f, 0.0f, 0.0f };
             d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.video_size,   vs4, 1);
             d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.texture_size, ts4, 1);
-            d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.output_size,  os4, 1);
-            d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.frame_count,  fc4, 1);
+            if (pd->vs_map.output_size >= 0
+                  && pd->vs_map.output_size == pd->vs_map.frame_count)
+            {
+               float packed[4] = { output_size[0], output_size[1], frame_cnt, 1.0f };
+               d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.output_size, packed, 1);
+            }
+            else
+            {
+               float os4[4] = { output_size[0], output_size[1], 0.0f, 0.0f };
+               float fc4[4] = { frame_cnt, 0.0f, 0.0f, 0.0f };
+               d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.output_size,  os4, 1);
+               d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.frame_count,  fc4, 1);
+            }
          }
       }
 
@@ -2846,7 +2869,8 @@ static void hlsl_d3d9_renderchain_render(
 
       hlsl_d3d9_renderchain_render_pass(d3d, chain,
             from_pass,
-            i + 1);
+            i + 1,
+            out_width, out_height);
 
       current_width  = out_width;
       current_height = out_height;
@@ -2876,7 +2900,9 @@ static void hlsl_d3d9_renderchain_render(
          chain->chain.frame_count, rotation);
 
    hlsl_d3d9_renderchain_render_pass(d3d, chain, last_pass,
-         chain->chain.passes->count);
+         chain->chain.passes->count,
+         chain->chain.out_vp->Width,
+         chain->chain.out_vp->Height);
 
    chain->chain.frame_count++;
 
