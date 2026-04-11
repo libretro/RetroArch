@@ -4583,15 +4583,24 @@ struct_ctor_done:
                   {
                      /* Check that '(' is preceded by an identifier
                       * AND the function is main_vertex or main_fragment
-                      * (don't extract params from helper functions) */
-                     if (pos > 0 && d3d9_hlsl_is_ident_char(out[pos - 1]))
+                      * (don't extract params from helper functions).
+                      * Scan backward past whitespace/newlines since the
+                      * name may be on a previous line: main_vertex\n  ( */
                      {
-                        /* Check function name */
-                        if ((pos >= 11 && strncmp(out + pos - 11, "main_vertex", 11) == 0
-                                 && (pos == 11 || !d3d9_hlsl_is_ident_char(out[pos - 12])))
-                              || (pos >= 13 && strncmp(out + pos - 13, "main_fragment", 13) == 0
-                                 && (pos == 13 || !d3d9_hlsl_is_ident_char(out[pos - 14]))))
-                           is_func_sig = true;
+                        size_t ne = pos;
+                        while (ne > 0 && (out[ne - 1] == ' '
+                              || out[ne - 1] == '\t'
+                              || out[ne - 1] == '\r'
+                              || out[ne - 1] == '\n'))
+                           ne--;
+                        if (ne > 0 && d3d9_hlsl_is_ident_char(out[ne - 1]))
+                        {
+                           if ((ne >= 11 && strncmp(out + ne - 11, "main_vertex", 11) == 0
+                                    && (ne == 11 || !d3d9_hlsl_is_ident_char(out[ne - 12])))
+                                 || (ne >= 13 && strncmp(out + ne - 13, "main_fragment", 13) == 0
+                                    && (ne == 13 || !d3d9_hlsl_is_ident_char(out[ne - 14]))))
+                              is_func_sig = true;
+                        }
                      }
                   }
                }
