@@ -2107,14 +2107,6 @@ static bool d3d9_hlsl_load_program_ex(
    return true;
 }
 
-static bool d3d9_hlsl_load_program(
-      LPDIRECT3DDEVICE9 dev,
-      struct shader_pass *pass,
-      const char *prog)
-{
-   return d3d9_hlsl_load_program_ex(dev, pass, prog, NULL);
-}
-
 static void hlsl_d3d9_renderchain_set_shader_params(
       d3d9_renderchain_t *chain,
       LPDIRECT3DDEVICE9 dev,
