@@ -3414,7 +3414,6 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
 {
    /* Known structs to skip */
    static const char *skip_names[] = {
-      "input", "orig", "prev", "previous", "in_vertex", "out_vertex", NULL
    };
    const char *p = source;
    int texcoord_counter = 2;
@@ -3454,17 +3453,31 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
                {
                   const char *cb = ob + 1;
                   int d = 1;
-                  bool all_no_sem = true, has_sampler = false, any_mem = false;
+                  bool any_no_sem = false, has_sampler = false, any_mem = false;
                   while (*cb && d > 0)
                   {
                      if (*cb == '{') d++;
                      else if (*cb == '}') d--;
-                     else if (*cb == ':' && d == 1) all_no_sem = false;
                      else if (d == 1 && strncmp(cb, "sampler", 7) == 0) has_sampler = true;
-                     else if (*cb == ';' && d == 1) any_mem = true;
+                     else if (*cb == ';' && d == 1)
+                     {
+                        any_mem = true;
+                        /* Check if this specific member has ':' */
+                        {
+                           const char *ms = cb - 1;
+                           bool mem_has_sem = false;
+                           while (ms > ob && *ms != ';' && *ms != '{')
+                           {
+                              if (*ms == ':') mem_has_sem = true;
+                              ms--;
+                           }
+                           if (!mem_has_sem)
+                              any_no_sem = true;
+                        }
+                     }
                      cb++;
                   }
-                  if (any_mem && all_no_sem && !has_sampler)
+                  if (any_mem && any_no_sem && !has_sampler)
                      any_qualify = true;
                }
             }
@@ -3517,18 +3530,31 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
                {
                   const char *cb = ob + 1;
                   int d = 1;
-                  bool all_no_sem = true, has_sampler = false, any_mem = false;
+                  bool any_no_sem = false, has_sampler = false, any_mem = false;
                   while (*cb && d > 0)
                   {
                      if (*cb == '{') d++;
                      else if (*cb == '}') d--;
-                     else if (*cb == ':' && d == 1) all_no_sem = false;
                      else if (d == 1 && strncmp(cb, "sampler", 7) == 0) has_sampler = true;
-                     else if (*cb == ';' && d == 1) any_mem = true;
+                     else if (*cb == ';' && d == 1)
+                     {
+                        any_mem = true;
+                        {
+                           const char *ms = cb - 1;
+                           bool mem_has_sem = false;
+                           while (ms > ob && *ms != ';' && *ms != '{')
+                           {
+                              if (*ms == ':') mem_has_sem = true;
+                              ms--;
+                           }
+                           if (!mem_has_sem)
+                              any_no_sem = true;
+                        }
+                     }
                      cb++;
                   }
 
-                  if (any_mem && all_no_sem && !has_sampler)
+                  if (any_mem && any_no_sem && !has_sampler)
                   {
                      /* Copy from p to ob (inclusive of '{') */
                      {
@@ -3539,20 +3565,34 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
                         opos += len;
                      }
 
-                     /* Copy struct body, inserting TEXCOORD before each ';' */
+                     /* Copy struct body, inserting TEXCOORD only before
+                      * ';' on members that don't already have ':' */
                      {
                         const char *mp = ob + 1;
-                        while (mp < cb - 1) /* cb-1 is '}' */
+                        while (mp < cb - 1)
                         {
                            if (*mp == ';')
                            {
-                              char sem[32];
-                              size_t sl = snprintf(sem, sizeof(sem),
-                                    " : TEXCOORD%d", texcoord_counter++);
-                              while (opos + sl + 2 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
-                              memcpy(out + opos, sem, sl);
-                              opos += sl;
+                              /* Check if this member already has ':' */
+                              bool has_colon = false;
+                              {
+                                 size_t bi = opos;
+                                 while (bi > 0 && out[bi-1] != ';' && out[bi-1] != '{')
+                                 {
+                                    if (out[bi-1] == ':') has_colon = true;
+                                    bi--;
+                                 }
+                              }
+                              if (!has_colon)
+                              {
+                                 char sem[32];
+                                 size_t sl = snprintf(sem, sizeof(sem),
+                                       " : TEXCOORD%d", texcoord_counter++);
+                                 while (opos + sl + 2 >= cap)
+                                 { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                                 memcpy(out + opos, sem, sl);
+                                 opos += sl;
+                              }
                            }
                            while (opos + 2 >= cap)
                            { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
