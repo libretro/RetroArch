@@ -653,7 +653,7 @@ static INT32 gfx_display_prim_to_d3d9_cg_enum(
    {
       case GFX_DISPLAY_PRIM_TRIANGLES:
       case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-         return D3DPT_COMM_TRIANGLESTRIP;
+         return D3DPT_TRIANGLESTRIP;
       case GFX_DISPLAY_PRIM_NONE:
       default:
          break;
@@ -789,15 +789,15 @@ static void gfx_display_d3d9_cg_bind_texture(gfx_display_ctx_draw_t *draw,
       IDirect3DDevice9_SetTexture(dev, 0, NULL);
 
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+         0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+         0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+         0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+         0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
    IDirect3DDevice9_SetSamplerState(dev, 0,
-         D3DSAMP_MIPFILTER, D3DTEXF_COMM_LINEAR);
+         D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
 }
 
 static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
@@ -834,7 +834,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
             cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
             cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
 
-            IDirect3DDevice9_DrawPrimitive(dev, D3DPT_COMM_TRIANGLESTRIP,
+            IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                   0, draw->coords->vertices - 2);
          }
 
@@ -949,7 +949,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
       gfx_display_d3d9_cg_bind_texture(draw, d3d);
 
-      IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_COMM_TRIANGLESTRIP,
+      IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_TRIANGLESTRIP,
             2, quad, sizeof(Vertex));
 
       /* DrawPrimitiveUP unbinds the stream source, re-bind it */
@@ -1666,13 +1666,13 @@ static void d3d9_cg_font_render_msg(
                      IDirect3DDevice9_SetTexture(d3d->dev, 0,
                            (IDirect3DBaseTexture9*)font->texture);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+                           0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+                           0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
                      IDirect3DDevice9_DrawPrimitiveUP(d3d->dev,
                            D3DPT_TRIANGLELIST,
@@ -1780,13 +1780,13 @@ static void d3d9_cg_font_render_msg(
                      IDirect3DDevice9_SetTexture(d3d->dev, 0,
                            (IDirect3DBaseTexture9*)font->texture);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+                           0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+                           0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
                      IDirect3DDevice9_DrawPrimitiveUP(d3d->dev,
                            D3DPT_TRIANGLELIST,
@@ -4105,15 +4105,15 @@ static void d3d9_cg_overlay_render(
    IDirect3DDevice9_SetTexture(dev, 0,
          (IDirect3DBaseTexture9*)overlay->tex);
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+         0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+         0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
    IDirect3DDevice9_SetSamplerState(dev,
          0, D3DSAMP_MINFILTER, force_linear
-         ? D3DTEXF_COMM_LINEAR : D3DTEXF_POINT);
+         ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    IDirect3DDevice9_SetSamplerState(dev,
          0, D3DSAMP_MAGFILTER, force_linear
-         ? D3DTEXF_COMM_LINEAR : D3DTEXF_POINT);
+         ? D3DTEXF_LINEAR : D3DTEXF_POINT);
 
    IDirect3DDevice9_SetVertexDeclaration(dev,
          (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
@@ -4132,7 +4132,7 @@ static void d3d9_cg_overlay_render(
 
    IDirect3DDevice9_BeginScene(dev);
    IDirect3DDevice9_DrawPrimitiveUP(dev,
-         D3DPT_COMM_TRIANGLESTRIP, 2,
+         D3DPT_TRIANGLESTRIP, 2,
          quad, sizeof(Vertex));
    IDirect3DDevice9_EndScene(dev);
 

@@ -615,7 +615,7 @@ static INT32 gfx_display_prim_to_d3d8_enum(
    {
       case GFX_DISPLAY_PRIM_TRIANGLES:
       case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-         return D3DPT_COMM_TRIANGLESTRIP;
+         return D3DPT_TRIANGLESTRIP;
       case GFX_DISPLAY_PRIM_NONE:
       default:
          break;
@@ -757,13 +757,13 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       IDirect3DDevice8_SetTexture(dev, 0,
             (IDirect3DBaseTexture8*)draw->texture);
       IDirect3DDevice8_SetTextureStageState(dev, 0,
-            (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+            (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
       IDirect3DDevice8_SetTextureStageState(dev, 0,
-            (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+            (D3DTEXTURESTAGESTATETYPE)D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
       IDirect3DDevice8_SetTextureStageState(dev, 0,
-            (D3DTEXTURESTAGESTATETYPE)D3DTSS_MINFILTER, D3DTEXF_COMM_LINEAR);
+            (D3DTEXTURESTAGESTATETYPE)D3DTSS_MINFILTER, D3DTEXF_LINEAR);
       IDirect3DDevice8_SetTextureStageState(dev, 0,
-            (D3DTEXTURESTAGESTATETYPE)D3DTSS_MAGFILTER, D3DTEXF_COMM_LINEAR);
+            (D3DTEXTURESTAGESTATETYPE)D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
    }
 
    type  = gfx_display_prim_to_d3d8_enum(draw->prim_type);

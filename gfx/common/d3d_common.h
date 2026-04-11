@@ -59,10 +59,6 @@ typedef struct Vertex
    float u, v;
 } Vertex;
 
-#define D3DTADDRESS_COMM_CLAMP           3
-#define D3DTEXF_COMM_LINEAR              2
-#define D3DPT_COMM_TRIANGLESTRIP         5
-
 int32_t d3d_translate_filter(unsigned type);
 
 void d3d_input_driver(const char* input_name,

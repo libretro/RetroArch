@@ -907,7 +907,7 @@ static INT32 gfx_display_prim_to_d3d9_hlsl_enum(
    {
       case GFX_DISPLAY_PRIM_TRIANGLES:
       case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-         return D3DPT_COMM_TRIANGLESTRIP;
+         return D3DPT_TRIANGLESTRIP;
       case GFX_DISPLAY_PRIM_NONE:
       default:
          break;
@@ -952,15 +952,15 @@ static void gfx_display_d3d9_bind_texture(gfx_display_ctx_draw_t *draw,
       IDirect3DDevice9_SetTexture(dev, 0, NULL);
 
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+         0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+         0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+         0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
    IDirect3DDevice9_SetSamplerState(dev,
-         0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+         0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
    IDirect3DDevice9_SetSamplerState(dev, 0,
-         D3DSAMP_MIPFILTER, D3DTEXF_COMM_LINEAR);
+         D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
 }
 
 static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
@@ -1001,7 +1001,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
 
             IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
 
-            IDirect3DDevice9_DrawPrimitive(dev, D3DPT_COMM_TRIANGLESTRIP,
+            IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                   0, draw->coords->vertices - 2);
          }
 
@@ -1115,7 +1115,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
 
       gfx_display_d3d9_bind_texture(draw, d3d);
 
-      IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_COMM_TRIANGLESTRIP,
+      IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_TRIANGLESTRIP,
             2, quad, sizeof(Vertex));
 
       /* DrawPrimitiveUP unbinds the stream source, re-bind it */
@@ -1818,13 +1818,13 @@ static void d3d9_font_render_msg(
                      IDirect3DDevice9_SetTexture(d3d->dev, 0,
                            (IDirect3DBaseTexture9*)font->texture);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+                           0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+                           0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
                      IDirect3DDevice9_DrawPrimitiveUP(d3d->dev,
                            D3DPT_TRIANGLELIST,
@@ -1906,13 +1906,13 @@ static void d3d9_font_render_msg(
                      IDirect3DDevice9_SetTexture(d3d->dev, 0,
                            (IDirect3DBaseTexture9*)font->texture);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+                           0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+                           0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+                           0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
                      IDirect3DDevice9_SetSamplerState(d3d->dev,
-                           0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+                           0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
                      IDirect3DDevice9_DrawPrimitiveUP(d3d->dev,
                            D3DPT_TRIANGLELIST,
