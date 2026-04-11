@@ -1661,7 +1661,14 @@ endif
 
 endif
 
-ifeq ($(HAVE_SDL2), 1)
+ifeq ($(HAVE_SDL3), 1)
+   SDL3_CFLAGS = $(shell pkg-config sdl3 --cflags)
+	SDL3_LIBS = $(shell pkg-config sdl3 --libs)
+   DEF_FLAGS += $(SDL3_CFLAGS)
+   LIBS += $(SDL3_LIBS)
+	DEFINES += -DHAVE_SDL3
+   OBJ += input/drivers_joypad/sdl3_joypad.o
+else ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
 	  gfx/common/sdl2_common.o

@@ -442,6 +442,7 @@
 		05C5D58220E3DD0900654EE4 /* input_autodetect_builtin.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_autodetect_builtin.c; sourceTree = "<group>"; };
 		05C5D58320E3DD0900654EE4 /* input_keymaps.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_keymaps.c; sourceTree = "<group>"; };
 		05C5D58720E3DD0900654EE4 /* sdl_joypad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sdl_joypad.c; sourceTree = "<group>"; };
+		05C5D58720E3DD0900654EE4 /* sdl3_joypad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sdl3_joypad.c; sourceTree = "<group>"; };
 		05C5D58D20E3DD0900654EE4 /* mfi_joypad.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = mfi_joypad.m; sourceTree = "<group>"; };
 		05C5D59820E3DD0A00654EE4 /* hid_joypad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hid_joypad.c; sourceTree = "<group>"; };
 		05C5D5A320E3DD0A00654EE4 /* input_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_driver.c; sourceTree = "<group>"; };
