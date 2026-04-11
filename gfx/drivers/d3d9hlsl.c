@@ -3315,6 +3315,8 @@ static char *d3d9_hlsl_preprocess_includes(
                         sizeof(inc_path));
 
                   inc_src = d3d9_hlsl_read_file(inc_path, NULL);
+                  if (!inc_src)
+                     RARCH_WARN("[D3D9 HLSL] Could not open include: %s\n", inc_path);
                   if (inc_src)
                   {
                      char inc_dir[PATH_MAX_LENGTH];
@@ -3622,6 +3624,264 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
    }
 }
 
+/* Decompose sampler members out of structs for HLSL SM3.0 compatibility.
+ *
+ * HLSL SM3.0 doesn't allow samplers to be members of compound types.
+ * This pass:
+ *  1. Removes 'sampler2D _texture;' lines from struct bodies
+ *  2. For each 'uniform <structtype> VARNAME;', emits a standalone
+ *     'sampler2D VARNAME__texture;' declaration
+ *  3. Replaces 'VARNAME._texture' with 'VARNAME__texture' everywhere
+ *
+ * Returns a malloc'd modified copy, or NULL if no changes needed. */
+static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
+{
+   /* Collect struct names that contain sampler members */
+   const char *sampler_structs[16];
+   size_t sampler_struct_lens[16];
+   unsigned sampler_struct_count = 0;
+
+   /* Collect instance variable names of those structs */
+   const char *instance_names[32];
+   size_t instance_name_lens[32];
+   unsigned instance_count = 0;
+
+   size_t src_len, cap, opos;
+   char *out;
+   const char *p;
+   bool modified = false;
+
+   /* Pass 1: find structs with sampler members */
+   {
+      const char *s = source;
+      while ((s = strstr(s, "struct")) != NULL)
+      {
+         if ((s == source || !d3d9_hlsl_is_ident_char(s[-1]))
+               && !d3d9_hlsl_is_ident_char(s[6]))
+         {
+            const char *nm = s + 6;
+            const char *nm_end;
+            while (*nm == ' ' || *nm == '\t' || *nm == '\n' || *nm == '\r') nm++;
+            nm_end = nm;
+            while (d3d9_hlsl_is_ident_char(*nm_end)) nm_end++;
+
+            if (nm_end > nm)
+            {
+               /* Find struct body */
+               const char *ob = nm_end;
+               while (*ob && *ob != '{' && *ob != ';') ob++;
+               if (*ob == '{')
+               {
+                  const char *cb = ob + 1;
+                  int d = 1;
+                  bool has_sampler = false;
+                  while (*cb && d > 0)
+                  {
+                     if (*cb == '{') d++;
+                     else if (*cb == '}') d--;
+                     else if (d == 1 && strncmp(cb, "sampler", 7) == 0)
+                        has_sampler = true;
+                     cb++;
+                  }
+                  if (has_sampler && sampler_struct_count < 16)
+                  {
+                     sampler_structs[sampler_struct_count] = nm;
+                     sampler_struct_lens[sampler_struct_count] = (size_t)(nm_end - nm);
+                     sampler_struct_count++;
+                  }
+               }
+            }
+         }
+         s++;
+      }
+   }
+
+   if (sampler_struct_count == 0)
+      return NULL;
+
+   /* Pass 2: find instances of sampler-containing structs
+    * Pattern: 'uniform <structname> VARNAME;' or just '<structname> VARNAME;' at global scope */
+   {
+      const char *s = source;
+      unsigned si;
+      while (*s)
+      {
+         for (si = 0; si < sampler_struct_count; si++)
+         {
+            size_t slen = sampler_struct_lens[si];
+            if (strncmp(s, sampler_structs[si], slen) == 0
+                  && !d3d9_hlsl_is_ident_char(s[slen])
+                  && (s == source || !d3d9_hlsl_is_ident_char(s[-1])
+                     || (s >= source + 8
+                        && strncmp(s - 8, "uniform ", 8) == 0)))
+            {
+               /* Find instance name after struct type */
+               const char *vn = s + slen;
+               const char *vn_end;
+               while (*vn == ' ' || *vn == '\t') vn++;
+               vn_end = vn;
+               while (d3d9_hlsl_is_ident_char(*vn_end)) vn_end++;
+
+               if (vn_end > vn && instance_count < 32)
+               {
+                  instance_names[instance_count] = vn;
+                  instance_name_lens[instance_count] = (size_t)(vn_end - vn);
+                  instance_count++;
+               }
+            }
+         }
+         s++;
+      }
+   }
+
+   /* Pass 3: rewrite source */
+   src_len = strlen(source);
+   cap = src_len + instance_count * 64 + 1024;
+   opos = 0;
+   out = (char*)malloc(cap);
+   if (!out) return NULL;
+
+   p = source;
+   while (*p)
+   {
+      /* Remove sampler member lines from sampler-containing structs.
+       * Look for lines containing 'sampler' followed by ';' */
+      {
+         bool skip_sampler_line = false;
+         if (strncmp(p, "sampler", 7) == 0 || (p > source && p[-1] != '\n'
+               && strstr(p, "sampler") == p))
+         {
+            /* Actually, let's detect sampler lines more carefully:
+             * at the start of a line (after whitespace), check if we see
+             * 'sampler2D' followed by '_texture' and ';' */
+         }
+
+         /* Simpler approach: detect 'sampler2D _texture;' or 'sampler2D _texture ;'
+          * as a standalone line (with optional leading whitespace) */
+         {
+            const char *line_start = p;
+            /* Check if we're at line start */
+            if (p == source || p[-1] == '\n')
+            {
+               const char *ls = p;
+               while (*ls == ' ' || *ls == '\t') ls++;
+               if (strncmp(ls, "sampler2D", 9) == 0
+                     && !d3d9_hlsl_is_ident_char(ls[9]))
+               {
+                  const char *after_type = ls + 9;
+                  while (*after_type == ' ' || *after_type == '\t') after_type++;
+                  if (strncmp(after_type, "_texture", 8) == 0
+                        && !d3d9_hlsl_is_ident_char(after_type[8]))
+                  {
+                     /* Check this is inside a struct (find ';' on this line) */
+                     const char *semi = after_type + 8;
+                     while (*semi == ' ' || *semi == '\t') semi++;
+                     if (*semi == ';')
+                     {
+                        /* Check if we're inside a struct body by looking
+                         * for a preceding '{' without a matching '}' */
+                        /* Simple heuristic: skip this line */
+                        const char *nl = strchr(semi, '\n');
+                        if (nl) p = nl + 1; else p = semi + 1 + strlen(semi + 1);
+                        modified = true;
+                        continue;
+                     }
+                  }
+               }
+            }
+         }
+      }
+
+      /* After 'uniform <structname> VARNAME;', add 'sampler2D VARNAME__texture;' */
+      {
+         unsigned ii;
+         for (ii = 0; ii < instance_count; ii++)
+         {
+            size_t ilen = instance_name_lens[ii];
+            if (strncmp(p, instance_names[ii], ilen) == 0
+                  && !d3d9_hlsl_is_ident_char(p[ilen])
+                  && (p == source || !d3d9_hlsl_is_ident_char(p[-1])))
+            {
+               /* Check if followed by ';' (this is the declaration) */
+               const char *after = p + ilen;
+               while (*after == ' ' || *after == '\t') after++;
+               if (*after == ';')
+               {
+                  /* Copy 'VARNAME;' then add sampler declaration */
+                  size_t chunk = (size_t)(after + 1 - p);
+                  while (opos + chunk + ilen + 40 >= cap)
+                  { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                  memcpy(out + opos, p, chunk);
+                  opos += chunk;
+
+                  /* Add newline + sampler declaration */
+                  opos += snprintf(out + opos, cap - opos,
+                        "\nsampler2D %.*s__texture;",
+                        (int)ilen, instance_names[ii]);
+
+                  p = after + 1;
+                  modified = true;
+                  continue;
+               }
+            }
+         }
+      }
+
+      /* Replace ._texture with __texture globally.
+       * Any struct member access on _texture should be decomposed
+       * since _texture was our renamed sampler member.
+       * Special case: in #define macros with ## token pasting,
+       * use ##__texture to preserve correct token pasting. */
+      if (*p == '.' && strncmp(p + 1, "_texture", 8) == 0
+            && !d3d9_hlsl_is_ident_char(p[9]))
+      {
+         /* Check if preceded by ## (token paste operator) */
+         bool has_paste = (opos >= 2 && out[opos-1] == '#' && out[opos-2] == '#');
+         /* Also check for ##<identifier>. before ._texture:
+          * e.g. ##c._texture — the ## was before the identifier, not before the dot */
+         if (!has_paste && opos >= 1 && d3d9_hlsl_is_ident_char(out[opos-1]))
+         {
+            /* Scan back past the identifier to see if ## precedes it */
+            size_t bi = opos - 1;
+            while (bi > 0 && d3d9_hlsl_is_ident_char(out[bi-1])) bi--;
+            if (bi >= 2 && out[bi-1] == '#' && out[bi-2] == '#')
+               has_paste = true;
+         }
+
+         while (opos + 14 >= cap)
+         { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+
+         if (has_paste)
+         {
+            memcpy(out + opos, "##__texture", 11);
+            opos += 11;
+         }
+         else
+         {
+            memcpy(out + opos, "__texture", 9);
+            opos += 9;
+         }
+         p += 9; /* skip ._texture */
+         modified = true;
+         continue;
+      }
+
+      /* Regular char */
+      while (opos + 2 >= cap)
+      { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+      out[opos++] = *p++;
+   }
+
+   if (!modified)
+   {
+      free(out);
+      return NULL;
+   }
+
+   out[opos] = '\0';
+   return out;
+}
+
 static char *d3d9_hlsl_fixup_cg_source(const char *source)
 {
    size_t src_len     = strlen(source);
@@ -3853,8 +4113,28 @@ static char *d3d9_hlsl_fixup_cg_source(const char *source)
                   /* Regular #define — copy verbatim */
                   {
                      size_t ll = (size_t)(eol - p);
-                     if (!d3d9_hlsl_buf_append(&out, &pos, &cap, p, ll))
-                        goto fail;
+                     /* Copy #define line, but apply texture -> _texture rename */
+                     {
+                        const char *dp = p;
+                        const char *de = p + ll;
+                        while (dp < de)
+                        {
+                           if (strncmp(dp, "texture", 7) == 0
+                                 && (dp == p || !d3d9_hlsl_is_ident_char(dp[-1]))
+                                 && !d3d9_hlsl_is_ident_char(dp[7]))
+                           {
+                              if (!d3d9_hlsl_buf_append(&out, &pos, &cap, "_texture", 8))
+                                 goto fail;
+                              dp += 7;
+                           }
+                           else
+                           {
+                              if (!d3d9_hlsl_buf_append(&out, &pos, &cap, dp, 1))
+                                 goto fail;
+                              dp++;
+                           }
+                        }
+                     }
                      p = eol;
                      continue;
                   }
@@ -4138,7 +4418,7 @@ struct_ctor_done:
        * We detect: inside parens, after '(' or ',', skip whitespace,
        * if we see 'uniform' consume it, then look for '<ident> <ident>'
        * NOT followed by ':'. */
-      if (paren_depth > 0)
+      if (paren_depth > 0 && brace_depth == 0)
       {
          /* Check if we're at the start of a parameter (after '(' or ',') */
          bool at_param_start = false;
@@ -4500,6 +4780,19 @@ static bool d3d9_hlsl_load_program_from_file_ex(
       {
          RARCH_ERR("[D3D9 HLSL] Source fixup failed: %s\n", prog);
          return false;
+      }
+   }
+
+   /* Decompose sampler members out of structs.
+    * HLSL SM3.0 doesn't allow samplers in compound types.
+    * This removes 'sampler2D _texture;' from struct bodies and
+    * creates standalone sampler declarations for each instance. */
+   {
+      char *decomposed = d3d9_hlsl_decompose_struct_samplers(resolved);
+      if (decomposed)
+      {
+         free(resolved);
+         resolved = decomposed;
       }
    }
 
