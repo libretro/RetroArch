@@ -6174,42 +6174,108 @@ static bool d3d9_hlsl_load_program_from_file_ex(
       {
          const char *name = sampler_names[si];
          size_t nlen = strlen(name);
-         /* Check if this name is referenced in the source outside of #define lines */
-         const char *ref = resolved;
+         /* Check if this sampler is actually used in the source.
+          * Since ORIG__texture only appears in #define lines (as a macro
+          * replacement target), we need to check for uses of the MACROS
+          * that reference it: ORIG_texture, ORIG_Sample, ORIG_SamplePoint,
+          * or direct uses of ORIG__texture in actual code (not #define). */
          bool found_real_ref = false;
-         while ((ref = strstr(ref, name)) != NULL)
+
+         /* Check for direct usage outside #define lines */
          {
-            /* Verify it's a whole-word match */
-            if ((ref > resolved && d3d9_hlsl_is_ident_char(ref[-1]))
-                  || d3d9_hlsl_is_ident_char(ref[nlen]))
+            const char *ref = resolved;
+            while ((ref = strstr(ref, name)) != NULL)
             {
+               /* Verify whole-word */
+               if ((ref > resolved && d3d9_hlsl_is_ident_char(ref[-1]))
+                     || d3d9_hlsl_is_ident_char(ref[nlen]))
+               { ref++; continue; }
+               /* Check not inside a #define line */
+               {
+                  const char *ls = ref;
+                  bool in_define = false;
+                  while (ls > resolved && ls[-1] != '\n') ls--;
+                  while (*ls == ' ' || *ls == '\t') ls++;
+                  if (*ls == '#')
+                  {
+                     const char *dir = ls + 1;
+                     while (*dir == ' ' || *dir == '\t') dir++;
+                     if (strncmp(dir, "define", 6) == 0)
+                        in_define = true;
+                  }
+                  if (!in_define)
+                  { found_real_ref = true; break; }
+               }
                ref++;
-               continue;
             }
-            /* Check this isn't inside a #define line */
-            {
-               const char *ls = ref;
-               bool in_define = false;
-               while (ls > resolved && ls[-1] != '\n')
-                  ls--;
-               /* Skip whitespace at line start */
-               while (*ls == ' ' || *ls == '\t') ls++;
-               if (*ls == '#')
-               {
-                  const char *dir = ls + 1;
-                  while (*dir == ' ' || *dir == '\t') dir++;
-                  if (strncmp(dir, "define", 6) == 0)
-                     in_define = true;
-               }
-               if (in_define)
-               {
-                  ref++;
-                  continue;
-               }
-            }
-            found_real_ref = true;
-            break;
          }
+
+         /* Also check for usage of macros that expand to this sampler.
+          * E.g., ORIG_texture expands to ORIG__texture, and ORIG_Sample
+          * uses ORIG__texture internally via tex2D(ORIG, ...).
+          * Check for the prefix (e.g., "ORIG" for "ORIG__texture") used
+          * in function parameters like 'in orig ORIG' or calls like
+          * ORIG_Sample, ORIG_SamplePoint, ORIG_texture. */
+         if (!found_real_ref)
+         {
+            /* Extract prefix: everything before "__texture" */
+            const char *suffix = strstr(name, "__texture");
+            if (suffix)
+            {
+               size_t prefix_len = (size_t)(suffix - name);
+               char usage_pattern[64];
+               /* Check for 'ORIG_Sample(' or 'ORIG_SamplePoint(' or
+                * 'ORIG_texture' used as an identifier in actual code */
+               snprintf(usage_pattern, sizeof(usage_pattern),
+                     "%.*s_Sample", (int)prefix_len, name);
+               if (strstr(resolved, usage_pattern))
+                  found_real_ref = true;
+
+               if (!found_real_ref)
+               {
+                  snprintf(usage_pattern, sizeof(usage_pattern),
+                        "%.*s_texture", (int)prefix_len, name);
+                  /* Check this isn't only in #define lines */
+                  {
+                     const char *ref = resolved;
+                     while ((ref = strstr(ref, usage_pattern)) != NULL)
+                     {
+                        const char *ls = ref;
+                        bool in_define = false;
+                        while (ls > resolved && ls[-1] != '\n') ls--;
+                        while (*ls == ' ' || *ls == '\t') ls++;
+                        if (*ls == '#')
+                        {
+                           const char *dir = ls + 1;
+                           while (*dir == ' ' || *dir == '\t') dir++;
+                           if (strncmp(dir, "define", 6) == 0)
+                              in_define = true;
+                        }
+                        if (!in_define)
+                        { found_real_ref = true; break; }
+                        ref++;
+                     }
+                  }
+               }
+
+               /* Check for 'in orig ORIG' or 'uniform orig ORIG' pattern
+                * in function signatures — struct parameter passing */
+               if (!found_real_ref)
+               {
+                  char struct_pattern[64];
+                  /* For ORIG__texture, check for 'orig ORIG' */
+                  if (prefix_len == 4 && strncmp(name, "ORIG", 4) == 0)
+                     snprintf(struct_pattern, sizeof(struct_pattern), "orig ORIG");
+                  else
+                     snprintf(struct_pattern, sizeof(struct_pattern),
+                           "%.*s %.*s", (int)prefix_len, name,
+                           (int)prefix_len, name);
+                  if (strstr(resolved, struct_pattern))
+                     found_real_ref = true;
+               }
+            }
+         }
+
          if (!found_real_ref)
             continue;
          /* Check if it's already declared as sampler2D */
