@@ -4010,6 +4010,13 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
             {
                const char *ls = p;
                while (*ls == ' ' || *ls == '\t') ls++;
+               /* Skip optional 'uniform' keyword */
+               if (strncmp(ls, "uniform", 7) == 0
+                     && !d3d9_hlsl_is_ident_char(ls[7]))
+               {
+                  ls += 7;
+                  while (*ls == ' ' || *ls == '\t') ls++;
+               }
                if (strncmp(ls, "sampler2D", 9) == 0
                      && !d3d9_hlsl_is_ident_char(ls[9]))
                {
@@ -4021,6 +4028,12 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
                      /* Check this is inside a struct (find ';' on this line) */
                      const char *semi = after_type + 8;
                      while (*semi == ' ' || *semi == '\t') semi++;
+                     /* Skip optional ': SEMANTIC' annotation */
+                     if (*semi == ':')
+                     {
+                        semi++;
+                        while (*semi && *semi != ';' && *semi != '\n') semi++;
+                     }
                      if (*semi == ';')
                      {
                         /* Check if we're inside a struct body by looking
