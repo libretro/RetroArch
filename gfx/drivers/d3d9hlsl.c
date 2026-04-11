@@ -6174,14 +6174,43 @@ static bool d3d9_hlsl_load_program_from_file_ex(
       {
          const char *name = sampler_names[si];
          size_t nlen = strlen(name);
-         /* Check if this name is referenced in the source */
-         const char *ref = strstr(resolved, name);
-         if (!ref)
-            continue;
-         /* Verify it's a whole-word match */
-         if (ref > resolved && d3d9_hlsl_is_ident_char(ref[-1]))
-            continue;
-         if (d3d9_hlsl_is_ident_char(ref[nlen]))
+         /* Check if this name is referenced in the source outside of #define lines */
+         const char *ref = resolved;
+         bool found_real_ref = false;
+         while ((ref = strstr(ref, name)) != NULL)
+         {
+            /* Verify it's a whole-word match */
+            if ((ref > resolved && d3d9_hlsl_is_ident_char(ref[-1]))
+                  || d3d9_hlsl_is_ident_char(ref[nlen]))
+            {
+               ref++;
+               continue;
+            }
+            /* Check this isn't inside a #define line */
+            {
+               const char *ls = ref;
+               bool in_define = false;
+               while (ls > resolved && ls[-1] != '\n')
+                  ls--;
+               /* Skip whitespace at line start */
+               while (*ls == ' ' || *ls == '\t') ls++;
+               if (*ls == '#')
+               {
+                  const char *dir = ls + 1;
+                  while (*dir == ' ' || *dir == '\t') dir++;
+                  if (strncmp(dir, "define", 6) == 0)
+                     in_define = true;
+               }
+               if (in_define)
+               {
+                  ref++;
+                  continue;
+               }
+            }
+            found_real_ref = true;
+            break;
+         }
+         if (!found_real_ref)
             continue;
          /* Check if it's already declared as sampler2D */
          {
