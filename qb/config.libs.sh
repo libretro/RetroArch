@@ -407,15 +407,9 @@ check_lib '' DSOUND -ldsound
 
 check_enabled DINPUT XINPUT xinput 'Dinput is' true
 
-if [ "$HAVE_D3DX" != 'no' ]; then
-   check_lib '' D3DX8 -ld3dx8
-   check_lib '' D3DX9 -ld3dx9
-fi
-
 check_platform Win32 D3D10 'Direct3D 10 is' true
 check_platform Win32 D3D11 'Direct3D 11 is' true
 check_platform Win32 D3D12 'Direct3D 12 is' true
-check_platform Win32 D3DX 'Direct3DX is' true
 check_platform Win32 WASAPI 'WASAPI is' true
 check_platform Win32 XAUDIO 'XAudio is' true
 check_platform Win32 WINMM 'WinMM is' true

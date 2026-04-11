@@ -570,7 +570,7 @@ static INLINE void d3d9_init_renderchain(d3d9_renderchain_t *chain)
 static gfx_ctx_driver_t d3d9_hlsl_fake_context;
 
 /* =====================================================================
- * SM3.0 CTAB (Constant Table) parser — no D3DX dependency
+ * SM3.0 CTAB (Constant Table) parser
  *
  * Parses the CTAB embedded in compiled SM3.0 shader bytecode to find
  * hardware register indices by uniform name.
