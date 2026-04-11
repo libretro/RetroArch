@@ -3517,8 +3517,14 @@ static bool d3d9_hlsl_buf_append(char **buf, size_t *pos, size_t *cap,
  * Returns a malloc'd modified copy, or NULL if no changes needed. */
 static char *d3d9_hlsl_add_struct_semantics(const char *source)
 {
-   /* Known structs to skip */
+   /* Known structs to skip — these are uniform/input structs that
+    * must NOT get TEXCOORD semantics added to their members.
+    * 'input' is the Cg compat struct for video_size/texture_size/etc.
+    * 'in_vertex' is a dummy struct for the vertex input macro. */
    static const char *skip_names[] = {
+      "input",
+      "in_vertex",
+      NULL
    };
    const char *p = source;
    int texcoord_counter = 2;
@@ -4955,6 +4961,14 @@ typedef HRESULT (WINAPI *PFN_D3DPREPROCESS)(
 #define D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY (1 << 12)
 #endif
 
+#ifndef D3DCOMPILE_OPTIMIZATION_LEVEL3
+#define D3DCOMPILE_OPTIMIZATION_LEVEL3 (1 << 15)
+#endif
+
+#ifndef D3DCOMPILE_PREFER_FLOW_CONTROL
+#define D3DCOMPILE_PREFER_FLOW_CONTROL (1 << 10)
+#endif
+
 static PFN_D3DCOMPILE    d3d9_pCompile    = NULL;
 static PFN_D3DPREPROCESS d3d9_pPreprocess = NULL;
 static bool d3d9_compiler_tried           = false;
@@ -5042,6 +5056,37 @@ static bool d3d9_hlsl_compile_cg_compat(
 
       if (FAILED(hr))
       {
+         /* First attempt failed — retry with maximum optimization and
+          * flow-control preference.  Complex Cg shaders with many unrolled
+          * texture fetches (e.g. 29-tap FIR filters) can exceed SM3.0's
+          * temp register limit at default optimization.  Level 3 + flow
+          * control lets the compiler use loops and reduce register pressure. */
+         if (error_blob)
+         {
+            error_blob->lpVtbl->Release(error_blob);
+            error_blob = NULL;
+         }
+         if (*out_blob)
+         {
+            (*out_blob)->lpVtbl->Release(*out_blob);
+            *out_blob = NULL;
+         }
+
+         hr = d3d9_pCompile(
+               source, source_len,
+               source_name,
+               NULL, NULL,
+               entry, target,
+               D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY
+               | D3DCOMPILE_OPTIMIZATION_LEVEL3
+               | D3DCOMPILE_PREFER_FLOW_CONTROL,
+               0,
+               (void**)out_blob,
+               (void**)&error_blob);
+      }
+
+      if (FAILED(hr))
+      {
          if (error_blob)
          {
             const char *err_str = (const char*)error_blob->lpVtbl->GetBufferPointer(error_blob);
@@ -5055,6 +5100,278 @@ static bool d3d9_hlsl_compile_cg_compat(
          error_blob->lpVtbl->Release(error_blob);
       return true;
    }
+}
+
+/* Convert consecutively-invoked single-parameter macros into [loop] for
+ * loops.  Many Cg shaders unroll filter kernels via macros like:
+ *
+ *   #define macroloop(i) <body using i>
+ *   macroloop(0)
+ *   macroloop(1)
+ *   ...
+ *   macroloop(28)
+ *
+ * The Cg compiler handles this, but D3DCompile for SM3.0 often exceeds
+ * the 32-temp-register limit on the fully expanded code.  Converting
+ * back to a real loop lets the HLSL compiler emit loop instructions.
+ *
+ * Detection:
+ *  1. Find '#define NAME(PARAM) BODY' where BODY uses PARAM
+ *  2. Find a run of NAME(0) NAME(1) ... NAME(N) with N >= 4
+ *  3. Replace the run with '[loop] for (int PARAM = 0; PARAM <= N; PARAM++) { BODY }'
+ *  4. Comment out the original #define
+ *
+ * Returns a malloc'd modified copy, or NULL if no changes were made. */
+static char *d3d9_hlsl_convert_macro_loops(const char *source)
+{
+   /* Find #define candidates: single-param function-like macros */
+   const char *p;
+   char macro_name[128];
+   char macro_param[64];
+   const char *macro_body_start = NULL;
+   size_t macro_body_len = 0;
+   size_t macro_name_len = 0;
+   size_t macro_param_len = 0;
+   const char *macro_define_start = NULL;
+   const char *macro_define_end = NULL;
+
+   p = source;
+   while (*p)
+   {
+      /* Look for #define at start of line */
+      if ((p == source || p[-1] == '\n') && *p == '#')
+      {
+         const char *dir = p + 1;
+         while (*dir == ' ' || *dir == '\t') dir++;
+         if (strncmp(dir, "define", 6) == 0 && !d3d9_hlsl_is_ident_char(dir[6]))
+         {
+            const char *nm = dir + 6;
+            const char *nm_end, *pp, *pp_end, *body, *body_end;
+
+            while (*nm == ' ' || *nm == '\t') nm++;
+            nm_end = nm;
+            while (d3d9_hlsl_is_ident_char(*nm_end)) nm_end++;
+
+            /* Check for (param) */
+            if (*nm_end == '(' && nm_end > nm)
+            {
+               pp = nm_end + 1;
+               while (*pp == ' ' || *pp == '\t') pp++;
+               pp_end = pp;
+               while (d3d9_hlsl_is_ident_char(*pp_end)) pp_end++;
+               if (pp_end > pp && *pp_end == ')')
+               {
+                  /* Found #define NAME(PARAM) — get the body */
+                  body = pp_end + 1;
+                  while (*body == ' ' || *body == '\t') body++;
+
+                  /* Find end of body (handle line continuations) */
+                  body_end = body;
+                  while (*body_end)
+                  {
+                     if (*body_end == '\n')
+                     {
+                        if (body_end > body && body_end[-1] == '\\')
+                        { body_end++; continue; }
+                        break;
+                     }
+                     body_end++;
+                  }
+
+                  /* Check that PARAM appears in BODY */
+                  {
+                     size_t pl = (size_t)(pp_end - pp);
+                     const char *scan = body;
+                     bool found = false;
+                     while (scan < body_end - pl)
+                     {
+                        if (strncmp(scan, pp, pl) == 0
+                              && (scan == body || !d3d9_hlsl_is_ident_char(scan[-1]))
+                              && !d3d9_hlsl_is_ident_char(scan[pl]))
+                        { found = true; break; }
+                        scan++;
+                     }
+
+                     if (found && (size_t)(nm_end - nm) < sizeof(macro_name)
+                           && pl < sizeof(macro_param))
+                     {
+                        /* Now search for consecutive invocations:
+                         * NAME(0) NAME(1) ... NAME(N) */
+                        int max_seq = -1;
+                        const char *seq_start = NULL, *seq_end_ptr = NULL;
+                        const char *s = source;
+
+                        while (*s)
+                        {
+                           if (strncmp(s, nm, (size_t)(nm_end - nm)) == 0
+                                 && (s == source || !d3d9_hlsl_is_ident_char(s[-1]))
+                                 && s[(size_t)(nm_end - nm)] == '(')
+                           {
+                              /* Check if this starts a consecutive run from 0 */
+                              const char *call = s;
+                              const char *after_name = s + (size_t)(nm_end - nm);
+                              /* Parse the argument */
+                              if (after_name[0] == '(' && after_name[1] == '0'
+                                    && after_name[2] == ')')
+                              {
+                                 /* Found NAME(0) — scan forward for NAME(1), NAME(2)... */
+                                 int expected = 1;
+                                 const char *run_end = after_name + 3;
+                                 seq_start = s;
+
+                                 while (*run_end)
+                                 {
+                                    const char *next = run_end;
+                                    char num_buf[16];
+                                    int num_len;
+                                    while (*next == ' ' || *next == '\t'
+                                          || *next == '\n' || *next == '\r')
+                                       next++;
+                                    num_len = snprintf(num_buf, sizeof(num_buf),
+                                          "%d", expected);
+                                    if (strncmp(next, nm, (size_t)(nm_end - nm)) == 0
+                                          && next[(size_t)(nm_end - nm)] == '('
+                                          && strncmp(next + (size_t)(nm_end - nm) + 1,
+                                             num_buf, num_len) == 0
+                                          && next[(size_t)(nm_end - nm) + 1 + num_len] == ')')
+                                    {
+                                       run_end = next + (size_t)(nm_end - nm)
+                                          + 1 + num_len + 1;
+                                       expected++;
+                                    }
+                                    else
+                                       break;
+                                 }
+
+                                 if (expected > 4)
+                                 {
+                                    max_seq = expected - 1;
+                                    seq_end_ptr = run_end;
+                                    break; /* Use first run found */
+                                 }
+                              }
+                           }
+                           s++;
+                        }
+
+                        if (max_seq >= 4 && seq_start && seq_end_ptr)
+                        {
+                           /* Build the replacement loop */
+                           size_t src_len_full = strlen(source);
+                           size_t body_l = (size_t)(body_end - body);
+                           char *out;
+                           size_t cap, opos;
+                           size_t nml = (size_t)(nm_end - nm);
+
+                           memcpy(macro_name, nm, nml);
+                           macro_name[nml] = '\0';
+                           macro_name_len = nml;
+                           memcpy(macro_param, pp, (size_t)(pp_end - pp));
+                           macro_param[(size_t)(pp_end - pp)] = '\0';
+                           macro_param_len = (size_t)(pp_end - pp);
+                           macro_body_start = body;
+                           macro_body_len = body_l;
+                           macro_define_start = p;
+                           macro_define_end = body_end;
+                           if (*macro_define_end == '\n')
+                              macro_define_end++;
+
+                           cap = src_len_full + body_l + 256;
+                           out = (char*)malloc(cap);
+                           if (!out) return NULL;
+                           opos = 0;
+
+                           /* Copy everything before the #define, commenting it out */
+                           {
+                              size_t pre = (size_t)(macro_define_start - source);
+                              memcpy(out, source, pre);
+                              opos = pre;
+                           }
+
+                           /* Comment out the #define line */
+                           {
+                              const char *dl = "/* ";
+                              size_t dll = 3;
+                              size_t def_len = (size_t)(macro_define_end - macro_define_start);
+                              /* Strip any trailing newline from the define for the comment */
+                              size_t comment_len = def_len;
+                              while (comment_len > 0
+                                    && (macro_define_start[comment_len-1] == '\n'
+                                       || macro_define_start[comment_len-1] == '\r'))
+                                 comment_len--;
+                              while (opos + dll + comment_len + 10 >= cap)
+                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              memcpy(out + opos, dl, dll); opos += dll;
+                              memcpy(out + opos, macro_define_start, comment_len);
+                              opos += comment_len;
+                              memcpy(out + opos, " */\n", 4); opos += 4;
+                           }
+
+                           /* Copy between #define and the macro call run */
+                           {
+                              size_t mid = (size_t)(seq_start - macro_define_end);
+                              while (opos + mid + 1 >= cap)
+                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              memcpy(out + opos, macro_define_end, mid);
+                              opos += mid;
+                           }
+
+                           /* Emit the [loop] for */
+                           {
+                              char loop_header[256];
+                              size_t lh_len = snprintf(loop_header, sizeof(loop_header),
+                                    "[loop] for (int %s = 0; %s <= %d; %s++) {\n",
+                                    macro_param, macro_param, max_seq, macro_param);
+                              while (opos + lh_len + 1 >= cap)
+                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              memcpy(out + opos, loop_header, lh_len);
+                              opos += lh_len;
+                           }
+
+                           /* Emit the macro body — need to strip line continuations */
+                           {
+                              const char *bp_src = macro_body_start;
+                              while (bp_src < macro_body_start + macro_body_len)
+                              {
+                                 if (*bp_src == '\\' && bp_src + 1 < macro_body_start + macro_body_len
+                                       && bp_src[1] == '\n')
+                                 { bp_src += 2; continue; }
+                                 while (opos + 2 >= cap)
+                                 { cap *= 2; out = (char*)realloc(out, cap); }
+                                 out[opos++] = *bp_src++;
+                              }
+                           }
+
+                           /* Close the loop */
+                           {
+                              const char *cl = "\n}\n";
+                              while (opos + 4 >= cap)
+                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              memcpy(out + opos, cl, 3); opos += 3;
+                           }
+
+                           /* Copy everything after the macro call run */
+                           {
+                              size_t tail = src_len_full - (size_t)(seq_end_ptr - source);
+                              while (opos + tail + 1 >= cap)
+                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              memcpy(out + opos, seq_end_ptr, tail);
+                              opos += tail;
+                           }
+
+                           out[opos] = '\0';
+                           return out;
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+      p++;
+   }
+
+   return NULL; /* No changes */
 }
 
 /* Load a shader from file AND populate pass_data with CTAB info.
@@ -5120,6 +5437,32 @@ static bool d3d9_hlsl_load_program_from_file_ex(
          const char *pp = p + 17; /* skip "#pragma parameter" */
          const char *name_start, *name_end;
          size_t name_len;
+
+         /* Check that #pragma is at the start of a line (not commented out).
+          * Scan backwards to the start of the line and check for '//' */
+         {
+            const char *ls = p;
+            bool in_comment = false;
+            while (ls > resolved && ls[-1] != '\n')
+               ls--;
+            /* Check if there's a '//' between line start and #pragma */
+            {
+               const char *sc = ls;
+               while (sc < p)
+               {
+                  if (sc[0] == '/' && sc[1] == '/')
+                  { in_comment = true; break; }
+                  if (*sc != ' ' && *sc != '\t')
+                     break;
+                  sc++;
+               }
+            }
+            if (in_comment)
+            {
+               p++;
+               continue;
+            }
+         }
 
          /* Skip whitespace to get parameter name */
          while (*pp == ' ' || *pp == '\t') pp++;
@@ -5281,8 +5624,17 @@ static bool d3d9_hlsl_load_program_from_file_ex(
 
    src_len = strlen(resolved);
 
-   /* Debug: write preprocessed source */
+   /* Convert consecutively-invoked macros into [loop] for loops.
+    * This is critical for shaders with large unrolled filter kernels
+    * (e.g. 29-tap FIR) that exceed SM3.0's temp register limit. */
    {
+      char *looped = d3d9_hlsl_convert_macro_loops(resolved);
+      if (looped)
+      {
+         free(resolved);
+         resolved = looped;
+         src_len = strlen(resolved);
+      }
    }
 
    if (!d3d9_hlsl_compile_cg_compat(resolved, src_len, prog,
