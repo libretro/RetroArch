@@ -647,7 +647,9 @@ static int d3d9_hlsl_ctab_find_register(
 
                cname = (const char*)(hdr + name_offset);
 
-               if (string_is_equal(cname, name))
+               /* D3DCompile with backwards compat may prefix names with '$' */
+               if (string_is_equal(cname, name)
+                     || (cname[0] == '$' && string_is_equal(cname + 1, name)))
                {
                   if (out_regset)
                      *out_regset = (int)reg_set;
@@ -2114,6 +2116,54 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(
                (const D3DVERTEXELEMENT9*)decl, (IDirect3DVertexDeclaration9**)&pass->vertex_decl)));
 }
 
+static void d3d9_hlsl_ctab_dump(const DWORD *bytecode, size_t bytecode_dwords,
+      const char *label)
+{
+   size_t pos;
+   const DWORD CTAB_TAG = 0x42415443;
+   if (!bytecode || bytecode_dwords < 2) return;
+   for (pos = 1; pos < bytecode_dwords; )
+   {
+      DWORD token = bytecode[pos];
+      DWORD opcode = token & 0xFFFF;
+      if (opcode == 0xFFFF) break;
+      if (opcode == 0xFFFE)
+      {
+         DWORD comment_dwords = (token >> 16) & 0x7FFF;
+         if (pos + 1 + comment_dwords > bytecode_dwords) break;
+         if (comment_dwords >= 6 && bytecode[pos + 1] == CTAB_TAG)
+         {
+            const uint8_t *cs = (const uint8_t*)&bytecode[pos + 1];
+            size_t ctb = comment_dwords * sizeof(DWORD);
+            const uint8_t *hdr = cs + 4;
+            size_t ha = ctb - 4;
+            DWORD nc, cio, ci;
+            if (ha < 28) return;
+            nc = *(const DWORD*)(hdr + 12);
+            cio = *(const DWORD*)(hdr + 16);
+            RARCH_LOG("[D3D9 HLSL] CTAB %s (%u constants):\n", label, (unsigned)nc);
+            for (ci = 0; ci < nc; ci++)
+            {
+               size_t eo = cio + ci * 20;
+               if (eo + 20 > ha) break;
+               {
+                  const uint8_t *e = hdr + eo;
+                  DWORD no = *(const DWORD*)(e + 0);
+                  WORD rs = *(const WORD*)(e + 4);
+                  WORD ri = *(const WORD*)(e + 6);
+                  WORD rc = *(const WORD*)(e + 8);
+                  const char *cn = (no < ha) ? (const char*)(hdr + no) : "?";
+                  RARCH_LOG("  [%u] '%s' set=%u reg=c%u cnt=%u\n",
+                        ci, cn, (unsigned)rs, (unsigned)ri, (unsigned)rc);
+               }
+            }
+            return;
+         }
+         pos += 1 + comment_dwords; continue;
+      }
+      pos++;
+   }
+}
 static bool d3d9_hlsl_load_program_from_file_ex(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
