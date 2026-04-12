@@ -43,7 +43,6 @@
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../../ui/drivers/ui_win32.h"
 
 #include "../../uwp/uwp_func.h"
 
