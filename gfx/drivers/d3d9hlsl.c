@@ -2357,17 +2357,11 @@ static void hlsl_d3d9_renderchain_free(void *data)
       }
 
       shader_pass_vector_list_free(chain->chain.passes);
-
-      chain->chain.passes = NULL;
    }
 
    lut_info_vector_list_free(chain->chain.luts);
    unsigned_vector_list_free(chain->chain.bound_tex);
    unsigned_vector_list_free(chain->chain.bound_vert);
-
-   chain->chain.luts       = NULL;
-   chain->chain.bound_tex  = NULL;
-   chain->chain.bound_vert = NULL;
 
    free(chain);
 }
@@ -7148,7 +7142,7 @@ static void d3d9_hlsl_free_overlays(d3d9_video_t *d3d)
    d3d->overlays_size = 0;
 }
 
-static void d3d9_overlay_tex_geom(
+static void d3d9_hlsl_overlay_tex_geom(
       void *data,
       unsigned index,
       float x, float y,
@@ -7165,7 +7159,7 @@ static void d3d9_overlay_tex_geom(
    d3d->overlays[index].tex_coords[3] = h;
 }
 
-static void d3d9_overlay_vertex_geom(
+static void d3d9_hlsl_overlay_vertex_geom(
       void *data,
       unsigned index,
       float x, float y,
@@ -7184,7 +7178,7 @@ static void d3d9_overlay_vertex_geom(
    d3d->overlays[index].vert_coords[3] = h;
 }
 
-static bool d3d9_overlay_load(void *data,
+static bool d3d9_hlsl_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, y;
@@ -7234,14 +7228,14 @@ static bool d3d9_overlay_load(void *data,
       overlay->tex_h         = height;
 
       /* Default. Stretch to whole screen. */
-      d3d9_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
-      d3d9_overlay_vertex_geom(d3d, i, 0, 0, 1, 1);
+      d3d9_hlsl_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
+      d3d9_hlsl_overlay_vertex_geom(d3d, i, 0, 0, 1, 1);
    }
 
    return true;
 }
 
-static void d3d9_overlay_enable(void *data, bool state)
+static void d3d9_hlsl_overlay_enable(void *data, bool state)
 {
    unsigned i;
    d3d9_video_t            *d3d = (d3d9_video_t*)data;
@@ -7257,7 +7251,7 @@ static void d3d9_overlay_enable(void *data, bool state)
 #endif
 }
 
-static void d3d9_overlay_full_screen(void *data, bool enable)
+static void d3d9_hlsl_overlay_full_screen(void *data, bool enable)
 {
    unsigned i;
    d3d9_video_t *d3d = (d3d9_video_t*)data;
@@ -7266,31 +7260,31 @@ static void d3d9_overlay_full_screen(void *data, bool enable)
       d3d->overlays[i].fullscreen = enable;
 }
 
-static void d3d9_overlay_set_alpha(void *data, unsigned index, float mod)
+static void d3d9_hlsl_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;
    if (d3d)
       d3d->overlays[index].alpha_mod = mod;
 }
 
-static const video_overlay_interface_t d3d9_overlay_interface = {
-   d3d9_overlay_enable,
-   d3d9_overlay_load,
-   d3d9_overlay_tex_geom,
-   d3d9_overlay_vertex_geom,
-   d3d9_overlay_full_screen,
-   d3d9_overlay_set_alpha,
+static const video_overlay_interface_t d3d9_hlsl_overlay_interface = {
+   d3d9_hlsl_overlay_enable,
+   d3d9_hlsl_overlay_load,
+   d3d9_hlsl_overlay_tex_geom,
+   d3d9_hlsl_overlay_vertex_geom,
+   d3d9_hlsl_overlay_full_screen,
+   d3d9_hlsl_overlay_set_alpha,
 };
 
 static void d3d9_hlsl_get_overlay_interface(void *data,
       const video_overlay_interface_t **iface)
 {
-   *iface = &d3d9_overlay_interface;
+   *iface = &d3d9_hlsl_overlay_interface;
 }
 #endif
 
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-static void d3d9_overlay_render(d3d9_video_t *d3d,
+static void d3d9_hlsl_overlay_render(d3d9_video_t *d3d,
       unsigned width,
       unsigned height,
       overlay_t *overlay, bool force_linear)
@@ -7433,10 +7427,6 @@ static void d3d9_hlsl_free(void *data)
 
 #ifdef HAVE_OVERLAY
    d3d9_hlsl_free_overlays(d3d);
-   if (d3d->overlays)
-      free(d3d->overlays);
-   d3d->overlays      = NULL;
-   d3d->overlays_size = 0;
 #endif
 
    if (d3d->menu)
@@ -7576,7 +7566,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
             (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
+         d3d9_hlsl_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
 #endif
 
@@ -7585,7 +7575,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    {
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
             (const float*)&d3d->mvp, 4);
-      d3d9_overlay_render(d3d, width, height, d3d->menu, false);
+      d3d9_hlsl_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
       IDirect3DDevice9_SetVertexDeclaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
@@ -7616,7 +7606,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
             (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
+         d3d9_hlsl_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
 #endif
 

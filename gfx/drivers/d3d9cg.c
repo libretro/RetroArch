@@ -2443,23 +2443,15 @@ void d3d9_cg_renderchain_free(void *data)
          if (chain->chain.passes->data[i].attrib_map)
             free(chain->chain.passes->data[i].attrib_map);
       }
-
       shader_pass_vector_list_free(chain->chain.passes);
-      chain->chain.passes = NULL;
    }
 
    lut_info_vector_list_free(chain->chain.luts);
    unsigned_vector_list_free(chain->chain.bound_tex);
    unsigned_vector_list_free(chain->chain.bound_vert);
 
-   chain->chain.luts       = NULL;
-   chain->chain.bound_tex  = NULL;
-   chain->chain.bound_vert = NULL;
-
-   /* Destroy Cg context */
    if (chain->cgCtx)
       cgDestroyContext(chain->cgCtx);
-   chain->cgCtx = NULL;
 
    free(chain);
 }
@@ -2884,26 +2876,21 @@ static void d3d9_cg_renderchain_render_pass(
    IDirect3DDevice9_SetSamplerState(chain->dev,
          0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 
+   for (i = 0; i < chain->bound_tex->count; i++)
    {
-      int i;
-      for (i = 0; i < (int) chain->bound_tex->count; i++)
-      {
-         IDirect3DDevice9_SetSamplerState(chain->dev,
-               chain->bound_tex->data[i], D3DSAMP_MINFILTER, D3DTEXF_POINT);
-         IDirect3DDevice9_SetSamplerState(chain->dev,
-               chain->bound_tex->data[i], D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-         IDirect3DDevice9_SetTexture(chain->dev,
-               chain->bound_tex->data[i], (IDirect3DBaseTexture9*)NULL);
-      }
-
-      for (i = 0; i < (int) chain->bound_vert->count; i++)
-         IDirect3DDevice9_SetStreamSource(chain->dev, chain->bound_vert->data[i], 0, 0, 0);
-
-      if (chain->bound_tex)
-         chain->bound_tex->count = 0;
-      if (chain->bound_vert)
-         chain->bound_vert->count = 0;
+      IDirect3DDevice9_SetSamplerState(chain->dev,
+            chain->bound_tex->data[i], D3DSAMP_MINFILTER, D3DTEXF_POINT);
+      IDirect3DDevice9_SetSamplerState(chain->dev,
+            chain->bound_tex->data[i], D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+      IDirect3DDevice9_SetTexture(chain->dev,
+            chain->bound_tex->data[i], (IDirect3DBaseTexture9*)NULL);
    }
+
+   for (i = 0; i < chain->bound_vert->count; i++)
+      IDirect3DDevice9_SetStreamSource(chain->dev, chain->bound_vert->data[i], 0, 0, 0);
+
+   chain->bound_tex->count  = 0;
+   chain->bound_vert->count = 0;
 }
 
 static void d3d9_cg_blit_to_texture(
@@ -3064,12 +3051,11 @@ static void d3d9_cg_renderchain_render(
    chain->prev.last_width[chain->prev.ptr]  = chain->passes->data[0].last_width;
    chain->prev.last_height[chain->prev.ptr] = chain->passes->data[0].last_height;
    chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
-   if (_chain)
-   {
-      cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
-      cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
-      CG_DEBUG_CHECK(_chain->cgCtx, "renderchain_render post-render BindProgram");
-   }
+
+   cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
+   cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+   CG_DEBUG_CHECK(_chain->cgCtx, "renderchain_render post-render BindProgram");
+
    d3d9_cg_renderchain_calc_and_set_shader_mvp(
          (CGprogram)_chain->stock_shader.vprg,
          chain->out_vp->Width,
