@@ -2564,7 +2564,6 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
    rjpeg_context s;
    int comp;
    uint32_t *img         = NULL;
-   uint32_t *pixels      = NULL;
    unsigned size_tex     = 0;
 
    if (!rjpeg)
@@ -2584,28 +2583,52 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       return IMAGE_PROCESS_ERROR;
 
    size_tex = (*width) * (*height);
-   pixels   = (uint32_t*)malloc(size_tex * sizeof(uint32_t));
 
-   if (!pixels)
+   /* Convert RGBA to ARGB in-place — no second buffer needed */
    {
-      free(img);
-      return IMAGE_PROCESS_ERROR;
+      unsigned i = 0;
+
+#if defined(__SSE2__)
+      {
+         __m128i mask_rb = _mm_set1_epi32(0x00FF00FF);
+         __m128i mask_ag = _mm_set1_epi32((int)0xFF00FF00);
+
+         for (; i + 3 < size_tex; i += 4)
+         {
+            __m128i px   = _mm_loadu_si128((const __m128i*)(img + i));
+            __m128i rb   = _mm_and_si128(px, mask_rb);
+            __m128i ag   = _mm_and_si128(px, mask_ag);
+            __m128i rb_s = _mm_or_si128(_mm_slli_epi32(rb, 16),
+                                         _mm_srli_epi32(rb, 16));
+            rb_s         = _mm_and_si128(rb_s, mask_rb);
+            _mm_storeu_si128((__m128i*)(img + i), _mm_or_si128(ag, rb_s));
+         }
+      }
+#elif defined(RJPEG_NEON)
+      for (; i + 3 < size_tex; i += 4)
+      {
+         /* Swap R and B channels using 32-bit lane operations */
+         uint32x4_t p     = vld1q_u32(img + i);
+         uint32x4_t rb    = vandq_u32(p, vdupq_n_u32(0x00FF00FF));
+         uint32x4_t ag    = vandq_u32(p, vdupq_n_u32(0xFF00FF00));
+         uint32x4_t rb_sw = vorrq_u32(vshlq_n_u32(rb, 16), vshrq_n_u32(rb, 16));
+         rb_sw            = vandq_u32(rb_sw, vdupq_n_u32(0x00FF00FF));
+         vst1q_u32(img + i, vorrq_u32(ag, rb_sw));
+      }
+#endif
+
+      for (; i < size_tex; i++)
+      {
+         uint32_t texel = img[i];
+         uint32_t A     = texel & 0xFF000000;
+         uint32_t B     = texel & 0x00FF0000;
+         uint32_t G     = texel & 0x0000FF00;
+         uint32_t R     = texel & 0x000000FF;
+         img[i]         = A | (R << 16) | G | (B >> 16);
+      }
    }
 
-   *buf_data = pixels;
-
-   /* Convert RGBA to ARGB */
-   while (size_tex--)
-   {
-      unsigned int texel = img[size_tex];
-      unsigned int A     = texel & 0xFF000000;
-      unsigned int B     = texel & 0x00FF0000;
-      unsigned int G     = texel & 0x0000FF00;
-      unsigned int R     = texel & 0x000000FF;
-      ((unsigned int*)pixels)[size_tex] = A | (R << 16) | G | (B >> 16);
-   }
-
-   free(img);
+   *buf_data = img;
 
    return IMAGE_PROCESS_END;
 }

@@ -82,8 +82,12 @@ static int cb_image_upload_generic(void *data, size_t len)
    image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift, &image->ti);
 
-   image_texture_color_convert(r_shift, g_shift, b_shift,
-         a_shift, &image->ti);
+   /* JPEG already outputs in the correct channel order after its
+    * internal RGBA-to-ARGB swizzle, so skip the redundant conversion.
+    * For other formats (PNG, BMP, TGA), apply the color conversion. */
+   if (image->type != IMAGE_TYPE_JPEG)
+      image_texture_color_convert(r_shift, g_shift, b_shift,
+            a_shift, &image->ti);
 
    image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
    image->flags                   |=  IMAGE_FLAG_IS_BLOCKING;
@@ -250,8 +254,7 @@ static bool upscale_image(
       struct texture_image *image_src,
       struct texture_image *image_dst)
 {
-   uint32_t x_ratio, y_ratio;
-   unsigned y_dst;
+   unsigned y_src;
    size_t total_pixels;
 
    /* Sanity check */
@@ -273,21 +276,36 @@ static bool upscale_image(
    if (!(image_dst->pixels = (uint32_t*)calloc(total_pixels, sizeof(uint32_t))))
       return false;
 
-   /* Perform nearest neighbour resampling */
-   x_ratio = ((image_src->width  << 16) / image_dst->width);
-   y_ratio = ((image_src->height << 16) / image_dst->height);
-
-   for (y_dst = 0; y_dst < image_dst->height; y_dst++)
+   /* Fast path for integer scale factors: expand each source pixel
+    * into a scale_factor-wide run, then memcpy to duplicate rows */
+   for (y_src = 0; y_src < image_src->height; y_src++)
    {
-      unsigned x_dst;
-      unsigned y_src      = (y_dst * y_ratio) >> 16;
-      uint32_t *dst_row   = image_dst->pixels + ((size_t)y_dst * image_dst->width);
-      uint32_t *src_row   = image_src->pixels + ((size_t)y_src * image_src->width);
+      unsigned x_src;
+      uint32_t *src_row     = image_src->pixels
+                            + ((size_t)y_src * image_src->width);
+      uint32_t *dst_first   = image_dst->pixels
+                            + ((size_t)y_src * scale_factor * image_dst->width);
+      size_t dst_row_bytes  = (size_t)image_dst->width * sizeof(uint32_t);
 
-      for (x_dst = 0; x_dst < image_dst->width; x_dst++)
+      /* Build the first scaled row by expanding each source pixel */
+      for (x_src = 0; x_src < image_src->width; x_src++)
       {
-         unsigned x_src = (x_dst * x_ratio) >> 16;
-         dst_row[x_dst] = src_row[x_src];
+         unsigned k;
+         uint32_t px        = src_row[x_src];
+         uint32_t *dst_px   = dst_first + (size_t)x_src * scale_factor;
+
+         for (k = 0; k < scale_factor; k++)
+            dst_px[k] = px;
+      }
+
+      /* Duplicate the first scaled row for the remaining (scale_factor-1) rows */
+      {
+         unsigned row_copy;
+         for (row_copy = 1; row_copy < scale_factor; row_copy++)
+         {
+            uint32_t *dst_dup = dst_first + (size_t)row_copy * image_dst->width;
+            memcpy(dst_dup, dst_first, dst_row_bytes);
+         }
       }
    }
 

@@ -90,6 +90,7 @@ struct idat_buffer
 {
    uint8_t *data;
    size_t size;
+   size_t capacity;
 };
 
 enum rpng_process_flags
@@ -1044,12 +1045,25 @@ false_end:
 
 static bool rpng_realloc_idat(struct idat_buffer *buf, uint32_t chunk_size)
 {
-   uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk_size);
+   size_t required = buf->size + chunk_size;
 
-   if (!new_buffer)
-      return false;
+   if (required > buf->capacity)
+   {
+      uint8_t *new_buffer = NULL;
+      size_t new_cap      = buf->capacity ? buf->capacity : 4096;
 
-   buf->data  = new_buffer;
+      while (new_cap < required)
+         new_cap *= 2;
+
+      new_buffer = (uint8_t*)realloc(buf->data, new_cap);
+
+      if (!new_buffer)
+         return false;
+
+      buf->data     = new_buffer;
+      buf->capacity = new_cap;
+   }
+
    return true;
 }
 
@@ -1340,8 +1354,7 @@ bool rpng_iterate_image(rpng_t *rpng)
 
          buf += 8;
 
-         for (i = 0; i < chunk_size; i++)
-            rpng->idat_buf.data[i + rpng->idat_buf.size] = buf[i];
+         memcpy(rpng->idat_buf.data + rpng->idat_buf.size, buf, chunk_size);
 
          rpng->idat_buf.size += chunk_size;
 
