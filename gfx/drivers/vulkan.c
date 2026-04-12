@@ -2258,6 +2258,14 @@ static void vulkan_font_render_msg(
                if (!(glyph = get_glyph(font_data, code)))
                   if (!(glyph = glyph_q))
                      continue;
+
+               if (font->atlas->dirty)
+               {
+                  vulkan_font_update_glyph(font, glyph);
+                  font->atlas->dirty = false;
+                  font->needs_update = true;
+               }
+
                width_accum += glyph->advance_x;
             }
             {
@@ -2364,7 +2372,10 @@ static void vulkan_font_render_msg(
     *   - the null-check on texture->image (always valid for fonts)
     */
 
-   /* Upload dirty atlas region to the GPU before the draw. */
+   /* Upload dirty atlas region to the GPU before the draw.
+    * Use a dedicated staging command buffer with vkQueueWaitIdle
+    * to guarantee the transfer is complete before the fragment
+    * shader samples the atlas in the main command buffer. */
    if (font->needs_update)
    {
       struct vk_texture *dynamic_tex = &font->texture_optimal;
@@ -2396,10 +2407,28 @@ static void vulkan_font_render_msg(
 
          if (dw > 0 && dh > 0)
          {
+            VkCommandBuffer staging_cmd;
+            VkSubmitInfo submit_info;
+            VkCommandBufferAllocateInfo cmd_info;
+            VkCommandBufferBeginInfo begin_info;
             VkBufferImageCopy region;
 
+            cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            cmd_info.pNext              = NULL;
+            cmd_info.commandPool        = vk->staging_pool;
+            cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            cmd_info.commandBufferCount = 1;
+            vkAllocateCommandBuffers(vk->context->device,
+                  &cmd_info, &staging_cmd);
+
+            begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            begin_info.pNext            = NULL;
+            begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            begin_info.pInheritanceInfo = NULL;
+            vkBeginCommandBuffer(staging_cmd, &begin_info);
+
             VULKAN_IMAGE_LAYOUT_TRANSITION(
-                  vk->cmd,
+                  staging_cmd,
                   dynamic_tex->image,
                   VK_IMAGE_LAYOUT_UNDEFINED,
                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -2408,7 +2437,7 @@ static void vulkan_font_render_msg(
                   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                   VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-            /* R8_UNORM ⇒ bpp = 1; stride is already in bytes. */
+            /* R8_UNORM => bpp = 1; stride is already in bytes. */
             region.bufferOffset                    =
                (VkDeviceSize)dy * staging_tex->stride + dx;
             region.bufferRowLength                 =
@@ -2426,7 +2455,7 @@ static void vulkan_font_render_msg(
             region.imageExtent.depth               = 1;
 
             vkCmdCopyBufferToImage(
-                  vk->cmd,
+                  staging_cmd,
                   staging_tex->buffer,
                   dynamic_tex->image,
                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -2434,7 +2463,7 @@ static void vulkan_font_render_msg(
                   &region);
 
             VULKAN_IMAGE_LAYOUT_TRANSITION(
-                  vk->cmd,
+                  staging_cmd,
                   dynamic_tex->image,
                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -2442,6 +2471,33 @@ static void vulkan_font_render_msg(
                   VK_ACCESS_SHADER_READ_BIT,
                   VK_PIPELINE_STAGE_TRANSFER_BIT,
                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+            vkEndCommandBuffer(staging_cmd);
+
+#ifdef HAVE_THREADS
+            slock_lock(vk->context->queue_lock);
+#endif
+
+            submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submit_info.pNext                = NULL;
+            submit_info.waitSemaphoreCount   = 0;
+            submit_info.pWaitSemaphores      = NULL;
+            submit_info.pWaitDstStageMask    = NULL;
+            submit_info.commandBufferCount   = 1;
+            submit_info.pCommandBuffers      = &staging_cmd;
+            submit_info.signalSemaphoreCount = 0;
+            submit_info.pSignalSemaphores    = NULL;
+            vkQueueSubmit(vk->context->queue,
+                  1, &submit_info, VK_NULL_HANDLE);
+
+            vkQueueWaitIdle(vk->context->queue);
+
+#ifdef HAVE_THREADS
+            slock_unlock(vk->context->queue_lock);
+#endif
+
+            vkFreeCommandBuffers(vk->context->device,
+                  vk->staging_pool, 1, &staging_cmd);
 
             dynamic_tex->layout =
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
