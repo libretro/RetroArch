@@ -38,8 +38,8 @@
    goto end; \
 } while (0)
 
-double DEFLATE_PADDING = 1.1;
-int PNG_ROUGH_HEADER = 100;
+static const double DEFLATE_PADDING = 1.1;
+static const int PNG_ROUGH_HEADER  = 100;
 
 static void dword_write_be(uint8_t *buf, uint32_t val)
 {
@@ -145,8 +145,10 @@ static unsigned count_sad(const uint8_t *data, size_t len)
    unsigned cnt = 0;
    for (i = 0; i < len; i++)
    {
-      if (data[i])
-         cnt += abs((int8_t)data[i]);
+      /* Use conditional instead of abs() to avoid undefined behaviour
+       * when the value is -128 (INT8_MIN). */
+      int8_t val = (int8_t)data[i];
+      cnt += val < 0 ? -val : val;
    }
    return cnt;
 }
@@ -315,23 +317,29 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
       }
    }
 
-   deflate_buf = (uint8_t*)malloc(encode_buf_size * 2); /* Just to be sure. */
-   if (!deflate_buf)
-      GOTO_END_ERROR();
+   /* Deflate output is typically smaller than input; zlib guarantees it
+    * will not exceed input + 0.1% + 12 bytes.  We use 1.01x + 256 for
+    * safety, which is substantially less wasteful than the previous 2x. */
+   {
+      size_t deflate_bound = (size_t)(encode_buf_size * 1.01) + 256;
+      deflate_buf = (uint8_t*)malloc(deflate_bound + 8); /* +8 for IDAT header */
+      if (!deflate_buf)
+         GOTO_END_ERROR();
 
-   stream = stream_backend->stream_new();
+      stream = stream_backend->stream_new();
 
-   if (!stream)
-      GOTO_END_ERROR();
+      if (!stream)
+         GOTO_END_ERROR();
 
-   stream_backend->set_in(
-         stream,
-         encode_buf,
-         (unsigned)encode_buf_size);
-   stream_backend->set_out(
-         stream,
-         deflate_buf + 8,
-         (unsigned)(encode_buf_size * 2));
+      stream_backend->set_in(
+            stream,
+            encode_buf,
+            (unsigned)encode_buf_size);
+      stream_backend->set_out(
+            stream,
+            deflate_buf + 8,
+            (unsigned)deflate_bound);
+   }
 
    if (!stream_backend->trans(stream, true, &total_in, &total_out, NULL))
       GOTO_END_ERROR();
@@ -403,9 +411,8 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
       unsigned width, unsigned height, signed pitch, uint64_t* bytes)
 {
    bool ret             = false;
-   uint8_t *output      = NULL;
    intfstream_t *intf_s = NULL;
-   size_t _len          = (width * height * 3 * DEFLATE_PADDING) + PNG_ROUGH_HEADER;
+   size_t _len          = (size_t)(width * height * 3 * DEFLATE_PADDING) + PNG_ROUGH_HEADER;
    uint8_t *buf         = (uint8_t*)malloc(_len * sizeof(uint8_t));
    if (!buf)
       GOTO_END_ERROR();
@@ -418,26 +425,29 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
    ret    = rpng_save_image_stream((const uint8_t*)data,
             intf_s, width, height, pitch, 3);
    *bytes = intfstream_get_ptr(intf_s);
-   intfstream_rewind(intf_s);
-   output = (uint8_t*)malloc((size_t)((*bytes)*sizeof(uint8_t)));
-   if (!output)
-      GOTO_END_ERROR();
-   intfstream_read(intf_s, output, *bytes);
+
+   /* Trim the buffer to the actual written size instead of
+    * allocating a second buffer and copying. */
+   if (ret && *bytes > 0)
+   {
+      uint8_t *trimmed = (uint8_t*)realloc(buf, (size_t)*bytes);
+      if (trimmed)
+         buf = trimmed;
+      /* If realloc fails, the original (oversized) buf is still valid */
+   }
 
 end:
-   if (buf)
-      free(buf);
    if (intf_s)
    {
       intfstream_close(intf_s);
       free(intf_s);
    }
-   if (ret == false)
+   if (!ret)
    {
-      if (output)
-         free(output);
+      if (buf)
+         free(buf);
       return NULL;
    }
-   return output;
+   return buf;
 }
 
