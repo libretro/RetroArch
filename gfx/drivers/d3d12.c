@@ -586,7 +586,7 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
          return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
       if (!(fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)dylib_proc(
-            d3d12_dll, "D3D12SerializeRootSignature")))
+            d3d12_dll, "D3D12SerializeVersionedRootSignature")))
          return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(pRootSignature, ppBlob, ppErrorBlob);
 }
@@ -793,9 +793,22 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       texture->desc.SampleDesc.Count = 1;
       texture->desc.Format           = d3d12_get_closest_match(device, &format_support);
 
-      hr = device->lpVtbl->CreateCommittedResource(
-            device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
-            initial_state, NULL, uuidof(ID3D12Resource), (void**)&texture->handle);
+      if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+      {
+         D3D12_CLEAR_VALUE clear_value;
+         clear_value.Format               = texture->desc.Format;
+         clear_value.Color[0]             = 0.0f;
+         clear_value.Color[1]             = 0.0f;
+         clear_value.Color[2]             = 0.0f;
+         clear_value.Color[3]             = 0.0f;
+         hr = device->lpVtbl->CreateCommittedResource(
+               device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
+               initial_state, &clear_value, uuidof(ID3D12Resource), (void**)&texture->handle);
+      }
+      else
+         hr = device->lpVtbl->CreateCommittedResource(
+               device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
+               initial_state, NULL, uuidof(ID3D12Resource), (void**)&texture->handle);
 
       if (FAILED(hr) || !texture->handle)
       {
@@ -3021,11 +3034,19 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->sprites.pipe_blend);
    Release(d3d12->sprites.pipe_noblend);
    Release(d3d12->sprites.pipe_font);
+#ifdef HAVE_DXGI_HDR
+   Release(d3d12->sprites.pipe_blend_hdr);
+   Release(d3d12->sprites.pipe_noblend_hdr);
+   Release(d3d12->sprites.pipe_font_hdr);
+#endif
 
    Release(d3d12->queue.fence);
    Release(d3d12->queue.cmd);
    Release(d3d12->queue.allocator);
    Release(d3d12->queue.handle);
+
+   if (d3d12->queue.fenceEvent)
+      CloseHandle(d3d12->queue.fenceEvent);
 
    Release(d3d12->chain.renderTargets[0]);
    Release(d3d12->chain.renderTargets[1]);
@@ -3038,6 +3059,10 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->factory);
    Release(d3d12->device);
    Release(d3d12->adapter);
+
+#ifdef DEBUG
+   Release(d3d12->debugController);
+#endif
 
    for (i = 0; i < D3D12_MAX_GPU_COUNT; i++)
    {
@@ -3996,8 +4021,8 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          d3d12->pass[i].viewport.Height      = height;
          d3d12->pass[i].viewport.MinDepth    = 0.0f;
          d3d12->pass[i].viewport.MaxDepth    = 1.0f;
-         d3d12->pass[i].scissorRect.left     = 0.0f;
-         d3d12->pass[i].scissorRect.top      = 0.0f;
+         d3d12->pass[i].scissorRect.left     = 0;
+         d3d12->pass[i].scissorRect.top      = 0;
          d3d12->pass[i].scissorRect.right    = width;
          d3d12->pass[i].scissorRect.bottom   = height;
       }
@@ -5556,12 +5581,14 @@ static uintptr_t d3d12_gfx_load_texture(
    {
       case TEXTURE_FILTER_MIPMAP_LINEAR:
          texture->desc.MipLevels = UINT16_MAX;
+         /* falls through */
       case TEXTURE_FILTER_LINEAR:
          texture->sampler = d3d12->samplers[
             RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
          break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
          texture->desc.MipLevels = UINT16_MAX;
+         /* falls through */
       case TEXTURE_FILTER_NEAREST:
          texture->sampler = d3d12->samplers[
             RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
