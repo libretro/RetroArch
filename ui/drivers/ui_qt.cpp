@@ -1195,20 +1195,12 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
 #endif
    ,m_coreOptionsDialog(new CoreOptionsDialog())
-   ,m_networkManager(new QNetworkAccessManager(this))
+   ,m_currentHttpTask(NULL)
    ,m_updateProgressDialog(new QProgressDialog())
-   ,m_updateFile()
-   ,m_updateReply()
    ,m_thumbnailDownloadProgressDialog(new QProgressDialog())
-   ,m_thumbnailDownloadFile()
-   ,m_thumbnailDownloadReply()
    ,m_pendingThumbnailDownloadTypes()
    ,m_thumbnailPackDownloadProgressDialog(new QProgressDialog())
-   ,m_thumbnailPackDownloadFile()
-   ,m_thumbnailPackDownloadReply()
    ,m_playlistThumbnailDownloadProgressDialog(new QProgressDialog())
-   ,m_playlistThumbnailDownloadFile()
-   ,m_playlistThumbnailDownloadReply()
    ,m_pendingPlaylistThumbnails()
    ,m_downloadedThumbnails(0)
    ,m_failedThumbnails(0)
@@ -3772,6 +3764,9 @@ TreeView* MainWindow::dirTreeView() { return m_dirTree; }
 void MainWindow::onTimeout()
 {
    uint8_t flags = content_get_flags();
+
+   /* Pump the task queue to process pending HTTP transfers etc. */
+   task_queue_check();
 
    if (flags & CONTENT_ST_FLAG_IS_INITED)
    {

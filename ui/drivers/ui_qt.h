@@ -36,10 +36,8 @@
 #include <QPointer>
 #include <QProgressBar>
 #include <QElapsedTimer>
-#include <QSslError>
 #include <QTableWidget>
 #include <QVBoxLayout>
-#include <QNetworkReply>
 #include <QStyledItemDelegate>
 #include <QCache>
 #include <QSortFilterProxyModel>
@@ -96,8 +94,6 @@ class QScrollArea;
 class QSlider;
 class QDragEnterEvent;
 class QDropEvent;
-class QNetworkAccessManager;
-class QNetworkReply;
 class QProgressDialog;
 class MainWindow;
 class ThumbnailWidget;
@@ -505,6 +501,8 @@ public slots:
    void showAbout();
    void showDocs();
    void onThumbnailPackExtractFinished(bool success);
+   void onSingleThumbnailDownloadFinishedInternal(const char *system, const char *title, const char *final_path, bool success);
+   void onPlaylistThumbnailDownloadFinishedInternal(const char *system, const char *title, const char *final_path, bool success);
    void deferReloadShaderParams();
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
    void downloadAllThumbnails(QString system, QUrl url = QUrl());
@@ -549,26 +547,11 @@ private slots:
    void onDownloadScrollAgain(QString path);
    int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
 
-   void onThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
-   void onThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
-   void onThumbnailDownloadFinished();
-   void onThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-   void onThumbnailDownloadReadyRead();
    void onThumbnailDownloadCanceled();
    void onDownloadThumbnail(QString system, QString title);
 
-   void onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError code);
-   void onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> &errors);
-   void onThumbnailPackDownloadFinished();
-   void onThumbnailPackDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-   void onThumbnailPackDownloadReadyRead();
    void onThumbnailPackDownloadCanceled();
 
-   void onPlaylistThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
-   void onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
-   void onPlaylistThumbnailDownloadFinished();
-   void onPlaylistThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-   void onPlaylistThumbnailDownloadReadyRead();
    void onPlaylistThumbnailDownloadCanceled();
 
    void startTimer();
@@ -650,24 +633,16 @@ private:
    QElapsedTimer m_statusMessageElapsedTimer;
    QPointer<ShaderParamsDialog> m_shaderParamsDialog;
    QPointer<CoreOptionsDialog> m_coreOptionsDialog;
-   QNetworkAccessManager *m_networkManager;
+   retro_task_t *m_currentHttpTask;
 
    QProgressDialog *m_updateProgressDialog;
-   QFile m_updateFile;
-   QPointer<QNetworkReply> m_updateReply;
 
    QProgressDialog *m_thumbnailDownloadProgressDialog;
-   QFile m_thumbnailDownloadFile;
-   QPointer<QNetworkReply> m_thumbnailDownloadReply;
    QStringList m_pendingThumbnailDownloadTypes;
 
    QProgressDialog *m_thumbnailPackDownloadProgressDialog;
-   QFile m_thumbnailPackDownloadFile;
-   QPointer<QNetworkReply> m_thumbnailPackDownloadReply;
 
    QProgressDialog *m_playlistThumbnailDownloadProgressDialog;
-   QFile m_playlistThumbnailDownloadFile;
-   QPointer<QNetworkReply> m_playlistThumbnailDownloadReply;
    QVector<QHash<QString, QString> > m_pendingPlaylistThumbnails;
    unsigned m_downloadedThumbnails;
    unsigned m_failedThumbnails;
