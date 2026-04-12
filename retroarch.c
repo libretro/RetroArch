@@ -8732,6 +8732,8 @@ size_t retroarch_get_capabilities(enum rarch_capabilities type,
                _len += strlcpy(s + _len, "AVX ", len - _len);
             if (cpu & RETRO_SIMD_AVX2)
                _len += strlcpy(s + _len, "AVX2 ", len - _len);
+            if (cpu & RETRO_SIMD_AVX512)
+               _len += strlcpy(s + _len, "AVX512 ", len - _len);
             if (cpu & RETRO_SIMD_NEON)
                _len += strlcpy(s + _len, "NEON ", len - _len);
             if (cpu & RETRO_SIMD_VFPV3)
