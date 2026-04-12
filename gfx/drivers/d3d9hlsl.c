@@ -1779,25 +1779,16 @@ font_renderer_t d3d9_font = {
 
 /* Look up a shader uniform register from compiled bytecode CTAB.
  * Returns the register index or -1 if not found. */
-static int d3d9_hlsl_find_uniform_reg(
-      const DWORD *bytecode, size_t bytecode_dwords,
-      const char *name)
-{
-   if (!bytecode || !bytecode_dwords || !name || !*name)
-      return -1;
-   return d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, name, NULL, NULL);
-}
-
-/* Set a float2 shader uniform by name, uploading to the register
- * found in the compiled bytecode CTAB.  Pads to float4 for the
- * hardware constant register. */
 /* Set a float shader uniform by name. */
 static INLINE void d3d9_hlsl_set_param_1f(
       const DWORD *bytecode, size_t bytecode_dwords,
       bool is_vertex,
       LPDIRECT3DDEVICE9 dev, const char *name, const void *value)
 {
-   int reg = d3d9_hlsl_find_uniform_reg(bytecode, bytecode_dwords, name);
+   int reg;
+   if (!bytecode || !bytecode_dwords || !name || !*name)
+      return;
+   reg = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, name, NULL, NULL);
    if (reg >= 0)
    {
       float v4[4] = { *(const float*)value, 0.0f, 0.0f, 0.0f };
@@ -1809,21 +1800,6 @@ static INLINE void d3d9_hlsl_set_param_1f(
 }
 
 /* Set a 4x4 matrix shader uniform by name. */
-static INLINE void d3d9_hlsl_set_param_matrix(
-      const DWORD *bytecode, size_t bytecode_dwords,
-      bool is_vertex,
-      LPDIRECT3DDEVICE9 dev, const char *name, const void *values)
-{
-   int reg = d3d9_hlsl_find_uniform_reg(bytecode, bytecode_dwords, name);
-   if (reg >= 0)
-   {
-      if (is_vertex)
-         d3d9_hlsl_set_vs_const(dev, reg, (const float*)values, 4);
-      else
-         d3d9_hlsl_set_ps_const(dev, reg, (const float*)values, 4);
-   }
-}
-
 static bool d3d9_hlsl_load_program_from_file(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
@@ -2061,27 +2037,6 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       return false;
    shader_pass_vector_list_append(chain->passes, pass);
    return true;
-}
-
-static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
-      hlsl_renderchain_t *chain,
-      const hlsl_pass_data_t *pd,
-      const void *mvp_data)
-{
-   /* Upload the pre-computed MVP to the register the compiled
-    * shader's CTAB reports for 'modelViewProj'.
-    *
-    * The MVP is already in row-major layout matching the stock
-    * shader's mul(position, matrix) convention — no transpose
-    * is needed.  d3d9_hlsl_frame() sets d3d->mvp via
-    * d3d_matrix_ortho_off_center_lh and writes it to c0 for
-    * the stock shader; per-pass shaders may have modelViewProj
-    * at a different register, which the CTAB lookup handles. */
-   if (!pd || !pd->vs_bytecode)
-      return;
-
-   d3d9_hlsl_set_param_matrix(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
-         chain->chain.dev, "modelViewProj", mvp_data);
 }
 
 static void d3d9_hlsl_renderchain_render_pass(
@@ -2734,11 +2689,11 @@ static void hlsl_d3d9_renderchain_render(
    chain->chain.prev.ptr                                = (chain->chain.prev.ptr + 1) & TEXTURESMASK;
 
    IDirect3DDevice9_SetVertexShader(chain->chain.dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
-
    IDirect3DDevice9_SetPixelShader(chain->chain.dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
-   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
-         chain, &chain->stock_data,
-         (const void*)&d3d->mvp);
+
+   if (chain->stock_data.vs_map.mvp >= 0)
+      IDirect3DDevice9_SetVertexShaderConstantF(chain->chain.dev,
+            chain->stock_data.vs_map.mvp, (const float*)&d3d->mvp, 4);
 }
 
 static bool hlsl_d3d9_renderchain_add_pass(

@@ -449,45 +449,6 @@ static void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
  * expected by the Cg shader's mul(matrix, vector).  Callers
  * coming from D3D row-major matrices should use the _transposed
  * variant below instead. */
-static INLINE void d3d9_cg_set_mvp(cg_renderchain_t *chain,
-      const float *matrix)
-{
-   if (chain)
-   {
-      CGparameter cgp = cgGetNamedParameter(
-            (CGprogram)chain->stock_shader.vprg, "modelViewProj");
-      if (cgp)
-      {
-         cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)matrix);
-         CG_DEBUG_CHECK(chain->cgCtx, "set_mvp SetUniformMatrix");
-      }
-   }
-}
-
-/* Transpose a D3D row-major matrix into the column-major order
- * the Cg stock shader expects (mul(matrix, vector)), then upload
- * it via cgD3D9SetUniformMatrix.
- *
- * Use this whenever the source matrix is in standard D3D / row-major
- * layout (e.g. d3d->mvp, d3d->mvp_transposed, or any matrix built
- * with the D3D ortho setup without a manual transpose). */
-static INLINE void d3d9_cg_set_mvp_transpose(cg_renderchain_t *chain,
-      const void *matrix)
-{
-   if (chain)
-   {
-      math_matrix_4x4 transposed;
-      CGparameter cgp = cgGetNamedParameter(
-            (CGprogram)chain->stock_shader.vprg, "modelViewProj");
-      if (cgp)
-      {
-         matrix_4x4_transpose(transposed, (*(const math_matrix_4x4*)matrix));
-         cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)&transposed);
-         CG_DEBUG_CHECK(chain->cgCtx, "set_mvp_transpose SetUniformMatrix");
-      }
-   }
-}
-
 /*
  * DISPLAY DRIVER
  */
@@ -805,7 +766,10 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
              0.0f,  0.0f, 0.0f,  1.0f
          };
          cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
-         d3d9_cg_set_mvp(_chain, topdown_ortho);
+         CGparameter cgp = cgGetNamedParameter(
+               (CGprogram)_chain->stock_shader.vprg, "modelViewProj");
+         if (cgp)
+            cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)topdown_ortho);
          /* Re-bind programs to commit the updated MVP to the GPU.
           * cgD3D9BindProgram pushes the parameter values that were
           * set via cgD3D9SetUniformMatrix into the hardware registers;
@@ -887,7 +851,12 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
           0.0f,  0.0f, 0.0f,  1.0f
       };
       cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
-      d3d9_cg_set_mvp(_chain, bottomup_ortho);
+      {
+         CGparameter cgp = cgGetNamedParameter(
+               (CGprogram)_chain->stock_shader.vprg, "modelViewProj");
+         if (cgp)
+            cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)bottomup_ortho);
+      }
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
       CG_DEBUG_CHECK(_chain->cgCtx, "multi-vertex draw BindProgram");
@@ -1367,7 +1336,10 @@ static void d3d9_cg_font_render_msg(
           0.0f,  0.0f, 0.0f,  1.0f
       };
       cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
-      d3d9_cg_set_mvp(_chain, topdown_ortho);
+      CGparameter cgp = cgGetNamedParameter(
+            (CGprogram)_chain->stock_shader.vprg, "modelViewProj");
+      if (cgp)
+         cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)topdown_ortho);
    }
 
    /* Update atlas texture if dirty */
@@ -3999,13 +3971,15 @@ static void d3d9_cg_overlay_render(
           0.0f,  0.0f, 0.0f,  1.0f
       };
       cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
-      d3d9_cg_set_mvp(_chain, bottomup_ortho);
-      if (_chain)
       {
-         cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
-         cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
-         CG_DEBUG_CHECK(_chain->cgCtx, "overlay_render BindProgram");
+         CGparameter cgp = cgGetNamedParameter(
+               (CGprogram)_chain->stock_shader.vprg, "modelViewProj");
+         if (cgp)
+            cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)bottomup_ortho);
       }
+      cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
+      cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+      CG_DEBUG_CHECK(_chain->cgCtx, "overlay_render BindProgram");
    }
 
    /* Build a quad from the overlay's normalised coordinates.
@@ -4158,7 +4132,15 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 
    {
       cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
-      d3d9_cg_set_mvp_transpose(_chain, &d3d->mvp);
+      CGparameter cgp = cgGetNamedParameter(
+            (CGprogram)_chain->stock_shader.vprg, "modelViewProj");
+      if (cgp)
+      {
+         math_matrix_4x4 transposed;
+         matrix_4x4_transpose(transposed, d3d->mvp);
+         cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)&transposed);
+         CG_DEBUG_CHECK(_chain->cgCtx, "set_mvp_transpose SetUniformMatrix");
+      }
    }
    d3d9_cg_renderchain_render(
             d3d, frame, frame_width, frame_height,
