@@ -55,6 +55,7 @@
 #include "../../verbosity.h"
 #include "../../msg_hash_lbl_str.h"
 #include "../../ui/drivers/ui_win32.h"
+#include "../../gfx/common/win32_resources.h"
 
 #include "platform_win32.h"
 
@@ -647,24 +648,9 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 
 static void frontend_win32_init(void *data)
 {
-   typedef BOOL (WINAPI *isProcessDPIAwareProc)();
-   typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-#ifdef HAVE_DYLIB
-   HMODULE handle                         =
-      GetModuleHandle("User32.dll");
-   isProcessDPIAwareProc  isDPIAwareProc  =
-      (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
-   setProcessDPIAwareProc setDPIAwareProc =
-      (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
-#else
-   isProcessDPIAwareProc  isDPIAwareProc  = IsProcessDPIAware;
-   setProcessDPIAwareProc setDPIAwareProc = SetProcessDPIAware;
-#endif
-
-   if (isDPIAwareProc)
-      if (!isDPIAwareProc())
-         if (setDPIAwareProc)
-            setDPIAwareProc();
+   /* Initializes DPI awareness, accelerator table, and
+    * prepares programmatic resources (replaces .rc file). */
+   win32_resources_init();
 }
 
 

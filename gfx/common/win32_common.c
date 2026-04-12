@@ -41,6 +41,7 @@
 #endif
 
 #include "win32_common.h"
+#include "win32_resources.h"
 
 #ifdef HAVE_GDI
 #include "gdi_defines.h"
@@ -577,8 +578,8 @@ static bool win32_load_content_from_gui(const char *szFilename)
                video_st->poke->show_mouse(video_st->data, true);
 
             /* Pick one core that could be compatible. */
-            if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
-                     main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
+            if (win32_resources_pick_core_dialog(
+                     main_window.hwnd, pick_core_proc) == IDOK)
             {
                task_push_load_content_with_current_core_from_companion_ui(
                      NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
@@ -2060,7 +2061,7 @@ bool win32_window_create(void *data, unsigned style,
    if (!main_window.hwnd)
       return false;
 
-   window_accelerators = LoadAcceleratorsA(GetModuleHandleA(NULL), MAKEINTRESOURCE(IDR_ACCELERATOR1));
+   window_accelerators = win32_resources_get_accelerator();
 
 #ifdef HAVE_TASKBAR
    g_win32->taskbar_message            =
@@ -2734,7 +2735,7 @@ void win32_set_window(unsigned *width, unsigned *height,
          rc_temp.right  = (LONG)*height;
          rc_temp.bottom = 0x7FFF;
 
-         menuItem = LoadMenuA(GetModuleHandle(NULL), MAKEINTRESOURCE(IDR_MENU));
+         menuItem = win32_resources_create_menu();
          win32_localize_menu(menuItem);
          SetMenu(main_window.hwnd, menuItem);
 
