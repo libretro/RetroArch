@@ -552,7 +552,7 @@ UIntComboBox::UIntComboBox(msg_hash_enums enum_idx, double min, double max, QWid
 
 void UIntComboBox::onCurrentIndexChanged(int index)
 {
-   Q_UNUSED(index);
+   (void)(index);
 
    *m_value = currentData().toUInt();
 
@@ -982,14 +982,14 @@ FloatSliderAndSpinBox::FloatSliderAndSpinBox(rarch_setting_t *setting, QWidget *
 
 void FloatSliderAndSpinBox::onSliderValueChanged(int value)
 {
-   Q_UNUSED(value);
+   (void)(value);
 
    m_spinBox->update();
 }
 
 void FloatSliderAndSpinBox::onSpinBoxValueChanged(double value)
 {
-   Q_UNUSED(value);
+   (void)(value);
 
    m_slider->update();
 }
@@ -1014,7 +1014,7 @@ BindButton::BindButton(msg_hash_enums enum_idx, QWidget *parent) :
 
 void BindButton::onClicked(bool checked)
 {
-   Q_UNUSED(checked);
+   (void)(checked);
 
    m_setting->action_ok(m_setting, 0, false);
 }
@@ -1552,15 +1552,13 @@ void GridView::scrollTo(const QModelIndex &index, QAbstractItemView::ScrollHint)
             + itemRect.left() - viewRect.left());
    else if (itemRect.right() > viewRect.right())
       horizontalScrollBar()->setValue(horizontalScrollBar()->value()
-            + qMin(itemRect.right() - viewRect.right(),
-               itemRect.left() - viewRect.left()));
+            + ((itemRect.right() - viewRect.right()) < (itemRect.left() - viewRect.left()) ? (itemRect.right() - viewRect.right()) : (itemRect.left() - viewRect.left())));
    if (itemRect.top() < viewRect.top())
       verticalScrollBar()->setValue(verticalScrollBar()->value()
             + itemRect.top() - viewRect.top());
    else if (itemRect.bottom() > viewRect.bottom())
       verticalScrollBar()->setValue(verticalScrollBar()->value()
-            + qMin(itemRect.bottom() - viewRect.bottom(),
-               itemRect.top() - viewRect.top()));
+            + ((itemRect.bottom() - viewRect.bottom()) < (itemRect.top() - viewRect.top()) ? (itemRect.bottom() - viewRect.bottom()) : (itemRect.top() - viewRect.top())));
    viewport()->update();
 }
 
@@ -1786,12 +1784,10 @@ void GridView::updateGeometries()
 
    verticalScrollBar()->setSingleStep(RowHeight);
    verticalScrollBar()->setPageStep(viewport()->height());
-   verticalScrollBar()->setRange(0, qMax(0,
-            m_idealHeight - viewport()->height()));
+   verticalScrollBar()->setRange(0, ((0) > (m_idealHeight - viewport()->height()) ? (0) : (m_idealHeight - viewport()->height())));
 
    horizontalScrollBar()->setPageStep(viewport()->width());
-   horizontalScrollBar()->setRange(0, qMax(0,
-            RowHeight - viewport()->width()));
+   horizontalScrollBar()->setRange(0, ((0) > (RowHeight - viewport()->width()) ? (0) : (RowHeight - viewport()->width())));
 
    emit(visibleItemsChangedMaybe());
 }
@@ -1801,15 +1797,15 @@ QString GridView::getLayout() const
    switch (m_viewMode)
    {
       case Simple:
-         return QStringLiteral("simple");
+         return QString("simple");
       case Anchored:
-         return QStringLiteral("anchored");
+         return QString("anchored");
       case Centered:
       default:
          break;
    }
 
-   return QStringLiteral("centered");
+   return QString("centered");
 }
 
 void GridView::setLayout(QString layout)
@@ -1841,15 +1837,15 @@ QString GridItem::getThumbnailVerticalAlign() const
    switch (thumbnailVerticalAlignmentFlag)
    {
       case Qt::AlignTop:
-         return QStringLiteral("top");
+         return QString("top");
       case Qt::AlignVCenter:
-         return QStringLiteral("center");
+         return QString("center");
       case Qt::AlignBottom:
       default:
          break;
    }
 
-   return QStringLiteral("bottom");
+   return QString("bottom");
 }
 
 void GridItem::setThumbnailVerticalAlign(const QString valign)
@@ -1903,7 +1899,7 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
             MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS), this);
    QToolButton *pathPushButton      = new QToolButton(this);
 
-   pathPushButton->setText(QStringLiteral("..."));
+   pathPushButton->setText(QString("..."));
 
    pathHBoxLayout->addWidget(m_pathLineEdit);
    pathHBoxLayout->addWidget(pathPushButton);
@@ -2304,8 +2300,8 @@ private:
 
          minSize                     += QSize(fw, fw);
          minSize                     += QSize(scrollBarWidth(), 0);
-         minSize.setWidth(qMin(minSize.width(), max_min_width));
-         minSize.setHeight(qMin(minSize.height(), max_min_height));
+         minSize.setWidth(((minSize.width()) < (max_min_width) ? (minSize.width()) : (max_min_width)));
+         minSize.setHeight(((minSize.height()) < (max_min_height) ? (minSize.height()) : (max_min_height)));
          return minSize;
       }
       return QSize(0, 0);
@@ -2780,9 +2776,10 @@ void CoreOptionsDialog::clearLayout()
 
    if (m_scrollArea)
    {
-      foreach (QObject *obj, children())
       {
-         obj->deleteLater();
+         QList<QObject*> _children = children();
+         for (int _i = 0; _i < _children.size(); _i++)
+            _children[_i]->deleteLater();
       }
    }
 
@@ -3190,8 +3187,11 @@ void ShaderParamsDialog::clearLayout()
 
    if (m_scrollArea)
    {
-      foreach (QObject *obj, children())
-         delete obj;
+      {
+         QList<QObject*> _children = children();
+         for (int _i = 0; _i < _children.size(); _i++)
+            delete _children[_i];
+      }
    }
 
    m_layout = new QVBoxLayout();
@@ -4832,9 +4832,9 @@ void MainWindow::onThumbnailPackDownloadNetworkSslErrors(
    {
       const QSslError &error = errors.at(i);
       QString string         =
-           QStringLiteral("Ignoring SSL error code ")
+           QString("Ignoring SSL error code ")
          + QString::number(error.error())
-         + QStringLiteral(": ")
+         + QString(": ")
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
@@ -4900,7 +4900,7 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
       emit showErrorMessageDeferred(QString(msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR))
-                + QStringLiteral(": HTTP Code ")
+                + QString(": HTTP Code ")
                 + QString::number(code));
 
       m_thumbnailPackDownloadFile.remove();
@@ -4953,9 +4953,9 @@ void MainWindow::onThumbnailPackDownloadFinished()
       RARCH_ERR("[Qt] Thumbnail pack download ended prematurely: %s.\n", errorData);
       emit showErrorMessageDeferred(QString(msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR))
-                + QStringLiteral(": Code ")
+                + QString(": Code ")
                 + QString::number(code)
-                + QStringLiteral(": ")
+                + QString(": ")
                 + errorData);
    }
 
@@ -5054,7 +5054,7 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
    m_thumbnailPackDownloadProgressDialog->setValue(0);
    m_thumbnailPackDownloadProgressDialog->setLabelText(QString(
             msg_hash_to_str(MSG_DOWNLOADING))
-          + QStringLiteral("..."));
+          + QString("..."));
    m_thumbnailPackDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
    m_thumbnailPackDownloadProgressDialog->show();
 
@@ -5140,9 +5140,9 @@ void MainWindow::onThumbnailDownloadNetworkSslErrors(
    {
       const QSslError &error = errors.at(i);
       QString         string =
-           QStringLiteral("Ignoring SSL error code ")
+           QString("Ignoring SSL error code ")
          + QString::number(error.error())
-         + QStringLiteral(": ")
+         + QString(": ")
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
@@ -5268,9 +5268,9 @@ void MainWindow::onThumbnailDownloadFinished()
       RARCH_ERR("[Qt] Thumbnail download ended prematurely: %s\n", errorData);
       emit showErrorMessageDeferred(
               QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR))
-            + QStringLiteral(": Code ")
+            + QString(": Code ")
             + QString::number(code)
-            + QStringLiteral(": ")
+            + QString(": ")
             + errorData);
    }
 
@@ -5324,9 +5324,9 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    downloadType             = m_pendingThumbnailDownloadTypes.takeFirst();
    urlString                = QString(THUMBNAIL_URL_HEADER)
       + system
-      + QStringLiteral("/")
+      + QString("/")
       + downloadType
-      + QStringLiteral("/")
+      + QString("/")
       + title
       + THUMBNAIL_IMAGE_EXTENSION;
 
@@ -5348,12 +5348,12 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
       QDir dir;
       const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
       QString               dirString = QString(path_dir_thumbnails)
-                                      + QStringLiteral("/")
+                                      + QString("/")
                                       + system
-                                      + QStringLiteral("/")
+                                      + QString("/")
                                       + downloadType;
       QString fileName                = dirString
-         + QStringLiteral("/")
+         + QString("/")
          + title
          + THUMBNAIL_IMAGE_EXTENSION
          + PARTIAL_EXTENSION;
@@ -5444,9 +5444,9 @@ void MainWindow::onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslErr
    {
       const QSslError &error = errors.at(i);
       QString string         =
-           QStringLiteral("Ignoring SSL error code ")
+           QString("Ignoring SSL error code ")
          + QString::number(error.error())
-         + QStringLiteral(": ")
+         + QString(": ")
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
@@ -5587,9 +5587,9 @@ void MainWindow::downloadNextPlaylistThumbnail(
    urlString            =
         QString(THUMBNAIL_URL_HEADER)
       + system
-      + QStringLiteral("/")
+      + QString("/")
       + type
-      + QStringLiteral("/")
+      + QString("/")
       + title
       + THUMBNAIL_IMAGE_EXTENSION;
 
@@ -5608,21 +5608,21 @@ void MainWindow::downloadNextPlaylistThumbnail(
       QDir dir;
       QString dirString = QString(settings->paths.directory_thumbnails);
       QString fileName = dirString
-         + QStringLiteral("/")
+         + QString("/")
          + system
-         + QStringLiteral("/")
+         + QString("/")
          + type
-         + QStringLiteral("/")
+         + QString("/")
          + title
          + THUMBNAIL_IMAGE_EXTENSION
          + PARTIAL_EXTENSION;
       QByteArray fileNameArray = fileName.toUtf8();
       const char *fileNameData = fileNameArray.constData();
 
-      dir.mkpath(dirString + QStringLiteral("/") + system + QStringLiteral("/") + THUMBNAIL_BOXART);
-      dir.mkpath(dirString + QStringLiteral("/") + system + QStringLiteral("/") + THUMBNAIL_SCREENSHOT);
-      dir.mkpath(dirString + QStringLiteral("/") + system + QStringLiteral("/") + THUMBNAIL_TITLE);
-      dir.mkpath(dirString + QStringLiteral("/") + system + QStringLiteral("/") + THUMBNAIL_LOGO);
+      dir.mkpath(dirString + QString("/") + system + QString("/") + THUMBNAIL_BOXART);
+      dir.mkpath(dirString + QString("/") + system + QString("/") + THUMBNAIL_SCREENSHOT);
+      dir.mkpath(dirString + QString("/") + system + QString("/") + THUMBNAIL_TITLE);
+      dir.mkpath(dirString + QString("/") + system + QString("/") + THUMBNAIL_LOGO);
 
       m_playlistThumbnailDownloadFile.setFileName(fileName);
 
@@ -5683,7 +5683,7 @@ void MainWindow::downloadNextPlaylistThumbnail(
 
    {
       QString labelText  = QString(msg_hash_to_str(MSG_DOWNLOADING))
-                         + QStringLiteral("...\n");
+                         + QString("...\n");
       QString labelText2 = QString(msg_hash_to_str(
                            MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS)).arg(
                            m_downloadedThumbnails).arg(m_failedThumbnails);
@@ -7335,7 +7335,7 @@ void VideoPage::onResolutionComboIndexChanged(int index)
 void CrtSwitchresPage::onCrtSuperResolutionComboIndexChanged(int index)
 {
    settings_t *settings = config_get_ptr();
-   Q_UNUSED(index)
+   (void)(index);
 
    settings->uints.crt_switch_resolution_super =
    m_crtSuperResolutionCombo->currentData().value<unsigned>();
@@ -7707,9 +7707,9 @@ QString PlaylistModel::getThumbnailPath(const QHash<QString, QString> &hash, QSt
 
    return getSanitizedThumbnailName(
       getPlaylistThumbnailsDir(hash.value("db_name"))
-      + QStringLiteral("/")
+      + QString("/")
       + type
-      + QStringLiteral("/"),
+      + QString("/"),
       hash["label_noext"]);
 }
 
@@ -7747,7 +7747,7 @@ void PlaylistModel::reloadSystemThumbnails(const QString system)
    settings_t *settings            = config_get_ptr();
    const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
    QString           path          = QDir::cleanPath(QString(path_dir_thumbnails))
-	   + QStringLiteral("/") + system;
+	   + QString("/") + system;
    QList<QString>             keys = m_cache.keys();
    QList<QString>          pending = m_pendingImages.values();
 
@@ -7823,7 +7823,7 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog,
 
    for (i = 0; i < dirList.count(); i++)
    {
-      QString path(dir.path() + QStringLiteral("/") + dirList.at(i));
+      QString path(dir.path() + QString("/") + dirList.at(i));
       QByteArray pathArray = path.toUtf8();
       QFileInfo fileInfo(path);
       const char *pathData = pathArray.constData();
@@ -7873,7 +7873,7 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog,
                          * MAME/FBA where only the archives themselves
                          * are valid content. */
                         pathArray = (QString(pathData)
-			      + QStringLiteral("#")
+			      + QString("#")
                               + archive_list->elems[0].data).toUtf8();
                         pathData = pathArray.constData();
 
@@ -8170,7 +8170,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
                 * something like MAME/FBA where only the archives
                 * themselves are valid content. */
                pathArray = QDir::toNativeSeparators(QString(pathData)
-                     + QStringLiteral("#")
+                     + QString("#")
 		     + list->elems[0].data).toUtf8();
                pathData  = pathArray.constData();
 
@@ -8312,7 +8312,7 @@ bool MainWindow::updateCurrentPlaylistEntry(
          {
             /* assume archives with one file should have that file loaded directly */
             pathArray = QDir::toNativeSeparators(QString(pathData)
-		      + QStringLiteral("#")
+		      + QString("#")
 		      + list->elems[0].data).toUtf8();
             pathData  = pathArray.constData();
          }
@@ -8404,7 +8404,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    hiddenPlaylistsMenu.reset(new QMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS), this));
    newPlaylistAction.reset(new QAction(QString(
 		msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST))
-	      + QStringLiteral("..."), this));
+	      + QString("..."), this));
 
    hiddenPlaylistsMenu->setObjectName("hiddenPlaylistsMenu");
 
@@ -8415,12 +8415,12 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
       deletePlaylistAction.reset(new QAction(
                QString(msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST))
-	           + QStringLiteral("..."), this));
+	           + QString("..."), this));
       menu->addAction(deletePlaylistAction.data());
 
       renamePlaylistAction.reset(new QAction(QString(
 	  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST))
-	+ QStringLiteral("..."), this));
+	+ QString("..."), this));
       menu->addAction(renamePlaylistAction.data());
    }
 

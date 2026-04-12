@@ -5,7 +5,6 @@
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
-#include <QDebug>
 #include <QDialog>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -527,7 +526,7 @@ public:
    ColorButton(rarch_setting_t *red, rarch_setting_t *green, rarch_setting_t *blue, QWidget *parent = 0);
    ColorButton(msg_hash_enums red, msg_hash_enums green, msg_hash_enums blue, QWidget *parent = 0);
 protected slots:
-   virtual void onColorChanged(const QColor& color) { Q_UNUSED(color); }
+   virtual void onColorChanged(const QColor& color) { (void)(color); }
 protected:
    virtual QColor color() { return QColor(); }
    void paintEvent(QPaintEvent *event);
@@ -1004,7 +1003,7 @@ public:
    VideoPage(QObject *parent = nullptr);
    QWidget *widget();
 private slots:
-   Q_DECL_DEPRECATED void onResolutionComboIndexChanged(const QString& value);
+   void onResolutionComboIndexChanged(const QString& value);
    void onResolutionComboIndexChanged(int index);
 private:
    QComboBox *m_resolutionCombo;
