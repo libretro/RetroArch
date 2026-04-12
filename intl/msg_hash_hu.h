@@ -1119,6 +1119,26 @@ MSG_HASH(
    "A felhő alapú tárhelyszolgáltatóhoz használt jelszó."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Hozzáférési kulcsazonosító"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "A felhő alapú tárhelyszolgáltatóhoz használt hozzáférési kulcsazonosító."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Titkos hozzáférési kulcs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "A felhő alapú tárhelyszolgáltatóhoz használt titkos hozzáférési kulcs."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "A felhő alapú tárhely S3 végpontjának címe."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Naplózás"
    )
@@ -2407,8 +2427,28 @@ MSG_HASH(
    "Ki"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Fényerő"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "A menü fényereje cd/m2 (nit) egységben HDR kijelző használatakor. Csak engedélyezett HDR beállítás esetén látható."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Fényerő"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "A HDR fényerő beállítás nit-ben. A kijelző fizikai fényerő beállításaival együtt alkalmazandó. Kezdésnek állítsuk ezt 80-ra és a kijelző fényerejét maximumra, vagy állítsuk ezt a kijelző maximális nit értékére és csökkentsük a kijelző fényerejét, amíg a kijelzés megfelelő nem lesz."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Színfeltöltés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "A kijelző teljes színskálájának használata egy fényesebb, telítetteb képhez. Az eredeti játékhoz hűbb színekhez a Pontos beállítás javasolt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
@@ -4483,6 +4523,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
    "Változások mentése a konfigurációs fájlba kilépéskor. Hasznos a menüben tett változtatásokhoz. Felülírja a konfigurációs fájlt, az #include direktívák és a kommentek nem őrződnek meg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Minimális konfiguráció mentése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Csak az alapértelmezettől eltérő beállítások mentése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Bekapcsolva csak azok a konfigurációs értékek mentődnek, amiknek az értéke nem az alapértelmezett. Ez kisebb, kezelhetőbb konfigurációs fájlt eredményez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -7880,6 +7932,10 @@ MSG_HASH(
    "Játéklista frissítése"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Új tartalom hozzáadása és az érvénytelen bejegyzések eltávolítása a játéklista legutóbbi létrehozásához vagy szerkesztéséhez használt \"Tartalom beolvasása\" művelet megismétlésével."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Játéklista törlése"
    )
@@ -8457,6 +8513,14 @@ MSG_HASH(
    "Átfésül egy fájlt olyan tartalmakat keresve, amelyek szerepelnek az adatbázisban."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "Tartalom beolvasása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+   "Konfigurálható beolvasás a tartalom fájlnevei és/vagy az adatbázis illeszkedése alapján."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Beolvasás"
    )
@@ -8522,6 +8586,30 @@ MSG_HASH(
 
 /* Import Content > Content Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+   "Tartalom helye"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+   "Tartalom beolvasása ebből a könyvtárból (vagy fájlból)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "A frissítendő játéklista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "A generált játéklista neve, ami a bélyegképek azonosításánál is számít. Az automatikus beállítás ugyanazt a nevet fogja használni, mint az illeszkedő adatbázis, vagy a tartalom könyvtára."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Játéklista egyedi neve"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "A beolvasott tartalom játéklistájának egyedi neve."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Alapértelmezett mag"
@@ -9307,6 +9395,10 @@ MSG_HASH(
    "Csalás keresés indítása vagy folytatása"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "A memória átfésülése új csalások létrehozásához."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Csalás fájl betöltése (lecserélés)"
    )
@@ -9327,6 +9419,10 @@ MSG_HASH(
    "Játékfüggő csalások újratöltése"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "Minden létező csalás újratöltése."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Csalás fájl mentése másként"
    )
@@ -9339,12 +9435,24 @@ MSG_HASH(
    "Új csalás hozzáadása az elejére"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "Csalás beszúrása a lista elejére."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Új csalás hozzáadása a végére"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "Csalás beszúrása a lista végére."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Minden csalás törlése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "A csaláslista ürítése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -9468,6 +9576,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Annyi, mint előzőleg - %u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "A %u egyezés hozzáadása a listához"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -14258,6 +14370,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Minden csalás törölve."
+   )
+MSG_HASH(
+   MSG_CHEAT_RELOAD_ALL_SUCCESS,
+   "Minden csalás újratöltve."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,
