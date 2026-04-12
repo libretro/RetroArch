@@ -26,6 +26,7 @@
 #include "glslang_util.h"
 #if defined(HAVE_GLSLANG)
 #include "glslang.hpp"
+#include "slang_cache.h"
 #endif
 #include "spirv_cross.hpp"
 #include "slang_process.h"
@@ -733,6 +734,7 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
 #if defined(HAVE_GLSLANG)
    struct shader_line_buf lines;
+   char cache_filename[PATH_MAX_LENGTH];
 
    if (!shader_line_buf_init(&lines))
       return false;
@@ -741,6 +743,23 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 
    if (!glslang_read_shader_file(shader_path, &lines, true, false))
       goto error;
+
+   /* Compute cache key from preprocessed source (vertex + fragment stages) */
+   {
+      std::string vertex_source = build_stage_source(&lines, "vertex");
+      std::string fragment_source = build_stage_source(&lines, "fragment");
+      spirv_cache_compute_hash(vertex_source.c_str(), fragment_source.c_str(),
+                              cache_filename);
+   }
+
+   /* Try to load from cache */
+   if (spirv_cache_load(cache_filename, output))
+   {
+      RARCH_LOG("[Slang] Loaded shader from cache: \"%s\".\n", shader_path);
+      shader_line_buf_free(&lines);
+      return true;
+   }
+
    output->meta = glslang_meta{};
    if (!glslang_parse_meta(&lines, &output->meta))
       goto error;
@@ -758,6 +777,9 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
       RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
       goto error;
    }
+
+   /* Save to cache */
+   spirv_cache_save(cache_filename, output);
 
    shader_line_buf_free(&lines);
 
