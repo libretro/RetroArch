@@ -1895,6 +1895,15 @@ static size_t core_info_list_resolve_all_extensions(
    string_ext_list_append_dedup(all_ext, &_len, all_ext_len,
          "zip", STRLEN_CONST("zip"));
 #endif
+
+   /* Shrink heap allocation to actual deduplicated size */
+   if (_len + 1 < all_ext_len)
+   {
+      char *trimmed = (char*)realloc(all_ext, _len + 1);
+      if (trimmed)
+         core_info_list->all_ext = trimmed;
+   }
+
    return _len;
 }
 
