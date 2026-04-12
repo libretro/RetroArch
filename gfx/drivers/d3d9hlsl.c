@@ -295,45 +295,6 @@ static INLINE bool d3d9_hlsl_renderchain_set_pass_size(
    return true;
 }
 
-static INLINE void d3d9_convert_geometry(
-      const struct LinkInfo *info,
-      unsigned *out_width,
-      unsigned *out_height,
-      unsigned width,
-      unsigned height,
-      D3DVIEWPORT9 *out_vp)
-{
-   switch (info->pass->fbo.type_x)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         *out_width = info->pass->fbo.scale_x * out_vp->Width;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         *out_width = info->pass->fbo.abs_x;
-         break;
-
-      case RARCH_SCALE_INPUT:
-         *out_width = info->pass->fbo.scale_x * width;
-         break;
-   }
-
-   switch (info->pass->fbo.type_y)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         *out_height = info->pass->fbo.scale_y * out_vp->Height;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         *out_height = info->pass->fbo.abs_y;
-         break;
-
-      case RARCH_SCALE_INPUT:
-         *out_height = info->pass->fbo.scale_y * height;
-         break;
-   }
-}
-
 static INLINE void d3d9_recompute_pass_sizes(
       LPDIRECT3DDEVICE9 dev,
       d3d9_hlsl_renderchain_t *chain,
@@ -364,10 +325,30 @@ static INLINE void d3d9_recompute_pass_sizes(
 
    for (i = 1; i < (int) d3d->shader.passes; i++)
    {
-      d3d9_convert_geometry(
-            &link_info,
-            &out_width, &out_height,
-            current_width, current_height, &d3d->out_vp);
+      switch (link_info.pass->fbo.type_x)
+      {
+         case RARCH_SCALE_VIEWPORT:
+            out_width = link_info.pass->fbo.scale_x * d3d->out_vp.Width;
+            break;
+         case RARCH_SCALE_ABSOLUTE:
+            out_width = link_info.pass->fbo.abs_x;
+            break;
+         case RARCH_SCALE_INPUT:
+            out_width = link_info.pass->fbo.scale_x * current_width;
+            break;
+      }
+      switch (link_info.pass->fbo.type_y)
+      {
+         case RARCH_SCALE_VIEWPORT:
+            out_height = link_info.pass->fbo.scale_y * d3d->out_vp.Height;
+            break;
+         case RARCH_SCALE_ABSOLUTE:
+            out_height = link_info.pass->fbo.abs_y;
+            break;
+         case RARCH_SCALE_INPUT:
+            out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+      }
 
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
@@ -2697,11 +2678,6 @@ static void hlsl_d3d9_renderchain_render(
    first_pass                     = (struct shader_pass*)
       &chain->chain.passes->data[0];
 
-   d3d9_convert_geometry(
-         &first_pass->info,
-         &out_width, &out_height,
-         current_width, current_height, chain->chain.out_vp);
-
    /* Blit frame to first pass texture */
    {
       unsigned y;
@@ -2744,9 +2720,30 @@ static void hlsl_d3d9_renderchain_render(
 		      (LPDIRECT3DTEXTURE9)to_pass->tex, 0, (IDirect3DSurface9**)&target);
       IDirect3DDevice9_SetRenderTarget(chain->chain.dev, 0, target);
 
-      d3d9_convert_geometry(&from_pass->info,
-            &out_width, &out_height,
-            current_width, current_height, chain->chain.out_vp);
+      switch (from_pass->info.pass->fbo.type_x)
+      {
+         case RARCH_SCALE_VIEWPORT:
+            out_width = from_pass->info.pass->fbo.scale_x * chain->chain.out_vp->Width;
+            break;
+         case RARCH_SCALE_ABSOLUTE:
+            out_width = from_pass->info.pass->fbo.abs_x;
+            break;
+         case RARCH_SCALE_INPUT:
+            out_width = from_pass->info.pass->fbo.scale_x * current_width;
+            break;
+      }
+      switch (from_pass->info.pass->fbo.type_y)
+      {
+         case RARCH_SCALE_VIEWPORT:
+            out_height = from_pass->info.pass->fbo.scale_y * chain->chain.out_vp->Height;
+            break;
+         case RARCH_SCALE_ABSOLUTE:
+            out_height = from_pass->info.pass->fbo.abs_y;
+            break;
+         case RARCH_SCALE_INPUT:
+            out_height = from_pass->info.pass->fbo.scale_y * current_height;
+            break;
+      }
 
       /* Clear out whole FBO. */
       viewport.Width  = to_pass->info.tex_w;
@@ -2789,9 +2786,30 @@ static void hlsl_d3d9_renderchain_render(
    last_pass = (struct shader_pass*)&chain->chain.passes->
       data[chain->chain.passes->count - 1];
 
-   d3d9_convert_geometry(&last_pass->info,
-         &out_width, &out_height,
-         current_width, current_height, chain->chain.out_vp);
+   switch (last_pass->info.pass->fbo.type_x)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         out_width = last_pass->info.pass->fbo.scale_x * chain->chain.out_vp->Width;
+         break;
+      case RARCH_SCALE_ABSOLUTE:
+         out_width = last_pass->info.pass->fbo.abs_x;
+         break;
+      case RARCH_SCALE_INPUT:
+         out_width = last_pass->info.pass->fbo.scale_x * current_width;
+         break;
+   }
+   switch (last_pass->info.pass->fbo.type_y)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         out_height = last_pass->info.pass->fbo.scale_y * chain->chain.out_vp->Height;
+         break;
+      case RARCH_SCALE_ABSOLUTE:
+         out_height = last_pass->info.pass->fbo.abs_y;
+         break;
+      case RARCH_SCALE_INPUT:
+         out_height = last_pass->info.pass->fbo.scale_y * current_height;
+         break;
+   }
 
    IDirect3DDevice9_SetViewport(
          chain->chain.dev, (D3DVIEWPORT9*)chain->chain.out_vp);
@@ -6544,10 +6562,30 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
 
    for (i = 1; i < d3d->shader.passes; i++)
    {
-      d3d9_convert_geometry(
-            &link_info,
-            &out_width, &out_height,
-            current_width, current_height, &d3d->out_vp);
+      switch (link_info.pass->fbo.type_x)
+      {
+         case RARCH_SCALE_VIEWPORT:
+            out_width = link_info.pass->fbo.scale_x * d3d->out_vp.Width;
+            break;
+         case RARCH_SCALE_ABSOLUTE:
+            out_width = link_info.pass->fbo.abs_x;
+            break;
+         case RARCH_SCALE_INPUT:
+            out_width = link_info.pass->fbo.scale_x * current_width;
+            break;
+      }
+      switch (link_info.pass->fbo.type_y)
+      {
+         case RARCH_SCALE_VIEWPORT:
+            out_height = link_info.pass->fbo.scale_y * d3d->out_vp.Height;
+            break;
+         case RARCH_SCALE_ABSOLUTE:
+            out_height = link_info.pass->fbo.abs_y;
+            break;
+         case RARCH_SCALE_INPUT:
+            out_height = link_info.pass->fbo.scale_y * current_height;
+            break;
+      }
 
       link_info.pass  = &d3d->shader.pass[i];
       link_info.tex_w = next_pow2(out_width);
