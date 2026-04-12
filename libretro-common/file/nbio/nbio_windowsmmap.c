@@ -219,6 +219,9 @@ nbio_intf_t nbio_mmap_win32 = {
    nbio_mmap_win32_get_ptr,
    nbio_mmap_win32_cancel,
    nbio_mmap_win32_free,
+   NULL, /* set_chunk_size - mmap doesn't chunk */
+   NULL, /* get_fd - win32 uses HANDLE, not fd */
+   NULL, /* get_progress - mmap is instant */
    "nbio_mmap_win32",
 };
 #else
@@ -231,6 +234,9 @@ nbio_intf_t nbio_mmap_win32 = {
    NULL,
    NULL,
    NULL,
+   NULL, /* set_chunk_size */
+   NULL, /* get_fd */
+   NULL, /* get_progress */
    "nbio_mmap_win32",
 };
 

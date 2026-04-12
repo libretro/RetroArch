@@ -26,6 +26,19 @@
 #include <malloc.h>
 #endif
 
+/* posix_fadvise for sequential readahead hints.
+ * Available on Linux and most BSDs, but NOT on macOS/iOS (Darwin),
+ * Wii U, 3DS, Vita, Switch, or Windows. */
+#if !defined(_WIN32) && !defined(__APPLE__) && !defined(WIIU) \
+ && !defined(_3DS) && !defined(VITA) && !defined(HAVE_LIBNX) \
+ && !defined(GEKKO) && !defined(__CELLOS_LV2__) && !defined(PSP) \
+ && (defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) \
+     || defined(__OpenBSD__) || defined(__DragonFly__) \
+     || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L))
+#include <fcntl.h>
+#define NBIO_HAVE_FADVISE 1
+#endif
+
 #include <file/nbio.h>
 #include <encodings/utf.h>
 
@@ -50,12 +63,17 @@
 #endif
 #endif
 
+/* Default chunk size for non-blocking I/O iterations (bytes).
+ * Callers may override per-handle via nbio_set_chunk_size(). */
+#define NBIO_DEFAULT_CHUNK_SIZE 65536
+
 struct nbio_stdio_t
 {
    FILE* f;
    void* data;
    size_t progress;
    size_t len;
+   size_t chunk_size;
    /*
     * possible values:
     * NBIO_READ, NBIO_WRITE - obvious
@@ -155,6 +173,7 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
    handle->data          = buf;
    handle->len           = len;
    handle->progress      = handle->len;
+   handle->chunk_size    = NBIO_DEFAULT_CHUNK_SIZE;
    handle->op            = -2;
 
    return handle;
@@ -170,6 +189,15 @@ static void nbio_stdio_begin_read(void *data)
       abort();
 
    fseek_wrap(handle->f, 0, SEEK_SET);
+
+#ifdef NBIO_HAVE_FADVISE
+   /* Hint sequential access so the kernel enlarges its readahead window */
+   {
+      int fd = fileno(handle->f);
+      if (fd >= 0)
+         posix_fadvise(fd, 0, (off_t)handle->len, POSIX_FADV_SEQUENTIAL);
+   }
+#endif
 
    handle->op       = NBIO_READ;
    handle->progress = 0;
@@ -191,11 +219,13 @@ static void nbio_stdio_begin_write(void *data)
 
 static bool nbio_stdio_iterate(void *data)
 {
-   size_t amount               = 65536;
+   size_t amount               = 0;
    struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
 
    if (!handle)
       return false;
+
+   amount = handle->chunk_size;
 
    if (amount > handle->len - handle->progress)
       amount = handle->len - handle->progress;
@@ -291,6 +321,39 @@ static void nbio_stdio_free(void *data)
    free(handle);
 }
 
+static void nbio_stdio_set_chunk_size(void *data, size_t chunk_size)
+{
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
+   if (!handle)
+      return;
+   handle->chunk_size = (chunk_size > 0) ? chunk_size : NBIO_DEFAULT_CHUNK_SIZE;
+}
+
+static int nbio_stdio_get_fd(void *data)
+{
+#if !defined(_WIN32) || defined(LEGACY_WIN32)
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
+   if (handle && handle->f)
+      return fileno(handle->f);
+#endif
+   return -1;
+}
+
+static bool nbio_stdio_get_progress(void *data,
+      size_t *completed, size_t *total)
+{
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
+   if (!handle)
+   {
+      if (completed) *completed = 0;
+      if (total)     *total     = 0;
+      return false;
+   }
+   if (completed) *completed = handle->progress;
+   if (total)     *total     = handle->len;
+   return (handle->op >= 0);
+}
+
 nbio_intf_t nbio_stdio = {
    nbio_stdio_open,
    nbio_stdio_begin_read,
@@ -300,5 +363,8 @@ nbio_intf_t nbio_stdio = {
    nbio_stdio_get_ptr,
    nbio_stdio_cancel,
    nbio_stdio_free,
+   nbio_stdio_set_chunk_size,
+   nbio_stdio_get_fd,
+   nbio_stdio_get_progress,
    "nbio_stdio",
 };

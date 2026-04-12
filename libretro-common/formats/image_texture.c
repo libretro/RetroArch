@@ -369,8 +369,10 @@ bool image_texture_load(struct texture_image *out_img,
 
    if (type != IMAGE_TYPE_NONE)
    {
+      /* Use BIO_READ (blocking single-shot) since we spin-wait
+       * until completion anyway — avoids chunked iteration overhead. */
       struct nbio_t *handle = (struct nbio_t*)
-         nbio_open(path, NBIO_READ);
+         nbio_open(path, BIO_READ);
       if (handle)
       {
          void *ptr       = NULL;

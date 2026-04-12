@@ -106,6 +106,16 @@ static void *nbio_linux_open(const char * filename, unsigned mode)
    if (fd < 0)
       return NULL;
 
+   /* Hint sequential access so the kernel prefetches aggressively
+    * while the AIO read is in progress.
+    * posix_fadvise requires _POSIX_C_SOURCE >= 200112L; some embedded
+    * Linux toolchains (early Android NDK) may not expose it. */
+#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L \
+ || defined(_GNU_SOURCE) || defined(__GLIBC__)
+   if (mode == NBIO_READ || mode == BIO_READ)
+      posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+#endif
+
    if (io_setup(128, &ctx) < 0)
    {
       close(fd);
@@ -208,6 +218,30 @@ static void nbio_linux_free(void *data)
    free(handle);
 }
 
+static int nbio_linux_get_fd(void *data)
+{
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   if (handle)
+      return handle->fd;
+   return -1;
+}
+
+static bool nbio_linux_get_progress(void *data,
+      size_t *completed, size_t *total)
+{
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   if (!handle)
+   {
+      if (completed) *completed = 0;
+      if (total)     *total     = 0;
+      return false;
+   }
+   /* Linux AIO is all-or-nothing: either busy (0 done) or complete */
+   if (completed) *completed = handle->busy ? 0 : handle->len;
+   if (total)     *total     = handle->len;
+   return handle->busy;
+}
+
 nbio_intf_t nbio_linux = {
    nbio_linux_open,
    nbio_linux_begin_read,
@@ -217,6 +251,9 @@ nbio_intf_t nbio_linux = {
    nbio_linux_get_ptr,
    nbio_linux_cancel,
    nbio_linux_free,
+   NULL, /* set_chunk_size - linux AIO submits entire read at once */
+   nbio_linux_get_fd,
+   nbio_linux_get_progress,
    "nbio_linux",
 };
 #else
@@ -229,6 +266,9 @@ nbio_intf_t nbio_linux = {
    NULL,
    NULL,
    NULL,
+   NULL, /* set_chunk_size */
+   NULL, /* get_fd */
+   NULL, /* get_progress */
    "nbio_linux",
 };
 
