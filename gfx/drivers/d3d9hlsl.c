@@ -1791,23 +1791,6 @@ static int d3d9_hlsl_find_uniform_reg(
 /* Set a float2 shader uniform by name, uploading to the register
  * found in the compiled bytecode CTAB.  Pads to float4 for the
  * hardware constant register. */
-static INLINE void d3d9_hlsl_set_param_2f(
-      const DWORD *bytecode, size_t bytecode_dwords,
-      bool is_vertex,
-      LPDIRECT3DDEVICE9 dev, const char *name, const void *values)
-{
-   int reg = d3d9_hlsl_find_uniform_reg(bytecode, bytecode_dwords, name);
-   if (reg >= 0)
-   {
-      const float *src = (const float*)values;
-      float v4[4]      = { src[0], src[1], 0.0f, 0.0f };
-      if (is_vertex)
-         d3d9_hlsl_set_vs_const(dev, reg, v4, 1);
-      else
-         d3d9_hlsl_set_ps_const(dev, reg, v4, 1);
-   }
-}
-
 /* Set a float shader uniform by name. */
 static INLINE void d3d9_hlsl_set_param_1f(
       const DWORD *bytecode, size_t bytecode_dwords,
@@ -2101,16 +2084,23 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
          chain->chain.dev, "modelViewProj", mvp_data);
 }
 
-static void hlsl_d3d9_renderchain_set_vertices(
+static void d3d9_hlsl_renderchain_render_pass(
       d3d9_video_t *d3d,
       hlsl_renderchain_t *chain,
       struct shader_pass *pass,
       unsigned pass_index,
       unsigned width, unsigned height,
-      unsigned vp_width, unsigned vp_height)
+      D3DVIEWPORT9 *vp)
 {
+   unsigned i;
    const hlsl_pass_data_t *pd = NULL;
+   int32_t filter;
+   unsigned vp_width          = vp->Width;
+   unsigned vp_height         = vp->Height;
 
+   IDirect3DDevice9_SetViewport(chain->chain.dev, vp);
+
+   /* === Set vertices === */
    if (pass->last_width != width || pass->last_height != height)
    {
       struct Vertex vert[4];
@@ -2156,187 +2146,23 @@ static void hlsl_d3d9_renderchain_set_vertices(
       IDirect3DVertexBuffer9_Unlock(pass->vertex_buf);
    }
 
-   /* Determine the pass data to use for uniform upload.
-    * Per-pass compiled shaders use pass_data[pass_index - 1].
-    * The stock shader fallback skips these — its MVP is already
-    * set at c0 by d3d9_hlsl_frame(), and it has no IN.* uniforms. */
+   /* Determine the pass data to use for uniform upload */
    if (pass->vprg && pass->fprg
          && pass_index > 0 && pass_index <= chain->pass_data_count)
       pd = &chain->pass_data[pass_index - 1];
 
-   if (pd && pd->vs_bytecode)
+   /* === Render pass === */
+   filter       = d3d_translate_filter(pass->info.pass->filter);
+
+   if (pd)
    {
-      float frame_cnt;
-      float video_size[2]   = { (float)width,            (float)height };
-      float texture_size[2] = { (float)pass->info.tex_w, (float)pass->info.tex_h };
-      float output_size[2]  = { (float)vp_width,         (float)vp_height };
-
-      hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, pd,
-            (const void*)&d3d->mvp);
-
-      d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
-            chain->chain.dev, "IN.video_size",      &video_size);
-      d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
-            chain->chain.dev, "IN.video_size",      &video_size);
-      d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
-            chain->chain.dev, "IN.texture_size",    &texture_size);
-      d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
-            chain->chain.dev, "IN.texture_size",    &texture_size);
-      d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
-            chain->chain.dev, "IN.output_size",     &output_size);
-      d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
-            chain->chain.dev, "IN.output_size",     &output_size);
-
-      frame_cnt = chain->chain.frame_count;
-
-      if (pass->info.pass->frame_count_mod)
-         frame_cnt = chain->chain.frame_count
-            % pass->info.pass->frame_count_mod;
-
-      d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
-            chain->chain.dev, "IN.frame_count",     &frame_cnt);
-      d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
-            chain->chain.dev, "IN.frame_count",     &frame_cnt);
-   }
-}
-
-static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
-{
-   if (chain->chain.passes->count >= 1)
-   {
-      size_t i;
-
-      d3d9_vertex_buffer_free(NULL,
-            chain->chain.passes->data[0].vertex_decl);
-
-      for (i = 1; i < chain->chain.passes->count; i++)
-      {
-         if (chain->chain.passes->data[i].tex)
-            IDirect3DTexture9_Release(chain->chain.passes->data[i].tex);
-         chain->chain.passes->data[i].tex = NULL;
-         d3d9_vertex_buffer_free(
-               chain->chain.passes->data[i].vertex_buf,
-               chain->chain.passes->data[i].vertex_decl);
-      }
-   }
-
-   /* Free per-pass bytecodes */
-   {
-      unsigned i;
-      for (i = 0; i < chain->pass_data_count; i++)
-         hlsl_pass_data_free(&chain->pass_data[i]);
-      chain->pass_data_count = 0;
-   }
-   hlsl_pass_data_free(&chain->stock_data);
-}
-
-static void hlsl_d3d9_renderchain_free(void *data)
-{
-   hlsl_renderchain_t *chain = (hlsl_renderchain_t*)data;
-
-   if (!chain)
-      return;
-
-   /* Destroy resources */
-   {
-      size_t i;
-
-      for (i = 0; i < TEXTURES; i++)
-      {
-         if (chain->chain.prev.tex[i])
-            IDirect3DTexture9_Release(chain->chain.prev.tex[i]);
-         if (chain->chain.prev.vertex_buf[i])
-            d3d9_vertex_buffer_free(chain->chain.prev.vertex_buf[i], NULL);
-      }
-
-      d3d9_hlsl_deinit_progs(chain);
-
-      for (i = 0; i < chain->chain.luts->count; i++)
-      {
-         if (chain->chain.luts->data[i].tex)
-            IDirect3DTexture9_Release(chain->chain.luts->data[i].tex);
-      }
-   }
-
-   /* Destroy passes and luts */
-   if (chain->chain.passes)
-   {
-      int i;
-
-      for (i = 0; i < (int) chain->chain.passes->count; i++)
-      {
-         if (chain->chain.passes->data[i].attrib_map)
-            free(chain->chain.passes->data[i].attrib_map);
-      }
-
-      shader_pass_vector_list_free(chain->chain.passes);
-   }
-
-   lut_info_vector_list_free(chain->chain.luts);
-   unsigned_vector_list_free(chain->chain.bound_tex);
-   unsigned_vector_list_free(chain->chain.bound_vert);
-
-   free(chain);
-}
-
-static bool hlsl_d3d9_renderchain_init(
-      d3d9_video_t *d3d,
-      hlsl_renderchain_t *chain,
-      LPDIRECT3DDEVICE9 dev,
-      const D3DVIEWPORT9 *out_vp,
-      const struct LinkInfo *info,
-      unsigned fmt
-      )
-{
-   chain->chain.dev                         = dev;
-   chain->chain.out_vp                      = (D3DVIEWPORT9*)out_vp;
-   chain->chain.frame_count                 = 0;
-   chain->chain.pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
-
-   if (!hlsl_d3d9_renderchain_create_first_pass(dev, chain, info, fmt))
-      return false;
-
-   hlsl_uniform_map_init(&chain->stock_data.vs_map);
-   hlsl_uniform_map_init(&chain->stock_data.ps_map);
-   chain->stock_data.vs_bytecode = NULL;
-   chain->stock_data.ps_bytecode = NULL;
-   if (!d3d9_hlsl_load_program_ex(chain->chain.dev, &chain->stock_shader,
-            stock_hlsl_program, &chain->stock_data))
-      return false;
-
-   IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
-   IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
-
-   return true;
-}
-
-static void hlsl_d3d9_renderchain_render_pass(
-      d3d9_video_t *d3d,
-      hlsl_renderchain_t *chain,
-      struct shader_pass *pass,
-      unsigned pass_index,
-      unsigned vp_width,
-      unsigned vp_height)
-{
-   unsigned i;
-   int32_t filter = d3d_translate_filter(pass->info.pass->filter);
-   bool has_programs = (pass->vprg && pass->fprg);
-   hlsl_pass_data_t *pd = NULL;
-
-   if (has_programs)
-   {
-      /* Use the per-pass compiled shader programs */
       IDirect3DDevice9_SetVertexShader(chain->chain.dev,
             (LPDIRECT3DVERTEXSHADER9)pass->vprg);
       IDirect3DDevice9_SetPixelShader(chain->chain.dev,
             (LPDIRECT3DPIXELSHADER9)pass->fprg);
-
-      if (pass_index > 0 && pass_index <= chain->pass_data_count)
-         pd = &chain->pass_data[pass_index - 1];
    }
    else
    {
-      /* Stock shader fallback — identical to original code */
       IDirect3DDevice9_SetVertexShader(chain->chain.dev,
             (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
       IDirect3DDevice9_SetPixelShader(chain->chain.dev,
@@ -2356,17 +2182,13 @@ static void hlsl_d3d9_renderchain_render_pass(
          chain->chain.dev, 0, pass->vertex_buf,
          0, sizeof(struct Vertex));
 
-   /* === Per-pass shader binding (only when we have compiled programs) === */
+   /* Per-pass shader binding (only when we have compiled programs) */
    if (pd)
    {
-      /* Set MVP matrix via CTAB.
-       * Use the same MVP matrix that the frame function computed
-       * (with viewport translation adjustments). */
       if (pd->vs_map.mvp >= 0)
          IDirect3DDevice9_SetVertexShaderConstantF(chain->chain.dev,
                pd->vs_map.mvp, (const float*)&d3d->mvp, 4);
 
-      /* Set shader uniforms via CTAB-discovered registers */
       {
          float video_size[2]   = {
             (float)pass->last_width, (float)pass->last_height };
@@ -2382,10 +2204,6 @@ static void hlsl_d3d9_renderchain_render_pass(
             frame_cnt = (float)(chain->chain.frame_count
                   % pass->info.pass->frame_count_mod);
 
-         /* Check if IN struct is packed (video_size and texture_size
-          * share the same register). If so, set as packed float4s:
-          *   c[N+0] = { video_size.x, video_size.y, texture_size.x, texture_size.y }
-          *   c[N+1] = { output_size.x, output_size.y, frame_count, frame_direction } */
          if (pd->ps_map.video_size >= 0
                && pd->ps_map.video_size == pd->ps_map.texture_size)
          {
@@ -2402,7 +2220,6 @@ static void hlsl_d3d9_renderchain_render_pass(
             float ts4[4] = { texture_size[0], texture_size[1], 0.0f, 0.0f };
             d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.video_size,   vs4, 1);
             d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.texture_size, ts4, 1);
-            /* If output_size and frame_count share a register, pack them */
             if (pd->ps_map.output_size >= 0
                   && pd->ps_map.output_size == pd->ps_map.frame_count)
             {
@@ -2536,10 +2353,10 @@ static void hlsl_d3d9_renderchain_render_pass(
                chain->chain.luts->data[i].id, NULL, NULL);
          if (ps_idx >= 0)
          {
-            int32_t filter = chain->chain.luts->data[i].smooth ? 2 : 1;
+            int32_t lut_filter = chain->chain.luts->data[i].smooth ? 2 : 1;
             IDirect3DDevice9_SetTexture(chain->chain.dev, ps_idx, (IDirect3DBaseTexture9*)chain->chain.luts->data[i].tex);
-            IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_MAGFILTER, filter);
-            IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_MINFILTER, filter);
+            IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_MAGFILTER, lut_filter);
+            IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_MINFILTER, lut_filter);
             IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
             IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
             unsigned_vector_list_append(chain->chain.bound_tex, ps_idx);
@@ -2584,11 +2401,7 @@ static void hlsl_d3d9_renderchain_render_pass(
          }
       }
 
-      /* Upload shader parameters from the preset.
-       * Each parameter is a named float uniform declared in the shader
-       * source.  Look up its hardware register in the compiled bytecode
-       * via CTAB and upload the current value (which the menu edits
-       * in-place on d3d->shader.parameters[].current). */
+      /* Upload shader parameters */
       for (i = 0; i < d3d->shader.num_parameters; i++)
       {
          float val[4] = { d3d->shader.parameters[i].current, 0.0f, 0.0f, 0.0f };
@@ -2615,22 +2428,21 @@ static void hlsl_d3d9_renderchain_render_pass(
    IDirect3DDevice9_SetSamplerState(chain->chain.dev,
          0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 
-   /* Unbind all bound textures and vertex streams.
-    * Render targets hate it when they have filters apparently. */
+   /* Unbind all bound textures and vertex streams. */
    {
-      int i;
-      for (i = 0; i < (int) chain->chain.bound_tex->count; i++)
+      int j;
+      for (j = 0; j < (int) chain->chain.bound_tex->count; j++)
       {
          IDirect3DDevice9_SetSamplerState(chain->chain.dev,
-               chain->chain.bound_tex->data[i], D3DSAMP_MINFILTER, D3DTEXF_POINT);
+               chain->chain.bound_tex->data[j], D3DSAMP_MINFILTER, D3DTEXF_POINT);
          IDirect3DDevice9_SetSamplerState(chain->chain.dev,
-               chain->chain.bound_tex->data[i], D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+               chain->chain.bound_tex->data[j], D3DSAMP_MAGFILTER, D3DTEXF_POINT);
          IDirect3DDevice9_SetTexture(chain->chain.dev,
-               chain->chain.bound_tex->data[i], (IDirect3DBaseTexture9*)NULL);
+               chain->chain.bound_tex->data[j], (IDirect3DBaseTexture9*)NULL);
       }
 
-      for (i = 0; i < (int) chain->chain.bound_vert->count; i++)
-         IDirect3DDevice9_SetStreamSource(chain->chain.dev, chain->chain.bound_vert->data[i], 0, 0, 0);
+      for (j = 0; j < (int) chain->chain.bound_vert->count; j++)
+         IDirect3DDevice9_SetStreamSource(chain->chain.dev, chain->chain.bound_vert->data[j], 0, 0, 0);
    }
 
    if (chain->chain.bound_tex)
@@ -2638,6 +2450,116 @@ static void hlsl_d3d9_renderchain_render_pass(
 
    if (chain->chain.bound_vert)
       chain->chain.bound_vert->count = 0;
+}
+
+static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
+{
+   if (chain->chain.passes->count >= 1)
+   {
+      size_t i;
+
+      d3d9_vertex_buffer_free(NULL,
+            chain->chain.passes->data[0].vertex_decl);
+
+      for (i = 1; i < chain->chain.passes->count; i++)
+      {
+         if (chain->chain.passes->data[i].tex)
+            IDirect3DTexture9_Release(chain->chain.passes->data[i].tex);
+         chain->chain.passes->data[i].tex = NULL;
+         d3d9_vertex_buffer_free(
+               chain->chain.passes->data[i].vertex_buf,
+               chain->chain.passes->data[i].vertex_decl);
+      }
+   }
+
+   /* Free per-pass bytecodes */
+   {
+      unsigned i;
+      for (i = 0; i < chain->pass_data_count; i++)
+         hlsl_pass_data_free(&chain->pass_data[i]);
+      chain->pass_data_count = 0;
+   }
+   hlsl_pass_data_free(&chain->stock_data);
+}
+
+static void hlsl_d3d9_renderchain_free(void *data)
+{
+   hlsl_renderchain_t *chain = (hlsl_renderchain_t*)data;
+
+   if (!chain)
+      return;
+
+   /* Destroy resources */
+   {
+      size_t i;
+
+      for (i = 0; i < TEXTURES; i++)
+      {
+         if (chain->chain.prev.tex[i])
+            IDirect3DTexture9_Release(chain->chain.prev.tex[i]);
+         if (chain->chain.prev.vertex_buf[i])
+            d3d9_vertex_buffer_free(chain->chain.prev.vertex_buf[i], NULL);
+      }
+
+      d3d9_hlsl_deinit_progs(chain);
+
+      for (i = 0; i < chain->chain.luts->count; i++)
+      {
+         if (chain->chain.luts->data[i].tex)
+            IDirect3DTexture9_Release(chain->chain.luts->data[i].tex);
+      }
+   }
+
+   /* Destroy passes and luts */
+   if (chain->chain.passes)
+   {
+      int i;
+
+      for (i = 0; i < (int) chain->chain.passes->count; i++)
+      {
+         if (chain->chain.passes->data[i].attrib_map)
+            free(chain->chain.passes->data[i].attrib_map);
+      }
+
+      shader_pass_vector_list_free(chain->chain.passes);
+   }
+
+   lut_info_vector_list_free(chain->chain.luts);
+   unsigned_vector_list_free(chain->chain.bound_tex);
+   unsigned_vector_list_free(chain->chain.bound_vert);
+
+   free(chain);
+}
+
+static bool hlsl_d3d9_renderchain_init(
+      d3d9_video_t *d3d,
+      hlsl_renderchain_t *chain,
+      LPDIRECT3DDEVICE9 dev,
+      const D3DVIEWPORT9 *out_vp,
+      const struct LinkInfo *info,
+      unsigned fmt
+      )
+{
+   chain->chain.dev                         = dev;
+   chain->chain.out_vp                      = (D3DVIEWPORT9*)out_vp;
+   chain->chain.frame_count                 = 0;
+   chain->chain.pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
+
+   if (!hlsl_d3d9_renderchain_create_first_pass(dev, chain, info, fmt))
+      return false;
+
+   hlsl_uniform_map_init(&chain->stock_data.vs_map);
+   hlsl_uniform_map_init(&chain->stock_data.ps_map);
+   chain->stock_data.vs_bytecode = NULL;
+   chain->stock_data.ps_bytecode = NULL;
+   if (!d3d9_hlsl_load_program_ex(chain->chain.dev, &chain->stock_shader,
+            stock_hlsl_program, &chain->stock_data))
+      return false;
+
+   IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
+   IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
+
+   return true;
 }
 
 static void hlsl_d3d9_renderchain_render(
@@ -2752,20 +2674,12 @@ static void hlsl_d3d9_renderchain_render(
       viewport.Width  = out_width;
       viewport.Height = out_height;
 
-      IDirect3DDevice9_SetViewport(
-            chain->chain.dev, (D3DVIEWPORT9*)&viewport);
-
-      hlsl_d3d9_renderchain_set_vertices(
+      d3d9_hlsl_renderchain_render_pass(
             d3d,
             chain, from_pass,
             i + 1,
             current_width, current_height,
-            out_width, out_height);
-
-      hlsl_d3d9_renderchain_render_pass(d3d, chain,
-            from_pass,
-            i + 1,
-            out_width, out_height);
+            &viewport);
 
       current_width  = out_width;
       current_height = out_height;
@@ -2803,21 +2717,12 @@ static void hlsl_d3d9_renderchain_render(
          break;
    }
 
-   IDirect3DDevice9_SetViewport(
-         chain->chain.dev, (D3DVIEWPORT9*)chain->chain.out_vp);
-
-   hlsl_d3d9_renderchain_set_vertices(
+   d3d9_hlsl_renderchain_render_pass(
          d3d,
          chain, last_pass,
          chain->chain.passes->count,
          current_width, current_height,
-         chain->chain.out_vp->Width,
-         chain->chain.out_vp->Height);
-
-   hlsl_d3d9_renderchain_render_pass(d3d, chain, last_pass,
-         chain->chain.passes->count,
-         chain->chain.out_vp->Width,
-         chain->chain.out_vp->Height);
+         chain->chain.out_vp);
 
    chain->chain.frame_count++;
 

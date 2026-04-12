@@ -2574,22 +2574,28 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
    }
 }
 
-static void d3d9_cg_renderchain_set_vertices(
+static void d3d9_cg_renderchain_render_pass(
       d3d9_cg_renderchain_t *chain,
       struct shader_pass *pass,
+      unsigned pass_index,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation,
-      struct video_shader *shader)
+      struct video_shader *shader,
+      D3DVIEWPORT9 *vp)
 {
-   CGprogram fprg = (CGprogram)pass->fprg;
-   CGprogram vprg = (CGprogram)pass->vprg;
+   unsigned i;
+   CGprogram fprg  = (CGprogram)pass->fprg;
+   CGprogram vprg  = (CGprogram)pass->vprg;
+   int32_t filter  = d3d_translate_filter(pass->info.pass->filter);
 
+   IDirect3DDevice9_SetViewport(chain->dev, vp);
+
+   /* Update vertex buffer if dimensions changed */
    if (pass->last_width != width || pass->last_height != height)
    {
       struct D3D9CGVertex vert[4];
-      unsigned i;
       void *verts        = NULL;
       float          _u  = (float)(width)  / pass->info.tex_w;
       float          _v  = (float)(height) / pass->info.tex_h;
@@ -2664,8 +2670,7 @@ static void d3d9_cg_renderchain_set_vertices(
       }
    }
 
-   d3d9_cg_renderchain_calc_and_set_shader_mvp(
-         (CGprogram)pass->vprg, vp_width, vp_height, rotation);
+   d3d9_cg_renderchain_calc_and_set_shader_mvp(vprg, vp_width, vp_height, rotation);
 
    /* Set shader parameters */
    {
@@ -2696,7 +2701,6 @@ static void d3d9_cg_renderchain_set_vertices(
          frame_cnt         = chain->frame_count
             % pass->info.pass->frame_count_mod;
 
-      /* Vertex program */
       if (vp_video_size)
          cgD3D9SetUniform(vp_video_size, &video_size);
       if (vp_texture_size)
@@ -2707,7 +2711,6 @@ static void d3d9_cg_renderchain_set_vertices(
          cgD3D9SetUniform(vp_frame_count, &frame_cnt);
       CG_DEBUG_CHECK(NULL, "set_shader_params vertex uniforms");
 
-      /* Fragment program */
       if (fp_video_size)
          cgD3D9SetUniform(fp_video_size, &video_size);
       if (fp_texture_size)
@@ -2718,10 +2721,8 @@ static void d3d9_cg_renderchain_set_vertices(
          cgD3D9SetUniform(fp_frame_count, &frame_cnt);
       CG_DEBUG_CHECK(NULL, "set_shader_params fragment uniforms");
 
-      /* User-defined shader parameters */
       if (shader)
       {
-         unsigned i;
          for (i = 0; i < shader->num_parameters; i++)
          {
             CGparameter cgp_vp = cgGetNamedParameter(vprg, shader->parameters[i].id);
@@ -2735,56 +2736,38 @@ static void d3d9_cg_renderchain_set_vertices(
          CG_DEBUG_CHECK(NULL, "set_shader_params user parameters");
       }
    }
-}
 
-static void d3d9_cg_renderchain_render_pass(
-      d3d9_cg_renderchain_t *chain,
-      struct shader_pass *pass,
-      unsigned pass_index)
-{
-   unsigned i;
-   /* Cache the filter translation to avoid redundant calls */
-   int32_t filter = d3d_translate_filter(pass->info.pass->filter);
-
-   cgD3D9BindProgram((CGprogram)pass->fprg);
-   cgD3D9BindProgram((CGprogram)pass->vprg);
+   /* Bind and draw */
+   cgD3D9BindProgram(fprg);
+   cgD3D9BindProgram(vprg);
    CG_DEBUG_CHECK(NULL, "renderchain_render_pass BindProgram");
 
    IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)pass->tex);
-   IDirect3DDevice9_SetSamplerState(chain->dev,
-         0, D3DSAMP_MINFILTER, filter);
-   IDirect3DDevice9_SetSamplerState(chain->dev,
-         0, D3DSAMP_MAGFILTER, filter);
+   IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_MINFILTER, filter);
+   IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_MAGFILTER, filter);
 
    IDirect3DDevice9_SetVertexDeclaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
       IDirect3DDevice9_SetStreamSource(chain->dev, i, pass->vertex_buf,
             0, sizeof(struct D3D9CGVertex));
 
-   /* Set orig texture. */
    d3d9_cg_renderchain_bind_orig(chain, chain->dev, pass);
-
-   /* Set prev textures. */
    d3d9_cg_renderchain_bind_prev(chain, chain->dev, pass);
 
-   /* Set lookup textures */
    for (i = 0; i < chain->luts->count; i++)
    {
       CGparameter vparam;
-      CGparameter fparam = cgGetNamedParameter(
-            (CGprogram)pass->fprg, chain->luts->data[i].id);
+      CGparameter fparam = cgGetNamedParameter(fprg, chain->luts->data[i].id);
       int bound_index    = -1;
 
       if (fparam)
       {
          unsigned index  = cgGetParameterResourceIndex(fparam);
          bound_index     = index;
-
          d3d9_cg_renderchain_add_lut_internal(chain, index, i);
       }
 
-      vparam = cgGetNamedParameter((CGprogram)pass->vprg,
-            chain->luts->data[i].id);
+      vparam = cgGetNamedParameter(vprg, chain->luts->data[i].id);
 
       if (vparam)
       {
@@ -2794,7 +2777,6 @@ static void d3d9_cg_renderchain_render_pass(
       }
    }
 
-   /* We only bother binding passes which are two indices behind. */
    if (pass_index >= 3)
       d3d9_cg_renderchain_bind_pass(chain, chain->dev, pass, pass_index);
 
@@ -2802,12 +2784,9 @@ static void d3d9_cg_renderchain_render_pass(
    IDirect3DDevice9_DrawPrimitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
    IDirect3DDevice9_EndScene(chain->dev);
 
-   /* Unbind all textures and vertex streams to avoid
-    * render targets keeping filters that look too blurry. */
-   IDirect3DDevice9_SetSamplerState(chain->dev,
-         0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-   IDirect3DDevice9_SetSamplerState(chain->dev,
-         0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+   /* Unbind all textures and vertex streams */
+   IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+   IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 
    for (i = 0; i < chain->bound_tex->count; i++)
    {
@@ -2952,18 +2931,12 @@ static void d3d9_cg_renderchain_render(
       viewport.Width  = out_width;
       viewport.Height = out_height;
 
-      IDirect3DDevice9_SetViewport(chain->dev, (D3DVIEWPORT9*)&viewport);
-
-      d3d9_cg_renderchain_set_vertices(
-            chain, from_pass,
+      d3d9_cg_renderchain_render_pass(chain, from_pass,
+            i + 1,
             current_width, current_height,
             out_width, out_height,
             out_width, out_height, 0,
-            &d3d->shader);
-
-      d3d9_cg_renderchain_render_pass(chain,
-            from_pass,
-            i + 1);
+            &d3d->shader, &viewport);
 
       current_width  = out_width;
       current_height = out_height;
@@ -3001,20 +2974,14 @@ static void d3d9_cg_renderchain_render(
          break;
    }
 
-   IDirect3DDevice9_SetViewport(chain->dev, (D3DVIEWPORT9*)chain->out_vp);
-
-   d3d9_cg_renderchain_set_vertices(
-         chain, last_pass,
+   d3d9_cg_renderchain_render_pass(chain, last_pass,
+         chain->passes->count,
          current_width, current_height,
          out_width, out_height,
          chain->out_vp->Width,
          chain->out_vp->Height,
          rotation,
-         &d3d->shader);
-
-   d3d9_cg_renderchain_render_pass(chain,
-         last_pass,
-         chain->passes->count);
+         &d3d->shader, chain->out_vp);
 
    chain->frame_count++;
 
