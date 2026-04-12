@@ -64,8 +64,32 @@ typedef struct
    int ypos;    /* which pre-expansion row we're on */
 } rjpeg_resample;
 
+enum rjpeg_phase
+{
+   RJPEG_PHASE_DECODE = 0,
+   RJPEG_PHASE_RESAMPLE,
+   RJPEG_PHASE_SWIZZLE
+};
+
+/* Forward declaration — full definition appears later in the file */
+typedef struct rjpeg_jpeg_s rjpeg_jpeg;
+
+struct rjpeg_process
+{
+   rjpeg_jpeg       *j;            /* heap-allocated decode state           */
+   uint8_t          *output;       /* output pixel buffer (n * w * h)       */
+   rjpeg_resample    res_comp[4];  /* per-component resample state          */
+   uint8_t          *coutput[4];   /* per-component line pointers           */
+   unsigned          cur_row;      /* current output row during resample    */
+   unsigned          swizzle_pos;  /* current pixel during RGBA->ARGB pass  */
+   int               n;            /* output components (always 4)          */
+   int               decode_n;     /* components to actually decode         */
+   enum rjpeg_phase  phase;
+};
+
 struct rjpeg
 {
+   struct rjpeg_process *process;
    uint8_t *buff_data;
 };
 
@@ -182,7 +206,7 @@ typedef struct
    uint8_t  size[257];
 } rjpeg_huffman;
 
-typedef struct
+typedef struct rjpeg_jpeg_s
 {
    rjpeg_context *s;
    /* kernels */
@@ -2432,161 +2456,254 @@ static void rjpeg_cleanup_jpeg(rjpeg_jpeg *j)
    }
 }
 
-static uint8_t *rjpeg_load_jpeg_image(rjpeg_jpeg *z,
-      unsigned *out_x, unsigned *out_y, int *comp, int req_comp)
+static void rjpeg_process_free(struct rjpeg_process *proc)
 {
-   int n, decode_n;
-   int k;
-   unsigned int i,j;
-   rjpeg_resample res_comp[4];
-   uint8_t *coutput[4] = {0};
-   uint8_t *output     = NULL;
-   z->s->img_n         = 0;
+   if (!proc)
+      return;
 
-   /* load a jpeg image from whichever source, but leave in YCbCr format */
-   if (!rjpeg_decode_jpeg_image(z))
-      goto error;
-
-   /* determine actual number of components to generate */
-   n = req_comp ? req_comp : z->s->img_n;
-
-   if (z->s->img_n == 3 && n < 3)
-      decode_n = 1;
-   else
-      decode_n = z->s->img_n;
-
-   /* resample and color-convert */
-   for (k = 0; k < decode_n; ++k)
+   if (proc->j)
    {
-      rjpeg_resample *r = &res_comp[k];
-
-      /* allocate line buffer big enough for upsampling off the edges
-       * with upsample factor of 4 */
-      z->img_comp[k].linebuf = (uint8_t *) malloc(z->s->img_x + 3);
-      if (!z->img_comp[k].linebuf)
-         goto error;
-
-      r->hs       = z->img_h_max / z->img_comp[k].h;
-      r->vs       = z->img_v_max / z->img_comp[k].v;
-      r->ystep    = r->vs >> 1;
-      r->w_lores  = (z->s->img_x + r->hs-1) / r->hs;
-      r->ypos     = 0;
-      r->line0    = r->line1 = z->img_comp[k].data;
-      r->resample = rjpeg_resample_row_generic;
-
-      if      (r->hs == 1 && r->vs == 1)
-         r->resample = rjpeg_resample_row_1;
-      else if (r->hs == 1 && r->vs == 2)
-         r->resample = rjpeg_resample_row_v_2;
-      else if (r->hs == 2 && r->vs == 1)
-         r->resample = rjpeg_resample_row_h_2;
-      else if (r->hs == 2 && r->vs == 2)
-         r->resample = z->resample_row_hv_2_kernel;
+      rjpeg_cleanup_jpeg(proc->j);
+      if (proc->j->s)
+         free(proc->j->s);
+      free(proc->j);
    }
 
-   /* can't error after this so, this is safe */
-   output = (uint8_t *) malloc(n * z->s->img_x * z->s->img_y + 1);
+   if (proc->output)
+      free(proc->output);
 
-   if (!output)
-      goto error;
-
-   /* now go ahead and resample */
-   for (j = 0; j < z->s->img_y; ++j)
-   {
-      uint8_t *out = output + n * z->s->img_x * j;
-      for (k = 0; k < decode_n; ++k)
-      {
-         rjpeg_resample *r = &res_comp[k];
-         int         y_bot  = r->ystep >= (r->vs >> 1);
-
-         coutput[k]         = r->resample(z->img_comp[k].linebuf,
-               y_bot ? r->line1 : r->line0,
-               y_bot ? r->line0 : r->line1,
-               r->w_lores, r->hs);
-
-         if (++r->ystep >= r->vs)
-         {
-            r->ystep = 0;
-            r->line0 = r->line1;
-            if (++r->ypos < z->img_comp[k].y)
-               r->line1 += z->img_comp[k].w2;
-         }
-      }
-
-      if (n >= 3)
-      {
-         uint8_t *y = coutput[0];
-         if (y)
-         {
-            if (z->s->img_n == 3)
-               z->YCbCr_to_RGB_kernel(out, y, coutput[1], coutput[2], z->s->img_x, n);
-            else
-               for (i = 0; i < z->s->img_x; ++i)
-               {
-                  out[0]  = out[1] = out[2] = y[i];
-                  out[3]  = 255; /* not used if n==3 */
-                  out    += n;
-               }
-         }
-      }
-      else
-      {
-         uint8_t *y = coutput[0];
-         if (n == 1)
-            for (i = 0; i < z->s->img_x; ++i)
-               out[i] = y[i];
-         else
-            for (i = 0; i < z->s->img_x; ++i)
-            {
-               *out++ = y[i];
-               *out++ = 255;
-            }
-      }
-   }
-
-   rjpeg_cleanup_jpeg(z);
-   *out_x = z->s->img_x;
-   *out_y = z->s->img_y;
-
-   if (comp)
-      *comp  = z->s->img_n; /* report original components, not output */
-   return output;
-
-error:
-   rjpeg_cleanup_jpeg(z);
-   return NULL;
+   free(proc);
 }
 
 int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
-   rjpeg_jpeg j;
-   rjpeg_context s;
-   int comp;
-   uint32_t *img         = NULL;
-   unsigned size_tex     = 0;
-
    if (!rjpeg)
       return IMAGE_PROCESS_ERROR;
 
-   s.img_buffer          = (uint8_t*)rjpeg->buff_data;
-   s.img_buffer_original = (uint8_t*)rjpeg->buff_data;
-   s.img_buffer_end      = (uint8_t*)rjpeg->buff_data + (int)size;
-
-   j.s                   = &s;
-
-   rjpeg_setup_jpeg(&j);
-
-   img                   =  (uint32_t*)rjpeg_load_jpeg_image(&j, width, height, &comp, 4);
-
-   if (!img)
-      return IMAGE_PROCESS_ERROR;
-
-   size_tex = (*width) * (*height);
-
-   /* Convert RGBA to ARGB in-place — no second buffer needed */
+   /* -----------------------------------------------------------
+    * Phase 0 — DECODE: run the entire entropy decode in one shot,
+    * then set up the resample state for incremental row processing.
+    * ----------------------------------------------------------- */
+   if (!rjpeg->process)
    {
-      unsigned i = 0;
+      int k;
+      struct rjpeg_process *proc = NULL;
+      rjpeg_jpeg    *j    = NULL;
+      rjpeg_context *s    = NULL;
+      int            comp = 0;
+
+      proc = (struct rjpeg_process*)calloc(1, sizeof(*proc));
+      if (!proc)
+         return IMAGE_PROCESS_ERROR;
+
+      j = (rjpeg_jpeg*)calloc(1, sizeof(*j));
+      if (!j)
+      {
+         free(proc);
+         return IMAGE_PROCESS_ERROR;
+      }
+
+      s = (rjpeg_context*)calloc(1, sizeof(*s));
+      if (!s)
+      {
+         free(j);
+         free(proc);
+         return IMAGE_PROCESS_ERROR;
+      }
+
+      s->img_buffer          = (uint8_t*)rjpeg->buff_data;
+      s->img_buffer_original = (uint8_t*)rjpeg->buff_data;
+      s->img_buffer_end      = (uint8_t*)rjpeg->buff_data + (int)size;
+
+      j->s                   = s;
+      proc->j                = j;
+
+      rjpeg_setup_jpeg(j);
+
+      /* Full entropy decode (the monolithic part) */
+      j->s->img_n            = 0;
+
+      if (!rjpeg_decode_jpeg_image(j))
+      {
+         rjpeg_process_free(proc);
+         return IMAGE_PROCESS_ERROR;
+      }
+
+      /* Determine actual number of components to generate */
+      proc->n       = 4; /* always request RGBA */
+      comp          = j->s->img_n;
+
+      if (j->s->img_n == 3 && proc->n < 3)
+         proc->decode_n = 1;
+      else
+         proc->decode_n = j->s->img_n;
+
+      /* Set up per-component resample state */
+      for (k = 0; k < proc->decode_n; ++k)
+      {
+         rjpeg_resample *r = &proc->res_comp[k];
+
+         /* allocate line buffer big enough for upsampling off the edges
+          * with upsample factor of 4 */
+         j->img_comp[k].linebuf = (uint8_t *) malloc(j->s->img_x + 3);
+         if (!j->img_comp[k].linebuf)
+         {
+            rjpeg_process_free(proc);
+            return IMAGE_PROCESS_ERROR;
+         }
+
+         r->hs       = j->img_h_max / j->img_comp[k].h;
+         r->vs       = j->img_v_max / j->img_comp[k].v;
+         r->ystep    = r->vs >> 1;
+         r->w_lores  = (j->s->img_x + r->hs-1) / r->hs;
+         r->ypos     = 0;
+         r->line0    = r->line1 = j->img_comp[k].data;
+         r->resample = rjpeg_resample_row_generic;
+
+         if      (r->hs == 1 && r->vs == 1)
+            r->resample = rjpeg_resample_row_1;
+         else if (r->hs == 1 && r->vs == 2)
+            r->resample = rjpeg_resample_row_v_2;
+         else if (r->hs == 2 && r->vs == 1)
+            r->resample = rjpeg_resample_row_h_2;
+         else if (r->hs == 2 && r->vs == 2)
+            r->resample = j->resample_row_hv_2_kernel;
+      }
+
+      /* Allocate output buffer */
+      proc->output = (uint8_t *) malloc(
+            proc->n * j->s->img_x * j->s->img_y + 1);
+      if (!proc->output)
+      {
+         rjpeg_process_free(proc);
+         return IMAGE_PROCESS_ERROR;
+      }
+
+      proc->cur_row     = 0;
+      proc->swizzle_pos = 0;
+      proc->phase       = RJPEG_PHASE_RESAMPLE;
+
+      *width            = j->s->img_x;
+      *height           = j->s->img_y;
+
+      rjpeg->process    = proc;
+
+      return IMAGE_PROCESS_NEXT;
+   }
+
+   /* -----------------------------------------------------------
+    * Phase 1 — RESAMPLE: process a batch of output rows per call.
+    * Chroma upsampling + YCbCr-to-RGB conversion.
+    * Batching amortises per-call overhead while still giving the
+    * caller regular yield points.
+    * ----------------------------------------------------------- */
+   if (rjpeg->process->phase == RJPEG_PHASE_RESAMPLE)
+   {
+      struct rjpeg_process *proc = rjpeg->process;
+      rjpeg_jpeg           *z   = proc->j;
+      unsigned          rows_done = 0;
+
+      /* Process up to 8 rows per call. 8 rows at ~6 us/row (1080p) ≈ 50 us,
+       * well within any reasonable frame budget while cutting call count
+       * from ~1080 to ~135 for 1080p images. */
+      #define RJPEG_ROWS_PER_CALL 8
+
+      *width  = z->s->img_x;
+      *height = z->s->img_y;
+
+      while (proc->cur_row < z->s->img_y && rows_done < RJPEG_ROWS_PER_CALL)
+      {
+         int k;
+         unsigned jj  = proc->cur_row;
+         uint8_t *out = proc->output + proc->n * z->s->img_x * jj;
+
+         for (k = 0; k < proc->decode_n; ++k)
+         {
+            rjpeg_resample *r = &proc->res_comp[k];
+            int         y_bot = r->ystep >= (r->vs >> 1);
+
+            proc->coutput[k]  = r->resample(z->img_comp[k].linebuf,
+                  y_bot ? r->line1 : r->line0,
+                  y_bot ? r->line0 : r->line1,
+                  r->w_lores, r->hs);
+
+            if (++r->ystep >= r->vs)
+            {
+               r->ystep = 0;
+               r->line0 = r->line1;
+               if (++r->ypos < z->img_comp[k].y)
+                  r->line1 += z->img_comp[k].w2;
+            }
+         }
+
+         if (proc->n >= 3)
+         {
+            uint8_t *y = proc->coutput[0];
+            if (y)
+            {
+               if (z->s->img_n == 3)
+                  z->YCbCr_to_RGB_kernel(out, y, proc->coutput[1],
+                        proc->coutput[2], z->s->img_x, proc->n);
+               else
+               {
+                  unsigned i;
+                  for (i = 0; i < z->s->img_x; ++i)
+                  {
+                     out[0]  = out[1] = out[2] = y[i];
+                     out[3]  = 255; /* not used if n==3 */
+                     out    += proc->n;
+                  }
+               }
+            }
+         }
+         else
+         {
+            uint8_t *y = proc->coutput[0];
+            if (proc->n == 1)
+            {
+               unsigned i;
+               for (i = 0; i < z->s->img_x; ++i)
+                  out[i] = y[i];
+            }
+            else
+            {
+               unsigned i;
+               for (i = 0; i < z->s->img_x; ++i)
+               {
+                  *out++ = y[i];
+                  *out++ = 255;
+               }
+            }
+         }
+
+         proc->cur_row++;
+         rows_done++;
+      }
+
+      if (proc->cur_row < z->s->img_y)
+         return IMAGE_PROCESS_NEXT;
+
+      /* All rows resampled — free decode buffers, advance to swizzle */
+      rjpeg_cleanup_jpeg(z);
+      proc->phase = RJPEG_PHASE_SWIZZLE;
+      return IMAGE_PROCESS_NEXT;
+   }
+
+   /* -----------------------------------------------------------
+    * Phase 2 — SWIZZLE: convert RGBA to ARGB in-place.
+    * Done in one shot since it's a simple in-place byte swap on
+    * already-allocated memory.
+    * ----------------------------------------------------------- */
+   if (rjpeg->process->phase == RJPEG_PHASE_SWIZZLE)
+   {
+      struct rjpeg_process *proc = rjpeg->process;
+      rjpeg_jpeg           *z   = proc->j;
+      uint32_t             *img = (uint32_t*)proc->output;
+      unsigned          size_tex = (*width) * (*height);
+      unsigned               i  = 0;
+
+      (void)z;
 
 #if defined(__SSE2__)
       {
@@ -2626,11 +2743,19 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
          uint32_t R     = texel & 0x000000FF;
          img[i]         = A | (R << 16) | G | (B >> 16);
       }
+
+      /* Transfer ownership of the pixel buffer to the caller */
+      *buf_data     = proc->output;
+      proc->output  = NULL; /* prevent rjpeg_process_free from freeing it */
+
+      /* Clean up the process state */
+      rjpeg_process_free(rjpeg->process);
+      rjpeg->process = NULL;
+
+      return IMAGE_PROCESS_END;
    }
 
-   *buf_data = img;
-
-   return IMAGE_PROCESS_END;
+   return IMAGE_PROCESS_ERROR;
 }
 
 bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data)
@@ -2647,6 +2772,12 @@ void rjpeg_free(rjpeg_t *rjpeg)
 {
    if (!rjpeg)
       return;
+
+   if (rjpeg->process)
+   {
+      rjpeg_process_free(rjpeg->process);
+      rjpeg->process = NULL;
+   }
 
    free(rjpeg);
 }
