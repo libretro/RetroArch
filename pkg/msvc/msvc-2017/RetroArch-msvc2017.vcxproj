@@ -569,7 +569,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -578,7 +578,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -705,7 +705,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -714,7 +714,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -1578,203 +1578,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">false</LinkObjects>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">false</LinkObjects>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</LinkObjects>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</LinkObjects>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="..\..\..\ui\drivers\qt\gridview.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">false</LinkObjects>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">false</LinkObjects>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</LinkObjects>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</LinkObjects>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">
+<CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</ExcludedFromBuild>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
@@ -1922,57 +1726,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">true</ExcludedFromBuild>
     </CustomBuild>
-    <CustomBuild Include="..\..\..\ui\drivers\qt\qt_options.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</LinkObjects>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</ExcludedFromBuild>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</LinkObjects>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</LinkObjects>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</LinkObjects>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-  </ItemGroup>
+</ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

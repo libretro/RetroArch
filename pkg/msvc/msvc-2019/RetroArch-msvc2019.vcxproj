@@ -178,7 +178,7 @@
     <QtBuild Condition="'$(Platform)'=='x64'">msvc2019_64</QtBuild>
     <QtDirectory Condition="'$(QtDirectory)' == ''">C:\Qt\$(QtVersion)\$(QtBuild)</QtDirectory>
     <QtInclude>$(QtDirectory)\include</QtInclude>
-    <IncludePath>$(QtInclude);$(QtInclude)\QtCore;$(QtInclude)\QtWidgets;$(QtInclude)\QtGui;$(QtInclude)\QtConcurrent;$(QtInclude)\QtNetwork;$(IncludePath)</IncludePath>
+    <IncludePath>$(QtInclude);$(QtInclude)\QtCore;$(QtInclude)\QtWidgets;$(QtInclude)\QtGui;$(QtInclude)\QtConcurrent;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath);$(QtDirectory)\lib</LibraryPath>
     <ExecutablePath>$(QtDirectory)\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>

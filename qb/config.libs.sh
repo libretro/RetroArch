@@ -293,7 +293,6 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_pkgconf QT6GUI Qt6Gui 6.2
       check_pkgconf QT6WIDGETS Qt6Widgets 6.2
       check_pkgconf QT6CONCURRENT Qt6Concurrent 6.2
-      check_pkgconf QT6NETWORK Qt6Network 6.2
       #check_pkgconf QT6WEBENGINE Qt6WebEngine 6.2
 
       # pkg-config is needed to reliably find Qt6 libraries.
@@ -302,14 +301,12 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_enabled QT6GUI QT Qt 'Qt6GUI is' user
       check_enabled QT6WIDGETS QT Qt 'Qt6Widgets is' user
       check_enabled QT6CONCURRENT QT Qt 'Qt6Concurrent is' user
-      check_enabled QT6NETWORK QT Qt 'Qt6Network is' user
       #check_enabled QT6WEBENGINE QT Qt 'Qt6Webengine is' user
 
       if [ "$HAVE_QT6CORE" = 'yes' ] && \
          [ "$HAVE_QT6GUI" = 'yes' ] &&  \
          [ "$HAVE_QT6WIDGETS" = 'yes' ] &&  \
-         [ "$HAVE_QT6CONCURRENT" = 'yes' ] && \
-         [ "$HAVE_QT6NETWORK" = 'yes' ]
+         [ "$HAVE_QT6CONCURRENT" = 'yes' ]
       then
          HAVE_QT6='yes'
          add_define MAKEFILE HAVE_QT6 1
@@ -322,7 +319,6 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_pkgconf QT5GUI Qt5Gui 5.2
       check_pkgconf QT5WIDGETS Qt5Widgets 5.2
       check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
-      check_pkgconf QT5NETWORK Qt5Network 5.2
       #check_pkgconf QT5WEBENGINE Qt6WebEngine 5.2
 
       # pkg-config is needed to reliably find Qt5 libraries.
@@ -331,7 +327,6 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_enabled QT5GUI QT Qt 'Qt5GUI is' true
       check_enabled QT5WIDGETS QT Qt 'Qt5Widgets is' true
       check_enabled QT5CONCURRENT QT Qt 'Qt5Concurrent is' true
-      check_enabled QT5NETWORK QT Qt 'Qt5Network is' true
       #check_enabled QT5WEBENGINE QT Qt 'Qt5Webengine is' true
    fi
 
