@@ -177,7 +177,7 @@ struct shader_pass
 #undef VECTOR_LIST_TYPE
 #undef VECTOR_LIST_NAME
 
-typedef struct d3d9_renderchain
+typedef struct d3d9_hlsl_renderchain
 {
    unsigned pixel_size;
    uint64_t frame_count;
@@ -195,97 +195,9 @@ typedef struct d3d9_renderchain
    struct unsigned_vector_list *bound_tex;
    struct unsigned_vector_list *bound_vert;
    struct lut_info_vector_list *luts;
-} d3d9_renderchain_t;
+} d3d9_hlsl_renderchain_t;
 
-static INLINE bool d3d9_device_create_offscreen_plain_surface(
-      LPDIRECT3DDEVICE9 dev,
-      unsigned width,
-      unsigned height,
-      unsigned format,
-      unsigned pool,
-      void **surf_data,
-      void *data)
-{
-#ifndef _XBOX
-   return (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
-               width, height,
-               (D3DFORMAT)format, (D3DPOOL)pool,
-               (LPDIRECT3DSURFACE9*)surf_data,
-               (HANDLE*)data)));
-#else
-   return false;
-#endif
-}
-
-
-static void *d3d9_texture_new(void *_dev,
-      unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, INT32 format,
-      INT32 pool, unsigned filter, unsigned mipfilter,
-      INT32 color_key, void *src_info_data,
-      PALETTEENTRY *palette, bool want_mipmap)
-{
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-   void *buf             = NULL;
-#ifndef _XBOX
-   if (want_mipmap)
-      usage |= D3DUSAGE_AUTOGENMIPMAP;
-#endif
-   return (SUCCEEDED(IDirect3DDevice9_CreateTexture(dev,
-               width, height, miplevels, usage,
-               (D3DFORMAT)format,
-               (D3DPOOL)pool,
-               (struct IDirect3DTexture9**)&buf, NULL))) ? buf : NULL;
-}
-
-
-static INLINE bool d3d9_renderchain_add_pass(d3d9_renderchain_t *chain,
-      struct shader_pass *pass,
-      const struct LinkInfo *info)
-{
-   LPDIRECT3DTEXTURE9      tex;
-   LPDIRECT3DVERTEXBUFFER9 vertbuf = NULL;
-
-   if (!SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
-               chain->dev,
-               4 * sizeof(struct Vertex),
-               D3DUSAGE_WRITEONLY, 0,
-               D3DPOOL_DEFAULT,
-               (LPDIRECT3DVERTEXBUFFER9*)&vertbuf, NULL)))
-      vertbuf = NULL;
-
-   if (!vertbuf)
-      return false;
-
-   pass->vertex_buf = vertbuf;
-
-   tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(
-         chain->dev,
-         info->tex_w,
-         info->tex_h,
-         1,
-         D3DUSAGE_RENDERTARGET,
-         (chain->passes->data[
-         chain->passes->count - 1].info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
-         ? D3DFMT_A32B32G32R32F : D3D9_ARGB8888_FORMAT,
-         D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL, false);
-
-   if (!tex)
-      return false;
-
-   pass->tex        = tex;
-
-   IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)pass->tex);
-   IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)NULL);
-
-   shader_pass_vector_list_append(chain->passes, *pass);
-
-   return true;
-}
-
-static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
+static INLINE bool d3d9_hlsl_renderchain_add_lut(d3d9_hlsl_renderchain_t *chain,
       const char *id, const char *path, bool smooth)
 {
    struct lut_info info;
@@ -303,12 +215,12 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
       return false;
    }
 
-   lut = (LPDIRECT3DTEXTURE9)d3d9_texture_new(
-         chain->dev,
+   lut = NULL;
+   IDirect3DDevice9_CreateTexture(chain->dev,
          image.width, image.height, 1,
          0, D3D9_ARGB8888_FORMAT,
-         D3DPOOL_MANAGED, 0, 0, 0,
-         NULL, NULL, false);
+         D3DPOOL_MANAGED,
+         (struct IDirect3DTexture9**)&lut, NULL);
 
    if (!lut)
    {
@@ -348,94 +260,7 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
    return true;
 }
 
-static INLINE void d3d9_renderchain_destroy_passes_and_luts(
-      d3d9_renderchain_t *chain)
-{
-   if (chain->passes)
-   {
-      int i;
-
-      for (i = 0; i < (int) chain->passes->count; i++)
-      {
-         if (chain->passes->data[i].attrib_map)
-            free(chain->passes->data[i].attrib_map);
-      }
-
-      shader_pass_vector_list_free(chain->passes);
-
-      chain->passes = NULL;
-   }
-
-   lut_info_vector_list_free(chain->luts);
-   unsigned_vector_list_free(chain->bound_tex);
-   unsigned_vector_list_free(chain->bound_vert);
-
-   chain->luts       = NULL;
-   chain->bound_tex  = NULL;
-   chain->bound_vert = NULL;
-}
-
-static INLINE void d3d9_renderchain_add_lut_internal(
-      d3d9_renderchain_t *chain,
-      unsigned index, unsigned i)
-{
-   /* 2 = D3D_TEXTURE_FILTER_LINEAR, 1 = D3D_TEXTURE_FILTER_POINT */
-   int32_t filter = chain->luts->data[i].smooth ? 2 : 1;
-   IDirect3DDevice9_SetTexture(chain->dev, index, (IDirect3DBaseTexture9*)chain->luts->data[i].tex);
-   IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MAGFILTER, filter);
-   IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_MINFILTER, filter);
-   IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   unsigned_vector_list_append(chain->bound_tex, index);
-}
-
-static INLINE void d3d9_renderchain_start_render(d3d9_renderchain_t *chain)
-{
-   chain->passes->data[0].tex         = chain->prev.tex[
-      chain->prev.ptr];
-   chain->passes->data[0].vertex_buf  = chain->prev.vertex_buf[
-      chain->prev.ptr];
-   chain->passes->data[0].last_width  = chain->prev.last_width[
-      chain->prev.ptr];
-   chain->passes->data[0].last_height = chain->prev.last_height[
-      chain->prev.ptr];
-}
-
-static INLINE void d3d9_renderchain_end_render(d3d9_renderchain_t *chain)
-{
-   chain->prev.last_width[chain->prev.ptr]  = chain->passes->data[0].last_width;
-   chain->prev.last_height[chain->prev.ptr] = chain->passes->data[0].last_height;
-   chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
-}
-
-static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
-{
-   int i;
-   /* Have to be a bit anal about it.
-    * Render targets hate it when they have filters apparently.
-    */
-   for (i = 0; i < (int) chain->bound_tex->count; i++)
-   {
-      IDirect3DDevice9_SetSamplerState(chain->dev,
-            chain->bound_tex->data[i], D3DSAMP_MINFILTER, D3DTEXF_POINT);
-      IDirect3DDevice9_SetSamplerState(chain->dev,
-            chain->bound_tex->data[i], D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-      IDirect3DDevice9_SetTexture(chain->dev,
-            chain->bound_tex->data[i], (IDirect3DBaseTexture9*)NULL);
-   }
-
-   for (i = 0; i < (int) chain->bound_vert->count; i++)
-      IDirect3DDevice9_SetStreamSource(chain->dev, chain->bound_vert->data[i], 0, 0, 0);
-
-   /* Reset counts instead of free/realloc to avoid per-frame heap churn */
-   if (chain->bound_tex)
-      chain->bound_tex->count = 0;
-
-   if (chain->bound_vert)
-      chain->bound_vert->count = 0;
-}
-
-static INLINE bool d3d9_renderchain_set_pass_size(
+static INLINE bool d3d9_hlsl_renderchain_set_pass_size(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
       struct shader_pass *pass2,
@@ -448,15 +273,15 @@ static INLINE bool d3d9_renderchain_set_pass_size(
       pass->info.tex_w = width;
       pass->info.tex_h = height;
       pass->pool       = D3DPOOL_DEFAULT;
-      pass->tex        = (LPDIRECT3DTEXTURE9)
-         d3d9_texture_new(dev,
+      pass->tex        = NULL;
+      IDirect3DDevice9_CreateTexture(dev,
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
             (pass2->info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
             ? D3DFMT_A32B32G32R32F
             : D3D9_ARGB8888_FORMAT,
-            D3DPOOL_DEFAULT, 0, 0, 0,
-            NULL, NULL, false);
+            D3DPOOL_DEFAULT,
+            (struct IDirect3DTexture9**)&pass->tex, NULL);
 
       if (!pass->tex)
          return false;
@@ -511,7 +336,7 @@ static INLINE void d3d9_convert_geometry(
 
 static INLINE void d3d9_recompute_pass_sizes(
       LPDIRECT3DDEVICE9 dev,
-      d3d9_renderchain_t *chain,
+      d3d9_hlsl_renderchain_t *chain,
       d3d9_video_t *d3d)
 {
    int i;
@@ -527,7 +352,7 @@ static INLINE void d3d9_recompute_pass_sizes(
    link_info.tex_w                   = current_width;
    link_info.tex_h                   = current_height;
 
-   if (!d3d9_renderchain_set_pass_size(dev,
+   if (!d3d9_hlsl_renderchain_set_pass_size(dev,
             (struct shader_pass*)&chain->passes->data[0],
             (struct shader_pass*)&chain->passes->data[
             chain->passes->count - 1],
@@ -547,7 +372,7 @@ static INLINE void d3d9_recompute_pass_sizes(
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
 
-      if (!d3d9_renderchain_set_pass_size(dev,
+      if (!d3d9_hlsl_renderchain_set_pass_size(dev,
                (struct shader_pass*)&chain->passes->data[i],
                (struct shader_pass*)&chain->passes->data[
                chain->passes->count - 1],
@@ -564,7 +389,7 @@ static INLINE void d3d9_recompute_pass_sizes(
    }
 }
 
-static INLINE void d3d9_init_renderchain(d3d9_renderchain_t *chain)
+static INLINE void d3d9_hlsl_init_renderchain(d3d9_hlsl_renderchain_t *chain)
 {
    chain->passes     = shader_pass_vector_list_new();
    chain->luts       = lut_info_vector_list_new();
@@ -841,7 +666,7 @@ static void hlsl_pass_data_free(hlsl_pass_data_t *pd)
 
 typedef struct hlsl_renderchain
 {
-   struct d3d9_renderchain chain;
+   struct d3d9_hlsl_renderchain chain;
    struct shader_pass stock_shader;
    /* Per-pass HLSL uniform data for shader presets */
    hlsl_pass_data_t pass_data[GFX_MAX_SHADERS + 1];
@@ -1416,11 +1241,12 @@ static void *d3d9_font_init(void *data,
    /* Create an A8R8G8B8 texture from the A8 atlas buffer.
     * D3D9 doesn't universally support D3DFMT_A8
     * as a texture format, so we expand it. */
-   font->texture    = (LPDIRECT3DTEXTURE9)
-      d3d9_texture_new(d3d->dev,
-            font->tex_width, font->tex_height, 1,
-            0, (INT32)D3DFMT_A8R8G8B8,
-            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
+   font->texture    = NULL;
+   IDirect3DDevice9_CreateTexture(d3d->dev,
+         font->tex_width, font->tex_height, 1,
+         0, D3DFMT_A8R8G8B8,
+         D3DPOOL_MANAGED,
+         (struct IDirect3DTexture9**)&font->texture, NULL);
 
    if (font->texture)
    {
@@ -1676,11 +1502,12 @@ static void d3d9_font_render_msg(
 
          font->tex_width  = font->atlas->width;
          font->tex_height = font->atlas->height;
-         font->texture    = (LPDIRECT3DTEXTURE9)
-            d3d9_texture_new(d3d->dev,
-                  font->tex_width, font->tex_height, 1,
-                  0, (INT32)D3DFMT_A8R8G8B8,
-                  D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
+         font->texture    = NULL;
+         IDirect3DDevice9_CreateTexture(d3d->dev,
+               font->tex_width, font->tex_height, 1,
+               0, D3DFMT_A8R8G8B8,
+               D3DPOOL_MANAGED,
+               (struct IDirect3DTexture9**)&font->texture, NULL);
       }
 
       if (font->texture)
@@ -2131,7 +1958,7 @@ static bool d3d9_hlsl_load_program_ex(
 }
 
 static void hlsl_d3d9_renderchain_set_shader_params(
-      d3d9_renderchain_t *chain,
+      d3d9_hlsl_renderchain_t *chain,
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
       const hlsl_pass_data_t *pd,
@@ -2180,7 +2007,7 @@ static void hlsl_d3d9_renderchain_set_shader_params(
 }
 
 static bool hlsl_d3d9_renderchain_init_shader_fvf(
-      d3d9_renderchain_t *chain,
+      d3d9_hlsl_renderchain_t *chain,
       struct shader_pass *pass)
 {
    static const D3DVERTEXELEMENT9 decl[4] =
@@ -2260,7 +2087,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 {
    int i;
    struct shader_pass pass       = { 0 };
-   d3d9_renderchain_t *chain     = &hlsl_chain->chain;
+   d3d9_hlsl_renderchain_t *chain     = &hlsl_chain->chain;
    unsigned fmt                  =
         (_fmt == RETRO_PIXEL_FORMAT_RGB565)
       ? D3D9_RGB565_FORMAT
@@ -2292,10 +2119,12 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
          if (!chain->prev.vertex_buf[i])
             return false;
 
-         chain->prev.tex[i] = (LPDIRECT3DTEXTURE9)
-            d3d9_texture_new(chain->dev,
-               info->tex_w, info->tex_h, 1, 0, fmt,
-               D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
+         chain->prev.tex[i] = NULL;
+         IDirect3DDevice9_CreateTexture(chain->dev,
+               info->tex_w, info->tex_h, 1, 0,
+               (D3DFORMAT)fmt,
+               D3DPOOL_MANAGED,
+               (struct IDirect3DTexture9**)&chain->prev.tex[i], NULL);
 
          if (!chain->prev.tex[i])
             return false;
@@ -2349,7 +2178,7 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
 }
 
 static INLINE void d3d9_hlsl_renderchain_set_vertices_on_change(
-      d3d9_renderchain_t *chain,
+      d3d9_hlsl_renderchain_t *chain,
       struct shader_pass *pass,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
@@ -2488,27 +2317,6 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
    hlsl_pass_data_free(&chain->stock_data);
 }
 
-static void d3d9_hlsl_destroy_resources(hlsl_renderchain_t *chain)
-{
-   size_t i;
-
-   for (i = 0; i < TEXTURES; i++)
-   {
-      if (chain->chain.prev.tex[i])
-         IDirect3DTexture9_Release(chain->chain.prev.tex[i]);
-      if (chain->chain.prev.vertex_buf[i])
-         d3d9_vertex_buffer_free(chain->chain.prev.vertex_buf[i], NULL);
-   }
-
-   d3d9_hlsl_deinit_progs(chain);
-
-   for (i = 0; i < chain->chain.luts->count; i++)
-   {
-      if (chain->chain.luts->data[i].tex)
-         IDirect3DTexture9_Release(chain->chain.luts->data[i].tex);
-   }
-}
-
 static void hlsl_d3d9_renderchain_free(void *data)
 {
    hlsl_renderchain_t *chain = (hlsl_renderchain_t*)data;
@@ -2516,8 +2324,51 @@ static void hlsl_d3d9_renderchain_free(void *data)
    if (!chain)
       return;
 
-   d3d9_hlsl_destroy_resources(chain);
-   d3d9_renderchain_destroy_passes_and_luts(&chain->chain);
+   /* Destroy resources */
+   {
+      size_t i;
+
+      for (i = 0; i < TEXTURES; i++)
+      {
+         if (chain->chain.prev.tex[i])
+            IDirect3DTexture9_Release(chain->chain.prev.tex[i]);
+         if (chain->chain.prev.vertex_buf[i])
+            d3d9_vertex_buffer_free(chain->chain.prev.vertex_buf[i], NULL);
+      }
+
+      d3d9_hlsl_deinit_progs(chain);
+
+      for (i = 0; i < chain->chain.luts->count; i++)
+      {
+         if (chain->chain.luts->data[i].tex)
+            IDirect3DTexture9_Release(chain->chain.luts->data[i].tex);
+      }
+   }
+
+   /* Destroy passes and luts */
+   if (chain->chain.passes)
+   {
+      int i;
+
+      for (i = 0; i < (int) chain->chain.passes->count; i++)
+      {
+         if (chain->chain.passes->data[i].attrib_map)
+            free(chain->chain.passes->data[i].attrib_map);
+      }
+
+      shader_pass_vector_list_free(chain->chain.passes);
+
+      chain->chain.passes = NULL;
+   }
+
+   lut_info_vector_list_free(chain->chain.luts);
+   unsigned_vector_list_free(chain->chain.bound_tex);
+   unsigned_vector_list_free(chain->chain.bound_vert);
+
+   chain->chain.luts       = NULL;
+   chain->chain.bound_tex  = NULL;
+   chain->chain.bound_vert = NULL;
+
    free(chain);
 }
 
@@ -2777,7 +2628,15 @@ static void hlsl_d3d9_renderchain_render_pass(
                pd->ps_bytecode, pd->ps_bytecode_dwords,
                chain->chain.luts->data[i].id, NULL, NULL);
          if (ps_idx >= 0)
-            d3d9_renderchain_add_lut_internal(&chain->chain, ps_idx, i);
+         {
+            int32_t filter = chain->chain.luts->data[i].smooth ? 2 : 1;
+            IDirect3DDevice9_SetTexture(chain->chain.dev, ps_idx, (IDirect3DBaseTexture9*)chain->chain.luts->data[i].tex);
+            IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_MAGFILTER, filter);
+            IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_MINFILTER, filter);
+            IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+            IDirect3DDevice9_SetSamplerState(chain->chain.dev, ps_idx, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+            unsigned_vector_list_append(chain->chain.bound_tex, ps_idx);
+         }
       }
 
       /* Bind intermediate PASSn textures (2+ indices behind) */
@@ -2849,7 +2708,29 @@ static void hlsl_d3d9_renderchain_render_pass(
    IDirect3DDevice9_SetSamplerState(chain->chain.dev,
          0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 
-   d3d9_renderchain_unbind_all(&chain->chain);
+   /* Unbind all bound textures and vertex streams.
+    * Render targets hate it when they have filters apparently. */
+   {
+      int i;
+      for (i = 0; i < (int) chain->chain.bound_tex->count; i++)
+      {
+         IDirect3DDevice9_SetSamplerState(chain->chain.dev,
+               chain->chain.bound_tex->data[i], D3DSAMP_MINFILTER, D3DTEXF_POINT);
+         IDirect3DDevice9_SetSamplerState(chain->chain.dev,
+               chain->chain.bound_tex->data[i], D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+         IDirect3DDevice9_SetTexture(chain->chain.dev,
+               chain->chain.bound_tex->data[i], (IDirect3DBaseTexture9*)NULL);
+      }
+
+      for (i = 0; i < (int) chain->chain.bound_vert->count; i++)
+         IDirect3DDevice9_SetStreamSource(chain->chain.dev, chain->chain.bound_vert->data[i], 0, 0, 0);
+   }
+
+   if (chain->chain.bound_tex)
+      chain->chain.bound_tex->count = 0;
+
+   if (chain->chain.bound_vert)
+      chain->chain.bound_vert->count = 0;
 }
 
 static void d3d9_hlsl_blit_to_texture(
@@ -2894,7 +2775,14 @@ static void hlsl_d3d9_renderchain_render(
    hlsl_renderchain_t *chain        = (hlsl_renderchain_t*)
       d3d->renderchain_data;
 
-   d3d9_renderchain_start_render(&chain->chain);
+   chain->chain.passes->data[0].tex         = chain->chain.prev.tex[
+      chain->chain.prev.ptr];
+   chain->chain.passes->data[0].vertex_buf  = chain->chain.prev.vertex_buf[
+      chain->chain.prev.ptr];
+   chain->chain.passes->data[0].last_width  = chain->chain.prev.last_width[
+      chain->chain.prev.ptr];
+   chain->chain.passes->data[0].last_height = chain->chain.prev.last_height[
+      chain->chain.prev.ptr];
 
    current_width                  = width;
    current_height                 = height;
@@ -3013,7 +2901,10 @@ static void hlsl_d3d9_renderchain_render(
    if (back_buffer)
       IDirect3DSurface9_Release(back_buffer);
 
-   d3d9_renderchain_end_render(&chain->chain);
+   chain->chain.prev.last_width[chain->chain.prev.ptr]  = chain->chain.passes->data[0].last_width;
+   chain->chain.prev.last_height[chain->chain.prev.ptr] = chain->chain.passes->data[0].last_height;
+   chain->chain.prev.ptr                                = (chain->chain.prev.ptr + 1) & TEXTURESMASK;
+
    IDirect3DDevice9_SetVertexShader(chain->chain.dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
 
    IDirect3DDevice9_SetPixelShader(chain->chain.dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
@@ -3027,6 +2918,8 @@ static bool hlsl_d3d9_renderchain_add_pass(
       const struct LinkInfo *info)
 {
    struct shader_pass pass;
+   LPDIRECT3DTEXTURE9      tex;
+   LPDIRECT3DVERTEXBUFFER9 vertbuf = NULL;
 
    pass.info                   = *info;
    pass.last_width             = 0;
@@ -3053,10 +2946,44 @@ static bool hlsl_d3d9_renderchain_add_pass(
                chain->chain.dev, &pass, info->pass->source.path);
    }
 
-   if (hlsl_d3d9_renderchain_init_shader_fvf(&chain->chain, &pass))
-      return d3d9_renderchain_add_pass(&chain->chain, &pass,
-            info);
-   return false;
+   if (!hlsl_d3d9_renderchain_init_shader_fvf(&chain->chain, &pass))
+      return false;
+
+   if (!SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
+               chain->chain.dev,
+               4 * sizeof(struct Vertex),
+               D3DUSAGE_WRITEONLY, 0,
+               D3DPOOL_DEFAULT,
+               (LPDIRECT3DVERTEXBUFFER9*)&vertbuf, NULL)))
+      return false;
+
+   pass.vertex_buf = vertbuf;
+
+   tex = NULL;
+   IDirect3DDevice9_CreateTexture(chain->chain.dev,
+         info->tex_w,
+         info->tex_h,
+         1,
+         D3DUSAGE_RENDERTARGET,
+         (chain->chain.passes->data[
+         chain->chain.passes->count - 1].info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
+         ? D3DFMT_A32B32G32R32F : D3D9_ARGB8888_FORMAT,
+         D3DPOOL_DEFAULT,
+         (struct IDirect3DTexture9**)&tex, NULL);
+
+   if (!tex)
+      return false;
+
+   pass.tex        = tex;
+
+   IDirect3DDevice9_SetTexture(chain->chain.dev, 0, (IDirect3DBaseTexture9*)pass.tex);
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   IDirect3DDevice9_SetSamplerState(chain->chain.dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   IDirect3DDevice9_SetTexture(chain->chain.dev, 0, (IDirect3DBaseTexture9*)NULL);
+
+   shader_pass_vector_list_append(chain->chain.passes, pass);
+
+   return true;
 }
 
 /* =====================================================================
@@ -6532,7 +6459,7 @@ static bool renderchain_d3d_hlsl_init_first(
    if (!renderchain)
       return false;
 
-   d3d9_init_renderchain(&renderchain->chain);
+   d3d9_hlsl_init_renderchain(&renderchain->chain);
 
    *renderchain_handle = renderchain;
 
@@ -6728,11 +6655,11 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
 
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
-      d3d9_renderchain_t *chain   = (d3d9_renderchain_t*)&_chain->chain;
+      d3d9_hlsl_renderchain_t *chain   = (d3d9_hlsl_renderchain_t*)&_chain->chain;
 
       for (i = 0; i < d3d->shader.luts; i++)
       {
-         if (!d3d9_renderchain_add_lut(
+         if (!d3d9_hlsl_renderchain_add_lut(
                   chain,
                   d3d->shader.lut[i].id,
                   d3d->shader.lut[i].path,
@@ -7206,19 +7133,16 @@ static void d3d9_hlsl_viewport_info(void *data, struct video_viewport *vp)
 }
 
 #ifdef HAVE_OVERLAY
-static void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
-{
-   if ((LPDIRECT3DTEXTURE9)overlay->tex)
-      IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)overlay->tex);
-   d3d9_vertex_buffer_free(overlay->vert_buf, NULL);
-}
-
 static void d3d9_hlsl_free_overlays(d3d9_video_t *d3d)
 {
    unsigned i;
 
    for (i = 0; i < d3d->overlays_size; i++)
-      d3d9_free_overlay(d3d, &d3d->overlays[i]);
+   {
+      if ((LPDIRECT3DTEXTURE9)d3d->overlays[i].tex)
+         IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->overlays[i].tex);
+      d3d9_vertex_buffer_free(d3d->overlays[i].vert_buf, NULL);
+   }
    free(d3d->overlays);
    d3d->overlays      = NULL;
    d3d->overlays_size = 0;
@@ -7282,12 +7206,13 @@ static bool d3d9_overlay_load(void *data,
       unsigned height    = images[i].height;
       overlay_t *overlay = (overlay_t*)&d3d->overlays[i];
 
-      overlay->tex       = d3d9_texture_new(d3d->dev,
+      overlay->tex       = NULL;
+      IDirect3DDevice9_CreateTexture(d3d->dev,
                   width, height, 1,
                   0,
                   D3D9_ARGB8888_FORMAT,
-                  D3DPOOL_MANAGED, 0, 0, 0,
-                  NULL, NULL, false);
+                  D3DPOOL_MANAGED,
+                  (struct IDirect3DTexture9**)&overlay->tex, NULL);
 
       if (!overlay->tex)
       {
@@ -7497,12 +7422,6 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
    IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)&d3d->out_vp);
 }
 
-static void d3d9_hlsl_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
-{
-   if ((LPDIRECT3DTEXTURE9)overlay->tex)
-      IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)overlay->tex);
-   d3d9_vertex_buffer_free(overlay->vert_buf, NULL);
-}
 #endif
 
 static void d3d9_hlsl_free(void *data)
@@ -7520,9 +7439,13 @@ static void d3d9_hlsl_free(void *data)
    d3d->overlays_size = 0;
 #endif
 
-   d3d9_hlsl_free_overlay(d3d, d3d->menu);
    if (d3d->menu)
+   {
+      if ((LPDIRECT3DTEXTURE9)d3d->menu->tex)
+         IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+      d3d9_vertex_buffer_free(d3d->menu->vert_buf, NULL);
       free(d3d->menu);
+   }
    d3d->menu          = NULL;
 
    d3d9_hlsl_deinitialize(d3d);
@@ -7598,7 +7521,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    if (d3d->should_resize)
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
-      d3d9_renderchain_t *chain  = (d3d9_renderchain_t*)&_chain->chain;
+      d3d9_hlsl_renderchain_t *chain  = (d3d9_hlsl_renderchain_t*)&_chain->chain;
 
       d3d9_hlsl_set_viewport(d3d, width, height, false, true);
 
@@ -7802,10 +7725,12 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
       if (d3d->menu->tex)
          IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
-      d3d->menu->tex = d3d9_texture_new(d3d->dev,
+      d3d->menu->tex = NULL;
+      IDirect3DDevice9_CreateTexture(d3d->dev,
             width, height, 1,
             0, D3D9_ARGB8888_FORMAT,
-            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
+            D3DPOOL_MANAGED,
+            (struct IDirect3DTexture9**)&d3d->menu->tex, NULL);
 
       if (!d3d->menu->tex)
       {
@@ -7900,11 +7825,16 @@ static void d3d9_hlsl_video_texture_load_d3d(
       || (info->type == TEXTURE_FILTER_MIPMAP_NEAREST))
       want_mipmap        = true;
 
-   if (!(tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(d3d->dev,
+#ifndef _XBOX
+   if (want_mipmap)
+      usage |= D3DUSAGE_AUTOGENMIPMAP;
+#endif
+   tex = NULL;
+   if (!SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
                ti->width, ti->height, 1,
                usage, D3D9_ARGB8888_FORMAT,
-               D3DPOOL_MANAGED, 0, 0, 0,
-               NULL, NULL, want_mipmap)))
+               D3DPOOL_MANAGED,
+               (struct IDirect3DTexture9**)&tex, NULL)))
       return;
 
    IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -8136,9 +8066,10 @@ static bool d3d9_hlsl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
             !(d3dr &&
                SUCCEEDED(IDirect3DDevice9_GetRenderTarget(d3dr,
                      0, (LPDIRECT3DSURFACE9*)&target)))
-         || !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
-            D3D9_XRGB8888_FORMAT,
-            D3DPOOL_SYSTEMMEM, (void**)&dest, NULL)
+         || !SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(d3dr,
+               width, height,
+               (D3DFORMAT)D3D9_XRGB8888_FORMAT, D3DPOOL_SYSTEMMEM,
+               (LPDIRECT3DSURFACE9*)&dest, NULL))
          || !d3d9_hlsl_device_get_render_target_data(d3dr, target, dest)
          )
    {
