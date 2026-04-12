@@ -39,6 +39,7 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <commctrl.h>
+#include <objbase.h>
 
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
@@ -46,6 +47,7 @@
 #include <encodings/utf.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
+#include <rthreads/rthreads.h>
 
 #include "../ui_companion_driver.h"
 #include "../../msg_hash.h"
@@ -59,6 +61,7 @@
 
 extern ui_window_win32_t main_window;
 extern HACCEL window_accelerators;
+extern enum win32_browser_mode g_win32_browser_mode;
 
 static void* ui_application_win32_initialize(void)
 {
@@ -242,28 +245,49 @@ ui_msg_window_t ui_msg_window_win32 = {
    "win32"
 };
 
-static bool ui_browser_window_win32_core(
-      ui_browser_window_state_t *state, bool save)
+/**
+ * Threaded file-dialog.
+ *
+ * GetOpenFileName / GetSaveFileName are blocking calls that run their
+ * own message loop.  When called on the main thread the RetroArch
+ * window stops updating (video freezes, audio may stutter/stop).
+ *
+ * We avoid that by running the dialog on a short-lived worker thread.
+ * The main thread continues its normal runloop_iterate() cycle.
+ * When the dialog closes, the worker thread posts a WM_USER message
+ * to the main window carrying a heap-allocated result so the main
+ * thread can finish loading the content/core.
+ *
+ * Message constants, the mode enum, and the thread-data struct are
+ * declared in ui_win32.h so that win32_common.c can handle the
+ * async completion.
+ */
+
+static void ui_browser_window_win32_thread(void *userdata)
 {
    OPENFILENAME ofn;
-   bool            ret   = true;
-   settings_t *settings  = config_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
-   bool video_fullscreen = settings->bools.video_fullscreen;
+   win32_browser_thread_data_t *data =
+      (win32_browser_thread_data_t *)userdata;
+   bool ret = false;
 
+   /* COM must be initialised per-thread for the shell dialogs. */
+   CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+
+   memset(&ofn, 0, sizeof(ofn));
    ofn.lStructSize       = sizeof(OPENFILENAME);
-   ofn.hwndOwner         = (HWND)state->window;
+   /* No owner → non-modal so the main window stays responsive. */
+   ofn.hwndOwner         = NULL;
    ofn.hInstance         = NULL;
-   ofn.lpstrFilter       = state->filters; /* actually const */
+   ofn.lpstrFilter       = data->filters;
    ofn.lpstrCustomFilter = NULL;
    ofn.nMaxCustFilter    = 0;
    ofn.nFilterIndex      = 0;
-   ofn.lpstrFile         = state->path;
-   ofn.nMaxFile          = PATH_MAX;
+   ofn.lpstrFile         = data->path;
+   ofn.nMaxFile          = sizeof(data->path);
    ofn.lpstrFileTitle    = NULL;
    ofn.nMaxFileTitle     = 0;
-   ofn.lpstrInitialDir   = state->startdir;
-   ofn.lpstrTitle        = state->title;
+   ofn.lpstrInitialDir   = data->startdir;
+   ofn.lpstrTitle        = data->title;
    ofn.Flags             =   OFN_FILEMUSTEXIST
                            | OFN_HIDEREADONLY
                            | OFN_NOCHANGEDIR;
@@ -279,6 +303,53 @@ static bool ui_browser_window_win32_core(
    ofn.FlagsEx           = 0;
 #endif
 
+   if (!data->is_save)
+      ret = GetOpenFileName(&ofn) ? true : false;
+   else
+      ret = GetSaveFileName(&ofn) ? true : false;
+
+   data->result = ret;
+
+   /* Notify the main window.  LPARAM carries the heap pointer;
+    * the main-thread handler is responsible for freeing it.     */
+   PostMessage(data->owner, ret
+         ? WM_BROWSER_OPEN_RESULT
+         : WM_BROWSER_CANCELLED,
+         (WPARAM)0, (LPARAM)data);
+
+   CoUninitialize();
+}
+
+static bool ui_browser_window_win32_core(
+      ui_browser_window_state_t *state, bool save)
+{
+   win32_browser_thread_data_t *td = NULL;
+   settings_t *settings            = config_get_ptr();
+   video_driver_state_t *video_st  = video_state_get_ptr();
+   bool video_fullscreen           = settings->bools.video_fullscreen;
+   sthread_t *thread               = NULL;
+
+   td = (win32_browser_thread_data_t *)calloc(1, sizeof(*td));
+   if (!td)
+      return false;
+
+   /* Copy the inputs into the heap block the thread will use. */
+   if (state->filters)
+      strlcpy(td->filters, state->filters, sizeof(td->filters));
+   if (state->title)
+      strlcpy(td->title, state->title, sizeof(td->title));
+   if (state->startdir)
+      strlcpy(td->startdir, state->startdir, sizeof(td->startdir));
+
+   td->path[0] = '\0';
+   if (state->path && *state->path)
+      strlcpy(td->path, state->path, sizeof(td->path));
+
+   td->owner    = (HWND)state->window;
+   td->is_save  = save;
+   td->mode     = g_win32_browser_mode;
+   td->result   = false;
+
    /* Full Screen: Show mouse for the file dialog */
    if (video_fullscreen)
    {
@@ -287,20 +358,20 @@ static bool ui_browser_window_win32_core(
          video_st->poke->show_mouse(video_st->data, true);
    }
 
-   if (!save && !GetOpenFileName(&ofn))
-      ret = false;
-   if (save && !GetSaveFileName(&ofn))
-      ret = false;
-
-   /* Full screen: Hide mouse after the file dialog */
-   if (video_fullscreen)
+   thread = sthread_create(ui_browser_window_win32_thread, td);
+   if (!thread)
    {
-      if (     video_st->poke
-            && video_st->poke->show_mouse)
-         video_st->poke->show_mouse(video_st->data, false);
+      free(td);
+      return false;
    }
 
-   return ret;
+   /* Detach — the thread frees nothing; the main-thread WM_USER
+    * handler owns *td and will free it after processing.          */
+   sthread_detach(thread);
+
+   /* Return false here: the caller must NOT act on state->path yet.
+    * The real result arrives asynchronously via WM_BROWSER_OPEN_RESULT. */
+   return false;
 }
 
 static bool ui_browser_window_win32_open(ui_browser_window_state_t *state)

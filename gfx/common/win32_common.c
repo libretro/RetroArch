@@ -54,6 +54,7 @@
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
+#include "../../ui/drivers/ui_win32.h"
 
 #if !defined(_XBOX)
 
@@ -641,13 +642,21 @@ static void win32_resize_after_display_change(HWND hwnd, HMONITOR monitor)
             SWP_NOMOVE);
 }
 
+/* Set by win32_browser() before calling browser->open() so
+ * the threaded dialog knows whether the result should trigger a
+ * core load or a content load. Only touched on the main thread.
+ * Declared extern in ui_win32.c. */
+enum win32_browser_mode g_win32_browser_mode =
+   WIN32_BROWSER_MODE_LOAD_CONTENT;
+
 static bool win32_browser(
       HWND owner,
       char *filename,
       size_t filename_size,
       const char *extensions,
       const char *title,
-      const char *initial_dir)
+      const char *initial_dir,
+      enum win32_browser_mode mode)
 {
    bool result = false;
    const ui_browser_window_t *browser =
@@ -684,10 +693,15 @@ static bool win32_browser(
       browser_state.path     = new_file;
       browser_state.window   = owner;
 
+      /* Stash the mode so the threaded dialog can tag its result. */
+      g_win32_browser_mode   = mode;
+
       result = browser->open(&browser_state);
 
-      /* browser->open() may update browser_state.path in-place;
-       * copy the final path back to the caller's buffer. */
+      /* With the threaded dialog, browser->open() spawns the thread
+       * and returns false immediately.  The real result arrives via
+       * WM_BROWSER_OPEN_RESULT.  The copy below is harmless but
+       * will not contain anything useful in the threaded path. */
       if (filename && browser_state.path)
          strlcpy(filename, browser_state.path, filename_size);
    }
@@ -710,33 +724,21 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             const char *title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
             const char *initial_dir = settings->paths.directory_libretro;
 
-            /* Convert UTF8 to UTF16, then back to the
-             * local code page.
-             * This is needed for proper multi-byte
-             * string display until Unicode is
-             * fully supported.
-             */
             wchar_t *title_wide     = utf8_to_utf16_string_alloc(title);
 
             if (title_wide)
                title_cp             = utf16_to_utf8_string_alloc(title_wide);
 
-            if (!win32_browser(owner, win32_file, sizeof(win32_file),
-                     extensions, title_cp, initial_dir))
-            {
-               if (title_wide)
-                  free(title_wide);
-               if (title_cp)
-                  free(title_cp);
-               break;
-            }
+            /* Fire-and-forget: the dialog runs on a worker thread.
+             * The actual core-load happens in WM_BROWSER_OPEN_RESULT. */
+            win32_browser(owner, win32_file, sizeof(win32_file),
+                     extensions, title_cp, initial_dir,
+                     WIN32_BROWSER_MODE_LOAD_CORE);
 
             if (title_wide)
                free(title_wide);
             if (title_cp)
                free(title_cp);
-            path_set(RARCH_PATH_CORE, win32_file);
-            command_event(CMD_EVENT_LOAD_CORE, NULL);
          }
          break;
       case ID_M_LOAD_CONTENT:
@@ -749,7 +751,6 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
             settings_t *settings    = config_get_ptr();
             const char *initial_dir = settings->paths.directory_menu_content;
-            bool browser            = true;
 
             /* Menubar accelerator hotkey is hijacked always, therefore must
              * press the keyboard event manually when blocking the accelerator. */
@@ -761,26 +762,21 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                break;
             }
 
-            /* Convert UTF8 to UTF16, then back to the
-             * local code page.
-             * This is needed for proper multi-byte
-             * string display until Unicode is
-             * fully supported.
-             */
             title_wide = utf8_to_utf16_string_alloc(title);
 
             if (title_wide)
                title_cp = utf16_to_utf8_string_alloc(title_wide);
 
-            browser = win32_browser(owner, win32_file, sizeof(win32_file), extensions, title_cp, initial_dir);
+            /* Fire-and-forget: the dialog runs on a worker thread.
+             * The actual content-load happens in WM_BROWSER_OPEN_RESULT. */
+            win32_browser(owner, win32_file, sizeof(win32_file),
+                  extensions, title_cp, initial_dir,
+                  WIN32_BROWSER_MODE_LOAD_CONTENT);
 
             if (title_wide)
                free(title_wide);
             if (title_cp)
                free(title_cp);
-
-            if (browser)
-               win32_load_content_from_gui(win32_file);
          }
          break;
       case ID_M_RESET:
@@ -1071,6 +1067,65 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_COMMAND:
          win32_menu_loop(main_window.hwnd, wparam);
          break;
+      case WM_BROWSER_OPEN_RESULT:
+         /* The threaded file-dialog picked a file.
+          * LPARAM is a heap-allocated win32_browser_thread_data_t*. */
+         {
+            win32_browser_thread_data_t *td =
+               (win32_browser_thread_data_t *)lparam;
+            if (td)
+            {
+               settings_t      *settings = config_get_ptr();
+               video_driver_state_t *video_st = video_state_get_ptr();
+
+               switch (td->mode)
+               {
+                  case WIN32_BROWSER_MODE_LOAD_CORE:
+                     path_set(RARCH_PATH_CORE, td->path);
+                     command_event(CMD_EVENT_LOAD_CORE, NULL);
+                     break;
+                  case WIN32_BROWSER_MODE_LOAD_CONTENT:
+                     win32_load_content_from_gui(td->path);
+                     break;
+                  default:
+                     break;
+               }
+
+               /* Full screen: hide mouse now that the dialog is gone */
+               if (settings->bools.video_fullscreen)
+               {
+                  if (     video_st->poke
+                        && video_st->poke->show_mouse)
+                     video_st->poke->show_mouse(video_st->data, false);
+               }
+
+               free(td);
+            }
+         }
+         break;
+      case WM_BROWSER_CANCELLED:
+         /* The threaded file-dialog was cancelled / closed.
+          * LPARAM is a heap-allocated win32_browser_thread_data_t*. */
+         {
+            win32_browser_thread_data_t *td =
+               (win32_browser_thread_data_t *)lparam;
+            if (td)
+            {
+               settings_t      *settings = config_get_ptr();
+               video_driver_state_t *video_st = video_state_get_ptr();
+
+               /* Full screen: hide mouse now that the dialog is gone */
+               if (settings->bools.video_fullscreen)
+               {
+                  if (     video_st->poke
+                        && video_st->poke->show_mouse)
+                     video_st->poke->show_mouse(video_st->data, false);
+               }
+
+               free(td);
+            }
+         }
+         break;
    }
    return 0;
 }
@@ -1160,6 +1215,8 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_SIZE:
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
+      case WM_BROWSER_OPEN_RESULT:
+      case WM_BROWSER_CANCELLED:
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
             return ret;
@@ -1242,6 +1299,8 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_SIZE:
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
+      case WM_BROWSER_OPEN_RESULT:
+      case WM_BROWSER_CANCELLED:
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
             return ret;
@@ -1463,6 +1522,8 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_SIZE:
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
+      case WM_BROWSER_OPEN_RESULT:
+      case WM_BROWSER_CANCELLED:
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
             return ret;
