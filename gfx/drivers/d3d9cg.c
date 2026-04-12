@@ -112,6 +112,19 @@ static const char *stock_cg_d3d9_program = CG(
 #define D3D_FILTER_LINEAR           (3 << 0)
 #define D3D_FILTER_POINT            (2 << 0)
 
+/* Cg debug helper: checks and logs Cg runtime errors.
+ * Only active in debug builds to avoid overhead in release. */
+#ifdef DEBUG
+#define CG_DEBUG_CHECK(ctx, msg) \
+   do { \
+      CGerror _cg_err = cgGetError(); \
+      if (_cg_err != CG_NO_ERROR) \
+         RARCH_WARN("[D3D9 Cg] %s: %s\n", msg, cgGetErrorString(_cg_err)); \
+   } while(0)
+#else
+#define CG_DEBUG_CHECK(ctx, msg) ((void)0)
+#endif
+
 #define D3D9_DECL_FVF_TEXCOORD(stream, offset, index) \
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
@@ -601,7 +614,10 @@ static INLINE void d3d9_cg_set_mvp(cg_renderchain_t *chain,
       CGparameter cgp = cgGetNamedParameter(
             (CGprogram)chain->stock_shader.vprg, "modelViewProj");
       if (cgp)
+      {
          cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)matrix);
+         CG_DEBUG_CHECK(chain->cgCtx, "set_mvp SetUniformMatrix");
+      }
    }
 }
 
@@ -624,6 +640,7 @@ static INLINE void d3d9_cg_set_mvp_transpose(cg_renderchain_t *chain,
       {
          matrix_4x4_transpose(transposed, (*(const math_matrix_4x4*)matrix));
          cgD3D9SetUniformMatrix(cgp, (const D3DMATRIX*)&transposed);
+         CG_DEBUG_CHECK(chain->cgCtx, "set_mvp_transpose SetUniformMatrix");
       }
    }
 }
@@ -672,7 +689,7 @@ static void gfx_display_d3d9_cg_blend_begin(void *data)
 
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, true);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, TRUE);
 }
 
 static void gfx_display_d3d9_cg_blend_end(void *data)
@@ -682,7 +699,7 @@ static void gfx_display_d3d9_cg_blend_end(void *data)
    if (!d3d)
       return;
 
-   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, false);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, FALSE);
 }
 
 struct d3d9_texture_info
@@ -717,7 +734,7 @@ static void d3d9_video_texture_load_d3d(
                NULL, NULL, want_mipmap)))
       return;
 
-   IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   if (SUCCEEDED(IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       unsigned i;
       uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
@@ -725,8 +742,8 @@ static void d3d9_video_texture_load_d3d(
       unsigned      pitch = d3dlr.Pitch >> 2;
       for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
          memcpy(dst, src, ti->width << 2);
+      IDirect3DTexture9_UnlockRect(tex, 0);
    }
-   IDirect3DTexture9_UnlockRect(tex, 0);
 
    *id = (uintptr_t)tex;
 }
@@ -833,6 +850,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
          {
             cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
             cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+            CG_DEBUG_CHECK(_chain->cgCtx, "pipeline draw BindProgram");
 
             IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                   0, draw->coords->vertices - 2);
@@ -844,7 +862,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
          IDirect3DDevice9_SetRenderState(dev,
                D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
          IDirect3DDevice9_SetRenderState(dev,
-               D3DRS_ALPHABLENDENABLE, true);
+               D3DRS_ALPHABLENDENABLE, TRUE);
 
          /* Restore menu display vertex buffer state */
          IDirect3DDevice9_SetStreamSource(dev, 0,
@@ -945,6 +963,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
           * active when the programs were last bound. */
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+         CG_DEBUG_CHECK(_chain->cgCtx, "single-sprite draw BindProgram");
       }
 
       gfx_display_d3d9_cg_bind_texture(draw, d3d);
@@ -1021,6 +1040,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       d3d9_cg_set_mvp(_chain, bottomup_ortho);
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+      CG_DEBUG_CHECK(_chain->cgCtx, "multi-vertex draw BindProgram");
    }
 
    gfx_display_d3d9_cg_bind_texture(draw, d3d);
@@ -1120,7 +1140,7 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
          IDirect3DDevice9_SetRenderState(d3d->dev,
                D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
          IDirect3DDevice9_SetRenderState(d3d->dev,
-               D3DRS_ALPHABLENDENABLE, true);
+               D3DRS_ALPHABLENDENABLE, TRUE);
          break;
       }
 
@@ -1150,6 +1170,7 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
                (CGprogram)_chain->stock_shader.fprg, "IN.frame_count");
          if (param)
             cgD3D9SetUniform(param, &t);
+         CG_DEBUG_CHECK(_chain->cgCtx, "draw_pipeline time uniform");
       }
    }
 }
@@ -1480,7 +1501,7 @@ static void d3d9_cg_font_render_msg(
    IDirect3DDevice9_SetRenderState(d3d->dev,
          D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
    IDirect3DDevice9_SetRenderState(d3d->dev,
-         D3DRS_ALPHABLENDENABLE, true);
+         D3DRS_ALPHABLENDENABLE, TRUE);
 
    /* Use top-down ortho: Y=0->top, Y=1->bottom, matching Ozone coords.
     * Transposed for the Cg stock shader's mul(matrix, vector) order. */
@@ -1543,6 +1564,7 @@ static void d3d9_cg_font_render_msg(
       {
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+         CG_DEBUG_CHECK(_chain->cgCtx, "font_render BindProgram");
       }
    }
 
@@ -1983,7 +2005,25 @@ static bool d3d9_cg_load_program(cg_renderchain_t *chain,
       goto error;
 
    cgD3D9LoadProgram((CGprogram)pass->fprg, true, 0);
+   {
+      CGerror _cg_err = cgGetError();
+      if (_cg_err != CG_NO_ERROR)
+      {
+         RARCH_ERR("[D3D9 Cg] LoadProgram (fragment) failed: %s.\n",
+               cgGetErrorString(_cg_err));
+         goto error;
+      }
+   }
    cgD3D9LoadProgram((CGprogram)pass->vprg, true, 0);
+   {
+      CGerror _cg_err = cgGetError();
+      if (_cg_err != CG_NO_ERROR)
+      {
+         RARCH_ERR("[D3D9 Cg] LoadProgram (vertex) failed: %s.\n",
+               cgGetErrorString(_cg_err));
+         goto error;
+      }
+   }
 
    free(listing_f);
    free(listing_v);
@@ -2054,6 +2094,7 @@ static void d3d9_cg_renderchain_set_shader_params(
       cgD3D9SetUniform(vp_output_size, &output_size);
    if (vp_frame_count)
       cgD3D9SetUniform(vp_frame_count, &frame_cnt);
+   CG_DEBUG_CHECK(NULL, "set_shader_params vertex uniforms");
 
    /* Fragment program */
    if (fp_video_size)
@@ -2064,6 +2105,7 @@ static void d3d9_cg_renderchain_set_shader_params(
       cgD3D9SetUniform(fp_output_size, &output_size);
    if (fp_frame_count)
       cgD3D9SetUniform(fp_frame_count, &frame_cnt);
+   CG_DEBUG_CHECK(NULL, "set_shader_params fragment uniforms");
 
    /* User-defined shader parameters */
    if (shader)
@@ -2079,6 +2121,7 @@ static void d3d9_cg_renderchain_set_shader_params(
          if (cgp_fp)
             cgD3D9SetUniform(cgp_fp, &shader->parameters[i].current);
       }
+      CG_DEBUG_CHECK(NULL, "set_shader_params user parameters");
    }
 }
 
@@ -2664,6 +2707,7 @@ static bool d3d9_cg_renderchain_init(
 
    cgD3D9BindProgram((CGprogram)chain->stock_shader.fprg);
    cgD3D9BindProgram((CGprogram)chain->stock_shader.vprg);
+   CG_DEBUG_CHECK(chain->cgCtx, "renderchain_init BindProgram");
 
    return true;
 }
@@ -2716,7 +2760,10 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
    }
 
    if (cgp)
+   {
       cgD3D9SetUniformMatrix(cgp, (D3DMATRIX*)&matrix);
+      CG_DEBUG_CHECK(NULL, "calc_and_set_shader_mvp SetUniformMatrix");
+   }
 }
 
 static INLINE void d3d9_cg_renderchain_set_vertices_on_change(
@@ -2798,9 +2845,12 @@ static INLINE void d3d9_cg_renderchain_set_vertices_on_change(
       vert[i].y += 0.5f;
    }
 
-   IDirect3DVertexBuffer9_Lock(pass->vertex_buf, 0, 0, &verts, 0);
-   memcpy(verts, vert, sizeof(vert));
-   IDirect3DVertexBuffer9_Unlock(pass->vertex_buf);
+   IDirect3DVertexBuffer9_Lock(pass->vertex_buf, 0, 0, &verts, D3DLOCK_DISCARD);
+   if (verts)
+   {
+      memcpy(verts, vert, sizeof(vert));
+      IDirect3DVertexBuffer9_Unlock(pass->vertex_buf);
+   }
 }
 
 static void d3d9_cg_renderchain_set_vertices(
@@ -2838,6 +2888,7 @@ static void d3d9_cg_renderchain_render_pass(
 
    cgD3D9BindProgram((CGprogram)pass->fprg);
    cgD3D9BindProgram((CGprogram)pass->vprg);
+   CG_DEBUG_CHECK(NULL, "renderchain_render_pass BindProgram");
 
    IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)pass->tex);
    IDirect3DDevice9_SetSamplerState(chain->dev,
@@ -2914,9 +2965,16 @@ static void d3d9_cg_blit_to_texture(
    d3dlr.pBits  = NULL;
 
    /* Single lock: clear if dimensions changed, then copy frame data */
-   IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL,
+   if (!SUCCEEDED(IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL,
          (last_width == width && last_height == height)
-         ? 0 : D3DLOCK_NOSYSLOCK);
+         ? 0 : D3DLOCK_NOSYSLOCK)))
+      return;
+
+   if (!d3dlr.pBits)
+   {
+      IDirect3DTexture9_UnlockRect(tex, 0);
+      return;
+   }
 
    if (last_width != width || last_height != height)
       memset(d3dlr.pBits, 0, tex_height * d3dlr.Pitch);
@@ -3049,6 +3107,7 @@ static void d3d9_cg_renderchain_render(
    {
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+      CG_DEBUG_CHECK(_chain->cgCtx, "renderchain_render post-render BindProgram");
    }
    d3d9_cg_renderchain_calc_and_set_shader_mvp(
          (CGprogram)_chain->stock_shader.vprg,
@@ -3253,8 +3312,12 @@ static bool d3d9_cg_process_shader(d3d9_video_t *d3d)
    const char *shader_path = d3d->shader_path;
    if (shader_path && *shader_path)
    {
-      RARCH_ERR("[D3D9] Failed to parse shader preset.\n");
-      return d3d9_cg_init_multipass(d3d, shader_path);
+      if (!d3d9_cg_init_multipass(d3d, shader_path))
+      {
+         RARCH_ERR("[D3D9] Failed to parse shader preset.\n");
+         return false;
+      }
+      return true;
    }
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
@@ -3530,7 +3593,7 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
       if (SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
                   d3d->dev, d3d->menu_display.size * sizeof(Vertex),
                   D3DUSAGE_WRITEONLY,
-                  D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
+                  0, /* FVF=0: using vertex declarations, not FVF */
                   D3DPOOL_DEFAULT,
                   (LPDIRECT3DVERTEXBUFFER9*)&_vbuf, NULL)))
          d3d->menu_display.buffer = _vbuf;
@@ -3895,15 +3958,15 @@ static bool d3d9_cg_overlay_load(void *data,
          return false;
       }
 
-      IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      if (SUCCEEDED(IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
       {
          uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
          const uint32_t *src = images[i].pixels;
          unsigned      pitch = d3dlr.Pitch >> 2;
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
+         IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0);
       }
-      IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0);
 
       overlay->tex_w         = width;
       overlay->tex_h         = height;
@@ -4058,6 +4121,7 @@ static void d3d9_cg_overlay_render(
       {
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+         CG_DEBUG_CHECK(_chain->cgCtx, "overlay_render BindProgram");
       }
    }
 
@@ -4098,7 +4162,7 @@ static void d3d9_cg_overlay_render(
    IDirect3DDevice9_SetRenderState(dev,
          D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
    IDirect3DDevice9_SetRenderState(dev,
-         D3DRS_ALPHABLENDENABLE, true);
+         D3DRS_ALPHABLENDENABLE, TRUE);
 
    IDirect3DDevice9_SetTexture(dev, 0,
          (IDirect3DBaseTexture9*)overlay->tex);
@@ -4256,6 +4320,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
          {
             cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
             cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+            CG_DEBUG_CHECK(_chain->cgCtx, "frame menu BindProgram");
          }
       }
       IDirect3DDevice9_BeginScene(d3d->dev);
@@ -4305,19 +4370,20 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       IDirect3DDevice9_SetScissorRect(d3d->dev, &scissor_rect);
 
       IDirect3DDevice9_SetRenderState(d3d->dev,
-            D3DRS_ALPHABLENDENABLE, true);
+            D3DRS_ALPHABLENDENABLE, TRUE);
       IDirect3DDevice9_SetRenderState(d3d->dev,
             D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
       IDirect3DDevice9_SetRenderState(d3d->dev,
             D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
       IDirect3DDevice9_SetRenderState(d3d->dev,
-            D3DRS_ZENABLE, false);
+            D3DRS_ZENABLE, FALSE);
       IDirect3DDevice9_SetRenderState(d3d->dev,
             D3DRS_CULLMODE, D3DCULL_NONE);
       if (_chain)
       {
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
          cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+         CG_DEBUG_CHECK(_chain->cgCtx, "widgets BindProgram");
       }
       IDirect3DDevice9_BeginScene(d3d->dev);
       gfx_widgets_frame(video_info);
@@ -4403,8 +4469,9 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
-   IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex,
-         0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   if (!SUCCEEDED(IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex,
+         0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+      return;
    {
       unsigned h, w;
 
@@ -4630,7 +4697,11 @@ bool d3d9_cg_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       goto end;
    }
 
-   IDirect3DSurface9_LockRect(dest, &rect, NULL, D3DLOCK_READONLY);
+   if (!SUCCEEDED(IDirect3DSurface9_LockRect(dest, &rect, NULL, D3DLOCK_READONLY)))
+   {
+      ret = false;
+      goto end;
+   }
 
    {
       unsigned x, y;
