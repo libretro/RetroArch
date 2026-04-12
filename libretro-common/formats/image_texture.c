@@ -29,10 +29,15 @@
 #include <formats/image.h>
 #include <file/nbio.h>
 
+/* SIMD acceleration for color conversion */
 #if defined(__SSE2__)
 #include <emmintrin.h>
+#define IMAGE_TEXTURE_SIMD_SSE2 1
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#if !defined(VITA) && !defined(WEBOS) && !defined(HAVE_LIBNX)
 #include <arm_neon.h>
+#define IMAGE_TEXTURE_SIMD_NEON 1
+#endif
 #endif
 
 enum image_type_enum image_texture_get_type(const char *path)
@@ -139,7 +144,7 @@ bool image_texture_color_convert(unsigned r_shift,
       if (a_shift == 24 && r_shift == 0 && g_shift == 8 && b_shift == 16)
       {
          i = 0;
-#if defined(__SSE2__)
+#if defined(IMAGE_TEXTURE_SIMD_SSE2)
          {
             __m128i mask_rb = _mm_set1_epi32(0x00FF00FF);
             __m128i mask_ag = _mm_set1_epi32((int)0xFF00FF00);
@@ -155,7 +160,7 @@ bool image_texture_color_convert(unsigned r_shift,
                      _mm_or_si128(ag, rb_s));
             }
          }
-#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#elif defined(IMAGE_TEXTURE_SIMD_NEON)
          {
             for (; i + 3 < num_pixels; i += 4)
             {
