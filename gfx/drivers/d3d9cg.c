@@ -1919,89 +1919,6 @@ error:
    return false;
 }
 
-static void d3d9_cg_renderchain_set_shader_params(
-      d3d9_cg_renderchain_t *chain,
-      LPDIRECT3DDEVICE9 dev,
-      struct shader_pass *pass,
-      unsigned video_w,  unsigned video_h,
-      unsigned tex_w,    unsigned tex_h,
-      unsigned vp_width, unsigned vp_height,
-      struct video_shader *shader)
-{
-   float frame_cnt;
-   float video_size[2];
-   float texture_size[2];
-   float output_size[2];
-   CGprogram fprg       = (CGprogram)pass->fprg;
-   CGprogram vprg       = (CGprogram)pass->vprg;
-
-   /* Cache parameter handles - cgGetNamedParameter does a string
-    * hash lookup each call. Using static locals caches per-program
-    * but since programs don't change between frames this is safe.
-    * For multi-pass with different programs, the Cg runtime returns
-    * NULL for mismatched params which we already check. */
-   CGparameter vp_video_size   = cgGetNamedParameter(vprg, "IN.video_size");
-   CGparameter vp_texture_size = cgGetNamedParameter(vprg, "IN.texture_size");
-   CGparameter vp_output_size  = cgGetNamedParameter(vprg, "IN.output_size");
-   CGparameter vp_frame_count  = cgGetNamedParameter(vprg, "IN.frame_count");
-   CGparameter fp_video_size   = cgGetNamedParameter(fprg, "IN.video_size");
-   CGparameter fp_texture_size = cgGetNamedParameter(fprg, "IN.texture_size");
-   CGparameter fp_output_size  = cgGetNamedParameter(fprg, "IN.output_size");
-   CGparameter fp_frame_count  = cgGetNamedParameter(fprg, "IN.frame_count");
-
-   video_size[0]        = video_w;
-   video_size[1]        = video_h;
-   texture_size[0]      = tex_w;
-   texture_size[1]      = tex_h;
-   output_size[0]       = vp_width;
-   output_size[1]       = vp_height;
-
-   frame_cnt            = chain->frame_count;
-
-   if (pass->info.pass->frame_count_mod)
-      frame_cnt         = chain->frame_count
-         % pass->info.pass->frame_count_mod;
-
-   /* Vertex program */
-   if (vp_video_size)
-      cgD3D9SetUniform(vp_video_size, &video_size);
-   if (vp_texture_size)
-      cgD3D9SetUniform(vp_texture_size, &texture_size);
-   if (vp_output_size)
-      cgD3D9SetUniform(vp_output_size, &output_size);
-   if (vp_frame_count)
-      cgD3D9SetUniform(vp_frame_count, &frame_cnt);
-   CG_DEBUG_CHECK(NULL, "set_shader_params vertex uniforms");
-
-   /* Fragment program */
-   if (fp_video_size)
-      cgD3D9SetUniform(fp_video_size, &video_size);
-   if (fp_texture_size)
-      cgD3D9SetUniform(fp_texture_size, &texture_size);
-   if (fp_output_size)
-      cgD3D9SetUniform(fp_output_size, &output_size);
-   if (fp_frame_count)
-      cgD3D9SetUniform(fp_frame_count, &frame_cnt);
-   CG_DEBUG_CHECK(NULL, "set_shader_params fragment uniforms");
-
-   /* User-defined shader parameters */
-   if (shader)
-   {
-      unsigned i;
-      for (i = 0; i < shader->num_parameters; i++)
-      {
-         CGparameter cgp_vp = cgGetNamedParameter(vprg, shader->parameters[i].id);
-         CGparameter cgp_fp = cgGetNamedParameter(fprg, shader->parameters[i].id);
-
-         if (cgp_vp)
-            cgD3D9SetUniform(cgp_vp, &shader->parameters[i].current);
-         if (cgp_fp)
-            cgD3D9SetUniform(cgp_fp, &shader->parameters[i].current);
-      }
-      CG_DEBUG_CHECK(NULL, "set_shader_params user parameters");
-   }
-}
-
 static bool d3d9_cg_renderchain_init_shader_fvf(
       d3d9_cg_renderchain_t *chain,
       struct shader_pass *pass)
@@ -2693,93 +2610,6 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
    }
 }
 
-static INLINE void d3d9_cg_renderchain_set_vertices_on_change(
-      d3d9_cg_renderchain_t *chain,
-      struct shader_pass *pass,
-      unsigned width, unsigned height,
-      unsigned out_width, unsigned out_height,
-      unsigned vp_width, unsigned vp_height,
-      unsigned rotation
-      )
-{
-   struct D3D9CGVertex vert[4];
-   unsigned i;
-   void* verts       = NULL;
-   const struct
-      LinkInfo* info = (const struct LinkInfo*)&pass->info;
-   float          _u = (float)(width) / info->tex_w;
-   float          _v = (float)(height) / info->tex_h;
-
-   pass->last_width  = width;
-   pass->last_height = height;
-
-   vert[0].x         = 0.0f;
-   vert[0].y         = out_height;
-   vert[0].z         = 0.5f;
-   vert[0].u         = 0.0f;
-   vert[0].v         = 0.0f;
-   vert[0].lut_u     = 0.0f;
-   vert[0].lut_v     = 0.0f;
-   vert[0].r         = 1.0f;
-   vert[0].g         = 1.0f;
-   vert[0].b         = 1.0f;
-   vert[0].a         = 1.0f;
-
-   vert[1].x         = out_width;
-   vert[1].y         = out_height;
-   vert[1].z         = 0.5f;
-   vert[1].u         = _u;
-   vert[1].v         = 0.0f;
-   vert[1].lut_u     = 1.0f;
-   vert[1].lut_v     = 0.0f;
-   vert[1].r         = 1.0f;
-   vert[1].g         = 1.0f;
-   vert[1].b         = 1.0f;
-   vert[1].a         = 1.0f;
-
-   vert[2].x         = 0.0f;
-   vert[2].y         = 0.0f;
-   vert[2].z         = 0.5f;
-   vert[2].u         = 0.0f;
-   vert[2].v         = _v;
-   vert[2].lut_u     = 0.0f;
-   vert[2].lut_v     = 1.0f;
-   vert[2].r         = 1.0f;
-   vert[2].g         = 1.0f;
-   vert[2].b         = 1.0f;
-   vert[2].a         = 1.0f;
-
-   vert[3].x         = out_width;
-   vert[3].y         = 0.0f;
-   vert[3].z         = 0.5f;
-   vert[3].u         = _u;
-   vert[3].v         = _v;
-   vert[3].lut_u     = 1.0f;
-   vert[3].lut_v     = 1.0f;
-   vert[3].r         = 1.0f;
-   vert[3].g         = 1.0f;
-   vert[3].b         = 1.0f;
-   vert[3].a         = 1.0f;
-
-   /* Align texels and vertices.
-    *
-    * Fixes infamous 'half-texel offset' issue of D3D9
-    *	http://msdn.microsoft.com/en-us/library/bb219690%28VS.85%29.aspx.
-    */
-   for (i = 0; i < 4; i++)
-   {
-      vert[i].x -= 0.5f;
-      vert[i].y += 0.5f;
-   }
-
-   IDirect3DVertexBuffer9_Lock(pass->vertex_buf, 0, 0, &verts, D3DLOCK_DISCARD);
-   if (verts)
-   {
-      memcpy(verts, vert, sizeof(vert));
-      IDirect3DVertexBuffer9_Unlock(pass->vertex_buf);
-   }
-}
-
 static void d3d9_cg_renderchain_set_vertices(
       d3d9_cg_renderchain_t *chain,
       struct shader_pass *pass,
@@ -2790,18 +2620,158 @@ static void d3d9_cg_renderchain_set_vertices(
       struct video_shader *shader)
 {
    if (pass->last_width != width || pass->last_height != height)
-      d3d9_cg_renderchain_set_vertices_on_change(chain,
-            pass, width, height, out_width, out_height,
-            vp_width, vp_height, rotation);
+   {
+      struct D3D9CGVertex vert[4];
+      unsigned i;
+      void *verts        = NULL;
+      const struct
+         LinkInfo *info  = (const struct LinkInfo*)&pass->info;
+      float          _u  = (float)(width) / info->tex_w;
+      float          _v  = (float)(height) / info->tex_h;
+
+      pass->last_width   = width;
+      pass->last_height  = height;
+
+      vert[0].x         = 0.0f;
+      vert[0].y         = out_height;
+      vert[0].z         = 0.5f;
+      vert[0].u         = 0.0f;
+      vert[0].v         = 0.0f;
+      vert[0].lut_u     = 0.0f;
+      vert[0].lut_v     = 0.0f;
+      vert[0].r         = 1.0f;
+      vert[0].g         = 1.0f;
+      vert[0].b         = 1.0f;
+      vert[0].a         = 1.0f;
+
+      vert[1].x         = out_width;
+      vert[1].y         = out_height;
+      vert[1].z         = 0.5f;
+      vert[1].u         = _u;
+      vert[1].v         = 0.0f;
+      vert[1].lut_u     = 1.0f;
+      vert[1].lut_v     = 0.0f;
+      vert[1].r         = 1.0f;
+      vert[1].g         = 1.0f;
+      vert[1].b         = 1.0f;
+      vert[1].a         = 1.0f;
+
+      vert[2].x         = 0.0f;
+      vert[2].y         = 0.0f;
+      vert[2].z         = 0.5f;
+      vert[2].u         = 0.0f;
+      vert[2].v         = _v;
+      vert[2].lut_u     = 0.0f;
+      vert[2].lut_v     = 1.0f;
+      vert[2].r         = 1.0f;
+      vert[2].g         = 1.0f;
+      vert[2].b         = 1.0f;
+      vert[2].a         = 1.0f;
+
+      vert[3].x         = out_width;
+      vert[3].y         = 0.0f;
+      vert[3].z         = 0.5f;
+      vert[3].u         = _u;
+      vert[3].v         = _v;
+      vert[3].lut_u     = 1.0f;
+      vert[3].lut_v     = 1.0f;
+      vert[3].r         = 1.0f;
+      vert[3].g         = 1.0f;
+      vert[3].b         = 1.0f;
+      vert[3].a         = 1.0f;
+
+      /* Align texels and vertices.
+       *
+       * Fixes infamous 'half-texel offset' issue of D3D9
+       *	http://msdn.microsoft.com/en-us/library/bb219690%28VS.85%29.aspx.
+       */
+      for (i = 0; i < 4; i++)
+      {
+         vert[i].x -= 0.5f;
+         vert[i].y += 0.5f;
+      }
+
+      IDirect3DVertexBuffer9_Lock(pass->vertex_buf, 0, 0, &verts, D3DLOCK_DISCARD);
+      if (verts)
+      {
+         memcpy(verts, vert, sizeof(vert));
+         IDirect3DVertexBuffer9_Unlock(pass->vertex_buf);
+      }
+   }
 
    d3d9_cg_renderchain_calc_and_set_shader_mvp(
          (CGprogram)pass->vprg, vp_width, vp_height, rotation);
-   d3d9_cg_renderchain_set_shader_params(chain, chain->dev,
-         pass,
-         width, height,
-         pass->info.tex_w, pass->info.tex_h,
-         vp_width, vp_height,
-         shader);
+
+   /* Set shader parameters */
+   {
+      float frame_cnt;
+      float video_size[2];
+      float texture_size[2];
+      float output_size[2];
+      CGprogram fprg       = (CGprogram)pass->fprg;
+      CGprogram vprg       = (CGprogram)pass->vprg;
+
+      CGparameter vp_video_size   = cgGetNamedParameter(vprg, "IN.video_size");
+      CGparameter vp_texture_size = cgGetNamedParameter(vprg, "IN.texture_size");
+      CGparameter vp_output_size  = cgGetNamedParameter(vprg, "IN.output_size");
+      CGparameter vp_frame_count  = cgGetNamedParameter(vprg, "IN.frame_count");
+      CGparameter fp_video_size   = cgGetNamedParameter(fprg, "IN.video_size");
+      CGparameter fp_texture_size = cgGetNamedParameter(fprg, "IN.texture_size");
+      CGparameter fp_output_size  = cgGetNamedParameter(fprg, "IN.output_size");
+      CGparameter fp_frame_count  = cgGetNamedParameter(fprg, "IN.frame_count");
+
+      video_size[0]        = width;
+      video_size[1]        = height;
+      texture_size[0]      = pass->info.tex_w;
+      texture_size[1]      = pass->info.tex_h;
+      output_size[0]       = vp_width;
+      output_size[1]       = vp_height;
+
+      frame_cnt            = chain->frame_count;
+
+      if (pass->info.pass->frame_count_mod)
+         frame_cnt         = chain->frame_count
+            % pass->info.pass->frame_count_mod;
+
+      /* Vertex program */
+      if (vp_video_size)
+         cgD3D9SetUniform(vp_video_size, &video_size);
+      if (vp_texture_size)
+         cgD3D9SetUniform(vp_texture_size, &texture_size);
+      if (vp_output_size)
+         cgD3D9SetUniform(vp_output_size, &output_size);
+      if (vp_frame_count)
+         cgD3D9SetUniform(vp_frame_count, &frame_cnt);
+      CG_DEBUG_CHECK(NULL, "set_shader_params vertex uniforms");
+
+      /* Fragment program */
+      if (fp_video_size)
+         cgD3D9SetUniform(fp_video_size, &video_size);
+      if (fp_texture_size)
+         cgD3D9SetUniform(fp_texture_size, &texture_size);
+      if (fp_output_size)
+         cgD3D9SetUniform(fp_output_size, &output_size);
+      if (fp_frame_count)
+         cgD3D9SetUniform(fp_frame_count, &frame_cnt);
+      CG_DEBUG_CHECK(NULL, "set_shader_params fragment uniforms");
+
+      /* User-defined shader parameters */
+      if (shader)
+      {
+         unsigned i;
+         for (i = 0; i < shader->num_parameters; i++)
+         {
+            CGparameter cgp_vp = cgGetNamedParameter(vprg, shader->parameters[i].id);
+            CGparameter cgp_fp = cgGetNamedParameter(fprg, shader->parameters[i].id);
+
+            if (cgp_vp)
+               cgD3D9SetUniform(cgp_vp, &shader->parameters[i].current);
+            if (cgp_fp)
+               cgD3D9SetUniform(cgp_fp, &shader->parameters[i].current);
+         }
+         CG_DEBUG_CHECK(NULL, "set_shader_params user parameters");
+      }
+   }
 }
 
 static void d3d9_cg_renderchain_render_pass(
@@ -2893,42 +2863,6 @@ static void d3d9_cg_renderchain_render_pass(
    chain->bound_vert->count = 0;
 }
 
-static void d3d9_cg_blit_to_texture(
-      LPDIRECT3DTEXTURE9 tex, const void *frame,
-      unsigned tex_width,  unsigned tex_height,
-      unsigned width,      unsigned height,
-      unsigned last_width, unsigned last_height,
-      unsigned pitch, unsigned pixel_size)
-{
-   unsigned y;
-   D3DLOCKED_RECT d3dlr;
-   d3dlr.Pitch  = 0;
-   d3dlr.pBits  = NULL;
-
-   /* Single lock: clear if dimensions changed, then copy frame data */
-   if (!SUCCEEDED(IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL,
-         (last_width == width && last_height == height)
-         ? 0 : D3DLOCK_NOSYSLOCK)))
-      return;
-
-   if (!d3dlr.pBits)
-   {
-      IDirect3DTexture9_UnlockRect(tex, 0);
-      return;
-   }
-
-   if (last_width != width || last_height != height)
-      memset(d3dlr.pBits, 0, tex_height * d3dlr.Pitch);
-
-   for (y = 0; y < height; y++)
-   {
-      const uint8_t *in = (const uint8_t*)frame + y * pitch;
-      uint8_t      *out = (uint8_t*)d3dlr.pBits   + y * d3dlr.Pitch;
-      memcpy(out, in, width * pixel_size);
-   }
-   IDirect3DTexture9_UnlockRect(tex, 0);
-}
-
 static void d3d9_cg_renderchain_render(
       d3d9_video_t *d3d,
       const void *frame_data,
@@ -2958,15 +2892,30 @@ static void d3d9_cg_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->out_vp);
 
-   d3d9_cg_blit_to_texture(first_pass->tex,
-         frame_data,
-         first_pass->info.tex_w,
-         first_pass->info.tex_h,
-         width,
-         height,
-         first_pass->last_width,
-         first_pass->last_height,
-         pitch, chain->pixel_size);
+   /* Blit frame data into the first pass texture */
+   {
+      D3DLOCKED_RECT d3dlr;
+      d3dlr.Pitch = 0;
+      d3dlr.pBits = NULL;
+
+      if (SUCCEEDED(IDirect3DTexture9_LockRect(first_pass->tex, 0, &d3dlr, NULL,
+            (first_pass->last_width == width && first_pass->last_height == height)
+            ? 0 : D3DLOCK_NOSYSLOCK)) && d3dlr.pBits)
+      {
+         unsigned y;
+
+         if (first_pass->last_width != width || first_pass->last_height != height)
+            memset(d3dlr.pBits, 0, first_pass->info.tex_h * d3dlr.Pitch);
+
+         for (y = 0; y < height; y++)
+         {
+            const uint8_t *in = (const uint8_t*)frame_data + y * pitch;
+            uint8_t      *out = (uint8_t*)d3dlr.pBits      + y * d3dlr.Pitch;
+            memcpy(out, in, width * chain->pixel_size);
+         }
+         IDirect3DTexture9_UnlockRect(first_pass->tex, 0);
+      }
+   }
 
    /* Grab back buffer. */
    IDirect3DDevice9_GetRenderTarget(chain->dev, 0, (LPDIRECT3DSURFACE9*)&back_buffer);

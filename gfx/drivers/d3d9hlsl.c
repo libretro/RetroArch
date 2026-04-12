@@ -1957,55 +1957,6 @@ static bool d3d9_hlsl_load_program_ex(
    return true;
 }
 
-static void hlsl_d3d9_renderchain_set_shader_params(
-      d3d9_hlsl_renderchain_t *chain,
-      LPDIRECT3DDEVICE9 dev,
-      struct shader_pass *pass,
-      const hlsl_pass_data_t *pd,
-      unsigned video_w, unsigned video_h,
-      unsigned tex_w, unsigned tex_h,
-      unsigned vp_width, unsigned vp_height)
-{
-   float frame_cnt;
-   float video_size[2];
-   float texture_size[2];
-   float output_size[2];
-
-   if (!pd || !pd->vs_bytecode)
-      return;
-
-   video_size[0]                            = video_w;
-   video_size[1]                            = video_h;
-   texture_size[0]                          = tex_w;
-   texture_size[1]                          = tex_h;
-   output_size[0]                           = vp_width;
-   output_size[1]                           = vp_height;
-
-   d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
-         dev, "IN.video_size",      &video_size);
-   d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
-         dev, "IN.video_size",      &video_size);
-   d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
-         dev, "IN.texture_size",    &texture_size);
-   d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
-         dev, "IN.texture_size",    &texture_size);
-   d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
-         dev, "IN.output_size",     &output_size);
-   d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
-         dev, "IN.output_size",     &output_size);
-
-   frame_cnt = chain->frame_count;
-
-   if (pass->info.pass->frame_count_mod)
-      frame_cnt         = chain->frame_count
-         % pass->info.pass->frame_count_mod;
-
-   d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
-         dev, "IN.frame_count",     &frame_cnt);
-   d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
-         dev, "IN.frame_count",     &frame_cnt);
-}
-
 static bool hlsl_d3d9_renderchain_init_shader_fvf(
       d3d9_hlsl_renderchain_t *chain,
       struct shader_pass *pass)
@@ -2177,76 +2128,6 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
          chain->chain.dev, "modelViewProj", mvp_data);
 }
 
-static INLINE void d3d9_hlsl_renderchain_set_vertices_on_change(
-      d3d9_hlsl_renderchain_t *chain,
-      struct shader_pass *pass,
-      unsigned width, unsigned height,
-      unsigned out_width, unsigned out_height,
-      unsigned vp_width, unsigned vp_height,
-      unsigned rotation
-      )
-{
-   struct Vertex vert[4];
-   void *verts       = NULL;
-   const struct
-      LinkInfo *info = (const struct LinkInfo*)&pass->info;
-   float _u          = (float)(width)  / info->tex_w;
-   float _v          = (float)(height) / info->tex_h;
-
-   pass->last_width  = width;
-   pass->last_height = height;
-
-   /* Copied from D3D8 driver */
-   vert[0].x        =  0.0f;
-   vert[0].y        =  1.0f;
-   vert[0].z        =  1.0f;
-
-   vert[1].x        =  1.0f;
-   vert[1].y        =  1.0f;
-   vert[1].z        =  1.0f;
-
-   vert[2].x        =  0.0f;
-   vert[2].y        =  0.0f;
-   vert[2].z        =  1.0f;
-
-   vert[3].x        =  1.0f;
-   vert[3].y        =  0.0f;
-   vert[3].z        =  1.0f;
-
-   vert[0].u        = 0.0f;
-   vert[0].v        = 0.0f;
-   vert[1].v        = 0.0f;
-   vert[2].u        = 0.0f;
-   vert[1].u        = _u;
-   vert[2].v        = _v;
-   vert[3].u        = _u;
-   vert[3].v        = _v;
-
-   vert[0].color    = 0xFFFFFFFF;
-   vert[1].color    = 0xFFFFFFFF;
-   vert[2].color    = 0xFFFFFFFF;
-   vert[3].color    = 0xFFFFFFFF;
-
-   /* Align texels and vertices.
-    *
-    * Fixes infamous 'half-texel offset' issue of D3D9
-    *	http://msdn.microsoft.com/en-us/library/bb219690%28VS.85%29.aspx.
-    */
-   /* Maybe we do need something like this left out for now */
-#if 0
-   for (i = 0; i < 4; i++)
-   {
-      vert[i].x    -= 0.5f;
-      vert[i].y    += 0.5f;
-   }
-#endif
-
-   IDirect3DVertexBuffer9_Lock(pass->vertex_buf, 0, 0, &verts, 0);
-   memcpy(verts, vert, sizeof(vert));
-   IDirect3DVertexBuffer9_Unlock(pass->vertex_buf);
-}
-
-
 static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_video_t *d3d,
       hlsl_renderchain_t *chain,
@@ -2261,9 +2142,49 @@ static void hlsl_d3d9_renderchain_set_vertices(
    const hlsl_pass_data_t *pd = NULL;
 
    if (pass->last_width != width || pass->last_height != height)
-      d3d9_hlsl_renderchain_set_vertices_on_change(&chain->chain,
-            pass, width, height, out_width, out_height,
-            vp_width, vp_height, rotation);
+   {
+      struct Vertex vert[4];
+      void *verts       = NULL;
+      float _u          = (float)(width)  / pass->info.tex_w;
+      float _v          = (float)(height) / pass->info.tex_h;
+
+      pass->last_width  = width;
+      pass->last_height = height;
+
+      vert[0].x        =  0.0f;
+      vert[0].y        =  1.0f;
+      vert[0].z        =  1.0f;
+
+      vert[1].x        =  1.0f;
+      vert[1].y        =  1.0f;
+      vert[1].z        =  1.0f;
+
+      vert[2].x        =  0.0f;
+      vert[2].y        =  0.0f;
+      vert[2].z        =  1.0f;
+
+      vert[3].x        =  1.0f;
+      vert[3].y        =  0.0f;
+      vert[3].z        =  1.0f;
+
+      vert[0].u        = 0.0f;
+      vert[0].v        = 0.0f;
+      vert[1].v        = 0.0f;
+      vert[2].u        = 0.0f;
+      vert[1].u        = _u;
+      vert[2].v        = _v;
+      vert[3].u        = _u;
+      vert[3].v        = _v;
+
+      vert[0].color    = 0xFFFFFFFF;
+      vert[1].color    = 0xFFFFFFFF;
+      vert[2].color    = 0xFFFFFFFF;
+      vert[3].color    = 0xFFFFFFFF;
+
+      IDirect3DVertexBuffer9_Lock(pass->vertex_buf, 0, 0, &verts, 0);
+      memcpy(verts, vert, sizeof(vert));
+      IDirect3DVertexBuffer9_Unlock(pass->vertex_buf);
+   }
 
    /* Determine the pass data to use for uniform upload.
     * Per-pass compiled shaders use pass_data[pass_index - 1].
@@ -2275,15 +2196,37 @@ static void hlsl_d3d9_renderchain_set_vertices(
 
    if (pd && pd->vs_bytecode)
    {
+      float frame_cnt;
+      float video_size[2]   = { (float)width,            (float)height };
+      float texture_size[2] = { (float)pass->info.tex_w, (float)pass->info.tex_h };
+      float output_size[2]  = { (float)vp_width,         (float)vp_height };
+
       hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, pd,
             (const void*)&d3d->mvp);
-      hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
-            chain->chain.dev,
-            pass,
-            pd,
-            width, height,
-            pass->info.tex_w, pass->info.tex_h,
-            vp_width, vp_height);
+
+      d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
+            chain->chain.dev, "IN.video_size",      &video_size);
+      d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
+            chain->chain.dev, "IN.video_size",      &video_size);
+      d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
+            chain->chain.dev, "IN.texture_size",    &texture_size);
+      d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
+            chain->chain.dev, "IN.texture_size",    &texture_size);
+      d3d9_hlsl_set_param_2f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
+            chain->chain.dev, "IN.output_size",     &output_size);
+      d3d9_hlsl_set_param_2f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
+            chain->chain.dev, "IN.output_size",     &output_size);
+
+      frame_cnt = chain->chain.frame_count;
+
+      if (pass->info.pass->frame_count_mod)
+         frame_cnt = chain->chain.frame_count
+            % pass->info.pass->frame_count_mod;
+
+      d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords, false,
+            chain->chain.dev, "IN.frame_count",     &frame_cnt);
+      d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords, true,
+            chain->chain.dev, "IN.frame_count",     &frame_cnt);
    }
 }
 
@@ -2727,33 +2670,6 @@ static void hlsl_d3d9_renderchain_render_pass(
       chain->chain.bound_vert->count = 0;
 }
 
-static void d3d9_hlsl_blit_to_texture(
-      LPDIRECT3DTEXTURE9 tex, const void *frame,
-      unsigned tex_width,  unsigned tex_height,
-      unsigned width,      unsigned height,
-      unsigned last_width, unsigned last_height,
-      unsigned pitch, unsigned pixel_size)
-{
-   unsigned y;
-   D3DLOCKED_RECT d3dlr;
-   d3dlr.Pitch  = 0;
-   d3dlr.pBits  = NULL;
-
-   /* Single lock: clear if dimensions changed, then copy frame data */
-   IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, 0);
-
-   if (last_width != width || last_height != height)
-      memset(d3dlr.pBits, 0, tex_height * d3dlr.Pitch);
-
-   for (y = 0; y < height; y++)
-   {
-      const uint8_t *in = (const uint8_t*)frame + y * pitch;
-      uint8_t      *out = (uint8_t*)d3dlr.pBits   + y * d3dlr.Pitch;
-      memcpy(out, in, width * pixel_size);
-   }
-   IDirect3DTexture9_UnlockRect(tex, 0);
-}
-
 static void hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
       const void *frame,
@@ -2789,16 +2705,26 @@ static void hlsl_d3d9_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->chain.out_vp);
 
-   d3d9_hlsl_blit_to_texture(first_pass->tex,
-         frame,
-         first_pass->info.tex_w,
-         first_pass->info.tex_h,
-         width,
-         height,
-         first_pass->last_width,
-         first_pass->last_height,
-         pitch,
-         chain->chain.pixel_size);
+   /* Blit frame to first pass texture */
+   {
+      unsigned y;
+      D3DLOCKED_RECT d3dlr;
+      d3dlr.Pitch  = 0;
+      d3dlr.pBits  = NULL;
+
+      IDirect3DTexture9_LockRect(first_pass->tex, 0, &d3dlr, NULL, 0);
+
+      if (first_pass->last_width != width || first_pass->last_height != height)
+         memset(d3dlr.pBits, 0, first_pass->info.tex_h * d3dlr.Pitch);
+
+      for (y = 0; y < height; y++)
+      {
+         const uint8_t *in = (const uint8_t*)frame + y * pitch;
+         uint8_t      *out = (uint8_t*)d3dlr.pBits   + y * d3dlr.Pitch;
+         memcpy(out, in, width * chain->chain.pixel_size);
+      }
+      IDirect3DTexture9_UnlockRect(first_pass->tex, 0);
+   }
 
    /* Grab back buffer. */
    if (chain->chain.dev)
