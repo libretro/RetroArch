@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 
 #if defined(_WIN32) && defined(_XBOX)
@@ -58,25 +59,48 @@ static int qstrcmp_plain(const void *a_, const void *b_)
    }
 }
 
+/**
+ * find_ext_dot:
+ * @path : file path
+ *
+ * Finds the '.' that begins the file extension, considering only
+ * dots after the last directory separator. This avoids treating
+ * dots in directory names (e.g. ".config") as extension separators.
+ *
+ * @return pointer to the extension '.', or to the trailing '\0'
+ * if no extension is found.
+ **/
+static const char *find_ext_dot(const char *path)
+{
+   const char *last_slash = strrchr(path, '/');
+#ifdef _WIN32
+   {
+      const char *last_bslash = strrchr(path, '\\');
+      if (last_bslash && (!last_slash || last_bslash > last_slash))
+         last_slash = last_bslash;
+   }
+#endif
+   {
+      const char *start = last_slash ? last_slash + 1 : path;
+      const char *dot   = strrchr(start, '.');
+      return dot ? dot : path + strlen(path);
+   }
+}
+
 static int qstrcmp_plain_noext(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_;
    const struct string_list_elem *b = (const struct string_list_elem*)b_;
-   const char *pa = a->data;
-   const char *pb = b->data;
-
-   for (;;)
-   {
-      int ca = (*pa == '.' || *pa == '\0') ? 0 : tolower((unsigned char)*pa);
-      int cb = (*pb == '.' || *pb == '\0') ? 0 : tolower((unsigned char)*pb);
-      if (ca != cb)
-         return ca - cb;
-      if (ca == 0)
-         break;
-      pa++;
-      pb++;
-   }
-
+   const char *ea = find_ext_dot(a->data);
+   const char *eb = find_ext_dot(b->data);
+   size_t la      = (size_t)(ea - a->data);
+   size_t lb      = (size_t)(eb - b->data);
+   size_t len     = la < lb ? la : lb;
+   int rv         = strncasecmp(a->data, b->data, len);
+   if (rv != 0)
+      return rv;
+   if (la != lb)
+      return (la < lb) ? -1 : 1;
    return 0;
 }
 
