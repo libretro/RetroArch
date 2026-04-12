@@ -569,7 +569,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -578,7 +578,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -705,7 +705,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -714,7 +714,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -877,7 +877,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -900,7 +900,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -923,7 +923,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -946,7 +946,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -969,7 +969,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -992,7 +992,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1057,7 +1057,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1079,7 +1079,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1274,7 +1274,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1302,7 +1302,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1330,7 +1330,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1358,7 +1358,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1386,7 +1386,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1414,7 +1414,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1495,7 +1495,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -1522,7 +1522,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

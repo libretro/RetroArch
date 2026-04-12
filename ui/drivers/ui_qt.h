@@ -30,7 +30,6 @@
 #include <QRegularExpression>
 #include <QPalette>
 #include <QPlainTextEdit>
-#include <QFutureWatcher>
 #include <QPixmap>
 #include <QImage>
 #include <QPointer>
@@ -42,6 +41,9 @@
 #include <QCache>
 #include <QSortFilterProxyModel>
 #include <QDir>
+#include <QThread>
+#include <QMutex>
+#include <QWaitCondition>
 
 #include "ui_qt_widgets.h"
 
@@ -123,6 +125,46 @@ static inline double lerp(double x, double y, double a, double b, double d)
    return a + (b - a) * ((double)(d - x) / (double)(y - x));
 }
 
+
+class ThumbnailLoader : public QThread
+{
+   Q_OBJECT
+public:
+   ThumbnailLoader(QObject *parent = 0) : QThread(parent), m_stop(false) {}
+   ~ThumbnailLoader() { stop(); wait(); }
+   void stop() { m_mutex.lock(); m_stop = true; m_cond.wakeOne(); m_mutex.unlock(); }
+   void request(const QModelIndex &index, const QString &path)
+   {
+      m_mutex.lock();
+      m_queue.append(qMakePair(index, path));
+      m_cond.wakeOne();
+      m_mutex.unlock();
+   }
+signals:
+   void imageLoaded(const QImage image, const QModelIndex index, const QString path);
+protected:
+   void run()
+   {
+      for (;;)
+      {
+         m_mutex.lock();
+         while (m_queue.isEmpty() && !m_stop)
+            m_cond.wait(&m_mutex);
+         if (m_stop) { m_mutex.unlock(); return; }
+         QPair<QModelIndex, QString> item = m_queue.takeFirst();
+         m_mutex.unlock();
+         QImage image(item.second);
+         if (!image.isNull())
+            emit imageLoaded(image, item.first, item.second);
+      }
+   }
+private:
+   QMutex m_mutex;
+   QWaitCondition m_cond;
+   QList<QPair<QModelIndex, QString> > m_queue;
+   bool m_stop;
+};
+
 class PlaylistModel : public QAbstractListModel
 {
    Q_OBJECT
@@ -167,11 +209,11 @@ private:
    QVector<QByteArray> m_imageFormats;
    QRegularExpression m_fileSanitizerRegex;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
+   ThumbnailLoader *m_thumbnailLoader;
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
    QString getThumbnailPath(const QHash<QString, QString> &hash, QString type) const;
    QString getCurrentTypeThumbnailPath(const QModelIndex &index) const;
    void getPlaylistItems(QString path);
-   void loadImage(const QModelIndex &index, const QString &path);
 };
 
 class ThumbnailWidget : public QStackedWidget

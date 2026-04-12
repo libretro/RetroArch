@@ -43,7 +43,6 @@
 #include <QProgressDialog>
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QtConcurrentRun>
 
 #include "ui_qt.h"
 

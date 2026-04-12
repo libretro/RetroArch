@@ -11,7 +11,6 @@
 		05269A6220ABF20500C29F1E /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05269A6120ABF20500C29F1E /* MetalKit.framework */; };
 		053FC26521433F2200D98D46 /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25721433F1800D98D46 /* QtWidgets.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		053FC270214340F500D98D46 /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25321433F1700D98D46 /* QtGui.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
-		053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25521433F1700D98D46 /* QtConcurrent.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		053FC275214341F000D98D46 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25421433F1700D98D46 /* QtCore.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		05422E432140C8DB00F09961 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
@@ -187,7 +186,6 @@
 		0538875920DE11D300769232 /* libretro.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libretro.h; sourceTree = "<group>"; };
 		053FC25321433F1700D98D46 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = /usr/local/opt/qt/lib/QtGui.framework; sourceTree = "<group>"; };
 		053FC25421433F1700D98D46 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = /usr/local/opt/qt/lib/QtCore.framework; sourceTree = "<group>"; };
-		053FC25521433F1700D98D46 /* QtConcurrent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtConcurrent.framework; path = /usr/local/opt/qt/lib/QtConcurrent.framework; sourceTree = "<group>"; };
 		053FC25721433F1800D98D46 /* QtWidgets.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtWidgets.framework; path = /usr/local/opt/qt/lib/QtWidgets.framework; sourceTree = "<group>"; };
 		05422E592140C8DB00F09961 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		05422E5C2140CFC500F09961 /* Metal.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Metal.xcconfig; sourceTree = "<group>"; };
@@ -512,7 +510,6 @@
 				D27C508A2228360D00113BC0 /* AudioToolbox.framework in Frameworks */,
 				D27C50882228360000113BC0 /* AVFoundation.framework in Frameworks */,
 				076E640D2BF30A9200681536 /* GameController.framework in Frameworks */,
-				053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */,
 				053FC275214341F000D98D46 /* QtCore.framework in Frameworks */,
 				053FC270214340F500D98D46 /* QtGui.framework in Frameworks */,
 				053FC26521433F2200D98D46 /* QtWidgets.framework in Frameworks */,
@@ -1326,7 +1323,6 @@
 				D27C50892228360D00113BC0 /* AudioToolbox.framework */,
 				072976DC296284F600D6E00C /* OpenGL.framework */,
 				D27C50872228360000113BC0 /* AVFoundation.framework */,
-				053FC25521433F1700D98D46 /* QtConcurrent.framework */,
 				053FC25421433F1700D98D46 /* QtCore.framework */,
 				053FC25321433F1700D98D46 /* QtGui.framework */,
 				053FC25721433F1800D98D46 /* QtWidgets.framework */,

@@ -29,7 +29,6 @@
 #include <QStyle>
 #include <QStyleOption>
 #include <QTimer>
-#include <QtConcurrent>
 
 #include "ui_qt_widgets.h"
 #include "ui_qt.h"
@@ -7222,8 +7221,11 @@ PlaylistModel::PlaylistModel(QObject *parent)
 {
    m_imageFormats       = QVector<QByteArray>::fromList(QImageReader::supportedImageFormats());
    m_fileSanitizerRegex = QRegularExpression("[&*/:`<>?\\|]");
+   m_thumbnailLoader    = new ThumbnailLoader(this);
    setThumbnailCacheLimit(500);
-   connect(this, &PlaylistModel::imageLoaded, this, &PlaylistModel::onImageLoaded);
+   connect(m_thumbnailLoader, SIGNAL(imageLoaded(QImage,QModelIndex,QString)),
+         this, SLOT(onImageLoaded(QImage,QModelIndex,QString)));
+   m_thumbnailLoader->start();
 }
 
 int PlaylistModel::rowCount(const QModelIndex & /* parent */) const
@@ -7441,19 +7443,8 @@ void PlaylistModel::loadThumbnail(const QModelIndex &index)
    if (!m_pendingImages.contains(path) && !m_cache.contains(path))
    {
       m_pendingImages.insert(path);
-#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
-      QtConcurrent::run(&PlaylistModel::loadImage, this, index, path);
-#else
-      QtConcurrent::run(this, &PlaylistModel::loadImage, index, path);
-#endif
+      m_thumbnailLoader->request(index, path);
    }
-}
-
-void PlaylistModel::loadImage(const QModelIndex &index, const QString &path)
-{
-   const QImage image = QImage(path);
-   if (!image.isNull())
-      emit imageLoaded(image, index, path);
 }
 
 void PlaylistModel::onImageLoaded(const QImage image,
