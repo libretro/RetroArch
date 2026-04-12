@@ -37,13 +37,15 @@
 #include <QProgressBar>
 #include <QElapsedTimer>
 #include <QSslError>
+#include <QTableWidget>
+#include <QVBoxLayout>
 #include <QNetworkReply>
 #include <QStyledItemDelegate>
 #include <QCache>
 #include <QSortFilterProxyModel>
 #include <QDir>
 
-#include "qt/qt_widgets.h"
+#include "ui_qt_widgets.h"
 
 #ifndef CXX_BUILD
 extern "C" {
@@ -97,7 +99,6 @@ class QDropEvent;
 class QNetworkAccessManager;
 class QNetworkReply;
 class QProgressDialog;
-class LoadCoreWindow;
 class MainWindow;
 class ThumbnailWidget;
 class ThumbnailLabel;
@@ -319,6 +320,42 @@ class FileSystemProxyModel : public QSortFilterProxyModel
 protected:
    virtual bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
+};
+
+class LoadCoreTableWidget : public QTableWidget
+{
+   Q_OBJECT
+public:
+   LoadCoreTableWidget(QWidget *parent = NULL);
+signals:
+   void enterPressed();
+protected:
+   void keyPressEvent(QKeyEvent *event);
+};
+
+class LoadCoreWindow : public QMainWindow
+{
+   Q_OBJECT
+public:
+   LoadCoreWindow(QWidget *parent = 0);
+   void initCoreList(const QStringList &extensionFilters = QStringList());
+   void setStatusLabel(QString label);
+signals:
+   void coreLoaded();
+   void windowClosed();
+private slots:
+   void onLoadCustomCoreClicked();
+   void onCoreEnterPressed();
+   void onCellDoubleClicked(int row, int column);
+protected:
+   void keyPressEvent(QKeyEvent *event);
+   void closeEvent(QCloseEvent *event);
+private:
+   void loadCore(const char *path);
+
+   QVBoxLayout m_layout;
+   LoadCoreTableWidget *m_table;
+   QLabel *m_statusLabel;
 };
 
 class MainWindow : public QMainWindow

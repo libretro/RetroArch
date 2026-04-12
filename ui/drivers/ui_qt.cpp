@@ -46,9 +46,6 @@
 #include <QtConcurrentRun>
 
 #include "ui_qt.h"
-#include "qt/gridview.h"
-#include "qt/ui_qt_load_core_window.h"
-#include "qt/qt_dialogs.h"
 
 #ifndef CXX_BUILD
 extern "C" {

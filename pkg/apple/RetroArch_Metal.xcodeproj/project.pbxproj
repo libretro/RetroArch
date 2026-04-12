@@ -175,7 +175,6 @@
 
 /* Begin PBXFileReference section */
 		05269A6120ABF20500C29F1E /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
-		05366519213F8BE5007E7EA0 /* ui_qt_load_core_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ui_qt_load_core_window.h; sourceTree = "<group>"; };
 		0538874D20DDD5C600769232 /* dxgi_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dxgi_common.c; sourceTree = "<group>"; };
 		0538874E20DDD5C600769232 /* dxgi_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dxgi_common.h; sourceTree = "<group>"; };
 		0538875120DE11D200769232 /* retro_common_api.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_common_api.h; sourceTree = "<group>"; };
@@ -620,7 +619,6 @@
 		05366511213F8BE5007E7EA0 /* qt */ = {
 			isa = PBXGroup;
 			children = (
-				05366519213F8BE5007E7EA0 /* ui_qt_load_core_window.h */,
 			);
 			path = qt;
 			sourceTree = "<group>";

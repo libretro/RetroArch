@@ -51,20 +51,9 @@ UI
 
 #include "../ui/drivers/ui_qt.cpp"
 
-#include "../ui/drivers/qt/gridview.cpp"
-#include "../ui/drivers/qt/qt_dialogs.cpp"
-#include "../ui/drivers/qt/qt_widgets.cpp"
-#include "../ui/drivers/qt/qt_playlist.cpp"
-#include "../ui/drivers/qt/qt_downloads.cpp"
-#ifdef HAVE_MENU
-#include "../ui/drivers/qt/qt_options.cpp"
-#include "../ui/drivers/qt/moc_qt_options.cpp"
-#endif
+#include "../ui/drivers/ui_qt_widgets.cpp"
 #include "../ui/drivers/moc_ui_qt.cpp"
-#include "../ui/drivers/qt/moc_gridview.cpp"
-#include "../ui/drivers/qt/moc_ui_qt_load_core_window.cpp"
-#include "../ui/drivers/qt/moc_qt_dialogs.cpp"
-#include "../ui/drivers/qt/moc_qt_widgets.cpp"
+#include "../ui/drivers/moc_ui_qt_widgets.cpp"
 #endif
 
 /*============================================================
