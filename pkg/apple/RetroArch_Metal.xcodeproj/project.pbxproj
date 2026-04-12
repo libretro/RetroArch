@@ -267,7 +267,6 @@
 		05A8C5AB20DB72F000FF7857 /* frontend_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = frontend_driver.c; sourceTree = "<group>"; };
 		05A8C5AC20DB72F000FF7857 /* frontend_salamander.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = frontend_salamander.c; sourceTree = "<group>"; };
 		05A8C5AF20DB72F000FF7857 /* ui_win32.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_win32.c; sourceTree = "<group>"; };
-		05A8C5B820DB72F000FF7857 /* ui_win32_resource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ui_win32_resource.h; sourceTree = "<group>"; };
 		05A8C5BA20DB72F000FF7857 /* ui_cocoa.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa.m; sourceTree = "<group>"; };
 		05A8C5BD20DB72F000FF7857 /* cocoa_common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = cocoa_common.m; sourceTree = "<group>"; };
 		05A8C5C220DB72F000FF7857 /* cocoa_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cocoa_common.h; sourceTree = "<group>"; };
@@ -844,7 +843,6 @@
 				05A8C5CF20DB72F000FF7857 /* ui_cocoatouch.m */,
 				05A8C5D020DB72F000FF7857 /* ui_qt.cpp */,
 				05A8C5C820DB72F000FF7857 /* ui_qt.h */,
-				05A8C5B820DB72F000FF7857 /* ui_win32_resource.h */,
 				05A8C5AF20DB72F000FF7857 /* ui_win32.c */,
 				05A8C5D120DB72F000FF7857 /* ui_win32.h */,
 			);

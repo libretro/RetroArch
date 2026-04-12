@@ -42,6 +42,7 @@
 
 #include "win32_common.h"
 
+
 #ifdef HAVE_GDI
 #include "gdi_defines.h"
 #endif
@@ -82,7 +83,6 @@
 #endif
 
 /* These are defined in later SDKs, thus ifdeffed. */
-
 #ifndef WM_MOUSEHWHEEL
 #define WM_MOUSEHWHEEL                  0x20e
 #endif
@@ -102,6 +102,53 @@
 #ifndef WM_POINTERUP
 #define WM_POINTERUP                    0x0247
 #endif
+
+/* Win32 UI resource identifiers (formerly ui_win32_resource.h) */
+enum
+{
+   IDR_MENU          = 101,
+   IDR_PICKCORE      = 103,
+   IDR_ACCELERATOR1,
+
+   ID_M_LOAD_CONTENT = 40001,
+   ID_CORELISTBOX,
+   ID_M_RESET,
+   ID_M_QUIT,
+   ID_M_MENU_TOGGLE,
+   ID_M_PAUSE_TOGGLE,
+   ID_M_LOAD_CORE,
+   ID_M_LOAD_STATE,
+   ID_M_SAVE_STATE,
+   ID_M_DISK_CYCLE,
+   ID_M_DISK_NEXT,
+   ID_M_DISK_PREV,
+   ID_M_WINDOW_SCALE_1X,
+   ID_M_WINDOW_SCALE_2X,
+   ID_M_WINDOW_SCALE_3X,
+   ID_M_WINDOW_SCALE_4X,
+   ID_M_WINDOW_SCALE_5X,
+   ID_M_WINDOW_SCALE_6X,
+   ID_M_WINDOW_SCALE_7X,
+   ID_M_WINDOW_SCALE_8X,
+   ID_M_WINDOW_SCALE_9X,
+   ID_M_WINDOW_SCALE_10X,
+   ID_M_FULL_SCREEN,
+   ID_M_MOUSE_GRAB,
+   ID_M_STATE_INDEX_AUTO,
+   ID_M_STATE_INDEX_0,
+   ID_M_STATE_INDEX_1,
+   ID_M_STATE_INDEX_2,
+   ID_M_STATE_INDEX_3,
+   ID_M_STATE_INDEX_4,
+   ID_M_STATE_INDEX_5,
+   ID_M_STATE_INDEX_6,
+   ID_M_STATE_INDEX_7,
+   ID_M_STATE_INDEX_8,
+   ID_M_STATE_INDEX_9,
+   ID_M_TAKE_SCREENSHOT,
+   ID_M_MUTE_TOGGLE,
+   ID_M_TOGGLE_DESKTOP
+};
 
 const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501

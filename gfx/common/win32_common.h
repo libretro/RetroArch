@@ -37,7 +37,6 @@
 #include "../../retroarch.h"
 
 #ifndef _XBOX
-#include "../../ui/drivers/ui_win32_resource.h"
 #include "../../ui/drivers/ui_win32.h"
 
 #if (defined(_MSC_VER) && (_MSC_VER >= 1400)) || defined(__MINGW32__)
