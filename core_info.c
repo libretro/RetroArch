@@ -1878,24 +1878,22 @@ static size_t core_info_list_resolve_all_extensions(
       return 0;
 
    core_info_list->all_ext = all_ext;
-   _len                    = strlen(all_ext);
+   _len                    = 0;
 
    for (i = 0; i < core_info_list->count; i++)
    {
       if (!core_info_list->list[i].supported_extensions)
          continue;
-
-      _len += strlcpy(core_info_list->all_ext + _len,
-            core_info_list->list[i].supported_extensions,
-                      all_ext_len - _len);
-      _len += strlcpy(core_info_list->all_ext + _len, "|",
-                      all_ext_len - _len);
+      string_ext_list_merge_dedup(all_ext, &_len, all_ext_len,
+            core_info_list->list[i].supported_extensions);
    }
 #ifdef HAVE_7ZIP
-   _len += strlcpy(core_info_list->all_ext + _len, "7z|", all_ext_len - _len);
+   string_ext_list_append_dedup(all_ext, &_len, all_ext_len,
+         "7z", STRLEN_CONST("7z"));
 #endif
 #ifdef HAVE_ZLIB
-   _len += strlcpy(core_info_list->all_ext + _len, "zip|", all_ext_len - _len);
+   string_ext_list_append_dedup(all_ext, &_len, all_ext_len,
+         "zip", STRLEN_CONST("zip"));
 #endif
    return _len;
 }

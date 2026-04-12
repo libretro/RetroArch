@@ -379,6 +379,48 @@ int string_find_index_substring_string(const char *str, const char *substr);
  **/
 void string_copy_only_ascii(char *str_stripped, const char *str);
 
+/**
+ * string_ext_list_find:
+ * @delim_str : '|'-delimited extension string (e.g. "bin|iso|cue")
+ * @delim_len : length of @delim_str
+ * @ext       : single extension token to look for
+ * @ext_len   : length of @ext
+ *
+ * Checks whether @ext exists as an exact token inside @delim_str.
+ * "bi" will not match "bin".
+ *
+ * Returns: true if found, false otherwise.
+ **/
+bool string_ext_list_find(const char *delim_str, size_t delim_len,
+      const char *ext, size_t ext_len);
+
+/**
+ * string_ext_list_append_dedup:
+ * @dst      : destination '|'-delimited string being built
+ * @dst_len  : pointer to current length of content in @dst (updated in place)
+ * @dst_size : total buffer capacity of @dst
+ * @ext      : a single extension token (no '|') to append if not duplicate
+ * @ext_len  : length of @ext
+ *
+ * Appends a single extension to @dst with a '|' separator,
+ * but only if @ext is not already present in @dst.
+ **/
+void string_ext_list_append_dedup(char *dst, size_t *dst_len,
+      size_t dst_size, const char *ext, size_t ext_len);
+
+/**
+ * string_ext_list_merge_dedup:
+ * @dst      : destination '|'-delimited string being built
+ * @dst_len  : pointer to current length of content in @dst (updated in place)
+ * @dst_size : total buffer capacity of @dst
+ * @src      : source '|'-delimited extension string (may contain many tokens)
+ *
+ * Splits @src on '|' and appends each unique extension to @dst.
+ * Extensions already present in @dst are skipped.
+ **/
+void string_ext_list_merge_dedup(char *dst, size_t *dst_len,
+      size_t dst_size, const char *src);
+
 extern const unsigned char lr_char_props[256];
 
 RETRO_END_DECLS

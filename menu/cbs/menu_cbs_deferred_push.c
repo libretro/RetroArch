@@ -298,7 +298,10 @@ static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
    size_t _len                                = 0;
-   char newstr2[PATH_MAX_LENGTH * 2];
+   /* Maximum size for the deduplicated '|'-delimited extension list.
+    * With dedup the realistic ceiling is ~1500 bytes even with all
+    * cores + multimedia extensions combined.  2048 provides headroom. */
+   char ext_filter[2048];
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
@@ -343,13 +346,13 @@ static int general_push(menu_displaylist_info_t *info,
    if (id != PUSH_DETECT_CORE_LIST)
       info->setting   = menu_setting_find_enum(info->enum_idx);
 
-   newstr2[0] = '\0';
+   ext_filter[0] = '\0';
 
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN:
          if (filebrowser_get_type() == FILEBROWSER_SELECT_OVERLAY)
-            _len += strlcpy(newstr2 + _len, "cfg", sizeof(newstr2) - _len);
+            string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "cfg");
          else
          {
             struct retro_system_info *sysinfo =
@@ -357,7 +360,7 @@ static int general_push(menu_displaylist_info_t *info,
             if (    sysinfo 
                 &&  sysinfo->valid_extensions 
                 && *sysinfo->valid_extensions)
-               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions, sizeof(newstr2) - _len);
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), sysinfo->valid_extensions);
          }
          break;
       case PUSH_DEFAULT:
@@ -378,9 +381,9 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (valid_extensions && *valid_extensions)
             {
-               _len += strlcpy(newstr2 + _len, valid_extensions, sizeof(newstr2) - _len);
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), valid_extensions);
 #ifdef HAVE_IBXM
-               _len += strlcpy(newstr2 + _len, "|s3m|mod|xm", sizeof(newstr2) - _len);
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "s3m|mod|xm");
 #endif
             }
          }
@@ -394,31 +397,31 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (sysinfo && sysinfo->valid_extensions && *sysinfo->valid_extensions
                 && filter_by_current_core)
-               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions, sizeof(newstr2) - _len);
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), sysinfo->valid_extensions);
             else
             {
                core_info_list_t *list = NULL;
                core_info_get_list(&list);
                if (list && *list->all_ext)
-                  _len += strlcpy(newstr2 + _len, list->all_ext, sizeof(newstr2) - _len);
+                  string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), list->all_ext);
             }
 #if defined(HAVE_AUDIOMIXER)
             if (multimedia_builtin_mediaplayer_enable)
             {
 #if defined(HAVE_DR_MP3)
-               _len += strlcpy(newstr2 + _len, "|mp3", sizeof(newstr2) - _len);
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "mp3");
 #endif
 #if defined(HAVE_STB_VORBIS)
-               _len += strlcpy(newstr2 + _len, "|ogg", sizeof(newstr2) - _len);
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "ogg");
 #endif
 #if defined(HAVE_DR_FLAC)
-               _len += strlcpy(newstr2 + _len, "|flac", sizeof(newstr2) - _len);
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "flac");
 #endif
 #if defined(HAVE_RWAV)
-               _len += strlcpy(newstr2 + _len, "|wav", sizeof(newstr2) - _len);
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "wav");
 #endif
 #ifdef HAVE_IBXM
-               _len += strlcpy(newstr2 + _len, "|s3m|mod|xm", sizeof(newstr2) - _len);
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "s3m|mod|xm");
 #endif
             }
 #endif
@@ -437,9 +440,7 @@ static int general_push(menu_displaylist_info_t *info,
 #endif
       if (*sysinfo.valid_extensions)
       {
-         if (_len > 0)
-            newstr2[_len++] = '|';
-         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, sizeof(newstr2) - _len);
+         string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), sysinfo.valid_extensions);
       }
    }
 #endif
@@ -451,18 +452,16 @@ static int general_push(menu_displaylist_info_t *info,
       libretro_imageviewer_retro_get_system_info(&sysinfo);
       if (*sysinfo.valid_extensions)
       {
-         if (_len > 0)
-            newstr2[_len++] = '|';
-         _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, sizeof(newstr2) - _len);
+         string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), sysinfo.valid_extensions);
       }
    }
 #endif
 
-   if (*newstr2)
+   if (*ext_filter)
    {
       if (info->exts)
          free(info->exts);
-      info->exts = strdup(newstr2);
+      info->exts = strdup(ext_filter);
    }
 
    return deferred_push_dlist(info, state, settings);

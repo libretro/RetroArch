@@ -720,3 +720,93 @@ void string_copy_only_ascii(char *s, const char *str)
          *s++ = *str;
    *s = '\0';
 }
+
+/**
+ * string_ext_list_find:
+ *
+ * Checks whether a single extension token already exists
+ * in a '|'-delimited string. Exact token matching only.
+ **/
+bool string_ext_list_find(const char *delim_str, size_t delim_len,
+      const char *ext, size_t ext_len)
+{
+   const char *p   = delim_str;
+   const char *end = delim_str + delim_len;
+
+   while (p < end)
+   {
+      const char *tok_end = (const char*)memchr(p, '|', end - p);
+      size_t tok_len;
+
+      if (!tok_end)
+         tok_end = end;
+
+      tok_len = tok_end - p;
+
+      if (tok_len == ext_len && memcmp(p, ext, ext_len) == 0)
+         return true;
+
+      p = tok_end + 1;
+   }
+
+   return false;
+}
+
+/**
+ * string_ext_list_append_dedup:
+ *
+ * Appends a single extension to a '|'-delimited destination buffer,
+ * but only if that extension is not already present.
+ **/
+void string_ext_list_append_dedup(char *dst, size_t *dst_len,
+      size_t dst_size, const char *ext, size_t ext_len)
+{
+   if (ext_len == 0)
+      return;
+   if (string_ext_list_find(dst, *dst_len, ext, ext_len))
+      return;
+   if (*dst_len + 1 + ext_len + 1 > dst_size)
+      return;
+
+   if (*dst_len > 0)
+      dst[(*dst_len)++] = '|';
+
+   memcpy(dst + *dst_len, ext, ext_len);
+   *dst_len += ext_len;
+   dst[*dst_len] = '\0';
+}
+
+/**
+ * string_ext_list_merge_dedup:
+ *
+ * Splits a '|'-delimited source string and appends each unique
+ * extension to the destination buffer via string_ext_list_append_dedup.
+ **/
+void string_ext_list_merge_dedup(char *dst, size_t *dst_len,
+      size_t dst_size, const char *src)
+{
+   const char *p;
+   const char *end;
+
+   if (!src || !*src)
+      return;
+
+   end = src + strlen(src);
+   p   = src;
+
+   while (p < end)
+   {
+      const char *tok_end = (const char*)memchr(p, '|', end - p);
+      size_t tok_len;
+
+      if (!tok_end)
+         tok_end = end;
+
+      tok_len = tok_end - p;
+
+      if (tok_len > 0)
+         string_ext_list_append_dedup(dst, dst_len, dst_size, p, tok_len);
+
+      p = tok_end + 1;
+   }
+}
