@@ -2045,15 +2045,42 @@ static void d3d9_hlsl_renderchain_render_pass(
       struct shader_pass *pass,
       unsigned pass_index,
       unsigned width, unsigned height,
-      D3DVIEWPORT9 *vp)
+      D3DVIEWPORT9 *vp,
+      unsigned rotation)
 {
    unsigned i;
    const hlsl_pass_data_t *pd = NULL;
    int32_t filter;
    unsigned vp_width          = vp->Width;
    unsigned vp_height         = vp->Height;
+   const float *mvp_data;
 
    IDirect3DDevice9_SetViewport(chain->chain.dev, vp);
+
+   /* Compute MVP */
+   if (rotation == 0)
+      mvp_data = (const float*)&d3d->mvp;
+   else
+   {
+      /* Flat arrays matching register/column layout for
+       * SetVertexShaderConstantF + HLSL mul(matrix, vector).
+       * Each group of 4 = one register = one column.
+       * clip.x = c0.x*x + c1.x*y + c2.x*z + c3.x*w
+       * clip.y = c0.y*x + c1.y*y + c2.y*z + c3.y*w */
+      static const float rot90[16]  = {
+          0, 2, 0, 0, -2, 0, 0, 0, 0, 0, 1, 0, 1,-1, 0, 1 };
+      static const float rot180[16] = {
+         -2, 0, 0, 0,  0,-2, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1 };
+      static const float rot270[16] = {
+          0,-2, 0, 0,  2, 0, 0, 0, 0, 0, 1, 0,-1, 1, 0, 1 };
+      switch (rotation)
+      {
+         case 1: mvp_data = rot90;  break;
+         case 2: mvp_data = rot180; break;
+         case 3: mvp_data = rot270; break;
+         default: mvp_data = (const float*)&d3d->mvp; break;
+      }
+   }
 
    /* === Set vertices === */
    if (pass->last_width != width || pass->last_height != height)
@@ -2126,6 +2153,11 @@ static void d3d9_hlsl_renderchain_render_pass(
 
    IDirect3DDevice9_SetTexture(chain->chain.dev, 0,
          (IDirect3DBaseTexture9*)pass->tex);
+
+   /* Upload MVP to c0 (stock shader) */
+   IDirect3DDevice9_SetVertexShaderConstantF(chain->chain.dev,
+         0, mvp_data, 4);
+
    IDirect3DDevice9_SetSamplerState(chain->chain.dev,
          0, D3DSAMP_MINFILTER, filter);
    IDirect3DDevice9_SetSamplerState(chain->chain.dev,
@@ -2142,7 +2174,7 @@ static void d3d9_hlsl_renderchain_render_pass(
    {
       if (pd->vs_map.mvp >= 0)
          IDirect3DDevice9_SetVertexShaderConstantF(chain->chain.dev,
-               pd->vs_map.mvp, (const float*)&d3d->mvp, 4);
+               pd->vs_map.mvp, mvp_data, 4);
 
       {
          float video_size[2]   = {
@@ -2521,7 +2553,7 @@ static void hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
       const void *frame,
       unsigned width, unsigned height,
-      unsigned pitch)
+      unsigned pitch, unsigned rotation)
 {
    LPDIRECT3DSURFACE9 back_buffer = NULL;
    LPDIRECT3DSURFACE9 target;
@@ -2634,7 +2666,7 @@ static void hlsl_d3d9_renderchain_render(
             chain, from_pass,
             i + 1,
             current_width, current_height,
-            &viewport);
+            &viewport, 0);
 
       current_width  = out_width;
       current_height = out_height;
@@ -2677,7 +2709,7 @@ static void hlsl_d3d9_renderchain_render(
          chain, last_pass,
          chain->chain.passes->count,
          current_width, current_height,
-         chain->chain.out_vp);
+         chain->chain.out_vp, rotation);
 
    chain->chain.frame_count++;
 
@@ -7339,7 +7371,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
          (const float*)&d3d->mvp, 4);
    hlsl_d3d9_renderchain_render(
          d3d, frame, frame_width, frame_height,
-         pitch);
+         pitch, d3d->dev_rotation);
 
    if (black_frame_insertion && !d3d->menu->enabled)
    {
