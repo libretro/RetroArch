@@ -183,6 +183,7 @@ typedef struct ALIGN(16)
       float height;
    } OutputSize;
    float time;
+   float _pad;  /* Pad to 80 bytes (must be multiple of 16 for CBs) */
 } d3d10_uniform_t;
 
 typedef struct d3d10_shader_t
@@ -425,8 +426,14 @@ static void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
    texture->desc.Format = d3d10_get_closest_match(
          device, texture->desc.Format, format_support);
 
-   device->lpVtbl->CreateTexture2D(device, &texture->desc, NULL,
-         &texture->handle);
+   if (FAILED(device->lpVtbl->CreateTexture2D(device, &texture->desc, NULL,
+         &texture->handle)))
+   {
+      texture->handle  = NULL;
+      texture->view    = NULL;
+      texture->staging = NULL;
+      return;
+   }
 
    {
       D3D10_SHADER_RESOURCE_VIEW_DESC view_desc;
@@ -632,10 +639,19 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
    {
       void*           mapped_vbo = NULL;
       d3d10_sprite_t* sprite     = NULL;
+      D3D10_MAP       map_type   = (d3d10->sprites.offset == 0)
+         ? D3D10_MAP_WRITE_DISCARD
+         : D3D10_MAP_WRITE_NO_OVERWRITE;
 
       d3d10->sprites.vbo->lpVtbl->Map(d3d10->sprites.vbo,
-            D3D10_MAP_WRITE_NO_OVERWRITE, 0,
+            map_type, 0,
             (void**)&mapped_vbo);
+
+      if (!mapped_vbo)
+      {
+         d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
+         return;
+      }
 
       sprite = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
 
@@ -903,12 +919,14 @@ static int d3d10_font_get_message_width(void* data,
    int      delta_x                 = 0;
    const struct font_glyph* glyph_q = NULL;
    d3d10_font_t* font               = (d3d10_font_t*)data;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                                    = font->font_driver->get_glyph;
-   void *font_data                  = font->font_data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
+   void *font_data;
 
    if (!font)
       return 0;
+
+   get_glyph = font->font_driver->get_glyph;
+   font_data = font->font_data;
 
    glyph_q = get_glyph(font_data, '?');
 
@@ -1050,6 +1068,12 @@ static void d3d10_font_render_msg(
 
    d3d10->sprites.vbo->lpVtbl->Map(d3d10->sprites.vbo,
          D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
+
+   if (!mapped_vbo)
+   {
+      d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
+      return;
+   }
 
    v_begin  = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
    v        = v_begin;
@@ -1312,10 +1336,15 @@ static void d3d10_overlay_tex_geom(void* data,
 
    d3d10->overlays.vbo->lpVtbl->Map(d3d10->overlays.vbo,
          D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&sprites);
-   sprites[index].coords.u = u;
-   sprites[index].coords.v = v;
-   sprites[index].coords.w = w;
-   sprites[index].coords.h = h;
+
+   if (sprites)
+   {
+      sprites[index].coords.u = u;
+      sprites[index].coords.v = v;
+      sprites[index].coords.w = w;
+      sprites[index].coords.h = h;
+   }
+
    d3d10->overlays.vbo->lpVtbl->Unmap(d3d10->overlays.vbo);
 }
 
@@ -1816,6 +1845,12 @@ static void d3d10_gfx_free(void* data)
    Release(d3d10->state);
    Release(d3d10->renderTargetView);
    Release(d3d10->swapChain);
+#if 0
+   /* TODO/FIXME - cannot free this otherwise we lock
+    * up when loading content */
+   Release(d3d10->factory);
+   Release(d3d10->adapter); 
+#endif
 
    font_driver_free_osd();
 
