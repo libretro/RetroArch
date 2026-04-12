@@ -8,13 +8,11 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <sys/stat.h>
+#include <lrc_hash.h>
 
 #if defined(_WIN32)
 #include <direct.h>
 #endif
-
-/* mbedtls SHA256 */
-#include "../../deps/mbedtls/mbedtls/sha256.h"
 
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -149,27 +147,26 @@ extern "C" {
 bool spirv_cache_compute_hash(const char *vertex_source, const char *fragment_source,
       char *hash_out)
 {
-   uint8_t digest[32];
-   mbedtls_sha256_context sha;
-   int i;
-
    if (!vertex_source || !fragment_source || !hash_out)
       return false;
 
-   /* Compute SHA256 hash of vertex + "|" + fragment source */
-   mbedtls_sha256_init(&sha);
-   mbedtls_sha256_starts(&sha, 0);  /* 0 for SHA256 */
-   mbedtls_sha256_update(&sha, (const unsigned char *)vertex_source, strlen(vertex_source));
-   mbedtls_sha256_update(&sha, (const unsigned char *)"|", 1);
-   mbedtls_sha256_update(&sha, (const unsigned char *)fragment_source, strlen(fragment_source));
-   mbedtls_sha256_finish(&sha, digest);
-   mbedtls_sha256_free(&sha);
+   /* Build combined hash input: vertex + "|" + fragment */
+   size_t vertex_len = strlen(vertex_source);
+   size_t fragment_len = strlen(fragment_source);
+   size_t total_len = vertex_len + 1 + fragment_len;  /* 1 for "|" separator */
 
-   /* Convert to hex string */
-   for (i = 0; i < 32; i++)
-      sprintf(hash_out + (i * 2), "%02x", digest[i]);
+   uint8_t *combined = new uint8_t[total_len];
+   if (!combined)
+      return false;
 
-   hash_out[64] = '\0';
+   memcpy(combined, vertex_source, vertex_len);
+   combined[vertex_len] = '|';
+   memcpy(combined + vertex_len + 1, fragment_source, fragment_len);
+
+   /* Compute SHA256 hash using libretro-common */
+   sha256_hash(hash_out, combined, total_len);
+
+   delete[] combined;
    return true;
 }
 
