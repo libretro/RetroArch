@@ -45,6 +45,7 @@ typedef struct ui_window_win32
 
 extern VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
+#ifdef HAVE_THREADS
 /**
  * Asynchronous file-browser result messages.
  *
@@ -77,6 +78,7 @@ typedef struct
    char               path[PATH_MAX_LENGTH];
    bool               result;        /* true = user picked a file     */
 } win32_browser_thread_data_t;
+#endif /* HAVE_THREADS */
 
 RETRO_END_DECLS
 
