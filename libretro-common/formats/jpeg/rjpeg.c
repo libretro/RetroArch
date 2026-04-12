@@ -71,12 +71,12 @@ enum rjpeg_phase
    RJPEG_PHASE_SWIZZLE
 };
 
-/* Forward declaration — full definition appears later in the file */
-typedef struct rjpeg_jpeg_s rjpeg_jpeg;
+/* Forward declaration -- full definition appears later in the file */
+struct rjpeg_jpeg_s;
 
 struct rjpeg_process
 {
-   rjpeg_jpeg       *j;            /* heap-allocated decode state           */
+   struct rjpeg_jpeg_s  *j;            /* heap-allocated decode state           */
    uint8_t          *output;       /* output pixel buffer (n * w * h)       */
    rjpeg_resample    res_comp[4];  /* per-component resample state          */
    uint8_t          *coutput[4];   /* per-component line pointers           */
@@ -2482,7 +2482,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       return IMAGE_PROCESS_ERROR;
 
    /* -----------------------------------------------------------
-    * Phase 0 — DECODE: run the entire entropy decode in one shot,
+    * Phase 0 -- DECODE: run the entire entropy decode in one shot,
     * then set up the resample state for incremental row processing.
     * ----------------------------------------------------------- */
    if (!rjpeg->process)
@@ -2491,7 +2491,6 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       struct rjpeg_process *proc = NULL;
       rjpeg_jpeg    *j    = NULL;
       rjpeg_context *s    = NULL;
-      int            comp = 0;
 
       proc = (struct rjpeg_process*)calloc(1, sizeof(*proc));
       if (!proc)
@@ -2532,7 +2531,6 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
 
       /* Determine actual number of components to generate */
       proc->n       = 4; /* always request RGBA */
-      comp          = j->s->img_n;
 
       if (j->s->img_n == 3 && proc->n < 3)
          proc->decode_n = 1;
@@ -2593,7 +2591,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
    }
 
    /* -----------------------------------------------------------
-    * Phase 1 — RESAMPLE: process a batch of output rows per call.
+    * Phase 1 -- RESAMPLE: process a batch of output rows per call.
     * Chroma upsampling + YCbCr-to-RGB conversion.
     * Batching amortises per-call overhead while still giving the
     * caller regular yield points.
@@ -2604,7 +2602,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       rjpeg_jpeg           *z   = proc->j;
       unsigned          rows_done = 0;
 
-      /* Process up to 8 rows per call. 8 rows at ~6 us/row (1080p) ≈ 50 us,
+      /* Process up to 8 rows per call. 8 rows at ~6 us/row (1080p) ~ 50 us,
        * well within any reasonable frame budget while cutting call count
        * from ~1080 to ~135 for 1080p images. */
       #define RJPEG_ROWS_PER_CALL 8
@@ -2684,14 +2682,14 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       if (proc->cur_row < z->s->img_y)
          return IMAGE_PROCESS_NEXT;
 
-      /* All rows resampled — free decode buffers, advance to swizzle */
+      /* All rows resampled -- free decode buffers, advance to swizzle */
       rjpeg_cleanup_jpeg(z);
       proc->phase = RJPEG_PHASE_SWIZZLE;
       return IMAGE_PROCESS_NEXT;
    }
 
    /* -----------------------------------------------------------
-    * Phase 2 — SWIZZLE: convert RGBA to ARGB in-place.
+    * Phase 2 -- SWIZZLE: convert RGBA to ARGB in-place.
     * Done in one shot since it's a simple in-place byte swap on
     * already-allocated memory.
     * ----------------------------------------------------------- */

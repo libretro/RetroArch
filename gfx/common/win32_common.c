@@ -3142,12 +3142,14 @@ static void apply_dpi_awareness(void)
    HMODULE shcore = LoadLibraryW(L"shcore.dll");
    if (shcore)
    {
-      pfn_SetProcessDpiAwareness fn =
-         (pfn_SetProcessDpiAwareness)(void*)GetProcAddress(
-               shcore, "SetProcessDpiAwareness");
-      if (fn)
+      union {
+         FARPROC proc;
+         pfn_SetProcessDpiAwareness func;
+      } u;
+      u.proc = GetProcAddress(shcore, "SetProcessDpiAwareness");
+      if (u.func)
       {
-         fn(1); /* PROCESS_SYSTEM_DPI_AWARE */
+         u.func(1); /* PROCESS_SYSTEM_DPI_AWARE */
          FreeLibrary(shcore);
          return;
       }
