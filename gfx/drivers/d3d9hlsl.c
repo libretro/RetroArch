@@ -853,6 +853,7 @@ typedef struct hlsl_renderchain
  * Stored as a file-static since the d3d9 menu_display struct
  * does not have a pipeline_vbo member like d3d10_video_t does. */
 static LPDIRECT3DVERTEXBUFFER9 d3d9_hlsl_menu_pipeline_vbo = NULL;
+static LPDIRECT3DVERTEXDECLARATION9 d3d9_hlsl_overlay_decl = NULL;
 
 static void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 {
@@ -1132,7 +1133,8 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
 
    IDirect3DVertexBuffer9_Lock((LPDIRECT3DVERTEXBUFFER9)
             d3d->menu_display.buffer, 0, 0, (void**)&pv,
-            D3DLOCK_NOOVERWRITE);
+            d3d->menu_display.offset == 0
+            ? D3DLOCK_DISCARD : D3DLOCK_NOOVERWRITE);
    if (!pv)
       return;
 
@@ -2863,9 +2865,7 @@ static void d3d9_hlsl_blit_to_texture(
    d3dlr.pBits  = NULL;
 
    /* Single lock: clear if dimensions changed, then copy frame data */
-   IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL,
-         (last_width == width && last_height == height)
-         ? 0 : D3DLOCK_NOSYSLOCK);
+   IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, 0);
 
    if (last_width != width || last_height != height)
       memset(d3dlr.pBits, 0, tex_height * d3dlr.Pitch);
@@ -2885,7 +2885,8 @@ static void hlsl_d3d9_renderchain_render(
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
 {
-   LPDIRECT3DSURFACE9 back_buffer, target;
+   LPDIRECT3DSURFACE9 back_buffer = NULL;
+   LPDIRECT3DSURFACE9 target;
    unsigned i, current_width, current_height,
           out_width = 0, out_height = 0;
    struct shader_pass *last_pass    = NULL;
@@ -2919,8 +2920,11 @@ static void hlsl_d3d9_renderchain_render(
 
    /* Grab back buffer. */
    if (chain->chain.dev)
-      IDirect3DDevice9_GetRenderTarget(chain->chain.dev,
-            0, (LPDIRECT3DSURFACE9*)&back_buffer);
+   {
+      if (!SUCCEEDED(IDirect3DDevice9_GetRenderTarget(chain->chain.dev,
+                  0, (LPDIRECT3DSURFACE9*)&back_buffer)))
+         back_buffer = NULL;
+   }
 
    /* In-between render target passes. */
    for (i = 0; i < chain->chain.passes->count - 1; i++)
@@ -6482,6 +6486,12 @@ static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
       d3d9_hlsl_menu_pipeline_vbo = NULL;
    }
 
+   if (d3d9_hlsl_overlay_decl)
+   {
+      IDirect3DVertexDeclaration9_Release(d3d9_hlsl_overlay_decl);
+      d3d9_hlsl_overlay_decl = NULL;
+   }
+
    d3d->renderchain_data    = NULL;
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl   = NULL;
@@ -6628,10 +6638,7 @@ static bool d3d9_hlsl_process_shader(d3d9_video_t *d3d)
    struct video_shader_pass *pass   = NULL;
    const char *shader_path = d3d->shader_path;
    if (shader_path && *shader_path)
-   {
-      RARCH_ERR("[D3D9] Failed to parse shader preset.\n");
       return d3d9_init_multipass(d3d, shader_path);
-   }
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes               = 1;
@@ -7364,13 +7371,12 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
       overlay_t *overlay, bool force_linear)
 {
    D3DTEXTUREFILTERTYPE filter_type;
-   LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
    LPDIRECT3DDEVICE9 dev;
    struct video_viewport vp;
    void *verts;
    unsigned i;
    Vertex vert[4];
-   D3DVERTEXELEMENT9 vElems[4] = {
+   static const D3DVERTEXELEMENT9 vElems[4] = {
       {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
          D3DDECLUSAGE_POSITION, 0},
       {0, offsetof(Vertex, u), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
@@ -7398,7 +7404,7 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
 #else
       if (!SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
                   dev, sizeof(vert), D3DUSAGE_WRITEONLY,
-                  D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
+                  0,
                   D3DPOOL_MANAGED,
                   (LPDIRECT3DVERTEXBUFFER9*)&overlay->vert_buf, NULL)))
          overlay->vert_buf = NULL;
@@ -7442,11 +7448,11 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, true);
 
-   /* set vertex declaration for overlay. */
-   IDirect3DDevice9_CreateVertexDeclaration(dev,
-         (const D3DVERTEXELEMENT9*)&vElems, (IDirect3DVertexDeclaration9**)&vertex_decl);
-   IDirect3DDevice9_SetVertexDeclaration(dev, vertex_decl);
-   IDirect3DVertexDeclaration9_Release(vertex_decl);
+   /* Use cached vertex declaration for overlay. */
+   if (!d3d9_hlsl_overlay_decl)
+      IDirect3DDevice9_CreateVertexDeclaration(dev,
+            (const D3DVERTEXELEMENT9*)&vElems, (IDirect3DVertexDeclaration9**)&d3d9_hlsl_overlay_decl);
+   IDirect3DDevice9_SetVertexDeclaration(dev, d3d9_hlsl_overlay_decl);
 
    IDirect3DDevice9_SetStreamSource(dev, 0,
          (LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf, 0, sizeof(*vert));
