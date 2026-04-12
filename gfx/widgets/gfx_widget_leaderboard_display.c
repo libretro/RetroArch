@@ -257,6 +257,10 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             else
             {
                /* achievement badge */
+               gfx_display_ctx_driver_t* dispctx = p_disp->dispctx;
+               if (dispctx && dispctx->blend_begin)
+                  dispctx->blend_begin(video_info->userdata);
+
                gfx_widgets_draw_icon(
                      video_info->userdata,
                      p_disp,
@@ -271,6 +275,9 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      1.0f, /* cos(rad)   = cos(0)  = 1.0f */
                      0.0f, /* sine(rad)  = sine(0) = 0.0f */
                      pure_white);
+
+               if (dispctx && dispctx->blend_end)
+                  dispctx->blend_end(video_info->userdata);
             }
          }
       }
@@ -346,6 +353,10 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             else
             {
                /* achievement badge */
+               gfx_display_ctx_driver_t* dispctx = p_disp->dispctx;
+               if (dispctx && dispctx->blend_begin)
+                  dispctx->blend_begin(video_info->userdata);
+
                gfx_widgets_draw_icon(
                      video_info->userdata,
                      p_disp,
@@ -360,6 +371,9 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      1.0f, /* cos(rad)   = cos(0)  = 1.0f */
                      0.0f, /* sine(rad)  = sine(0) = 0.0f */
                      pure_white);
+
+               if (dispctx && dispctx->blend_end)
+                  dispctx->blend_end(video_info->userdata);
             }
 
             x += image_size + spacing;

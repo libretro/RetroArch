@@ -270,6 +270,24 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       /* Badge */
       else
       {
+         /* Backdrop */
+         gfx_display_draw_quad(
+            p_disp,
+            video_info->userdata,
+            video_width,
+            video_height,
+            screen_pos_x,
+            screen_pos_y,
+            state->height,
+            state->height,
+            video_width,
+            video_height,
+            p_dispwidget->backdrop_orig,
+            NULL);
+
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(video_info->userdata);
+
          gfx_widgets_draw_icon(
             video_info->userdata,
             p_disp,
@@ -284,6 +302,9 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             1.0f, /* cos(rad)   = cos(0)  = 1.0f */
             0.0f, /* sine(rad)  = sine(0) = 0.0f */
             pure_white);
+
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(video_info->userdata);
       }
 
       if (is_folding)
