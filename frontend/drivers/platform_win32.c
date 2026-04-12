@@ -55,7 +55,7 @@
 #include "../../verbosity.h"
 #include "../../msg_hash_lbl_str.h"
 #include "../../ui/drivers/ui_win32.h"
-#include "../../gfx/common/win32_resources.h"
+#include "../../gfx/common/win32_common.h"
 
 #include "platform_win32.h"
 

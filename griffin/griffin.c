@@ -261,7 +261,6 @@ CHEATS
 UI COMMON CONTEXT
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-#include "../gfx/common/win32_resources.c"
 #include "../gfx/common/win32_common.c"
 #endif
 

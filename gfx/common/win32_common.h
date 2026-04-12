@@ -187,6 +187,36 @@ BOOL IsIconic(HWND hwnd);
 
 void win32_setup_pixel_format(HDC hdc, bool supports_gl);
 
+#if !defined(__WINRT__)
+/* Programmatic replacement for the menu, dialog, accelerator,
+ * and manifest resources that were in media/rarch.rc.
+ *
+ * The icon resource remains in rarch.rc (compiled by windres/rc)
+ * so that the .exe has an embedded icon visible in Explorer.
+ * Everything else is created at runtime via Win32 API calls. */
+
+/* Call once before creating any windows.
+ * Applies DPI awareness and creates the accelerator table. */
+void win32_resources_init(void);
+
+/* Release resources created by win32_resources_init(). */
+void win32_resources_free(void);
+
+/* Build the application menu bar programmatically
+ * (replaces LoadMenu + MAKEINTRESOURCE(IDR_MENU)).
+ * Returns a fresh HMENU each call — caller owns it. */
+HMENU win32_resources_create_menu(void);
+
+/* Return the accelerator table
+ * (replaces LoadAccelerators + MAKEINTRESOURCE(IDR_ACCELERATOR1)). */
+HACCEL win32_resources_get_accelerator(void);
+
+/* Show the "Pick Core" dialog built in memory
+ * (replaces DialogBoxParam + MAKEINTRESOURCE(IDD_PICKCORE)).
+ * Returns IDOK or IDCANCEL. */
+int win32_resources_pick_core_dialog(HWND parent, DLGPROC dlg_proc);
+#endif /* !__WINRT__ */
+
 RETRO_END_DECLS
 
 #endif
