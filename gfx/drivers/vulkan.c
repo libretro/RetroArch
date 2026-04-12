@@ -464,10 +464,13 @@ static struct vk_buffer vulkan_create_buffer(
       const struct vulkan_context *context,
       size_t len, VkBufferUsageFlags usage)
 {
+   VkResult res;
    struct vk_buffer buffer;
    VkMemoryRequirements mem_reqs;
    VkBufferCreateInfo info;
    VkMemoryAllocateInfo alloc;
+
+   memset(&buffer, 0, sizeof(buffer));
 
    info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
    info.pNext                 = NULL;
@@ -477,7 +480,12 @@ static struct vk_buffer vulkan_create_buffer(
    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    info.queueFamilyIndexCount = 0;
    info.pQueueFamilyIndices   = NULL;
-   vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
+   res = vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
+   if (res != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan] Failed to create buffer (VkResult: %d).\n", res);
+      return buffer;
+   }
    vulkan_debug_mark_buffer(context->device, buffer.buffer);
 
    vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
@@ -490,14 +498,26 @@ static struct vk_buffer vulkan_create_buffer(
          mem_reqs.memoryTypeBits,
            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-   vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
+   res = vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
+   if (res != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan] Failed to allocate buffer memory (VkResult: %d).\n", res);
+      vkDestroyBuffer(context->device, buffer.buffer, NULL);
+      memset(&buffer, 0, sizeof(buffer));
+      return buffer;
+   }
    vulkan_debug_mark_memory(context->device, buffer.memory);
    vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
 
    buffer.size                = len;
 
-   vkMapMemory(context->device,
+   res = vkMapMemory(context->device,
          buffer.memory, 0, buffer.size, 0, &buffer.mapped);
+   if (res != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan] Failed to map buffer memory (VkResult: %d).\n", res);
+      buffer.mapped = NULL;
+   }
    return buffer;
 }
 
@@ -922,11 +942,19 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
     * saving 33% VBO bandwidth compared to 6 vertices per quad. */
    if (call->indexed_quads && vk->quad_ibo.buffer != VK_NULL_HANDLE)
    {
-      unsigned num_quads  = call->vertices / 4;
-      unsigned index_count = num_quads * 6;
-      vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
-            0, VK_INDEX_TYPE_UINT16);
-      vkCmdDrawIndexed(vk->cmd, index_count, 1, 0, 0, 0);
+      unsigned num_quads   = call->vertices / 4;
+      /* Guard against exceeding IBO capacity to prevent
+       * out-of-bounds index reads
+       * (VUID-vkCmdDrawIndexed-indexSize-00463). */
+      if (num_quads <= vk->quad_ibo.num_quads)
+      {
+         unsigned index_count = num_quads * 6;
+         vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
+               0, VK_INDEX_TYPE_UINT16);
+         vkCmdDrawIndexed(vk->cmd, index_count, 1, 0, 0, 0);
+      }
+      else
+         vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
    }
    else
    {
@@ -1110,7 +1138,14 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    if (     (type != VULKAN_TEXTURE_STAGING)
          && (type != VULKAN_TEXTURE_READBACK))
    {
-      vkCreateImage(device, &info, NULL, &tex.image);
+      VkResult res = vkCreateImage(device, &info, NULL, &tex.image);
+      if (res != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan] Failed to create image %ux%u (VkResult: %d).\n",
+               width, height, res);
+         memset(&tex, 0, sizeof(tex));
+         return tex;
+      }
       vulkan_debug_mark_image(device, tex.image);
 #if 0
       vulkan_track_alloc(tex.image);
@@ -1121,7 +1156,14 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    {
       /* Linear staging textures are not guaranteed to be supported,
        * use buffers instead. */
-      vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+      VkResult res = vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+      if (res != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan] Failed to create staging buffer %ux%u (VkResult: %d).\n",
+               width, height, res);
+         memset(&tex, 0, sizeof(tex));
+         return tex;
+      }
       vulkan_debug_mark_buffer(device, tex.buffer);
       vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
    }
@@ -1223,7 +1265,17 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    }
    else
    {
-      vkAllocateMemory(device, &alloc, NULL, &tex.memory);
+      VkResult res = vkAllocateMemory(device, &alloc, NULL, &tex.memory);
+      if (res != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan] Failed to allocate texture memory (VkResult: %d).\n", res);
+         if (tex.image)
+            vkDestroyImage(device, tex.image, NULL);
+         if (tex.buffer)
+            vkDestroyBuffer(device, tex.buffer, NULL);
+         memset(&tex, 0, sizeof(tex));
+         return tex;
+      }
       vulkan_debug_mark_memory(device, tex.memory);
       tex.memory_size = alloc.allocationSize;
       tex.memory_type = alloc.memoryTypeIndex;
@@ -1918,8 +1970,11 @@ static void gfx_display_vk_scissor_begin(
 {
    vk_t *vk                          = (vk_t*)data;
 
-   vk->tracker.scissor.offset.x      = x;
-   vk->tracker.scissor.offset.y      = y;
+   /* Clamp scissor offsets to non-negative values.
+    * Negative offsets violate VUID-vkCmdSetScissor-x-00595 /
+    * VUID-vkCmdSetScissor-y-00596. */
+   vk->tracker.scissor.offset.x      = (x < 0) ? 0 : x;
+   vk->tracker.scissor.offset.y      = (y < 0) ? 0 : y;
    vk->tracker.scissor.extent.width  = width;
    vk->tracker.scissor.extent.height = height;
    vk->flags                        |= VK_FLAG_TRACKER_USE_SCISSOR;
@@ -2386,11 +2441,40 @@ static void vulkan_font_render_msg(
             && staging_tex->memory != VK_NULL_HANDLE)
       {
          VkMappedMemoryRange mem_range;
+         VkDeviceSize flush_offset;
+         VkDeviceSize flush_end;
+         VkDeviceSize flush_size;
+         /* Use nonCoherentAtomSize for alignment;
+          * fall back to 256 (common minimum) if unavailable. */
+         VkDeviceSize atom_size = 256;
+
+         /* Compute tight flush range from dirty rectangle
+          * instead of flushing the entire allocation.
+          * Aligns offset down and size up to nonCoherentAtomSize
+          * as required by the spec (§12.1). */
+         flush_offset = (VkDeviceSize)font->dirty_y_min * staging_tex->stride
+                      + font->dirty_x_min;
+         flush_end    = (VkDeviceSize)(font->dirty_y_max > 0
+                      ? (font->dirty_y_max - 1) : 0) * staging_tex->stride
+                      + font->dirty_x_max;
+         if (flush_end <= flush_offset)
+            flush_end = flush_offset + 1;
+         flush_size   = flush_end - flush_offset;
+
+         /* Align to nonCoherentAtomSize boundaries. */
+         flush_size   = flush_size + (flush_offset & (atom_size - 1));
+         flush_offset = flush_offset & ~(atom_size - 1);
+         flush_size   = (flush_size + atom_size - 1) & ~(atom_size - 1);
+
+         /* Clamp to allocation size. */
+         if (flush_offset + flush_size > staging_tex->size)
+            flush_size = VK_WHOLE_SIZE;
+
          mem_range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
          mem_range.pNext  = NULL;
          mem_range.memory = staging_tex->memory;
-         mem_range.offset = 0;
-         mem_range.size   = VK_WHOLE_SIZE;
+         mem_range.offset = flush_offset;
+         mem_range.size   = flush_size;
          vkFlushMappedMemoryRanges(vk->context->device, 1, &mem_range);
       }
 
@@ -2600,10 +2684,17 @@ static void vulkan_font_render_msg(
    if (vk->quad_ibo.buffer != VK_NULL_HANDLE)
    {
       unsigned num_quads   = font->vertices / 4;
-      unsigned index_count = num_quads * 6;
-      vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
-            0, VK_INDEX_TYPE_UINT16);
-      vkCmdDrawIndexed(vk->cmd, index_count, 1, 0, 0, 0);
+      /* Guard against exceeding IBO capacity
+       * (VUID-vkCmdDrawIndexed-indexSize-00463). */
+      if (num_quads <= vk->quad_ibo.num_quads)
+      {
+         unsigned index_count = num_quads * 6;
+         vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
+               0, VK_INDEX_TYPE_UINT16);
+         vkCmdDrawIndexed(vk->cmd, index_count, 1, 0, 0, 0);
+      }
+      else
+         vkCmdDraw(vk->cmd, font->vertices, 1, 0, 0);
    }
    else
       vkCmdDraw(vk->cmd, font->vertices, 1, 0, 0);
@@ -4054,6 +4145,7 @@ static void vulkan_init_quad_ibo(vk_t *vk, unsigned max_quads)
 {
    unsigned i;
    uint16_t *indices;
+   VkResult res;
    void *mapped                            = NULL;
    VkDevice device                         = vk->context->device;
    VkDeviceSize ibo_size                   = max_quads * 6 * sizeof(uint16_t);
@@ -4070,7 +4162,14 @@ static void vulkan_init_quad_ibo(vk_t *vk, unsigned max_quads)
    buffer_info.queueFamilyIndexCount       = 0;
    buffer_info.pQueueFamilyIndices         = NULL;
 
-   vkCreateBuffer(device, &buffer_info, NULL, &vk->quad_ibo.buffer);
+   res = vkCreateBuffer(device, &buffer_info, NULL, &vk->quad_ibo.buffer);
+   if (res != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan] Failed to create quad IBO (VkResult: %d).\n", res);
+      vk->quad_ibo.buffer    = VK_NULL_HANDLE;
+      vk->quad_ibo.num_quads = 0;
+      return;
+   }
    vkGetBufferMemoryRequirements(device, vk->quad_ibo.buffer, &mem_reqs);
 
    alloc.sType                             = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -4083,10 +4182,29 @@ static void vulkan_init_quad_ibo(vk_t *vk, unsigned max_quads)
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-   vkAllocateMemory(device, &alloc, NULL, &vk->quad_ibo.memory);
+   res = vkAllocateMemory(device, &alloc, NULL, &vk->quad_ibo.memory);
+   if (res != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan] Failed to allocate quad IBO memory (VkResult: %d).\n", res);
+      vkDestroyBuffer(device, vk->quad_ibo.buffer, NULL);
+      vk->quad_ibo.buffer    = VK_NULL_HANDLE;
+      vk->quad_ibo.memory    = VK_NULL_HANDLE;
+      vk->quad_ibo.num_quads = 0;
+      return;
+   }
    vkBindBufferMemory(device, vk->quad_ibo.buffer, vk->quad_ibo.memory, 0);
 
-   vkMapMemory(device, vk->quad_ibo.memory, 0, ibo_size, 0, &mapped);
+   res = vkMapMemory(device, vk->quad_ibo.memory, 0, ibo_size, 0, &mapped);
+   if (res != VK_SUCCESS || !mapped)
+   {
+      RARCH_ERR("[Vulkan] Failed to map quad IBO memory (VkResult: %d).\n", res);
+      vkFreeMemory(device, vk->quad_ibo.memory, NULL);
+      vkDestroyBuffer(device, vk->quad_ibo.buffer, NULL);
+      vk->quad_ibo.buffer    = VK_NULL_HANDLE;
+      vk->quad_ibo.memory    = VK_NULL_HANDLE;
+      vk->quad_ibo.num_quads = 0;
+      return;
+   }
    indices = (uint16_t*)mapped;
 
    /* Pattern per quad: 0,1,2, 2,1,3  (two triangles from 4 unique verts)
@@ -5092,8 +5210,26 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
    region.imageOffset.x                   = vp.x;
    region.imageOffset.y                   = vp.y;
    region.imageOffset.z                   = 0;
-   region.imageExtent.width               = vp.width + vk->translate_x;
-   region.imageExtent.height              = vp.height + vk->translate_y;
+
+   /* Clamp readback extent so imageOffset + imageExtent does not
+    * exceed the source image dimensions.  translate_x/y can be
+    * negative when the viewport had a negative origin, which would
+    * otherwise produce an invalid (or wrapped-to-huge) extent.
+    * VUID-VkBufferImageCopy-imageOffset-00197 */
+   {
+      int rw = (int)(vp.width  + vk->translate_x);
+      int rh = (int)(vp.height + vk->translate_y);
+      unsigned sw = vk->context->swapchain_width;
+      unsigned sh = vk->context->swapchain_height;
+      if (rw < 1) rw = (int)vp.width;
+      if (rh < 1) rh = (int)vp.height;
+      if (vp.x + (unsigned)rw > sw) rw = (int)(sw - vp.x);
+      if (vp.y + (unsigned)rh > sh) rh = (int)(sh - vp.y);
+      if (rw < 1) rw = 1;
+      if (rh < 1) rh = 1;
+      region.imageExtent.width            = (unsigned)rw;
+      region.imageExtent.height           = (unsigned)rh;
+   }
    region.imageExtent.depth               = 1;
 
    staging  = &vk->readback.staging[vk->context->current_frame_index];
@@ -5314,9 +5450,15 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    }
 
    /* Draw the quad using shared index buffer. */
-   vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
-         0, VK_INDEX_TYPE_UINT16);
-   vkCmdDrawIndexed(vk->cmd, 6, 1, 0, 0, 0);
+   if (   vk->quad_ibo.buffer != VK_NULL_HANDLE
+       && vk->quad_ibo.num_quads >= 1)
+   {
+      vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
+            0, VK_INDEX_TYPE_UINT16);
+      vkCmdDrawIndexed(vk->cmd, 6, 1, 0, 0, 0);
+   }
+   else
+      vkCmdDraw(vk->cmd, 4, 1, 0, 0);
 }
 #endif
 
@@ -5394,8 +5536,12 @@ static void vulkan_init_render_target(struct vk_image* image, uint32_t width, ui
    info.renderPass      = render_pass;
    info.attachmentCount = 1;
    info.pAttachments    = &image->view;
-   info.width           = ctx->swapchain_width;
-   info.height          = ctx->swapchain_height;
+   /* Use the image dimensions, not swapchain dimensions.
+    * When width/height differ from ctx->swapchain_width/Height
+    * (e.g. during resize), the validation layer flags
+    * VUID-VkFramebufferCreateInfo-pAttachments-00882. */
+   info.width           = width;
+   info.height          = height;
    info.layers          = 1;
 
    vkCreateFramebuffer(ctx->device, &info, NULL, &image->framebuffer);
