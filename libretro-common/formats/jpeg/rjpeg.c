@@ -2051,21 +2051,23 @@ static uint8_t* rjpeg_resample_row_v_2(uint8_t *out, uint8_t *in_near,
 #if defined(__SSE2__)
    for (; i + 15 < w; i += 16)
    {
-      __m128i zero = _mm_setzero_si128();
-      __m128i near_b = _mm_loadu_si128((const __m128i*)(in_near + i));
-      __m128i far_b  = _mm_loadu_si128((const __m128i*)(in_far  + i));
+      __m128i zero    = _mm_setzero_si128();
+      __m128i near_b  = _mm_loadu_si128((const __m128i*)(in_near + i));
+      __m128i far_b   = _mm_loadu_si128((const __m128i*)(in_far  + i));
+      __m128i near_lo, far_lo, sum_lo;
+      __m128i near_hi, far_hi, sum_hi;
 
       /* Process low 8 bytes: (3*near + far + 2) >> 2 */
-      __m128i near_lo = _mm_unpacklo_epi8(near_b, zero);
-      __m128i far_lo  = _mm_unpacklo_epi8(far_b, zero);
-      __m128i sum_lo  = _mm_add_epi16(_mm_add_epi16(near_lo, _mm_slli_epi16(near_lo, 1)), far_lo);
-      sum_lo          = _mm_srli_epi16(_mm_add_epi16(sum_lo, _mm_set1_epi16(2)), 2);
+      near_lo = _mm_unpacklo_epi8(near_b, zero);
+      far_lo  = _mm_unpacklo_epi8(far_b, zero);
+      sum_lo  = _mm_add_epi16(_mm_add_epi16(near_lo, _mm_slli_epi16(near_lo, 1)), far_lo);
+      sum_lo  = _mm_srli_epi16(_mm_add_epi16(sum_lo, _mm_set1_epi16(2)), 2);
 
       /* Process high 8 bytes */
-      __m128i near_hi = _mm_unpackhi_epi8(near_b, zero);
-      __m128i far_hi  = _mm_unpackhi_epi8(far_b, zero);
-      __m128i sum_hi  = _mm_add_epi16(_mm_add_epi16(near_hi, _mm_slli_epi16(near_hi, 1)), far_hi);
-      sum_hi          = _mm_srli_epi16(_mm_add_epi16(sum_hi, _mm_set1_epi16(2)), 2);
+      near_hi = _mm_unpackhi_epi8(near_b, zero);
+      far_hi  = _mm_unpackhi_epi8(far_b, zero);
+      sum_hi  = _mm_add_epi16(_mm_add_epi16(near_hi, _mm_slli_epi16(near_hi, 1)), far_hi);
+      sum_hi  = _mm_srli_epi16(_mm_add_epi16(sum_hi, _mm_set1_epi16(2)), 2);
 
       _mm_storeu_si128((__m128i*)(out + i), _mm_packus_epi16(sum_lo, sum_hi));
    }
@@ -2115,27 +2117,31 @@ static uint8_t*  rjpeg_resample_row_h_2(uint8_t *out, uint8_t *in_near,
     */
    for (; i + 8 < w - 1; i += 8)
    {
-      __m128i zero = _mm_setzero_si128();
-      __m128i bias = _mm_set1_epi16(2);
+      __m128i zero, bias, cur, prev, next;
+      __m128i cur_w, prev_w, next_w;
+      __m128i base, even, odd, lo, hi, result;
 
-      __m128i cur  = _mm_loadl_epi64((const __m128i*)(input + i));
-      __m128i prev = _mm_loadl_epi64((const __m128i*)(input + i - 1));
-      __m128i next = _mm_loadl_epi64((const __m128i*)(input + i + 1));
+      zero = _mm_setzero_si128();
+      bias = _mm_set1_epi16(2);
 
-      __m128i cur_w  = _mm_unpacklo_epi8(cur, zero);
-      __m128i prev_w = _mm_unpacklo_epi8(prev, zero);
-      __m128i next_w = _mm_unpacklo_epi8(next, zero);
+      cur  = _mm_loadl_epi64((const __m128i*)(input + i));
+      prev = _mm_loadl_epi64((const __m128i*)(input + i - 1));
+      next = _mm_loadl_epi64((const __m128i*)(input + i + 1));
+
+      cur_w  = _mm_unpacklo_epi8(cur, zero);
+      prev_w = _mm_unpacklo_epi8(prev, zero);
+      next_w = _mm_unpacklo_epi8(next, zero);
 
       /* 3*cur + 2 */
-      __m128i base = _mm_add_epi16(_mm_add_epi16(cur_w, _mm_slli_epi16(cur_w, 1)), bias);
-      __m128i even = _mm_srli_epi16(_mm_add_epi16(base, prev_w), 2);
-      __m128i odd  = _mm_srli_epi16(_mm_add_epi16(base, next_w), 2);
+      base = _mm_add_epi16(_mm_add_epi16(cur_w, _mm_slli_epi16(cur_w, 1)), bias);
+      even = _mm_srli_epi16(_mm_add_epi16(base, prev_w), 2);
+      odd  = _mm_srli_epi16(_mm_add_epi16(base, next_w), 2);
 
       /* Interleave even/odd into output */
-      __m128i lo = _mm_unpacklo_epi16(even, odd);
-      __m128i hi = _mm_unpackhi_epi16(even, odd);
+      lo = _mm_unpacklo_epi16(even, odd);
+      hi = _mm_unpackhi_epi16(even, odd);
       /* Pack back to bytes */
-      __m128i result = _mm_packus_epi16(lo, hi);
+      result = _mm_packus_epi16(lo, hi);
       _mm_storeu_si128((__m128i*)(out + i * 2), result);
    }
 #elif defined(RJPEG_NEON)
@@ -2229,14 +2235,19 @@ static uint8_t *rjpeg_resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near,
 #if defined(__SSE2__)
       /* load and perform the vertical filtering pass
        * this uses 3*x + y = 4*x + (y - x) */
-      __m128i zero  = _mm_setzero_si128();
-      __m128i farb  = _mm_loadl_epi64((__m128i *) (in_far + i));
-      __m128i nearb = _mm_loadl_epi64((__m128i *) (in_near + i));
-      __m128i farw  = _mm_unpacklo_epi8(farb, zero);
-      __m128i nearw = _mm_unpacklo_epi8(nearb, zero);
-      __m128i diff  = _mm_sub_epi16(farw, nearw);
-      __m128i nears = _mm_slli_epi16(nearw, 2);
-      __m128i curr  = _mm_add_epi16(nears, diff); /* current row */
+      __m128i zero, farb, nearb, farw, nearw, diff, nears, curr;
+      __m128i prv0, nxt0, prev, next;
+      __m128i bias, curs, prvd, nxtd, curb, even, odd;
+      __m128i int0, int1, de0, de1, outv;
+
+      zero  = _mm_setzero_si128();
+      farb  = _mm_loadl_epi64((__m128i *) (in_far + i));
+      nearb = _mm_loadl_epi64((__m128i *) (in_near + i));
+      farw  = _mm_unpacklo_epi8(farb, zero);
+      nearw = _mm_unpacklo_epi8(nearb, zero);
+      diff  = _mm_sub_epi16(farw, nearw);
+      nears = _mm_slli_epi16(nearw, 2);
+      curr  = _mm_add_epi16(nears, diff); /* current row */
 
       /* horizontal filter works the same based on shifted vers of current
        * row. "prev" is current row shifted right by 1 pixel; we need to
@@ -2244,31 +2255,31 @@ static uint8_t *rjpeg_resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near,
        * "next" is current row shifted left by 1 pixel, with first pixel
        * of next block of 8 pixels added in.
        */
-      __m128i prv0 = _mm_slli_si128(curr, 2);
-      __m128i nxt0 = _mm_srli_si128(curr, 2);
-      __m128i prev = _mm_insert_epi16(prv0, t1, 0);
-      __m128i next = _mm_insert_epi16(nxt0, 3*in_near[i+8] + in_far[i+8], 7);
+      prv0 = _mm_slli_si128(curr, 2);
+      nxt0 = _mm_srli_si128(curr, 2);
+      prev = _mm_insert_epi16(prv0, t1, 0);
+      next = _mm_insert_epi16(nxt0, 3*in_near[i+8] + in_far[i+8], 7);
 
       /* horizontal filter, polyphase implementation since it's convenient:
        * even pixels = 3*cur + prev = cur*4 + (prev - cur)
        * odd  pixels = 3*cur + next = cur*4 + (next - cur)
        * note the shared term. */
-      __m128i bias = _mm_set1_epi16(8);
-      __m128i curs = _mm_slli_epi16(curr, 2);
-      __m128i prvd = _mm_sub_epi16(prev, curr);
-      __m128i nxtd = _mm_sub_epi16(next, curr);
-      __m128i curb = _mm_add_epi16(curs, bias);
-      __m128i even = _mm_add_epi16(prvd, curb);
-      __m128i odd  = _mm_add_epi16(nxtd, curb);
+      bias = _mm_set1_epi16(8);
+      curs = _mm_slli_epi16(curr, 2);
+      prvd = _mm_sub_epi16(prev, curr);
+      nxtd = _mm_sub_epi16(next, curr);
+      curb = _mm_add_epi16(curs, bias);
+      even = _mm_add_epi16(prvd, curb);
+      odd  = _mm_add_epi16(nxtd, curb);
 
       /* interleave even and odd pixels, then undo scaling. */
-      __m128i int0 = _mm_unpacklo_epi16(even, odd);
-      __m128i int1 = _mm_unpackhi_epi16(even, odd);
-      __m128i de0  = _mm_srli_epi16(int0, 4);
-      __m128i de1  = _mm_srli_epi16(int1, 4);
+      int0 = _mm_unpacklo_epi16(even, odd);
+      int1 = _mm_unpackhi_epi16(even, odd);
+      de0  = _mm_srli_epi16(int0, 4);
+      de1  = _mm_srli_epi16(int1, 4);
 
       /* pack and write output */
-      __m128i outv = _mm_packus_epi16(de0, de1);
+      outv = _mm_packus_epi16(de0, de1);
       _mm_storeu_si128((__m128i *) (out + i*2), outv);
 #elif defined(RJPEG_NEON)
       /* load and perform the vertical filtering pass
