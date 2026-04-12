@@ -2619,15 +2619,16 @@ static void d3d9_cg_renderchain_set_vertices(
       unsigned rotation,
       struct video_shader *shader)
 {
+   CGprogram fprg = (CGprogram)pass->fprg;
+   CGprogram vprg = (CGprogram)pass->vprg;
+
    if (pass->last_width != width || pass->last_height != height)
    {
       struct D3D9CGVertex vert[4];
       unsigned i;
       void *verts        = NULL;
-      const struct
-         LinkInfo *info  = (const struct LinkInfo*)&pass->info;
-      float          _u  = (float)(width) / info->tex_w;
-      float          _v  = (float)(height) / info->tex_h;
+      float          _u  = (float)(width)  / pass->info.tex_w;
+      float          _v  = (float)(height) / pass->info.tex_h;
 
       pass->last_width   = width;
       pass->last_height  = height;
@@ -2708,8 +2709,6 @@ static void d3d9_cg_renderchain_set_vertices(
       float video_size[2];
       float texture_size[2];
       float output_size[2];
-      CGprogram fprg       = (CGprogram)pass->fprg;
-      CGprogram vprg       = (CGprogram)pass->vprg;
 
       CGparameter vp_video_size   = cgGetNamedParameter(vprg, "IN.video_size");
       CGparameter vp_texture_size = cgGetNamedParameter(vprg, "IN.texture_size");

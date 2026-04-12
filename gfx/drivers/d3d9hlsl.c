@@ -2134,10 +2134,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
       struct shader_pass *pass,
       unsigned pass_index,
       unsigned width, unsigned height,
-      unsigned out_width, unsigned out_height,
-      unsigned vp_width, unsigned vp_height,
-      uint64_t frame_count,
-      unsigned rotation)
+      unsigned vp_width, unsigned vp_height)
 {
    const hlsl_pass_data_t *pd = NULL;
 
@@ -2674,7 +2671,7 @@ static void hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
       const void *frame,
       unsigned width, unsigned height,
-      unsigned pitch, unsigned rotation)
+      unsigned pitch)
 {
    LPDIRECT3DSURFACE9 back_buffer = NULL;
    LPDIRECT3DSURFACE9 target;
@@ -2774,9 +2771,7 @@ static void hlsl_d3d9_renderchain_render(
             chain, from_pass,
             i + 1,
             current_width, current_height,
-            out_width, out_height,
-            out_width, out_height,
-            chain->chain.frame_count, 0);
+            out_width, out_height);
 
       hlsl_d3d9_renderchain_render_pass(d3d, chain,
             from_pass,
@@ -2806,10 +2801,8 @@ static void hlsl_d3d9_renderchain_render(
          chain, last_pass,
          chain->chain.passes->count,
          current_width, current_height,
-         out_width, out_height,
          chain->chain.out_vp->Width,
-         chain->chain.out_vp->Height,
-         chain->chain.frame_count, rotation);
+         chain->chain.out_vp->Height);
 
    hlsl_d3d9_renderchain_render_pass(d3d, chain, last_pass,
          chain->chain.passes->count,
@@ -7465,7 +7458,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
          (const float*)&d3d->mvp, 4);
    hlsl_d3d9_renderchain_render(
          d3d, frame, frame_width, frame_height,
-         pitch, d3d->dev_rotation);
+         pitch);
 
    if (black_frame_insertion && !d3d->menu->enabled)
    {
