@@ -1858,54 +1858,163 @@ static void core_info_parse_config_file(
    list->info_count++;
 }
 
+/*
+ * Stack-resident open-addressing hash set for extension deduplication.
+ *
+ * Replaces the original O(N*M) linear-scan dedup with O(N) amortised
+ * hashing, where N is the total number of extension tokens across all
+ * cores. The hash table and token buffer live entirely on the stack,
+ * so the collection phase requires zero heap allocations. The final
+ * output string is built with a single, exactly-sized malloc — no
+ * over-allocation and no realloc/shrink step.
+ *
+ * 1024 slots handles ~500 unique extensions at ~0.5 load factor.
+ * The 8 KiB token buffer is more than sufficient (real-world unique
+ * extension text totals ~1-2 KiB).
+ */
+
+#define _HASH_BITS  10
+#define _HASH_SLOTS (1 << _HASH_BITS)
+#define _HASH_MASK  (_HASH_SLOTS - 1)
+#define _TOKEN_BUF  8192
+
+typedef struct
+{
+   uint16_t off;
+   uint8_t  len;
+   uint8_t  used;
+} core_info_ext_slot_t;
+
+/*
+ * Inline FNV-1a hash + insert into a stack-resident hash set slot.
+ * ext/ext_len: the extension token to insert.
+ * slots/token_buf/token_pos/unique_count/total_chars: hash set state.
+ * HASH_MASK: bitmask for the slot array.
+ */
+#define CORE_INFO_EXT_INSERT(ext, ext_len, slots, token_buf,            \
+      token_pos, token_buf_size, unique_count, total_chars, HASH_MASK)  \
+   do {                                                                 \
+      if ((ext_len) > 0 && (ext_len) <= 255)                            \
+      {                                                                 \
+         uint32_t _h = 0x811c9dc5u;                                     \
+         size_t _hi, _idx;                                              \
+         for (_hi = 0; _hi < (ext_len); _hi++)                          \
+         {                                                              \
+            _h ^= (uint8_t)(ext)[_hi];                                  \
+            _h *= 0x01000193u;                                          \
+         }                                                              \
+         _idx = _h & (HASH_MASK);                                       \
+         for (;;)                                                       \
+         {                                                              \
+            core_info_ext_slot_t *_s = &(slots)[_idx];                  \
+            if (!_s->used)                                              \
+            {                                                           \
+               if ((token_pos) + (ext_len) <= (token_buf_size))         \
+               {                                                        \
+                  memcpy((token_buf) + (token_pos), (ext), (ext_len));  \
+                  _s->off  = (uint16_t)(token_pos);                     \
+                  _s->len  = (uint8_t)(ext_len);                        \
+                  _s->used = 1;                                         \
+                  (token_pos)     += (ext_len);                         \
+                  (unique_count)++;                                     \
+                  (total_chars)   += (ext_len);                         \
+               }                                                        \
+               break;                                                   \
+            }                                                           \
+            if (_s->len == (ext_len)                                     \
+                  && memcmp((token_buf) + _s->off, (ext), (ext_len))    \
+                     == 0)                                               \
+               break;                                                   \
+            _idx = (_idx + 1) & (HASH_MASK);                            \
+         }                                                              \
+      }                                                                 \
+   } while (0)
+
 static size_t core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
-   size_t _len;
-   size_t i              = 0;
-   size_t all_ext_len    = 0;
-   char *all_ext         = NULL;
+   size_t i;
+   size_t pos;
+   size_t final_len;
+   size_t token_pos     = 0;
+   size_t unique_count  = 0;
+   size_t total_chars   = 0;
+   char  *result;
+   core_info_ext_slot_t slots[_HASH_SLOTS];
+   char                 token_buf[_TOKEN_BUF];
 
+   memset(slots, 0, sizeof(slots));
+
+   /*
+    * Phase 1 — parse every core's extension list, split on '|',
+    * and insert each token into the hash set. Zero heap allocations.
+    */
    for (i = 0; i < core_info_list->count; i++)
    {
-      if (core_info_list->list[i].supported_extensions)
-         all_ext_len +=
-            (strlen(core_info_list->list[i].supported_extensions) + 2);
+      const char *src = core_info_list->list[i].supported_extensions;
+      if (src && *src)
+      {
+         const char *end = src + strlen(src);
+         const char *p   = src;
+         while (p < end)
+         {
+            const char *tok_end = (const char*)memchr(p, '|', end - p);
+            size_t tok_len;
+            if (!tok_end)
+               tok_end = end;
+            tok_len = tok_end - p;
+            CORE_INFO_EXT_INSERT(p, tok_len, slots, token_buf,
+                  token_pos, _TOKEN_BUF, unique_count, total_chars,
+                  _HASH_MASK);
+            p = tok_end + 1;
+         }
+      }
    }
 
-   all_ext_len       += STRLEN_CONST("7z|") + STRLEN_CONST("zip|");
-   if (!(all_ext      = (char*)calloc(1, all_ext_len)))
-      return 0;
-
-   core_info_list->all_ext = all_ext;
-   _len                    = 0;
-
-   for (i = 0; i < core_info_list->count; i++)
-   {
-      if (!core_info_list->list[i].supported_extensions)
-         continue;
-      string_ext_list_merge_dedup(all_ext, &_len, all_ext_len,
-            core_info_list->list[i].supported_extensions);
-   }
 #ifdef HAVE_7ZIP
-   string_ext_list_append_dedup(all_ext, &_len, all_ext_len,
-         "7z", STRLEN_CONST("7z"));
+   CORE_INFO_EXT_INSERT("7z", STRLEN_CONST("7z"), slots, token_buf,
+         token_pos, _TOKEN_BUF, unique_count, total_chars, _HASH_MASK);
 #endif
 #ifdef HAVE_ZLIB
-   string_ext_list_append_dedup(all_ext, &_len, all_ext_len,
-         "zip", STRLEN_CONST("zip"));
+   CORE_INFO_EXT_INSERT("zip", STRLEN_CONST("zip"), slots, token_buf,
+         token_pos, _TOKEN_BUF, unique_count, total_chars, _HASH_MASK);
 #endif
 
-   /* Shrink heap allocation to actual deduplicated size */
-   if (_len + 1 < all_ext_len)
-   {
-      char *trimmed = (char*)realloc(all_ext, _len + 1);
-      if (trimmed)
-         core_info_list->all_ext = trimmed;
-   }
+   if (unique_count == 0)
+      return 0;
 
-   return _len;
+   /*
+    * Phase 2 — single exactly-sized allocation for the result.
+    *   total_chars     = sum of all unique extension lengths
+    *   unique_count-1  = number of '|' separators
+    *   +1              = NUL terminator
+    */
+   final_len = total_chars + (unique_count - 1);
+   result    = (char*)malloc(final_len + 1);
+   if (!result)
+      return 0;
+
+   pos = 0;
+   for (i = 0; i < _HASH_SLOTS; i++)
+   {
+      core_info_ext_slot_t *s = &slots[i];
+      if (!s->used)
+         continue;
+      if (pos > 0)
+         result[pos++] = '|';
+      memcpy(result + pos, token_buf + s->off, s->len);
+      pos += s->len;
+   }
+   result[pos] = '\0';
+
+   core_info_list->all_ext = result;
+   return pos;
 }
+
+#undef _HASH_BITS
+#undef _HASH_SLOTS
+#undef _HASH_MASK
+#undef _TOKEN_BUF
 
 static void core_info_free(core_info_t* info)
 {

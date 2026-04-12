@@ -67,8 +67,7 @@ typedef struct
 enum rjpeg_phase
 {
    RJPEG_PHASE_DECODE = 0,
-   RJPEG_PHASE_RESAMPLE,
-   RJPEG_PHASE_SWIZZLE
+   RJPEG_PHASE_RESAMPLE
 };
 
 /* Forward declaration -- full definition appears later in the file */
@@ -81,7 +80,6 @@ struct rjpeg_process
    rjpeg_resample    res_comp[4];  /* per-component resample state          */
    uint8_t          *coutput[4];   /* per-component line pointers           */
    unsigned          cur_row;      /* current output row during resample    */
-   unsigned          swizzle_pos;  /* current pixel during RGBA->ARGB pass  */
    int               n;            /* output components (always 4)          */
    int               decode_n;     /* components to actually decode         */
    enum rjpeg_phase  phase;
@@ -554,6 +552,8 @@ static int rjpeg_jpeg_decode_block(
          /* fast-AC path */
          k               += (r >> 4) & 15; /* run */
          s                = r & 15; /* combined length */
+         if (k > 63)
+            return 0; /* Corrupt JPEG: AC coefficient index out of range */
          j->code_buffer <<= s;
          j->code_bits    -= s;
          /* decode into unzigzag'd location */
@@ -579,6 +579,8 @@ static int rjpeg_jpeg_decode_block(
          else
          {
             k += r;
+            if (k > 63)
+               return 0; /* Corrupt JPEG: AC coefficient index out of range */
             /* decode into unzigzag'd location */
             zig = rjpeg_jpeg_dezigzag[k++];
             data[zig] = (short) (rjpeg_extend_receive(j,s) * dequant[zig]);
@@ -1347,6 +1349,7 @@ static void rjpeg_jpeg_reset(rjpeg_jpeg *j)
    j->img_comp[0].dc_pred = 0;
    j->img_comp[1].dc_pred = 0;
    j->img_comp[2].dc_pred = 0;
+   j->img_comp[3].dc_pred = 0;
    j->marker              = RJPEG_MARKER_NONE;
    j->todo                = j->restart_interval ? j->restart_interval : 0x7fffffff;
    j->eob_run             = 0;
@@ -1533,9 +1536,32 @@ static int rjpeg_parse_entropy_coded_data(rjpeg_jpeg *z)
 
 static void rjpeg_jpeg_dequantize(short *data, uint8_t *dequant)
 {
-   int i;
-   for (i = 0; i < 64; ++i)
+   int i = 0;
+
+#if defined(__SSE2__)
+   {
+      __m128i zero = _mm_setzero_si128();
+      for (; i < 64; i += 8)
+      {
+         __m128i d   = _mm_load_si128((const __m128i*)(data + i));
+         /* Load 8 bytes of dequant and widen to 16-bit */
+         __m128i q8  = _mm_loadl_epi64((const __m128i*)(dequant + i));
+         __m128i q16 = _mm_unpacklo_epi8(q8, zero);
+         _mm_store_si128((__m128i*)(data + i), _mm_mullo_epi16(d, q16));
+      }
+   }
+#elif defined(RJPEG_NEON)
+   for (; i < 64; i += 8)
+   {
+      int16x8_t d   = vld1q_s16(data + i);
+      uint8x8_t q8  = vld1_u8(dequant + i);
+      int16x8_t q16 = vreinterpretq_s16_u16(vmovl_u8(q8));
+      vst1q_s16(data + i, vmulq_s16(d, q16));
+   }
+#else
+   for (; i < 64; ++i)
       data[i] *= dequant[i];
+#endif
 }
 
 static void rjpeg_jpeg_finish(rjpeg_jpeg *z)
@@ -1896,6 +1922,8 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
                free(z->img_comp[i].raw_data);
                z->img_comp[i].data = NULL;
             }
+
+            return 0;
          }
 
          /* align blocks for IDCT using MMX/SSE */
@@ -2017,9 +2045,45 @@ static uint8_t* rjpeg_resample_row_v_2(uint8_t *out, uint8_t *in_near,
       uint8_t *in_far, int w, int hs)
 {
    /* need to generate two samples vertically for every one in input */
-   int i;
+   int i = 0;
    (void)hs;
-   for (i = 0; i < w; ++i)
+
+#if defined(__SSE2__)
+   for (; i + 15 < w; i += 16)
+   {
+      __m128i zero = _mm_setzero_si128();
+      __m128i near_b = _mm_loadu_si128((const __m128i*)(in_near + i));
+      __m128i far_b  = _mm_loadu_si128((const __m128i*)(in_far  + i));
+
+      /* Process low 8 bytes: (3*near + far + 2) >> 2 */
+      __m128i near_lo = _mm_unpacklo_epi8(near_b, zero);
+      __m128i far_lo  = _mm_unpacklo_epi8(far_b, zero);
+      __m128i sum_lo  = _mm_add_epi16(_mm_add_epi16(near_lo, _mm_slli_epi16(near_lo, 1)), far_lo);
+      sum_lo          = _mm_srli_epi16(_mm_add_epi16(sum_lo, _mm_set1_epi16(2)), 2);
+
+      /* Process high 8 bytes */
+      __m128i near_hi = _mm_unpackhi_epi8(near_b, zero);
+      __m128i far_hi  = _mm_unpackhi_epi8(far_b, zero);
+      __m128i sum_hi  = _mm_add_epi16(_mm_add_epi16(near_hi, _mm_slli_epi16(near_hi, 1)), far_hi);
+      sum_hi          = _mm_srli_epi16(_mm_add_epi16(sum_hi, _mm_set1_epi16(2)), 2);
+
+      _mm_storeu_si128((__m128i*)(out + i), _mm_packus_epi16(sum_lo, sum_hi));
+   }
+#elif defined(RJPEG_NEON)
+   for (; i + 7 < w; i += 8)
+   {
+      uint8x8_t near_b = vld1_u8(in_near + i);
+      uint8x8_t far_b  = vld1_u8(in_far  + i);
+      uint16x8_t near_w = vmovl_u8(near_b);
+      uint16x8_t far_w  = vmovl_u8(far_b);
+      /* 3*near + far + 2, then >> 2 */
+      uint16x8_t sum = vaddq_u16(vaddq_u16(near_w, vshlq_n_u16(near_w, 1)), far_w);
+      sum = vshrq_n_u16(vaddq_u16(sum, vdupq_n_u16(2)), 2);
+      vst1_u8(out + i, vmovn_u16(sum));
+   }
+#endif
+
+   for (; i < w; ++i)
       out[i] = RJPEG_DIV4(3*in_near[i] + in_far[i] + 2);
    return out;
 }
@@ -2041,7 +2105,65 @@ static uint8_t*  rjpeg_resample_row_h_2(uint8_t *out, uint8_t *in_near,
    out[0] = input[0];
    out[1] = RJPEG_DIV4(input[0]*3 + input[1] + 2);
 
-   for (i=1; i < w-1; ++i)
+   i = 1;
+
+#if defined(__SSE2__)
+   /* Process 8 input pixels at a time -> 16 output pixels.
+    * For each input pixel i:
+    *   out[i*2+0] = (3*input[i] + input[i-1] + 2) >> 2
+    *   out[i*2+1] = (3*input[i] + input[i+1] + 2) >> 2
+    */
+   for (; i + 8 < w - 1; i += 8)
+   {
+      __m128i zero = _mm_setzero_si128();
+      __m128i bias = _mm_set1_epi16(2);
+
+      __m128i cur  = _mm_loadl_epi64((const __m128i*)(input + i));
+      __m128i prev = _mm_loadl_epi64((const __m128i*)(input + i - 1));
+      __m128i next = _mm_loadl_epi64((const __m128i*)(input + i + 1));
+
+      __m128i cur_w  = _mm_unpacklo_epi8(cur, zero);
+      __m128i prev_w = _mm_unpacklo_epi8(prev, zero);
+      __m128i next_w = _mm_unpacklo_epi8(next, zero);
+
+      /* 3*cur + 2 */
+      __m128i base = _mm_add_epi16(_mm_add_epi16(cur_w, _mm_slli_epi16(cur_w, 1)), bias);
+      __m128i even = _mm_srli_epi16(_mm_add_epi16(base, prev_w), 2);
+      __m128i odd  = _mm_srli_epi16(_mm_add_epi16(base, next_w), 2);
+
+      /* Interleave even/odd into output */
+      __m128i lo = _mm_unpacklo_epi16(even, odd);
+      __m128i hi = _mm_unpackhi_epi16(even, odd);
+      /* Pack back to bytes */
+      __m128i result = _mm_packus_epi16(lo, hi);
+      _mm_storeu_si128((__m128i*)(out + i * 2), result);
+   }
+#elif defined(RJPEG_NEON)
+   for (; i + 8 < w - 1; i += 8)
+   {
+      uint8x8_t cur  = vld1_u8(input + i);
+      uint8x8_t prev = vld1_u8(input + i - 1);
+      uint8x8_t next = vld1_u8(input + i + 1);
+
+      uint16x8_t cur_w  = vmovl_u8(cur);
+      uint16x8_t prev_w = vmovl_u8(prev);
+      uint16x8_t next_w = vmovl_u8(next);
+
+      /* 3*cur + 2 */
+      uint16x8_t base = vaddq_u16(vaddq_u16(cur_w, vshlq_n_u16(cur_w, 1)),
+                                  vdupq_n_u16(2));
+      uint16x8_t even = vshrq_n_u16(vaddq_u16(base, prev_w), 2);
+      uint16x8_t odd  = vshrq_n_u16(vaddq_u16(base, next_w), 2);
+
+      /* Interleave even/odd */
+      uint8x8x2_t o;
+      o.val[0] = vmovn_u16(even);
+      o.val[1] = vmovn_u16(odd);
+      vst2_u8(out + i * 2, o);
+   }
+#endif
+
+   for (; i < w-1; ++i)
    {
       int n      = 3 * input[i] + 2;
       out[i*2+0] = RJPEG_DIV4(n+input[i-1]);
@@ -2248,9 +2370,12 @@ static void rjpeg_YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y,
          g = (g < 0) ? 0 : 255;
       if ((unsigned) b > 255)
          b = (b < 0) ? 0 : 255;
-      out[0] = (uint8_t)r;
+      /* Write BGRA byte order so the uint32 reads as ARGB --
+       * this fuses the old RGBA->ARGB swizzle pass into the
+       * color conversion itself. */
+      out[0] = (uint8_t)b;
       out[1] = (uint8_t)g;
-      out[2] = (uint8_t)b;
+      out[2] = (uint8_t)r;
       out[3] = 255;
       out += step;
    }
@@ -2308,8 +2433,11 @@ static void rjpeg_YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y,
          __m128i bw = _mm_srai_epi16(bws, 4);
          __m128i gw = _mm_srai_epi16(gws, 4);
 
-         /* back to byte, set up for transpose */
-         __m128i brb = _mm_packus_epi16(rw, bw);
+         /* back to byte, set up for transpose
+          * Pack B in low half, R in high half (was R,B) so the
+          * interleave produces BGRA byte order directly -- this
+          * eliminates the separate RGBA->ARGB swizzle pass. */
+         __m128i brb = _mm_packus_epi16(bw, rw);
          __m128i gxb = _mm_packus_epi16(gw, xw);
 
          /* transpose to interleave channels */
@@ -2362,13 +2490,15 @@ static void rjpeg_YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y,
          int16x8_t gws = vaddq_s16(vaddq_s16(yws, cb0), cr1);
          int16x8_t bws = vaddq_s16(yws, cb1);
 
-         /* undo scaling, round, convert to byte */
-         o.val[0] = vqrshrun_n_s16(rws, 4);
+         /* undo scaling, round, convert to byte
+          * Output BGRA byte order directly to eliminate
+          * the separate RGBA->ARGB swizzle pass. */
+         o.val[0] = vqrshrun_n_s16(bws, 4);
          o.val[1] = vqrshrun_n_s16(gws, 4);
-         o.val[2] = vqrshrun_n_s16(bws, 4);
+         o.val[2] = vqrshrun_n_s16(rws, 4);
          o.val[3] = vdup_n_u8(255);
 
-         /* store, interleaving r/g/b/a */
+         /* store, interleaving b/g/r/a */
          vst4_u8(out, o);
          out += 8*4;
       }
@@ -2392,9 +2522,10 @@ static void rjpeg_YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y,
          g = (g < 0) ? 0 : 255;
       if ((unsigned) b > 255)
          b = (b < 0) ? 0 : 255;
-      out[0] = (uint8_t)r;
+      /* BGRA byte order -- matches the SIMD paths above */
+      out[0] = (uint8_t)b;
       out[1] = (uint8_t)g;
-      out[2] = (uint8_t)b;
+      out[2] = (uint8_t)r;
       out[3] = 255;
       out += step;
    }
@@ -2513,7 +2644,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
 
       s->img_buffer          = (uint8_t*)rjpeg->buff_data;
       s->img_buffer_original = (uint8_t*)rjpeg->buff_data;
-      s->img_buffer_end      = (uint8_t*)rjpeg->buff_data + (int)size;
+      s->img_buffer_end      = (uint8_t*)rjpeg->buff_data + size;
 
       j->s                   = s;
       proc->j                = j;
@@ -2571,7 +2702,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
 
       /* Allocate output buffer */
       proc->output = (uint8_t *) malloc(
-            proc->n * j->s->img_x * j->s->img_y + 1);
+            proc->n * j->s->img_x * j->s->img_y);
       if (!proc->output)
       {
          rjpeg_process_free(proc);
@@ -2579,7 +2710,6 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       }
 
       proc->cur_row     = 0;
-      proc->swizzle_pos = 0;
       proc->phase       = RJPEG_PHASE_RESAMPLE;
 
       *width            = j->s->img_x;
@@ -2682,65 +2812,10 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       if (proc->cur_row < z->s->img_y)
          return IMAGE_PROCESS_NEXT;
 
-      /* All rows resampled -- free decode buffers, advance to swizzle */
+      /* All rows resampled -- YCbCr conversion already wrote BGRA
+       * (ARGB as uint32), so no swizzle pass is needed.
+       * Free decode buffers and hand off the pixel buffer. */
       rjpeg_cleanup_jpeg(z);
-      proc->phase = RJPEG_PHASE_SWIZZLE;
-      return IMAGE_PROCESS_NEXT;
-   }
-
-   /* -----------------------------------------------------------
-    * Phase 2 -- SWIZZLE: convert RGBA to ARGB in-place.
-    * Done in one shot since it's a simple in-place byte swap on
-    * already-allocated memory.
-    * ----------------------------------------------------------- */
-   if (rjpeg->process->phase == RJPEG_PHASE_SWIZZLE)
-   {
-      struct rjpeg_process *proc = rjpeg->process;
-      rjpeg_jpeg           *z   = proc->j;
-      uint32_t             *img = (uint32_t*)proc->output;
-      unsigned          size_tex = (*width) * (*height);
-      unsigned               i  = 0;
-
-      (void)z;
-
-#if defined(__SSE2__)
-      {
-         __m128i mask_rb = _mm_set1_epi32(0x00FF00FF);
-         __m128i mask_ag = _mm_set1_epi32((int)0xFF00FF00);
-
-         for (; i + 3 < size_tex; i += 4)
-         {
-            __m128i px   = _mm_loadu_si128((const __m128i*)(img + i));
-            __m128i rb   = _mm_and_si128(px, mask_rb);
-            __m128i ag   = _mm_and_si128(px, mask_ag);
-            __m128i rb_s = _mm_or_si128(_mm_slli_epi32(rb, 16),
-                                         _mm_srli_epi32(rb, 16));
-            rb_s         = _mm_and_si128(rb_s, mask_rb);
-            _mm_storeu_si128((__m128i*)(img + i), _mm_or_si128(ag, rb_s));
-         }
-      }
-#elif defined(RJPEG_NEON)
-      for (; i + 3 < size_tex; i += 4)
-      {
-         /* Swap R and B channels using 32-bit lane operations */
-         uint32x4_t p     = vld1q_u32(img + i);
-         uint32x4_t rb    = vandq_u32(p, vdupq_n_u32(0x00FF00FF));
-         uint32x4_t ag    = vandq_u32(p, vdupq_n_u32(0xFF00FF00));
-         uint32x4_t rb_sw = vorrq_u32(vshlq_n_u32(rb, 16), vshrq_n_u32(rb, 16));
-         rb_sw            = vandq_u32(rb_sw, vdupq_n_u32(0x00FF00FF));
-         vst1q_u32(img + i, vorrq_u32(ag, rb_sw));
-      }
-#endif
-
-      for (; i < size_tex; i++)
-      {
-         uint32_t texel = img[i];
-         uint32_t A     = texel & 0xFF000000;
-         uint32_t B     = texel & 0x00FF0000;
-         uint32_t G     = texel & 0x0000FF00;
-         uint32_t R     = texel & 0x000000FF;
-         img[i]         = A | (R << 16) | G | (B >> 16);
-      }
 
       /* Transfer ownership of the pixel buffer to the caller */
       *buf_data     = proc->output;
