@@ -70,7 +70,7 @@
 
 extern "C" {
 
-   static void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
+   static bool vulkan_initialize_render_pass(VkDevice device, VkFormat format,
          VkRenderPass *render_pass)
    {
       VkAttachmentReference color_ref;
@@ -114,7 +114,8 @@ extern "C" {
       subpass.preserveAttachmentCount   = 0;
       subpass.pPreserveAttachments      = NULL;
 
-      vkCreateRenderPass(device, &rp_info, NULL, render_pass);
+      return vkCreateRenderPass(device, &rp_info, NULL, render_pass)
+            == VK_SUCCESS;
    }
 
    static void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
@@ -987,7 +988,11 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image_info.pQueueFamilyIndices   = NULL;
    image_info.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
 
-   vkCreateImage(info->device, &image_info, nullptr, &tex);
+   if (vkCreateImage(info->device, &image_info, nullptr, &tex) != VK_SUCCESS)
+   {
+      image_texture_free(&image);
+      return {};
+   }
    vulkan_debug_mark_image(info->device, tex);
    vkGetImageMemoryRequirements(info->device, tex, &mem_reqs);
 
@@ -1020,7 +1025,11 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    view_info.subresourceRange.levelCount     = image_info.mipLevels;
    view_info.subresourceRange.baseArrayLayer = 0;
    view_info.subresourceRange.layerCount     = 1;
-   vkCreateImageView(info->device, &view_info, nullptr, &view);
+   if (vkCreateImageView(info->device, &view_info, nullptr, &view) != VK_SUCCESS)
+   {
+      image_texture_free(&image);
+      goto error;
+   }
 
    buffer                                =
       std::unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
@@ -1167,12 +1176,19 @@ static bool vulkan_filter_chain_load_luts(
    cmd_info.level                                = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
    cmd_info.commandBufferCount                   = 1;
 
-   vkAllocateCommandBuffers(info->device, &cmd_info, &cmd);
+   if (vkAllocateCommandBuffers(info->device, &cmd_info, &cmd) != VK_SUCCESS)
+      return false;
+
    begin_info.sType                              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
    begin_info.pNext                              = NULL;
    begin_info.flags                              = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    begin_info.pInheritanceInfo                   = NULL;
-   vkBeginCommandBuffer(cmd, &begin_info);
+
+   if (vkBeginCommandBuffer(cmd, &begin_info) != VK_SUCCESS)
+   {
+      vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
+      return false;
+   }
 
    for (i = 0; i < shader->luts; i++)
    {
@@ -1190,11 +1206,17 @@ static bool vulkan_filter_chain_load_luts(
       chain->add_static_texture(std::move(image));
    }
 
-   vkEndCommandBuffer(cmd);
+   if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
+   {
+      vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
+      return false;
+   }
+
    submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
    submit_info.pNext                = NULL;
    submit_info.waitSemaphoreCount   = 0;
    submit_info.pWaitSemaphores      = NULL;
+   submit_info.pWaitDstStageMask    = NULL;
    submit_info.commandBufferCount   = 1;
    submit_info.pCommandBuffers      = &cmd;
    submit_info.signalSemaphoreCount = 0;
@@ -1209,7 +1231,17 @@ static bool vulkan_filter_chain_load_luts(
       fence_info.flags             = 0;
 
       vkCreateFence(info->device, &fence_info, nullptr, &fence);
-      vkQueueSubmit(info->queue, 1, &submit_info, fence);
+      if (fence == VK_NULL_HANDLE)
+      {
+         vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
+         return false;
+      }
+      if (vkQueueSubmit(info->queue, 1, &submit_info, fence) != VK_SUCCESS)
+      {
+         vkDestroyFence(info->device, fence, nullptr);
+         vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
+         return false;
+      }
       vkWaitForFences(info->device, 1, &fence, VK_TRUE, UINT64_MAX);
       vkDestroyFence(info->device, fence, nullptr);
    }
@@ -1378,6 +1410,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
 
       const Framebuffer &fb   = passes[i]->get_framebuffer();
 
+      source.texture.image    = fb.get_image();
       source.texture.view     = fb.get_view();
       source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source.texture.width    = fb.get_size().width;
@@ -1485,6 +1518,7 @@ void vulkan_filter_chain::build_viewport_pass(
    else
    {
       const Framebuffer &fb  = passes[passes.size() - 2]->get_framebuffer();
+      source.texture.image   = fb.get_image();
       source.texture.view    = fb.get_view();
       source.texture.layout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source.texture.width   = fb.get_size().width;
@@ -1736,7 +1770,10 @@ bool vulkan_filter_chain::init_ubo()
                memory_properties, common.ubo_offset * deferred_calls.size(),
                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 
-   common.ubo_mapped            = static_cast<uint8_t*>(common.ubo->map());
+   if (common.ubo)
+      common.ubo_mapped         = static_cast<uint8_t*>(common.ubo->map());
+   else
+      common.ubo_mapped         = nullptr;
    return true;
 }
 
@@ -1964,7 +2001,12 @@ Buffer::Buffer(VkDevice device,
    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    info.queueFamilyIndexCount = 0;
    info.pQueueFamilyIndices   = NULL;
-   vkCreateBuffer(device, &info, nullptr, &buffer);
+   if (vkCreateBuffer(device, &info, nullptr, &buffer) != VK_SUCCESS)
+   {
+      buffer = VK_NULL_HANDLE;
+      memory = VK_NULL_HANDLE;
+      return;
+   }
 
    vkGetBufferMemoryRequirements(device, buffer, &mem_reqs);
 
@@ -1976,7 +2018,12 @@ Buffer::Buffer(VkDevice device,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-   vkAllocateMemory(device, &alloc, NULL, &memory);
+   if (vkAllocateMemory(device, &alloc, NULL, &memory) != VK_SUCCESS)
+   {
+      memory = VK_NULL_HANDLE;
+      return;
+   }
+
    vulkan_debug_mark_memory(device, memory);
    vkBindBufferMemory(device, buffer, memory, 0);
 }
@@ -2122,9 +2169,10 @@ void Pass::clear_vk()
    if (pipeline_layout != VK_NULL_HANDLE)
       vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
 
-   pool       = VK_NULL_HANDLE;
-   pipeline   = VK_NULL_HANDLE;
-   set_layout = VK_NULL_HANDLE;
+   pool            = VK_NULL_HANDLE;
+   pipeline        = VK_NULL_HANDLE;
+   set_layout      = VK_NULL_HANDLE;
+   pipeline_layout = VK_NULL_HANDLE;
 }
 
 bool Pass::init_pipeline_layout()
@@ -2239,7 +2287,10 @@ bool Pass::init_pipeline_layout()
    sets.resize(num_sync_indices);
 
    for (i = 0; i < num_sync_indices; i++)
-      vkAllocateDescriptorSets(device, &alloc_info, &sets[i]);
+   {
+      if (vkAllocateDescriptorSets(device, &alloc_info, &sets[i]) != VK_SUCCESS)
+         return false;
+   }
 
    return true;
 }
@@ -2365,13 +2416,20 @@ bool Pass::init_pipeline()
    module_info.pCode         = vertex_shader.data();
    shader_stages[0].stage    = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName    = "main";
-   vkCreateShaderModule(device, &module_info, NULL, &shader_stages[0].module);
+   if (vkCreateShaderModule(device, &module_info, NULL,
+            &shader_stages[0].module) != VK_SUCCESS)
+      return false;
 
    module_info.codeSize      = fragment_shader.size() * sizeof(uint32_t);
    module_info.pCode         = fragment_shader.data();
    shader_stages[1].stage    = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName    = "main";
-   vkCreateShaderModule(device, &module_info, NULL, &shader_stages[1].module);
+   if (vkCreateShaderModule(device, &module_info, NULL,
+            &shader_stages[1].module) != VK_SUCCESS)
+   {
+      vkDestroyShaderModule(device, shader_stages[0].module, NULL);
+      return false;
+   }
 
    pipe.sType                = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
    pipe.pNext                = NULL;
@@ -2531,7 +2589,9 @@ CommonResources::CommonResources(VkDevice device,
             info.addressModeU = mode;
             info.addressModeV = mode;
             info.addressModeW = mode;
-            vkCreateSampler(device, &info, nullptr, &samplers[i][j][k]);
+            if (vkCreateSampler(device, &info, nullptr,
+                     &samplers[i][j][k]) != VK_SUCCESS)
+               samplers[i][j][k] = VK_NULL_HANDLE;
          }
       }
    }
@@ -2999,7 +3059,9 @@ void Pass::build_commands(
    {
       VkRenderPassBeginInfo rp_info;
 
-      /* Render. */
+      /* Render.  The image transitions from UNDEFINED (contents
+       * discarded), so no prior work needs to complete — use
+       * TOP_OF_PIPE_BIT as the source stage. */
       VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
             framebuffer->get_image(), 1,
             VK_IMAGE_LAYOUT_UNDEFINED,
@@ -3007,7 +3069,7 @@ void Pass::build_commands(
             0,
             VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_QUEUE_FAMILY_IGNORED,
             VK_QUEUE_FAMILY_IGNORED);
@@ -3167,8 +3229,11 @@ Framebuffer::Framebuffer(
 {
    RARCH_LOG("[Vulkan] Creating framebuffer %ux%u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
-   vulkan_initialize_render_pass(device, format, &render_pass);
-   init(nullptr);
+   if (vulkan_initialize_render_pass(device, format, &render_pass))
+      init(nullptr);
+   else
+      RARCH_ERR("[Vulkan] Failed to create render pass for "
+            "framebuffer %ux%u.\n", max_size.width, max_size.height);
 }
 
 void Framebuffer::init(DeferredDisposer *disposer)
@@ -3197,11 +3262,13 @@ void Framebuffer::init(DeferredDisposer *disposer)
                             | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                             | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
    info.sharingMode         = VK_SHARING_MODE_EXCLUSIVE;
+   info.queueFamilyIndexCount = 0;
    info.pQueueFamilyIndices = NULL;
    info.initialLayout       = VK_IMAGE_LAYOUT_UNDEFINED;
    levels                   = info.mipLevels;
 
-   vkCreateImage(device, &info, nullptr, &image);
+   if (vkCreateImage(device, &info, nullptr, &image) != VK_SUCCESS)
+      return;
    vulkan_debug_mark_image(device, image);
 
    vkGetImageMemoryRequirements(device, image, &mem_reqs);
@@ -3230,6 +3297,8 @@ void Framebuffer::init(DeferredDisposer *disposer)
       memory.size = mem_reqs.size;
 
       vkAllocateMemory(device, &alloc, nullptr, &memory.memory);
+      if (memory.memory == VK_NULL_HANDLE)
+         return;
       vulkan_debug_mark_memory(device, memory.memory);
    }
 
@@ -3251,9 +3320,11 @@ void Framebuffer::init(DeferredDisposer *disposer)
    view_info.subresourceRange.baseArrayLayer = 0;
    view_info.subresourceRange.layerCount     = 1;
 
-   vkCreateImageView(device, &view_info, nullptr, &view);
+   if (vkCreateImageView(device, &view_info, nullptr, &view) != VK_SUCCESS)
+      return;
    view_info.subresourceRange.levelCount     = 1;
-   vkCreateImageView(device, &view_info, nullptr, &fb_view);
+   if (vkCreateImageView(device, &view_info, nullptr, &fb_view) != VK_SUCCESS)
+      return;
 
    /* Initialize framebuffer */
    fb_info.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -3266,7 +3337,9 @@ void Framebuffer::init(DeferredDisposer *disposer)
    fb_info.height          = size.height;
    fb_info.layers          = 1;
 
-   vkCreateFramebuffer(device, &fb_info, nullptr, &framebuffer);
+   if (vkCreateFramebuffer(device, &fb_info, nullptr,
+            &framebuffer) != VK_SUCCESS)
+      framebuffer = VK_NULL_HANDLE;
 }
 
 void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format)
@@ -3277,6 +3350,21 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
 
    RARCH_LOG("[Vulkan] Updating framebuffer size %ux%u (format: %u).\n",
          size.width, size.height, (unsigned)this->format);
+
+   /* If the format changed we must recreate the render pass so that
+    * the attachment description matches the new image format.  The
+    * old render pass is deferred for destruction alongside the old
+    * framebuffer resources. */
+   if (format != VK_FORMAT_UNDEFINED && format != this->format)
+   {
+      VkDevice     d  = device;
+      VkRenderPass rp = render_pass;
+      disposer.defer([=] {
+         if (rp != VK_NULL_HANDLE)
+            vkDestroyRenderPass(d, rp, nullptr);
+      });
+      vulkan_initialize_render_pass(device, this->format, &render_pass);
+   }
 
    {
       /* The current framebuffers, etc, might still be in use

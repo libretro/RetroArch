@@ -2441,20 +2441,19 @@ static void vulkan_font_render_msg(
             && staging_tex->memory != VK_NULL_HANDLE)
       {
          VkMappedMemoryRange mem_range;
-         VkDeviceSize flush_offset;
-         VkDeviceSize flush_end;
          VkDeviceSize flush_size;
          /* Use nonCoherentAtomSize for alignment;
           * fall back to 256 (common minimum) if unavailable. */
-         VkDeviceSize atom_size = 256;
+         VkDeviceSize atom_size    = 256;
 
          /* Compute tight flush range from dirty rectangle
           * instead of flushing the entire allocation.
           * Aligns offset down and size up to nonCoherentAtomSize
           * as required by the spec (§12.1). */
-         flush_offset = (VkDeviceSize)font->dirty_y_min * staging_tex->stride
+         VkDeviceSize flush_offset = (VkDeviceSize)font->dirty_y_min 
+                      * staging_tex->stride
                       + font->dirty_x_min;
-         flush_end    = (VkDeviceSize)(font->dirty_y_max > 0
+         VkDeviceSize flush_end    = (VkDeviceSize)(font->dirty_y_max > 0
                       ? (font->dirty_y_max - 1) : 0) * staging_tex->stride
                       + font->dirty_x_max;
          if (flush_end <= flush_offset)
@@ -5217,16 +5216,22 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
     * otherwise produce an invalid (or wrapped-to-huge) extent.
     * VUID-VkBufferImageCopy-imageOffset-00197 */
    {
-      int rw = (int)(vp.width  + vk->translate_x);
-      int rh = (int)(vp.height + vk->translate_y);
+      int rw      = (int)(vp.width  + vk->translate_x);
+      int rh      = (int)(vp.height + vk->translate_y);
       unsigned sw = vk->context->swapchain_width;
       unsigned sh = vk->context->swapchain_height;
-      if (rw < 1) rw = (int)vp.width;
-      if (rh < 1) rh = (int)vp.height;
-      if (vp.x + (unsigned)rw > sw) rw = (int)(sw - vp.x);
-      if (vp.y + (unsigned)rh > sh) rh = (int)(sh - vp.y);
-      if (rw < 1) rw = 1;
-      if (rh < 1) rh = 1;
+      if (rw < 1)
+         rw = (int)vp.width;
+      if (rh < 1)
+         rh = (int)vp.height;
+      if (vp.x + (unsigned)rw > sw)
+         rw = (int)(sw - vp.x);
+      if (vp.y + (unsigned)rh > sh)
+         rh = (int)(sh - vp.y);
+      if (rw < 1)
+         rw = 1;
+      if (rh < 1)
+         rh = 1;
       region.imageExtent.width            = (unsigned)rw;
       region.imageExtent.height           = (unsigned)rh;
    }
