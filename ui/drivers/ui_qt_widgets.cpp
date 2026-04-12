@@ -11,7 +11,6 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHash>
-#include <QImageReader>
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <QLayout>
@@ -7219,7 +7218,6 @@ QWidget *RewindPage::widget()
 PlaylistModel::PlaylistModel(QObject *parent)
    : QAbstractListModel(parent)
 {
-   m_imageFormats       = QVector<QByteArray>::fromList(QImageReader::supportedImageFormats());
    m_fileSanitizerRegex = QRegularExpression("[&*/:`<>?\\|]");
    m_thumbnailLoader    = new ThumbnailLoader(this);
    setThumbnailCacheLimit(500);
@@ -7326,22 +7324,8 @@ QString PlaylistModel::getPlaylistThumbnailsDir(
 
 bool PlaylistModel::isSupportedImage(const QString path) const
 {
-   QByteArray extension;
-   QString extensionStr;
-   int lastIndex = path.lastIndexOf('.');
-
-   if (lastIndex >= 0)
-   {
-      extensionStr = path.mid(lastIndex + 1);
-
-      if (!extensionStr.isEmpty())
-         extension = extensionStr.toLower().toUtf8();
-   }
-
-   if (!extension.isEmpty() && m_imageFormats.contains(extension))
-      return true;
-
-   return false;
+   QByteArray pathArray = path.toUtf8();
+   return image_texture_get_type(pathArray.constData()) != IMAGE_TYPE_NONE;
 }
 
 QString PlaylistModel::getSanitizedThumbnailName(QString dir, QString label) const

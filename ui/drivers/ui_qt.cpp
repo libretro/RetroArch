@@ -127,6 +127,14 @@ enum core_selection
 static AppHandler *app_handler;
 static ui_application_qt_t ui_application;
 
+static QPixmap pixmapFromPathRA(const QString &path)
+{
+   QImage img = ThumbnailLoader::loadImageRA(path);
+   if (!img.isNull())
+      return QPixmap::fromImage(img);
+   return QPixmap(path);
+}
+
 /* %1 is a placeholder for palette(highlight) or the equivalent chosen by the user */
 static const QString qt_theme_default_stylesheet = QString(R"(
    QPushButton[flat="true"] {
@@ -1378,7 +1386,6 @@ MainWindow::MainWindow(QWidget *parent) :
    m_logWidget->setObjectName("logWidget");
 
    m_folderIcon     = QIcon(QString(path_dir_assets) + GENERIC_FOLDER_ICON);
-   m_imageFormats   = QVector<QByteArray>::fromList(QImageReader::supportedImageFormats());
    m_defaultStyle   = QApplication::style();
    m_defaultPalette = QApplication::palette();
 
@@ -2300,7 +2307,7 @@ void MainWindow::onThumbnailDropped(const QImage &image,
          if (m_thumbnailPixmap)
             delete m_thumbnailPixmap;
 
-         m_thumbnailPixmap = new QPixmap(path);
+         m_thumbnailPixmap = new QPixmap(pixmapFromPathRA(path));
 
          onResizeThumbnailOne(*m_thumbnailPixmap, true);
          break;
@@ -2316,7 +2323,7 @@ void MainWindow::onThumbnailDropped(const QImage &image,
          if (m_thumbnailPixmap2)
             delete m_thumbnailPixmap2;
 
-         m_thumbnailPixmap2 = new QPixmap(path);
+         m_thumbnailPixmap2 = new QPixmap(pixmapFromPathRA(path));
 
          onResizeThumbnailTwo(*m_thumbnailPixmap2, true);
          break;
@@ -2332,7 +2339,7 @@ void MainWindow::onThumbnailDropped(const QImage &image,
          if (m_thumbnailPixmap3)
             delete m_thumbnailPixmap3;
 
-         m_thumbnailPixmap3 = new QPixmap(path);
+         m_thumbnailPixmap3 = new QPixmap(pixmapFromPathRA(path));
 
          onResizeThumbnailThree(*m_thumbnailPixmap3, true);
          break;
@@ -2348,7 +2355,7 @@ void MainWindow::onThumbnailDropped(const QImage &image,
          if (m_thumbnailPixmap4)
             delete m_thumbnailPixmap4;
 
-         m_thumbnailPixmap4 = new QPixmap(path);
+         m_thumbnailPixmap4 = new QPixmap(pixmapFromPathRA(path));
 
          onResizeThumbnailFour(*m_thumbnailPixmap4, true);
          break;
@@ -3591,7 +3598,7 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
    if (m_playlistModel->isSupportedImage(path))
    {
       /* use thumbnail widgets to show regular image files */
-      m_thumbnailPixmap = new QPixmap(path);
+      m_thumbnailPixmap = new QPixmap(pixmapFromPathRA(path));
       m_thumbnailPixmap2 = new QPixmap(*m_thumbnailPixmap);
       m_thumbnailPixmap3 = new QPixmap(*m_thumbnailPixmap);
       m_thumbnailPixmap4 = new QPixmap(*m_thumbnailPixmap);
@@ -3613,10 +3620,10 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
             thumbnailsDir + QString("/") + THUMBNAIL_LOGO       + QString("/"),
             hash["label_noext"]);
 
-      m_thumbnailPixmap     = new QPixmap(thumbnailName1);
-      m_thumbnailPixmap2    = new QPixmap(thumbnailName2);
-      m_thumbnailPixmap3    = new QPixmap(thumbnailName3);
-      m_thumbnailPixmap4    = new QPixmap(thumbnailName4);
+      m_thumbnailPixmap     = new QPixmap(pixmapFromPathRA(thumbnailName1));
+      m_thumbnailPixmap2    = new QPixmap(pixmapFromPathRA(thumbnailName2));
+      m_thumbnailPixmap3    = new QPixmap(pixmapFromPathRA(thumbnailName3));
+      m_thumbnailPixmap4    = new QPixmap(pixmapFromPathRA(thumbnailName4));
 
       if (      m_currentBrowser == BROWSER_TYPE_PLAYLISTS
             && !currentPlaylistIsSpecial())

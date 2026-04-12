@@ -60,6 +60,7 @@ extern "C" {
 
 #include "../ui_companion_driver.h"
 #include "../../retroarch.h"
+#include <formats/image.h>
 
 #ifndef CXX_BUILD
 }
@@ -140,6 +141,34 @@ public:
       m_cond.wakeOne();
       m_mutex.unlock();
    }
+   static void cleanupTexturePixels(void *pixels)
+   {
+      free(pixels);
+   }
+   static QImage loadImageRA(const QString &path)
+   {
+      struct texture_image tex;
+      QByteArray pathArray = path.toUtf8();
+
+      tex.width         = 0;
+      tex.height        = 0;
+      tex.pixels        = NULL;
+      tex.supports_rgba = false;
+
+      if (image_texture_load(&tex, pathArray.constData()))
+      {
+         /* Transfer pixel ownership to QImage - no copy needed.
+          * QImage will call free() on the buffer when destroyed. */
+         return QImage((unsigned char*)tex.pixels,
+               tex.width, tex.height,
+               tex.width * sizeof(uint32_t),
+               QImage::Format_ARGB32,
+               cleanupTexturePixels, tex.pixels);
+      }
+
+      /* Fallback to Qt for unsupported formats */
+      return QImage(path);
+   }
 signals:
    void imageLoaded(const QImage image, const QModelIndex index, const QString path);
 protected:
@@ -153,7 +182,7 @@ protected:
          if (m_stop) { m_mutex.unlock(); return; }
          QPair<QModelIndex, QString> item = m_queue.takeFirst();
          m_mutex.unlock();
-         QImage image(item.second);
+         QImage image = loadImageRA(item.second);
          if (!image.isNull())
             emit imageLoaded(image, item.first, item.second);
       }
@@ -206,7 +235,6 @@ private:
    QVector<QHash<QString, QString> > m_contents;
    QCache<QString, QPixmap> m_cache;
    QSet<QString> m_pendingImages;
-   QVector<QByteArray> m_imageFormats;
    QRegularExpression m_fileSanitizerRegex;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
    ThumbnailLoader *m_thumbnailLoader;
@@ -654,7 +682,6 @@ private:
    QDockWidget *m_logDock;
    QFrame *m_logWidget;
    LogTextEdit *m_logTextEdit;
-   QVector<QByteArray> m_imageFormats;
    QListWidgetItem *m_historyPlaylistsItem;
    QIcon m_folderIcon;
    QString m_customThemeString;
