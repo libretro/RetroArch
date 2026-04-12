@@ -1,5 +1,5 @@
-#ifndef SETTINGSWIDGETS_H
-#define SETTINGSWIDGETS_H
+#ifndef UI_QT_WIDGETS_H
+#define UI_QT_WIDGETS_H
 
 #include <QAbstractItemView>
 #include <QCheckBox>

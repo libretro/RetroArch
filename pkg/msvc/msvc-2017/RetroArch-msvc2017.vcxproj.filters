@@ -26,6 +26,5 @@
     <CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">
       <Filter>QT</Filter>
     </CustomBuild>
-<CustomBuild Include="..\..\..\ui\drivers\qt\settingswidgets.h" />
 </ItemGroup>
 </Project>
