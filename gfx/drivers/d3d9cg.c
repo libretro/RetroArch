@@ -2354,20 +2354,6 @@ void d3d9_cg_renderchain_free(void *data)
    free(chain);
 }
 
-static void *d3d9_cg_renderchain_new(void)
-{
-   cg_renderchain_t *renderchain = (cg_renderchain_t*)calloc(1, sizeof(*renderchain));
-   if (!renderchain)
-      return NULL;
-
-   renderchain->chain.passes     = shader_pass_vector_list_new();
-   renderchain->chain.luts       = lut_info_vector_list_new();
-   renderchain->chain.bound_tex  = unsigned_vector_list_new();
-   renderchain->chain.bound_vert = unsigned_vector_list_new();
-
-   return renderchain;
-}
-
 static bool d3d9_cg_renderchain_init_shader(d3d9_video_t *d3d,
       cg_renderchain_t *renderchain)
 {
@@ -2473,8 +2459,6 @@ static bool d3d9_cg_renderchain_init(
    cg_renderchain_t *chain        = (cg_renderchain_t*)d3d->renderchain_data;
    unsigned fmt                   = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
 
-   if (!chain)
-      return false;
    if (!d3d9_cg_renderchain_init_shader(d3d, chain))
    {
       RARCH_ERR("[D3D9 Cg] Failed to initialize shader subsystem.\n");
@@ -2483,7 +2467,6 @@ static bool d3d9_cg_renderchain_init(
 
    chain->chain.dev            = dev;
    chain->chain.out_vp         = (D3DVIEWPORT9*)out_vp;
-   chain->chain.frame_count    = 0;
    chain->chain.pixel_size     = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
 
    if (!d3d9_cg_renderchain_create_first_pass(dev, chain, &chain->chain, info, fmt))
@@ -3124,32 +3107,6 @@ static bool d3d9_cg_init_base(d3d9_video_t *d3d, const video_info_t *info)
    return true;
 }
 
-static bool renderchain_d3d_cg_init_first(
-      enum gfx_ctx_api api,
-      void **renderchain_handle)
-{
-   switch (api)
-   {
-      case GFX_CTX_DIRECT3D9_API:
-         {
-            void *data = d3d9_cg_renderchain_new();
-
-            if (!data)
-               return false;
-
-            *renderchain_handle   = data;
-
-            return true;
-         }
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
-   return false;
-}
-
 static void d3d9_cg_log_info(const struct LinkInfo *info)
 {
    RARCH_LOG("[D3D9] Render pass info:\n");
@@ -3281,22 +3238,25 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
 {
    unsigned i = 0;
    struct LinkInfo link_info;
-   unsigned current_width, current_height, out_width, out_height;
+   unsigned current_width, current_height, out_width = 0, out_height = 0;
+   cg_renderchain_t *renderchain;
 
    /* Setup information for first pass. */
    link_info.tex_w = input_scale * RARCH_SCALE_BASE;
    link_info.tex_h = input_scale * RARCH_SCALE_BASE;
    link_info.pass  = &d3d->shader.pass[0];
 
-   if (!renderchain_d3d_cg_init_first(GFX_CTX_DIRECT3D9_API,
-            &d3d->renderchain_data))
+   renderchain = (cg_renderchain_t*)calloc(1, sizeof(*renderchain));
+   if (!renderchain)
    {
       RARCH_ERR("[D3D9 Cg] Renderchain could not be initialized.\n");
       return false;
    }
-
-   if (!d3d->renderchain_data)
-      return false;
+   renderchain->chain.passes     = shader_pass_vector_list_new();
+   renderchain->chain.luts       = lut_info_vector_list_new();
+   renderchain->chain.bound_tex  = unsigned_vector_list_new();
+   renderchain->chain.bound_vert = unsigned_vector_list_new();
+   d3d->renderchain_data         = renderchain;
 
    if (
          !d3d9_cg_renderchain_init(
@@ -3313,8 +3273,6 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
 
    current_width  = link_info.tex_w;
    current_height = link_info.tex_h;
-   out_width      = 0;
-   out_height     = 0;
 
    for (i = 1; i < d3d->shader.passes; i++)
    {

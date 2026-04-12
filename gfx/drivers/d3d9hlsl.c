@@ -370,14 +370,6 @@ static INLINE void d3d9_recompute_pass_sizes(
    }
 }
 
-static INLINE void d3d9_hlsl_init_renderchain(d3d9_hlsl_renderchain_t *chain)
-{
-   chain->passes     = shader_pass_vector_list_new();
-   chain->luts       = lut_info_vector_list_new();
-   chain->bound_tex  = unsigned_vector_list_new();
-   chain->bound_vert = unsigned_vector_list_new();
-}
-
 /* TODO/FIXME - Temporary workaround for D3D9 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d9_hlsl_fake_context;
 
@@ -6381,22 +6373,6 @@ static bool d3d9_hlsl_init_base(
    return true;
 }
 
-static bool renderchain_d3d_hlsl_init_first(
-      enum gfx_ctx_api api,
-      void **renderchain_handle)
-{
-   hlsl_renderchain_t *renderchain =
-      (hlsl_renderchain_t*)calloc(1, sizeof(*renderchain));
-   if (!renderchain)
-      return false;
-
-   d3d9_hlsl_init_renderchain(&renderchain->chain);
-
-   *renderchain_handle = renderchain;
-
-   return true;
-}
-
 static void d3d9_hlsl_log_info(const struct LinkInfo *info)
 {
    RARCH_LOG("[D3D9] Render pass info:\n");
@@ -6528,16 +6504,23 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    bool video_smooth    = settings->bools.video_smooth;
 
    /* Setup information for first pass. */
-   link_info.pass       = NULL;
    link_info.tex_w      = input_scale * RARCH_SCALE_BASE;
    link_info.tex_h      = input_scale * RARCH_SCALE_BASE;
    link_info.pass       = &d3d->shader.pass[0];
 
-   if (!renderchain_d3d_hlsl_init_first(GFX_CTX_DIRECT3D9_API,
-            &d3d->renderchain_data))
-      return false;
-   if (!d3d->renderchain_data)
-      return false;
+   {
+      hlsl_renderchain_t *renderchain =
+         (hlsl_renderchain_t*)calloc(1, sizeof(*renderchain));
+      if (!renderchain)
+         return false;
+
+      renderchain->chain.passes     = shader_pass_vector_list_new();
+      renderchain->chain.luts       = lut_info_vector_list_new();
+      renderchain->chain.bound_tex  = unsigned_vector_list_new();
+      renderchain->chain.bound_vert = unsigned_vector_list_new();
+
+      d3d->renderchain_data         = renderchain;
+   }
 
    RARCH_LOG("[D3D9 HLSL] Using HLSL shader backend.\n");
 
