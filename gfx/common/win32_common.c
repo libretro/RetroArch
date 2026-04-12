@@ -775,6 +775,9 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
    {
       case ID_M_LOAD_CORE:
          {
+#ifndef HAVE_THREADS
+            content_ctx_info_t content_info;
+#endif
             char win32_file[PATH_MAX_LENGTH] = {0};
             settings_t *settings    = config_get_ptr();
             char    *title_cp       = NULL;
@@ -819,8 +822,15 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                free(title_wide);
             if (title_cp)
                free(title_cp);
-            path_set(RARCH_PATH_CORE, win32_file);
-            command_event(CMD_EVENT_LOAD_CORE, NULL);
+            content_info.argc        = 0;
+            content_info.argv        = NULL;
+            content_info.args        = NULL;
+            content_info.environ_get = NULL;
+            task_push_load_new_core(
+                     win32_file, NULL,
+                     &content_info,
+                     CORE_TYPE_PLAIN,
+                     NULL, NULL);
 #endif
          }
          break;
@@ -1181,14 +1191,22 @@ static LRESULT CALLBACK wnd_proc_common(
                (win32_browser_thread_data_t *)lparam;
             if (td)
             {
+               content_ctx_info_t content_info;
                settings_t      *settings = config_get_ptr();
                video_driver_state_t *video_st = video_state_get_ptr();
 
                switch (td->mode)
                {
                   case WIN32_BROWSER_MODE_LOAD_CORE:
-                     path_set(RARCH_PATH_CORE, td->path);
-                     command_event(CMD_EVENT_LOAD_CORE, NULL);
+                     content_info.argc        = 0;
+                     content_info.argv        = NULL;
+                     content_info.args        = NULL;
+                     content_info.environ_get = NULL;
+                     task_push_load_new_core(
+                           td->path, NULL,
+                           &content_info,
+                           CORE_TYPE_PLAIN,
+                           NULL, NULL);
                      break;
                   case WIN32_BROWSER_MODE_LOAD_CONTENT:
                      win32_load_content_from_gui(td->path);
