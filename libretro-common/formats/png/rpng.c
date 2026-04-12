@@ -865,7 +865,15 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
          break;
    }
 
-   memcpy(pngp->prev_scanline, pngp->decoded_scanline, pngp->pitch);
+   /* Swap scanline pointers instead of copying — the current decoded
+    * scanline becomes the previous scanline for the next row.
+    * Both buffers are the same size (pitch bytes), allocated in
+    * rpng_reverse_filter_init, so swapping is always safe. */
+   {
+      uint8_t *tmp           = pngp->prev_scanline;
+      pngp->prev_scanline    = pngp->decoded_scanline;
+      pngp->decoded_scanline = tmp;
+   }
 
    return IMAGE_PROCESS_NEXT;
 }
@@ -1070,41 +1078,12 @@ static bool rpng_realloc_idat(struct idat_buffer *buf, uint32_t chunk_size)
 static struct rpng_process *rpng_process_init(rpng_t *rpng)
 {
    uint8_t *inflate_buf            = NULL;
-   struct rpng_process *process    = (struct rpng_process*)malloc(sizeof(*process));
+   /* calloc zeroes all fields (pointers, integers, flags) in one call */
+   struct rpng_process *process    = (struct rpng_process*)calloc(1, sizeof(*process));
 
    if (!process)
       return NULL;
 
-   process->flags                  = 0;
-   process->prev_scanline          = NULL;
-   process->decoded_scanline       = NULL;
-   process->inflate_buf            = NULL;
-
-   process->ihdr.width             = 0;
-   process->ihdr.height            = 0;
-   process->ihdr.depth             = 0;
-   process->ihdr.color_type        = 0;
-   process->ihdr.compression       = 0;
-   process->ihdr.filter            = 0;
-   process->ihdr.interlace         = 0;
-
-   process->restore_buf_size       = 0;
-   process->adam7_restore_buf_size = 0;
-   process->data_restore_buf_size  = 0;
-   process->inflate_buf_size       = 0;
-   process->avail_in               = 0;
-   process->avail_out              = 0;
-   process->total_out              = 0;
-   process->pass_size              = 0;
-   process->bpp                    = 0;
-   process->pitch                  = 0;
-   process->h                      = 0;
-   process->pass_width             = 0;
-   process->pass_height            = 0;
-   process->pass_pos               = 0;
-   process->data                   = 0;
-   process->palette                = 0;
-   process->stream                 = NULL;
    process->stream_backend         = trans_stream_get_zlib_inflate_backend();
 
    rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
@@ -1161,58 +1140,28 @@ static enum png_chunk_type rpng_read_chunk_header(
       uint8_t *buf, uint32_t chunk_size)
 {
    int i;
-   char type[4];
+   /* Read chunk type as a big-endian 32-bit word for fast comparison */
+   uint32_t tag = rpng_dword_be(buf + 4);
 
+   /* Validate: all four bytes must be ASCII letters (65-90 or 97-122) */
    for (i = 0; i < 4; i++)
    {
-      uint8_t byte = buf[i + 4];
-
-      /* All four bytes of the chunk type must be
-       * ASCII letters (codes 65-90 and 97-122) */
+      uint8_t byte = (uint8_t)(tag >> (24 - i * 8));
       if ((byte < 65) || ((byte > 90) && (byte < 97)) || (byte > 122))
          return PNG_CHUNK_ERROR;
-      type[i]      = byte;
    }
 
-   if (
-            type[0] == 'I'
-         && type[1] == 'H'
-         && type[2] == 'D'
-         && type[3] == 'R'
-      )
+   /* IDAT is the most common chunk type — check it first */
+   if (tag == 0x49444154) /* "IDAT" */
+      return PNG_CHUNK_IDAT;
+   if (tag == 0x49484452) /* "IHDR" */
       return PNG_CHUNK_IHDR;
-   else if
-      (
-          type[0] == 'I'
-       && type[1] == 'D'
-       && type[2] == 'A'
-       && type[3] == 'T'
-      )
-         return PNG_CHUNK_IDAT;
-   else if
-      (
-          type[0] == 'I'
-       && type[1] == 'E'
-       && type[2] == 'N'
-       && type[3] == 'D'
-      )
-         return PNG_CHUNK_IEND;
-   else if
-      (
-          type[0] == 'P'
-       && type[1] == 'L'
-       && type[2] == 'T'
-       && type[3] == 'E'
-      )
-         return PNG_CHUNK_PLTE;
-   else if
-      (
-          type[0] == 't'
-       && type[1] == 'R'
-       && type[2] == 'N'
-       && type[3] == 'S'
-      )
-         return PNG_CHUNK_tRNS;
+   if (tag == 0x49454E44) /* "IEND" */
+      return PNG_CHUNK_IEND;
+   if (tag == 0x504C5445) /* "PLTE" */
+      return PNG_CHUNK_PLTE;
+   if (tag == 0x74524E53) /* "tRNS" */
+      return PNG_CHUNK_tRNS;
 
    return PNG_CHUNK_NOOP;
 }
@@ -1478,8 +1427,10 @@ bool rpng_start(rpng_t *rpng)
  **/
 bool rpng_is_valid(rpng_t *rpng)
 {
-   return (rpng && ((rpng->flags & (RPNG_FLAG_HAS_IHDR | RPNG_FLAG_HAS_IDAT |
-RPNG_FLAG_HAS_IEND)) > 0));
+   const uint8_t valid_mask = RPNG_FLAG_HAS_IHDR
+                            | RPNG_FLAG_HAS_IDAT
+                            | RPNG_FLAG_HAS_IEND;
+   return (rpng && ((rpng->flags & valid_mask) == valid_mask));
 }
 
 bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len)

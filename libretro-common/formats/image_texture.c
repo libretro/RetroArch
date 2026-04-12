@@ -29,6 +29,12 @@
 #include <formats/image.h>
 #include <file/nbio.h>
 
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#endif
+
 enum image_type_enum image_texture_get_type(const char *path)
 {
    /* We are comparing against a fixed list of file
@@ -126,6 +132,54 @@ bool image_texture_color_convert(unsigned r_shift,
       uint32_t i;
       uint32_t num_pixels = out_img->width * out_img->height;
       uint32_t *pixels    = (uint32_t*)out_img->pixels;
+
+      /* Fast path: supports_rgba swap (a=24, r=0, g=8, b=16)
+       * is just an R↔B byte swap within each 32-bit pixel.
+       * This is the only case that actually occurs in practice. */
+      if (a_shift == 24 && r_shift == 0 && g_shift == 8 && b_shift == 16)
+      {
+         i = 0;
+#if defined(__SSE2__)
+         {
+            __m128i mask_rb = _mm_set1_epi32(0x00FF00FF);
+            __m128i mask_ag = _mm_set1_epi32((int)0xFF00FF00);
+            for (; i + 3 < num_pixels; i += 4)
+            {
+               __m128i px   = _mm_loadu_si128((const __m128i*)(pixels + i));
+               __m128i rb   = _mm_and_si128(px, mask_rb);
+               __m128i ag   = _mm_and_si128(px, mask_ag);
+               __m128i rb_s = _mm_or_si128(_mm_slli_epi32(rb, 16),
+                                            _mm_srli_epi32(rb, 16));
+               rb_s         = _mm_and_si128(rb_s, mask_rb);
+               _mm_storeu_si128((__m128i*)(pixels + i),
+                     _mm_or_si128(ag, rb_s));
+            }
+         }
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+         {
+            for (; i + 3 < num_pixels; i += 4)
+            {
+               uint32x4_t p     = vld1q_u32(pixels + i);
+               uint32x4_t rb    = vandq_u32(p, vdupq_n_u32(0x00FF00FF));
+               uint32x4_t ag    = vandq_u32(p, vdupq_n_u32(0xFF00FF00));
+               uint32x4_t rb_sw = vorrq_u32(vshlq_n_u32(rb, 16),
+                                              vshrq_n_u32(rb, 16));
+               rb_sw            = vandq_u32(rb_sw, vdupq_n_u32(0x00FF00FF));
+               vst1q_u32(pixels + i, vorrq_u32(ag, rb_sw));
+            }
+         }
+#endif
+         for (; i < num_pixels; i++)
+         {
+            uint32_t col = pixels[i];
+            uint32_t A   = col & 0xFF000000;
+            uint32_t R   = col & 0x00FF0000;
+            uint32_t G   = col & 0x0000FF00;
+            uint32_t B   = col & 0x000000FF;
+            pixels[i]    = A | (B << 16) | G | (R >> 16);
+         }
+         return true;
+      }
 
       for (i = 0; i < num_pixels; i++)
       {
