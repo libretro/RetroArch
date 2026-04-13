@@ -106,102 +106,64 @@ enum image_type_enum image_texture_get_type(const char *path)
    return IMAGE_TYPE_NONE;
 }
 
-bool image_texture_set_color_shifts(
-      unsigned *r_shift, unsigned *g_shift, unsigned *b_shift,
-      unsigned *a_shift,
-      struct texture_image *out_img
-      )
+bool image_texture_color_convert(struct texture_image *out_img)
 {
-   *a_shift             = 24;
-   *r_shift             = 16;
-   *g_shift             = 8;
-   *b_shift             = 0;
-
+   /* When supports_rgba is set, the decoder produced pixels in ABGR
+    * byte order but the renderer expects ARGB.  The only difference
+    * is that R and B are swapped.  When supports_rgba is false the
+    * pixels are already in ARGB order and no conversion is needed.
+    *
+    * This replaces the old two-function dance of
+    * image_texture_set_color_shifts() + image_texture_color_convert()
+    * which computed 4 shift values, passed them through, then either
+    * did nothing (non-RGBA) or performed the same R↔B swap (RGBA).
+    * Folding eliminates the shift variables, the branch on 4 shift
+    * values, and the unreachable generic-shift code path. */
    if (out_img->supports_rgba)
    {
-      *r_shift = 0;
-      *b_shift = 16;
-      return true;
-   }
-
-   return false;
-}
-
-bool image_texture_color_convert(unsigned r_shift,
-      unsigned g_shift, unsigned b_shift, unsigned a_shift,
-      struct texture_image *out_img)
-{
-   /* This is quite uncommon. */
-   if (a_shift != 24 || r_shift != 16 || g_shift != 8 || b_shift != 0)
-   {
-      uint32_t i;
+      uint32_t i = 0;
       uint32_t num_pixels = out_img->width * out_img->height;
       uint32_t *pixels    = (uint32_t*)out_img->pixels;
 
-      /* Fast path: supports_rgba swap (a=24, r=0, g=8, b=16)
-       * is just an R↔B byte swap within each 32-bit pixel.
-       * This is the only case that actually occurs in practice. */
-      if (a_shift == 24 && r_shift == 0 && g_shift == 8 && b_shift == 16)
-      {
-         i = 0;
 #if defined(IMAGE_TEXTURE_SIMD_SSE2)
+      {
+         __m128i mask_rb = _mm_set1_epi32(0x00FF00FF);
+         __m128i mask_ag = _mm_set1_epi32((int)0xFF00FF00);
+         for (; i + 3 < num_pixels; i += 4)
          {
-            __m128i mask_rb = _mm_set1_epi32(0x00FF00FF);
-            __m128i mask_ag = _mm_set1_epi32((int)0xFF00FF00);
-            for (; i + 3 < num_pixels; i += 4)
-            {
-               __m128i px   = _mm_loadu_si128((const __m128i*)(pixels + i));
-               __m128i rb   = _mm_and_si128(px, mask_rb);
-               __m128i ag   = _mm_and_si128(px, mask_ag);
-               __m128i rb_s = _mm_or_si128(_mm_slli_epi32(rb, 16),
-                                            _mm_srli_epi32(rb, 16));
-               rb_s         = _mm_and_si128(rb_s, mask_rb);
-               _mm_storeu_si128((__m128i*)(pixels + i),
-                     _mm_or_si128(ag, rb_s));
-            }
+            __m128i px   = _mm_loadu_si128((const __m128i*)(pixels + i));
+            __m128i rb   = _mm_and_si128(px, mask_rb);
+            __m128i ag   = _mm_and_si128(px, mask_ag);
+            __m128i rb_s = _mm_or_si128(_mm_slli_epi32(rb, 16),
+                                         _mm_srli_epi32(rb, 16));
+            rb_s         = _mm_and_si128(rb_s, mask_rb);
+            _mm_storeu_si128((__m128i*)(pixels + i),
+                  _mm_or_si128(ag, rb_s));
          }
-#elif defined(IMAGE_TEXTURE_SIMD_NEON)
-         {
-            for (; i + 3 < num_pixels; i += 4)
-            {
-               uint32x4_t p     = vld1q_u32(pixels + i);
-               uint32x4_t rb    = vandq_u32(p, vdupq_n_u32(0x00FF00FF));
-               uint32x4_t ag    = vandq_u32(p, vdupq_n_u32(0xFF00FF00));
-               uint32x4_t rb_sw = vorrq_u32(vshlq_n_u32(rb, 16),
-                                              vshrq_n_u32(rb, 16));
-               rb_sw            = vandq_u32(rb_sw, vdupq_n_u32(0x00FF00FF));
-               vst1q_u32(pixels + i, vorrq_u32(ag, rb_sw));
-            }
-         }
-#endif
-         for (; i < num_pixels; i++)
-         {
-            uint32_t col = pixels[i];
-            uint32_t A   = col & 0xFF000000;
-            uint32_t R   = col & 0x00FF0000;
-            uint32_t G   = col & 0x0000FF00;
-            uint32_t B   = col & 0x000000FF;
-            pixels[i]    = A | (B << 16) | G | (R >> 16);
-         }
-         return true;
       }
-
-      for (i = 0; i < num_pixels; i++)
+#elif defined(IMAGE_TEXTURE_SIMD_NEON)
+      {
+         for (; i + 3 < num_pixels; i += 4)
+         {
+            uint32x4_t p     = vld1q_u32(pixels + i);
+            uint32x4_t rb    = vandq_u32(p, vdupq_n_u32(0x00FF00FF));
+            uint32x4_t ag    = vandq_u32(p, vdupq_n_u32(0xFF00FF00));
+            uint32x4_t rb_sw = vorrq_u32(vshlq_n_u32(rb, 16),
+                                           vshrq_n_u32(rb, 16));
+            rb_sw            = vandq_u32(rb_sw, vdupq_n_u32(0x00FF00FF));
+            vst1q_u32(pixels + i, vorrq_u32(ag, rb_sw));
+         }
+      }
+#endif
+      for (; i < num_pixels; i++)
       {
          uint32_t col = pixels[i];
-         uint8_t a    = (uint8_t)(col >> 24);
-         uint8_t r    = (uint8_t)(col >> 16);
-         uint8_t g    = (uint8_t)(col >>  8);
-         uint8_t b    = (uint8_t)(col >>  0);
-         /* Explicitly cast these to uint32_t to prevent
-          * ASAN runtime error: left shift of 255 by 24 places
-          * cannot be represented in type 'int' */
-         pixels[i]    = (  (uint32_t)a << a_shift)
-                        | ((uint32_t)r << r_shift)
-                        | ((uint32_t)g << g_shift)
-                        | ((uint32_t)b << b_shift);
+         uint32_t A   = col & 0xFF000000;
+         uint32_t R   = col & 0x00FF0000;
+         uint32_t G   = col & 0x0000FF00;
+         uint32_t B   = col & 0x000000FF;
+         pixels[i]    = A | (B << 16) | G | (R >> 16);
       }
-
       return true;
    }
 
@@ -272,9 +234,7 @@ static bool image_texture_load_internal(
       enum image_type_enum type,
       void *ptr,
       size_t len,
-      struct texture_image *out_img,
-      unsigned a_shift, unsigned r_shift,
-      unsigned g_shift, unsigned b_shift)
+      struct texture_image *out_img)
 {
    int ret;
    void *img    = image_transfer_new(type);
@@ -311,8 +271,7 @@ static bool image_texture_load_internal(
       return false;
    }
 
-   image_texture_color_convert(r_shift, g_shift, b_shift,
-         a_shift, out_img);
+   image_texture_color_convert(out_img);
 
 #ifdef GEKKO
    if (!image_texture_internal_gx_convert_texture32(out_img))
@@ -342,15 +301,10 @@ void image_texture_free(struct texture_image *img)
 bool image_texture_load_buffer(struct texture_image *out_img,
    enum image_type_enum type, void *buffer, size_t buffer_len)
 {
-   unsigned r_shift, g_shift, b_shift, a_shift;
-   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
-      &a_shift, out_img);
-
    if (type != IMAGE_TYPE_NONE)
    {
       if (image_texture_load_internal(
-         type, buffer, buffer_len, out_img,
-         a_shift, r_shift, g_shift, b_shift))
+         type, buffer, buffer_len, out_img))
          return true;
    }
 
@@ -381,14 +335,9 @@ bool image_texture_load(struct texture_image *out_img,
           * for AIO a single blocking syscall, for stdio one fread. */
          if ((ptr = nbio_load_entire(handle, &file_len)))
          {
-            unsigned r_shift, g_shift, b_shift, a_shift;
-            image_texture_set_color_shifts(&r_shift,
-                  &g_shift, &b_shift, &a_shift, out_img);
-
             if (image_texture_load_internal(
                      type,
-                     ptr, file_len, out_img,
-                     a_shift, r_shift, g_shift, b_shift))
+                     ptr, file_len, out_img))
             {
                nbio_free(handle);
                return true;

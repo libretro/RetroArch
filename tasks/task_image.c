@@ -63,7 +63,6 @@ struct nbio_image_handle
 
 static int cb_image_upload_generic(void *data, size_t len)
 {
-   unsigned r_shift, g_shift, b_shift, a_shift;
    nbio_handle_t             *nbio = (nbio_handle_t*)data;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
@@ -79,15 +78,12 @@ static int cb_image_upload_generic(void *data, size_t len)
          break;
    }
 
-   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
-         &a_shift, &image->ti);
-
-   /* JPEG already outputs in the correct channel order after its
-    * internal RGBA-to-ARGB swizzle, so skip the redundant conversion.
-    * For other formats (PNG, BMP, TGA), apply the color conversion. */
+   /* JPEG already outputs in the correct channel order (BGRA/ARGB)
+    * after its internal YCbCr→RGB conversion, so skip the swap.
+    * For other formats (PNG, BMP, TGA), apply R↔B conversion
+    * if the platform requires RGBA byte order. */
    if (image->type != IMAGE_TYPE_JPEG)
-      image_texture_color_convert(r_shift, g_shift, b_shift,
-            a_shift, &image->ti);
+      image_texture_color_convert(&image->ti);
 
    image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
    image->flags                   |=  IMAGE_FLAG_IS_BLOCKING;

@@ -59,13 +59,7 @@ enum image_type_enum
 
 enum image_type_enum image_texture_get_type(const char *path);
 
-bool image_texture_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
-      unsigned *b_shift, unsigned *a_shift,
-      struct texture_image *out_img);
-
-bool image_texture_color_convert(unsigned r_shift,
-      unsigned g_shift, unsigned b_shift, unsigned a_shift,
-      struct texture_image *out_img);
+bool image_texture_color_convert(struct texture_image *out_img);
 
 bool image_texture_load_buffer(struct texture_image *img,
    enum image_type_enum type, void *s, size_t len);
