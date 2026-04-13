@@ -123,6 +123,8 @@ bool image_transfer_start(void *data, enum image_type_enum type)
 #endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
+         if (!rjpeg_start((rjpeg_t*)data))
+            break;
          return true;
 #else
          break;
@@ -156,7 +158,7 @@ bool image_transfer_is_valid(
 #endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
-         return true;
+         return rjpeg_is_valid((rjpeg_t*)data);
 #else
          break;
 #endif
@@ -190,7 +192,7 @@ void image_transfer_set_buffer_ptr(
          break;
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
-         rjpeg_set_buf_ptr((rjpeg_t*)data, (uint8_t*)ptr);
+         rjpeg_set_buf_ptr((rjpeg_t*)data, (uint8_t*)ptr, len);
 #endif
          break;
       case IMAGE_TYPE_TGA:
@@ -265,10 +267,10 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
          break;
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
-         return false;
-#else
-         break;
+         if (!rjpeg_iterate_image((rjpeg_t*)data))
+            return false;
 #endif
+         break;
       case IMAGE_TYPE_TGA:
 #ifdef HAVE_RTGA
          return false;
