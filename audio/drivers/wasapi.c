@@ -14,6 +14,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ *  NOTE ON write_raw: This driver does NOT implement write_raw.
+ *  RetroArch's audio rate control system works by dynamically adjusting
+ *  the sinc resampler ratio each frame to keep the driver's audio buffer
+ *  at ~50% saturation.  The write_raw fast path bypasses the software
+ *  resampler and passes the rate_adjust parameter to the driver, which
+ *  must apply it internally.  WASAPI's IAudioClient locks its stream
+ *  format and internal resampling configuration at Initialize() time —
+ *  there is no API to dynamically adjust the conversion ratio during
+ *  streaming.  Without dynamic rate adjustment, the audio buffer would
+ *  slowly drift until it underruns or overruns, breaking A/V sync
+ *  within minutes.  The software sinc resampler remains the only
+ *  viable path.  (CoreAudio is the only driver that implements
+ *  write_raw because AudioConverter supports dynamic rate changes
+ *  via AudioConverterSetProperty during playback.)
+ */
+
 #include <stdlib.h>
 
 #include <lists/string_list.h>
