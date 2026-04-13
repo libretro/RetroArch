@@ -3155,8 +3155,22 @@ static void apply_dpi_awareness(void)
       }
       FreeLibrary(shcore);
    }
-   /* Fallback for Vista / Win7 without shcore */
-   SetProcessDPIAware();
+   /* Fallback for Vista / Win7 without shcore.
+    * Load dynamically so we still link on XP / MSVC 2005. */
+   {
+      HMODULE user32 = GetModuleHandleW(L"user32.dll");
+      if (user32)
+      {
+         typedef BOOL (WINAPI *pfn_SetProcessDPIAware)(void);
+         union {
+            FARPROC proc;
+            pfn_SetProcessDPIAware func;
+         } u;
+         u.proc = GetProcAddress(user32, "SetProcessDPIAware");
+         if (u.func)
+            u.func();
+      }
+   }
 }
 
 /* ACCELERATOR TABLE  (replaces IDR_ACCELERATOR1)
