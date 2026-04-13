@@ -28,10 +28,12 @@
 
 /* posix_fadvise for sequential readahead hints.
  * Available on Linux and most BSDs, but NOT on macOS/iOS (Darwin),
- * Wii U, 3DS, Vita, Switch, or Windows. */
+ * Wii U, 3DS, Vita, Switch, PS2, PS3, PS4/Orbis, or Windows. */
 #if !defined(_WIN32) && !defined(__APPLE__) && !defined(WIIU) \
  && !defined(_3DS) && !defined(VITA) && !defined(HAVE_LIBNX) \
- && !defined(GEKKO) && !defined(__CELLOS_LV2__) && !defined(PSP) \
+ && !defined(SWITCH) && !defined(GEKKO) && !defined(__CELLOS_LV2__) \
+ && !defined(__PSL1GHT__) && !defined(PSP) && !defined(PS2) \
+ && !defined(ORBIS) \
  && (defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) \
      || defined(__OpenBSD__) || defined(__DragonFly__) \
      || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L))
