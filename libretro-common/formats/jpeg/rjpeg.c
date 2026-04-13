@@ -785,13 +785,6 @@ static INLINE int rjpeg_jpeg_decode_block(
    int t;
    int diff      = 0;
 
-   /* Single grow_buffer for DC: guarantees code_bits >= 24.
-    * DC huff_decode consumes at most 16 bits, extend_receive
-    * consumes at most 11 bits. Total max = 27 > 24, but in
-    * practice DC categories > 11 are invalid in baseline JPEG
-    * (max category = 11, so max DC consumption = 16+11 = 27).
-    * The _nocheck calls below skip their own grow_buffer since
-    * we just ensured >= 24 bits and will consume <= ~22. */
    if (j->code_bits < 16)
       rjpeg_grow_buffer_unsafe(j);
    t = rjpeg_jpeg_huff_decode_nocheck(j, hdc);
@@ -800,7 +793,7 @@ static INLINE int rjpeg_jpeg_decode_block(
       return 0;
 
    if (t)
-      diff                = rjpeg_extend_receive_nocheck(j, t);
+      diff                = rjpeg_extend_receive(j, t);
    dc                     = j->img_comp[b].dc_pred + diff;
    j->img_comp[b].dc_pred = dc;
    data[0]                = (short) (dc * dequant[0]);
@@ -852,7 +845,7 @@ static INLINE int rjpeg_jpeg_decode_block(
             if (k > 63)
                return 0;
             zig = rjpeg_jpeg_dezigzag[k++];
-            data[zig] = (short) (rjpeg_extend_receive_nocheck(j,s) * dequant[zig]);
+            data[zig] = (short) (rjpeg_extend_receive(j,s) * dequant[zig]);
          }
       }
    } while (k < 64);
