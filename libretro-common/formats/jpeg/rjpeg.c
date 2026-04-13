@@ -214,7 +214,40 @@ static INLINE uint8_t rjpeg_get8(rjpeg_context *s)
 
 #define RJPEG_AT_EOF(s)     ((s)->img_buffer >= (s)->img_buffer_end)
 
-#define RJPEG_GET16BE(s)    ((rjpeg_get8((s)) << 8) + rjpeg_get8((s)))
+/* Fast 16-bit big-endian read: single bounds check for 2 bytes.
+ * The old RJPEG_GET16BE called rjpeg_get8 twice (2 bounds checks).
+ * At EOF, returns partial or zero like the original. */
+static INLINE uint32_t rjpeg_get16be(rjpeg_context *s)
+{
+   uint32_t hi;
+   if (s->img_buffer + 1 < s->img_buffer_end)
+   {
+      hi = s->img_buffer[0];
+      s->img_buffer += 2;
+      return (hi << 8) | s->img_buffer[-1];
+   }
+   /* Fallback for last byte or empty */
+   hi = rjpeg_get8(s);
+   return (hi << 8) | rjpeg_get8(s);
+}
+
+#define RJPEG_GET16BE(s)    rjpeg_get16be((s))
+
+/* Unchecked byte read: caller guarantees img_buffer < img_buffer_end.
+ * Used in bulk parsing loops after a segment-length bounds check. */
+static INLINE uint8_t rjpeg_get8_fast(rjpeg_context *s)
+{
+   return *s->img_buffer++;
+}
+
+/* Skip n bytes, clamping to end of buffer */
+static INLINE void rjpeg_skip(rjpeg_context *s, int n)
+{
+   if (s->img_buffer + n > s->img_buffer_end)
+      s->img_buffer = s->img_buffer_end;
+   else
+      s->img_buffer += n;
+}
 
 /* huffman decoding acceleration */
 #define FAST_BITS   9  /* larger handles more cases; smaller stomps less cache */
@@ -2237,8 +2270,19 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
             if (t > 3)
                return 0;
 
-            for (i = 0; i < 64; ++i)
-               z->dequant[t][rjpeg_jpeg_dezigzag[i]] = rjpeg_get8(z->s);
+            /* Bulk-read 64 quantization values directly from buffer.
+             * The old code called rjpeg_get8 64 times (64 bounds checks).
+             * After verifying 64 bytes remain, we read with no per-byte check. */
+            if (z->s->img_buffer + 64 <= z->s->img_buffer_end)
+            {
+               for (i = 0; i < 64; ++i)
+                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = rjpeg_get8_fast(z->s);
+            }
+            else
+            {
+               for (i = 0; i < 64; ++i)
+                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = rjpeg_get8(z->s);
+            }
             L -= 65;
          }
          return L == 0;
@@ -2257,10 +2301,22 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
             if (tc > 1 || th > 3)
                return 0;
 
-            for (i = 0; i < 16; ++i)
+            /* Bulk-read 16 size bytes: one bounds check instead of 16. */
+            if (z->s->img_buffer + 16 <= z->s->img_buffer_end)
             {
-               sizes[i] = rjpeg_get8(z->s);
-               n += sizes[i];
+               for (i = 0; i < 16; ++i)
+               {
+                  sizes[i] = rjpeg_get8_fast(z->s);
+                  n += sizes[i];
+               }
+            }
+            else
+            {
+               for (i = 0; i < 16; ++i)
+               {
+                  sizes[i] = rjpeg_get8(z->s);
+                  n += sizes[i];
+               }
             }
             L -= 17;
 
@@ -2276,8 +2332,17 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
                   return 0;
                v = z->huff_ac[th].values;
             }
-            for (i = 0; i < n; ++i)
-               v[i] = rjpeg_get8(z->s);
+            /* Bulk-read n value bytes */
+            if (z->s->img_buffer + n <= z->s->img_buffer_end)
+            {
+               memcpy(v, z->s->img_buffer, n);
+               z->s->img_buffer += n;
+            }
+            else
+            {
+               for (i = 0; i < n; ++i)
+                  v[i] = rjpeg_get8(z->s);
+            }
             if (tc != 0)
                rjpeg_build_fast_ac(z->fast_ac[th], z->huff_ac + th);
             L -= n;
@@ -2289,12 +2354,7 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
    if ((m >= 0xE0 && m <= 0xEF) || m == 0xFE)
    {
       int n = RJPEG_GET16BE(z->s)-2;
-
-      if (n < 0)
-         z->s->img_buffer = z->s->img_buffer_end;
-      else
-         z->s->img_buffer += n;
-
+      rjpeg_skip(z->s, n);
       return 1;
    }
    return 0;
@@ -2639,18 +2699,23 @@ static int rjpeg_decode_jpeg_image(rjpeg_jpeg *j)
          if (j->marker == RJPEG_MARKER_NONE )
          {
             /* handle 0s at the end of image data from IP Kamera 9060 */
-
-            while (!RJPEG_AT_EOF(j->s))
+            uint8_t *p   = j->s->img_buffer;
+            uint8_t *end = j->s->img_buffer_end;
+            while (p < end)
             {
-               int x = rjpeg_get8(j->s);
-               if (x == 255)
+               uint8_t x = *p++;
+               if (x == 0xFF && p < end)
                {
-                  j->marker = rjpeg_get8(j->s);
+                  j->marker = *p++;
                   break;
                }
                else if (x != 0) /* Junk before marker. Corrupt JPEG? */
+               {
+                  j->s->img_buffer = p;
                   return 0;
+               }
             }
+            j->s->img_buffer = p;
 
             /* if we reach eof without hitting a marker,
              * rjpeg_get_marker() below will fail and we'll eventually return 0 */
@@ -3519,17 +3584,26 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
             /* All MCU rows done -- consume remaining markers to EOI */
             if (j->marker == RJPEG_MARKER_NONE)
             {
-               while (!RJPEG_AT_EOF(j->s))
+               /* Scan for next marker: direct pointer access avoids
+                * redundant AT_EOF + get8 bounds checks. */
+               uint8_t *p   = j->s->img_buffer;
+               uint8_t *end = j->s->img_buffer_end;
+               while (p < end)
                {
-                  int x = rjpeg_get8(j->s);
-                  if (x == 255)
+                  uint8_t x = *p++;
+                  if (x == 0xFF && p < end)
                   {
-                     j->marker = rjpeg_get8(j->s);
-                     break;
+                     uint8_t c = *p++;
+                     if (c != 0)
+                     {
+                        j->marker = c;
+                        break;
+                     }
                   }
                   else if (x != 0)
                      break; /* junk, but tolerate it */
                }
+               j->s->img_buffer = p;
             }
             rjpeg->iter_state = RJPEG_ITER_DONE;
             return false; /* iteration complete */
@@ -3549,17 +3623,20 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
             /* Last row -- handle trailing data */
             if (j->marker == RJPEG_MARKER_NONE)
             {
-               while (!RJPEG_AT_EOF(j->s))
+               uint8_t *p   = j->s->img_buffer;
+               uint8_t *end = j->s->img_buffer_end;
+               while (p < end)
                {
-                  int x = rjpeg_get8(j->s);
-                  if (x == 255)
+                  uint8_t x = *p++;
+                  if (x == 0xFF && p < end)
                   {
-                     j->marker = rjpeg_get8(j->s);
-                     break;
+                     uint8_t c = *p++;
+                     if (c != 0) { j->marker = c; break; }
                   }
                   else if (x != 0)
                      break;
                }
+               j->s->img_buffer = p;
             }
             rjpeg->iter_state = RJPEG_ITER_DONE;
             return false;
@@ -3623,20 +3700,24 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          /* Handle trailing padding/junk after entropy data */
          if (j->marker == RJPEG_MARKER_NONE)
          {
-            while (!RJPEG_AT_EOF(j->s))
+            uint8_t *p   = j->s->img_buffer;
+            uint8_t *end = j->s->img_buffer_end;
+            while (p < end)
             {
-               int x = rjpeg_get8(j->s);
-               if (x == 255)
+               uint8_t x = *p++;
+               if (x == 0xFF && p < end)
                {
-                  j->marker = rjpeg_get8(j->s);
-                  break;
+                  uint8_t c = *p++;
+                  if (c != 0) { j->marker = c; break; }
                }
                else if (x != 0)
                {
+                  j->s->img_buffer = p;
                   rjpeg->iter_state = RJPEG_ITER_ERROR;
                   return false;
                }
             }
+            j->s->img_buffer = p;
          }
 
          /* Fetch the next marker for the next iteration */
