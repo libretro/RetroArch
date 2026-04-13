@@ -3307,84 +3307,20 @@ static void rjpeg_YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y,
  * ----------------------------------------------------------------------- */
 
 /* Scalar fallback: performs hv_2 upsample + YCbCr→BGRA without SIMD.
- * Matches the old resample_row_hv_2 + YCbCr_to_RGB_row pipeline exactly. */
+ * Calls the existing scalar resample + color convert functions directly
+ * through a stack buffer, guaranteeing bit-exact output. */
 static void rjpeg_upsample_YCbCr_to_BGRA_row(uint8_t *out, const uint8_t *y_row,
       uint8_t *cb_near, uint8_t *cb_far,
       uint8_t *cr_near, uint8_t *cr_far,
       int chroma_w, int out_w)
 {
-   int i, px = 0;
-   int cb_t0, cr_t0;
-   int cb_t1 = 3 * cb_near[0] + cb_far[0];
-   int cr_t1 = 3 * cr_near[0] + cr_far[0];
+   /* Stack buffers for upsampled chroma (chroma_w*2 output pixels).
+    * For typical images, chroma_w <= 960 so 1920 bytes each. */
+   uint8_t cb_buf[1920], cr_buf[1920];
 
-   for (i = 0; i < chroma_w && px < out_w; ++i)
-   {
-      int y_fixed, cr, cb, r, g, b;
-      int cbi_even, cri_even, cbi_odd, cri_odd;
-
-      cb_t0 = cb_t1;
-      cr_t0 = cr_t1;
-      if (i + 1 < chroma_w)
-      {
-         cb_t1 = 3 * cb_near[i+1] + cb_far[i+1];
-         cr_t1 = 3 * cr_near[i+1] + cr_far[i+1];
-      }
-
-      /* even pixel */
-      if (i == 0)
-      {
-         cbi_even = RJPEG_DIV4(cb_t0 + 2);
-         cri_even = RJPEG_DIV4(cr_t0 + 2);
-      }
-      else
-      {
-         cbi_even = RJPEG_DIV16(3 * cb_t0 + (3 * cb_near[i-1] + cb_far[i-1]) + 8);
-         cri_even = RJPEG_DIV16(3 * cr_t0 + (3 * cr_near[i-1] + cr_far[i-1]) + 8);
-      }
-      if (px < out_w)
-      {
-         cb = cbi_even - 128;
-         cr = cri_even - 128;
-         y_fixed = (y_row[px] << 20) + (1 << 19);
-         r = (y_fixed + cr * FLOAT2FIXED(1.40200f)) >> 20;
-         g = (y_fixed + cr * -FLOAT2FIXED(0.71414f) + ((cb * -FLOAT2FIXED(0.34414f)) & 0xffff0000)) >> 20;
-         b = (y_fixed + cb * FLOAT2FIXED(1.77200f)) >> 20;
-         if ((unsigned)r > 255) r = (r < 0) ? 0 : 255;
-         if ((unsigned)g > 255) g = (g < 0) ? 0 : 255;
-         if ((unsigned)b > 255) b = (b < 0) ? 0 : 255;
-         out[px*4] = (uint8_t)b; out[px*4+1] = (uint8_t)g;
-         out[px*4+2] = (uint8_t)r; out[px*4+3] = 255;
-         px++;
-      }
-
-      /* odd pixel */
-      if (i >= chroma_w - 1)
-      {
-         cbi_odd = RJPEG_DIV4(cb_t0 + 2);
-         cri_odd = RJPEG_DIV4(cr_t0 + 2);
-      }
-      else
-      {
-         cbi_odd = RJPEG_DIV16(3 * cb_t0 + cb_t1 + 8);
-         cri_odd = RJPEG_DIV16(3 * cr_t0 + cr_t1 + 8);
-      }
-      if (px < out_w)
-      {
-         cb = cbi_odd - 128;
-         cr = cri_odd - 128;
-         y_fixed = (y_row[px] << 20) + (1 << 19);
-         r = (y_fixed + cr * FLOAT2FIXED(1.40200f)) >> 20;
-         g = (y_fixed + cr * -FLOAT2FIXED(0.71414f) + ((cb * -FLOAT2FIXED(0.34414f)) & 0xffff0000)) >> 20;
-         b = (y_fixed + cb * FLOAT2FIXED(1.77200f)) >> 20;
-         if ((unsigned)r > 255) r = (r < 0) ? 0 : 255;
-         if ((unsigned)g > 255) g = (g < 0) ? 0 : 255;
-         if ((unsigned)b > 255) b = (b < 0) ? 0 : 255;
-         out[px*4] = (uint8_t)b; out[px*4+1] = (uint8_t)g;
-         out[px*4+2] = (uint8_t)r; out[px*4+3] = 255;
-         px++;
-      }
-   }
+   rjpeg_resample_row_hv_2(cb_buf, cb_near, cb_far, chroma_w, 2);
+   rjpeg_resample_row_hv_2(cr_buf, cr_near, cr_far, chroma_w, 2);
+   rjpeg_YCbCr_to_RGB_row(out, y_row, cb_buf, cr_buf, out_w, 4);
 }
 
 #if defined(__SSE2__) || defined(RJPEG_NEON)
@@ -3415,9 +3351,6 @@ static void rjpeg_upsample_YCbCr_to_BGRA_simd(uint8_t *out, const uint8_t *y_row
          __m128i cr_farb, cr_nearb, cr_farw, cr_nearw, cr_diff, cr_nears, cr_curr;
          __m128i cb_prv0, cb_nxt0, cb_prev, cb_next, cb_curs, cb_prvd, cb_nxtd, cb_curb, cb_even, cb_odd;
          __m128i cr_prv0, cr_nxt0, cr_prev, cr_next, cr_curs, cr_prvd, cr_nxtd, cr_curb, cr_even, cr_odd;
-         
-         
-         int j;
 
          /* ---- Vertical filter: curr = 4*near + (far - near) ---- */
          cb_farb  = _mm_loadl_epi64((__m128i*)(cb_far + i));
@@ -3461,77 +3394,106 @@ static void rjpeg_upsample_YCbCr_to_BGRA_simd(uint8_t *out, const uint8_t *y_row
          cr_even = _mm_add_epi16(cr_prvd, cr_curb);
          cr_odd  = _mm_add_epi16(cr_nxtd, cr_curb);
 
-         /* Interleave even/odd → 16 upsampled values as int16.
-          * Instead of >>4 + pack to uint8 (the old path), we keep int16
-          * and convert to the YCbCr color math's expected format.
-          * The resample produces values in range [0..1020] (before >>4),
-          * i.e. [0..255] after >>4.  The color math needs (value - 128)
-          * shifted left by 8.  So: (val >> 4 - 128) << 8 = (val - 128*16) >> 4 << 8
-          * = (val - 2048) << 4.  But we need to match the exact rounding
-          * of the separate path.  Safest: pack to uint8 first, then do
-          * the color math exactly as the existing kernel does. */
+         /* Pack upsampled chroma to uint8 (16 pixels each).
+          * cb_bytes_16[0..7] = first 8 output pixels, [8..15] = second 8. */
          {
             __m128i int0, int1, de0, de1;
             __m128i cb_bytes_16, cr_bytes_16;
+            __m128i y_all, yb_lo, yb_hi;
+            __m128i cb_lo, cb_hi, cr_lo, cr_hi;
+            __m128i cb_biased, cr_biased;
+            __m128i yw, crw, cbw, yws;
+            __m128i cr0, cb0, cb1, cr1, rws, gws, bws;
+            __m128i rw, gw, bw, brb, gxb, t0, t1, o0, o1;
 
-            /* Cb: interleave, descale, pack */
+            /* Cb: interleave even/odd, descale, pack */
             int0 = _mm_unpacklo_epi16(cb_even, cb_odd);
             int1 = _mm_unpackhi_epi16(cb_even, cb_odd);
             de0  = _mm_srli_epi16(int0, 4);
             de1  = _mm_srli_epi16(int1, 4);
             cb_bytes_16 = _mm_packus_epi16(de0, de1);
 
-            /* Cr: interleave, descale, pack */
+            /* Cr: interleave even/odd, descale, pack */
             int0 = _mm_unpacklo_epi16(cr_even, cr_odd);
             int1 = _mm_unpackhi_epi16(cr_even, cr_odd);
             de0  = _mm_srli_epi16(int0, 4);
             de1  = _mm_srli_epi16(int1, 4);
             cr_bytes_16 = _mm_packus_epi16(de0, de1);
 
-            /* Now do YCbCr→BGRA on two batches of 8 output pixels.
-             * cb_bytes_16 and cr_bytes_16 are in registers — no linebuf. */
-            for (j = 0; j < 2; ++j)
-            {
-               __m128i yb, cbb, crb, cb_biased, cr_biased;
-               __m128i yw, crw, cbw, yws;
-               __m128i cr0, cb0, cb1, cr1, rws, gws, bws;
-               __m128i rw, gw, bw, brb, gxb, t0, t1, o0, o1;
+            /* Load all 16 Y bytes at once */
+            y_all = _mm_loadu_si128((__m128i*)(y_row + px));
 
-               yb  = _mm_loadl_epi64((__m128i*)(y_row + px + j*8));
-               cbb = (j == 0) ? cb_bytes_16 : _mm_srli_si128(cb_bytes_16, 8);
-               crb = (j == 0) ? cr_bytes_16 : _mm_srli_si128(cr_bytes_16, 8);
+            /* ---- Pixels 0-7 (low halves) ---- */
+            yb_lo = y_all; /* low 8 bytes used by unpacklo */
+            cb_lo = cb_bytes_16;
+            cr_lo = cr_bytes_16;
 
-               cb_biased = _mm_xor_si128(cbb, signflip);
-               cr_biased = _mm_xor_si128(crb, signflip);
+            cb_biased = _mm_xor_si128(cb_lo, signflip);
+            cr_biased = _mm_xor_si128(cr_lo, signflip);
 
-               yw  = _mm_unpacklo_epi8(y_bias, yb);
-               crw = _mm_unpacklo_epi8(zero, cr_biased);
-               cbw = _mm_unpacklo_epi8(zero, cb_biased);
+            yw  = _mm_unpacklo_epi8(y_bias, yb_lo);
+            crw = _mm_unpacklo_epi8(zero, cr_biased);
+            cbw = _mm_unpacklo_epi8(zero, cb_biased);
 
-               yws = _mm_srli_epi16(yw, 4);
-               cr0 = _mm_mulhi_epi16(cr_const0, crw);
-               cb0 = _mm_mulhi_epi16(cb_const0, cbw);
-               cb1 = _mm_mulhi_epi16(cbw, cb_const1);
-               cr1 = _mm_mulhi_epi16(crw, cr_const1);
-               rws = _mm_add_epi16(cr0, yws);
-               gws = _mm_add_epi16(_mm_add_epi16(cb0, yws), cr1);
-               bws = _mm_add_epi16(yws, cb1);
+            yws = _mm_srli_epi16(yw, 4);
+            cr0 = _mm_mulhi_epi16(cr_const0, crw);
+            cb0 = _mm_mulhi_epi16(cb_const0, cbw);
+            cb1 = _mm_mulhi_epi16(cbw, cb_const1);
+            cr1 = _mm_mulhi_epi16(crw, cr_const1);
+            rws = _mm_add_epi16(cr0, yws);
+            gws = _mm_add_epi16(_mm_add_epi16(cb0, yws), cr1);
+            bws = _mm_add_epi16(yws, cb1);
 
-               rw  = _mm_srai_epi16(rws, 4);
-               bw  = _mm_srai_epi16(bws, 4);
-               gw  = _mm_srai_epi16(gws, 4);
+            rw  = _mm_srai_epi16(rws, 4);
+            bw  = _mm_srai_epi16(bws, 4);
+            gw  = _mm_srai_epi16(gws, 4);
 
-               brb = _mm_packus_epi16(bw, rw);
-               gxb = _mm_packus_epi16(gw, xw);
+            brb = _mm_packus_epi16(bw, rw);
+            gxb = _mm_packus_epi16(gw, xw);
 
-               t0 = _mm_unpacklo_epi8(brb, gxb);
-               t1 = _mm_unpackhi_epi8(brb, gxb);
-               o0 = _mm_unpacklo_epi16(t0, t1);
-               o1 = _mm_unpackhi_epi16(t0, t1);
+            t0 = _mm_unpacklo_epi8(brb, gxb);
+            t1 = _mm_unpackhi_epi8(brb, gxb);
+            o0 = _mm_unpacklo_epi16(t0, t1);
+            o1 = _mm_unpackhi_epi16(t0, t1);
 
-               _mm_storeu_si128((__m128i*)(out + (px + j*8)*4),      o0);
-               _mm_storeu_si128((__m128i*)(out + (px + j*8)*4 + 16), o1);
-            }
+            _mm_storeu_si128((__m128i*)(out + px*4),      o0);
+            _mm_storeu_si128((__m128i*)(out + px*4 + 16), o1);
+
+            /* ---- Pixels 8-15 (high halves) ---- */
+            yb_hi = _mm_srli_si128(y_all, 8);
+            cb_hi = _mm_srli_si128(cb_bytes_16, 8);
+            cr_hi = _mm_srli_si128(cr_bytes_16, 8);
+
+            cb_biased = _mm_xor_si128(cb_hi, signflip);
+            cr_biased = _mm_xor_si128(cr_hi, signflip);
+
+            yw  = _mm_unpacklo_epi8(y_bias, yb_hi);
+            crw = _mm_unpacklo_epi8(zero, cr_biased);
+            cbw = _mm_unpacklo_epi8(zero, cb_biased);
+
+            yws = _mm_srli_epi16(yw, 4);
+            cr0 = _mm_mulhi_epi16(cr_const0, crw);
+            cb0 = _mm_mulhi_epi16(cb_const0, cbw);
+            cb1 = _mm_mulhi_epi16(cbw, cb_const1);
+            cr1 = _mm_mulhi_epi16(crw, cr_const1);
+            rws = _mm_add_epi16(cr0, yws);
+            gws = _mm_add_epi16(_mm_add_epi16(cb0, yws), cr1);
+            bws = _mm_add_epi16(yws, cb1);
+
+            rw  = _mm_srai_epi16(rws, 4);
+            bw  = _mm_srai_epi16(bws, 4);
+            gw  = _mm_srai_epi16(gws, 4);
+
+            brb = _mm_packus_epi16(bw, rw);
+            gxb = _mm_packus_epi16(gw, xw);
+
+            t0 = _mm_unpacklo_epi8(brb, gxb);
+            t1 = _mm_unpackhi_epi8(brb, gxb);
+            o0 = _mm_unpacklo_epi16(t0, t1);
+            o1 = _mm_unpackhi_epi16(t0, t1);
+
+            _mm_storeu_si128((__m128i*)(out + (px+8)*4),      o0);
+            _mm_storeu_si128((__m128i*)(out + (px+8)*4 + 16), o1);
          }
 
          cb_carry = 3*cb_near[i+7] + cb_far[i+7];
@@ -3591,7 +3553,7 @@ static void rjpeg_upsample_YCbCr_to_BGRA_simd(uint8_t *out, const uint8_t *y_row
 
          /* Process two batches of 8 output pixels */
          {
-            int j;
+            int j, op;
             uint8_t cb_tmp[16], cr_tmp[16];
             vst2_u8(cb_tmp, cb_packed);
             vst2_u8(cr_tmp, cr_packed);
@@ -3632,68 +3594,48 @@ static void rjpeg_upsample_YCbCr_to_BGRA_simd(uint8_t *out, const uint8_t *y_row
 
 #endif
 
-   /* Scalar tail for remaining chroma pixels */
+   /* Scalar tail: upsample remaining chroma into a stack buffer,
+    * then call the standard color convert function for bit-exact output. */
+   if (i < chroma_w)
    {
-      int cb_t0, cr_t0;
-      int cb_t1 = cb_carry;
-      int cr_t1 = cr_carry;
-
-      if (i < chroma_w)
+      int tail_out = out_w - px;
+      if (tail_out > 0)
       {
-         cb_t1 = 3*cb_near[i] + cb_far[i];
-         cr_t1 = 3*cr_near[i] + cr_far[i];
-      }
+         uint8_t cb_buf[256], cr_buf[256];
+         int j, op = 0;
+         int cb_t0 = cb_carry;
+         int cr_t0 = cr_carry;
+         int cb_t1 = 3*cb_near[i] + cb_far[i];
+         int cr_t1 = 3*cr_near[i] + cr_far[i];
 
-      for (; i < chroma_w && px < out_w; ++i)
-      {
-         int y_fixed, cr, cb, r, g, b;
-         cb_t0 = cb_t1;
-         cr_t0 = cr_t1;
-         if (i + 1 < chroma_w)
+         cb_buf[op] = RJPEG_DIV16(3*cb_t1 + cb_t0 + 8);
+         cr_buf[op] = RJPEG_DIV16(3*cr_t1 + cr_t0 + 8);
+         op++;
+
+         for (j = i + 1; j < chroma_w; ++j)
          {
-            cb_t1 = 3*cb_near[i+1] + cb_far[i+1];
-            cr_t1 = 3*cr_near[i+1] + cr_far[i+1];
+            cb_t0 = cb_t1; cr_t0 = cr_t1;
+            cb_t1 = 3*cb_near[j] + cb_far[j];
+            cr_t1 = 3*cr_near[j] + cr_far[j];
+            cb_buf[op] = RJPEG_DIV16(3*cb_t0 + cb_t1 + 8);
+            cr_buf[op] = RJPEG_DIV16(3*cr_t0 + cr_t1 + 8);
+            op++;
+            cb_buf[op] = RJPEG_DIV16(3*cb_t1 + cb_t0 + 8);
+            cr_buf[op] = RJPEG_DIV16(3*cr_t1 + cr_t0 + 8);
+            op++;
          }
 
-         /* even pixel */
-         if (px < out_w)
-         {
-            int cbi = (i == 0) ? RJPEG_DIV4(cb_t0 + 2)
-                                : RJPEG_DIV16(3*cb_t0 + (3*cb_near[i-1]+cb_far[i-1]) + 8);
-            int cri = (i == 0) ? RJPEG_DIV4(cr_t0 + 2)
-                                : RJPEG_DIV16(3*cr_t0 + (3*cr_near[i-1]+cr_far[i-1]) + 8);
-            cb = cbi - 128; cr = cri - 128;
-            y_fixed = (y_row[px] << 20) + (1<<19);
-            r = (y_fixed + cr*FLOAT2FIXED(1.40200f)) >> 20;
-            g = (y_fixed + cr*-FLOAT2FIXED(0.71414f) + ((cb*-FLOAT2FIXED(0.34414f))&0xffff0000)) >> 20;
-            b = (y_fixed + cb*FLOAT2FIXED(1.77200f)) >> 20;
-            if ((unsigned)r > 255) r = (r < 0) ? 0 : 255;
-            if ((unsigned)g > 255) g = (g < 0) ? 0 : 255;
-            if ((unsigned)b > 255) b = (b < 0) ? 0 : 255;
-            out[px*4]=b; out[px*4+1]=g; out[px*4+2]=r; out[px*4+3]=255;
-            px++;
-         }
-         /* odd pixel */
-         if (px < out_w)
-         {
-            int cbi = (i >= chroma_w-1) ? RJPEG_DIV4(cb_t0 + 2)
-                                         : RJPEG_DIV16(3*cb_t0 + cb_t1 + 8);
-            int cri = (i >= chroma_w-1) ? RJPEG_DIV4(cr_t0 + 2)
-                                         : RJPEG_DIV16(3*cr_t0 + cr_t1 + 8);
-            cb = cbi - 128; cr = cri - 128;
-            y_fixed = (y_row[px] << 20) + (1<<19);
-            r = (y_fixed + cr*FLOAT2FIXED(1.40200f)) >> 20;
-            g = (y_fixed + cr*-FLOAT2FIXED(0.71414f) + ((cb*-FLOAT2FIXED(0.34414f))&0xffff0000)) >> 20;
-            b = (y_fixed + cb*FLOAT2FIXED(1.77200f)) >> 20;
-            if ((unsigned)r > 255) r = (r < 0) ? 0 : 255;
-            if ((unsigned)g > 255) g = (g < 0) ? 0 : 255;
-            if ((unsigned)b > 255) b = (b < 0) ? 0 : 255;
-            out[px*4]=b; out[px*4+1]=g; out[px*4+2]=r; out[px*4+3]=255;
-            px++;
-         }
+         cb_buf[op] = RJPEG_DIV4(cb_t1 + 2);
+         cr_buf[op] = RJPEG_DIV4(cr_t1 + 2);
+         op++;
+
+         if (tail_out > op) tail_out = op;
+         rjpeg_YCbCr_to_RGB_row(out + px*4, y_row + px,
+               cb_buf, cr_buf, tail_out, 4);
       }
    }
 }
+
 
 /* set up the kernels */
 static void rjpeg_setup_jpeg(rjpeg_jpeg *j)
@@ -3814,8 +3756,7 @@ static void rjpeg_process_free(struct rjpeg_process *proc)
  * Progressive images and single-scan non-interleaved images still
  * complete in one iteration (the per-block granularity doesn't map
  * to a sensible yield point without major restructuring of the
- * coefficient storage walk).  This is acceptable because progressive
- * JPEGs are rare in RetroArch assets.
+ * coefficient storage walk). 
  * ----------------------------------------------------------------------- */
 
 /* Decode one MCU-row (j=mcu_row) of an interleaved baseline scan.
