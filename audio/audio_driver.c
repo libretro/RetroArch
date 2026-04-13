@@ -21,6 +21,15 @@
 #include <math.h>
 #include <memalign.h>
 
+#if defined(__SSE__)
+#include <xmmintrin.h>
+#endif
+
+#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#include <arm_neon.h>
+#include <features/features_cpu.h>
+#endif
+
 #include "audio_driver.h"
 
 #include <retro_assert.h>
@@ -85,6 +94,19 @@
 
  /* Converts decibels to voltage gain. Returns voltage gain value. */
 #define DB_TO_GAIN(db) (powf(10.0f, (db) / 20.0f))
+
+#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+static bool clamp_float_neon_enabled = false;
+
+static void audio_driver_clamp_init_simd(void)
+{
+   uint64_t cpu = cpu_features_get();
+   if (cpu & RETRO_SIMD_NEON)
+      clamp_float_neon_enabled = true;
+}
+#else
+static void audio_driver_clamp_init_simd(void) { }
+#endif
 
 audio_driver_t audio_null = {
    NULL, /* init */
@@ -495,9 +517,21 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          int half_size               = (int)(audio_st->buffer_size / 2);
          int delta_mid               = avail - half_size;
          double direction            = (double)delta_mid / half_size;
+         /* Scale rate_control_delta inversely with the resampling ratio
+          * so the effective loop gain stays constant regardless of
+          * output sample rate (e.g. 96 kHz+).  Without this, high
+          * ratios amplify the correction and the controller oscillates,
+          * causing audible volume pumping.
+          *
+          * Only scale down (ratio > 1.0).  At sub-unity ratios the
+          * original delta is already well-tuned and dividing by a
+          * fraction would over-amplify corrections. */
+         double effective_delta      = (audio_st->src_ratio_orig > 1.0)
+               ? audio_st->rate_control_delta / audio_st->src_ratio_orig
+               : audio_st->rate_control_delta;
 
          audio_st->free_samples_buf[write_idx] = avail;
-         rate_adjust                 = 1.0 + audio_st->rate_control_delta * direction;
+         rate_adjust                 = 1.0 + effective_delta * direction;
       }
 
       if (is_slowmotion)
@@ -570,7 +604,19 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          int half_size               = (int)(audio_st->buffer_size / 2);
          int delta_mid               = avail - half_size;
          double direction            = (double)delta_mid / half_size;
-         double adjust               = 1.0 + audio_st->rate_control_delta * direction;
+         /* Scale rate_control_delta inversely with the resampling ratio
+          * so the effective loop gain stays constant regardless of
+          * output sample rate (e.g. 96 kHz+).  Without this, high
+          * ratios amplify the correction and the controller oscillates,
+          * causing audible volume pumping.
+          *
+          * Only scale down (ratio > 1.0).  At sub-unity ratios the
+          * original delta is already well-tuned and dividing by a
+          * fraction would over-amplify corrections. */
+         double effective_delta      = (audio_st->src_ratio_orig > 1.0)
+               ? audio_st->rate_control_delta / audio_st->src_ratio_orig
+               : audio_st->rate_control_delta;
+         double adjust               = 1.0 + effective_delta * direction;
 
          audio_st->free_samples_buf[write_idx] = avail;
          audio_st->src_ratio_curr = audio_st->src_ratio_orig * adjust;
@@ -657,6 +703,71 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       const void *output_data = audio_st->output_samples_buf;
       unsigned output_frames  = (unsigned)src_data.output_frames; /* Unit: frames */
 
+      /* Clamp float samples to [-1.0, 1.0] before writing to the
+       * audio driver.  Three sources can produce out-of-range values:
+       *
+       *   1. Volume gain above 0 dB (up to +12 dB ≈ 3.98× multiplier).
+       *   2. Sinc resampler overshoot on transients — Gibbs phenomenon
+       *      causes up to ~28% overshoot on step edges even at unity gain.
+       *   3. Mixer voice summation adding on top of core audio.
+       *
+       * Without clamping, float-output drivers (WASAPI, PulseAudio,
+       * PipeWire, CoreAudio, JACK) pass these values straight to the
+       * hardware.  The s16 path (convert_float_to_s16) saturates, but
+       * the float path had no protection.
+       *
+       * When the audio mixer is active, audio_mixer_mix() unconditionally
+       * clamps the entire buffer (core audio + voices) as its final step,
+       * so an additional pass here would be redundant.  We rely on this
+       * because audio_mixer_mix() is called on the same buffer immediately
+       * above, with no intervening modifications. */
+#ifdef HAVE_AUDIOMIXER
+      if (!(audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE))
+#endif
+      {
+         unsigned i              = 0;
+         unsigned total_samples  = output_frames * 2; /* stereo */
+         float *buf              = audio_st->output_samples_buf;
+
+#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+         if (clamp_float_neon_enabled)
+         {
+            float32x4_t vpos1 = vdupq_n_f32( 1.0f);
+            float32x4_t vneg1 = vdupq_n_f32(-1.0f);
+            for (; i + 8 <= total_samples; i += 8)
+            {
+               float32x4_t v0 = vld1q_f32(buf + i);
+               float32x4_t v1 = vld1q_f32(buf + i + 4);
+               v0             = vminq_f32(v0, vpos1);
+               v0             = vmaxq_f32(v0, vneg1);
+               v1             = vminq_f32(v1, vpos1);
+               v1             = vmaxq_f32(v1, vneg1);
+               vst1q_f32(buf + i,     v0);
+               vst1q_f32(buf + i + 4, v1);
+            }
+         }
+#elif defined(__SSE__)
+         {
+            __m128 vpos1 = _mm_set1_ps( 1.0f);
+            __m128 vneg1 = _mm_set1_ps(-1.0f);
+            for (; i + 4 <= total_samples; i += 4)
+            {
+               __m128 v = _mm_loadu_ps(buf + i);
+               v        = _mm_min_ps(v, vpos1);
+               v        = _mm_max_ps(v, vneg1);
+               _mm_storeu_ps(buf + i, v);
+            }
+         }
+#endif
+         for (; i < total_samples; i++)
+         {
+            if (buf[i] > 1.0f)
+               buf[i] = 1.0f;
+            else if (buf[i] < -1.0f)
+               buf[i] = -1.0f;
+         }
+      }
+
       /* If the audio driver supports float samples,
        * we don't have to do conversion */
       if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
@@ -727,6 +838,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
+   audio_driver_clamp_init_simd();
 
    if (!out_conv_buf || !audio_buf)
       goto error;
@@ -2247,6 +2359,7 @@ bool microphone_driver_init_internal(void *settings_data)
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
+   audio_driver_clamp_init_simd();
 
    if (!(microphone_driver_find_driver(settings,
                "microphone driver", verbosity_enabled)))
