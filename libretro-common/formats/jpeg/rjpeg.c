@@ -2137,8 +2137,16 @@ static void rjpeg_dequant_idct_neon(uint8_t *out, int out_stride,
       }
 
       /* If all AC zero: uniform fill */
+#if defined(__aarch64__)
       if (vmaxvq_u16(vreinterpretq_u16_s16(
-            veorq_s16(ac_or, vdupq_n_s16(0)))) == 0)
+            vabsq_s16(ac_or))) == 0)
+#else
+      /* ARMv7 fallback: OR-reduce to a single lane */
+      {
+         uint32x4_t w = vreinterpretq_u32_s16(ac_or);
+         uint32x2_t h = vorr_u32(vget_low_u32(w), vget_high_u32(w));
+         if ((vget_lane_u32(h, 0) | vget_lane_u32(h, 1)) == 0)
+#endif
       {
          int dc  = data[0];
          int val = ((dc + 4) >> 3) + 128;
@@ -2156,6 +2164,9 @@ static void rjpeg_dequant_idct_neon(uint8_t *out, int out_stride,
          }
          return;
       }
+#if !defined(__aarch64__)
+      }
+#endif
    }
 
    /* Full IDCT on already-dequantized data */
