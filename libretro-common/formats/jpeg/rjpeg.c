@@ -2986,7 +2986,7 @@ static uint8_t*  rjpeg_resample_row_h_2(uint8_t *out, uint8_t *in_near,
       out[i*2+0] = RJPEG_DIV4(n+input[i-1]);
       out[i*2+1] = RJPEG_DIV4(n+input[i+1]);
    }
-   out[i*2+0] = RJPEG_DIV4(input[w-2]*3 + input[w-1] + 2);
+   out[i*2+0] = RJPEG_DIV4(input[w-1]*3 + input[w-2] + 2);
    out[i*2+1] = input[w-1];
 
    (void)in_far;
