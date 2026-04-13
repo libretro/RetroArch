@@ -403,6 +403,7 @@ check_platform Win32 D3D12 'Direct3D 12 is' true
 check_platform Win32 WASAPI 'WASAPI is' true
 check_platform Win32 XAUDIO 'XAudio is' true
 check_platform Win32 WINMM 'WinMM is' true
+check_platform Win32 ASIO 'ASIO is' true
 
 if [ "$HAVE_BLISSBOX" != 'no' ]; then
    if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ]; then
