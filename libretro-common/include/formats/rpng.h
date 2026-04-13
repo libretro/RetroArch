@@ -47,7 +47,8 @@ void rpng_free(rpng_t *rpng);
 bool rpng_iterate_image(rpng_t *rpng);
 
 int rpng_process_image(rpng_t *rpng,
-      void **data, size_t size, unsigned *width, unsigned *height);
+      void **data, size_t size, unsigned *width, unsigned *height,
+      bool supports_rgba);
 
 bool rpng_start(rpng_t *rpng);
 

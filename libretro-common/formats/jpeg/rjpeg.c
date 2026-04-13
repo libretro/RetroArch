@@ -4278,7 +4278,8 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
 }
 
 int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
-      size_t size, unsigned *width, unsigned *height)
+      size_t size, unsigned *width, unsigned *height,
+      bool supports_rgba)
 {
    if (!rjpeg)
       return IMAGE_PROCESS_ERROR;

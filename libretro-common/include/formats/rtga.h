@@ -35,7 +35,8 @@ RETRO_BEGIN_DECLS
 typedef struct rtga rtga_t;
 
 int rtga_process_image(rtga_t *rtga, void **buf,
-      size_t size, unsigned *width, unsigned *height);
+      size_t size, unsigned *width, unsigned *height,
+      bool supports_rgba);
 
 bool rtga_set_buf_ptr(rtga_t *rtga, void *data);
 

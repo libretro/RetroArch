@@ -428,10 +428,10 @@ static uint8_t *rtga_load_from_memory(uint8_t const *buffer, int len,
 }
 
 int rtga_process_image(rtga_t *rtga, void **buf_data,
-      size_t size, unsigned *width, unsigned *height)
+      size_t size, unsigned *width, unsigned *height,
+      bool supports_rgba)
 {
    int comp;
-   unsigned size_tex     = 0;
 
    if (!rtga)
       return IMAGE_PROCESS_ERROR;
@@ -439,18 +439,31 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
    rtga->output_image   = (uint32_t*)rtga_load_from_memory(rtga->buff_data,
                            (int)size, width, height, &comp, 4);
    *buf_data             = rtga->output_image;
-   size_tex              = (*width) * (*height);
 
-   /* Convert RGBA to ARGB */
-   while (size_tex--)
+   /* rtga_tga_load swaps BGR→RGB in the byte array, producing
+    * bytes [R,G,B,A] per pixel = uint32 ABGR on little-endian.
+    *
+    * When supports_rgba is true the renderer expects ABGR — the
+    * output is already correct, skip the conversion.
+    * This eliminates two passes that previously cancelled out
+    * (ABGR→ARGB swap + color_convert ARGB→ABGR).
+    *
+    * When supports_rgba is false the renderer expects ARGB,
+    * so swap R↔B with a single pass. */
+   if (!supports_rgba)
    {
-      unsigned int texel = rtga->output_image[size_tex];
-      unsigned int A     = texel & 0xFF000000;
-      unsigned int B     = texel & 0x00FF0000;
-      unsigned int G     = texel & 0x0000FF00;
-      unsigned int R     = texel & 0x000000FF;
-      ((unsigned int*)rtga->output_image)[size_tex] = A | (R << 16) | G | (B >> 16);
-   };
+      unsigned size_tex = (*width) * (*height);
+
+      while (size_tex--)
+      {
+         unsigned int texel = rtga->output_image[size_tex];
+         unsigned int A     = texel & 0xFF000000;
+         unsigned int B     = texel & 0x00FF0000;
+         unsigned int G     = texel & 0x0000FF00;
+         unsigned int R     = texel & 0x000000FF;
+         ((unsigned int*)rtga->output_image)[size_tex] = A | (R << 16) | G | (B >> 16);
+      }
+   }
 
    return IMAGE_PROCESS_END;
 }

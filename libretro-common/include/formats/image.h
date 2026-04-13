@@ -59,8 +59,6 @@ enum image_type_enum
 
 enum image_type_enum image_texture_get_type(const char *path);
 
-bool image_texture_color_convert(struct texture_image *out_img);
-
 bool image_texture_load_buffer(struct texture_image *img,
    enum image_type_enum type, void *s, size_t len);
 
@@ -87,7 +85,8 @@ int image_transfer_process(
       uint32_t **buf,
       size_t len,
       unsigned *width,
-      unsigned *height);
+      unsigned *height,
+      bool supports_rgba);
 
 bool image_transfer_iterate(void *data, enum image_type_enum type);
 

@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <boolean.h>
 
@@ -214,36 +215,43 @@ int image_transfer_process(
       void *data,
       enum image_type_enum type,
       uint32_t **buf, size_t len,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height,
+      bool supports_rgba)
 {
+   int ret = 0;
+
    switch (type)
    {
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-         return rpng_process_image(
+         ret = rpng_process_image(
                (rpng_t*)data,
-               (void**)buf, len, width, height);
+               (void**)buf, len, width, height, supports_rgba);
+         break;
 #else
          break;
 #endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
-         return rjpeg_process_image((rjpeg_t*)data,
-               (void**)buf, len, width, height);
+         ret = rjpeg_process_image((rjpeg_t*)data,
+               (void**)buf, len, width, height, supports_rgba);
+         break;
 #else
          break;
 #endif
       case IMAGE_TYPE_TGA:
 #ifdef HAVE_RTGA
-         return rtga_process_image((rtga_t*)data,
-               (void**)buf, len, width, height);
+         ret = rtga_process_image((rtga_t*)data,
+               (void**)buf, len, width, height, supports_rgba);
+         break;
 #else
          break;
 #endif
       case IMAGE_TYPE_BMP:
 #ifdef HAVE_RBMP
-         return rbmp_process_image((rbmp_t*)data,
-               (void**)buf, len, width, height);
+         ret = rbmp_process_image((rbmp_t*)data,
+               (void**)buf, len, width, height, supports_rgba);
+         break;
 #else
          break;
 #endif
@@ -251,7 +259,61 @@ int image_transfer_process(
          break;
    }
 
-   return 0;
+#ifdef GEKKO
+   /* Convert from linear ARGB to the Wii's tiled texture format.
+    * Applied once when decoding finishes (IMAGE_PROCESS_END),
+    * not during intermediate iterations. */
+   if (ret == IMAGE_PROCESS_END && *buf && *width && *height)
+   {
+      unsigned tmp_pitch, width2, i;
+      const uint16_t *src = NULL;
+      uint16_t *dst       = NULL;
+      void *tmp           = malloc((*width) * (*height) * sizeof(uint32_t));
+
+      if (!tmp)
+         return IMAGE_PROCESS_ERROR;
+
+      memcpy(tmp, *buf, (*width) * (*height) * sizeof(uint32_t));
+      tmp_pitch = ((*width) * sizeof(uint32_t)) >> 1;
+
+      *width  &= ~3;
+      *height &= ~3;
+      width2   = (*width) << 1;
+      src      = (const uint16_t*)tmp;
+      dst      = (uint16_t*)*buf;
+
+      for (i = 0; i < *height; i += 4, dst += 4 * width2)
+      {
+#define GX_BLIT_LINE_32(off) \
+         { \
+            unsigned x; \
+            const uint16_t *tmp_src = src; \
+            uint16_t       *tmp_dst = dst; \
+            for (x = 0; x < width2 >> 3; x++, tmp_src += 8, tmp_dst += 32) \
+            { \
+               tmp_dst[  0 + off] = tmp_src[0]; \
+               tmp_dst[ 16 + off] = tmp_src[1]; \
+               tmp_dst[  1 + off] = tmp_src[2]; \
+               tmp_dst[ 17 + off] = tmp_src[3]; \
+               tmp_dst[  2 + off] = tmp_src[4]; \
+               tmp_dst[ 18 + off] = tmp_src[5]; \
+               tmp_dst[  3 + off] = tmp_src[6]; \
+               tmp_dst[ 19 + off] = tmp_src[7]; \
+            } \
+            src += tmp_pitch; \
+         }
+         GX_BLIT_LINE_32(0)
+         GX_BLIT_LINE_32(4)
+         GX_BLIT_LINE_32(8)
+         GX_BLIT_LINE_32(12)
+#undef GX_BLIT_LINE_32
+      }
+
+      free(tmp);
+   }
+#endif
+
+   return ret;
 }
 
 bool image_transfer_iterate(void *data, enum image_type_enum type)

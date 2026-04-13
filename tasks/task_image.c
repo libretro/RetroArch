@@ -79,12 +79,8 @@ static int cb_image_upload_generic(void *data, size_t len)
          break;
    }
 
-   /* JPEG already outputs in the correct channel order (BGRA/ARGB)
-    * after its internal YCbCr→RGB conversion, so skip the swap.
-    * For other formats (PNG, BMP, TGA), apply R↔B conversion
-    * if the platform requires RGBA byte order. */
-   if (image->type != IMAGE_TYPE_JPEG)
-      image_texture_color_convert(&image->ti);
+   /* All decoders now output the correct channel order directly
+    * based on supports_rgba, so no post-processing swap is needed. */
 
    image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
    image->flags                   |=  IMAGE_FLAG_IS_BLOCKING;
@@ -107,7 +103,8 @@ static int task_image_process(
    if ((retval = image_transfer_process(
          image->handle,
          image->type,
-         &image->ti.pixels, image->size, width, height)) == IMAGE_PROCESS_ERROR)
+         &image->ti.pixels, image->size, width, height,
+         image->ti.supports_rgba)) == IMAGE_PROCESS_ERROR)
       return IMAGE_PROCESS_ERROR;
 
    image->ti.width  = *width;

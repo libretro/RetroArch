@@ -724,7 +724,8 @@ static void rbmp_convert_frame(uint32_t *frame, unsigned width, unsigned height)
 }
 
 int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
-      size_t size, unsigned *width, unsigned *height)
+      size_t size, unsigned *width, unsigned *height,
+      bool supports_rgba)
 {
    int comp;
 
@@ -735,7 +736,18 @@ int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
                            (int)size, width, height, &comp, 4);
    *buf_data             = rbmp->output_image;
 
-   rbmp_convert_frame(rbmp->output_image, *width, *height);
+   /* rbmp_load outputs bytes [R,G,B,A] per pixel, which as a
+    * little-endian uint32 reads as ABGR.
+    *
+    * When supports_rgba is true the renderer expects ABGR — the raw
+    * output is already correct, skip the conversion entirely.
+    * This eliminates two full-image passes that previously cancelled
+    * out (rbmp_convert_frame ABGR→ARGB + color_convert ARGB→ABGR).
+    *
+    * When supports_rgba is false the renderer expects ARGB, so swap
+    * R↔B with a single pass (rbmp_convert_frame). */
+   if (!supports_rgba)
+      rbmp_convert_frame(rbmp->output_image, *width, *height);
 
    return IMAGE_PROCESS_END;
 }

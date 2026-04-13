@@ -458,7 +458,8 @@ static void handle_translation_response(
             do
             {
                retval = rpng_process_image(rpng, &raw_image_data_alpha,
-                     (size_t)new_image_size, &image_width, &image_height);
+                     (size_t)new_image_size, &image_width, &image_height,
+                     false);
             } while (retval == IMAGE_PROCESS_NEXT);
 
             /* Returned output from the png processor is an upside down RGBA

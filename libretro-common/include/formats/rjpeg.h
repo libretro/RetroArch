@@ -41,7 +41,8 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg);
 bool rjpeg_is_valid(rjpeg_t *rjpeg);
 
 int rjpeg_process_image(rjpeg_t *rjpeg, void **buf,
-      size_t size, unsigned *width, unsigned *height);
+      size_t size, unsigned *width, unsigned *height,
+      bool supports_rgba);
 
 bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data, size_t len);
 
