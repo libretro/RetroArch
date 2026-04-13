@@ -16,10 +16,12 @@
  */
 
 #include <retro_miscellaneous.h>
+#include <file/file_path.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
+#include "../../tasks/tasks_internal.h"
 
 /* Constants */
 #define VOLUME_DURATION 3000
@@ -344,6 +346,8 @@ static void gfx_widget_volume_layout(
    }
 }
 
+static uint64_t volume_icon_load_gen = 0;
+
 static void gfx_widget_volume_context_reset(bool is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
@@ -351,16 +355,28 @@ static void gfx_widget_volume_context_reset(bool is_threaded,
       char* widgets_png_path)
 {
    size_t i;
-   gfx_widget_volume_state_t *state     = &p_w_volume_st;
+   bool supports_rgba                    = video_driver_supports_rgba();
+   gfx_widget_volume_state_t *state      = &p_w_volume_st;
+
+   volume_icon_load_gen++;
 
    for (i = 0; i < ICON_LAST; i++)
-      gfx_display_reset_textures_list(ICONS_NAMES[i], menu_png_path, &state->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+   {
+      char texpath[PATH_MAX_LENGTH];
+      fill_pathname_join_special(texpath,
+            menu_png_path, ICONS_NAMES[i], sizeof(texpath));
+      task_push_icon_load(texpath, supports_rgba,
+            &state->textures[i], volume_icon_load_gen,
+            &volume_icon_load_gen);
+   }
 }
 
 static void gfx_widget_volume_context_destroy(void)
 {
    size_t i;
    gfx_widget_volume_state_t *state     = &p_w_volume_st;
+
+   volume_icon_load_gen++;
 
    for (i = 0; i < ICON_LAST; i++)
       video_driver_texture_unload(&state->textures[i]);

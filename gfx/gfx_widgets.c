@@ -46,6 +46,44 @@
 #define MSG_QUEUE_FONT_SIZE 20.0f
 
 static dispgfx_widget_t dispwidget_st = {0}; /* uint64_t alignment */
+static uint64_t widget_icon_load_gen  = 0;
+
+/* Recompute the layout variables that depend on whether widget icons
+ * are loaded.  Called from gfx_widgets_layout() during context_reset,
+ * and again from the async icon load callback when icons arrive. */
+static void gfx_widgets_update_icon_layout(dispgfx_widget_t *p_dispwidget)
+{
+   bool has_icons = !!(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS);
+
+   if (has_icons)
+      p_dispwidget->msg_queue_regular_padding_x   = p_dispwidget->simple_widget_padding / 2;
+   else
+      p_dispwidget->msg_queue_regular_padding_x   = p_dispwidget->simple_widget_padding;
+
+   if (has_icons)
+   {
+      p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height;
+      p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->msg_queue_icon_size_y;
+   }
+   else
+   {
+      p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->msg_queue_height / 4.0f;
+      p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_icon_size_x;
+   }
+
+   p_dispwidget->msg_queue_internal_icon_size     = p_dispwidget->msg_queue_icon_size_y;
+   p_dispwidget->msg_queue_icon_offset_y          = (p_dispwidget->msg_queue_icon_size_y - p_dispwidget->msg_queue_height) / 2;
+   p_dispwidget->msg_queue_scissor_start_x        = p_dispwidget->msg_queue_spacing + p_dispwidget->msg_queue_icon_size_x - (p_dispwidget->msg_queue_icon_size_x * 0.28928571428f);
+
+   p_dispwidget->msg_queue_regular_text_start     = p_dispwidget->msg_queue_rect_start_x + p_dispwidget->msg_queue_icon_size_x + (p_dispwidget->simple_widget_padding / 2.5f);
+   p_dispwidget->msg_queue_task_text_start_x      = p_dispwidget->msg_queue_rect_start_x + (p_dispwidget->msg_queue_height / 2.0f) + (p_dispwidget->simple_widget_padding / 2.0f);
+
+   if (!p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_HOURGLASS])
+      p_dispwidget->msg_queue_task_text_start_x  -= p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 2.0f;
+
+   p_dispwidget->msg_queue_default_rect_width     = p_dispwidget->last_video_width
+         - p_dispwidget->msg_queue_regular_text_start - (2 * p_dispwidget->simple_widget_padding);
+}
 
 /* Widgets list */
 static const gfx_widget_t* const widgets[] = {
@@ -841,34 +879,7 @@ static void gfx_widgets_layout(
    p_dispwidget->msg_queue_spacing                = p_dispwidget->msg_queue_height / 4.0f;
    p_dispwidget->msg_queue_rect_start_x           = ceil(p_dispwidget->msg_queue_padding - (p_dispwidget->simple_widget_padding * 0.10f));
 
-   if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
-      p_dispwidget->msg_queue_regular_padding_x   = p_dispwidget->simple_widget_padding / 2;
-   else
-      p_dispwidget->msg_queue_regular_padding_x   = p_dispwidget->simple_widget_padding;
-
-   if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
-   {
-      p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height;
-      p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->msg_queue_icon_size_y;
-   }
-   else
-   {
-      p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->msg_queue_height / 4.0f;
-      p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_icon_size_x;
-   }
-
-   p_dispwidget->msg_queue_internal_icon_size     = p_dispwidget->msg_queue_icon_size_y;
-   p_dispwidget->msg_queue_icon_offset_y          = (p_dispwidget->msg_queue_icon_size_y - p_dispwidget->msg_queue_height) / 2;
-   p_dispwidget->msg_queue_scissor_start_x        = p_dispwidget->msg_queue_spacing + p_dispwidget->msg_queue_icon_size_x - (p_dispwidget->msg_queue_icon_size_x * 0.28928571428f);
-
-   p_dispwidget->msg_queue_regular_text_start     = p_dispwidget->msg_queue_rect_start_x + p_dispwidget->msg_queue_icon_size_x + (p_dispwidget->simple_widget_padding / 2.5f);
-   p_dispwidget->msg_queue_task_text_start_x      = p_dispwidget->msg_queue_rect_start_x + (p_dispwidget->msg_queue_height / 2.0f) + (p_dispwidget->simple_widget_padding / 2.0f);
-
-   if (!p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_HOURGLASS])
-      p_dispwidget->msg_queue_task_text_start_x  -= p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 2.0f;
-
-   p_dispwidget->msg_queue_default_rect_width     = p_dispwidget->last_video_width
-         - p_dispwidget->msg_queue_regular_text_start - (2 * p_dispwidget->simple_widget_padding);
+   gfx_widgets_update_icon_layout(p_dispwidget);
 
    p_dispwidget->divider_width_1px                = 1;
    if (p_dispwidget->last_scale_factor > 1.0f)
@@ -1564,6 +1575,17 @@ void gfx_widgets_frame(void *data)
 
    p_dispwidget->gfx_widgets_frame_count++;
 
+   /* Second-pass icon layout: when async widget icons finish loading,
+    * detect the transition and recompute icon-dependent layout once.
+    * This avoids the old approach of either blocking on load or
+    * setting the flag optimistically (which caused text/icon overlap). */
+   if (!(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
+         && p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO])
+   {
+      p_dispwidget->flags |= DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
+      gfx_widgets_update_icon_layout(p_dispwidget);
+   }
+
 #ifdef HAVE_MENU
    /* If menu screensaver is active, draw nothing */
    if (menu_screensaver_active)
@@ -1978,24 +2000,28 @@ static void gfx_widgets_context_reset(
          "menu_achievements.png"
       };
    size_t i;
+   bool supports_rgba = video_driver_supports_rgba();
 
-   /* Load textures — kept synchronous because the message queue
-    * layout (gfx_widgets_layout) depends on MSG_QUEUE_HAS_ICONS
-    * which requires knowing whether icons loaded successfully.
-    * Only ~10 small PNGs, total cost ~30ms. */
+   /* Invalidate any in-flight async icon loads */
+   widget_icon_load_gen++;
+
+   /* Start with no-icons layout — text positions are correct for
+    * text-only rendering.  When async loads complete, the callback
+    * sets MSG_QUEUE_HAS_ICONS and recomputes icon-dependent layout. */
+   p_dispwidget->flags &= ~DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
+
+   /* Queue async icon loads */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
-      gfx_display_reset_textures_list(
-            gfx_widgets_icons_names[i],
+   {
+      char texpath[PATH_MAX_LENGTH];
+      fill_pathname_join_special(texpath,
             p_dispwidget->monochrome_png_path,
+            gfx_widgets_icons_names[i],
+            sizeof(texpath));
+      task_push_icon_load(texpath, supports_rgba,
             &p_dispwidget->gfx_widgets_icons_textures[i],
-            TEXTURE_FILTER_MIPMAP_LINEAR,
-            NULL,
-            NULL);
-
-   if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO])
-      p_dispwidget->flags |=  DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
-   else
-      p_dispwidget->flags &= ~DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
+            widget_icon_load_gen, &widget_icon_load_gen);
+   }
 
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
@@ -2164,6 +2190,9 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
    }
 
    /* TODO: Dismiss onscreen notifications that have been freed */
+
+   /* Invalidate in-flight async widget icon loads */
+   widget_icon_load_gen++;
 
    /* Textures */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
