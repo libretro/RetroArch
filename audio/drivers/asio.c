@@ -876,6 +876,8 @@ static ASIOCallbacks g_asio_callbacks = {
    asio_cb_buffer_switch_time_info
 };
 
+/* One thing worth noting: if RetroArch switches away from the ASIO driver to a different audio driver (e.g. user changes from "asio" to "wasapi" in settings), free() parks the instance but init() is never called again for ASIO — so g_asio_persistent holds the parked instance until exit. That's not a growing leak (it's a fixed ~100 bytes plus the ring buffer), but it does hold the ASIO COM object and device open. If you wanted to handle that edge case, you'd need a destructor that runs on actual driver unload, but RetroArch doesn't have that mechanism */
+
 /* Called at process exit to clean up a parked ASIO instance.
  * This prevents COM object leaks and satisfies leak checkers. */
 static void asio_atexit_cleanup(void)
