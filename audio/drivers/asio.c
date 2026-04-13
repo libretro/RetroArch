@@ -222,10 +222,11 @@ enum iasio_vtable_index
 #define IASIO_VTBL(iface, idx) \
    (((void **)(*(void **)(iface)))[CYCLED_VTABLE_OFFSET + (idx)])
 
-#if defined(__x86_64__) || defined(_M_X64)
-/* ── 64-bit (both MSVC and GCC/MinGW) ──
- * Windows x64 has a single unified calling convention — 'this'
- * goes in RCX as the first argument.  No special handling needed. */
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
+/* ── 64-bit (x86_64 and ARM64, both MSVC and GCC/MinGW/Clang) ──
+ * Windows x64 and ARM64 both use a single unified calling convention
+ * — 'this' goes as the first argument (RCX on x64, X0 on ARM64).
+ * No special handling needed. */
 
 typedef ASIOBool  (__cdecl *iasio_init_fn)(void *this_, void *sysHandle);
 typedef void      (__cdecl *iasio_get_str_fn)(void *this_, char *str);
