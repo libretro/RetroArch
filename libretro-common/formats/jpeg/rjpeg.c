@@ -607,8 +607,6 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
    if (j->code_bits < 16)
       rjpeg_grow_buffer_unsafe(j);
 
-   /* look at the top FAST_BITS and determine what symbol ID it is,
-    * if the code is <= FAST_BITS */
    c = (j->code_buffer >> (32 - FAST_BITS)) & ((1 << FAST_BITS)-1);
    k = h->fast[c];
 
@@ -622,12 +620,6 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
       return h->values[k];
    }
 
-   /* naive test is to shift the code_buffer down so k bits are
-    * valid, then test against maxcode. To speed this up, we've
-    * preshifted maxcode left so that it has (16-k) 0s at the
-    * end; in other words, regardless of the number of bits, it
-    * wants to be compared against something shifted to have 16;
-    * that way we don't need to shift inside the loop. */
    temp = j->code_buffer >> 16;
    for (k=FAST_BITS+1 ; ; ++k)
       if (temp < h->maxcode[k])
@@ -635,7 +627,6 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
 
    if (k == 17)
    {
-      /* error! code not found */
       j->code_bits -= 16;
       return -1;
    }
@@ -643,10 +634,49 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
    if (k > j->code_bits)
       return -1;
 
-   /* convert the huffman code to the symbol id */
    c = ((j->code_buffer >> (32 - k)) & rjpeg_bmask[k]) + h->delta[k];
 
-   /* convert the id to a symbol */
+   j->code_bits -= k;
+   j->code_buffer <<= k;
+   return h->values[c];
+}
+
+/* _nocheck variant: caller guarantees code_bits >= 16.
+ * Used from decode_block where grow_buffer was just called. */
+static INLINE int rjpeg_jpeg_huff_decode_nocheck(rjpeg_jpeg *j, rjpeg_huffman *h)
+{
+   unsigned int temp;
+   int c,k;
+
+   c = (j->code_buffer >> (32 - FAST_BITS)) & ((1 << FAST_BITS)-1);
+   k = h->fast[c];
+
+   if (k < 255)
+   {
+      int s = h->size[k];
+      if (s > j->code_bits)
+         return -1;
+      j->code_buffer <<= s;
+      j->code_bits -= s;
+      return h->values[k];
+   }
+
+   temp = j->code_buffer >> 16;
+   for (k=FAST_BITS+1 ; ; ++k)
+      if (temp < h->maxcode[k])
+         break;
+
+   if (k == 17)
+   {
+      j->code_bits -= 16;
+      return -1;
+   }
+
+   if (k > j->code_bits)
+      return -1;
+
+   c = ((j->code_buffer >> (32 - k)) & rjpeg_bmask[k]) + h->delta[k];
+
    j->code_bits -= k;
    j->code_buffer <<= k;
    return h->values[c];
@@ -664,7 +694,24 @@ static INLINE int rjpeg_extend_receive(rjpeg_jpeg *j, int n)
    if (j->code_bits < n)
       rjpeg_grow_buffer_unsafe(j);
 
-   sgn             = (int32_t)j->code_buffer >> 31; /* sign bit is always in MSB */
+   sgn             = (int32_t)j->code_buffer >> 31;
+   k               = RJPEG_LROT(j->code_buffer, n);
+   j->code_buffer  = k & ~rjpeg_bmask[n];
+   k              &= rjpeg_bmask[n];
+   j->code_bits   -= n;
+   return k + (rjpeg_jbias[n] & ~sgn);
+}
+
+/* _nocheck variant: caller guarantees code_bits >= n.
+ * After grow_buffer fills to 24+ bits and DC huff_decode consumes
+ * at most 16 bits, at least 8 bits remain — enough for any
+ * DC category (max 11 bits). */
+static INLINE int rjpeg_extend_receive_nocheck(rjpeg_jpeg *j, int n)
+{
+   unsigned int k;
+   int sgn;
+
+   sgn             = (int32_t)j->code_buffer >> 31;
    k               = RJPEG_LROT(j->code_buffer, n);
    j->code_buffer  = k & ~rjpeg_bmask[n];
    k              &= rjpeg_bmask[n];
@@ -726,7 +773,7 @@ static uint8_t rjpeg_jpeg_dezigzag[64+15] =
  * up to 64 for a full block, 0 on error).  The caller uses this to
  * clean up: zero data[dezigzag[1..k-1]] after IDCT consumes the block.
  */
-static int rjpeg_jpeg_decode_block(
+static INLINE int rjpeg_jpeg_decode_block(
       rjpeg_jpeg *j, short data[64],
       rjpeg_huffman *hdc,
       rjpeg_huffman *hac,
@@ -738,52 +785,56 @@ static int rjpeg_jpeg_decode_block(
    int t;
    int diff      = 0;
 
+   /* Single grow_buffer for DC: guarantees code_bits >= 24.
+    * DC huff_decode consumes at most 16 bits, extend_receive
+    * consumes at most 11 bits. Total max = 27 > 24, but in
+    * practice DC categories > 11 are invalid in baseline JPEG
+    * (max category = 11, so max DC consumption = 16+11 = 27).
+    * The _nocheck calls below skip their own grow_buffer since
+    * we just ensured >= 24 bits and will consume <= ~22. */
    if (j->code_bits < 16)
       rjpeg_grow_buffer_unsafe(j);
-   t = rjpeg_jpeg_huff_decode(j, hdc);
+   t = rjpeg_jpeg_huff_decode_nocheck(j, hdc);
 
-   /* Bad huffman code. Corrupt JPEG? */
    if (t < 0)
       return 0;
 
-   /* No memset here — caller maintains the zero invariant.
-    * Only data[0] is written unconditionally; AC positions are
-    * written sparsely and cleaned up after IDCT. */
-
    if (t)
-      diff                = rjpeg_extend_receive(j, t);
+      diff                = rjpeg_extend_receive_nocheck(j, t);
    dc                     = j->img_comp[b].dc_pred + diff;
    j->img_comp[b].dc_pred = dc;
    data[0]                = (short) (dc * dequant[0]);
 
-   /* decode AC components, see JPEG spec */
    k                      = 1;
    do
    {
       unsigned int zig;
       int c,r,s;
+      /* Single grow_buffer per AC iteration: guarantees >= 16 bits.
+       * The fast_ac path consumes at most 16 bits (FAST_BITS=9 + 7
+       * for the coefficient). The slow path's huff_decode_nocheck
+       * consumes at most 16 bits, then extend_receive_nocheck
+       * consumes at most 10 bits (max AC category). We check once
+       * here; both paths skip their internal checks. */
       if (j->code_bits < 16)
          rjpeg_grow_buffer_unsafe(j);
       c = (j->code_buffer >> (32 - FAST_BITS)) & ((1 << FAST_BITS)-1);
       r = fac[c];
       if (r)
       {
-         /* fast-AC path */
-         k               += (r >> 4) & 15; /* run */
-         s                = r & 15; /* combined length */
+         k               += (r >> 4) & 15;
+         s                = r & 15;
          if (k > 63)
-            return 0; /* Corrupt JPEG: AC coefficient index out of range */
+            return 0;
          j->code_buffer <<= s;
          j->code_bits    -= s;
-         /* decode into unzigzag'd location */
          zig              = rjpeg_jpeg_dezigzag[k++];
          data[zig]        = (short) ((r >> 8) * dequant[zig]);
       }
       else
       {
-         int rs = rjpeg_jpeg_huff_decode(j, hac);
+         int rs = rjpeg_jpeg_huff_decode_nocheck(j, hac);
 
-         /* Bad huffman code. Corrupt JPEG? */
          if (rs < 0)
             return 0;
 
@@ -792,21 +843,20 @@ static int rjpeg_jpeg_decode_block(
          if (s == 0)
          {
             if (rs != 0xf0)
-               break; /* end block */
+               break;
             k += 16;
          }
          else
          {
             k += r;
             if (k > 63)
-               return 0; /* Corrupt JPEG: AC coefficient index out of range */
-            /* decode into unzigzag'd location */
+               return 0;
             zig = rjpeg_jpeg_dezigzag[k++];
-            data[zig] = (short) (rjpeg_extend_receive(j,s) * dequant[zig]);
+            data[zig] = (short) (rjpeg_extend_receive_nocheck(j,s) * dequant[zig]);
          }
       }
    } while (k < 64);
-   return k; /* zigzag index at exit: 1 = DC-only, >1 = has AC */
+   return k;
 }
 
 /* Clean up the data[] buffer after IDCT by zeroing only the positions
