@@ -416,15 +416,23 @@ static INLINE ASIOError asio_thiscall_four_longs(void *iface, int idx,
 {
    ASIOError ret;
    void *fn = IASIO_VTBL(iface, idx);
+   /* Store args in a local array so asm only needs 2 register inputs
+    * (this + fn).  Avoids "impossible constraints" on i686 where GCC
+    * cannot allocate 6 simultaneous register operands. */
+   void *args[4];
+   args[0] = (void *)a;
+   args[1] = (void *)b;
+   args[2] = (void *)c;
+   args[3] = (void *)d;
    __asm__ __volatile__ (
-      "pushl %5\n\t"
-      "pushl %4\n\t"
-      "pushl %3\n\t"
-      "pushl %2\n\t"
+      "pushl 12(%2)\n\t"    /* args[3] = d */
+      "pushl  8(%2)\n\t"    /* args[2] = c */
+      "pushl  4(%2)\n\t"    /* args[1] = b */
+      "pushl   (%2)\n\t"    /* args[0] = a */
       "movl  %1, %%ecx\n\t"
-      "call  *%6\n\t"
+      "call  *%3\n\t"
       : "=a"(ret)
-      : "r"(iface), "r"(a), "r"(b), "r"(c), "r"(d), "r"(fn)
+      : "r"(iface), "r"(args), "r"(fn)
       : "ecx", "edx", "memory"
    );
    return ret;
@@ -488,15 +496,22 @@ static INLINE ASIOError asio_thiscall_create_buffers(void *iface,
 {
    ASIOError ret;
    void *fn = IASIO_VTBL(iface, CYCLED_IASIO_CREATE_BUFFERS);
+   /* Store args in a local array — same register-pressure fix as
+    * asio_thiscall_four_longs above. */
+   void *args[4];
+   args[0] = (void *)bi;
+   args[1] = (void *)(intptr_t)nc;
+   args[2] = (void *)(intptr_t)bs;
+   args[3] = (void *)cb;
    __asm__ __volatile__ (
-      "pushl %5\n\t"
-      "pushl %4\n\t"
-      "pushl %3\n\t"
-      "pushl %2\n\t"
+      "pushl 12(%2)\n\t"    /* args[3] = cb */
+      "pushl  8(%2)\n\t"    /* args[2] = bs */
+      "pushl  4(%2)\n\t"    /* args[1] = nc */
+      "pushl   (%2)\n\t"    /* args[0] = bi */
       "movl  %1, %%ecx\n\t"
-      "call  *%6\n\t"
+      "call  *%3\n\t"
       : "=a"(ret)
-      : "r"(iface), "r"(bi), "r"(nc), "r"(bs), "r"(cb), "r"(fn)
+      : "r"(iface), "r"(args), "r"(fn)
       : "ecx", "edx", "memory"
    );
    return ret;
