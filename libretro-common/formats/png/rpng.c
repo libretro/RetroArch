@@ -1168,7 +1168,6 @@ static enum png_chunk_type rpng_read_chunk_header(
 
 bool rpng_iterate_image(rpng_t *rpng)
 {
-   unsigned i;
    uint8_t *buf             = (uint8_t*)rpng->buff_data;
    uint32_t chunk_size      = 0;
 
