@@ -5069,6 +5069,15 @@ static size_t setting_get_string_representation_uint_custom_vp_height(
    return _len;
 }
 
+#ifdef HAVE_ASIO
+static int setting_action_asio_control_panel(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   audio_asio_open_control_panel();
+   return 0;
+}
+#endif
+
 #ifdef HAVE_WASAPI
 static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_length(
       rarch_setting_t *setting, char *s, size_t len)
@@ -15392,6 +15401,20 @@ static bool setting_append_list(
                   &setting_get_string_representation_uint_audio_wasapi_sh_buffer_length;
             menu_settings_list_current_add_range(list, list_info, 0, 32.0f * 200, 32.0f, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         }
+#endif
+
+#ifdef HAVE_ASIO
+         if (string_is_equal(audio_driver_get_ident(), "asio"))
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_AUDIO_ASIO_CONTROL_PANEL,
+                  MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+            (*list)[list_info->index - 1].action_ok = &setting_action_asio_control_panel;
          }
 #endif
 

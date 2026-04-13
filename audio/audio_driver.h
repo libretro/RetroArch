@@ -428,6 +428,10 @@ extern audio_driver_t audio_pulse;
 extern audio_driver_t audio_pipewire;
 extern audio_driver_t audio_dsound;
 extern audio_driver_t audio_wasapi;
+#ifdef HAVE_ASIO
+extern audio_driver_t audio_asio;
+void audio_asio_open_control_panel(void);
+#endif
 extern audio_driver_t audio_coreaudio;
 extern audio_driver_t audio_coreaudio3;
 extern audio_driver_t audio_xenon360;

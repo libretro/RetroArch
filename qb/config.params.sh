@@ -31,6 +31,7 @@ HAVE_RUNAHEAD=yes          # Runahead support
 HAVE_DSOUND=auto           # DirectSound support
 HAVE_XAUDIO=auto           # XAudio support
 HAVE_WASAPI=auto           # WASAPI support
+HAVE_ASIO=no               # ASIO support (Windows only, requires ASIO-compatible driver)
 HAVE_WINMM=auto            # WinMM support
 HAVE_NEAREST_RESAMPLER=yes # Nearest resampler
 HAVE_CC_RESAMPLER=yes      # CC Resampler

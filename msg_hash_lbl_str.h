@@ -93,6 +93,7 @@
 #define MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE_STR "audio_wasapi_exclusive_mode"
 #define MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT_STR "audio_wasapi_float_format"
 #define MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH_STR "audio_wasapi_sh_buffer_length"
+#define MENU_ENUM_LABEL_AUDIO_ASIO_CONTROL_PANEL_STR "audio_asio_control_panel"
 #define MENU_ENUM_LABEL_MICROPHONE_ENABLE_STR "microphone_enable"
 #define MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER_STR "microphone_resampler_driver"
 #define MENU_ENUM_LABEL_MICROPHONE_DEVICE_STR "microphone_device"

@@ -7846,6 +7846,16 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false) == 0)
                count++;
 #endif
+#ifdef HAVE_ASIO
+            if (  string_is_equal(settings->arrays.audio_driver, "asio")
+               && !string_is_empty(settings->arrays.audio_device))
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_AUDIO_ASIO_CONTROL_PANEL,
+                        PARSE_ACTION, false) == 0)
+                  count++;
+            }
+#endif
          }
          break;
 #ifdef HAVE_MICROPHONE

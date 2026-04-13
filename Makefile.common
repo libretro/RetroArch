@@ -945,6 +945,12 @@ ifeq ($(HAVE_WASAPI), 1)
    LIBS += -lole32 -lksuser
 endif
 
+ifeq ($(HAVE_ASIO), 1)
+   OBJ += audio/drivers/asio.o
+   DEFINES += -DHAVE_ASIO
+   LIBS += -lole32
+endif
+
 ifeq ($(HAVE_XAUDIO), 1)
    OBJ += audio/drivers/xaudio.o
    DEFINES += -DHAVE_XAUDIO

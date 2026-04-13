@@ -2835,6 +2835,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Open ASIO Control Panel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Open the ASIO driver control panel to configure device routing and buffer settings."
+   )
 
 /* Settings > Audio > Output */
 
