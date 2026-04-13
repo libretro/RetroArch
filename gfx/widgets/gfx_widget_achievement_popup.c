@@ -572,10 +572,10 @@ static void gfx_widget_achievement_popup_start(
    state->width = MAX(
       font_driver_get_message_width(
          p_dispwidget->gfx_widget_fonts.regular.font,
-         state->queue[state->queue_read_index].title, 0, 1.0f),
+         state->queue[state->queue_read_index].title, strlen(state->queue[state->queue_read_index].title), 1.0f),
       font_driver_get_message_width(
          p_dispwidget->gfx_widget_fonts.regular.font,
-         state->queue[state->queue_read_index].subtitle, 0, 1.0f)
+         state->queue[state->queue_read_index].subtitle, strlen(state->queue[state->queue_read_index].subtitle), 1.0f)
    );
    state->width += p_dispwidget->simple_widget_padding * 2;
    state->unfold = 0.0f;

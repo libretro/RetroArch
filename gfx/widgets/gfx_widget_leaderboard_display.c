@@ -391,7 +391,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          const char *disconnected_text = state->disconnected ? "! RA !" : loading_buffer;
          const unsigned disconnect_widget_width = font_driver_get_message_width(
             state->dispwidget_ptr->gfx_widget_fonts.msg_queue.font,
-            disconnected_text, 0, 1) + CHEEVO_LBOARD_DISPLAY_PADDING * 2;
+            disconnected_text, strlen(disconnected_text), 1) + CHEEVO_LBOARD_DISPLAY_PADDING * 2;
          const unsigned disconnect_widget_height =
             p_dispwidget->gfx_widget_fonts.msg_queue.line_height + (CHEEVO_LBOARD_DISPLAY_PADDING - 1) * 2;
          x  = video_width - disconnect_widget_width - spacing;
@@ -489,7 +489,7 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
                buffer[0] = (char)(j + CHEEVO_LBOARD_FIRST_FIXED_CHAR);
                state->char_width[j] = (uint16_t)font_driver_get_message_width(
                      state->dispwidget_ptr->gfx_widget_fonts.regular.font,
-                     buffer, 0, 1);
+                     buffer, 1, 1);
                if (state->char_width[j] > state->fixed_char_width)
                   state->fixed_char_width = state->char_width[j];
             }
@@ -631,7 +631,7 @@ void gfx_widget_set_achievement_progress(const char* badge, const char* progress
       snprintf(state->progress_tracker.display, sizeof(state->progress_tracker.display), "%s", progress);
       state->progress_tracker.width = (uint16_t)font_driver_get_message_width(
             state->dispwidget_ptr->gfx_widget_fonts.regular.font,
-            progress, 0, 1);
+            progress, strlen(progress), 1);
    }
 
    if (old_badge_id)
