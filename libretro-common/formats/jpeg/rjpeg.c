@@ -77,6 +77,7 @@ enum rjpeg_iter_state
 {
    RJPEG_ITER_PARSE_HEADER = 0,  /* SOI + markers before first SOS       */
    RJPEG_ITER_ENTROPY_ROWS,      /* MCU-row-at-a-time entropy decode      */
+   RJPEG_ITER_PROG_SCAN,         /* progressive: one scan per iteration   */
    RJPEG_ITER_FINISH_PROG,       /* progressive: dequant+IDCT after scans */
    RJPEG_ITER_DONE,              /* all decoding finished                 */
    RJPEG_ITER_ERROR               /* unrecoverable error                   */
@@ -110,6 +111,10 @@ struct rjpeg
    int                     iter_mcu_row;   /* current MCU row during entropy  */
    int                     iter_marker;    /* pending marker between scans    */
    bool                    iter_started;   /* rjpeg_start() was called        */
+
+   /* Progressive finish-phase tracking (RJPEG_ITER_FINISH_PROG) */
+   int                     iter_finish_comp;  /* current component index       */
+   int                     iter_finish_row;   /* current block-row within comp */
 };
 
 #ifdef _MSC_VER
@@ -1215,11 +1220,11 @@ static void rjpeg_idct_simd(uint8_t *out, int out_stride, short data[64])
                   _mm_setzero_si128())) == 0xFFFF)
       {
          /* All AC == 0.  The IDCT of a DC-only block produces a
-          * uniform value: clamp((dc * dequant[0] >> 2) + 128).
+          * uniform value: clamp(((dc + 4) >> 3) + 128).
           * But data[0] is already dequantized (dc * dequant[0])
           * by the caller, so we just apply the IDCT scale. */
          int dc  = (int)(short)_mm_extract_epi16(row0, 0);
-         int val = ((dc >> 2) + 128);
+         int val = ((dc + 4) >> 3) + 128;
          uint8_t fill;
          if ((unsigned)val > 255)
             fill = (val < 0) ? 0 : 255;
@@ -1432,7 +1437,7 @@ static void rjpeg_idct_simd(uint8_t *out, int out_stride, short data[64])
 #endif
       {
          int dc  = vgetq_lane_s16(row0, 0);
-         int val = ((dc >> 2) + 128);
+         int val = ((dc + 4) >> 3) + 128;
          uint8_t fill;
          if ((unsigned)val > 255)
             fill = (val < 0) ? 0 : 255;
@@ -1819,9 +1824,9 @@ static void rjpeg_dequant_idct_block(uint8_t *out, int out_stride,
       {
          /* DC coefficient goes through the same scale path as the
           * IDCT: column pass does d[0]<<2, row pass adds
-          * 65536+(128<<17) then >>17.  Net: clamp((d[0]>>2)+128). */
+          * 65536+(128<<17) then >>17.  Net: clamp(((d[0]+4)>>3)+128). */
          int dc = data[0];
-         int val8 = ((dc >> 2) + 128);
+         int val8 = ((dc + 4) >> 3) + 128;
          uint8_t fill;
          if ((unsigned)val8 > 255)
             fill = (val8 < 0) ? 0 : 255;
@@ -1933,9 +1938,9 @@ static void rjpeg_dequant_idct_simd(uint8_t *out, int out_stride,
       if (_mm_movemask_epi8(_mm_cmpeq_epi16(ac_or, zero)) == 0xFFFF)
       {
          /* All AC == 0: output is flat fill from DC value.
-          * DC path: (dc >> 2) + 128, clamped to [0,255]. */
-         int dc  = _mm_extract_epi16(row0, 0);
-         int val = (dc >> 2) + 128;
+          * DC path: ((dc + 4) >> 3) + 128, clamped to [0,255]. */
+         int dc  = (int)(short)_mm_extract_epi16(row0, 0);
+         int val = ((dc + 4) >> 3) + 128;
          uint8_t fill;
          if ((unsigned)val > 255)
             fill = (val < 0) ? 0 : 255;
@@ -2136,7 +2141,7 @@ static void rjpeg_dequant_idct_neon(uint8_t *out, int out_stride,
             veorq_s16(ac_or, vdupq_n_s16(0)))) == 0)
       {
          int dc  = data[0];
-         int val = (dc >> 2) + 128;
+         int val = ((dc + 4) >> 3) + 128;
          uint8_t fill;
          if ((unsigned)val > 255)
             fill = (val < 0) ? 0 : 255;
@@ -2469,7 +2474,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
        * syscall overhead and guarantees spatial locality.
        * ---------------------------------------------------------------- */
       size_t arena_size = 0;
-      size_t offsets_data[4], offsets_coeff[4];
+      size_t offsets_data[4], offsets_coeff[4], offsets_linebuf[4];
       uint8_t *arena;
 
       for (i = 0; i < s->img_n; ++i)
@@ -2484,13 +2489,17 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
          /* raw_data: w2*h2 bytes + 15 for alignment */
          offsets_data[i] = arena_size;
          arena_size += (size_t)z->img_comp[i].w2 * z->img_comp[i].h2 + 15;
-         /* Align next region to 16 bytes */
          arena_size = (arena_size + 15) & ~(size_t)15;
 
          /* raw_coeff: coeff_w * coeff_h * 64 shorts + 15 for alignment */
          offsets_coeff[i] = arena_size;
          arena_size += (size_t)z->img_comp[i].coeff_w
                      * z->img_comp[i].coeff_h * 64 * sizeof(short) + 15;
+         arena_size = (arena_size + 15) & ~(size_t)15;
+
+         /* linebuf: img_x + 3 bytes (resample scratch, used later) */
+         offsets_linebuf[i] = arena_size;
+         arena_size += (size_t)s->img_x + 3;
          arena_size = (arena_size + 15) & ~(size_t)15;
       }
 
@@ -2505,7 +2514,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
       {
          z->img_comp[i].raw_data  = arena + offsets_data[i];
          z->img_comp[i].data      = (uint8_t*)(((size_t)(arena + offsets_data[i]) + 15) & ~(size_t)15);
-         z->img_comp[i].linebuf   = NULL;
+         z->img_comp[i].linebuf   = arena + offsets_linebuf[i];
          z->img_comp[i].raw_coeff = arena + offsets_coeff[i];
          z->img_comp[i].coeff     = (short*)(((size_t)(arena + offsets_coeff[i]) + 15) & ~(size_t)15);
       }
@@ -2517,7 +2526,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
        * Only raw_data needed (no coefficient storage).
        * ---------------------------------------------------------------- */
       size_t arena_size = 0;
-      size_t offsets_data[4];
+      size_t offsets_data[4], offsets_linebuf[4];
       uint8_t *arena;
 
       for (i = 0; i < s->img_n; ++i)
@@ -2530,6 +2539,11 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
          offsets_data[i] = arena_size;
          arena_size += (size_t)z->img_comp[i].w2 * z->img_comp[i].h2 + 15;
          arena_size = (arena_size + 15) & ~(size_t)15;
+
+         /* linebuf: img_x + 3 bytes (resample scratch, used later) */
+         offsets_linebuf[i] = arena_size;
+         arena_size += (size_t)s->img_x + 3;
+         arena_size = (arena_size + 15) & ~(size_t)15;
       }
 
       arena = (uint8_t*)malloc(arena_size);
@@ -2543,7 +2557,7 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
       {
          z->img_comp[i].raw_data  = arena + offsets_data[i];
          z->img_comp[i].data      = (uint8_t*)(((size_t)(arena + offsets_data[i]) + 15) & ~(size_t)15);
-         z->img_comp[i].linebuf   = NULL;
+         z->img_comp[i].linebuf   = arena + offsets_linebuf[i];
          z->img_comp[i].coeff     = 0;
          z->img_comp[i].raw_coeff = 0;
       }
@@ -3207,6 +3221,7 @@ static void rjpeg_cleanup_jpeg(rjpeg_jpeg *j)
          j->img_comp[i].data      = NULL;
          j->img_comp[i].raw_coeff = NULL;
          j->img_comp[i].coeff     = NULL;
+         j->img_comp[i].linebuf   = NULL;
       }
    }
    else
@@ -3228,17 +3243,12 @@ static void rjpeg_cleanup_jpeg(rjpeg_jpeg *j)
             j->img_comp[i].raw_coeff = 0;
             j->img_comp[i].coeff = 0;
          }
-      }
-   }
 
-   /* linebuf is always allocated separately (in rjpeg_process_image)
-    * since it's not needed during entropy decode */
-   for (i = 0; i < j->s->img_n; ++i)
-   {
-      if (j->img_comp[i].linebuf)
-      {
-         free(j->img_comp[i].linebuf);
-         j->img_comp[i].linebuf = NULL;
+         if (j->img_comp[i].linebuf)
+         {
+            free(j->img_comp[i].linebuf);
+            j->img_comp[i].linebuf = NULL;
+         }
       }
    }
 }
@@ -3414,60 +3424,15 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          /* Get the first marker after the header */
          rjpeg->iter_marker = rjpeg_get_marker(j);
 
-         /* For progressive: run all scans monolithically then
-          * finish with dequant/IDCT.  We keep the old behaviour
-          * because splitting progressive across yield points would
-          * require tracking per-scan / per-coefficient-band state. */
+         /* For progressive: transition to per-scan iterative decode.
+          * Each call to rjpeg_iterate_image in RJPEG_ITER_PROG_SCAN
+          * processes one SOS scan, yielding between scans.  After all
+          * scans complete, RJPEG_ITER_FINISH_PROG runs the fused
+          * dequant+IDCT one component-row at a time. */
          if (j->progressive)
          {
-            /* Run the full decode loop for progressive */
-            m = rjpeg->iter_marker;
-            while (m != JPEG_MARKER_EOI)
-            {
-               if (m == JPEG_MARKER_SOS)
-               {
-                  if (!rjpeg_process_scan_header(j))
-                  {
-                     rjpeg->iter_state = RJPEG_ITER_ERROR;
-                     return false;
-                  }
-                  if (!rjpeg_parse_entropy_coded_data(j))
-                  {
-                     rjpeg->iter_state = RJPEG_ITER_ERROR;
-                     return false;
-                  }
-
-                  if (j->marker == RJPEG_MARKER_NONE)
-                  {
-                     while (!RJPEG_AT_EOF(j->s))
-                     {
-                        int x = rjpeg_get8(j->s);
-                        if (x == 255)
-                        {
-                           j->marker = rjpeg_get8(j->s);
-                           break;
-                        }
-                        else if (x != 0)
-                        {
-                           rjpeg->iter_state = RJPEG_ITER_ERROR;
-                           return false;
-                        }
-                     }
-                  }
-               }
-               else
-               {
-                  if (!rjpeg_process_marker(j, m))
-                  {
-                     rjpeg->iter_state = RJPEG_ITER_ERROR;
-                     return false;
-                  }
-               }
-               m = rjpeg_get_marker(j);
-            }
-            rjpeg_jpeg_finish(j);
-            rjpeg->iter_state = RJPEG_ITER_DONE;
-            return false; /* signal: iteration complete */
+            rjpeg->iter_state  = RJPEG_ITER_PROG_SCAN;
+            return true; /* more work — start processing scans */
          }
 
          /* Baseline: find SOS, parse it, prepare for MCU-row iteration */
@@ -3592,6 +3557,142 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          return true; /* more MCU rows remain */
       }
 
+      /* -----------------------------------------------------------
+       * Progressive scan-at-a-time iteration
+       *
+       * Each call processes markers until the next SOS, runs one
+       * complete entropy scan, then yields.  A typical progressive
+       * JPEG has 6-10 scans; each scan at 1080p takes ~0.5-2 ms,
+       * giving the task scheduler regular yield points.
+       *
+       * After the last scan (EOI reached), we transition to
+       * RJPEG_ITER_FINISH_PROG for the dequant+IDCT phase.
+       * ----------------------------------------------------------- */
+      case RJPEG_ITER_PROG_SCAN:
+      {
+         int m = rjpeg->iter_marker;
+
+         /* Consume non-SOS markers (DHT, DQT, etc. between scans) */
+         while (m != JPEG_MARKER_SOS && m != JPEG_MARKER_EOI)
+         {
+            if (RJPEG_AT_EOF(j->s))
+            {
+               rjpeg->iter_state = RJPEG_ITER_ERROR;
+               return false;
+            }
+            if (!rjpeg_process_marker(j, m))
+            {
+               rjpeg->iter_state = RJPEG_ITER_ERROR;
+               return false;
+            }
+            m = rjpeg_get_marker(j);
+         }
+
+         if (m == JPEG_MARKER_EOI)
+         {
+            /* All scans consumed — transition to IDCT phase */
+            rjpeg->iter_finish_comp = 0;
+            rjpeg->iter_finish_row  = 0;
+            rjpeg->iter_state       = RJPEG_ITER_FINISH_PROG;
+            return true;
+         }
+
+         /* Process this SOS scan */
+         if (!rjpeg_process_scan_header(j))
+         {
+            rjpeg->iter_state = RJPEG_ITER_ERROR;
+            return false;
+         }
+         if (!rjpeg_parse_entropy_coded_data(j))
+         {
+            rjpeg->iter_state = RJPEG_ITER_ERROR;
+            return false;
+         }
+
+         /* Handle trailing padding/junk after entropy data */
+         if (j->marker == RJPEG_MARKER_NONE)
+         {
+            while (!RJPEG_AT_EOF(j->s))
+            {
+               int x = rjpeg_get8(j->s);
+               if (x == 255)
+               {
+                  j->marker = rjpeg_get8(j->s);
+                  break;
+               }
+               else if (x != 0)
+               {
+                  rjpeg->iter_state = RJPEG_ITER_ERROR;
+                  return false;
+               }
+            }
+         }
+
+         /* Fetch the next marker for the next iteration */
+         rjpeg->iter_marker = rjpeg_get_marker(j);
+         return true; /* more scans may follow */
+      }
+
+      /* -----------------------------------------------------------
+       * Progressive finish phase: dequant + IDCT
+       *
+       * After all scans are decoded, the coefficient buffer holds
+       * the full DCT data.  We run the fused dequant+IDCT one
+       * component block-row at a time, yielding between rows.
+       *
+       * For a 1080p 4:2:0 image this gives ~135 Y rows + ~68 Cb
+       * rows + ~68 Cr rows = ~271 yield points, each processing
+       * one row of 8×8 blocks (~40-80 µs per row).
+       * ----------------------------------------------------------- */
+      case RJPEG_ITER_FINISH_PROG:
+      {
+         int n = rjpeg->iter_finish_comp;
+
+         /* Find next component that has work remaining */
+         while (n < j->s->img_n)
+         {
+            int w = (j->img_comp[n].x + 7) >> 3;
+            int h = (j->img_comp[n].y + 7) >> 3;
+            int row = rjpeg->iter_finish_row;
+
+            if (row < h)
+            {
+               /* Process one block-row of this component */
+               int i;
+               for (i = 0; i < w; ++i)
+               {
+                  short *data = j->img_comp[n].coeff
+                     + 64 * (i + row * j->img_comp[n].coeff_w);
+                  j->dequant_idct_block_kernel(
+                        j->img_comp[n].data
+                        + j->img_comp[n].w2 * row * 8 + i * 8,
+                        j->img_comp[n].w2, data,
+                        j->dequant[j->img_comp[n].tq]);
+               }
+
+               rjpeg->iter_finish_row = row + 1;
+
+               /* Check if this component is done */
+               if (rjpeg->iter_finish_row >= h)
+               {
+                  /* Move to next component */
+                  rjpeg->iter_finish_comp = n + 1;
+                  rjpeg->iter_finish_row  = 0;
+               }
+               return true; /* yield after each block-row */
+            }
+
+            /* This component done, try next */
+            n++;
+            rjpeg->iter_finish_comp = n;
+            rjpeg->iter_finish_row  = 0;
+         }
+
+         /* All components finished */
+         rjpeg->iter_state = RJPEG_ITER_DONE;
+         return false;
+      }
+
       case RJPEG_ITER_DONE:
          return false;
 
@@ -3698,12 +3799,16 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
          rjpeg_resample *r = &proc->res_comp[k];
 
          /* allocate line buffer big enough for upsampling off the edges
-          * with upsample factor of 4 */
-         j->img_comp[k].linebuf = (uint8_t *) malloc(j->s->img_x + 3);
+          * with upsample factor of 4.  If the arena already allocated
+          * linebuf (it points into comp_arena), skip the malloc. */
          if (!j->img_comp[k].linebuf)
          {
-            rjpeg_process_free(proc);
-            return IMAGE_PROCESS_ERROR;
+            j->img_comp[k].linebuf = (uint8_t *) malloc(j->s->img_x + 3);
+            if (!j->img_comp[k].linebuf)
+            {
+               rjpeg_process_free(proc);
+               return IMAGE_PROCESS_ERROR;
+            }
          }
 
          r->hs       = j->img_h_max / j->img_comp[k].h;
