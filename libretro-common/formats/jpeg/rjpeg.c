@@ -191,63 +191,13 @@ struct rjpeg
 #define RJPEG_SIMD_ALIGN(type, name) type name
 #endif
 
-typedef struct
-{
-   uint8_t *img_buffer;
-   uint8_t *img_buffer_end;
-   uint8_t *img_buffer_original;
-   int      img_n;
-   int      img_out_n;
-   int      buflen;
-   uint32_t img_x;
-   uint32_t img_y;
-   uint8_t  buffer_start[128];
-} rjpeg_context;
+/* rjpeg_context has been folded into rjpeg_jpeg (struct rjpeg_jpeg_s).
+ * The I/O primitives below take rjpeg_jpeg* directly. */
+typedef struct rjpeg_jpeg_s rjpeg_jpeg;
 
-static INLINE uint8_t rjpeg_get8(rjpeg_context *s)
-{
-   if (s->img_buffer < s->img_buffer_end)
-      return *s->img_buffer++;
 
-   return 0;
-}
+/* I/O primitives moved after struct definition — see below */
 
-#define RJPEG_AT_EOF(s)     ((s)->img_buffer >= (s)->img_buffer_end)
-
-/* Fast 16-bit big-endian read: single bounds check for 2 bytes.
- * The old RJPEG_GET16BE called rjpeg_get8 twice (2 bounds checks).
- * At EOF, returns partial or zero like the original. */
-static INLINE uint32_t rjpeg_get16be(rjpeg_context *s)
-{
-   uint32_t hi;
-   if (s->img_buffer + 1 < s->img_buffer_end)
-   {
-      hi = s->img_buffer[0];
-      s->img_buffer += 2;
-      return (hi << 8) | s->img_buffer[-1];
-   }
-   /* Fallback for last byte or empty */
-   hi = rjpeg_get8(s);
-   return (hi << 8) | rjpeg_get8(s);
-}
-
-#define RJPEG_GET16BE(s)    rjpeg_get16be((s))
-
-/* Unchecked byte read: caller guarantees img_buffer < img_buffer_end.
- * Used in bulk parsing loops after a segment-length bounds check. */
-static INLINE uint8_t rjpeg_get8_fast(rjpeg_context *s)
-{
-   return *s->img_buffer++;
-}
-
-/* Skip n bytes, clamping to end of buffer */
-static INLINE void rjpeg_skip(rjpeg_context *s, int n)
-{
-   if (s->img_buffer + n > s->img_buffer_end)
-      s->img_buffer = s->img_buffer_end;
-   else
-      s->img_buffer += n;
-}
 
 /* huffman decoding acceleration */
 #define FAST_BITS   9  /* larger handles more cases; smaller stomps less cache */
@@ -263,9 +213,20 @@ typedef struct
    uint8_t  size[257];
 } rjpeg_huffman;
 
-typedef struct rjpeg_jpeg_s
+struct rjpeg_jpeg_s
 {
-   rjpeg_context *s;
+   /* Embedded context (was separately allocated rjpeg_jpeg).
+    * Eliminating the j-> double indirection saves ~50K pointer
+    * chases per 1080p frame in the hot entropy decode path. */
+   uint8_t *img_buffer;
+   uint8_t *img_buffer_original;
+   uint8_t *img_buffer_end;
+   int      img_n;
+   int      img_out_n;
+   uint32_t img_x;
+   uint32_t img_y;
+   uint8_t  buffer_start[128];
+
    /* kernels */
    void (*idct_block_kernel)(uint8_t *out, int out_stride, short data[64]);
    void (*dequant_idct_block_kernel)(uint8_t *out, int out_stride,
@@ -328,7 +289,52 @@ typedef struct rjpeg_jpeg_s
    int16_t fast_ac[4][1 << FAST_BITS];
    unsigned char  marker;        /* marker seen while filling entropy buffer */
    uint8_t dequant[4][64];
-} rjpeg_jpeg;
+};
+
+static INLINE uint8_t rjpeg_get8(rjpeg_jpeg *s)
+{
+   if (s->img_buffer < s->img_buffer_end)
+      return *s->img_buffer++;
+
+   return 0;
+}
+
+#define RJPEG_AT_EOF(s)     ((s)->img_buffer >= (s)->img_buffer_end)
+
+/* Fast 16-bit big-endian read: single bounds check for 2 bytes.
+ * The old RJPEG_GET16BE called rjpeg_get8 twice (2 bounds checks).
+ * At EOF, returns partial or zero like the original. */
+static INLINE uint32_t rjpeg_get16be(rjpeg_jpeg *s)
+{
+   uint32_t hi;
+   if (s->img_buffer + 1 < s->img_buffer_end)
+   {
+      hi = s->img_buffer[0];
+      s->img_buffer += 2;
+      return (hi << 8) | s->img_buffer[-1];
+   }
+   /* Fallback for last byte or empty */
+   hi = rjpeg_get8(s);
+   return (hi << 8) | rjpeg_get8(s);
+}
+
+#define RJPEG_GET16BE(s)    rjpeg_get16be((s))
+
+/* Unchecked byte read: caller guarantees img_buffer < img_buffer_end.
+ * Used in bulk parsing loops after a segment-length bounds check. */
+static INLINE uint8_t rjpeg_get8_fast(rjpeg_jpeg *s)
+{
+   return *s->img_buffer++;
+}
+
+/* Skip n bytes, clamping to end of buffer */
+static INLINE void rjpeg_skip(rjpeg_jpeg *s, int n)
+{
+   if (s->img_buffer + n > s->img_buffer_end)
+      s->img_buffer = s->img_buffer_end;
+   else
+      s->img_buffer += n;
+}
 
 #define RJPEG_F2F(x)  ((int) (((x) * 4096 + 0.5)))
 #define RJPEG_FSH(x)  ((x) << 12)
@@ -464,7 +470,7 @@ static void rjpeg_build_fast_ac(int16_t *fast_ac, rjpeg_huffman *h)
 
 static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
 {
-   rjpeg_context *s = j->s;
+   rjpeg_jpeg *s = j;
 
    if (j->nomore)
    {
@@ -1646,11 +1652,11 @@ static uint8_t rjpeg_get_marker(rjpeg_jpeg *j)
       return x;
    }
 
-   x = rjpeg_get8(j->s);
+   x = rjpeg_get8(j);
    if (x != 0xff)
       return RJPEG_MARKER_NONE;
    while (x == 0xff)
-      x = rjpeg_get8(j->s);
+      x = rjpeg_get8(j);
    return x;
 }
 
@@ -1726,20 +1732,30 @@ static int rjpeg_parse_entropy_coded_data(rjpeg_jpeg *z)
       else
       {
          RJPEG_SIMD_ALIGN(short, data[64]);
+         int comp_ha    = z->img_comp[n].ha;
+         int comp_hd    = z->img_comp[n].hd;
+         int comp_w2    = z->img_comp[n].w2;
+         uint8_t *comp_data = z->img_comp[n].data;
+         rjpeg_huffman *hdc = z->huff_dc + comp_hd;
+         rjpeg_huffman *hac = z->huff_ac + comp_ha;
+         int16_t *fac       = z->fast_ac[comp_ha];
+         uint8_t *dq        = z->dequant[z->img_comp[n].tq];
+         void (*idct_fn)(uint8_t *out, int out_stride, short data[64])
+            = z->idct_block_kernel;
+
          memset(data, 0, 64 * sizeof(data[0]));
 
          for (j = 0; j < h; ++j)
          {
             for (i = 0; i < w; ++i)
             {
-               int ha = z->img_comp[n].ha;
-               int k_end = rjpeg_jpeg_decode_block(z, data, z->huff_dc+z->img_comp[n].hd,
-                        z->huff_ac+ha, z->fast_ac[ha], n, z->dequant[z->img_comp[n].tq]);
+               int k_end = rjpeg_jpeg_decode_block(z, data,
+                        hdc, hac, fac, n, dq);
                if (!k_end)
                   return 0;
 
-               z->idct_block_kernel(z->img_comp[n].data+z->img_comp[n].w2*j*8+i*8,
-                     z->img_comp[n].w2, data);
+               idct_fn(comp_data + comp_w2 * j * 8 + i * 8,
+                     comp_w2, data);
 
                rjpeg_block_cleanup(data, k_end);
 
@@ -1815,26 +1831,32 @@ static int rjpeg_parse_entropy_coded_data(rjpeg_jpeg *z)
                for (k = 0; k < z->scan_n; ++k)
                {
                   int n = z->order[k];
-                  /* scan out an MCU's worth of this component; that's just determined
-                   * by the basic H and V specified for the component */
-                  for (y = 0; y < z->img_comp[n].v; ++y)
+                  int comp_h  = z->img_comp[n].h;
+                  int comp_v  = z->img_comp[n].v;
+                  int comp_ha = z->img_comp[n].ha;
+                  int comp_w2 = z->img_comp[n].w2;
+                  uint8_t *comp_data = z->img_comp[n].data;
+                  rjpeg_huffman *hdc = z->huff_dc + z->img_comp[n].hd;
+                  rjpeg_huffman *hac = z->huff_ac + comp_ha;
+                  int16_t *fac       = z->fast_ac[comp_ha];
+                  uint8_t *dq        = z->dequant[z->img_comp[n].tq];
+
+                  for (y = 0; y < comp_v; ++y)
                   {
-                     for (x = 0; x < z->img_comp[n].h; ++x)
+                     for (x = 0; x < comp_h; ++x)
                      {
-                        int x2 = (i*z->img_comp[n].h + x)*8;
-                        int y2 = (j*z->img_comp[n].v + y)*8;
-                        int ha = z->img_comp[n].ha;
+                        int x2 = (i * comp_h + x) * 8;
+                        int y2 = (j * comp_v + y) * 8;
                         int k_end;
 
                         k_end = rjpeg_jpeg_decode_block(z, data,
-                                 z->huff_dc+z->img_comp[n].hd,
-                                 z->huff_ac+ha, z->fast_ac[ha],
-                                 n, z->dequant[z->img_comp[n].tq]);
+                                 hdc, hac, fac,
+                                 n, dq);
                         if (!k_end)
                            return 0;
 
-                        z->idct_block_kernel(z->img_comp[n].data+z->img_comp[n].w2*y2+x2,
-                              z->img_comp[n].w2, data);
+                        z->idct_block_kernel(comp_data + comp_w2 * y2 + x2,
+                              comp_w2, data);
 
                         rjpeg_block_cleanup(data, k_end);
                      }
@@ -2259,7 +2281,7 @@ static void rjpeg_jpeg_finish(rjpeg_jpeg *z)
     * the old rjpeg_jpeg_dequantize() + z->idct_block_kernel()
     * two-pass sequence.  Saves one 128-byte store+load round-trip
     * per 8x8 block and adds a DC-only fast path. */
-   for (n = 0; n < z->s->img_n; ++n)
+   for (n = 0; n < z->img_n; ++n)
    {
       int w = (z->img_comp[n].x+7) >> 3;
       int h = (z->img_comp[n].y+7) >> 3;
@@ -2289,17 +2311,17 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
       case 0xDD: /* DRI - specify restart interval */
 
          /* Bad DRI length. Corrupt JPEG? */
-         if (RJPEG_GET16BE(z->s) != 4)
+         if (RJPEG_GET16BE(z) != 4)
             return 0;
 
-         z->restart_interval = RJPEG_GET16BE(z->s);
+         z->restart_interval = RJPEG_GET16BE(z);
          return 1;
 
       case 0xDB: /* DQT - define quantization table */
-         L = RJPEG_GET16BE(z->s)-2;
+         L = RJPEG_GET16BE(z)-2;
          while (L > 0)
          {
-            int q = rjpeg_get8(z->s);
+            int q = rjpeg_get8(z);
             int p = q >> 4;
             int t = q & 15,i;
 
@@ -2314,27 +2336,27 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
             /* Bulk-read 64 quantization values directly from buffer.
              * The old code called rjpeg_get8 64 times (64 bounds checks).
              * After verifying 64 bytes remain, we read with no per-byte check. */
-            if (z->s->img_buffer + 64 <= z->s->img_buffer_end)
+            if (z->img_buffer + 64 <= z->img_buffer_end)
             {
                for (i = 0; i < 64; ++i)
-                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = rjpeg_get8_fast(z->s);
+                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = rjpeg_get8_fast(z);
             }
             else
             {
                for (i = 0; i < 64; ++i)
-                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = rjpeg_get8(z->s);
+                  z->dequant[t][rjpeg_jpeg_dezigzag[i]] = rjpeg_get8(z);
             }
             L -= 65;
          }
          return L == 0;
 
       case 0xC4: /* DHT - define huffman table */
-         L = RJPEG_GET16BE(z->s)-2;
+         L = RJPEG_GET16BE(z)-2;
          while (L > 0)
          {
             int sizes[16],i,n = 0;
             uint8_t *v = NULL;
-            int q      = rjpeg_get8(z->s);
+            int q      = rjpeg_get8(z);
             int tc     = q >> 4;
             int th     = q & 15;
 
@@ -2343,11 +2365,11 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
                return 0;
 
             /* Bulk-read 16 size bytes: one bounds check instead of 16. */
-            if (z->s->img_buffer + 16 <= z->s->img_buffer_end)
+            if (z->img_buffer + 16 <= z->img_buffer_end)
             {
                for (i = 0; i < 16; ++i)
                {
-                  sizes[i] = rjpeg_get8_fast(z->s);
+                  sizes[i] = rjpeg_get8_fast(z);
                   n += sizes[i];
                }
             }
@@ -2355,7 +2377,7 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
             {
                for (i = 0; i < 16; ++i)
                {
-                  sizes[i] = rjpeg_get8(z->s);
+                  sizes[i] = rjpeg_get8(z);
                   n += sizes[i];
                }
             }
@@ -2374,15 +2396,15 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
                v = z->huff_ac[th].values;
             }
             /* Bulk-read n value bytes */
-            if (z->s->img_buffer + n <= z->s->img_buffer_end)
+            if (z->img_buffer + n <= z->img_buffer_end)
             {
-               memcpy(v, z->s->img_buffer, n);
-               z->s->img_buffer += n;
+               memcpy(v, z->img_buffer, n);
+               z->img_buffer += n;
             }
             else
             {
                for (i = 0; i < n; ++i)
-                  v[i] = rjpeg_get8(z->s);
+                  v[i] = rjpeg_get8(z);
             }
             if (tc != 0)
                rjpeg_build_fast_ac(z->fast_ac[th], z->huff_ac + th);
@@ -2394,8 +2416,8 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
    /* check for comment block or APP blocks */
    if ((m >= 0xE0 && m <= 0xEF) || m == 0xFE)
    {
-      int n = RJPEG_GET16BE(z->s)-2;
-      rjpeg_skip(z->s, n);
+      int n = RJPEG_GET16BE(z)-2;
+      rjpeg_skip(z, n);
       return 1;
    }
    return 0;
@@ -2406,12 +2428,12 @@ static int rjpeg_process_scan_header(rjpeg_jpeg *z)
 {
    int i;
    int aa;
-   int Ls    = RJPEG_GET16BE(z->s);
+   int Ls    = RJPEG_GET16BE(z);
 
-   z->scan_n = rjpeg_get8(z->s);
+   z->scan_n = rjpeg_get8(z);
 
    /* Bad SOS component count. Corrupt JPEG? */
-   if (z->scan_n < 1 || z->scan_n > 4 || z->scan_n > (int) z->s->img_n)
+   if (z->scan_n < 1 || z->scan_n > 4 || z->scan_n > (int) z->img_n)
       return 0;
 
    /* Bad SOS length. Corrupt JPEG? */
@@ -2421,13 +2443,13 @@ static int rjpeg_process_scan_header(rjpeg_jpeg *z)
    for (i = 0; i < z->scan_n; ++i)
    {
       int which;
-      int id = rjpeg_get8(z->s);
-      int q  = rjpeg_get8(z->s);
+      int id = rjpeg_get8(z);
+      int q  = rjpeg_get8(z);
 
-      for (which = 0; which < z->s->img_n; ++which)
+      for (which = 0; which < z->img_n; ++which)
          if (z->img_comp[which].id == id)
             break;
-      if (which == z->s->img_n)
+      if (which == z->img_n)
          return 0; /* no match */
 
       /* Bad DC huff. Corrupt JPEG? */
@@ -2441,9 +2463,9 @@ static int rjpeg_process_scan_header(rjpeg_jpeg *z)
       z->order[i] = which;
    }
 
-   z->spec_start = rjpeg_get8(z->s);
-   z->spec_end   = rjpeg_get8(z->s); /* should be 63, but might be 0 */
-   aa            = rjpeg_get8(z->s);
+   z->spec_start = rjpeg_get8(z);
+   z->spec_end   = rjpeg_get8(z); /* should be 63, but might be 0 */
+   aa            = rjpeg_get8(z);
    z->succ_high  = (aa >> 4);
    z->succ_low   = (aa & 15);
 
@@ -2473,7 +2495,7 @@ static int rjpeg_process_scan_header(rjpeg_jpeg *z)
 
 static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
 {
-   rjpeg_context *s = z->s;
+   rjpeg_jpeg *s = z;
    int Lf,p,i,q, h_max=1,v_max=1,c;
    Lf = RJPEG_GET16BE(s);
 
@@ -2702,7 +2724,7 @@ static int rjpeg_decode_jpeg_header(rjpeg_jpeg *z, int scan)
          /* some files have extra padding after their blocks, so ok, we'll scan */
 
          /* No SOF. Corrupt JPEG? */
-         if (RJPEG_AT_EOF(z->s))
+         if (RJPEG_AT_EOF(z))
             return 0;
 
          m = rjpeg_get_marker(z);
@@ -2740,8 +2762,8 @@ static int rjpeg_decode_jpeg_image(rjpeg_jpeg *j)
          if (j->marker == RJPEG_MARKER_NONE )
          {
             /* handle 0s at the end of image data from IP Kamera 9060 */
-            uint8_t *p   = j->s->img_buffer;
-            uint8_t *end = j->s->img_buffer_end;
+            uint8_t *p   = j->img_buffer;
+            uint8_t *end = j->img_buffer_end;
             while (p < end)
             {
                uint8_t x = *p++;
@@ -2752,11 +2774,11 @@ static int rjpeg_decode_jpeg_image(rjpeg_jpeg *j)
                }
                else if (x != 0) /* Junk before marker. Corrupt JPEG? */
                {
-                  j->s->img_buffer = p;
+                  j->img_buffer = p;
                   return 0;
                }
             }
-            j->s->img_buffer = p;
+            j->img_buffer = p;
 
             /* if we reach eof without hitting a marker,
              * rjpeg_get_marker() below will fail and we'll eventually return 0 */
@@ -3315,7 +3337,7 @@ static void rjpeg_upsample_YCbCr_to_BGRA_row(uint8_t *out, const uint8_t *y_row,
       int chroma_w, int out_w)
 {
    /* Stack buffers for upsampled chroma (chroma_w*2 output pixels).
-    * For typical images, chroma_w <= 960 so 1920 bytes each. */
+    * For typical RetroArch images, chroma_w <= 960 so 1920 bytes each. */
    uint8_t cb_buf[1920], cr_buf[1920];
 
    rjpeg_resample_row_hv_2(cb_buf, cb_near, cb_far, chroma_w, 2);
@@ -3683,7 +3705,7 @@ static void rjpeg_cleanup_jpeg(rjpeg_jpeg *j)
       j->comp_arena      = NULL;
       j->comp_arena_size = 0;
 
-      for (i = 0; i < j->s->img_n; ++i)
+      for (i = 0; i < j->img_n; ++i)
       {
          j->img_comp[i].raw_data  = NULL;
          j->img_comp[i].data      = NULL;
@@ -3696,7 +3718,7 @@ static void rjpeg_cleanup_jpeg(rjpeg_jpeg *j)
    {
       /* Fallback: individually-allocated buffers (shouldn't happen
        * with the arena path, but kept for safety). */
-      for (i = 0; i < j->s->img_n; ++i)
+      for (i = 0; i < j->img_n; ++i)
       {
          if (j->img_comp[i].raw_data)
          {
@@ -3729,8 +3751,6 @@ static void rjpeg_process_free(struct rjpeg_process *proc)
    if (proc->j)
    {
       rjpeg_cleanup_jpeg(proc->j);
-      if (proc->j->s)
-         free(proc->j->s);
       free(proc->j);
    }
 
@@ -3756,7 +3776,8 @@ static void rjpeg_process_free(struct rjpeg_process *proc)
  * Progressive images and single-scan non-interleaved images still
  * complete in one iteration (the per-block granularity doesn't map
  * to a sensible yield point without major restructuring of the
- * coefficient storage walk). 
+ * coefficient storage walk).  This is acceptable because progressive
+ * JPEGs are rare in RetroArch assets.
  * ----------------------------------------------------------------------- */
 
 /* Decode one MCU-row (j=mcu_row) of an interleaved baseline scan.
@@ -3766,39 +3787,52 @@ static int rjpeg_parse_entropy_one_mcu_row_interleaved(
 {
    int i, k, x, y;
    RJPEG_SIMD_ALIGN(short, data[64]);
+   void (*idct_fn)(uint8_t *out, int out_stride, short data[64])
+      = z->idct_block_kernel;
+   int mcu_x  = z->img_mcu_x;
+   int scan_n = z->scan_n;
 
    /* Zero once at the start of the row.  decode_block maintains the
     * zero invariant via rjpeg_block_cleanup after each IDCT. */
    memset(data, 0, 64 * sizeof(data[0]));
 
-   for (i = 0; i < z->img_mcu_x; ++i)
+   for (i = 0; i < mcu_x; ++i)
    {
-      for (k = 0; k < z->scan_n; ++k)
+      for (k = 0; k < scan_n; ++k)
       {
-         int n = z->order[k];
-         for (y = 0; y < z->img_comp[n].v; ++y)
+         /* Hoist all img_comp[n] fields into locals.
+          * The compiler can't do this because decode_block takes z
+          * as a pointer — the aliasing barrier forces it to reload
+          * every field through z->img_comp[n] on each iteration.
+          * These fields are constant across the block loop. */
+         int n            = z->order[k];
+         int comp_h       = z->img_comp[n].h;
+         int comp_v       = z->img_comp[n].v;
+         int comp_ha      = z->img_comp[n].ha;
+         int comp_hd      = z->img_comp[n].hd;
+         int comp_w2      = z->img_comp[n].w2;
+         uint8_t *comp_data = z->img_comp[n].data;
+         rjpeg_huffman *hdc = z->huff_dc + comp_hd;
+         rjpeg_huffman *hac = z->huff_ac + comp_ha;
+         int16_t *fac       = z->fast_ac[comp_ha];
+         uint8_t *dq        = z->dequant[z->img_comp[n].tq];
+
+         for (y = 0; y < comp_v; ++y)
          {
-            for (x = 0; x < z->img_comp[n].h; ++x)
+            int y2 = (mcu_row * comp_v + y) * 8;
+            for (x = 0; x < comp_h; ++x)
             {
-               int x2 = (i * z->img_comp[n].h + x) * 8;
-               int y2 = (mcu_row * z->img_comp[n].v + y) * 8;
-               int ha = z->img_comp[n].ha;
+               int x2 = (i * comp_h + x) * 8;
                int k_end;
 
                k_end = rjpeg_jpeg_decode_block(z, data,
-                        z->huff_dc + z->img_comp[n].hd,
-                        z->huff_ac + ha, z->fast_ac[ha],
-                        n, z->dequant[z->img_comp[n].tq]);
+                        hdc, hac, fac, n, dq);
                if (!k_end)
                   return 0;
 
-               z->idct_block_kernel(
-                     z->img_comp[n].data + z->img_comp[n].w2 * y2 + x2,
-                     z->img_comp[n].w2, data);
+               idct_fn(comp_data + comp_w2 * y2 + x2,
+                     comp_w2, data);
 
-               /* Restore zero invariant: clear only the positions
-                * that decode_block wrote to. DC-only blocks (k_end==1)
-                * only zero data[0] — no loop over AC positions. */
                rjpeg_block_cleanup(data, k_end);
             }
          }
@@ -3820,28 +3854,31 @@ static int rjpeg_parse_entropy_one_mcu_row_interleaved(
 bool rjpeg_start(rjpeg_t *rjpeg)
 {
    rjpeg_jpeg    *j = NULL;
-   rjpeg_context *s = NULL;
 
    if (!rjpeg || !rjpeg->buff_data)
       return false;
 
    /* Allocate the decode state structures */
-   j = (rjpeg_jpeg*)calloc(1, sizeof(*j));
+   j = (rjpeg_jpeg*)malloc(sizeof(*j));
    if (!j)
       return false;
 
-   s = (rjpeg_context*)calloc(1, sizeof(*s));
-   if (!s)
-   {
-      free(j);
-      return false;
-   }
+   /* Zero only fields that need init — saves zeroing ~18 KB of
+    * Huffman tables that build_huffman will fully overwrite. */
+   memset(j->img_comp, 0, sizeof(j->img_comp));
+   j->code_bits = 0; j->code_buffer = 0;
+   j->nomore = 0; j->progressive = 0;
+   j->scan_n = 0; j->eob_run = 0;
+   j->marker = RJPEG_MARKER_NONE;
+   j->restart_interval = 0; j->todo = 0;
+   j->comp_arena = NULL; j->comp_arena_size = 0;
+   j->img_n = 0;
 
-   s->img_buffer          = (uint8_t*)rjpeg->buff_data;
-   s->img_buffer_original = (uint8_t*)rjpeg->buff_data;
-   s->img_buffer_end      = (uint8_t*)rjpeg->buff_data + rjpeg->buff_len;
+   /* Context fields embedded in j */
+   j->img_buffer          = (uint8_t*)rjpeg->buff_data;
+   j->img_buffer_original = (uint8_t*)rjpeg->buff_data;
+   j->img_buffer_end      = (uint8_t*)rjpeg->buff_data + rjpeg->buff_len;
 
-   j->s             = s;
    rjpeg->iter_j    = j;
    rjpeg->iter_state    = RJPEG_ITER_PARSE_HEADER;
    rjpeg->iter_mcu_row  = 0;
@@ -3917,7 +3954,7 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          m = rjpeg->iter_marker;
          while (m != JPEG_MARKER_SOS)
          {
-            if (m == JPEG_MARKER_EOI || RJPEG_AT_EOF(j->s))
+            if (m == JPEG_MARKER_EOI || RJPEG_AT_EOF(j))
             {
                rjpeg->iter_state = RJPEG_ITER_ERROR;
                return false;
@@ -3951,7 +3988,7 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
             /* Check for trailing markers / EOI */
             {
                int mx = rjpeg_get_marker(j);
-               while (mx != JPEG_MARKER_EOI && !RJPEG_AT_EOF(j->s))
+               while (mx != JPEG_MARKER_EOI && !RJPEG_AT_EOF(j))
                {
                   if (mx == JPEG_MARKER_SOS)
                   {
@@ -3988,8 +4025,8 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
             {
                /* Scan for next marker: direct pointer access avoids
                 * redundant AT_EOF + get8 bounds checks. */
-               uint8_t *p   = j->s->img_buffer;
-               uint8_t *end = j->s->img_buffer_end;
+               uint8_t *p   = j->img_buffer;
+               uint8_t *end = j->img_buffer_end;
                while (p < end)
                {
                   uint8_t x = *p++;
@@ -4005,7 +4042,7 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
                   else if (x != 0)
                      break; /* junk, but tolerate it */
                }
-               j->s->img_buffer = p;
+               j->img_buffer = p;
             }
             rjpeg->iter_state = RJPEG_ITER_DONE;
             return false; /* iteration complete */
@@ -4025,8 +4062,8 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
             /* Last row -- handle trailing data */
             if (j->marker == RJPEG_MARKER_NONE)
             {
-               uint8_t *p   = j->s->img_buffer;
-               uint8_t *end = j->s->img_buffer_end;
+               uint8_t *p   = j->img_buffer;
+               uint8_t *end = j->img_buffer_end;
                while (p < end)
                {
                   uint8_t x = *p++;
@@ -4038,7 +4075,7 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
                   else if (x != 0)
                      break;
                }
-               j->s->img_buffer = p;
+               j->img_buffer = p;
             }
             rjpeg->iter_state = RJPEG_ITER_DONE;
             return false;
@@ -4065,7 +4102,7 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          /* Consume non-SOS markers (DHT, DQT, etc. between scans) */
          while (m != JPEG_MARKER_SOS && m != JPEG_MARKER_EOI)
          {
-            if (RJPEG_AT_EOF(j->s))
+            if (RJPEG_AT_EOF(j))
             {
                rjpeg->iter_state = RJPEG_ITER_ERROR;
                return false;
@@ -4102,8 +4139,8 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          /* Handle trailing padding/junk after entropy data */
          if (j->marker == RJPEG_MARKER_NONE)
          {
-            uint8_t *p   = j->s->img_buffer;
-            uint8_t *end = j->s->img_buffer_end;
+            uint8_t *p   = j->img_buffer;
+            uint8_t *end = j->img_buffer_end;
             while (p < end)
             {
                uint8_t x = *p++;
@@ -4114,12 +4151,12 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
                }
                else if (x != 0)
                {
-                  j->s->img_buffer = p;
+                  j->img_buffer = p;
                   rjpeg->iter_state = RJPEG_ITER_ERROR;
                   return false;
                }
             }
-            j->s->img_buffer = p;
+            j->img_buffer = p;
          }
 
          /* Fetch the next marker for the next iteration */
@@ -4143,7 +4180,7 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          int n = rjpeg->iter_finish_comp;
 
          /* Find next component that has work remaining */
-         while (n < j->s->img_n)
+         while (n < j->img_n)
          {
             int w = (j->img_comp[n].x + 7) >> 3;
             int h = (j->img_comp[n].y + 7) >> 3;
@@ -4215,7 +4252,6 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       int k;
       struct rjpeg_process *proc = NULL;
       rjpeg_jpeg    *j    = NULL;
-      rjpeg_context *s    = NULL;
 
       proc = (struct rjpeg_process*)calloc(1, sizeof(*proc));
       if (!proc)
@@ -4228,49 +4264,47 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
          /* Iterative path completed -- reuse its decode state.
           * Transfer ownership from rjpeg->iter_j to proc->j. */
          j             = rjpeg->iter_j;
-         s             = j->s;
          rjpeg->iter_j = NULL;
 
          /* Set the buffer end pointer if the iterative path
           * didn't have it (start() is called before size is known
           * via set_buf_ptr, but the buffer was already set). */
-         if (!s->img_buffer_end || s->img_buffer_end == s->img_buffer_original)
-            s->img_buffer_end = (uint8_t*)rjpeg->buff_data + size;
+         if (!j->img_buffer_end || j->img_buffer_end == j->img_buffer_original)
+            j->img_buffer_end = (uint8_t*)rjpeg->buff_data + size;
       }
       else
       {
          /* Synchronous fallback -- do the full decode now.
           * This path is used by image_texture_load_internal()
           * which calls iterate in a tight loop anyway. */
-         j = (rjpeg_jpeg*)calloc(1, sizeof(*j));
+         j = (rjpeg_jpeg*)malloc(sizeof(*j));
          if (!j)
          {
             free(proc);
             return IMAGE_PROCESS_ERROR;
          }
 
-         s = (rjpeg_context*)calloc(1, sizeof(*s));
-         if (!s)
-         {
-            free(j);
-            free(proc);
-            return IMAGE_PROCESS_ERROR;
-         }
+         /* Zero only fields that need init */
+         memset(j->img_comp, 0, sizeof(j->img_comp));
+         j->code_bits = 0; j->code_buffer = 0;
+         j->nomore = 0; j->progressive = 0;
+         j->scan_n = 0; j->eob_run = 0;
+         j->marker = RJPEG_MARKER_NONE;
+         j->restart_interval = 0; j->todo = 0;
+         j->comp_arena = NULL; j->comp_arena_size = 0;
 
-         s->img_buffer          = (uint8_t*)rjpeg->buff_data;
-         s->img_buffer_original = (uint8_t*)rjpeg->buff_data;
-         s->img_buffer_end      = (uint8_t*)rjpeg->buff_data + size;
-
-         j->s                   = s;
+         /* Context fields embedded in j */
+         j->img_buffer          = (uint8_t*)rjpeg->buff_data;
+         j->img_buffer_original = (uint8_t*)rjpeg->buff_data;
+         j->img_buffer_end      = (uint8_t*)rjpeg->buff_data + size;
 
          rjpeg_setup_jpeg(j);
 
-         j->s->img_n            = 0;
+         j->img_n            = 0;
 
          if (!rjpeg_decode_jpeg_image(j))
          {
             rjpeg_cleanup_jpeg(j);
-            free(s);
             free(j);
             free(proc);
             return IMAGE_PROCESS_ERROR;
@@ -4282,10 +4316,10 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       /* Determine actual number of components to generate */
       proc->n       = 4; /* always request RGBA */
 
-      if (j->s->img_n == 3 && proc->n < 3)
+      if (j->img_n == 3 && proc->n < 3)
          proc->decode_n = 1;
       else
-         proc->decode_n = j->s->img_n;
+         proc->decode_n = j->img_n;
 
       /* Set up per-component resample state */
       for (k = 0; k < proc->decode_n; ++k)
@@ -4297,7 +4331,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
           * linebuf (it points into comp_arena), skip the malloc. */
          if (!j->img_comp[k].linebuf)
          {
-            j->img_comp[k].linebuf = (uint8_t *) malloc(j->s->img_x + 3);
+            j->img_comp[k].linebuf = (uint8_t *) malloc(j->img_x + 3);
             if (!j->img_comp[k].linebuf)
             {
                rjpeg_process_free(proc);
@@ -4308,7 +4342,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
          r->hs       = j->img_h_max / j->img_comp[k].h;
          r->vs       = j->img_v_max / j->img_comp[k].v;
          r->ystep    = r->vs >> 1;
-         r->w_lores  = (j->s->img_x + r->hs-1) / r->hs;
+         r->w_lores  = (j->img_x + r->hs-1) / r->hs;
          r->ypos     = 0;
          r->line0    = r->line1 = j->img_comp[k].data;
          r->resample = rjpeg_resample_row_generic;
@@ -4325,7 +4359,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
 
       /* Allocate output buffer */
       proc->output = (uint8_t *) malloc(
-            proc->n * j->s->img_x * j->s->img_y);
+            proc->n * j->img_x * j->img_y);
       if (!proc->output)
       {
          rjpeg_process_free(proc);
@@ -4335,8 +4369,8 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       proc->cur_row     = 0;
       proc->phase       = RJPEG_PHASE_RESAMPLE;
 
-      *width            = j->s->img_x;
-      *height           = j->s->img_y;
+      *width            = j->img_x;
+      *height           = j->img_y;
 
       rjpeg->process    = proc;
 
@@ -4360,19 +4394,19 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
        * from ~1080 to ~135 for 1080p images. */
       #define RJPEG_ROWS_PER_CALL 8
 
-      *width  = z->s->img_x;
-      *height = z->s->img_y;
+      *width  = z->img_x;
+      *height = z->img_y;
 
-      while (proc->cur_row < z->s->img_y && rows_done < RJPEG_ROWS_PER_CALL)
+      while (proc->cur_row < z->img_y && rows_done < RJPEG_ROWS_PER_CALL)
       {
          int k;
          unsigned jj  = proc->cur_row;
-         uint8_t *out = proc->output + proc->n * z->s->img_x * jj;
+         uint8_t *out = proc->output + proc->n * z->img_x * jj;
 
          /* Determine if we can use the fused upsample+colorconvert path
           * for this row.  Must be computed BEFORE the resample loop
           * advances ystep. */
-         int use_fused = (proc->n >= 3 && z->s->img_n == 3
+         int use_fused = (proc->n >= 3 && z->img_n == 3
                && z->upsample_YCbCr_to_BGRA_kernel
                && proc->decode_n >= 3
                && proc->res_comp[1].hs == 2
@@ -4423,25 +4457,25 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
             uint8_t *y = proc->coutput[0];
             if (y)
             {
-               if (z->s->img_n == 3)
+               if (z->img_n == 3)
                {
                   if (use_fused)
                   {
                      z->upsample_YCbCr_to_BGRA_kernel(out, y,
                            fused_cb_near, fused_cb_far,
                            fused_cr_near, fused_cr_far,
-                           proc->res_comp[1].w_lores, z->s->img_x);
+                           proc->res_comp[1].w_lores, z->img_x);
                   }
                   else
                   {
                      z->YCbCr_to_RGB_kernel(out, y, proc->coutput[1],
-                           proc->coutput[2], z->s->img_x, proc->n);
+                           proc->coutput[2], z->img_x, proc->n);
                   }
                }
                else
                {
                   unsigned i;
-                  for (i = 0; i < z->s->img_x; ++i)
+                  for (i = 0; i < z->img_x; ++i)
                   {
                      out[0]  = out[1] = out[2] = y[i];
                      out[3]  = 255; /* not used if n==3 */
@@ -4456,13 +4490,13 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
             if (proc->n == 1)
             {
                unsigned i;
-               for (i = 0; i < z->s->img_x; ++i)
+               for (i = 0; i < z->img_x; ++i)
                   out[i] = y[i];
             }
             else
             {
                unsigned i;
-               for (i = 0; i < z->s->img_x; ++i)
+               for (i = 0; i < z->img_x; ++i)
                {
                   *out++ = y[i];
                   *out++ = 255;
@@ -4474,7 +4508,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
          rows_done++;
       }
 
-      if (proc->cur_row < z->s->img_y)
+      if (proc->cur_row < z->img_y)
          return IMAGE_PROCESS_NEXT;
 
       /* All rows resampled -- YCbCr conversion already wrote BGRA
@@ -4523,8 +4557,6 @@ void rjpeg_free(rjpeg_t *rjpeg)
    if (rjpeg->iter_j)
    {
       rjpeg_cleanup_jpeg(rjpeg->iter_j);
-      if (rjpeg->iter_j->s)
-         free(rjpeg->iter_j->s);
       free(rjpeg->iter_j);
       rjpeg->iter_j = NULL;
    }
