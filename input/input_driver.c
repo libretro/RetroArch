@@ -828,13 +828,50 @@ static int32_t input_state_wrap(
          if (sec_joypad)
             ret |= sec_joypad->state(joypad_info, binds[_port], _port);
       }
+      else if (id < RARCH_FIRST_CUSTOM_BIND)
+      {
+         /* Standard joypad buttons (0-15): serve from a per-port
+          * bitmask cache when available.  The cache is populated
+          * either by an earlier JOYPAD_MASK query for this port
+          * (common in modern cores) or lazily on the first
+          * individual button query (old-style cores).
+          * This avoids up to 32 indirect joypad->button()/axis()
+          * calls per port per frame. */
+         input_driver_state_t *input_st = &input_driver_st;
+
+         if (_port < MAX_USERS
+               && !input_st->joypad_state_cache_valid[_port])
+         {
+            int32_t cached = 0;
+            if (joypad)
+               cached |= joypad->state(joypad_info, binds[_port], _port);
+            if (sec_joypad)
+               cached |= sec_joypad->state(joypad_info, binds[_port], _port);
+            if (input && input->input_state)
+               cached |= input->input_state(
+                     data, joypad, sec_joypad, joypad_info, binds,
+                     keyboard_mapping_blocked,
+                     _port, RETRO_DEVICE_JOYPAD, 0,
+                     RETRO_DEVICE_ID_JOYPAD_MASK);
+            input_st->joypad_state_cache[_port]       = cached;
+            input_st->joypad_state_cache_valid[_port]  = true;
+         }
+
+         if (    _port < MAX_USERS
+              && (input_st->joypad_state_cache[_port] & (1 << id)))
+            return 1;
+
+         /* Cache says not pressed; skip input->input_state() below
+          * since the cache already incorporates it. */
+         return 0;
+      }
       else
       {
-         /* Do a bitwise OR to combine both input
-          * states together */
+         /* Extended bind IDs (turbo, hold, meta keys) are not
+          * covered by joypad->state(), so use the original
+          * per-button dispatch path. */
          if (binds[_port][id].valid)
          {
-            /* Auto-binds are per joypad, not per user. */
             const uint64_t bind_joykey     = binds[_port][id].joykey;
             const uint64_t bind_joyaxis    = binds[_port][id].joyaxis;
             const uint64_t autobind_joykey = joypad_info->auto_binds[id].joykey;
@@ -889,6 +926,23 @@ static int32_t input_state_wrap(
             device,
             idx,
             id);
+
+   /* Populate the per-port joypad cache from the MASK result so that
+    * subsequent individual button queries (from hybrid or old-style
+    * cores) can be served from cache without a second joypad->state()
+    * call.  This is a no-op when the cache is already valid (i.e.
+    * individual queries ran before the first MASK query). */
+   if (    device == RETRO_DEVICE_JOYPAD
+        && id     == RETRO_DEVICE_ID_JOYPAD_MASK
+        && _port  <  MAX_USERS)
+   {
+      input_driver_state_t *input_st = &input_driver_st;
+      if (!input_st->joypad_state_cache_valid[_port])
+      {
+         input_st->joypad_state_cache[_port]       = ret;
+         input_st->joypad_state_cache_valid[_port]  = true;
+      }
+   }
 
    return ret;
 }
@@ -6854,6 +6908,10 @@ void input_driver_poll(void)
       sec_joypad->poll();
    if (input && input->poll)
       input->poll(input_st->current_data);
+
+   /* Invalidate joypad state bitmask cache for the new frame */
+   memset(input_st->joypad_state_cache_valid, 0,
+         sizeof(input_st->joypad_state_cache_valid));
 
    /* Enable/disable sensors at the driver level based on demand
     * from shaders and/or core. Setting gates everything. */

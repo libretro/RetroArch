@@ -643,6 +643,17 @@ typedef struct
 
    /* primitives */
    bool analog_requested[MAX_USERS];
+
+   /* Per-port joypad state bitmask cache.
+    * Populated lazily on the first JOYPAD query for each mapped_port
+    * within a frame, then reused for subsequent individual button
+    * queries to the same port.  Avoids up to 32 indirect
+    * joypad->button()/axis() calls per port when cores use the
+    * old per-button query pattern instead of JOYPAD_MASK.
+    * Invalidated at the start of each input_driver_poll(). */
+   int32_t joypad_state_cache[MAX_USERS];
+   bool    joypad_state_cache_valid[MAX_USERS];
+
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
 
