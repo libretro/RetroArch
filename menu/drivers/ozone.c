@@ -5086,12 +5086,20 @@ static ozone_node_t *ozone_alloc_node(void)
    return node;
 }
 
+/* File-static generation counter for async icon loads.
+ * NOT inside ozone_handle_t — must outlive the struct. */
+static uint64_t ozone_icon_load_gen = 0;
+
 static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 {
    unsigned i;
+   bool supports_rgba = video_driver_supports_rgba();
    size_t list_size = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
    RHMAP_FREE(ozone->playlist_db_node_map);
+
+   /* Invalidate any in-flight async icon loads from a previous call */
+   ozone_icon_load_gen++;
 
    for (i = 0; i < list_size; i++)
    {
@@ -5109,7 +5117,6 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
          size_t __len, syslen;
-         struct texture_image ti;
          char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
 
@@ -5128,45 +5135,22 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                   texturepath, ozone->icons_path, "default.png",
                   sizeof(texturepath));
 
-         ti.width         = 0;
-         ti.height        = 0;
-         ti.pixels        = NULL;
-         ti.supports_rgba = video_driver_supports_rgba();
-
-         if (image_texture_load(&ti, texturepath))
-         {
-            if (ti.pixels)
-            {
-               video_driver_texture_unload(&node->icon);
-               video_driver_texture_load(&ti,
-                     TEXTURE_FILTER_MIPMAP_LINEAR, &node->icon);
-            }
-
-            image_texture_free(&ti);
-         }
+         task_push_icon_load(texturepath, supports_rgba,
+               &node->icon, ozone_icon_load_gen,
+               &ozone_icon_load_gen);
 
          strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
-         /* Assemble new icon path */
          fill_pathname_join_special(
                texturepath, ozone->icons_path, sysname,
                sizeof(texturepath));
 
-         /* If the content icon doesn't exist, return default-content */
          if (!path_is_valid(texturepath))
             fill_pathname_join_delim(texturepath, ozone->icons_path_default,
                   "content.png", '-', sizeof(texturepath));
 
-         if (image_texture_load(&ti, texturepath))
-         {
-            if (ti.pixels)
-            {
-               video_driver_texture_unload(&node->content_icon);
-               video_driver_texture_load(&ti,
-                     TEXTURE_FILTER_MIPMAP_LINEAR, &node->content_icon);
-            }
-
-            image_texture_free(&ti);
-         }
+         task_push_icon_load(texturepath, supports_rgba,
+               &node->content_icon, ozone_icon_load_gen,
+               &ozone_icon_load_gen);
 
          /* Console name */
          console_name = ozone->horizontal_list.list[i].alt
@@ -5177,9 +5161,6 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             free(node->console_name);
          node->console_name = NULL;
 
-         /* Note: console_name will *always* be valid here,
-          * but provide a fallback to prevent NULL pointer
-          * dereferencing in case of unknown errors... */
          if (console_name)
             node->console_name = strdup(console_name);
          else
@@ -9387,6 +9368,10 @@ static void ozone_free(void *data)
 
    if (ozone)
    {
+      /* Invalidate any in-flight async icon loads before freeing
+       * the nodes they would write into */
+      ozone_icon_load_gen++;
+
       video_coord_array_free(&ozone->fonts.footer.raster_block.carr);
       video_coord_array_free(&ozone->fonts.title.raster_block.carr);
       video_coord_array_free(&ozone->fonts.time.raster_block.carr);

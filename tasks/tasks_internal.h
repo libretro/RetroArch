@@ -183,6 +183,14 @@ bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
       retro_task_callback_t cb, void *userdata);
 
+/* Async icon/texture loading.  generation_ptr must point to a static
+ * variable in the calling module (not a heap struct field). */
+bool task_push_icon_load(const char *fullpath,
+      bool supports_rgba,
+      uintptr_t *target_texture,
+      uint64_t generation,
+      uint64_t *generation_ptr);
+
 #ifdef HAVE_LIBRETRODB
 bool task_push_dbscan(
       const char *playlist_directory,

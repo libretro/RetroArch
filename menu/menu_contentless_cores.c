@@ -254,6 +254,9 @@ static void contentless_cores_unload_icons(contentless_cores_state_t *state)
    state->icons = NULL;
 }
 
+/* File-static generation counter for async icon loads */
+static uint64_t contentless_icon_load_gen = 0;
+
 static void contentless_cores_load_icons(contentless_cores_state_t *state)
 {
    size_t i;
@@ -267,6 +270,9 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
 
    /* Unload any existing icons */
    contentless_cores_unload_icons(state);
+
+   /* Invalidate any in-flight async icon loads */
+   contentless_icon_load_gen++;
 
    if (!state->icons_enabled)
       return;
@@ -288,23 +294,9 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          CONTENTLESS_CORE_ICON_DEFAULT, sizeof(icon_path));
 
    if (path_is_valid(icon_path))
-   {
-      struct texture_image ti;
-      ti.pixels               = NULL;
-      ti.width                = 0;
-      ti.height               = 0;
-      ti.supports_rgba        = rgba_supported;
-
-      if (image_texture_load(&ti, icon_path))
-      {
-         if (ti.pixels)
-            video_driver_texture_load(&ti,
-                  TEXTURE_FILTER_MIPMAP_LINEAR,
-                  &state->icons->fallback);
-
-         image_texture_free(&ti);
-      }
-   }
+      task_push_icon_load(icon_path, rgba_supported,
+            &state->icons->fallback, contentless_icon_load_gen,
+            &contentless_icon_load_gen);
 
    /* Get icons for all contentless cores */
    core_info_get_list(&core_info_list);
@@ -316,14 +308,11 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
    {
       core_info_t *core_info = core_info_get(core_info_list, i);
 
-      /* Icon name is the first entry in the core
-       * info database list */
       if (    core_info
           && (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME)
           &&  core_info->databases_list
           && (core_info->databases_list->size > 0))
       {
-         struct texture_image ti;
          const char *icon_name   =
                core_info->databases_list->elems[0].data;
          size_t _len             = fill_pathname_join_special(
@@ -335,30 +324,23 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          icon_path[++_len]       = 'g';
          icon_path[++_len]       = '\0';
 
-         ti.pixels               = NULL;
-         ti.width                = 0;
-         ti.height               = 0;
-         ti.supports_rgba        = rgba_supported;
-
          if (!path_is_valid(icon_path))
             continue;
 
-         if (image_texture_load(&ti, icon_path))
+         /* Allocate the icon handle and insert into hash map now.
+          * The async callback fills in the texture handle when
+          * the decode completes. */
          {
-            if (ti.pixels)
-            {
-               uintptr_t *icon = (uintptr_t*)calloc(1, sizeof(*icon));
+            uintptr_t *icon = (uintptr_t*)calloc(1, sizeof(*icon));
+            if (!icon)
+               continue;
 
-               video_driver_texture_load(&ti,
-                     TEXTURE_FILTER_MIPMAP_LINEAR,
-                     icon);
+            RHMAP_SET_STR(state->icons->system,
+                  core_info->core_file_id.str, icon);
 
-               /* Add icon to hash map */
-               RHMAP_SET_STR(state->icons->system,
-               core_info->core_file_id.str, icon);
-            }
-
-            image_texture_free(&ti);
+            task_push_icon_load(icon_path, rgba_supported,
+                  icon, contentless_icon_load_gen,
+                  &contentless_icon_load_gen);
          }
       }
    }
@@ -387,7 +369,11 @@ void menu_contentless_cores_context_init(void)
 void menu_contentless_cores_context_deinit(void)
 {
    if (contentless_cores_state)
+   {
+      /* Invalidate in-flight async icon loads before unloading */
+      contentless_icon_load_gen++;
       contentless_cores_unload_icons(contentless_cores_state);
+   }
 }
 
 void menu_contentless_cores_free(void)
@@ -395,6 +381,8 @@ void menu_contentless_cores_free(void)
    if (!contentless_cores_state)
       return;
 
+   /* Invalidate in-flight async icon loads before freeing */
+   contentless_icon_load_gen++;
    contentless_cores_free_info_entries(contentless_cores_state);
    contentless_cores_unload_icons(contentless_cores_state);
    free(contentless_cores_state);

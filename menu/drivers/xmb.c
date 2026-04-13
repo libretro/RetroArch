@@ -2918,14 +2918,18 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
    }
 }
 
+/* File-static generation counter for async icon loads */
+static uint64_t xmb_icon_load_gen = 0;
+
 static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned i;
    char iconpath[PATH_MAX_LENGTH];
    char icons_path_default[PATH_MAX_LENGTH];
-   int depth                       = 1; /* keep this integer */
-   size_t list_size                = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
-   uintptr_t tag                   = (uintptr_t)&xmb->x;
+   bool supports_rgba               = video_driver_supports_rgba();
+   int depth                        = 1;
+   size_t list_size                 = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
+   uintptr_t tag                    = (uintptr_t)&xmb->x;
 
    gfx_animation_kill_by_tag(&tag);
 
@@ -2934,10 +2938,12 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
    if (xmb->depth > 1)
       depth++;
 
-   /* Align icon size with left thumbnail area */
    xmb->x                          = xmb->icon_size * (xmb->use_ps3_layout ? 1.1f : 0.7f) * -(depth * 2 - 2);
 
    RHMAP_FREE(xmb->playlist_db_node_map);
+
+   /* Invalidate any in-flight async icon loads */
+   xmb_icon_load_gen++;
 
    fill_pathname_application_special(iconpath, sizeof(iconpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
@@ -2959,12 +2965,10 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
          size_t __len, syslen;
-         struct texture_image ti;
          char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          const char *console_name = NULL;
 
-         /* Add current node to playlist database name map */
          RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
 
          syslen  = fill_pathname(sysname, path_basename(path), "",
@@ -2973,7 +2977,6 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
                sizeof(texturepath));
          strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
-         /* If the playlist icon doesn't exist return default */
          if (!path_is_valid(texturepath))
          {
             __len  = fill_pathname_join_special(texturepath, iconpath, "default",
@@ -2981,44 +2984,22 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
             strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
          }
 
-         ti.width         = 0;
-         ti.height        = 0;
-         ti.pixels        = NULL;
-         ti.supports_rgba = video_driver_supports_rgba();
-
-         if (image_texture_load(&ti, texturepath))
-         {
-            if (ti.pixels)
-            {
-               video_driver_texture_unload(&node->icon);
-               video_driver_texture_load(&ti, TEXTURE_FILTER_MIPMAP_LINEAR, &node->icon);
-            }
-
-            image_texture_free(&ti);
-         }
+         task_push_icon_load(texturepath, supports_rgba,
+               &node->icon, xmb_icon_load_gen,
+               &xmb_icon_load_gen);
 
          strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
-         /* Assemble new icon path */
          fill_pathname_join_special(texturepath, iconpath, sysname,
                sizeof(texturepath));
 
-         /* If the content icon doesn't exist, return default-content */
          if (!path_is_valid(texturepath))
             fill_pathname_join_delim(texturepath, icons_path_default,
                   FILE_PATH_CONTENT_BASENAME, '-', sizeof(texturepath));
 
-         if (image_texture_load(&ti, texturepath))
-         {
-            if (ti.pixels)
-            {
-               video_driver_texture_unload(&node->content_icon);
-               video_driver_texture_load(&ti, TEXTURE_FILTER_MIPMAP_LINEAR, &node->content_icon);
-            }
+         task_push_icon_load(texturepath, supports_rgba,
+               &node->content_icon, xmb_icon_load_gen,
+               &xmb_icon_load_gen);
 
-            image_texture_free(&ti);
-         }
-
-         /* Console name */
          console_name = xmb->horizontal_list.list[i].alt
                       ? xmb->horizontal_list.list[i].alt
                       : xmb->horizontal_list.list[i].path;
@@ -3026,9 +3007,6 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
          if (node->console_name)
             free(node->console_name);
 
-         /* Note: console_name will *always* be valid here,
-          * but provide a fallback to prevent NULL pointer
-          * dereferencing in case of unknown errors... */
          if (console_name)
             node->console_name = strdup(console_name);
          else
@@ -9285,6 +9263,10 @@ static void xmb_free(void *data)
 
    if (xmb)
    {
+      /* Invalidate any in-flight async icon loads before freeing
+       * the nodes they would write into */
+      xmb_icon_load_gen++;
+
       xmb_free_list_nodes(&xmb->horizontal_list, false);
       file_list_deinitialize(&xmb->horizontal_list);
       RHMAP_FREE(xmb->playlist_db_node_map);

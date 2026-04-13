@@ -28,6 +28,7 @@
 #include "tasks_internal.h"
 
 #include "../configuration.h"
+#include "../gfx/video_driver.h"
 
 enum image_status_enum
 {
@@ -516,6 +517,100 @@ bool task_push_image_load(const char *fullpath,
    t->user_data       = user_data;
 
    task_queue_push(t);
+
+   return true;
+}
+
+/* -----------------------------------------------------------------------
+ * Async icon/texture loading
+ *
+ * Wraps task_push_image_load with a built-in callback that uploads the
+ * decoded image to the GPU via video_driver_texture_load and stores the
+ * resulting handle at *target_texture.
+ *
+ * A generation counter prevents stale callbacks from writing into freed
+ * memory when the owning list is rebuilt or destroyed between queue and
+ * completion.
+ *
+ * The generation counter must be a static local (or file-static) in the
+ * calling module — NOT inside a heap-allocated struct that could be freed.
+ * Each subsystem (ozone, xmb, explore, contentless) maintains its own
+ * counter so bumping one doesn't invalidate another's in-flight loads.
+ *
+ * Usage (in caller):
+ *   static uint64_t my_gen = 0;
+ *   my_gen++;                    // invalidate previous batch
+ *   for (i = 0; i < N; i++)
+ *      task_push_icon_load(path, rgba, &node->icon, my_gen, &my_gen);
+ * ----------------------------------------------------------------------- */
+
+typedef struct
+{
+   uintptr_t *target;          /* where to store the GPU texture handle  */
+   uint64_t   generation;      /* snapshot of gen counter at queue time  */
+   uint64_t  *generation_ptr;  /* pointer to the STATIC gen counter      */
+} icon_load_tag_t;
+
+static void cb_task_icon_load(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
+{
+   struct texture_image *img = (struct texture_image*)task_data;
+   icon_load_tag_t      *tag = (icon_load_tag_t*)user_data;
+
+   if (!tag)
+      goto end;
+
+   /* Generation check: if the counter was bumped since this task was
+    * queued, the target pointer may be invalid — skip the write.
+    * generation_ptr points to a static variable in the calling module
+    * so it is always valid (never freed). */
+   if (tag->generation != *tag->generation_ptr)
+      goto end;
+
+   if (!img || img->width < 1 || img->height < 1 || !img->pixels)
+      goto end;
+
+   /* Unload previous texture if any */
+   if (tag->target && *tag->target)
+      video_driver_texture_unload(tag->target);
+
+   video_driver_texture_load(img, TEXTURE_FILTER_MIPMAP_LINEAR,
+         tag->target);
+
+end:
+   if (img)
+   {
+      image_texture_free(img);
+      free(img);
+   }
+   free(tag);
+}
+
+bool task_push_icon_load(const char *fullpath,
+      bool supports_rgba,
+      uintptr_t *target_texture,
+      uint64_t generation,
+      uint64_t *generation_ptr)
+{
+   icon_load_tag_t *tag = NULL;
+
+   if (!fullpath || !target_texture || !generation_ptr)
+      return false;
+
+   tag = (icon_load_tag_t*)malloc(sizeof(*tag));
+   if (!tag)
+      return false;
+
+   tag->target         = target_texture;
+   tag->generation     = generation;
+   tag->generation_ptr = generation_ptr;
+
+   if (!task_push_image_load(fullpath, supports_rgba, 0,
+         cb_task_icon_load, tag))
+   {
+      free(tag);
+      return false;
+   }
 
    return true;
 }

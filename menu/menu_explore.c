@@ -398,10 +398,14 @@ static void explore_unload_icons(explore_state_t *state)
          video_driver_texture_unload(&state->icons[i]);
 }
 
+/* File-static generation counter for async icon loads */
+static uint64_t explore_icon_load_gen = 0;
+
 static void explore_load_icons(explore_state_t *state)
 {
    char path[PATH_MAX_LENGTH];
    size_t i, _len, system_count;
+   bool supports_rgba = video_driver_supports_rgba();
    if (!state)
       return;
 
@@ -410,6 +414,9 @@ static void explore_load_icons(explore_state_t *state)
 
    /* unload any icons that could exist from a previous call to this */
    explore_unload_icons(state);
+
+   /* Invalidate any in-flight async icon loads */
+   explore_icon_load_gen++;
 
    /* RBUF_RESIZE leaves memory uninitialised,
       have to zero it 'manually' */
@@ -425,7 +432,6 @@ static void explore_load_icons(explore_state_t *state)
 
    for (i = 0; i != system_count; i++)
    {
-      struct texture_image ti;
       size_t __len = _len;
       __len       += strlcpy(path + _len,
                  state->by[EXPLORE_BY_SYSTEM][i]->str,
@@ -434,19 +440,9 @@ static void explore_load_icons(explore_state_t *state)
       if (!path_is_valid(path))
          continue;
 
-      ti.width         = 0;
-      ti.height        = 0;
-      ti.pixels        = NULL;
-      ti.supports_rgba = video_driver_supports_rgba();
-
-      if (!image_texture_load(&ti, path))
-         continue;
-
-      if (ti.pixels)
-         video_driver_texture_load(&ti,
-               TEXTURE_FILTER_MIPMAP_LINEAR, &state->icons[i]);
-
-      image_texture_free(&ti);
+      task_push_icon_load(path, supports_rgba,
+            &state->icons[i], explore_icon_load_gen,
+            &explore_icon_load_gen);
    }
 }
 
@@ -1841,7 +1837,11 @@ void menu_explore_context_init(void)
 void menu_explore_context_deinit(void)
 {
    if (explore_state)
+   {
+      /* Invalidate in-flight async icon loads before unloading */
+      explore_icon_load_gen++;
       explore_unload_icons(explore_state);
+   }
 }
 
 void menu_explore_free_state(explore_state_t *state)
@@ -1858,6 +1858,8 @@ void menu_explore_free_state(explore_state_t *state)
       playlist_free(state->playlists[i]);
    RBUF_FREE(state->playlists);
 
+   /* Invalidate in-flight async icon loads before freeing */
+   explore_icon_load_gen++;
    explore_unload_icons(state);
    RBUF_FREE(state->icons);
 
