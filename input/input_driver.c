@@ -1022,8 +1022,25 @@ static int16_t input_joypad_analog_button(
       ? joypad_info->auto_binds[ident].joyaxis
       : bind->joyaxis;
 
+   /* Early exit for digital-only buttons: if neither the user bind
+    * nor the autoconfig bind has an analog axis, this button has no
+    * analog capability. Skip the input_joypad_axis() call and
+    * deadzone magnitude computation entirely — go straight to the
+    * digital button fallback. Saves one drv->axis() indirect call
+    * plus float math per pressed digital button in the remap loop. */
+   if (axis == AXIS_NONE)
+   {
+      uint16_t key = (bind->joykey == NO_BTN)
+         ? joypad_info->auto_binds[ident].joykey
+         : bind->joykey;
+
+      if (drv->button(joy_idx, key))
+         return 0x7fff;
+      return 0;
+   }
+
    /* Analog button - call drv->axis at most once */
-   if (input_analog_deadzone && axis != AXIS_NONE)
+   if (input_analog_deadzone)
    {
       int16_t mult = drv->axis(joy_idx, axis);
       if (mult != 0)
