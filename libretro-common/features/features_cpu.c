@@ -737,7 +737,23 @@ uint64_t cpu_features_get(void)
             : "=a"(flags7[0]), "=S"(flags7[1]), "=c"(flags7[2]), "=d"(flags7[3])
             : "a"(7), "c"(0));
 #elif defined(_MSC_VER) && INT_MAX == 2147483647
+#if _MSC_VER >= 1500
       __cpuidex((int*)flags7, 7, 0);
+#else
+      {
+         int *p = (int*)flags7;
+         __asm {
+            mov eax, 7
+            xor ecx, ecx
+            cpuid
+            mov esi, p
+            mov [esi],      eax
+            mov [esi + 4],  ebx
+            mov [esi + 8],  ecx
+            mov [esi + 12], edx
+         }
+      }
+#endif
 #else
       memset(flags7, 0, sizeof(flags7));
 #endif
