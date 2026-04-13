@@ -1979,8 +1979,10 @@ static void gfx_widgets_context_reset(
       };
    size_t i;
 
-   /* Load textures */
-   /* Icons */
+   /* Load textures — kept synchronous because the message queue
+    * layout (gfx_widgets_layout) depends on MSG_QUEUE_HAS_ICONS
+    * which requires knowing whether icons loaded successfully.
+    * Only ~10 small PNGs, total cost ~30ms. */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
       gfx_display_reset_textures_list(
             gfx_widgets_icons_names[i],

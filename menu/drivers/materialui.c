@@ -2270,10 +2270,14 @@ static void materialui_context_destroy_playlist_icons(materialui_handle_t *mui)
       video_driver_texture_unload(&mui->textures.playlist.icons[i].image);
 }
 
+/* File-static generation counter for async icon loads */
+static uint64_t mui_icon_load_gen = 0;
+
 static void materialui_context_reset_playlist_icons(
       materialui_handle_t *mui)
 {
    size_t i;
+   bool supports_rgba = video_driver_supports_rgba();
    if (!*mui->sysicons_path)
       return;
 
@@ -2281,14 +2285,17 @@ static void materialui_context_reset_playlist_icons(
     * > Note that missing icons are ignored */
    for (i = 0; i < mui->textures.playlist.size; i++)
    {
+      char texpath[PATH_MAX_LENGTH];
       const char *image_file =
             mui->textures.playlist.icons[i].image_file;
       if (!image_file || !*image_file)
          continue;
-      gfx_display_reset_textures_list(
-            image_file, mui->sysicons_path,
+      fill_pathname_join_special(texpath,
+            mui->sysicons_path, image_file,
+            sizeof(texpath));
+      task_push_icon_load(texpath, supports_rgba,
             &mui->textures.playlist.icons[i].image,
-            TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+            mui_icon_load_gen, &mui_icon_load_gen);
    }
 }
 
@@ -2553,13 +2560,18 @@ static void materialui_update_savestate_thumbnail_image(void *data)
 static void materialui_context_reset_textures(materialui_handle_t *mui)
 {
    int i;
+   bool supports_rgba = video_driver_supports_rgba();
 
    /* Loop through all textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
    {
-      gfx_display_reset_textures_list(
-            materialui_texture_path(i), mui->icons_path, &mui->textures.list[i],
-            TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+      char texpath[PATH_MAX_LENGTH];
+      fill_pathname_join_special(texpath,
+            mui->icons_path, materialui_texture_path(i),
+            sizeof(texpath));
+      task_push_icon_load(texpath, supports_rgba,
+            &mui->textures.list[i], mui_icon_load_gen,
+            &mui_icon_load_gen);
    }
 }
 
@@ -9168,6 +9180,9 @@ static void materialui_free(void *data)
    if (!mui)
       return;
 
+   /* Invalidate in-flight async icon loads */
+   mui_icon_load_gen++;
+
    video_coord_array_free(&mui->font_data.title.raster_block.carr);
    video_coord_array_free(&mui->font_data.list.raster_block.carr);
    video_coord_array_free(&mui->font_data.hint.raster_block.carr);
@@ -9224,6 +9239,9 @@ static void materialui_context_destroy(void *data)
 
    if (!mui)
       return;
+
+   /* Invalidate in-flight async icon loads before freeing targets */
+   mui_icon_load_gen++;
 
    /* Free standard menu textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)

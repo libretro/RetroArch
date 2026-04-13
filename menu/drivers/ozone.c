@@ -2910,7 +2910,15 @@ static void ozone_unload_theme_textures(ozone_handle_t *ozone)
    }
 }
 
-static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
+/* File-static generation counter for async icon loads.
+ * NOT inside ozone_handle_t — must outlive the struct.
+ * Two counters: one for context_reset static textures,
+ * one for horizontal list playlist icons. Separate because
+ * horizontal list rebuilds must not invalidate context textures. */
+static uint64_t ozone_icon_load_gen     = 0;
+static uint64_t ozone_ctx_icon_load_gen = 0;
+
+static void ozone_reset_theme_textures(ozone_handle_t *ozone)
 {
    static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
       "switch.png",
@@ -2921,7 +2929,7 @@ static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
    };
    unsigned i, j;
    char theme_path[NAME_MAX_LENGTH];
-   bool result = true;
+   bool supports_rgba = video_driver_supports_rgba();
 
    for (j = 0; j < ARRAY_SIZE(ozone_themes); j++)
    {
@@ -2939,18 +2947,15 @@ static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
 
       for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
       {
-         if (!gfx_display_reset_textures_list(
-               OZONE_THEME_TEXTURES_FILES[i],
-               theme_path,
-               &theme->textures[i],
-               TEXTURE_FILTER_MIPMAP_LINEAR,
-               NULL,
-               NULL))
-            result = false;
+         char texpath[PATH_MAX_LENGTH];
+         fill_pathname_join_special(texpath,
+               theme_path, OZONE_THEME_TEXTURES_FILES[i],
+               sizeof(texpath));
+         task_push_icon_load(texpath, supports_rgba,
+               &theme->textures[i], ozone_ctx_icon_load_gen,
+               &ozone_ctx_icon_load_gen);
       }
    }
-
-   return result;
 }
 
 static void ozone_sidebar_collapse_end(void *userdata)
@@ -5085,10 +5090,6 @@ static ozone_node_t *ozone_alloc_node(void)
    node->wrap           = false;
    return node;
 }
-
-/* File-static generation counter for async icon loads.
- * NOT inside ozone_handle_t — must outlive the struct. */
-static uint64_t ozone_icon_load_gen = 0;
 
 static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 {
@@ -9371,6 +9372,7 @@ static void ozone_free(void *data)
       /* Invalidate any in-flight async icon loads before freeing
        * the nodes they would write into */
       ozone_icon_load_gen++;
+      ozone_ctx_icon_load_gen++;
 
       video_coord_array_free(&ozone->fonts.footer.raster_block.carr);
       video_coord_array_free(&ozone->fonts.title.raster_block.carr);
@@ -9804,6 +9806,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       "cursor_border.png"
    };
    unsigned i;
+   bool supports_rgba             = video_driver_supports_rgba();
    ozone_handle_t *ozone      = (ozone_handle_t*) data;
 
    if (ozone)
@@ -9818,47 +9821,58 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone_set_layout(ozone, settings->paths.directory_assets,
             settings->bools.ozone_collapse_sidebar, is_threaded);
 
+      /* Invalidate in-flight context texture loads */
+      ozone_ctx_icon_load_gen++;
+
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
-         char filename[64];
-         strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
-
-         if (!gfx_display_reset_textures_list(filename,
-               ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-            ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
+         char texpath[PATH_MAX_LENGTH];
+         fill_pathname_join_special(texpath,
+               ozone->png_path, OZONE_TEXTURES_FILES[i],
+               sizeof(texpath));
+         task_push_icon_load(texpath, supports_rgba,
+               &ozone->textures[i], ozone_ctx_icon_load_gen,
+               &ozone_ctx_icon_load_gen);
       }
 
       /* Sidebar textures */
       for (i = 0; i < OZONE_TAB_TEXTURE_LAST; i++)
       {
+         char texpath[PATH_MAX_LENGTH];
          switch (i)
          {
             /* Exceptions for icons that don't exist in 'png/sidebar/' */
             case OZONE_TAB_TEXTURE_CONTENTLESS_CORES:
             case OZONE_TAB_TEXTURE_EXPLORE:
-               if (!gfx_display_reset_textures_list(OZONE_TAB_TEXTURES_FILES[i],
-                     ozone->icons_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-                  ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
+               fill_pathname_join_special(texpath,
+                     ozone->icons_path, OZONE_TAB_TEXTURES_FILES[i],
+                     sizeof(texpath));
                break;
             default:
-               if (!gfx_display_reset_textures_list(OZONE_TAB_TEXTURES_FILES[i],
-                     ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-                  ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
+               fill_pathname_join_special(texpath,
+                     ozone->tab_path, OZONE_TAB_TEXTURES_FILES[i],
+                     sizeof(texpath));
                break;
          }
+         task_push_icon_load(texpath, supports_rgba,
+               &ozone->tab_textures[i], ozone_ctx_icon_load_gen,
+               &ozone_ctx_icon_load_gen);
       }
 
       /* Theme textures */
-      if (!ozone_reset_theme_textures(ozone))
-         ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
+      ozone_reset_theme_textures(ozone);
 
       /* Icons textures init */
       for (i = 0; i < OZONE_ENTRIES_ICONS_TEXTURE_LAST; i++)
       {
-         if (!gfx_display_reset_textures_list(ozone_entries_icon_texture_path(i),
-               ozone->icons_path, &ozone->icons_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-            ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
+         char texpath[PATH_MAX_LENGTH];
+         fill_pathname_join_special(texpath,
+               ozone->icons_path, ozone_entries_icon_texture_path(i),
+               sizeof(texpath));
+         task_push_icon_load(texpath, supports_rgba,
+               &ozone->icons_textures[i], ozone_ctx_icon_load_gen,
+               &ozone_ctx_icon_load_gen);
       }
 
       gfx_display_deinit_white_texture();
@@ -9936,6 +9950,10 @@ static void ozone_context_destroy(void *data)
 
    if (!ozone)
       return;
+
+   /* Invalidate in-flight async icon loads before unloading */
+   ozone_icon_load_gen++;
+   ozone_ctx_icon_load_gen++;
 
    /* Theme */
    ozone_unload_theme_textures(ozone);
