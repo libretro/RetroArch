@@ -876,6 +876,43 @@ static ASIOCallbacks g_asio_callbacks = {
    asio_cb_buffer_switch_time_info
 };
 
+/* Called at process exit to clean up a parked ASIO instance.
+ * This prevents COM object leaks and satisfies leak checkers. */
+static void asio_atexit_cleanup(void)
+{
+   ra_asio_t *ad = g_asio_persistent;
+   if (!ad)
+      ad = g_asio;
+   if (!ad)
+      return;
+
+   g_asio            = NULL;
+   g_asio_persistent = NULL;
+
+   if (ad->iasio)
+   {
+      ASIO_CALL_STOP(ad->iasio);
+      if (ad->buffers_created)
+         ASIO_CALL_DISPOSE_BUFFERS(ad->iasio);
+      ASIO_CALL_RELEASE(ad->iasio);
+   }
+
+   if (ad->ring)
+      fifo_free(ad->ring);
+
+#ifdef HAVE_THREADS
+   if (ad->cond_lock)
+      slock_free(ad->cond_lock);
+   if (ad->cond)
+      scond_free(ad->cond);
+#endif
+
+   if (ad->com_initialized)
+      CoUninitialize();
+
+   free(ad);
+}
+
 /* ═══════════════════════════════════════════════════════════════════
  *  RetroArch audio_driver_t implementation
  * ═══════════════════════════════════════════════════════════════════ */
@@ -948,6 +985,17 @@ static void *ra_asio_init(const char *device, unsigned rate,
    ad = (ra_asio_t *)calloc(1, sizeof(ra_asio_t));
    if (!ad)
       return NULL;
+
+   /* Register cleanup for process exit — ensures the parked
+    * instance is properly torn down even if free() only parks it. */
+   {
+      static bool atexit_registered = false;
+      if (!atexit_registered)
+      {
+         atexit(asio_atexit_cleanup);
+         atexit_registered = true;
+      }
+   }
 
    /* Initialize COM — ASIO drivers are in-process COM servers.
     * Must use single-threaded apartment (STA) because most ASIO
