@@ -210,6 +210,17 @@ static void nbio_mmap_win32_free(void *data)
    free(handle);
 }
 
+static void *nbio_mmap_win32_load_entire(void *data, size_t *len)
+{
+   /* mmap: data is already mapped — just return the pointer. */
+   struct nbio_mmap_win32_t* handle = (struct nbio_mmap_win32_t*)data;
+   if (!handle)
+      return NULL;
+   if (len)
+      *len = handle->len;
+   return handle->ptr;
+}
+
 nbio_intf_t nbio_mmap_win32 = {
    nbio_mmap_win32_open,
    nbio_mmap_win32_begin_read,
@@ -222,6 +233,7 @@ nbio_intf_t nbio_mmap_win32 = {
    NULL, /* set_chunk_size - mmap doesn't chunk */
    NULL, /* get_fd - win32 uses HANDLE, not fd */
    NULL, /* get_progress - mmap is instant */
+   nbio_mmap_win32_load_entire,
    "nbio_mmap_win32",
 };
 #else
@@ -237,6 +249,7 @@ nbio_intf_t nbio_mmap_win32 = {
    NULL, /* set_chunk_size */
    NULL, /* get_fd */
    NULL, /* get_progress */
+   NULL, /* load_entire */
    "nbio_mmap_win32",
 };
 

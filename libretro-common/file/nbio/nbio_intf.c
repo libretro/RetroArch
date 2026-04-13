@@ -123,3 +123,15 @@ bool nbio_get_progress(void *data, size_t *completed, size_t *total)
    if (total)     *total     = 0;
    return false;
 }
+
+void *nbio_load_entire(void *data, size_t *len)
+{
+   /* Fast path: backend provides a direct implementation */
+   if (internal_nbio->load_entire)
+      return internal_nbio->load_entire(data, len);
+
+   /* Fallback: use the iterate loop */
+   internal_nbio->begin_read(data);
+   while (!internal_nbio->iterate(data));
+   return internal_nbio->get_ptr(data, len);
+}

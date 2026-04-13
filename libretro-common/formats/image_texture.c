@@ -369,20 +369,17 @@ bool image_texture_load(struct texture_image *out_img,
 
    if (type != IMAGE_TYPE_NONE)
    {
-      /* Use BIO_READ (blocking single-shot) since we spin-wait
-       * until completion anyway — avoids chunked iteration overhead. */
       struct nbio_t *handle = (struct nbio_t*)
-         nbio_open(path, BIO_READ);
+         nbio_open(path, NBIO_READ);
       if (handle)
       {
          void *ptr       = NULL;
          size_t file_len = 0;
 
-         nbio_begin_read(handle);
-
-         while (!nbio_iterate(handle));
-
-         if ((ptr = nbio_get_ptr(handle, &file_len)))
+         /* Fast path: collapses begin_read + iterate-loop + get_ptr
+          * into a single call. For mmap this is zero-copy (instant),
+          * for AIO a single blocking syscall, for stdio one fread. */
+         if ((ptr = nbio_load_entire(handle, &file_len)))
          {
             unsigned r_shift, g_shift, b_shift, a_shift;
             image_texture_set_color_shifts(&r_shift,

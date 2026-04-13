@@ -242,6 +242,30 @@ static bool nbio_linux_get_progress(void *data,
    return handle->busy;
 }
 
+static void *nbio_linux_load_entire(void *data, size_t *len)
+{
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   if (!handle)
+      return NULL;
+
+   /* Submit the read if not already in flight */
+   if (!handle->busy)
+      nbio_begin_op(handle, IOCB_CMD_PREAD);
+
+   /* Blocking wait: min_nr=1 means the kernel won't return
+    * until the I/O is complete — one syscall, no poll loop. */
+   if (handle->busy)
+   {
+      struct io_event ev;
+      while (io_getevents(handle->ctx, 1, 1, &ev, NULL) != 1);
+      handle->busy = false;
+   }
+
+   if (len)
+      *len = handle->len;
+   return handle->ptr;
+}
+
 nbio_intf_t nbio_linux = {
    nbio_linux_open,
    nbio_linux_begin_read,
@@ -254,6 +278,7 @@ nbio_intf_t nbio_linux = {
    NULL, /* set_chunk_size - linux AIO submits entire read at once */
    nbio_linux_get_fd,
    nbio_linux_get_progress,
+   nbio_linux_load_entire,
    "nbio_linux",
 };
 #else
@@ -269,6 +294,7 @@ nbio_intf_t nbio_linux = {
    NULL, /* set_chunk_size */
    NULL, /* get_fd */
    NULL, /* get_progress */
+   NULL, /* load_entire */
    "nbio_linux",
 };
 

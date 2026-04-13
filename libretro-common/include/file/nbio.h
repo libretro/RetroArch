@@ -84,6 +84,16 @@ typedef struct nbio_intf
     * Backends that do not track progress may set this to NULL. */
    bool (*get_progress)(void *data, size_t *completed, size_t *total);
 
+   /* Fast path: load an entire file in one blocking call.
+    * Collapses begin_read + iterate-loop + get_ptr into a single
+    * operation. For mmap backends this is a no-op (data already mapped).
+    * For AIO it does a blocking wait. For stdio it does a single fread.
+    * Returns a pointer to the data and sets *len, or NULL on failure.
+    * The handle must have been opened in a read mode.
+    * Backends that do not implement this may set it to NULL;
+    * the dispatch layer falls back to begin_read + iterate + get_ptr. */
+   void *(*load_entire)(void *data, size_t *len);
+
    /* Human readable string. */
    const char *ident;
 } nbio_intf_t;
@@ -157,6 +167,18 @@ int nbio_get_fd(void *data);
  * Returns true if the operation is still in progress, false if idle/done.
  */
 bool nbio_get_progress(void *data, size_t *completed, size_t *total);
+
+/*
+ * Fast path: load the entire file into memory in one blocking call.
+ * Equivalent to begin_read + while(!iterate) + get_ptr, but backends
+ * can implement this far more efficiently:
+ *   - mmap: returns the mapped pointer directly (zero-copy, instant)
+ *   - linux AIO: blocking io_getevents wait (one syscall)
+ *   - stdio: single fread of the whole file
+ * Returns a pointer to the file data and sets *len, or NULL on error.
+ * The handle remains valid; call nbio_free() when done.
+ */
+void *nbio_load_entire(void *data, size_t *len);
 
 RETRO_END_DECLS
 

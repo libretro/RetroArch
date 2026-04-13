@@ -354,6 +354,34 @@ static bool nbio_stdio_get_progress(void *data,
    return (handle->op >= 0);
 }
 
+static void *nbio_stdio_load_entire(void *data, size_t *len)
+{
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
+   if (!handle || !handle->f)
+      return NULL;
+
+   fseek_wrap(handle->f, 0, SEEK_SET);
+
+#ifdef NBIO_HAVE_FADVISE
+   {
+      int fd = fileno(handle->f);
+      if (fd >= 0)
+         posix_fadvise(fd, 0, (off_t)handle->len, POSIX_FADV_SEQUENTIAL);
+   }
+#endif
+
+   /* Single fread of the entire file */
+   if (handle->len > 0)
+      fread((char*)handle->data, 1, handle->len, handle->f);
+
+   handle->progress = handle->len;
+   handle->op       = -1;
+
+   if (len)
+      *len = handle->len;
+   return handle->data;
+}
+
 nbio_intf_t nbio_stdio = {
    nbio_stdio_open,
    nbio_stdio_begin_read,
@@ -366,5 +394,6 @@ nbio_intf_t nbio_stdio = {
    nbio_stdio_set_chunk_size,
    nbio_stdio_get_fd,
    nbio_stdio_get_progress,
+   nbio_stdio_load_entire,
    "nbio_stdio",
 };

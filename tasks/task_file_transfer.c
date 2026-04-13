@@ -70,7 +70,21 @@ void task_file_load_handler(retro_task_t *task)
                struct nbio_t *handle = (struct nbio_t*)nbio_open(nbio->path, NBIO_READ);
                if (handle)
                {
+                  size_t _len = 0;
                   nbio->handle       = handle;
+
+                  /* Fast path: try load_entire to skip the iterate loop.
+                   * For mmap this returns instantly (zero-copy), for AIO
+                   * it does a single blocking wait. If the data is ready
+                   * immediately, jump straight to TRANSFER_PARSE and
+                   * skip the multi-tick TRANSFER state entirely. */
+                  if (nbio_load_entire(handle, &_len))
+                  {
+                     nbio->status    = NBIO_STATUS_TRANSFER_PARSE;
+                     return;
+                  }
+
+                  /* Fallback: backend needs iterative I/O (stdio) */
                   nbio->status       = NBIO_STATUS_TRANSFER;
                   nbio_begin_read(handle);
                   return;
