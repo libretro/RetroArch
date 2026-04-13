@@ -3657,8 +3657,6 @@ static void rjpeg_upsample_YCbCr_to_BGRA_simd(uint8_t *out, const uint8_t *y_row
    }
 #endif
 
-#endif
-
    /* Scalar tail: upsample remaining chroma into a stack buffer,
     * then call the standard color convert function for bit-exact output. */
    if (i < chroma_w)
@@ -3700,6 +3698,7 @@ static void rjpeg_upsample_YCbCr_to_BGRA_simd(uint8_t *out, const uint8_t *y_row
       }
    }
 }
+#endif
 
 
 /* set up the kernels */
