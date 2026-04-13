@@ -339,6 +339,18 @@ static void task_save_handler_finished(retro_task_t *task,
 /* Align to 8-byte boundary */
 #define CONTENT_ALIGN_SIZE(size) ((((size) + 7) & ~7))
 
+/* Zero only the alignment padding bytes after a block's data payload.
+ * When a block's unaligned size is not a multiple of 8, there are up to
+ * 7 padding bytes that would otherwise contain uninitialized data,
+ * causing nondeterministic compressed state file sizes. */
+#define CONTENT_ZERO_PADDING(output, unaligned_size)              \
+   do {                                                           \
+      size_t _pad = CONTENT_ALIGN_SIZE(unaligned_size)            \
+                  - (unaligned_size);                              \
+      if (_pad > 0)                                               \
+         memset((output) + (unaligned_size), 0, _pad);            \
+   } while (0)
+
 static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
 {
    size_t info_size = core_serialize_size();
@@ -416,7 +428,10 @@ static bool content_write_serialized_state(void* buffer,
           content_write_block_header(output,
              RASTATE_REPLAY_BLOCK, size->replay_size);
           if (replay_get_serialized_data(output + 8))
+          {
+            CONTENT_ZERO_PADDING(output + 8, size->replay_size);
             output += CONTENT_ALIGN_SIZE(size->replay_size) + 8;
+          }
        }
     }
 #endif
@@ -431,6 +446,7 @@ static bool content_write_serialized_state(void* buffer,
    if (!core_serialize(&serial_info))
       return false;
 
+   CONTENT_ZERO_PADDING(output, size->coremem_size);
    output += CONTENT_ALIGN_SIZE(size->coremem_size);
 
 #ifdef HAVE_CHEEVOS
@@ -439,7 +455,10 @@ static bool content_write_serialized_state(void* buffer,
       content_write_block_header(output,
             RASTATE_CHEEVOS_BLOCK, size->cheevos_size);
       if (rcheevos_get_serialized_data(output + 8))
+      {
+         CONTENT_ZERO_PADDING(output + 8, size->cheevos_size);
          output += CONTENT_ALIGN_SIZE(size->cheevos_size) + 8;
+      }
    }
 #endif
 
@@ -477,12 +496,10 @@ static void *content_get_serialized_data(size_t *serial_size)
    if ((_len = content_get_rastate_size(&size, false)) == 0)
       return NULL;
 
-   /* Ensure buffer is initialised to zero
-    * > Prevents inconsistent compressed state file
-    *   sizes when core requests a larger buffer
-    *   than it needs (and leaves the excess
-    *   as uninitialised garbage) */
-   if (!(data = calloc(_len, 1)))
+   /* Alignment padding bytes are zeroed selectively by
+    * CONTENT_ZERO_PADDING() in content_write_serialized_state(),
+    * so a full calloc() zero-fill is no longer needed here. */
+   if (!(data = malloc(_len)))
       return NULL;
 
    if (!content_write_serialized_state(data, &size, false))
