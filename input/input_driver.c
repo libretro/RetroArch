@@ -6718,27 +6718,44 @@ void input_driver_poll(void)
       return;
    }
 
-   /* This rarch_joypad_info_t struct contains the device index + autoconfig binds for the
-    * controller to be queried, and also (for unknown reasons) the analog axis threshold
-    * when mapping analog stick to dpad input.
+   /* Fused turbo/hold + remap loop.
     *
-    * Poll turbo and hold modifier state in a single pass per user
-    * to avoid iterating max_users twice with separate input_state_wrap calls. */
+    * Previously these were two separate max_users iterations:
+    *   1) turbo/hold: init joypad_info[i], call input_state_wrap ×2
+    *   2) remap:      reuse joypad_info[i], do remap work
+    * Now fused into a single pass to improve cache locality —
+    * joypad_info[i], bind arrays, and joypad driver state stay hot
+    * in L1 across all per-user work, and the loop overhead is halved. */
    {
-      bool turbo_enable      = settings->bools.input_turbo_enable;
-      uint16_t turbo_btn_id  = RARCH_TURBO_ENABLE;
-      bool kb_blocked        = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+      bool turbo_enable              = settings->bools.input_turbo_enable;
+      uint16_t turbo_btn_id          = RARCH_TURBO_ENABLE;
+      bool kb_blocked                = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+#ifdef HAVE_MENU
+      bool do_remap                  = input_remap_binds_enable
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
+#else
+      bool do_remap                  = input_remap_binds_enable;
+#endif
+#ifdef HAVE_OVERLAY
+      input_overlay_t *overlay_pointer = (input_overlay_t*)input_st->overlay_ptr;
+      bool poll_overlay              = (overlay_pointer &&
+            (overlay_pointer->flags & INPUT_OVERLAY_ALIVE));
+#endif
+      input_mapper_t *handle         = &input_st->mapper;
+      float input_analog_deadzone    = settings->floats.input_analog_deadzone;
+      float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
 
       if (settings->ints.input_turbo_bind != -1)
          turbo_btn_id = settings->ints.input_turbo_bind;
 
       for (i = 0; i < max_users; i++)
       {
+         /* --- joypad_info init (shared by turbo/hold and remap) --- */
          joypad_info[i].axis_threshold        = input_axis_threshold;
          joypad_info[i].joy_idx               = settings->uints.input_joypad_index[i];
          joypad_info[i].auto_binds            = input_autoconf_binds[joypad_info[i].joy_idx];
 
-         /* Turbo button state */
+         /* --- Turbo button state --- */
          input_st->turbo_btns.frame_enable[i] =
                   (*input_st->libretro_input_binds[i])[turbo_btn_id].valid
                && turbo_enable ?
@@ -6753,13 +6770,13 @@ void input_driver_poll(void)
 #ifdef HAVE_OVERLAY
          if (     (i == 0)
                && turbo_enable
-               && input_st->overlay_ptr
-               && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
-               && BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, turbo_btn_id))
+               && overlay_pointer
+               && (overlay_pointer->flags & INPUT_OVERLAY_ALIVE)
+               && BIT256_GET(overlay_pointer->overlay_state.buttons, turbo_btn_id))
             input_st->turbo_btns.frame_enable[i] = true;
 #endif
 
-         /* Hold button modifier state */
+         /* --- Hold button modifier state --- */
          input_st->hold_btns.frame_enable[i] =
                   (*input_st->libretro_input_binds[i])[RARCH_HOLD_ENABLE].valid ?
             input_state_wrap(input_st->current_driver,
@@ -6772,31 +6789,15 @@ void input_driver_poll(void)
 
 #ifdef HAVE_OVERLAY
          if (     (i == 0)
-               && input_st->overlay_ptr
-               && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
-               && BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, RARCH_HOLD_ENABLE))
+               && overlay_pointer
+               && (overlay_pointer->flags & INPUT_OVERLAY_ALIVE)
+               && BIT256_GET(overlay_pointer->overlay_state.buttons, RARCH_HOLD_ENABLE))
             input_st->hold_btns.frame_enable[i] = true;
 #endif
-      }
-   }
 
-#ifdef HAVE_MENU
-   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
-#endif
-   if (input_remap_binds_enable)
-   {
-#ifdef HAVE_OVERLAY
-      input_overlay_t *overlay_pointer   = (input_overlay_t*)input_st->overlay_ptr;
-      bool poll_overlay                  = (overlay_pointer &&
-            (overlay_pointer->flags & INPUT_OVERLAY_ALIVE));
-#endif
-      input_mapper_t *handle             = &input_st->mapper;
-      float input_analog_deadzone        = settings->floats.input_analog_deadzone;
-      float input_analog_sensitivity     = settings->floats.input_analog_sensitivity;
-      bool remap_kb_blocked              = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
-
-      for (i = 0; i < max_users; i++)
-      {
+         /* --- Remap work (conditional) --- */
+         if (do_remap)
+         {
          input_bits_t current_inputs;
          unsigned mapped_port            = settings->uints.input_remap_ports[i];
          unsigned device                 = settings->uints.input_libretro_device[mapped_port]
@@ -6845,7 +6846,7 @@ void input_driver_poll(void)
                         sec_joypad,
                         &joypad_info[i],
                         (*input_st->libretro_input_binds),
-                        remap_kb_blocked,
+                        kb_blocked,
                         (unsigned)i, RETRO_DEVICE_JOYPAD,
                         0, RETRO_DEVICE_ID_JOYPAD_MASK);
 
@@ -7075,7 +7076,8 @@ void input_driver_poll(void)
             default:
                break;
          }
-      }
+         } /* if (do_remap) */
+      } /* for (i = 0; i < max_users; i++) */
    }
 
 #ifdef HAVE_COMMAND
