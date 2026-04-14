@@ -38,6 +38,10 @@ void libretrodb_query_dec_ref(libretrodb_query_t *q);
 
 int libretrodb_query_filter(libretrodb_query_t *q, struct rmsgpack_dom_value *v);
 
+int libretrodb_query_get_filter_fields(libretrodb_query_t *q,
+      const char **field_names, uint32_t *field_lens,
+      unsigned max_fields);
+
 RETRO_END_DECLS
 
 #endif

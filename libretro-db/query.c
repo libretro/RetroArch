@@ -1059,3 +1059,58 @@ int libretrodb_query_filter(libretrodb_query_t *q,
    struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
    return (res.type == RDT_BOOL && res.val.bool_);
 }
+
+/**
+ * libretrodb_query_get_filter_fields:
+ *
+ * Extract the field names that a compiled table query filters on.
+ * For a query like {crc:or(b"..."), releaseyear:1995}, this returns
+ * pointers to "crc" and "releaseyear".
+ *
+ * Only works for table queries (root.func == query_func_all_map)
+ * where argv[even] entries are AT_VALUE / RDT_STRING field names.
+ *
+ * @q            : Compiled query handle.
+ * @field_names  : Output array of string pointers (not copied — valid
+ *                 for the lifetime of the query).
+ * @field_lens   : Output array of string lengths.
+ * @max_fields   : Capacity of output arrays.
+ *
+ * Returns: number of fields extracted, or 0 if the query structure
+ *          is not a table query or has no extractable field names.
+ */
+int libretrodb_query_get_filter_fields(libretrodb_query_t *q,
+      const char **field_names, uint32_t *field_lens,
+      unsigned max_fields)
+{
+   unsigned i;
+   unsigned count    = 0;
+   struct query *rq  = (struct query *)q;
+
+   if (!rq || !rq->root.func || !rq->root.argv)
+      return 0;
+
+   /* Table queries use query_func_all_map and store field names
+    * at even argv indices: argv[0]="crc", argv[1]=matcher,
+    * argv[2]="year", argv[3]=matcher, etc. */
+   if (rq->root.func != query_func_all_map)
+      return 0;
+
+   for (i = 0; i < rq->root.argc; i += 2)
+   {
+      struct argument *arg = &rq->root.argv[i];
+      if (  arg->type        == AT_VALUE
+         && arg->a.value.type == RDT_STRING
+         && arg->a.value.val.string.buff)
+      {
+         if (count < max_fields)
+         {
+            field_names[count] = arg->a.value.val.string.buff;
+            field_lens[count]  = arg->a.value.val.string.len;
+         }
+         count++;
+      }
+   }
+
+   return count;
+}

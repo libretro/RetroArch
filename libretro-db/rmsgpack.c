@@ -333,7 +333,7 @@ int rmsgpack_write_uint(intfstream_t *fd, uint64_t value)
    return (int)len;
 }
 
-static int rmsgpack_read_uint(intfstream_t *fd, uint64_t *s, size_t len)
+int rmsgpack_read_uint(intfstream_t *fd, uint64_t *s, size_t len)
 {
    union { uint64_t u64; uint32_t u32; uint16_t u16; uint8_t u8; } tmp;
 
@@ -569,4 +569,133 @@ int rmsgpack_read(intfstream_t *fd,
    if (buff)
       free(buff);
    return 0;
+}
+
+/**
+ * rmsgpack_skip_bytes:
+ *
+ * Read and discard @len bytes from the stream. Using read+discard
+ * instead of seek preserves the fread buffer — seeking with a
+ * FILE* forces a buffer flush and refill, which is catastrophic
+ * for performance.
+ */
+static int rmsgpack_skip_bytes(intfstream_t *fd, uint64_t len)
+{
+   uint8_t tmp[256];
+   while (len > 0)
+   {
+      uint64_t chunk = len > sizeof(tmp) ? sizeof(tmp) : len;
+      if (intfstream_read(fd, tmp, (size_t)chunk) == -1)
+         return -1;
+      len -= chunk;
+   }
+   return 0;
+}
+
+/**
+ * rmsgpack_skip_value:
+ *
+ * Skip one complete MsgPack value in the stream without allocating
+ * any heap memory. For scalar types this reads past the payload.
+ * For containers (map, array) it recursively skips all contained
+ * values.
+ *
+ * Returns: 0 on success, -1 on error.
+ */
+int rmsgpack_skip_value(intfstream_t *fd)
+{
+   uint8_t  type  = 0;
+   uint64_t len   = 0;
+   uint64_t i;
+
+   if (intfstream_read(fd, &type, 1) == -1)
+      return -1;
+
+   /* positive fixint (0x00..0x7f) — no payload */
+   if (type < _MPF_FIXMAP)
+      return 0;
+
+   /* fixmap (0x80..0x8f) — skip N*2 values */
+   if (type < _MPF_FIXARRAY)
+   {
+      len = type - _MPF_FIXMAP;
+      for (i = 0; i < len * 2; i++)
+         if (rmsgpack_skip_value(fd) < 0)
+            return -1;
+      return 0;
+   }
+
+   /* fixarray (0x90..0x9f) — skip N values */
+   if (type < _MPF_FIXSTR)
+   {
+      len = type - _MPF_FIXARRAY;
+      for (i = 0; i < len; i++)
+         if (rmsgpack_skip_value(fd) < 0)
+            return -1;
+      return 0;
+   }
+
+   /* fixstr (0xa0..0xbf) — read past N bytes */
+   if (type < _MPF_NIL)
+      return rmsgpack_skip_bytes(fd, type - _MPF_FIXSTR);
+
+   /* negative fixint (0xe0..0xff) — no payload */
+   if (type > _MPF_MAP32)
+      return 0;
+
+   switch (type)
+   {
+      case _MPF_NIL:
+      case _MPF_FALSE:
+      case _MPF_TRUE:
+         return 0;
+
+      case _MPF_BIN8:
+      case _MPF_STR8:
+         if (rmsgpack_read_uint(fd, &len, 1) == -1) return -1;
+         return rmsgpack_skip_bytes(fd, len);
+
+      case _MPF_BIN16:
+      case _MPF_STR16:
+         if (rmsgpack_read_uint(fd, &len, 2) == -1) return -1;
+         return rmsgpack_skip_bytes(fd, len);
+
+      case _MPF_BIN32:
+      case _MPF_STR32:
+         if (rmsgpack_read_uint(fd, &len, 4) == -1) return -1;
+         return rmsgpack_skip_bytes(fd, len);
+
+      case _MPF_UINT8:  case _MPF_INT8:
+         return rmsgpack_skip_bytes(fd, 1);
+      case _MPF_UINT16: case _MPF_INT16:
+         return rmsgpack_skip_bytes(fd, 2);
+      case _MPF_UINT32: case _MPF_INT32:
+         return rmsgpack_skip_bytes(fd, 4);
+      case _MPF_UINT64: case _MPF_INT64:
+         return rmsgpack_skip_bytes(fd, 8);
+
+      case _MPF_ARRAY16:
+         if (rmsgpack_read_uint(fd, &len, 2) == -1) return -1;
+         for (i = 0; i < len; i++)
+            if (rmsgpack_skip_value(fd) < 0) return -1;
+         return 0;
+      case _MPF_ARRAY32:
+         if (rmsgpack_read_uint(fd, &len, 4) == -1) return -1;
+         for (i = 0; i < len; i++)
+            if (rmsgpack_skip_value(fd) < 0) return -1;
+         return 0;
+
+      case _MPF_MAP16:
+         if (rmsgpack_read_uint(fd, &len, 2) == -1) return -1;
+         for (i = 0; i < len * 2; i++)
+            if (rmsgpack_skip_value(fd) < 0) return -1;
+         return 0;
+      case _MPF_MAP32:
+         if (rmsgpack_read_uint(fd, &len, 4) == -1) return -1;
+         for (i = 0; i < len * 2; i++)
+            if (rmsgpack_skip_value(fd) < 0) return -1;
+         return 0;
+   }
+
+   return -1;
 }
