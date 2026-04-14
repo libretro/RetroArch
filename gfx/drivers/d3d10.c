@@ -3418,6 +3418,8 @@ video_driver_t video_d3d10 = {
 #endif
    d3d10_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #if defined(HAVE_GFX_WIDGETS)
    d3d10_gfx_widgets_enabled
 #endif

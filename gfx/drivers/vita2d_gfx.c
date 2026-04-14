@@ -1397,6 +1397,8 @@ video_driver_t video_vita2d = {
 #endif
    vita2d_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    vita2d_widgets_enabled
 #endif

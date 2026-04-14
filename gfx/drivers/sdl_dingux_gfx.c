@@ -1125,6 +1125,8 @@ video_driver_t video_sdl_dingux = {
 #endif
    sdl_dingux_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

@@ -7238,6 +7238,9 @@ int runloop_iterate(void)
    bsv_movie_dequeue_next(input_st);
 #endif
 
+   /* Tick deferred shader compilation (one pass per frame) */
+   video_driver_shader_deferred_tick();
+
    if (runloop_st->frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.

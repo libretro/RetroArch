@@ -170,8 +170,50 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path,
       enum glslang_filter_chain_filter filter);
 
+/**
+ * Deferred (per-frame) filter chain creation API.
+ * Splits gl3_filter_chain_create_from_preset into three phases:
+ *   1. create_deferred  - parse preset, load LUTs, allocate pass slots
+ *   2. compile_pass     - compile one shader pass (call once per frame)
+ *   3. finalize         - init history/feedback, mark chain ready
+ **/
 struct video_shader *gl3_filter_chain_get_preset(
       gl3_filter_chain_t *chain);
+
+/* ---- Deferred (per-frame) filter chain construction ---- */
+
+/**
+ * gl3_filter_chain_create_deferred:
+ *
+ * Parse a preset and allocate a chain, load LUT textures, but do NOT
+ * compile any shader passes. Returns NULL on failure.
+ * The returned chain is NOT yet usable for rendering.
+ **/
+gl3_filter_chain_t *gl3_filter_chain_create_deferred(
+      const char *path,
+      enum glslang_filter_chain_filter filter,
+      unsigned *out_num_passes);
+
+/**
+ * gl3_filter_chain_compile_pass:
+ *
+ * SPIRV-cross-compile and GL-compile/link one shader pass.
+ * Call once per frame with incrementing pass_index.
+ * Returns true on success, false on error.
+ **/
+bool gl3_filter_chain_compile_pass(
+      gl3_filter_chain_t *chain,
+      unsigned pass_index,
+      enum glslang_filter_chain_filter filter);
+
+/**
+ * gl3_filter_chain_finalize:
+ *
+ * Finalize the chain after all passes are compiled:
+ * init aliases, build GPU resources, set up history/feedback.
+ * Returns true on success.
+ **/
+bool gl3_filter_chain_finalize(gl3_filter_chain_t *chain);
 
 void gl3_filter_chain_end_frame(gl3_filter_chain_t *chain);
 
