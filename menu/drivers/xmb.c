@@ -8354,6 +8354,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (xmb_item_color[3] != 0)
          {
             uintptr_t texture        = node->icon;
+            float x;
+            float y;
+            float scale_factor;
 
             /* Fixup for explore view (.lvw) nodes: their icon was
              * copied from textures.list[CURSOR] during list build,
@@ -8364,13 +8367,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                texture    = xmb->textures.list[XMB_TEXTURE_CURSOR];
                node->icon = texture;
             }
-            float x                  = xmb->x + xmb->categories_x_pos
+
+            x                        = xmb->x + xmb->categories_x_pos
                   + xmb->margins_screen_left
                   + xmb->icon_spacing_horizontal * (i + 1)
                   - xmb->icon_size / 2.0;
-            float y                  = xmb->margins_screen_top
+            y                        = xmb->margins_screen_top
                   + xmb->icon_size / 2.0;
-            float scale_factor       = node->zoom;
+            scale_factor             = node->zoom;
 
             xmb_draw_icon(
                   userdata,
