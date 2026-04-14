@@ -838,6 +838,7 @@ struct vulkan_filter_chain
       vulkan_filter_chain_texture input_texture;
 
       Size2D max_input_size;
+      Size2D deferred_source;   /* accumulated source size for per-frame builds */
       vulkan_filter_chain_swapchain_info swapchain_info;
       unsigned current_sync_index;
 
@@ -1267,6 +1268,7 @@ vulkan_filter_chain::vulkan_filter_chain(
      original_format(info.original_format)
 {
    max_input_size = { info.max_input_size.width, info.max_input_size.height };
+   deferred_source = max_input_size;
    set_swapchain_info(info.swapchain);
    set_num_passes(info.num_passes);
 }
@@ -1823,13 +1825,11 @@ bool vulkan_filter_chain::init_single_pass(unsigned pass_idx)
    if (pass_idx >= passes.size())
       return false;
 
-   /* Accumulate source size from all prior passes */
-   Size2D source = max_input_size;
-   for (unsigned i = 0; i <= pass_idx; i++)
-   {
-      source = passes[i]->set_pass_info(max_input_size,
-            source, swapchain_info, pass_info[i]);
-   }
+   /* Only call set_pass_info on this pass, using the accumulated
+    * source size. set_pass_info calls clear_vk() which destroys
+    * Vulkan objects — we must NOT re-call it on prior passes. */
+   deferred_source = passes[pass_idx]->set_pass_info(max_input_size,
+         deferred_source, swapchain_info, pass_info[pass_idx]);
 
    RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", pass_idx,
          passes[pass_idx]->get_name().empty()
