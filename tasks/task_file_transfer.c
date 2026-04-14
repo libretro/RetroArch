@@ -94,11 +94,16 @@ void task_file_load_handler(retro_task_t *task)
                   size_t _len = 0;
                   nbio->handle       = handle;
 
+#ifndef __ANDROID__
                   /* Fast path: try load_entire to skip the iterate loop.
                    * For mmap this returns instantly (zero-copy), for AIO
                    * it does a single blocking wait. If the data is ready
                    * immediately, jump straight to TRANSFER_PARSE and
-                   * skip the multi-tick TRANSFER state entirely. */
+                   * skip the multi-tick TRANSFER state entirely.
+                   *
+                   * Disabled on Android where the AIO fast path behind
+                   * fuse/sdcardfs is counterproductive — fall through to
+                   * the iterative transfer path instead. */
                   if (nbio_load_entire(handle, &_len))
                   {
                      /* Fall through: run parse in the same tick instead
@@ -108,6 +113,7 @@ void task_file_load_handler(retro_task_t *task)
                      nbio->status    = NBIO_STATUS_TRANSFER_PARSE;
                      goto do_transfer_parse;
                   }
+#endif
 
                   /* Fallback: backend needs iterative I/O (stdio).
                    * For small files, attempt to finish all iterations
