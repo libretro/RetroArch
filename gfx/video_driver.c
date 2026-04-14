@@ -4614,6 +4614,22 @@ void video_driver_frame(const void *data, unsigned width,
          video_st->flags &= ~VIDEO_FLAG_ACTIVE;
    }
 
+   /* GPU device lost (e.g. D3D12 TDR) — reinit the video driver
+    * to get a fresh device.  Must happen outside gfx_frame so the
+    * driver isn't freed while its stack frame is still live.
+    * If reinit fails (device still not available), keep the flag
+    * set so we retry on the next frame. */
+   if (video_st->flags & VIDEO_FLAG_GPU_DEVICE_LOST)
+   {
+      video_st->flags |=  VIDEO_FLAG_ACTIVE;   /* re-arm so reinit runs */
+      command_event(CMD_EVENT_REINIT, NULL);
+      /* If the reinit succeeded, the driver is alive — clear the flag.
+       * If it failed, vid->frame will be NULL or return false again,
+       * re-setting GPU_DEVICE_LOST for the next attempt. */
+      video_st->flags &= ~VIDEO_FLAG_GPU_DEVICE_LOST;
+      return;
+   }
+
    video_st->frame_count++;
 
    /* Display the status text, with a higher priority. */

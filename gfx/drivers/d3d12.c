@@ -29,6 +29,7 @@
 
 #include <retro_inline.h>
 #include <retro_common_api.h>
+#include <retro_timers.h>
 
 #include <boolean.h>
 #include <retro_math.h>
@@ -3724,7 +3725,9 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    d3d12->chain.back_buffer.desc.Width             = width;
    d3d12->chain.back_buffer.desc.Height            = height;
    d3d12->chain.back_buffer.desc.Format            =
-      DXGI_FORMAT_R8G8B8A8_UNORM;
+      (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+      ? d3d12->chain.formats[d3d12->chain.bit_depth]
+      : DXGI_FORMAT_R8G8B8A8_UNORM;
    d3d12->chain.back_buffer.desc.Flags             =
       D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
    d3d12->chain.back_buffer.srv_heap               =
@@ -3823,8 +3826,33 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
          AddRef(d3d12->adapter);
       }
 
-      if (!SUCCEEDED(D3D12CreateDevice((IUnknown*)d3d12->adapter, D3D_FEATURE_LEVEL_11_0, uuidof(ID3D12Device), (void**)&d3d12->device)))
-         RARCH_WARN("[D3D12] Could not create D3D12 device.\n");
+      /* After a TDR / device removal, the GPU driver may need time
+       * to recover.  Try a few times here; if all fail, d3d12_gfx_init
+       * returns NULL and the VIDEO_FLAG_GPU_DEVICE_LOST handler in
+       * video_driver_frame will retry the full reinit next frame. */
+      {
+         int retries;
+         HRESULT hr = E_FAIL;
+         for (retries = 0; retries < 3; retries++)
+         {
+            hr = D3D12CreateDevice(
+                  (IUnknown*)d3d12->adapter,
+                  D3D_FEATURE_LEVEL_11_0,
+                  uuidof(ID3D12Device),
+                  (void**)&d3d12->device);
+            if (SUCCEEDED(hr))
+               break;
+            RARCH_WARN("[D3D12] Device creation failed (0x%08X), retry %d/3...\n",
+                  (unsigned)hr, retries + 1);
+            retro_sleep(2000);
+         }
+         if (!SUCCEEDED(hr))
+         {
+            RARCH_ERR("[D3D12] Could not create D3D12 device after %d retries.\n",
+                  retries);
+            return;
+         }
+      }
    }
 
 #ifdef DEVICE_DEBUG
@@ -4212,6 +4240,10 @@ static void *d3d12_gfx_init(const video_info_t* video,
          settings->arrays.input_joypad_driver, input, input_data);
 
    d3d12_init_base(d3d12);
+
+   if (!d3d12->device)
+      goto error;
+
    d3d12_init_descriptors(d3d12);
 
    if (!d3d12_gfx_init_pipelines(d3d12))
@@ -4656,9 +4688,19 @@ static bool d3d12_gfx_frame(
    D3D12_GFX_SYNC();
 
    /* If the device was removed (TDR / GPU hang), bail out early.
-    * Continuing would crash on the first Map or Draw call. */
-   if (FAILED(d3d12->device->lpVtbl->GetDeviceRemovedReason(d3d12->device)))
-      return false;
+    * Continuing would crash on the first Map or Draw call.
+    * Set GPU_DEVICE_LOST so the runloop triggers a reinit. */
+   {
+      HRESULT removed_reason = d3d12->device->lpVtbl->GetDeviceRemovedReason(d3d12->device);
+      if (FAILED(removed_reason))
+      {
+         video_driver_state_t *video_st = video_state_get_ptr();
+         RARCH_ERR("[D3D12] Device removed (reason 0x%08X). Requesting reinit.\n",
+               (unsigned)removed_reason);
+         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
+         return false;
+      }
+   }
 
 #ifdef HAVE_DXGI_HDR
    d3d12_hdr_enable = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? true : false;
@@ -4814,27 +4856,35 @@ static bool d3d12_gfx_frame(
 #ifdef HAVE_DXGI_HDR
    } /* close desired_bit_depth scope */
 
-   /* Recreate back_buffer if its format doesn't match the shader's
-    * declared output.  Needed for scRGB: the shader's last pass may
-    * write A2B10G10R10 (PQ) into back_buffer, then Point 2 converts
-    * to the R16G16B16A16F swapchain.  Without this the back_buffer
-    * stays R8G8B8A8 and the 10-bit PQ data is quantised to 8-bit. */
-   if (     (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
-         && use_back_buffer
-         && d3d12->chain.back_buffer.desc.Format != back_buffer_format)
+   /* Recreate back_buffer if its format doesn't match the expected
+    * target.  When use_back_buffer is true the shader's last pass
+    * writes to back_buffer, so it must match back_buffer_format.
+    * When use_back_buffer is false but HDR is on, the menu overlay
+    * still draws to back_buffer and the HDR composite copies it to
+    * the swapchain — so it must match the swapchain format.
+    * Without this, d3d12_gfx_init's hardcoded R8G8B8A8 persists
+    * and the menu draws to a mismatched RT, causing a visual freeze. */
    {
-      d3d12->chain.back_buffer.desc.Width  = video_width;
-      d3d12->chain.back_buffer.desc.Height = video_height;
-      d3d12->chain.back_buffer.desc.Format = back_buffer_format;
-      d3d12->chain.back_buffer.desc.Flags  =
-            D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-      d3d12->chain.back_buffer.srv_heap    = &d3d12->desc.srv_heap;
-      d3d12->chain.back_buffer.rt_view.ptr =
-            d3d12->desc.rtv_heap.cpu.ptr
-            + countof(d3d12->chain.renderTargets)
-            * d3d12->desc.rtv_heap.stride;
-      d3d12_release_texture(&d3d12->chain.back_buffer);
-      d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
+      DXGI_FORMAT needed_bb_fmt = use_back_buffer
+         ? back_buffer_format
+         : d3d12->chain.formats[d3d12->chain.bit_depth];
+
+      if (     (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+            && d3d12->chain.back_buffer.desc.Format != needed_bb_fmt)
+      {
+         d3d12->chain.back_buffer.desc.Width  = video_width;
+         d3d12->chain.back_buffer.desc.Height = video_height;
+         d3d12->chain.back_buffer.desc.Format = needed_bb_fmt;
+         d3d12->chain.back_buffer.desc.Flags  =
+               D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+         d3d12->chain.back_buffer.srv_heap    = &d3d12->desc.srv_heap;
+         d3d12->chain.back_buffer.rt_view.ptr =
+               d3d12->desc.rtv_heap.cpu.ptr
+               + countof(d3d12->chain.renderTargets)
+               * d3d12->desc.rtv_heap.stride;
+         d3d12_release_texture(&d3d12->chain.back_buffer);
+         d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
+      }
    }
 #endif
 
