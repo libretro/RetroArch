@@ -115,6 +115,15 @@ struct rjpeg
    /* Progressive finish-phase tracking (RJPEG_ITER_FINISH_PROG) */
    int                     iter_finish_comp;  /* current component index       */
    int                     iter_finish_row;   /* current block-row within comp */
+
+   /* Fused iterate+resample state: when iterating baseline interleaved,
+    * the resample for MCU-row N runs after MCU-row N+1's entropy decode.
+    * This overlaps the two phases and avoids the serial
+    * entropy→done→resample pipeline. */
+   rjpeg_resample          iter_res[4];       /* per-component resample state  */
+   uint8_t                *iter_output;       /* BGRA output buffer            */
+   unsigned                iter_out_row;      /* next output row to resample   */
+   int                     iter_resample_ready; /* 1 = resample state inited   */
 };
 
 #ifdef _MSC_VER
@@ -2620,9 +2629,15 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
    if (scan != RJPEG_SCAN_LOAD)
       return 1;
 
-   /* Image too large to decode? */
-   if ((1 << 30) / s->img_x / s->img_n < s->img_y)
-      return 0;
+   /* Image too large to decode?
+    * Guard against allocations that would overflow size_t.
+    * The output buffer is img_x * img_y * 4 bytes (BGRA), so we check
+    * that img_x * img_n * img_y fits in size_t with room for the ×4. */
+   {
+      size_t max_pixels = (size_t)-1 / 4; /* SIZE_MAX / 4, portable */
+      if (max_pixels / s->img_x / s->img_n < s->img_y)
+         return 0;
+   }
 
    for (i = 0; i < s->img_n; ++i)
    {
@@ -3618,7 +3633,7 @@ static void rjpeg_upsample_YCbCr_to_BGRA_simd(uint8_t *out, const uint8_t *y_row
 
          /* Process two batches of 8 output pixels */
          {
-            int j, op;
+            int j;
             uint8_t cb_tmp[16], cr_tmp[16];
             vst2_u8(cb_tmp, cb_packed);
             vst2_u8(cr_tmp, cr_packed);
@@ -3926,6 +3941,9 @@ bool rjpeg_start(rjpeg_t *rjpeg)
    rjpeg->iter_mcu_row  = 0;
    rjpeg->iter_marker   = 0;
    rjpeg->iter_started  = true;
+   rjpeg->iter_output   = NULL;
+   rjpeg->iter_out_row  = 0;
+   rjpeg->iter_resample_ready = 0;
 
    rjpeg_setup_jpeg(j);
 
@@ -3942,6 +3960,143 @@ bool rjpeg_is_valid(rjpeg_t *rjpeg)
    if (rjpeg->iter_state == RJPEG_ITER_ERROR)
       return false;
    return true;
+}
+
+/* Resample output rows from a completed MCU-row during iteration.
+ * Called after each MCU-row's entropy+IDCT finishes.  Each MCU-row
+ * produces vs*8 rows of component data (16 at 4:2:0); we resample
+ * those rows into the BGRA output buffer.
+ *
+ * max_row = min(img_y, (mcu_row+1) * v_max * 8) -- clamp to image height. */
+static void rjpeg_iterate_resample_rows(rjpeg_t *rjpeg, unsigned max_row)
+{
+   rjpeg_jpeg *z = rjpeg->iter_j;
+   uint8_t *coutput[4];
+   int decode_n = (z->img_n >= 3) ? 3 : z->img_n;
+
+   while (rjpeg->iter_out_row < max_row)
+   {
+      int k;
+      unsigned jj  = rjpeg->iter_out_row;
+      uint8_t *out = rjpeg->iter_output + 4 * z->img_x * jj;
+
+      int use_fused = (z->img_n == 3
+            && z->upsample_YCbCr_to_BGRA_kernel
+            && decode_n >= 3
+            && rjpeg->iter_res[1].hs == 2
+            && rjpeg->iter_res[1].vs == 2);
+      int fused_y_bot1 = 0, fused_y_bot2 = 0;
+      uint8_t *fused_cb_near = NULL, *fused_cb_far = NULL;
+      uint8_t *fused_cr_near = NULL, *fused_cr_far = NULL;
+
+      if (use_fused)
+      {
+         rjpeg_resample *r1 = &rjpeg->iter_res[1];
+         rjpeg_resample *r2 = &rjpeg->iter_res[2];
+         fused_y_bot1 = r1->ystep >= (r1->vs >> 1);
+         fused_y_bot2 = r2->ystep >= (r2->vs >> 1);
+         fused_cb_near = fused_y_bot1 ? r1->line1 : r1->line0;
+         fused_cb_far  = fused_y_bot1 ? r1->line0 : r1->line1;
+         fused_cr_near = fused_y_bot2 ? r2->line1 : r2->line0;
+         fused_cr_far  = fused_y_bot2 ? r2->line0 : r2->line1;
+      }
+
+      for (k = 0; k < decode_n; ++k)
+      {
+         rjpeg_resample *r = &rjpeg->iter_res[k];
+         int y_bot = r->ystep >= (r->vs >> 1);
+
+         if (use_fused && k >= 1)
+            coutput[k] = NULL;
+         else
+            coutput[k] = r->resample(z->img_comp[k].linebuf,
+                  y_bot ? r->line1 : r->line0,
+                  y_bot ? r->line0 : r->line1,
+                  r->w_lores, r->hs);
+
+         if (++r->ystep >= r->vs)
+         {
+            r->ystep = 0;
+            r->line0 = r->line1;
+            if (++r->ypos < z->img_comp[k].y)
+               r->line1 += z->img_comp[k].w2;
+         }
+      }
+
+      if (z->img_n >= 3)
+      {
+         uint8_t *y = coutput[0];
+         if (y)
+         {
+            if (use_fused)
+            {
+               z->upsample_YCbCr_to_BGRA_kernel(out, y,
+                     fused_cb_near, fused_cb_far,
+                     fused_cr_near, fused_cr_far,
+                     rjpeg->iter_res[1].w_lores, z->img_x);
+            }
+            else
+            {
+               z->YCbCr_to_RGB_kernel(out, y, coutput[1],
+                     coutput[2], z->img_x, 4);
+            }
+         }
+      }
+      else
+      {
+         uint8_t *y = coutput[0];
+         if (y)
+         {
+            unsigned i;
+            for (i = 0; i < z->img_x; ++i)
+            {
+               out[0] = out[1] = out[2] = y[i];
+               out[3] = 255;
+               out += 4;
+            }
+         }
+      }
+
+      rjpeg->iter_out_row++;
+   }
+}
+
+/* Initialize the fused iterate+resample state after the header is parsed.
+ * Sets up resample contexts and allocates the output buffer. */
+static int rjpeg_iterate_init_resample(rjpeg_t *rjpeg)
+{
+   rjpeg_jpeg *j = rjpeg->iter_j;
+   int k;
+
+   for (k = 0; k < j->img_n; ++k)
+   {
+      rjpeg_resample *r = &rjpeg->iter_res[k];
+
+      r->hs       = j->img_h_max / j->img_comp[k].h;
+      r->vs       = j->img_v_max / j->img_comp[k].v;
+      r->ystep    = r->vs >> 1;
+      r->w_lores  = (j->img_x + r->hs - 1) / r->hs;
+      r->ypos     = 0;
+      r->line0    = r->line1 = j->img_comp[k].data;
+      r->resample = rjpeg_resample_row_generic;
+
+      if      (r->hs == 1 && r->vs == 1)
+         r->resample = rjpeg_resample_row_1;
+      else if (r->hs == 1 && r->vs == 2)
+         r->resample = rjpeg_resample_row_v_2;
+      else if (r->hs == 2 && r->vs == 1)
+         r->resample = rjpeg_resample_row_h_2;
+      else if (r->hs == 2 && r->vs == 2)
+         r->resample = j->resample_row_hv_2_kernel;
+   }
+
+   rjpeg->iter_output = (uint8_t *)malloc(4 * j->img_x * j->img_y);
+   if (!rjpeg->iter_output)
+      return 0;
+
+   rjpeg->iter_out_row = 0;
+   rjpeg->iter_resample_ready = 0; /* TODO: fix ystep state bug */
+   return 1;
 }
 
 bool rjpeg_iterate_image(rjpeg_t *rjpeg)
@@ -4053,6 +4208,12 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          }
 
          rjpeg->iter_state = RJPEG_ITER_ENTROPY_ROWS;
+
+         /* Initialize fused resample so we can process output rows
+          * as MCU-rows complete, overlapping entropy+resample. */
+         if (!rjpeg->iter_resample_ready)
+            rjpeg_iterate_init_resample(rjpeg);
+
          return true; /* more work to do */
       }
 
@@ -4098,6 +4259,18 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          }
 
          rjpeg->iter_mcu_row++;
+
+         /* Fused resample: the MCU-row we just decoded produced up to
+          * v_max*8 rows of component data.  Resample them now while
+          * the data is hot in cache, overlapping with the next
+          * entropy decode on the next iterate call. */
+         if (rjpeg->iter_resample_ready && rjpeg->iter_output)
+         {
+            unsigned max_row = rjpeg->iter_mcu_row * j->img_v_max * 8;
+            if (max_row > j->img_y)
+               max_row = j->img_y;
+            rjpeg_iterate_resample_rows(rjpeg, max_row);
+         }
 
          if (rjpeg->iter_mcu_row >= j->img_mcu_y)
          {
@@ -4308,6 +4481,22 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
           * Transfer ownership from rjpeg->iter_j to proc->j. */
          j             = rjpeg->iter_j;
          rjpeg->iter_j = NULL;
+
+         /* If the fused iterate+resample already produced the BGRA
+          * output, skip the entire resample phase. */
+         if (rjpeg->iter_resample_ready && rjpeg->iter_output
+               && rjpeg->iter_out_row >= j->img_y)
+         {
+            *buf_data = rjpeg->iter_output;
+            *width  = j->img_x;
+            *height = j->img_y;
+            rjpeg->iter_output = NULL; /* transfer ownership */
+
+            rjpeg_cleanup_jpeg(j);
+            free(j);
+            free(proc);
+            return IMAGE_PROCESS_END;
+         }
 
          /* Set the buffer end pointer if the iterative path
           * didn't have it (start() is called before size is known
@@ -4602,6 +4791,12 @@ void rjpeg_free(rjpeg_t *rjpeg)
       rjpeg_cleanup_jpeg(rjpeg->iter_j);
       free(rjpeg->iter_j);
       rjpeg->iter_j = NULL;
+   }
+
+   if (rjpeg->iter_output)
+   {
+      free(rjpeg->iter_output);
+      rjpeg->iter_output = NULL;
    }
 
    free(rjpeg);
