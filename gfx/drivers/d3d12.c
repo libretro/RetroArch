@@ -3826,39 +3826,12 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
          AddRef(d3d12->adapter);
       }
 
-      /* After a TDR / device removal, the GPU driver may need time
-       * to recover.  Try up to 30 seconds here; if all fail,
-       * d3d12_gfx_init returns NULL and RetroArch will exit.
-       * Severe TDRs (e.g. RTX 5090 DEVICE_HUNG from 31-pass
-       * shaders at 11284×8640) can take 15–20+ seconds. */
-      {
-         int retries;
-         HRESULT hr = E_FAIL;
-         for (retries = 0; retries < 10; retries++)
-         {
-            hr = D3D12CreateDevice(
+      if (!SUCCEEDED(D3D12CreateDevice(
                   (IUnknown*)d3d12->adapter,
                   D3D_FEATURE_LEVEL_11_0,
                   uuidof(ID3D12Device),
-                  (void**)&d3d12->device);
-            if (SUCCEEDED(hr))
-            {
-               if (retries > 0)
-                  RARCH_LOG("[D3D12] Device created successfully after %d retries.\n",
-                        retries);
-               break;
-            }
-            RARCH_WARN("[D3D12] Device creation failed (0x%08X), retry %d/10...\n",
-                  (unsigned)hr, retries + 1);
-            retro_sleep(3000);
-         }
-         if (!SUCCEEDED(hr))
-         {
-            RARCH_ERR("[D3D12] Could not create D3D12 device after %d retries.\n",
-                  retries);
-            return;
-         }
-      }
+                  (void**)&d3d12->device)))
+         return;
    }
 
 #ifdef DEVICE_DEBUG
@@ -4692,21 +4665,6 @@ static bool d3d12_gfx_frame(
             true);
 
    D3D12_GFX_SYNC();
-
-   /* If the device was removed (TDR / GPU hang), bail out early.
-    * Continuing would crash on the first Map or Draw call.
-    * Set GPU_DEVICE_LOST so the runloop triggers a reinit. */
-   {
-      HRESULT removed_reason = d3d12->device->lpVtbl->GetDeviceRemovedReason(d3d12->device);
-      if (FAILED(removed_reason))
-      {
-         video_driver_state_t *video_st = video_state_get_ptr();
-         RARCH_ERR("[D3D12] Device removed (reason 0x%08X). Requesting reinit.\n",
-               (unsigned)removed_reason);
-         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
-         return false;
-      }
-   }
 
 #ifdef HAVE_DXGI_HDR
    d3d12_hdr_enable = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? true : false;
