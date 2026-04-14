@@ -10658,6 +10658,11 @@ static void ozone_draw_header(
    float header_margin_min                  = ozone->dimensions.sidebar_entry_icon_padding;
    unsigned logo_icon_size;
    unsigned status_icon_size                = 80 * scale_factor;
+   unsigned status_row_size;
+   unsigned separator_margin;
+   unsigned separator;
+   enum gfx_animation_ticker_type menu_ticker_type;
+   gfx_display_ctx_driver_t *dispctx;
 
    /* If header_icon is zero but the setting says it should exist,
     * the handle was likely cached before its async texture loaded.
@@ -10668,13 +10673,12 @@ static void ozone_draw_header(
        && ozone->textures[OZONE_TEXTURE_RETROARCH])
       ozone->header_icon = ozone->textures[OZONE_TEXTURE_RETROARCH];
 
-   logo_icon_size = (ozone->header_icon) ? 60 * scale_factor : 0;
-   unsigned status_row_size                 = 160 * scale_factor;
-   unsigned separator_margin                = 30 * scale_factor;
-   unsigned separator                       = settings->uints.menu_ozone_header_separator;
-   enum gfx_animation_ticker_type
-         menu_ticker_type                   = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   gfx_display_ctx_driver_t *dispctx        = p_disp->dispctx;
+   logo_icon_size                           = (ozone->header_icon) ? 60 * scale_factor : 0;
+   status_row_size                          = 160 * scale_factor;
+   separator_margin                         = 30 * scale_factor;
+   separator                                = settings->uints.menu_ozone_header_separator;
+   menu_ticker_type                         = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+   dispctx                                  = p_disp->dispctx;
 
    header_margin *= ozone->last_padding_factor;
    if (header_margin < header_margin_min)
