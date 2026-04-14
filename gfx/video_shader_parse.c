@@ -3109,11 +3109,15 @@ bool video_shader_apply_shader(
    /* ---- Deferred (per-frame) path ----
     * Skip when threaded video is active: the tick runs on the main
     * thread but gl3_frame() runs on the video thread, so they would
-    * race on the filter_chain pointer. */
+    * race on the filter_chain pointer.
+    * Disabled on Android: untested on mobile GPU drivers.
+    * Can be disabled at runtime via video_shader_deferred_loading. */
+#ifndef ANDROID
    if (  video_st->current_video
       && video_st->current_video->shader_load_begin
       && video_st->current_video->shader_load_step
       && !video_st->threaded
+      && settings->bools.video_shader_deferred_loading
       && preset_path && *preset_path)
    {
       shader_load_deferred_t *d = &video_st->shader_deferred;
@@ -3173,6 +3177,7 @@ bool video_shader_apply_shader(
       /* shader_load_begin failed — fall through to synchronous */
       d->state = SHADER_LOAD_IDLE;
    }
+#endif /* !ANDROID */
 
    /* ---- Synchronous fallback path ---- */
    /* TODO/FIXME - This loads the shader into the video driver
