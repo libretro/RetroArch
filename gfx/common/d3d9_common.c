@@ -30,6 +30,7 @@
 #include <dynamic/dylib.h>
 #endif
 #include <string/stdstring.h>
+#include <retro_timers.h>
 
 #include "../../verbosity.h"
 
@@ -128,18 +129,33 @@ bool d3d9_create_device(void *dev,
       HWND focus_window,
       unsigned cur_mon_id)
 {
-   if (!d3d9_create_device_internal(dev,
-            (D3DPRESENT_PARAMETERS*)d3dpp,
-            d3d,
-            focus_window,
-            cur_mon_id,
-            D3DCREATE_HARDWARE_VERTEXPROCESSING))
-      if (!d3d9_create_device_internal(
+   int retries;
+   for (retries = 0; retries < 10; retries++)
+   {
+      if (d3d9_create_device_internal(dev,
+               (D3DPRESENT_PARAMETERS*)d3dpp,
+               d3d,
+               focus_window,
+               cur_mon_id,
+               D3DCREATE_HARDWARE_VERTEXPROCESSING))
+         goto success;
+      if (d3d9_create_device_internal(
                dev,
                (D3DPRESENT_PARAMETERS*)d3dpp, d3d, focus_window,
                cur_mon_id,
                D3DCREATE_SOFTWARE_VERTEXPROCESSING))
-         return false;
+         goto success;
+      if (retries == 0)
+         RARCH_WARN("[D3D9] Device creation failed, retrying...\n");
+      retro_sleep(3000);
+   }
+   RARCH_ERR("[D3D9] Could not create device after %d retries.\n", retries);
+   return false;
+
+success:
+   if (retries > 0)
+      RARCH_LOG("[D3D9] Device created successfully after %d retries.\n",
+            retries);
    return true;
 }
 

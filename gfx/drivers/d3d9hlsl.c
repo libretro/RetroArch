@@ -7335,7 +7335,9 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 
       if (!d3d9_hlsl_restore(d3d))
       {
-         RARCH_ERR("[D3D9 HLSL] Failed to restore.\n");
+         video_driver_state_t *video_st = video_state_get_ptr();
+         RARCH_ERR("[D3D9 HLSL] Failed to restore. Requesting reinit.\n");
+         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
          return false;
       }
    }
@@ -7495,7 +7497,22 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    }
 
    video_driver_update_title(NULL);
+
+#ifndef _XBOX
+   {
+      HRESULT hr = IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
+      if (hr == D3DERR_DEVICELOST)
+      {
+         video_driver_state_t *video_st = video_state_get_ptr();
+         RARCH_WARN("[D3D9 HLSL] Device lost detected on Present().\n");
+         d3d->needs_restore = true;
+         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
+         return false;
+      }
+   }
+#else
    IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
+#endif
 
    return true;
 }
