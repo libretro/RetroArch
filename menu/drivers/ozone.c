@@ -3036,6 +3036,11 @@ static void ozone_draw_icon(
    gfx_display_ctx_driver_t
          *dispctx       = p_disp->dispctx;
 
+   /* Skip drawing when the texture hasn't loaded yet
+    * (async loads start at 0 and are written on completion) */
+   if (!texture)
+      return;
+
    coords.vertices      = 4;
    coords.vertex        = NULL;
    coords.tex_coord     = NULL;
@@ -3730,15 +3735,24 @@ static void ozone_draw_sidebar(
 
          gfx_display_set_alpha(col, ozone->animations.alpha);
 
-         /* Icon */
-         ozone_draw_icon(
-               p_disp,
-               userdata,
-               video_width,
-               video_height,
-               ozone->dimensions.sidebar_entry_icon_size,
-               ozone->dimensions.sidebar_entry_icon_size,
-               node->icon,
+         /* Icon — if node->icon is still 0 (explore view entry whose
+          * cursor texture hadn't loaded during list build), retry now. */
+         {
+            uintptr_t icon_tex = node->icon;
+            if (!icon_tex
+                  && ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR])
+            {
+               icon_tex   = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
+               node->icon = icon_tex;
+            }
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  ozone->dimensions.sidebar_entry_icon_size,
+                  ozone->dimensions.sidebar_entry_icon_size,
+                  icon_tex,
                ozone->sidebar_offset
                      + ozone->dimensions.sidebar_padding_horizontal
                      + ozone->dimensions.sidebar_entry_icon_padding,
@@ -3752,6 +3766,7 @@ static void ozone_draw_sidebar(
                1.0f,
                col,
                mymat);
+         }
 
          /* Text */
          if (ozone->sidebar_collapsed)

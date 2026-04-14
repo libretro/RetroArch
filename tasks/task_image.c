@@ -571,7 +571,7 @@ static void cb_task_icon_load(retro_task_t *task,
    if (tag->target && *tag->target)
       video_driver_texture_unload(tag->target);
 
-   video_driver_texture_load(img, TEXTURE_FILTER_MIPMAP_LINEAR,
+   video_driver_texture_load(img, TEXTURE_FILTER_LINEAR,
          tag->target);
 
 end:

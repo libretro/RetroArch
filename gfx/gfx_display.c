@@ -1213,7 +1213,7 @@ bool gfx_display_load_icon(
    (void)generation_ptr;
    return gfx_display_reset_icon_texture(
          fullpath, target_texture,
-         TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+         TEXTURE_FILTER_LINEAR, NULL, NULL);
 #else
    return task_push_icon_load(
          fullpath, supports_rgba,

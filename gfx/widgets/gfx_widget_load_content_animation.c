@@ -221,7 +221,7 @@ static void gfx_widget_load_content_animation_load_icon(void)
       gfx_display_reset_textures_list(
             state->icon_file, state->icon_directory,
             &state->icon_texture,
-            TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+            TEXTURE_FILTER_LINEAR, NULL, NULL);
 }
 
 /* Callbacks */

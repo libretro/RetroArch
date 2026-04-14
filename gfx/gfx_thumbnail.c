@@ -188,7 +188,7 @@ static void gfx_thumbnail_handle_upload(
 
    /* Upload texture to GPU */
    if (!video_driver_texture_load(
-            img, TEXTURE_FILTER_MIPMAP_LINEAR,
+            img, TEXTURE_FILTER_LINEAR,
             &thumbnail_tag->thumbnail->texture))
       goto end;
 

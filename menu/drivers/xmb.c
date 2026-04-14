@@ -951,6 +951,11 @@ static void xmb_draw_icon(
    struct video_coords coords;
    math_matrix_4x4 mymat_tmp;
 
+   /* Skip drawing when the texture hasn't loaded yet
+    * (async loads start at 0 and are written on completion) */
+   if (!texture)
+      return;
+
    if (     (x < (-icon_size_x / 2.0f))
          || (x > width)
          || (y < (icon_size_y / 2.0f))
@@ -6195,7 +6200,7 @@ static bool xmb_load_dynamic_icon(const char *icon_path,
    if (gfx_display_reset_icon_texture(
          icon_path,
          &icon->texture,
-         TEXTURE_FILTER_MIPMAP_LINEAR,
+         TEXTURE_FILTER_LINEAR,
          &width,
          &height))
    {
@@ -8019,33 +8024,42 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (!xmb)
       return;
 
-   /* One-shot async icon fixup: when context textures finish loading
-    * asynchronously, tab node .icon fields are still zero (they were
-    * cleared in xmb_context_reset_textures). Detect arrival by
-    * checking the main menu texture and populate all tab nodes once. */
-   if (   !xmb->main_menu_node.icon
-       &&  xmb->textures.list[XMB_TEXTURE_MAIN_MENU])
-   {
+   /* Async icon sync: context textures are loaded asynchronously and
+    * may complete across multiple frames.  Continuously propagate
+    * finished textures into the tab node icon fields.  The writes
+    * are single-pointer stores so there is no race with the async
+    * callback, and the per-frame cost is negligible (a few pointer
+    * comparisons). */
+   if (xmb->textures.list[XMB_TEXTURE_MAIN_MENU])
       xmb->main_menu_node.icon             = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+   if (xmb->textures.list[XMB_TEXTURE_SETTINGS])
       xmb->settings_tab_node.icon          = xmb->textures.list[XMB_TEXTURE_SETTINGS];
+   if (xmb->textures.list[XMB_TEXTURE_HISTORY])
       xmb->history_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_HISTORY];
+   if (xmb->textures.list[XMB_TEXTURE_FAVORITES])
       xmb->favorites_tab_node.icon         = xmb->textures.list[XMB_TEXTURE_FAVORITES];
 #ifdef HAVE_IMAGEVIEWER
+   if (xmb->textures.list[XMB_TEXTURE_IMAGES])
       xmb->images_tab_node.icon            = xmb->textures.list[XMB_TEXTURE_IMAGES];
 #endif
+   if (xmb->textures.list[XMB_TEXTURE_MUSICS])
       xmb->music_tab_node.icon             = xmb->textures.list[XMB_TEXTURE_MUSICS];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   if (xmb->textures.list[XMB_TEXTURE_MOVIES])
       xmb->video_tab_node.icon             = xmb->textures.list[XMB_TEXTURE_MOVIES];
 #endif
+   if (xmb->textures.list[XMB_TEXTURE_ADD])
       xmb->add_tab_node.icon               = xmb->textures.list[XMB_TEXTURE_ADD];
+   if (xmb->textures.list[XMB_TEXTURE_CORE])
       xmb->contentless_cores_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_CORE];
 #if defined(HAVE_LIBRETRODB)
+   if (xmb->textures.list[XMB_TEXTURE_RDB])
       xmb->explore_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_RDB];
 #endif
 #ifdef HAVE_NETWORKING
+   if (xmb->textures.list[XMB_TEXTURE_NETPLAY])
       xmb->netplay_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_NETPLAY];
 #endif
-   }
 
    msg[0]                              = '\0';
    title_msg[0]                        = '\0';
@@ -8340,6 +8354,16 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (xmb_item_color[3] != 0)
          {
             uintptr_t texture        = node->icon;
+
+            /* Fixup for explore view (.lvw) nodes: their icon was
+             * copied from textures.list[CURSOR] during list build,
+             * but if the async load hadn't completed yet the copy
+             * was 0.  Retry each frame until the texture arrives. */
+            if (!texture && xmb->textures.list[XMB_TEXTURE_CURSOR])
+            {
+               texture    = xmb->textures.list[XMB_TEXTURE_CURSOR];
+               node->icon = texture;
+            }
             float x                  = xmb->x + xmb->categories_x_pos
                   + xmb->margins_screen_left
                   + xmb->icon_spacing_horizontal * (i + 1)
@@ -9300,7 +9324,7 @@ static bool xmb_load_image(void *userdata, void *data,
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
          video_driver_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR,
+               TEXTURE_FILTER_LINEAR,
                &xmb->textures.bg);
          gfx_display_init_white_texture();
          break;

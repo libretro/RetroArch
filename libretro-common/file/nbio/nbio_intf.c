@@ -52,13 +52,13 @@ extern nbio_intf_t nbio_stdio;
 
 #endif
 
-/* NOTE: Yes, this is a typo that never got hit,
-   but this is intentional. Apparently this driver
-   never got picked before on Android and Linux but
-   now that it did we suddenly get huge file I/O
-   issues, so try to avoid it to see if the issues
-   go away */
-#if defined(_linux__) 
+/* Disabled: the Linux AIO backend calls io_setup/io_destroy per
+ * file handle, adding ~35us of kernel overhead per open+close.
+ * For the small-file burst pattern used by menu icon loading
+ * (40+ files of 4-64KB), this makes it ~2x slower than stdio.
+ * Fall through to nbio_stdio on Linux until the AIO backend
+ * shares a single context across handles. */
+#if 0 /* was: defined(__linux__) */
 static nbio_intf_t *internal_nbio = &nbio_linux;
 #elif defined(HAVE_MMAP) && defined(BSD)
 static nbio_intf_t *internal_nbio = &nbio_mmap_unix;

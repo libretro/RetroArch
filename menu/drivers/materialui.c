@@ -2591,6 +2591,11 @@ static void materialui_draw_icon(
    struct video_coords coords;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
+   /* Skip drawing when the texture hasn't loaded yet
+    * (async loads start at 0 and are written on completion) */
+   if (!texture)
+      return;
+
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
@@ -9285,7 +9290,7 @@ static bool materialui_load_image(void *userdata,
    {
       materialui_context_bg_destroy(mui);
       video_driver_texture_load(data,
-            TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
+            TEXTURE_FILTER_LINEAR, &mui->textures.bg);
       gfx_display_deinit_white_texture();
       gfx_display_init_white_texture();
    }

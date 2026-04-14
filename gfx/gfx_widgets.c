@@ -1576,14 +1576,27 @@ void gfx_widgets_frame(void *data)
    p_dispwidget->gfx_widgets_frame_count++;
 
    /* Second-pass icon layout: when async widget icons finish loading,
-    * detect the transition and recompute icon-dependent layout once.
-    * This avoids the old approach of either blocking on load or
-    * setting the flag optimistically (which caused text/icon overlap). */
-   if (!(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
-         && p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO])
+    * detect the transition and recompute icon-dependent layout.
+    * Wait until ALL icons are loaded before flipping the flag —
+    * the layout function checks individual textures (e.g. hourglass)
+    * so partial loads produce wrong text offsets. */
+   if (!(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS))
    {
-      p_dispwidget->flags |= DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
-      gfx_widgets_update_icon_layout(p_dispwidget);
+      size_t _i;
+      bool all_loaded = true;
+      for (_i = 0; _i < MENU_WIDGETS_ICON_LAST; _i++)
+      {
+         if (!p_dispwidget->gfx_widgets_icons_textures[_i])
+         {
+            all_loaded = false;
+            break;
+         }
+      }
+      if (all_loaded)
+      {
+         p_dispwidget->flags |= DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
+         gfx_widgets_update_icon_layout(p_dispwidget);
+      }
    }
 
 #ifdef HAVE_MENU
@@ -2225,7 +2238,7 @@ bool gfx_widgets_ai_service_overlay_load(
    {
       if (!gfx_display_reset_textures_list_buffer(
                &p_dispwidget->ai_service_overlay_texture,
-               TEXTURE_FILTER_MIPMAP_LINEAR,
+               TEXTURE_FILTER_LINEAR,
                (void *) buffer, buffer_len, image_type,
                &p_dispwidget->ai_service_overlay_width,
                &p_dispwidget->ai_service_overlay_height))
