@@ -1011,7 +1011,9 @@ static void d3d12_update_texture(
 
    read_range.Begin         = 0;
    read_range.End           = 0;
-   resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst);
+   if (FAILED(resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst))
+         || !dst)
+      return;
    dxgi_copy(width, height, format, pitch, data, texture->desc.Format,
          texture->layout.Footprint.RowPitch, dst + texture->layout.Offset);
    resource->lpVtbl->Unmap(resource, 0, NULL);
@@ -3040,6 +3042,13 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->sprites.pipe_font_hdr);
 #endif
 
+   /* Release swapchain render targets BEFORE destroying the command
+    * queue.  The debug layer checks resource lifetimes against the
+    * queue — releasing them after the queue triggers error #921
+    * (OBJECT_DELETED_WHILE_STILL_IN_USE). */
+   Release(d3d12->chain.renderTargets[0]);
+   Release(d3d12->chain.renderTargets[1]);
+
    Release(d3d12->queue.fence);
    Release(d3d12->queue.cmd);
    Release(d3d12->queue.allocator);
@@ -3047,9 +3056,6 @@ static void d3d12_gfx_free(void* data)
 
    if (d3d12->queue.fenceEvent)
       CloseHandle(d3d12->queue.fenceEvent);
-
-   Release(d3d12->chain.renderTargets[0]);
-   Release(d3d12->chain.renderTargets[1]);
 
 #if 0
    /* Releasing this will crash eventually (?!) */
@@ -4178,8 +4184,13 @@ static bool d3d12_gfx_frame(
 
    D3D12_GFX_SYNC();
 
+   /* If the device was removed (TDR / GPU hang), bail out early.
+    * Continuing would crash on the first Map or Draw call. */
+   if (FAILED(d3d12->device->lpVtbl->GetDeviceRemovedReason(d3d12->device)))
+      return false;
+
 #ifdef HAVE_DXGI_HDR
-   d3d12_hdr_enable               = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? true : false;
+   d3d12_hdr_enable = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? true : false;
    {
       enum dxgi_swapchain_bit_depth desired_bit_depth;
       if (video_info->hdr_mode == 2)
@@ -5664,17 +5675,14 @@ static bool d3d12_get_current_software_framebuffer(
    if (!d3d12 || !fb)
       return false;
 
-   /* Ensure the frame texture is large enough for the requested size */
+   /* Ensure the frame texture is large enough for the requested size.
+    * If it doesn't match, return false so the core uses its own
+    * buffer this frame.  d3d12_gfx_frame will recreate the texture
+    * (after its D3D12_GFX_SYNC) and the core will get the SW
+    * framebuffer on the next call. */
    if (     d3d12->frame.texture[0].desc.Width  != fb->width
          || d3d12->frame.texture[0].desc.Height != fb->height)
-   {
-      d3d12->frame.texture[0].desc.Width  = fb->width;
-      d3d12->frame.texture[0].desc.Height = fb->height;
-      d3d12->frame.texture[0].desc.Format = d3d12->format;
-      d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
-      d3d12_release_texture(&d3d12->frame.texture[0]);
-      d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
-   }
+      return false;
 
    if (!d3d12->frame.texture[0].upload_buffer)
       return false;
