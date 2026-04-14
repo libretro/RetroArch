@@ -1619,6 +1619,366 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
                                   | D3D10_ST_FLAG_RESIZE_RTS);
 }
 
+/* ---- Deferred (per-frame) shader loading for D3D10 ---- */
+
+typedef struct d3d10_deferred_pass
+{
+   d3d10_shader_t    shader;
+   pass_semantics_t  semantics;
+   D3D10Buffer       buffers[SLANG_CBUFFER_MAX];
+} d3d10_deferred_pass_t;
+
+typedef struct d3d10_deferred_state
+{
+   struct video_shader      *shader_preset;
+   d3d10_deferred_pass_t     passes[GFX_MAX_SHADERS];
+   d3d10_texture_t           luts[GFX_MAX_TEXTURES];
+   bool                      luts_loaded;
+} d3d10_deferred_state_t;
+
+static bool d3d10_shader_load_begin(void *data,
+      shader_load_deferred_t *deferred)
+{
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   d3d10_video_t *d3d10 = (d3d10_video_t*)data;
+   d3d10_deferred_state_t *ds;
+
+   if (!d3d10)
+      return false;
+
+   if (deferred->type != RARCH_SHADER_SLANG)
+      return false;
+
+   ds = (d3d10_deferred_state_t*)calloc(1, sizeof(*ds));
+   if (!ds)
+      return false;
+
+   ds->shader_preset = (struct video_shader*)calloc(
+         1, sizeof(*ds->shader_preset));
+   if (!ds->shader_preset)
+   {
+      free(ds);
+      return false;
+   }
+
+   if (!video_shader_load_preset_into_shader(
+            deferred->preset_path, ds->shader_preset))
+   {
+      free(ds->shader_preset);
+      free(ds);
+      return false;
+   }
+
+   deferred->total_passes = ds->shader_preset->passes;
+
+   /* Load LUTs synchronously */
+   {
+      unsigned i;
+      for (i = 0; i < ds->shader_preset->luts; i++)
+      {
+         struct texture_image image;
+         image.pixels        = NULL;
+         image.width         = 0;
+         image.height        = 0;
+         image.supports_rgba = true;
+
+         if (!image_texture_load(&image,
+                  ds->shader_preset->lut[i].path))
+         {
+            RARCH_ERR("[D3D10] Deferred: failed to load LUT: \"%s\".\n",
+                  ds->shader_preset->lut[i].path);
+            goto error;
+         }
+
+         ds->luts[i].desc.Width  = image.width;
+         ds->luts[i].desc.Height = image.height;
+         ds->luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+         if (ds->shader_preset->lut[i].mipmap)
+            ds->luts[i].desc.MiscFlags = D3D10_RESOURCE_MISC_GENERATE_MIPS;
+
+         d3d10_init_texture(d3d10->device, &ds->luts[i]);
+
+         if (ds->luts[i].staging)
+            d3d10_update_texture(
+                  d3d10->device,
+                  image.width, image.height, 0,
+                  DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
+                  &ds->luts[i]);
+
+         image_texture_free(&image);
+      }
+      ds->luts_loaded = true;
+   }
+
+   RARCH_LOG("[D3D10] Deferred: prepared %u passes for \"%s\".\n",
+         deferred->total_passes, deferred->preset_path);
+
+   deferred->driver_data = ds;
+   return true;
+
+error:
+   {
+      unsigned j;
+      for (j = 0; j < ds->shader_preset->luts; j++)
+         d3d10_release_texture(&ds->luts[j]);
+   }
+   free(ds->shader_preset);
+   free(ds);
+   return false;
+#else
+   return false;
+#endif
+}
+
+static void d3d10_deferred_state_free(
+      d3d10_deferred_state_t *ds,
+      unsigned passes_built)
+{
+   unsigned i;
+
+   if (!ds)
+      return;
+
+   for (i = 0; i < passes_built; i++)
+   {
+      unsigned j;
+      d3d10_release_shader(&ds->passes[i].shader);
+      free(ds->passes[i].semantics.textures);
+      ds->passes[i].semantics.textures = NULL;
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      {
+         free(ds->passes[i].semantics.cbuffers[j].uniforms);
+         ds->passes[i].semantics.cbuffers[j].uniforms = NULL;
+         Release(ds->passes[i].buffers[j]);
+      }
+   }
+
+   if (ds->luts_loaded && ds->shader_preset)
+   {
+      for (i = 0; i < ds->shader_preset->luts; i++)
+         d3d10_release_texture(&ds->luts[i]);
+   }
+
+   if (ds->shader_preset)
+   {
+      for (i = 0; i < ds->shader_preset->passes; i++)
+      {
+         free(ds->shader_preset->pass[i].source.string.vertex);
+         free(ds->shader_preset->pass[i].source.string.fragment);
+      }
+      free(ds->shader_preset);
+   }
+
+   free(ds);
+}
+
+static bool d3d10_shader_load_step(void *data,
+      shader_load_deferred_t *deferred)
+{
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   d3d10_video_t *d3d10          = (d3d10_video_t*)data;
+   d3d10_deferred_state_t *ds    =
+      (d3d10_deferred_state_t*)deferred->driver_data;
+   unsigned pass                 = deferred->current_pass;
+
+   if (!d3d10 || !ds)
+   {
+      deferred->state = SHADER_LOAD_FAILED;
+      return false;
+   }
+
+   if (pass < deferred->total_passes)
+   {
+      d3d10_texture_t *source;
+      unsigned i = pass;
+
+      RARCH_LOG("[D3D10] Deferred: compiling pass %u/%u...\n",
+            pass + 1, deferred->total_passes);
+
+      source = (i == 0)
+         ? &d3d10->frame.texture[0]
+         : &d3d10->pass[i - 1].rt;
+
+      {
+         unsigned j;
+         semantics_map_t semantics_map = {
+            {
+               { &d3d10->frame.texture[0].view, 0,
+                  &d3d10->frame.texture[0].size_data, 0 },
+               { &source->view, 0,
+                  &source->size_data, 0 },
+               { &d3d10->frame.texture[0].view,
+                  sizeof(*d3d10->frame.texture),
+                  &d3d10->frame.texture[0].size_data,
+                  sizeof(*d3d10->frame.texture) },
+               { &d3d10->pass[0].rt.view, sizeof(*d3d10->pass),
+                  &d3d10->pass[0].rt.size_data,
+                  sizeof(*d3d10->pass) },
+               { &d3d10->pass[0].feedback.view, sizeof(*d3d10->pass),
+                  &d3d10->pass[0].feedback.size_data,
+                  sizeof(*d3d10->pass) },
+               /* Point at d3d10->luts, not ds->luts */
+               { &d3d10->luts[0].view, sizeof(*d3d10->luts),
+                  &d3d10->luts[0].size_data, sizeof(*d3d10->luts) },
+            },
+            {
+               &d3d10->mvp,
+               &d3d10->pass[i].rt.size_data,
+               &d3d10->frame.output_size,
+               &d3d10->pass[i].frame_count,
+               &d3d10->pass[i].frame_direction,
+               &d3d10->pass[i].frame_time_delta,
+               &d3d10->pass[i].original_fps,
+               &d3d10->pass[i].rotation,
+               &d3d10->pass[i].core_aspect,
+               &d3d10->pass[i].core_aspect_rot,
+               &d3d10->pass[i].total_subframes,
+               &d3d10->pass[i].current_subframe,
+            }
+         };
+
+         if (!slang_process(
+                  ds->shader_preset, i, RARCH_SHADER_HLSL,
+                  40, &semantics_map,
+                  &ds->passes[i].semantics))
+         {
+            RARCH_ERR("[D3D10] Deferred: failed to process pass %u.\n", i);
+            d3d10_deferred_state_free(ds, pass);
+            deferred->state       = SHADER_LOAD_FAILED;
+            deferred->driver_data = NULL;
+            return false;
+         }
+
+         /* Compile HLSL and create shader objects */
+         {
+            static const D3D10_INPUT_ELEMENT_DESC desc[] = {
+               { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
+                  offsetof(d3d10_vertex_t, position),
+                  D3D10_INPUT_PER_VERTEX_DATA, 0 },
+               { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0,
+                  offsetof(d3d10_vertex_t, texcoord),
+                  D3D10_INPUT_PER_VERTEX_DATA, 0 },
+            };
+            char _path[PATH_MAX_LENGTH];
+            const char *slang_path =
+               ds->shader_preset->pass[i].source.path;
+            const char *vs_src =
+               ds->shader_preset->pass[i].source.string.vertex;
+            const char *ps_src =
+               ds->shader_preset->pass[i].source.string.fragment;
+            size_t _len = strlcpy(_path, slang_path, sizeof(_path));
+
+            strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+            d3d10_init_shader(d3d10->device, vs_src, 0,
+                  _path, "main", NULL, NULL, desc, countof(desc),
+                  &ds->passes[i].shader);
+
+            strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+            d3d10_init_shader(d3d10->device, ps_src, 0, _path,
+                  NULL, "main", NULL, NULL, 0,
+                  &ds->passes[i].shader);
+
+            free(ds->shader_preset->pass[i].source.string.vertex);
+            free(ds->shader_preset->pass[i].source.string.fragment);
+            ds->shader_preset->pass[i].source.string.vertex   = NULL;
+            ds->shader_preset->pass[i].source.string.fragment = NULL;
+
+            if (!ds->passes[i].shader.vs || !ds->passes[i].shader.ps)
+            {
+               RARCH_ERR("[D3D10] Deferred: failed to compile shader"
+                     " for pass %u.\n", i);
+               d3d10_deferred_state_free(ds, pass + 1);
+               deferred->state       = SHADER_LOAD_FAILED;
+               deferred->driver_data = NULL;
+               return false;
+            }
+         }
+
+         /* Create cbuffers */
+         for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+         {
+            D3D10_BUFFER_DESC buf_desc;
+            buf_desc.ByteWidth      =
+               ds->passes[i].semantics.cbuffers[j].size;
+            buf_desc.Usage          = D3D10_USAGE_DYNAMIC;
+            buf_desc.BindFlags      = D3D10_BIND_CONSTANT_BUFFER;
+            buf_desc.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+            buf_desc.MiscFlags      = 0;
+
+            if (!buf_desc.ByteWidth)
+               continue;
+
+            d3d10->device->lpVtbl->CreateBuffer(
+                  d3d10->device, &buf_desc, NULL,
+                  &ds->passes[i].buffers[j]);
+         }
+      }
+
+      deferred->current_pass++;
+      return true;
+   }
+
+   /* Cancellation check */
+   if (deferred->state != SHADER_LOAD_COMPILING)
+   {
+      RARCH_LOG("[D3D10] Deferred: cancelled, cleaning up.\n");
+      d3d10_deferred_state_free(ds, pass);
+      deferred->state       = SHADER_LOAD_FAILED;
+      deferred->driver_data = NULL;
+      return false;
+   }
+
+   /* All passes compiled — install */
+   RARCH_LOG("[D3D10] Deferred: finalizing...\n");
+
+   d3d10->device->lpVtbl->Flush(d3d10->device);
+   d3d10_free_shader_preset(d3d10);
+
+   /* Install preset */
+   d3d10->shader_preset = ds->shader_preset;
+   ds->shader_preset    = NULL;
+
+   /* Install LUTs */
+   memcpy(d3d10->luts, ds->luts, sizeof(ds->luts));
+   memset(ds->luts, 0, sizeof(ds->luts));
+   ds->luts_loaded = false;
+
+   /* Install per-pass state */
+   {
+      unsigned i;
+      for (i = 0; i < deferred->total_passes; i++)
+      {
+         d3d10->pass[i].shader = ds->passes[i].shader;
+         memset(&ds->passes[i].shader, 0,
+               sizeof(ds->passes[i].shader));
+
+         d3d10->pass[i].semantics = ds->passes[i].semantics;
+         memset(&ds->passes[i].semantics, 0,
+               sizeof(ds->passes[i].semantics));
+
+         memcpy(d3d10->pass[i].buffers,
+               ds->passes[i].buffers,
+               sizeof(ds->passes[i].buffers));
+         memset(ds->passes[i].buffers, 0,
+               sizeof(ds->passes[i].buffers));
+      }
+   }
+
+   d3d10->flags |= D3D10_ST_FLAG_INIT_HISTORY | D3D10_ST_FLAG_RESIZE_RTS;
+
+   deferred->state = SHADER_LOAD_DONE;
+   RARCH_LOG("[D3D10] Deferred: shader loaded successfully.\n");
+
+   free(ds);
+   deferred->driver_data = NULL;
+   return false;
+#else
+   deferred->state = SHADER_LOAD_FAILED;
+   return false;
+#endif
+}
+
 static bool d3d10_gfx_set_shader(void* data,
       enum rarch_shader_type type, const char* path)
 {
@@ -3418,8 +3778,8 @@ video_driver_t video_d3d10 = {
 #endif
    d3d10_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
-   NULL, /* shader_load_begin */
-   NULL, /* shader_load_step */
+   d3d10_shader_load_begin,
+   d3d10_shader_load_step,
 #if defined(HAVE_GFX_WIDGETS)
    d3d10_gfx_widgets_enabled
 #endif
