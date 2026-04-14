@@ -413,6 +413,7 @@ typedef struct xmb_handle
    float font_size;
    float font2_size;
    float last_scale_factor;
+   unsigned pending_context_reset;
 
    float margins_screen_left;
    float margins_screen_top;
@@ -6874,6 +6875,25 @@ static void xmb_render(void *data,
    if (!xmb)
       return;
 
+   /* Handle deferred context reset from a previous scale factor /
+    * layout change. We must wait two xmb_render() calls (not one)
+    * because xmb_render() is called from runloop_check_state()
+    * BEFORE video_driver_cached_frame() in the same iteration.
+    * The sequence per iteration is:
+    *   xmb_render() -> video_driver_cached_frame() -> gfx_frame()
+    * So on the frame that detects the change (N), we set the counter
+    * to 2. On frame N+1 xmb_render runs first (counter becomes 1),
+    * then gfx_frame completes frame N's GPU work. On frame N+2
+    * xmb_render runs (counter becomes 0), and now the GPU has finished
+    * all prior command lists, so it is safe to release textures and
+    * fonts via xmb_context_reset_internal(). */
+   if (xmb->pending_context_reset > 0)
+   {
+      if (--xmb->pending_context_reset == 0)
+         xmb_context_reset_internal(xmb, video_driver_is_threaded(), false,
+               settings->uints.menu_xmb_theme);
+   }
+
    xmb->use_ps3_layout            = xmb_use_ps3_layout(settings->uints.menu_xmb_layout, width, height);
    scale_factor                   = xmb_get_scale_factor(settings->floats.menu_scale_factor,
          xmb->use_ps3_layout, width);
@@ -6888,8 +6908,8 @@ static void xmb_render(void *data,
       xmb->last_margins_title_horizontal_offset = xmb->margins_title_horizontal_offset;
       xmb->last_scale_factor                    = scale_factor;
 
-      xmb_context_reset_internal(xmb, video_driver_is_threaded(), false,
-            settings->uints.menu_xmb_theme);
+      /* Defer context reset by 2 frames — see comment above */
+      xmb->pending_context_reset = 2;
    }
 
    /* This must be set every frame when using a pointer,
@@ -9258,6 +9278,10 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->last_scale_factor                     = xmb_get_scale_factor(
          settings->floats.menu_scale_factor,
          xmb->use_ps3_layout, width);
+   xmb->margins_title                          = (float)settings->ints.menu_xmb_title_margin * 10.0f;
+   xmb->last_margins_title                     = xmb->margins_title;
+   xmb->margins_title_horizontal_offset        = (float)settings->ints.menu_xmb_title_margin_horizontal_offset * 10.0f;
+   xmb->last_margins_title_horizontal_offset   = xmb->margins_title_horizontal_offset;
 
    p_anim->updatetime_cb                      = xmb_menu_animation_update_time;
 
