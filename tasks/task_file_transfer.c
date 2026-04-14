@@ -53,6 +53,14 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
    iters = nbio->pos_increment ? nbio->pos_increment
                                : NBIO_DEFAULT_POS_INCREMENT;
 
+#ifdef __ANDROID__
+   /* Android: complete the entire file read in one pass to avoid
+    * spreading I/O across frames, which causes menu freezes and
+    * icon glitches when combined with async image decoding. */
+   (void)iters;
+   while (!nbio_iterate(nbio->handle));
+   return -1;
+#else
    for (i = 0; i < iters; i++)
    {
       if (nbio_iterate(nbio->handle))
@@ -60,6 +68,7 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
    }
 
    return 0;
+#endif
 }
 
 static int task_file_transfer_iterate_parse(nbio_handle_t *nbio)

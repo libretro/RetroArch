@@ -151,8 +151,16 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
       if ((retval = task_image_process(image, &width, &height)) 
           != IMAGE_PROCESS_NEXT)
          break;
+#ifndef __ANDROID__
+      /* On non-Android platforms, budget image processing across
+       * multiple frames to avoid blocking the UI thread.
+       * On Android this causes freezes and icon glitches with all
+       * menu drivers, so we complete the entire decode in one pass. */
    }while (cpu_features_get_time_usec() - start_time
          < image->frame_duration);
+#else
+   }while (1);
+#endif
 
    if (retval == IMAGE_PROCESS_NEXT)
       return 0;
@@ -350,8 +358,14 @@ bool task_image_load_handler(retro_task_t *task)
                      image->status = IMAGE_STATUS_TRANSFER_PARSE;
                      break;
                   }
+#ifndef __ANDROID__
                }while (cpu_features_get_time_usec() - start_time
                      < image->frame_duration);
+#else
+               /* Android: complete transfer in one pass to avoid
+                * context contention causing freezes/glitches */
+               }while (1);
+#endif
             }
             break;
          case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
