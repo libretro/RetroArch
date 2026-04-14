@@ -5865,6 +5865,9 @@ bool config_save_file(const char *path)
             input_driver_state_t *input_st = input_state_get_ptr();
             input_device_info_t saved_device_info[MAX_INPUT_DEVICES];
             retro_keybind_set *saved_autoconf_binds;
+#ifdef HAVE_LANGEXTRA
+            unsigned saved_user_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+#endif
 
             /* Save current input_config_binds */
             retro_keybind_set saved_binds[MAX_USERS];
@@ -5917,6 +5920,11 @@ bool config_save_file(const char *path)
             /* Restore input_device_info */
             memcpy(input_st->input_device_info, saved_device_info,
                    sizeof(saved_device_info));
+
+#ifdef HAVE_LANGEXTRA
+            /* Restore user_language global, clobbered by config_set_defaults. */
+            msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, saved_user_language);
+#endif
 
             /* Restore input_autoconf_binds (free strings allocated by input_config_reset, then restore) */
             if (saved_autoconf_binds)
@@ -6124,9 +6132,30 @@ bool config_save_file(const char *path)
          if (   !uint_settings[i].override
              || !retroarch_override_setting_is_set(uint_settings[i].override, NULL))
          {
+            unsigned default_val = 0;
+            bool has_default     = false;
+
+            if (minimal)
+            {
+               if (uint_settings[i].ptr == uint_defaults[i].ptr)
+               {
+                  if (uint_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
+                  {
+                     default_val = uint_settings[i].def;
+                     has_default = true;
+                  }
+               }
+               else
+               {
+                  default_val = *uint_defaults[i].ptr;
+                  has_default = true;
+               }
+            }
+
             /* In minimal mode, only save if value differs from default */
             if (   !minimal
-                || *uint_settings[i].ptr != *uint_defaults[i].ptr)
+                || !has_default
+                || *uint_settings[i].ptr != default_val)
             {
                config_set_int(conf,
                      uint_settings[i].ident,
