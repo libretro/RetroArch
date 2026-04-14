@@ -10656,8 +10656,19 @@ static void ozone_draw_header(
    float scale_factor                       = ozone->last_scale_factor;
    float header_margin                      = 40 * scale_factor;
    float header_margin_min                  = ozone->dimensions.sidebar_entry_icon_padding;
-   unsigned logo_icon_size                  = (ozone->header_icon) ? 60 * scale_factor : 0;
+   unsigned logo_icon_size;
    unsigned status_icon_size                = 80 * scale_factor;
+
+   /* If header_icon is zero but the setting says it should exist,
+    * the handle was likely cached before its async texture loaded.
+    * Try the RetroArch logo as a fallback — it covers FIXED mode
+    * and the DYNAMIC mode fallback at the end of ozone_selection_changed. */
+   if (  !ozone->header_icon
+       && settings->uints.menu_ozone_header_icon != OZONE_HEADER_ICON_NONE
+       && ozone->textures[OZONE_TEXTURE_RETROARCH])
+      ozone->header_icon = ozone->textures[OZONE_TEXTURE_RETROARCH];
+
+   logo_icon_size = (ozone->header_icon) ? 60 * scale_factor : 0;
    unsigned status_row_size                 = 160 * scale_factor;
    unsigned separator_margin                = 30 * scale_factor;
    unsigned separator                       = settings->uints.menu_ozone_header_separator;
