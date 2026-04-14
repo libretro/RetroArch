@@ -294,7 +294,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          CONTENTLESS_CORE_ICON_DEFAULT, sizeof(icon_path));
 
    if (path_is_valid(icon_path))
-      task_push_icon_load(icon_path, rgba_supported,
+      gfx_display_load_icon(icon_path, rgba_supported,
             &state->icons->fallback, contentless_icon_load_gen,
             &contentless_icon_load_gen);
 
@@ -338,7 +338,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
             RHMAP_SET_STR(state->icons->system,
                   core_info->core_file_id.str, icon);
 
-            task_push_icon_load(icon_path, rgba_supported,
+            gfx_display_load_icon(icon_path, rgba_supported,
                   icon, contentless_icon_load_gen,
                   &contentless_icon_load_gen);
          }

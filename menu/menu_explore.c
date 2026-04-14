@@ -440,7 +440,7 @@ static void explore_load_icons(explore_state_t *state)
       if (!path_is_valid(path))
          continue;
 
-      task_push_icon_load(path, supports_rgba,
+      gfx_display_load_icon(path, supports_rgba,
             &state->icons[i], explore_icon_load_gen,
             &explore_icon_load_gen);
    }

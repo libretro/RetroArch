@@ -365,7 +365,7 @@ static void gfx_widget_volume_context_reset(bool is_threaded,
       char texpath[PATH_MAX_LENGTH];
       fill_pathname_join_special(texpath,
             menu_png_path, ICONS_NAMES[i], sizeof(texpath));
-      task_push_icon_load(texpath, supports_rgba,
+      gfx_display_load_icon(texpath, supports_rgba,
             &state->textures[i], volume_icon_load_gen,
             &volume_icon_load_gen);
    }

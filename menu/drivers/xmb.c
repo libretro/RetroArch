@@ -2988,7 +2988,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
             strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
          }
 
-         task_push_icon_load(texturepath, supports_rgba,
+         gfx_display_load_icon(texturepath, supports_rgba,
                &node->icon, xmb_icon_load_gen,
                &xmb_icon_load_gen);
 
@@ -3000,7 +3000,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
             fill_pathname_join_delim(texturepath, icons_path_default,
                   FILE_PATH_CONTENT_BASENAME, '-', sizeof(texturepath));
 
-         task_push_icon_load(texturepath, supports_rgba,
+         gfx_display_load_icon(texturepath, supports_rgba,
                &node->content_icon, xmb_icon_load_gen,
                &xmb_icon_load_gen);
 
@@ -6674,7 +6674,7 @@ static void xmb_context_reset_textures(
 
       fill_pathname_join_special(texpath,
             iconpath, texture_path, sizeof(texpath));
-      task_push_icon_load(texpath, supports_rgba,
+      gfx_display_load_icon(texpath, supports_rgba,
             &xmb->textures.list[i], xmb_ctx_icon_load_gen,
             &xmb_ctx_icon_load_gen);
    }

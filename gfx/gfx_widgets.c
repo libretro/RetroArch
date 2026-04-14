@@ -2006,11 +2006,12 @@ static void gfx_widgets_context_reset(
    widget_icon_load_gen++;
 
    /* Start with no-icons layout — text positions are correct for
-    * text-only rendering.  When async loads complete, the callback
-    * sets MSG_QUEUE_HAS_ICONS and recomputes icon-dependent layout. */
+    * text-only rendering.  When loads complete (immediately on sync
+    * platforms, via callback on async), the frame-loop detects
+    * non-zero textures and recomputes icon-dependent layout. */
    p_dispwidget->flags &= ~DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
 
-   /* Queue async icon loads */
+   /* Load icons */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
    {
       char texpath[PATH_MAX_LENGTH];
@@ -2018,7 +2019,7 @@ static void gfx_widgets_context_reset(
             p_dispwidget->monochrome_png_path,
             gfx_widgets_icons_names[i],
             sizeof(texpath));
-      task_push_icon_load(texpath, supports_rgba,
+      gfx_display_load_icon(texpath, supports_rgba,
             &p_dispwidget->gfx_widgets_icons_textures[i],
             widget_icon_load_gen, &widget_icon_load_gen);
    }

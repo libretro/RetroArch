@@ -19,6 +19,7 @@
 #include "gfx_display.h"
 
 #include "../configuration.h"
+#include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_MIST
@@ -1173,6 +1174,51 @@ bool gfx_display_reset_icon_texture(
    image_texture_free(&ti);
 
    return true;
+}
+
+/* -----------------------------------------------------------------------
+ * Platform-adaptive icon/texture loading
+ *
+ * Dispatches to either the synchronous (blocking) or asynchronous
+ * (task-queue) icon loading path depending on the platform.
+ *
+ * Platforms that define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS get the
+ * pre-async behavior: image_texture_load -> video_driver_texture_load
+ * in one call, no task queue involvement.  This avoids frame-spread
+ * I/O and GL context contention on platforms where the async path is
+ * actually slower (e.g. Android behind SAF / fuse storage).
+ *
+ * To opt a new platform into the synchronous path, add it to the
+ * ifdef below.
+ * ----------------------------------------------------------------------- */
+
+#if defined(__ANDROID__)
+#define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
+#endif
+
+bool gfx_display_load_icon(
+      const char *fullpath,
+      bool supports_rgba,
+      uintptr_t *target_texture,
+      uint64_t generation,
+      uint64_t *generation_ptr)
+{
+#ifdef GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
+   /* Synchronous path - identical to pre-async behavior.
+    * Generation counter is irrelevant: the load completes
+    * before this function returns, so there is no in-flight
+    * callback that could write to a freed pointer. */
+   (void)supports_rgba;
+   (void)generation;
+   (void)generation_ptr;
+   return gfx_display_reset_icon_texture(
+         fullpath, target_texture,
+         TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+#else
+   return task_push_icon_load(
+         fullpath, supports_rgba,
+         target_texture, generation, generation_ptr);
+#endif
 }
 
 void gfx_display_deinit_white_texture(void)

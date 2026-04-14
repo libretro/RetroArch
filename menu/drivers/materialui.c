@@ -2293,7 +2293,7 @@ static void materialui_context_reset_playlist_icons(
       fill_pathname_join_special(texpath,
             mui->sysicons_path, image_file,
             sizeof(texpath));
-      task_push_icon_load(texpath, supports_rgba,
+      gfx_display_load_icon(texpath, supports_rgba,
             &mui->textures.playlist.icons[i].image,
             mui_icon_load_gen, &mui_icon_load_gen);
    }
@@ -2569,7 +2569,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
       fill_pathname_join_special(texpath,
             mui->icons_path, materialui_texture_path(i),
             sizeof(texpath));
-      task_push_icon_load(texpath, supports_rgba,
+      gfx_display_load_icon(texpath, supports_rgba,
             &mui->textures.list[i], mui_icon_load_gen,
             &mui_icon_load_gen);
    }

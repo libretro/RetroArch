@@ -2951,7 +2951,7 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
          fill_pathname_join_special(texpath,
                theme_path, OZONE_THEME_TEXTURES_FILES[i],
                sizeof(texpath));
-         task_push_icon_load(texpath, supports_rgba,
+         gfx_display_load_icon(texpath, supports_rgba,
                &theme->textures[i], ozone_ctx_icon_load_gen,
                &ozone_ctx_icon_load_gen);
       }
@@ -5136,7 +5136,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                   texturepath, ozone->icons_path, "default.png",
                   sizeof(texturepath));
 
-         task_push_icon_load(texturepath, supports_rgba,
+         gfx_display_load_icon(texturepath, supports_rgba,
                &node->icon, ozone_icon_load_gen,
                &ozone_icon_load_gen);
 
@@ -5149,7 +5149,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             fill_pathname_join_delim(texturepath, ozone->icons_path_default,
                   "content.png", '-', sizeof(texturepath));
 
-         task_push_icon_load(texturepath, supports_rgba,
+         gfx_display_load_icon(texturepath, supports_rgba,
                &node->content_icon, ozone_icon_load_gen,
                &ozone_icon_load_gen);
 
@@ -9831,7 +9831,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
          fill_pathname_join_special(texpath,
                ozone->png_path, OZONE_TEXTURES_FILES[i],
                sizeof(texpath));
-         task_push_icon_load(texpath, supports_rgba,
+         gfx_display_load_icon(texpath, supports_rgba,
                &ozone->textures[i], ozone_ctx_icon_load_gen,
                &ozone_ctx_icon_load_gen);
       }
@@ -9855,7 +9855,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
                      sizeof(texpath));
                break;
          }
-         task_push_icon_load(texpath, supports_rgba,
+         gfx_display_load_icon(texpath, supports_rgba,
                &ozone->tab_textures[i], ozone_ctx_icon_load_gen,
                &ozone_ctx_icon_load_gen);
       }
@@ -9870,7 +9870,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
          fill_pathname_join_special(texpath,
                ozone->icons_path, ozone_entries_icon_texture_path(i),
                sizeof(texpath));
-         task_push_icon_load(texpath, supports_rgba,
+         gfx_display_load_icon(texpath, supports_rgba,
                &ozone->icons_textures[i], ozone_ctx_icon_load_gen,
                &ozone_ctx_icon_load_gen);
       }
