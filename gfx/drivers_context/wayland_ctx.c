@@ -608,14 +608,14 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    if (wl->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-   if (string_is_equal(video_ident, "glcore") || string_is_equal(video_ident, "gl"))
+   if (string_is_equal(video_ident, "glcore"))
    {
-      if (string_is_equal(video_ident, "glcore"))
-      {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
-      }
+   }
+   else if (string_is_equal(video_ident, "gl"))
+   {
 #ifdef HAVE_GLSL
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
