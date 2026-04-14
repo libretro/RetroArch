@@ -567,10 +567,6 @@ static void cb_task_icon_load(retro_task_t *task,
    if (!img || img->width < 1 || img->height < 1 || !img->pixels)
       goto end;
 
-   /* Unload previous texture if any */
-   if (tag->target && *tag->target)
-      video_driver_texture_unload(tag->target);
-
    video_driver_texture_load(img, TEXTURE_FILTER_LINEAR,
          tag->target);
 
