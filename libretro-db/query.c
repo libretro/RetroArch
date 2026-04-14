@@ -1114,3 +1114,76 @@ int libretrodb_query_get_filter_fields(libretrodb_query_t *q,
 
    return count;
 }
+
+/**
+ * libretrodb_query_eval_field:
+ *
+ * Evaluate a single field's query condition inline. For a table query
+ * like {crc:or(b"..."), year:1995}, this finds the condition matching
+ * @field_name and evaluates its matcher against @value.
+ *
+ * @q           : Compiled query handle.
+ * @field_name  : The map key name to evaluate (e.g. "crc").
+ * @field_len   : Length of field_name.
+ * @value       : The parsed DOM value for this field, or NULL to
+ *                just check if the field is in the query.
+ *
+ * Returns:  1 if the condition passes (or field exists when value is NULL),
+ *           0 if the condition fails (mismatch),
+ *          -1 if this field is not in the query (irrelevant).
+ */
+int libretrodb_query_eval_field(libretrodb_query_t *q,
+      const char *field_name, uint32_t field_len,
+      struct rmsgpack_dom_value *value)
+{
+   unsigned i;
+   struct query *rq = (struct query *)q;
+
+   if (!rq || !rq->root.func || !rq->root.argv)
+      return -1;
+
+   if (rq->root.func != query_func_all_map)
+      return -1;
+
+   /* Walk argv pairs: argv[i] = field name, argv[i+1] = matcher */
+   for (i = 0; i + 1 < rq->root.argc; i += 2)
+   {
+      struct argument *key_arg = &rq->root.argv[i];
+      struct argument *val_arg = &rq->root.argv[i + 1];
+
+      if (  key_arg->type              != AT_VALUE
+         || key_arg->a.value.type      != RDT_STRING
+         || key_arg->a.value.val.string.len != field_len)
+         continue;
+
+      if (memcmp(key_arg->a.value.val.string.buff, field_name, field_len) != 0)
+         continue;
+
+      /* Found the matching condition */
+
+      /* If value is NULL, caller just wants to know if this
+       * field is in the query (existence check) */
+      if (!value)
+         return 1;
+
+      /* Evaluate the matcher against the value */
+      if (val_arg->type == AT_VALUE)
+      {
+         struct rmsgpack_dom_value res = func_equals(*value, 1, val_arg);
+         return res.val.bool_ ? 1 : 0;
+      }
+      else
+      {
+         struct rmsgpack_dom_value res = query_func_is_true(
+               val_arg->a.invocation.func(
+                  *value,
+                  val_arg->a.invocation.argc,
+                  val_arg->a.invocation.argv),
+               0, NULL);
+         return res.val.bool_ ? 1 : 0;
+      }
+   }
+
+   /* Field not in query — irrelevant */
+   return -1;
+}

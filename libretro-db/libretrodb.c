@@ -435,13 +435,8 @@ static int32_t rmsgpack_read_key_string(intfstream_t *fd,
    return (int32_t)len;
 }
 
-/* Maximum number of query filter fields we can handle in the
- * fast path. If a query has more fields than this, we fall
- * back to the full DOM parse path. */
-#define CURSOR_MAX_FILTER_FIELDS 8
-
 /* Maximum number of map fields in a single record for the
- * partial DOM. Typical .rdb records have 10-15 fields. */
+ * fast path. Typical .rdb records have 10-15 fields. */
 #define CURSOR_MAX_MAP_FIELDS    24
 
 int libretrodb_cursor_read_item(libretrodb_cursor_t *cursor,
@@ -465,27 +460,27 @@ int libretrodb_cursor_read_item(libretrodb_cursor_t *cursor,
       return 0;
    }
 
-   /* --- Fast path: field-level skip for query-filtered scans --- */
+   /* --- Fast path: folded field-level scan + inline evaluation --- */
    {
-      const char *qfield_names[CURSOR_MAX_FILTER_FIELDS];
-      uint32_t    qfield_lens[CURSOR_MAX_FILTER_FIELDS];
-      int         num_qfields;
+      int num_qfields;
 
       num_qfields = libretrodb_query_get_filter_fields(
-            cursor->query, qfield_names, qfield_lens,
-            CURSOR_MAX_FILTER_FIELDS);
+            cursor->query, NULL, NULL, 0);
 
-      /* If we can't extract field names (non-table query or too many
-       * fields), fall back to the full DOM path */
-      if (num_qfields <= 0 || num_qfields > CURSOR_MAX_FILTER_FIELDS)
+      /* If we can't extract field names (non-table query),
+       * fall back to the full DOM path */
+      if (num_qfields <= 0)
          goto slow_path;
 
       for (;;)
       {
          int32_t  map_len;
          int32_t  i;
-         int      matched;
          int64_t  record_start;
+         int      conditions_met   = 0;
+         int      rejected         = 0;
+         int      skip_rest        = 0;
+         int      error            = 0;
 
          /* Remember where this record starts so we can rewind
           * if the query matches */
@@ -513,137 +508,103 @@ int libretrodb_cursor_read_item(libretrodb_cursor_t *cursor,
             goto slow_path_single;
          }
 
-         /* Scan fields: read each key, check if the query cares,
-          * skip or parse the value accordingly */
+         /* Scan fields: for each key-value pair, read the key into
+          * a stack buffer, check if the query cares, and either skip
+          * the value or parse + evaluate it immediately inline. */
+         for (i = 0; i < map_len; i++)
          {
-            /* Partial DOM: only allocate pairs for matched fields.
-             * We stack-allocate the pairs array and only malloc
-             * the individual string/binary values that the query
-             * actually needs to inspect. */
-            struct rmsgpack_dom_pair pairs[CURSOR_MAX_MAP_FIELDS];
-            unsigned partial_count = 0;
-            int      skip_rest     = 0;
-            int      error         = 0;
+            char     key_buf[64];
+            int32_t  key_len;
 
-            for (i = 0; i < map_len; i++)
+            if (skip_rest)
             {
-               char     key_buf[64];
-               int32_t  key_len;
-               int      is_query_field = 0;
-               int      j;
-
-               if (skip_rest)
-               {
-                  /* Already know we don't match — skip both
-                   * key and value to reach the next record */
-                  if (  rmsgpack_skip_value(cursor->fd) < 0
-                     || rmsgpack_skip_value(cursor->fd) < 0)
-                  { error = 1; break; }
-                  continue;
-               }
-
-               /* Read the key string into stack buffer */
-               key_len = rmsgpack_read_key_string(
-                     cursor->fd, key_buf, sizeof(key_buf));
-
-               if (key_len < 0)
-               {
-                  /* Key read failed — skip value and continue */
-                  if (rmsgpack_skip_value(cursor->fd) < 0)
-                  { error = 1; break; }
-                  continue;
-               }
-
-               /* Check if this key is one the query filters on */
-               for (j = 0; j < num_qfields; j++)
-               {
-                  if (  (uint32_t)key_len == qfield_lens[j]
-                     && memcmp(key_buf, qfield_names[j], key_len) == 0)
-                  {
-                     is_query_field = 1;
-                     break;
-                  }
-               }
-
-               if (!is_query_field)
-               {
-                  /* Query doesn't care about this field — skip value */
-                  if (rmsgpack_skip_value(cursor->fd) < 0)
-                  { error = 1; break; }
-                  continue;
-               }
-
-               /* Query needs this field — parse the value with full
-                * DOM read. Set up the key in the partial DOM. */
-               pairs[partial_count].key.type            = RDT_STRING;
-               pairs[partial_count].key.val.string.len  = (uint32_t)key_len;
-               /* Must malloc the key string because
-                * rmsgpack_dom_value_free will free it */
-               pairs[partial_count].key.val.string.buff =
-                  (char*)malloc(key_len + 1);
-               if (!pairs[partial_count].key.val.string.buff)
+               /* Already decided — skip both key and value */
+               if (  rmsgpack_skip_value(cursor->fd) < 0
+                  || rmsgpack_skip_value(cursor->fd) < 0)
                { error = 1; break; }
-               memcpy(pairs[partial_count].key.val.string.buff,
-                     key_buf, key_len + 1);
-
-               /* Read the value */
-               if (rmsgpack_dom_read(cursor->fd,
-                     &pairs[partial_count].value) < 0)
-               {
-                  free(pairs[partial_count].key.val.string.buff);
-                  error = 1;
-                  break;
-               }
-
-               partial_count++;
+               continue;
             }
 
-            /* On error, clean up any partially parsed fields
-             * and return failure */
-            if (error)
+            /* Read the key string into stack buffer */
+            key_len = rmsgpack_read_key_string(
+                  cursor->fd, key_buf, sizeof(key_buf));
+
+            if (key_len < 0)
             {
-               unsigned pi;
-               for (pi = 0; pi < partial_count; pi++)
-               {
-                  rmsgpack_dom_value_free(&pairs[pi].key);
-                  rmsgpack_dom_value_free(&pairs[pi].value);
-               }
-               return -1;
+               /* Key read failed — skip value and continue */
+               if (rmsgpack_skip_value(cursor->fd) < 0)
+               { error = 1; break; }
+               continue;
             }
 
-            /* Build partial map and run query filter */
+            /* Evaluate this field against the query inline.
+             * eval_field returns:
+             *   -1 = field not in query (skip it)
+             *    0 = condition failed (reject record)
+             *    1 = condition passed */
             {
-               struct rmsgpack_dom_value partial_map;
-               partial_map.type         = RDT_MAP;
-               partial_map.val.map.len  = partial_count;
-               partial_map.val.map.items = pairs;
+               struct rmsgpack_dom_value field_val;
+               int eval_result;
 
-               matched = libretrodb_query_filter(
-                     cursor->query, &partial_map);
+               /* Peek: is this field in the query at all?
+                * Check before parsing the value to avoid
+                * unnecessary DOM allocation */
+               eval_result = libretrodb_query_eval_field(
+                     cursor->query, key_buf, (uint32_t)key_len,
+                     NULL);
 
-               /* Free only the parsed fields (not the pairs array
-                * itself — it's on the stack) */
-               for (i = 0; i < (int32_t)partial_count; i++)
+               if (eval_result == -1)
                {
-                  rmsgpack_dom_value_free(&pairs[i].key);
-                  rmsgpack_dom_value_free(&pairs[i].value);
+                  /* Field not in query — skip value entirely */
+                  if (rmsgpack_skip_value(cursor->fd) < 0)
+                  { error = 1; break; }
+                  continue;
+               }
+
+               /* Field IS in query — parse value and evaluate */
+               if (rmsgpack_dom_read(cursor->fd, &field_val) < 0)
+               { error = 1; break; }
+
+               eval_result = libretrodb_query_eval_field(
+                     cursor->query, key_buf, (uint32_t)key_len,
+                     &field_val);
+
+               rmsgpack_dom_value_free(&field_val);
+
+               if (eval_result == 0)
+               {
+                  /* Condition failed — reject this record.
+                   * Skip remaining fields to advance to next record. */
+                  rejected  = 1;
+                  skip_rest = 1;
+               }
+               else if (eval_result == 1)
+               {
+                  conditions_met++;
+                  /* If all conditions satisfied, we can also skip
+                   * remaining fields (they're not query-relevant) */
+                  if (conditions_met >= num_qfields)
+                     skip_rest = 1;
                }
             }
-
-            if (!matched)
-               continue; /* Next record — the stream is already
-                          * positioned past the current record */
-
-            /* Match! Rewind and do a full DOM parse so the caller
-             * gets the complete record */
-            intfstream_seek(cursor->fd, record_start,
-                  RETRO_VFS_SEEK_POSITION_START);
-
-            if ((rv = rmsgpack_dom_read(cursor->fd, out)) < 0)
-               return rv;
-
-            return 0;
          }
+
+         if (error)
+            return -1;
+
+         /* Reject: all conditions not met, or explicit mismatch */
+         if (rejected || conditions_met < num_qfields)
+            continue;
+
+         /* Match! Rewind and do a full DOM parse so the caller
+          * gets the complete record */
+         intfstream_seek(cursor->fd, record_start,
+               RETRO_VFS_SEEK_POSITION_START);
+
+         if ((rv = rmsgpack_dom_read(cursor->fd, out)) < 0)
+            return rv;
+
+         return 0;
       }
    }
 

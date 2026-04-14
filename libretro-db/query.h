@@ -42,6 +42,10 @@ int libretrodb_query_get_filter_fields(libretrodb_query_t *q,
       const char **field_names, uint32_t *field_lens,
       unsigned max_fields);
 
+int libretrodb_query_eval_field(libretrodb_query_t *q,
+      const char *field_name, uint32_t field_len,
+      struct rmsgpack_dom_value *value);
+
 RETRO_END_DECLS
 
 #endif
