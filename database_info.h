@@ -137,8 +137,25 @@ typedef struct
    size_t count;
 } database_info_list_t;
 
+/* Field selection flags for database_info_list_new_filtered.
+ * Controls which fields are extracted from each record.
+ * 0 = extract all fields. */
+#define DB_EXTRACT_NAME     (1 << 0)
+#define DB_EXTRACT_CRC      (1 << 1)
+#define DB_EXTRACT_SERIAL   (1 << 2)
+#define DB_EXTRACT_SIZE     (1 << 3)
+#define DB_EXTRACT_MD5      (1 << 4)
+#define DB_EXTRACT_SHA1     (1 << 5)
+
+/* Preset used by the ROM scanner */
+#define DB_EXTRACT_SCAN_FIELDS \
+   (DB_EXTRACT_NAME | DB_EXTRACT_CRC | DB_EXTRACT_SERIAL | DB_EXTRACT_SIZE)
+
 database_info_list_t *database_info_list_new(const char *rdb_path,
       const char *query);
+
+database_info_list_t *database_info_list_new_filtered(const char *rdb_path,
+      const char *query, unsigned fields);
 
 void database_info_list_free(database_info_list_t *list);
 

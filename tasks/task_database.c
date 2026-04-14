@@ -884,7 +884,8 @@ static int database_info_list_iterate_new(
       database_info_list_free(db_state->info);
       free(db_state->info);
    }
-   db_state->info = database_info_list_new(new_database, query);
+   db_state->info = database_info_list_new_filtered(
+         new_database, query, DB_EXTRACT_SCAN_FIELDS);
    return 0;
 }
 
