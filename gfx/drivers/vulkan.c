@@ -967,7 +967,7 @@ static void vulkan_destroy_texture(
       VkDevice device,
       struct vk_texture *tex)
 {
-   if (tex->mapped)
+   if (tex->mapped && tex->memory)
       vkUnmapMemory(device, tex->memory);
    if (tex->view)
       vkDestroyImageView(device, tex->view, NULL);
