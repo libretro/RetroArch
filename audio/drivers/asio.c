@@ -222,6 +222,13 @@ enum iasio_vtable_index
 #define IASIO_VTBL(iface, idx) \
    (((void **)(*(void **)(iface)))[CYCLED_VTABLE_OFFSET + (idx)])
 
+/* Cast a void* vtable slot to a typed function pointer.
+ * Direct (fntype)void_ptr is forbidden by ISO C (-Wpedantic).
+ * Going through memcpy is the standards-blessed workaround
+ * that all compilers optimize to a no-op. */
+#define IASIO_CALL(fntype, iface, idx) \
+   (*(fntype *)&(((void **)(*(void **)(iface)))[CYCLED_VTABLE_OFFSET + (idx)]))
+
 #if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
 /* ── 64-bit (x86_64 and ARM64, both MSVC and GCC/MinGW/Clang) ──
  * Windows x64 and ARM64 both use a single unified calling convention
@@ -242,41 +249,41 @@ typedef ASIOError (__cdecl *iasio_set_long_fn)(void *this_, long);
 typedef ASIOError (__cdecl *iasio_future_fn)(void *this_, long, void *);
 
 #define ASIO_CALL_INIT(iface, sysHandle) \
-   ((iasio_init_fn)IASIO_VTBL(iface, CYCLED_IASIO_INIT))(iface, sysHandle)
+   IASIO_CALL(iasio_init_fn, iface, CYCLED_IASIO_INIT)(iface, sysHandle)
 #define ASIO_CALL_GET_DRIVER_NAME(iface, name) \
-   ((iasio_get_str_fn)IASIO_VTBL(iface, CYCLED_IASIO_GET_DRIVER_NAME))(iface, name)
+   IASIO_CALL(iasio_get_str_fn, iface, CYCLED_IASIO_GET_DRIVER_NAME)(iface, name)
 #define ASIO_CALL_GET_DRIVER_VERSION(iface) \
-   ((iasio_get_long_fn)IASIO_VTBL(iface, CYCLED_IASIO_GET_DRIVER_VERSION))(iface)
+   IASIO_CALL(iasio_get_long_fn, iface, CYCLED_IASIO_GET_DRIVER_VERSION)(iface)
 #define ASIO_CALL_GET_ERROR_MESSAGE(iface, msg) \
-   ((iasio_get_str_fn)IASIO_VTBL(iface, CYCLED_IASIO_GET_ERROR_MESSAGE))(iface, msg)
+   IASIO_CALL(iasio_get_str_fn, iface, CYCLED_IASIO_GET_ERROR_MESSAGE)(iface, msg)
 #define ASIO_CALL_START(iface) \
-   ((iasio_no_arg_fn)IASIO_VTBL(iface, CYCLED_IASIO_START))(iface)
+   IASIO_CALL(iasio_no_arg_fn, iface, CYCLED_IASIO_START)(iface)
 #define ASIO_CALL_STOP(iface) \
-   ((iasio_no_arg_fn)IASIO_VTBL(iface, CYCLED_IASIO_STOP))(iface)
+   IASIO_CALL(iasio_no_arg_fn, iface, CYCLED_IASIO_STOP)(iface)
 #define ASIO_CALL_GET_CHANNELS(iface, inp, outp) \
-   ((iasio_get_channels_fn)IASIO_VTBL(iface, CYCLED_IASIO_GET_CHANNELS))(iface, inp, outp)
+   IASIO_CALL(iasio_get_channels_fn, iface, CYCLED_IASIO_GET_CHANNELS)(iface, inp, outp)
 #define ASIO_CALL_GET_LATENCIES(iface, inp, outp) \
-   ((iasio_get_channels_fn)IASIO_VTBL(iface, CYCLED_IASIO_GET_LATENCIES))(iface, inp, outp)
+   IASIO_CALL(iasio_get_channels_fn, iface, CYCLED_IASIO_GET_LATENCIES)(iface, inp, outp)
 #define ASIO_CALL_GET_BUFFER_SIZE(iface, a, b, c, d) \
-   ((iasio_get_buffer_size_fn)IASIO_VTBL(iface, CYCLED_IASIO_GET_BUFFER_SIZE))(iface, a, b, c, d)
+   IASIO_CALL(iasio_get_buffer_size_fn, iface, CYCLED_IASIO_GET_BUFFER_SIZE)(iface, a, b, c, d)
 #define ASIO_CALL_CAN_SAMPLE_RATE(iface, r) \
-   ((iasio_sample_rate_fn)IASIO_VTBL(iface, CYCLED_IASIO_CAN_SAMPLE_RATE))(iface, r)
+   IASIO_CALL(iasio_sample_rate_fn, iface, CYCLED_IASIO_CAN_SAMPLE_RATE)(iface, r)
 #define ASIO_CALL_GET_SAMPLE_RATE(iface, r) \
-   ((iasio_get_sample_rate_fn)IASIO_VTBL(iface, CYCLED_IASIO_GET_SAMPLE_RATE))(iface, r)
+   IASIO_CALL(iasio_get_sample_rate_fn, iface, CYCLED_IASIO_GET_SAMPLE_RATE)(iface, r)
 #define ASIO_CALL_SET_SAMPLE_RATE(iface, r) \
-   ((iasio_sample_rate_fn)IASIO_VTBL(iface, CYCLED_IASIO_SET_SAMPLE_RATE))(iface, r)
+   IASIO_CALL(iasio_sample_rate_fn, iface, CYCLED_IASIO_SET_SAMPLE_RATE)(iface, r)
 #define ASIO_CALL_GET_CHANNEL_INFO(iface, ci) \
-   ((iasio_get_channel_info_fn)IASIO_VTBL(iface, CYCLED_IASIO_GET_CHANNEL_INFO))(iface, ci)
+   IASIO_CALL(iasio_get_channel_info_fn, iface, CYCLED_IASIO_GET_CHANNEL_INFO)(iface, ci)
 #define ASIO_CALL_CREATE_BUFFERS(iface, bi, nc, bs, cb) \
-   ((iasio_create_buffers_fn)IASIO_VTBL(iface, CYCLED_IASIO_CREATE_BUFFERS))(iface, bi, nc, bs, cb)
+   IASIO_CALL(iasio_create_buffers_fn, iface, CYCLED_IASIO_CREATE_BUFFERS)(iface, bi, nc, bs, cb)
 #define ASIO_CALL_DISPOSE_BUFFERS(iface) \
-   ((iasio_no_arg_fn)IASIO_VTBL(iface, CYCLED_IASIO_DISPOSE_BUFFERS))(iface)
+   IASIO_CALL(iasio_no_arg_fn, iface, CYCLED_IASIO_DISPOSE_BUFFERS)(iface)
 #define ASIO_CALL_CONTROL_PANEL(iface) \
-   ((iasio_no_arg_fn)IASIO_VTBL(iface, CYCLED_IASIO_CONTROL_PANEL))(iface)
+   IASIO_CALL(iasio_no_arg_fn, iface, CYCLED_IASIO_CONTROL_PANEL)(iface)
 #define ASIO_CALL_OUTPUT_READY(iface) \
-   ((iasio_no_arg_fn)IASIO_VTBL(iface, CYCLED_IASIO_OUTPUT_READY))(iface)
+   IASIO_CALL(iasio_no_arg_fn, iface, CYCLED_IASIO_OUTPUT_READY)(iface)
 #define ASIO_CALL_RELEASE(iface) \
-   ((iasio_no_arg_fn)(((void **)(*(void **)(iface)))[2]))(iface)
+   (*(iasio_no_arg_fn *)&(((void **)(*(void **)(iface)))[2]))(iface)
 
 #elif defined(_MSC_VER) && defined(_M_IX86)
 /* ── 32-bit MSVC ──
@@ -765,9 +772,10 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          float tmp[2];
          for (i = 0; i < have; i++)
          {
+            int32_t l, r;
             fifo_read(ad->ring, tmp, sizeof(tmp));
-            int32_t l = (int32_t)(tmp[0] * 8388607.0f);
-            int32_t r = (int32_t)(tmp[1] * 8388607.0f);
+            l = (int32_t)(tmp[0] * 8388607.0f);
+            r = (int32_t)(tmp[1] * 8388607.0f);
             l = l >  8388607 ?  8388607 : (l < -8388608 ? -8388608 : l);
             r = r >  8388607 ?  8388607 : (r < -8388608 ? -8388608 : r);
             dl[i*3+0]=(char)(l&0xFF); dl[i*3+1]=(char)((l>>8)&0xFF); dl[i*3+2]=(char)((l>>16)&0xFF);
@@ -788,9 +796,10 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          float tmp[2];
          for (i = 0; i < have; i++)
          {
+            int32_t l, r;
             fifo_read(ad->ring, tmp, sizeof(tmp));
-            int32_t l = (int32_t)(tmp[0] * 32767.0f);
-            int32_t r = (int32_t)(tmp[1] * 32767.0f);
+            l = (int32_t)(tmp[0] * 32767.0f);
+            r = (int32_t)(tmp[1] * 32767.0f);
             dl[i] = (int16_t)(l > 32767 ? 32767 : (l < -32768 ? -32768 : l));
             dr[i] = (int16_t)(r > 32767 ? 32767 : (r < -32768 ? -32768 : r));
          }
