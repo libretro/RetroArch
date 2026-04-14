@@ -83,16 +83,6 @@ static void *nbio_mmap_unix_open(const char * filename, unsigned mode)
       return NULL;
    }
 
-   /* Hint sequential access pattern for read modes — the kernel
-    * will aggressively readahead and drop pages behind the cursor.
-    * madvise is available on all BSDs and macOS (which define BSD).
-    * Guard against hypothetical targets where sys/mman.h exists
-    * but madvise or MADV_SEQUENTIAL is missing. */
-#if defined(MADV_SEQUENTIAL)
-   if (ptr && _len != 0 && (mode == NBIO_READ || mode == BIO_READ))
-      madvise(ptr, _len, MADV_SEQUENTIAL);
-#endif
-
    handle            = malloc(sizeof(struct nbio_mmap_unix_t));
    handle->fd        = fd;
    handle->map_flags = map_flags[mode];

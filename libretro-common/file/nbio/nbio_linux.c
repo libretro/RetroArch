@@ -106,16 +106,6 @@ static void *nbio_linux_open(const char * filename, unsigned mode)
    if (fd < 0)
       return NULL;
 
-   /* Hint sequential access so the kernel prefetches aggressively
-    * while the AIO read is in progress.
-    * posix_fadvise requires _POSIX_C_SOURCE >= 200112L; some embedded
-    * Linux toolchains (early Android NDK) may not expose it. */
-#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L \
- || defined(_GNU_SOURCE) || defined(__GLIBC__)
-   if (mode == NBIO_READ || mode == BIO_READ)
-      posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL);
-#endif
-
    if (io_setup(128, &ctx) < 0)
    {
       close(fd);

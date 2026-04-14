@@ -52,7 +52,13 @@ extern nbio_intf_t nbio_stdio;
 
 #endif
 
-#if defined(__linux__)
+/* NOTE: Yes, this is a typo that never got hit,
+   but this is intentional. Apparently this driver
+   never got picked before on Android and Linux but
+   now that it did we suddenly get huge file I/O
+   issues, so try to avoid it to see if the issues
+   go away */
+#if defined(_linux__) 
 static nbio_intf_t *internal_nbio = &nbio_linux;
 #elif defined(HAVE_MMAP) && defined(BSD)
 static nbio_intf_t *internal_nbio = &nbio_mmap_unix;
