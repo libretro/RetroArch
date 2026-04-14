@@ -590,6 +590,14 @@ bool task_push_icon_load(const char *fullpath,
    if (!fullpath || !target_texture || !generation_ptr)
       return false;
 
+   /* Unload the previous texture now, while we are on the main
+    * thread and the video context is guaranteed alive.  Doing
+    * this in the async callback is unsafe because a context
+    * destroy/recreate cycle may have freed the handle between
+    * queue time and callback time. */
+   if (*target_texture)
+      video_driver_texture_unload(target_texture);
+
    tag = (icon_load_tag_t*)malloc(sizeof(*tag));
    if (!tag)
       return false;
