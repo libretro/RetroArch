@@ -31,6 +31,7 @@
 #include <malloc.h>
 
 #include <retro_inline.h>
+#include <retro_timers.h>
 #include <boolean.h>
 #include <retro_math.h>
 
@@ -2797,7 +2798,8 @@ static void d3d11_gfx_free(void* data)
    Release(d3d11->swapChain);
 
    video_st_flags                  = video_st->flags;
-   if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
+   if (   (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
+       && !(video_st_flags & VIDEO_FLAG_GPU_DEVICE_LOST))
    {
       cached_device_d3d11          = d3d11->device;
       cached_context_d3d11         = d3d11->context;
@@ -2943,13 +2945,33 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    }
    else
    {
-      if (FAILED(D3D11CreateDevice(
+      /* After a TDR / device removal, the GPU driver may need time
+       * to recover.  Retry up to 30 seconds. */
+      {
+         int retries;
+         HRESULT hr = E_FAIL;
+         for (retries = 0; retries < 10; retries++)
+         {
+            hr = D3D11CreateDevice(
                   (IDXGIAdapter*)d3d11->adapter,
                   D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
                   requested_feature_levels, number_feature_levels,
                   D3D11_SDK_VERSION, &d3d11->device,
-                  &d3d11->supportedFeatureLevel, &d3d11->context)))
-         return false;
+                  &d3d11->supportedFeatureLevel, &d3d11->context);
+            if (SUCCEEDED(hr))
+            {
+               if (retries > 0)
+                  RARCH_LOG("[D3D11] Device created successfully after %d retries.\n",
+                        retries);
+               break;
+            }
+            RARCH_WARN("[D3D11] Device creation failed (0x%08X), retry %d/10...\n",
+                  (unsigned)hr, retries + 1);
+            retro_sleep(3000);
+         }
+         if (FAILED(hr))
+            return false;
+      }
       switch (d3d11->supportedFeatureLevel)
       {
          case D3D_FEATURE_LEVEL_9_1:
@@ -4860,6 +4882,22 @@ static bool d3d11_gfx_frame(
    }
    else
       DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+
+   /* Check for device removal (TDR / GPU hang) after Present.
+    * D3D11 devices cannot be Reset like D3D9 — a removed device
+    * requires a full driver reinit. */
+   if (d3d11->device)
+   {
+      HRESULT removed = d3d11->device->lpVtbl->GetDeviceRemovedReason(d3d11->device);
+      if (FAILED(removed))
+      {
+         video_driver_state_t *video_st = video_state_get_ptr();
+         RARCH_ERR("[D3D11] Device removed (reason 0x%08X). Requesting reinit.\n",
+               (unsigned)removed);
+         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
+         return false;
+      }
+   }
 
    if (vsync && d3d11->wait_for_vblank > 0)
       d3d11_wait_for_vblank(d3d11);

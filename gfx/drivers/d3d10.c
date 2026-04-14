@@ -30,6 +30,7 @@
 #include <math.h>
 
 #include <retro_inline.h>
+#include <retro_timers.h>
 #include <boolean.h>
 #include <retro_math.h>
 #include <string/stdstring.h>
@@ -2270,11 +2271,31 @@ static bool d3d10_init_swapchain(d3d10_video_t *d3d10,
    flags                                  |= D3D10_CREATE_DEVICE_DEBUG;
 #endif
 
-   if (FAILED(D3D10CreateDeviceAndSwapChain(
+   /* After a TDR / device removal, the GPU driver may need time
+    * to recover.  Retry up to 30 seconds. */
+   {
+      int retries;
+      HRESULT hr = E_FAIL;
+      for (retries = 0; retries < 10; retries++)
+      {
+         hr = D3D10CreateDeviceAndSwapChain(
                (IDXGIAdapter*)d3d10->adapter, D3D10_DRIVER_TYPE_HARDWARE,
                NULL, flags, D3D10_SDK_VERSION, &desc,
-               (IDXGISwapChain**)&d3d10->swapChain, &d3d10->device)))
-      return false;
+               (IDXGISwapChain**)&d3d10->swapChain, &d3d10->device);
+         if (SUCCEEDED(hr))
+         {
+            if (retries > 0)
+               RARCH_LOG("[D3D10] Device created successfully after %d retries.\n",
+                     retries);
+            break;
+         }
+         RARCH_WARN("[D3D10] Device creation failed (0x%08X), retry %d/10...\n",
+               (unsigned)hr, retries + 1);
+         retro_sleep(3000);
+      }
+      if (FAILED(hr))
+         return false;
+   }
    return true;
 }
 
@@ -3374,6 +3395,20 @@ static bool d3d10_gfx_frame(
    video_driver_update_title(NULL);
 #endif
    DXGIPresent(d3d10->swapChain, d3d10->swap_interval, 0);
+
+   /* Check for device removal (TDR / GPU hang) after Present. */
+   if (d3d10->device)
+   {
+      HRESULT removed = d3d10->device->lpVtbl->GetDeviceRemovedReason(d3d10->device);
+      if (FAILED(removed))
+      {
+         video_driver_state_t *video_st = video_state_get_ptr();
+         RARCH_ERR("[D3D10] Device removed (reason 0x%08X). Requesting reinit.\n",
+               (unsigned)removed);
+         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
+         return false;
+      }
+   }
 
    if (
            black_frame_insertion
