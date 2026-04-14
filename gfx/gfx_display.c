@@ -1192,7 +1192,7 @@ bool gfx_display_reset_icon_texture(
  * ifdef below.
  * ----------------------------------------------------------------------- */
 
-#if defined(__ANDROID__)
+#if 0 
 #define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
 #endif
 
