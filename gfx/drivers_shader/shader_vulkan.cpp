@@ -772,6 +772,11 @@ struct vulkan_filter_chain
             const uint32_t *spirv, size_t spirv_words);
 
       bool init();
+      bool init_single_pass(unsigned pass_idx);
+      bool init_alias_early();
+      bool compile_full_pass(unsigned pass_idx,
+            enum glslang_filter_chain_filter default_filter);
+      bool finalize();
       bool update_swapchain_info(
             const vulkan_filter_chain_swapchain_info &info);
 
@@ -839,6 +844,7 @@ struct vulkan_filter_chain
       std::vector<std::unique_ptr<Framebuffer>> original_history;
       unsigned history_ring_index    = 0;
       bool require_clear        = false;
+      bool alias_initialized    = false;
       bool emits_hdr_colorspace = false;
       bool emits_hdr16_output   = false;
 
@@ -1784,6 +1790,7 @@ bool vulkan_filter_chain::init()
 
    if (!init_alias())
       return false;
+   alias_initialized = true;
 
    for (i = 0; i < passes.size(); i++)
    {
@@ -1798,6 +1805,294 @@ bool vulkan_filter_chain::init()
             source, swapchain_info, pass_info[i]);
       if (!passes[i]->build())
          return false;
+   }
+
+   require_clear = false;
+   if (!init_ubo())
+      return false;
+   if (!init_history())
+      return false;
+   if (!init_feedback())
+      return false;
+   common.pass_outputs.resize(passes.size());
+   return true;
+}
+
+bool vulkan_filter_chain::init_single_pass(unsigned pass_idx)
+{
+   if (pass_idx >= passes.size())
+      return false;
+
+   /* Accumulate source size from all prior passes */
+   Size2D source = max_input_size;
+   for (unsigned i = 0; i <= pass_idx; i++)
+   {
+      source = passes[i]->set_pass_info(max_input_size,
+            source, swapchain_info, pass_info[i]);
+   }
+
+   RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", pass_idx,
+         passes[pass_idx]->get_name().empty()
+         ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         : passes[pass_idx]->get_name().c_str());
+
+   if (!passes[pass_idx]->build())
+      return false;
+
+   return true;
+}
+
+bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
+      glslang_filter_chain_filter default_filter)
+{
+   video_shader *shader = common.shader_preset.get();
+   if (!shader || pass_idx >= passes.size())
+      return false;
+
+   /* Extra opaque pass (last_pass_is_fbo) — SPIRV already set */
+   if (pass_idx >= shader->passes)
+      return init_single_pass(pass_idx);
+
+   const video_shader_pass *pass      = &shader->pass[pass_idx];
+   const video_shader_pass *next_pass =
+      pass_idx + 1 < shader->passes
+      ? &shader->pass[pass_idx + 1] : nullptr;
+
+   /* ---- SPIRV cross-compile (CPU) ---- */
+   glslang_output output;
+   if (!glslang_compile_shader(pass->source.path, &output))
+   {
+      RARCH_ERR("[Vulkan] Failed to compile shader: \"%s\".\n",
+            pass->source.path);
+      return false;
+   }
+
+   /* ---- Extract parameters ---- */
+   for (unsigned j = 0; j < output.meta.parameters.size(); j++)
+   {
+      auto &meta_param = output.meta.parameters[j];
+
+      if (shader->num_parameters >= GFX_MAX_PARAMETERS)
+      {
+         RARCH_ERR("[Vulkan] Exceeded maximum number of parameters (%u).\n",
+               GFX_MAX_PARAMETERS);
+         return false;
+      }
+
+      video_shader_parameter *itr = NULL;
+      {
+         unsigned k;
+         for (k = 0; k < shader->num_parameters; k++)
+         {
+            if (meta_param.id == shader->parameters[k].id)
+            {
+               itr = &shader->parameters[k];
+               break;
+            }
+         }
+      }
+
+      if (itr)
+      {
+         if (   meta_param.desc    != itr->desc
+             || meta_param.initial != itr->initial
+             || meta_param.minimum != itr->minimum
+             || meta_param.maximum != itr->maximum
+             || meta_param.step    != itr->step)
+         {
+            RARCH_ERR("[Vulkan] Duplicate parameters found for \"%s\","
+                  " but arguments do not match.\n", itr->id);
+            return false;
+         }
+         add_parameter(pass_idx,
+               (unsigned)(itr - shader->parameters), meta_param.id);
+      }
+      else
+      {
+         video_shader_parameter *param =
+            &shader->parameters[shader->num_parameters];
+         strlcpy(param->id, meta_param.id.c_str(), sizeof(param->id));
+         strlcpy(param->desc, meta_param.desc.c_str(), sizeof(param->desc));
+         param->initial = meta_param.initial;
+         param->minimum = meta_param.minimum;
+         param->maximum = meta_param.maximum;
+         param->step    = meta_param.step;
+         add_parameter(pass_idx, shader->num_parameters, meta_param.id);
+         shader->num_parameters++;
+      }
+   }
+
+   /* ---- Set SPIRV on the pass ---- */
+   set_shader(pass_idx, VK_SHADER_STAGE_VERTEX_BIT,
+         output.vertex.data(), output.vertex.size());
+   set_shader(pass_idx, VK_SHADER_STAGE_FRAGMENT_BIT,
+         output.fragment.data(), output.fragment.size());
+
+   set_frame_count_period(pass_idx, pass->frame_count_mod);
+
+   /* ---- Pass name ---- */
+   if (!output.meta.name.empty())
+      set_pass_name(pass_idx, output.meta.name.c_str());
+   if (*pass->alias)
+      set_pass_name(pass_idx, pass->alias);
+
+   /* Update alias map incrementally */
+   if (!passes[pass_idx]->get_name().empty())
+   {
+      alias_initialized = false;
+      if (!init_alias_early())
+         return false;
+   }
+
+   /* ---- Pass info (scale, filter, format) ---- */
+   struct vulkan_filter_chain_pass_info p_info;
+   p_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+   p_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+   p_info.scale_x       = 0.0f;
+   p_info.scale_y       = 0.0f;
+   p_info.rt_format     = VK_FORMAT_UNDEFINED;
+   p_info.source_filter = GLSLANG_FILTER_CHAIN_LINEAR;
+   p_info.mip_filter    = GLSLANG_FILTER_CHAIN_LINEAR;
+   p_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT;
+   p_info.max_levels    = 0;
+
+   if (pass->filter == RARCH_FILTER_UNSPEC)
+      p_info.source_filter = default_filter;
+   else
+   {
+      p_info.source_filter =
+         pass->filter == RARCH_FILTER_LINEAR
+         ? GLSLANG_FILTER_CHAIN_LINEAR
+         : GLSLANG_FILTER_CHAIN_NEAREST;
+   }
+   p_info.address    = rarch_wrap_to_address(pass->wrap);
+   p_info.max_levels = 1;
+
+   if (next_pass && next_pass->mipmap)
+      p_info.max_levels = ~0u;
+
+   p_info.mip_filter =
+      (pass->filter != RARCH_FILTER_NEAREST && p_info.max_levels > 1)
+      ? GLSLANG_FILTER_CHAIN_LINEAR
+      : GLSLANG_FILTER_CHAIN_NEAREST;
+
+   bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
+
+   if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
+      output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_UNORM;
+
+   if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
+   {
+      p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
+      p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
+      p_info.scale_x      = 1.0f;
+      p_info.scale_y      = 1.0f;
+
+      if (pass_idx + 1 == shader->passes)
+      {
+         p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+         p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+
+         VkFormat pass_format = glslang_format_to_vk(output.meta.rt_format);
+
+         if (explicit_format && vulkan_is_hdr10_format(pass_format))
+            set_hdr10();
+#ifdef VULKAN_HDR_SWAPCHAIN
+         if (explicit_format && pass_format == VK_FORMAT_R16G16B16A16_SFLOAT)
+            set_hdr16();
+#endif
+         p_info.rt_format = swapchain_info.format;
+
+         if (explicit_format && pass_format != p_info.rt_format)
+            RARCH_WARN("[Vulkan] Using explicit format for last pass in chain,"
+                  " but it is not rendered to framebuffer,"
+                  " using swapchain format instead.\n");
+      }
+      else
+      {
+         p_info.rt_format = glslang_format_to_vk(output.meta.rt_format);
+         RARCH_LOG("[Vulkan] Using render target format %s for pass output #%u.\n",
+               glslang_format_to_string(output.meta.rt_format), pass_idx);
+      }
+   }
+   else
+   {
+      if (pass->fbo.flags & FBO_SCALE_FLAG_SRGB_FBO)
+         output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_SRGB;
+      else if (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
+         output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+
+      p_info.rt_format = glslang_format_to_vk(output.meta.rt_format);
+
+      RARCH_LOG("[Vulkan] Using render target format %s for pass output #%u.\n",
+            glslang_format_to_string(output.meta.rt_format), pass_idx);
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+      if (pass_idx + 1 == shader->passes)
+      {
+         if (explicit_format && vulkan_is_hdr10_format(p_info.rt_format))
+            set_hdr10();
+         else if (explicit_format && p_info.rt_format == VK_FORMAT_R16G16B16A16_SFLOAT)
+            set_hdr16();
+      }
+#endif
+
+      switch (pass->fbo.type_x)
+      {
+         case RARCH_SCALE_INPUT:
+            p_info.scale_x      = pass->fbo.scale_x;
+            p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
+            break;
+         case RARCH_SCALE_ABSOLUTE:
+            p_info.scale_x      = float(pass->fbo.abs_x);
+            p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
+            break;
+         case RARCH_SCALE_VIEWPORT:
+            p_info.scale_x      = pass->fbo.scale_x;
+            p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+            break;
+      }
+
+      switch (pass->fbo.type_y)
+      {
+         case RARCH_SCALE_INPUT:
+            p_info.scale_y      = pass->fbo.scale_y;
+            p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
+            break;
+         case RARCH_SCALE_ABSOLUTE:
+            p_info.scale_y      = float(pass->fbo.abs_y);
+            p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
+            break;
+         case RARCH_SCALE_VIEWPORT:
+            p_info.scale_y      = pass->fbo.scale_y;
+            p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+            break;
+      }
+   }
+
+   set_pass_info(pass_idx, p_info);
+
+   /* ---- Vulkan pipeline creation ---- */
+   return init_single_pass(pass_idx);
+}
+
+bool vulkan_filter_chain::init_alias_early()
+{
+   if (alias_initialized)
+      return true;
+   if (!init_alias())
+      return false;
+   alias_initialized = true;
+   return true;
+}
+
+bool vulkan_filter_chain::finalize()
+{
+   if (!alias_initialized)
+   {
+      if (!init_alias())
+         return false;
+      alias_initialized = true;
    }
 
    require_clear = false;
@@ -3777,6 +4072,98 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
 error:
    return nullptr;
+}
+
+/* ---- Deferred (per-frame) Vulkan filter chain construction ---- */
+
+vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
+      const struct vulkan_filter_chain_create_info *info,
+      const char *path,
+      glslang_filter_chain_filter filter,
+      unsigned *out_num_passes)
+{
+   unsigned i;
+   std::unique_ptr<video_shader> shader{ new video_shader() };
+
+   if (!shader)
+      return nullptr;
+
+   if (!video_shader_load_preset_into_shader(path, shader.get()))
+      return nullptr;
+
+   bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
+      FBO_SCALE_FLAG_VALID;
+   struct vulkan_filter_chain_create_info tmpinfo = *info;
+   tmpinfo.num_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
+
+   std::unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
+   if (!chain)
+      return nullptr;
+
+   if (shader->luts && !vulkan_filter_chain_load_luts(info, chain.get(), shader.get()))
+      return nullptr;
+
+   shader->num_parameters = 0;
+
+   /* Set pass names from preset aliases only */
+   for (i = 0; i < shader->passes; i++)
+   {
+      if (*shader->pass[i].alias)
+         chain->set_pass_name(i, shader->pass[i].alias);
+   }
+
+   if (last_pass_is_fbo)
+   {
+      struct vulkan_filter_chain_pass_info pass_info;
+
+      pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+      pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+      pass_info.scale_x       = 1.0f;
+      pass_info.scale_y       = 1.0f;
+      pass_info.rt_format     = tmpinfo.swapchain.format;
+      pass_info.source_filter = filter;
+      pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_NEAREST;
+      pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+      pass_info.max_levels    = 0;
+
+      chain->set_pass_info(shader->passes, pass_info);
+
+      chain->set_shader(shader->passes,
+            VK_SHADER_STAGE_VERTEX_BIT,
+            opaque_vert,
+            sizeof(opaque_vert) / sizeof(uint32_t));
+
+      chain->set_shader(shader->passes,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            opaque_frag,
+            sizeof(opaque_frag) / sizeof(uint32_t));
+   }
+
+   chain->set_shader_preset(std::move(shader));
+
+   if (!chain->init_alias_early())
+   {
+      RARCH_ERR("[Vulkan] Deferred: failed to initialize alias map.\n");
+      return nullptr;
+   }
+
+   if (out_num_passes)
+      *out_num_passes = tmpinfo.num_passes;
+
+   return chain.release();
+}
+
+bool vulkan_filter_chain_compile_pass(
+      vulkan_filter_chain_t *chain,
+      unsigned pass_index,
+      glslang_filter_chain_filter filter)
+{
+   return chain->compile_full_pass(pass_index, filter);
+}
+
+bool vulkan_filter_chain_finalize(vulkan_filter_chain_t *chain)
+{
+   return chain->finalize();
 }
 
 struct video_shader *vulkan_filter_chain_get_preset(

@@ -200,6 +200,21 @@ struct video_shader *vulkan_filter_chain_get_preset(
 bool vulkan_filter_chain_emits_hdr10(vulkan_filter_chain_t *chain);
 bool vulkan_filter_chain_emits_hdr16(vulkan_filter_chain_t *chain);
 
+/* ---- Deferred (per-frame) filter chain construction ---- */
+
+vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
+      const struct vulkan_filter_chain_create_info *info,
+      const char *path,
+      enum glslang_filter_chain_filter filter,
+      unsigned *out_num_passes);
+
+bool vulkan_filter_chain_compile_pass(
+      vulkan_filter_chain_t *chain,
+      unsigned pass_index,
+      enum glslang_filter_chain_filter filter);
+
+bool vulkan_filter_chain_finalize(vulkan_filter_chain_t *chain);
+
 RETRO_END_DECLS
 
 #endif
