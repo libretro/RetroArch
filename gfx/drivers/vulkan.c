@@ -7024,20 +7024,24 @@ static void vulkan_unload_texture(void *data,
 {
    vk_t *vk                         = (vk_t*)data;
    struct vk_texture *texture       = (struct vk_texture*)handle;
-   if (!texture || !vk)
+   if (!texture || !vk || !vk->context)
       return;
 
    /* TODO: We really want to defer this deletion instead,
     * but this will do for now. */
 #ifdef HAVE_THREADS
-   slock_lock(vk->context->queue_lock);
+   if (vk->context->queue_lock)
+      slock_lock(vk->context->queue_lock);
 #endif
-   vkQueueWaitIdle(vk->context->queue);
+   if (vk->context->queue)
+      vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
-   slock_unlock(vk->context->queue_lock);
+   if (vk->context->queue_lock)
+      slock_unlock(vk->context->queue_lock);
 #endif
-   vulkan_destroy_texture(
-         vk->context->device, texture);
+   if (vk->context->device)
+      vulkan_destroy_texture(
+            vk->context->device, texture);
    free(texture);
 }
 
