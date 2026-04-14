@@ -3341,6 +3341,144 @@ static bool gl3_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
+#ifdef HAVE_SLANG
+/* ---- Deferred (per-frame) shader loading for GL Core ---- */
+
+typedef struct gl3_deferred_state
+{
+   gl3_filter_chain_t *new_chain;   /* chain being built          */
+   gl3_filter_chain_t *old_chain;   /* previous, kept as fallback */
+   enum glslang_filter_chain_filter filter;
+} gl3_deferred_state_t;
+
+static bool gl3_shader_load_begin(void *data,
+      shader_load_deferred_t *deferred)
+{
+   gl3_t *gl = (gl3_t *)data;
+   gl3_deferred_state_t *ds;
+
+   if (!gl)
+      return false;
+
+   ds = (gl3_deferred_state_t*)calloc(1, sizeof(*ds));
+   if (!ds)
+      return false;
+
+   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+
+   /* Keep old chain alive — it continues rendering
+    * while the new one is being compiled. */
+   ds->old_chain = gl->filter_chain;
+   ds->filter    = gl->video_info.smooth
+      ? GLSLANG_FILTER_CHAIN_LINEAR
+      : GLSLANG_FILTER_CHAIN_NEAREST;
+
+   ds->new_chain = gl3_filter_chain_create_deferred(
+         deferred->preset_path,
+         ds->filter,
+         &deferred->total_passes);
+
+   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+
+   if (!ds->new_chain)
+   {
+      RARCH_ERR("[GLCore] Deferred: failed to create chain for \"%s\".\n",
+            deferred->preset_path);
+      free(ds);
+      return false;
+   }
+
+   RARCH_LOG("[GLCore] Deferred: prepared %u passes for \"%s\".\n",
+         deferred->total_passes, deferred->preset_path);
+
+   deferred->driver_data = ds;
+   return true;
+}
+
+static bool gl3_shader_load_step(void *data,
+      shader_load_deferred_t *deferred)
+{
+   gl3_t *gl                = (gl3_t *)data;
+   gl3_deferred_state_t *ds = (gl3_deferred_state_t*)deferred->driver_data;
+   unsigned pass            = deferred->current_pass;
+
+   if (!gl || !ds)
+   {
+      deferred->state = SHADER_LOAD_FAILED;
+      return false;
+   }
+
+   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+
+   if (pass < deferred->total_passes)
+   {
+      RARCH_LOG("[GLCore] Deferred: compiling pass %u/%u...\n",
+            pass + 1, deferred->total_passes);
+
+      if (!gl3_filter_chain_compile_pass(ds->new_chain, pass, ds->filter))
+      {
+         RARCH_ERR("[GLCore] Deferred: failed to compile pass %u.\n", pass);
+         gl3_filter_chain_free(ds->new_chain);
+         /* Restore old chain */
+         gl->filter_chain = ds->old_chain;
+         deferred->state  = SHADER_LOAD_FAILED;
+         goto cleanup;
+      }
+
+      deferred->current_pass++;
+
+      if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+
+      return true; /* more work remains */
+   }
+
+   /* Check if this is a cancellation (state was changed externally).
+    * Don't try to finalize a partially compiled chain — just clean up. */
+   if (deferred->state != SHADER_LOAD_COMPILING)
+   {
+      RARCH_LOG("[GLCore] Deferred: cancelled, cleaning up.\n");
+      gl3_filter_chain_free(ds->new_chain);
+      gl->filter_chain = ds->old_chain;
+      deferred->state  = SHADER_LOAD_FAILED;
+      goto cleanup;
+   }
+
+   /* All passes compiled — finalize the chain */
+   RARCH_LOG("[GLCore] Deferred: finalizing chain...\n");
+
+   if (gl3_filter_chain_finalize(ds->new_chain))
+   {
+      /* Tear down old chain */
+      if (ds->old_chain)
+         gl3_filter_chain_free(ds->old_chain);
+
+      /* Swap in the new chain */
+      gl->filter_chain = ds->new_chain;
+      deferred->state  = SHADER_LOAD_DONE;
+
+      RARCH_LOG("[GLCore] Deferred: shader loaded successfully.\n");
+   }
+   else
+   {
+      RARCH_ERR("[GLCore] Deferred: finalize failed.\n");
+      gl3_filter_chain_free(ds->new_chain);
+      gl->filter_chain = ds->old_chain;
+      deferred->state  = SHADER_LOAD_FAILED;
+   }
+
+cleanup:
+   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   free(ds);
+   deferred->driver_data = NULL;
+   return false; /* no more work */
+}
+#endif /* HAVE_SLANG */
+
 static bool gl3_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -4737,6 +4875,13 @@ video_driver_t video_gl3 = {
 #endif
    gl3_get_poke_interface,
    gl3_wrap_type_to_enum,
+#ifdef HAVE_SLANG
+   gl3_shader_load_begin,
+   gl3_shader_load_step,
+#else
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
+#endif
 #ifdef HAVE_GFX_WIDGETS
    gl3_gfx_widgets_enabled
 #endif

@@ -65,6 +65,9 @@
 #include "../list_special.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
+#include "../command.h"
+#include "../configuration.h"
+#include "video_shader_parse.h"
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
@@ -340,6 +343,9 @@ video_driver_t video_null = {
   NULL, /* overlay_interface */
 #endif
   NULL, /* get_poke_interface */
+   NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 };
 
 const video_driver_t *video_drivers[] = {
@@ -482,6 +488,120 @@ struct retro_hw_render_callback *video_driver_get_hw_context(void)
 video_driver_state_t *video_state_get_ptr(void)
 {
    return &video_driver_st;
+}
+
+/**
+ * video_driver_shader_deferred_tick:
+ *
+ * Called once per runloop iteration. If a deferred shader
+ * load is in progress, compiles one pass per frame and
+ * handles completion or failure.
+ **/
+void video_driver_shader_deferred_tick(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   shader_load_deferred_t *d       = &video_st->shader_deferred;
+
+   if (d->state != SHADER_LOAD_COMPILING)
+      return;
+
+   if (  !video_st->current_video
+      || !video_st->current_video->shader_load_step)
+   {
+      d->state = SHADER_LOAD_FAILED;
+      return;
+   }
+
+   if (!video_st->current_video->shader_load_step(
+            video_st->data, d))
+   {
+      /* shader_load_step returned false: no more work.
+       * The step function sets d->state to DONE or FAILED. */
+      if (d->state == SHADER_LOAD_DONE)
+      {
+         settings_t *settings = config_get_ptr();
+
+         if (d->preset_path[0] != '\0')
+         {
+            configuration_set_bool(settings,
+                  settings->bools.video_shader_enable, true);
+
+#ifdef HAVE_MENU
+            {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+               struct video_shader *shader = menu_shader_get();
+               if (shader)
+               {
+                  video_shader_load_preset_into_shader(
+                        d->preset_path, shader);
+                  shader->flags &= ~SHDR_FLAG_MODIFIED;
+               }
+#endif
+               menu_state_get_ptr()->flags |=
+                  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+            }
+#endif
+         }
+
+         {
+            char msg[256];
+            const char *preset_file = path_basename_nocompression(
+                  d->preset_path);
+            snprintf(msg, sizeof(msg), "Shader: \"%s\"",
+                  preset_file ? preset_file : "N/A");
+#ifdef HAVE_GFX_WIDGETS
+            if (dispwidget_get_ptr()->active)
+               gfx_widget_set_generic_message(msg, 2000);
+            else
+#endif
+               runloop_msg_queue_push(msg, strlen(msg),
+                     1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT,
+                     MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+
+         RARCH_LOG("[Shaders] Deferred load complete: \"%s\".\n",
+               d->preset_path);
+         command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+      }
+      else /* SHADER_LOAD_FAILED */
+      {
+         RARCH_ERR("[Shaders] Deferred shader load failed.\n");
+#ifdef HAVE_GFX_WIDGETS
+         if (dispwidget_get_ptr()->active)
+            gfx_widget_set_generic_message(
+                  "Shader preset failed to load.", 2000);
+         else
+#endif
+            runloop_msg_queue_push(
+                  "Shader preset failed to load.", 32,
+                  1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT,
+                  MESSAGE_QUEUE_CATEGORY_ERROR);
+         command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+      }
+
+      /* Reset to idle regardless */
+      d->state = SHADER_LOAD_IDLE;
+      d->driver_data = NULL;
+   }
+#ifdef HAVE_GFX_WIDGETS
+   else
+   {
+      /* Still compiling — show progress widget */
+      dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+      if (p_dispwidget->active && d->total_passes > 0)
+      {
+         char msg[64];
+         int8_t progress = (int8_t)(
+               (d->current_pass * 100) / d->total_passes);
+         snprintf(msg, sizeof(msg), "Loading shader %u/%u...",
+               d->current_pass, d->total_passes);
+         gfx_widget_set_progress_message(
+               msg, 200, 0, progress);
+      }
+   }
+#endif
 }
 
 #ifdef HAVE_THREADS
@@ -1649,6 +1769,24 @@ void video_driver_free_internal(void)
 #endif
       input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
       input_st->current_data                = NULL;
+   }
+
+   /* Cancel any in-progress deferred shader load before
+    * freeing the driver — the deferred state holds pointers
+    * into driver-owned GPU resources. */
+   {
+      shader_load_deferred_t *d = &video_st->shader_deferred;
+      if (d->state == SHADER_LOAD_COMPILING && d->driver_data)
+      {
+         if (vid && vid->shader_load_step)
+         {
+            d->current_pass = d->total_passes;
+            d->state        = SHADER_LOAD_FAILED; /* signal cancellation */
+            vid->shader_load_step(video_st->data, d);
+         }
+         d->state       = SHADER_LOAD_IDLE;
+         d->driver_data = NULL;
+      }
    }
 
    if (video_st->data && vid && vid->free)

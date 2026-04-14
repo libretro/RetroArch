@@ -2481,6 +2481,8 @@ video_driver_t video_gcm =
 #endif
    rsx_get_poke_interface,
    rsx_wrap_type_to_enum,
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    rsx_widgets_enabled
 #endif

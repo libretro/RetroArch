@@ -2574,6 +2574,8 @@ video_driver_t video_wiiu =
 #endif
    gx2_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    gx2_widgets_enabled
 #endif

@@ -710,6 +710,26 @@ typedef bool (*video_driver_frame_t)(void *data,
       unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info);
 
+/* ---- Deferred (per-frame) shader loading ---- */
+
+enum shader_load_state
+{
+   SHADER_LOAD_IDLE = 0,       /* No pending work                        */
+   SHADER_LOAD_COMPILING,      /* Compiling passes, one per frame        */
+   SHADER_LOAD_DONE,           /* Complete - swap into active chain       */
+   SHADER_LOAD_FAILED          /* Error - revert to previous or stock    */
+};
+
+typedef struct shader_load_deferred
+{
+   enum shader_load_state state;
+   char                   preset_path[PATH_MAX_LENGTH];
+   unsigned               type;         /* enum rarch_shader_type        */
+   unsigned               current_pass; /* next pass to compile          */
+   unsigned               total_passes;
+   void                  *driver_data;  /* driver-specific work state    */
+} shader_load_deferred_t;
+
 typedef struct video_driver
 {
    /* Should the video driver act as an input driver as well?
@@ -785,6 +805,19 @@ typedef struct video_driver
 #endif
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
+
+   /* Optional: Begin deferred (per-frame) shader compilation.
+    * Prepares pass 0 for compilation. Returns true on success.
+    * If NULL, falls through to synchronous set_shader(). */
+   bool (*shader_load_begin)(void *data,
+         shader_load_deferred_t *deferred);
+
+   /* Optional: Compile one shader pass per call.
+    * Called once per frame from the runloop.
+    * Returns true when more work remains, false when done.
+    * On completion, the driver swaps in the new filter chain. */
+   bool (*shader_load_step)(void *data,
+         shader_load_deferred_t *deferred);
 
 #if defined(HAVE_GFX_WIDGETS)
    /* if set to true, will use display widgets when applicable
@@ -896,6 +929,9 @@ typedef struct
    bool frame_delay_pause;
 
    bool threaded;
+
+   /* Deferred shader loading state */
+   shader_load_deferred_t shader_deferred;
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto
@@ -1008,6 +1044,14 @@ const char* config_get_video_driver_options(void);
 void *video_driver_get_ptr(void);
 
 video_driver_state_t *video_state_get_ptr(void);
+
+/**
+ * video_driver_shader_deferred_tick:
+ *
+ * Called once per runloop iteration. If a deferred shader load
+ * is in progress, compiles one pass and checks for completion.
+ **/
+void video_driver_shader_deferred_tick(void);
 
 bool video_driver_set_rotation(unsigned rotation);
 

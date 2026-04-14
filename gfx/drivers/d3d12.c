@@ -2294,6 +2294,477 @@ static void d3d12_init_pipeline(
    device->lpVtbl->CreateGraphicsPipelineState(device, desc, uuidof(ID3D12PipelineState), (void**)out);
 }
 
+/* ---- Deferred (per-frame) shader loading for D3D12 ---- */
+
+typedef struct d3d12_deferred_pass
+{
+   D3D12PipelineState     pipe;
+   pass_semantics_t       semantics;
+   D3D12Resource          buffers[SLANG_CBUFFER_MAX];
+   D3D12_CONSTANT_BUFFER_VIEW_DESC buffer_view[SLANG_CBUFFER_MAX];
+} d3d12_deferred_pass_t;
+
+typedef struct d3d12_deferred_state
+{
+   struct video_shader   *shader_preset;
+   d3d12_deferred_pass_t  passes[GFX_MAX_SHADERS];
+   d3d12_texture_t        luts[GFX_MAX_TEXTURES];
+   bool                   luts_loaded;
+} d3d12_deferred_state_t;
+
+static bool d3d12_shader_load_begin(void *data,
+      shader_load_deferred_t *deferred)
+{
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   d3d12_deferred_state_t *ds;
+
+   if (!d3d12)
+      return false;
+
+   if (deferred->type != RARCH_SHADER_SLANG)
+      return false;
+
+   ds = (d3d12_deferred_state_t*)calloc(1, sizeof(*ds));
+   if (!ds)
+      return false;
+
+   ds->shader_preset = (struct video_shader*)calloc(
+         1, sizeof(*ds->shader_preset));
+   if (!ds->shader_preset)
+   {
+      free(ds);
+      return false;
+   }
+
+   if (!video_shader_load_preset_into_shader(
+            deferred->preset_path, ds->shader_preset))
+   {
+      free(ds->shader_preset);
+      free(ds);
+      return false;
+   }
+
+   deferred->total_passes = ds->shader_preset->passes;
+
+   /* Load LUTs synchronously (same as before) */
+   {
+      unsigned i;
+      for (i = 0; i < ds->shader_preset->luts; i++)
+      {
+         struct texture_image image;
+         image.pixels        = NULL;
+         image.width         = 0;
+         image.height        = 0;
+         image.supports_rgba = true;
+
+         if (!image_texture_load(&image,
+                  ds->shader_preset->lut[i].path))
+         {
+            RARCH_ERR("[D3D12] Deferred: failed to load LUT: \"%s\".\n",
+                  ds->shader_preset->lut[i].path);
+            goto error;
+         }
+
+         ds->luts[i].desc.Width  = image.width;
+         ds->luts[i].desc.Height = image.height;
+         ds->luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+         ds->luts[i].srv_heap    = &d3d12->desc.srv_heap;
+
+         if (ds->shader_preset->lut[i].mipmap)
+            ds->luts[i].desc.MipLevels = UINT16_MAX;
+
+         d3d12_init_texture(d3d12->device, &ds->luts[i]);
+
+         if (ds->luts[i].upload_buffer)
+            d3d12_update_texture(
+                  image.width, image.height, 0,
+                  DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
+                  &ds->luts[i]);
+
+         image_texture_free(&image);
+      }
+      ds->luts_loaded = true;
+   }
+
+   RARCH_LOG("[D3D12] Deferred: prepared %u passes for \"%s\".\n",
+         deferred->total_passes, deferred->preset_path);
+
+   deferred->driver_data = ds;
+   return true;
+
+error:
+   {
+      unsigned j;
+      for (j = 0; j < ds->shader_preset->luts; j++)
+         d3d12_release_texture(&ds->luts[j]);
+   }
+   free(ds->shader_preset);
+   free(ds);
+   return false;
+#else
+   return false;
+#endif
+}
+
+static void d3d12_deferred_state_free(
+      d3d12_video_t *d3d12,
+      d3d12_deferred_state_t *ds,
+      unsigned passes_built)
+{
+   unsigned i;
+
+   if (!ds)
+      return;
+
+   for (i = 0; i < passes_built; i++)
+   {
+      unsigned j;
+      Release(ds->passes[i].pipe);
+      free(ds->passes[i].semantics.textures);
+      ds->passes[i].semantics.textures = NULL;
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      {
+         free(ds->passes[i].semantics.cbuffers[j].uniforms);
+         ds->passes[i].semantics.cbuffers[j].uniforms = NULL;
+         Release(ds->passes[i].buffers[j]);
+      }
+   }
+
+   if (ds->luts_loaded && ds->shader_preset)
+   {
+      for (i = 0; i < ds->shader_preset->luts; i++)
+         d3d12_release_texture(&ds->luts[i]);
+   }
+
+   if (ds->shader_preset)
+   {
+      for (i = 0; i < ds->shader_preset->passes; i++)
+      {
+         free(ds->shader_preset->pass[i].source.string.vertex);
+         free(ds->shader_preset->pass[i].source.string.fragment);
+      }
+      free(ds->shader_preset);
+   }
+
+   free(ds);
+}
+
+static bool d3d12_shader_load_step(void *data,
+      shader_load_deferred_t *deferred)
+{
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   d3d12_video_t *d3d12          = (d3d12_video_t*)data;
+   d3d12_deferred_state_t *ds    =
+      (d3d12_deferred_state_t*)deferred->driver_data;
+   unsigned pass                 = deferred->current_pass;
+
+   if (!d3d12 || !ds)
+   {
+      deferred->state = SHADER_LOAD_FAILED;
+      return false;
+   }
+
+   if (pass < deferred->total_passes)
+   {
+      d3d12_texture_t *source;
+      unsigned i = pass;
+
+      RARCH_LOG("[D3D12] Deferred: compiling pass %u/%u...\n",
+            pass + 1, deferred->total_passes);
+
+      /* Build semantics map pointing at real d3d12->pass[].rt
+       * and d3d12->frame.texture[] — the pointers are stored
+       * but only dereferenced at render time after completion. */
+      source = (i == 0)
+         ? &d3d12->frame.texture[0]
+         : &d3d12->pass[i - 1].rt;
+
+      {
+         unsigned j;
+         semantics_map_t semantics_map = {
+            {
+               { &d3d12->frame.texture[0], 0,
+                  &d3d12->frame.texture[0].size_data, 0 },
+               { source, 0,
+                  &source->size_data, 0 },
+               { &d3d12->frame.texture[0],
+                  sizeof(*d3d12->frame.texture),
+                  &d3d12->frame.texture[0].size_data,
+                  sizeof(*d3d12->frame.texture) },
+               { &d3d12->pass[0].rt, sizeof(*d3d12->pass),
+                  &d3d12->pass[0].rt.size_data,
+                  sizeof(*d3d12->pass) },
+               { &d3d12->pass[0].feedback, sizeof(*d3d12->pass),
+                  &d3d12->pass[0].feedback.size_data,
+                  sizeof(*d3d12->pass) },
+               /* Point at d3d12->luts, not ds->luts — the stored
+                * texture_data pointers must remain valid after ds
+                * is freed. LUT contents are memcpy'd here on
+                * completion. */
+               { &d3d12->luts[0], sizeof(*d3d12->luts),
+                  &d3d12->luts[0].size_data, sizeof(*d3d12->luts) },
+            },
+            {
+               i == ds->shader_preset->passes - 1
+                  ? &d3d12->mvp : &d3d12->identity,
+               &d3d12->pass[i].rt.size_data,
+               &d3d12->frame.output_size,
+               &d3d12->pass[i].frame_count,
+               &d3d12->pass[i].frame_direction,
+               &d3d12->pass[i].frame_time_delta,
+               &d3d12->pass[i].original_fps,
+               &d3d12->pass[i].rotation,
+               &d3d12->pass[i].core_aspect,
+               &d3d12->pass[i].core_aspect_rot,
+               &d3d12->pass[i].total_subframes,
+               &d3d12->pass[i].current_subframe,
+#ifdef HAVE_DXGI_HDR
+               &d3d12->pass[i].hdr_mode,
+               &d3d12->pass[i].paper_white_nits,
+               &d3d12->pass[i].scanlines,
+               &d3d12->pass[i].subpixel_layout,
+               &d3d12->pass[i].expand_gamut,
+               &d3d12->pass[i].inverse_tonemap,
+               &d3d12->pass[i].hdr10
+#endif
+            }
+         };
+
+         if (!slang_process(
+                  ds->shader_preset, i, RARCH_SHADER_HLSL, 50,
+                  &semantics_map, &ds->passes[i].semantics))
+         {
+            RARCH_ERR("[D3D12] Deferred: failed to process pass %u.\n", i);
+            d3d12_deferred_state_free(d3d12, ds, pass);
+            deferred->state      = SHADER_LOAD_FAILED;
+            deferred->driver_data = NULL;
+            return false;
+         }
+
+         /* Compile HLSL and create PSO */
+         {
+            D3DBlob vs_code = NULL;
+            D3DBlob ps_code = NULL;
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC desc =
+               { d3d12->desc.sl_rootSignature };
+            static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+               { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
+                  offsetof(d3d12_vertex_t, position),
+                  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+               { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0,
+                  offsetof(d3d12_vertex_t, texcoord),
+                  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            };
+            char _path[PATH_MAX_LENGTH];
+            const char *slang_path =
+               ds->shader_preset->pass[i].source.path;
+            const char *vs_src =
+               ds->shader_preset->pass[i].source.string.vertex;
+            const char *ps_src =
+               ds->shader_preset->pass[i].source.string.fragment;
+            size_t _len = strlcpy(_path, slang_path, sizeof(_path));
+
+            strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+            d3d_compile(vs_src, 0, _path, "main", "vs_5_0", &vs_code);
+
+            strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+            d3d_compile(ps_src, 0, _path, "main", "ps_5_0", &ps_code);
+
+            desc.BlendState.RenderTarget[0].RenderTargetWriteMask =
+               D3D12_COLOR_WRITE_ENABLE_ALL;
+            desc.RTVFormats[0] = glslang_format_to_dxgi(
+                  ds->passes[i].semantics.format);
+            desc.PrimitiveTopologyType =
+               D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+            desc.InputLayout.pInputElementDescs = inputElementDesc;
+            desc.InputLayout.NumElements = countof(inputElementDesc);
+
+            d3d12_init_pipeline(d3d12->device,
+                  vs_code, ps_code, NULL, &desc,
+                  &ds->passes[i].pipe);
+
+            free(ds->shader_preset->pass[i].source.string.vertex);
+            free(ds->shader_preset->pass[i].source.string.fragment);
+            ds->shader_preset->pass[i].source.string.vertex   = NULL;
+            ds->shader_preset->pass[i].source.string.fragment = NULL;
+
+            Release(vs_code);
+            Release(ps_code);
+
+            if (!ds->passes[i].pipe)
+            {
+               RARCH_ERR("[D3D12] Deferred: failed to create pipeline"
+                     " for pass %u.\n", i);
+               d3d12_deferred_state_free(d3d12, ds, pass + 1);
+               deferred->state       = SHADER_LOAD_FAILED;
+               deferred->driver_data = NULL;
+               return false;
+            }
+         }
+
+         /* Create cbuffers */
+         for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+         {
+            if (!ds->passes[i].semantics.cbuffers[j].size)
+               continue;
+            ds->passes[i].buffer_view[j].SizeInBytes =
+               ds->passes[i].semantics.cbuffers[j].size;
+            ds->passes[i].buffer_view[j].BufferLocation =
+               d3d12_create_buffer(d3d12->device,
+                     ds->passes[i].buffer_view[j].SizeInBytes,
+                     &ds->passes[i].buffers[j]);
+         }
+      }
+
+      deferred->current_pass++;
+      return true;
+   }
+
+   /* Cancellation check */
+   if (deferred->state != SHADER_LOAD_COMPILING)
+   {
+      RARCH_LOG("[D3D12] Deferred: cancelled, cleaning up.\n");
+      d3d12_deferred_state_free(d3d12, ds, pass);
+      deferred->state       = SHADER_LOAD_FAILED;
+      deferred->driver_data = NULL;
+      return false;
+   }
+
+   /* All passes compiled — install */
+   RARCH_LOG("[D3D12] Deferred: finalizing...\n");
+
+   D3D12_GFX_SYNC();
+   d3d12_free_shader_preset(d3d12);
+
+   /* Install preset */
+   d3d12->shader_preset = ds->shader_preset;
+   ds->shader_preset    = NULL; /* ownership transferred */
+
+   /* Install LUTs */
+   memcpy(d3d12->luts, ds->luts, sizeof(ds->luts));
+   memset(ds->luts, 0, sizeof(ds->luts));
+   ds->luts_loaded = false;
+
+   /* Install per-pass state */
+   {
+      unsigned i;
+      for (i = 0; i < deferred->total_passes; i++)
+      {
+         d3d12->pass[i].pipe = ds->passes[i].pipe;
+         ds->passes[i].pipe  = NULL; /* ownership transferred */
+
+         d3d12->pass[i].semantics = ds->passes[i].semantics;
+         memset(&ds->passes[i].semantics, 0,
+               sizeof(ds->passes[i].semantics));
+
+         memcpy(d3d12->pass[i].buffers,
+               ds->passes[i].buffers,
+               sizeof(ds->passes[i].buffers));
+         memset(ds->passes[i].buffers, 0,
+               sizeof(ds->passes[i].buffers));
+
+         memcpy(d3d12->pass[i].buffer_view,
+               ds->passes[i].buffer_view,
+               sizeof(ds->passes[i].buffer_view));
+
+         /* Set up descriptor heap pointers */
+#ifdef HAVE_DXGI_HDR
+         d3d12->pass[i].rt.rt_view.ptr =
+            d3d12->desc.rtv_heap.cpu.ptr +
+            (countof(d3d12->chain.renderTargets) + 1 + (2 * i))
+            * d3d12->desc.rtv_heap.stride;
+#else
+         d3d12->pass[i].rt.rt_view.ptr =
+            d3d12->desc.rtv_heap.cpu.ptr +
+            (countof(d3d12->chain.renderTargets) + (2 * i))
+            * d3d12->desc.rtv_heap.stride;
+#endif
+         d3d12->pass[i].feedback.rt_view.ptr =
+            d3d12->pass[i].rt.rt_view.ptr +
+            d3d12->desc.rtv_heap.stride;
+
+         d3d12->pass[i].textures.ptr =
+            d3d12->desc.srv_heap.gpu.ptr +
+            i * SLANG_NUM_SEMANTICS * d3d12->desc.srv_heap.stride;
+         d3d12->pass[i].samplers.ptr =
+            d3d12->desc.sampler_heap.gpu.ptr +
+            i * SLANG_NUM_SEMANTICS *
+            d3d12->desc.sampler_heap.stride;
+      }
+   }
+
+#ifdef HAVE_DXGI_HDR
+   if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+   {
+      settings_t *settings        = config_get_ptr();
+      unsigned menu_hdr_mode      = settings->uints.video_hdr_mode;
+      enum glslang_format last_fmt =
+         (d3d12->shader_preset && d3d12->shader_preset->passes)
+         ? d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format
+         : SLANG_FORMAT_UNKNOWN;
+
+      if (menu_hdr_mode == 2)
+      {
+         d3d12_set_hdr_inverse_tonemap(d3d12, false);
+         d3d12_set_hdr10(d3d12, false);
+
+         if (last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+            d3d12->hdr.ubo_values.hdr_mode = 0;
+         else if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
+            d3d12->hdr.ubo_values.hdr_mode = 3;
+         else
+         {
+            d3d12->hdr.ubo_values.hdr_mode = 2;
+            if (last_fmt == SLANG_FORMAT_R8G8B8A8_UNORM)
+            {
+               d3d12_set_hdr_scanlines(d3d12, false);
+               settings->bools.video_hdr_scanlines = false;
+            }
+         }
+         d3d12->flags |= D3D12_ST_FLAG_RESIZE_CHAIN;
+      }
+      else
+      {
+         if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
+               || last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+         {
+            d3d12_set_hdr_inverse_tonemap(d3d12, false);
+            d3d12_set_hdr10(d3d12, false);
+            d3d12->flags |= D3D12_ST_FLAG_RESIZE_CHAIN;
+         }
+         else if (last_fmt == SLANG_FORMAT_R8G8B8A8_UNORM)
+         {
+            d3d12_set_hdr_inverse_tonemap(d3d12, true);
+            d3d12_set_hdr10(d3d12, true);
+            d3d12_set_hdr_scanlines(d3d12, false);
+            settings->bools.video_hdr_scanlines = false;
+            d3d12->flags |= D3D12_ST_FLAG_RESIZE_CHAIN;
+         }
+         else
+         {
+            d3d12_set_hdr_inverse_tonemap(d3d12, true);
+            d3d12_set_hdr10(d3d12, true);
+         }
+         d3d12->hdr.ubo_values.hdr_mode = 0;
+      }
+   }
+#endif
+
+   d3d12->flags |= D3D12_ST_FLAG_INIT_HISTORY | D3D12_ST_FLAG_RESIZE_RTS;
+
+   deferred->state = SHADER_LOAD_DONE;
+   RARCH_LOG("[D3D12] Deferred: shader loaded successfully.\n");
+
+   free(ds);
+   deferred->driver_data = NULL;
+   return false;
+#else
+   deferred->state = SHADER_LOAD_FAILED;
+   return false;
+#endif
+}
+
 static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -5809,6 +6280,8 @@ video_driver_t video_d3d12 = {
 #endif
    d3d12_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   d3d12_shader_load_begin,
+   d3d12_shader_load_step,
 #ifdef HAVE_GFX_WIDGETS
    d3d12_gfx_widgets_enabled
 #endif

@@ -3106,6 +3106,78 @@ bool video_shader_apply_shader(
    if (preset_path && *preset_path)
       preset_file = path_basename_nocompression(preset_path);
 
+   /* ---- Deferred (per-frame) path ----
+    * Skip when threaded video is active: the tick runs on the main
+    * thread but gl3_frame() runs on the video thread, so they would
+    * race on the filter_chain pointer.
+    * Disabled on Android: untested on mobile GPU drivers.
+    * Can be disabled at runtime via video_shader_deferred_loading. */
+   if (  video_st->current_video
+      && video_st->current_video->shader_load_begin
+      && video_st->current_video->shader_load_step
+      && !video_st->threaded
+      && settings->bools.video_shader_deferred_loading
+      && preset_path && *preset_path)
+   {
+      shader_load_deferred_t *d = &video_st->shader_deferred;
+
+      /* Cancel any in-progress deferred load */
+      if (d->state == SHADER_LOAD_COMPILING)
+      {
+         /* Let the driver clean up the partial chain.
+          * Set current_pass past total and state to FAILED so
+          * step() skips compilation and goes to cleanup. */
+         if (d->driver_data
+               && video_st->current_video->shader_load_step)
+         {
+            d->current_pass = d->total_passes;
+            d->state        = SHADER_LOAD_FAILED;
+            video_st->current_video->shader_load_step(
+                  video_st->data, d);
+         }
+         d->state       = SHADER_LOAD_IDLE;
+         d->driver_data = NULL;
+      }
+
+      d->type         = (unsigned)type;
+      d->current_pass = 0;
+      strlcpy(d->preset_path, preset_path, sizeof(d->preset_path));
+
+      if (video_st->current_video->shader_load_begin(
+               video_st->data, d))
+      {
+         d->state = SHADER_LOAD_COMPILING;
+
+         /* Store the runtime preset path early so hotkey
+          * cycling and auto-preset logic see it immediately */
+         if (runloop_st->runtime_shader_preset_path != preset_path)
+            strlcpy(runloop_st->runtime_shader_preset_path,
+                  preset_path,
+                  sizeof(runloop_st->runtime_shader_preset_path));
+
+         if (message)
+         {
+            size_t _len = strlcpy(msg, "Loading shader...", sizeof(msg));
+#ifdef HAVE_GFX_WIDGETS
+            if (dispwidget_get_ptr()->active)
+               gfx_widget_set_generic_message(msg, 2000);
+            else
+#endif
+               runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT,
+                     MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+
+         RARCH_LOG("[Shaders] Deferred load started: \"%s\".\n",
+               preset_path);
+         return true;
+      }
+
+      /* shader_load_begin failed — fall through to synchronous */
+      d->state = SHADER_LOAD_IDLE;
+   }
+
+   /* ---- Synchronous fallback path ---- */
    /* TODO/FIXME - This loads the shader into the video driver
     * But then we load the shader from disk twice more to put it in the menu
     * We need to reconfigure this at some point to only load it once */

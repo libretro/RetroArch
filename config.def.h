@@ -500,6 +500,15 @@
 /* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
 
+/* When enabled, shaders compile one pass per frame instead of
+ * stalling for the entire preset.  Disable to force the legacy
+ * synchronous (blocking) shader load path. */
+#if defined(ANDROID)
+#define DEFAULT_SHADER_DEFERRED_LOADING false
+#else
+#define DEFAULT_SHADER_DEFERRED_LOADING true
+#endif
+
 /* HDR output mode: 0 = off, 1 = HDR10, 2 = scRGB */
 #define DEFAULT_VIDEO_HDR_MODE 0
 
