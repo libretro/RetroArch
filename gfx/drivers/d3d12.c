@@ -3827,13 +3827,14 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
       }
 
       /* After a TDR / device removal, the GPU driver may need time
-       * to recover.  Try a few times here; if all fail, d3d12_gfx_init
-       * returns NULL and the VIDEO_FLAG_GPU_DEVICE_LOST handler in
-       * video_driver_frame will retry the full reinit next frame. */
+       * to recover.  Try up to 30 seconds here; if all fail,
+       * d3d12_gfx_init returns NULL and RetroArch will exit.
+       * Severe TDRs (e.g. RTX 5090 DEVICE_HUNG from 31-pass
+       * shaders at 11284×8640) can take 15–20+ seconds. */
       {
          int retries;
          HRESULT hr = E_FAIL;
-         for (retries = 0; retries < 3; retries++)
+         for (retries = 0; retries < 10; retries++)
          {
             hr = D3D12CreateDevice(
                   (IUnknown*)d3d12->adapter,
@@ -3841,10 +3842,15 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
                   uuidof(ID3D12Device),
                   (void**)&d3d12->device);
             if (SUCCEEDED(hr))
+            {
+               if (retries > 0)
+                  RARCH_LOG("[D3D12] Device created successfully after %d retries.\n",
+                        retries);
                break;
-            RARCH_WARN("[D3D12] Device creation failed (0x%08X), retry %d/3...\n",
+            }
+            RARCH_WARN("[D3D12] Device creation failed (0x%08X), retry %d/10...\n",
                   (unsigned)hr, retries + 1);
-            retro_sleep(2000);
+            retro_sleep(3000);
          }
          if (!SUCCEEDED(hr))
          {
