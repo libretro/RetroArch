@@ -139,7 +139,83 @@ static uint32_t *rtga_tga_load(rtga_context *s,
    rtga_skip(s, tga_offset);
 
    /* --- Decode all pixels directly into uint32 output --- */
+
+   if (!tga_indexed && !tga_is_RLE && tga_comp >= 3)
    {
+      /* Fast path: uncompressed, non-indexed, 24/32-bit.
+       * Read entire rows via pointer arithmetic (no per-byte rtga_get8),
+       * assemble uint32 pixels directly, handle row flip by writing
+       * to the correct row offset. */
+      int row;
+
+      for (row = 0; row < tga_height; ++row)
+      {
+         int dst_row     = tga_inverted ? (tga_height - 1 - row) : row;
+         uint32_t *dst   = output + dst_row * tga_width;
+         int bytes_needed = tga_width * tga_comp;
+         int col;
+
+         if (s->img_buffer + bytes_needed > s->img_buffer_end)
+            break;
+
+         if (tga_comp == 4)
+         {
+            const uint8_t *src = s->img_buffer;
+            if (supports_rgba)
+            {
+               /* TGA BGRA bytes → ABGR uint32: just memcpy on little-endian
+                * since BGRA bytes = uint32 ARGB... no wait:
+                * bytes [B,G,R,A] as little-endian uint32 = A<<24|R<<16|G<<8|B = ARGB.
+                * We need ABGR = A<<24|B<<16|G<<8|R.
+                * So we still need to swap R and B. */
+               for (col = 0; col < tga_width; ++col)
+               {
+                  uint8_t b = src[0], g = src[1], r = src[2], a = src[3];
+                  dst[col] = ((uint32_t)a << 24) | ((uint32_t)b << 16)
+                           | ((uint32_t)g << 8)  | (uint32_t)r;
+                  src += 4;
+               }
+            }
+            else
+            {
+               /* Need ARGB = A<<24|R<<16|G<<8|B.
+                * TGA bytes [B,G,R,A] as little-endian uint32 is already ARGB.
+                * Direct memcpy! */
+               memcpy(dst, src, tga_width * 4);
+            }
+         }
+         else /* tga_comp == 3 */
+         {
+            const uint8_t *src = s->img_buffer;
+            if (supports_rgba)
+            {
+               for (col = 0; col < tga_width; ++col)
+               {
+                  uint8_t b = src[0], g = src[1], r = src[2];
+                  dst[col] = 0xFF000000u | ((uint32_t)b << 16)
+                           | ((uint32_t)g << 8)  | (uint32_t)r;
+                  src += 3;
+               }
+            }
+            else
+            {
+               for (col = 0; col < tga_width; ++col)
+               {
+                  uint8_t b = src[0], g = src[1], r = src[2];
+                  dst[col] = 0xFF000000u | ((uint32_t)r << 16)
+                           | ((uint32_t)g << 8)  | (uint32_t)b;
+                  src += 3;
+               }
+            }
+         }
+
+         s->img_buffer += bytes_needed;
+      }
+   }
+   else
+   {
+      /* Generic path: RLE, indexed, or grayscale.
+       * Per-pixel processing with row/column tracking. */
       int i, j;
       int RLE_repeating          = 0;
       int RLE_count              = 0;
@@ -147,6 +223,8 @@ static uint32_t *rtga_tga_load(rtga_context *s,
       unsigned char raw_data[4]  = {0};
       unsigned char *tga_palette = NULL;
       int pixel_count            = tga_width * tga_height;
+      int cur_col                = 0;
+      int cur_row                = 0;
 
       /* Load palette if indexed */
       if (tga_indexed)
@@ -175,7 +253,7 @@ static uint32_t *rtga_tga_load(rtga_context *s,
 
       for (i = 0; i < pixel_count; ++i)
       {
-         int src_row, dst_row, px_in_row;
+         int dst_row;
          uint32_t pixel;
          unsigned char b, g, r, a;
 
@@ -225,13 +303,7 @@ static uint32_t *rtga_tga_load(rtga_context *s,
             read_next_pixel = 0;
          }
 
-         /* Assemble pixel in correct byte order directly.
-          * TGA stores pixels as BGR(A). We convert to the target
-          * format here — no separate swap pass needed.
-          *
-          * For tga_comp < 3 (grayscale), treat as R=G=B=raw_data[0].
-          * For tga_comp == 3 (24-bit), alpha = 0xFF.
-          * For tga_comp == 4 (32-bit), alpha from raw_data[3]. */
+         /* Assemble pixel in correct byte order */
          if (tga_comp >= 3)
          {
             b = raw_data[0];
@@ -241,14 +313,10 @@ static uint32_t *rtga_tga_load(rtga_context *s,
          }
          else
          {
-            /* Grayscale or 16-bit — R=G=B */
             r = g = b = raw_data[0];
             a = (tga_comp >= 2) ? raw_data[1] : 0xFF;
          }
 
-         /* Pack to uint32:
-          * supports_rgba → ABGR: (a<<24)|(b<<16)|(g<<8)|r
-          * !supports_rgba → ARGB: (a<<24)|(r<<16)|(g<<8)|b */
          if (supports_rgba)
             pixel = ((uint32_t)a << 24) | ((uint32_t)b << 16)
                   | ((uint32_t)g << 8)  | (uint32_t)r;
@@ -256,14 +324,16 @@ static uint32_t *rtga_tga_load(rtga_context *s,
             pixel = ((uint32_t)a << 24) | ((uint32_t)r << 16)
                   | ((uint32_t)g << 8)  | (uint32_t)b;
 
-         /* Write to correct position, handling row flip inline.
-          * For non-RLE non-inverted images, rows are already in
-          * top-to-bottom order. For inverted (the common case in TGA),
-          * flip the row index. */
-         src_row    = i / tga_width;
-         px_in_row  = i % tga_width;
-         dst_row    = tga_inverted ? (tga_height - 1 - src_row) : src_row;
-         output[dst_row * tga_width + px_in_row] = pixel;
+         /* Write to correct position using tracked row/col
+          * (avoids per-pixel division and modulo) */
+         dst_row = tga_inverted ? (tga_height - 1 - cur_row) : cur_row;
+         output[dst_row * tga_width + cur_col] = pixel;
+
+         if (++cur_col >= tga_width)
+         {
+            cur_col = 0;
+            ++cur_row;
+         }
 
          --RLE_count;
       }
