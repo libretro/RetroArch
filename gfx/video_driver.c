@@ -585,6 +585,23 @@ void video_driver_shader_deferred_tick(void)
       d->state = SHADER_LOAD_IDLE;
       d->driver_data = NULL;
    }
+#ifdef HAVE_GFX_WIDGETS
+   else
+   {
+      /* Still compiling — show progress widget */
+      dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+      if (p_dispwidget->active && d->total_passes > 0)
+      {
+         char msg[64];
+         int8_t progress = (int8_t)(
+               (d->current_pass * 100) / d->total_passes);
+         snprintf(msg, sizeof(msg), "Loading shader %u/%u...",
+               d->current_pass, d->total_passes);
+         gfx_widget_set_progress_message(
+               msg, 200, 0, progress);
+      }
+   }
+#endif
 }
 
 #ifdef HAVE_THREADS
