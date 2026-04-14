@@ -3112,7 +3112,6 @@ bool video_shader_apply_shader(
     * race on the filter_chain pointer.
     * Disabled on Android: untested on mobile GPU drivers.
     * Can be disabled at runtime via video_shader_deferred_loading. */
-#ifndef ANDROID
    if (  video_st->current_video
       && video_st->current_video->shader_load_begin
       && video_st->current_video->shader_load_step
@@ -3177,7 +3176,6 @@ bool video_shader_apply_shader(
       /* shader_load_begin failed — fall through to synchronous */
       d->state = SHADER_LOAD_IDLE;
    }
-#endif /* !ANDROID */
 
    /* ---- Synchronous fallback path ---- */
    /* TODO/FIXME - This loads the shader into the video driver
