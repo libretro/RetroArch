@@ -528,6 +528,7 @@ void video_driver_shader_deferred_tick(void)
 
 #ifdef HAVE_MENU
             {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                struct video_shader *shader = menu_shader_get();
                if (shader)
                {
@@ -535,6 +536,7 @@ void video_driver_shader_deferred_tick(void)
                         d->preset_path, shader);
                   shader->flags &= ~SHDR_FLAG_MODIFIED;
                }
+#endif
                menu_state_get_ptr()->flags |=
                   MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
             }
