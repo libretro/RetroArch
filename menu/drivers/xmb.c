@@ -2918,8 +2918,12 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
    }
 }
 
-/* File-static generation counter for async icon loads */
-static uint64_t xmb_icon_load_gen = 0;
+/* File-static generation counters for async icon loads.
+ * Two counters: one for horizontal list playlist icons,
+ * one for context_reset static textures. Separate because
+ * horizontal list rebuilds must not invalidate context textures. */
+static uint64_t xmb_icon_load_gen     = 0;
+static uint64_t xmb_ctx_icon_load_gen = 0;
 
 static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
 {
@@ -6639,135 +6643,97 @@ static const char *xmb_texture_path(unsigned id)
 }
 
 
-static bool xmb_context_reset_textures(
+static void xmb_context_reset_textures(
       xmb_handle_t *xmb,
       const char *iconpath,
       unsigned menu_xmb_theme)
 {
    unsigned i;
+   bool supports_rgba = video_driver_supports_rgba();
+
+   /* Invalidate in-flight context texture loads */
+   xmb_ctx_icon_load_gen++;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {
-      /* Use Ozone sidebar icon for netplay icon instead if it exists */
+      char texpath[PATH_MAX_LENGTH];
       const char *texture_path = xmb_texture_path(i);
+
 #ifdef HAVE_NETWORKING
       if (     (i == XMB_TEXTURE_NETPLAY)
             && (menu_xmb_theme == XMB_ICON_THEME_MONOCHROME))
       {
-         char texpath[PATH_MAX_LENGTH];
-         fill_pathname_join_special(texpath,
+         char alt_path[PATH_MAX_LENGTH];
+         fill_pathname_join_special(alt_path,
                iconpath, xmb_texture_path(XMB_TEXTURE_NETPLAY_ALT),
-               sizeof(texpath));
-         if (path_is_valid(texpath))
+               sizeof(alt_path));
+         if (path_is_valid(alt_path))
             texture_path = xmb_texture_path(XMB_TEXTURE_NETPLAY_ALT);
       }
 #endif
 
-      if (!gfx_display_reset_textures_list(texture_path, iconpath,
-               &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR,
-               NULL, NULL))
-      {
-         /* New extra battery icons could be missing */
-         if (     i == XMB_TEXTURE_BATTERY_80
-               || i == XMB_TEXTURE_BATTERY_60
-               || i == XMB_TEXTURE_BATTERY_40
-               || i == XMB_TEXTURE_BATTERY_20)
-         {
-            /* If there are no extra battery icons revert to the old behaviour */
-            if (     !gfx_display_reset_textures_list(
-                     xmb_texture_path(XMB_TEXTURE_BATTERY_FULL),
-                     iconpath, &xmb->textures.list[i],
-                     TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL)
-                  && !(menu_xmb_theme == XMB_ICON_THEME_CUSTOM))
-               return false;
-            continue;
-         }
-
-         /* If the icon is missing return the subsetting
-          * (because some themes are incomplete) */
-         if ( !(  i == XMB_TEXTURE_DIALOG_SLICE
-               || i == XMB_TEXTURE_KEY_HOVER
-               || i == XMB_TEXTURE_KEY))
-         {
-            /* OSD Warning only if subsetting icon is missing */
-            if (     !gfx_display_reset_textures_list(
-                     xmb_texture_path(XMB_TEXTURE_SUBSETTING),
-                     iconpath, &xmb->textures.list[i],
-                     TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL)
-                  && !(menu_xmb_theme == XMB_ICON_THEME_CUSTOM))
-            {
-               /* Do not draw icons if subsetting is missing */
-               return false;
-            }
-            /* Do not draw icons if these are missing */
-            switch (i)
-            {
-               case XMB_TEXTURE_POINTER:
-               case XMB_TEXTURE_ARROW:
-               case XMB_TEXTURE_CLOCK:
-               case XMB_TEXTURE_BATTERY_CHARGING:
-               case XMB_TEXTURE_BATTERY_FULL:
-               case XMB_TEXTURE_DEFAULT:
-               case XMB_TEXTURE_DEFAULT_CONTENT:
-                  return false;
-            }
-         }
-      }
+      fill_pathname_join_special(texpath,
+            iconpath, texture_path, sizeof(texpath));
+      task_push_icon_load(texpath, supports_rgba,
+            &xmb->textures.list[i], xmb_ctx_icon_load_gen,
+            &xmb_ctx_icon_load_gen);
    }
 
-   xmb->main_menu_node.icon       = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
-   xmb->main_menu_node.alpha      = xmb->categories_active_alpha;
-   xmb->main_menu_node.zoom       = xmb->categories_active_zoom;
-
-   xmb->settings_tab_node.icon    = xmb->textures.list[XMB_TEXTURE_SETTINGS];
-   xmb->settings_tab_node.alpha   = xmb->categories_active_alpha;
-   xmb->settings_tab_node.zoom    = xmb->categories_active_zoom;
-
-   xmb->history_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_HISTORY];
-   xmb->history_tab_node.alpha    = xmb->categories_active_alpha;
-   xmb->history_tab_node.zoom     = xmb->categories_active_zoom;
-
-   xmb->favorites_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_FAVORITES];
-   xmb->favorites_tab_node.alpha  = xmb->categories_active_alpha;
-   xmb->favorites_tab_node.zoom   = xmb->categories_active_zoom;
-
+   /* Tab node icons will be populated from textures.list[]
+    * once the async loads complete — handled by the draw-time
+    * check in xmb_draw_icon_predot / xmb_frame. */
+   xmb->main_menu_node.icon              = 0;
+   xmb->settings_tab_node.icon           = 0;
+   xmb->history_tab_node.icon            = 0;
+   xmb->favorites_tab_node.icon          = 0;
 #ifdef HAVE_IMAGEVIEWER
-   xmb->images_tab_node.icon      = xmb->textures.list[XMB_TEXTURE_IMAGES];
-   xmb->images_tab_node.alpha     = xmb->categories_active_alpha;
-   xmb->images_tab_node.zoom      = xmb->categories_active_zoom;
+   xmb->images_tab_node.icon             = 0;
 #endif
-
-   xmb->music_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_MUSICS];
-   xmb->music_tab_node.alpha      = xmb->categories_active_alpha;
-   xmb->music_tab_node.zoom       = xmb->categories_active_zoom;
-
+   xmb->music_tab_node.icon              = 0;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   xmb->video_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_MOVIES];
-   xmb->video_tab_node.alpha      = xmb->categories_active_alpha;
-   xmb->video_tab_node.zoom       = xmb->categories_active_zoom;
+   xmb->video_tab_node.icon              = 0;
 #endif
-
-   xmb->add_tab_node.icon         = xmb->textures.list[XMB_TEXTURE_ADD];
-   xmb->add_tab_node.alpha        = xmb->categories_active_alpha;
-   xmb->add_tab_node.zoom         = xmb->categories_active_zoom;
-
-   xmb->contentless_cores_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_CORE];
-   xmb->contentless_cores_tab_node.alpha = xmb->categories_active_alpha;
-   xmb->contentless_cores_tab_node.zoom  = xmb->categories_active_zoom;
-
+   xmb->add_tab_node.icon                = 0;
+   xmb->contentless_cores_tab_node.icon  = 0;
 #if defined(HAVE_LIBRETRODB)
-   xmb->explore_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_RDB];
-   xmb->explore_tab_node.alpha    = xmb->categories_active_alpha;
-   xmb->explore_tab_node.zoom     = xmb->categories_active_zoom;
+   xmb->explore_tab_node.icon            = 0;
 #endif
-
 #ifdef HAVE_NETWORKING
-   xmb->netplay_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_NETPLAY];
-   xmb->netplay_tab_node.alpha    = xmb->categories_active_alpha;
-   xmb->netplay_tab_node.zoom     = xmb->categories_active_zoom;
+   xmb->netplay_tab_node.icon            = 0;
 #endif
 
-   xmb->current_menu_icon         = 0;
+   xmb->main_menu_node.alpha             = xmb->categories_active_alpha;
+   xmb->main_menu_node.zoom              = xmb->categories_active_zoom;
+   xmb->settings_tab_node.alpha          = xmb->categories_active_alpha;
+   xmb->settings_tab_node.zoom           = xmb->categories_active_zoom;
+   xmb->history_tab_node.alpha           = xmb->categories_active_alpha;
+   xmb->history_tab_node.zoom            = xmb->categories_active_zoom;
+   xmb->favorites_tab_node.alpha         = xmb->categories_active_alpha;
+   xmb->favorites_tab_node.zoom          = xmb->categories_active_zoom;
+#ifdef HAVE_IMAGEVIEWER
+   xmb->images_tab_node.alpha            = xmb->categories_active_alpha;
+   xmb->images_tab_node.zoom             = xmb->categories_active_zoom;
+#endif
+   xmb->music_tab_node.alpha             = xmb->categories_active_alpha;
+   xmb->music_tab_node.zoom              = xmb->categories_active_zoom;
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   xmb->video_tab_node.alpha             = xmb->categories_active_alpha;
+   xmb->video_tab_node.zoom              = xmb->categories_active_zoom;
+#endif
+   xmb->add_tab_node.alpha               = xmb->categories_active_alpha;
+   xmb->add_tab_node.zoom                = xmb->categories_active_zoom;
+   xmb->contentless_cores_tab_node.alpha  = xmb->categories_active_alpha;
+   xmb->contentless_cores_tab_node.zoom   = xmb->categories_active_zoom;
+#if defined(HAVE_LIBRETRODB)
+   xmb->explore_tab_node.alpha           = xmb->categories_active_alpha;
+   xmb->explore_tab_node.zoom            = xmb->categories_active_zoom;
+#endif
+#ifdef HAVE_NETWORKING
+   xmb->netplay_tab_node.alpha           = xmb->categories_active_alpha;
+   xmb->netplay_tab_node.zoom            = xmb->categories_active_zoom;
+#endif
+
+   xmb->current_menu_icon                = 0;
 
    /* Recolor */
    if (     menu_xmb_theme == XMB_ICON_THEME_MONOCHROME_INVERTED
@@ -6775,8 +6741,6 @@ static bool xmb_context_reset_textures(
       memcpy(xmb_item_color, xmb_coord_black, sizeof(xmb_item_color));
    else
       memcpy(xmb_item_color, xmb_coord_white, sizeof(xmb_item_color));
-
-   return true;
 }
 
 
@@ -6833,8 +6797,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       gfx_display_deinit_white_texture();
       gfx_display_init_white_texture();
       xmb->assets_missing     = false;
-      if (!xmb_context_reset_textures(xmb, iconpath, menu_xmb_theme))
-         xmb->assets_missing  = true;
+      xmb_context_reset_textures(xmb, iconpath, menu_xmb_theme);
    }
    else
    {
@@ -8056,6 +8019,34 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (!xmb)
       return;
 
+   /* One-shot async icon fixup: when context textures finish loading
+    * asynchronously, tab node .icon fields are still zero (they were
+    * cleared in xmb_context_reset_textures). Detect arrival by
+    * checking the main menu texture and populate all tab nodes once. */
+   if (   !xmb->main_menu_node.icon
+       &&  xmb->textures.list[XMB_TEXTURE_MAIN_MENU])
+   {
+      xmb->main_menu_node.icon             = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+      xmb->settings_tab_node.icon          = xmb->textures.list[XMB_TEXTURE_SETTINGS];
+      xmb->history_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_HISTORY];
+      xmb->favorites_tab_node.icon         = xmb->textures.list[XMB_TEXTURE_FAVORITES];
+#ifdef HAVE_IMAGEVIEWER
+      xmb->images_tab_node.icon            = xmb->textures.list[XMB_TEXTURE_IMAGES];
+#endif
+      xmb->music_tab_node.icon             = xmb->textures.list[XMB_TEXTURE_MUSICS];
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+      xmb->video_tab_node.icon             = xmb->textures.list[XMB_TEXTURE_MOVIES];
+#endif
+      xmb->add_tab_node.icon               = xmb->textures.list[XMB_TEXTURE_ADD];
+      xmb->contentless_cores_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_CORE];
+#if defined(HAVE_LIBRETRODB)
+      xmb->explore_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_RDB];
+#endif
+#ifdef HAVE_NETWORKING
+      xmb->netplay_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_NETPLAY];
+#endif
+   }
+
    msg[0]                              = '\0';
    title_msg[0]                        = '\0';
    title_truncated[0]                  = '\0';
@@ -9266,6 +9257,7 @@ static void xmb_free(void *data)
       /* Invalidate any in-flight async icon loads before freeing
        * the nodes they would write into */
       xmb_icon_load_gen++;
+      xmb_ctx_icon_load_gen++;
 
       xmb_free_list_nodes(&xmb->horizontal_list, false);
       file_list_deinitialize(&xmb->horizontal_list);
@@ -9575,6 +9567,10 @@ static void xmb_context_destroy(void *data)
 
    if (!xmb)
       return;
+
+   /* Invalidate in-flight async icon loads before unloading */
+   xmb_icon_load_gen++;
+   xmb_ctx_icon_load_gen++;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       video_driver_texture_unload(&xmb->textures.list[i]);
