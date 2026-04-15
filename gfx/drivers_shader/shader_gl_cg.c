@@ -39,7 +39,12 @@
 
 #ifdef HAVE_SHADERPIPELINE
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
+#include "../drivers/gl_shaders/pipeline_xmb_ribbon.cg.h"
+#include "../drivers/gl_shaders/pipeline_snow_simple.cg.h"
+#include "../drivers/gl_shaders/pipeline_snow_heavy.cg.h"
 #include "../drivers/gl_shaders/pipeline_snow.cg.h"
+#include "../drivers/gl_shaders/pipeline_bokeh.cg.h"
+#include "../drivers/gl_shaders/pipeline_snowflake.cg.h"
 #endif
 
 #include "../include/Cg/cg.h"
@@ -983,35 +988,55 @@ static void gl_cg_init_menu_shaders(void *data)
       return;
 
 #ifdef HAVE_SHADERPIPELINE
-   shader_prog_info.combined = stock_xmb_ribbon_simple;
    shader_prog_info.is_file  = false;
 
+   shader_prog_info.combined = stock_xmb_ribbon;
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU,
          &cg->prg[VIDEO_SHADER_MENU],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU);
 
    shader_prog_info.combined = stock_xmb_ribbon_simple;
-   shader_prog_info.is_file  = false;
-
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU_2,
          &cg->prg[VIDEO_SHADER_MENU_2],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_2);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_2);
 
-   shader_prog_info.combined = stock_xmb_snow;
-   shader_prog_info.is_file  = false;
-
+   shader_prog_info.combined = stock_xmb_simple_snow;
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU_3,
          &cg->prg[VIDEO_SHADER_MENU_3],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_3);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_3);
+
+   shader_prog_info.combined = stock_xmb_snow_heavy;
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_4,
+         &cg->prg[VIDEO_SHADER_MENU_4],
+         &shader_prog_info);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_4);
+
+   shader_prog_info.combined = stock_xmb_bokeh;
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_5,
+         &cg->prg[VIDEO_SHADER_MENU_5],
+         &shader_prog_info);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_5);
+
+   shader_prog_info.combined = stock_xmb_snowflake;
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_6,
+         &cg->prg[VIDEO_SHADER_MENU_6],
+         &shader_prog_info);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_6);
 #endif
 }
 
