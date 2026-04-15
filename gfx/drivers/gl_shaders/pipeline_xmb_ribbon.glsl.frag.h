@@ -9,9 +9,10 @@ static const char *stock_fragment_xmb = GLSL_STANDARD_DERIVATIVES(
    {
      vec3 X = dFdx(fragVertexEc);
      vec3 Y = dFdy(fragVertexEc);
+     Y = -Y;
      vec3 normal=normalize(cross(X,Y));
      float c = (1.0 - dot(normal, up));
-     c = (1.0 - cos(c*c))/3.0;
+     c = (1.0 - cos(c*c))/13.0;
      gl_FragColor = vec4(c, c, c, 1.0);
    }
 );
