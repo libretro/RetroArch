@@ -1300,21 +1300,6 @@ void video_driver_free_hw_context(void);
 void video_driver_filter_free(void);
 #endif
 
-#ifdef HAVE_THREADS
-/**
- * video_thread_get_ptr:
- *
- * Gets the underlying video driver associated with the
- * threaded video wrapper. Sets @drv to the found
- * video driver.
- *
- * Returns: Video driver data of the video driver associated
- * with the threaded wrapper (if successful). If not successful,
- * NULL.
- **/
-void *video_thread_get_ptr(video_driver_state_t *video_st);
-#endif
-
 void video_driver_lock_new(void);
 
 bool video_driver_find_driver(

@@ -605,9 +605,12 @@ void video_driver_shader_deferred_tick(void)
 }
 
 #ifdef HAVE_THREADS
-void *video_thread_get_ptr(video_driver_state_t *video_st)
+static void *video_thread_get_ptr(video_driver_state_t *video_st)
 {
-   const thread_video_t *thr   = (const thread_video_t*)video_st->data;
+   const thread_video_t *thr;
+   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+      return video_st->data;
+   thr = (const thread_video_t*)video_st->data;
    if (thr)
       return thr->driver_data;
    return NULL;
