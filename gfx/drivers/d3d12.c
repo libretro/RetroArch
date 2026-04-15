@@ -1152,7 +1152,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 #ifdef HAVE_DXGI_HDR      
          if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
             cmd->lpVtbl->SetPipelineState(cmd,
-                  (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
+                  (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
          else
 #endif   
             cmd->lpVtbl->SetPipelineState(cmd,
@@ -1177,7 +1177,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 #ifdef HAVE_DXGI_HDR      
             if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
                cmd->lpVtbl->SetPipelineState(cmd,
-                     (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
+                     (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
             else
 #endif 
                cmd->lpVtbl->SetPipelineState(cmd,
@@ -3153,6 +3153,47 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       ps_code = NULL;
    }
 
+   /* --- Opaque blend pipe with HDR RTVFormat (VIDEO_SHADER_STOCK_BLEND_HDR) ---
+    * Uses the simple passthrough shader (opaque_sm5) like VIDEO_SHADER_STOCK_BLEND
+    * but with RTVFormats matching the HDR render target.  Used for menu draws
+    * (multi-vertex triangle strips) that render SDR content into the HDR-format
+    * back_buffer.  The actual HDR conversion happens in the later composite pass,
+    * so we must NOT use the inverse-tonemap HDR shader here. */
+   {
+      static const char shader[] =
+#include "d3d_shaders/opaque_sm5.hlsl.h"
+         ;
+
+      static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_vertex_t, color),
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+
+      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      desc.InputLayout.pInputElementDescs = inputElementDesc;
+      desc.InputLayout.NumElements        = countof(inputElementDesc);
+
+      desc.BlendState.RenderTarget[0]     = d3d12_blend_enable_desc;
+      Release(d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
+      d3d12_init_pipeline(
+            d3d12->device, vs_code, ps_code, NULL, &desc,
+            &d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
+
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+   }
+
    /* --- Sprite HDR pipes (blend / noblend / font) --- */
    {
       static const char shader[] =
@@ -3178,7 +3219,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
 
       if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
          goto error;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8", "ps_5_0", &ps_code))
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
          goto error;
       if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
          goto error;
@@ -3196,6 +3237,13 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       Release(d3d12->sprites.pipe_blend_hdr);
       d3d12_init_pipeline(
             d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_blend_hdr);
+
+      /* Font pipe uses PSMainA8 (alpha-only texture sampling) */
+      Release(ps_code);
+      ps_code = NULL;
+
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8", "ps_5_0", &ps_code))
+         goto error;
 
       Release(d3d12->sprites.pipe_font_hdr);
       d3d12_init_pipeline(
@@ -5650,7 +5698,17 @@ static bool d3d12_gfx_frame(
    }
 #endif
 
-   cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+#ifdef HAVE_DXGI_HDR
+   /* When HDR is on the menu/overlay draws into the HDR-format
+    * back_buffer.  D3D12 requires PSO RTVFormats to match the bound
+    * render target, so we must use the HDR-RTVFormat variants of
+    * every pipeline used during the menu pass.  The shaders are
+    * identical (simple passthrough) — only the PSO format differs. */
+   if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
+   else
+#endif
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
    cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
 
 #ifdef HAVE_GFX_WIDGETS
@@ -5699,7 +5757,12 @@ static bool d3d12_gfx_frame(
          d3d12_upload_texture(cmd, &d3d12->menu.texture,
                d3d12);
 
-         cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+#ifdef HAVE_DXGI_HDR
+         if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+            cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
+         else
+#endif
+            cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
       }
 
       cmd->lpVtbl->SetGraphicsRootConstantBufferView(
@@ -5719,7 +5782,12 @@ static bool d3d12_gfx_frame(
       cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
    }
 
-   d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
+#ifdef HAVE_DXGI_HDR
+   if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+      d3d12->sprites.pipe = d3d12->sprites.pipe_noblend_hdr;
+   else
+#endif
+      d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
    cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
    cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
 
@@ -5750,7 +5818,12 @@ static bool d3d12_gfx_frame(
       {
          if (osd_params)
          {
-            cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
+#ifdef HAVE_DXGI_HDR
+            if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+               cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend_hdr);
+            else
+#endif
+               cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
             cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
             cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
             cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
@@ -5770,7 +5843,12 @@ static bool d3d12_gfx_frame(
 
    if (msg && *msg)
    {
-      cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
+#ifdef HAVE_DXGI_HDR
+      if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+         cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend_hdr);
+      else
+#endif
+         cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
       cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
       cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
