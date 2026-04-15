@@ -139,6 +139,7 @@ typedef struct gl3
       GLuint snow_simple;
       GLuint snow;
       GLuint bokeh;
+      GLuint snowflake;
 #endif /* HAVE_SHADERPIPELINE */
       struct gl3_buffer_locations alpha_blend_loc;
       struct gl3_buffer_locations font_loc;
@@ -148,6 +149,7 @@ typedef struct gl3
       struct gl3_buffer_locations snow_simple_loc;
       struct gl3_buffer_locations snow_loc;
       struct gl3_buffer_locations bokeh_loc;
+      struct gl3_buffer_locations snowflake_loc;
 #endif /* HAVE_SHADERPIPELINE */
    } pipelines;
 #endif /* HAVE_SLANG */
@@ -613,6 +615,7 @@ static void gfx_display_gl3_draw_pipeline(
          case VIDEO_SHADER_MENU_3:
          case VIDEO_SHADER_MENU_4:
          case VIDEO_SHADER_MENU_5:
+         case VIDEO_SHADER_MENU_6:
             draw->backend_data               = ubo_scratch_data;
             draw->backend_data_size          = sizeof(math_matrix_4x4)
                + 4 * sizeof(float);
@@ -625,7 +628,8 @@ static void gfx_display_gl3_draw_pipeline(
                   output_size,
                   sizeof(output_size));
 
-            if (draw->pipeline_id == VIDEO_SHADER_MENU_5)
+            if (   draw->pipeline_id == VIDEO_SHADER_MENU_5
+                || draw->pipeline_id == VIDEO_SHADER_MENU_6)
                yflip = 1.0f;
 
             memcpy(ubo_scratch_data + sizeof(math_matrix_4x4)
@@ -738,6 +742,11 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
          case VIDEO_SHADER_MENU_5:
             glUseProgram(gl->pipelines.bokeh);
             loc = &gl->pipelines.bokeh_loc;
+            break;
+
+         case VIDEO_SHADER_MENU_6:
+            glUseProgram(gl->pipelines.snowflake);
+            loc = &gl->pipelines.snowflake_loc;
             break;
 #endif /* HAVE_SHADERPIPELINE */
 
@@ -1755,6 +1764,11 @@ static void gl3_destroy_resources(gl3_t *gl)
       glDeleteProgram(gl->pipelines.bokeh);
       gl->pipelines.bokeh = 0;
    }
+   if (gl->pipelines.snowflake)
+   {
+      glDeleteProgram(gl->pipelines.snowflake);
+      gl->pipelines.snowflake = 0;
+   }
 #endif /* HAVE_SHADERPIPELINE */
 #endif /* HAVE_SLANG */
 
@@ -2055,6 +2069,10 @@ static bool gl3_init_pipelines(gl3_t *gl)
    static const uint32_t pipeline_bokeh_frag[] =
 #include "vulkan_shaders/pipeline_bokeh.frag.inc"
       ;
+
+   static const uint32_t pipeline_snowflake_frag[] =
+#include "vulkan_shaders/pipeline_snowflake.frag.inc"
+      ;
 #endif /* HAVE_SHADERPIPELINE */
 
    if (!gl->pipelines.alpha_blend)
@@ -2091,6 +2109,13 @@ static bool gl3_init_pipelines(gl3_t *gl)
                                                        pipeline_bokeh_frag, sizeof(pipeline_bokeh_frag),
                                                        &gl->pipelines.bokeh_loc, true);
    if (!gl->pipelines.bokeh)
+      return false;
+
+   if (!gl->pipelines.snowflake)
+      gl->pipelines.snowflake = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
+                                                           pipeline_snowflake_frag, sizeof(pipeline_snowflake_frag),
+                                                           &gl->pipelines.snowflake_loc, true);
+   if (!gl->pipelines.snowflake)
       return false;
 
    if (!gl->pipelines.snow_simple)
