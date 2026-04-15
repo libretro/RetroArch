@@ -2121,29 +2121,36 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
           * The colorspace extension alone is not enough — some
           * drivers expose the extension without any HDR surface
           * formats. */
-         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
-         for (i = 0; i < format_count; i++)
          {
-            if (  vulkan_is_hdr10_format(formats[i].format)
-               && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
-               video_driver_set_disp_flags(video_driver_get_disp_flags() | VIDEO_FLAG_HDR10_SUPPORT);
-            if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
-               && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
-               video_driver_set_disp_flags(video_driver_get_disp_flags() | VIDEO_FLAG_SCRGB_SUPPORT);
+            uint32_t disp_flags = video_driver_get_disp_flags();
+            disp_flags &= ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
+            for (i = 0; i < format_count; i++)
+            {
+               if (  vulkan_is_hdr10_format(formats[i].format)
+                  && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+                  disp_flags |= VIDEO_FLAG_HDR10_SUPPORT;
+               if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+                  && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
+                  disp_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
+            }
+            if (disp_flags & (VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT))
+               disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
+            video_driver_set_disp_flags(disp_flags);
          }
-         if ((video_driver_get_disp_flags() & VIDEO_FLAG_HDR10_SUPPORT) || (video_driver_get_disp_flags() & VIDEO_FLAG_SCRGB_SUPPORT))
-            video_driver_set_disp_flags(video_driver_get_disp_flags() | VIDEO_FLAG_HDR_SUPPORT);
 
          /* Clamp the selected mode if the surface doesn't support it */
-         if (video_hdr_mode == 2 && !(video_driver_get_disp_flags() & VIDEO_FLAG_SCRGB_SUPPORT))
          {
-            RARCH_WARN("[Vulkan] scRGB not available on this surface, falling back.\n");
-            video_hdr_mode = (video_driver_get_disp_flags() & VIDEO_FLAG_HDR10_SUPPORT) ? 1 : 0;
-         }
-         if (video_hdr_mode == 1 && !(video_driver_get_disp_flags() & VIDEO_FLAG_HDR10_SUPPORT))
-         {
-            RARCH_WARN("[Vulkan] HDR10 not available on this surface, falling back.\n");
-            video_hdr_mode = 0;
+            uint32_t disp_flags = video_driver_get_disp_flags();
+            if (video_hdr_mode == 2 && !(disp_flags & VIDEO_FLAG_SCRGB_SUPPORT))
+            {
+               RARCH_WARN("[Vulkan] scRGB not available on this surface, falling back.\n");
+               video_hdr_mode = (disp_flags & VIDEO_FLAG_HDR10_SUPPORT) ? 1 : 0;
+            }
+            if (video_hdr_mode == 1 && !(disp_flags & VIDEO_FLAG_HDR10_SUPPORT))
+            {
+               RARCH_WARN("[Vulkan] HDR10 not available on this surface, falling back.\n");
+               video_hdr_mode = 0;
+            }
          }
 
          if (video_hdr_mode > 0)
