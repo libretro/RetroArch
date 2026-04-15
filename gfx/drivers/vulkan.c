@@ -1846,6 +1846,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
    unsigned i;
+   int use_default_tc, use_default_color;
    struct vk_buffer_range range;
    struct vk_texture *texture    = NULL;
    const float *vertex           = NULL;
@@ -1873,6 +1874,15 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    if (!color)
       color                       = &vk_colors[0];
 
+   /* The static fallback arrays vk_tex_coords and vk_colors only
+    * contain data for 4 vertices.  When a pipeline (e.g. the ribbon
+    * menu shader) submits thousands of vertices without providing its
+    * own tex_coord/color arrays, iterating past the 4th element would
+    * read out of bounds.  The affected shaders never consume these
+    * attributes, so fill constant defaults instead. */
+   use_default_tc    = (tex_coord == vk_tex_coords);
+   use_default_color = (color     == vk_colors);
+
    vk->vk_vp.x                    = draw->x;
    vk->vk_vp.y                    = vk->context->swapchain_height - draw->y - draw->height;
    vk->vk_vp.width                = draw->width;
@@ -1894,12 +1904,32 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       pv->x       = *vertex++;
       /* Y-flip. Vulkan is top-left clip space */
       pv->y       = 1.0f - (*vertex++);
-      pv->tex_x   = *tex_coord++;
-      pv->tex_y   = *tex_coord++;
-      pv->color.r = *color++;
-      pv->color.g = *color++;
-      pv->color.b = *color++;
-      pv->color.a = *color++;
+
+      if (use_default_tc && i >= 4)
+      {
+         pv->tex_x = 0.0f;
+         pv->tex_y = 0.0f;
+      }
+      else
+      {
+         pv->tex_x = *tex_coord++;
+         pv->tex_y = *tex_coord++;
+      }
+
+      if (use_default_color && i >= 4)
+      {
+         pv->color.r = 1.0f;
+         pv->color.g = 1.0f;
+         pv->color.b = 1.0f;
+         pv->color.a = 1.0f;
+      }
+      else
+      {
+         pv->color.r = *color++;
+         pv->color.g = *color++;
+         pv->color.b = *color++;
+         pv->color.a = *color++;
+      }
    }
 
    switch (draw->pipeline_id)
