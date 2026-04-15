@@ -84,6 +84,12 @@
 #include "../../retroarch.h"
 
 #include "d3d_shaders/shaders_common.h"
+#include "d3d_shaders/ribbon_sm3.hlsl.h"
+#include "d3d_shaders/ribbon_simple_sm3.hlsl.h"
+#include "d3d_shaders/simple_snow_sm3.hlsl.h"
+#include "d3d_shaders/snow_sm3.hlsl.h"
+#include "d3d_shaders/bokeh_sm3.hlsl.h"
+#include "d3d_shaders/snowflake_sm3.hlsl.h"
 
 static const char *stock_hlsl_program = CG(
       void main_vertex
@@ -645,12 +651,18 @@ typedef struct hlsl_renderchain
    hlsl_pass_data_t pass_data[GFX_MAX_SHADERS + 1];
    unsigned pass_data_count;
    hlsl_pass_data_t stock_data;
+   /* XMB pipeline shaders */
+   struct shader_pass pipeline_shaders[6]; /* MENU..MENU_6 */
+   hlsl_pass_data_t  pipeline_data[6];
+   bool              pipeline_inited;
 } hlsl_renderchain_t;
 
 /* Pipeline vertex buffer for menu shader effects (VIDEO_SHADER_MENU, etc.).
  * Stored as a file-static since the d3d9 menu_display struct
  * does not have a pipeline_vbo member like d3d10_video_t does. */
 static LPDIRECT3DVERTEXBUFFER9 d3d9_hlsl_menu_pipeline_vbo = NULL;
+static LPDIRECT3DVERTEXBUFFER9 d3d9_hlsl_menu_fullscreen_vbo = NULL;
+static LPDIRECT3DVERTEXDECLARATION9 d3d9_hlsl_pipeline_decl = NULL;
 static LPDIRECT3DVERTEXDECLARATION9 d3d9_hlsl_overlay_decl = NULL;
 
 static void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
@@ -788,18 +800,57 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
       {
-         /* Draw the pipeline vertices using the stock shader,
-          * then restore blend state and menu display vertex state.
-          * Adapted from d3d10 gfx_display_d3d10_draw pipeline path. */
          hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
 
-         if (_chain)
+         if (_chain && _chain->pipeline_inited)
          {
-            IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)(&_chain->stock_shader)->vprg);
+            unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
+            struct shader_pass *shader = &_chain->pipeline_shaders[idx];
 
-            IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
+            IDirect3DDevice9_SetVertexShader(dev,
+                  (LPDIRECT3DVERTEXSHADER9)shader->vprg);
+            IDirect3DDevice9_SetPixelShader(dev,
+                  (LPDIRECT3DPIXELSHADER9)shader->fprg);
+            IDirect3DDevice9_SetVertexDeclaration(dev,
+                  (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
 
+            /* Snow/bokeh/snowflake need MVP matrix set */
+            if (draw->pipeline_id <= VIDEO_SHADER_MENU_3)
+            {
+               hlsl_pass_data_t *pd = &_chain->pipeline_data[idx];
+               /* Row-major ortho for mul(matrix, vector) in shader.
+                * D3D9 SetVertexShaderConstantF stores rows sequentially.
+                * mul(M, v) computes dot(row[i], v) — correct with row-major.
+                * Maps X [0,1]→[-1,1], Y [0,1]→[-1,1], Z pass-through. */
+               static const float ortho_mvp[16] = {
+                   2.0f,  0.0f, 0.0f, 0.0f,
+                   0.0f,  2.0f, 0.0f, 0.0f,
+                   0.0f,  0.0f, 1.0f, 0.0f,
+                  -1.0f, -1.0f, 0.0f, 1.0f
+               };
+               {
+                  int reg = d3d9_hlsl_ctab_find_register(
+                        pd->vs_bytecode, pd->vs_bytecode_dwords,
+                        "modelViewProj", NULL, NULL);
+                  if (reg >= 0)
+                     d3d9_hlsl_set_vs_const(dev, reg, ortho_mvp, 4);
+               }
+            }
+
+            IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
+                  0, draw->coords->vertices - 2);
+         }
+         else if (_chain)
+         {
+            /* Fallback to stock shader */
+            IDirect3DDevice9_SetVertexShader(dev,
+                  (LPDIRECT3DVERTEXSHADER9)(&_chain->stock_shader)->vprg);
+            IDirect3DDevice9_SetPixelShader(dev,
+                  (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
             IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
                   0, draw->coords->vertices - 2);
          }
@@ -818,6 +869,16 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
                0, sizeof(Vertex));
          IDirect3DDevice9_SetVertexDeclaration(dev,
                (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
+
+         /* Restore stock shader and its constants so subsequent
+          * non-pipeline draws (text, icons) work correctly. */
+         if (_chain)
+         {
+            IDirect3DDevice9_SetVertexShader(dev,
+                  (LPDIRECT3DVERTEXSHADER9)(&_chain->stock_shader)->vprg);
+            IDirect3DDevice9_SetPixelShader(dev,
+                  (LPDIRECT3DPIXELSHADER9)(&_chain->stock_shader)->fprg);
+         }
          return;
       }
       default:
@@ -1080,19 +1141,79 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
 
          draw->coords->vertices = ca->coords.vertices;
 
-         /* Set pipeline blend state */
+         /* Set pipeline blend state — ribbon uses multiplicative blend
+          * (DESTCOLOR + ONE) matching D3D11's blend_pipeline. */
          IDirect3DDevice9_SetRenderState(d3d->dev,
-               D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+               D3DRS_SRCBLEND,  D3DBLEND_DESTCOLOR);
          IDirect3DDevice9_SetRenderState(d3d->dev,
-               D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+               D3DRS_DESTBLEND, D3DBLEND_ONE);
          IDirect3DDevice9_SetRenderState(d3d->dev,
                D3DRS_ALPHABLENDENABLE, true);
          break;
       }
 
       case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
       {
-         draw->coords->vertices = 4;
+         static struct video_coords blank_coords = {0};
+
+         /* Fullscreen quad for snow/bokeh/snowflake effects */
+         if (!d3d9_hlsl_menu_fullscreen_vbo)
+         {
+            Vertex verts[4];
+            verts[0].x = 0.0f; verts[0].y = 0.0f; verts[0].z = 0.0f;
+            verts[0].u = 0.0f; verts[0].v = 1.0f;
+            verts[0].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+            verts[1].x = 1.0f; verts[1].y = 0.0f; verts[1].z = 0.0f;
+            verts[1].u = 1.0f; verts[1].v = 1.0f;
+            verts[1].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+            verts[2].x = 0.0f; verts[2].y = 1.0f; verts[2].z = 0.0f;
+            verts[2].u = 0.0f; verts[2].v = 0.0f;
+            verts[2].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+            verts[3].x = 1.0f; verts[3].y = 1.0f; verts[3].z = 0.0f;
+            verts[3].u = 1.0f; verts[3].v = 0.0f;
+            verts[3].color = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
+
+            if (SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
+                        d3d->dev, 4 * sizeof(Vertex),
+                        D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT,
+                        (LPDIRECT3DVERTEXBUFFER9*)&d3d9_hlsl_menu_fullscreen_vbo, NULL)))
+            {
+               void *lock = NULL;
+               IDirect3DVertexBuffer9_Lock(
+                     (LPDIRECT3DVERTEXBUFFER9)d3d9_hlsl_menu_fullscreen_vbo,
+                     0, 0, &lock, 0);
+               if (lock)
+               {
+                  memcpy(lock, verts, sizeof(verts));
+                  IDirect3DVertexBuffer9_Unlock(
+                        (LPDIRECT3DVERTEXBUFFER9)d3d9_hlsl_menu_fullscreen_vbo);
+               }
+            }
+         }
+
+         if (d3d9_hlsl_menu_fullscreen_vbo)
+         {
+            IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+                  (LPDIRECT3DVERTEXBUFFER9)d3d9_hlsl_menu_fullscreen_vbo,
+                  0, sizeof(Vertex));
+         }
+
+         /* Use separate coords to avoid mutating the shared
+          * ca->coords.vertices (which ribbon needs at 8064). */
+         blank_coords.vertices = 4;
+         draw->coords          = &blank_coords;
+         draw->prim_type = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+
+         /* Set blend state for particle effects */
+         IDirect3DDevice9_SetRenderState(d3d->dev,
+               D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+         IDirect3DDevice9_SetRenderState(d3d->dev,
+               D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+         IDirect3DDevice9_SetRenderState(d3d->dev,
+               D3DRS_ALPHABLENDENABLE, true);
          break;
       }
 
@@ -1105,7 +1226,56 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
 
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
-      if (_chain)
+      if (_chain && _chain->pipeline_inited
+            && draw->pipeline_id <= VIDEO_SHADER_MENU
+            && draw->pipeline_id >= VIDEO_SHADER_MENU_6)
+      {
+         unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
+         hlsl_pass_data_t *pd = &_chain->pipeline_data[idx];
+
+         /* Set time uniform for all pipeline shaders */
+         d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords,
+               true, d3d->dev, "time", &t);
+         d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords,
+               false, d3d->dev, "time", &t);
+
+         /* Set OutputSize for snow/bokeh/snowflake shaders */
+         if (draw->pipeline_id <= VIDEO_SHADER_MENU_3)
+         {
+            D3DVIEWPORT9 vp;
+            IDirect3DDevice9_GetViewport(d3d->dev, &vp);
+            {
+               float output_size[4];
+               int reg;
+               output_size[0] = (float)vp.Width;
+               output_size[1] = (float)vp.Height;
+               output_size[2] = 0.0f;
+               output_size[3] = 0.0f;
+               /* Set OutputSize as a full register (float2 occupies one register) */
+               reg = d3d9_hlsl_ctab_find_register(
+                     pd->vs_bytecode, pd->vs_bytecode_dwords,
+                     "OutputSize", NULL, NULL);
+               if (reg >= 0)
+                  d3d9_hlsl_set_vs_const(d3d->dev, reg, output_size, 1);
+               reg = d3d9_hlsl_ctab_find_register(
+                     pd->ps_bytecode, pd->ps_bytecode_dwords,
+                     "OutputSize", NULL, NULL);
+               if (reg >= 0)
+                  d3d9_hlsl_set_ps_const(d3d->dev, reg, output_size, 1);
+            }
+         }
+
+         /* Set alpha for ribbon shaders */
+         if (draw->pipeline_id >= VIDEO_SHADER_MENU_2)
+         {
+            float alpha_val = draw->color ? draw->color[3] : 1.0f;
+            d3d9_hlsl_set_param_1f(pd->vs_bytecode, pd->vs_bytecode_dwords,
+                  true, d3d->dev, "alpha", &alpha_val);
+            d3d9_hlsl_set_param_1f(pd->ps_bytecode, pd->ps_bytecode_dwords,
+                  false, d3d->dev, "alpha", &alpha_val);
+         }
+      }
+      else if (_chain)
       {
          d3d9_hlsl_set_param_1f(
                _chain->stock_data.vs_bytecode,
@@ -2545,6 +2715,35 @@ static bool hlsl_d3d9_renderchain_init(
 
    IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
    IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
+
+   /* Compile XMB pipeline shaders */
+   {
+      const char *pipeline_sources[6];
+      unsigned i;
+      pipeline_sources[0] = hlsl_ribbon_program;
+      pipeline_sources[1] = hlsl_ribbon_simple_program;
+      pipeline_sources[2] = hlsl_simple_snow_program;
+      pipeline_sources[3] = hlsl_snow_program;
+      pipeline_sources[4] = hlsl_bokeh_program;
+      pipeline_sources[5] = hlsl_snowflake_program;
+      chain->pipeline_inited = true;
+      for (i = 0; i < 6; i++)
+      {
+         hlsl_uniform_map_init(&chain->pipeline_data[i].vs_map);
+         hlsl_uniform_map_init(&chain->pipeline_data[i].ps_map);
+         chain->pipeline_data[i].vs_bytecode = NULL;
+         chain->pipeline_data[i].ps_bytecode = NULL;
+         if (!d3d9_hlsl_load_program_ex(dev,
+                  &chain->pipeline_shaders[i],
+                  pipeline_sources[i],
+                  &chain->pipeline_data[i]))
+         {
+            RARCH_WARN("[D3D9 HLSL] Could not compile XMB pipeline shader %u, effects disabled.\n", i);
+            chain->pipeline_inited = false;
+            break;
+         }
+      }
+   }
 
    return true;
 }
@@ -6222,6 +6421,16 @@ static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
    d3d9_vertex_buffer_free(d3d->menu_display.buffer,
          d3d->menu_display.decl);
 
+   if (d3d9_hlsl_menu_fullscreen_vbo)
+   {
+      IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_fullscreen_vbo);
+      d3d9_hlsl_menu_fullscreen_vbo = NULL;
+   }
+   if (d3d9_hlsl_pipeline_decl)
+   {
+      IDirect3DVertexDeclaration9_Release(d3d9_hlsl_pipeline_decl);
+      d3d9_hlsl_pipeline_decl = NULL;
+   }
    if (d3d9_hlsl_menu_pipeline_vbo)
    {
       IDirect3DVertexBuffer9_Release(d3d9_hlsl_menu_pipeline_vbo);
