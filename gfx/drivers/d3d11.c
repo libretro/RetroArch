@@ -1363,8 +1363,8 @@ static void d3d11_font_render_msg(
                   {
                      float dx_vp = (float)drop_x_px * inv_vp_w;
                      float dy_vp = (float)drop_y_px * inv_vp_h;
-                     d3d11_sprite_t *s;
-                     for (s = v_line; s < v; s++)
+                     d3d11_sprite_t *s, *v_end = v;
+                     for (s = v_line; s < v_end; s++)
                      {
                         /* Avoid v_line pointer aliasing: read then write. */
                         d3d11_sprite_t tmp = *s;
