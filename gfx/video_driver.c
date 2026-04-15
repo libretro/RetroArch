@@ -625,7 +625,12 @@ void *video_thread_get_ptr(video_driver_state_t *video_st)
 void *video_driver_get_ptr(void)
 {
    video_driver_state_t *video_st         = &video_driver_st;
-   return VIDEO_DRIVER_GET_PTR_INTERNAL(video_st);
+#ifdef HAVE_THREADS
+   if (  VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+       && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+      return video_thread_get_ptr(video_st);
+#endif
+   return video_st->data;
 }
 
 
@@ -1570,7 +1575,8 @@ const char *video_driver_get_ident(void)
    if (!vid)
       return NULL;
 #ifdef HAVE_THREADS
-   if (VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
+   if (  VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+       && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
    {
       const thread_video_t *thr   = (const thread_video_t*)video_st->data;
       if (!thr || !thr->driver)
@@ -3333,7 +3339,13 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_grab_mouse_state = (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
    video_info->disp_userdata                 = disp_get_ptr();
 
-   video_info->userdata                      = VIDEO_DRIVER_GET_PTR_INTERNAL(video_st);
+#ifdef HAVE_THREADS
+   if (  VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+       && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+      video_info->userdata                   = video_thread_get_ptr(video_st);
+   else
+#endif
+      video_info->userdata                   = video_st->data;
 
 #ifdef HAVE_THREADS
    VIDEO_DRIVER_THREADED_UNLOCK(video_st, is_threaded);
