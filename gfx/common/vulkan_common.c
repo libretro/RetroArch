@@ -2323,10 +2323,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.clipped                = VK_TRUE;
    info.oldSwapchain           = old_swapchain;
 
-   info.oldSwapchain = VK_NULL_HANDLE;
-   if (old_swapchain != VK_NULL_HANDLE)
-      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
-
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    if (vk->fse_supported)
    {
@@ -2347,6 +2343,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          return false;
       }
    }
+
+   if (old_swapchain != VK_NULL_HANDLE)
+      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 
    vk->context.swapchain_width        = swapchain_size.width;
    vk->context.swapchain_height       = swapchain_size.height;
