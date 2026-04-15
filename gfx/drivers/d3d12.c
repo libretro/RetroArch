@@ -183,16 +183,6 @@ typedef struct
 #endif
 #endif
 
-#define D3D12_GFX_SYNC() \
-{ \
-   D3D12Fence fence = d3d12->queue.fence; \
-   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue); \
-   if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue) \
-   { \
-      fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent); \
-      WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE); \
-   } \
-}
 
 typedef struct d3d12_vertex_t
 {
@@ -1398,7 +1388,13 @@ static void d3d12_font_free(void* data, bool is_threaded)
    if (font->d3d12)
    {
       d3d12_video_t *d3d12 = font->d3d12;
-      D3D12_GFX_SYNC();
+      D3D12Fence     fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
    }
 
    if (font->font_driver && font->font_data)
@@ -1902,7 +1898,15 @@ static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_
    if (!d3d12)
       return false;
 
-   D3D12_GFX_SYNC();
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
 
    d3d12_free_overlays(d3d12);
    d3d12->overlays.textures = (d3d12_texture_t*)calloc(num_images, sizeof(d3d12_texture_t));
@@ -2155,7 +2159,15 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
    if (!d3d12)
       return;
 
-   D3D12_GFX_SYNC();
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
    d3d12->frame.rotation = rotation;
 
    radians                 = d3d12->frame.rotation * (M_PI / 2.0f);
@@ -2647,7 +2659,15 @@ static bool d3d12_shader_load_step(void *data,
    /* All passes compiled — install */
    RARCH_LOG("[D3D12] Deferred: finalizing...\n");
 
-   D3D12_GFX_SYNC();
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
    d3d12_free_shader_preset(d3d12);
 
    /* Install preset */
@@ -2788,7 +2808,15 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    if (!d3d12)
       return false;
 
-   D3D12_GFX_SYNC();
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
    d3d12_free_shader_preset(d3d12);
 
    if (!path || !*path)
@@ -3479,7 +3507,15 @@ static void d3d12_gfx_free(void* data)
    if (!d3d12)
       return;
 
-   D3D12_GFX_SYNC();
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
 
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       CloseHandle(d3d12->chain.frameLatencyWaitableObject);
@@ -4581,8 +4617,15 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
 {
    D3D12GraphicsCommandList cmd   = d3d12->queue.cmd;
 
-
-   D3D12_GFX_SYNC();
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
 
    d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
    cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
@@ -4688,7 +4731,15 @@ static bool d3d12_gfx_frame(
             1000,
             true);
 
-   D3D12_GFX_SYNC();
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
 
 #ifdef HAVE_DXGI_HDR
    d3d12_hdr_enable = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? true : false;
@@ -6142,7 +6193,13 @@ static void d3d12_gfx_unload_texture(void* data,
 
    if (d3d12)
    {
-      D3D12_GFX_SYNC();
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
    }
 
    d3d12_release_texture(texture);
@@ -6187,7 +6244,7 @@ static bool d3d12_get_current_software_framebuffer(
    /* Ensure the frame texture is large enough for the requested size.
     * If it doesn't match, return false so the core uses its own
     * buffer this frame.  d3d12_gfx_frame will recreate the texture
-    * (after its D3D12_GFX_SYNC) and the core will get the SW
+    * (after its GPU sync) and the core will get the SW
     * framebuffer on the next call. */
    if (     d3d12->frame.texture[0].desc.Width  != fb->width
          || d3d12->frame.texture[0].desc.Height != fb->height)
