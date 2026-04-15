@@ -1784,6 +1784,11 @@ static void gfx_display_vk_draw_pipeline(
       case VIDEO_SHADER_MENU_2:
          {
             float alpha                   = draw->color ? draw->color[3] : 1.0f;
+            /* Ribbon computes its own clip-space Y from noise,
+             * bypassing the VBO Y-flip that normally handles
+             * Vulkan's inverted clip Y.  Negate yflip so
+             * gl_Position.y *= yflip corrects for this. */
+            float ribbon_yflip            = -yflip;
             ca                            = &p_disp->dispca;
             draw->coords                  = (struct video_coords*)&ca->coords;
             draw->backend_data            = ubo_scratch_data;
@@ -1791,7 +1796,7 @@ static void gfx_display_vk_draw_pipeline(
 
             /* Match UBO layout in shader. */
             memcpy(ubo_scratch_data, &t, sizeof(t));
-            memcpy(ubo_scratch_data + sizeof(float), &yflip, sizeof(yflip));
+            memcpy(ubo_scratch_data + sizeof(float), &ribbon_yflip, sizeof(ribbon_yflip));
             memcpy(ubo_scratch_data + 2 * sizeof(float), &alpha, sizeof(alpha));
          }
          break;
