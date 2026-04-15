@@ -169,7 +169,8 @@ enum video_driver_state_flags
    VIDEO_FLAG_RUNAHEAD_IS_ACTIVE                  = (1 << 18),
    VIDEO_FLAG_HDR10_SUPPORT                       = (1 << 19),
    VIDEO_FLAG_SCRGB_SUPPORT                       = (1 << 20),
-   VIDEO_FLAG_GPU_DEVICE_LOST                     = (1 << 21)
+   VIDEO_FLAG_GPU_DEVICE_LOST                     = (1 << 21),
+   VIDEO_FLAG_THREAD_WRAPPER_ACTIVE               = (1 << 22)
 };
 
 struct LinkInfo

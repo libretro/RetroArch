@@ -3080,8 +3080,13 @@ bool video_driver_texture_load(void *data,
    const video_poke_interface_t *poke = video_st->poke;
    if (!id || !poke || !poke->load_texture)
       return false;
+   /* Only use the threaded path when the thread wrapper is
+    * fully active. During reinit, video_st->threaded may
+    * already reflect the new setting while video_st->data
+    * still points to the real driver, not thread_video_t. */
    *id = poke->load_texture(video_st->data, data,
-         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st),
+         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE),
          filter_type);
    return true;
 }
@@ -3093,7 +3098,8 @@ bool video_driver_texture_unload(uintptr_t *id)
    if (!poke || !poke->unload_texture)
       return false;
    poke->unload_texture(video_st->data,
-         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st),
+         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE),
          *id);
    *id = 0;
    return true;

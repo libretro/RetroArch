@@ -832,6 +832,8 @@ static void video_thread_free(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
+   video_state_get_ptr()->flags &= ~VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
+
    if (thr)
    {
       if (thr->thread)
@@ -1425,7 +1427,11 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
    thr->driver = drv;
    *out_driver = &thr->video_thread;
    *out_data   = thr;
-   return video_thread_init(thr, info, input, input_data);
+   if (!video_thread_init(thr, info, input, input_data))
+      return false;
+
+   video_state_get_ptr()->flags |= VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
+   return true;
 }
 
 bool video_thread_font_init(const void **font_driver, void **font_handle,
