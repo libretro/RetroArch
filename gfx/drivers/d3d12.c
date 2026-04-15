@@ -3367,6 +3367,18 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
          desc.InputLayout.pInputElementDescs = inputElementDesc;
          desc.InputLayout.NumElements        = countof(inputElementDesc);
 
+         /* Reset blend state to standard alpha blending for snow/bokeh/snowflake
+          * pipelines.  The ribbon shaders above set SrcBlend = DEST_COLOR /
+          * DestBlend = ONE which is a multiplicative blend unsuitable for
+          * additive particle effects — white snowflakes become invisible
+          * against coloured backgrounds. */
+         desc.BlendState.RenderTarget[0].SrcBlend       = D3D12_BLEND_SRC_ALPHA;
+         desc.BlendState.RenderTarget[0].DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
+         desc.BlendState.RenderTarget[0].BlendOp        = D3D12_BLEND_OP_ADD;
+         desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_SRC_ALPHA;
+         desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+         desc.BlendState.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
+
          if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "VSMain", "vs_5_0", &vs_code))
             goto error;
          if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "PSMain", "ps_5_0", &ps_code))
