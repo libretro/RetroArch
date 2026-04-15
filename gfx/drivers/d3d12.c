@@ -457,6 +457,7 @@ typedef struct
    const font_renderer_driver_t* font_driver;
    void*                         font_data;
    struct font_atlas*            atlas;
+   d3d12_video_t*                d3d12; /* For GPU sync on free */
 } d3d12_font_t;
 
 static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
@@ -1364,6 +1365,7 @@ static void * d3d12_font_init(void* data, const char* font_path,
       return NULL;
    }
 
+   font->d3d12               = d3d12;
    font->atlas               = font->font_driver->get_atlas(font->font_data);
    font->texture.sampler     = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
    font->texture.desc.Width  = font->atlas->width;
@@ -1388,6 +1390,16 @@ static void d3d12_font_free(void* data, bool is_threaded)
 
    if (!font)
       return;
+
+   /* Wait for the GPU to finish any in-flight commands that
+    * might still reference the font texture.  Without this,
+    * releasing the texture while the GPU is drawing with it
+    * causes a crash (e.g. when changing Font Scale in XMB). */
+   if (font->d3d12)
+   {
+      d3d12_video_t *d3d12 = font->d3d12;
+      D3D12_GFX_SYNC();
+   }
 
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
