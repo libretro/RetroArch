@@ -1465,7 +1465,7 @@ static void driver_adjust_system_rates(
          runloop_st->flags |= RUNLOOP_FLAG_FORCE_NONBLOCK;
          RARCH_LOG("[Video] Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 
-         if (VIDEO_DRIVER_GET_PTR_INTERNAL(video_st))
+         if (video_st->data)
          {
             if (video_st->current_video->set_nonblock_state)
                video_st->current_video->set_nonblock_state(
@@ -1478,7 +1478,7 @@ static void driver_adjust_system_rates(
       }
    }
 
-   if (VIDEO_DRIVER_GET_PTR_INTERNAL(video_st))
+   if (video_st->data)
       driver_set_nonblock_state();
 }
 
@@ -1512,7 +1512,7 @@ void driver_set_nonblock_state(void)
    bool runloop_force_nonblock = (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK) ? true : false;
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_active && VIDEO_DRIVER_GET_PTR_INTERNAL(video_st))
+   if (video_driver_active && video_st->data)
    {
       if (video_st->current_video->set_nonblock_state)
       {

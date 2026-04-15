@@ -114,7 +114,6 @@
 #define VIDEO_DRIVER_THREADED_UNLOCK(video_st, is_threaded) \
    if (is_threaded) \
       VIDEO_DRIVER_UNLOCK(video_st)
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(video_st) ((VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)) ? video_thread_get_ptr(video_st) : video_st->data)
 #else
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) (false)
 #define VIDEO_DRIVER_LOCK(video_st)            ((void)0)
@@ -124,7 +123,6 @@
 #define VIDEO_DRIVER_THREADED_UNLOCK(video_st, is_threaded) ((void)0)
 #define VIDEO_DRIVER_CONTEXT_LOCK(video_st)    ((void)0)
 #define VIDEO_DRIVER_CONTEXT_UNLOCK(video_st)  ((void)0)
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(video_st) (video_st->data)
 #endif
 
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st) (&video_st->hw_render)
