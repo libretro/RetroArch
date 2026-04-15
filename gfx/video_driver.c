@@ -1731,18 +1731,18 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 void video_driver_free_hw_context(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
-
+#ifdef HAVE_THREADS
    if (video_st->context_lock)
       slock_lock(video_st->context_lock);
-
+#endif
    if (video_st->hw_render.context_destroy)
       video_st->hw_render.context_destroy();
 
    memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
-
+#ifdef HAVE_THREADS
    if (video_st->context_lock)
       slock_unlock(video_st->context_lock);
-
+#endif
    video_st->hw_render_context_negotiation = NULL;
 }
 
