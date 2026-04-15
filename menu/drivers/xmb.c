@@ -8378,15 +8378,16 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float y;
             float scale_factor;
 
-            /* Fixup for explore view (.lvw) nodes: their icon was
-             * copied from textures.list[CURSOR] during list build,
-             * but if the async load hadn't completed yet the copy
-             * was 0.  Retry each frame until the texture arrives. */
+            /* Fallback for nodes whose icon hasn't resolved yet
+             * (e.g. .lvw nodes when CURSOR wasn't loaded during
+             * list build, or .lpl nodes with an in-flight async
+             * load). Use the shared CURSOR texture for this frame
+             * only — do NOT write it back into node->icon, or
+             * xmb_context_destroy_horizontal_list will later
+             * double-free it when it unloads the node's icon
+             * alongside xmb->textures.list[CURSOR]. */
             if (!texture && xmb->textures.list[XMB_TEXTURE_CURSOR])
-            {
-               texture    = xmb->textures.list[XMB_TEXTURE_CURSOR];
-               node->icon = texture;
-            }
+               texture = xmb->textures.list[XMB_TEXTURE_CURSOR];
 
             x                        = xmb->x + xmb->categories_x_pos
                   + xmb->margins_screen_left
