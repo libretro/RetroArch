@@ -3321,19 +3321,17 @@ bool menu_shader_manager_save_auto_preset(
 
 static enum action_iterate_type action_iterate_type(const char *label)
 {
-   if (memcmp(label, "info_screen", sizeof("info_screen")) == 0)
+   if (!strcmp(label, "info_screen"))
       return ITERATE_TYPE_INFO;
    if (string_starts_with_size(label, "help", STRLEN_CONST("help")))
-      if (memcmp(label, "help", sizeof("help")) == 0)
+      if (!strcmp(label, "help"))
          return ITERATE_TYPE_HELP;
-   if (memcmp(label, "cheevos_description", sizeof("cheevos_description")) == 0)
-         return ITERATE_TYPE_HELP;
+   if (!strcmp(label, "cheevos_description"))
+      return ITERATE_TYPE_HELP;
    if (string_starts_with_size(label, "custom_bind", STRLEN_CONST("custom_bind")))
-      if (
-               memcmp(label, "custom_bind", sizeof("custom_bind")) == 0
-            || memcmp(label, "custom_bind_all", sizeof("custom_bind_all")) == 0
-            || memcmp(label, "custom_bind_defaults", sizeof("custom_bind_defaults")) == 0
-         )
+      if (   !strcmp(label, "custom_bind")
+          || !strcmp(label, "custom_bind_all")
+          || !strcmp(label, "custom_bind_defaults"))
          return ITERATE_TYPE_BIND;
    return ITERATE_TYPE_DEFAULT;
 }
@@ -3817,19 +3815,19 @@ static enum menu_driver_id_type menu_driver_set_id(
    if (driver_name && *driver_name)
    {
 #ifdef HAVE_RGUI
-      if (memcmp(driver_name, "rgui", 5) == 0)
+      if (!strcmp(driver_name, "rgui"))
          return MENU_DRIVER_ID_RGUI;
 #endif
 #ifdef HAVE_OZONE
-      if (memcmp(driver_name, "ozone", 6) == 0)
+      if (!strcmp(driver_name, "ozone"))
          return MENU_DRIVER_ID_OZONE;
 #endif
 #ifdef HAVE_MATERIALUI
-      if (memcmp(driver_name, "glui", 5) == 0)
+      if (!strcmp(driver_name, "glui"))
          return MENU_DRIVER_ID_GLUI;
 #endif
 #ifdef HAVE_XMB
-      if (memcmp(driver_name, "xmb", 4) == 0)
+      if (!strcmp(driver_name, "xmb"))
          return MENU_DRIVER_ID_XMB;
 #endif
    }

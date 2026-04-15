@@ -1173,81 +1173,81 @@ size_t midi_driver_get_event_size(uint8_t status)
 static size_t find_driver_nonempty(
       const char *label, int i, char *s, size_t len)
 {
-   if (!memcmp(label, "camera_driver", STRLEN_CONST("camera_driver")))
+   if (!strcmp(label, "camera_driver"))
    {
       if (camera_drivers[i])
          return strlcpy(s, camera_drivers[i]->ident, len);
    }
-   else if (!memcmp(label, "location_driver", STRLEN_CONST("location_driver")))
+   else if (!strcmp(label, "location_driver"))
    {
       if (location_drivers[i])
          return strlcpy(s, location_drivers[i]->ident, len);
    }
 #ifdef HAVE_MENU
-   else if (!memcmp(label, "menu_driver", STRLEN_CONST("menu_driver")))
+   else if (!strcmp(label, "menu_driver"))
    {
       if (menu_ctx_drivers[i])
          return strlcpy(s, menu_ctx_drivers[i]->ident, len);
    }
 #endif
-   else if (!memcmp(label, "input_driver", STRLEN_CONST("input_driver")))
+   else if (!strcmp(label, "input_driver"))
    {
       if (input_drivers[i])
          return strlcpy(s, input_drivers[i]->ident, len);
    }
-   else if (!memcmp(label, "input_joypad_driver", STRLEN_CONST("input_joypad_driver")))
+   else if (!strcmp(label, "input_joypad_driver"))
    {
       if (joypad_drivers[i])
          return strlcpy(s, joypad_drivers[i]->ident, len);
    }
-   else if (!memcmp(label, "video_driver", STRLEN_CONST("video_driver")))
+   else if (!strcmp(label, "video_driver"))
    {
       if (video_drivers[i])
          return strlcpy(s, video_drivers[i]->ident, len);
    }
-   else if (!memcmp(label, "audio_driver", STRLEN_CONST("audio_driver")))
+   else if (!strcmp(label, "audio_driver"))
    {
       if (audio_drivers[i])
          return strlcpy(s, audio_drivers[i]->ident, len);
    }
 #ifdef HAVE_MICROPHONE
-   else if (!memcmp(label, "microphone_driver", STRLEN_CONST("microphone_driver")))
+   else if (!strcmp(label, "microphone_driver"))
    {
       if (microphone_drivers[i])
          return strlcpy(s, microphone_drivers[i]->ident, len);
    }
 #endif
-   else if (!memcmp(label, "record_driver", STRLEN_CONST("record_driver")))
+   else if (!strcmp(label, "record_driver"))
    {
       if (record_drivers[i])
          return strlcpy(s, record_drivers[i]->ident, len);
    }
-   else if (!memcmp(label, "midi_driver", STRLEN_CONST("midi_driver")))
+   else if (!strcmp(label, "midi_driver"))
    {
       if (midi_driver_find_handle(i))
          return strlcpy(s, midi_drivers[i]->ident, len);
    }
-   else if (!memcmp(label, "audio_resampler_driver", STRLEN_CONST("audio_resampler_driver")))
+   else if (!strcmp(label, "audio_resampler_driver"))
    {
       if (audio_resampler_driver_find_handle(i))
          return strlcpy(s, audio_resampler_driver_find_ident(i), len);
    }
 #ifdef HAVE_BLUETOOTH
-   else if (!memcmp(label, "bluetooth_driver", STRLEN_CONST("bluetooth_driver")))
+   else if (!strcmp(label, "bluetooth_driver"))
    {
       if (bluetooth_drivers[i])
          return strlcpy(s, bluetooth_drivers[i]->ident, len);
    }
 #endif
 #ifdef HAVE_WIFI
-   else if (!memcmp(label, "wifi_driver", STRLEN_CONST("wifi_driver")))
+   else if (!strcmp(label, "wifi_driver"))
    {
       if (wifi_drivers[i])
          return strlcpy(s, wifi_drivers[i]->ident, len);
    }
 #endif
 #ifdef HAVE_CLOUDSYNC
-   else if (!memcmp(label, "cloud_sync_driver", STRLEN_CONST("cloud_sync_driver")))
+   else if (!strcmp(label, "cloud_sync_driver"))
    {
       if (cloud_sync_drivers[i])
          return strlcpy(s, cloud_sync_drivers[i]->ident, len);

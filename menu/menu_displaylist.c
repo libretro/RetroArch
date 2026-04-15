@@ -2577,7 +2577,7 @@ static int menu_displaylist_parse_playlist(
       return 0;
 
    /* Check whether core name should be added to playlist entries */
-   if (    (memcmp(menu_driver, "ozone", 6) != 0)
+   if (    strcmp(menu_driver, "ozone")
        && !pl_show_sublabels
        && ((pl_show_inline_core_name == PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS)
        ||  (!is_collection
@@ -2588,7 +2588,7 @@ static int menu_displaylist_parse_playlist(
 #ifdef HAVE_RGUI
       /* Get spacer for menu entry labels (<content><spacer><core>)
        * > Note: Only required when showing inline core names */
-      if (memcmp(menu_driver, "rgui", 5) == 0)
+      if (!strcmp(menu_driver, "rgui"))
          strlcpy(label_spacer, PL_LABEL_SPACER_RGUI, sizeof(label_spacer));
       else
 #endif
@@ -3358,9 +3358,7 @@ static void menu_displaylist_set_new_playlist(
       if (string_ends_with_size(playlist_file_name, "_history.lpl",
                strlen(playlist_file_name), STRLEN_CONST("_history.lpl")))
          playlist_config.capacity = content_history_size;
-      else if (memcmp(playlist_file_name,
-               FILE_PATH_CONTENT_FAVORITES,
-               strlen(FILE_PATH_CONTENT_FAVORITES) + 1) == 0
+      else if (!strcmp(playlist_file_name, FILE_PATH_CONTENT_FAVORITES)
             && (content_favorites_size >= 0))
          playlist_config.capacity = (unsigned)content_favorites_size;
    }
