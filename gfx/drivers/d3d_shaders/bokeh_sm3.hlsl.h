@@ -9,13 +9,17 @@ static const char *hlsl_bokeh_program = CG(
       float4 position : POSITION,
       float2 texcoord : TEXCOORD0,
       out float4 oPosition : POSITION,
-      out float2 vpos : TEXCOORD0
+      out float4 vdata0 : TEXCOORD0,
+      out float4 vdata1 : TEXCOORD1
    )
    {
       oPosition = mul(modelViewProj, position);
-      vpos = float2(
+      float2 vpos = float2(
          (oPosition.x / oPosition.w * 0.5 + 0.5) * OutputSize.x,
          (0.5 - oPosition.y / oPosition.w * 0.5) * OutputSize.y);
+      /* Pack vpos, OutputSize, and time into two float4 varyings */
+      vdata0 = float4(vpos, OutputSize);
+      vdata1 = float4(time, 0.0, 0.0, 0.0);
    }
 
    struct output
@@ -23,19 +27,21 @@ static const char *hlsl_bokeh_program = CG(
       float4 color : COLOR;
    };
 
-   output main_fragment(float2 vpos : TEXCOORD0)
+   output main_fragment(float4 vdata0 : TEXCOORD0, float4 vdata1 : TEXCOORD1)
    {
       output OUT;
-      float speed = time * 4.0;
-      float2 uv = -1.0 + 2.0 * vpos.xy / OutputSize;
-      uv.x *= OutputSize.x / OutputSize.y;
+      float2 vpos = vdata0.xy;
+      float2 osize = vdata0.zw;
+      float speed = vdata1.x * 4.0;
+      float2 uv = -1.0 + 2.0 * vpos.xy / osize;
+      uv.x *= osize.x / osize.y;
       float3 color = float3(0.0, 0.0, 0.0);
 
       for (int i = 0; i < 8; i++)
       {
          float pha = sin(float(i) * 546.13 + 1.0) * 0.5 + 0.5;
          float siz = pow(sin(float(i) * 651.74 + 5.0) * 0.5 + 0.5, 4.0);
-         float pox = sin(float(i) * 321.55 + 4.1) * OutputSize.x / OutputSize.y;
+         float pox = sin(float(i) * 321.55 + 4.1) * osize.x / osize.y;
          float rad = 0.1 + 0.5 * siz + sin(pha + siz) / 4.0;
          float2 pos = float2(pox + sin(speed / 15. + pha + siz),
             -1.0 - rad + (2.0 + 2.0 * rad) * frac(pha + 0.3 * (speed / 7.) * (0.2 + 0.8 * siz)));
