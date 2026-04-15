@@ -2683,6 +2683,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "ความยาวบัฟเฟอร์กลาง (หน่วยเป็นเฟรม) เมื่อใช้ไดรเวอร์ WASAPI ในโหมดใช้งานร่วม"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "เปิดแผงควบคุม ASIO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "เปิดแผงควบคุมของไดรเวอร์ ASIO เพื่อกำหนดค่าการกำหนดเส้นทางอุปกรณ์ และการตั้งค่าบัฟเฟอร์"
+   )
 
 /* Settings > Audio > Output */
 
@@ -2813,6 +2821,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    "ลดค่านี้ลงเพื่อให้ความสำคัญกับประสิทธิภาพ/เวลาแฝงที่ต่ำกว่าเมื่อเทียบกับคุณภาพเสียง เพิ่มค่าเพื่อให้ได้คุณภาพเสียงที่ดีขึ้นโดยต้องแลกกับประสิทธิภาพ/เวลาแฝงที่ต่ำลง"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   "อัตราสุ่มสัญญาณเสียงเอาต์พุต"
+   )
 
 /* Settings > Audio > Synchronization */
 
@@ -2911,24 +2923,388 @@ MSG_HASH(
    "จะเริ่มเล่นสตรีมเสียง เมื่อเล่นเสร็จแล้ว จะข้ามไปยังสตรีมเสียงถัดไปตามลำดับ และทำซ้ำพฤติกรรมนี้ เหมาะสำหรับโหมดการเล่นแบบอัลบั้ม"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   "หยุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+   "การหยุดเล่นกระแสข้อมูลเสียงแต่จะไม่ลบข้อมูลออกจากหน่วยความจำ สามารถเริ่มเล่นใหม่ได้โดยการเลือก 'เล่น'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "ลบออก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
+   "การหยุดเล่นสตรีมเสียงและลบข้อมูลออกจากหน่วยความจำทั้งหมด"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    "ระดับเสียง"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+   "ปรับระดับความดังของสตรีมเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "สถานะ: ไม่พร้อมใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "สถานะ: หยุดการเล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "สถานะ: กำลังเล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "สถานะ: กำลังเล่น (วนซ้ำ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "สถานะ: กำลังเล่น (ตามลำดับ)"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   "เล่นสตรีมเสียงพร้อมกันแม้จะอยู่ในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+   "เปิดเสียง 'ตกลง'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+   "เปิดเสียง 'ยกเลิก'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+   "เปิดใช้งานเสียง 'แจ้งเตือน'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+   "เปิดใช้งานเสียง 'BGM'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+   "เปิดใช้งานเสียง 'เมื่อปัดหรือเลื่อน'"
+   )
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
+   "จำนวนผู้ใช้สูงสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "จำนวนผู้ใช้สูงสุดที่รองรับโดย RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "พฤติกรรมการเรียกข้อมูล (จำเป็นต้องเริ่มระบบใหม่)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "มีผลต่อการเรียกข้อมูลอินพุตใน RetroArch หากตั้งค่าเป็น 'เร็ว' หรือ 'ช้า' อาจช่วยลดความหน่วงได้ ทั้งนี้ขึ้นอยู่กับการกำหนดค่าของคุณ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   "มีผลต่อการเรียกข้อมูลอินพุตภายใน RetroArch\nเร็ว - เรียกข้อมูลอินพุตก่อนที่จะมีการประมวลผลเฟรม\nปกติ - เรียกข้อมูลอินพุตเมื่อมีการร้องขอการเรียกข้อมูล\nช้า - เรียกข้อมูลอินพุตเมื่อมีก[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   "เปลี่ยนการตั้งค่าปุ่มสำหรับ Core นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   "แทนที่การตั้งค่าปุ่มอินพุตด้วยการเปลี่ยนการตั้งค่าปุ่มที่กำหนดไว้สำหรับ Core ปัจจุบัน แทนที่การตั้งค่าปุ่มอินพุตด้วยการเปลี่ยนการตั้งค่าปุ่มที่กำหนดไว้สำหรับ Core ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "เรียงลำดับการเปลี่ยนการตั้งค่าปุ่มตาม Gamepad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "การเปลี่ยนการตั้งค่าปุ่มจะมีผลกับ Gamepad ที่ใช้งานขณะบันทึกเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+   "กำหนดค่าอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+   "กำหนดค่าคอนโทรลเลอร์ที่มีโปรไฟล์ให้โดยอัตโนมัติ ในรูปแบบเสียบปลั๊กแล้วใช้งานได้เลย"
+   )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "ปิดการใช้งานปุ่มลัดของ Windows (จำเป็นต้องเริ่มระบบใหม่)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "คงการใช้งานคีย์ผสมของปุ่ม Windows ไว้ภายในแอปพลิเคชัน"
+   )
 #endif
 #ifdef ANDROID
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "เลือกคีย์บอร์ดที่เชื่อมต่ออยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "ใช้เครื่องมือนี้เป็นคีย์บอร์ดแทนที่จะเป็น Gamepad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "หาก RetroArch ระบุว่าคีย์บอร์ดฮาร์ดแวร์เป็น Gamepad ชนิดหนึ่ง การตั้งค่านี้สามารถใช้เพื่อบังคับให้ RetroArch ปฏิบัติกับอุปกรณ์ที่ระบุผิดนั้นเป็นคีย์บอร์ด\nสิ่งนี้จะมีประโยชน์หากคุณกำลังพยาย[...]"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "อินพุตเซนเซอร์เสริม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "เปิดใช้งานอินพุตจากเซนเซอร์ตรวจจับความเร่ง เซนเซอร์ตรวจจับลักษณะการหมุน และเซนเซอร์วัดความสว่าง หากฮาร์ดแวร์ปัจจุบันรองรับ อาจมีผลกระทบต่อประสิทธิภาพและ/หรือเพิ่มการใช้พล[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "ยึดเมาส์โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "เปิดใช้งานการยึดเมาส์เมื่อแอปพลิเคชันได้รับโฟกัส"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "เปิดใช้งานโหมด 'เน้นที่เกม' โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "เปิดใช้งานโหมด 'เน้นที่เกม' ทุกครั้งที่เริ่มหรือกลับเข้าสู่เนื้อหา เมื่อตั้งค่าเป็น 'ตรวจจับ' ตัวเลือกนี้จะถูกเปิดใช้งานหาก Core ปัจจุบันมีการรองรับฟังก์ชันเรียกกลับของคีย์บอร์[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   "เปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "ตรวจจับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   "หยุดเนื้อหาเมื่อคอนโทรลเลอร์ถูกตัดการเชื่อมต่อ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   "หยุดเนื้อหาเมื่อคอนโทรลเลอร์ใดก็ตามถูกตัดการเชื่อมต่อ และกลับมาเล่นต่อด้วยปุ่ม Start"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   "เกณฑ์การตอบสนองของแกนปุ่มอินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   "ค่าความอ่อนไหวของแกนที่ต้องขยับเพื่อให้ถือว่าเป็นการกดปุ่ม เมื่อใช้งานโหมด 'Analog to Digital'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+   "ระยะตายของอนาล็อก (Analog Deadzone)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   "ละเว้นการเคลื่อนที่ของแกนอนาล็อกที่น้อยกว่าค่าระยะตาย (Deadzone)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   "ความไวของอนาล็อก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "ความไวของเซนเซอร์ตรวจจับความเร่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "ความไวไจโรสโคป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   "ปรับความไวของก้านอะนาล็อก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "ปรับความไวของตัวตรวจจับความเร่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   "การปรับทิศทางเซ็นเซอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   "หมุนแกนของตัวตรวจจับความเร่งและไจโรสโคปให้ตรงกับการวางอุปกรณ์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   "อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "ปรับความไวของไจโรสโคป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
+   "หมดเวลาในการผูก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   "จำนวนวินาทีที่จะรอก่อนดำเนินการไปยังการผูกถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+   "กดค้างเพื่อผูก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   "จำนวนวินาทีที่ต้องกดอินพุตค้างไว้เพื่อทำการผูก"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "กดแป้นพิมพ์ เมาส์ หรือคอนโทรลเลอร์"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "ปล่อยปุ่มและแป้นพิมพ์"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "หมดเวลา"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "กดค้างไว้"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "ปุ่ม Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   "การปิดใช้งานจะหยุดการทำงานของ ปุ่ม Turbo ทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+   "ช่วงเวลา Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "ระยะเวลาเป็นจำนวนเฟรมที่ใช้ในการกดปุ่ม Turbo ที่เปิดใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
+   "อัตราส่วนหน้าที่ปุ่ม Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   "จำนวนเฟรมจากช่วงเวลาปุ่ม Turbo ที่ปุ่มถูกกดค้างไว้ หากตัวเลขนี้มีค่าเท่ากับหรือมากกว่าช่วงเวลาปุ่ม Turbo ปุ่มจะไม่ถูกปล่อยออกเลย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   "ครึ่งช่วงเวลา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   "โหมด Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "เลือกพฤติกรรมทั่วไปของโหมด Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Classic (เปิดปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
+   "ปุ่มเดียว (เปิดปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "ปุ่มเดียว (กดค้าง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "โหมด Classic การทำงานสองปุ่ม กดปุ่มค้างไว้แล้วแตะปุ่ม Turbo เพื่อเปิดใช้งานลำดับการกด-ปล่อย\nสามารถกำหนดการผูก Turbo ได้ใน การตั้งค่า/อินพุต/พอร์ต X ควบคุม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "โหมด Classic เปิดปิด การทำงานสองปุ่ม กดปุ่มค้างไว้แล้วแตะปุ่ม Turbo เพื่อเปิดใช้งาน Turbo สำหรับปุ่มนั้น หากต้องการปิด Turbo: กดปุ่มค้างไว้แล้วกดปุ่ม Turbo อีกครั้ง\nสามารถกำหนดการผูก Turbo ได้ใน การต[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "โหมด เปิดปิด กดปุ่ม Turbo หนึ่งครั้งเพื่อเปิดใช้งานลำดับการกด-ปล่อยสำหรับปุ่มเริ่มต้นที่เลือก กดอีกครั้งเพื่อปิดการทำงาน\nสามารถกำหนดการผูก Turbo ได้ใน การตั้งค่า/อินพุต/พอร์ต X ควบคุม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "โหมดกดค้าง ลำดับการกด-ปล่อยของปุ่มมาตรฐานที่เลือกไว้จะทำงานตราบเท่าที่กดปุ่ม Turbo ค้างไว้\nสามารถตั้งค่าปุ่ม Turbo ได้ที่ การตั้งค่า/อินพุต/การควบคุมพอร์ต X\nในการจำลองฟังก์ชันรัวปุ่[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   "ปุ่ม Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "ปุ่ม Turbo ที่เชื่อมกับ RetroPad หากเว้นว่างไว้จะใช้ปุ่มที่เชื่อมไว้ตามพอร์ตที่กำหนด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "ปุ่ม Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "ปุ่ม Turbo เป้าหมายในโหมด 'ปุ่มเดียว'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+   "อนุญาตทิศทาง D-Pad สำหรับ Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   "หากเปิดใช้งาน อินพุตทิศทางดิจิทัล (หรือที่เรียกว่า d-pad หรือ 'hatswitch') จะสามารถใช้ Turbo ได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "ปุ่ม Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "เปลี่ยนการตั้งค่าปุ่ม Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "แรงสั่นสะเทือน/การสั่นสะเทือน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "เปลี่ยนการตั้งค่าแรงสั่นสะเทือนและการสั่นสะเทือน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   "เซนเซอร์จับความเคลื่อนไหว/แสง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   "เปลี่ยนการตั้งค่าเซนเซอร์ความเร่ง เซนเซอร์วัดการหมุน และความสว่างของแสง"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
    "การควบคุมเมนู"
@@ -2977,28 +3353,596 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "วิธีแก้ปัญหาชั่วคราวสำหรับคอนโทรลเลอร์ที่หลุดแล้วเชื่อมต่อใหม่ ซึ่งส่งผลกระทบต่อการเล่น 2 คนที่ใช้คอนโทรลเลอร์รุ่นเดียวกัน"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "ต้องกดปุ่มลัดเพื่อออกซ้ำสองครั้งจึงจะออกได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "ยืนยันการปิดเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "ต้องกดปุ่มลัดเพื่อปิดเนื้อหาซ้ำสองครั้งจึงจะทำงาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "ยืนยันการรีเซ็ตเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "ต้องกดปุ่มลัดเพื่อรีเซ็ตเนื้อหาซ้ำสองครั้งจึงจะทำงาน"
+   )
 
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   "สั่นเมื่อกดปุ่ม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   "เปิดใช้งานการสั่นของอุปกรณ์ (สำหรับ Core ที่รองรับ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "แรงสั่นสะเทือน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "กำหนดระดับความแรงของเอฟเฟกต์การสั่น"
+   )
 
 /* Settings > Input > Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+   "การควบคุมเมนูแบบรวม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+   "ใช้ปุ่มควบคุมเดียวกันทั้งในเมนูและในเกม มีผลกับการใช้งานคีย์บอร์ดด้วย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "สลับปุ่มตกลงและปุ่มยกเลิก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "สลับปุ่มสำหรับ ตกลง/ยกเลิก หากปิดใช้งานจะเป็นการเรียงปุ่มแบบญี่ปุ่น หากเปิดใช้งานจะเป็นการเรียงปุ่มแบบตะวันตก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "สลับปุ่มเลื่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "สลับปุ่มสำหรับการเลื่อน หากปิดใช้งานจะเลื่อนทีละ 10 รายการด้วยปุ่ม L/R และเลื่อนตามตัวอักษรด้วยปุ่ม L2/R2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "ควบคุมเมนูได้ทุกผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "อนุญาตให้ผู้ใช้ทุกคนควบคุมเมนูได้ หากปิดใช้งาน จะมีเพียงผู้ใช้ที่ 1 เท่านั้นที่สามารถควบคุมเมนูได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "เพลย์ลิสต์แบบคลิกเดียวจบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "ข้ามเมนู 'เล่น' เมื่อเข้าเล่นจากเพลย์ลิสต์ สามารถเข้าเมนู 'เล่น' ได้โดยการกดปุ่มทิศทางพร้อมกับกดปุ่มตกลงค้างไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "อนุญาตให้กดย้อนหลังจากแท็บได้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "กลับสู่เมนูหลักจากแท็บ/แถบด้านข้าง เมื่อกดปุ่มย้อนกลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "ความเร็วในการเลื่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "ความเร็วสูงสุดของเคอร์เซอร์เมื่อกดทิศทางค้างเพื่อเลื่อนดูรายการต่างๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "หน่วงเวลาการเลื่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "ความหน่วงเริ่มต้นเมื่อกดทิศทางค้างเพื่อเลื่อน (มิลลิวินาที)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
+   "ปิดปุ่มข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "ระงับฟังก์ชันข้อมูลเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   "ปิดปุ่มค้นหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "ระงับฟังก์ชันค้นหาเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "ปิดปุ่มอนาล็อกซ้ายในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "ระงับการใช้งานอนาล็อกซ้ายในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "ปิดปุ่มอนาล็อกขวาในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "ระงับการใช้งานอนาล็อกขวาในเมนู โดยอนาล็อกขวาจะสลับภาพตัวอย่างในเพลย์ลิสต์แทน"
+   )
 
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+   "ปุ่มเปิดใช้งานคีย์ลัด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "เมื่อกำหนดแล้ว ต้องกดปุ่ม 'เปิดใช้งานคีย์ลัด' ค้างไว้ก่อนจึงจะใช้งานคีย์ลัดอื่นๆ ได้ ช่วยให้ตั้งค่าปุ่มบนคอนโทรลเลอร์เป็นคีย์ลัดได้โดยไม่กระทบต่อการควบคุมปกติ หากกำหนดปุ่มเ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "หากกำหนดคีย์ลัดนี้ให้กับคีย์บอร์ด ปุ่มกด หรือแกนควบคุม คีย์ลัดอื่นทั้งหมดจะถูกปิดการใช้งาน เว้นแต่จะกดคีย์ลัดนี้ค้างไว้พร้อมกัน\nซึ่งมีประโยชน์สำหรับการใช้งานที่เน้นคีย์บ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+   "หน่วงเวลาเปิดใช้งานคีย์ลัด (เฟรม)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "เพิ่มระยะเวลาการหน่วงเป็นจำนวนเฟรมก่อนที่การควบคุมปกติจะถูกระงับ หลังจากกดปุ่ม 'เปิดใช้งานคีย์ลัด' ที่กำหนดไว้\nช่วยให้ยังสามารถใช้งานการควบคุมปกติจากปุ่ม 'เปิดใช้งานคีย์ลั[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "รวมประเภทอุปกรณ์คีย์ลัดไว้ด้วยกัน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "ระงับคีย์ลัดทั้งหมดจากทั้งคีย์บอร์ดและคอนโทรลเลอร์ หากอุปกรณ์ประเภทใดประเภทหนึ่งมีการตั้งค่า 'เปิดใช้งานคีย์ลัด' ไว้\nช่วยให้การใช้งานคีย์ลัดจากทั้งสองอุปกรณ์ถูกควบคุมด้วย[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "คีย์ลัดตามผู้เล่น 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "กำหนดให้คีย์ลัดยึดตามพอร์ตหลัก 1 (Core Port 1) แม้ว่าจะมีการเปลี่ยนพอร์ตดังกล่าวไปเป็นของผู้เล่นคนอื่นก็ตาม\nหมายเหตุ: คีย์ลัดบนคีย์บอร์ดจะไม่ทำงานหากพอร์ตหลัก 1 ถูกเปลี่ยนไปเป็นของผ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "เปิด/ปิดเมนู (Controller Combo)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "ปุ่มกด Controller Combo เพื่อเปิด/ปิดเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
+   "เปิด/ปิดเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
+   "สลับการแสดงผลปัจจุบันระหว่างเมนูและเนื้อหาในแอปพลิเคชัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "ออกจากแอป (Controller Combo)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "ปุ่มกด Controller Combo เพื่อออกจาก RetroArch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "ออก"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
+   "ปิด RetroArch เพื่อให้แน่ใจว่าข้อมูลการเซฟและไฟล์การตั้งค่าทั้งหมดถูกเขียนลงในดิสก์เรียบร้อยแล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "ปิดเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "ปิดเนื้อหาที่กำลังเล่นอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   "รีเซ็ตเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   "เริ่มเนื้อหาใหม่ตั้งแต่ต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+   "เร่งความเร็ว (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
+   "สลับระหว่างเร่งความเร็วและความเร็วปกติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "เร่งความเร็ว (กดค้าง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "เปิดใช้งานการเร่งความเร็วเมื่อกดค้างไว้ และเนื้อหาจะรันที่ความเร็วปกติเมื่อปล่อยปุ่ม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+   "สโลว์โมชั่น (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
+   "สลับระหว่างสโลว์โมชั่นและความเร็วปกติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
+   "สโลว์โมชั่น (กดค้าง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
+   "เปิดใช้งานสโลว์โมชั่นเมื่อกดค้างไว้ และเนื้อหาจะรันที่ความเร็วปกติเมื่อปล่อยปุ่ม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   "ย้อนเวลา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   "ย้อนกลับเนื้อหาปัจจุบันเมื่อกดปุ่มค้างไว้ ต้องเปิดใช้งาน 'การสนับสนุนการย้อนกลับ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
+   "หยุดชั่วคราว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
+   "สลับระหว่างสถานะหยุดชั่วคราวและไม่หยุดชั่วคราว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
+   "เฟรมถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
+   "เลื่อนเนื้อหาไปข้างหน้าทีละหนึ่งเฟรมเมื่อหยุดชั่วคราว"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
+   "ปิดเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
+   "สลับการเปิด-ปิดเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
+   "เพิ่มระดับเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   "เพิ่มระดับเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+   "ลดระดับเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
+   "ลดระดับเสียงเอาต์พุตลง"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   "โหลดสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   "โหลดสถานะที่บันทึกไว้จากสล็อตที่เลือกอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   "บันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   "บันทึกสถานะลงในสล็อตที่เลือกอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
+   "สล็อตบันทึกสถานะถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
+   "เพิ่มลำดับสล็อตบันทึกสถานะที่เลือกอยู่ในปัจจุบันขึ้นทีละหนึ่ง (สล็อตถัดไป)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   "สล็อตบันทึกสถานะก่อนหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
+   "ลดลำดับสล็อตบันทึกสถานะที่เลือกอยู่ในปัจจุบันลงทีละหนึ่ง (สล็อตก่อนหน้า)"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
+   "นำแผ่นออก (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   "หากถาดวางแผ่นจำลองปิดอยู่ จะทำการเปิดถาดและนำแผ่นที่โหลดไว้ออก หากถาดเปิดอยู่ จะทำการใส่แผ่นที่เลือกไว้และปิดถาดลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
+   "แผ่นถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "เพิ่มลำดับแผ่นดิสก์ที่เลือกอยู่ในปัจจุบัน และจะทำการใส่แผ่นแบบดีเลย์ หากถาดใส่แผ่นจำลองปิดอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
+   "แผ่นก่อนหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "ลดลำดับแผ่นดิสก์ที่เลือกอยู่ในปัจจุบัน และจะทำการใส่แผ่นแบบดีเลย์ หากถาดใส่แผ่นจำลองปิดอยู่"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "เปิด-ปิด การใช้งาน Shaders"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "เปิด-ปิด การใช้งานเชเดอร์ที่เลือกอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
+   "เปิด-ปิด การใช้งาน Shaders"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   "เปิด/ปิดการใช้งาน Shader ปัจจุบัน ขณะที่กดปุ่มค้างไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
+   "Shader ถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   "โหลดและเรียกใช้ไฟล์ Shader preset ถัดไปที่อยู่ในโฟลเดอร์หลักของไดเรกทอรี 'Video Shaders'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
+   "Shader ก่อนหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
+   "โหลดและเรียกใช้ไฟล์ Shader preset ก่อนหน้าที่อยู่ในโฟลเดอร์หลักของไดเรกทอรี 'Video Shaders'"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
+   "เปิด-ปิด สูตรโกง (Cheats)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
+   "เปิด-ปิด การใช้งานสูตรโกงที่เลือกอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
+   "ลำดับสูตรโกงถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS,
+   "เพิ่มลำดับสูตรโกงที่เลือกอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
+   "ลำดับสูตรโกงก่อนหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS,
+   "ลดลำดับสูตรโกงที่เลือกอยู่ในปัจจุบัน"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   "จับภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
+   "บันทึกภาพของเนื้อหาที่แสดงอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+   "เปิด-ปิด การบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
+   "เริ่ม-หยุด การบันทึกเซสชันปัจจุบันลงเป็นไฟล์วิดีโอในเครื่อง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+   "เปิด-ปิด การสตรีม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
+   "เริ่ม-หยุด การสตรีมของเซสชันปัจจุบันไปยังแพลตฟอร์มวิดีโอออนไลน์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "เล่นไฟล์ เล่นซ้ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   "เล่นไฟล์ เล่นซ้ำ จากช่องที่เลือกไว้ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "บันทึกไฟล์ เล่นซ้ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "บันทึกไฟล์เล่นซ้ำลงในช่องที่เลือกไว้ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "หยุดการบันทึก/เล่นซ้ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "หยุดการบันทึก/เล่นไฟล์เล่นซ้ำปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "บันทึกจุดเช็คพอยต์การเล่นซ้ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "บันทึกจุดเช็คพอยต์ลงในการเล่นซ้ำที่กำลังเล่นอยู่ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "ย้อนกลับไปยังจุดเช็คพอยต์การเล่นซ้ำก่อนหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "ย้อนกลับการเล่นซ้ำไปยังจุดเช็คพอยต์ก่อนหน้า ทั้งที่บันทึกโดยอัตโนมัติหรือบันทึกด้วยตัวเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "จุดเช็คพอยต์เล่นซ้ำถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "เร่งการเล่นซ้ำ ไปยังจุดเช็คพอยต์ที่บันทึกโดยอัตโนมัติหรือบันทึกด้วยตนเองถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "สล็อตเล่นซ้ำถัดไป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "เพิ่มลำดับหมายเลขสล็อตเล่นซ้ำที่เลือกไว้ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "สล็อตเล่นซ้ำก่อนหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "ลดหมายเลขสล็อตเล่นซ้ำที่เลือกไว้ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   "ปุ่ม Turbo (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   "สลับการ เปิด-ปิด ปุ่ม Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
+   "จับเมาส์ (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
+   "ยึดหรือปล่อยเมาส์ เมื่อถูกยึด เคอร์เซอร์ของระบบจะถูกซ่อนและจำกัดไว้ในหน้าต่างแสดงผลของ RetroArch เพื่อปรับปรุงการป้อนข้อมูลเมาส์แบบสัมพัทธ์ให้ดีขึ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
+   "โฟกัสเกม (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "สลับ เปิด-ปิด โหมด 'โฟกัสเกม' เมื่อเนื้อหาถูกโฟกัส ปุ่มลัดจะถูกปิดใช้งาน (การป้อนข้อมูลคีย์บอร์ดทั้งหมดจะถูกส่งไปยัง Core ที่กำลังรันอยู่) และเมาส์จะถูกยึดไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "เต็มหน้าจอ (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+   "เมนูเดสก์ท็อป (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
+   "เปิดหน้าต่างส่วนประสานงานผู้ใช้แบบเดสก์ท็อป WIMP (Windows, Icons, Menus, Pointer) ที่ใช้งานร่วมกัน"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "ซิงค์กับอัตราเฟรมของเนื้อหาโดยตรง (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "สลับการ เปิด-ปิด การซิงค์กับอัตราเฟรมของเนื้อหาโดยตรง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "รันเฟรมล่วงหน้า (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "เปิด-ปิด รันเฟรมล่วงหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   "เรนเดอร์เฟรมล่วงหน้า (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   "เปิด-ปิด เรนเดอร์เฟรมล่วงหน้า"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+   "แสดง FPS (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
+   "เปิด-ปิด การแสดงค่าเฟรมเรต (FPS)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "แสดงสถิติทางเทคนิค (เปิด-ปิด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "เปิด-ปิด การแสดงสถิติทางเทคนิคบนหน้าจอ"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
    "คีย์บอร์ดเสมือน (เปิด/ปิด)"
@@ -3044,33 +3988,677 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
    "โหมดการเล่น/รับชม Netplay (เปิด/ปิด)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
+   "สลับโหมด netplay ระหว่าง 'เล่น' และ 'รับชม'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "แชทผู้เล่น netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "ส่งข้อความแชทไปยังเซสชันการเล่นผ่านเครือข่าย Netplay ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "เปิด-ปิด การจางหายของแชท Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "สลับระหว่างการทำให้ข้อความแชทค่อยๆ จางหาย หรือแสดงค้างไว้ในการเล่นผ่านเครือข่าย Netplay"
+   )
 
 /* Settings > Input > Port # Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
+   "ประเภทอุปกรณ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
+   "ระบุประเภทของจอยคอนโทรลเลอร์ที่จำลองขึ้นมา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+   "Analog เป็น Digital"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "ใช้ก้านอะนาล็อกที่ระบุเพื่อป้อนข้อมูลแทนปุ่มทิศทาง (D-Pad) โดยโหมด 'บังคับ' (Forced) จะแทนที่การป้อนข้อมูลอะนาล็อกเดิมของตัวคอร์โดยตรง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   "กำหนดก้านอะนาล็อกที่ระบุเพื่อป้อนข้อมูลแทนปุ่มทิศทาง (D-Pad)\nหากคอร์รองรับการใช้ก้านอะนาล็อกอยู่แล้ว การกำหนดค่านี้จะถูกปิดใช้งาน เว้นแต่จะเลือกตัวเลือก '(บังคับ)'\nหากเลือกแบบบั[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
+   "หมายเลขอุปกรณ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "จอยคอนโทรลเลอร์ที่ระบบ RetroArch ตรวจพบทางกายภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "อุปกรณ์ที่จองไว้สำหรับผู้เล่นนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "จอยคอนโทรลเลอร์นี้จะถูกจองไว้สำหรับผู้เล่นคนนี้ ตามโหมดการสำรองที่กำหนดไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "ไม่มีการจอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   "ที่ต้องการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   "จองแล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "ประเภทการจองอุปกรณ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "ที่ต้องการ: หากพบอุปกรณ์ที่ระบุไว้ จะถูกจองไว้ให้ผู้เล่นคนนี้ จองแล้ว: จะไม่มีจอยคอนโทรลเลอร์ตัวอื่นถูกจองไว้ให้ผู้เล่นคนนี้แทนที่ได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "พอร์ตที่จับคู่ไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "ระบุว่า Core พอร์ตใดจะได้รับสัญญาณอินพุตจากพอร์ตจอยคอนโทรลเลอร์ %u ของ Frontend"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
+   "ตั้งค่าการควบคุมทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "กำหนดทิศทางและปุ่มทั้งหมด ตามลำดับที่ปรากฏในเมนูนี้ทีละปุ่ม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
+   "คืนค่าการควบคุมเริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "ล้างค่าการตั้งค่าปุ่มอินพุตให้เป็นค่าเริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+   "บันทึกโปรไฟล์จอยคอนโทรลเลอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "บันทึกไฟล์การตั้งค่าอัตโนมัติ ซึ่งจะถูกนำมาใช้โดยอัตโนมัติเมื่อตรวจพบจอยคอนโทรลเลอร์นี้ในครั้งต่อไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
+   "หมายเลขเมาส์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "ลำดับเมาส์ ทางกายภาพ ที่ RetroArch ตรวจพบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   "ปุ่ม B (ล่าง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
+   "ปุ่ม Y (ซ้าย)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
+   "ปุ่ม Select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
+   "ปุ่ม Start"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
+   "ปุ่ม D-Pad (ขึ้น)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
+   "ปุ่ม D-Pad (ลง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
+   "ปุ่ม D-Pad (ซ้าย)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
+   "ปุ่ม D-Pad (ขวา)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
+   "ปุ่ม A (ขวา)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
+   "ปุ่ม X (บน)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
+   "ปุ่ม L (ไหล่หน้า)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
+   "ปุ่ม R (ไหล่หน้า)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
+   "ปุ่ม L2 (ทริกเกอร์)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
+   "ปุ่ม R2 (ทริกเกอร์)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
+   "ปุ่ม L3 (แกนโยกซ้าย)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
+   "ปุ่ม R3 (แกนโยกขวา)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   "ปุ่มแกนโยกซ้าย X+ (ขวา)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   "ปุ่มแกนโยกซ้าย X- (ซ้าย)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   "ปุ่มแกนโยกซ้าย Y+ (ลง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   "ปุ่มแกนโยกซ้าย Y- (บน)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   "ปุ่มแกนโยกขวา X+ (ขวา)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   "ปุ่มแกนโยกขวา X- (ซ้าย)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+   "ปุ่มแกนโยกขวา Y+ (ลง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   "ปุ่มแกนโยกขวา Y- (บน)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+   "ปุ่มไกปืน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   "ปืน รีโหลดกระสุน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
+   "ปุ่ม Gun Aux A"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
+   "ปุ่ม Gun Aux B"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
+   "ปุ่ม Gun Aux C"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
+   "ปืน ปุ่ม D-Pad (ขึ้น)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
+   "ปืน ปุ่ม D-Pad (ลง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
+   "ปืน ปุ่ม D-Pad (ซ้าย)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
+   "ปืน ปุ่ม D-Pad (ขวา)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "ปุ่ม Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "กดค้างไว้"
+   )
 
 /* Settings > Latency */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+   "[รันเฟรมล่วงหน้า ไม่สามารถใช้งานได้]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "Core ปัจจุบันไม่รองรับการรันเฟรมล่วงหน้า เนื่องจากไม่รองรับการบันทึกสถานะแบบ Deterministic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
+   "รันเฟรมล่วงหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+   "จำนวนเฟรมที่จะรันล่วงหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   "จำนวนเฟรมที่จะรันเฟรมล่วงหน้า หากตั้งค่าเกินจำนวนเฟรมที่หน่วงจริงภายในเกม จะทำให้เกิดปัญหาในการเล่นอย่างเช่นอาการภาพสั่นค้างหรือกระตุกได้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "ประมวลผลการทำงานของ Core เพิ่มเติมเพื่อลดความหน่วง โดย Single Instance จะรันเฟรมไปยังอนาคตแล้วโหลดสถานะปัจจุบันใหม่ ส่วน Second Instance จะรัน Core แยกเฉพาะวิดีโอไว้ที่เฟรมอนาคตเพื่อเลี่ยงปัญหาด้านเ[...]"
+   )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "ประมวลผลการทำงานของ Core เพิ่มเติมเพื่อลดความหน่วง โดย Single Instance จะรันเฟรมไปยังอนาคตแล้วโหลดสถานะปัจจุบันใหม่ ส่วน Preemptive Frames จะรันเฟรมที่ผ่านมาใหม่พร้อมกับอินพุตใหม่เมื่อจำเป็นเพื่อเ[...]"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "โหมด Single Instance"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "โหมด Second Instance"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "โหมดจัดการเฟรมที่ถูกเรนเดอร์ล่วงหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+   "ซ่อนการแจ้งเตือนรันเฟรมล่วงหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+   "ซ่อนข้อความแจ้งเตือนที่ปรากฏขึ้นเมื่อใช้งานรันเฟรมล่วงหน้าในกรณีที่ Core ไม่รองรับการบันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   "จำนวนเฟรมที่ถูกเรนเดอร์ล่วงหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
+   "จำนวนเฟรมที่จะรันซ้ำ หากตั้งค่าเกินจำนวนเฟรมที่หน่วงจริงภายในเกม จะทำให้เกิดปัญหาในการเล่นอย่างเช่นอาการภาพสั่นค้างหรือกระตุกได้"
+   )
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   "ใช้ Context ร่วมกับฮาร์ดแวร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+   "กำหนดบริบทส่วนตัวให้กับ Core ที่มีการเรนเดอร์ด้วยฮาร์ดแวร์ เพื่อหลีกเลี่ยงการต้องคาดการณ์การเปลี่ยนแปลงสถานะของฮาร์ดแวร์ในระหว่างเฟรม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
+   "อนุญาตให้ Core สลับไดรเวอร์วิดีโอได้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
+   "อนุญาตให้ Core สามารถสลับไปใช้ไดรเวอร์วิดีโออื่นที่ต่างจากตัวที่กำลังใช้งานอยู่ได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
+   "โหลด Dummy Core เมื่อปิดคอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   "โหลด Dummy Core เพื่อป้องกันไม่ให้ RetroArch ปิดตัวลง เมื่อใช้งานคอร์ที่มีฟีเจอร์คำสั่งปิดระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   "บาง Core อาจมีฟีเจอร์ปิดเครื่อง หากปิดตัวเลือกนี้ไว้ การสั่งปิดเครื่องจะทำให้ RetroArch ปิดตัวลง\nหากเปิดไว้จะโหลด dummy Core แทนเพื่อให้ยังอยู่ในเมนูและ RetroArch ไม่ปิดลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   "เริ่มใช้งาน Core โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "หมวดหมู่ตัวเลือก Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "อนุญาตให้ Core แสดงตัวเลือกในรูปแบบหมวดหมู่เมนูย่อย หมายเหตุ: ต้องทำการโหลด Core ใหม่เพื่อให้การเปลี่ยนแปลงมีผล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   "แคชไฟล์ข้อมูล Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   "เก็บแคชข้อมูล Core ที่ติดตั้งไว้ในเครื่องอย่างถาวร ช่วยลดเวลาการโหลดได้อย่างมากบนแพลตฟอร์มที่มีการเข้าถึงดิสก์ได้ช้า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "ข้ามฟีเจอร์บันทึกสถานะจากข้อมูล Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "กำหนดว่าจะละเว้นขีดความสามารถในการบันทึกสถานะที่ระบุไว้ในข้อมูล Core หรือไม่ เพื่อให้สามารถทดลองใช้งานฟีเจอร์ที่เกี่ยวข้องได้ (เช่นรันเฟรมล่วงหน้า, ย้อนเวลา และอื่นๆ)"
+   )
 #ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "โหลด Core ใหม่เสมอเมื่อเริ่มคอนเทนต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "รีสตาร์ท RetroArch เมื่อเริ่มคอนเทนต์ แม้ว่า Core ที่ต้องการจะถูกโหลดไว้แล้วก็ตาม วิธีนี้อาจช่วยเพิ่มความเสถียรของระบบ แต่ต้องแลกมาด้วยเวลาการโหลดที่เพิ่มขึ้น"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
+   "อนุญาตให้หมุนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
+   "อนุญาตให้ Core ตั้งค่าการหมุนหน้าจอ เมื่อปิดการใช้งาน การร้องขอการหมุนหน้าจอจะถูกละเพิกเฉย มีประโยชน์สำหรับเครื่องที่ตั้งค่าหมุนหน้าจอด้วยตนเองอยู่แล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   "จัดการ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
+   "จัดการงานบำรุงรักษาแบบออฟไลน์สำหรับ Core ที่ติดตั้งไว้ (สำรองข้อมูล, เรียกคืนข้อมูล, ลบ และอื่นๆ) และดูข้อมูล Core"
+   )
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+   "จัดการ Core"
+   )
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
+   "ติดตั้งหรือถอนการติดตั้ง Core ที่เผยแพร่ผ่าน Steam"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
+   "ติดตั้ง Core"
+)
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+   "ถอนการติดตั้ง Core"
+)
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+   "แสดง 'จัดการ Core'"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+   "แสดง 'จัดการ Core' ในเมนูหลัก"
+)
 
+MSG_HASH(
+   MSG_CORE_STEAM_INSTALLING,
+   "กำลังติดตั้ง Core:"
+)
 
+MSG_HASH(
+   MSG_CORE_STEAM_UNINSTALLED,
+   "Core จะถูกถอนการติดตั้งเมื่อปิด RetroArch"
+)
 
+MSG_HASH(
+   MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
+   "ขณะนี้กำลังดาวน์โหลด Core"
+)
 #endif
 /* Settings > Configuration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
+   "บันทึกการตั้งค่าเมื่อปิดโปรแกรม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+   "บันทึกการเปลี่ยนแปลงไปยังไฟล์การตั้งค่าเมื่อปิดโปรแกรม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
+   "บันทึกการเปลี่ยนแปลงไปยังไฟล์การตั้งค่าเมื่อออกจากโปรแกรม มีประโยชน์สำหรับการเปลี่ยนแปลงที่ทำผ่านเมนู ทั้งนี้จะทำการเขียนทับไฟล์การตั้งค่าเดิม โดยที่บรรทัด #include และคอมเมนต[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "บันทึกการตั้งค่าแบบขั้นต่ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "บันทึกเฉพาะการตั้งค่าที่ต่างจากค่าเริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "เมื่อเปิดใช้งาน จะบันทึกเฉพาะค่าการตั้งค่าที่ถูกเปลี่ยนจากค่าเริ่มต้นเท่านั้น  ส่งผลให้ไฟล์การตั้งค่ามีขนาดเล็กลงและจัดการได้ง่ายขึ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "บันทึกไฟล์การปรับปุ่มเมื่อออกจากโปรแกรม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "บันทึกการเปลี่ยนแปลงไปยังไฟล์การปรับปุ่มอินพุตที่ใช้งานอยู่ เมื่อปิดคอนเทนต์หรือออกจาก RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
+   "โหลดตัวเลือก Core เฉพาะคอนเทนต์โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
+   "โหลดตัวเลือก Core ที่ปรับแต่งไว้โดยค่าเริ่มต้นเมื่อเริ่มต้นโปรแกรม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
+   "โหลดไฟล์เขียนทับโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
+   "โหลดการตั้งค่าที่ปรับแต่งไว้โดยอัตโนมัติเมื่อเริ่มต้นโปรแกรม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
+   "โหลดไฟล์การปรับปุ่มโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
+   "โหลดการควบคุมที่ปรับแต่งไว้โดยอัตโนมัติเมื่อเริ่มต้นโปรแกรม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "โหลดไฟล์หมายเลขแผ่นดิสก์เริ่มต้นโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "เปลี่ยนไปใช้แผ่นดิสก์ล่าสุดที่เคยใช้ เมื่อเริ่มต้นคอนเทนต์แบบหลายแผ่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+   "โหลดค่า Shader Presets โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
+   "ใช้ไฟล์ตัวเลือก Core แบบ Global"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
+   "บันทึกตัวเลือกทั้งหมดของ Core ลงในไฟล์การตั้งค่ารวม (retroarch-core-options.cfg)  เมื่อปิดการใช้งาน ตัวเลือกของแต่ละ Core จะถูกบันทึกลงในโฟลเดอร์/ไฟล์เฉพาะของ Core นั้น ๆ ภายในไดเรกทอรี 'Configs' ของ RetroArch"
+   )
 
 /* Settings > Saving */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   "บันทึกไฟล์เซฟ โดยจัดแยกเข้าโฟลเดอร์ตามชื่อ Core "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+   "จัดเรียงไฟล์เซฟลงในโฟลเดอร์ที่ตั้งชื่อตาม Core ที่ใช้ "
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "บันทึกสถานะ: แยกโฟลเดอร์ตามชื่อ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+   "จัดเก็บไฟล์บันทึกสถานะลงในโฟลเดอร์ที่ตั้งชื่อตาม Core ที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "บันทึกไฟล์เซฟ: จัดเรียงเข้าโฟลเดอร์ตามไดเรกทอรีของคอนเทนต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "จัดเรียงไฟล์เซฟ ลงในโฟลเดอร์ที่ตั้งชื่อตามไดเรกทอรีที่คอนเทนต์นั้นถูกเก็บอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "บันทึกสถานะ: แยกโฟลเดอร์ตามไดเรกทอรีของเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "จัดเรียงการบันทึกสถานะลงในโฟลเดอร์ตามชื่อไดเรกทอรีที่เนื้อหานั้นจัดเก็บอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+   "ไฟล์เซฟ: ไม่เขียนทับ SaveRAM เมื่อโหลดสถานะที่บันทึกไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
+   "บล็อกไม่ให้ SaveRAM ถูกเขียนทับเมื่อโหลดสถานะที่บันทึกไว้ แต่อาจส่งผลให้ตัวเกมทำงานผิดปกติได้ในบางกรณี"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+   "บันทึกไฟล์: SaveRAM ช่วงเวลาบันทึกอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+   "บันทึก SaveRAM อัตโนมัติเป็นช่วงเวลา (วินาที) ทุกๆ ระยะเวลาที่กำหนดลงในหน่วยความจำถาวร"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   "บันทึก SaveRAM อัตโนมัติเป็นช่วงเวลา (วินาที) ทุกๆ ระยะเวลาที่กำหนด โดยปกติจะถูกปิดไว้จนกว่าจะมีการตั้งค่า หากตั้งค่าเป็น 0 จะเป็นการปิดการบันทึกอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "เล่นซ้ำ: ช่วงเวลาการบันทึกจุดเช็คพอยต์ออกมาเป็นวินาที"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "บันทึกจุดตรวจสอบสถานะเกมโดยอัตโนมัติระหว่างการบันทึกการเล่นซ้ำตามช่วงเวลาที่กำหนด (วินาที)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "บันทึกสถานะเกมโดยอัตโนมัติระหว่างการบันทึกการเล่นซ้ำตามช่วงเวลาที่กำหนด โดยปกติจะถูกปิดใช้งานไว้ เว้นแต่จะมีการตั้งค่า โดยช่วงเวลามีหน่วยเป็นวินาที หากตั้งค่าเป็น 0 จะเป็น[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "กำหนดว่าจะทำการอ่านค่าจุดเช็คพอยต์ที่เก็บไว้ในการเล่นซ้ำ ระหว่างการเล่นกลับตามปกติหรือไม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "การเล่นซ้ำ: การอ่านค่าจุดเช็คพอยต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "กำหนดว่าจะทำการอ่านค่าจุดเช็คพอยต์ที่เก็บไว้ในการเล่นซ้ำระหว่างการเล่นกลับตามปกติหรือไม่ โดยทั่วไปควรตั้งค่าเป็นเปิดใช้งาน แต่บางคอร์อาจทำงานผิดปกติเมื่อมีการอ่านค่าข้อ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   "บันทึกสถานะ: เพิ่มหมายเลขแบบอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
+   "ก่อนที่จะทำการบันทึกสถานะ หมายเลขบันทึกสถานะจะถูกเพิ่มขึ้นโดยอัตโนมัติ และเมื่อโหลดเนื้อหา หมายเลขจะถูกตั้งค่าไปยังหมายเลขที่สูงสุดที่มีอยู่เดิม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "เล่นซ้ำ: เพิ่มหมายเลขโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "ก่อนที่จะทำการเล่นซ้ำ หมายเลขเล่นซ้ำ จะถูกเพิ่มขึ้นโดยอัตโนมัติ  เมื่อโหลดคอนเทนต์ หมายเลขนี้จะถูกตั้งค่าเป็นหมายเลขสูงสุดที่มีอยู่แล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "บันทึกสถานะ: จำนวนหมายเลขที่เพิ่มขึ้นอัตโนมัติสูงสุดที่จะเก็บไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "จำกัดจำนวนของบันทึกสถานะที่จะถูกสร้างขึ้นเมื่อเปิดใช้งาน 'เพิ่มหมายเลขแบบอัตโนมัติ' หากจำนวนเกินขีดจำกัดขณะบันทึกสถานะใหม่ บันทึกสถานะเดิมที่มีหมายเลขต่ำสุดจะถูกลบออก หาก[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   "บันทึกสถานะ: บันทึกอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "ทำการบันทึกสถานะโดยอัตโนมัติเมื่อปิดเนื้อหา บันทึกสถานะนี้จะถูกโหลดขึ้นมาเมื่อเริ่มโปรแกรมหากเปิดใช้งาน 'โหลดอัตโนมัติ' ไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "บันทึกสถานะ: โหลดอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+   "โหลดบันทึกสถานะอัตโนมัติโดยจะเริ่มทำงานเมื่อเปิดโปรแกรมครั้งแรก (Startup) หากมีการทำบันทึกสถานะอัตโนมัติเอาไว้ก่อนหน้านี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   "บันทึกสถานะ: ภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "แสดงภาพตัวอย่างของบันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "บันทึกสถานะ: การบีบอัดไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+   "เขียนไฟล์บันทึกสถานะในรูปแบบไฟล์บีบอัด ช่วยลดขนาดไฟล์ลงได้อย่างมากแต่ต้องแลกมาด้วยการใช้เวลาในการบันทึกและโหลดที่นานขึ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "บันทึกสถานะ: เขียนลงในโฟลเดอร์ของเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "ใช้โฟลเดอร์ของเนื้อหาเป็นโฟลเดอร์สำหรับบันทึกสถานะ"
+   )
 
 /* Settings > Logging */
 
@@ -3104,12 +4692,36 @@ MSG_HASH(
 
 /* Settings > Frame Throttle */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   "ย้อนเวลา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "ข้ามเฟรมตามอัตราการเร่งความเร็ว สิ่งนี้ช่วยประหยัดพลังงานและเปิดโอกาสให้ใช้การจำกัดเฟรมจากซอฟต์แวร์ภายนอกได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+   "อัตราการเล่นแบบสโลว์โมชั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+   "อัตราที่คอนเทนต์จะเล่นเมื่อใช้โหมดสโลว์โมชั่น"
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "รีเซ็ตหลังจากบันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "รีเซ็ตตัวนับเวลาเฟรมหลังจากทำการบันทึกสถานะ"
+   )
 
 /* Settings > Recording */
 
@@ -3167,6 +4779,14 @@ MSG_HASH(
    "แสดงข้อความบนหน้าจอ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "การแจ้งเตือนบันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "แสดงข้อความบนหน้าจอเมื่อทำการบันทึกและโหลดบันทึกสถานะ"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
    "กำหนดค่าสีเขียวของสีพื้นหลัง OSD โดยค่าที่ใช้งานได้จะอยู่ระหว่าง 0 ถึง 255"
    )
@@ -3216,6 +4836,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    "หยุดเนื้อหา เมื่อไม่ได้ใช้งานเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "กลับมาเล่นเนื้อหาต่อหลังจากใช้งานบันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "ปิดเมนูและกลับเข้าสู่เนื้อหาโดยอัตโนมัติหลังจากบันทึกหรือโหลดสถานะ การปิดใช้งานส่วนนี้อาจช่วยเพิ่มประสิทธิภาพการบันทึกสถานะให้ดีขึ้นบนอุปกรณ์ที่มีความเร็วต่ำมาก"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -3291,6 +4919,30 @@ MSG_HASH(
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "แสดงเมนูย่อย 'บันทึกสถานะ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "แสดงตัวเลือกการบันทึกสถานะในเมนูย่อย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+   "แสดง 'บันทึก/โหลดสถานะ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+   "แสดงตัวเลือกสำหรับการบันทึก/โหลดสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "แสดง 'เลิกทำบันทึก/โหลดสถานะ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "แสดงตัวเลือกสำหรับการเลิกทำ บันทึก/โหลดสถานะ"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
    "แสดงตัวเลือก 'เชดเดอร์'"
@@ -3456,6 +5108,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "ความสำเร็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "ปิดการใช้งานสูตรโกง, การย้อนกลับ, สโลว์โมชัน และการโหลดบันทึกสถานะ, ความสำเร็จ ที่ได้รับในโหมดฮาร์ดคอร์จะถูกทำเครื่องหมายไว้เป็นพิเศษ เพื่อให้คุณสามารถแสดงให้ผู้อื่นเห็นถึง[...]"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
@@ -3655,6 +5311,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "เพลย์ลิสต์"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+   "บันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "บันทึกสถานะ และการเล่นย้อนหลัง จะถูกจัดเก็บไว้ในโฟลเดอร์นี้ หากไม่ได้ตั้งค่าไว้ ระบบจะพยายามบันทึกไปยังโฟลเดอร์ที่เนื้อหานั้นตั้งอยู่โดยอัตโนมัติ"
+   )
 
 #ifdef HAVE_MIST
 /* Settings > Steam */
@@ -3753,8 +5417,64 @@ MSG_HASH( /* FIXME Unused? */
 /* Quick Menu */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_STATE,
+   "บันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_STATE,
+   "บันทึกสถานะไปยังสล็อตที่เลือกไว้ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVE_STATE,
+   "บันทึกสถานะไปยังสล็อตที่เลือกไว้ในปัจจุบัน หมายเหตุ: โดยทั่วไปแล้วไฟล์บันทึกสถานะ จะไม่สามารถนำไปใช้ข้ามระบบได้ และอาจใช้งานไม่ได้กับเวอร์ชันอื่นของ Core นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_STATE,
+   "โหลดสถานะจากสล็อตที่เลือกไว้ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_STATE,
+   "โหลดสถานะจากสล็อตที่เลือกไว้ในปัจจุบัน หมายเหตุ: อาจใช้งานไม่ได้หากสถานะถูกบันทึกไว้ด้วยเวอร์ชันอื่นของ Core นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
+   "เลิกบันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
+   "หากมีการบันทึกทับสถานะเดิม ระบบจะย้อนกลับไปใช้การบันทึกสถานะก่อนหน้า ให้โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "เล่นไฟล์ เล่นซ้ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   "เล่นไฟล์ เล่นซ้ำ จากช่องที่เลือกไว้ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "บันทึกไฟล์ เล่นซ้ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "บันทึกไฟล์เล่นซ้ำลงในช่องที่เลือกไว้ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "หยุดการบันทึก/เล่นซ้ำ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
    "เพิ่มในรายการโปรด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
+   "บันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
+   "เข้าถึงตัวเลือกการบันทึกสถานะ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -3810,6 +5530,14 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "ระงับโหมดฮาร์ดคอร์สำหรับ ความสำเร็จ ในเซสชันปัจจุบัน การดำเนินการนี้จะเปิดใช้งานสูตรโกง, การย้อนกลับ, สโลว์โมชัน และการโหลดบันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "กลับเข้าสู่โหมดฮาร์ดคอร์สำหรับ ความสำเร็จ ในเซสชันปัจจุบัน การดำเนินการนี้จะปิดใช้งานสูตรโกง, การย้อนกลับ, สโลว์โมชัน และการโหลดบันทึกสถานะ พร้อมทั้งเริ่มเกมใหม่ทันที"
+   )
 
 /* Quick Menu > Information */
 
@@ -3974,6 +5702,10 @@ MSG_HASH(
    "ข้อมูล"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_STOP,
+   "หยุด"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
    "เปลี่ยนชื่อเพลย์ลิสต์"
    )
@@ -4015,6 +5747,30 @@ MSG_HASH(
 /* Notifications */
 
 
+MSG_HASH(
+   MSG_AUTO_SAVE_STATE_TO,
+   "บันทึกสถานะอัตโนมัติไปยัง"
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Core ไม่รองรับการบันทึกสถานะ"
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   "Core ไม่รองรับการยกเลิกบันทึกสถานะ"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_STATE_TO,
+   "ล้มเหลวในการบันทึกสถานะไปยัง"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNDO_SAVE_STATE,
+   "ล้มเหลวในการเลิกทำบันทึกสถานะ"
+   )
+MSG_HASH(
+   MSG_FOUND_AUTO_SAVESTATE_IN,
+   "พบการบันทึกสถานะอัตโนมัติใน"
+   )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
    "เปลี่ยนชื่อหัวข้อ"

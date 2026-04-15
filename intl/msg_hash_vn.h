@@ -2767,6 +2767,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "Chiều dài bộ đệm trung gian (tính theo khung) khi sử dụng trình điều khiển WASAPI ở chế độ chia sẻ."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Mở bảng điều khiển ASIO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Mở bảng điều khiển driver ASIO để cấu hình định tuyến thiết bị và các thiết lập bộ đệm."
+   )
 
 /* Settings > Audio > Output */
 

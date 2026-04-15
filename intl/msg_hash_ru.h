@@ -2763,6 +2763,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "Длина промежуточного буфера (в кадрах) при использовании драйвера WASAPI в общем режиме."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Открыть панель управления ASIO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Открыть панель управления драйвера ASIO для настройки буфера и маршрутизации устройства."
+   )
 
 /* Settings > Audio > Output */
 

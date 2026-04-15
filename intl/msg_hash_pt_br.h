@@ -2703,6 +2703,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "O tamanho (em quadros) do buffer intermediário quando o driver WASAPI estiver em modo compartilhado."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Abrir Painel de Controle ASIO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Abra o painel de controle do driver ASIO para configurar o roteamento de dispositivos e as configurações de buffer."
+   )
 
 /* Settings > Audio > Output */
 

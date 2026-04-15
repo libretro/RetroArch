@@ -554,6 +554,10 @@ MSG_HASH(
    "インストール済みコアをロック"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   ""
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "[コンテンツレスコア] メニューから除外"
    )

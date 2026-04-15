@@ -815,6 +815,14 @@ MSG_HASH(
    "Menyimpan konfigurasi saat ini ke berkas terpisah."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Simpan konfigurasi terkini sebagai file konfigurasi kustom."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Simpan Konfigurasi Utama"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Setel ulang ke Default"
    )
@@ -935,12 +943,52 @@ MSG_HASH(
    "Sinkron: Berkas Sistem"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Ketika diaktifkan, File konfigurasi akan di sinkronisasi ke penyimpanan cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Ketika diaktifkan, File sistem akan disinkronisasikan ke penyimpanan cloud. Ini akan meningkatkan waktu untuk menyinkronkan, Pakai dengan hati - hati."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "Ketika dinonaktifkan, File akan dipindahkan ke folder backup sebelum ditimpa atau dihapus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Mode Sinkronisasi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Otomatis: Sinkronkan saat RetroArch dinyalakan dan saat cores tidak dimuat. Manual: Hanya sinkronkan saat tombol 'Sinkronkan Sekarang' ditekan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Otomatis"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Nama Pengguna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "Username kamu untuk akun penyimpanan cloud."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "Kata Sandi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "Password kamu untuk akun penyimpanan cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Kunci Akses Rahasia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Kunci rahasia kamu untuk akun penyimpanan cloud."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -999,8 +1047,20 @@ MSG_HASH(
    "Berkas pangkalan data."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "Video. Pilih ini untuk membuka file ini dengan pemutar video."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "Musik. Pilih ini untuk membuka file ini dengan pemutar musik."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
    "Berkas gambar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Core Libretro. Mempilihkan ini akan rekan core ini ke game."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1154,6 +1214,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Driver Video yang digunakan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "Driver OpenGL 3.x. Driver ini mengizinkan cores libretro GL untuk digunakan selain cores renderer perangkat lunak. Versi minimum diperlukan: OpenGL 3.2 atau OpenGLES 3.0+. Mendukung format shader slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Driver Vulkan. Driver ini mengizinkan cores libretro Vulkan untuk digunakan selain cores renderer perangkat lunak. Versi minimum diperlukan: Vulkan 1.0. Mendukung HDR dan shader Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
