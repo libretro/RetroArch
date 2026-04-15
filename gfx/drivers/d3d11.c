@@ -1357,16 +1357,20 @@ static void d3d11_font_render_msg(
                         s->pos.x += shift_vp;
                   }
 
-                  /* Now emit shadow glyphs for this aligned line.  We clone
-                   * the foreground sprites and adjust position + color. */
+                  /* Now emit shadow glyphs for this aligned line.
+                   * Shadow must appear before foreground in the VBO so
+                   * it draws behind the text.  Clone the foreground
+                   * sprites with shadow offset + color, then swap the
+                   * two blocks so shadow comes first. */
                   if (have_drop)
                   {
                      float dx_vp = (float)drop_x_px * inv_vp_w;
                      float dy_vp = (float)drop_y_px * inv_vp_h;
-                     d3d11_sprite_t *s, *v_end = v;
-                     for (s = v_line; s < v_end; s++)
+                     unsigned fg_count = (unsigned)(v - v_line);
+                     d3d11_sprite_t *s;
+                     /* Append shadow copies after foreground (temporary) */
+                     for (s = v_line; s < v_line + fg_count; s++)
                      {
-                        /* Avoid v_line pointer aliasing: read then write. */
                         d3d11_sprite_t tmp = *s;
                         tmp.pos.x   += dx_vp;
                         tmp.pos.y   += dy_vp;
@@ -1376,6 +1380,19 @@ static void d3d11_font_render_msg(
                         tmp.colors[3] = color_dark;
                         *v = tmp;
                         v++;
+                     }
+                     /* Reorder: swap fg and shadow blocks in-place
+                      * so shadow draws first (painters order). */
+                     {
+                        unsigned i;
+                        d3d11_sprite_t *fg_start   = v_line;
+                        d3d11_sprite_t *shad_start = v_line + fg_count;
+                        for (i = 0; i < fg_count; i++)
+                        {
+                           d3d11_sprite_t tmp = fg_start[i];
+                           fg_start[i]        = shad_start[i];
+                           shad_start[i]      = tmp;
+                        }
                      }
                   }
                }
