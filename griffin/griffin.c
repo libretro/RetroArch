@@ -420,6 +420,9 @@ VIDEO IMAGE
 #ifdef HAVE_RBMP
 #include "../libretro-common/formats/bmp/rbmp.c"
 #endif
+#ifdef HAVE_RWEBP
+#include "../libretro-common/formats/webp/rwebp.c"
+#endif
 
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 #ifdef HAVE_RWAV

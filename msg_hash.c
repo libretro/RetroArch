@@ -752,6 +752,8 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_FILE_GONG_CAPS                                              0x7c8558d0U
 #define MENU_VALUE_FILE_TGA                                                    0x0b88ae01U
 #define MENU_VALUE_FILE_BMP                                                    0x0b886244U
+#define MENU_VALUE_FILE_WEBP                                                   0x7ca00b53U
+#define MENU_VALUE_FILE_WEBP_CAPS                                              0x7c8df2d3U
 
 #define MENU_VALUE_MD5                                                         0x0b888fabU
 #define MENU_VALUE_SHA1                                                        0x7c9de632U
@@ -936,6 +938,9 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_TGA;
       case MENU_VALUE_FILE_BMP:
          return FILE_TYPE_BMP;
+      case MENU_VALUE_FILE_WEBP:
+      case MENU_VALUE_FILE_WEBP_CAPS:
+         return FILE_TYPE_WEBP;
 #endif
 #ifdef HAVE_EASTEREGG
       case MENU_VALUE_FILE_GONG:

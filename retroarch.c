@@ -2872,6 +2872,7 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_PNG:
       case FILE_TYPE_TGA:
       case FILE_TYPE_BMP:
+      case FILE_TYPE_WEBP:
          return RARCH_CONTENT_IMAGE;
 #endif
       default:
@@ -6513,6 +6514,9 @@ static void retroarch_print_features(void)
 #endif
 #ifdef HAVE_RTGA
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_RTGA,            "RTGA",            "TGA (RTGA) image loading/encoding");
+#endif
+#ifdef HAVE_RWEBP
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_RWEBP,           "RWEBP",           "WebP (RWEBP) image loading");
 #endif
 #ifdef HAVE_SDL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL,             "SDL1",            "SDL1 input/audio/video drivers");

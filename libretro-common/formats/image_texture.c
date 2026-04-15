@@ -89,6 +89,13 @@ enum image_type_enum image_texture_get_type(const char *path)
              (ext[3] | 0x20) == 'g')
             return IMAGE_TYPE_JPEG;
 #endif
+#ifdef HAVE_RWEBP
+         if ((ext[0] | 0x20) == 'w' &&
+             (ext[1] | 0x20) == 'e' &&
+             (ext[2] | 0x20) == 'b' &&
+             (ext[3] | 0x20) == 'p')
+            return IMAGE_TYPE_WEBP;
+#endif
          break;
    }
 
