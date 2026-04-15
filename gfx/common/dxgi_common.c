@@ -2825,25 +2825,24 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
       {
          supported = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
 
+	 /* When Windows reports HDR support (PQ/ST.2084),
+	  * scRGB (R16G16B16A16_FLOAT + G10_NONE_P709) is
+	  * always available — the Windows HDR compositor
+	  * guarantees both paths. */
          if (supported)
          {
-            video_driver_set_disp_flags(video_driver_get_disp_flags() | VIDEO_FLAG_HDR_SUPPORT);
-            video_driver_set_disp_flags(video_driver_get_disp_flags() | VIDEO_FLAG_HDR10_SUPPORT);
-            /* When Windows reports HDR support (PQ/ST.2084),
-             * scRGB (R16G16B16A16_FLOAT + G10_NONE_P709) is
-             * always available — the Windows HDR compositor
-             * guarantees both paths. */
-            video_driver_set_disp_flags(video_driver_get_disp_flags() | VIDEO_FLAG_SCRGB_SUPPORT);
+            uint32_t disp_flags = video_driver_get_disp_flags();
+            disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
+            disp_flags |= VIDEO_FLAG_HDR10_SUPPORT;
+            disp_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
+            video_driver_set_disp_flags(disp_flags);
          }
          else
          {
             settings_t*    settings           = config_get_ptr();
             settings->flags                  |= SETTINGS_FLG_MODIFIED;
             settings->uints.video_hdr_mode    = 0;
-
-            video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_HDR_SUPPORT);
-            video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_HDR10_SUPPORT);
-            video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_SCRGB_SUPPORT);
+            video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
          }
       }
       else

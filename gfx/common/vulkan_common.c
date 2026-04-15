@@ -2121,9 +2121,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
           * The colorspace extension alone is not enough — some
           * drivers expose the extension without any HDR surface
           * formats. */
-         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_HDR_SUPPORT);
-         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_HDR10_SUPPORT);
-         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_SCRGB_SUPPORT);
+         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
          for (i = 0; i < format_count; i++)
          {
             if (  vulkan_is_hdr10_format(formats[i].format)

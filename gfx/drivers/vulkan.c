@@ -4425,9 +4425,7 @@ static void vulkan_free(void *data)
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->offscreen_buffer);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
          vulkan_deinit_hdr_readback_render_pass(vk);
-         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_HDR_SUPPORT);
-         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_HDR10_SUPPORT);
-         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_SCRGB_SUPPORT);
+         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
