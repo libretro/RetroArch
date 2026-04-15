@@ -2266,7 +2266,7 @@ static bool d3d10_init_swapchain(d3d10_video_t *d3d10,
    desc.Windowed                           = TRUE;
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
    flags                                  |= D3D10_CREATE_DEVICE_DEBUG;
 #endif
 

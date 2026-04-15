@@ -153,7 +153,7 @@ typedef ID3D12GraphicsCommandList*                D3D12GraphicsCommandList;
 typedef ID3D12CommandQueue*                       D3D12CommandQueue;
 typedef ID3D12Device*                             D3D12Device;
 typedef ID3D12PipelineLibrary*                    D3D12PipelineLibrary;
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
 typedef ID3D12Debug*                              D3D12Debug;
 typedef ID3D12DebugDevice*                        D3D12DebugDevice;
 typedef ID3D12DebugCommandQueue*                  D3D12DebugCommandQueue;
@@ -263,7 +263,7 @@ typedef struct
    D3D12Device device;
 
 #ifdef DEVICE_DEBUG
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
    D3D12DebugDevice debug_device;
    D3D12InfoQueue info_queue;
    D3D12DeviceRemovedExtendedDataSettings device_removed_info;
@@ -442,7 +442,7 @@ typedef struct
    D3D12Resource                   menu_pipeline_vbo;
    D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
    D3D12Debug debugController;
 #endif
    uint32_t flags;
@@ -516,7 +516,7 @@ DEFINE_GUIDW(IID_ID3D12CommandSignature, 0xc36a797c, 0xec80, 0x4f0a, 0x89, 0x85,
 DEFINE_GUIDW(IID_ID3D12CommandList, 0x7116d91c, 0xe7e4, 0x47ce, 0xb8, 0xc6, 0xec, 0x81, 0x68, 0xf4, 0x37, 0xe5);
 DEFINE_GUIDW(IID_ID3D12PipelineLibrary, 0xc64226a8, 0x9201, 0x46af, 0xb4, 0xcc, 0x53, 0xfb, 0x9f, 0xf7, 0x41, 0x4f);
 DEFINE_GUIDW(IID_ID3D12Device1, 0x77acce80, 0x638e, 0x4e65, 0x88, 0x95, 0xc1, 0xf2, 0x33, 0x86, 0x86, 0x3e);
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
 DEFINE_GUIDW(IID_ID3D12Debug, 0x344488b7, 0x6846, 0x474b, 0xb9, 0x89, 0xf0, 0x27, 0x44, 0x82, 0x45, 0xe0);
 DEFINE_GUIDW(IID_ID3D12Debug1, 0xaffaa4ca, 0x63fe, 0x4d8e, 0xb8, 0xad, 0x15, 0x90, 0x00, 0xaf, 0x43, 0x04);
 DEFINE_GUIDW(IID_ID3D12DebugDevice1, 0xa9b71770, 0xd099, 0x4a65, 0xa6, 0x98, 0x3d, 0xee, 0x10, 0x02, 0x0f, 0x88);
@@ -3538,7 +3538,7 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->device);
    Release(d3d12->adapter);
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
    Release(d3d12->debugController);
 #endif
 
@@ -3755,7 +3755,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 {
    int i = 0;
    DXGIAdapter adapter = NULL;
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
    if (SUCCEEDED(D3D12GetDebugInterface(uuidof(ID3D12Debug), (void**)&d3d12->debugController)))
       d3d12->debugController->lpVtbl->EnableDebugLayer(d3d12->debugController);
 #endif
@@ -3835,7 +3835,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
    }
 
 #ifdef DEVICE_DEBUG
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
    if (d3d12->device)
    {
       if (SUCCEEDED(d3d12->device->lpVtbl->QueryInterface(d3d12->device, uuidof(ID3D12DebugDevice), (void*)&d3d12->debug_device)))

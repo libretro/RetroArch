@@ -2929,7 +2929,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    desc.Windowed                           = TRUE;
 #endif
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
    flags                                  |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
