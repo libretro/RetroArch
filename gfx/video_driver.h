@@ -84,45 +84,8 @@
 
 #ifdef HAVE_THREADS
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) ((!video_driver_is_hw_context() && (((video_st->threaded)) ? true : false)))
-
-#define VIDEO_DRIVER_LOCK(video_st) \
-   if (video_st->display_lock) \
-      slock_lock(video_st->display_lock)
-
-#define VIDEO_DRIVER_UNLOCK(video_st) \
-   if (video_st->display_lock) \
-      slock_unlock(video_st->display_lock)
-
-#define VIDEO_DRIVER_CONTEXT_LOCK(video_st) \
-   if (video_st->context_lock) \
-      slock_lock(video_st->context_lock)
-
-#define VIDEO_DRIVER_CONTEXT_UNLOCK(video_st) \
-   if (video_st->context_lock) \
-      slock_unlock(video_st->context_lock)
-
-#define VIDEO_DRIVER_LOCK_FREE(video_st) \
-   slock_free(video_st->display_lock); \
-   slock_free(video_st->context_lock); \
-   video_st->display_lock = NULL; \
-   video_st->context_lock = NULL
-
-#define VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded) \
-   if (is_threaded) \
-      VIDEO_DRIVER_LOCK(video_st)
-
-#define VIDEO_DRIVER_THREADED_UNLOCK(video_st, is_threaded) \
-   if (is_threaded) \
-      VIDEO_DRIVER_UNLOCK(video_st)
 #else
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) (false)
-#define VIDEO_DRIVER_LOCK(video_st)            ((void)0)
-#define VIDEO_DRIVER_UNLOCK(video_st)          ((void)0)
-#define VIDEO_DRIVER_LOCK_FREE(video_st)       ((void)0)
-#define VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded)   ((void)0)
-#define VIDEO_DRIVER_THREADED_UNLOCK(video_st, is_threaded) ((void)0)
-#define VIDEO_DRIVER_CONTEXT_LOCK(video_st)    ((void)0)
-#define VIDEO_DRIVER_CONTEXT_UNLOCK(video_st)  ((void)0)
 #endif
 
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st) (&video_st->hw_render)

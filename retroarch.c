@@ -1877,7 +1877,12 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
    if (flags & DRIVERS_VIDEO_INPUT)
    {
       video_driver_free_internal();
-      VIDEO_DRIVER_LOCK_FREE(video_st);
+#ifdef HAVE_THREADS
+      slock_free(video_st->display_lock);
+      slock_free(video_st->context_lock);
+      video_st->display_lock      = NULL;
+      video_st->context_lock      = NULL;
+#endif
       video_st->data              = NULL;
       video_st->frame_cache_data  = NULL;
    }
