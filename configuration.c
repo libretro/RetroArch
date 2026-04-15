@@ -2725,6 +2725,13 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("cpu_scaling_mode",              &settings->uints.cpu_scaling_mode,    true,   0, false);
    SETTING_UINT("cpu_min_freq",                  &settings->uints.cpu_min_freq,        true,   1, false);
    SETTING_UINT("cpu_max_freq",                  &settings->uints.cpu_max_freq,        true, ~0U, false);
+
+#ifdef HAVE_LAKKA_SWITCH
+   SETTING_UINT("gpu_scaling_mode",              &settings->uints.gpu_scaling_mode,    true,   0, false);
+   SETTING_UINT("gpu_min_freq",                  &settings->uints.gpu_min_freq,        true,   1, false);
+   SETTING_UINT("gpu_max_freq",                  &settings->uints.gpu_max_freq,        true, ~0U, false);
+#endif
+
 #endif
 
 #ifdef HAVE_MIST

@@ -72,8 +72,14 @@
 #include "../input/input_remapping.h"
 #include "../performance_counters.h"
 #include "../version.h"
+#ifdef HAVE_LAKKA
 #include "../misc/cpufreq/cpufreq.h"
 
+#ifdef HAVE_LAKKA_SWITCH
+#include "../misc/gpufreq/gpufreq.h"
+#endif
+
+#endif
 #ifdef HAVE_LIBNX
 #include <switch.h>
 #include "../switch_performance_profiles.h"
@@ -6396,6 +6402,9 @@ void menu_driver_toggle(
    {
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
+#ifdef HAVE_LAKKA_SWITCH
+      set_gpu_scaling_signal(GPUSCALING_EVENT_FOCUS_MENU);
+#endif
 #endif
 #ifdef HAVE_OVERLAY
       /* If an overlay was displayed before the toggle
@@ -6417,6 +6426,9 @@ void menu_driver_toggle(
    {
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
+#ifdef HAVE_LAKKA_SWITCH
+      set_gpu_scaling_signal(GPUSCALING_EVENT_FOCUS_CORE);
+#endif
 #endif
 #ifdef HAVE_OVERLAY
       /* Inhibits pointer 'select' and 'cancel' actions

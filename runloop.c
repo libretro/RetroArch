@@ -201,7 +201,12 @@
 #ifdef HAVE_BLUETOOTH
 #include "bluetooth/bluetooth_driver.h"
 #endif
+#ifdef HAVE_LAKKA
 #include "misc/cpufreq/cpufreq.h"
+#ifdef HAVE_LAKKA_SWITCH
+#include "misc/gpufreq/gpufreq.h"
+#endif
+#endif
 #include "led/led_driver.h"
 #include "midi_driver.h"
 #include "location_driver.h"
@@ -4912,6 +4917,11 @@ void runloop_pause_checks(void)
 
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
+
+#ifdef HAVE_LAKKA_SWITCH
+      set_gpu_scaling_signal(GPUSCALING_EVENT_FOCUS_MENU);
+#endif
+
 #endif
 
       /* Limit paused frames to video refresh. */
@@ -4924,6 +4934,11 @@ void runloop_pause_checks(void)
    {
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
+
+#ifdef HAVE_LAKKA_SWITCH
+      set_gpu_scaling_signal(GPUSCALING_EVENT_FOCUS_CORE);
+#endif
+
 #endif
 
       /* Restore frame limit. */

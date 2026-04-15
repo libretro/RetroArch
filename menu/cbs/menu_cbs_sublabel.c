@@ -40,7 +40,9 @@
 #include "../../bluetooth/bluetooth_driver.h"
 #endif
 #include "../../misc/cpufreq/cpufreq.h"
-
+#ifdef HAVE_LAKKA_SWITCH
+#include "../../misc/gpufreq/gpufreq.h"
+#endif
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
 #endif
@@ -1551,7 +1553,7 @@ static int action_bind_sublabel_cpu_policy_entry_list(
       int idx     = atoi(path);
       size_t _len = strlcpy(s, drivers[idx]->scaling_governor, len);
       snprintf(s + _len, len - _len, " | Freq: %u MHz\n",
-            drivers[idx]->current_frequency / 1000);
+            drivers[idx]->current_frequency / 1000000);
       return 0;
    }
 
@@ -1570,7 +1572,20 @@ static int action_bind_sublabel_cpu_perf_mode(
    return 0;
 }
 #endif
-
+#ifdef HAVE_LAKKA_SWITCH
+static int action_bind_sublabel_gpu_perf_mode(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   /* Displays info about the mode selected */
+   enum gpu_scaling_mode mode = get_gpu_scaling_mode(NULL);
+   strlcpy(s, msg_hash_to_str(
+      MENU_ENUM_SUBLABEL_VALUE_GPU_PERF_MODE_MANAGED_PERF + (int)mode), len);
+   return 0;
+}
+#endif
 #ifdef HAVE_CHEEVOS
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -5487,6 +5502,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_ertm_disable);
+            break;
+         case MENU_ENUM_LABEL_GPU_PERF_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_gpu_perf_mode);
             break;
 #endif
          case MENU_ENUM_LABEL_USER_LANGUAGE:

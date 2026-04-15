@@ -801,6 +801,10 @@ ifeq ($(HAVE_LAKKA), 1)
    LIBS += -lsystemd
 endif
 
+ifeq ($(HAVE_LAKKA_SWITCH), 1)
+      OBJ += misc/gpufreq/gpufreq.o
+endif
+
 ifeq ($(HAVE_WIFI), 1)
    OBJ += network/wifi_driver.o
    OBJ += tasks/task_wifi.o
