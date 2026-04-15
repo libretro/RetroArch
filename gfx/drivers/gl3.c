@@ -606,7 +606,7 @@ static void gfx_display_gl3_draw_pipeline(
             draw->backend_data_size          = 2 * sizeof(float);
 
             /* Match UBO layout in shader. */
-            yflip = -1.0f;
+            yflip = 1.0f;
             memcpy(ubo_scratch_data, &t, sizeof(t));
             memcpy(ubo_scratch_data + sizeof(float), &yflip, sizeof(yflip));
             break;
