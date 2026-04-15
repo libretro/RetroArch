@@ -293,7 +293,7 @@ typedef struct vk
 
    struct
    {
-      VkPipeline pipelines[8 * 2];
+      VkPipeline pipelines[9 * 2];
       struct vk_texture blank_texture;
    } display;
 
@@ -1745,6 +1745,8 @@ static unsigned to_menu_pipeline(
          return 12 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
       case VIDEO_SHADER_MENU_5:
          return 14 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
+      case VIDEO_SHADER_MENU_6:
+         return 16 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
       default:
          break;
    }
@@ -1794,10 +1796,11 @@ static void gfx_display_vk_draw_pipeline(
          }
          break;
 
-      /* Snow simple */
+      /* Snow simple, Snow, Bokeh, Snowflake */
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
          draw->backend_data               = ubo_scratch_data;
          draw->backend_data_size          = sizeof(math_matrix_4x4)
             + 4 * sizeof(float);
@@ -1811,7 +1814,8 @@ static void gfx_display_vk_draw_pipeline(
                sizeof(output_size));
 
          /* Shader uses FragCoord, need to fix up. */
-         if (draw->pipeline_id == VIDEO_SHADER_MENU_5)
+         if (   draw->pipeline_id == VIDEO_SHADER_MENU_5
+             || draw->pipeline_id == VIDEO_SHADER_MENU_6)
             yflip = -1.0f;
 
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4)
@@ -1901,6 +1905,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
          {
             struct vk_draw_triangles call;
 
@@ -3205,6 +3210,10 @@ static void vulkan_init_pipelines(vk_t *vk)
 #include "vulkan_shaders/pipeline_bokeh.frag.inc"
       ;
 
+   static const uint32_t pipeline_snowflake_frag[] =
+#include "vulkan_shaders/pipeline_snowflake.frag.inc"
+      ;
+
    int i;
    VkPipelineMultisampleStateCreateInfo multisample;
    VkPipelineInputAssemblyStateCreateInfo input_assembly = {
@@ -3461,6 +3470,11 @@ static void vulkan_init_pipelines(vk_t *vk)
             module_info.pCode      = alpha_blend_vert;
             break;
 
+         case 5:
+            module_info.codeSize   = sizeof(alpha_blend_vert);
+            module_info.pCode      = alpha_blend_vert;
+            break;
+
          default:
             break;
       }
@@ -3495,6 +3509,11 @@ static void vulkan_init_pipelines(vk_t *vk)
          case 4:
             module_info.codeSize   = sizeof(pipeline_bokeh_frag);
             module_info.pCode      = pipeline_bokeh_frag;
+            break;
+
+         case 5:
+            module_info.codeSize   = sizeof(pipeline_snowflake_frag);
+            module_info.pCode      = pipeline_snowflake_frag;
             break;
 
          default:
