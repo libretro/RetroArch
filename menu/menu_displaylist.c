@@ -10189,7 +10189,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
          {
-            if (video_driver_supports_hdr())
+            if ((video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT))
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,

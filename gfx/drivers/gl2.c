@@ -2691,7 +2691,7 @@ static void gl_load_texture_data(
 {
    GLint mag_filter, min_filter;
    bool want_mipmap = false;
-   bool use_rgba    = video_driver_supports_rgba();
+   bool use_rgba    = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    bool rgb32       = (base_size == (sizeof(uint32_t)));
    GLenum wrap      = gl2_wrap_type_to_enum(wrap_type);
    bool have_mipmap = gl_check_capability(GL_CAPS_MIPMAP);
@@ -2769,7 +2769,7 @@ static bool gl2_add_lut(
    img.width         = 0;
    img.height        = 0;
    img.pixels        = NULL;
-   img.supports_rgba = video_driver_supports_rgba();
+   img.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    if (!image_texture_load(&img, lut_path))
    {
@@ -4079,7 +4079,7 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
    else
       gl->flags                 &= ~GL2_FLAG_HAVE_SYNC;
 
-   video_driver_unset_rgba();
+   video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_USE_RGBA);
 
    gl2_renderchain_resolve_extensions(gl,
          (gl2_renderchain_data_t*)gl->renderchain_data,
@@ -4088,7 +4088,7 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (!gl_check_capability(GL_CAPS_BGRA8888))
    {
-      video_driver_set_rgba();
+      video_driver_set_disp_flags(video_driver_get_disp_flags() | VIDEO_FLAG_USE_RGBA);
       RARCH_WARN("[GL] GLES implementation does not have BGRA8888 extension.\n"
                  "[GL] 32-bit path will require conversion.\n");
    }
@@ -4143,7 +4143,7 @@ static INLINE void gl2_set_texture_fmts(gl2_t *gl, bool rgb32)
 
    if (rgb32)
    {
-      bool use_rgba       = video_driver_supports_rgba();
+      bool use_rgba       = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
       gl->internal_fmt    = RARCH_GL_INTERNAL_FORMAT32;
       gl->texture_type    = RARCH_GL_TEXTURE_TYPE32;

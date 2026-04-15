@@ -1078,7 +1078,7 @@ bool gfx_display_reset_textures_list_buffer(
    ti.width         = 0;
    ti.height        = 0;
    ti.pixels        = NULL;
-   ti.supports_rgba = video_driver_supports_rgba();
+   ti.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
    {
@@ -1114,7 +1114,7 @@ bool gfx_display_reset_textures_list(
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
-   ti.supports_rgba              = video_driver_supports_rgba();
+   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    if (!texture_path || !*texture_path)
       return false;
@@ -1153,7 +1153,7 @@ bool gfx_display_reset_icon_texture(
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
-   ti.supports_rgba              = video_driver_supports_rgba();
+   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    if (!texture_path || !*texture_path)
       return false;

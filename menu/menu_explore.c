@@ -405,7 +405,7 @@ static void explore_load_icons(explore_state_t *state)
 {
    char path[PATH_MAX_LENGTH];
    size_t i, _len, system_count;
-   bool supports_rgba = video_driver_supports_rgba();
+   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    if (!state)
       return;
 

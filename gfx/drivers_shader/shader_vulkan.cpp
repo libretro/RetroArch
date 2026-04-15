@@ -969,7 +969,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image.width                     = 0;
    image.height                    = 0;
    image.pixels                    = NULL;
-   image.supports_rgba             = video_driver_supports_rgba();
+   image.supports_rgba             = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    if (!image_texture_load(&image, shader->path))
       return {};

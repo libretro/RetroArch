@@ -1269,7 +1269,7 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
       if (path_is_valid(path))
       {
          task_push_image_load(path,
-               video_driver_supports_rgba(), 0,
+               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
                menu_display_handle_wallpaper_upload, NULL);
 
          free(xmb->bg_file_path);
@@ -2936,7 +2936,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
    unsigned i;
    char iconpath[PATH_MAX_LENGTH];
    char icons_path_default[PATH_MAX_LENGTH];
-   bool supports_rgba               = video_driver_supports_rgba();
+   bool supports_rgba               = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    int depth                        = 1;
    size_t list_size                 = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
    uintptr_t tag                    = (uintptr_t)&xmb->x;
@@ -6655,7 +6655,7 @@ static void xmb_context_reset_textures(
       unsigned menu_xmb_theme)
 {
    unsigned i;
-   bool supports_rgba = video_driver_supports_rgba();
+   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    /* Invalidate in-flight context texture loads */
    xmb_ctx_icon_load_gen++;

@@ -2277,7 +2277,7 @@ static void materialui_context_reset_playlist_icons(
       materialui_handle_t *mui)
 {
    size_t i;
-   bool supports_rgba = video_driver_supports_rgba();
+   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    if (!*mui->sysicons_path)
       return;
 
@@ -2560,7 +2560,7 @@ static void materialui_update_savestate_thumbnail_image(void *data)
 static void materialui_context_reset_textures(materialui_handle_t *mui)
 {
    int i;
-   bool supports_rgba = video_driver_supports_rgba();
+   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    /* Loop through all textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
@@ -9880,7 +9880,7 @@ static void materialui_context_reset(void *data, bool is_threaded)
 
    if (path_is_valid(path_menu_wallpaper))
       task_push_image_load(path_menu_wallpaper,
-            video_driver_supports_rgba(), 0,
+            (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
             menu_display_handle_wallpaper_upload, NULL);
 
    if (path_is_valid(mui->savestate_thumbnail_file_path))

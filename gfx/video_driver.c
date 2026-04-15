@@ -2135,196 +2135,44 @@ void video_driver_set_viewport_core(void)
       aspectratio_lut[ASPECT_RATIO_CORE].value = core_aspect;
 }
 
-void video_driver_set_rgba(void)
+uint32_t video_driver_get_disp_flags(void)
 {
-   video_driver_state_t *video_st       = &video_driver_st;
+   video_driver_state_t *video_st = &video_driver_st;
 #ifdef HAVE_THREADS
    if (video_st->display_lock)
    {
+      uint32_t tmp;
       slock_lock(video_st->display_lock);
-      video_st->flags |= VIDEO_FLAG_USE_RGBA;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
-   video_st->flags |= VIDEO_FLAG_USE_RGBA;
-}
-
-void video_driver_unset_rgba(void)
-{
-   video_driver_state_t *video_st       = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      video_st->flags &= ~VIDEO_FLAG_USE_RGBA;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
-   video_st->flags &= ~VIDEO_FLAG_USE_RGBA;
-}
-
-bool video_driver_supports_rgba(void)
-{
-   video_driver_state_t *video_st       = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      bool tmp;
-      slock_lock(video_st->display_lock);
-      tmp = (video_st->flags & VIDEO_FLAG_USE_RGBA) ? true : false;
+      tmp = video_st->flags;
       slock_unlock(video_st->display_lock);
       return tmp;
    }
 #endif
-   return (video_st->flags & VIDEO_FLAG_USE_RGBA) ? true : false;
+   return video_st->flags;
 }
 
-void video_driver_set_hdr_support(void)
+void video_driver_set_disp_flags(uint32_t flags)
 {
-   video_driver_state_t *video_st  = &video_driver_st;
+   video_driver_state_t *video_st = &video_driver_st;
 #ifdef HAVE_THREADS
    if (video_st->display_lock)
    {
       slock_lock(video_st->display_lock);
-      video_st->flags |= VIDEO_FLAG_HDR_SUPPORT;
+      video_st->flags = flags;
       slock_unlock(video_st->display_lock);
       return;
    }
 #endif
-   video_st->flags |= VIDEO_FLAG_HDR_SUPPORT;
-}
-
-void video_driver_unset_hdr_support(void)
-{
-   video_driver_state_t *video_st  = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      video_st->flags &= ~VIDEO_FLAG_HDR_SUPPORT;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
-   video_st->flags &= ~VIDEO_FLAG_HDR_SUPPORT;
-}
-
-bool video_driver_supports_hdr(void)
-{
-   video_driver_state_t *video_st       = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      bool tmp;
-      slock_lock(video_st->display_lock);
-      tmp = (video_st->flags & VIDEO_FLAG_HDR_SUPPORT) ? true : false;
-      slock_unlock(video_st->display_lock);
-      return tmp;
-   }
-#endif
-   return (video_st->flags & VIDEO_FLAG_HDR_SUPPORT) ? true : false;
-}
-
-void video_driver_set_hdr10_support(void)
-{
-   video_driver_state_t *video_st  = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      video_st->flags |= VIDEO_FLAG_HDR10_SUPPORT;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
-   video_st->flags |= VIDEO_FLAG_HDR10_SUPPORT;
-}
-
-void video_driver_unset_hdr10_support(void)
-{
-   video_driver_state_t *video_st  = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      video_st->flags &= ~VIDEO_FLAG_HDR10_SUPPORT;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
-   video_st->flags &= ~VIDEO_FLAG_HDR10_SUPPORT;
-}
-
-bool video_driver_supports_hdr10(void)
-{
-   video_driver_state_t *video_st       = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      bool tmp;
-      slock_lock(video_st->display_lock);
-      tmp = (video_st->flags & VIDEO_FLAG_HDR10_SUPPORT) ? true : false;
-      slock_unlock(video_st->display_lock);
-      return tmp;
-   }
-#endif
-   return (video_st->flags & VIDEO_FLAG_HDR10_SUPPORT) ? true : false;
-}
-
-void video_driver_set_scrgb_support(void)
-{
-   video_driver_state_t *video_st  = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      video_st->flags |= VIDEO_FLAG_SCRGB_SUPPORT;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
-   video_st->flags |= VIDEO_FLAG_SCRGB_SUPPORT;
-}
-
-void video_driver_unset_scrgb_support(void)
-{
-   video_driver_state_t *video_st  = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      video_st->flags &= ~VIDEO_FLAG_SCRGB_SUPPORT;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
-   video_st->flags &= ~VIDEO_FLAG_SCRGB_SUPPORT;
-}
-
-bool video_driver_supports_scrgb(void)
-{
-   video_driver_state_t *video_st       = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      bool tmp;
-      slock_lock(video_st->display_lock);
-      tmp = (video_st->flags & VIDEO_FLAG_SCRGB_SUPPORT) ? true : false;
-      slock_unlock(video_st->display_lock);
-      return tmp;
-   }
-#endif
-   return (video_st->flags & VIDEO_FLAG_SCRGB_SUPPORT) ? true : false;
+   video_st->flags = flags;
 }
 
 unsigned video_driver_hdr_max_mode(void)
 {
+   uint32_t flags = video_driver_get_disp_flags();
    /* 0 = Off, 1 = HDR10, 2 = scRGB */
-   if (video_driver_supports_scrgb())
+   if (flags & VIDEO_FLAG_SCRGB_SUPPORT)
       return 2;
-   if (video_driver_supports_hdr10())
+   if (flags & VIDEO_FLAG_HDR10_SUPPORT)
       return 1;
    return 0;
 }

@@ -4425,9 +4425,9 @@ static void vulkan_free(void *data)
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->offscreen_buffer);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
          vulkan_deinit_hdr_readback_render_pass(vk);
-         video_driver_unset_hdr_support();
-         video_driver_unset_hdr10_support();
-         video_driver_unset_scrgb_support();
+         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_HDR_SUPPORT);
+         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_HDR10_SUPPORT);
+         video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_SCRGB_SUPPORT);
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -6847,7 +6847,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
 #ifdef VULKAN_HDR_SWAPCHAIN
-   bool video_hdr_enable = video_driver_supports_hdr() && (video_info->hdr_mode > 0);
+   bool video_hdr_enable = (video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT) && (video_info->hdr_mode > 0);
    if (       (vk->flags & VK_FLAG_SHOULD_RESIZE)
          || (((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) > 0)
          != video_hdr_enable))

@@ -2090,7 +2090,7 @@ static void gl1_load_texture_data(
       const void *frame, unsigned base_size)
 {
    GLint filter;
-   bool use_rgba    = video_driver_supports_rgba();
+   bool use_rgba    = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    bool rgb32       = (base_size == (sizeof(uint32_t)));
    GLenum wrap      = gl1_wrap_type_to_enum(wrap_type);
 

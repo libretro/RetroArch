@@ -329,7 +329,7 @@ void gfx_thumbnail_request(
                /* Would like to cancel any existing image load tasks
                 * here, but can't see how to do it... */
                if (task_push_image_load(
-                        thumbnail_path, video_driver_supports_rgba(),
+                        thumbnail_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
                         gfx_thumbnail_upscale_threshold,
                         gfx_thumbnail_handle_upload, thumbnail_tag))
                   thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
@@ -434,7 +434,7 @@ void gfx_thumbnail_request_file(
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
    if (task_push_image_load(
-         file_path, video_driver_supports_rgba(),
+         file_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
          gfx_thumbnail_upscale_threshold,
          gfx_thumbnail_handle_upload, thumbnail_tag))
       thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;

@@ -940,29 +940,9 @@ float video_driver_get_original_fps(void);
 
 void video_driver_set_viewport_core(void);
 
-void video_driver_set_rgba(void);
+uint32_t video_driver_get_disp_flags(void);
 
-void video_driver_unset_rgba(void);
-
-bool video_driver_supports_rgba(void);
-
-void video_driver_set_hdr_support(void);
-
-void video_driver_unset_hdr_support(void);
-
-bool video_driver_supports_hdr(void);
-
-void video_driver_set_hdr10_support(void);
-
-void video_driver_unset_hdr10_support(void);
-
-bool video_driver_supports_hdr10(void);
-
-void video_driver_set_scrgb_support(void);
-
-void video_driver_unset_scrgb_support(void);
-
-bool video_driver_supports_scrgb(void);
+void video_driver_set_disp_flags(uint32_t flags);
 
 unsigned video_driver_hdr_max_mode(void);
 

@@ -2013,7 +2013,7 @@ static void gfx_widgets_context_reset(
          "menu_achievements.png"
       };
    size_t i;
-   bool supports_rgba = video_driver_supports_rgba();
+   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    /* Invalidate any in-flight async icon loads */
    widget_icon_load_gen++;
