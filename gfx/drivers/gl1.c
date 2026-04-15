@@ -2174,16 +2174,24 @@ static void video_texture_load_gl1(
 }
 
 #ifdef HAVE_THREADS
+typedef struct
+{
+   gl1_t     *gl;
+   void      *payload;
+} gl1_texture_cmd_t;
+
 static int video_texture_load_wrap_gl1(void *data)
 {
-   uintptr_t id = 0;
-   gl1_t   *gl1 = (gl1_t*)video_driver_get_ptr();
+   uintptr_t id             = 0;
+   gl1_texture_cmd_t *cmd   = (gl1_texture_cmd_t*)data;
+   gl1_t             *gl1   = cmd->gl;
+   void              *image = cmd->payload;
 
-   if (gl1->ctx_driver->make_current)
+   if (gl1 && gl1->ctx_driver->make_current)
       gl1->ctx_driver->make_current(false);
 
-   if (data)
-      video_texture_load_gl1((struct texture_image*)data,
+   if (image)
+      video_texture_load_gl1((struct texture_image*)image,
             TEXTURE_FILTER_NEAREST, &id);
    return (int)id;
 }
@@ -2191,8 +2199,9 @@ static int video_texture_load_wrap_gl1(void *data)
 static int video_texture_unload_wrap_gl1(void *data)
 {
    GLuint  glid;
-   uintptr_t id = (uintptr_t)data;
-   gl1_t   *gl1 = (gl1_t*)video_driver_get_ptr();
+   gl1_texture_cmd_t *cmd = (gl1_texture_cmd_t*)data;
+   gl1_t             *gl1 = cmd->gl;
+   uintptr_t          id  = (uintptr_t)cmd->payload;
 
    if (gl1 && gl1->ctx_driver->make_current)
       gl1->ctx_driver->make_current(false);
@@ -2211,9 +2220,13 @@ static uintptr_t gl1_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
+      gl1_texture_cmd_t cmd;
       custom_command_method_t func = video_texture_load_wrap_gl1;
 
-      return video_thread_texture_handle(data, func);
+      cmd.gl      = (gl1_t*)video_data;
+      cmd.payload = data;
+
+      return video_thread_texture_handle(&cmd, func);
    }
 #endif
 
@@ -2238,8 +2251,13 @@ static void gl1_unload_texture(void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
+      gl1_texture_cmd_t cmd;
       custom_command_method_t func = video_texture_unload_wrap_gl1;
-      video_thread_texture_handle((void *)id, func);
+
+      cmd.gl      = (gl1_t*)data;
+      cmd.payload = (void*)id;
+
+      video_thread_texture_handle(&cmd, func);
       return;
    }
 #endif
