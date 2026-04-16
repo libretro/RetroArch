@@ -440,6 +440,22 @@ typedef struct
 #endif
    uint32_t flags;
    int8_t wait_for_vblank;
+
+   /* Deferred texture deletion.  Instead of Signal + WaitFor-
+    * SingleObject on every texture unload (which drains the GPU
+    * pipeline), textures are queued here and freed at the start
+    * of the next frame after the frame fence confirms all prior
+    * GPU work has completed.
+    *
+    * Single flat list: D3D12's per-frame fence is a full drain
+    * (Signal + Wait), so after it completes, all previously
+    * submitted work is done.  No per-slot tracking needed. */
+   struct
+   {
+#define D3D12_DEFERRED_MAX 64
+      d3d12_texture_t entries[D3D12_DEFERRED_MAX];
+      unsigned count;
+   } deferred;
 } d3d12_video_t;
 
 #define D3D12_ROLLING_SCANLINE_SIMULATION
@@ -669,6 +685,21 @@ static void d3d12_release_texture(d3d12_texture_t* texture)
 
    Release(texture->handle);
    Release(texture->upload_buffer);
+}
+
+/* Flush deferred texture deletions.
+ * Called at the start of d3d12_gfx_frame after the fence wait
+ * confirms all prior GPU work has completed, and from
+ * d3d12_gfx_free after the final fence drain. */
+static void d3d12_flush_deferred_deletes(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   unsigned count = d3d12->deferred.count;
+
+   for (i = 0; i < count; i++)
+      d3d12_release_texture(&d3d12->deferred.entries[i]);
+
+   d3d12->deferred.count = 0;
 }
 
 static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DATA_FORMAT_SUPPORT* desired)
@@ -3527,6 +3558,10 @@ static void d3d12_gfx_free(void* data)
       }
    }
 
+   /* Flush all deferred texture deletions now that the
+    * GPU is fully idle. */
+   d3d12_flush_deferred_deletes(d3d12);
+
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       CloseHandle(d3d12->chain.frameLatencyWaitableObject);
 
@@ -4748,6 +4783,11 @@ static bool d3d12_gfx_frame(
          WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
       }
    }
+
+   /* Flush deferred texture deletions.  The fence wait above
+    * guarantees all prior GPU work has completed, so every
+    * texture in the deferred list is safe to release. */
+   d3d12_flush_deferred_deletes(d3d12);
 
 #ifdef HAVE_DXGI_HDR
    d3d12_hdr_enable = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? true : false;
@@ -6245,16 +6285,32 @@ static void d3d12_gfx_unload_texture_internal(
 
    if (d3d12)
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      unsigned count = d3d12->deferred.count;
+
+      if (count < D3D12_DEFERRED_MAX)
       {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+         /* Copy the D3D12 resource handles into the deferred
+          * list.  They will be released at the start of the
+          * next frame after the fence confirms the GPU is done. */
+         d3d12->deferred.entries[count] = *texture;
+         d3d12->deferred.count          = count + 1;
+      }
+      else
+      {
+         /* Overflow: fall back to synchronous drain.
+          * Extremely rare — requires 64+ texture unloads
+          * between two consecutive frames. */
+         D3D12Fence fence = d3d12->queue.fence;
+         d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+         if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+         {
+            fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+            WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+         }
+         d3d12_release_texture(texture);
       }
    }
 
-   d3d12_release_texture(texture);
    free(texture);
 }
 
