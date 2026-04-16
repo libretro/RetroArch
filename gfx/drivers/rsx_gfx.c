@@ -1667,7 +1667,7 @@ typedef struct
    uintptr_t                     handle;
 } rsx_texture_cmd_t;
 
-static int rsx_texture_load_wrap(void *data)
+static uintptr_t rsx_texture_load_wrap(void *data)
 {
    rsx_texture_cmd_t *cmd = (rsx_texture_cmd_t*)data;
    cmd->handle = rsx_load_texture_internal(
@@ -1675,7 +1675,7 @@ static int rsx_texture_load_wrap(void *data)
    return 0;
 }
 
-static int rsx_texture_unload_wrap(void *data)
+static uintptr_t rsx_texture_unload_wrap(void *data)
 {
    rsx_texture_cmd_t *cmd = (rsx_texture_cmd_t*)data;
    rsx_unload_texture_internal(cmd->video_data, cmd->handle);

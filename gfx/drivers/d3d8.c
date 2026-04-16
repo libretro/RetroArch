@@ -2098,7 +2098,7 @@ static void d3d8_video_texture_load_d3d(
    *id = (uintptr_t)tex;
 }
 
-static int d3d8_video_texture_load_wrap_d3d(void *data)
+static uintptr_t d3d8_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
    struct d3d8_texture_info *info = (struct d3d8_texture_info*)data;
@@ -2126,7 +2126,7 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
    return id;
 }
 
-static int d3d8_video_texture_unload_wrap_d3d(void *data)
+static uintptr_t d3d8_video_texture_unload_wrap_d3d(void *data)
 {
    uintptr_t id = (uintptr_t)data;
    if (id)

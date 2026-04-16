@@ -3666,7 +3666,7 @@ static void d3d10_gfx_unload_texture_internal(uintptr_t handle)
 }
 
 #ifdef HAVE_THREADS
-static int d3d10_texture_load_wrap(void *data)
+static uintptr_t d3d10_texture_load_wrap(void *data)
 {
    d3d10_texture_cmd_t *cmd = (d3d10_texture_cmd_t*)data;
    cmd->handle = d3d10_gfx_load_texture_internal(
@@ -3674,7 +3674,7 @@ static int d3d10_texture_load_wrap(void *data)
    return 0;
 }
 
-static int d3d10_texture_unload_wrap(void *data)
+static uintptr_t d3d10_texture_unload_wrap(void *data)
 {
    d3d10_texture_cmd_t *cmd = (d3d10_texture_cmd_t*)data;
    d3d10_gfx_unload_texture_internal(cmd->handle);

@@ -7645,7 +7645,7 @@ static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t handle)
 #ifdef HAVE_THREADS
 /* Wrap function invoked on the video thread via
  * CMD_CUSTOM_COMMAND.  Returns 0 (ignored). */
-static int vulkan_texture_unload_wrap(void *data)
+static uintptr_t vulkan_texture_unload_wrap(void *data)
 {
    vulkan_texture_cmd_t *cmd = (vulkan_texture_cmd_t*)data;
    vulkan_unload_texture_internal(cmd->vk, cmd->handle);

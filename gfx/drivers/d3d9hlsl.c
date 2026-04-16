@@ -7880,7 +7880,7 @@ static void d3d9_hlsl_video_texture_load_d3d(
 }
 
 #ifdef HAVE_THREADS
-static int d3d9_hlsl_video_texture_load_wrap_d3d(void *data)
+static uintptr_t d3d9_hlsl_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
    struct d3d9_texture_info *info = (struct d3d9_texture_info*)data;
@@ -7912,7 +7912,7 @@ uintptr_t d3d9_hlsl_load_texture(void *video_data, void *data,
 }
 
 #ifdef HAVE_THREADS
-static int d3d9_hlsl_video_texture_unload_wrap_d3d(void *data)
+static uintptr_t d3d9_hlsl_video_texture_unload_wrap_d3d(void *data)
 {
    uintptr_t id = (uintptr_t)data;
    if (id)

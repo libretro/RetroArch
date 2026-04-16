@@ -5333,7 +5333,7 @@ typedef struct
    void      *payload;
 } gl2_texture_cmd_t;
 
-static int video_texture_load_wrap_gl2_mipmap(void *data)
+static uintptr_t video_texture_load_wrap_gl2_mipmap(void *data)
 {
    uintptr_t id            = 0;
    gl2_texture_cmd_t *cmd  = (gl2_texture_cmd_t*)data;
@@ -5349,7 +5349,7 @@ static int video_texture_load_wrap_gl2_mipmap(void *data)
    return (int)id;
 }
 
-static int video_texture_load_wrap_gl2(void *data)
+static uintptr_t video_texture_load_wrap_gl2(void *data)
 {
    uintptr_t id            = 0;
    gl2_texture_cmd_t *cmd  = (gl2_texture_cmd_t*)data;
@@ -5365,7 +5365,7 @@ static int video_texture_load_wrap_gl2(void *data)
    return (int)id;
 }
 
-static int video_texture_unload_wrap_gl2(void *data)
+static uintptr_t video_texture_unload_wrap_gl2(void *data)
 {
    GLuint  glid;
    gl2_texture_cmd_t *cmd = (gl2_texture_cmd_t*)data;

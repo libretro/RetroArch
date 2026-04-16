@@ -909,7 +909,7 @@ typedef struct
    bool                   is_threaded;
 } font_free_cmd_t;
 
-static int font_driver_free_wrap(void *data)
+static uintptr_t font_driver_free_wrap(void *data)
 {
    font_free_cmd_t *cmd = (font_free_cmd_t*)data;
    if (cmd->renderer && cmd->renderer->free)

@@ -6309,7 +6309,7 @@ static void d3d12_gfx_unload_texture_internal(
  * return channel) because uintptr_t may be 64-bit while the
  * command's return_value is int -- truncation would corrupt
  * pointer-valued handles on 64-bit Windows. */
-static int d3d12_texture_load_wrap(void *data)
+static uintptr_t d3d12_texture_load_wrap(void *data)
 {
    d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
    cmd->handle = d3d12_gfx_load_texture_internal(
@@ -6317,7 +6317,7 @@ static int d3d12_texture_load_wrap(void *data)
    return 0;
 }
 
-static int d3d12_texture_unload_wrap(void *data)
+static uintptr_t d3d12_texture_unload_wrap(void *data)
 {
    d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
    d3d12_gfx_unload_texture_internal(cmd->d3d12, cmd->handle);

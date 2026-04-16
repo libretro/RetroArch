@@ -2180,7 +2180,7 @@ typedef struct
    void      *payload;
 } gl1_texture_cmd_t;
 
-static int video_texture_load_wrap_gl1(void *data)
+static uintptr_t video_texture_load_wrap_gl1(void *data)
 {
    uintptr_t id             = 0;
    gl1_texture_cmd_t *cmd   = (gl1_texture_cmd_t*)data;
@@ -2196,7 +2196,7 @@ static int video_texture_load_wrap_gl1(void *data)
    return (int)id;
 }
 
-static int video_texture_unload_wrap_gl1(void *data)
+static uintptr_t video_texture_unload_wrap_gl1(void *data)
 {
    GLuint  glid;
    gl1_texture_cmd_t *cmd = (gl1_texture_cmd_t*)data;
