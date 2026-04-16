@@ -14,7 +14,12 @@
  *     the buffer-size, COM-outptr, and wrapper families. We fill
  *     in the gaps.
  *   * MSVC 2012+ (_MSC_VER >= 1700): full SAL 2 in <sal.h>. The
- *     whole shim is skipped.
+ *     shim's <sal.h> include picks it up; every stub below is
+ *     guarded with #ifndef, so the shim adds nothing.
+ *   * MinGW-w64 (GCC, Clang): ships its own <sal.h>. Coverage has
+ *     varied across releases; some are missing legacy SAL 1
+ *     "bytecount"/"ecount" forms like _Inout_opt_bytecount_. The
+ *     shim fills in any gaps via the same #ifndef-guarded stubs.
  *
  * Usage: #include "dxsdk_sal_compat.h" at the top of any bundled
  * DirectX header (d3dcommon.h, d3d11shader.h, d3dcompiler.h, etc.)
@@ -22,7 +27,8 @@
  * guard and before any declarations.
  *
  * Every macro is wrapped in #ifndef so we only fill in what the
- * toolchain is missing, avoiding C4005 redefinition warnings.
+ * toolchain is missing, avoiding C4005 redefinition warnings on
+ * MSVC and -Wmacro-redefined on Clang.
  *
  * The macros expand to nothing (or to a pass-through for the "wrapper"
  * forms like _Always_(x) / _When_(c,x)) so that declarations using
@@ -35,14 +41,21 @@
 #ifndef DXSDK_SAL_COMPAT_H
 #define DXSDK_SAL_COMPAT_H
 
-/* Only kick in on pre-VS2012 MSVC, which lacks full SAL 2.
- * _MSC_VER 1700 == VS2012, first to ship full SAL 2 broadly. */
-#if defined(_MSC_VER) && _MSC_VER < 1700
-
-/* <sal.h> first appeared in MSVC 2005 (_MSC_VER 1400).
- * MSVC 2003 and earlier have no sal.h, so don't try to include it. */
-#if _MSC_VER >= 1400
+/* The shim activates on any toolchain whose SAL header set is
+ * incomplete -- which in practice means pre-VS2012 MSVC *and* some
+ * MinGW-w64 releases whose <sal.h> omits legacy SAL 1 forms like
+ * _Inout_opt_bytecount_. Per-macro #ifndef guards below make this a
+ * no-op on toolchains that already have proper definitions, so
+ * activating unconditionally is safe.
+ *
+ * We still try to include <sal.h> where it exists, so that the
+ * #ifndef guards pick up whatever the toolchain does provide. */
+#if defined(_MSC_VER) && _MSC_VER >= 1400
 #include <sal.h>
+#elif defined(__has_include)
+#if __has_include(<sal.h>)
+#include <sal.h>
+#endif
 #endif
 
 /* --- SAL 1 forms (double-underscore) --------------------------------- *
@@ -126,6 +139,50 @@
 #ifndef __field_bcount
 #define __field_bcount(s)
 #endif
+
+/* SAL 1 underscore-prefix bytecount/ecount family.
+ * Some mingw-w64 releases of <sal.h> omit these. MSVC 2005-2010 may
+ * also not define all of them depending on SP level. */
+#ifndef _In_bytecount_
+#define _In_bytecount_(s)
+#endif
+#ifndef _In_bytecount_opt_
+#define _In_bytecount_opt_(s)
+#endif
+#ifndef _Out_bytecount_
+#define _Out_bytecount_(s)
+#endif
+#ifndef _Out_bytecount_opt_
+#define _Out_bytecount_opt_(s)
+#endif
+#ifndef _Inout_bytecount_
+#define _Inout_bytecount_(s)
+#endif
+#ifndef _Inout_bytecount_opt_
+#define _Inout_bytecount_opt_(s)
+#endif
+#ifndef _Inout_opt_bytecount_
+#define _Inout_opt_bytecount_(s)
+#endif
+#ifndef _In_ecount_
+#define _In_ecount_(s)
+#endif
+#ifndef _In_ecount_opt_
+#define _In_ecount_opt_(s)
+#endif
+#ifndef _Out_ecount_
+#define _Out_ecount_(s)
+#endif
+#ifndef _Out_ecount_opt_
+#define _Out_ecount_opt_(s)
+#endif
+#ifndef _Inout_ecount_
+#define _Inout_ecount_(s)
+#endif
+#ifndef _Inout_ecount_opt_
+#define _Inout_ecount_opt_(s)
+#endif
+
 #ifndef __success
 #define __success(c)
 #endif
@@ -335,7 +392,5 @@
 #ifndef _Analysis_assume_
 #define _Analysis_assume_(c)
 #endif
-
-#endif /* _MSC_VER < 1700 */
 
 #endif /* DXSDK_SAL_COMPAT_H */
