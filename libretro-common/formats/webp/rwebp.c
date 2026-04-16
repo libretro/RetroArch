@@ -847,8 +847,8 @@ static void vp8_iwht4x4(const int16_t in[16], int16_t out[16])
    {
       int a = tmp[i]+tmp[12+i], b = tmp[4+i]+tmp[8+i];
       int c = tmp[4+i]-tmp[8+i], d = tmp[i]-tmp[12+i];
-      out[i]=(int16_t)(a+b); out[4+i]=(int16_t)(c+d);
-      out[8+i]=(int16_t)(a-b); out[12+i]=(int16_t)(d-c);
+      out[i]=(int16_t)((a+b+3)>>3); out[4+i]=(int16_t)((c+d+3)>>3);
+      out[8+i]=(int16_t)((a-b+3)>>3); out[12+i]=(int16_t)((d-c+3)>>3);
    }
 }
 
@@ -959,24 +959,34 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
    }
 }
 
-static void vp8_pred16(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl)
+static void vp8_pred16(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl,
+      int has_above, int has_left)
 {
    int i, j;
    switch (m) {
-   case 0: { int sum=0; for(i=0;i<16;i++) sum+=a[i]+l[i];
-             { uint8_t dc=(uint8_t)((sum+16)>>5); for(j=0;j<16;j++) memset(d+j*s,dc,16); } break; }
+   case 0: { int sum=0; uint8_t dc;
+             if (has_above && has_left) { for(i=0;i<16;i++) sum+=a[i]+l[i]; dc=(uint8_t)((sum+16)>>5); }
+             else if (has_above) { for(i=0;i<16;i++) sum+=a[i]; dc=(uint8_t)((sum+8)>>4); }
+             else if (has_left) { for(i=0;i<16;i++) sum+=l[i]; dc=(uint8_t)((sum+8)>>4); }
+             else dc=128;
+             for(j=0;j<16;j++) memset(d+j*s,dc,16); break; }
    case 1: for(j=0;j<16;j++) memcpy(d+j*s,a,16); break;
    case 2: for(j=0;j<16;j++) memset(d+j*s,l[j],16); break;
    case 3: for(j=0;j<16;j++) for(i=0;i<16;i++) d[j*s+i]=vp8_cl((int)a[i]+(int)l[j]-(int)tl); break;
    }
 }
 
-static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl)
+static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl,
+      int has_above, int has_left)
 {
    int i, j;
    switch (m) {
-   case 0: { int sum=0; for(i=0;i<8;i++) sum+=a[i]+l[i];
-             { uint8_t dc=(uint8_t)((sum+8)>>4); for(j=0;j<8;j++) memset(d+j*s,dc,8); } break; }
+   case 0: { int sum=0; uint8_t dc;
+             if (has_above && has_left) { for(i=0;i<8;i++) sum+=a[i]+l[i]; dc=(uint8_t)((sum+8)>>4); }
+             else if (has_above) { for(i=0;i<8;i++) sum+=a[i]; dc=(uint8_t)((sum+4)>>3); }
+             else if (has_left) { for(i=0;i<8;i++) sum+=l[i]; dc=(uint8_t)((sum+4)>>3); }
+             else dc=128;
+             for(j=0;j<8;j++) memset(d+j*s,dc,8); break; }
    case 1: for(j=0;j<8;j++) memcpy(d+j*s,a,8); break;
    case 2: for(j=0;j<8;j++) memset(d+j*s,l[j],8); break;
    case 3: for(j=0;j<8;j++) for(i=0;i<8;i++) d[j*s+i]=vp8_cl((int)a[i]+(int)l[j]-(int)tl); break;
@@ -993,6 +1003,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    int qp, y1_dc_q, y1_ac_q, y2_dc_q, y2_ac_q, uv_dc_q, uv_ac_q;
    int skip_enabled, log2parts, num_parts;
    int seg_enabled, seg_abs, seg_qp[4], seg_prob[3];
+   int lf_type, lf_level, lf_sharp, lf_interior;
    vp8b br;
    vp8b tbr[8]; /* up to 8 token partitions */
    const uint8_t *p0;
@@ -1031,7 +1042,10 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
       if (um) for (i=0;i<3;i++) { if (vp8b_bit(&br)) seg_prob[i] = (int)vp8b_lit(&br,8); }
    }
 
-   vp8b_bit(&br); vp8b_lit(&br,6); vp8b_lit(&br,3); /* filter */
+   lf_type = vp8b_bit(&br); lf_level = (int)vp8b_lit(&br,6); lf_sharp = (int)vp8b_lit(&br,3);
+   lf_interior = lf_level;
+   if (lf_sharp > 0) { lf_interior >>= (lf_sharp > 4 ? 2 : 1); if (lf_interior > 9 - lf_sharp) lf_interior = 9 - lf_sharp; }
+   if (lf_interior < 1) lf_interior = 1;
    { int mrd = vp8b_bit(&br);
      if (mrd && vp8b_bit(&br))
      { for(i=0;i<4;i++) if(vp8b_bit(&br)) vp8b_sig(&br,6);
@@ -1282,10 +1296,10 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
 
          /* Predict */
          if (ym != 4)
-            vp8_pred16(yb+my*16*ys+mx*16, ys, ym, ay, ly, tly);
+            vp8_pred16(yb+my*16*ys+mx*16, ys, ym, ay, ly, tly, my>0, mx>0);
          /* B_PRED Y prediction is done per sub-block below */
-         vp8_pred8(ub+my*8*uvs+mx*8, uvs, uvm, au, lu, tlu);
-         vp8_pred8(vb+my*8*uvs+mx*8, uvs, uvm, av, lv, tlv);
+         vp8_pred8(ub+my*8*uvs+mx*8, uvs, uvm, au, lu, tlu, my>0, mx>0);
+         vp8_pred8(vb+my*8*uvs+mx*8, uvs, uvm, av, lv, tlv, my>0, mx>0);
 
          /* Decode and add residual */
          if (!is_skip)
@@ -1354,7 +1368,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                         vp8_cprob[(ym == 4) ? 3 : 0], start, sb_ctx);
                   /* Dequantize */
                   if (ym != 4)
-                     coeffs[0] = dc_vals[by * 4 + bx]; /* DC from WHT */
+                     coeffs[0] = (int16_t)(dc_vals[by * 4 + bx] * y1_dc_q); /* DC from WHT, dequant */
                   else
                      coeffs[0] = (int16_t)(coeffs[0] * y1_dc_q);
                   for (i = 1; i < 16; i++)
@@ -1415,6 +1429,24 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
             memset(left_nz_u, 0, sizeof(left_nz_u));
             memset(left_nz_v, 0, sizeof(left_nz_v));
             left_nz_dc = 0;
+         }
+      }
+      /* Per-row in-loop deblocking filter (VP8 §15) */
+      if (lf_level > 0) {
+         int elim=(lf_level+2)*2+lf_interior,slim=lf_level*2+lf_interior;
+         int hevt=(lf_level>=40)?2:(lf_level>=15)?1:0,fx,fy;
+         #define LFA(x) ((x)<0?-(x):(x))
+         #define LFC(v,l) ((v)<-(l)?-(l):(v)>(l)?(l):(v))
+         #define LFFILT(P,S,O,IL,HT,EL) do{int p3=P[(O)-4*(S)],p2=P[(O)-3*(S)],p1=P[(O)-2*(S)],p0=P[(O)-1*(S)],q0=P[(O)],q1=P[(O)+1*(S)],q2=P[(O)+2*(S)],q3=P[(O)+3*(S)];if((LFA(p0-q0)*2+(LFA(p1-q1)>>1)<=(EL))&&LFA(p3-p2)<=(IL)&&LFA(p2-p1)<=(IL)&&LFA(p1-p0)<=(IL)&&LFA(q1-q0)<=(IL)&&LFA(q2-q1)<=(IL)&&LFA(q3-q2)<=(IL)){int hv=(LFA(p1-p0)>(HT)||LFA(q1-q0)>(HT)),a=LFC(3*(q0-p0)+(hv?LFC(p1-q1,128):0),127),a1=(a+4)>>3,a2=(a+3)>>3;P[(O)-1*(S)]=vp8_cl(p0+a2);P[(O)]=vp8_cl(q0-a1);if(!hv){int a3=(a1+1)>>1;P[(O)-2*(S)]=vp8_cl(p1+a3);P[(O)+1*(S)]=vp8_cl(q1-a3);}}}while(0)
+         for(mx=0;mx<mbw;mx++){
+            if(mx>0)for(fy=0;fy<16;fy++)LFFILT(yb,1,my*16*ys+fy*ys+mx*16,lf_interior,hevt,elim);
+            if(my>0)for(fx=0;fx<16;fx++)LFFILT(yb,ys,my*16*ys+mx*16+fx,lf_interior,hevt,elim);
+            if(lf_type){for(fy=0;fy<16;fy++)for(i=1;i<4;i++)LFFILT(yb,1,my*16*ys+fy*ys+mx*16+i*4,lf_interior,hevt,slim);
+               for(fx=0;fx<16;fx++)for(j=1;j<4;j++)LFFILT(yb,ys,(my*16+j*4)*ys+mx*16+fx,lf_interior,hevt,slim);}
+            if(mx>0){for(fy=0;fy<8;fy++){LFFILT(ub,1,my*8*uvs+fy*uvs+mx*8,lf_interior,hevt,elim);LFFILT(vb,1,my*8*uvs+fy*uvs+mx*8,lf_interior,hevt,elim);}}
+            if(my>0){for(fx=0;fx<8;fx++){LFFILT(ub,uvs,my*8*uvs+mx*8+fx,lf_interior,hevt,elim);LFFILT(vb,uvs,my*8*uvs+mx*8+fx,lf_interior,hevt,elim);}}
+            if(lf_type){for(fy=0;fy<8;fy++){LFFILT(ub,1,my*8*uvs+fy*uvs+mx*8+4,lf_interior,hevt,slim);LFFILT(vb,1,my*8*uvs+fy*uvs+mx*8+4,lf_interior,hevt,slim);}
+               for(fx=0;fx<8;fx++){LFFILT(ub,uvs,(my*8+4)*uvs+mx*8+fx,lf_interior,hevt,slim);LFFILT(vb,uvs,(my*8+4)*uvs+mx*8+fx,lf_interior,hevt,slim);}}
          }
       }
    }
