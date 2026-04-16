@@ -674,6 +674,7 @@ typedef struct materialui_handle
    /* Colour theme parameters */
    materialui_colors_t colors;   /* uint32_t alignment */
    uint32_t flags;
+   uint32_t context_generation;
 
    size_t playlist_selection[NAME_MAX_LENGTH];
    size_t playlist_selection_ptr;
@@ -7884,6 +7885,14 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (!mui)
       return;
 
+   /* Snapshot context generation — if materialui_context_destroy()
+    * runs on the main thread while we are mid-render on the
+    * video thread, the generation will change and we must
+    * abandon the frame to avoid use-after-free on freed
+    * textures and fonts. */
+   {
+      uint32_t ctx_gen = mui->context_generation;
+
    /* Snapshot texture handles — the main thread may write new
     * handles via async icon load callbacks or context reset at
     * any time.  Copy the texture list and bg once and use the
@@ -7912,6 +7921,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
             video_st->data, video_width, video_height, true, false);
+
+   /* Guard: bail if context was destroyed after we started */
+   if (ctx_gen != mui->context_generation)
+      goto ctx_destroyed;
 
    /* Clear text */
    font_bind(&mui->font_data.title);
@@ -8157,6 +8170,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
     * by menu transition animations */
    materialui_colors_reset_transition_alpha(mui);
 
+   /* Guard: bail if context was destroyed during the draw pass */
+   if (ctx_gen != mui->context_generation)
+      goto ctx_destroyed;
+
    /* Unbind fonts */
    font_unbind(&mui->font_data.title);
    font_unbind(&mui->font_data.list);
@@ -8166,7 +8183,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       video_st->current_video->set_viewport(
             video_st->data, video_width, video_height, false, true);
 
+ctx_destroyed:
+   ; /* no-op — reached if context was destroyed mid-frame */
+
    } /* end of texture snapshot scope */
+   } /* end of context generation scope */
 }
 
 /* Determines current list view type, based on
@@ -9261,6 +9282,11 @@ static void materialui_context_destroy(void *data)
 
    if (!mui)
       return;
+
+   /* Signal the render path to stop using textures/fonts.
+    * Under threaded video, materialui_frame() may be mid-render
+    * on the video thread when this runs on the main thread. */
+   mui->context_generation++;
 
    /* Invalidate in-flight async icon loads before freeing targets */
    mui_icon_load_gen++;
