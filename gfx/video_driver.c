@@ -3914,9 +3914,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          && !video_st->current_video_context.get_flags)
    {
       const char *shader_preset   = video_shader_get_current_shader_preset();
-      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
-      video_st->current_video->set_shader(
-            video_st->data, type, shader_preset);
+      if (shader_preset && *shader_preset)
+      {
+         enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+         video_st->current_video->set_shader(
+               video_st->data, type, shader_preset);
+      }
    }
 #endif
 
