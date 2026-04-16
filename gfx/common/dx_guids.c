@@ -48,11 +48,16 @@
 #ifdef HAVE_D3D8
 #include <d3d8.h>
 #endif
-#if defined(HAVE_D3D9) || defined(HAVE_D3D10) \
- || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) \
+ || (defined(HAVE_D3D9) && defined(HAVE_HLSL))
 #include <d3dcompiler.h>
+#endif
+
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
 #include <dxgi.h>
 #endif
+
 #ifdef HAVE_DINPUT
 #include <dinput.h>
 #endif
