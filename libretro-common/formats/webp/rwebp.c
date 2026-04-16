@@ -735,73 +735,72 @@ static int vp8_decode_block(vp8b *br, int16_t coeffs[16], int type,
    static const uint8_t kCat5[] = {180,157,141,134,130};
    static const uint8_t kCat6[] = {254,254,243,230,196,177,153,140,133,130,129};
    int n = start_at;
-   const uint8_t *p = probs[n][init_ctx];
+   const uint8_t *p = probs[vp8_bands[n]][init_ctx];
    memset(coeffs, 0, 16 * sizeof(int16_t));
 
-   /* First "CBP" bit: EOB for entire block */
-   if (!vp8b_get(br, p[0]))
-      return 0;
-
+   int has_nz = 0;
    for (;;)
    {
       int v;
-      ++n;
+      /* EOB check — done at EVERY coefficient position */
+      if (!vp8b_get(br, p[0]))
+         return has_nz; /* EOB: return whether any non-zero was stored */
+
+      /* zero/non-zero check */
       if (!vp8b_get(br, p[1]))
       {
-         /* zero coefficient */
+         /* zero coefficient: advance to next position */
+         ++n;
+         if (n >= 16) return has_nz;
          p = probs[vp8_bands[n]][0];
+         continue;
+      }
+      /* non-zero coefficient: decode value from tree */
+      if (!vp8b_get(br, p[2]))
+      {
+         v = 1;
       }
       else
       {
-         /* non-zero coefficient */
-         if (!vp8b_get(br, p[2]))
+         if (!vp8b_get(br, p[3]))
          {
-            v = 1;
-            p = probs[vp8_bands[n]][1];
+            if (!vp8b_get(br, p[4]))
+               v = 2;
+            else
+               v = 3 + vp8b_get(br, p[5]);
          }
          else
          {
-            if (!vp8b_get(br, p[3]))
+            if (!vp8b_get(br, p[6]))
             {
-               if (!vp8b_get(br, p[4]))
-                  v = 2;
+               if (!vp8b_get(br, p[7]))
+                  v = 5 + vp8b_get(br, 159);
                else
-                  v = 3 + vp8b_get(br, p[5]);
+               {
+                  v = 7 + 2 * vp8b_get(br, 165);
+                  v += vp8b_get(br, 145);
+               }
             }
             else
             {
-               if (!vp8b_get(br, p[6]))
-               {
-                  if (!vp8b_get(br, p[7]))
-                     v = 5 + vp8b_get(br, 159);
-                  else
-                  {
-                     v = 7 + 2 * vp8b_get(br, 165);
-                     v += vp8b_get(br, 145);
-                  }
-               }
-               else
-               {
-                  int bit1 = vp8b_get(br, p[8]);
-                  int bit0 = vp8b_get(br, p[9 + bit1]);
-                  int cat = 2 * bit1 + bit0, k;
-                  v = 0;
-                  if (cat == 0) { for(k=0;k<3;k++) v = v*2 + vp8b_get(br, kCat3[k]); v += 11; }
-                  else if (cat == 1) { for(k=0;k<4;k++) v = v*2 + vp8b_get(br, kCat4[k]); v += 19; }
-                  else if (cat == 2) { for(k=0;k<5;k++) v = v*2 + vp8b_get(br, kCat5[k]); v += 35; }
-                  else { for(k=0;k<11;k++) v = v*2 + vp8b_get(br, kCat6[k]); v += 67; }
-               }
+               int bit1 = vp8b_get(br, p[8]);
+               int bit0 = vp8b_get(br, p[9 + bit1]);
+               int cat = 2 * bit1 + bit0, k;
+               v = 0;
+               if (cat == 0) { for(k=0;k<3;k++) v = v*2 + vp8b_get(br, kCat3[k]); v += 11; }
+               else if (cat == 1) { for(k=0;k<4;k++) v = v*2 + vp8b_get(br, kCat4[k]); v += 19; }
+               else if (cat == 2) { for(k=0;k<5;k++) v = v*2 + vp8b_get(br, kCat5[k]); v += 35; }
+               else { for(k=0;k<11;k++) v = v*2 + vp8b_get(br, kCat6[k]); v += 67; }
             }
-            p = probs[vp8_bands[n]][2];
          }
-         /* Sign bit and store */
-         coeffs[vp8_zigzag[n-1]] = (int16_t)(vp8b_get(br, 128) ? -v : v);
-
-         if (n == 16 || !vp8b_get(br, p[0])) /* EOB */
-            return n;
       }
-      if (n == 16)
-         return 16;
+      /* Sign bit and store */
+      coeffs[vp8_zigzag[n]] = (int16_t)(vp8b_get(br, 128) ? -v : v);
+      has_nz = n + 1; /* non-zero count (position + 1, always > 0) */
+      ++n;
+      if (n >= 16) return has_nz ? has_nz : 16;
+      /* Update context for next position: ctx=1 if v==1, ctx=2 if v>1 */
+      p = probs[vp8_bands[n]][(v == 1) ? 1 : 2];
    }
 }
 
