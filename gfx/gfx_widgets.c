@@ -261,13 +261,21 @@ void gfx_widgets_msg_queue_push(
 
          if (task)
          {
-            len                                 = strlen(task->title);
-            msg_title = msg_widget->msg         = strdup(task->title);
+
+            if (task->error && *task->error)
+            {
+               msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
+               len                              = strlen(task->error);
+               msg_title = msg_widget->msg      = strdup(task->error);
+            }
+            else
+            {
+               len                              = strlen(task->title);
+               msg_title = msg_widget->msg      = strdup(task->title);
+            }
             msg_widget->msg_new                 = strdup(msg_title);
             msg_widget->msg_len                 = len;
 
-            if (task->error && *task->error)
-               msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
             if ((task->flags & RETRO_TASK_FLG_CANCELLED) != 0)
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_CANCELLED;
             if ((task->flags & RETRO_TASK_FLG_FINISHED) != 0)
