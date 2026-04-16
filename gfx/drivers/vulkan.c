@@ -3656,6 +3656,11 @@ static void vulkan_init_pipelines(vk_t *vk)
    {
       pipe.renderPass = vk->sdr_render_pass;
 
+      /* Reset topology to TRIANGLE_LIST for the font and
+       * alpha_blend pipelines.  The preceding menu shader loop
+       * leaves it at TRIANGLE_STRIP. */
+      input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
       /* SDR font pipeline */
       module_info.codeSize   = sizeof(alpha_blend_vert);
       module_info.pCode      = alpha_blend_vert;
