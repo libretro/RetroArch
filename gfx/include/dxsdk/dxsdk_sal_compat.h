@@ -244,6 +244,21 @@
 #ifndef _Out_writes_to_opt_
 #define _Out_writes_to_opt_(s,c)
 #endif
+#ifndef _Out_writes_bytes_to_
+#define _Out_writes_bytes_to_(s,c)
+#endif
+#ifndef _Out_writes_bytes_to_opt_
+#define _Out_writes_bytes_to_opt_(s,c)
+#endif
+#ifndef _Out_writes_all_opt_
+#define _Out_writes_all_opt_(s)
+#endif
+#ifndef _Out_writes_bytes_all_
+#define _Out_writes_bytes_all_(s)
+#endif
+#ifndef _Out_writes_bytes_all_opt_
+#define _Out_writes_bytes_all_opt_(s)
+#endif
 #ifndef _Inout_updates_
 #define _Inout_updates_(s)
 #endif
@@ -264,6 +279,24 @@
 #endif
 #ifndef _Field_size_bytes_opt_
 #define _Field_size_bytes_opt_(s)
+#endif
+#ifndef _Field_size_full_
+#define _Field_size_full_(s)
+#endif
+#ifndef _Field_size_full_opt_
+#define _Field_size_full_opt_(s)
+#endif
+#ifndef _Field_size_bytes_full_
+#define _Field_size_bytes_full_(s)
+#endif
+#ifndef _Field_size_bytes_full_opt_
+#define _Field_size_bytes_full_opt_(s)
+#endif
+#ifndef _Field_size_part_
+#define _Field_size_part_(s,c)
+#endif
+#ifndef _Field_size_part_opt_
+#define _Field_size_part_opt_(s,c)
 #endif
 
 /* --- SAL 2 wrapper / annotation-of-annotation forms (pass-through) --- */
