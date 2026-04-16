@@ -63,6 +63,9 @@
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx_widgets.h"
 #endif
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
 
 #ifdef __WINRT__
 #error "UWP does not support D3D10"
@@ -3595,13 +3598,27 @@ static void d3d10_gfx_set_osd_msg(
    }
 }
 
-static uintptr_t d3d10_gfx_load_texture(
-      void* video_data, void* data, bool threaded,
+#ifdef HAVE_THREADS
+typedef struct
+{
+   d3d10_video_t               *d3d10;
+   struct texture_image        *image;
+   enum texture_filter_type     filter_type;
+   uintptr_t                    handle;
+} d3d10_texture_cmd_t;
+#endif
+
+/* Inner load -- performs all Device-context-touching work.
+ * D3D10 serialises Device calls via an internal mutex (we do
+ * not set D3D10_CREATE_DEVICE_SINGLETHREADED), but the texture
+ * upload path calls CopySubresourceRegion which queues
+ * asynchronous GPU work.  Serialising on the video thread
+ * prevents resource-lifetime races with concurrent draws. */
+static uintptr_t d3d10_gfx_load_texture_internal(
+      d3d10_video_t* d3d10, struct texture_image* image,
       enum texture_filter_type filter_type)
 {
-   d3d10_texture_t*      texture = NULL;
-   d3d10_video_t*        d3d10   = (d3d10_video_t*)video_data;
-   struct texture_image* image   = (struct texture_image*)data;
+   d3d10_texture_t* texture = NULL;
 
    if (!d3d10)
       return 0;
@@ -3643,8 +3660,11 @@ static uintptr_t d3d10_gfx_load_texture(
 
    return (uintptr_t)texture;
 }
-static void d3d10_gfx_unload_texture(void* data,
-      bool threaded, uintptr_t handle)
+
+/* Inner unload -- COM Release only.  Refcounting is
+ * thread-safe but does not block on GPU completion.  Running
+ * on the video thread serialises with pending draws. */
+static void d3d10_gfx_unload_texture_internal(uintptr_t handle)
 {
    d3d10_texture_t* texture = (d3d10_texture_t*)handle;
 
@@ -3655,6 +3675,71 @@ static void d3d10_gfx_unload_texture(void* data,
    Release(texture->staging);
    Release(texture->handle);
    free(texture);
+}
+
+#ifdef HAVE_THREADS
+static int d3d10_texture_load_wrap(void *data)
+{
+   d3d10_texture_cmd_t *cmd = (d3d10_texture_cmd_t*)data;
+   cmd->handle = d3d10_gfx_load_texture_internal(
+         cmd->d3d10, cmd->image, cmd->filter_type);
+   return 0;
+}
+
+static int d3d10_texture_unload_wrap(void *data)
+{
+   d3d10_texture_cmd_t *cmd = (d3d10_texture_cmd_t*)data;
+   d3d10_gfx_unload_texture_internal(cmd->handle);
+   return 0;
+}
+#endif
+
+static uintptr_t d3d10_gfx_load_texture(
+      void* video_data, void* data, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   d3d10_video_t*        d3d10 = (d3d10_video_t*)video_data;
+   struct texture_image* image = (struct texture_image*)data;
+
+#ifdef HAVE_THREADS
+   /* When threaded video is active, dispatch to the video
+    * thread to serialise Device context access and GPU
+    * resource lifetime with the video thread's draws. */
+   if (threaded)
+   {
+      d3d10_texture_cmd_t cmd;
+      cmd.d3d10       = d3d10;
+      cmd.image       = image;
+      cmd.filter_type = filter_type;
+      cmd.handle      = 0;
+      video_thread_texture_handle(&cmd, d3d10_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return d3d10_gfx_load_texture_internal(d3d10, image, filter_type);
+}
+
+static void d3d10_gfx_unload_texture(void* data,
+      bool threaded, uintptr_t handle)
+{
+   if (!handle)
+      return;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      d3d10_texture_cmd_t cmd;
+      cmd.d3d10       = (d3d10_video_t*)data;
+      cmd.image       = NULL;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = handle;
+      video_thread_texture_handle(&cmd, d3d10_texture_unload_wrap);
+      return;
+   }
+#endif
+
+   d3d10_gfx_unload_texture_internal(handle);
 }
 
 #if 0
