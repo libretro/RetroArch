@@ -2063,7 +2063,7 @@ LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
 }
 #endif
 
-bool win32_window_create(void *data, unsigned style,
+static bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
 {
