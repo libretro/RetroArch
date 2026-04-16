@@ -671,6 +671,12 @@ struct ozone_handle
    float sidebar_background[16];
    float sidebar_bottom_gradient[16];
    float background_running[16];
+
+   /* Incremented on context destroy; the render path snapshots
+    * this at frame start and bails if it changes mid-frame.
+    * Prevents use-after-free on textures/fonts during driver
+    * reinit under threaded video. */
+   uint32_t context_generation;
 };
 
 typedef struct ozone_handle ozone_handle_t;
@@ -9977,6 +9983,11 @@ static void ozone_context_destroy(void *data)
    if (!ozone)
       return;
 
+   /* Signal the render path to stop using textures/fonts.
+    * Under threaded video, ozone_frame() may be mid-render on
+    * the video thread when this runs on the main thread. */
+   ozone->context_generation++;
+
    /* Invalidate in-flight async icon loads before unloading */
    ozone_icon_load_gen++;
    ozone_ctx_icon_load_gen++;
@@ -11869,6 +11880,14 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    if (!ozone)
       return;
 
+   /* Snapshot context generation — if ozone_context_destroy()
+    * runs on the main thread while we are mid-render on the
+    * video thread, the generation will change and we must
+    * abandon the frame to avoid use-after-free on freed
+    * textures and fonts. */
+   {
+      uint32_t ctx_gen = ozone->context_generation;
+
    /* Reset thumbnail bar when starting/closing content */
    if (((ozone->flags & OZONE_FLAG_LIBRETRO_RUNNING) > 0) != libretro_running)
    {
@@ -11948,6 +11967,10 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
             video_st->data, video_width, video_height, true, false);
+
+   /* Guard: bail if context was destroyed after we started */
+   if (ctx_gen != ozone->context_generation)
+      goto ctx_destroyed;
 
    /* Clear text */
    font_bind(&ozone->fonts.footer);
@@ -12220,6 +12243,10 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
                ozone->pending_message,
                &mymat);
 
+      /* Guard: bail if context was destroyed during the draw pass */
+      if (ctx_gen != ozone->context_generation)
+         goto ctx_destroyed;
+
       /* Flush second layer of text */
       font_flush(video_width, video_height, &ozone->fonts.footer);
       font_flush(video_width, video_height, &ozone->fonts.entries_label);
@@ -12258,6 +12285,11 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
             video_st->data, video_width, video_height, false, true);
+
+ctx_destroyed:
+   ; /* no-op — reached if context was destroyed mid-frame */
+
+   } /* end of context generation scope */
 }
 
 static void ozone_get_playlist_index_header_icon(ozone_handle_t *ozone)

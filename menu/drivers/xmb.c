@@ -493,6 +493,12 @@ typedef struct xmb_handle
    /* Base item color: 0,0,0 for inverted themes, 1,1,1 otherwise
     * (was file-scope static xmb_item_color) */
    float item_color_base[16];
+
+   /* Incremented on context destroy; the render path snapshots
+    * this at frame start and bails if it changes mid-frame.
+    * Prevents use-after-free on textures/fonts during driver
+    * reinit under threaded video. */
+   uint32_t context_generation;
 } xmb_handle_t;
 
 /* Constant color templates — safe to share across threads.
@@ -8042,6 +8048,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (!xmb)
       return;
 
+   /* Snapshot context generation — if xmb_context_destroy()
+    * runs on the main thread while we are mid-render on the
+    * video thread, the generation will change and we must
+    * abandon the frame to avoid use-after-free on freed
+    * textures and fonts. */
+   {
+      uint32_t ctx_gen = xmb->context_generation;
+
    /* Per-frame scratch color arrays — local to this stack frame
     * to avoid data races with the GPU driver thread.
     * coord_black: zero RGB, alpha set per use
@@ -8134,6 +8148,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
    else
       thumbnail_shadow.type                = GFX_THUMBNAIL_SHADOW_NONE;
+
+   /* Guard: bail if context was destroyed after we started */
+   if (ctx_gen != xmb->context_generation)
+      goto ctx_destroyed;
 
    font_driver_bind_block(xmb->font,  &xmb->raster_block);
    font_driver_bind_block(xmb->font2, &xmb->raster_block2);
@@ -9074,6 +9092,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_width, video_height, xmb->font);
    }
 
+   /* Guard: bail if context was destroyed during the draw pass */
+   if (ctx_gen != xmb->context_generation)
+      goto ctx_destroyed;
+
    if (xmb->font && xmb->font->renderer && xmb->font->renderer->flush)
       xmb->font->renderer->flush(video_width,
             video_height, xmb->font->renderer_data);
@@ -9157,7 +9179,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       video_st->current_video->set_viewport(
             video_st->data, video_width, video_height, false, true);
 
+ctx_destroyed:
+   ; /* no-op — reached if context was destroyed mid-frame */
+
    } /* end of local color array scope */
+   } /* end of context generation scope */
 }
 
 static void xmb_ribbon_set_vertex(float *ribbon_verts,
@@ -9635,6 +9661,11 @@ static void xmb_context_destroy(void *data)
 
    if (!xmb)
       return;
+
+   /* Signal the render path to stop using textures/fonts.
+    * Under threaded video, xmb_frame() may be mid-render on
+    * the video thread when this runs on the main thread. */
+   xmb->context_generation++;
 
    /* Invalidate in-flight async icon loads before unloading */
    xmb_icon_load_gen++;
