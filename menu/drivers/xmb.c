@@ -8068,41 +8068,51 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       memcpy(coord_white,    xmb_color_white,      sizeof(coord_white));
       memcpy(xmb_item_color, xmb->item_color_base, sizeof(xmb_item_color));
 
+   /* Snapshot texture handles — the main thread may write new
+    * handles via async icon load callbacks or context reset at
+    * any time.  Copy the entire array once and use the snapshot
+    * for all rendering this frame, eliminating torn reads and
+    * use-after-free on handles freed by context destroy. */
+   {
+      uintptr_t tex_list[XMB_TEXTURE_LAST];
+      uintptr_t tex_bg = xmb->textures.bg;
+      memcpy(tex_list, xmb->textures.list, sizeof(tex_list));
+
    /* Async icon sync: context textures are loaded asynchronously and
     * may complete across multiple frames.  Continuously propagate
     * finished textures into the tab node icon fields.  The writes
     * are single-pointer stores so there is no race with the async
     * callback, and the per-frame cost is negligible (a few pointer
     * comparisons). */
-   if (xmb->textures.list[XMB_TEXTURE_MAIN_MENU])
-      xmb->main_menu_node.icon             = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
-   if (xmb->textures.list[XMB_TEXTURE_SETTINGS])
-      xmb->settings_tab_node.icon          = xmb->textures.list[XMB_TEXTURE_SETTINGS];
-   if (xmb->textures.list[XMB_TEXTURE_HISTORY])
-      xmb->history_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_HISTORY];
-   if (xmb->textures.list[XMB_TEXTURE_FAVORITES])
-      xmb->favorites_tab_node.icon         = xmb->textures.list[XMB_TEXTURE_FAVORITES];
+   if (tex_list[XMB_TEXTURE_MAIN_MENU])
+      xmb->main_menu_node.icon             = tex_list[XMB_TEXTURE_MAIN_MENU];
+   if (tex_list[XMB_TEXTURE_SETTINGS])
+      xmb->settings_tab_node.icon          = tex_list[XMB_TEXTURE_SETTINGS];
+   if (tex_list[XMB_TEXTURE_HISTORY])
+      xmb->history_tab_node.icon           = tex_list[XMB_TEXTURE_HISTORY];
+   if (tex_list[XMB_TEXTURE_FAVORITES])
+      xmb->favorites_tab_node.icon         = tex_list[XMB_TEXTURE_FAVORITES];
 #ifdef HAVE_IMAGEVIEWER
-   if (xmb->textures.list[XMB_TEXTURE_IMAGES])
-      xmb->images_tab_node.icon            = xmb->textures.list[XMB_TEXTURE_IMAGES];
+   if (tex_list[XMB_TEXTURE_IMAGES])
+      xmb->images_tab_node.icon            = tex_list[XMB_TEXTURE_IMAGES];
 #endif
-   if (xmb->textures.list[XMB_TEXTURE_MUSICS])
-      xmb->music_tab_node.icon             = xmb->textures.list[XMB_TEXTURE_MUSICS];
+   if (tex_list[XMB_TEXTURE_MUSICS])
+      xmb->music_tab_node.icon             = tex_list[XMB_TEXTURE_MUSICS];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   if (xmb->textures.list[XMB_TEXTURE_MOVIES])
-      xmb->video_tab_node.icon             = xmb->textures.list[XMB_TEXTURE_MOVIES];
+   if (tex_list[XMB_TEXTURE_MOVIES])
+      xmb->video_tab_node.icon             = tex_list[XMB_TEXTURE_MOVIES];
 #endif
-   if (xmb->textures.list[XMB_TEXTURE_ADD])
-      xmb->add_tab_node.icon               = xmb->textures.list[XMB_TEXTURE_ADD];
-   if (xmb->textures.list[XMB_TEXTURE_CORE])
-      xmb->contentless_cores_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_CORE];
+   if (tex_list[XMB_TEXTURE_ADD])
+      xmb->add_tab_node.icon               = tex_list[XMB_TEXTURE_ADD];
+   if (tex_list[XMB_TEXTURE_CORE])
+      xmb->contentless_cores_tab_node.icon  = tex_list[XMB_TEXTURE_CORE];
 #if defined(HAVE_LIBRETRODB)
-   if (xmb->textures.list[XMB_TEXTURE_RDB])
-      xmb->explore_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_RDB];
+   if (tex_list[XMB_TEXTURE_RDB])
+      xmb->explore_tab_node.icon           = tex_list[XMB_TEXTURE_RDB];
 #endif
 #ifdef HAVE_NETWORKING
-   if (xmb->textures.list[XMB_TEXTURE_NETPLAY])
-      xmb->netplay_tab_node.icon           = xmb->textures.list[XMB_TEXTURE_NETPLAY];
+   if (tex_list[XMB_TEXTURE_NETPLAY])
+      xmb->netplay_tab_node.icon           = tex_list[XMB_TEXTURE_NETPLAY];
 #endif
 
    msg[0]                              = '\0';
@@ -8201,7 +8211,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             MIN(xmb->alpha, menu_wallpaper_opacity),
             libretro_running,
             MIN(xmb->alpha, alpha_factor / 100),
-            xmb->textures.bg,
+            tex_bg,
             xmb->bg_file_path,
             coord_black,
             coord_white);
@@ -8363,7 +8373,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                shadows_enable,
                xmb->icon_size,
                xmb->icon_size,
-               xmb->textures.list[XMB_TEXTURE_ARROW],
+               tex_list[XMB_TEXTURE_ARROW],
                current_x + (xmb->use_ps3_layout ? (icon_size * 1.1f) : (icon_size * 0.70f)),
                current_y,
                video_width,
@@ -8413,9 +8423,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
              * only — do NOT write it back into node->icon, or
              * xmb_context_destroy_horizontal_list will later
              * double-free it when it unloads the node's icon
-             * alongside xmb->textures.list[CURSOR]. */
-            if (!texture && xmb->textures.list[XMB_TEXTURE_CURSOR])
-               texture = xmb->textures.list[XMB_TEXTURE_CURSOR];
+             * alongside tex_list[CURSOR]. */
+            if (!texture && tex_list[XMB_TEXTURE_CURSOR])
+               texture = tex_list[XMB_TEXTURE_CURSOR];
 
             x                        = xmb->x + xmb->categories_x_pos
                   + xmb->margins_screen_left
@@ -8899,7 +8909,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   shadows_enable,
                   xmb->icon_size,
                   xmb->icon_size,
-                  xmb->textures.list[
+                  tex_list[
                   powerstate.charging       ? XMB_TEXTURE_BATTERY_CHARGING   :
                   (powerstate.percent > 80) ? XMB_TEXTURE_BATTERY_FULL :
                   (powerstate.percent > 60) ? XMB_TEXTURE_BATTERY_80   :
@@ -8959,7 +8969,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                shadows_enable,
                xmb->icon_size,
                xmb->icon_size,
-               xmb->textures.list[XMB_TEXTURE_CLOCK],
+               tex_list[XMB_TEXTURE_CLOCK],
                video_width - xmb->margins_title_left + margin_offset - x_pos,
                xmb->icon_size + xmb->margins_title_top + margin_offset,
                video_width,
@@ -9168,7 +9178,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                cursor_visible,
                &coord_white[0],
                xmb->cursor_size,
-               xmb->textures.list[XMB_TEXTURE_POINTER],
+               tex_list[XMB_TEXTURE_POINTER],
                xmb->pointer.x,
                xmb->pointer.y,
                video_width,
@@ -9182,6 +9192,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 ctx_destroyed:
    ; /* no-op — reached if context was destroyed mid-frame */
 
+   } /* end of texture snapshot scope */
    } /* end of local color array scope */
    } /* end of context generation scope */
 }
