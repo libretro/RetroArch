@@ -3689,9 +3689,11 @@ static void vulkan_init_pipelines(vk_t *vk)
 
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->pipelines.alpha_blend_sdr);
-      vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
-      /* SDR display pipelines 0-3 */
+      /* SDR display pipelines 0-3.
+       * Reuse the alpha_blend vertex shader (stages[0]) and
+       * alpha_blend fragment shader (stages[1]) still alive
+       * from just above. */
       for (i = 0; i < 4; i++)
       {
          input_assembly.topology = i & 2 ?
@@ -3701,6 +3703,10 @@ static void vulkan_init_pipelines(vk_t *vk)
          vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
                1, &pipe, NULL, &vk->display.pipelines_sdr[i]);
       }
+
+      /* Done with the alpha_blend shader modules. */
+      vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
+      vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
       /* SDR menu shader pipelines 6+ */
       for (i = 0; i < (int)ARRAY_SIZE(vk->display.pipelines) - 6; i++)
@@ -3782,8 +3788,6 @@ static void vulkan_init_pipelines(vk_t *vk)
          vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
          vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
       }
-
-      vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
    }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
