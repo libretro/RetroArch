@@ -194,6 +194,9 @@
 
 #include "gfx/video_driver.h"
 #include "gfx/video_display_server.h"
+#ifdef HAVE_THREADS
+#include "gfx/video_thread_wrapper.h"
+#endif
 #ifdef HAVE_BLUETOOTH
 #include "bluetooth/bluetooth_driver.h"
 #endif
@@ -1817,6 +1820,21 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
 
    core_info_deinit_list();
    core_info_free_current_core();
+
+#ifdef HAVE_THREADS
+   /* Wait for the video thread to finish any pending frame before
+    * freeing GPU resources owned by the menu driver and widgets.
+    * Without this barrier, the video thread can be mid-render on
+    * frame N-1 while the main thread frees textures/fonts that
+    * the in-flight frame still references, producing
+    * use-after-free crashes on D3D12/Vulkan under threaded video.
+    *
+    * No-op when threaded video is not active. */
+   if (     (flags & DRIVERS_VIDEO_INPUT)
+         && VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+      video_thread_wait_idle();
+#endif
 
 #if defined(HAVE_GFX_WIDGETS)
    /* This absolutely has to be done before video_driver_free_internal()
