@@ -901,6 +901,23 @@ int font_driver_get_line_centre_offset(font_data_t *font, float scale)
    return (int)roundf((1.58f * 0.5f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f) / 2.0f);
 }
 
+#ifdef HAVE_THREADS
+typedef struct
+{
+   const font_renderer_t *renderer;
+   void                  *renderer_data;
+   bool                   is_threaded;
+} font_free_cmd_t;
+
+static int font_driver_free_wrap(void *data)
+{
+   font_free_cmd_t *cmd = (font_free_cmd_t*)data;
+   if (cmd->renderer && cmd->renderer->free)
+      cmd->renderer->free(cmd->renderer_data, cmd->is_threaded);
+   return 0;
+}
+#endif
+
 void font_driver_free(font_data_t *font)
 {
    if (font)
@@ -912,6 +929,49 @@ void font_driver_free(font_data_t *font)
       is_threaded             = *is_threaded_tmp;
 #endif
       renderer                = font ? font->renderer : NULL;
+
+#ifdef HAVE_THREADS
+      /* When threaded video is active, font resources (GPU
+       * textures, GL names, D3D COM objects) belong to the
+       * video thread's rendering context.  Freeing them on
+       * the main thread races with the video thread's draw
+       * calls:
+       *
+       *  - GL: context is single-threaded; gl2_raster_font_free
+       *    calls make_current to steal the context, but the video
+       *    thread may be mid-frame.
+       *  - D3D11: ImmediateContext is not thread-safe; Release on
+       *    the main thread while the video thread draws is UB.
+       *  - D3D12: fenceValue++ from the main thread races with
+       *    the video thread's own fence signalling.
+       *  - Vulkan: vkQueueWaitIdle under queue_lock only drains
+       *    submitted work, not command buffers being recorded.
+       *
+       * Dispatch renderer->free to the video thread via
+       * video_thread_texture_handle so it runs serialised with
+       * the video thread's frame rendering.  This is the same
+       * pattern used by texture load/unload.
+       *
+       * video_thread_texture_handle is self-safe: if the wrapper
+       * is not active (VIDEO_FLAG_THREAD_WRAPPER_ACTIVE not set),
+       * it falls back to calling func(data) on the current thread.
+       * If called from the video thread itself, it calls func
+       * directly (no deadlock). */
+      if (is_threaded && renderer && renderer->free)
+      {
+         font_free_cmd_t cmd;
+         cmd.renderer      = renderer;
+         cmd.renderer_data = font->renderer_data;
+         cmd.is_threaded   = is_threaded;
+         video_thread_texture_handle(&cmd, font_driver_free_wrap);
+
+         font->renderer      = NULL;
+         font->renderer_data = NULL;
+
+         free(font);
+         return;
+      }
+#endif
 
       if (renderer && renderer->free)
          renderer->free(font->renderer_data, is_threaded);
