@@ -91,6 +91,7 @@ typedef struct dsound
 
    bool nonblock;
    bool is_paused;
+   bool use_float;
    volatile bool thread_alive;
 } dsound_t;
 
@@ -492,7 +493,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       goto error;
 #endif
 
-   dsound_set_format(&wf, false, 2, rate);
+   dsound_set_format(&wf, true, 2, rate);
    RARCH_DBG("[DirectSound] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.wBitsPerSample,
          wf.nChannels,
@@ -527,7 +528,33 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       goto error;
 
    if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
-      goto error;
+   {
+      RARCH_WARN("[DirectSound] Failed to create float buffer, falling back to 16-bit PCM.\n");
+
+      dsound_set_format(&wf, false, 2, rate);
+
+      ds->buffer_size       = (latency * wf.nAvgBytesPerSec) / 1000;
+      ds->buffer_size      /= CHUNK_SIZE;
+      ds->buffer_size      *= CHUNK_SIZE;
+      if (ds->buffer_size < 4 * CHUNK_SIZE)
+         ds->buffer_size    = 4 * CHUNK_SIZE;
+
+      bufdesc.dwBufferBytes = ds->buffer_size;
+      bufdesc.lpwfxFormat   = &wf;
+
+      if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
+         goto error;
+
+      ds->use_float = false;
+   }
+   else
+      ds->use_float = true;
+
+   RARCH_LOG("[DirectSound] Initialized %u-bit %s buffer, %u bytes, latency %u ms.\n",
+         wf.wBitsPerSample,
+         dsound_wave_format_name(&wf),
+         ds->buffer_size,
+         (unsigned)((1000 * ds->buffer_size) / wf.nAvgBytesPerSec));
 
    IDirectSoundBuffer_SetVolume(ds->dsb, DSBVOLUME_MAX);
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
@@ -655,8 +682,11 @@ static size_t dsound_buffer_size(void *data)
    return ds->fifo_bufsize;
 }
 
-/* TODO/FIXME - implement? */
-static bool dsound_use_float(void *data) { return false; }
+static bool dsound_use_float(void *data)
+{
+   dsound_t *ds = (dsound_t*)data;
+   return ds && ds->use_float;
+}
 
 static void dsound_device_list_free(void *u, void *slp)
 {
