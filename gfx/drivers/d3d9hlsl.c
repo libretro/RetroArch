@@ -5483,7 +5483,6 @@ static char *d3d9_hlsl_init_vs_output_members(const char *source)
       unsigned i;
       for (i = 0; i < member_count; i++)
       {
-         char pattern[192];
          bool found = false;
          /* Build "OUT.membername" pattern and search within function body */
          /* Try common output variable names: OUT, Out, output */

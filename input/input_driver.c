@@ -7156,7 +7156,7 @@ void input_driver_poll(void)
                BIT256_CLEAR_ALL_PTR(&current_inputs);
                if (joypad)
                {
-                  unsigned k, j;
+                  unsigned k;
                   int32_t ret = input_state_wrap(
                         input_st->current_driver,
                         input_st->current_data,
