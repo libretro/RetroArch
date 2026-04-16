@@ -3893,6 +3893,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       video_st->current_video->poke_interface(
             video_st->data, &video_st->poke);
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Load the initial shader preset for drivers that don't
     * load shaders during their own init().  GL and Vulkan
     * drivers load shaders inside init() using their real
@@ -3917,6 +3918,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       video_st->current_video->set_shader(
             video_st->data, type, shader_preset);
    }
+#endif
 
    if (video_st->current_video->viewport_info &&
          (!custom_vp->width  ||
