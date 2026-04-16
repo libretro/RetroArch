@@ -6345,6 +6345,26 @@ static bool d3d12_get_current_software_framebuffer(
          return false;
    }
 
+   /* Wait for the GPU to finish any in-flight commands that may be
+    * reading from this upload buffer (e.g. CopyTextureRegion from
+    * the previous frame).  Without this, the core would write into
+    * the buffer while the GPU is still copying from it — a data race.
+    *
+    * This is the same Signal-then-Wait pattern used at the top of
+    * d3d12_gfx_frame.  The subsequent fence wait there will see the
+    * fence already satisfied and skip without blocking. */
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(
+            d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(
+               fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
+
    /* Map the upload buffer so the core can write directly into it.
     * D3D12 upload heaps are persistently mappable — the pointer
     * remains valid after Unmap, so the core can safely use it. */
