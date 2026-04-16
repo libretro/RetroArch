@@ -73,6 +73,9 @@
 #ifdef HAVE_SLANG
 #include "../drivers_shader/slang_process.h"
 #endif
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
 
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
@@ -6208,13 +6211,25 @@ static void d3d12_gfx_set_osd_msg(
       font_driver_render_msg(d3d12, msg, params, font);
 }
 
-static uintptr_t d3d12_gfx_load_texture(
-      void* video_data, void* data, bool threaded,
+#ifdef HAVE_THREADS
+typedef struct
+{
+   d3d12_video_t               *d3d12;
+   struct texture_image        *image;
+   enum texture_filter_type     filter_type;
+   uintptr_t                    handle; /* in for unload, out for load */
+} d3d12_texture_cmd_t;
+#endif
+
+/* Inner load function -- performs all GPU-touching work.
+ * Must run on the same thread that owns the D3D12 command
+ * queue (the video thread when threaded video is active,
+ * otherwise the main thread). */
+static uintptr_t d3d12_gfx_load_texture_internal(
+      d3d12_video_t* d3d12, struct texture_image* image,
       enum texture_filter_type filter_type)
 {
-   d3d12_texture_t*      texture = NULL;
-   d3d12_video_t*        d3d12   = (d3d12_video_t*)video_data;
-   struct texture_image* image   = (struct texture_image*)data;
+   d3d12_texture_t* texture = NULL;
 
    if (!d3d12)
       return 0;
@@ -6258,11 +6273,13 @@ static uintptr_t d3d12_gfx_load_texture(
    return (uintptr_t)texture;
 }
 
-static void d3d12_gfx_unload_texture(void* data,
-      bool threaded, uintptr_t handle)
+/* Inner unload function -- performs the fence wait and
+ * resource release.  Must run on the same thread that owns
+ * the D3D12 command queue. */
+static void d3d12_gfx_unload_texture_internal(
+      d3d12_video_t* d3d12, uintptr_t handle)
 {
    d3d12_texture_t* texture = (d3d12_texture_t*)handle;
-   d3d12_video_t* d3d12     = (d3d12_video_t*)data;
 
    if (!texture)
       return;
@@ -6280,6 +6297,84 @@ static void d3d12_gfx_unload_texture(void* data,
 
    d3d12_release_texture(texture);
    free(texture);
+}
+
+#ifdef HAVE_THREADS
+/* Wrapped entry points for video_thread_texture_handle.
+ * These are invoked on the video thread via CMD_CUSTOM_COMMAND.
+ * Return value is written to cmd->handle (not via the int
+ * return channel) because uintptr_t may be 64-bit while the
+ * command's return_value is int -- truncation would corrupt
+ * pointer-valued handles on 64-bit Windows. */
+static int d3d12_texture_load_wrap(void *data)
+{
+   d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
+   cmd->handle = d3d12_gfx_load_texture_internal(
+         cmd->d3d12, cmd->image, cmd->filter_type);
+   return 0;
+}
+
+static int d3d12_texture_unload_wrap(void *data)
+{
+   d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
+   d3d12_gfx_unload_texture_internal(cmd->d3d12, cmd->handle);
+   return 0;
+}
+#endif
+
+static uintptr_t d3d12_gfx_load_texture(
+      void* video_data, void* data, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   d3d12_video_t*        d3d12 = (d3d12_video_t*)video_data;
+   struct texture_image* image = (struct texture_image*)data;
+
+#ifdef HAVE_THREADS
+   /* When threaded video is active, dispatch to the video
+    * thread so that texture creation, upload-buffer writes,
+    * and command-queue signalling all happen on the same
+    * thread that owns the D3D12 command queue.  This
+    * prevents races on texture->dirty, descriptor heap
+    * allocation, and upload buffer visibility. */
+   if (threaded)
+   {
+      d3d12_texture_cmd_t cmd;
+      cmd.d3d12       = d3d12;
+      cmd.image       = image;
+      cmd.filter_type = filter_type;
+      cmd.handle      = 0;
+      video_thread_texture_handle(&cmd, d3d12_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return d3d12_gfx_load_texture_internal(d3d12, image, filter_type);
+}
+
+static void d3d12_gfx_unload_texture(void* data,
+      bool threaded, uintptr_t handle)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (!handle)
+      return;
+
+#ifdef HAVE_THREADS
+   /* Same reasoning as load: dispatch Release to the video
+    * thread so it is serialized with command-list recording. */
+   if (threaded)
+   {
+      d3d12_texture_cmd_t cmd;
+      cmd.d3d12       = d3d12;
+      cmd.image       = NULL;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = handle;
+      video_thread_texture_handle(&cmd, d3d12_texture_unload_wrap);
+      return;
+   }
+#endif
+
+   d3d12_gfx_unload_texture_internal(d3d12, handle);
 }
 
 static bool d3d12_get_hw_render_interface(
