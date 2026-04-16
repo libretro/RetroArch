@@ -461,7 +461,7 @@ void gfx_display_draw_bg(
       void *userdata, bool add_opacity_to_wallpaper,
       float override_opacity)
 {
-   struct video_coords coords;
+   static struct video_coords coords;
    const float           *new_vertex = NULL;
    const float        *new_tex_coord = NULL;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
