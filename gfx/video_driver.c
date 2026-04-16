@@ -3465,27 +3465,6 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
    return have_flags;
 }
 
-static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
-{
-   video_driver_state_t *video_st     = &video_driver_st;
-   const video_poke_interface_t *poke = video_st->poke;
-   if (!poke || !poke->get_flags)
-      return false;
-   flags->flags = poke->get_flags(video_st->data);
-   return true;
-}
-
-gfx_ctx_flags_t video_driver_get_flags_wrapper(void)
-{
-   gfx_ctx_flags_t flags;
-   flags.flags                 = 0;
-
-   if (!video_driver_get_flags(&flags))
-      video_context_driver_get_flags(&flags);
-
-   return flags;
-}
-
 /**
  * video_driver_test_all_flags:
  * @testflag          : flag to test
@@ -3496,10 +3475,7 @@ gfx_ctx_flags_t video_driver_get_flags_wrapper(void)
 bool video_driver_test_all_flags(enum display_flags testflag)
 {
    gfx_ctx_flags_t flags;
-
-   if (video_driver_get_flags(&flags))
-      if (BIT32_GET(flags.flags, testflag))
-         return true;
+   flags.flags = 0;
 
    if (video_context_driver_get_flags(&flags))
       if (BIT32_GET(flags.flags, testflag))
