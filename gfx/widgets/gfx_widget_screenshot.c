@@ -231,7 +231,7 @@ static void gfx_widget_screenshot_context_destroy(void)
 
 static void gfx_widget_screenshot_frame(void* data, void *user_data)
 {
-   static float pure_white[16]          = {
+   float pure_white[16]          = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,

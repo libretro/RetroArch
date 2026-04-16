@@ -346,7 +346,7 @@ typedef struct ozone_theme
 {
    /* Background color */
    float background[16];
-   float *background_libretro_running;
+   const float *background_libretro_running;
 
    /* Float colors for quads and icons */
    float header_footer_separator[16];
@@ -367,14 +367,14 @@ typedef struct ozone_theme
    /* Screensaver 'tint' (RGB24) */
    uint32_t screensaver_tint;
 
-   /* Sidebar color */
-   float *sidebar_background;
-   float *sidebar_top_gradient;
-   float *sidebar_bottom_gradient;
+   /* Sidebar color (const templates — mutable copies live in ozone_handle) */
+   const float *sidebar_background;
+   const float *sidebar_top_gradient;
+   const float *sidebar_bottom_gradient;
 
-   /* Fancy cursor colors */
-   float *cursor_border_0;
-   float *cursor_border_1;
+   /* Fancy cursor colors (read-only, used as memcpy source) */
+   const float *cursor_border_0;
+   const float *cursor_border_1;
 
    uintptr_t textures[OZONE_THEME_TEXTURE_LAST];
 
@@ -662,397 +662,406 @@ struct ozone_handle
       float amplitude;
       enum menu_action direction;
    } cursor_wiggle_state;
+
+   /* Per-instance mutable copies of theme sidebar/background colors.
+    * The file-scope theme arrays are now const; these are copied on
+    * theme change and mutated per-frame for alpha.  Avoids data races
+    * with threaded video backends (was file-scope mutable statics). */
+   float sidebar_top_gradient[16];
+   float sidebar_background[16];
+   float sidebar_bottom_gradient[16];
+   float background_running[16];
 };
 
 typedef struct ozone_handle ozone_handle_t;
 
-static float ozone_sidebar_gradient_top_light[16]                     = {
+static const float ozone_sidebar_gradient_top_light[16]                     = {
    0.94f,  0.94f,  0.94f,  1.00f,
    0.94f,  0.94f,  0.94f,  1.00f,
    0.922f, 0.922f, 0.922f, 1.00f,
    0.922f, 0.922f, 0.922f, 1.00f,
 };
 
-static float ozone_sidebar_gradient_bottom_light[16]                  = {
+static const float ozone_sidebar_gradient_bottom_light[16]                  = {
    0.922f, 0.922f, 0.922f, 1.00f,
    0.922f, 0.922f, 0.922f, 1.00f,
    0.94f,  0.94f,  0.94f,  1.00f,
    0.94f,  0.94f,  0.94f,  1.00f,
 };
 
-static float ozone_sidebar_gradient_top_dark[16]                      = {
+static const float ozone_sidebar_gradient_top_dark[16]                      = {
    0.2f,  0.2f,  0.2f,  1.00f,
    0.2f,  0.2f,  0.2f,  1.00f,
    0.18f, 0.18f, 0.18f, 1.00f,
    0.18f, 0.18f, 0.18f, 1.00f,
 };
 
-static float ozone_sidebar_gradient_bottom_dark[16]                   = {
+static const float ozone_sidebar_gradient_bottom_dark[16]                   = {
    0.18f, 0.18f, 0.18f, 1.00f,
    0.18f, 0.18f, 0.18f, 1.00f,
    0.2f,  0.2f,  0.2f,  1.00f,
    0.2f,  0.2f,  0.2f,  1.00f,
 };
 
-static float ozone_sidebar_gradient_top_nord[16]                      = {
+static const float ozone_sidebar_gradient_top_nord[16]                      = {
    0.2078431f, 0.2352941f, 0.2901961f, 1.0f,
    0.2078431f, 0.2352941f, 0.2901961f, 1.0f,
    0.1921569f, 0.2196078f, 0.2705882f, 0.9f,
    0.1921569f, 0.2196078f, 0.2705882f, 0.9f,
 };
 
-static float ozone_sidebar_gradient_bottom_nord[16]                   = {
+static const float ozone_sidebar_gradient_bottom_nord[16]                   = {
    0.1921569f, 0.2196078f, 0.2705882f, 0.9f,
    0.1921569f, 0.2196078f, 0.2705882f, 0.9f,
    0.2078431f, 0.2352941f, 0.2901961f, 1.0f,
    0.2078431f, 0.2352941f, 0.2901961f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_top_gruvbox_dark[16]              = {
+static const float ozone_sidebar_gradient_top_gruvbox_dark[16]              = {
    0.1960784f, 0.1882353f, 0.1843137f, 1.0f,
    0.1960784f, 0.1882353f, 0.1843137f, 1.0f,
    0.1686275f, 0.1686275f, 0.1686275f, 0.9f,
    0.1686275f, 0.1686275f, 0.1686275f, 0.9f,
 };
 
-static float ozone_sidebar_gradient_bottom_gruvbox_dark[16]           = {
+static const float ozone_sidebar_gradient_bottom_gruvbox_dark[16]           = {
    0.1686275f, 0.1686275f, 0.1686275f, 0.9f,
    0.1686275f, 0.1686275f, 0.1686275f, 0.9f,
    0.1960784f, 0.1882353f, 0.1843137f, 1.0f,
    0.1960784f, 0.1882353f, 0.1843137f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_top_boysenberry[16]               = {
+static const float ozone_sidebar_gradient_top_boysenberry[16]               = {
    0.27058823529f, 0.09803921568f, 0.14117647058f, 1.00f,
    0.27058823529f, 0.09803921568f, 0.14117647058f, 1.00f,
    0.19215686274f, 0.0f,           0.04705882352f, 1.00f,
    0.19215686274f, 0.0f,           0.04705882352f, 1.00f,
 };
 
-static float ozone_sidebar_gradient_bottom_boysenberry[16]            = {
+static const float ozone_sidebar_gradient_bottom_boysenberry[16]            = {
    0.19215686274f, 0.0f,           0.04705882352f, 1.00f,
    0.19215686274f, 0.0f,           0.04705882352f, 1.00f,
    0.27058823529f, 0.09803921568f, 0.14117647058f, 1.00f,
    0.27058823529f, 0.09803921568f, 0.14117647058f, 1.00f,
 };
 
-static float ozone_sidebar_gradient_top_hacking_the_kernel[16]        = {
+static const float ozone_sidebar_gradient_top_hacking_the_kernel[16]        = {
    0.0f, 0.13333333f, 0.0f, 1.0f,
    0.0f, 0.13333333f, 0.0f, 1.0f,
    0.0f, 0.13333333f, 0.0f, 1.0f,
    0.0f, 0.13333333f, 0.0f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_bottom_hacking_the_kernel[16]     = {
+static const float ozone_sidebar_gradient_bottom_hacking_the_kernel[16]     = {
    0.0f, 0.0666666f,  0.0f, 1.0f,
    0.0f, 0.0666666f,  0.0f, 1.0f,
    0.0f, 0.13333333f, 0.0f, 1.0f,
    0.0f, 0.13333333f, 0.0f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_top_twilight_zone[16]             = {
+static const float ozone_sidebar_gradient_top_twilight_zone[16]             = {
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_bottom_twilight_zone[16]          = {
+static const float ozone_sidebar_gradient_bottom_twilight_zone[16]          = {
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_top_dracula[16]                   = {
+static const float ozone_sidebar_gradient_top_dracula[16]                   = {
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_bottom_dracula[16]                = {
+static const float ozone_sidebar_gradient_bottom_dracula[16]                = {
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_top_evergarden[16]                   =
+static const float ozone_sidebar_gradient_top_evergarden[16]                   =
    COLOR_HEX_TO_FLOAT(0x1C2225, 1.0f);
 
-static float ozone_sidebar_gradient_bottom_evergarden[16]                =
+static const float ozone_sidebar_gradient_bottom_evergarden[16]                =
    COLOR_HEX_TO_FLOAT(0x1C2225, 1.0f);
 
-static float ozone_sidebar_gradient_top_selenium[16]            = {
+static const float ozone_sidebar_gradient_top_selenium[16]            = {
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_top_solarized_dark[16]            = {
+static const float ozone_sidebar_gradient_top_solarized_dark[16]            = {
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_bottom_selenium[16]         = {
+static const float ozone_sidebar_gradient_bottom_selenium[16]         = {
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
 };
-static float ozone_sidebar_gradient_bottom_solarized_dark[16]         = {
+static const float ozone_sidebar_gradient_bottom_solarized_dark[16]         = {
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_top_solarized_light[16]           = {
+static const float ozone_sidebar_gradient_top_solarized_light[16]           = {
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
 };
 
-static float ozone_sidebar_gradient_bottom_solarized_light[16]        = {
+static const float ozone_sidebar_gradient_bottom_solarized_light[16]        = {
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
 };
 
-static float ozone_sidebar_background_gray_dark[16]                   =
+static const float ozone_sidebar_background_gray_dark[16]                   =
    COLOR_HEX_TO_FLOAT(0x101010, 0.0f);
 
-static float ozone_sidebar_background_gray_light[16]                  =
+static const float ozone_sidebar_background_gray_light[16]                  =
    COLOR_HEX_TO_FLOAT(0x202020, 0.0f);
 
-static float ozone_sidebar_background_light[16]                       = {
+static const float ozone_sidebar_background_light[16]                       = {
    0.94f, 0.94f, 0.94f, 1.00f,
    0.94f, 0.94f, 0.94f, 1.00f,
    0.94f, 0.94f, 0.94f, 1.00f,
    0.94f, 0.94f, 0.94f, 1.00f,
 };
 
-static float ozone_sidebar_background_dark[16]                        = {
+static const float ozone_sidebar_background_dark[16]                        = {
    0.2f, 0.2f, 0.2f, 1.00f,
    0.2f, 0.2f, 0.2f, 1.00f,
    0.2f, 0.2f, 0.2f, 1.00f,
    0.2f, 0.2f, 0.2f, 1.00f,
 };
 
-static float ozone_sidebar_background_nord[16]                        = {
+static const float ozone_sidebar_background_nord[16]                        = {
    0.2078431f, 0.2352941f, 0.2901961f, 1.0f,
    0.2078431f, 0.2352941f, 0.2901961f, 1.0f,
    0.2078431f, 0.2352941f, 0.2901961f, 1.0f,
    0.2078431f, 0.2352941f, 0.2901961f, 1.0f,
 };
 
-static float ozone_sidebar_background_gruvbox_dark[16]                = {
+static const float ozone_sidebar_background_gruvbox_dark[16]                = {
    0.1960784f, 0.1882353f, 0.1843137f, 1.0f,
    0.1960784f, 0.1882353f, 0.1843137f, 1.0f,
    0.1960784f, 0.1882353f, 0.1843137f, 1.0f,
    0.1960784f, 0.1882353f, 0.1843137f, 1.0f,
 };
 
-static float ozone_sidebar_background_boysenberry[16]                 = {
+static const float ozone_sidebar_background_boysenberry[16]                 = {
    0.27058823529f, 0.09803921568f, 0.14117647058f, 1.00f,
    0.27058823529f, 0.09803921568f, 0.14117647058f, 1.00f,
    0.27058823529f, 0.09803921568f, 0.14117647058f, 1.00f,
    0.27058823529f, 0.09803921568f, 0.14117647058f, 1.00f,
 };
 
-static float ozone_sidebar_background_hacking_the_kernel[16]          = {
+static const float ozone_sidebar_background_hacking_the_kernel[16]          = {
    0.0f, 0.1333333f, 0.0f, 1.0f,
    0.0f, 0.1333333f, 0.0f, 1.0f,
    0.0f, 0.1333333f, 0.0f, 1.0f,
    0.0f, 0.1333333f, 0.0f, 1.0f,
 };
 
-static float ozone_sidebar_background_twilight_zone[16]               = {
+static const float ozone_sidebar_background_twilight_zone[16]               = {
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
 };
 
-static float ozone_sidebar_background_dracula[16]                     = {
+static const float ozone_sidebar_background_dracula[16]                     = {
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
 };
 
-static float ozone_sidebar_background_evergarden[16]                  =
+static const float ozone_sidebar_background_evergarden[16]                  =
    COLOR_HEX_TO_FLOAT(0x1C2225, 1.0f);
 
-static float ozone_sidebar_background_selenium[16]              = {
+static const float ozone_sidebar_background_selenium[16]              = {
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
    0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
 };
-static float ozone_sidebar_background_solarized_dark[16]              = {
+static const float ozone_sidebar_background_solarized_dark[16]              = {
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
 };
 
-static float ozone_sidebar_background_solarized_light[16]             = {
+static const float ozone_sidebar_background_solarized_light[16]             = {
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
 };
 
-static float ozone_sidebar_background_purple_rain[16] = {
+static const float ozone_sidebar_background_purple_rain[16] = {
    0.0862745f, 0.0f, 0.1294117f, 1.0f,
    0.0862745f, 0.0f, 0.1294117f, 1.0f,
    0.0862745f, 0.0f, 0.1294117f, 1.0f,
    0.0862745f, 0.0f, 0.1294117f, 1.0f,
 };
 
-static float ozone_background_libretro_running_gray_dark[16]          =
+static const float ozone_background_libretro_running_gray_dark[16]          =
    COLOR_HEX_TO_FLOAT(0x101010, 1.0f);
 
-static float ozone_background_libretro_running_gray_light[16]         =
+static const float ozone_background_libretro_running_gray_light[16]         =
    COLOR_HEX_TO_FLOAT(0x202020, 1.0f);
 
-static float ozone_background_libretro_running_light[16]              = {
+static const float ozone_background_libretro_running_light[16]              = {
    0.690f, 0.690f, 0.690f, 0.75f,
    0.690f, 0.690f, 0.690f, 0.75f,
    0.922f, 0.922f, 0.922f, 1.0f,
    0.922f, 0.922f, 0.922f, 1.0f
 };
 
-static float ozone_background_libretro_running_dark[16]               = {
+static const float ozone_background_libretro_running_dark[16]               = {
    0.176f, 0.176f, 0.176f, 0.75f,
    0.176f, 0.176f, 0.176f, 0.75f,
    0.178f, 0.178f, 0.178f, 1.0f,
    0.178f, 0.178f, 0.178f, 1.0f,
 };
 
-static float ozone_background_libretro_running_nord[16]               = {
+static const float ozone_background_libretro_running_nord[16]               = {
    0.1803922f, 0.2039216f, 0.2509804f, 0.75f,
    0.1803922f, 0.2039216f, 0.2509804f, 0.75f,
    0.1803922f, 0.2039216f, 0.2509804f, 1.0f,
    0.1803922f, 0.2039216f, 0.2509804f, 1.0f,
 };
 
-static float ozone_background_libretro_running_gruvbox_dark[16]       = {
+static const float ozone_background_libretro_running_gruvbox_dark[16]       = {
    0.1568627f, 0.1568627f, 0.1568627f, 0.75f,
    0.1568627f, 0.1568627f, 0.1568627f, 0.75f,
    0.1568627f, 0.1568627f, 0.1568627f, 1.0f,
    0.1568627f, 0.1568627f, 0.1568627f, 1.0f,
 };
 
-static float ozone_background_libretro_running_boysenberry[16]        = {
+static const float ozone_background_libretro_running_boysenberry[16]        = {
    0.27058823529f, 0.09803921568f, 0.14117647058f, 0.75f,
    0.27058823529f, 0.09803921568f, 0.14117647058f, 0.75f,
    0.27058823529f, 0.09803921568f, 0.14117647058f, 0.75f,
    0.27058823529f, 0.09803921568f, 0.14117647058f, 0.75f,
 };
 
-static float ozone_background_libretro_running_hacking_the_kernel[16] = {
+static const float ozone_background_libretro_running_hacking_the_kernel[16] = {
    0.0f, 0.0666666f, 0.0f, 0.75f,
    0.0f, 0.0666666f, 0.0f, 0.75f,
    0.0f, 0.0666666f, 0.0f, 1.0f,
    0.0f, 0.0666666f, 0.0f, 1.0f,
 };
 
-static float ozone_background_libretro_running_twilight_zone[16]      = {
+static const float ozone_background_libretro_running_twilight_zone[16]      = {
    0.0078431f, 0.0f, 0.0156862f, 0.75f,
    0.0078431f, 0.0f, 0.0156862f, 0.75f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
    0.0078431f, 0.0f, 0.0156862f, 1.0f,
 };
 
-static float ozone_background_libretro_running_dracula[16]            = {
+static const float ozone_background_libretro_running_dracula[16]            = {
    0.1568627f, 0.1647058f, 0.2117647f, 0.75f,
    0.1568627f, 0.1647058f, 0.2117647f, 0.75f,
    0.1568627f, 0.1647058f, 0.2117647f, 1.0f,
    0.1568627f, 0.1647058f, 0.2117647f, 1.0f,
 };
 
-static float ozone_background_libretro_running_evergarden[16]            = {
+static const float ozone_background_libretro_running_evergarden[16]            = {
    0.1568627f, 0.1647058f, 0.2117647f, 0.75f,
    0.1568627f, 0.1647058f, 0.2117647f, 0.75f,
    0.1568627f, 0.1647058f, 0.2117647f, 1.0f,
    0.1568627f, 0.1647058f, 0.2117647f, 1.0f,
 };
 
-static float ozone_background_libretro_running_selenium[16]     = {
+static const float ozone_background_libretro_running_selenium[16]     = {
    0.1647059f, 0.1647059f, 0.1647059f, 1.0f,
    0.1647059f, 0.1647059f, 0.1647059f, 1.0f,
    0.1647059f, 0.1647059f, 0.1647059f, 1.0f,
    0.1647059f, 0.1647059f, 0.1647059f, 1.0f,
 };
-static float ozone_background_libretro_running_solarized_dark[16]     = {
+static const float ozone_background_libretro_running_solarized_dark[16]     = {
    0.0000000f, 0.1294118f, 0.1725490f, .85f,
    0.0000000f, 0.1294118f, 0.1725490f, .85f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
 };
 
-static float ozone_background_libretro_running_solarized_light[16]    = {
+static const float ozone_background_libretro_running_solarized_light[16]    = {
    1.0000000f, 1.0000000f, 0.9294118f, 0.85f,
    1.0000000f, 1.0000000f, 0.9294118f, 0.85f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
 };
 
-static float ozone_background_libretro_running_purple_rain[16] = {
+static const float ozone_background_libretro_running_purple_rain[16] = {
    0.0862745f, 0.0f, 0.1294117f, 0.75f,
    0.0862745f, 0.0f, 0.1294117f, 0.75f,
    0.0862745f, 0.0f, 0.1294117f, 1.0f,
    0.0862745f, 0.0f, 0.1294117f, 1.0f,
 };
 
-static float ozone_border_gray[16]                 = COLOR_HEX_TO_FLOAT(0x303030, 1.0f);
+static const float ozone_border_gray[16]                 = COLOR_HEX_TO_FLOAT(0x303030, 1.0f);
 
-static float ozone_border_0_light[16]              = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
-static float ozone_border_1_light[16]              = COLOR_HEX_TO_FLOAT(0x0DB6D5, 1.00);
+static const float ozone_border_0_light[16]              = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
+static const float ozone_border_1_light[16]              = COLOR_HEX_TO_FLOAT(0x0DB6D5, 1.00);
 
-static float ozone_border_0_dark[16]               = COLOR_HEX_TO_FLOAT(0x198AC6, 1.00);
-static float ozone_border_1_dark[16]               = COLOR_HEX_TO_FLOAT(0x89F1F2, 1.00);
+static const float ozone_border_0_dark[16]               = COLOR_HEX_TO_FLOAT(0x198AC6, 1.00);
+static const float ozone_border_1_dark[16]               = COLOR_HEX_TO_FLOAT(0x89F1F2, 1.00);
 
-static float ozone_border_0_nord[16]               = COLOR_HEX_TO_FLOAT(0x5E81AC, 1.0f);
-static float ozone_border_1_nord[16]               = COLOR_HEX_TO_FLOAT(0x88C0D0, 1.0f);
+static const float ozone_border_0_nord[16]               = COLOR_HEX_TO_FLOAT(0x5E81AC, 1.0f);
+static const float ozone_border_1_nord[16]               = COLOR_HEX_TO_FLOAT(0x88C0D0, 1.0f);
 
-static float ozone_border_0_gruvbox_dark[16]       = COLOR_HEX_TO_FLOAT(0xAF3A03, 1.0f);
-static float ozone_border_1_gruvbox_dark[16]       = COLOR_HEX_TO_FLOAT(0xFE8019, 1.0f);
+static const float ozone_border_0_gruvbox_dark[16]       = COLOR_HEX_TO_FLOAT(0xAF3A03, 1.0f);
+static const float ozone_border_1_gruvbox_dark[16]       = COLOR_HEX_TO_FLOAT(0xFE8019, 1.0f);
 
-static float ozone_border_0_boysenberry[16]        = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
-static float ozone_border_1_boysenberry[16]        = COLOR_HEX_TO_FLOAT(0x0DB6D5, 1.00);
+static const float ozone_border_0_boysenberry[16]        = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
+static const float ozone_border_1_boysenberry[16]        = COLOR_HEX_TO_FLOAT(0x0DB6D5, 1.00);
 
-static float ozone_border_0_hacking_the_kernel[16] = COLOR_HEX_TO_FLOAT(0x008C00, 1.0f);
-static float ozone_border_1_hacking_the_kernel[16] = COLOR_HEX_TO_FLOAT(0x00E000, 1.0f);
+static const float ozone_border_0_hacking_the_kernel[16] = COLOR_HEX_TO_FLOAT(0x008C00, 1.0f);
+static const float ozone_border_1_hacking_the_kernel[16] = COLOR_HEX_TO_FLOAT(0x00E000, 1.0f);
 
-static float ozone_border_0_twilight_zone[16]      = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
-static float ozone_border_1_twilight_zone[16]      = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
+static const float ozone_border_0_twilight_zone[16]      = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
+static const float ozone_border_1_twilight_zone[16]      = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
 
-static float ozone_border_0_dracula[16]            = COLOR_HEX_TO_FLOAT(0xBD93F9, 1.0f);
-static float ozone_border_1_dracula[16]            = COLOR_HEX_TO_FLOAT(0xFF79C6, 1.0f);
+static const float ozone_border_0_dracula[16]            = COLOR_HEX_TO_FLOAT(0xBD93F9, 1.0f);
+static const float ozone_border_1_dracula[16]            = COLOR_HEX_TO_FLOAT(0xFF79C6, 1.0f);
 
-static float ozone_border_0_evergarden[16]         = COLOR_HEX_TO_FLOAT(0xCBE3B3, 1.0f);
-static float ozone_border_1_evergarden[16]         = COLOR_HEX_TO_FLOAT(0xB3E6DB, 1.0f);
+static const float ozone_border_0_evergarden[16]         = COLOR_HEX_TO_FLOAT(0xCBE3B3, 1.0f);
+static const float ozone_border_1_evergarden[16]         = COLOR_HEX_TO_FLOAT(0xB3E6DB, 1.0f);
 
-static float ozone_border_0_selenium[16]           = COLOR_HEX_TO_FLOAT(0x91a666, 1.0f);
-static float ozone_border_1_selenium[16]           = COLOR_HEX_TO_FLOAT(0x566646, 1.0f);
+static const float ozone_border_0_selenium[16]           = COLOR_HEX_TO_FLOAT(0x91a666, 1.0f);
+static const float ozone_border_1_selenium[16]           = COLOR_HEX_TO_FLOAT(0x566646, 1.0f);
 
-static float ozone_border_0_solarized_dark[16]     = COLOR_HEX_TO_FLOAT(0x67ECE2, 1.0f);
-static float ozone_border_1_solarized_dark[16]     = COLOR_HEX_TO_FLOAT(0x2AA198, 1.0f);
+static const float ozone_border_0_solarized_dark[16]     = COLOR_HEX_TO_FLOAT(0x67ECE2, 1.0f);
+static const float ozone_border_1_solarized_dark[16]     = COLOR_HEX_TO_FLOAT(0x2AA198, 1.0f);
 
-static float ozone_border_0_solarized_light[16]    = COLOR_HEX_TO_FLOAT(0x8F120F, 1.0f);
-static float ozone_border_1_solarized_light[16]    = COLOR_HEX_TO_FLOAT(0xDC322F, 1.0f);
+static const float ozone_border_0_solarized_light[16]    = COLOR_HEX_TO_FLOAT(0x8F120F, 1.0f);
+static const float ozone_border_1_solarized_light[16]    = COLOR_HEX_TO_FLOAT(0xDC322F, 1.0f);
 
-static float ozone_border_0_purple_rain[16]        = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
-static float ozone_border_1_purple_rain[16]        = COLOR_HEX_TO_FLOAT(0x8C3DCC, 1.0f);
+static const float ozone_border_0_purple_rain[16]        = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
+static const float ozone_border_1_purple_rain[16]        = COLOR_HEX_TO_FLOAT(0x8C3DCC, 1.0f);
 
 static ozone_theme_t ozone_theme_light = {
    COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00f),                  /* background */
@@ -1655,7 +1664,7 @@ static INLINE uint8_t ozone_count_lines(const char *str)
 
 static void ozone_animate_cursor(ozone_handle_t *ozone,
       float *dst,
-      float *target)
+      const float *target)
 {
    int i;
    gfx_animation_ctx_entry_t entry;
@@ -1684,7 +1693,7 @@ static void ozone_animate_cursor(ozone_handle_t *ozone,
 
 static void ozone_cursor_animation_cb(void *userdata)
 {
-   float *target         = NULL;
+   const float *target   = NULL;
    ozone_handle_t *ozone = (ozone_handle_t*)userdata;
 
    switch (ozone->theme_dynamic_cursor_state)
@@ -1797,6 +1806,23 @@ static void ozone_set_color_theme(ozone_handle_t *ozone,
          ozone->theme->message_background,
          sizeof(ozone->theme_dynamic.message_background));
 
+   /* Copy sidebar/background colors into per-instance mutable arrays.
+    * The theme arrays are now const; these copies are what gets
+    * alpha-mutated per-frame. */
+   memcpy(ozone->sidebar_top_gradient,
+         ozone->theme->sidebar_top_gradient,
+         sizeof(ozone->sidebar_top_gradient));
+   memcpy(ozone->sidebar_background,
+         ozone->theme->sidebar_background,
+         sizeof(ozone->sidebar_background));
+   memcpy(ozone->sidebar_bottom_gradient,
+         ozone->theme->sidebar_bottom_gradient,
+         sizeof(ozone->sidebar_bottom_gradient));
+   if (ozone->theme->background_libretro_running)
+      memcpy(ozone->background_running,
+            ozone->theme->background_libretro_running,
+            sizeof(ozone->background_running));
+
    if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)
       ozone_restart_cursor_animation(ozone);
 
@@ -1830,10 +1856,10 @@ static void ozone_set_background_running_opacity(
       float framebuffer_opacity)
 {
 #if USE_BG_GRADIENT
-   static float background_running_alpha_top    = 1.0f;
-   static float background_running_alpha_bottom = 0.75f;
+   float background_running_alpha_top;
+   float background_running_alpha_bottom;
    float *background                            =
-         ozone->theme->background_libretro_running;
+         ozone->background_running;
 
    /* When content is running, background is a
     * gradient that from top to bottom transitions
@@ -1862,7 +1888,7 @@ static void ozone_set_background_running_opacity(
    background[7]                                = background_running_alpha_bottom;
 #else
    float *background                            =
-         ozone->theme->background_libretro_running;
+         ozone->background_running;
 
    background[11]                               = framebuffer_opacity;
    background[15]                               = framebuffer_opacity;
@@ -1872,12 +1898,13 @@ static void ozone_set_background_running_opacity(
 
    ozone->last_framebuffer_opacity              = framebuffer_opacity;
 
-   /* Set sidebar background to half opacity if transparent */
-   if (ozone->theme->sidebar_background[3] > 0)
+   /* Set sidebar background to half opacity if transparent —
+    * now mutates instance copies, not the const theme arrays */
+   if (ozone->sidebar_background[3] > 0)
    {
-      gfx_display_set_alpha(ozone->theme->sidebar_top_gradient, 0.5f);
-      gfx_display_set_alpha(ozone->theme->sidebar_background, 0.5f);
-      gfx_display_set_alpha(ozone->theme->sidebar_bottom_gradient, 0.5f);
+      gfx_display_set_alpha(ozone->sidebar_top_gradient, 0.5f);
+      gfx_display_set_alpha(ozone->sidebar_background, 0.5f);
+      gfx_display_set_alpha(ozone->sidebar_bottom_gradient, 0.5f);
    }
 }
 
@@ -3129,7 +3156,6 @@ static void ozone_draw_cursor_slice(
 {
    gfx_display_ctx_driver_t
          *dispctx                  = p_disp->dispctx;
-   static float last_alpha         = 0.0f;
    float scale_factor              = ozone->last_scale_factor;
    int slice_x                     = x_offset - (12 + 1) * scale_factor;
    int slice_y                     = (int)y + 8 * scale_factor;
@@ -3139,12 +3165,8 @@ static void ozone_draw_cursor_slice(
    unsigned slice_h                = 80;
    unsigned offset                 = 20;
 
-   if (alpha != last_alpha)
-   {
-      gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
-      gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
-      last_alpha = alpha;
-   }
+   gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
+   gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
 
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
@@ -3207,14 +3229,8 @@ static void ozone_draw_cursor_fallback(
       size_t y,
       float alpha)
 {
-   static float last_alpha         = 0.0f;
-
-   if (alpha != last_alpha)
-   {
-      gfx_display_set_alpha(ozone->theme_dynamic.selection_border, alpha);
-      gfx_display_set_alpha(ozone->theme_dynamic.selection, alpha);
-      last_alpha = alpha;
-   }
+   gfx_display_set_alpha(ozone->theme_dynamic.selection_border, alpha);
+   gfx_display_set_alpha(ozone->theme_dynamic.selection, alpha);
 
    /* Fill */
    gfx_display_draw_quad(
@@ -3486,7 +3502,7 @@ static void ozone_draw_sidebar(
             ozone->dimensions.sidebar_gradient_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_top_gradient,
+            ozone->sidebar_top_gradient,
             NULL);
       gfx_display_draw_quad(
             p_disp,
@@ -3500,7 +3516,7 @@ static void ozone_draw_sidebar(
             sidebar_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_background,
+            ozone->sidebar_background,
             NULL);
       gfx_display_draw_quad(
             p_disp,
@@ -3515,7 +3531,7 @@ static void ozone_draw_sidebar(
             ozone->dimensions.sidebar_gradient_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_bottom_gradient,
+            ozone->sidebar_bottom_gradient,
             NULL);
    }
 
@@ -6397,7 +6413,7 @@ static void ozone_draw_thumbnail_bar(
             ozone->dimensions.sidebar_gradient_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_top_gradient,
+            ozone->sidebar_top_gradient,
             NULL);
       gfx_display_draw_quad(
             p_disp,
@@ -6411,7 +6427,7 @@ static void ozone_draw_thumbnail_bar(
             sidebar_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_background,
+            ozone->sidebar_background,
             NULL);
       gfx_display_draw_quad(
             p_disp,
@@ -6426,7 +6442,7 @@ static void ozone_draw_thumbnail_bar(
             ozone->dimensions.sidebar_gradient_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_bottom_gradient,
+            ozone->sidebar_bottom_gradient,
             NULL);
    }
 
@@ -7003,21 +7019,16 @@ static void ozone_draw_backdrop(
       unsigned video_height,
       float alpha)
 {
-   static float ozone_backdrop[16] = {
+   /* Stack-local scratch — avoids data race with threaded
+    * video backends reading a previous frame's color data */
+   float ozone_backdrop[16] = {
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
    };
-   static float last_alpha         = 0.0f;
 
-   /* TODO: Replace this backdrop by a blur shader
-    * on the whole screen if available */
-   if (alpha != last_alpha)
-   {
-      gfx_display_set_alpha(ozone_backdrop, alpha);
-      last_alpha = alpha;
-   }
+   gfx_display_set_alpha(ozone_backdrop, alpha);
 
    gfx_display_draw_quad(
          (gfx_display_t*)disp_data,
@@ -7046,7 +7057,7 @@ static void ozone_draw_osk(
    gfx_display_t *p_disp          = (gfx_display_t*)disp_userdata;
    const char *text               = str;
    unsigned text_color            = 0xffffffff;
-   static float ozone_osk_backdrop[16] = {
+   float ozone_osk_backdrop[16] = {
       0.00, 0.00, 0.00, 0.15,
       0.00, 0.00, 0.00, 0.15,
       0.00, 0.00, 0.00, 0.15,
@@ -7537,7 +7548,7 @@ static void ozone_draw_fullscreen_thumbnails(
       float left_thumbnail_draw_width   = 0.0f;
       float left_thumbnail_draw_height  = 0.0f;
       float background_alpha            = 0.95f;
-      static float background_color[16] = {
+      float background_color[16] = {
          0.0f, 0.0f, 0.0f, 1.0f,
          0.0f, 0.0f, 0.0f, 1.0f,
          0.0f, 0.0f, 0.0f, 1.0f,
@@ -7703,7 +7714,7 @@ static void ozone_draw_fullscreen_thumbnails(
             ozone->animations.fullscreen_thumbnail_alpha);
 
       /* > Thumbnail frame */
-      memcpy(frame_color, ozone->theme->sidebar_background, sizeof(frame_color));
+      memcpy(frame_color, ozone->sidebar_background, sizeof(frame_color));
       gfx_display_set_alpha(
             frame_color,
             ozone->animations.fullscreen_thumbnail_alpha);
@@ -11837,6 +11848,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    bool draw_osk                          = menu_input_dialog_get_display_kb();
    static bool draw_osk_old               = false;
    float *background_color                = NULL;
+   float background_color_buf[16]; /* stack copy to avoid mutating static theme struct */
    void *userdata                         = video_info->userdata;
    unsigned video_width                   = video_info->width;
    unsigned video_height                  = video_info->height;
@@ -11979,10 +11991,14 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          if (ozone->theme->background_libretro_running)
             ozone_set_background_running_opacity(ozone, menu_framebuffer_opacity);
 
-      background_color = ozone->theme->background_libretro_running;
+      background_color = ozone->background_running;
    }
    else
-      background_color = ozone->theme->background;
+   {
+      memcpy(background_color_buf, ozone->theme->background,
+            sizeof(background_color_buf));
+      background_color = background_color_buf;
+   }
 
    gfx_display_set_alpha(background_color, menu_framebuffer_opacity * ozone->animations.alpha);
 

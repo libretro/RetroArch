@@ -86,7 +86,7 @@ static gfx_widget_volume_state_t p_w_volume_st = {
 
 static void gfx_widget_volume_frame(void* data, void *user_data)
 {
-   static float pure_white[16]             = {
+   float pure_white[16]             = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
