@@ -2557,7 +2557,7 @@ static uintptr_t metal_load_texture_internal(void *video_data, void *data,
  * CMD_CUSTOM_COMMAND.  Writes the handle to cmd->handle rather
  * than the int return channel to avoid truncation on 64-bit
  * Apple platforms where uintptr_t is 64 bits. */
-static int metal_texture_load_wrap(void *data)
+static uintptr_t metal_texture_load_wrap(void *data)
 {
    metal_texture_cmd_t *cmd = (metal_texture_cmd_t*)data;
    cmd->handle = metal_load_texture_internal(
