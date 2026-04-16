@@ -3429,19 +3429,40 @@ bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 {
    video_driver_state_t *video_st  = &video_driver_st;
-   const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
-   void *ctx_data                  = (void*)video_st->context_data;
-   if (!ctx->get_flags)
-      return false;
+   bool have_flags                 = false;
 
-   if (video_st->flags & VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS)
+   /* Check the context driver (GL/Vulkan path). */
    {
-      flags->flags     = video_st->deferred_flag_data.flags;
-      video_st->flags &= ~VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
+      const gfx_ctx_driver_t *ctx = &video_st->current_video_context;
+      void *ctx_data              = (void*)video_st->context_data;
+      if (ctx->get_flags)
+      {
+         if (video_st->flags & VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS)
+         {
+            flags->flags     = video_st->deferred_flag_data.flags;
+            video_st->flags &= ~VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
+         }
+         else
+            flags->flags     = ctx->get_flags(ctx_data);
+         have_flags = true;
+      }
    }
-   else
-      flags->flags     = ctx->get_flags(ctx_data);
-   return true;
+
+   /* Merge in flags from the video driver's poke interface.
+    * D3D and Metal drivers provide all flags here (no context
+    * driver).  GL drivers provide supplementary flags (hard
+    * sync, BFI, etc.) alongside the context driver's flags
+    * (shader types, adaptive vsync). */
+   {
+      const video_poke_interface_t *poke = video_st->poke;
+      if (poke && poke->get_flags)
+      {
+         flags->flags |= poke->get_flags(video_st->data);
+         have_flags    = true;
+      }
+   }
+
+   return have_flags;
 }
 
 static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
@@ -3895,6 +3916,31 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    if (video_st->current_video->poke_interface)
       video_st->current_video->poke_interface(
             video_st->data, &video_st->poke);
+
+   /* Load the initial shader preset for drivers that don't
+    * load shaders during their own init().  GL and Vulkan
+    * drivers load shaders inside init() using their real
+    * context driver for flag queries.  D3D and Metal drivers
+    * cannot do this because they don't have a context driver,
+    * so shader loading is deferred to here where the poke
+    * interface (which provides the same flags) is available.
+    *
+    * Previously each D3D/Metal driver installed a fake
+    * gfx_ctx_driver_t inside init() as a workaround.
+    * This centralized loading eliminates that workaround.
+    *
+    * The guard checks whether the context driver provides
+    * get_flags — if it does, the driver loaded its own
+    * shaders during init and we must not reload them here
+    * (which would tear down and rebuild the filter chain). */
+   if (     video_st->current_video->set_shader
+         && !video_st->current_video_context.get_flags)
+   {
+      const char *shader_preset   = video_shader_get_current_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+      video_st->current_video->set_shader(
+            video_st->data, type, shader_preset);
+   }
 
    if (video_st->current_video->viewport_info &&
          (!custom_vp->width  ||

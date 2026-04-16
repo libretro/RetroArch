@@ -2334,52 +2334,6 @@ static void metal_ctx_swap_buffers(void *data)
       [md.context swapBuffers];
 }
 
-static void metal_ctx_swap_interval(void *data, int interval)
-{
-   /* No-op: displaySyncEnabled is already set by metal_set_nonblock_state,
-    * and swap_interval is stored in metal_swap_interval for frame duplication. */
-   (void)data;
-   (void)interval;
-}
-
-static gfx_ctx_driver_t metal_fake_context = {
-       NULL,                    /* init */
-       NULL,                    /* destroy */
-       NULL,                    /* get_api */
-       NULL,                    /* bind_api */
-       metal_ctx_swap_interval, /* swap_interval */
-       NULL,                    /* set_video_mode */
-       NULL,                    /* get_video_size */
-       NULL,                    /* get_refresh_rate */
-       NULL,                    /* get_video_output_size */
-       NULL,                    /* get_video_output_prev */
-       NULL,                    /* get_video_output_next */
-#ifdef HAVE_COCOATOUCH
-       metal_ctx_get_metrics,
-#else
-       NULL,
-#endif
-       NULL,                    /* translate_aspect */
-       NULL,                    /* update_title */
-       NULL,                    /* check_window */
-       NULL,                    /* set_resize */
-       NULL,                    /* has_focus */
-       NULL,                    /* suppress_screensaver */
-       false,                   /* has_windowed */
-       metal_ctx_swap_buffers,  /* swap_buffers */
-       NULL,                    /* input_driver */
-       NULL,                    /* get_proc_address */
-       NULL,                    /* image_buffer_init */
-       NULL,                    /* image_buffer_write */
-       NULL,                    /* show_mouse */
-       "metal",
-       NULL,                    /* get_flags */
-       NULL,                    /* set_flags */
-       NULL,
-       NULL,                    /* get_context_data */
-       NULL                     /* make_current */
-};
-
 static bool metal_set_shader(void *data,
       enum rarch_shader_type type, const char *path);
 
@@ -2388,7 +2342,6 @@ static void *metal_init(
       input_driver_t **input,
       void **input_data)
 {
-   const char *shader_path;
    MetalDriver *md = nil;
 
    [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
@@ -2399,13 +2352,6 @@ static void *metal_init(
 
    /* Store reference for context swap_buffers calls */
    metal_ctx_data = (__bridge void *)md;
-
-   metal_fake_context.get_flags = metal_get_flags;
-   video_context_driver_set(&metal_fake_context);
-
-   shader_path = video_shader_get_current_shader_preset();
-   metal_set_shader((__bridge void *)md,
-         video_shader_parse_type(shader_path), shader_path);
 
    return (__bridge_retained void *)md;
 }
@@ -2439,8 +2385,7 @@ static bool metal_frame(void *data, const void *frame,
    /* Call swap_buffers to acquire next drawable. This moves the blocking
     * acquisition to AFTER presenting (like Vulkan), instead of BEFORE
     * rendering. This is critical for proper 120Hz on ProMotion displays. */
-   if (metal_fake_context.swap_buffers)
-      metal_fake_context.swap_buffers(NULL);
+   metal_ctx_swap_buffers(NULL);
 
    /* Frame duping for shader_subframes - present multiple times per core frame
     * to match high refresh rate displays (e.g., 60fps core on 120Hz display).

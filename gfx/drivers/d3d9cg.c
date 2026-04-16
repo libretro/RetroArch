@@ -395,9 +395,6 @@ static INLINE void d3d9_recompute_pass_sizes(
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_COLOR, (BYTE)(index) } \
 
-/* TODO/FIXME - Temporary workaround for D3D9 not being able to poll flags during init */
-static gfx_ctx_driver_t d3d9_cg_fake_context;
-
 struct D3D9CGVertex
 {
    float x, y, z;
@@ -3893,16 +3890,6 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
 
    if (!d3d9_cg_initialize(d3d, &d3d->video_info))
       return false;
-
-   d3d9_cg_fake_context.get_flags   = d3d9_cg_get_flags;
-   d3d9_cg_fake_context.get_metrics = win32_get_metrics;
-   video_context_driver_set(&d3d9_cg_fake_context);
-   {
-      const char *shader_preset   = video_shader_get_current_shader_preset();
-      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
-
-      d3d9_cg_set_shader(d3d, type, shader_preset);
-   }
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
       settings->arrays.input_joypad_driver, input, input_data);

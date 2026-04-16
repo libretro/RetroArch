@@ -287,8 +287,6 @@ typedef struct
 } d3d10_video_t;
 
 
-/* Temporary workaround for d3d10 not being able to poll flags during init */
-static gfx_ctx_driver_t d3d10_fake_context;
 static uint32_t d3d10_get_flags(void *data);
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
@@ -2661,16 +2659,6 @@ static void *d3d10_gfx_init(const video_info_t* video,
             video->is_threaded,
             FONT_DRIVER_RENDER_D3D10_API);
 
-   {
-      d3d10_fake_context.get_flags = d3d10_get_flags;
-      d3d10_fake_context.get_metrics = win32_get_metrics;
-      video_context_driver_set(&d3d10_fake_context);
-#ifdef HAVE_SLANG
-      const char *shader_preset   = video_shader_get_current_shader_preset();
-      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
-      d3d10_gfx_set_shader(d3d10, type, shader_preset);
-#endif
-   }
 
 #if 0
    if (video_driver_get_hw_context()->context_type == RETRO_HW_CONTEXT_D3D10)

@@ -433,8 +433,6 @@ typedef struct
 
 #define D3D11_ROLLING_SCANLINE_SIMULATION
 
-/* Temporary workaround for d3d11 not being able to poll flags during init */
-static gfx_ctx_driver_t d3d11_fake_context;
 
 static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
@@ -3689,15 +3687,6 @@ static void *d3d11_gfx_init(const video_info_t* video,
          false,
          video->is_threaded,
          FONT_DRIVER_RENDER_D3D11_API);
-
-   {
-      d3d11_fake_context.get_flags   = d3d11_get_flags;
-      d3d11_fake_context.get_metrics = win32_get_metrics;
-      video_context_driver_set(&d3d11_fake_context);
-      const char *shader_preset      = video_shader_get_current_shader_preset();
-      enum rarch_shader_type type    = video_shader_parse_type(shader_preset);
-      d3d11_gfx_set_shader(d3d11, type, shader_preset);
-   }
 
    if (video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_D3D11)
    {

@@ -376,9 +376,6 @@ static INLINE void d3d9_recompute_pass_sizes(
    }
 }
 
-/* TODO/FIXME - Temporary workaround for D3D9 not being able to poll flags during init */
-static gfx_ctx_driver_t d3d9_hlsl_fake_context;
-
 /* =====================================================================
  * SM3.0 CTAB (Constant Table) parser
  *
@@ -7074,18 +7071,6 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 
    if (!d3d9_hlsl_initialize(d3d, &d3d->video_info))
       return false;
-
-   d3d9_hlsl_fake_context.get_flags   = d3d9_hlsl_get_flags;
-#ifndef _XBOX_
-   d3d9_hlsl_fake_context.get_metrics = win32_get_metrics;
-#endif
-   video_context_driver_set(&d3d9_hlsl_fake_context);
-   {
-      const char *shader_preset   = video_shader_get_current_shader_preset();
-      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
-
-      d3d9_hlsl_set_shader(d3d, type, shader_preset);
-   }
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
       settings->arrays.input_joypad_driver, input, input_data);
