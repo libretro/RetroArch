@@ -71,6 +71,9 @@
 #ifdef HAVE_SLANG
 #include "../drivers_shader/slang_process.h"
 #endif
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
 
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
@@ -2836,9 +2839,7 @@ static void d3d11_gfx_free(void* data)
    }
 
 #ifdef HAVE_DXGI_HDR
-   video_driver_unset_hdr_support();
-   video_driver_unset_hdr10_support();
-   video_driver_unset_scrgb_support();
+   video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
 #endif
 
 #ifdef HAVE_MONITOR
@@ -5206,12 +5207,24 @@ static void d3d11_gfx_set_osd_msg(
       font_driver_render_msg(d3d11, msg, params, font);
 }
 
-static uintptr_t d3d11_gfx_load_texture(
-      void* video_data, void* data, bool threaded, enum texture_filter_type filter_type)
+#ifdef HAVE_THREADS
+typedef struct
 {
-   d3d11_texture_t*      texture = NULL;
-   d3d11_video_t*        d3d11   = (d3d11_video_t*)video_data;
-   struct texture_image* image   = (struct texture_image*)data;
+   d3d11_video_t               *d3d11;
+   struct texture_image        *image;
+   enum texture_filter_type     filter_type;
+   uintptr_t                    handle;
+} d3d11_texture_cmd_t;
+#endif
+
+/* Inner load function -- performs all DeviceContext-touching work.
+ * Must run on the same thread that owns the D3D11 immediate
+ * context (ID3D11DeviceContext is NOT thread-safe). */
+static uintptr_t d3d11_gfx_load_texture_internal(
+      d3d11_video_t* d3d11, struct texture_image* image,
+      enum texture_filter_type filter_type)
+{
+   d3d11_texture_t* texture = NULL;
 
    if (!d3d11)
       return 0;
@@ -5256,8 +5269,12 @@ static uintptr_t d3d11_gfx_load_texture(
    return (uintptr_t)texture;
 }
 
-static void d3d11_gfx_unload_texture(void* data,
-      bool threaded, uintptr_t handle)
+/* Inner unload -- releases COM objects.  While COM Release is
+ * itself thread-safe, doing it on a resource the GPU is still
+ * referencing via the ImmediateContext's pending command stream
+ * can cause the GPU to access freed memory.  Running unload on
+ * the video thread serialises it with the context's draw calls. */
+static void d3d11_gfx_unload_texture_internal(uintptr_t handle)
 {
    d3d11_texture_t* texture = (d3d11_texture_t*)handle;
 
@@ -5268,6 +5285,80 @@ static void d3d11_gfx_unload_texture(void* data,
    Release(texture->staging);
    Release(texture->handle);
    free(texture);
+}
+
+#ifdef HAVE_THREADS
+static int d3d11_texture_load_wrap(void *data)
+{
+   d3d11_texture_cmd_t *cmd = (d3d11_texture_cmd_t*)data;
+   cmd->handle = d3d11_gfx_load_texture_internal(
+         cmd->d3d11, cmd->image, cmd->filter_type);
+   return 0;
+}
+
+static int d3d11_texture_unload_wrap(void *data)
+{
+   d3d11_texture_cmd_t *cmd = (d3d11_texture_cmd_t*)data;
+   d3d11_gfx_unload_texture_internal(cmd->handle);
+   return 0;
+}
+#endif
+
+static uintptr_t d3d11_gfx_load_texture(
+      void* video_data, void* data, bool threaded, enum texture_filter_type filter_type)
+{
+   d3d11_video_t*        d3d11 = (d3d11_video_t*)video_data;
+   struct texture_image* image = (struct texture_image*)data;
+
+#ifdef HAVE_THREADS
+   /* ID3D11DeviceContext is NOT thread-safe.  When threaded
+    * video is active, d3d11_gfx_frame runs on the video thread
+    * and submits draws via d3d11->context.  If the main thread
+    * concurrently calls context methods (Map/Unmap/
+    * CopySubresourceRegion) from load_texture, the resulting
+    * concurrent access is undefined behaviour.
+    *
+    * Dispatch to the video thread so all context access is
+    * serialised on a single thread. */
+   if (threaded)
+   {
+      d3d11_texture_cmd_t cmd;
+      cmd.d3d11       = d3d11;
+      cmd.image       = image;
+      cmd.filter_type = filter_type;
+      cmd.handle      = 0;
+      video_thread_texture_handle(&cmd, d3d11_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return d3d11_gfx_load_texture_internal(d3d11, image, filter_type);
+}
+
+static void d3d11_gfx_unload_texture(void* data,
+      bool threaded, uintptr_t handle)
+{
+   if (!handle)
+      return;
+
+#ifdef HAVE_THREADS
+   /* Same reasoning as load: serialise with the video thread's
+    * use of the ImmediateContext so Release does not free a
+    * resource while the context still has pending commands
+    * referencing it. */
+   if (threaded)
+   {
+      d3d11_texture_cmd_t cmd;
+      cmd.d3d11       = (d3d11_video_t*)data;
+      cmd.image       = NULL;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = handle;
+      video_thread_texture_handle(&cmd, d3d11_texture_unload_wrap);
+      return;
+   }
+#endif
+
+   d3d11_gfx_unload_texture_internal(handle);
 }
 
 static bool d3d11_get_hw_render_interface(

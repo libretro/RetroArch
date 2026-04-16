@@ -73,6 +73,9 @@
 #ifdef HAVE_SLANG
 #include "../drivers_shader/slang_process.h"
 #endif
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
 
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
@@ -437,6 +440,22 @@ typedef struct
 #endif
    uint32_t flags;
    int8_t wait_for_vblank;
+
+   /* Deferred texture deletion.  Instead of Signal + WaitFor-
+    * SingleObject on every texture unload (which drains the GPU
+    * pipeline), textures are queued here and freed at the start
+    * of the next frame after the frame fence confirms all prior
+    * GPU work has completed.
+    *
+    * Single flat list: D3D12's per-frame fence is a full drain
+    * (Signal + Wait), so after it completes, all previously
+    * submitted work is done.  No per-slot tracking needed. */
+   struct
+   {
+#define D3D12_DEFERRED_MAX 64
+      d3d12_texture_t entries[D3D12_DEFERRED_MAX];
+      unsigned count;
+   } deferred;
 } d3d12_video_t;
 
 #define D3D12_ROLLING_SCANLINE_SIMULATION
@@ -478,47 +497,6 @@ static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_disable_desc = {
 
 /* Temporary workaround for d3d12 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d12_fake_context;
-
-#ifdef __MINGW32__
-#if __GNUC__ < 12
-/* clang-format off */
-#ifdef __cplusplus
-#define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) EXTERN_C const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
-#else
-#define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
-#endif
-
-DEFINE_GUIDW(IID_ID3D12PipelineState, 0x765a30f3, 0xf624, 0x4c6f, 0xa8, 0x28, 0xac, 0xe9, 0x48, 0x62, 0x24, 0x45);
-DEFINE_GUIDW(IID_ID3D12RootSignature, 0xc54a6b66, 0x72df, 0x4ee8, 0x8b, 0xe5, 0xa9, 0x46, 0xa1, 0x42, 0x92, 0x14);
-DEFINE_GUIDW(IID_ID3D12Resource, 0x696442be, 0xa72e, 0x4059, 0xbc, 0x79, 0x5b, 0x5c, 0x98, 0x04, 0x0f, 0xad);
-DEFINE_GUIDW(IID_ID3D12CommandAllocator, 0x6102dee4, 0xaf59, 0x4b09, 0xb9, 0x99, 0xb4, 0x4d, 0x73, 0xf0, 0x9b, 0x24);
-DEFINE_GUIDW(IID_ID3D12Fence, 0x0a753dcf, 0xc4d8, 0x4b91, 0xad, 0xf6, 0xbe, 0x5a, 0x60, 0xd9, 0x5a, 0x76);
-DEFINE_GUIDW(IID_ID3D12DescriptorHeap, 0x8efb471d, 0x616c, 0x4f49, 0x90, 0xf7, 0x12, 0x7b, 0xb7, 0x63, 0xfa, 0x51);
-DEFINE_GUIDW(IID_ID3D12GraphicsCommandList, 0x5b160d0f, 0xac1b, 0x4185, 0x8b, 0xa8, 0xb3, 0xae, 0x42, 0xa5, 0xa4, 0x55);
-DEFINE_GUIDW(IID_ID3D12CommandQueue, 0x0ec870a6, 0x5d7e, 0x4c22, 0x8c, 0xfc, 0x5b, 0xaa, 0xe0, 0x76, 0x16, 0xed);
-DEFINE_GUIDW(IID_ID3D12Device, 0x189819f1, 0x1db6, 0x4b57, 0xbe, 0x54, 0x18, 0x21, 0x33, 0x9b, 0x85, 0xf7);
-DEFINE_GUIDW(IID_ID3D12Object, 0xc4fec28f, 0x7966, 0x4e95, 0x9f, 0x94, 0xf4, 0x31, 0xcb, 0x56, 0xc3, 0xb8);
-DEFINE_GUIDW(IID_ID3D12DeviceChild, 0x905db94b, 0xa00c, 0x4140, 0x9d, 0xf5, 0x2b, 0x64, 0xca, 0x9e, 0xa3, 0x57);
-DEFINE_GUIDW(IID_ID3D12RootSignatureDeserializer, 0x34AB647B, 0x3CC8, 0x46AC, 0x84, 0x1B, 0xC0, 0x96, 0x56, 0x45, 0xC0, 0x46);
-DEFINE_GUIDW(IID_ID3D12Pageable, 0x63ee58fb, 0x1268, 0x4835, 0x86, 0xda, 0xf0, 0x08, 0xce, 0x62, 0xf0, 0xd6);
-DEFINE_GUIDW(IID_ID3D12Heap, 0x6b3b2502, 0x6e51, 0x45b3, 0x90, 0xee, 0x98, 0x84, 0x26, 0x5e, 0x8d, 0xf3);
-DEFINE_GUIDW(IID_ID3D12QueryHeap, 0x0d9658ae, 0xed45, 0x469e, 0xa6, 0x1d, 0x97, 0x0e, 0xc5, 0x83, 0xca, 0xb4);
-DEFINE_GUIDW(IID_ID3D12CommandSignature, 0xc36a797c, 0xec80, 0x4f0a, 0x89, 0x85, 0xa7, 0xb2, 0x47, 0x50, 0x82, 0xd1);
-DEFINE_GUIDW(IID_ID3D12CommandList, 0x7116d91c, 0xe7e4, 0x47ce, 0xb8, 0xc6, 0xec, 0x81, 0x68, 0xf4, 0x37, 0xe5);
-DEFINE_GUIDW(IID_ID3D12PipelineLibrary, 0xc64226a8, 0x9201, 0x46af, 0xb4, 0xcc, 0x53, 0xfb, 0x9f, 0xf7, 0x41, 0x4f);
-DEFINE_GUIDW(IID_ID3D12Device1, 0x77acce80, 0x638e, 0x4e65, 0x88, 0x95, 0xc1, 0xf2, 0x33, 0x86, 0x86, 0x3e);
-#if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
-DEFINE_GUIDW(IID_ID3D12Debug, 0x344488b7, 0x6846, 0x474b, 0xb9, 0x89, 0xf0, 0x27, 0x44, 0x82, 0x45, 0xe0);
-DEFINE_GUIDW(IID_ID3D12Debug1, 0xaffaa4ca, 0x63fe, 0x4d8e, 0xb8, 0xad, 0x15, 0x90, 0x00, 0xaf, 0x43, 0x04);
-DEFINE_GUIDW(IID_ID3D12DebugDevice1, 0xa9b71770, 0xd099, 0x4a65, 0xa6, 0x98, 0x3d, 0xee, 0x10, 0x02, 0x0f, 0x88);
-DEFINE_GUIDW(IID_ID3D12DebugDevice, 0x3febd6dd, 0x4973, 0x4787, 0x81, 0x94, 0xe4, 0x5f, 0x9e, 0x28, 0x92, 0x3e);
-DEFINE_GUIDW(IID_ID3D12DebugCommandQueue, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47, 0x4b, 0xae, 0xea, 0xb6, 0x05, 0x3a);
-DEFINE_GUIDW(IID_ID3D12DebugCommandList1, 0x102ca951, 0x311b, 0x4b01, 0xb1, 0x1f, 0xec, 0xb8, 0x3e, 0x06, 0x1b, 0x37);
-DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47, 0x4b, 0xae, 0xea, 0xb6, 0x05, 0x3f);
-#endif
-/* clang-format on */
-#endif
-#endif
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
 static dylib_t     d3d12_dll;
@@ -707,6 +685,21 @@ static void d3d12_release_texture(d3d12_texture_t* texture)
 
    Release(texture->handle);
    Release(texture->upload_buffer);
+}
+
+/* Flush deferred texture deletions.
+ * Called at the start of d3d12_gfx_frame after the fence wait
+ * confirms all prior GPU work has completed, and from
+ * d3d12_gfx_free after the final fence drain. */
+static void d3d12_flush_deferred_deletes(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   unsigned count = d3d12->deferred.count;
+
+   for (i = 0; i < count; i++)
+      d3d12_release_texture(&d3d12->deferred.entries[i]);
+
+   d3d12->deferred.count = 0;
 }
 
 static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DATA_FORMAT_SUPPORT* desired)
@@ -1152,7 +1145,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 #ifdef HAVE_DXGI_HDR      
          if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
             cmd->lpVtbl->SetPipelineState(cmd,
-                  (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
+                  (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
          else
 #endif   
             cmd->lpVtbl->SetPipelineState(cmd,
@@ -1177,7 +1170,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 #ifdef HAVE_DXGI_HDR      
             if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
                cmd->lpVtbl->SetPipelineState(cmd,
-                     (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
+                     (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
             else
 #endif 
                cmd->lpVtbl->SetPipelineState(cmd,
@@ -3153,6 +3146,47 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       ps_code = NULL;
    }
 
+   /* --- Opaque blend pipe with HDR RTVFormat (VIDEO_SHADER_STOCK_BLEND_HDR) ---
+    * Uses the simple passthrough shader (opaque_sm5) like VIDEO_SHADER_STOCK_BLEND
+    * but with RTVFormats matching the HDR render target.  Used for menu draws
+    * (multi-vertex triangle strips) that render SDR content into the HDR-format
+    * back_buffer.  The actual HDR conversion happens in the later composite pass,
+    * so we must NOT use the inverse-tonemap HDR shader here. */
+   {
+      static const char shader[] =
+#include "d3d_shaders/opaque_sm5.hlsl.h"
+         ;
+
+      static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_vertex_t, color),
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+
+      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      desc.InputLayout.pInputElementDescs = inputElementDesc;
+      desc.InputLayout.NumElements        = countof(inputElementDesc);
+
+      desc.BlendState.RenderTarget[0]     = d3d12_blend_enable_desc;
+      Release(d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
+      d3d12_init_pipeline(
+            d3d12->device, vs_code, ps_code, NULL, &desc,
+            &d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
+
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+   }
+
    /* --- Sprite HDR pipes (blend / noblend / font) --- */
    {
       static const char shader[] =
@@ -3178,7 +3212,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
 
       if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
          goto error;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8", "ps_5_0", &ps_code))
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
          goto error;
       if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
          goto error;
@@ -3196,6 +3230,13 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       Release(d3d12->sprites.pipe_blend_hdr);
       d3d12_init_pipeline(
             d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_blend_hdr);
+
+      /* Font pipe uses PSMainA8 (alpha-only texture sampling) */
+      Release(ps_code);
+      ps_code = NULL;
+
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8", "ps_5_0", &ps_code))
+         goto error;
 
       Release(d3d12->sprites.pipe_font_hdr);
       d3d12_init_pipeline(
@@ -3517,6 +3558,10 @@ static void d3d12_gfx_free(void* data)
       }
    }
 
+   /* Flush all deferred texture deletions now that the
+    * GPU is fully idle. */
+   d3d12_flush_deferred_deletes(d3d12);
+
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       CloseHandle(d3d12->chain.frameLatencyWaitableObject);
 
@@ -3612,9 +3657,7 @@ static void d3d12_gfx_free(void* data)
    }
 
 #ifdef HAVE_DXGI_HDR
-   video_driver_unset_hdr_support();
-   video_driver_unset_hdr10_support();
-   video_driver_unset_scrgb_support();
+   video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
 #endif
 
 #ifdef HAVE_MONITOR
@@ -4741,6 +4784,11 @@ static bool d3d12_gfx_frame(
       }
    }
 
+   /* Flush deferred texture deletions.  The fence wait above
+    * guarantees all prior GPU work has completed, so every
+    * texture in the deferred list is safe to release. */
+   d3d12_flush_deferred_deletes(d3d12);
+
 #ifdef HAVE_DXGI_HDR
    d3d12_hdr_enable = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? true : false;
    {
@@ -5652,7 +5700,17 @@ static bool d3d12_gfx_frame(
    }
 #endif
 
-   cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+#ifdef HAVE_DXGI_HDR
+   /* When HDR is on the menu/overlay draws into the HDR-format
+    * back_buffer.  D3D12 requires PSO RTVFormats to match the bound
+    * render target, so we must use the HDR-RTVFormat variants of
+    * every pipeline used during the menu pass.  The shaders are
+    * identical (simple passthrough) — only the PSO format differs. */
+   if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
+   else
+#endif
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
    cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
 
 #ifdef HAVE_GFX_WIDGETS
@@ -5701,7 +5759,12 @@ static bool d3d12_gfx_frame(
          d3d12_upload_texture(cmd, &d3d12->menu.texture,
                d3d12);
 
-         cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+#ifdef HAVE_DXGI_HDR
+         if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+            cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR]);
+         else
+#endif
+            cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
       }
 
       cmd->lpVtbl->SetGraphicsRootConstantBufferView(
@@ -5721,7 +5784,12 @@ static bool d3d12_gfx_frame(
       cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
    }
 
-   d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
+#ifdef HAVE_DXGI_HDR
+   if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+      d3d12->sprites.pipe = d3d12->sprites.pipe_noblend_hdr;
+   else
+#endif
+      d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
    cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
    cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
 
@@ -5752,7 +5820,12 @@ static bool d3d12_gfx_frame(
       {
          if (osd_params)
          {
-            cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
+#ifdef HAVE_DXGI_HDR
+            if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+               cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend_hdr);
+            else
+#endif
+               cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
             cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
             cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
             cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
@@ -5772,7 +5845,12 @@ static bool d3d12_gfx_frame(
 
    if (msg && *msg)
    {
-      cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
+#ifdef HAVE_DXGI_HDR
+      if((d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM) || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+         cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend_hdr);
+      else
+#endif
+         cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
       cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
       cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
@@ -6132,13 +6210,25 @@ static void d3d12_gfx_set_osd_msg(
       font_driver_render_msg(d3d12, msg, params, font);
 }
 
-static uintptr_t d3d12_gfx_load_texture(
-      void* video_data, void* data, bool threaded,
+#ifdef HAVE_THREADS
+typedef struct
+{
+   d3d12_video_t               *d3d12;
+   struct texture_image        *image;
+   enum texture_filter_type     filter_type;
+   uintptr_t                    handle; /* in for unload, out for load */
+} d3d12_texture_cmd_t;
+#endif
+
+/* Inner load function -- performs all GPU-touching work.
+ * Must run on the same thread that owns the D3D12 command
+ * queue (the video thread when threaded video is active,
+ * otherwise the main thread). */
+static uintptr_t d3d12_gfx_load_texture_internal(
+      d3d12_video_t* d3d12, struct texture_image* image,
       enum texture_filter_type filter_type)
 {
-   d3d12_texture_t*      texture = NULL;
-   d3d12_video_t*        d3d12   = (d3d12_video_t*)video_data;
-   struct texture_image* image   = (struct texture_image*)data;
+   d3d12_texture_t* texture = NULL;
 
    if (!d3d12)
       return 0;
@@ -6182,28 +6272,124 @@ static uintptr_t d3d12_gfx_load_texture(
    return (uintptr_t)texture;
 }
 
-static void d3d12_gfx_unload_texture(void* data,
-      bool threaded, uintptr_t handle)
+/* Inner unload function -- performs the fence wait and
+ * resource release.  Must run on the same thread that owns
+ * the D3D12 command queue. */
+static void d3d12_gfx_unload_texture_internal(
+      d3d12_video_t* d3d12, uintptr_t handle)
 {
    d3d12_texture_t* texture = (d3d12_texture_t*)handle;
-   d3d12_video_t* d3d12     = (d3d12_video_t*)data;
 
    if (!texture)
       return;
 
    if (d3d12)
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      unsigned count = d3d12->deferred.count;
+
+      if (count < D3D12_DEFERRED_MAX)
       {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+         /* Copy the D3D12 resource handles into the deferred
+          * list.  They will be released at the start of the
+          * next frame after the fence confirms the GPU is done. */
+         d3d12->deferred.entries[count] = *texture;
+         d3d12->deferred.count          = count + 1;
+      }
+      else
+      {
+         /* Overflow: fall back to synchronous drain.
+          * Extremely rare — requires 64+ texture unloads
+          * between two consecutive frames. */
+         D3D12Fence fence = d3d12->queue.fence;
+         d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+         if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+         {
+            fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+            WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+         }
+         d3d12_release_texture(texture);
       }
    }
 
-   d3d12_release_texture(texture);
    free(texture);
+}
+
+#ifdef HAVE_THREADS
+/* Wrapped entry points for video_thread_texture_handle.
+ * These are invoked on the video thread via CMD_CUSTOM_COMMAND.
+ * Return value is written to cmd->handle (not via the int
+ * return channel) because uintptr_t may be 64-bit while the
+ * command's return_value is int -- truncation would corrupt
+ * pointer-valued handles on 64-bit Windows. */
+static int d3d12_texture_load_wrap(void *data)
+{
+   d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
+   cmd->handle = d3d12_gfx_load_texture_internal(
+         cmd->d3d12, cmd->image, cmd->filter_type);
+   return 0;
+}
+
+static int d3d12_texture_unload_wrap(void *data)
+{
+   d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
+   d3d12_gfx_unload_texture_internal(cmd->d3d12, cmd->handle);
+   return 0;
+}
+#endif
+
+static uintptr_t d3d12_gfx_load_texture(
+      void* video_data, void* data, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   d3d12_video_t*        d3d12 = (d3d12_video_t*)video_data;
+   struct texture_image* image = (struct texture_image*)data;
+
+#ifdef HAVE_THREADS
+   /* When threaded video is active, dispatch to the video
+    * thread so that texture creation, upload-buffer writes,
+    * and command-queue signalling all happen on the same
+    * thread that owns the D3D12 command queue.  This
+    * prevents races on texture->dirty, descriptor heap
+    * allocation, and upload buffer visibility. */
+   if (threaded)
+   {
+      d3d12_texture_cmd_t cmd;
+      cmd.d3d12       = d3d12;
+      cmd.image       = image;
+      cmd.filter_type = filter_type;
+      cmd.handle      = 0;
+      video_thread_texture_handle(&cmd, d3d12_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return d3d12_gfx_load_texture_internal(d3d12, image, filter_type);
+}
+
+static void d3d12_gfx_unload_texture(void* data,
+      bool threaded, uintptr_t handle)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (!handle)
+      return;
+
+#ifdef HAVE_THREADS
+   /* Same reasoning as load: dispatch Release to the video
+    * thread so it is serialized with command-list recording. */
+   if (threaded)
+   {
+      d3d12_texture_cmd_t cmd;
+      cmd.d3d12       = d3d12;
+      cmd.image       = NULL;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = handle;
+      video_thread_texture_handle(&cmd, d3d12_texture_unload_wrap);
+      return;
+   }
+#endif
+
+   d3d12_gfx_unload_texture_internal(d3d12, handle);
 }
 
 static bool d3d12_get_hw_render_interface(
@@ -6267,6 +6453,26 @@ static bool d3d12_get_current_software_framebuffer(
       int tight_pitch = (int)fb->width * bpp;
       if (tight_pitch != (int)d3d12->frame.texture[0].layout.Footprint.RowPitch)
          return false;
+   }
+
+   /* Wait for the GPU to finish any in-flight commands that may be
+    * reading from this upload buffer (e.g. CopyTextureRegion from
+    * the previous frame).  Without this, the core would write into
+    * the buffer while the GPU is still copying from it — a data race.
+    *
+    * This is the same Signal-then-Wait pattern used at the top of
+    * d3d12_gfx_frame.  The subsequent fence wait there will see the
+    * fence already satisfied and skip without blocking. */
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(
+            d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(
+               fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
    }
 
    /* Map the upload buffer so the core can write directly into it.

@@ -4620,6 +4620,14 @@ MSG_HASH(
    "จำกัดจำนวนของบันทึกสถานะที่จะถูกสร้างขึ้นเมื่อเปิดใช้งาน 'เพิ่มหมายเลขแบบอัตโนมัติ' หากจำนวนเกินขีดจำกัดขณะบันทึกสถานะใหม่ บันทึกสถานะเดิมที่มีหมายเลขต่ำสุดจะถูกลบออก หาก[...]"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "เล่นซ้ำ: จำนวนการเพิ่มหมายเลขสูงสุดที่เก็บไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "จำกัดจำนวนการ เล่นซ้ำ ที่จะถูกสร้างขึ้นเมื่อเปิดใช้งาน 'เพิ่มหมายเลขโดยอัตโนมัติ' หากจำนวนเกินขีดจำกัดขณะที่บันทึกการ เล่นซ้ำ ใหม่ ไฟล์การ เล่นซ้ำ เดิมที่มี หมายเลข ต่ำสุดจะถู[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "บันทึกสถานะ: บันทึกอัตโนมัติ"
    )
@@ -4644,6 +4652,14 @@ MSG_HASH(
    "แสดงภาพตัวอย่างของบันทึกสถานะ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "บันทึกไฟล์: การบีบอัด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   "เขียนไฟล์ SaveRAM ในรูปแบบไฟล์เก็บถาวร ช่วยลดขนาดไฟล์ได้อย่างมากแต่ต้องแลกกับการเพิ่มเวลาในการบันทึก/โหลด (เพียงเล็กน้อย)\nใช้ได้เฉพาะกับ Core ที่รองรับการบันทึกผ่านอินเทอร์เฟซ SaveRAM มา[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
    "บันทึกสถานะ: การบีบอัดไฟล์"
    )
@@ -4652,12 +4668,68 @@ MSG_HASH(
    "เขียนไฟล์บันทึกสถานะในรูปแบบไฟล์บีบอัด ช่วยลดขนาดไฟล์ลงได้อย่างมากแต่ต้องแลกมาด้วยการใช้เวลาในการบันทึกและโหลดที่นานขึ้น"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "บันทึกไฟล์: เขียนลงในโฟลเดอร์ของเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "ใช้โฟลเดอร์ของเนื้อหาเป็นโฟลเดอร์สำหรับบันทึกไฟล์"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "บันทึกสถานะ: เขียนลงในโฟลเดอร์ของเนื้อหา"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "ใช้โฟลเดอร์ของเนื้อหาเป็นโฟลเดอร์สำหรับบันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "ไฟล์ระบบอยู่ในโฟลเดอร์ของเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "ใช้โฟลเดอร์ของเนื้อหาเป็นโฟลเดอร์ System/BIOS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "จับภาพหน้าจอ: จัดแยกโฟลเดอร์ตามโฟลเดอร์ของเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "จัดเก็บภาพหน้าจอแยกตามโฟลเดอร์ที่ตั้งชื่อตามโฟลเดอร์ของเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "จับภาพหน้าจอ: เขียนลงในโฟลเดอร์ของเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "ใช้โฟลเดอร์ของเนื้อหาเป็นโฟลเดอร์สำหรับเก็บภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "จับภาพหน้าจอ: ใช้ GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "การจับภาพหน้าจอจะรวมผลลัพธ์จาก GPU Shader หากมีการใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+   "บันทึกบันทึกเวลาการใช้งาน (แยกตาม Core)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+   "บันทึกข้อมูลระยะเวลาที่ใช้เล่นเนื้อหาแต่ละรายการ โดยแยกการเก็บสถิติตาม Core ที่ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+   "บันทึกบันทึกเวลาการใช้งาน (รวมทั้งหมด)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+   "บันทึกข้อมูลระยะเวลาที่ใช้เล่นเนื้อหาแต่ละรายการ โดยเก็บสถิติเป็นยอดรวมสะสมจากทุก Core ที่ใช้งาน"
    )
 
 /* Settings > Logging */
@@ -4669,6 +4741,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
    "บันทึก Events log ลงหน้าต่างคำสั่งหรือไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
+   "ระดับการบันทึก Log ของ Frontend"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+   "กำหนดระดับการบันทึก Log สำหรับ Frontend หากระดับของ Log ที่ส่งมาต่ำกว่าค่านี้ ข้อมูลดังกล่าวจะถูกละเว้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
+   "ระดับการบันทึก Log ของ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
+   "กำหนดระดับการบันทึก Log สำหรับ Core หากระดับของ Log ที่ส่งมาจาก Core ต่ำกว่าค่านี้ ข้อมูลดังกล่าวจะถูกละเว้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
+   "กำหนดระดับการบันทึก Log สำหรับ libretro core (GET_LOG_INTERFACE) หากระดับของ Log ที่ส่งมาจาก libretro core ต่ำกว่าระดับ libretro_log ข้อมูลดังกล่าวจะถูกละเว้น ทั้งนี้ Log ระดับ DEBUG จะถูกละเว้นเสมอ เว้นแต่จะเปิดใช้งานโหมดละเ[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
@@ -4686,15 +4778,107 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
    "เมื่อบันทึกลงไฟล์ ให้บันทึกแยกเป็นไฟล์ใหม่ตามเวลาที่เริ่มใช้งาน หากปิดไว้ ไฟล์บันทึกเดิมจะถูกเขียนทับทุกครั้งที่เริ่ม RetroArch ใหม่"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
+   "ตัวนับประสิทธิภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
+   "ตัวนับประสิทธิภาพสำหรับ RetroArch และ Core ต่างๆ ข้อมูลตัวนับสามารถช่วยระบุจุดคอขวดของระบบและช่วยในการปรับแต่งประสิทธิภาพให้ดียิ่งขึ้น"
+   )
 
 /* Settings > File Browser */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
+   "แสดงไฟล์และไดเรกทอรีที่ซ่อนอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
+   "แสดงไฟล์และไดเรกทอรีที่ซ่อนอยู่ในการเลือกดูไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "ตัวกรองนามสกุลไฟล์ที่ไม่รู้จัก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "กรองไฟล์ที่แสดงในการเลือกดูไฟล์ โดยเลือกเฉพาะนามสกุลไฟล์ที่รองรับเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+   "กรองตาม Core ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   "กรองไฟล์ที่แสดงในการเลือกดูไฟล์ โดยเลือกตาม Core ที่ใช้งานอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
+   "จำไดเรกทอรีเริ่มต้นที่ใช้งานล่าสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
+   "เปิดการเลือกดูไฟล์ที่ตำแหน่งล่าสุดที่เคยใช้งาน เมื่อโหลดเนื้อหาจากไดเรกทอรีเริ่มต้น หมายเหตุ: ตำแหน่งจะถูกรีเซ็ตเป็นค่าเริ่มต้นเมื่อเริ่มการทำงาน RetroArch ใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   "แนะนำ Core เสมอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "แนะนำ Core ที่ใช้งานได้เสมอ แม้ว่าจะมีการโหลด Core ไว้เองแล้วก็ตาม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "ใช้เครื่องเล่นสื่อภายในตัว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   "แสดงไฟล์ที่เครื่องเล่นสื่อรองรับในการเลือกดูไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "ใช้เครื่องเล่นรูปภาพภายในตัว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "แสดงไฟล์ที่เครื่องเล่นรูปภาพรองรับในการเลือกดูไฟล์"
+   )
 
 /* Settings > Frame Throttle */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    "ย้อนเวลา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
+   "ปรับเปลี่ยนการตั้งค่าการย้อนกลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
+   "ตัวนับเวลาเฟรม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+   "ปรับเปลี่ยนการตั้งค่าที่มีผลต่อตัวนับเวลาเฟรม\nจะใช้งานได้เมื่อปิดการใช้งานวิดีโอแบบเธรดเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+   "อัตราการเร่งความเร็ว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+   "อัตราความเร็วสูงสุดที่จะให้เนื้อหาทำงานเมื่อใช้งานการเร่งความเร็ว (เช่น 5.0x สำหรับเนื้อหา 60 fps = จำกัดที่ 300 fps) หากตั้งค่าเป็น 0.0x จะไม่จำกัดอัตราการเร่งความเร็ว (ไม่มีการจำกัด FPS)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
+   "อัตราความเร็วสูงสุดที่จะให้เนื้อหาทำงานเมื่อใช้การเร่งความเร็ว (เช่น 5.0 สำหรับเนื้อหา 60 fps => จำกัดที่ 300 fps)\nRetroArch จะเข้าสู่โหมดพักการทำงานเพื่อให้แน่ใจว่าความเร็วจะไม่เกินอัตราสูงส[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   "ข้ามเฟรมเมื่อเร่งความเร็ว"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
@@ -4708,9 +4892,29 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
    "อัตราที่คอนเทนต์จะเล่นเมื่อใช้โหมดสโลว์โมชั่น"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   "จำกัดอัตราเฟรมเรตของเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   "ตรวจสอบให้แน่ใจว่ามีการจำกัดอัตราเฟรมเรตในขณะที่อยู่ในเมนู"
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
+   "สนับสนุนการย้อนกลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_ENABLE,
+   "ย้อนกลับไปยังจุดก่อนหน้าในการเล่นเกมล่าสุด ซึ่งจะส่งผลกระทบต่อประสิทธิภาพการทำงานอย่างมากในขณะเล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
+   "จำนวนเฟรมในการย้อนกลับ"
+   )
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
@@ -4756,8 +4960,200 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay */
 
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "แสดง Overlay ไว้ด้านหลังแทนที่จะอยู่ด้านหน้าเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
+   "ซ่อน Overlay ในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+   "ซ่อน Overlay ขณะที่อยู่ในเมนู และแสดงอีกครั้งเมื่อออกจากเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "ซ่อน Overlay เมื่อเชื่อมต่อจอยคอนโทรลเลอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "ซ่อน Overlay เมื่อมีการเชื่อมต่อคอนโทรลเลอร์ในพอร์ต 1 และแสดงอีกครั้งเมื่อตัดการเชื่อมต่อคอนโทรลเลอร์"
+   )
 #if defined(ANDROID)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+   "ซ่อน Overlay เมื่อมีการเชื่อมต่อคอนโทรลเลอร์ในพอร์ต 1 โดย Overlay จะไม่ถูกเรียกคืนให้โดยอัตโนมัติเมื่อตัดการเชื่อมต่อคอนโทรลเลอร์"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "แสดง Input บน Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
+   "แสดงปุ่มที่กดบน Overlay หน้าจอ โดย 'สัมผัส' จะเน้นองค์ประกอบบน Overlay ที่ถูกกด/คลิก ส่วน 'Physical (คอนโทรลเลอร์)' จะเน้นอินพุตจริงที่ส่งไปยัง Core ซึ่งมักจะมาจากคอนโทรลเลอร์หรือคีย์บอร์ดที่เชื่อม[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "สัมผัส"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   "Physical (คอนโทรลเลอร์)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "แสดงอินพุตจากพอร์ต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "เลือกพอร์ตของอุปกรณ์อินพุตที่จะตรวจสอบ เมื่อตั้งค่า 'แสดงการกดปุ่มบน Overlay' เป็น 'Physical (คอนโทรลเลอร์)'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   "แสดงตัวชี้เมาส์พร้อมกับ Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   "แสดงตัวชี้เมาส์เมื่อใช้งาน Overlay บนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+   "หมุน Overlay อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+   "หาก Overlay ปัจจุบันรองรับ จะทำการหมุน Layout โดยอัตโนมัติเพื่อให้สอดคล้องกับการวางแนวของหน้าจอหรืออัตราส่วนภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "ปรับขนาด Overlay อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "ปรับขนาดของ Overlay และระยะห่างขององค์ประกอบ UI โดยอัตโนมัติเพื่อให้สอดคล้องกับอัตราส่วนภาพของหน้าจอ ซึ่งจะให้ผลลัพธ์ที่ดีที่สุดกับการใช้งาน Overlay รูปแบบคอนโทรลเลอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "ความไวในแนวทแยงของ D-Pad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "ปรับขนาดของพื้นที่แนวทแยง กำหนดเป็น 100% เพื่อให้มีความสมมาตรแบบ 8 ทิศทาง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "ความไวในการกดปุ่ม ABXY พร้อมกัน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "ปรับขนาดของพื้นที่ทับซ้อนในปุ่มกดหลักรูปเพชร กำหนดเป็น 100% เพื่อให้มีความสมมาตรแบบ 8 ทิศทาง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "โซนการคืนค่ากึ่งกลางของอนาล็อก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "อินพุตของอนาล็อกจะอ้างอิงจากจุดสัมผัสแรก หากมีการกดภายในโซนนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   "โหลด Overlay ที่ต้องการโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "เลือกโหลด Overlay ตามชื่อของระบบก่อนที่จะใช้ค่าเริ่มต้น จะถูกข้ามหากมีการตั้งค่าการเขียนทับไว้สำหรับชุดค่าล่วงหน้านั้นๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
+   "ความโปร่งใสของ Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+   "ความโปร่งใสขององค์ประกอบ UI ทั้งหมดบน Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   "เลือก Overlay จากเบราว์เซอร์ไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "ขนาด Overlay (แนวนอน)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "มาตราส่วนขององค์ประกอบ UI ทั้งหมดบน Overlay เมื่อใช้งานในแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "การปรับสัดส่วนภาพของ Overlay (แนวนอน)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "ใช้ค่าการแก้ไขสัดส่วนภาพกับ Overlay เมื่อใช้งานในแนวนอน โดยค่าบวกจะเพิ่มความกว้างและค่าลบจะลดความกว้างของ Overlay ออกไป โดยมีผลต่อพื้นที่การแสดงผลจริง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "การแยกส่วนของ Overlay ในแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "หากชุดค่าล่วงหน้าปัจจุบันรองรับ ให้ปรับระยะห่างระหว่างองค์ประกอบ UI ในซีกซ้ายและซีกขวาของ Overlay เมื่อใช้งานในแนวนอน โดยค่าบวกจะเพิ่มการแยกของทั้งสองซีกออกจากกัน และค่าลบจะลดระ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "การแยกส่วนของ Overlay ในแนวตั้ง (แนวนอน)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "หากชุดค่าล่วงหน้าปัจจุบันรองรับ ให้ปรับระยะห่างระหว่างองค์ประกอบ UI ในซีกบนและซีกล่างของ Overlay เมื่อใช้งานในแนวนอน โดยค่าบวกจะเพิ่มการแยกของทั้งสองซีกออกจากกัน และค่าลบจะลดระย[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "การขยับตำแหน่ง Overlay X (แนวนอน)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "ระยะขยับของ Overlay เมื่อใช้งานในแนวนอน โดยค่าบวกจะขยับ Overlay ไปทางขวา และค่าลบจะขยับไปทางซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "การขยับตำแหน่ง Overlay Y (แนวนอน)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "ระยะขยับของ Overlay ในแนวตั้ง เมื่อใช้งานในแนวนอน โดยค่าบวกจะขยับ Overlay ขึ้นด้านบน และค่าลบจะขยับลงด้านล่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "ขนาดของ Overlay (แนวตั้ง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "ขนาดขององค์ประกอบ UI ทั้งหมดบน Overlay เมื่อใช้งานในแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "การปรับอัตราส่วนภาพของ Overlay (แนวตั้ง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "ปรับค่าแก้ไขอัตราส่วนภาพของ Overlay เมื่อใช้งานในแนวตั้ง โดยค่าบวกจะเพิ่มความสูง (และค่าลบจะลดความสูง) ของ Overlay ที่แสดงผลจริง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "การแยกองค์ประกอบ Overlay ในแนวนอน (แนวตั้ง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "หากรองรับโดยค่าที่ตั้งไว้ปัจจุบัน จะเป็นการปรับระยะห่างระหว่างองค์ประกอบ UI ในส่วนซีกซ้ายและซีกขวาของ Overlay เมื่อใช้งานในแนวตั้ง โดยค่าบวกจะเพิ่มระยะห่าง (และค่าลบจะลดระยะห่าง) [...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "การแยกองค์ประกอบ Overlay ในแนวตั้ง (แนวตั้ง)"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
@@ -4777,6 +5173,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    "แสดงข้อความบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+   "ปรับขนาดวิดเจ็ตกราฟิกโดยอัตโนมัติ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,

@@ -832,6 +832,8 @@ static void video_thread_free(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
+   video_state_get_ptr()->flags &= ~VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
+
    if (thr)
    {
       if (thr->thread)
@@ -1425,7 +1427,11 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
    thr->driver = drv;
    *out_driver = &thr->video_thread;
    *out_data   = thr;
-   return video_thread_init(thr, info, input, input_data);
+   if (!video_thread_init(thr, info, input, input_data))
+      return false;
+
+   video_state_get_ptr()->flags |= VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
+   return true;
 }
 
 bool video_thread_font_init(const void **font_driver, void **font_handle,
@@ -1435,7 +1441,17 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
 {
    thread_packet_t pkt;
    video_driver_state_t *video_st = video_state_get_ptr();
-   thread_video_t       *thr      = (thread_video_t*)video_st->data;
+   thread_video_t       *thr;
+
+   /* Only safe to interpret video_st->data as a thread_video_t*
+    * when the threaded video wrapper is actually active.  During
+    * driver reinit, is_threaded may already reflect the new
+    * configuration while video_st->data still points to the
+    * previous (possibly non-threaded) driver's private state. */
+   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+      return false;
+
+   thr = (thread_video_t*)video_st->data;
 
    if (!thr)
       return false;
@@ -1459,7 +1475,19 @@ unsigned video_thread_texture_handle(void *data, custom_command_method_t func)
 {
    thread_packet_t pkt;
    video_driver_state_t *video_st = video_state_get_ptr();
-   thread_video_t       *thr      = (thread_video_t*)video_st->data;
+   thread_video_t       *thr;
+
+   /* Only safe to interpret video_st->data as a thread_video_t*
+    * when the threaded video wrapper is actually active.  During
+    * driver reinit, callers' "threaded" flags may already reflect
+    * the new configuration while video_st->data still points to
+    * the previous driver's private state.  Fall back to calling
+    * func directly (same contract as the "already on video
+    * thread" branch below). */
+   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+      return func(data);
+
+   thr = (thread_video_t*)video_st->data;
 
    if (!thr)
       return 0;
@@ -1476,4 +1504,40 @@ unsigned video_thread_texture_handle(void *data, custom_command_method_t func)
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 
    return pkt.data.custom_command.return_value;
+}
+
+/* Waits until the video thread has finished processing any
+ * pending frame and is idle, waiting on its command condition
+ * variable.  After this returns, it is safe to free GPU-backed
+ * resources (textures, fonts) owned by the menu driver — no
+ * frame can be in-flight referencing them.
+ *
+ * Must be called from the main thread.  No-op if the video
+ * thread is not running or if called from the video thread
+ * itself (would deadlock). */
+void video_thread_wait_idle(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t       *thr;
+
+   /* Only safe to interpret video_st->data as a thread_video_t*
+    * when the threaded video wrapper is actually active.  With
+    * non-threaded video, video_st->data points to the raw
+    * driver's private state. */
+   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+      return;
+
+   thr = (thread_video_t*)video_st->data;
+
+   if (!thr || !thr->thread)
+      return;
+
+   /* Avoid self-deadlock if called from the video thread. */
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
+      return;
+
+   slock_lock(thr->lock);
+   while (thr->frame.updated)
+      scond_wait(thr->cond_cmd, thr->lock);
+   slock_unlock(thr->lock);
 }

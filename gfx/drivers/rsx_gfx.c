@@ -48,6 +48,9 @@
 
 #include "../../driver.h"
 #include "../../retroarch.h"
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
 
 #define RSX_MAX_BUFFERS 2
 #define RSX_MAX_MENU_BUFFERS 2
@@ -514,13 +517,22 @@ static void rsx_font_free(void *data,
 
    rsxClearSurface(font->rsx->context, GCM_CLEAR_Z);
    gcmSetWaitFlip(font->rsx->context);
-#if 0
-   /* TODO fix crash on loading core */
+
+   /* Drain the RSX command queue before freeing font memory.
+    * gcmSetWaitFlip only waits for the page flip, not for all
+    * draw commands to complete.  rsxFinish ensures the GPU is
+    * fully idle so the font texture and vertex buffer can be
+    * safely freed.
+    *
+    * Previously #if 0'd out, leaking font RSX memory on every
+    * font scale change or context reset. */
+   rsxFinish(font->rsx->context, 0);
+
    if (font->texture.data)
       rsxFree(font->texture.data);
    if (font->vertices)
       rsxFree(font->vertices);
-#endif
+
    free(font);
 }
 
@@ -1606,8 +1618,8 @@ static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-static uintptr_t rsx_load_texture(void *video_data, void *data,
-      bool threaded, enum texture_filter_type filter_type)
+static uintptr_t rsx_load_texture_internal(void *video_data, void *data,
+      enum texture_filter_type filter_type)
 {
    rsx_t *rsx                     = (rsx_t *)video_data;
    struct texture_image *image    = (struct texture_image*)data;
@@ -1618,22 +1630,95 @@ static uintptr_t rsx_load_texture(void *video_data, void *data,
    rsxAddressToOffset(texture->data, &texture->offset);
    rsx_load_texture_data(rsx, texture, image->pixels, image->width, image->height, image->width*4, true, false, filter_type);
 
-   return (uintptr_t)texture;;
+   return (uintptr_t)texture;
+}
+
+static void rsx_unload_texture_internal(void *data, uintptr_t handle)
+{
+   rsx_texture_t *texture = (rsx_texture_t *)handle;
+   if (texture)
+   {
+      if (texture->data)
+      {
+         rsx_t *rsx = (rsx_t *)data;
+         /* Drain the RSX command queue before freeing texture
+          * memory.  The GPU may still be reading this memory for
+          * the current frame's draw.  rsxFinish blocks until all
+          * submitted commands complete — equivalent to
+          * vkQueueWaitIdle / D3D12 Signal+Wait.
+          *
+          * This was previously #if 0'd out, leaking every menu
+          * texture's RSX memory permanently.  On PS3 with 256MB
+          * RAM, menu navigation would eventually exhaust memory. */
+         if (rsx && rsx->context)
+            rsxFinish(rsx->context, 0);
+         rsxFree(texture->data);
+      }
+      free(texture);
+   }
+}
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   void                         *video_data;
+   struct texture_image         *image;
+   enum texture_filter_type      filter_type;
+   uintptr_t                     handle;
+} rsx_texture_cmd_t;
+
+static int rsx_texture_load_wrap(void *data)
+{
+   rsx_texture_cmd_t *cmd = (rsx_texture_cmd_t*)data;
+   cmd->handle = rsx_load_texture_internal(
+         cmd->video_data, cmd->image, cmd->filter_type);
+   return 0;
+}
+
+static int rsx_texture_unload_wrap(void *data)
+{
+   rsx_texture_cmd_t *cmd = (rsx_texture_cmd_t*)data;
+   rsx_unload_texture_internal(cmd->video_data, cmd->handle);
+   return 0;
+}
+#endif
+
+static uintptr_t rsx_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      rsx_texture_cmd_t cmd;
+      cmd.video_data  = video_data;
+      cmd.image       = (struct texture_image *)data;
+      cmd.filter_type = filter_type;
+      cmd.handle      = 0;
+      video_thread_texture_handle(&cmd, rsx_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+   return rsx_load_texture_internal(video_data, data, filter_type);
 }
 
 static void rsx_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
-   rsx_texture_t *texture = (rsx_texture_t *)handle;
-   if (texture)
+   if (!handle)
+      return;
+#ifdef HAVE_THREADS
+   if (threaded)
    {
-#if 0
-      /* TODO fix crash on loading core */
-      if (texture->data)
-         rsxFree(texture->data);
-#endif
-      free(texture);
+      rsx_texture_cmd_t cmd;
+      cmd.video_data  = data;
+      cmd.image       = NULL;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = handle;
+      video_thread_texture_handle(&cmd, rsx_texture_unload_wrap);
+      return;
    }
+#endif
+   rsx_unload_texture_internal(data, handle);
 }
 
 #if 0

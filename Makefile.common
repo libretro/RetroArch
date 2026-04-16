@@ -934,7 +934,6 @@ endif
 ifeq ($(HAVE_DSOUND), 1)
    OBJ += audio/drivers/dsound.o
    DEFINES += -DHAVE_DSOUND
-   HAVE_DX_COMMON  = 1
    LIBS += -ldsound
 endif
 
@@ -1338,7 +1337,6 @@ OBJ += \
 #Input
 
 ifeq ($(HAVE_DINPUT), 1)
-   HAVE_DX_COMMON  = 1
    LIBS += -ldinput8 -lole32
    DEFINES += -DHAVE_DINPUT
    OBJ += input/drivers/dinput.o
@@ -1779,7 +1777,6 @@ ifeq ($(HAVE_D3D9), 1)
    ifneq ($(HAVE_DYLIB), 1)
       LIBS += $(D3D9_LIBS)
    endif
-   HAVE_DX_COMMON  = 1
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
       OBJ  += gfx/drivers/d3d9cg.o
@@ -1813,15 +1810,10 @@ endif
 
 ifeq ($(HAVE_D3D8), 1)
    HAVE_D3D_COMMON = 1
-   HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
    ifneq ($(HAVE_DYLIB), 1)
       LIBS += $(D3D8_LIBS)
    endif
-endif
-
-ifeq ($(HAVE_DX_COMMON), 1)
-   LIBS += -ldxguid
 endif
 
 ifeq ($(HAVE_D3D8), 1)
@@ -2526,7 +2518,8 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
           gfx/common/win32_common.o \
           frontend/drivers/platform_win32.o \
-          gfx/display_servers/dispserv_win32.o
+          gfx/display_servers/dispserv_win32.o \
+          gfx/common/dx_guids.o
 
    ifeq ($(HAVE_GDI), 1)
       OBJ += gfx/drivers/gdi_gfx.o

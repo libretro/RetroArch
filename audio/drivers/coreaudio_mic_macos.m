@@ -18,20 +18,22 @@
 #include <AudioUnit/AudioUnit.h>
 #include <CoreFoundation/CoreFoundation.h>
 
-#include <retro_miscellaneous.h> // General utilities
-#include <retro_common.h>      // For RARCH_LOG and other common utilities
-#include <lists/string_list.h>   // For string_list functions
-#include <queues/fifo_queue.h>   // For fifo_buffer_t and fifo_read/write etc.
-#include <audio/microphone_driver.h>
-#include <verbosity.h>
+#include <retro_miscellaneous.h> /* General utilities */
+#include <retro_common.h>      /* For RARCH_LOG and other common utilities */
+#include <lists/string_list.h>   /* For string_list functions */
+#include <queues/fifo_queue.h>   /* For fifo_buffer_t and fifo_read/write etc. */
 #include <compat/strl.h>
 #include <memory.h>
 #include <stdatomic.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
 #include <rthreads/rthreads.h>
+#include <boolean.h>
+
+#include "../microphone_driver.h"
+#include "../../verbosity.h"
 
 typedef struct coreaudio_macos_microphone
 {

@@ -285,7 +285,7 @@ static int action_get_title_dropdown_item(
    if (!path || !*path)
       return 0;
 
-   if (!memcmp(path, "core_option_", STRLEN_CONST("core_option_")))
+   if (string_starts_with_size(path, "core_option_", STRLEN_CONST("core_option_")))
    {
       core_option_manager_t *coreopts = NULL;
       const char *opt = strrchr(path, '_');

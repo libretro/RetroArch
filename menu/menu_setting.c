@@ -14125,7 +14125,7 @@ static bool setting_append_list(
 
             END_SUB_GROUP(list, list_info, parent_group);
 
-            if (video_driver_supports_hdr())
+            if ((video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT))
             {
                START_SUB_GROUP(list, list_info, "HDR", &group_info, &subgroup_info, parent_group);
 

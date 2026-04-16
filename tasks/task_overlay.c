@@ -1248,7 +1248,7 @@ bool task_push_overlay_load_default(
    if (is_osk)
       loader->flags        |= OVERLAY_LOADER_IS_OSK;
 #ifdef RARCH_INTERNAL
-   if (video_driver_supports_rgba())
+   if ((video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA))
       loader->flags        |= OVERLAY_LOADER_RGBA_SUPPORT;
 #endif
 

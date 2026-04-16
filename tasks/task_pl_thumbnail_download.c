@@ -210,8 +210,8 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
        * then the current 'path_data->system' string is
        * meaningless. In this case, we fall back to the
        * content directory name */
-      if (   memcmp(system, "history", sizeof("history")) == 0
-		    || memcmp(system, "favorites", sizeof("favorites")) == 0)
+      if (   !strcmp(system, "history")
+		    || !strcmp(system, "favorites"))
       {
          if (gfx_thumbnail_get_content_dir(
                pl_thumb->thumbnail_path_data, content_dir, sizeof(content_dir)) == 0)
@@ -680,7 +680,7 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
       return;
 
 #ifdef HAVE_MATERIALUI
-   if (menu_driver && memcmp(menu_driver, "glui", sizeof("glui")) == 0)
+   if (menu_driver && !strcmp(menu_driver, "glui"))
    {
       if (!string_is_equal(pl_thumb->playlist_path, a))
          return;

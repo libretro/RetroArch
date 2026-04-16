@@ -43,6 +43,40 @@
 #define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  16.66667f * 3
 #define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
 
+/* Helpers for cross-thread thumbnail status synchronisation.
+ *
+ * The main thread writes texture/width/height then publishes
+ * status = AVAILABLE.  The video thread reads status; if it
+ * sees AVAILABLE, the data fields must be visible.
+ *
+ * On GCC/Clang (covers ARM64, x86, PowerPC, MIPS):
+ *   release-store / acquire-load give the required ordering.
+ * On MSVC (x86/x64 only in RetroArch's target matrix):
+ *   x86 total-store-order makes plain volatile sufficient,
+ *   but _InterlockedOr gives an explicit acquire load.
+ * Fallback:
+ *   Plain volatile read/write — sufficient on single-core
+ *   and x86.  Platforms with weak ordering that lack GCC
+ *   builtins do not run threaded video in practice.
+ */
+#if defined(__GNUC__)
+#define GFX_THUMB_STATUS_STORE(ptr, val) \
+   __atomic_store_n((int*)(ptr), (int)(val), __ATOMIC_RELEASE)
+#define GFX_THUMB_STATUS_LOAD(ptr) \
+   ((enum gfx_thumbnail_status)__atomic_load_n((int*)(ptr), __ATOMIC_ACQUIRE))
+#elif defined(_MSC_VER)
+#include <intrin.h>
+#define GFX_THUMB_STATUS_STORE(ptr, val) \
+   _InterlockedExchange((volatile long*)(ptr), (long)(val))
+#define GFX_THUMB_STATUS_LOAD(ptr) \
+   ((enum gfx_thumbnail_status)_InterlockedOr((volatile long*)(ptr), 0))
+#else
+#define GFX_THUMB_STATUS_STORE(ptr, val) \
+   do { (*(volatile int*)(ptr)) = (int)(val); } while(0)
+#define GFX_THUMB_STATUS_LOAD(ptr) \
+   ((enum gfx_thumbnail_status)(*(volatile int*)(ptr)))
+#endif
+
 /* Utility structure, sent as userdata when pushing
  * an image load */
 typedef struct
@@ -174,8 +208,11 @@ static void gfx_thumbnail_handle_upload(
       gfx_thumbnail_reset(thumbnail_tag->thumbnail);
 
    /* Set thumbnail 'missing' status by default
-    * (saves a number of checks later) */
-   thumbnail_tag->thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+    * (saves a number of checks later)
+    * > Release-store ensures prior texture reset is
+    *   visible before status change */
+   GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
+         GFX_THUMBNAIL_STATUS_MISSING);
 
    /* If we reach this stage, thumbnail 'fade in'
     * animations should be applied (based on current
@@ -196,8 +233,12 @@ static void gfx_thumbnail_handle_upload(
    thumbnail_tag->thumbnail->width  = img->width;
    thumbnail_tag->thumbnail->height = img->height;
 
-   /* Update thumbnail status */
-   thumbnail_tag->thumbnail->status = GFX_THUMBNAIL_STATUS_AVAILABLE;
+   /* Update thumbnail status
+    * > Release-store ensures texture/width/height writes
+    *   are visible to the video thread before it sees
+    *   AVAILABLE via acquire-load in gfx_thumbnail_draw() */
+   GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
+         GFX_THUMBNAIL_STATUS_AVAILABLE);
 
 end:
    /* Clean up */
@@ -329,7 +370,7 @@ void gfx_thumbnail_request(
                /* Would like to cancel any existing image load tasks
                 * here, but can't see how to do it... */
                if (task_push_image_load(
-                        thumbnail_path, video_driver_supports_rgba(),
+                        thumbnail_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
                         gfx_thumbnail_upscale_threshold,
                         gfx_thumbnail_handle_upload, thumbnail_tag))
                   thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
@@ -434,7 +475,7 @@ void gfx_thumbnail_request_file(
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
    if (task_push_image_load(
-         file_path, video_driver_supports_rgba(),
+         file_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
          gfx_thumbnail_upscale_threshold,
          gfx_thumbnail_handle_upload, thumbnail_tag))
       thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
@@ -945,8 +986,12 @@ void gfx_thumbnail_draw(
       )
       return;
 
-   /* Only draw thumbnail if it is available... */
-   if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+   /* Only draw thumbnail if it is available...
+    * > Acquire-load pairs with release-store in
+    *   gfx_thumbnail_handle_upload() to ensure
+    *   texture/width/height are visible when we
+    *   read AVAILABLE */
+   if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_AVAILABLE)
    {
       gfx_display_ctx_draw_t draw;
       struct video_coords coords;
@@ -955,7 +1000,18 @@ void gfx_thumbnail_draw(
       float draw_height;
       float draw_x;
       float draw_y;
-      float thumbnail_alpha     = thumbnail->alpha * alpha;
+
+      /* Snapshot fields — read once, use local copies for the
+       * remainder of this draw call.  The main thread may update
+       * the live struct concurrently (upload callback, reset, or
+       * animation tick on alpha), but these locals are stable. */
+      uintptr_t thumb_texture = thumbnail->texture;
+      unsigned  thumb_width   = thumbnail->width;
+      unsigned  thumb_height  = thumbnail->height;
+      float     thumb_alpha   = thumbnail->alpha;
+      uint8_t   thumb_flags   = thumbnail->flags;
+
+      float thumbnail_alpha     = thumb_alpha * alpha;
       float thumbnail_color[16] = {
          1.0f, 1.0f, 1.0f, 1.0f,
          1.0f, 1.0f, 1.0f, 1.0f,
@@ -969,10 +1025,23 @@ void gfx_thumbnail_draw(
       if (thumbnail_alpha < 1.0f)
          gfx_display_set_alpha(thumbnail_color, thumbnail_alpha);
 
-      /* Get thumbnail dimensions */
-      gfx_thumbnail_get_draw_dimensions(
-            thumbnail, width, height, scale_factor,
-            &draw_width, &draw_height);
+      /* Get thumbnail dimensions using snapshot values
+       * > Build a temporary on the stack so
+       *   gfx_thumbnail_get_draw_dimensions reads
+       *   consistent data without touching the live struct */
+      {
+         gfx_thumbnail_t thumb_snapshot;
+         thumb_snapshot.texture = thumb_texture;
+         thumb_snapshot.width   = thumb_width;
+         thumb_snapshot.height  = thumb_height;
+         thumb_snapshot.alpha   = thumb_alpha;
+         thumb_snapshot.flags   = thumb_flags;
+         thumb_snapshot.status  = GFX_THUMBNAIL_STATUS_AVAILABLE;
+         thumb_snapshot.delay_timer = 0.0f;
+         gfx_thumbnail_get_draw_dimensions(
+               &thumb_snapshot, width, height, scale_factor,
+               &draw_width, &draw_height);
+      }
 
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
@@ -1006,7 +1075,7 @@ void gfx_thumbnail_draw(
       draw.rotation        = 0.0f;
       draw.coords          = &coords;
       draw.matrix_data     = &mymat;
-      draw.texture         = thumbnail->texture;
+      draw.texture         = thumb_texture;
       draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
       draw.pipeline_id     = 0;
 

@@ -60,7 +60,6 @@
 
 #if defined(_MSC_VER) && !defined(_XBOX)
 #pragma comment(lib, "dsound")
-#pragma comment(lib, "dxguid")
 #endif
 
 #define CHUNK_SIZE 256

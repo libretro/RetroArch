@@ -15,7 +15,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <math.h>
 #include <malloc.h>
 
@@ -27,6 +26,7 @@
 
 #include <encodings/utf.h>
 #include <libretro_gskit_ps2.h>
+#include <boolean.h>
 
 #include "../video_defines.h"
 #include "../../driver.h"

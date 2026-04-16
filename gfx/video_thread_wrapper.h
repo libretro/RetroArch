@@ -275,6 +275,12 @@ bool video_thread_font_init(
 unsigned video_thread_texture_handle(void *data,
       custom_command_method_t func);
 
+/* Barrier: wait until the video thread is idle (no pending frame).
+ * Must be called from the main thread before freeing GPU resources
+ * that an in-flight frame might reference.  No-op on non-threaded
+ * video or when called from the video thread. */
+void video_thread_wait_idle(void);
+
 RETRO_END_DECLS
 
 #endif

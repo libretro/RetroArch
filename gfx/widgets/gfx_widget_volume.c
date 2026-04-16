@@ -86,7 +86,7 @@ static gfx_widget_volume_state_t p_w_volume_st = {
 
 static void gfx_widget_volume_frame(void* data, void *user_data)
 {
-   static float pure_white[16]             = {
+   float pure_white[16]             = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
@@ -355,7 +355,7 @@ static void gfx_widget_volume_context_reset(bool is_threaded,
       char* widgets_png_path)
 {
    size_t i;
-   bool supports_rgba                    = video_driver_supports_rgba();
+   bool supports_rgba                    = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    gfx_widget_volume_state_t *state      = &p_w_volume_st;
 
    volume_icon_load_gen++;

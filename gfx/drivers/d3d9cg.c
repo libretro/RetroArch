@@ -603,12 +603,42 @@ static uintptr_t d3d9_cg_load_texture(void *video_data, void *data,
    return id;
 }
 
+#ifdef HAVE_THREADS
+static int d3d9_cg_video_texture_unload_wrap_d3d(void *data)
+{
+   uintptr_t id = (uintptr_t)data;
+   if (id)
+   {
+      LPDIRECT3DTEXTURE9 texid = (LPDIRECT3DTEXTURE9)id;
+      IDirect3DTexture9_Release(texid);
+   }
+   return 0;
+}
+#endif
+
 static void d3d9_cg_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    LPDIRECT3DTEXTURE9 texid;
    if (!id)
       return;
+
+#ifdef HAVE_THREADS
+   /* When threaded video is active, dispatch the Release to the
+    * video thread so it is serialised with command buffer
+    * recording.  IDirect3DTexture9_Release is refcount-safe on
+    * its own, but the D3D9 driver on the video thread may have
+    * queued draw calls (via d3d9cg_gfx_frame) that still
+    * reference this texture.  Running Release on the video
+    * thread guarantees any such draws have been submitted
+    * before the refcount hits zero. */
+   if (threaded)
+   {
+      video_thread_texture_handle((void*)id,
+            d3d9_cg_video_texture_unload_wrap_d3d);
+      return;
+   }
+#endif
 
    texid = (LPDIRECT3DTEXTURE9)id;
    IDirect3DTexture9_Release(texid);

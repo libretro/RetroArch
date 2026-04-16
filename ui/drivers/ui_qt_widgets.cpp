@@ -6811,7 +6811,7 @@ QWidget *VideoPage::widget()
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CTX_SCALING);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
 
-   if (video_driver_supports_hdr())
+   if (video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT)
    {
       hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
       hdrGroup->add(MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS);

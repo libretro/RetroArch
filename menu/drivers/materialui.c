@@ -674,6 +674,7 @@ typedef struct materialui_handle
    /* Colour theme parameters */
    materialui_colors_t colors;   /* uint32_t alignment */
    uint32_t flags;
+   uint32_t context_generation;
 
    size_t playlist_selection[NAME_MAX_LENGTH];
    size_t playlist_selection_ptr;
@@ -2277,7 +2278,7 @@ static void materialui_context_reset_playlist_icons(
       materialui_handle_t *mui)
 {
    size_t i;
-   bool supports_rgba = video_driver_supports_rgba();
+   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    if (!*mui->sysicons_path)
       return;
 
@@ -2560,7 +2561,7 @@ static void materialui_update_savestate_thumbnail_image(void *data)
 static void materialui_context_reset_textures(materialui_handle_t *mui)
 {
    int i;
-   bool supports_rgba = video_driver_supports_rgba();
+   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    /* Loop through all textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
@@ -2584,7 +2585,7 @@ static void materialui_draw_icon(
       uintptr_t texture,
       float x, float y,
       float rotation, float scale_factor,
-      float *color,
+      const float *color,
       math_matrix_4x4 *mymat)
 {
    gfx_display_ctx_draw_t draw;
@@ -4327,7 +4328,7 @@ static void materialui_render_menu_entry_default(
    gfx_display_t *p_disp                             = disp_get_ptr();
    uico_driver_state_t *uico_st                      = uico_state_get_ptr();
 
-   static float color_white[16] = {
+   static const float color_white[16] = {
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
@@ -6148,6 +6149,7 @@ static size_t materialui_list_get_size(void *data, enum menu_list_type type)
 
 static void materialui_render_background(
       materialui_handle_t *mui,
+      uintptr_t tex_bg,
       gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width, unsigned video_height,
@@ -6183,9 +6185,9 @@ static void materialui_render_background(
    draw.color                 = draw_color;
    draw.texture               = 0;
 
-   if (mui->textures.bg && !libretro_running)
+   if (tex_bg && !libretro_running)
    {
-      draw.texture = mui->textures.bg;
+      draw.texture = tex_bg;
 
       /* We are showing a wallpaper - set opacity
        * override to menu_wallpaper_opacity */
@@ -6210,9 +6212,10 @@ static void materialui_render_background(
    /* Draw background */
    if (dispctx)
    {
+      struct video_coords coords;
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
-      gfx_display_draw_bg(p_disp, &draw, userdata,
+      gfx_display_draw_bg(p_disp, &draw, &coords, userdata,
             add_opacity, opacity_override);
       if (dispctx->draw)
          if (draw.height > 0 && draw.width > 0)
@@ -6462,6 +6465,7 @@ static void materialui_render_entry_touch_feedback(
 
 static void materialui_render_header(
       materialui_handle_t *mui,
+      const uintptr_t *tex_list,
       struct menu_state *menu_st,
       menu_list_t *menu_list,
       settings_t *settings,
@@ -6582,27 +6586,27 @@ static void materialui_render_header(
             /* Set critical by default, to ensure texture_battery
              * is always valid */
             uintptr_t texture_battery =
-               mui->textures.list[MUI_TEXTURE_BATTERY_CRITICAL];
+               tex_list[MUI_TEXTURE_BATTERY_CRITICAL];
 
             /* Draw battery icon */
             if (powerstate.charging)
-               texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_CHARGING];
+               texture_battery = tex_list[MUI_TEXTURE_BATTERY_CHARGING];
             else
             {
                if (powerstate.percent >= 100)
-                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_100];
+                  texture_battery = tex_list[MUI_TEXTURE_BATTERY_100];
                else if (powerstate.percent >= 90)
-                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_90];
+                  texture_battery = tex_list[MUI_TEXTURE_BATTERY_90];
                else if (powerstate.percent >= 80)
-                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_80];
+                  texture_battery = tex_list[MUI_TEXTURE_BATTERY_80];
                else if (powerstate.percent >= 60)
-                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_60];
+                  texture_battery = tex_list[MUI_TEXTURE_BATTERY_60];
                else if (powerstate.percent >= 50)
-                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_50];
+                  texture_battery = tex_list[MUI_TEXTURE_BATTERY_50];
                else if (powerstate.percent >= 30)
-                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_30];
+                  texture_battery = tex_list[MUI_TEXTURE_BATTERY_30];
                else if (powerstate.percent >= 20)
-                  texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_20];
+                  texture_battery = tex_list[MUI_TEXTURE_BATTERY_20];
             }
 
             materialui_draw_icon(
@@ -6745,7 +6749,7 @@ static void materialui_render_header(
             video_width,
             video_height,
             mui->icon_size,
-            mui->textures.list[MUI_TEXTURE_BACK],
+            tex_list[MUI_TEXTURE_BACK],
             0,
             (int)mui->sys_bar_height,
             0,
@@ -6764,7 +6768,7 @@ static void materialui_render_header(
             video_width,
             video_height,
             mui->icon_size,
-            mui->textures.list[MUI_TEXTURE_SEARCH],
+            tex_list[MUI_TEXTURE_SEARCH],
             (int)video_width - (int)mui->icon_size - (int)mui->nav_bar_layout_width,
             (int)mui->sys_bar_height,
             0,
@@ -6785,7 +6789,7 @@ static void materialui_render_header(
                video_width,
                video_height,
                mui->icon_size,
-               mui->textures.list[MUI_TEXTURE_SWITCH_VIEW],
+               tex_list[MUI_TEXTURE_SWITCH_VIEW],
                (int)video_width - (2 * (int)mui->icon_size)
                - (int)mui->nav_bar_layout_width,
                (int)mui->sys_bar_height,
@@ -6886,6 +6890,7 @@ static void materialui_render_header(
  * we try to handle this with a single function then
  * things get incredibly messy and inefficient... */
 static void materialui_render_nav_bar_bottom(materialui_handle_t *mui,
+      const uintptr_t *tex_list,
       gfx_display_t *p_disp, void *userdata,
       unsigned video_width, unsigned video_height, math_matrix_4x4 *mymat)
 {
@@ -6941,7 +6946,7 @@ static void materialui_render_nav_bar_bottom(materialui_handle_t *mui,
          video_width,
          video_height,
          mui->icon_size,
-         mui->textures.list[mui->nav_bar.back_tab.texture_index],
+         tex_list[mui->nav_bar.back_tab.texture_index],
          (int)((0.5f * tab_width) - ((float)mui->icon_size / 2.0f)),
          nav_bar_y,
          0,
@@ -6957,7 +6962,7 @@ static void materialui_render_nav_bar_bottom(materialui_handle_t *mui,
          video_width,
          video_height,
          mui->icon_size,
-         mui->textures.list[mui->nav_bar.resume_tab.texture_index],
+         tex_list[mui->nav_bar.resume_tab.texture_index],
          (int)((((float)num_tabs - 0.5f) * tab_width) - ((float)mui->icon_size / 2.0f)),
          nav_bar_y,
          0,
@@ -6980,7 +6985,7 @@ static void materialui_render_nav_bar_bottom(materialui_handle_t *mui,
             video_width,
             video_height,
             mui->icon_size,
-            mui->textures.list[tab->texture_index],
+            tex_list[tab->texture_index],
             (((float)i + 1.5f) * tab_width)
             - ((float)mui->icon_size / 2.0f),
             nav_bar_y,
@@ -7007,6 +7012,7 @@ static void materialui_render_nav_bar_bottom(materialui_handle_t *mui,
 }
 
 static void materialui_render_nav_bar_right(materialui_handle_t *mui,
+      const uintptr_t *tex_list,
       gfx_display_t *p_disp, void *userdata,
       unsigned video_width, unsigned video_height,
       math_matrix_4x4 *mymat)
@@ -7063,7 +7069,7 @@ static void materialui_render_nav_bar_right(materialui_handle_t *mui,
          video_width,
          video_height,
          mui->icon_size,
-         mui->textures.list[mui->nav_bar.back_tab.texture_index],
+         tex_list[mui->nav_bar.back_tab.texture_index],
          nav_bar_x,
          (int)((((float)num_tabs - 0.5f) * tab_height) - ((float)mui->icon_size / 2.0f)),
          0,
@@ -7079,7 +7085,7 @@ static void materialui_render_nav_bar_right(materialui_handle_t *mui,
          video_width,
          video_height,
          mui->icon_size,
-         mui->textures.list[mui->nav_bar.resume_tab.texture_index],
+         tex_list[mui->nav_bar.resume_tab.texture_index],
          nav_bar_x,
          (int)((0.5f * tab_height)
             - ((float)mui->icon_size / 2.0f)),
@@ -7103,7 +7109,7 @@ static void materialui_render_nav_bar_right(materialui_handle_t *mui,
             video_width,
             video_height,
             mui->icon_size,
-            mui->textures.list[tab->texture_index],
+            tex_list[tab->texture_index],
             nav_bar_x,
             (((float)i + 1.5f) * tab_height)
             - ((float)mui->icon_size / 2.0f),
@@ -7130,6 +7136,7 @@ static void materialui_render_nav_bar_right(materialui_handle_t *mui,
 }
 
 static void materialui_render_nav_bar(materialui_handle_t *mui,
+      const uintptr_t *tex_list,
       gfx_display_t *p_disp, void *userdata,
       unsigned video_width, unsigned video_height,
       math_matrix_4x4 *mymat)
@@ -7138,7 +7145,7 @@ static void materialui_render_nav_bar(materialui_handle_t *mui,
    {
       case MUI_NAV_BAR_LOCATION_RIGHT:
          materialui_render_nav_bar_right(
-            mui, p_disp, userdata, video_width, video_height,
+            mui, tex_list, p_disp, userdata, video_width, video_height,
             mymat);
          break;
       case MUI_NAV_BAR_LOCATION_HIDDEN:
@@ -7148,7 +7155,7 @@ static void materialui_render_nav_bar(materialui_handle_t *mui,
       case MUI_NAV_BAR_LOCATION_BOTTOM:
       default:
          materialui_render_nav_bar_bottom(
-            mui, p_disp, userdata, video_width, video_height,
+            mui, tex_list, p_disp, userdata, video_width, video_height,
             mymat);
          break;
    }
@@ -7878,6 +7885,23 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (!mui)
       return;
 
+   /* Snapshot context generation — if materialui_context_destroy()
+    * runs on the main thread while we are mid-render on the
+    * video thread, the generation will change and we must
+    * abandon the frame to avoid use-after-free on freed
+    * textures and fonts. */
+   {
+      uint32_t ctx_gen = mui->context_generation;
+
+   /* Snapshot texture handles — the main thread may write new
+    * handles via async icon load callbacks or context reset at
+    * any time.  Copy the texture list and bg once and use the
+    * snapshots for rendering this frame. */
+   {
+      uintptr_t tex_list[MUI_TEXTURE_LAST];
+      uintptr_t tex_bg = mui->textures.bg;
+      memcpy(tex_list, mui->textures.list, sizeof(tex_list));
+
    /* If menu screensaver is active, draw
     * screensaver and return */
    if (mui->flags & MUI_FLAG_SHOW_SCREENSAVER)
@@ -7897,6 +7921,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
             video_st->data, video_width, video_height, true, false);
+
+   /* Guard: bail if context was destroyed after we started */
+   if (ctx_gen != mui->context_generation)
+      goto ctx_destroyed;
 
    /* Clear text */
    font_bind(&mui->font_data.title);
@@ -7952,7 +7980,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    list_x_offset = (int)(mui->transition_x_offset * (float)((int)video_width - (int)mui->nav_bar_layout_width));
 
    /* Draw background */
-   materialui_render_background(mui, p_disp,
+   materialui_render_background(mui, tex_bg, p_disp,
          userdata,
          video_width,
          video_height,
@@ -8012,12 +8040,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          video_width, video_height, header_height, selection);
 
    /* Draw title + system bar */
-   materialui_render_header(mui, menu_st, menu_list,
+   materialui_render_header(mui, tex_list, menu_st, menu_list,
          settings, p_disp, userdata,
          video_width, video_height, &mymat);
 
    /* Draw navigation bar */
-   materialui_render_nav_bar(mui, p_disp, userdata,
+   materialui_render_nav_bar(mui, tex_list, p_disp, userdata,
          video_width, video_height, &mymat);
 
    /* Flush second layer of text
@@ -8068,7 +8096,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
                userdata,
                video_width,
                video_height,
-               mui->textures.list[MUI_TEXTURE_KEY_HOVER],
+               tex_list[MUI_TEXTURE_KEY_HOVER],
                mui->font_data.list.font,
                input_st->osk_grid,
                input_st->osk_ptr,
@@ -8131,7 +8159,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
                cursor_visible,
                color_white,
                mui->cursor_size,
-               mui->textures.list[MUI_TEXTURE_POINTER],
+               tex_list[MUI_TEXTURE_POINTER],
                mui->pointer.x,
                mui->pointer.y,
                video_width,
@@ -8142,6 +8170,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
     * by menu transition animations */
    materialui_colors_reset_transition_alpha(mui);
 
+   /* Guard: bail if context was destroyed during the draw pass */
+   if (ctx_gen != mui->context_generation)
+      goto ctx_destroyed;
+
    /* Unbind fonts */
    font_unbind(&mui->font_data.title);
    font_unbind(&mui->font_data.list);
@@ -8150,6 +8182,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
             video_st->data, video_width, video_height, false, true);
+
+ctx_destroyed:
+   ; /* no-op — reached if context was destroyed mid-frame */
+
+   } /* end of texture snapshot scope */
+   } /* end of context generation scope */
 }
 
 /* Determines current list view type, based on
@@ -9245,6 +9283,11 @@ static void materialui_context_destroy(void *data)
    if (!mui)
       return;
 
+   /* Signal the render path to stop using textures/fonts.
+    * Under threaded video, materialui_frame() may be mid-render
+    * on the video thread when this runs on the main thread. */
+   mui->context_generation++;
+
    /* Invalidate in-flight async icon loads before freeing targets */
    mui_icon_load_gen++;
 
@@ -9880,7 +9923,7 @@ static void materialui_context_reset(void *data, bool is_threaded)
 
    if (path_is_valid(path_menu_wallpaper))
       task_push_image_load(path_menu_wallpaper,
-            video_driver_supports_rgba(), 0,
+            (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
             menu_display_handle_wallpaper_upload, NULL);
 
    if (path_is_valid(mui->savestate_thumbnail_file_path))

@@ -13,12 +13,12 @@
 
 #include <stdarg.h>
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <profileapi.h>
-#else
-#include <time.h>
+#if defined(_WIN32)
+  #if defined(_MSC_VER) && _MSC_VER < 1700
+    #include <windows.h>  /* pre-VS2012 SDKs lack profileapi.h; windows.h brings the functions */
+  #else
+    #include <profileapi.h>
+  #endif
 #endif
 
 #define RC_CLIENT_UNKNOWN_GAME_ID (uint32_t)-1

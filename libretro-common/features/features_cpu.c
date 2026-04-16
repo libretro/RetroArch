@@ -737,7 +737,7 @@ uint64_t cpu_features_get(void)
             : "=a"(flags7[0]), "=S"(flags7[1]), "=c"(flags7[2]), "=d"(flags7[3])
             : "a"(7), "c"(0));
 #elif defined(_MSC_VER) && INT_MAX == 2147483647
-#if _MSC_VER >= 1500
+#if _MSC_VER >= 1600
       __cpuidex((int*)flags7, 7, 0);
 #else
       {

@@ -262,7 +262,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
    size_t i;
    char icon_path[PATH_MAX_LENGTH];
    char icon_directory[DIR_MAX_LENGTH];
-   bool rgba_supported              = video_driver_supports_rgba();
+   bool rgba_supported              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    core_info_list_t *core_info_list = NULL;
 
    if (!state)

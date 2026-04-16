@@ -405,7 +405,7 @@ static void explore_load_icons(explore_state_t *state)
 {
    char path[PATH_MAX_LENGTH];
    size_t i, _len, system_count;
-   bool supports_rgba = video_driver_supports_rgba();
+   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    if (!state)
       return;
 
@@ -661,7 +661,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
                continue;
 
             key_str                         = key->val.string.buff;
-            if (memcmp(key_str, "crc", STRLEN_CONST("crc") + 1) == 0)
+            if (!strcmp(key_str, "crc"))
             {
                switch (val->val.binary.len)
                {
@@ -681,13 +681,13 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
                continue;
             }
-            else if (memcmp(key_str, "name", STRLEN_CONST("name") + 1) == 0)
+            else if (!strcmp(key_str, "name"))
             {
                name = val->val.string.buff;
                continue;
             }
 #ifdef EXPLORE_SHOW_ORIGINAL_TITLE
-            else if (memcmp(key_str, "original_title", STRLEN_CONST("original_title") + 1) == 0)
+            else if (!strcmp(key_str, "original_title"))
             {
                original_title = val->val.string.buff;
                continue;
@@ -696,8 +696,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
             for (cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
             {
-               if (memcmp(key_str, explore_by_info[cat].rdbkey,
-                        strlen(explore_by_info[cat].rdbkey) + 1) != 0)
+               if (strcmp(key_str, explore_by_info[cat].rdbkey) != 0)
                   continue;
 
                meta_count++;
@@ -855,7 +854,7 @@ static int explore_action_sublabel_spacer(
     * > In RGUI it does nothing other than
     *   unnecessarily blank out the fallback
     *   core title text in the sublabel area */
-   if (memcmp(menu_driver, "ozone", STRLEN_CONST("ozone") + 1) == 0)
+   if (!strcmp(menu_driver, "ozone"))
    {
       s[0] = ' ';
       s[1] = '\0';
@@ -1194,18 +1193,18 @@ static void explore_load_view(explore_state_t *state, const char* path)
       if (depth == 1 && type == RJSON_STRING)
       {
          const char* key = rjson_get_string(json, NULL);
-         if (        memcmp(key, "filter_name", STRLEN_CONST("filter_name") + 1) == 0
+         if (        !strcmp(key, "filter_name")
                   && rjson_next(json) == RJSON_STRING)
             strlcpy(state->view_search,
                   rjson_get_string(json, NULL),
 		  sizeof(state->view_search));
-         else if (   memcmp(key, "filter_equal", STRLEN_CONST("filter_equal") + 1) == 0
+         else if (   !strcmp(key, "filter_equal")
                   && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_EQUAL;
-         else if (   memcmp(key, "filter_min", STRLEN_CONST("filter_min") + 1) == 0
+         else if (   !strcmp(key, "filter_min")
                   && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MIN;
-         else if (   memcmp(key, "filter_max", STRLEN_CONST("filter_max") + 1) == 0
+         else if (   !strcmp(key, "filter_max")
                   && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MAX;
       }

@@ -8,17 +8,17 @@
 
 #import <AudioToolbox/AudioToolbox.h>
 #import <AVFoundation/AVFoundation.h>
-#include "audio/microphone_driver.h"
-#include "queues/fifo_queue.h"
-#include "verbosity.h"
-#include <memory.h>
-#include <stdatomic.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <rthreads/rthreads.h>
+#include <memory.h>
+#include <stdatomic.h>
 
-#include "audio/audio_driver.h"
+#include <boolean.h>
+#include <rthreads/rthreads.h>
+#include <queues/fifo_queue.h>
+
+#include "../audio_driver.h"
+#include "../microphone_driver.h"
 #include "../../verbosity.h"
 
 typedef struct coreaudio_microphone

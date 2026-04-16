@@ -700,6 +700,10 @@ static void gx2_font_free(void* data, bool is_threaded)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
+   /* Ensure the GPU has finished any draws referencing the
+    * font atlas and UBO before freeing the backing memory. */
+   GX2DrawDone();
+
    if (font->texture.surface.image)
       MEM1_free(font->texture.surface.image);
    if (font->ubo_tex)
@@ -2418,6 +2422,10 @@ static void gx2_unload_texture(void *data,
 
    if (!texture)
       return;
+
+   /* Ensure the GPU has finished any draws referencing this
+    * texture before freeing the backing memory. */
+   GX2DrawDone();
 
    MEM2_free(texture->surface.image);
    free(texture);

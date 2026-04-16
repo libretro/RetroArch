@@ -49,6 +49,9 @@
 
 #include "../font_driver.h"
 #include "../video_driver.h"
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
 
 #include "../common/metal_common.h"
 
@@ -2568,8 +2571,31 @@ static bool metal_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return [md.frameView readViewport:buffer isIdle:is_idle];
 }
 
-static uintptr_t metal_load_texture(void *video_data, void *data,
-      bool threaded, enum texture_filter_type filter_type)
+#ifdef HAVE_THREADS
+typedef struct
+{
+   void                         *video_data;  /* unretained MetalDriver * */
+   struct texture_image         *image;
+   enum texture_filter_type      filter_type;
+   uintptr_t                     handle;
+} metal_texture_cmd_t;
+#endif
+
+/* Inner load function -- performs the actual texture creation.
+ * Must run on the same thread that owns the Metal context's
+ * blit command buffer (the video thread when threaded video is
+ * active, otherwise the main thread).
+ *
+ * Metal's blit command buffer is lazily created on first use
+ * and committed during frame end.  It is stored on the shared
+ * Context instance, not thread-local.  Mipmapped texture loads
+ * encode mipmap-generation commands into this buffer via a
+ * BlitCommandEncoder -- and MTLCommandBuffer / MTLCommandEncoder
+ * are explicitly documented as single-thread-only.  Concurrent
+ * access from the main thread (mid-load) and the video thread
+ * (mid-frame-end commit) is undefined behaviour. */
+static uintptr_t metal_load_texture_internal(void *video_data, void *data,
+      enum texture_filter_type filter_type)
 {
    MetalDriver           *md  = (__bridge MetalDriver *)video_data;
    struct texture_image *img  = (struct texture_image *)data;
@@ -2581,11 +2607,56 @@ static uintptr_t metal_load_texture(void *video_data, void *data,
    return (uintptr_t)(__bridge_retained void *)(t);
 }
 
+#ifdef HAVE_THREADS
+/* Wrap function invoked on the video thread via
+ * CMD_CUSTOM_COMMAND.  Writes the handle to cmd->handle rather
+ * than the int return channel to avoid truncation on 64-bit
+ * Apple platforms where uintptr_t is 64 bits. */
+static int metal_texture_load_wrap(void *data)
+{
+   metal_texture_cmd_t *cmd = (metal_texture_cmd_t*)data;
+   cmd->handle = metal_load_texture_internal(
+         cmd->video_data, cmd->image, cmd->filter_type);
+   return 0;
+}
+#endif
+
+static uintptr_t metal_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+#ifdef HAVE_THREADS
+   /* When threaded video is active, dispatch to the video
+    * thread so Context.blitCommandBuffer access is serialised
+    * with the video thread's frame-end commit.  This is only
+    * required for mipmapped filters (which encode into the
+    * blit buffer), but we dispatch unconditionally for
+    * consistency and simplicity. */
+   if (threaded)
+   {
+      metal_texture_cmd_t cmd;
+      cmd.video_data  = video_data;
+      cmd.image       = (struct texture_image *)data;
+      cmd.filter_type = filter_type;
+      cmd.handle      = 0;
+      video_thread_texture_handle(&cmd, metal_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return metal_load_texture_internal(video_data, data, filter_type);
+}
+
 static void metal_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
    if (!handle)
       return;
+   /* Metal command buffers retain their referenced resources,
+    * so ARC-releasing the handle here does not free the
+    * underlying MTLTexture if the video thread's command
+    * buffer is still using it -- the Metal runtime refcounts
+    * resources across CPU and GPU.  No cross-thread
+    * serialisation needed for unload. */
    Texture *t = (__bridge_transfer Texture *)(void *)handle;
    t = nil;
 }

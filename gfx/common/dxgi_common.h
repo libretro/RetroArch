@@ -285,7 +285,7 @@ enum dxgi_swapchain_bit_depth
 #endif
 
 #include <assert.h>
-#include <dxgi1_6.h>
+#include "../include/dxsdk/dxgi1_6.h"
 
 #ifndef countof
 #define countof(a) (sizeof(a) / sizeof(*a))

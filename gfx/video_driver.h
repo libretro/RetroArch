@@ -61,6 +61,7 @@
 #define VIDEO_SHADER_STOCK_HDR            (GFX_MAX_SHADERS - 8)
 #define VIDEO_SHADER_STOCK_NOBLEND_HDR    (GFX_MAX_SHADERS - 9)
 #define VIDEO_SHADER_STOCK_NOBLEND        (GFX_MAX_SHADERS - 10)
+#define VIDEO_SHADER_STOCK_BLEND_HDR      (GFX_MAX_SHADERS - 11)
 
 #if defined(_XBOX360)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
@@ -84,47 +85,8 @@
 
 #ifdef HAVE_THREADS
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) ((!video_driver_is_hw_context() && (((video_st->threaded)) ? true : false)))
-
-#define VIDEO_DRIVER_LOCK(video_st) \
-   if (video_st->display_lock) \
-      slock_lock(video_st->display_lock)
-
-#define VIDEO_DRIVER_UNLOCK(video_st) \
-   if (video_st->display_lock) \
-      slock_unlock(video_st->display_lock)
-
-#define VIDEO_DRIVER_CONTEXT_LOCK(video_st) \
-   if (video_st->context_lock) \
-      slock_lock(video_st->context_lock)
-
-#define VIDEO_DRIVER_CONTEXT_UNLOCK(video_st) \
-   if (video_st->context_lock) \
-      slock_unlock(video_st->context_lock)
-
-#define VIDEO_DRIVER_LOCK_FREE(video_st) \
-   slock_free(video_st->display_lock); \
-   slock_free(video_st->context_lock); \
-   video_st->display_lock = NULL; \
-   video_st->context_lock = NULL
-
-#define VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded) \
-   if (is_threaded) \
-      VIDEO_DRIVER_LOCK(video_st)
-
-#define VIDEO_DRIVER_THREADED_UNLOCK(video_st, is_threaded) \
-   if (is_threaded) \
-      VIDEO_DRIVER_UNLOCK(video_st)
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(video_st) ((VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)) ? video_thread_get_ptr(video_st) : video_st->data)
 #else
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) (false)
-#define VIDEO_DRIVER_LOCK(video_st)            ((void)0)
-#define VIDEO_DRIVER_UNLOCK(video_st)          ((void)0)
-#define VIDEO_DRIVER_LOCK_FREE(video_st)       ((void)0)
-#define VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded)   ((void)0)
-#define VIDEO_DRIVER_THREADED_UNLOCK(video_st, is_threaded) ((void)0)
-#define VIDEO_DRIVER_CONTEXT_LOCK(video_st)    ((void)0)
-#define VIDEO_DRIVER_CONTEXT_UNLOCK(video_st)  ((void)0)
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(video_st) (video_st->data)
 #endif
 
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st) (&video_st->hw_render)
@@ -169,7 +131,8 @@ enum video_driver_state_flags
    VIDEO_FLAG_RUNAHEAD_IS_ACTIVE                  = (1 << 18),
    VIDEO_FLAG_HDR10_SUPPORT                       = (1 << 19),
    VIDEO_FLAG_SCRGB_SUPPORT                       = (1 << 20),
-   VIDEO_FLAG_GPU_DEVICE_LOST                     = (1 << 21)
+   VIDEO_FLAG_GPU_DEVICE_LOST                     = (1 << 21),
+   VIDEO_FLAG_THREAD_WRAPPER_ACTIVE               = (1 << 22)
 };
 
 struct LinkInfo
@@ -978,29 +941,9 @@ float video_driver_get_original_fps(void);
 
 void video_driver_set_viewport_core(void);
 
-void video_driver_set_rgba(void);
+uint32_t video_driver_get_disp_flags(void);
 
-void video_driver_unset_rgba(void);
-
-bool video_driver_supports_rgba(void);
-
-void video_driver_set_hdr_support(void);
-
-void video_driver_unset_hdr_support(void);
-
-bool video_driver_supports_hdr(void);
-
-void video_driver_set_hdr10_support(void);
-
-void video_driver_unset_hdr10_support(void);
-
-bool video_driver_supports_hdr10(void);
-
-void video_driver_set_scrgb_support(void);
-
-void video_driver_unset_scrgb_support(void);
-
-bool video_driver_supports_scrgb(void);
+void video_driver_set_disp_flags(uint32_t flags);
 
 unsigned video_driver_hdr_max_mode(void);
 
@@ -1299,21 +1242,6 @@ void video_driver_free_hw_context(void);
 
 #ifdef HAVE_VIDEO_FILTER
 void video_driver_filter_free(void);
-#endif
-
-#ifdef HAVE_THREADS
-/**
- * video_thread_get_ptr:
- *
- * Gets the underlying video driver associated with the
- * threaded video wrapper. Sets @drv to the found
- * video driver.
- *
- * Returns: Video driver data of the video driver associated
- * with the threaded wrapper (if successful). If not successful,
- * NULL.
- **/
-void *video_thread_get_ptr(video_driver_state_t *video_st);
 #endif
 
 void video_driver_lock_new(void);

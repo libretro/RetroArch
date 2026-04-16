@@ -142,7 +142,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 #endif
 
    {
-      static float pure_white[16] = {
+      float pure_white[16] = {
          1.00, 1.00, 1.00, 1.00,
          1.00, 1.00, 1.00, 1.00,
          1.00, 1.00, 1.00, 1.00,

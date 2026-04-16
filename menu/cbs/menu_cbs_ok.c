@@ -2261,7 +2261,7 @@ static int generic_action_ok(const char *path,
                   action_path);
 
             task_push_image_load(action_path,
-                  video_driver_supports_rgba(), 0,
+                  (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
                   menu_display_handle_wallpaper_upload, NULL);
          }
          break;

@@ -5483,7 +5483,6 @@ static char *d3d9_hlsl_init_vs_output_members(const char *source)
       unsigned i;
       for (i = 0; i < member_count; i++)
       {
-         char pattern[192];
          bool found = false;
          /* Build "OUT.membername" pattern and search within function body */
          /* Try common output variable names: OUT, Out, output */
@@ -7931,12 +7930,38 @@ uintptr_t d3d9_hlsl_load_texture(void *video_data, void *data,
    return id;
 }
 
+#ifdef HAVE_THREADS
+static int d3d9_hlsl_video_texture_unload_wrap_d3d(void *data)
+{
+   uintptr_t id = (uintptr_t)data;
+   if (id)
+   {
+      LPDIRECT3DTEXTURE9 texid = (LPDIRECT3DTEXTURE9)id;
+      IDirect3DTexture9_Release(texid);
+   }
+   return 0;
+}
+#endif
+
 static void d3d9_hlsl_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    LPDIRECT3DTEXTURE9 texid;
    if (!id)
       return;
+
+#ifdef HAVE_THREADS
+   /* Dispatch Release to the video thread to serialise with
+    * in-flight draw calls that may still reference the
+    * texture.  Matches the threading pattern already used by
+    * d3d9_hlsl_load_texture above. */
+   if (threaded)
+   {
+      video_thread_texture_handle((void*)id,
+            d3d9_hlsl_video_texture_unload_wrap_d3d);
+      return;
+   }
+#endif
 
    texid = (LPDIRECT3DTEXTURE9)id;
    IDirect3DTexture9_Release(texid);

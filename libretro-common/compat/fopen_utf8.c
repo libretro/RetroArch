@@ -22,10 +22,10 @@
 
 #include <compat/fopen_utf8.h>
 #include <encodings/utf.h>
-#include <string.h>
-#include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
+#include <boolean.h>
 #if defined(__WINRT__)
 #include <stdint.h>
 #include <windows.h>

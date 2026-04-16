@@ -247,9 +247,13 @@ void gfx_display_draw_keyboard(
       char *grid[], unsigned id,
       unsigned text_color);
 
+/* Note: coords must outlive the call — its address is stored in
+ * draw->coords and read by the caller's subsequent dispctx->draw().
+ * Callers should declare coords as a stack local alongside draw. */
 void gfx_display_draw_bg(
       gfx_display_t *p_disp,
       gfx_display_ctx_draw_t *draw,
+      struct video_coords *coords,
       void *userdata,
       bool add_opacity, float opacity_override);
 

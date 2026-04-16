@@ -2130,12 +2130,35 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
    return id;
 }
 
+static int d3d8_video_texture_unload_wrap_d3d(void *data)
+{
+   uintptr_t id = (uintptr_t)data;
+   if (id)
+   {
+      LPDIRECT3DTEXTURE8 texid = (LPDIRECT3DTEXTURE8)id;
+      IDirect3DTexture8_Release(texid);
+   }
+   return 0;
+}
+
 static void d3d8_unload_texture(void *data, bool threaded,
       uintptr_t id)
 {
    LPDIRECT3DTEXTURE8 texid;
    if (!id)
 	   return;
+
+   /* Dispatch Release to the video thread when threaded video is
+    * active, so it is serialised with any pending draw calls
+    * that may still reference this texture.  Matches the
+    * threading pattern already used by d3d8_load_texture
+    * above. */
+   if (threaded)
+   {
+      video_thread_texture_handle((void*)id,
+            d3d8_video_texture_unload_wrap_d3d);
+      return;
+   }
 
    texid = (LPDIRECT3DTEXTURE8)id;
    IDirect3DTexture8_Release(texid);

@@ -71,7 +71,6 @@
 #define WIN32_LEAN_AND_MEAN
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
-
 #include <dinput.h>
 #endif
 
