@@ -836,7 +836,7 @@ not_found:
       snprintf(msg, sizeof(msg), "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
             path_basename(state->path));
-      task_set_title(task, strdup(msg));
+      task_set_error(task, strdup(msg));
    }
 
 end:
