@@ -6992,10 +6992,8 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
    HMONITOR hm_to_use;
 #endif
 #ifdef HAVE_WINDOW
-   DWORD style;
    unsigned win_width        = 0;
    unsigned win_height       = 0;
-   RECT rect                 = {0};
 #endif
    unsigned full_x           = 0;
    unsigned full_y           = 0;
@@ -7057,14 +7055,12 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 #ifdef HAVE_WINDOW
    video_driver_get_size(&win_width, &win_height);
 
-   win32_set_style(&current_mon, &hm_to_use, &win_width, &win_height,
-         info->fullscreen, windowed_full, &rect, &mon_rect, &style);
-
-   win32_window_create(d3d, style, &mon_rect, win_width,
-         win_height, info->fullscreen);
-
-   win32_set_window(&win_width, &win_height, info->fullscreen,
-      windowed_full, &rect);
+   if (!win32_set_video_mode(d3d, win_width, win_height,
+         info->fullscreen))
+   {
+      RARCH_ERR("[D3D9 HLSL] win32_set_video_mode failed.\n");
+      return false;
+   }
 #endif
 
    d3d->video_info = *info;
