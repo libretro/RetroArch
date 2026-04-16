@@ -10,6 +10,10 @@
 #ifndef __D3D12SHADER_H__
 #define __D3D12SHADER_H__
 
+#if defined(__GNUC__)
+#pragma GCC system_header
+#endif
+
 #include "d3dcommon.h"
 
 typedef enum D3D12_SHADER_VERSION_TYPE

@@ -10,6 +10,10 @@
 #ifndef __D3D10SHADER_H__
 #define __D3D10SHADER_H__
 
+#if defined(__GNUC__)
+#pragma GCC system_header
+#endif
+
 #include "d3d10.h"
 
 /*#include <winapifamily.h>*/

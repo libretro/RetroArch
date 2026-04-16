@@ -10,6 +10,10 @@
 #ifndef __D3DCOMPILER_H__
 #define __D3DCOMPILER_H__
 
+#if defined(__GNUC__)
+#pragma GCC system_header
+#endif
+
 /*#include <winapifamily.h>*/
 
 // Current name of the DLL shipped in the same SDK as this header.
