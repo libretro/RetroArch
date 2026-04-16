@@ -1002,7 +1002,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
    int qp, y1_dc_q, y1_ac_q, y2_dc_q, y2_ac_q, uv_dc_q, uv_ac_q;
    int skip_enabled, log2parts, num_parts;
-   int seg_enabled, seg_abs, seg_qp[4], seg_prob[3];
+   int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
    int lf_type, lf_level, lf_sharp, lf_interior;
    vp8b br;
    vp8b tbr[8]; /* up to 8 token partitions */
@@ -1030,6 +1030,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    seg_enabled = vp8b_bit(&br);
    seg_abs = 0;
    seg_qp[0] = seg_qp[1] = seg_qp[2] = seg_qp[3] = 0;
+   seg_lf[0] = seg_lf[1] = seg_lf[2] = seg_lf[3] = 0;
    seg_prob[0] = seg_prob[1] = seg_prob[2] = 255;
    if (seg_enabled)
    {
@@ -1037,7 +1038,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
       if (ud) {
          seg_abs = vp8b_bit(&br);
          for (i=0;i<4;i++) seg_qp[i] = vp8b_bit(&br) ? vp8b_sig(&br,7) : 0;
-         for (i=0;i<4;i++) if (vp8b_bit(&br)) vp8b_sig(&br,6); /* lf deltas - discard */
+         for (i=0;i<4;i++) seg_lf[i] = vp8b_bit(&br) ? vp8b_sig(&br,6) : 0;
       }
       if (um) for (i=0;i<3;i++) { if (vp8b_bit(&br)) seg_prob[i] = (int)vp8b_lit(&br,8); }
    }
@@ -1169,7 +1170,8 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
     * above_nz_*: one entry per sub-block column across the MB row.
     * left_nz_*: one entry per sub-block row within current MB. */
    {
-      uint8_t *above_nz_y  = (uint8_t*)calloc(mbw * 4, 1); /* 4 Y sub-block cols per MB */
+      uint8_t *seg_map = (uint8_t*)calloc(mbw * mbh, 1); /* segment ID per MB */
+   uint8_t *above_nz_y  = (uint8_t*)calloc(mbw * 4, 1); /* 4 Y sub-block cols per MB */
       uint8_t *above_nz_u  = (uint8_t*)calloc(mbw * 2, 1); /* 2 U sub-block cols per MB */
       uint8_t *above_nz_v  = (uint8_t*)calloc(mbw * 2, 1);
       uint8_t *above_nz_dc = (uint8_t*)calloc(mbw, 1);     /* Y2 DC block */
@@ -1210,6 +1212,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                seg_id = vp8b_get(&br, seg_prob[1]);
          }
 
+         seg_map[my * mbw + mx] = (uint8_t)seg_id;
          /* Compute per-MB quantizer based on segment */
          if (seg_enabled && seg_abs)
             mb_qp = seg_qp[seg_id];
@@ -1432,25 +1435,69 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          }
       }
       /* Per-row in-loop deblocking filter (VP8 §15) */
-      if (lf_level > 0) {
-         int elim=(lf_level+2)*2+lf_interior,slim=lf_level*2+lf_interior;
-         int hevt=(lf_level>=40)?2:(lf_level>=15)?1:0,fx,fy;
+      {
+         int fx, fy;
          #define LFA(x) ((x)<0?-(x):(x))
-         #define LFC(v,l) ((v)<-(l)?-(l):(v)>(l)?(l):(v))
-         #define LFFILT(P,S,O,IL,HT,EL) do{int p3=P[(O)-4*(S)],p2=P[(O)-3*(S)],p1=P[(O)-2*(S)],p0=P[(O)-1*(S)],q0=P[(O)],q1=P[(O)+1*(S)],q2=P[(O)+2*(S)],q3=P[(O)+3*(S)];if((LFA(p0-q0)*2+(LFA(p1-q1)>>1)<=(EL))&&LFA(p3-p2)<=(IL)&&LFA(p2-p1)<=(IL)&&LFA(p1-p0)<=(IL)&&LFA(q1-q0)<=(IL)&&LFA(q2-q1)<=(IL)&&LFA(q3-q2)<=(IL)){int hv=(LFA(p1-p0)>(HT)||LFA(q1-q0)>(HT)),a=LFC(3*(q0-p0)+(hv?LFC(p1-q1,128):0),127),a1=(a+4)>>3,a2=(a+3)>>3;P[(O)-1*(S)]=vp8_cl(p0+a2);P[(O)]=vp8_cl(q0-a1);if(!hv){int a3=(a1+1)>>1;P[(O)-2*(S)]=vp8_cl(p1+a3);P[(O)+1*(S)]=vp8_cl(q1-a3);}}}while(0)
-         for(mx=0;mx<mbw;mx++){
-            if(mx>0)for(fy=0;fy<16;fy++)LFFILT(yb,1,my*16*ys+fy*ys+mx*16,lf_interior,hevt,elim);
-            if(my>0)for(fx=0;fx<16;fx++)LFFILT(yb,ys,my*16*ys+mx*16+fx,lf_interior,hevt,elim);
-            if(lf_type){for(fy=0;fy<16;fy++)for(i=1;i<4;i++)LFFILT(yb,1,my*16*ys+fy*ys+mx*16+i*4,lf_interior,hevt,slim);
-               for(fx=0;fx<16;fx++)for(j=1;j<4;j++)LFFILT(yb,ys,(my*16+j*4)*ys+mx*16+fx,lf_interior,hevt,slim);}
-            if(mx>0){for(fy=0;fy<8;fy++){LFFILT(ub,1,my*8*uvs+fy*uvs+mx*8,lf_interior,hevt,elim);LFFILT(vb,1,my*8*uvs+fy*uvs+mx*8,lf_interior,hevt,elim);}}
-            if(my>0){for(fx=0;fx<8;fx++){LFFILT(ub,uvs,my*8*uvs+mx*8+fx,lf_interior,hevt,elim);LFFILT(vb,uvs,my*8*uvs+mx*8+fx,lf_interior,hevt,elim);}}
-            if(lf_type){for(fy=0;fy<8;fy++){LFFILT(ub,1,my*8*uvs+fy*uvs+mx*8+4,lf_interior,hevt,slim);LFFILT(vb,1,my*8*uvs+fy*uvs+mx*8+4,lf_interior,hevt,slim);}
-               for(fx=0;fx<8;fx++){LFFILT(ub,uvs,(my*8+4)*uvs+mx*8+fx,lf_interior,hevt,slim);LFFILT(vb,uvs,(my*8+4)*uvs+mx*8+fx,lf_interior,hevt,slim);}}
+         #define LFC(v,lo) ((v)<-(lo)?-(lo):(v)>(lo)?(lo):(v))
+         for (mx = 0; mx < mbw; mx++)
+         {
+            int mb_seg = seg_map[my * mbw + mx];
+            int mb_lf;
+            if (seg_enabled && seg_abs)
+               mb_lf = seg_lf[mb_seg];
+            else if (seg_enabled)
+               mb_lf = lf_level + seg_lf[mb_seg];
+            else
+               mb_lf = lf_level;
+            if (mb_lf < 0) mb_lf = 0;
+            if (mb_lf > 63) mb_lf = 63;
+            if (mb_lf == 0) continue;
+            /* Compute filter limits for this MB */
+            {
+               int il = mb_lf;
+               int el, hevt;
+               if (lf_sharp > 0) {
+                  il >>= (lf_sharp > 4 ? 2 : 1);
+                  if (il > 9 - lf_sharp) il = 9 - lf_sharp;
+               }
+               if (il < 1) il = 1;
+               if (lf_type == 0) {
+                  /* Normal filter: MB edges and sub-block edges */
+                  el = (mb_lf + 2) * 2 + il;
+                  hevt = (mb_lf >= 40) ? 2 : (mb_lf >= 15) ? 1 : 0;
+                  #define NFILT(P,S,O,IL2,HT,EL2) do{int p3=P[(O)-4*(S)],p2=P[(O)-3*(S)],p1=P[(O)-2*(S)],p0=P[(O)-1*(S)],q0=P[(O)],q1=P[(O)+1*(S)],q2=P[(O)+2*(S)],q3=P[(O)+3*(S)];if((LFA(p0-q0)*2+(LFA(p1-q1)>>1)<=(EL2))&&LFA(p3-p2)<=(IL2)&&LFA(p2-p1)<=(IL2)&&LFA(p1-p0)<=(IL2)&&LFA(q1-q0)<=(IL2)&&LFA(q2-q1)<=(IL2)&&LFA(q3-q2)<=(IL2)){int hv=(LFA(p1-p0)>(HT)||LFA(q1-q0)>(HT)),a=LFC(3*(q0-p0)+(hv?LFC(p1-q1,128):0),127),a1=(a+4)>>3,a2=(a+3)>>3;P[(O)-1*(S)]=vp8_cl(p0+a2);P[(O)]=vp8_cl(q0-a1);if(!hv){int a3=(a1+1)>>1;P[(O)-2*(S)]=vp8_cl(p1+a3);P[(O)+1*(S)]=vp8_cl(q1-a3);}}}while(0)
+                  { int slim = mb_lf * 2 + il;
+                  /* Vertical MB edge */
+                  if (mx > 0) for (fy=0;fy<16;fy++) NFILT(yb,1,my*16*ys+fy*ys+mx*16,il,hevt,el);
+                  /* Horizontal MB edge */
+                  if (my > 0) for (fx=0;fx<16;fx++) NFILT(yb,ys,my*16*ys+mx*16+fx,il,hevt,el);
+                  /* Vertical sub-block edges */
+                  for (fy=0;fy<16;fy++) for (i=1;i<4;i++) NFILT(yb,1,my*16*ys+fy*ys+mx*16+i*4,il,hevt,slim);
+                  /* Horizontal sub-block edges */
+                  for (fx=0;fx<16;fx++) for (j=1;j<4;j++) NFILT(yb,ys,(my*16+j*4)*ys+mx*16+fx,il,hevt,slim);
+                  /* UV MB edges */
+                  if (mx > 0) for (fy=0;fy<8;fy++) { NFILT(ub,1,my*8*uvs+fy*uvs+mx*8,il,hevt,el); NFILT(vb,1,my*8*uvs+fy*uvs+mx*8,il,hevt,el); }
+                  if (my > 0) for (fx=0;fx<8;fx++) { NFILT(ub,uvs,my*8*uvs+mx*8+fx,il,hevt,el); NFILT(vb,uvs,my*8*uvs+mx*8+fx,il,hevt,el); }
+                  /* UV sub-block edges */
+                  for (fy=0;fy<8;fy++) { NFILT(ub,1,my*8*uvs+fy*uvs+mx*8+4,il,hevt,slim); NFILT(vb,1,my*8*uvs+fy*uvs+mx*8+4,il,hevt,slim); }
+                  for (fx=0;fx<8;fx++) { NFILT(ub,uvs,(my*8+4)*uvs+mx*8+fx,il,hevt,slim); NFILT(vb,uvs,(my*8+4)*uvs+mx*8+fx,il,hevt,slim); }
+                  }
+               } else {
+                  /* Simple filter: MB edges only, simplified formula */
+                  el = (mb_lf + 2) * 2 + il;
+                  #define SFILT(P,S,O,EL2) do{int p1=P[(O)-2*(S)],p0=P[(O)-1*(S)],q0=P[(O)],q1=P[(O)+1*(S)];if(LFA(p0-q0)*2+(LFA(p1-q1)>>1)<=(EL2)){int a=LFC(3*(q0-p0)+(LFC(p1-q1,128)),127),a1=(a+4)>>3,a2=(a+3)>>3;P[(O)-1*(S)]=vp8_cl(p0+a2);P[(O)]=vp8_cl(q0-a1);}}while(0)
+                  if (mx > 0) for (fy=0;fy<16;fy++) SFILT(yb,1,my*16*ys+fy*ys+mx*16,el);
+                  if (my > 0) for (fx=0;fx<16;fx++) SFILT(yb,ys,my*16*ys+mx*16+fx,el);
+                  /* Simple filter for UV MB edges */
+                  if (mx > 0) for (fy=0;fy<8;fy++) { SFILT(ub,1,my*8*uvs+fy*uvs+mx*8,el); SFILT(vb,1,my*8*uvs+fy*uvs+mx*8,el); }
+                  if (my > 0) for (fx=0;fx<8;fx++) { SFILT(ub,uvs,my*8*uvs+mx*8+fx,el); SFILT(vb,uvs,my*8*uvs+mx*8+fx,el); }
+               }
+            }
          }
       }
    }
 
+   free(seg_map);
    free(above_nz_y); free(above_nz_u); free(above_nz_v); free(above_nz_dc); free(above_bmodes);
    } /* end context tracking block */
 
