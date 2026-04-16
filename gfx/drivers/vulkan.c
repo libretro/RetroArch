@@ -43,6 +43,9 @@
 
 #include "../font_driver.h"
 #include "../video_driver.h"
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
 
 #include "../common/vulkan_common.h"
 
@@ -7296,11 +7299,21 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void vulkan_unload_texture(void *data,
-      bool threaded, uintptr_t handle)
+#ifdef HAVE_THREADS
+typedef struct
 {
-   vk_t *vk                         = (vk_t*)data;
-   struct vk_texture *texture       = (struct vk_texture*)handle;
+   vk_t       *vk;
+   uintptr_t   handle;
+} vulkan_texture_cmd_t;
+#endif
+
+/* Inner unload function -- performs the queue wait and texture
+ * destruction.  Must run on the same thread that owns the
+ * Vulkan queue submissions (the video thread when threaded
+ * video is active, otherwise the main thread). */
+static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t handle)
+{
+   struct vk_texture *texture = (struct vk_texture*)handle;
    if (!texture || !vk || !vk->context)
       return;
 
@@ -7320,6 +7333,46 @@ static void vulkan_unload_texture(void *data,
       vulkan_destroy_texture(
             vk->context->device, texture);
    free(texture);
+}
+
+#ifdef HAVE_THREADS
+/* Wrap function invoked on the video thread via
+ * CMD_CUSTOM_COMMAND.  Returns 0 (ignored). */
+static int vulkan_texture_unload_wrap(void *data)
+{
+   vulkan_texture_cmd_t *cmd = (vulkan_texture_cmd_t*)data;
+   vulkan_unload_texture_internal(cmd->vk, cmd->handle);
+   return 0;
+}
+#endif
+
+static void vulkan_unload_texture(void *data,
+      bool threaded, uintptr_t handle)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!handle)
+      return;
+
+#ifdef HAVE_THREADS
+   /* When threaded video is active, dispatch the Release to
+    * the video thread so it is serialised with command buffer
+    * recording.  The queue_lock + vkQueueWaitIdle in the inner
+    * function only waits for submitted work -- it does not
+    * cover command buffers currently being recorded by the
+    * video thread, which may still reference this texture.
+    * Dispatching ensures the video thread completes its
+    * current recording before the texture is destroyed. */
+   if (threaded)
+   {
+      vulkan_texture_cmd_t cmd;
+      cmd.vk     = vk;
+      cmd.handle = handle;
+      video_thread_texture_handle(&cmd, vulkan_texture_unload_wrap);
+      return;
+   }
+#endif
+
+   vulkan_unload_texture_internal(vk, handle);
 }
 
 static float vulkan_get_refresh_rate(void *data)
