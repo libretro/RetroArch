@@ -4308,15 +4308,15 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
 
    if (*menu_st->thumbnail_path_data->content_core_name)
    {
-      if (     memcmp(
+      if (     !strcmp(
                menu_st->thumbnail_path_data->content_core_name,
-               "imageviewer", STRLEN_CONST("imageviewer") + 1) == 0
-            || memcmp(
+               "imageviewer")
+            || !strcmp(
                menu_st->thumbnail_path_data->content_core_name,
-               "musicplayer", STRLEN_CONST("musicplayer") + 1) == 0
-            || memcmp(
+               "musicplayer")
+            || !strcmp(
                menu_st->thumbnail_path_data->content_core_name,
-               "movieplayer", STRLEN_CONST("movieplayer") + 1) == 0)
+               "movieplayer"))
          ozone->flags2 |=  OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
       else
          ozone->flags2 &= ~OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
@@ -4410,7 +4410,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       /* Fill core name */
       if (entry)
       {
-         if (!entry->core_name || memcmp(entry->core_name, "DETECT", STRLEN_CONST("DETECT")) == 0)
+         if (!entry->core_name || !strcmp(entry->core_name, "DETECT"))
             core_label = msg_hash_to_str(MSG_AUTODETECT);
          else
             core_label = entry->core_name;
@@ -5399,7 +5399,7 @@ static void ozone_draw_entry_value(
             y,
             video_width,
             video_height,
-            (memcmp(value, "null", STRLEN_CONST("null")) == 0)
+            (!strcmp(value, "null"))
                   ? COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32 >> 1)
                   : COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32),
             TEXT_ALIGN_RIGHT,
@@ -7969,7 +7969,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
       }
    }
 #endif
-   else if (memcmp(s, "imageviewer", sizeof("imageviewer")) == 0)
+   else if (!strcmp(s, "imageviewer"))
    {
       /* Filebrowser image updates */
       size_t selection           = menu_st->selection_ptr;
@@ -8824,9 +8824,8 @@ static enum menu_action ozone_parse_menu_entry_action(
             const file_list_t *list = menu_st->entries.list ? MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
             if (list->size)
             {
-               if (memcmp(list->list[list->size - 1].label,
-                   MENU_ENUM_LABEL_CONFIGURATIONS_STR,
-                   STRLEN_CONST(MENU_ENUM_LABEL_CONFIGURATIONS_STR)) == 0)
+               if (!strcmp(list->list[list->size - 1].label,
+                   MENU_ENUM_LABEL_CONFIGURATIONS_STR))
                   ozone->flags2 |= OZONE_FLAG2_RESET_DEPTH;
             }
          }
@@ -9774,7 +9773,7 @@ static void ozone_set_layout(
    if (path_menu_font && *path_menu_font)
       strlcpy(font_path, path_menu_font, sizeof(font_path));
 
-   ozone->font_unicode = (memcmp(path_menu_font, FILE_PATH_UNKNOWN, STRLEN_CONST(FILE_PATH_UNKNOWN)) == 0) ? false : true;
+   ozone->font_unicode = !strcmp(path_menu_font, FILE_PATH_UNKNOWN) ? false : true;
 
    /* Sidebar */
    font_inited = ozone_init_font(&ozone->fonts.sidebar,
@@ -12462,10 +12461,8 @@ static void ozone_set_header(ozone_handle_t *ozone)
             size_t tab_texture = ozone->tabs[ozone->categories_selection_ptr];
             ozone->header_icon = ozone->tab_textures[tab_texture];
 
-            if (label && memcmp(label,
-                     MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR,
-                     sizeof(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)) 
-                  == 0)
+            if (label && !strcmp(label,
+                     MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
                ozone_get_playlist_index_header_icon(ozone);
             else if (ozone->depth > 1)
                ozone_search_header_icon(ozone, &enum_idx, path, label, type);
@@ -12702,21 +12699,21 @@ static void ozone_populate_entries(
       ozone->flags            &= ~OZONE_FLAG_FADE_DIRECTION;
    ozone->depth                = new_depth;
 
-   if (memcmp(label, MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR, STRLEN_CONST(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR)) == 0)
+   if (!strcmp(label, MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST_STR))
       ozone->flags            |=  OZONE_FLAG_IS_DB_MANAGER_LIST;
    else
       ozone->flags            &= ~OZONE_FLAG_IS_DB_MANAGER_LIST;
 
 #if defined(HAVE_LIBRETRODB)
-   if (     memcmp(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR, STRLEN_CONST(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR)) == 0
-         || memcmp(label, MENU_ENUM_LABEL_EXPLORE_TAB_STR, STRLEN_CONST(MENU_ENUM_LABEL_EXPLORE_TAB_STR)) == 0
+   if (     !strcmp(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR)
+         || !strcmp(label, MENU_ENUM_LABEL_EXPLORE_TAB_STR)
          || ozone_get_horizontal_selection_type(ozone) == MENU_EXPLORE_TAB)
       ozone->flags |=  OZONE_FLAG_IS_EXPLORE_LIST;
    else
       ozone->flags &= ~OZONE_FLAG_IS_EXPLORE_LIST;
 #endif
 
-   if (memcmp(label, MENU_ENUM_LABEL_FAVORITES_STR, STRLEN_CONST(MENU_ENUM_LABEL_FAVORITES_STR)) == 0)
+   if (!strcmp(label, MENU_ENUM_LABEL_FAVORITES_STR))
       ozone->flags |=  OZONE_FLAG_IS_FILE_LIST;
    else
       ozone->flags &= ~OZONE_FLAG_IS_FILE_LIST;
@@ -12805,7 +12802,7 @@ static void ozone_populate_entries(
       ozone->flags |= OZONE_FLAG_SKIP_THUMBNAIL_RESET;
 
    /* Always allow thumbnail reset in Information page */
-   if (memcmp(label, MENU_ENUM_LABEL_INFORMATION_STR, STRLEN_CONST(MENU_ENUM_LABEL_INFORMATION_STR)) == 0)
+   if (!strcmp(label, MENU_ENUM_LABEL_INFORMATION_STR))
       ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
 
    if (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)

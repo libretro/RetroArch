@@ -1839,10 +1839,10 @@ static void core_info_parse_config_file(
 
          if (entry && (entry->value && *entry->value))
          {
-            if (memcmp(entry->value, "basic", 6) == 0)
+            if (!strcmp(entry->value, "basic"))
                info->savestate_support_level =
                   CORE_INFO_SAVESTATE_BASIC;
-            else if (memcmp(entry->value, "serialized", 11) == 0)
+            else if (!strcmp(entry->value, "serialized"))
                info->savestate_support_level =
                   CORE_INFO_SAVESTATE_SERIALIZED;
          }

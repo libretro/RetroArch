@@ -1392,8 +1392,8 @@ void runtime_update_playlist(
    if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
    {
       const char *menu_ident = menu_driver_ident();
-      if (     memcmp(menu_ident, "ozone", 5) == 0
-            || memcmp(menu_ident, "glui", 4) == 0)
+      if (     !strcmp(menu_ident, "ozone")
+            || !strcmp(menu_ident, "glui"))
       {
          runtime_log_get_runtime_str(NULL,
                runtime_str, sizeof(runtime_str));
@@ -1483,8 +1483,8 @@ void runtime_update_contentless_core(
    if (runtime_info.status != CONTENTLESS_CORE_RUNTIME_VALID)
    {
       const char *menu_ident = menu_driver_ident();
-      if (     memcmp(menu_ident, "ozone", 5) == 0
-            || memcmp(menu_ident, "glui", 4) == 0)
+      if (     !strcmp(menu_ident, "ozone")
+            || !strcmp(menu_ident, "glui"))
       {
          runtime_log_get_runtime_str(NULL,
                runtime_str, sizeof(runtime_str));
