@@ -735,72 +735,73 @@ static int vp8_decode_block(vp8b *br, int16_t coeffs[16], int type,
    static const uint8_t kCat5[] = {180,157,141,134,130};
    static const uint8_t kCat6[] = {254,254,243,230,196,177,153,140,133,130,129};
    int n = start_at;
-   const uint8_t *p = probs[vp8_bands[n]][init_ctx];
+   const uint8_t *p = probs[n][init_ctx];
    memset(coeffs, 0, 16 * sizeof(int16_t));
 
-   int has_nz = 0;
+   /* First "CBP" bit: EOB for entire block */
+   if (!vp8b_get(br, p[0]))
+      return 0;
+
    for (;;)
    {
       int v;
-      /* EOB check — done at EVERY coefficient position */
-      if (!vp8b_get(br, p[0]))
-         return has_nz; /* EOB: return whether any non-zero was stored */
-
-      /* zero/non-zero check */
+      ++n;
       if (!vp8b_get(br, p[1]))
       {
-         /* zero coefficient: advance to next position */
-         ++n;
-         if (n >= 16) return has_nz;
+         /* zero coefficient */
          p = probs[vp8_bands[n]][0];
-         continue;
-      }
-      /* non-zero coefficient: decode value from tree */
-      if (!vp8b_get(br, p[2]))
-      {
-         v = 1;
       }
       else
       {
-         if (!vp8b_get(br, p[3]))
+         /* non-zero coefficient */
+         if (!vp8b_get(br, p[2]))
          {
-            if (!vp8b_get(br, p[4]))
-               v = 2;
-            else
-               v = 3 + vp8b_get(br, p[5]);
+            v = 1;
+            p = probs[vp8_bands[n]][1];
          }
          else
          {
-            if (!vp8b_get(br, p[6]))
+            if (!vp8b_get(br, p[3]))
             {
-               if (!vp8b_get(br, p[7]))
-                  v = 5 + vp8b_get(br, 159);
+               if (!vp8b_get(br, p[4]))
+                  v = 2;
                else
-               {
-                  v = 7 + 2 * vp8b_get(br, 165);
-                  v += vp8b_get(br, 145);
-               }
+                  v = 3 + vp8b_get(br, p[5]);
             }
             else
             {
-               int bit1 = vp8b_get(br, p[8]);
-               int bit0 = vp8b_get(br, p[9 + bit1]);
-               int cat = 2 * bit1 + bit0, k;
-               v = 0;
-               if (cat == 0) { for(k=0;k<3;k++) v = v*2 + vp8b_get(br, kCat3[k]); v += 11; }
-               else if (cat == 1) { for(k=0;k<4;k++) v = v*2 + vp8b_get(br, kCat4[k]); v += 19; }
-               else if (cat == 2) { for(k=0;k<5;k++) v = v*2 + vp8b_get(br, kCat5[k]); v += 35; }
-               else { for(k=0;k<11;k++) v = v*2 + vp8b_get(br, kCat6[k]); v += 67; }
+               if (!vp8b_get(br, p[6]))
+               {
+                  if (!vp8b_get(br, p[7]))
+                     v = 5 + vp8b_get(br, 159);
+                  else
+                  {
+                     v = 7 + 2 * vp8b_get(br, 165);
+                     v += vp8b_get(br, 145);
+                  }
+               }
+               else
+               {
+                  int bit1 = vp8b_get(br, p[8]);
+                  int bit0 = vp8b_get(br, p[9 + bit1]);
+                  int cat = 2 * bit1 + bit0, k;
+                  v = 0;
+                  if (cat == 0) { for(k=0;k<3;k++) v = v*2 + vp8b_get(br, kCat3[k]); v += 11; }
+                  else if (cat == 1) { for(k=0;k<4;k++) v = v*2 + vp8b_get(br, kCat4[k]); v += 19; }
+                  else if (cat == 2) { for(k=0;k<5;k++) v = v*2 + vp8b_get(br, kCat5[k]); v += 35; }
+                  else { for(k=0;k<11;k++) v = v*2 + vp8b_get(br, kCat6[k]); v += 67; }
+               }
             }
+            p = probs[vp8_bands[n]][2];
          }
+         /* Sign bit and store */
+         coeffs[vp8_zigzag[n-1]] = (int16_t)(vp8b_get(br, 128) ? -v : v);
+
+         if (n == 16 || !vp8b_get(br, p[0])) /* EOB */
+            return n;
       }
-      /* Sign bit and store */
-      coeffs[vp8_zigzag[n]] = (int16_t)(vp8b_get(br, 128) ? -v : v);
-      has_nz = n + 1; /* non-zero count (position + 1, always > 0) */
-      ++n;
-      if (n >= 16) return has_nz ? has_nz : 16;
-      /* Update context for next position: ctx=1 if v==1, ctx=2 if v>1 */
-      p = probs[vp8_bands[n]][(v == 1) ? 1 : 2];
+      if (n == 16)
+         return 16;
    }
 }
 
@@ -846,8 +847,8 @@ static void vp8_iwht4x4(const int16_t in[16], int16_t out[16])
    {
       int a = tmp[i]+tmp[12+i], b = tmp[4+i]+tmp[8+i];
       int c = tmp[4+i]-tmp[8+i], d = tmp[i]-tmp[12+i];
-      out[i]=(int16_t)((a+b+3)>>3); out[4+i]=(int16_t)((c+d+3)>>3);
-      out[8+i]=(int16_t)((a-b+3)>>3); out[12+i]=(int16_t)((d-c+3)>>3);
+      out[i]=(int16_t)(a+b); out[4+i]=(int16_t)(c+d);
+      out[8+i]=(int16_t)(a-b); out[12+i]=(int16_t)(d-c);
    }
 }
 
@@ -958,34 +959,24 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
    }
 }
 
-static void vp8_pred16(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl,
-      int has_above, int has_left)
+static void vp8_pred16(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl)
 {
    int i, j;
    switch (m) {
-   case 0: { int sum=0; uint8_t dc;
-             if (has_above && has_left) { for(i=0;i<16;i++) sum+=a[i]+l[i]; dc=(uint8_t)((sum+16)>>5); }
-             else if (has_above) { for(i=0;i<16;i++) sum+=a[i]; dc=(uint8_t)((sum+8)>>4); }
-             else if (has_left) { for(i=0;i<16;i++) sum+=l[i]; dc=(uint8_t)((sum+8)>>4); }
-             else dc=128;
-             for(j=0;j<16;j++) memset(d+j*s,dc,16); break; }
+   case 0: { int sum=0; for(i=0;i<16;i++) sum+=a[i]+l[i];
+             { uint8_t dc=(uint8_t)((sum+16)>>5); for(j=0;j<16;j++) memset(d+j*s,dc,16); } break; }
    case 1: for(j=0;j<16;j++) memcpy(d+j*s,a,16); break;
    case 2: for(j=0;j<16;j++) memset(d+j*s,l[j],16); break;
    case 3: for(j=0;j<16;j++) for(i=0;i<16;i++) d[j*s+i]=vp8_cl((int)a[i]+(int)l[j]-(int)tl); break;
    }
 }
 
-static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl,
-      int has_above, int has_left)
+static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl)
 {
    int i, j;
    switch (m) {
-   case 0: { int sum=0; uint8_t dc;
-             if (has_above && has_left) { for(i=0;i<8;i++) sum+=a[i]+l[i]; dc=(uint8_t)((sum+8)>>4); }
-             else if (has_above) { for(i=0;i<8;i++) sum+=a[i]; dc=(uint8_t)((sum+4)>>3); }
-             else if (has_left) { for(i=0;i<8;i++) sum+=l[i]; dc=(uint8_t)((sum+4)>>3); }
-             else dc=128;
-             for(j=0;j<8;j++) memset(d+j*s,dc,8); break; }
+   case 0: { int sum=0; for(i=0;i<8;i++) sum+=a[i]+l[i];
+             { uint8_t dc=(uint8_t)((sum+8)>>4); for(j=0;j<8;j++) memset(d+j*s,dc,8); } break; }
    case 1: for(j=0;j<8;j++) memcpy(d+j*s,a,8); break;
    case 2: for(j=0;j<8;j++) memset(d+j*s,l[j],8); break;
    case 3: for(j=0;j<8;j++) for(i=0;i<8;i++) d[j*s+i]=vp8_cl((int)a[i]+(int)l[j]-(int)tl); break;
@@ -1001,8 +992,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
    int qp, y1_dc_q, y1_ac_q, y2_dc_q, y2_ac_q, uv_dc_q, uv_ac_q;
    int skip_enabled, log2parts, num_parts;
-   int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
-   int lf_type, lf_level, lf_sharp, lf_interior;
+   int seg_enabled, seg_abs, seg_qp[4], seg_prob[3];
    vp8b br;
    vp8b tbr[8]; /* up to 8 token partitions */
    const uint8_t *p0;
@@ -1029,7 +1019,6 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    seg_enabled = vp8b_bit(&br);
    seg_abs = 0;
    seg_qp[0] = seg_qp[1] = seg_qp[2] = seg_qp[3] = 0;
-   seg_lf[0] = seg_lf[1] = seg_lf[2] = seg_lf[3] = 0;
    seg_prob[0] = seg_prob[1] = seg_prob[2] = 255;
    if (seg_enabled)
    {
@@ -1037,15 +1026,12 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
       if (ud) {
          seg_abs = vp8b_bit(&br);
          for (i=0;i<4;i++) seg_qp[i] = vp8b_bit(&br) ? vp8b_sig(&br,7) : 0;
-         for (i=0;i<4;i++) seg_lf[i] = vp8b_bit(&br) ? vp8b_sig(&br,6) : 0;
+         for (i=0;i<4;i++) if (vp8b_bit(&br)) vp8b_sig(&br,6); /* lf deltas - discard */
       }
       if (um) for (i=0;i<3;i++) { if (vp8b_bit(&br)) seg_prob[i] = (int)vp8b_lit(&br,8); }
    }
 
-   lf_type = vp8b_bit(&br); lf_level = (int)vp8b_lit(&br,6); lf_sharp = (int)vp8b_lit(&br,3);
-   lf_interior = lf_level;
-   if (lf_sharp > 0) { lf_interior >>= (lf_sharp > 4 ? 2 : 1); if (lf_interior > 9 - lf_sharp) lf_interior = 9 - lf_sharp; }
-   if (lf_interior < 1) lf_interior = 1;
+   vp8b_bit(&br); vp8b_lit(&br,6); vp8b_lit(&br,3); /* filter */
    { int mrd = vp8b_bit(&br);
      if (mrd && vp8b_bit(&br))
      { for(i=0;i<4;i++) if(vp8b_bit(&br)) vp8b_sig(&br,6);
@@ -1060,6 +1046,9 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    y2ac_dq = vp8b_bit(&br) ? vp8b_sig(&br,4) : 0;
    uvdc_dq = vp8b_bit(&br) ? vp8b_sig(&br,4) : 0;
    uvac_dq = vp8b_bit(&br) ? vp8b_sig(&br,4) : 0;
+
+   /* refresh_entropy_probs (RFC 6386) */
+   (void)vp8b_bit(&br);
 
    /* We'll compute per-MB quantizer in the loop using segment info */
    qp = base_qp < 0 ? 0 : (base_qp > 127 ? 127 : base_qp);
@@ -1169,8 +1158,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
     * above_nz_*: one entry per sub-block column across the MB row.
     * left_nz_*: one entry per sub-block row within current MB. */
    {
-      uint8_t *seg_map = (uint8_t*)calloc(mbw * mbh, 1); /* segment ID per MB */
-   uint8_t *above_nz_y  = (uint8_t*)calloc(mbw * 4, 1); /* 4 Y sub-block cols per MB */
+      uint8_t *above_nz_y  = (uint8_t*)calloc(mbw * 4, 1); /* 4 Y sub-block cols per MB */
       uint8_t *above_nz_u  = (uint8_t*)calloc(mbw * 2, 1); /* 2 U sub-block cols per MB */
       uint8_t *above_nz_v  = (uint8_t*)calloc(mbw * 2, 1);
       uint8_t *above_nz_dc = (uint8_t*)calloc(mbw, 1);     /* Y2 DC block */
@@ -1211,7 +1199,6 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                seg_id = vp8b_get(&br, seg_prob[1]);
          }
 
-         seg_map[my * mbw + mx] = (uint8_t)seg_id;
          /* Compute per-MB quantizer based on segment */
          if (seg_enabled && seg_abs)
             mb_qp = seg_qp[seg_id];
@@ -1298,10 +1285,10 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
 
          /* Predict */
          if (ym != 4)
-            vp8_pred16(yb+my*16*ys+mx*16, ys, ym, ay, ly, tly, my>0, mx>0);
+            vp8_pred16(yb+my*16*ys+mx*16, ys, ym, ay, ly, tly);
          /* B_PRED Y prediction is done per sub-block below */
-         vp8_pred8(ub+my*8*uvs+mx*8, uvs, uvm, au, lu, tlu, my>0, mx>0);
-         vp8_pred8(vb+my*8*uvs+mx*8, uvs, uvm, av, lv, tlv, my>0, mx>0);
+         vp8_pred8(ub+my*8*uvs+mx*8, uvs, uvm, au, lu, tlu);
+         vp8_pred8(vb+my*8*uvs+mx*8, uvs, uvm, av, lv, tlv);
 
          /* Decode and add residual */
          if (!is_skip)
@@ -1370,7 +1357,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                         vp8_cprob[(ym == 4) ? 3 : 0], start, sb_ctx);
                   /* Dequantize */
                   if (ym != 4)
-                     coeffs[0] = (int16_t)(dc_vals[by * 4 + bx] * y1_dc_q); /* DC from WHT, dequant */
+                     coeffs[0] = dc_vals[by * 4 + bx]; /* DC from WHT */
                   else
                      coeffs[0] = (int16_t)(coeffs[0] * y1_dc_q);
                   for (i = 1; i < 16; i++)
@@ -1433,70 +1420,8 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
             left_nz_dc = 0;
          }
       }
-      /* Per-row in-loop deblocking filter (VP8 §15) */
-      {
-         int fx, fy;
-         #define LFA(x) ((x)<0?-(x):(x))
-         #define LFC(v,lo) ((v)<-(lo)?-(lo):(v)>(lo)?(lo):(v))
-         for (mx = 0; mx < mbw; mx++)
-         {
-            int mb_seg = seg_map[my * mbw + mx];
-            int mb_lf;
-            if (seg_enabled && seg_abs)
-               mb_lf = seg_lf[mb_seg];
-            else if (seg_enabled)
-               mb_lf = lf_level + seg_lf[mb_seg];
-            else
-               mb_lf = lf_level;
-            if (mb_lf < 0) mb_lf = 0;
-            if (mb_lf > 63) mb_lf = 63;
-            if (mb_lf == 0) continue;
-            /* Compute filter limits for this MB */
-            {
-               int il = mb_lf;
-               int el, hevt;
-               if (lf_sharp > 0) {
-                  il >>= (lf_sharp > 4 ? 2 : 1);
-                  if (il > 9 - lf_sharp) il = 9 - lf_sharp;
-               }
-               if (il < 1) il = 1;
-               if (lf_type == 0) {
-                  /* Normal filter: MB edges and sub-block edges */
-                  el = (mb_lf + 2) * 2 + il;
-                  hevt = (mb_lf >= 40) ? 2 : (mb_lf >= 15) ? 1 : 0;
-                  #define NFILT(P,S,O,IL2,HT,EL2) do{int p3=P[(O)-4*(S)],p2=P[(O)-3*(S)],p1=P[(O)-2*(S)],p0=P[(O)-1*(S)],q0=P[(O)],q1=P[(O)+1*(S)],q2=P[(O)+2*(S)],q3=P[(O)+3*(S)];if((LFA(p0-q0)*2+(LFA(p1-q1)>>1)<=(EL2))&&LFA(p3-p2)<=(IL2)&&LFA(p2-p1)<=(IL2)&&LFA(p1-p0)<=(IL2)&&LFA(q1-q0)<=(IL2)&&LFA(q2-q1)<=(IL2)&&LFA(q3-q2)<=(IL2)){int hv=(LFA(p1-p0)>(HT)||LFA(q1-q0)>(HT)),a=LFC(3*(q0-p0)+(hv?LFC(p1-q1,128):0),127),a1=(a+4)>>3,a2=(a+3)>>3;P[(O)-1*(S)]=vp8_cl(p0+a2);P[(O)]=vp8_cl(q0-a1);if(!hv){int a3=(a1+1)>>1;P[(O)-2*(S)]=vp8_cl(p1+a3);P[(O)+1*(S)]=vp8_cl(q1-a3);}}}while(0)
-                  { int slim = mb_lf * 2 + il;
-                  /* Vertical MB edge */
-                  if (mx > 0) for (fy=0;fy<16;fy++) NFILT(yb,1,my*16*ys+fy*ys+mx*16,il,hevt,el);
-                  /* Horizontal MB edge */
-                  if (my > 0) for (fx=0;fx<16;fx++) NFILT(yb,ys,my*16*ys+mx*16+fx,il,hevt,el);
-                  /* Vertical sub-block edges */
-                  for (fy=0;fy<16;fy++) for (i=1;i<4;i++) NFILT(yb,1,my*16*ys+fy*ys+mx*16+i*4,il,hevt,slim);
-                  /* Horizontal sub-block edges */
-                  for (fx=0;fx<16;fx++) for (j=1;j<4;j++) NFILT(yb,ys,(my*16+j*4)*ys+mx*16+fx,il,hevt,slim);
-                  /* UV MB edges */
-                  if (mx > 0) for (fy=0;fy<8;fy++) { NFILT(ub,1,my*8*uvs+fy*uvs+mx*8,il,hevt,el); NFILT(vb,1,my*8*uvs+fy*uvs+mx*8,il,hevt,el); }
-                  if (my > 0) for (fx=0;fx<8;fx++) { NFILT(ub,uvs,my*8*uvs+mx*8+fx,il,hevt,el); NFILT(vb,uvs,my*8*uvs+mx*8+fx,il,hevt,el); }
-                  /* UV sub-block edges */
-                  for (fy=0;fy<8;fy++) { NFILT(ub,1,my*8*uvs+fy*uvs+mx*8+4,il,hevt,slim); NFILT(vb,1,my*8*uvs+fy*uvs+mx*8+4,il,hevt,slim); }
-                  for (fx=0;fx<8;fx++) { NFILT(ub,uvs,(my*8+4)*uvs+mx*8+fx,il,hevt,slim); NFILT(vb,uvs,(my*8+4)*uvs+mx*8+fx,il,hevt,slim); }
-                  }
-               } else {
-                  /* Simple filter: MB edges only, simplified formula */
-                  el = (mb_lf + 2) * 2 + il;
-                  #define SFILT(P,S,O,EL2) do{int p1=P[(O)-2*(S)],p0=P[(O)-1*(S)],q0=P[(O)],q1=P[(O)+1*(S)];if(LFA(p0-q0)*2+(LFA(p1-q1)>>1)<=(EL2)){int a=LFC(3*(q0-p0)+(LFC(p1-q1,128)),127),a1=(a+4)>>3,a2=(a+3)>>3;P[(O)-1*(S)]=vp8_cl(p0+a2);P[(O)]=vp8_cl(q0-a1);}}while(0)
-                  if (mx > 0) for (fy=0;fy<16;fy++) SFILT(yb,1,my*16*ys+fy*ys+mx*16,el);
-                  if (my > 0) for (fx=0;fx<16;fx++) SFILT(yb,ys,my*16*ys+mx*16+fx,el);
-                  /* Simple filter for UV MB edges */
-                  if (mx > 0) for (fy=0;fy<8;fy++) { SFILT(ub,1,my*8*uvs+fy*uvs+mx*8,el); SFILT(vb,1,my*8*uvs+fy*uvs+mx*8,el); }
-                  if (my > 0) for (fx=0;fx<8;fx++) { SFILT(ub,uvs,my*8*uvs+mx*8+fx,el); SFILT(vb,uvs,my*8*uvs+mx*8+fx,el); }
-               }
-            }
-         }
-      }
    }
 
-   free(seg_map);
    free(above_nz_y); free(above_nz_u); free(above_nz_v); free(above_nz_dc); free(above_bmodes);
    } /* end context tracking block */
 
