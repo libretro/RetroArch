@@ -45,7 +45,6 @@
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
 
 /* TODO/FIXME - static globals */
-LPDIRECT3D9 g_pD3D9;
 #ifdef HAVE_DYNAMIC_D3D
 static dylib_t g_d3d9_dll;
 static bool d3d9_dylib_initialized = false;
@@ -249,12 +248,12 @@ static bool d3d9_is_windowed_enable(bool info_fullscreen)
 }
 
 static D3DFORMAT d3d9_get_color_format_backbuffer(
-      bool rgb32, bool windowed)
+      LPDIRECT3D9 d3d9, bool rgb32, bool windowed)
 {
    if (windowed)
    {
       D3DDISPLAYMODE display_mode;
-      if (IDirect3D9_GetAdapterDisplayMode(g_pD3D9, 0, &display_mode))
+      if (IDirect3D9_GetAdapterDisplayMode(d3d9, 0, &display_mode))
          return display_mode.Format;
    }
    return D3DFMT_X8R8G8B8;
@@ -319,7 +318,7 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
    }
 #else
    d3dpp->BackBufferFormat        = d3d9_get_color_format_backbuffer(
-         info->rgb32, windowed_enable);
+         d3d->d3d9, info->rgb32, windowed_enable);
    d3dpp->hDeviceWindow           = win32_get_window();
 #endif
 

@@ -6454,15 +6454,15 @@ static bool d3d9_hlsl_init_base(
 
    memset(&d3dpp, 0, sizeof(d3dpp));
 
-   g_pD3D9 = (LPDIRECT3D9)d3d9_create();
+   d3d->d3d9 = (LPDIRECT3D9)d3d9_create();
 
-   /* this needs g_pD3D9 created first */
+   /* this needs d3d->d3d9 created first */
    d3d9_make_d3dpp(d3d, info, &d3dpp);
 
-   if (!g_pD3D9)
+   if (!d3d->d3d9)
       return false;
    if (!d3d9_create_device(&d3d->dev, &d3dpp,
-            g_pD3D9,
+            d3d->d3d9,
             focus_window,
             d3d->cur_mon_id)
       )
@@ -6812,7 +6812,7 @@ static bool d3d9_hlsl_initialize(
    unsigned width, height;
    bool ret             = true;
 
-   if (!g_pD3D9)
+   if (!d3d->d3d9)
       ret               = d3d9_hlsl_init_base(d3d, info);
    else if (d3d->needs_restore)
    {
@@ -6822,8 +6822,8 @@ static bool d3d9_hlsl_initialize(
       if (!d3d9_reset(d3d->dev, &d3dpp))
       {
          d3d9_hlsl_deinitialize(d3d);
-         IDirect3D9_Release(g_pD3D9);
-         g_pD3D9 = NULL;
+         IDirect3D9_Release(d3d->d3d9);
+         d3d->d3d9 = NULL;
 
          ret     = d3d9_hlsl_init_base(d3d, info);
          if (ret)
@@ -7075,7 +7075,7 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
       char version_str[128];
       D3DADAPTER_IDENTIFIER9 ident = {0};
 
-      IDirect3D9_GetAdapterIdentifier(g_pD3D9, 0, 0, &ident);
+      IDirect3D9_GetAdapterIdentifier(d3d->d3d9, 0, 0, &ident);
 
       version_str[0] = '\0';
 
@@ -7471,10 +7471,10 @@ static void d3d9_hlsl_free(void *data)
       free(d3d->shader_path);
 
    IDirect3DDevice9_Release(d3d->dev);
-   IDirect3D9_Release(g_pD3D9);
+   IDirect3D9_Release(d3d->d3d9);
    d3d->shader_path = NULL;
    d3d->dev         = NULL;
-   g_pD3D9          = NULL;
+   d3d->d3d9          = NULL;
 
    d3d9_deinitialize_symbols();
 

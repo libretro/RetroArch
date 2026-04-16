@@ -62,6 +62,7 @@ typedef struct d3d9_video
    WNDCLASSEX windowClass;
 #endif
    LPDIRECT3DDEVICE9 dev;
+   LPDIRECT3D9 d3d9;
    D3DVIEWPORT9 out_vp;
    float translate_x;
    float translate_y;
@@ -107,8 +108,6 @@ void d3d9_deinitialize_symbols(void);
 
 void d3d9_make_d3dpp(d3d9_video_t *d3d,
       const video_info_t *info, void *_d3dpp);
-
-extern LPDIRECT3D9 g_pD3D9;
 
 RETRO_END_DECLS
 

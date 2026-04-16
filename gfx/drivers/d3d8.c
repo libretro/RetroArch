@@ -97,6 +97,7 @@ typedef struct d3d8_video
    WNDCLASSEX windowClass;
 #endif
    LPDIRECT3DDEVICE8 dev;
+   LPDIRECT3D8 d3d8;
    D3DVIEWPORT8 out_vp;
 
    char *shader_path;
@@ -164,8 +165,6 @@ static const float d3d8_tex_coords[8] = {
    0, 0,
    1, 0
 };
-
-static LPDIRECT3D8 g_pD3D8;
 
 void *dinput;
 
@@ -978,7 +977,8 @@ static INLINE bool d3d8_get_adapter_display_mode(
    return false;
 }
 
-static D3DFORMAT d3d8_get_color_format_backbuffer(bool rgb32, bool windowed)
+static D3DFORMAT d3d8_get_color_format_backbuffer(
+      LPDIRECT3D8 d3d8, bool rgb32, bool windowed)
 {
    D3DFORMAT fmt = D3DFMT_X8R8G8B8;
 #ifdef _XBOX
@@ -988,7 +988,7 @@ static D3DFORMAT d3d8_get_color_format_backbuffer(bool rgb32, bool windowed)
    if (windowed)
    {
       D3DDISPLAYMODE display_mode;
-      if (d3d8_get_adapter_display_mode(g_pD3D8, 0, &display_mode))
+      if (d3d8_get_adapter_display_mode(d3d8, 0, &display_mode))
          fmt = display_mode.Format;
    }
 #endif
@@ -1115,7 +1115,7 @@ static void d3d8_make_d3dpp(void *data,
    d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount         = 2;
    d3dpp->BackBufferFormat        = d3d8_get_color_format_backbuffer(
-         info->rgb32, windowed_enable);
+         d3d->d3d8, info->rgb32, windowed_enable);
 #ifndef _XBOX
    d3dpp->hDeviceWindow           = win32_get_window();
 #endif
@@ -1184,18 +1184,18 @@ static bool d3d8_init_base(void *data, const video_info_t *info)
    d3d8_video_t *d3d = (d3d8_video_t*)data;
 
 #ifdef _XBOX
-   g_pD3D8           = (LPDIRECT3D8)D3DCreate(0);
+   d3d->d3d8           = (LPDIRECT3D8)D3DCreate(0);
 #else
-   g_pD3D8           = (LPDIRECT3D8)D3DCreate(220);
+   d3d->d3d8           = (LPDIRECT3D8)D3DCreate(220);
 #endif
 
    /* this needs g_pD3D created first */
    d3d8_make_d3dpp(d3d, info, &d3dpp);
 
-   if (!g_pD3D8)
+   if (!d3d->d3d8)
       return false;
    if (!d3d8_create_device(&d3d->dev, &d3dpp,
-            g_pD3D8,
+            d3d->d3d8,
             focus_window,
             d3d->cur_mon_id)
       )
@@ -1285,7 +1285,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    if (!d3d)
       return false;
 
-   if (!g_pD3D8)
+   if (!d3d->d3d8)
       ret = d3d8_init_base(d3d, info);
    else if (d3d->needs_restore)
    {
@@ -1294,8 +1294,8 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
       if (!d3d8_reset(d3d->dev, &d3dpp))
       {
          d3d8_deinitialize(d3d);
-         IDirect3D8_Release(g_pD3D8);
-         g_pD3D8 = NULL;
+         IDirect3D8_Release(d3d->d3d8);
+         d3d->d3d8 = NULL;
 
          if ((ret = d3d8_init_base(d3d, info)))
             RARCH_LOG("[D3D8] Recovered from dead state.\n");
@@ -1686,10 +1686,10 @@ static void d3d8_free(void *data)
       free(d3d->shader_path);
 
    IDirect3DDevice8_Release(d3d->dev);
-   IDirect3D8_Release(g_pD3D8);
+   IDirect3D8_Release(d3d->d3d8);
    d3d->shader_path = NULL;
    d3d->dev         = NULL;
-   g_pD3D8          = NULL;
+   d3d->d3d8          = NULL;
 
 #ifdef HAVE_DYNAMIC_D3D
    d3d8_deinitialize_symbols();
