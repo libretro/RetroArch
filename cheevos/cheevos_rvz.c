@@ -17,7 +17,6 @@
 #include "cheevos_locals.h"
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +25,7 @@
 #include <lrc_hash.h>
 #include <streams/file_stream.h>
 #include <retro_endianness.h>
+#include <boolean.h>
 
 #ifdef HAVE_ZSTD
 #include <zstd.h>
