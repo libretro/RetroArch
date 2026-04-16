@@ -458,14 +458,14 @@ void gfx_display_draw_text(
 void gfx_display_draw_bg(
       gfx_display_t *p_disp,
       gfx_display_ctx_draw_t *draw,
+      struct video_coords *coords,
       void *userdata, bool add_opacity_to_wallpaper,
       float override_opacity)
 {
-   static struct video_coords coords;
    const float           *new_vertex = NULL;
    const float        *new_tex_coord = NULL;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (!dispctx || !draw)
+   if (!dispctx || !draw || !coords)
       return;
 
    if (draw->vertex)
@@ -478,13 +478,13 @@ void gfx_display_draw_bg(
    else if (dispctx->get_default_tex_coords)
       new_tex_coord                  = dispctx->get_default_tex_coords();
 
-   coords.vertices                   = (unsigned)draw->vertex_count;
-   coords.vertex                     = new_vertex;
-   coords.tex_coord                  = new_tex_coord;
-   coords.lut_tex_coord              = new_tex_coord;
-   coords.color                      = (const float*)draw->color;
+   coords->vertices                  = (unsigned)draw->vertex_count;
+   coords->vertex                    = new_vertex;
+   coords->tex_coord                 = new_tex_coord;
+   coords->lut_tex_coord             = new_tex_coord;
+   coords->color                     = (const float*)draw->color;
 
-   draw->coords                      = &coords;
+   draw->coords                      = coords;
    draw->scale_factor                = 1.0f;
    draw->rotation                    = 0.0f;
 

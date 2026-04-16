@@ -6211,9 +6211,10 @@ static void materialui_render_background(
    /* Draw background */
    if (dispctx)
    {
+      struct video_coords coords;
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
-      gfx_display_draw_bg(p_disp, &draw, userdata,
+      gfx_display_draw_bg(p_disp, &draw, &coords, userdata,
             add_opacity, opacity_override);
       if (dispctx->draw)
          if (draw.height > 0 && draw.width > 0)

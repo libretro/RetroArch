@@ -7372,6 +7372,7 @@ static void xmb_draw_bg(
       float *coord_white)
 {
    gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
 
    draw.x                    = 0;
    draw.y                    = 0;
@@ -7400,7 +7401,7 @@ static void xmb_draw_bg(
       draw.color = &coord_white[0];
 
       gfx_display_set_alpha(draw.color, coord_white[3]);
-      gfx_display_draw_bg(p_disp, &draw, userdata, true, menu_wallpaper_opacity);
+      gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, menu_wallpaper_opacity);
 
       if (dispctx->draw)
          dispctx->draw(&draw, userdata, video_width, video_height);
@@ -7412,7 +7413,7 @@ static void xmb_draw_bg(
       draw.texture = 0;
 
       gfx_display_set_alpha(draw.color, coord_white[3]);
-      gfx_display_draw_bg(p_disp, &draw, userdata, true, alpha);
+      gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, alpha);
 
       if (dispctx->draw)
          dispctx->draw(&draw, userdata, video_width, video_height);
@@ -7473,6 +7474,7 @@ static void xmb_draw_dark_layer(
       float alpha)
 {
    gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
    float black[16]      = {
          0, 0, 0, 1,
          0, 0, 0, 1,
@@ -7496,7 +7498,7 @@ static void xmb_draw_dark_layer(
 
    if (dispctx->blend_begin)
       dispctx->blend_begin(userdata);
-   gfx_display_draw_bg(p_disp, &draw, userdata, true, MIN(xmb->alpha, alpha));
+   gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, MIN(xmb->alpha, alpha));
    if (draw.height > 0 && draw.width > 0)
       if (dispctx && dispctx->draw)
          dispctx->draw(&draw, userdata, width, height);
