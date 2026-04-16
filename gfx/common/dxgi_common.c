@@ -193,13 +193,11 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
                         g = (src_val >> 8) & 255;
                         b = (src_val >> 16) & 255;
-                        a = (src_val >> 24) & 255;
-                        a = a >> 8;
                         *dst_ptr++ = (r << 16) | (g << 8) | (b << 0);
                      }
                      src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
@@ -223,14 +221,8 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT32 src_val = *src_ptr++;
-                        r = (src_val >> 0) & 255;
-                        r = r >> 8;
-                        g = (src_val >> 8) & 255;
-                        g = g >> 8;
-                        b = (src_val >> 16) & 255;
-                        b = b >> 8;
                         a = (src_val >> 24) & 255;
                         *dst_ptr++ = (a << 0);
                      }
@@ -255,15 +247,9 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
-                        g = (src_val >> 8) & 255;
-                        g = g >> 8;
-                        b = (src_val >> 16) & 255;
-                        b = b >> 8;
-                        a = (src_val >> 24) & 255;
-                        a = a >> 8;
                         *dst_ptr++ = (r << 0);
                      }
                      src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
@@ -287,7 +273,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
                         r = r >> 3;
@@ -295,8 +281,6 @@ void dxgi_copy(
                         g = g >> 2;
                         b = (src_val >> 16) & 255;
                         b = b >> 3;
-                        a = (src_val >> 24) & 255;
-                        a = a >> 8;
                         *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
                      }
                      src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
@@ -457,7 +441,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 16) & 255;
                         g = (src_val >> 8) & 255;
@@ -499,14 +483,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
-                        UINT32 src_val = *src_ptr++;
-                        r = (src_val >> 16) & 255;
-                        r = r >> 8;
-                        g = (src_val >> 8) & 255;
-                        g = g >> 8;
-                        b = (src_val >> 0) & 255;
-                        b = b >> 8;
+                        src_ptr++;
                         *dst_ptr++ = (255 << 0);
                      }
                      src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
@@ -530,13 +507,9 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 16) & 255;
-                        g = (src_val >> 8) & 255;
-                        g = g >> 8;
-                        b = (src_val >> 0) & 255;
-                        b = b >> 8;
                         *dst_ptr++ = (r << 0);
                      }
                      src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
@@ -560,7 +533,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 16) & 255;
                         r = r >> 3;
@@ -591,7 +564,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 16) & 255;
                         r = r >> 3;
@@ -622,7 +595,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 16) & 255;
                         r = r >> 4;
@@ -653,7 +626,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 16) & 255;
                         g = (src_val >> 8) & 255;
@@ -681,7 +654,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 16) & 255;
                         r = r >> 4;
@@ -721,7 +694,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT8 src_val = *src_ptr++;
                         a = (src_val >> 0) & 255;
                         *dst_ptr++ = (0 << 0) | (0 << 8) | (0 << 16) | (a << 24);
@@ -747,10 +720,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
-                        UINT8 src_val = *src_ptr++;
-                        a = (src_val >> 0) & 255;
-                        a = a >> 8;
+                        src_ptr++;
                         *dst_ptr++ = (0 << 16) | (0 << 8) | (0 << 0);
                      }
                      src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
@@ -788,10 +758,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
-                        UINT8 src_val = *src_ptr++;
-                        a = (src_val >> 0) & 255;
-                        a = a >> 8;
+                        src_ptr++;
                         *dst_ptr++ = (0 << 0);
                      }
                      src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
@@ -815,10 +782,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
-                        UINT8 src_val = *src_ptr++;
-                        a = (src_val >> 0) & 255;
-                        a = a >> 8;
+                        src_ptr++;
                         *dst_ptr++ = (0 << 11) | (0 << 5) | (0 << 0);
                      }
                      src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
@@ -842,7 +806,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT8 src_val = *src_ptr++;
                         a = (src_val >> 0) & 255;
                         a = a >> 7;
@@ -869,7 +833,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT8 src_val = *src_ptr++;
                         a = (src_val >> 0) & 255;
                         a = a >> 4;
@@ -896,7 +860,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT8 src_val = *src_ptr++;
                         a = (src_val >> 0) & 255;
                         *dst_ptr++ = (0 << 16) | (0 << 8) | (0 << 0) | (a << 24);
@@ -922,7 +886,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT8 src_val = *src_ptr++;
                         a = (src_val >> 0) & 255;
                         a = a >> 4;
@@ -958,7 +922,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT8 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
                         *dst_ptr++ = (r << 0) | (0 << 8) | (0 << 16) | (255 << 24);
@@ -984,7 +948,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT8 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
                         *dst_ptr++ = (r << 16) | (0 << 8) | (0 << 0);
@@ -1010,10 +974,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
-                        UINT8 src_val = *src_ptr++;
-                        r = (src_val >> 0) & 255;
-                        r = r >> 8;
+                        src_ptr++;
                         *dst_ptr++ = (255 << 0);
                      }
                      src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
@@ -1051,7 +1012,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT8 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
                         r = r >> 3;
@@ -1078,7 +1039,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT8 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
                         r = r >> 3;
@@ -1105,7 +1066,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT8 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
                         r = r >> 4;
@@ -1132,7 +1093,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT8 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
                         *dst_ptr++ = (r << 16) | (0 << 8) | (0 << 0) | (255 << 24);
@@ -1158,7 +1119,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT8 src_val = *src_ptr++;
                         r = (src_val >> 0) & 255;
                         r = r >> 4;
@@ -1194,7 +1155,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 11) & 31;
                         r = (r << 3) | (r >> 2);
@@ -1225,7 +1186,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 11) & 31;
                         r = (r << 3) | (r >> 2);
@@ -1256,14 +1217,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
-                        UINT16 src_val = *src_ptr++;
-                        r = (src_val >> 11) & 31;
-                        r = r >> 5;
-                        g = (src_val >> 5) & 63;
-                        g = g >> 6;
-                        b = (src_val >> 0) & 31;
-                        b = b >> 5;
+                        src_ptr++;
                         *dst_ptr++ = (255 << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -1287,14 +1241,10 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 11) & 31;
                         r = (r << 3) | (r >> 2);
-                        g = (src_val >> 5) & 63;
-                        g = g >> 6;
-                        b = (src_val >> 0) & 31;
-                        b = b >> 5;
                         *dst_ptr++ = (r << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -1332,7 +1282,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 11) & 31;
                         g = (src_val >> 5) & 63;
@@ -1361,7 +1311,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 11) & 31;
                         r = r >> 1;
@@ -1392,7 +1342,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 11) & 31;
                         r = (r << 3) | (r >> 2);
@@ -1423,7 +1373,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 11) & 31;
                         r = r >> 1;
@@ -1496,7 +1446,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 10) & 31;
                         r = (r << 3) | (r >> 2);
@@ -1504,8 +1454,6 @@ void dxgi_copy(
                         g = (g << 3) | (g >> 2);
                         b = (src_val >> 0) & 31;
                         b = (b << 3) | (b >> 2);
-                        a = (src_val >> 11) & 1;
-                        a = a >> 1;
                         *dst_ptr++ = (r << 16) | (g << 8) | (b << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -1529,14 +1477,8 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT16 src_val = *src_ptr++;
-                        r = (src_val >> 10) & 31;
-                        r = r >> 5;
-                        g = (src_val >> 5) & 31;
-                        g = g >> 5;
-                        b = (src_val >> 0) & 31;
-                        b = b >> 5;
                         a = (src_val >> 11) & 1;
                         a = (a << 7) | (a >> 0);
                         *dst_ptr++ = (a << 0);
@@ -1562,16 +1504,10 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 10) & 31;
                         r = (r << 3) | (r >> 2);
-                        g = (src_val >> 5) & 31;
-                        g = g >> 5;
-                        b = (src_val >> 0) & 31;
-                        b = b >> 5;
-                        a = (src_val >> 11) & 1;
-                        a = a >> 1;
                         *dst_ptr++ = (r << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -1595,14 +1531,12 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 10) & 31;
                         g = (src_val >> 5) & 31;
                         g = (g << 1) | (g >> 4);
                         b = (src_val >> 0) & 31;
-                        a = (src_val >> 11) & 1;
-                        a = a >> 1;
                         *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -1781,7 +1715,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 8) & 15;
                         r = (r << 4) | (r >> 0);
@@ -1789,8 +1723,6 @@ void dxgi_copy(
                         g = (g << 4) | (g >> 0);
                         b = (src_val >> 0) & 15;
                         b = (b << 4) | (b >> 0);
-                        a = (src_val >> 12) & 15;
-                        a = a >> 4;
                         *dst_ptr++ = (r << 16) | (g << 8) | (b << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -1814,14 +1746,8 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT16 src_val = *src_ptr++;
-                        r = (src_val >> 8) & 15;
-                        r = r >> 4;
-                        g = (src_val >> 4) & 15;
-                        g = g >> 4;
-                        b = (src_val >> 0) & 15;
-                        b = b >> 4;
                         a = (src_val >> 12) & 15;
                         a = (a << 4) | (a >> 0);
                         *dst_ptr++ = (a << 0);
@@ -1847,16 +1773,10 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 8) & 15;
                         r = (r << 4) | (r >> 0);
-                        g = (src_val >> 4) & 15;
-                        g = g >> 4;
-                        b = (src_val >> 0) & 15;
-                        b = b >> 4;
-                        a = (src_val >> 12) & 15;
-                        a = a >> 4;
                         *dst_ptr++ = (r << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -1880,7 +1800,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 8) & 15;
                         r = (r << 1) | (r >> 3);
@@ -1888,8 +1808,6 @@ void dxgi_copy(
                         g = (g << 2) | (g >> 2);
                         b = (src_val >> 0) & 15;
                         b = (b << 1) | (b >> 3);
-                        a = (src_val >> 12) & 15;
-                        a = a >> 4;
                         *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -2074,14 +1992,8 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT32 src_val = *src_ptr++;
-                        r = (src_val >> 16) & 255;
-                        r = r >> 8;
-                        g = (src_val >> 8) & 255;
-                        g = g >> 8;
-                        b = (src_val >> 0) & 255;
-                        b = b >> 8;
                         a = (src_val >> 24) & 255;
                         *dst_ptr++ = (a << 0);
                      }
@@ -2106,15 +2018,9 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 16) & 255;
-                        g = (src_val >> 8) & 255;
-                        g = g >> 8;
-                        b = (src_val >> 0) & 255;
-                        b = b >> 8;
-                        a = (src_val >> 24) & 255;
-                        a = a >> 8;
                         *dst_ptr++ = (r << 0);
                      }
                      src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
@@ -2138,7 +2044,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT32 src_val = *src_ptr++;
                         r = (src_val >> 16) & 255;
                         r = r >> 3;
@@ -2146,8 +2052,6 @@ void dxgi_copy(
                         g = g >> 2;
                         b = (src_val >> 0) & 255;
                         b = b >> 3;
-                        a = (src_val >> 24) & 255;
-                        a = a >> 8;
                         *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
                      }
                      src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
@@ -2326,7 +2230,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 4) & 15;
                         r = (r << 4) | (r >> 0);
@@ -2334,8 +2238,6 @@ void dxgi_copy(
                         g = (g << 4) | (g >> 0);
                         b = (src_val >> 12) & 15;
                         b = (b << 4) | (b >> 0);
-                        a = (src_val >> 0) & 15;
-                        a = a >> 4;
                         *dst_ptr++ = (r << 16) | (g << 8) | (b << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -2359,14 +2261,8 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned a = 0;
                         UINT16 src_val = *src_ptr++;
-                        r = (src_val >> 4) & 15;
-                        r = r >> 4;
-                        g = (src_val >> 8) & 15;
-                        g = g >> 4;
-                        b = (src_val >> 12) & 15;
-                        b = b >> 4;
                         a = (src_val >> 0) & 15;
                         a = (a << 4) | (a >> 0);
                         *dst_ptr++ = (a << 0);
@@ -2392,16 +2288,10 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 4) & 15;
                         r = (r << 4) | (r >> 0);
-                        g = (src_val >> 8) & 15;
-                        g = g >> 4;
-                        b = (src_val >> 12) & 15;
-                        b = b >> 4;
-                        a = (src_val >> 0) & 15;
-                        a = a >> 4;
                         *dst_ptr++ = (r << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
@@ -2425,7 +2315,7 @@ void dxgi_copy(
                   {
                      for (j = 0; j < width; j++)
                      {
-                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        unsigned r = 0, g = 0, b = 0;
                         UINT16 src_val = *src_ptr++;
                         r = (src_val >> 4) & 15;
                         r = (r << 1) | (r >> 3);
@@ -2433,8 +2323,6 @@ void dxgi_copy(
                         g = (g << 2) | (g >> 2);
                         b = (src_val >> 12) & 15;
                         b = (b << 1) | (b >> 3);
-                        a = (src_val >> 0) & 15;
-                        a = a >> 4;
                         *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
                      }
                      src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
