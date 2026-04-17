@@ -975,9 +975,9 @@ static const video_poke_interface_t gdi_poke_interface = {
    gdi_load_texture,
    gdi_unload_texture,
    gdi_set_video_mode,
-   win32_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* set_filtering */
-   win32_get_video_output_size,
+   NULL, /* video_output_size - handled by display server */
    NULL, /* get_video_output_prev - handled by display server */
    NULL, /* get_video_output_next - handled by display server */
    NULL, /* get_current_framebuffer */

@@ -1022,6 +1022,51 @@ extern "C" {
       return returnValue;
    }
 
+   float uwp_get_refresh_rate(void)
+   {
+      float ret              = 0.0f;
+      volatile bool finished = false;
+      CoreApplication::MainView().CoreWindow().Dispatcher().RunAsync(
+            CoreDispatcherPriority::Normal,
+            DispatchedHandler([&ret, &finished]()
+               {
+               if (is_running_on_xbox())
+               {
+                  auto hdi = winrt::Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+                  if (hdi)
+                     ret = static_cast<float>(hdi.GetCurrentDisplayMode().RefreshRate());
+               }
+               finished = true;
+               }));
+      auto corewindow = CoreWindow::GetForCurrentThread();
+      while (!finished)
+      {
+         if (corewindow)
+            corewindow.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+      }
+      return ret;
+   }
+
+   float uwp_get_dpi(void)
+   {
+      float ret              = 0.0f;
+      volatile bool finished = false;
+      CoreApplication::MainView().CoreWindow().Dispatcher().RunAsync(
+            CoreDispatcherPriority::Normal,
+            DispatchedHandler([&ret, &finished]()
+               {
+               ret     = DisplayInformation::GetForCurrentView().RawDpiX();
+               finished = true;
+               }));
+      auto corewindow = CoreWindow::GetForCurrentThread();
+      while (!finished)
+      {
+         if (corewindow)
+            corewindow.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+      }
+      return ret;
+   }
+
    void uwp_fill_installed_core_packages(struct string_list *list)
    {
       for (auto package : Package::Current().Dependencies())

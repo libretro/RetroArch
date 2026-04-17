@@ -1259,6 +1259,8 @@ void* video_display_server_init(enum rarch_display_type type)
       case RARCH_DISPLAY_WIN32:
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
          current_display_server = &dispserv_win32;
+#elif defined(__WINRT__)
+         current_display_server = &dispserv_uwp;
 #endif
          break;
       case RARCH_DISPLAY_X11:

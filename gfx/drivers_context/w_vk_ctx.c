@@ -302,11 +302,11 @@ const gfx_ctx_driver_t gfx_ctx_w_vk = {
    gfx_ctx_w_vk_swap_interval,
    gfx_ctx_w_vk_set_video_mode,
    win32_get_video_size,
-   win32_get_refresh_rate,
-   win32_get_video_output_size,
+   NULL, /* refresh_rate - handled by display server */
+   NULL, /* video_output_size - handled by display server */
    NULL, /* get_video_output_prev - handled by display server */
    NULL, /* get_video_output_next - handled by display server */
-   win32_get_metrics,
+   NULL, /* metrics - handled by display server */
    NULL,
    video_driver_update_title,
    gfx_ctx_w_vk_check_window,

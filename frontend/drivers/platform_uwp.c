@@ -334,6 +334,11 @@ static uint64_t frontend_uwp_get_free_mem(void)
    return (mem_info.ullTotalPhys - mem_info.ullAvailPhys);
 }
 
+static enum rarch_display_type frontend_uwp_get_display_type(void)
+{
+   return RARCH_DISPLAY_WIN32;
+}
+
 frontend_ctx_driver_t frontend_ctx_uwp = {
    frontend_uwp_env_get,           /* env_get */
    frontend_uwp_init,              /* init    */
@@ -367,7 +372,7 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
    NULL,                            /* set_gamemode        */
-   NULL, /* get_display_type */
+   frontend_uwp_get_display_type,
    "uwp",                           /* ident               */
    NULL                             /* get_video_driver    */
 };

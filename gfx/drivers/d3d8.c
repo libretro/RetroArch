@@ -2188,7 +2188,7 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL, /* get_refresh_rate */
 #else
    /* UWP does not expose this information easily */
-   win32_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
 #endif
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */

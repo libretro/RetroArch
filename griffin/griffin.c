@@ -298,6 +298,8 @@ VIDEO CONTEXT
 
 #if !defined(__WINRT__)
 #include "../gfx/display_servers/dispserv_win32.c"
+#else
+#include "../gfx/display_servers/dispserv_uwp.c"
 #endif
 
 #endif

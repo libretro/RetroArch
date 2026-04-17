@@ -5372,7 +5372,7 @@ static const video_poke_interface_t d3d11_poke_interface = {
    /* UWP does not expose this information easily */
    NULL, /* get_refresh_rate */
 #else
-   win32_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
 #endif
    d3d11_set_filtering,
 #ifdef __WINRT__
@@ -5380,7 +5380,7 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
 #else
-   win32_get_video_output_size,
+   NULL, /* video_output_size - handled by display server */
    NULL, /* get_video_output_prev - handled by display server */
    NULL, /* get_video_output_next - handled by display server */
 #endif
