@@ -1,4 +1,4 @@
-name: CI Linux (i686)
+name: CI Linux Headless [No Menu] (i686)
 
 on:
   push:
