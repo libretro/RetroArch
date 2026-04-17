@@ -307,7 +307,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   android_display_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    NULL, /* update_title */
    android_gfx_ctx_check_window,
