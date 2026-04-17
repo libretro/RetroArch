@@ -5020,15 +5020,24 @@ static void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_d
 #endif
    int8_t mode                    = 0;
 
-   /* Calculate average frame time */
+   /* Calculate average frame time.
+    *
+    * The sample ring (frame_time_samples) is power-of-two sized and masked
+    * with (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1). Wrap the read index the
+    * same way so that when frame_time_index is small (e.g. just after the
+    * ring wrapped), we correctly fetch the most recent samples from the
+    * tail of the buffer instead of skipping them.
+    *
+    * The caller already guarantees video_st->frame_count > frame_time_interval
+    * before invoking this function, so the ring is always populated by the
+    * time we get here. */
    for (i = 1; i < frame_time_frames + 1; i++)
    {
       retro_time_t frame_time_i = 0;
+      uint16_t sample_index     = (uint16_t)
+         ((frame_time_index - i) & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
 
-      if (i > frame_time_index)
-         continue;
-
-      frame_time_i = video_st->frame_time_samples[frame_time_index - i];
+      frame_time_i = video_st->frame_time_samples[sample_index];
 
       if (frame_time_i > frame_time_limit_cap)
          frame_time_i = frame_time_target;
