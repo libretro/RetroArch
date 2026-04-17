@@ -1273,6 +1273,11 @@ void* video_display_server_init(enum rarch_display_type type)
          current_display_server = &dispserv_kms;
 #endif
          break;
+      case RARCH_DISPLAY_OSX:
+#if defined(__APPLE__)
+         current_display_server = &dispserv_apple;
+#endif
+         break;
       default:
 #if defined(ANDROID)
          current_display_server = &dispserv_android;

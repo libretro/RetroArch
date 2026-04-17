@@ -1063,6 +1063,11 @@ static void frontend_darwin_content_loaded(void)
 #endif
 }
 
+static enum rarch_display_type frontend_darwin_get_display_type(void)
+{
+   return RARCH_DISPLAY_OSX;
+}
+
 frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_env,         /* get_env */
    NULL,                            /* init */
@@ -1096,7 +1101,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_is_narrator_running, /* is_narrator_running */
    frontend_darwin_accessibility_speak, /* accessibility_speak */
    NULL,                            /* set_gamemode        */
-   NULL,                            /* get_display_type   */
+   frontend_darwin_get_display_type,
    "darwin",                        /* ident               */
    NULL                             /* get_video_driver    */
 };

@@ -553,7 +553,7 @@ const video_display_server_t dispserv_apple = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   cocoa_get_metrics,
    NULL, /* get_flags */
    "apple"
 };
