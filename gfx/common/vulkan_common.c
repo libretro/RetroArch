@@ -2326,7 +2326,19 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.compositeAlpha         = composite;
    info.presentMode            = swapchain_present_mode;
    info.clipped                = VK_TRUE;
+
+   /* TODO/FIXME:
+    * Weird shenanigans necessary for Apple otherwise the following happens:
+    * The menu sometimes refuses to display, but still responds to input. 
+    * This happens about 1/5 times on macOS but 100% in the quick menu on iOS
+    */
+#ifdef __APPLE__
+   info.oldSwapchain           = NULL;
+   if (old_swapchain != VK_NULL_HANDLE)
+      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+#else
    info.oldSwapchain           = old_swapchain;
+#endif
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    if (vk->fse_supported)
@@ -2349,8 +2361,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }
    }
 
+   /* See TODO/FIXME note above - part of the same rubber bandaid hack 'fix' */
+#ifndef __APPLE__
    if (old_swapchain != VK_NULL_HANDLE)
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+#endif
 
    vk->context.swapchain_width        = swapchain_size.width;
    vk->context.swapchain_height       = swapchain_size.height;
