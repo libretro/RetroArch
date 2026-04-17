@@ -5359,10 +5359,6 @@ static bool d3d11_get_hw_render_interface(
    return ((d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE) > 0);
 }
 
-#ifndef __WINRT__
-
-#endif
-
 static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_get_flags,
    d3d11_gfx_load_texture,

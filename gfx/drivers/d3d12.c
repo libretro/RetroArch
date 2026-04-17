@@ -6389,10 +6389,6 @@ static bool d3d12_get_hw_render_interface(
    return ((d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE) > 0);
 }
 
-#ifndef __WINRT__
-
-#endif
-
 static bool d3d12_get_current_software_framebuffer(
       void* data, struct retro_framebuffer* fb)
 {

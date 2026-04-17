@@ -3757,10 +3757,6 @@ static uint32_t d3d10_get_flags(void *data)
    return flags;
 }
 
-#ifndef __WINRT__
-
-#endif
-
 static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_get_flags,
    d3d10_gfx_load_texture,
