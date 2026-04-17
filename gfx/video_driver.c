@@ -3642,13 +3642,14 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 
 float video_driver_get_refresh_rate(void)
 {
+   float rate;
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
-   if (poke && poke->get_refresh_rate)
-   {
-      float rate = poke->get_refresh_rate(video_st->data);
+   rate = video_display_server_get_refresh_rate();
+   if (rate != 0.0f)
       return rate;
-   }
+   if (poke && poke->get_refresh_rate)
+      return poke->get_refresh_rate(video_st->data);
 
    return 0.0f;
 }
