@@ -25,6 +25,7 @@
 #include <lists/string_list.h>
 
 #include <libretro.h>
+#include "../gfx/video_defines.h"
 
 RETRO_BEGIN_DECLS
 
