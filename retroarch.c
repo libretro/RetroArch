@@ -8896,9 +8896,7 @@ bool retroarch_main_quit(void)
       if (discord_st->ready)
       {
          Discord_ClearPresence();
-#ifdef DISCORD_DISABLE_IO_THREAD
          Discord_UpdateConnection();
-#endif
          Discord_Shutdown();
          discord_st->ready       = false;
       }

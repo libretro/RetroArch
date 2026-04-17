@@ -7232,9 +7232,7 @@ int runloop_iterate(void)
    if (discord_st->inited)
    {
       Discord_RunCallbacks();
-#ifdef DISCORD_DISABLE_IO_THREAD
       Discord_UpdateConnection();
-#endif
    }
 #endif
 

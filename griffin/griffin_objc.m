@@ -79,10 +79,6 @@
 #include "../record/drivers/record_avfoundation.m"
 #endif
 
-#if defined(HAVE_DISCORD)
-#include "../deps/discord-rpc/src/discord_register_osx.m"
-#endif
-
 #ifdef HAVE_METAL
 #import "../gfx/common/metal/metal_renderer.m"
 #import "../gfx/drivers/metal.m"
