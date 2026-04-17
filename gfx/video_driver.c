@@ -3790,10 +3790,17 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
                if ((max_win_width == 0) || (max_win_height == 0))
                {
                   /* Maximum window width/size *must* be non-zero;
-                   * if all else fails, used defined default
-                   * maximum window size */
-                  max_win_width  = DEFAULT_WINDOW_AUTO_WIDTH_MAX;
-                  max_win_height = DEFAULT_WINDOW_AUTO_HEIGHT_MAX;
+                   * try querying the display server for the actual
+                   * monitor resolution before falling back to the
+                   * compiled-in default */
+                  if (  !video_display_server_get_video_output_size(
+                           &max_win_width, &max_win_height, NULL, 0)
+                     || (max_win_width == 0)
+                     || (max_win_height == 0))
+                  {
+                     max_win_width  = DEFAULT_WINDOW_AUTO_WIDTH_MAX;
+                     max_win_height = DEFAULT_WINDOW_AUTO_HEIGHT_MAX;
+                  }
                }
             }
 
