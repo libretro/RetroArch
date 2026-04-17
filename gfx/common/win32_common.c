@@ -35,6 +35,9 @@
 
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#ifdef HAVE_DYLIB
+#include <dynamic/dylib.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -2009,41 +2012,39 @@ static HACCEL s_accel_table = NULL;
  * reports a fixed 96 DPI regardless of monitor or scaling settings.
  * See call site in retroarch.c (top of rarch_main). */
 typedef HRESULT (WINAPI *pfn_SetProcessDpiAwareness)(int);
+typedef BOOL    (WINAPI *pfn_SetProcessDPIAware)(void);
 
 void win32_apply_dpi_awareness(void)
 {
-   HMODULE shcore = LoadLibraryW(L"shcore.dll");
-   if (shcore)
+#ifdef HAVE_DYLIB
+   dylib_t lib;
+
+   /* Windows 8.1+: SetProcessDpiAwareness in shcore.dll. */
+   if ((lib = dylib_load("shcore.dll")))
    {
-      union {
-         FARPROC proc;
-         pfn_SetProcessDpiAwareness func;
-      } u;
-      u.proc = GetProcAddress(shcore, "SetProcessDpiAwareness");
-      if (u.func)
+      pfn_SetProcessDpiAwareness fn = (pfn_SetProcessDpiAwareness)
+         dylib_proc(lib, "SetProcessDpiAwareness");
+      if (fn)
       {
-         u.func(1); /* PROCESS_SYSTEM_DPI_AWARE */
-         FreeLibrary(shcore);
+         fn(1); /* PROCESS_SYSTEM_DPI_AWARE */
+         dylib_close(lib);
          return;
       }
-      FreeLibrary(shcore);
+      dylib_close(lib);
    }
-   /* Fallback for Vista / Win7 without shcore.
-    * Load dynamically so we still link on XP / MSVC 2005. */
+
+   /* Vista / Win 7 / Win 8 fallback: SetProcessDPIAware in user32.dll. */
+   if ((lib = dylib_load("user32.dll")))
    {
-      HMODULE user32 = GetModuleHandleW(L"user32.dll");
-      if (user32)
-      {
-         typedef BOOL (WINAPI *pfn_SetProcessDPIAware)(void);
-         union {
-            FARPROC proc;
-            pfn_SetProcessDPIAware func;
-         } u;
-         u.proc = GetProcAddress(user32, "SetProcessDPIAware");
-         if (u.func)
-            u.func();
-      }
+      pfn_SetProcessDPIAware fn = (pfn_SetProcessDPIAware)
+         dylib_proc(lib, "SetProcessDPIAware");
+      if (fn)
+         fn();
+      dylib_close(lib);
    }
+   /* Older than Vista: no API available; process stays DPI-Unaware,
+    * which is the correct behaviour for those systems anyway. */
+#endif
 }
 
 /* ACCELERATOR TABLE  (replaces IDR_ACCELERATOR1)
