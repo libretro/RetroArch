@@ -3594,29 +3594,29 @@ enum gfx_ctx_api video_context_driver_get_api(void)
       const char *video_ident  = (vid) ? vid->ident : NULL;
       if (string_starts_with_size(video_ident, "d3d", STRLEN_CONST("d3d")))
       {
-         if (!memcmp(video_ident, "d3d9_hlsl", STRLEN_CONST("d3d9_hlsl") + 1))
+         if (!strcmp(video_ident, "d3d9_hlsl"))
             return GFX_CTX_DIRECT3D9_API;
-         else if (!memcmp(video_ident, "d3d10", STRLEN_CONST("d3d10") + 1))
+         else if (!strcmp(video_ident, "d3d10"))
             return GFX_CTX_DIRECT3D10_API;
-         else if (!memcmp(video_ident, "d3d11", STRLEN_CONST("d3d11") + 1))
+         else if (!strcmp(video_ident, "d3d11"))
             return GFX_CTX_DIRECT3D11_API;
-         else if (!memcmp(video_ident, "d3d12", STRLEN_CONST("d3d12") + 1))
+         else if (!strcmp(video_ident, "d3d12"))
             return GFX_CTX_DIRECT3D12_API;
       }
       if (string_starts_with_size(video_ident, "gl", STRLEN_CONST("gl")))
       {
-         if (!memcmp(video_ident, "gl", STRLEN_CONST("gl") + 1))
+         if (!strcmp(video_ident, "gl"))
             return GFX_CTX_OPENGL_API;
-         else if (!memcmp(video_ident, "gl1", STRLEN_CONST("gl1") + 1))
+         else if (!strcmp(video_ident, "gl1"))
             return GFX_CTX_OPENGL_API;
-         else if (!memcmp(video_ident, "glcore", STRLEN_CONST("glcore") + 1))
+         else if (!strcmp(video_ident, "glcore"))
             return GFX_CTX_OPENGL_API;
       }
-      else if (!memcmp(video_ident, "vulkan", STRLEN_CONST("vulkan") + 1))
+      else if (!strcmp(video_ident, "vulkan"))
          return GFX_CTX_VULKAN_API;
-      else if (!memcmp(video_ident, "metal", STRLEN_CONST("metal") + 1))
+      else if (!strcmp(video_ident, "metal"))
          return GFX_CTX_METAL_API;
-      else if (!memcmp(video_ident, "rsx", STRLEN_CONST("rsx") + 1))
+      else if (!strcmp(video_ident, "rsx"))
          return GFX_CTX_RSX_API;
       return GFX_CTX_NONE;
    }
