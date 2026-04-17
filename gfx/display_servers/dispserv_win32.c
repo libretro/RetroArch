@@ -538,6 +538,35 @@ void win32_display_server_set_screen_orientation(void *data,
 }
 #endif
 
+static float win32_display_server_get_refresh_rate(void *data)
+{
+   return win32_get_refresh_rate(data);
+}
+
+static void win32_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *s, size_t len)
+{
+   win32_get_video_output_size(data, width, height, s, len);
+}
+
+static void win32_display_server_get_video_output_prev(void *data)
+{
+   unsigned width = 0, height = 0;
+   win32_get_video_output_prev(&width, &height);
+}
+
+static void win32_display_server_get_video_output_next(void *data)
+{
+   unsigned width = 0, height = 0;
+   win32_get_video_output_next(&width, &height);
+}
+
+static bool win32_display_server_get_metrics(void *data,
+      enum display_metric_types type, float *value)
+{
+   return win32_get_metrics(data, type, value);
+}
+
 static uint32_t win32_display_server_get_flags(void *data)
 {
    uint32_t             flags   = 0;
@@ -563,6 +592,11 @@ const video_display_server_t dispserv_win32 = {
    NULL,
    NULL,
 #endif
+   win32_display_server_get_refresh_rate,
+   win32_display_server_get_video_output_size,
+   win32_display_server_get_video_output_prev,
+   win32_display_server_get_video_output_next,
+   win32_display_server_get_metrics,
    win32_display_server_get_flags,
    "win32"
 };

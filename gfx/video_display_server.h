@@ -58,6 +58,13 @@ typedef struct video_display_server
    const char *(*get_output_options)(void *data);
    void (*set_screen_orientation)(void *data, enum rotation rotation);
    enum rotation (*get_screen_orientation)(void *data);
+   float (*get_refresh_rate)(void *data);
+   void (*get_video_output_size)(void *data,
+         unsigned *width, unsigned *height, char *s, size_t len);
+   void (*get_video_output_prev)(void *data);
+   void (*get_video_output_next)(void *data);
+   bool (*get_metrics)(void *data, enum display_metric_types type,
+         float *value);
    uint32_t (*get_flags)(void *data);
    const char *ident;
 } video_display_server_t;
@@ -85,6 +92,18 @@ const char *video_display_server_get_output_options(void);
 const char *video_display_server_get_ident(void);
 
 void video_display_server_set_screen_orientation(enum rotation rotation);
+
+float video_display_server_get_refresh_rate(void);
+
+bool video_display_server_get_video_output_size(
+      unsigned *width, unsigned *height, char *s, size_t len);
+
+bool video_display_server_get_video_output_prev(void);
+
+bool video_display_server_get_video_output_next(void);
+
+bool video_display_server_get_metrics(
+      enum display_metric_types type, float *value);
 
 bool video_display_server_can_set_screen_orientation(void);
 

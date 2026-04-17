@@ -131,6 +131,11 @@ const video_display_server_t dispserv_android = {
    NULL, /* get_output_options */
    android_display_server_set_screen_orientation,
    NULL, /* get_screen_orientation */
+   NULL, /* get_refresh_rate */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_metrics */
    android_display_server_get_flags,
    "android"
 };

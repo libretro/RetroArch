@@ -3320,6 +3320,21 @@ static bool accessibility_speak_android(int speed,
 }
 #endif
 
+static enum rarch_display_type frontend_unix_get_display_type(void)
+{
+#if defined(ANDROID)
+   return RARCH_DISPLAY_NONE;
+#elif defined(HAVE_WAYLAND)
+   if (getenv("WAYLAND_DISPLAY"))
+      return RARCH_DISPLAY_WAYLAND;
+#endif
+#if defined(HAVE_X11)
+   if (getenv("DISPLAY"))
+      return RARCH_DISPLAY_X11;
+#endif
+   return RARCH_DISPLAY_NONE;
+}
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* get_env */
    frontend_unix_init,          /* init */
@@ -3384,6 +3399,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #else
    NULL,
 #endif
+   frontend_unix_get_display_type,
 #ifdef ANDROID
    "android",                    /* ident               */
 #else

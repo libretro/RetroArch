@@ -6207,6 +6207,22 @@ int rarch_main(int argc, char *argv[], void *data)
 
    frontend_driver_init_first(data);
 
+   /* Early display server init — allows querying display metrics
+    * (resolution, DPI, refresh rate) before the video driver creates
+    * a window.  The frontend provides get_display_type() to determine
+    * the platform's display type without needing a window. */
+   {
+      frontend_state_t *frontend_st = frontend_state_get_ptr();
+      if (     frontend_st
+            && frontend_st->current_frontend_ctx
+            && frontend_st->current_frontend_ctx->get_display_type)
+      {
+         enum rarch_display_type dtype =
+            frontend_st->current_frontend_ctx->get_display_type();
+         video_display_server_init(dtype);
+      }
+   }
+
    if (runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
       driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
 

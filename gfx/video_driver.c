@@ -97,6 +97,11 @@ static const video_display_server_t dispserv_null = {
    NULL, /* get_output_options */
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
+   NULL, /* get_refresh_rate */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_metrics */
    NULL, /* get_flags */
    "null"
 };
@@ -1528,6 +1533,63 @@ enum rotation video_display_server_get_screen_orientation(void)
       return current_display_server->get_screen_orientation(
             video_st->current_display_server_data);
    return ORIENTATION_NORMAL;
+}
+
+
+float video_display_server_get_refresh_rate(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (current_display_server && current_display_server->get_refresh_rate)
+      return current_display_server->get_refresh_rate(
+            video_st->current_display_server_data);
+   return 0.0f;
+}
+
+bool video_display_server_get_video_output_size(
+      unsigned *width, unsigned *height, char *s, size_t len)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (current_display_server && current_display_server->get_video_output_size)
+   {
+      current_display_server->get_video_output_size(
+            video_st->current_display_server_data, width, height, s, len);
+      return true;
+   }
+   return false;
+}
+
+bool video_display_server_get_video_output_prev(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (current_display_server && current_display_server->get_video_output_prev)
+   {
+      current_display_server->get_video_output_prev(
+            video_st->current_display_server_data);
+      return true;
+   }
+   return false;
+}
+
+bool video_display_server_get_video_output_next(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (current_display_server && current_display_server->get_video_output_next)
+   {
+      current_display_server->get_video_output_next(
+            video_st->current_display_server_data);
+      return true;
+   }
+   return false;
+}
+
+bool video_display_server_get_metrics(
+      enum display_metric_types type, float *value)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (current_display_server && current_display_server->get_metrics)
+      return current_display_server->get_metrics(
+            video_st->current_display_server_data, type, value);
+   return false;
 }
 
 bool video_display_server_get_flags(gfx_ctx_flags_t *flags)

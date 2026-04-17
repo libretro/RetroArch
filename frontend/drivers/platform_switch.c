@@ -807,6 +807,7 @@ frontend_ctx_driver_t frontend_ctx_switch =
    NULL,                               /* is_narrator_running */
    NULL,                               /* accessibility_speak */
    NULL,                               /* set_gamemode */
+   NULL, /* get_display_type */
    "switch",                           /* ident */
    NULL                                /* get_video_driver */
 };
