@@ -957,41 +957,57 @@ static void rpng_pass_geom(const struct png_ihdr *ihdr,
       unsigned width, unsigned height,
       unsigned *bpp_out, unsigned *pitch_out, size_t *pass_size)
 {
-   unsigned bpp   = 0;
-   unsigned pitch = 0;
+   /* Perform pitch and pass_size arithmetic in size_t.  Previously these
+    * were done in unsigned int, which can silently wrap on 32-bit at a
+    * width of ~67M for 16bpc RGBA (pitch = width*8) or, more plausibly,
+    * at a pitch*height product exceeding ~4 GiB — reachable today with
+    * a 30000x30000 16bpc-RGBA image that passes the IHDR output-size
+    * cap (based on the RGBA-8 output buffer) but whose 16bpc intermediate
+    * scanline buffer is ~6.7 GiB.  A wrapped pass_size underallocates the
+    * inflate buffer and exposes a heap overflow during decode.
+    *
+    * The `(size_t)ihdr->width * ihdr->depth` leading term forces the
+    * whole expression to size_t width.  Callers with `unsigned *pitch_out`
+    * still receive a narrowed value — safe on 64-bit where size_t is 64
+    * bits, since realistic pitches fit comfortably.  On 32-bit targets
+    * pitch_out itself has no headroom beyond UINT32_MAX, but the caller
+    * won't reach any allocation using pitch if the IHDR check further
+    * down rejects such images for their overall size. */
+   size_t   bpp   = 0;
+   size_t   pitch = 0;
 
    switch (ihdr->color_type)
    {
       case PNG_IHDR_COLOR_GRAY:
-         bpp   = (ihdr->depth + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth + 7) / 8;
+         bpp   = ((size_t)ihdr->depth + 7) / 8;
+         pitch = ((size_t)ihdr->width * ihdr->depth + 7) / 8;
          break;
       case PNG_IHDR_COLOR_RGB:
-         bpp   = (ihdr->depth * 3 + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth * 3 + 7) / 8;
+         bpp   = ((size_t)ihdr->depth * 3 + 7) / 8;
+         pitch = ((size_t)ihdr->width * ihdr->depth * 3 + 7) / 8;
          break;
       case PNG_IHDR_COLOR_PLT:
-         bpp   = (ihdr->depth + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth + 7) / 8;
+         bpp   = ((size_t)ihdr->depth + 7) / 8;
+         pitch = ((size_t)ihdr->width * ihdr->depth + 7) / 8;
          break;
       case PNG_IHDR_COLOR_GRAY_ALPHA:
-         bpp   = (ihdr->depth * 2 + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth * 2 + 7) / 8;
+         bpp   = ((size_t)ihdr->depth * 2 + 7) / 8;
+         pitch = ((size_t)ihdr->width * ihdr->depth * 2 + 7) / 8;
          break;
       case PNG_IHDR_COLOR_RGBA:
-         bpp   = (ihdr->depth * 4 + 7) / 8;
-         pitch = (ihdr->width * ihdr->depth * 4 + 7) / 8;
+         bpp   = ((size_t)ihdr->depth * 4 + 7) / 8;
+         pitch = ((size_t)ihdr->width * ihdr->depth * 4 + 7) / 8;
          break;
       default:
          break;
    }
 
    if (pass_size)
-      *pass_size = (pitch + 1) * ihdr->height;
+      *pass_size = (pitch + 1) * (size_t)ihdr->height;
    if (bpp_out)
-      *bpp_out   = bpp;
+      *bpp_out   = (unsigned)bpp;
    if (pitch_out)
-      *pitch_out = pitch;
+      *pitch_out = (unsigned)pitch;
 }
 
 static void rpng_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
