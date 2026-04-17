@@ -89,8 +89,6 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 int win32_change_display_settings(const char *str, void *devmode_data,
       unsigned flags);
 
-bool win32_get_video_output(DEVMODE *dm, int mode);
-
 #if !defined(__WINRT__)
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
 
@@ -108,9 +106,6 @@ bool win32_set_video_mode(void *data,
       bool fullscreen);
 
 bool win32_suspend_screensaver(void *data, bool enable);
-
-bool win32_get_metrics(void *data,
-      enum display_metric_types type, float *value);
 
 void win32_show_cursor(void *data, bool state);
 
@@ -133,22 +128,11 @@ void win32_check_window(void *data,
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
-void win32_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len);
-
-void win32_get_video_output_prev(
-      unsigned *width, unsigned *height);
-
-void win32_get_video_output_next(
-      unsigned *width, unsigned *height);
-
 void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
 uint8_t win32_get_flags(void);
-
-float win32_get_refresh_rate(void *data);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,

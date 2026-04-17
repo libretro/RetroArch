@@ -867,46 +867,6 @@ extern "C" {
       return true;
    }
 
-   bool win32_get_metrics(void* data,
-         enum display_metric_types type, float* value)
-   {
-      switch (type)
-      {
-         case DISPLAY_METRIC_PIXEL_WIDTH:
-            *value                 = uwp_get_width();
-            return true;
-         case DISPLAY_METRIC_PIXEL_HEIGHT:
-            *value				 = uwp_get_height();
-            return true;
-         case DISPLAY_METRIC_MM_WIDTH:
-            /* 25.4 mm in an inch. */
-            {
-               int pixels_x        = DisplayInformation::GetForCurrentView().ScreenWidthInRawPixels();
-               int raw_dpi_x       = DisplayInformation::GetForCurrentView().RawDpiX();
-               int physical_width  = pixels_x / raw_dpi_x;
-               *value              = 254 * physical_width / 10;
-            }
-            return true;
-         case DISPLAY_METRIC_MM_HEIGHT:
-            /* 25.4 mm in an inch. */
-            {
-               int pixels_y        = DisplayInformation::GetForCurrentView().ScreenHeightInRawPixels();
-               int raw_dpi_y       = DisplayInformation::GetForCurrentView().RawDpiY();
-               int physical_height = pixels_y / raw_dpi_y;
-               *value              = 254 * physical_height / 10;
-            }
-            return true;
-         case DISPLAY_METRIC_DPI:
-            *value                 = DisplayInformation::GetForCurrentView().RawDpiX();
-            return true;
-         case DISPLAY_METRIC_NONE:
-         default:
-            *value                 = 0;
-            break;
-      }
-      return false;
-   }
-
    void win32_check_window(void *data,
          bool *quit, bool *resize, unsigned *width, unsigned *height)
    {

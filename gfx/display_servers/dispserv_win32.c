@@ -85,6 +85,119 @@ typedef struct
    uint8_t flags;
 } dispserv_win32_t;
 
+/* Display configuration structs for QueryDisplayConfig */
+typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM
+{
+   UINT32 Numerator;
+   UINT32 Denominator;
+} DISPLAYCONFIG_RATIONAL_CUSTOM;
+
+typedef struct DISPLAYCONFIG_2DREGION_CUSTOM
+{
+   UINT32 cx;
+   UINT32 cy;
+} DISPLAYCONFIG_2DREGION_CUSTOM;
+
+typedef struct DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM
+{
+   UINT64                          pixelRate;
+   DISPLAYCONFIG_RATIONAL_CUSTOM          hSyncFreq;
+   DISPLAYCONFIG_RATIONAL_CUSTOM          vSyncFreq;
+   DISPLAYCONFIG_2DREGION_CUSTOM          activeSize;
+   DISPLAYCONFIG_2DREGION_CUSTOM          totalSize;
+   union
+   {
+      struct
+      {
+         UINT32 videoStandard  :16;
+         UINT32 vSyncFreqDivider  :6;
+         UINT32 reserved  :10;
+      } AdditionalSignalInfo;
+      UINT32 videoStandard;
+   } dummyunionname;
+   UINT32 scanLineOrdering;
+} DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM;
+
+typedef struct DISPLAYCONFIG_TARGET_MODE_CUSTOM
+{
+   DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM targetVideoSignalInfo;
+} DISPLAYCONFIG_TARGET_MODE_CUSTOM;
+
+typedef struct DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM
+{
+   LUID   adapterId;
+   UINT32 id;
+   union
+   {
+      UINT32 modeInfoIdx;
+      struct
+      {
+         UINT32 cloneGroupId  :16;
+         UINT32 sourceModeInfoIdx  :16;
+      } dummystructname;
+   } dummyunionname;
+   UINT32 statusFlags;
+} DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM;
+
+typedef struct DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM
+{
+   POINTL PathSourceSize;
+   RECTL  DesktopImageRegion;
+   RECTL  DesktopImageClip;
+} DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM;
+
+typedef struct DISPLAYCONFIG_SOURCE_MODE_CUSTOM
+{
+   UINT32                    width;
+   UINT32                    height;
+   UINT32                    pixelFormat;
+   POINTL                    position;
+} DISPLAYCONFIG_SOURCE_MODE_CUSTOM;
+
+typedef struct DISPLAYCONFIG_MODE_INFO_CUSTOM
+{
+   UINT32                       infoType;
+   UINT32                       id;
+   LUID                         adapterId;
+   union
+   {
+      DISPLAYCONFIG_TARGET_MODE_CUSTOM        targetMode;
+      DISPLAYCONFIG_SOURCE_MODE_CUSTOM        sourceMode;
+      DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM desktopImageInfo;
+   } dummyunionname;
+} DISPLAYCONFIG_MODE_INFO_CUSTOM;
+
+typedef struct DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM
+{
+   LUID                                  adapterId;
+   UINT32                                id;
+   union
+   {
+      UINT32 modeInfoIdx;
+      struct
+      {
+         UINT32 desktopModeInfoIdx  :16;
+         UINT32 targetModeInfoIdx  :16;
+      } dummystructname;
+   } dummyunionname;
+   UINT32 outputTechnology;
+   UINT32 rotation;
+   UINT32 scaling;
+   DISPLAYCONFIG_RATIONAL_CUSTOM refreshRate;
+   UINT32 scanLineOrdering;
+   BOOL targetAvailable;
+   UINT32 statusFlags;
+} DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM;
+
+typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM
+{
+   DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM sourceInfo;
+   DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM targetInfo;
+   UINT32                         flags;
+} DISPLAYCONFIG_PATH_INFO_CUSTOM;
+
+typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
+typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
 
 static void *win32_display_server_init(void)
 {
@@ -224,6 +337,30 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
     * apply decoration changes */
 
    return true;
+}
+
+static bool win32_get_video_output(DEVMODE *dm, int mode)
+{
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use        = NULL;
+   unsigned mon_id           = 0;
+
+   memset(dm, 0, sizeof(DEVMODE));
+   dm->dmSize = sizeof(DEVMODE);
+
+   win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* Windows 2K and up*/
+   return EnumDisplaySettingsEx(
+         current_mon.szDevice,
+         (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode,
+         dm, EDS_ROTATEDMODE) != 0;
+#else
+   return EnumDisplaySettings(
+         current_mon.szDevice,
+         (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode,
+         dm) != 0;
+#endif
 }
 
 static bool win32_display_server_set_resolution(void *data,
@@ -438,7 +575,7 @@ static void *win32_display_server_get_resolution_list(
 }
 
 #if _WIN32_WINNT >= 0x0500
-enum rotation win32_display_server_get_screen_orientation(void *data)
+static enum rotation win32_display_server_get_screen_orientation(void *data)
 {
    DEVMODE dm = {0};
    win32_get_video_output(&dm, -1);
@@ -459,7 +596,7 @@ enum rotation win32_display_server_get_screen_orientation(void *data)
    return ORIENTATION_NORMAL;
 }
 
-void win32_display_server_set_screen_orientation(void *data,
+static void win32_display_server_set_screen_orientation(void *data,
       enum rotation rotation)
 {
    DEVMODE dm = {0};
@@ -539,239 +676,7 @@ void win32_display_server_set_screen_orientation(void *data,
 }
 #endif
 
-/* Display configuration structs for QueryDisplayConfig */
-typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM
-{
-   UINT32 Numerator;
-   UINT32 Denominator;
-} DISPLAYCONFIG_RATIONAL_CUSTOM;
-
-typedef struct DISPLAYCONFIG_2DREGION_CUSTOM
-{
-   UINT32 cx;
-   UINT32 cy;
-} DISPLAYCONFIG_2DREGION_CUSTOM;
-
-typedef struct DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM
-{
-   UINT64                          pixelRate;
-   DISPLAYCONFIG_RATIONAL_CUSTOM          hSyncFreq;
-   DISPLAYCONFIG_RATIONAL_CUSTOM          vSyncFreq;
-   DISPLAYCONFIG_2DREGION_CUSTOM          activeSize;
-   DISPLAYCONFIG_2DREGION_CUSTOM          totalSize;
-   union
-   {
-      struct
-      {
-         UINT32 videoStandard  :16;
-         UINT32 vSyncFreqDivider  :6;
-         UINT32 reserved  :10;
-      } AdditionalSignalInfo;
-      UINT32 videoStandard;
-   } dummyunionname;
-   UINT32 scanLineOrdering;
-} DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM;
-
-typedef struct DISPLAYCONFIG_TARGET_MODE_CUSTOM
-{
-   DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM targetVideoSignalInfo;
-} DISPLAYCONFIG_TARGET_MODE_CUSTOM;
-
-typedef struct DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM
-{
-   LUID   adapterId;
-   UINT32 id;
-   union
-   {
-      UINT32 modeInfoIdx;
-      struct
-      {
-         UINT32 cloneGroupId  :16;
-         UINT32 sourceModeInfoIdx  :16;
-      } dummystructname;
-   } dummyunionname;
-   UINT32 statusFlags;
-} DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM;
-
-typedef struct DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM
-{
-   POINTL PathSourceSize;
-   RECTL  DesktopImageRegion;
-   RECTL  DesktopImageClip;
-} DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM;
-
-typedef struct DISPLAYCONFIG_SOURCE_MODE_CUSTOM
-{
-   UINT32                    width;
-   UINT32                    height;
-   UINT32                    pixelFormat;
-   POINTL                    position;
-} DISPLAYCONFIG_SOURCE_MODE_CUSTOM;
-
-typedef struct DISPLAYCONFIG_MODE_INFO_CUSTOM
-{
-   UINT32                       infoType;
-   UINT32                       id;
-   LUID                         adapterId;
-   union
-   {
-      DISPLAYCONFIG_TARGET_MODE_CUSTOM        targetMode;
-      DISPLAYCONFIG_SOURCE_MODE_CUSTOM        sourceMode;
-      DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM desktopImageInfo;
-   } dummyunionname;
-} DISPLAYCONFIG_MODE_INFO_CUSTOM;
-
-typedef struct DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM
-{
-   LUID                                  adapterId;
-   UINT32                                id;
-   union
-   {
-      UINT32 modeInfoIdx;
-      struct
-      {
-         UINT32 desktopModeInfoIdx  :16;
-         UINT32 targetModeInfoIdx  :16;
-      } dummystructname;
-   } dummyunionname;
-   UINT32 outputTechnology;
-   UINT32 rotation;
-   UINT32 scaling;
-   DISPLAYCONFIG_RATIONAL_CUSTOM refreshRate;
-   UINT32 scanLineOrdering;
-   BOOL targetAvailable;
-   UINT32 statusFlags;
-} DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM;
-
-typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM
-{
-   DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM sourceInfo;
-   DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM targetInfo;
-   UINT32                         flags;
-} DISPLAYCONFIG_PATH_INFO_CUSTOM;
-
-typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
-typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
-
-
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-#define WIN32_GET_VIDEO_OUTPUT(devName, iModeNum, dm) EnumDisplaySettingsEx(devName, iModeNum, dm, EDS_ROTATEDMODE)
-#else
-#define WIN32_GET_VIDEO_OUTPUT(devName, iModeNum, dm) EnumDisplaySettings(devName, iModeNum, dm)
-#endif
-
-
-bool win32_get_metrics(void *data,
-   enum display_metric_types type, float *value)
-{
-   HDC monitor;
-   bool ret = true;
-
-   if (type == DISPLAY_METRIC_NONE)
-   {
-      *value = 0;
-      return false;
-   }
-
-   monitor = GetDC(NULL);
-   if (!monitor)
-   {
-      *value = 0;
-      return false;
-   }
-
-   switch (type)
-   {
-      case DISPLAY_METRIC_PIXEL_WIDTH:
-         *value = (float)GetDeviceCaps(monitor, HORZRES);
-         break;
-      case DISPLAY_METRIC_PIXEL_HEIGHT:
-         *value = (float)GetDeviceCaps(monitor, VERTRES);
-         break;
-      case DISPLAY_METRIC_MM_WIDTH:
-         *value = (float)GetDeviceCaps(monitor, HORZSIZE);
-         break;
-      case DISPLAY_METRIC_MM_HEIGHT:
-         *value = (float)GetDeviceCaps(monitor, VERTSIZE);
-         break;
-      case DISPLAY_METRIC_DPI:
-         /* 25.4 mm in an inch. */
-         {
-            int pixels_x       = GetDeviceCaps(monitor, HORZRES);
-            int physical_width = GetDeviceCaps(monitor, HORZSIZE);
-            *value = (physical_width > 0)
-               ? (float)(254 * pixels_x) / (float)(physical_width * 10)
-               : 0.0f;
-         }
-         break;
-      default:
-         *value = 0;
-         ret    = false;
-         break;
-   }
-
-   ReleaseDC(NULL, monitor);
-   return ret;
-}
-bool win32_get_video_output(DEVMODE *dm, int mode)
-{
-   MONITORINFOEX current_mon;
-   HMONITOR hm_to_use        = NULL;
-   unsigned mon_id           = 0;
-
-   memset(dm, 0, sizeof(DEVMODE));
-   dm->dmSize = sizeof(DEVMODE);
-
-   win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
-
-   return WIN32_GET_VIDEO_OUTPUT(
-         current_mon.szDevice,
-         (mode == -1) ? ENUM_CURRENT_SETTINGS : (DWORD)mode,
-         dm) != 0;
-}
-
-void win32_get_video_output_prev(
-      unsigned *width, unsigned *height)
-{
-   DEVMODE dm;
-   unsigned i;
-   bool found           = false;
-   unsigned prev_width  = 0;
-   unsigned prev_height = 0;
-   unsigned curr_width  = 0;
-   unsigned curr_height = 0;
-
-   if (win32_get_video_output(&dm, -1))
-   {
-      curr_width  = dm.dmPelsWidth;
-      curr_height = dm.dmPelsHeight;
-   }
-
-   for (i = 0; win32_get_video_output(&dm, i); i++)
-   {
-      if (     dm.dmPelsWidth  == curr_width
-            && dm.dmPelsHeight == curr_height)
-      {
-         if (     prev_width  != curr_width
-               && prev_height != curr_height)
-         {
-            found        = true;
-            break;
-         }
-      }
-
-      prev_width     = dm.dmPelsWidth;
-      prev_height    = dm.dmPelsHeight;
-   }
-
-   if (found)
-   {
-      *width       = prev_width;
-      *height      = prev_height;
-   }
-}
-
-float win32_get_refresh_rate(void *data)
+static float win32_display_server_get_refresh_rate(void *data)
 {
 #if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
    UINT32 TopologyID;
@@ -839,12 +744,23 @@ float win32_get_refresh_rate(void *data)
 #endif
 }
 
-void win32_get_video_output_next(
-      unsigned *width, unsigned *height)
+static void win32_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *s, size_t len)
 {
    DEVMODE dm;
-   int i;
-   bool found           = false;
+   if (win32_get_video_output(&dm, -1))
+   {
+      *width  = dm.dmPelsWidth;
+      *height = dm.dmPelsHeight;
+   }
+}
+
+static void win32_display_server_get_video_output_prev(void *data)
+{
+   unsigned i;
+   DEVMODE dm;
+   unsigned prev_width  = 0;
+   unsigned prev_height = 0;
    unsigned curr_width  = 0;
    unsigned curr_height = 0;
 
@@ -856,62 +772,94 @@ void win32_get_video_output_next(
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
-      if (found)
-      {
-         *width     = dm.dmPelsWidth;
-         *height    = dm.dmPelsHeight;
-         break;
-      }
-
       if (     dm.dmPelsWidth  == curr_width
             && dm.dmPelsHeight == curr_height)
-         found = true;
+      {
+         if (     prev_width  != curr_width
+               && prev_height != curr_height)
+            break;
+      }
+
+      prev_width     = dm.dmPelsWidth;
+      prev_height    = dm.dmPelsHeight;
    }
-}
-
-void win32_get_video_output_size(void *data, unsigned *width,
-   unsigned *height, char *desc, size_t len)
-{
-   DEVMODE dm;
-   if (win32_get_video_output(&dm, -1))
-   {
-      *width  = dm.dmPelsWidth;
-      *height = dm.dmPelsHeight;
-   }
-}
-
-static float win32_display_server_get_refresh_rate(void *data)
-{
-   return win32_get_refresh_rate(data);
-}
-
-static void win32_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
-{
-   win32_get_video_output_size(data, width, height, s, len);
-}
-
-static void win32_display_server_get_video_output_prev(void *data)
-{
-   unsigned width = 0, height = 0;
-   win32_get_video_output_prev(&width, &height);
 }
 
 static void win32_display_server_get_video_output_next(void *data)
 {
-   unsigned width = 0, height = 0;
-   win32_get_video_output_next(&width, &height);
+   int i;
+   DEVMODE dm;
+   unsigned curr_width  = 0;
+   unsigned curr_height = 0;
+
+   if (win32_get_video_output(&dm, -1))
+   {
+      curr_width  = dm.dmPelsWidth;
+      curr_height = dm.dmPelsHeight;
+   }
+
+   for (i = 0; win32_get_video_output(&dm, i); i++)
+   {
+      if (     dm.dmPelsWidth  == curr_width
+            && dm.dmPelsHeight == curr_height)
+         break;
+   }
 }
 
 static bool win32_display_server_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
-   return win32_get_metrics(data, type, value);
+   HDC monitor;
+
+   if (type == DISPLAY_METRIC_NONE)
+   {
+      *value = 0;
+      return false;
+   }
+
+   monitor = GetDC(NULL);
+   if (!monitor)
+   {
+      *value = 0;
+      return false;
+   }
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_PIXEL_WIDTH:
+         *value = (float)GetDeviceCaps(monitor, HORZRES);
+         break;
+      case DISPLAY_METRIC_PIXEL_HEIGHT:
+         *value = (float)GetDeviceCaps(monitor, VERTRES);
+         break;
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = (float)GetDeviceCaps(monitor, HORZSIZE);
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = (float)GetDeviceCaps(monitor, VERTSIZE);
+         break;
+      case DISPLAY_METRIC_DPI:
+         /* 25.4 mm in an inch. */
+         {
+            int pixels_x       = GetDeviceCaps(monitor, HORZRES);
+            int physical_width = GetDeviceCaps(monitor, HORZSIZE);
+            *value = (physical_width > 0)
+               ? (float)(254 * pixels_x) / (float)(physical_width * 10)
+               : 0.0f;
+         }
+         break;
+      default:
+         *value = 0;
+         return false;
+   }
+
+   ReleaseDC(NULL, monitor);
+   return true;
 }
 
 static uint32_t win32_display_server_get_flags(void *data)
 {
-   uint32_t             flags   = 0;
+   uint32_t flags   = 0;
 
    BIT32_SET(flags, DISPSERV_CTX_CRT_SWITCHRES);
 

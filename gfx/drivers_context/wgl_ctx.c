@@ -851,7 +851,6 @@ static bool gfx_ctx_wgl_destroy_surface(void *data)
 
 /* TODO: maybe create an uwp_mesa_common.c? */
 #ifdef __WINRT__
-
 static void win32_get_video_size(void* data,
    unsigned* width, unsigned* height)
 {
@@ -862,22 +861,10 @@ static void win32_get_video_size(void* data,
    height = uwp_get_height();
 }
 
-void win32_get_video_output_size(void* data, unsigned* width, unsigned* height, char* desc, size_t desc_len)
-{
-   win32_get_video_size(data, width, height);
-}
-
 bool win32_suspend_screensaver(void* data, bool enable)
 {
    return true;
 }
-
-float win32_get_refresh_rate(void* data)
-{
-   return 60.0;
-}
-
-#define win32_get_refresh_rate NULL
 
 HWND win32_get_window(void)
 {
