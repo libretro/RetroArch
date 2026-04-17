@@ -991,7 +991,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    uint32_t p0s;
    int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
    int qp, y1_dc_q, y1_ac_q, y2_dc_q, y2_ac_q, uv_dc_q, uv_ac_q;
-   int skip_enabled, log2parts, num_parts;
+   int skip_enabled, prob_skip, log2parts, num_parts;
    int seg_enabled, seg_abs, seg_qp[4], seg_prob[3];
    vp8b br;
    vp8b tbr[8]; /* up to 8 token partitions */
@@ -1111,6 +1111,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
 
    /* Dump some probs */
    skip_enabled = vp8b_bit(&br);
+   prob_skip = skip_enabled ? (int)vp8b_lit(&br, 8) : 0;
 
    /* Initialize token partitions */
    {
@@ -1268,7 +1269,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
 
          /* Skip flag */
          if (skip_enabled)
-            is_skip = vp8b_bit(&br);
+            is_skip = vp8b_get(&br, prob_skip);
 
          /* Gather prediction context */
          if (my > 0) {
