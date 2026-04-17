@@ -1560,22 +1560,43 @@ bool rpng_iterate_image(rpng_t *rpng)
          rpng->ihdr.filter       = buf[11];
          rpng->ihdr.interlace    = buf[12];
 
-         if (     rpng->ihdr.width  == 0
-               || rpng->ihdr.height == 0
-               /* Cap the decoded output buffer at 4 GiB to ensure the
-                * width*height*4 multiplication cannot overflow uint64_t
-                * and to reject obviously-malformed or maliciously-huge
-                * PNGs before any large allocation is attempted.  The
-                * previous 2 GiB limit was conservative: it rejected
-                * images around 23000x28000 which are valid on modern
-                * 64-bit platforms with sufficient RAM.  Callers on
-                * memory-constrained systems will still see malloc
-                * fail at the allocation site further down. */
-               || (uint64_t)rpng->ihdr.width*rpng->ihdr.height*sizeof(uint32_t) >= 0x100000000ULL)
-            return false;
-
+         /* Validate color_type + depth combination before any size
+          * arithmetic; rpng_pass_geom's switch relies on color_type
+          * being one of the five legal values. */
          if (!rpng_process_ihdr(&rpng->ihdr))
             return false;
+
+         if (rpng->ihdr.width == 0 || rpng->ihdr.height == 0)
+            return false;
+
+         /* Two independent size caps, both at 4 GiB:
+          *
+          *   1) Output buffer — rpng always decodes to ARGB32 regardless
+          *      of the source depth, so the final buffer is always
+          *      width * height * 4 bytes.
+          *
+          *   2) Intermediate inflate buffer — sized by rpng_pass_geom
+          *      as (pitch + 1) * height.  For 8bpc RGBA this matches
+          *      the output (~4 bytes/pixel), but for 16bpc RGBA it is
+          *      2x (8 bytes/pixel), and palette/gray paths are smaller.
+          *      A 30000x30000 16bpc-RGBA image passes the output cap
+          *      (3.35 GiB) but needs a 7 GiB intermediate — reject it
+          *      here rather than relying on malloc to fail downstream.
+          *
+          * Both caps use 64-bit arithmetic; the ULL literal keeps the
+          * constant unambiguously 64-bit on LLP64 (Windows) where
+          * unsigned long is 32-bit.  rpng_pass_geom's arithmetic is
+          * itself size_t-wide after the prior widening commit, so the
+          * pass_size returned here is trustworthy. */
+         {
+            size_t pass_size = 0;
+            rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
+                           rpng->ihdr.height, NULL, NULL, &pass_size);
+            if ((uint64_t)rpng->ihdr.width * rpng->ihdr.height
+                     * sizeof(uint32_t) >= 0x100000000ULL
+                  || (uint64_t)pass_size >= 0x100000000ULL)
+               return false;
+         }
 
          if (rpng->ihdr.compression != 0)
          {
