@@ -10784,30 +10784,24 @@ unsigned menu_displaylist_build_list(
                 && !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                runahead_supported = core_info_current_supports_runahead();
 
-            if (runahead_supported)
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               for (i = 0; i < ARRAY_SIZE(build_list); i++)
+               switch (build_list[i].enum_idx)
                {
-                  switch (build_list[i].enum_idx)
-                  {
-                     case MENU_ENUM_LABEL_RUNAHEAD_MODE:
-                        build_list[i].checked = true;
-                        break;
-                     case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
-                        if (runahead_enabled)
-                           build_list[i].checked = true;
-                        break;
-                     case MENU_ENUM_LABEL_PREEMPT_FRAMES:
-                        if (preempt_enabled)
-                           build_list[i].checked = true;
-                        break;
-                     case MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS:
-                        if (runahead_enabled || preempt_enabled)
-                           build_list[i].checked = true;
-                        break;
-                     default:
-                        break;
-                  }
+                  case MENU_ENUM_LABEL_RUNAHEAD_MODE:
+                     build_list[i].checked = runahead_supported;
+                     break;
+                  case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
+                     build_list[i].checked = runahead_supported && runahead_enabled;
+                     break;
+                  case MENU_ENUM_LABEL_PREEMPT_FRAMES:
+                     build_list[i].checked = runahead_supported && preempt_enabled;
+                     break;
+                  case MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS:
+                     build_list[i].checked = runahead_supported && (runahead_enabled || preempt_enabled);
+                     break;
+                  default:
+                     break;
                }
             }
 #endif
