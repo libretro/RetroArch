@@ -1006,6 +1006,21 @@ static void x11_display_server_get_video_output_next(void *data)
 }
 #endif
 
+#ifndef HAVE_XRANDR
+static void x11_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *s, size_t len)
+{
+   Display *dpy = XOpenDisplay(NULL);
+   if (!dpy)
+      return;
+   if (width)
+      *width  = DisplayWidth(dpy, DefaultScreen(dpy));
+   if (height)
+      *height = DisplayHeight(dpy, DefaultScreen(dpy));
+   XCloseDisplay(dpy);
+}
+#endif
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
@@ -1030,8 +1045,8 @@ const video_display_server_t dispserv_x11 = {
    x11_display_server_get_refresh_rate,
    x11_display_server_get_video_output_size,
 #else
-   NULL, /* get_refresh_rate */
-   NULL, /* get_video_output_size */
+   NULL, /* get_refresh_rate — no standard Xlib API */
+   x11_display_server_get_video_output_size,
 #endif
 #ifdef HAVE_XRANDR
    x11_display_server_get_video_output_prev,
