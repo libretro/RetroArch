@@ -757,12 +757,15 @@ static void win32_display_server_get_video_output_size(void *data,
 
 static void win32_display_server_get_video_output_prev(void *data)
 {
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use        = NULL;
+   unsigned mon_id            = 0;
    unsigned i;
    DEVMODE dm;
-   unsigned prev_width  = 0;
-   unsigned prev_height = 0;
-   unsigned curr_width  = 0;
-   unsigned curr_height = 0;
+   DEVMODE prev_dm;
+   bool have_prev             = false;
+   unsigned curr_width        = 0;
+   unsigned curr_height       = 0;
 
    if (win32_get_video_output(&dm, -1))
    {
@@ -775,22 +778,34 @@ static void win32_display_server_get_video_output_prev(void *data)
       if (     dm.dmPelsWidth  == curr_width
             && dm.dmPelsHeight == curr_height)
       {
-         if (     prev_width  != curr_width
-               && prev_height != curr_height)
+         if (have_prev)
             break;
       }
+      else
+      {
+         prev_dm   = dm;
+         have_prev = true;
+      }
+   }
 
-      prev_width     = dm.dmPelsWidth;
-      prev_height    = dm.dmPelsHeight;
+   if (have_prev)
+   {
+      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+      win32_change_display_settings(
+            (const char*)&current_mon.szDevice, &prev_dm, 0);
    }
 }
 
 static void win32_display_server_get_video_output_next(void *data)
 {
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use        = NULL;
+   unsigned mon_id            = 0;
    int i;
    DEVMODE dm;
-   unsigned curr_width  = 0;
-   unsigned curr_height = 0;
+   bool found                 = false;
+   unsigned curr_width        = 0;
+   unsigned curr_height       = 0;
 
    if (win32_get_video_output(&dm, -1))
    {
@@ -800,9 +815,21 @@ static void win32_display_server_get_video_output_next(void *data)
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
+      if (found)
+      {
+         if (     dm.dmPelsWidth  != curr_width
+               || dm.dmPelsHeight != curr_height)
+         {
+            win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+            win32_change_display_settings(
+                  (const char*)&current_mon.szDevice, &dm, 0);
+            break;
+         }
+      }
+
       if (     dm.dmPelsWidth  == curr_width
             && dm.dmPelsHeight == curr_height)
-         break;
+         found = true;
    }
 }
 
