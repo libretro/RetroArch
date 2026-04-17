@@ -5114,7 +5114,9 @@ void video_frame_delay(video_driver_state_t *video_st,
          frame_time_update            = false;
          video_st->frame_delay_target = video_frame_delay_effective = video_frame_delay;
          video_st->frame_time_reserve = ((int)(1 / refresh_rate * 1000) - video_st->frame_delay_target) * 1000;
+#if 0
          RARCH_DBG("[Video] Frame delay target reset to %d ms.\n", video_frame_delay);
+#endif
 
          /* Enforce minimum reserve */
          if (video_st->frame_time_reserve < 1000)
