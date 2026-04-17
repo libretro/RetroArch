@@ -1546,9 +1546,16 @@ bool rpng_iterate_image(rpng_t *rpng)
 
          if (     rpng->ihdr.width  == 0
                || rpng->ihdr.height == 0
-               /* Ensure multiplications don't overflow and wrap around, 
-                * that'd give buffer overflow crashes */
-               || (uint64_t)rpng->ihdr.width*rpng->ihdr.height*sizeof(uint32_t) >= 0x80000000)
+               /* Cap the decoded output buffer at 4 GiB to ensure the
+                * width*height*4 multiplication cannot overflow uint64_t
+                * and to reject obviously-malformed or maliciously-huge
+                * PNGs before any large allocation is attempted.  The
+                * previous 2 GiB limit was conservative: it rejected
+                * images around 23000x28000 which are valid on modern
+                * 64-bit platforms with sufficient RAM.  Callers on
+                * memory-constrained systems will still see malloc
+                * fail at the allocation site further down. */
+               || (uint64_t)rpng->ihdr.width*rpng->ihdr.height*sizeof(uint32_t) >= 0x100000000ULL)
             return false;
 
          if (!rpng_process_ihdr(&rpng->ihdr))
