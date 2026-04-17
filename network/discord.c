@@ -238,31 +238,19 @@ static int64_t discord_now_ms(void)
    return (int64_t)(cpu_features_get_time_usec() / 1000);
 }
 
-static void discord_backoff_reset(void)
-{
-   discord_backoff_current = DISCORD_BACKOFF_MIN_MS;
-}
-
 static int64_t discord_backoff_next_delay(void)
 {
    /* Upstream uses mt19937 + uniform_real_distribution(0..1) for jitter.
     * For a local IPC pipe that is overkill; a simple doubling schedule with
     * a cheap rand-based jitter factor matches the intent. */
-   int64_t jitter;
-   int64_t delay;
    int     r      = rand();
    /* jitter in [0 .. current] roughly */
-   jitter         = (int64_t)(((double)r / (double)RAND_MAX) * (double)discord_backoff_current);
-   delay          = discord_backoff_current + jitter;
+   int64_t jitter = (int64_t)(((double)r / (double)RAND_MAX) * (double)discord_backoff_current);
+   int64_t delay  = discord_backoff_current + jitter;
    if (delay > DISCORD_BACKOFF_MAX_MS)
       delay       = DISCORD_BACKOFF_MAX_MS;
    discord_backoff_current = delay;
    return delay;
-}
-
-static void discord_update_reconnect_time(void)
-{
-   discord_next_connect_ms = discord_now_ms() + discord_backoff_next_delay();
 }
 
 /* ------------------------------------------------------------------------ */
@@ -375,13 +363,17 @@ static bool discord_pipe_read(struct discord_rpc *rpc,
 static const char *discord_get_temp_path(void)
 {
    const char *t = getenv("XDG_RUNTIME_DIR");
-   if (t) return t;
+   if (t)
+      return t;
    t             = getenv("TMPDIR");
-   if (t) return t;
+   if (t)
+      return t;
    t             = getenv("TMP");
-   if (t) return t;
+   if (t)
+      return t;
    t             = getenv("TEMP");
-   if (t) return t;
+   if (t)
+      return t;
    return "/tmp";
 }
 
@@ -1281,7 +1273,7 @@ static void discord_on_connect_ready(rjson_t *r)
    }
 
    discord_was_just_connected = true;
-   discord_backoff_reset();
+   discord_backoff_current = DISCORD_BACKOFF_MIN_MS;
 
    if (user_id)       free(user_id);
    if (username)      free(username);
@@ -1296,7 +1288,7 @@ static void discord_on_disconnect(int err, const char *message)
          sizeof(discord_last_disconnect_message));
    memset(&discord_handlers, 0, sizeof(discord_handlers));
    discord_was_just_disconnected = true;
-   discord_update_reconnect_time();
+   discord_next_connect_ms = discord_now_ms() + discord_backoff_next_delay();
 }
 
 /* ------------------------------------------------------------------------ */
@@ -1312,7 +1304,7 @@ static void discord_update_connection(void)
    {
       if (discord_now_ms() >= discord_next_connect_ms)
       {
-         discord_update_reconnect_time();
+         discord_next_connect_ms = discord_now_ms() + discord_backoff_next_delay();
          discord_rpc_open(&discord_rpc_inst);
       }
       return;
@@ -1765,16 +1757,16 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data,
    http_transfer_data_t      *data       = (http_transfer_data_t *)task_data;
    discord_state_t           *discord_st = &discord_state_st;
 
-   (void)task;
-
-   if (err)
-      goto done;
-   if (!data || !data->data || !data->len)
-      goto done;
-   if (data->status != 200)
-      goto done;
+   if (err || !data || !data->data || !data->len || data->status != 200)
+   {
+      free(user_data);
+      return;
+   }
    if (!(room_data = (char *)malloc(data->len + 1)))
-      goto done;
+   {
+      free(user_data);
+      return;
+   }
    memcpy(room_data, data->data, data->len);
    room_data[data->len] = '\0';
 
@@ -1799,8 +1791,6 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data,
    }
 
    netplay_rooms_free();
-
-done:
    free(user_data);
 }
 
@@ -2023,8 +2013,6 @@ void discord_init(const char *discord_app_id, char *args)
 {
    DiscordEventHandlers handlers;
    discord_state_t     *discord_st = &discord_state_st;
-
-   (void)args; /* auto-register is disabled; command string is unused */
 
    discord_st->start_time = time(0);
 
