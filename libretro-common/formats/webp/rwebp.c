@@ -1217,12 +1217,12 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          { int q2 = mb_qp + uvdc_dq; uv_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; if(uv_dc_q>132)uv_dc_q=132; }
          { int q2 = mb_qp + uvac_dq; uv_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2]; }
 
-         /* Y mode */
-         if      (!vp8b_get(&br, vp8_ymp[0])) ym = 0;
-         else if (!vp8b_get(&br, vp8_ymp[1])) ym = 1;
-         else if (!vp8b_get(&br, vp8_ymp[2])) ym = 2;
-         else if (!vp8b_get(&br, vp8_ymp[3])) ym = 3;
-         else ym = 4; /* B_PRED */
+         /* Y mode — keyframe tree: B_PRED first (RFC 6386 §11.2) */
+         if      (!vp8b_get(&br, vp8_ymp[0])) ym = 4; /* B_PRED */
+         else if (!vp8b_get(&br, vp8_ymp[1])) ym = 0; /* DC_PRED */
+         else if (!vp8b_get(&br, vp8_ymp[2])) ym = 1; /* V_PRED */
+         else if (!vp8b_get(&br, vp8_ymp[3])) ym = 2; /* H_PRED */
+         else ym = 3; /* TM_PRED */
 
          if (ym == 4)
          {
