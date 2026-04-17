@@ -1143,6 +1143,26 @@ MSG_HASH(
    "Ваш пароль користувача облікового запису хмарного сховища."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Ідентифікатор ключа доступу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Ідентифікатор вашого ключа доступу для вашого облікового запису хмарного сховища."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Секретний ключ доступу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Ваш секретний ключ доступу до вашого облікового запису хмарного сховища."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "URL-адреса вашої кінцевої точки S3 для хмарного сховища."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Журналювання"
    )
@@ -2435,8 +2455,16 @@ MSG_HASH(
    "Вимкнути"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Яскравість"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Посилення кольору"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Використовує повний колірний діапазон вашого дисплея для створення яскравішого та насиченішого зображення. Щоб кольори були точнішими за оригінальний дизайн гри, установіть для цього параметра значення «Точний»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
@@ -4745,6 +4773,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "Використовувати вбудований переглядач зображень"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   "Показувати підтримувані файли засобу перегляду зображень у файловому браузері."
+   )
 
 /* Settings > Frame Throttle */
 
@@ -6244,6 +6276,10 @@ MSG_HASH(
    "Показувати опцію поновлення вмісту."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "Показати опцію скидання вмісту."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Показати 'Закрити вміст'"
    )
@@ -7664,6 +7700,10 @@ MSG_HASH(
    "Оновити список відтворення"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Додайте новий контент та видаліть недійсні записи, повторивши операцію сканування контенту, яка востаннє використовувалася для створення або редагування списку відтворення."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Вилучити список відтворення"
    )
@@ -8249,12 +8289,24 @@ MSG_HASH(
    "Сканує файл для вмісту, який відповідає базі даних."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "Сканування вмісту"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+   "Налаштоване сканування на основі імен файлів вмісту та/або збігу з базою даних."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Сканування товару"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
    "Метод сканування"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Автоматичний або налаштований з детальними налаштуваннями."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,

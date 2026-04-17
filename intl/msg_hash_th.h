@@ -4915,9 +4915,45 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
    "จำนวนเฟรมในการย้อนกลับ"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+   "จำนวนเฟรมที่จะย้อนกลับต่อหนึ่งขั้นตอน ค่าที่สูงขึ้นจะช่วยเพิ่มความเร็วในการย้อนกลับออกไปอีก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+   "ขนาดบัฟเฟอร์การย้อนกลับ (MB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+   "ขนาดหน่วยความจำ (MB) ที่จะสำรองไว้สำหรับบัฟเฟอร์การย้อนกลับ การเพิ่มค่านี้จะช่วยให้สามารถจัดเก็บประวัติการย้อนกลับได้ยาวนานขึ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+   "ขนาดขั้นในการปรับบัฟเฟอร์การย้อนกลับ (MB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+   "ทุกครั้งที่คุณปรับค่า ขนาดบัฟเฟอร์การย้อนกลับ มันจะเปลี่ยนขึ้นหรือลงตามจำนวนที่กำหนดไว้ใน ขนาดขั้นในการปรับขยาย เสมอ"
+   )
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "รีเซ็ตหลังจากเร่งความเร็ว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "รีเซ็ตตัวนับเวลาเฟรม หลังจากหยุดการเร่งความเร็ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "รีเซ็ตหลังจากโหลดสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "รีเซ็ตตัวนับเวลาเฟรม หลังจากโหลดสถานะ"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
    "รีเซ็ตหลังจากบันทึกสถานะ"
@@ -4930,19 +4966,123 @@ MSG_HASH(
 /* Settings > Recording */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+   "คุณภาพการบันทึกวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   "ตํ่า"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
    "ปานกลาง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
+   "สูง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   "ไม่สูญเสียคุณภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
+   "WebM เร็ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   "WebM คุณภาพสูง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   "การตั้งค่าการบันทึกวิดีโอแบบกำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+   "จำนวนเธรดในการบันทึกวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   "ใช้การบันทึกวิดีโอหลังฟิลเตอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   "บันทึกภาพหลังจากใช้งานฟิลเตอร์ (แต่ไม่รวมเชดเดอร์) วิดีโอที่ได้จะมีความสวยงามเหมือนกับที่คุณเห็นบนหน้าจอของคุณ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
+   "ใช้การบันทึกวิดีโอด้วย GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
+   "บันทึกวิดีโอจากผลลัพธ์ของเชดเดอร์บน GPU หากมีการใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+   "โหมดการสตรีม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   "ในเครื่อง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   "คุณภาพการสตรีม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   "ตํ่า"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
    "ปานกลาง"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
+   "สูง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   "การตั้งค่าการสตรีมแบบกำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+   "ชื่อสตรีม"
+   )
 
 /* Settings > On-Screen Display */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+   "Overlay ซ้อนทับบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+   "ปรับ bezels และตัวควบคุมบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "เลย์เอาต์วิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "ปรับเลย์เอาต์วิดีโอ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "แสดงตัวเลือก การแจ้งเตือนบนหน้าจอ"
+   "การแจ้งเตือนบนหน้าจอ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
@@ -4959,7 +5099,19 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
+   "แสดงผลการซ้อนทับบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+   "การซ้อนทับบนหน้าจอใช้สำหรับขอบภาพและตัวควบคุมบนหน้าจอ"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   "แสดงการซ้อนทับไว้หลังเมนู"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
    "แสดง Overlay ไว้ด้านหลังแทนที่จะอยู่ด้านหน้าเมนู"
@@ -5154,21 +5306,209 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
    "การแยกองค์ประกอบ Overlay ในแนวตั้ง (แนวตั้ง)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "หากค่าพรีเซ็ตปัจจุบันรองรับ ให้ปรับระยะห่างระหว่างองค์ประกอบ UI ในส่วนบนและส่วนล่างของการซ้อนทับเมื่อใช้งานในแนวตั้ง โดยค่าที่เป็นบวกจะเพิ่มระยะห่าง (ในขณะที่ค่าที่เป็นลบจะ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "(แนวตั้ง) ระยะห่างแนวนอนของการซ้อนทับ X"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "(แนวตั้ง) ระยะห่างแนวนอนของการซ้อนทับเมื่อใช้งานในแนวตั้ง โดยค่าที่เป็นบวกจะเลื่อนการซ้อนทับไปทางขวา และค่าที่เป็นลบจะเลื่อนไปทางซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "(แนวตั้ง) ระยะห่างแนวตั้งของการซ้อนทับ Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "(แนวตั้ง) ระยะห่างแนวตั้งของการซ้อนทับเมื่อใช้งานในแนวตั้ง โดยค่าที่เป็นบวกจะเลื่อนการซ้อนทับขึ้นด้านบน และค่าที่เป็นลบจะเลื่อนลงด้านล่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "การซ้อนทับแป้นพิมพ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "เลือกและปรับแต่งการซ้อนทับแป้นพิมพ์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "เปิดใช้งานการซ้อนทับสำหรับไลต์กัน เมาส์ และพอยเทอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "ใช้การสัมผัสใดๆ ที่ไม่ได้เป็นการกดปุ่มตัวควบคุมเพื่อสร้างอินพุตสำหรับอุปกรณ์ชี้ตำแหน่งให้กับคอร์ (Core)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "การซ้อนทับไลต์กัน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "กำหนดค่าอินพุตไลต์กันที่ส่งมาจากการซ้อนทับบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "การซ้อนทับเมาส์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "กำหนดค่าอินพุตเมาส์ที่ส่งมาจากการซ้อนทับบนหน้าจอ หมายเหตุ: การแตะด้วย 1, 2 และ 3 นิ้ว จะเป็นการส่งคำสั่งคลิกซ้าย, ขวา และกลาง ตามลำดับ"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "พรีเซ็ตการซ้อนทับแป้นพิมพ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "เลือกพรีเซ็ตการซ้อนทับแป้นพิมพ์จากตัวเลือกไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "ปรับขนาดการซ้อนทับแป้นพิมพ์อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "ปรับขนาดการซ้อนทับแป้นพิมพ์ให้เป็นไปตามอัตราส่วนภาพดั้งเดิม หากปิดการใช้งานจะเป็นการยืดให้เต็มหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "ความโปร่งใสของการซ้อนทับแป้นพิมพ์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "ระดับความโปร่งใสขององค์ประกอบ UI ทั้งหมดของการซ้อนทับแป้นพิมพ์"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "ตั้งค่าพอร์ตของ Core เพื่อรับสัญญาณอินพุตจากไลต์กันบนหน้าจอซ้อนทับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   "ทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "เหนี่ยวไกเมื่อสัมผัส"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "ส่งสัญญาณอินพุตการเหนี่ยวไกไปพร้อมกับอินพุตพอยเตอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "ความหน่วงการเหนี่ยวไก (เฟรม)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "หน่วงเวลาการเหนี่ยวไกเพื่อให้พอยเตอร์มีเวลาเคลื่อนที่ การหน่วงเวลานี้ยังใช้เพื่อรอการนับจำนวนการสัมผัสแบบมัลติทัชที่ถูกต้องด้วย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "อินพุตแบบสัมผัส 2 จุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "เลือกอินพุตที่จะส่งเมื่อมีพอยเตอร์สองจุดบนหน้าจอ ควรตั้งค่าความหน่วงการเหนี่ยวไกให้ไม่เป็นศูนย์เพื่อแยกแยะจากอินพุตอื่นๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "อินพุตแบบสัมผัส 3 จุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "เลือกอินพุตที่จะส่งเมื่อมีพอยเตอร์สามจุดบนหน้าจอ ควรตั้งค่าความหน่วงการเหนี่ยวไกให้ไม่เป็นศูนย์เพื่อแยกแยะจากอินพุตอื่นๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "อินพุตแบบสัมผัส 4 จุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "เลือกอินพุตที่จะส่งเมื่อมีพอยเตอร์สี่จุดบนหน้าจอ ควรตั้งค่าความหน่วงการเหนี่ยวไกให้ไม่เป็นศูนย์เพื่อแยกแยะจากอินพุตอื่นๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "อนุญาตให้นอกหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "อนุญาตให้นอกหน้าจอ หากปิดใช้งานจะจำกัดขอบเขตการเล็งที่อยู่นอกหน้าจอไว้ที่บริเวณขอบจอแทน"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "ความเร็วเมาส์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   "ปรับความเร็วการเคลื่อนที่ของพอยเตอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "กดค้างเพื่อลาก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "กดหน้าจอค้างไว้เพื่อเริ่มการกดปุ่มค้างย้อนกลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "ระยะเวลาการกดค้าง (มิลลิวินาที)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "ปรับระยะเวลาที่ต้องกดค้างไว้เพื่อให้ระบบรับรู้เป็นการกดค้าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "แตะสองครั้งเพื่อลาก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "แตะสองครั้งที่หน้าจอเพื่อเริ่มการกดปุ่มค้างในการแตะครั้งที่สอง (อาจทำให้การคลิกเมาส์มีความล่าช้าเพิ่มขึ้น)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "ระยะเวลาการแตะสองครั้ง (มิลลิวินาที)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "ปรับระยะเวลาที่อนุญาตให้แตะแต่ละครั้ง เพื่อตรวจจับการแตะสองครั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "เกณฑ์การปัด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "อินพุตสัมผัสสำรอง 2"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "ใช้การสัมผัสจุดที่สองเป็นปุ่มเมาส์ในระหว่างที่ควบคุมพอยเตอร์อยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "ปรับระยะการเคลื่อนที่ที่อนุญาตเมื่อตรวจจับการกดค้างหรือการแตะ โดยคำนวณเป็นเปอร์เซ็นต์ของมิติหน้าจอส่วนที่สั้นกว่า"
+   )
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
-   "แสดงตัวเลือก การแจ้งเตือนบนหน้าจอ"
+   "การแจ้งเตือนบนหน้าจอ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
@@ -5185,6 +5525,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "แสดงข้อความบนหน้าจอเมื่อทำการบันทึกและโหลดบันทึกสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "เอฟเฟกต์แสงแฟลชเมื่อถ่ายภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "แสดงเอฟเฟกต์แสงแฟลชสีขาวบนหน้าจอตามระยะเวลาที่กำหนดเมื่อถ่ายภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   "เปิด (ปกติ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   "เปิด (เร็ว)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "แจ้งเตือนอัตราการรีเฟรชหน้าจอ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -5337,7 +5697,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "แสดง 'เลิกทำบันทึก/โหลดสถานะ'"
+   "แสดง เลิกทำ 'บันทึก/โหลดสถานะ'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -5662,7 +6022,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   "บางครั้งไฟล์ ISO อาจจะมีเลข Serial ที่ซ้ำกัน โดยเฉพาะกับเกม PSP หรือ PSN ซึ่งการพึ่งพาเพียงเลขซีเรียลเพียงอย่างเดียวอาจทำให้ระบบสแกนจัดกลุ่มเกมไปไว้ในระบบที่ผิดได้ หากเปิดใช้งานตัวเลื[...]"
+   "บางครั้งไฟล์ ISO อาจมีรหัส Serial ซ้ำกัน โดยเฉพาะในเกมของ PSP/PSN การอาศัยเพียงรหัส Serial อย่างเดียวอาจทำให้ระบบสแกนจัดหมวดหมู่เกมไปไว้ในระบบที่ผิดพลาด การเปิดใช้งานส่วนนี้จะเพิ่มการตรวจส[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -6121,6 +6481,10 @@ MSG_HASH(
 /* Unsorted */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
+   "Overlay ซ้อนทับบนหน้าจอ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    "ประวัติ"
    )
@@ -6165,7 +6529,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
-   "ล้มเหลวในการเลิกทำบันทึกสถานะ"
+   "ล้มเหลวในการเลิกทำ บันทึกสถานะ"
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
