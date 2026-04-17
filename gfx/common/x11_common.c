@@ -484,48 +484,6 @@ static bool x11_create_input_context(Display *dpy,
    return true;
 }
 
-bool x11_get_metrics(void *data,
-      enum display_metric_types type, float *value)
-{
-   unsigned screen_no      = 0;
-   Display *dpy            = NULL;
-
-   switch (type)
-   {
-      case DISPLAY_METRIC_PIXEL_WIDTH:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayWidth(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_PIXEL_HEIGHT:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayHeight(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_MM_WIDTH:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayWidthMM(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_MM_HEIGHT:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayHeightMM(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_DPI:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4)
-               /  (  (float)DisplayWidthMM(dpy, screen_no)));
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_NONE:
-      default:
-         *value = 0;
-         return false;
-   }
-
-   return true;
-}
 
 static enum retro_key x11_translate_keysym_to_rk(unsigned sym)
 {

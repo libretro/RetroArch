@@ -39,8 +39,6 @@ void x11_move_window(Display *dpy, Window win,
 /* Set icon, class, default stuff. */
 void x11_set_window_attr(Display *dpy, Window win);
 
-bool x11_get_metrics(void *data,
-      enum display_metric_types type, float *value);
 
 #ifdef HAVE_XF86VM
 float x11_get_refresh_rate(void *data);

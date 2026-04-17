@@ -1021,6 +1021,49 @@ static void x11_display_server_get_video_output_size(void *data,
 }
 #endif
 
+static bool x11_get_metrics(void *data,
+      enum display_metric_types type, float *value)
+{
+   unsigned screen_no      = 0;
+   Display *dpy            = NULL;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_PIXEL_WIDTH:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayWidth(dpy, screen_no);
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_PIXEL_HEIGHT:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayHeight(dpy, screen_no);
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_MM_WIDTH:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayWidthMM(dpy, screen_no);
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = (float)DisplayHeightMM(dpy, screen_no);
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_DPI:
+         dpy    = (Display*)XOpenDisplay(NULL);
+         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4)
+               /  (  (float)DisplayWidthMM(dpy, screen_no)));
+         XCloseDisplay(dpy);
+         break;
+      case DISPLAY_METRIC_NONE:
+      default:
+         *value = 0;
+         return false;
+   }
+
+   return true;
+}
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
