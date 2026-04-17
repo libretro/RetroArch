@@ -6141,6 +6141,14 @@ int rarch_main(int argc, char *argv[], void *data)
                         );
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   /* Mark the process DPI-aware BEFORE anything creates a window.
+    * CoInitialize below can create a hidden OLE message window on
+    * some STA configurations; once any HWND exists, the DPI setting
+    * is locked and GetDeviceCaps will report a fixed 96 DPI. */
+   {
+      extern void win32_apply_dpi_awareness(void);
+      win32_apply_dpi_awareness();
+   }
    if (FAILED(CoInitialize(NULL)))
    {
       RARCH_ERR("FATAL: Failed to initialize the COM interface.\n");

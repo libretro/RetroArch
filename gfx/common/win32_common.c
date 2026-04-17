@@ -1991,17 +1991,26 @@ bool win32_window_init(WNDCLASSEX *wndclass,
  *   IDR_MENU          → win32_resources_create_menu()  [in ui_win32.c]
  *   IDR_ACCELERATOR1  → win32_resources_get_accelerator()
  *   IDD_PICKCORE      → win32_resources_pick_core_dialog()  [in ui_win32.c]
- *   rarch.manifest    → apply_dpi_awareness()  (called from _init)
+ *   rarch.manifest    → win32_apply_dpi_awareness()
+ *                       (called from the top of rarch_main, before
+ *                        any window is created)
  * ---------------------------------------------------------------- */
 
 static HACCEL s_accel_table = NULL;
 
 /* DPI AWARENESS  (replaces media/rarch.manifest)
  * The manifest contained <dpiAware>true</dpiAware>.
- * We call the equivalent API at runtime. */
+ * We call the equivalent API at runtime.
+ *
+ * Must be called before the process creates any HWND (direct or
+ * transitive, e.g. via CoInitialize or AllocConsole).  Once any
+ * top-level window exists, SetProcessDpiAwareness returns
+ * E_ACCESSDENIED and the process stays Unaware — meaning GetDeviceCaps
+ * reports a fixed 96 DPI regardless of monitor or scaling settings.
+ * See call site in retroarch.c (top of rarch_main). */
 typedef HRESULT (WINAPI *pfn_SetProcessDpiAwareness)(int);
 
-static void apply_dpi_awareness(void)
+void win32_apply_dpi_awareness(void)
 {
    HMODULE shcore = LoadLibraryW(L"shcore.dll");
    if (shcore)
@@ -2055,7 +2064,10 @@ static HACCEL create_accelerator_table(void)
 
 void win32_resources_init(void)
 {
-   apply_dpi_awareness();
+   /* NOTE: DPI awareness is applied separately, at the very top of
+    * rarch_main(), to guarantee it runs before any window is created
+    * (including the hidden OLE window CoInitialize may create).
+    * See win32_apply_dpi_awareness(). */
    s_accel_table = create_accelerator_table();
 }
 

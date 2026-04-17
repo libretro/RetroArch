@@ -175,8 +175,18 @@ void win32_setup_pixel_format(HDC hdc, bool supports_gl);
  * so that the .exe has an embedded icon visible in Explorer.
  * Everything else is created at runtime via Win32 API calls. */
 
+/* Mark the process as DPI-aware (replaces the <dpiAware>true</dpiAware>
+ * entry that used to live in media/rarch.manifest).
+ *
+ * MUST be called before any HWND is created — directly or transitively
+ * (e.g. via CoInitialize or AllocConsole).  Call it at the very top of
+ * rarch_main(), before anything else.  Safe to call on any Windows
+ * version: falls back from SetProcessDpiAwareness (Win8.1+) to
+ * SetProcessDPIAware (Vista/7), and is a no-op on older systems. */
+void win32_apply_dpi_awareness(void);
+
 /* Call once before creating any windows.
- * Applies DPI awareness and creates the accelerator table. */
+ * Creates the accelerator table and other programmatic resources. */
 void win32_resources_init(void);
 
 /* Release resources created by win32_resources_init(). */
