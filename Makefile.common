@@ -341,14 +341,11 @@ OBJ += \
        gfx/video_driver.o \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
+       gfx/gfx_thumbnail.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o
-
-ifeq ($(HAVE_MENU), 1)
-   OBJ += gfx/gfx_thumbnail.o
-endif
 
 ifeq ($(HAVE_MICROPHONE), 1)
    DEFINES += -DHAVE_MICROPHONE
@@ -2306,16 +2303,13 @@ ifeq ($(HAVE_NETWORKING), 1)
           network/natt.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
+	  tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
 
    ifeq ($(HAVE_EMSCRIPTEN), 1)
      OBJ += tasks/task_http_emscripten.o
    else
      OBJ += tasks/task_http.o
-   endif
-
-   ifeq ($(HAVE_MENU), 1)
-      OBJ += tasks/task_pl_thumbnail_download.o
    endif
 
    ifeq ($(HAVE_MENU_COMMON), 1)

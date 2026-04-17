@@ -7166,7 +7166,9 @@ static enum runloop_state_enum runloop_check_state(
    }
 #endif
 
+#ifdef HAVE_MENU
 end:
+#endif
    if (runloop_paused)
    {
       cbs->poll_cb();

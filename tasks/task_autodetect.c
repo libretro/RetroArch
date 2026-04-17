@@ -42,6 +42,7 @@
 #include "../menu/menu_driver.h"
 #endif
 
+#include "../retroarch.h"
 #include "../runloop.h"
 
 enum autoconfig_handle_flags

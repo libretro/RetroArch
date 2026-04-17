@@ -1573,7 +1573,9 @@ void audio_driver_load_system_sounds(void)
    const char *path_cancel               = NULL;
    const char *path_notice               = NULL;
    const char *path_notice_back          = NULL;
+#if defined(HAVE_MENU)
    const char *path_bgm                  = NULL;
+#endif
    const char *path_cheevo_unlock        = NULL;
    const char *path_up                   = NULL;
    const char *path_down                 = NULL;
@@ -1643,8 +1645,10 @@ void audio_driver_load_system_sounds(void)
             path_notice = path;
          else if (string_is_equal_noncase(basename_noext, "notice_back"))
             path_notice_back = path;
+#if defined(HAVE_MENU)
          else if (string_is_equal_noncase(basename_noext, "bgm"))
             path_bgm = path;
+#endif
          else if (string_is_equal_noncase(basename_noext, "unlock"))
             path_cheevo_unlock = path;
          else if (string_is_equal_noncase(basename_noext, "up"))
