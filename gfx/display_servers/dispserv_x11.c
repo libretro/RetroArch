@@ -786,7 +786,7 @@ const video_display_server_t dispserv_x11 = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   x11_get_metrics,
    x11_display_server_get_flags,
    "x11"
 };

@@ -1190,7 +1190,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   x11_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    x11_update_title,
    x11_check_window,
