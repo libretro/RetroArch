@@ -260,12 +260,12 @@ static int filebrowser_parse(
       if (string_is_equal(label, MENU_ENUM_LABEL_SCAN_FILE_STR))
          filter_ext = false;
 
-      if (   memcmp(label, "database_manager_list", STRLEN_CONST("database_manager_list")) == 0
+      if (   !strcmp(label, "database_manager_list")
 #ifdef IOS
-            || memcmp(label, "video_filter", STRLEN_CONST("video_filter")) == 0
-            || memcmp(label, "audio_dsp_plugin", STRLEN_CONST("audio_dsp_plugin")) == 0
+            || !strcmp(label, "video_filter")
+            || !strcmp(label, "audio_dsp_plugin")
 #endif
-            || memcmp(label, "cursor_manager_list", STRLEN_CONST("cursor_manager_list")) == 0)
+            || !strcmp(label, "cursor_manager_list"))
          allow_parent_directory = false;
 
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)

@@ -1830,10 +1830,6 @@ static void handle_discord_join_request(const DiscordUser *request)
 void discord_update(enum presence presence)
 {
    discord_state_t *discord_st = &discord_state_st;
-#ifdef HAVE_CHEEVOS
-   char cheevos_richpresence[256];
-   char cheevos_badge_url[256];
-#endif
 
    if (presence == discord_st->status)
       return;
@@ -1913,13 +1909,17 @@ void discord_update(enum presence presence)
                discord_st->presence.startTimestamp = discord_st->start_time;
 
 #ifdef HAVE_CHEEVOS
-               if (rcheevos_get_game_badge_url(cheevos_badge_url,
-                        sizeof(cheevos_badge_url)))
-                  discord_st->presence.largeImageKey = cheevos_badge_url;
+               if (rcheevos_get_game_badge_url(
+                        discord_st->cheevos_badge_url,
+                        sizeof(discord_st->cheevos_badge_url)))
+                  discord_st->presence.largeImageKey =
+                        discord_st->cheevos_badge_url;
 
-               if (rcheevos_get_richpresence(cheevos_richpresence,
-                        sizeof(cheevos_richpresence)) > 0)
-                  discord_st->presence.details = cheevos_richpresence;
+               if (rcheevos_get_richpresence(
+                        discord_st->cheevos_richpresence,
+                        sizeof(discord_st->cheevos_richpresence)) > 0)
+                  discord_st->presence.details =
+                        discord_st->cheevos_richpresence;
                else
 #endif
                   discord_st->presence.details = msg_hash_to_str(
@@ -1979,13 +1979,17 @@ void discord_update(enum presence presence)
          if (discord_st->pause_time)
             return;
 
-         if (rcheevos_get_game_badge_url(cheevos_badge_url,
-                  sizeof(cheevos_badge_url)))
-            discord_st->presence.largeImageKey = cheevos_badge_url;
+         if (rcheevos_get_game_badge_url(
+                  discord_st->cheevos_badge_url,
+                  sizeof(discord_st->cheevos_badge_url)))
+            discord_st->presence.largeImageKey =
+                  discord_st->cheevos_badge_url;
 
-         if (rcheevos_get_richpresence(cheevos_richpresence,
-                  sizeof(cheevos_richpresence)) > 0)
-            discord_st->presence.details = cheevos_richpresence;
+         if (rcheevos_get_richpresence(
+                  discord_st->cheevos_richpresence,
+                  sizeof(discord_st->cheevos_richpresence)) > 0)
+            discord_st->presence.details =
+                  discord_st->cheevos_richpresence;
          presence = PRESENCE_GAME;
          break;
 #endif

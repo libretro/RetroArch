@@ -128,6 +128,11 @@ struct discord_state
    char user_name[344];
    char user_avatar[344];
 
+#ifdef HAVE_CHEEVOS
+   char cheevos_richpresence[256];
+   char cheevos_badge_url[256];
+#endif
+
    bool ready;
    bool avatar_ready;
    bool connecting;

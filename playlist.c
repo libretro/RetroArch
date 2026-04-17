@@ -2427,55 +2427,55 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
             switch (pValue[0])
             {
                case 'c':
-                     if (memcmp(pValue, "core_name", sizeof("core_name")) == 0)
+                     if (!strcmp(pValue, "core_name"))
                         pCtx->current_string_val = &pCtx->current_entry->core_name;
-                     else if (memcmp(pValue, "core_path", sizeof("core_path")) == 0)
+                     else if (!strcmp(pValue, "core_path"))
                         pCtx->current_string_val = &pCtx->current_entry->core_path;
-                     else if (memcmp(pValue, "crc32", sizeof("crc32")) == 0)
+                     else if (!strcmp(pValue, "crc32"))
                         pCtx->current_string_val = &pCtx->current_entry->crc32;
                      break;
                case 'd':
-                     if (memcmp(pValue, "db_name", sizeof("db_name")) == 0)
+                     if (!strcmp(pValue, "db_name"))
                         pCtx->current_string_val = &pCtx->current_entry->db_name;
                      break;
                case 'e':
-                     if (memcmp(pValue, "entry_slot", sizeof("entry_slot")) == 0)
+                     if (!strcmp(pValue, "entry_slot"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->entry_slot;
                      break;
                case 'l':
-                     if (memcmp(pValue, "label", sizeof("label")) == 0)
+                     if (!strcmp(pValue, "label"))
                         pCtx->current_string_val = &pCtx->current_entry->label;
-                     else if (memcmp(pValue, "last_played_day", sizeof("last_played_day")) == 0)
+                     else if (!strcmp(pValue, "last_played_day"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_day;
-                     else if (memcmp(pValue, "last_played_hour", sizeof("last_played_hour")) == 0)
+                     else if (!strcmp(pValue, "last_played_hour"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_hour;
-                     else if (memcmp(pValue, "last_played_minute", sizeof("last_played_minute")) == 0)
+                     else if (!strcmp(pValue, "last_played_minute"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_minute;
-                     else if (memcmp(pValue, "last_played_month", sizeof("last_played_month")) == 0)
+                     else if (!strcmp(pValue, "last_played_month"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_month;
-                     else if (memcmp(pValue, "last_played_second", sizeof("last_played_second")) == 0)
+                     else if (!strcmp(pValue, "last_played_second"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_second;
-                     else if (memcmp(pValue, "last_played_year", sizeof("last_played_year")) == 0)
+                     else if (!strcmp(pValue, "last_played_year"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->last_played_year;
                      break;
                case 'p':
-                     if (memcmp(pValue, "path", sizeof("path")) == 0)
+                     if (!strcmp(pValue, "path"))
                         pCtx->current_string_val = &pCtx->current_entry->path;
                      break;
                case 'r':
-                     if (memcmp(pValue, "runtime_hours", sizeof("runtime_hours")) == 0)
+                     if (!strcmp(pValue, "runtime_hours"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
-                     else if (memcmp(pValue, "runtime_minutes", sizeof("runtime_minutes")) == 0)
+                     else if (!strcmp(pValue, "runtime_minutes"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_minutes;
-                     else if (memcmp(pValue, "runtime_seconds", sizeof("runtime_seconds")) == 0)
+                     else if (!strcmp(pValue, "runtime_seconds"))
                         pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_seconds;
                      break;
                case 's':
-                     if (memcmp(pValue, "subsystem_ident", sizeof("subsystem_ident")) == 0)
+                     if (!strcmp(pValue, "subsystem_ident"))
                         pCtx->current_string_val = &pCtx->current_entry->subsystem_ident;
-                     else if (memcmp(pValue, "subsystem_name", sizeof("subsystem_name")) == 0)
+                     else if (!strcmp(pValue, "subsystem_name"))
                         pCtx->current_string_val = &pCtx->current_entry->subsystem_name;
-                     else if (memcmp(pValue, "subsystem_roms", sizeof("subsystem_roms")) == 0)
+                     else if (!strcmp(pValue, "subsystem_roms"))
                         pCtx->flags |= (JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT);
                      break;
             }
@@ -2498,55 +2498,55 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
       switch (pValue[0])
       {
          case 'b':
-            if (memcmp(pValue, "base_content_directory", sizeof("base_content_directory")) == 0)
+            if (!strcmp(pValue, "base_content_directory"))
                pCtx->current_string_val = &pCtx->playlist->base_content_directory;
             break;
          case 'd':
-            if (memcmp(pValue, "default_core_path", sizeof("default_core_path")) == 0)
+            if (!strcmp(pValue, "default_core_path"))
                pCtx->current_string_val = &pCtx->playlist->default_core_path;
-            else if (memcmp(pValue, "default_core_name", sizeof("default_core_name")) == 0)
+            else if (!strcmp(pValue, "default_core_name"))
                pCtx->current_string_val = &pCtx->playlist->default_core_name;
             break;
          case 'i':
-            if (memcmp(pValue, "items", sizeof("items")) == 0)
+            if (!strcmp(pValue, "items"))
                pCtx->flags |= JSON_CTX_FLG_IN_ITEMS;
             break;
          case 'l':
-            if (memcmp(pValue, "label_display_mode", sizeof("label_display_mode")) == 0)
+            if (!strcmp(pValue, "label_display_mode"))
                pCtx->current_meta_label_display_mode_val = &pCtx->playlist->label_display_mode;
-            else if (memcmp(pValue, "left_thumbnail_mode", sizeof("left_thumbnail_mode")) == 0)
+            else if (!strcmp(pValue, "left_thumbnail_mode"))
                pCtx->current_meta_thumbnail_mode_val     = &pCtx->playlist->left_thumbnail_mode;
             break;
          case 'r':
-            if (memcmp(pValue, "right_thumbnail_mode", sizeof("right_thumbnail_mode")) == 0)
+            if (!strcmp(pValue, "right_thumbnail_mode"))
                pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->right_thumbnail_mode;
             break;
          case 's':
-            if (memcmp(pValue, "scan_content_dir", sizeof("scan_content_dir")) == 0)
+            if (!strcmp(pValue, "scan_content_dir"))
                pCtx->current_string_val         = &pCtx->playlist->scan_record.content_dir;
-            else if (memcmp(pValue, "scan_file_exts", sizeof("scan_file_exts")) == 0)
+            else if (!strcmp(pValue, "scan_file_exts"))
                pCtx->current_string_val         = &pCtx->playlist->scan_record.file_exts;
-            else if (memcmp(pValue, "scan_dat_file_path", sizeof("scan_dat_file_path")) == 0)
+            else if (!strcmp(pValue, "scan_dat_file_path"))
                pCtx->current_string_val         = &pCtx->playlist->scan_record.dat_file_path;
             else if (string_is_equal(pValue, "scan_database_name"))
                pCtx->current_string_val         = &pCtx->playlist->scan_record.database_name;
-            else if (memcmp(pValue, "scan_search_recursively", sizeof("scan_search_recursively")) == 0)
+            else if (!strcmp(pValue, "scan_search_recursively"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.search_recursively;
-            else if (memcmp(pValue, "scan_search_archives", sizeof("scan_search_archives")) == 0)
+            else if (!strcmp(pValue, "scan_search_archives"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.search_archives;
-            else if (memcmp(pValue, "scan_filter_dat_content", sizeof("scan_filter_dat_content")) == 0)
+            else if (!strcmp(pValue, "scan_filter_dat_content"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.filter_dat_content;
             else if (string_is_equal(pValue, "scan_omit_db_ref"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.omit_db_ref;
             else if (string_is_equal(pValue, "scan_db_usage"))
                pCtx->current_meta_db_usage_val  = (unsigned int*)&pCtx->playlist->scan_record.db_usage;
-            else if (memcmp(pValue, "scan_overwrite_playlist", sizeof("scan_overwrite_playlist")) == 0)
+            else if (!strcmp(pValue, "scan_overwrite_playlist"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.overwrite_playlist;
-            else if (memcmp(pValue, "sort_mode", sizeof("sort_mode")) == 0)
+            else if (!strcmp(pValue, "sort_mode"))
                pCtx->current_meta_sort_mode_val = &pCtx->playlist->sort_mode;
             break;
          case 't':
-            if (memcmp(pValue, "thumbnail_match_mode", sizeof("thumbnail_match_mode")) == 0)
+            if (!strcmp(pValue, "thumbnail_match_mode"))
                pCtx->current_meta_thumbnail_match_mode_val     = &pCtx->playlist->thumbnail_match_mode;
             break;
       }
