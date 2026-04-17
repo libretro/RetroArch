@@ -5127,7 +5127,10 @@ static void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_d
    vfda->frame_time_target = frame_time_target;
 
 #if FRAME_DELAY_AUTO_DEBUG
-   if (frame_time_index > frame_time_frames)
+   {
+      /* Match the averager's wrapped read order so debug output
+       * reflects the samples actually used. */
+      const uint16_t mask = MEASURE_FRAME_TIME_SAMPLES_COUNT - 1;
       RARCH_DBG("[Video] %5d / pos:%d,%d min:%d med:%d max:%d / delta:%5d = %5d %5d %5d %5d %5d %5d %5d %5d\n",
             frame_time_avg,
             count_pos,
@@ -5136,15 +5139,16 @@ static void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_d
             count_med,
             count_max,
             frame_time_max - frame_time_min,
-            video_st->frame_time_samples[frame_time_index - 8],
-            video_st->frame_time_samples[frame_time_index - 7],
-            video_st->frame_time_samples[frame_time_index - 6],
-            video_st->frame_time_samples[frame_time_index - 5],
-            video_st->frame_time_samples[frame_time_index - 4],
-            video_st->frame_time_samples[frame_time_index - 3],
-            video_st->frame_time_samples[frame_time_index - 2],
-            video_st->frame_time_samples[frame_time_index - 1]
+            video_st->frame_time_samples[(uint16_t)((frame_time_index - 8) & mask)],
+            video_st->frame_time_samples[(uint16_t)((frame_time_index - 7) & mask)],
+            video_st->frame_time_samples[(uint16_t)((frame_time_index - 6) & mask)],
+            video_st->frame_time_samples[(uint16_t)((frame_time_index - 5) & mask)],
+            video_st->frame_time_samples[(uint16_t)((frame_time_index - 4) & mask)],
+            video_st->frame_time_samples[(uint16_t)((frame_time_index - 3) & mask)],
+            video_st->frame_time_samples[(uint16_t)((frame_time_index - 2) & mask)],
+            video_st->frame_time_samples[(uint16_t)((frame_time_index - 1) & mask)]
       );
+   }
 #endif
 }
 
