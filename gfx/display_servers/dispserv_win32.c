@@ -23,6 +23,7 @@
 #include <windows.h>
 #include <ntverp.h>
 
+
 #ifndef COBJMACROS
 #define COBJMACROS
 #define COBJMACROS_DEFINED

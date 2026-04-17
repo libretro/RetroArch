@@ -7297,10 +7297,12 @@ int action_cb_push_dropdown_item_resolution(const char *path,
 
    ++end;
    height = (unsigned)strtoul(end, &end, 0);
-   if (*end == ' ')
+   /* Skip whitespace and opening parenthesis: "2160 (120 Hz)" → "120 Hz)" */
+   while (*end == ' ' || *end == '(')
       ++end;
 
    refreshrate = (float)strtod(end, NULL);
+
 
    if (video_display_server_set_resolution(width, height,
          floor(refreshrate), refreshrate, 0, 0, 0, 0))

@@ -968,19 +968,7 @@ static void gdi_unload_texture(void *data,
 
 static uint32_t gdi_get_flags(void *data) { return 0; }
 
-static void gdi_get_video_output_prev(void *data)
-{
-   unsigned width  = 0;
-   unsigned height = 0;
-   win32_get_video_output_prev(&width, &height);
-}
 
-static void gdi_get_video_output_next(void *data)
-{
-   unsigned width  = 0;
-   unsigned height = 0;
-   win32_get_video_output_next(&width, &height);
-}
 
 static const video_poke_interface_t gdi_poke_interface = {
    gdi_get_flags,
@@ -990,8 +978,8 @@ static const video_poke_interface_t gdi_poke_interface = {
    win32_get_refresh_rate,
    NULL, /* set_filtering */
    win32_get_video_output_size,
-   gdi_get_video_output_prev,
-   gdi_get_video_output_next,
+   NULL, /* get_video_output_prev - handled by display server */
+   NULL, /* get_video_output_next - handled by display server */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
    NULL, /* set_aspect_ratio */

@@ -1980,6 +1980,8 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height, char 
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
+   if (video_display_server_get_video_output_size(width, height, s, len))
+      return true;
    if (!poke || !poke->get_video_output_size)
       return false;
    poke->get_video_output_size(video_st->data,
@@ -2243,6 +2245,8 @@ bool video_driver_get_next_video_out(void)
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
+   if (video_display_server_get_video_output_next())
+      return true;
    if (!poke || !poke->get_video_output_next)
       return false;
    poke->get_video_output_next(video_st->data);
@@ -2253,6 +2257,8 @@ bool video_driver_get_prev_video_out(void)
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
+   if (video_display_server_get_video_output_prev())
+      return true;
    if (!poke || !poke->get_video_output_prev)
       return false;
    poke->get_video_output_prev(video_st->data);
@@ -3443,6 +3449,8 @@ bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
    video_driver_state_t *video_st  = &video_driver_st;
    const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
    void *ctx_data                  = (void*)video_st->context_data;
+   if (video_display_server_get_metrics(metrics->type, metrics->value))
+      return true;
    if (ctx->get_metrics)
       return ctx->get_metrics(ctx_data, metrics->type, metrics->value);
    return false;
@@ -3637,7 +3645,10 @@ float video_driver_get_refresh_rate(void)
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
    if (poke && poke->get_refresh_rate)
-      return poke->get_refresh_rate(video_st->data);
+   {
+      float rate = poke->get_refresh_rate(video_st->data);
+      return rate;
+   }
 
    return 0.0f;
 }

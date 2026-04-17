@@ -830,8 +830,6 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 
 }
 
-static void gfx_ctx_wgl_get_video_output_prev(void *data) { }
-static void gfx_ctx_wgl_get_video_output_next(void *data) { }
 
 static bool gfx_ctx_wgl_create_surface(void *data)
 {
@@ -904,8 +902,8 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    win32_get_video_size,
    win32_get_refresh_rate,
    win32_get_video_output_size,
-   gfx_ctx_wgl_get_video_output_prev,
-   gfx_ctx_wgl_get_video_output_next,
+   NULL, /* get_video_output_prev - handled by display server */
+   NULL, /* get_video_output_next - handled by display server */
    win32_get_metrics,
    NULL,
    video_driver_update_title,

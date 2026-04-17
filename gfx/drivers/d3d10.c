@@ -3758,19 +3758,7 @@ static uint32_t d3d10_get_flags(void *data)
 }
 
 #ifndef __WINRT__
-static void d3d10_get_video_output_prev(void *data)
-{
-   unsigned width  = 0;
-   unsigned height = 0;
-   win32_get_video_output_prev(&width, &height);
-}
 
-static void d3d10_get_video_output_next(void *data)
-{
-   unsigned width  = 0;
-   unsigned height = 0;
-   win32_get_video_output_next(&width, &height);
-}
 #endif
 
 static const video_poke_interface_t d3d10_poke_interface = {
@@ -3791,8 +3779,8 @@ static const video_poke_interface_t d3d10_poke_interface = {
    NULL, /* get_video_output_next */
 #else
    win32_get_video_output_size,
-   d3d10_get_video_output_prev,
-   d3d10_get_video_output_next,
+   NULL, /* get_video_output_prev - handled by display server */
+   NULL, /* get_video_output_next - handled by display server */
 #endif
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */

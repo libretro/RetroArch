@@ -293,8 +293,6 @@ static uint32_t gfx_ctx_w_vk_get_flags(void *data)
 }
 
 static void gfx_ctx_w_vk_set_flags(void *data, uint32_t flags) { }
-static void gfx_ctx_w_vk_get_video_output_prev(void *data) { }
-static void gfx_ctx_w_vk_get_video_output_next(void *data) { }
 
 const gfx_ctx_driver_t gfx_ctx_w_vk = {
    gfx_ctx_w_vk_init,
@@ -306,8 +304,8 @@ const gfx_ctx_driver_t gfx_ctx_w_vk = {
    win32_get_video_size,
    win32_get_refresh_rate,
    win32_get_video_output_size,
-   gfx_ctx_w_vk_get_video_output_prev,
-   gfx_ctx_w_vk_get_video_output_next,
+   NULL, /* get_video_output_prev - handled by display server */
+   NULL, /* get_video_output_next - handled by display server */
    win32_get_metrics,
    NULL,
    video_driver_update_title,

@@ -6390,19 +6390,7 @@ static bool d3d12_get_hw_render_interface(
 }
 
 #ifndef __WINRT__
-static void d3d12_get_video_output_prev(void *data)
-{
-   unsigned width  = 0;
-   unsigned height = 0;
-   win32_get_video_output_prev(&width, &height);
-}
 
-static void d3d12_get_video_output_next(void *data)
-{
-   unsigned width  = 0;
-   unsigned height = 0;
-   win32_get_video_output_next(&width, &height);
-}
 #endif
 
 static bool d3d12_get_current_software_framebuffer(
@@ -6509,8 +6497,8 @@ static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* get_video_output_next */
 #else
    win32_get_video_output_size,
-   d3d12_get_video_output_prev,
-   d3d12_get_video_output_next,
+   NULL, /* get_video_output_prev - handled by display server */
+   NULL, /* get_video_output_next - handled by display server */
 #endif
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
