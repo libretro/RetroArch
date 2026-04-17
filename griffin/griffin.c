@@ -328,6 +328,7 @@ VIDEO CONTEXT
 
 #ifdef HAVE_WAYLAND
 #include "../gfx/drivers_context/wayland_ctx.c"
+#include "../gfx/display_servers/dispserv_wl.c"
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers_context/wayland_vk_ctx.c"
 #endif
