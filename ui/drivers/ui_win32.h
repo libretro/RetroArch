@@ -80,6 +80,67 @@ typedef struct
 } win32_browser_thread_data_t;
 #endif /* HAVE_THREADS */
 
+/* Win32 UI resource identifiers — used by the menu bar,
+ * accelerator table, and the "Pick Core" dialog. */
+enum
+{
+   IDR_MENU          = 101,
+   IDR_PICKCORE      = 103,
+   IDR_ACCELERATOR1,
+
+   ID_M_LOAD_CONTENT = 40001,
+   ID_CORELISTBOX,
+   ID_M_RESET,
+   ID_M_QUIT,
+   ID_M_MENU_TOGGLE,
+   ID_M_PAUSE_TOGGLE,
+   ID_M_LOAD_CORE,
+   ID_M_LOAD_STATE,
+   ID_M_SAVE_STATE,
+   ID_M_DISK_CYCLE,
+   ID_M_DISK_NEXT,
+   ID_M_DISK_PREV,
+   ID_M_WINDOW_SCALE_1X,
+   ID_M_WINDOW_SCALE_2X,
+   ID_M_WINDOW_SCALE_3X,
+   ID_M_WINDOW_SCALE_4X,
+   ID_M_WINDOW_SCALE_5X,
+   ID_M_WINDOW_SCALE_6X,
+   ID_M_WINDOW_SCALE_7X,
+   ID_M_WINDOW_SCALE_8X,
+   ID_M_WINDOW_SCALE_9X,
+   ID_M_WINDOW_SCALE_10X,
+   ID_M_FULL_SCREEN,
+   ID_M_MOUSE_GRAB,
+   ID_M_STATE_INDEX_AUTO,
+   ID_M_STATE_INDEX_0,
+   ID_M_STATE_INDEX_1,
+   ID_M_STATE_INDEX_2,
+   ID_M_STATE_INDEX_3,
+   ID_M_STATE_INDEX_4,
+   ID_M_STATE_INDEX_5,
+   ID_M_STATE_INDEX_6,
+   ID_M_STATE_INDEX_7,
+   ID_M_STATE_INDEX_8,
+   ID_M_STATE_INDEX_9,
+   ID_M_TAKE_SCREENSHOT,
+   ID_M_MUTE_TOGGLE,
+   ID_M_TOGGLE_DESKTOP
+};
+
+/* Functions moved from gfx/common/win32_common.c —
+ * UI logic that the WndProc and window-setup code calls into. */
+bool win32_load_content_from_gui(const char *szFilename);
+bool win32_drag_query_file(HWND hwnd, WPARAM wparam);
+LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
+#ifdef HAVE_MENU
+void win32_localize_menu(HMENU menu);
+#endif
+#ifndef __WINRT__
+HMENU win32_resources_create_menu(void);
+int win32_resources_pick_core_dialog(HWND parent, DLGPROC dlg_proc);
+#endif
+
 RETRO_END_DECLS
 
 #endif

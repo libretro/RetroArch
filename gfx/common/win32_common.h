@@ -80,6 +80,7 @@ extern unsigned g_win32_resize_width;
 extern unsigned g_win32_resize_height;
 extern float g_win32_refresh_rate;
 extern ui_window_win32_t main_window;
+extern HACCEL window_accelerators;
 
 void win32_monitor_get_info(void);
 
@@ -197,19 +198,9 @@ void win32_resources_init(void);
 /* Release resources created by win32_resources_init(). */
 void win32_resources_free(void);
 
-/* Build the application menu bar programmatically
- * (replaces LoadMenu + MAKEINTRESOURCE(IDR_MENU)).
- * Returns a fresh HMENU each call — caller owns it. */
-HMENU win32_resources_create_menu(void);
-
 /* Return the accelerator table
  * (replaces LoadAccelerators + MAKEINTRESOURCE(IDR_ACCELERATOR1)). */
 HACCEL win32_resources_get_accelerator(void);
-
-/* Show the "Pick Core" dialog built in memory
- * (replaces DialogBoxParam + MAKEINTRESOURCE(IDD_PICKCORE)).
- * Returns IDOK or IDCANCEL. */
-int win32_resources_pick_core_dialog(HWND parent, DLGPROC dlg_proc);
 #endif /* !__WINRT__ */
 
 RETRO_END_DECLS
