@@ -114,6 +114,8 @@ typedef struct frontend_ctx_driver
          const char* speak_text, int priority);
    bool (*set_gamemode)(bool on);
 
+   enum rarch_display_type (*get_display_type)(void);
+
    const char *ident;
 
    const struct video_driver *(*get_video_driver)(void);

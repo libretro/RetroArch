@@ -624,12 +624,14 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "vita",                       /* ident */
 #else
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "psp",                        /* ident */
 #endif
    NULL                          /* get_video_driver */

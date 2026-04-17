@@ -71,6 +71,7 @@ static frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL,                         /* get_display_type */
    "null",
    NULL,                         /* get_video_driver */
 };

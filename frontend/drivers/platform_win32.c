@@ -1311,6 +1311,11 @@ static bool accessibility_speak_windows(int speed,
 }
 #endif
 
+static enum rarch_display_type frontend_win32_get_display_type(void)
+{
+   return RARCH_DISPLAY_WIN32;
+}
+
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_env_get,         /* env_get   */
    frontend_win32_init,            /* init      */
@@ -1357,6 +1362,7 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* accessibility_speak */
 #endif
    NULL,                            /* set_gamemode        */
+   frontend_win32_get_display_type,
    "win32",                         /* ident               */
    NULL                             /* get_video_driver    */
 };
