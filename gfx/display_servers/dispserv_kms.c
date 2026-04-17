@@ -223,6 +223,24 @@ static uint32_t kms_display_server_get_flags(void *data)
    return flags;
 }
 
+static float kms_display_server_get_refresh_rate(void *data)
+{
+   if (g_drm_mode)
+      return drm_calc_refresh_rate(g_drm_mode);
+   return 0.0f;
+}
+
+static void kms_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *s, size_t len)
+{
+   if (!g_drm_mode)
+      return;
+   if (width)
+      *width  = g_drm_mode->hdisplay;
+   if (height)
+      *height = g_drm_mode->vdisplay;
+}
+
 const video_display_server_t dispserv_kms = {
    kms_display_server_init,
    kms_display_server_destroy,
@@ -234,8 +252,8 @@ const video_display_server_t dispserv_kms = {
    NULL, /* get output options */
    NULL, /* kms_display_server_set_screen_orientation */
    NULL, /* kms_display_server_get_screen_orientation */
-   NULL, /* get_refresh_rate */
-   NULL, /* get_video_output_size */
+   kms_display_server_get_refresh_rate,
+   kms_display_server_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
