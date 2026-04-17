@@ -205,15 +205,221 @@ static void rpng_filter_up(uint8_t *out,
 #endif
 }
 
-/* PNG Filter Average (vectorised portion for the prior-only prefix and the
- * main body where we can process multiple independent bytes at once).
- * NOTE: the recurrence in the main body (decoded[i] depends on decoded[i-bpp])
- * limits parallelism to bytes that are bpp-apart; we process bpp-width stripes
- * sequentially but use SIMD within each stripe. For bpp >= 4 (RGBA 8-bit) the
- * stripes are 4 independent channels and we fall back to scalar for safety. */
+/* --- PNG reverse filter SIMD paths for RGBA (bpp == 4) ------------------
+ *
+ * The SUB, AVERAGE and PAETH filters all have a per-pixel recurrence:
+ *   decoded[i] depends on decoded[i - bpp] from the same scanline.
+ *
+ * For RGBA (bpp == 4) the recurrence distance equals one SIMD "pixel", so
+ * we can process the 4 channels of each pixel in parallel within a single
+ * vector register while still respecting the pixel-to-pixel chain.  This
+ * eliminates the per-byte branch and scalar dependency chain that costs
+ * most in the scalar versions (PAETH especially, where each byte has two
+ * unpredictable branches).
+ *
+ * All three helpers assume:
+ *   - bpp == 4, pitch is a multiple of 4 (guaranteed by PNG spec for RGBA)
+ *   - prev is a valid prev_scanline pointer (zero-initialised on row 0
+ *     by rpng_reverse_filter_init -> calloc)
+ *   - raw and decoded may alias (the original code memcpy's raw->decoded
+ *     first; we do the filter in-place from raw directly)
+ *
+ * For bpp != 4 we keep the scalar path.  The payoff would be smaller there
+ * (palette/gray images are smaller to begin with) and the SIMD layout is
+ * more awkward.
+ */
+#if defined(RPNG_SIMD_SSE2)
 
-/* PNG Filter Up on RGBA data: reinterpret rows as uint32 columns—
- * each component is independent, so we can use wider loads. */
+/* Load 4 bytes (one RGBA pixel) and zero-extend each to 16 bits so that
+ * the subsequent arithmetic has one byte of headroom (additions, shifts,
+ * signed subtraction for Paeth) without overflowing. */
+static INLINE __m128i rpng_load4_u8_to_u16(const uint8_t *p)
+{
+   /* memcpy into a properly-aligned temporary avoids UB from an
+    * unaligned dereference of int32_t*.  The scanline buffer
+    * (pngp->inflate_buf) is not guaranteed 4-byte aligned at the
+    * start of every filter step, so casting directly would be
+    * unsafe.  Compilers fold this to a single movd at -O2. */
+   int32_t tmp;
+   memcpy(&tmp, p, sizeof(tmp));
+   return _mm_unpacklo_epi8(_mm_cvtsi32_si128(tmp), _mm_setzero_si128());
+}
+
+/* Write the low 4 lanes (bytes) of a 16-bit-lane register back to memory
+ * as packed u8.  We mask to 0x00FF before packus so wrap-around (the PNG
+ * filter arithmetic is mod 256) is preserved rather than saturated. */
+static INLINE void rpng_store4_u16_to_u8(uint8_t *p, __m128i v)
+{
+   __m128i packed = _mm_packus_epi16(v, _mm_setzero_si128());
+   int32_t tmp    = _mm_cvtsi128_si32(packed);
+   memcpy(p, &tmp, sizeof(tmp));
+}
+
+static void rpng_filter_sub_rgba(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i;
+   __m128i prev_pixel = _mm_setzero_si128();
+   const __m128i mask = _mm_set1_epi16(0x00FF);
+   for (i = 0; i + 4 <= pitch; i += 4)
+   {
+      __m128i r   = rpng_load4_u8_to_u16(raw + i);
+      __m128i out = _mm_and_si128(_mm_add_epi16(r, prev_pixel), mask);
+      rpng_store4_u16_to_u8(decoded + i, out);
+      prev_pixel  = out;
+   }
+}
+
+static void rpng_filter_avg_rgba(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+{
+   size_t i;
+   __m128i prev_pixel = _mm_setzero_si128();
+   const __m128i mask = _mm_set1_epi16(0x00FF);
+   for (i = 0; i + 4 <= pitch; i += 4)
+   {
+      __m128i r   = rpng_load4_u8_to_u16(raw  + i);
+      __m128i pv  = rpng_load4_u8_to_u16(prev + i);
+      __m128i avg = _mm_srli_epi16(_mm_add_epi16(prev_pixel, pv), 1);
+      __m128i out = _mm_and_si128(_mm_add_epi16(r, avg), mask);
+      rpng_store4_u16_to_u8(decoded + i, out);
+      prev_pixel  = out;
+   }
+}
+
+/* Branch-free Paeth predictor for 16-bit lanes, following the identity
+ *   pa = |b - c|
+ *   pb = |a - c|
+ *   pc = |(b - c) + (a - c)| = |a + b - 2c|
+ * PNG selection rule (in priority order): a if pa <= pb && pa <= pc,
+ * else b if pb <= pc, else c. */
+static INLINE __m128i rpng_paeth_predictor_epi16(
+      __m128i a, __m128i b, __m128i c)
+{
+   __m128i bc = _mm_sub_epi16(b, c);
+   __m128i ac = _mm_sub_epi16(a, c);
+   __m128i sm = _mm_add_epi16(bc, ac);
+   __m128i z  = _mm_setzero_si128();
+   /* SSE2 lacks abs_epi16; max(x, -x) is the standard substitute. */
+   __m128i pa = _mm_max_epi16(bc, _mm_sub_epi16(z, bc));
+   __m128i pb = _mm_max_epi16(ac, _mm_sub_epi16(z, ac));
+   __m128i pc = _mm_max_epi16(sm, _mm_sub_epi16(z, sm));
+   /* cmpgt returns 0xFFFF on "greater than" — mask of "don't pick a/b". */
+   __m128i not_a  = _mm_or_si128(_mm_cmpgt_epi16(pa, pb),
+                                 _mm_cmpgt_epi16(pa, pc));
+   __m128i pick_c = _mm_cmpgt_epi16(pb, pc);
+   __m128i bc_sel = _mm_or_si128(_mm_andnot_si128(pick_c, b),
+                                 _mm_and_si128(   pick_c, c));
+   return            _mm_or_si128(_mm_andnot_si128(not_a, a),
+                                  _mm_and_si128(   not_a, bc_sel));
+}
+
+static void rpng_filter_paeth_rgba(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+{
+   size_t i;
+   __m128i prev_pixel      = _mm_setzero_si128();  /* decoded[i-4] */
+   __m128i prev_upper_left = _mm_setzero_si128();  /* prev[i-4]    */
+   const __m128i mask      = _mm_set1_epi16(0x00FF);
+   for (i = 0; i + 4 <= pitch; i += 4)
+   {
+      __m128i r    = rpng_load4_u8_to_u16(raw  + i);
+      __m128i pv   = rpng_load4_u8_to_u16(prev + i);
+      __m128i pred = rpng_paeth_predictor_epi16(
+            prev_pixel, pv, prev_upper_left);
+      __m128i out  = _mm_and_si128(_mm_add_epi16(r, pred), mask);
+      rpng_store4_u16_to_u8(decoded + i, out);
+      prev_pixel      = out;
+      prev_upper_left = pv;
+   }
+}
+
+#elif defined(RPNG_SIMD_NEON)
+
+static INLINE uint16x4_t rpng_load4_u8_to_u16(const uint8_t *p)
+{
+   uint32_t v;
+   memcpy(&v, p, 4);
+   return vget_low_u16(vmovl_u8(vreinterpret_u8_u32(vdup_n_u32(v))));
+}
+
+static INLINE void rpng_store4_u16_to_u8(uint8_t *p, uint16x4_t v)
+{
+   /* Narrow 4x16 -> 4x8, reinterpret as u32 lane, then memcpy to dst.
+    * memcpy handles any alignment and compiles to a single str at -O2. */
+   uint8x8_t b    = vmovn_u16(vcombine_u16(v, v));
+   uint32_t  word = vget_lane_u32(vreinterpret_u32_u8(b), 0);
+   memcpy(p, &word, sizeof(word));
+}
+
+static void rpng_filter_sub_rgba(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i;
+   uint16x4_t prev_pixel = vdup_n_u16(0);
+   const uint16x4_t mask = vdup_n_u16(0xFF);
+   for (i = 0; i + 4 <= pitch; i += 4)
+   {
+      uint16x4_t r   = rpng_load4_u8_to_u16(raw + i);
+      uint16x4_t out = vand_u16(vadd_u16(r, prev_pixel), mask);
+      rpng_store4_u16_to_u8(decoded + i, out);
+      prev_pixel     = out;
+   }
+}
+
+static void rpng_filter_avg_rgba(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+{
+   size_t i;
+   uint16x4_t prev_pixel = vdup_n_u16(0);
+   const uint16x4_t mask = vdup_n_u16(0xFF);
+   for (i = 0; i + 4 <= pitch; i += 4)
+   {
+      uint16x4_t r   = rpng_load4_u8_to_u16(raw  + i);
+      uint16x4_t pv  = rpng_load4_u8_to_u16(prev + i);
+      uint16x4_t avg = vshr_n_u16(vadd_u16(prev_pixel, pv), 1);
+      uint16x4_t out = vand_u16(vadd_u16(r, avg), mask);
+      rpng_store4_u16_to_u8(decoded + i, out);
+      prev_pixel     = out;
+   }
+}
+
+static INLINE uint16x4_t rpng_paeth_predictor_u16(
+      uint16x4_t a, uint16x4_t b, uint16x4_t c)
+{
+   int16x4_t bc = vsub_s16(vreinterpret_s16_u16(b), vreinterpret_s16_u16(c));
+   int16x4_t ac = vsub_s16(vreinterpret_s16_u16(a), vreinterpret_s16_u16(c));
+   int16x4_t sm = vadd_s16(bc, ac);
+   uint16x4_t pa = vreinterpret_u16_s16(vabs_s16(bc));
+   uint16x4_t pb = vreinterpret_u16_s16(vabs_s16(ac));
+   uint16x4_t pc = vreinterpret_u16_s16(vabs_s16(sm));
+   uint16x4_t not_a  = vorr_u16(vcgt_u16(pa, pb), vcgt_u16(pa, pc));
+   uint16x4_t pick_c = vcgt_u16(pb, pc);
+   uint16x4_t bc_sel = vbsl_u16(pick_c, c, b);
+   return              vbsl_u16(not_a,  bc_sel, a);
+}
+
+static void rpng_filter_paeth_rgba(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+{
+   size_t i;
+   uint16x4_t prev_pixel      = vdup_n_u16(0);
+   uint16x4_t prev_upper_left = vdup_n_u16(0);
+   const uint16x4_t mask      = vdup_n_u16(0xFF);
+   for (i = 0; i + 4 <= pitch; i += 4)
+   {
+      uint16x4_t r    = rpng_load4_u8_to_u16(raw  + i);
+      uint16x4_t pv   = rpng_load4_u8_to_u16(prev + i);
+      uint16x4_t pred = rpng_paeth_predictor_u16(
+            prev_pixel, pv, prev_upper_left);
+      uint16x4_t out  = vand_u16(vadd_u16(r, pred), mask);
+      rpng_store4_u16_to_u8(decoded + i, out);
+      prev_pixel      = out;
+      prev_upper_left = pv;
+   }
+}
+
+#endif /* RPNG_SIMD_SSE2 / RPNG_SIMD_NEON */
 
 /* ---------------------------------------------------------------------------
  * SIMD pixel format conversion helpers
@@ -903,6 +1109,14 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          break;
       case PNG_FILTER_SUB:
+#if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
+         if (pngp->bpp == 4)
+         {
+            rpng_filter_sub_rgba(pngp->decoded_scanline,
+                  pngp->inflate_buf, pngp->pitch);
+            break;
+         }
+#endif
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = pngp->bpp; i < pngp->pitch; i++)
             pngp->decoded_scanline[i] += pngp->decoded_scanline[i - pngp->bpp];
@@ -913,6 +1127,14 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
                pngp->inflate_buf, pngp->prev_scanline, pngp->pitch);
          break;
       case PNG_FILTER_AVERAGE:
+#if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
+         if (pngp->bpp == 4)
+         {
+            rpng_filter_avg_rgba(pngp->decoded_scanline,
+                  pngp->inflate_buf, pngp->prev_scanline, pngp->pitch);
+            break;
+         }
+#endif
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = 0; i < pngp->bpp; i++)
          {
@@ -926,6 +1148,14 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
          }
          break;
       case PNG_FILTER_PAETH:
+#if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
+         if (pngp->bpp == 4)
+         {
+            rpng_filter_paeth_rgba(pngp->decoded_scanline,
+                  pngp->inflate_buf, pngp->prev_scanline, pngp->pitch);
+            break;
+         }
+#endif
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = 0; i < pngp->bpp; i++)
             pngp->decoded_scanline[i] += pngp->prev_scanline[i];
