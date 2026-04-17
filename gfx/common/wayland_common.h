@@ -62,8 +62,6 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl);
 
 void gfx_ctx_wl_update_title_common(void *data);
 
-bool gfx_ctx_wl_get_metrics_common(void *data,
-      enum display_metric_types type, float *value);
 
 bool gfx_ctx_wl_init_common(
       const toplevel_listener_t *toplevel_listener,
@@ -81,7 +79,6 @@ bool gfx_ctx_wl_set_video_mode_common(gfx_ctx_wayland_data_t *wl,
       unsigned width, unsigned height,
       bool fullscreen);
 
-float gfx_ctx_wl_get_refresh_rate(void *data);
 
 bool gfx_ctx_wl_has_focus(void *data);
 

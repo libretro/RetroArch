@@ -469,42 +469,6 @@ void gfx_ctx_wl_update_title_common(void *data)
    }
 }
 
-bool gfx_ctx_wl_get_metrics_common(void *data,
-      enum display_metric_types type, float *value)
-{
-   display_output_t *od;
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   output_info_t *oi          = wl ? wl->current_output : NULL;
-
-   if (!oi)
-      wl_list_for_each(od, &wl->all_outputs, link)
-      {
-         oi = od->output;
-         break;
-      };
-
-   switch (type)
-   {
-      case DISPLAY_METRIC_MM_WIDTH:
-         *value = (float)oi->physical_width;
-         break;
-
-      case DISPLAY_METRIC_MM_HEIGHT:
-         *value = (float)oi->physical_height;
-         break;
-
-      case DISPLAY_METRIC_DPI:
-         *value =   (float)oi->width * 25.4f
-                  / (float)oi->physical_width;
-         break;
-
-      default:
-         *value = 0.0f;
-         return false;
-   }
-
-   return true;
-}
 
 static int create_shm_file(off_t size)
 {
@@ -1135,13 +1099,6 @@ bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
    return true;
 }
 
-float gfx_ctx_wl_get_refresh_rate(void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (!wl || !wl->current_output)
-      return false;
-   return (float)wl->current_output->refresh_rate / 1000.0f;
-}
 
 bool gfx_ctx_wl_has_focus(void *data)
 {
