@@ -1455,7 +1455,7 @@ static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* load_texture */
    NULL, /* unload_texture */
    NULL, /* set_video_mode */
-   drm_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

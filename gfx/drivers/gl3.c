@@ -4545,14 +4545,6 @@ static uint32_t gl3_get_flags(void *data)
    return flags;
 }
 
-static float gl3_get_refresh_rate(void *data)
-{
-   float refresh_rate;
-   if (video_context_driver_get_refresh_rate(&refresh_rate))
-       return refresh_rate;
-   return 0.0f;
-}
-
 static void gl3_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl3_t *gl     = (gl3_t*)data;
@@ -4774,30 +4766,6 @@ static void gl3_set_texture_enable(void *data, bool state, bool fullscreen)
       gl->flags &= ~GL3_FLAG_MENU_TEXTURE_FULLSCREEN;
 }
 
-static void gl3_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
-{
-   gl3_t   *gl = (gl3_t*)data;
-   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_size)
-      gl->ctx_driver->get_video_output_size(
-            gl->ctx_data,
-            width, height, desc, desc_len);
-}
-
-static void gl3_get_video_output_prev(void *data)
-{
-   gl3_t   *gl = (gl3_t*)data;
-   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_prev)
-      gl->ctx_driver->get_video_output_prev(gl->ctx_data);
-}
-
-static void gl3_get_video_output_next(void *data)
-{
-   gl3_t   *gl = (gl3_t*)data;
-   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_next)
-      gl->ctx_driver->get_video_output_next(gl->ctx_data);
-}
-
 static uintptr_t gl3_get_current_framebuffer(void *data)
 {
    gl3_t *gl = (gl3_t*)data;
@@ -4820,11 +4788,11 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_load_texture,
    gl3_unload_texture,
    gl3_set_video_mode,
-   gl3_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* set_filtering */
-   gl3_get_video_output_size,
-   gl3_get_video_output_prev,
-   gl3_get_video_output_next,
+   NULL, /* video_output_size - handled by display server */
+   NULL, /* video_output_prev - handled by display server */
+   NULL, /* video_output_next - handled by display server */
    gl3_get_current_framebuffer,
    gl3_get_proc_address,
    gl3_set_aspect_ratio,

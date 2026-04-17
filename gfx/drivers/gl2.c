@@ -5275,29 +5275,6 @@ static void gl2_apply_state_changes(void *data)
       gl->flags        |= GL2_FLAG_SHOULD_RESIZE;
 }
 
-static void gl2_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
-{
-   gl2_t *gl         = (gl2_t*)data;
-   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_size)
-      gl->ctx_driver->get_video_output_size(
-            gl->ctx_data, width, height, s, len);
-}
-
-static void gl2_get_video_output_prev(void *data)
-{
-   gl2_t *gl = (gl2_t*)data;
-   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_prev)
-      gl->ctx_driver->get_video_output_prev(gl->ctx_data);
-}
-
-static void gl2_get_video_output_next(void *data)
-{
-   gl2_t *gl = (gl2_t*)data;
-   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_next)
-      gl->ctx_driver->get_video_output_next(gl->ctx_data);
-}
-
 static void video_texture_load_gl2(
       struct texture_image *ti,
       enum texture_filter_type filter_type,
@@ -5437,14 +5414,6 @@ static void gl2_unload_texture(void *data,
    glDeleteTextures(1, &glid);
 }
 
-static float gl2_get_refresh_rate(void *data)
-{
-   float refresh_rate = 0.0f;
-   if (video_context_driver_get_refresh_rate(&refresh_rate))
-      return refresh_rate;
-   return 0.0f;
-}
-
 static uint32_t gl2_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -5463,11 +5432,11 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_load_texture,
    gl2_unload_texture,
    gl2_set_video_mode,
-   gl2_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* set_filtering */
-   gl2_get_video_output_size,
-   gl2_get_video_output_prev,
-   gl2_get_video_output_next,
+   NULL, /* video_output_size - handled by display server */
+   NULL, /* video_output_prev - handled by display server */
+   NULL, /* video_output_next - handled by display server */
    gl2_get_current_framebuffer,
    gl2_get_proc_address,
    gl2_set_aspect_ratio,
