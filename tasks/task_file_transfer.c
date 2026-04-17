@@ -34,10 +34,16 @@ bool task_image_load_handler(retro_task_t *task);
 
 /* File-size threshold (bytes) below which the iterative transfer
  * loop runs to completion in a single tick rather than spreading
- * work across multiple frames.  Thumbnails and small config files
- * are typically well under this limit, so finishing them in one
- * tick eliminates several frames of latency. */
-#define NBIO_SMALL_FILE_THRESHOLD  (256 * 1024)
+ * work across multiple frames.  Thumbnails, box art, and small
+ * config files are typically well under this limit, so finishing
+ * them in one tick eliminates several frames of latency.
+ *
+ * Raised from 256 KB to 1 MB: modern box-art PNGs at 512x720 can
+ * exceed 400-600 KB, and loading them iteratively over several
+ * frames is visibly laggy on menu scroll. 1 MB is still small
+ * enough that a single blocking read completes in well under a
+ * frame on every supported platform. */
+#define NBIO_SMALL_FILE_THRESHOLD  (1024 * 1024)
 
 static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
 {

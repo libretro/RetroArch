@@ -266,8 +266,14 @@ static bool upscale_image(
    if (total_pixels == 0 || total_pixels > UPSCALE_MAX_PIXELS)
       return false;
 
-   /* Allocate pixel buffer */
-   if (!(image_dst->pixels = (uint32_t*)calloc(total_pixels, sizeof(uint32_t))))
+   /* Allocate pixel buffer.
+    * malloc (not calloc) is sufficient: the loop below writes every
+    * destination pixel before returning — first by building the top
+    * row of each scale_factor-high block via the x_src expansion
+    * loop, then by memcpy'ing that row into the remaining rows of
+    * the block. No pixel is ever read before being written, so the
+    * zero-fill that calloc would do is wasted work. */
+   if (!(image_dst->pixels = (uint32_t*)malloc(total_pixels * sizeof(uint32_t))))
       return false;
 
    /* Fast path for integer scale factors: expand each source pixel
