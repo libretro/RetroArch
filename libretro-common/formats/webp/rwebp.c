@@ -1193,15 +1193,8 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          /* Read segment ID if segmentation is enabled */
          if (seg_enabled)
          {
-            /* VP8 segment tree (RFC 6386 §10.2): linear, not binary */
-            if (!vp8b_get(&br, seg_prob[0]))
-               seg_id = 0;
-            else if (!vp8b_get(&br, seg_prob[1]))
-               seg_id = 1;
-            else if (!vp8b_get(&br, seg_prob[2]))
-               seg_id = 2;
-            else
-               seg_id = 3;
+            /* Segment ID: 2-bit literal (matching libvpx behavior) */
+            seg_id = (int)vp8b_lit(&br, 2);
          }
 
          /* Compute per-MB quantizer based on segment */
