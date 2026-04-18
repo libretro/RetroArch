@@ -1984,7 +1984,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             }
 
             /* Open playlist */
-            if (!(manual_scan->playlist =
+            if (manual_scan->task_config->target_is_single_determined_playlist &&
+                !(manual_scan->playlist =
                      playlist_init(&manual_scan->playlist_config)))
                goto task_finished;
 
