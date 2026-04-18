@@ -1113,6 +1113,12 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    skip_enabled = vp8b_bit(&br);
    prob_skip = skip_enabled ? (int)vp8b_lit(&br, 8) : 0;
 
+   /* vp8_decode_mode_mvs reads a flag + 8-bit value from FP BD
+    * before the per-MB loop. Since our BD state diverges slightly
+    * from libvpx at this point, we use unconditional 9-bit skip
+    * to align the BD for better overall MB mode parsing. */
+   { int i; for (i = 0; i < 9; i++) (void)vp8b_bit(&br); }
+
    /* Initialize token partitions */
    {
       const uint8_t *tp_base = p0 + p0s;
