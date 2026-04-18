@@ -7831,18 +7831,21 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false) == 0)
                count++;
 #ifdef HAVE_WASAPI
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
+            if (string_is_equal(settings->arrays.audio_driver, "wasapi"))
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+            }
 #endif
 #ifdef HAVE_ASIO
             if (  string_is_equal(settings->arrays.audio_driver, "asio")
@@ -9649,8 +9652,14 @@ unsigned menu_displaylist_build_list(
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (cheevos_enable)
+               /* The build_list array is static, so 'checked' retains
+                * state from previous menu builds. We must explicitly
+                * reset it on each pass: only CHEEVOS_ENABLE itself is
+                * always shown; everything else is gated on it. */
+               if (build_list[i].enum_idx == MENU_ENUM_LABEL_CHEEVOS_ENABLE)
                   build_list[i].checked = true;
+               else
+                  build_list[i].checked = cheevos_enable;
             }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10245,14 +10254,17 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_AXIS,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_SCALING,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
+               if (settings->bools.video_scale_integer)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_AXIS,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_SCALING,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
                         PARSE_ONLY_UINT, false) == 0)
