@@ -572,11 +572,24 @@ static LRESULT CALLBACK wnd_proc_common(
                      content_info.argv        = NULL;
                      content_info.args        = NULL;
                      content_info.environ_get = NULL;
-                     task_push_load_new_core(
-                           td->path, NULL,
-                           &content_info,
-                           CORE_TYPE_PLAIN,
-                           NULL, NULL);
+                     if (task_push_load_new_core(
+                              td->path, NULL,
+                              &content_info,
+                              CORE_TYPE_PLAIN,
+                              NULL, NULL))
+                     {
+#ifdef HAVE_MENU
+                        /* Force the main menu to rebuild so that entries
+                         * which depend on a loaded core (Start Core for
+                         * contentless cores, Unload Core, etc.) appear
+                         * on the fly instead of only after the next
+                         * user-driven menu interaction. */
+                        struct menu_state *menu_st = menu_state_get_ptr();
+                        menu_st->flags            |=
+                              MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                            | MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
+                     }
                      break;
                   case WIN32_BROWSER_MODE_LOAD_CONTENT:
                      win32_load_content_from_gui(td->path);
