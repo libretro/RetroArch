@@ -878,6 +878,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_LOAD_CONTENT:
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
+            char win32_root[4]      = {0};
             char *title_cp          = NULL;
             wchar_t *title_wide     = NULL;
             const char *extensions  = "All Files (*.*)\0*.*\0\0";
@@ -888,6 +889,31 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 #ifndef HAVE_THREADS
             bool browser            = true;
 #endif
+
+            /* If the user hasn't configured a content directory, deliberately
+             * open the dialog at the system drive's root rather than leaving
+             * lpstrInitialDir empty. Two reasons:
+             *  - Vista+ GetOpenFileName keys its per-app MRU by the
+             *    lpstrInitialDir string; two dialogs (Load Core, Load Content)
+             *    that both pass "" share an MRU slot, so after the user picks
+             *    a core, Load Content opens in the core directory.
+             *  - It produces a predictable starting point on every Windows
+             *    version. GetWindowsDirectoryA is available since Windows
+             *    95 / NT 3.1, so this path is maximally backwards-compatible.
+             */
+            if (!initial_dir || !*initial_dir)
+            {
+               char win_dir[MAX_PATH];
+               UINT _len = GetWindowsDirectoryA(win_dir, sizeof(win_dir));
+               if (_len >= 3 && win_dir[1] == ':')
+               {
+                  win32_root[0] = win_dir[0];
+                  win32_root[1] = ':';
+                  win32_root[2] = '\\';
+                  win32_root[3] = '\0';
+                  initial_dir   = win32_root;
+               }
+            }
 
             /* Menubar accelerator hotkey is hijacked always, therefore must
              * press the keyboard event manually when blocking the accelerator. */
