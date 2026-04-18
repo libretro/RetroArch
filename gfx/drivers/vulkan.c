@@ -339,21 +339,6 @@ typedef struct vk
       bool dirty[VULKAN_MAX_SWAPCHAIN_IMAGES];
    } menu;
 
-   /* Deferred texture deletion.  Instead of calling vkQueueWaitIdle
-    * on every texture unload (which stalls the entire GPU pipeline),
-    * we tag textures for deletion and free them when the frame fence
-    * confirms the GPU has finished the frame that was using them.
-    *
-    * Per-slot lists: slot index = current_frame_index at the time
-    * of unload.  Flushed at the start of vulkan_frame after the
-    * fence wait for that slot. */
-   struct
-   {
-#define VK_DEFERRED_MAX 64
-      struct vk_texture entries[VULKAN_MAX_SWAPCHAIN_IMAGES][VK_DEFERRED_MAX];
-      unsigned count[VULKAN_MAX_SWAPCHAIN_IMAGES];
-   } deferred;
-
    struct
    {
       VkSampler linear;
@@ -1021,24 +1006,6 @@ static void vulkan_destroy_texture(
    tex->format                        = VK_FORMAT_UNDEFINED;
    tex->memory_size                   = 0;
    tex->layout                        = VK_IMAGE_LAYOUT_UNDEFINED;
-}
-
-/* Flush deferred texture deletions for a given frame slot.
- * Called at the start of vulkan_frame after the fence wait
- * guarantees all GPU work from the previous use of this slot
- * has completed.  Also called from deinit after vkDeviceWaitIdle. */
-static void vulkan_flush_deferred_deletes(vk_t *vk, unsigned slot)
-{
-   unsigned i;
-   unsigned count = vk->deferred.count[slot];
-
-   for (i = 0; i < count; i++)
-   {
-      vulkan_destroy_texture(
-            vk->context->device,
-            &vk->deferred.entries[slot][i]);
-   }
-   vk->deferred.count[slot] = 0;
 }
 
 static struct vk_texture vulkan_create_texture(vk_t *vk,
@@ -4647,15 +4614,6 @@ static void vulkan_free(void *data)
 #ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
 #endif
-
-      /* Flush all deferred texture deletions now that the
-       * GPU is fully idle. */
-      {
-         unsigned s;
-         for (s = 0; s < VULKAN_MAX_SWAPCHAIN_IMAGES; s++)
-            vulkan_flush_deferred_deletes(vk, s);
-      }
-
       vulkan_deinit_pipelines(vk);
       vulkan_deinit_framebuffers(vk);
       vulkan_deinit_descriptor_pool(vk);
@@ -5162,15 +5120,6 @@ static void vulkan_check_swapchain(vk_t *vk)
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
-
-   /* Flush all deferred texture deletions before
-    * tearing down pipelines and framebuffers. */
-   {
-      unsigned s;
-      for (s = 0; s < VULKAN_MAX_SWAPCHAIN_IMAGES; s++)
-         vulkan_flush_deferred_deletes(vk, s);
-   }
-
    vulkan_deinit_pipelines(vk);
    vulkan_deinit_framebuffers(vk);
    vulkan_deinit_descriptor_pool(vk);
@@ -6302,12 +6251,6 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned swapchain_index                      =
       vk->context->current_swapchain_index;
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
-
-   /* Flush deferred texture deletions for this frame slot.
-    * The fence for this slot was already waited on in
-    * vulkan_acquire_wait_fences, so all GPU work from the
-    * previous use of this slot has completed. */
-   vulkan_flush_deferred_deletes(vk, frame_index);
 
    /* Fast toggle shader filter chain logic */
    filter_chain = vk->filter_chain;
@@ -7604,41 +7547,21 @@ static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t handle)
    if (!texture || !vk || !vk->context)
       return;
 
-   {
-      unsigned slot  = vk->context->current_frame_index;
-      unsigned count = vk->deferred.count[slot];
-
-      if (count < VK_DEFERRED_MAX)
-      {
-         /* Copy the Vulkan resource handles into the deferred
-          * slot.  They will be destroyed at the start of the
-          * frame that reuses this slot, after the fence confirms
-          * the GPU is done. */
-         vk->deferred.entries[slot][count] = *texture;
-         vk->deferred.count[slot]          = count + 1;
-      }
-      else
-      {
-         /* Overflow: fall back to synchronous wait.
-          * This should be extremely rare — it requires more
-          * than VK_DEFERRED_MAX texture unloads in a single
-          * frame. */
+   /* TODO: We really want to defer this deletion instead,
+    * but this will do for now. */
 #ifdef HAVE_THREADS
-         if (vk->context->queue_lock)
-            slock_lock(vk->context->queue_lock);
+   if (vk->context->queue_lock)
+      slock_lock(vk->context->queue_lock);
 #endif
-         if (vk->context->queue)
-            vkQueueWaitIdle(vk->context->queue);
+   if (vk->context->queue)
+      vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
-         if (vk->context->queue_lock)
-            slock_unlock(vk->context->queue_lock);
+   if (vk->context->queue_lock)
+      slock_unlock(vk->context->queue_lock);
 #endif
-         if (vk->context->device)
-            vulkan_destroy_texture(
-                  vk->context->device, texture);
-      }
-   }
-
+   if (vk->context->device)
+      vulkan_destroy_texture(
+            vk->context->device, texture);
    free(texture);
 }
 
