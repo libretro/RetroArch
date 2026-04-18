@@ -130,7 +130,11 @@ DWORD CALLBACK mmdevice_thread(PVOID data)
 
    hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
    if (FAILED(hr))
+#ifdef HAVE_THREADS
+      return;
+#else
       return 0;
+#endif
 
 #ifdef __cplusplus
    hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
@@ -196,7 +200,9 @@ cleanup:
    IMMNotificationThreadId = 0;
    CoUninitialize();
    ExitThread(0);
+#ifndef HAVE_THREADS
    return 0;
+#endif
 #endif
 }
 
