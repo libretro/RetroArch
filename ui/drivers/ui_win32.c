@@ -1079,6 +1079,10 @@ static enum msg_hash_enums menu_id_to_label_enum(unsigned int menuId)
          return MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT;
       case ID_M_MUTE_TOGGLE:
          return MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE;
+#ifdef HAVE_QT
+      case ID_M_TOGGLE_DESKTOP:
+         return MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE;
+#endif
       default:
          break;
    }
@@ -1207,6 +1211,24 @@ void win32_localize_menu(HMENU menu)
          const char* meta_key_name  = NULL;
          char* new_label_text       = NULL;
          char key_name_buf[2]       = {0};
+         /* Buffer for labels that need "..." appended (Load Core, Load
+          * Content); long enough for any plausible translation + dots. */
+         char ellipsis_buf[128];
+
+         /* Dialog-opening entries get a trailing ellipsis per Windows
+          * UI convention. Do it here rather than at menu-creation time
+          * so it survives language changes (this function is re-run
+          * whenever the menubar is rebuilt). */
+         if (  label_enum == MENU_ENUM_LABEL_VALUE_CORE_LIST
+            || label_enum == MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
+         {
+            size_t _len = strlcpy(ellipsis_buf, new_label,
+                  sizeof(ellipsis_buf));
+            strlcpy(ellipsis_buf + _len, "...",
+                  sizeof(ellipsis_buf) - _len);
+            new_label  = ellipsis_buf;
+            new_label2 = ellipsis_buf;
+         }
 
          /* specific replacements:
             Load Content = "Ctrl+O"
@@ -1276,6 +1298,42 @@ void win32_localize_menu(HMENU menu)
 #endif
 
 #ifndef __WINRT__
+/* Append a popup submenu whose header text is UTF-8.
+ *
+ * AppendMenuA interprets the label via the active code page, so passing
+ * UTF-8 bytes directly produces mojibake for any non-ASCII translation
+ * (e.g. Japanese "リセット" rendered from "リ..." bytes as "ãƒªã‚»...").
+ * Popup headers have no wID, so win32_localize_menu never rewrites them
+ * after creation. Do the encoding conversion right here, at append time.
+ *
+ * On modern Windows we go through AppendMenuW with a UTF-16 string.
+ * On LEGACY_WIN32 (Win9x / very old targets lacking the W API surface)
+ * we fall back to the ANSI codepath via utf8_to_local_string_alloc,
+ * matching the pattern in win32_localize_menu. */
+static void win32_append_popup_utf8(HMENU parent, HMENU submenu,
+      const char *label_utf8)
+{
+#ifndef LEGACY_WIN32
+   wchar_t *label_w = utf8_to_utf16_string_alloc(label_utf8);
+   if (label_w)
+   {
+      AppendMenuW(parent, MF_POPUP, (UINT_PTR)submenu, label_w);
+      free(label_w);
+   }
+   else
+      AppendMenuA(parent, MF_POPUP, (UINT_PTR)submenu, label_utf8);
+#else
+   char *label_a = utf8_to_local_string_alloc(label_utf8);
+   if (label_a)
+   {
+      AppendMenuA(parent, MF_POPUP, (UINT_PTR)submenu, label_a);
+      free(label_a);
+   }
+   else
+      AppendMenuA(parent, MF_POPUP, (UINT_PTR)submenu, label_utf8);
+#endif
+}
+
 HMENU win32_resources_create_menu(void)
 {
    HMENU menu_bar, file_menu, command_menu, window_menu;
@@ -1286,7 +1344,11 @@ HMENU win32_resources_create_menu(void)
    if (!menu_bar)
       return NULL;
 
-   /* ---- File ---- */
+   /* ---- File ----
+    * Creation-time strings below are placeholders: win32_localize_menu()
+    * runs immediately after this function and rewrites every item whose
+    * wID is listed in menu_id_to_label_enum() with the translated text
+    * (including appending "..." to Load Core / Load Content). */
    file_menu = CreatePopupMenu();
    AppendMenuA(file_menu, MF_STRING, ID_M_LOAD_CORE,    "Load Core...");
    AppendMenuA(file_menu, MF_STRING, ID_M_LOAD_CONTENT, "Load Content...");
@@ -1299,13 +1361,15 @@ HMENU win32_resources_create_menu(void)
 
    audio_menu = CreatePopupMenu();
    AppendMenuA(audio_menu, MF_STRING, ID_M_MUTE_TOGGLE, "Audio Mute Toggle");
-   AppendMenuA(command_menu, MF_POPUP, (UINT_PTR)audio_menu, "Audio Options");
+   win32_append_popup_utf8(command_menu, audio_menu,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS));
 
    disk_menu = CreatePopupMenu();
    AppendMenuA(disk_menu, MF_STRING, ID_M_DISK_CYCLE, "Disk Eject Toggle");
    AppendMenuA(disk_menu, MF_STRING, ID_M_DISK_PREV,  "Disk Previous");
    AppendMenuA(disk_menu, MF_STRING, ID_M_DISK_NEXT,  "Disk Next");
-   AppendMenuA(command_menu, MF_POPUP, (UINT_PTR)disk_menu, "Disk Options");
+   win32_append_popup_utf8(command_menu, disk_menu,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS));
 
    savestate_menu = CreatePopupMenu();
 
@@ -1321,19 +1385,24 @@ HMENU win32_resources_create_menu(void)
    AppendMenuA(stateindex_menu, MF_STRING, ID_M_STATE_INDEX_7,    "7");
    AppendMenuA(stateindex_menu, MF_STRING, ID_M_STATE_INDEX_8,    "8");
    AppendMenuA(stateindex_menu, MF_STRING, ID_M_STATE_INDEX_9,    "9");
-   AppendMenuA(savestate_menu, MF_POPUP,
-         (UINT_PTR)stateindex_menu, "State Index");
+   win32_append_popup_utf8(savestate_menu, stateindex_menu,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT));
 
    AppendMenuA(savestate_menu, MF_STRING, ID_M_LOAD_STATE, "Load State");
    AppendMenuA(savestate_menu, MF_STRING, ID_M_SAVE_STATE, "Save State");
-   AppendMenuA(command_menu, MF_POPUP,
-         (UINT_PTR)savestate_menu, "Save State Options");
+   win32_append_popup_utf8(command_menu, savestate_menu,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST));
 
-   AppendMenuA(command_menu, MF_STRING, ID_M_RESET,           "Reset");
-   AppendMenuA(command_menu, MF_STRING, ID_M_PAUSE_TOGGLE,    "Pause Toggle");
-   AppendMenuA(command_menu, MF_STRING, ID_M_MENU_TOGGLE,     "Menu Toggle");
-   AppendMenuA(command_menu, MF_STRING, ID_M_TAKE_SCREENSHOT, "Take Screenshot");
-   AppendMenuA(command_menu, MF_STRING, ID_M_MOUSE_GRAB,      "Mouse Grab Toggle");
+   AppendMenuA(command_menu, MF_STRING, ID_M_RESET,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT));
+   AppendMenuA(command_menu, MF_STRING, ID_M_PAUSE_TOGGLE,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE));
+   AppendMenuA(command_menu, MF_STRING, ID_M_MENU_TOGGLE,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE));
+   AppendMenuA(command_menu, MF_STRING, ID_M_TAKE_SCREENSHOT,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT));
+   AppendMenuA(command_menu, MF_STRING, ID_M_MOUSE_GRAB,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE));
    AppendMenuA(menu_bar, MF_POPUP, (UINT_PTR)command_menu, "Command");
 
    /* ---- Window ---- */
@@ -1350,18 +1419,49 @@ HMENU win32_resources_create_menu(void)
    AppendMenuA(scale_menu, MF_STRING, ID_M_WINDOW_SCALE_8X,  "8x");
    AppendMenuA(scale_menu, MF_STRING, ID_M_WINDOW_SCALE_9X,  "9x");
    AppendMenuA(scale_menu, MF_STRING, ID_M_WINDOW_SCALE_10X, "10x");
-   AppendMenuA(window_menu, MF_POPUP, (UINT_PTR)scale_menu, "Windowed Scale");
+   win32_append_popup_utf8(window_menu, scale_menu,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE));
 
 #ifdef HAVE_QT
    AppendMenuA(window_menu, MF_STRING, ID_M_TOGGLE_DESKTOP,
-         "Toggle Desktop Menu");
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE));
 #endif
    AppendMenuA(window_menu, MF_STRING, ID_M_FULL_SCREEN,
-         "Toggle Exclusive Full Screen");
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY));
    AppendMenuA(menu_bar, MF_POPUP, (UINT_PTR)window_menu, "Window");
 
    return menu_bar;
 }
+
+#ifdef HAVE_MENU
+/* Destroy the currently-attached Win32 menubar and build a fresh one.
+ * Used when something changes that invalidates every visible menu
+ * string at once (notably: the user changes the UI language). */
+void win32_menubar_rebuild(void)
+{
+   HWND  hwnd     = main_window.hwnd;
+   HMENU old_menu;
+   HMENU new_menu;
+
+   if (!hwnd)
+      return;
+
+   old_menu = GetMenu(hwnd);
+   /* No menubar is currently attached (e.g. fullscreen, or menubar
+    * disabled via ui_menubar_enable). Nothing to rebuild. */
+   if (!old_menu)
+      return;
+
+   new_menu = win32_resources_create_menu();
+   if (!new_menu)
+      return;
+
+   win32_localize_menu(new_menu);
+   SetMenu(hwnd, new_menu);
+   DestroyMenu(old_menu);
+   DrawMenuBar(hwnd);
+}
+#endif
 
 /* "PICK CORE" DIALOG  (replaces IDD_PICKCORE)
  * Builds DLGTEMPLATE + DLGITEMTEMPLATE in memory. */

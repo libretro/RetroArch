@@ -135,6 +135,7 @@ bool win32_drag_query_file(HWND hwnd, WPARAM wparam);
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 #ifdef HAVE_MENU
 void win32_localize_menu(HMENU menu);
+void win32_menubar_rebuild(void);
 #endif
 #ifndef __WINRT__
 HMENU win32_resources_create_menu(void);

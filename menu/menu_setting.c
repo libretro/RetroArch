@@ -155,6 +155,14 @@
 #include "../libretro-common/vfs/vfs_implementation_smb.h"
 #endif
 
+/* Forward declaration for Win32 native menubar rebuild.
+ * Defined in ui/drivers/ui_win32.c. Declared here rather than included
+ * via ui/drivers/ui_win32.h to avoid dragging <windows.h> and friends
+ * into menu_setting.c. */
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && defined(HAVE_MENU)
+void win32_menubar_rebuild(void);
+#endif
+
 #define _3_SECONDS  3000000
 #define _6_SECONDS  6000000
 #define _9_SECONDS  9000000
@@ -8521,6 +8529,16 @@ static void general_write_handler(rarch_setting_t *setting)
      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type(*setting->value.target.integer);
          break;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && defined(HAVE_MENU)
+      case MENU_ENUM_LABEL_USER_LANGUAGE:
+         /* The native Win32 menubar bakes translated strings at
+          * menu-creation time (popup headers in particular have no
+          * resource ID and so are not walked by win32_localize_menu
+          * afterwards). Rebuild the whole menubar so every string -
+          * including popup headers - reflects the new language. */
+         win32_menubar_rebuild();
+         break;
+#endif
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          {
             video_viewport_t vp;
