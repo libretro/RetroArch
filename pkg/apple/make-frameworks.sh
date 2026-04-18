@@ -37,7 +37,11 @@ fi
 
 mkdir -p "$OUTDIR"
 
-for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*\.dylib$') ; do
+process_one() {
+    set -e
+    local dylib="$1"
+    local intermediate fwName fwDir build_sdk dSYMDir dylibName
+
     intermediate=$(basename "$dylib")
     intermediate="${intermediate/%.dylib/}"
     if [ -n "$SUFFIX" ] ; then
@@ -87,7 +91,16 @@ for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*
         # Update Info.plist with framework identifier
         /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.apple.xcode.dsym.$fwName" "$dSYMDir/Contents/Info.plist"
     fi
-done
+}
+export -f process_one
+export OUTDIR DSYM_OUTDIR SUFFIX PLATFORM_FAMILY_NAME PLATFORM \
+       DEPLOYMENT_TARGET CODE_SIGN_IDENTITY_FOR_ITEMS
+
+JOBS=$(sysctl -n hw.ncpu)
+if [ "$JOBS" -gt 8 ] ; then JOBS=8 ; fi
+
+find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*\.dylib$' -print0 \
+    | xargs -0 -n1 -P"$JOBS" bash -c 'process_one "$0"' || exit 1
 
 # Copy in MoltenVK as an embedded library manually instead of having
 # Xcode do it. This makes it potentially easier to substitute out
