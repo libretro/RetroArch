@@ -7266,7 +7266,7 @@ unsigned menu_displaylist_build_list(
             bool playlist_show_sublabels = settings->bools.playlist_show_sublabels;
             bool history_list_enable     = settings->bools.history_list_enable;
             bool truncate_playlist       = settings->bools.ozone_truncate_playlist_name;
-            menu_displaylist_build_info_selective_t build_list[] =
+            static menu_displaylist_build_info_selective_t build_list[] =
             {
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,        PARSE_ONLY_BOOL, true},
@@ -7304,16 +7304,13 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE:
                   case MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE:
-                     if (playlist_show_sublabels)
-                        build_list[i].checked = true;
+                     build_list[i].checked = playlist_show_sublabels;
                      break;
                   case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
-                     if (history_list_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = history_list_enable;
                      break;
                   case MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME:
-                     if (truncate_playlist)
-                        build_list[i].checked = true;
+                     build_list[i].checked = truncate_playlist;
                      break;
                   default:
                      break;
@@ -8320,8 +8317,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED:
-                     if (accessibility_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = accessibility_enable;
                      break;
                   default:
                      break;
@@ -8364,8 +8360,7 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_AI_SERVICE_PAUSE:
                   case MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG:
                   case MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG:
-                     if (ai_service_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = ai_service_enable;
                      break;
                   default:
                      break;
@@ -9263,13 +9258,11 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
-                     if (netplay_allow_slaves)
-                        build_list[i].checked = true;
+                     build_list[i].checked = netplay_allow_slaves;
                      break;
                   case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
                   case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
-                     if (netplay_use_mitm_server)
-                        build_list[i].checked = true;
+                     build_list[i].checked = netplay_use_mitm_server;
                      break;
                   default:
                      break;
@@ -9594,8 +9587,8 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_UDP_STREAM_PORT:
-                     if (is_ffmpeg && streaming_mode == STREAMING_MODE_LOCAL)
-                        build_list[i].checked = true;
+                     build_list[i].checked =
+                           (is_ffmpeg && streaming_mode == STREAMING_MODE_LOCAL);
                      break;
                   default:
                      break;
@@ -9834,28 +9827,24 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = settings->bools.settings_show_file_browser;
                      break;
                   case MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD:
-                     if (kiosk_mode_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = kiosk_mode_enable;
                      break;
                   case MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT:
-                     if (menu_screensaver_supported)
-                        build_list[i].checked = true;
+                     build_list[i].checked = menu_screensaver_supported;
                      break;
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
                   case MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION:
-                     if (menu_screensaver_supported)
-                        build_list[i].checked = true;
+                     build_list[i].checked = menu_screensaver_supported;
                      break;
                   case MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED:
-                     if (    menu_screensaver_supported
-                         && (menu_screensaver_animation != MENU_SCREENSAVER_BLANK))
-                        build_list[i].checked = true;
+                     build_list[i].checked =
+                           menu_screensaver_supported
+                        && (menu_screensaver_animation != MENU_SCREENSAVER_BLANK);
                      break;
 #endif
 #if defined(HAVE_QT) || defined(HAVE_COCOA)
                   case MENU_ENUM_LABEL_UI_COMPANION_TOGGLE:
-                     if (desktop_menu_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = desktop_menu_enable;
                      break;
 #endif
                   default:
@@ -9925,18 +9914,15 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_VIDEO_SCALE:
-                     if (!window_custom_size_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = !window_custom_size_enable;
                      break;
                   case MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH:
                   case MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT:
-                     if (window_custom_size_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = window_custom_size_enable;
                      break;
                   case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX:
                   case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX:
-                     if (!window_custom_size_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = !window_custom_size_enable;
                      break;
                   default:
                      break;
@@ -10588,13 +10574,11 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_OVERLAY_PRESET:
                   case MENU_ENUM_LABEL_OVERLAY_OPACITY:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_POINTER_ENABLE:
-                     if (input_overlay_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = input_overlay_enable;
                      break;
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT:
-                     if (input_overlay_enable &&
-                         (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_PHYSICAL))
-                        build_list[i].checked = true;
+                     build_list[i].checked = input_overlay_enable &&
+                         (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_PHYSICAL);
                      break;
                   case MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE:
                   case MENU_ENUM_LABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE:
@@ -10608,34 +10592,28 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_PORTRAIT:
                   case MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT:
                   case MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT:
-                     if (input_overlay_enable &&
-                         !input_overlay_auto_scale)
-                        build_list[i].checked = true;
+                     build_list[i].checked = input_overlay_enable &&
+                         !input_overlay_auto_scale;
                      break;
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY:
-                     if (input_overlay_enable &&
-                         BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_DPAD_AREA))
-                        build_list[i].checked = true;
+                     build_list[i].checked = input_overlay_enable &&
+                         BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_DPAD_AREA);
                      break;
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY:
-                     if (input_overlay_enable &&
-                         BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ABXY_AREA))
-                        build_list[i].checked = true;
+                     build_list[i].checked = input_overlay_enable &&
+                         BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ABXY_AREA);
                      break;
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE:
-                     if (input_overlay_enable &&
+                     build_list[i].checked = input_overlay_enable &&
                          (BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_LEFT)
-                          || BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_RIGHT)))
-                        build_list[i].checked = true;
+                          || BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_RIGHT));
                      break;
                   case MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS:
                   case MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS:
-                     if (input_overlay_enable && input_overlay_ptr_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = input_overlay_enable && input_overlay_ptr_enable;
                      break;
                   case MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS:
-                     if (input_overlay_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = input_overlay_enable;
                      break;
                   default:
                      break;
@@ -10887,29 +10865,24 @@ unsigned menu_displaylist_build_list(
                {
 #ifdef HAVE_GFX_WIDGETS
                   case MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE:
-                     if (video_font_enable && widgets_supported)
-                        build_list[i].checked = true;
+                     build_list[i].checked = video_font_enable && widgets_supported;
                      break;
                   case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO:
-                     if (widgets_active)
-                        build_list[i].checked = true;
+                     build_list[i].checked = widgets_active;
                      break;
                   case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR:
-                     if (widgets_active && !menu_widget_scale_auto)
-                        build_list[i].checked = true;
+                     build_list[i].checked = widgets_active && !menu_widget_scale_auto;
                      break;
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
                   case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED:
-                     if (widgets_active && !menu_widget_scale_auto)
-                        build_list[i].checked = true;
+                     build_list[i].checked = widgets_active && !menu_widget_scale_auto;
                      break;
 #endif
 #endif
                   case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS:
                   case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
                   case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
-                     if (video_font_enable || widgets_active)
-                        build_list[i].checked = true;
+                     build_list[i].checked = video_font_enable || widgets_active;
                      break;
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
@@ -10917,17 +10890,15 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
-                     if (!widgets_active && video_font_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = !widgets_active && video_font_enable;
                      break;
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
-                     if (!widgets_active &&
+                     build_list[i].checked = !widgets_active &&
                          video_font_enable &&
-                         video_msg_bgcolor_enable)
-                        build_list[i].checked = true;
+                         video_msg_bgcolor_enable;
                      break;
                   default:
                      break;
@@ -11004,42 +10975,34 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL:
-                     if (notifications_active && video_fps_show)
-                        build_list[i].checked = true;
+                     build_list[i].checked = notifications_active && video_fps_show;
                      break;
                   case MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL:
-                     if (notifications_active && video_memory_show)
-                        build_list[i].checked = true;
+                     build_list[i].checked = notifications_active && video_memory_show;
                      break;
                   case MENU_ENUM_LABEL_STATISTICS_SHOW:
-                     if (notifications_active && video_font_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = notifications_active && video_font_enable;
                      break;
 #ifdef HAVE_GFX_WIDGETS
 #ifdef HAVE_NETWORKING
                   case MENU_ENUM_LABEL_NETPLAY_PING_SHOW:
-                     if (widgets_active)
-                        build_list[i].checked = true;
+                     build_list[i].checked = widgets_active;
                      break;
 #endif
                   case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION:
-                     if (widgets_active)
-                        build_list[i].checked = true;
+                     build_list[i].checked = widgets_active;
                      break;
 #ifdef HAVE_SCREENSHOTS
                   case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION:
-                     if (widgets_active && notification_show_screenshot)
-                        build_list[i].checked = true;
+                     build_list[i].checked = widgets_active && notification_show_screenshot;
                      break;
                   case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH:
-                     if (widgets_active)
-                        build_list[i].checked = true;
+                     build_list[i].checked = widgets_active;
                      break;
 #endif
 #endif
                   default:
-                     if (notifications_active)
-                        build_list[i].checked = true;
+                     build_list[i].checked = notifications_active;
                      break;
                }
             }
@@ -11174,9 +11137,9 @@ unsigned menu_displaylist_build_list(
                   {
 #ifdef HAVE_SCREENSHOTS
                      video_driver_state_t *video_st    = video_state_get_ptr();
-                     if (     video_st->current_video->read_viewport
-                           && video_st->current_video->viewport_info)
-                        build_list[i].checked = true;
+                     build_list[i].checked =
+                              video_st->current_video->read_viewport
+                           && video_st->current_video->viewport_info;
 #endif
                      break;
                   }
@@ -11227,21 +11190,21 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
-                     if (  string_is_equal(settings->arrays.cloud_sync_driver, "webdav")
-                        || string_is_equal(settings->arrays.cloud_sync_driver, "s3"))
-                       build_list[i].checked = true;
+                     build_list[i].checked =
+                           (  string_is_equal(settings->arrays.cloud_sync_driver, "webdav")
+                           || string_is_equal(settings->arrays.cloud_sync_driver, "s3"));
                      break;
                   case MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_URL:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD:
-                     if (string_is_equal(settings->arrays.cloud_sync_driver, "webdav"))
-                        build_list[i].checked = true;
+                     build_list[i].checked =
+                           string_is_equal(settings->arrays.cloud_sync_driver, "webdav");
                      break;
                   case MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY:
-                     if (string_is_equal(settings->arrays.cloud_sync_driver, "s3"))
-                        build_list[i].checked = true;
+                     build_list[i].checked =
+                           string_is_equal(settings->arrays.cloud_sync_driver, "s3");
                      break;
                   default:
                      break;
@@ -11287,8 +11250,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_FORMAT:
-                     if (settings->bools.steam_rich_presence_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = settings->bools.steam_rich_presence_enable;
                      break;
                   default:
                      break;
@@ -11847,12 +11809,10 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL:
                   case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
-                     if (verbosity_is_enabled())
-                        build_list[i].checked = true;
+                     build_list[i].checked = verbosity_is_enabled();
                      break;
                   case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
-                     if (log_to_file)
-                        build_list[i].checked = true;
+                     build_list[i].checked = log_to_file;
                      break;
                   default:
                      break;
@@ -11935,18 +11895,17 @@ unsigned menu_displaylist_build_list(
                 && !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                rewind_supported = core_info_current_supports_rewind();
 
-            if (rewind_supported)
-               for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
                {
-                  switch (build_list[i].enum_idx)
-                  {
-                     case MENU_ENUM_LABEL_REWIND_SETTINGS:
-                        build_list[i].checked = true;
-                        break;
-                     default:
-                        break;
-                  }
+                  case MENU_ENUM_LABEL_REWIND_SETTINGS:
+                     build_list[i].checked = rewind_supported;
+                     break;
+                  default:
+                     break;
                }
+            }
 #endif
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -11954,8 +11913,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE:
-                     if (settings->bools.vrr_runloop_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = settings->bools.vrr_runloop_enable;
                      break;
                   default:
                      break;
@@ -12083,42 +12041,36 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT:
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU:
-                     if (menu_horizontal_animation)
-                        build_list[i].checked = true;
+                     build_list[i].checked = menu_horizontal_animation;
                      break;
                   case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
-                     if (menu_rgui_color_theme == RGUI_THEME_CUSTOM)
-                        build_list[i].checked = true;
+                     build_list[i].checked = (menu_rgui_color_theme == RGUI_THEME_CUSTOM);
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_TRANSPARENCY:
-                     if (   (menu_rgui_color_theme != RGUI_THEME_CUSTOM)
-                         && (menu_rgui_color_theme != RGUI_THEME_DYNAMIC))
-                        build_list[i].checked = true;
+                     build_list[i].checked =
+                           (menu_rgui_color_theme != RGUI_THEME_CUSTOM)
+                        && (menu_rgui_color_theme != RGUI_THEME_DYNAMIC);
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED:
-                     if (menu_rgui_particle_effect != RGUI_PARTICLE_EFFECT_NONE)
-                        build_list[i].checked = true;
+                     build_list[i].checked =
+                           (menu_rgui_particle_effect != RGUI_PARTICLE_EFFECT_NONE);
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER:
-                     if (   (menu_screensaver_timeout  != 0)
-                         && (menu_rgui_particle_effect != RGUI_PARTICLE_EFFECT_NONE))
-                        build_list[i].checked = true;
+                     build_list[i].checked =
+                           (menu_screensaver_timeout  != 0)
+                        && (menu_rgui_particle_effect != RGUI_PARTICLE_EFFECT_NONE);
                      break;
                   case MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE:
-                     if (menu_materialui_icons_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = menu_materialui_icons_enable;
                      break;
                   case MENU_ENUM_LABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR:
-                     if (menu_materialui_show_nav_bar)
-                        build_list[i].checked = true;
+                     build_list[i].checked = menu_materialui_show_nav_bar;
                      break;
                   case MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME:
-                     if (!menu_use_preferred_system_color_theme)
-                        build_list[i].checked = true;
+                     build_list[i].checked = !menu_use_preferred_system_color_theme;
                      break;
                   case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL:
-                     if (ozone_font_scale == 1)
-                        build_list[i].checked = true;
+                     build_list[i].checked = (ozone_font_scale == 1);
                      break;
                   case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TITLE:
                   case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR:
@@ -12126,16 +12078,13 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL:
                   case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TIME:
                   case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_FOOTER:
-                     if (ozone_font_scale == 2)
-                        build_list[i].checked = true;
+                     build_list[i].checked = (ozone_font_scale == 2);
                      break;
                   case MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME:
-                     if (truncate_playlist)
-                        build_list[i].checked = true;
+                     build_list[i].checked = truncate_playlist;
                      break;
                   case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
-                     if (settings->uints.video_hdr_mode > 0)
-                        build_list[i].checked = true;
+                     build_list[i].checked = (settings->uints.video_hdr_mode > 0);
                      break;
                   default:
                      break;
@@ -12181,8 +12130,7 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE:
                   case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY:
                   case MENU_ENUM_LABEL_BOTTOM_FONT_SCALE:
-                     if (video_3ds_lcd_bottom)
-                        build_list[i].checked = true;
+                     build_list[i].checked = video_3ds_lcd_bottom;
                      break;
                   default:
                      break;
@@ -12267,8 +12215,7 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE:
                   case MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS:
                   case MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT:
-                     if (smb_enable)
-                        build_list[i].checked = true;
+                     build_list[i].checked = smb_enable;
                      break;
                   default:
                      break;
@@ -12601,13 +12548,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   switch (build_list[i].enum_idx)
                   {
                      case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
-                        if (netplay_allow_slaves)
-                           build_list[i].checked = true;
+                        build_list[i].checked = netplay_allow_slaves;
                         break;
                      case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
                      case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
-                        if (netplay_use_mitm_server)
-                           build_list[i].checked = true;
+                        build_list[i].checked = netplay_use_mitm_server;
                         break;
                      default:
                         break;
