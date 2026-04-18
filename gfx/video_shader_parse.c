@@ -597,13 +597,13 @@ static const char *video_shader_wrap_mode_to_str(enum gfx_wrap_type type)
  **/
 static enum gfx_wrap_type video_shader_wrap_str_to_mode(const char *wrap_mode)
 {
-   if (memcmp(wrap_mode,      "clamp_to_border", sizeof("clamp_to_border")) == 0)
+   if (!strcmp(wrap_mode,      "clamp_to_border"))
       return RARCH_WRAP_BORDER;
-   else if (memcmp(wrap_mode, "clamp_to_edge", sizeof("clamp_to_edge")) == 0)
+   else if (!strcmp(wrap_mode, "clamp_to_edge"))
       return RARCH_WRAP_EDGE;
-   else if (memcmp(wrap_mode, "repeat", sizeof("repeat")) == 0)
+   else if (!strcmp(wrap_mode, "repeat"))
       return RARCH_WRAP_REPEAT;
-   else if (memcmp(wrap_mode, "mirrored_repeat", sizeof("mirrored_repeat")) == 0)
+   else if (!strcmp(wrap_mode, "mirrored_repeat"))
       return RARCH_WRAP_MIRRORED_REPEAT;
    RARCH_WARN("[Shaders] Invalid wrapping type \"%s\". Valid ones are: \"clamp_to_border\" "
          "(default), \"clamp_to_edge\", \"repeat\" and \"mirrored_repeat\". Falling back to default.\n",
@@ -760,11 +760,11 @@ static bool video_shader_parse_pass(config_file_t *conf,
 
    if (*scale_type_y)
    {
-      if (memcmp(scale_type_y, "source", sizeof("source")) == 0)
+      if (!strcmp(scale_type_y, "source"))
          scale->type_y = RARCH_SCALE_INPUT;
-      else if (memcmp(scale_type_y, "viewport", sizeof("viewport")) == 0)
+      else if (!strcmp(scale_type_y, "viewport"))
          scale->type_y = RARCH_SCALE_VIEWPORT;
-      else if (memcmp(scale_type_y, "absolute", sizeof("absolute")) == 0)
+      else if (!strcmp(scale_type_y, "absolute"))
          scale->type_y = RARCH_SCALE_ABSOLUTE;
       else
       {
