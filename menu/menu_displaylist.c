@@ -618,11 +618,11 @@ static int menu_displaylist_parse_core_info(
          {
             core_path = entry->core_path;
 
-            if (memcmp(entry->core_path, FILE_PATH_DETECT, sizeof(FILE_PATH_DETECT)) == 0)
+            if (!strcmp(entry->core_path, FILE_PATH_DETECT))
             {
                const char* default_core_path = playlist_get_default_core_path(playlist);
                if (     default_core_path
-                     && memcmp(default_core_path, FILE_PATH_DETECT, sizeof(FILE_PATH_DETECT)) != 0)
+                     && strcmp(default_core_path, FILE_PATH_DETECT) != 0)
                   core_path = default_core_path;
             }
          }
@@ -2098,7 +2098,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                count++;
 
 #ifdef HAVE_RGUI
-            if (memcmp(menu_driver, "rgui", 5) == 0)
+            if (!strcmp(menu_driver, "rgui"))
             {
                /* Device Display Name */
                snprintf(entry, sizeof(entry), /* TODO/FIXME: localize */
@@ -2607,8 +2607,8 @@ static int menu_displaylist_parse_playlist(
        * 'download thumbnails' option, we must also extend
        * this to music_history and video_history */
       if (
-               memcmp(path_playlist, "history", sizeof("history")) == 0
-            || memcmp(path_playlist, "favorites", sizeof("favorites")) == 0
+               !strcmp(path_playlist, "history")
+            || !strcmp(path_playlist, "favorites")
             || string_ends_with_size(path_playlist, "_history",
                path_playlist_size, STRLEN_CONST("_history")))
          gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
@@ -2685,9 +2685,9 @@ static int menu_displaylist_parse_playlist(
          {
             /* Both core name and core path must be valid */
             if (     entry->core_name
-                  && memcmp(entry->core_name, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT) + 1)
+                  && strcmp(entry->core_name, FILE_PATH_DETECT)
                   && entry->core_path
-                  && memcmp(entry->core_path, FILE_PATH_DETECT, STRLEN_CONST(FILE_PATH_DETECT) + 1))
+                  && strcmp(entry->core_path, FILE_PATH_DETECT))
             {
                _len += strlcpy(
                      menu_entry_lbl           + _len,
@@ -3686,7 +3686,7 @@ static int menu_displaylist_parse_load_content_settings(
                playlist_file = path_basename_nocompression(playlist_path);
 
             if (  playlist_file
-                && memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, STRLEN_CONST(FILE_PATH_CONTENT_FAVORITES)) == 0)
+                && !strcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES))
                add_to_favorites_enabled = false;
          }
 
@@ -3932,8 +3932,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
                {
                   if (*menu_st->thumbnail_path_data->system)
                      remove_entry_enabled =
-                        memcmp(menu_st->thumbnail_path_data->system, "history", sizeof("history")) == 0
-                        || memcmp(menu_st->thumbnail_path_data->system, "favorites", sizeof("favorites")) == 0
+                        !strcmp(menu_st->thumbnail_path_data->system, "history")
+                        || !strcmp(menu_st->thumbnail_path_data->system, "favorites")
                         || string_ends_with_size(menu_st->thumbnail_path_data->system, "_history",
                               menu_st->thumbnail_path_data->system_len, STRLEN_CONST("_history"));
 
@@ -4622,7 +4622,7 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(file_list_t *list,
           * > content_history + favorites are handled separately
           * > music/video/image_history are ignored */
          if (     string_ends_with_size(path, "_history.lpl", strlen(path), STRLEN_CONST("_history.lpl"))
-               || memcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES, STRLEN_CONST(FILE_PATH_CONTENT_FAVORITES)) == 0)
+               || !strcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES))
             continue;
 
          fill_pathname(playlist_display_name, playlist_file, "",
@@ -8189,7 +8189,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK:
-                     if (memcmp(menu_driver, "rgui", 5) == 0)
+                     if (!strcmp(menu_driver, "rgui"))
                         build_list[i].checked = false;
                      break;
                   default:
@@ -12608,7 +12608,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                unsigned max_users          = settings->uints.input_max_users;
                const char *menu_driver     = menu_driver_ident();
 #ifdef HAVE_RGUI
-               bool is_rgui                = memcmp(menu_driver, "rgui", STRLEN_CONST("rgui")) == 0 && menu_driver[STRLEN_CONST("rgui")] == '\0';
+               bool is_rgui                = !strcmp(menu_driver, "rgui");
 #endif
                file_list_t *list           = info->list;
                unsigned port               = string_to_unsigned(info->path);
@@ -13778,14 +13778,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (     string_starts_with_size(info->path, "content_", STRLEN_CONST("content_"))
                   && string_ends_with_size  (info->path, ".lpl", strlen(info->path), STRLEN_CONST(".lpl")))
             {
-               if (memcmp(info->path, FILE_PATH_CONTENT_HISTORY, sizeof(FILE_PATH_CONTENT_HISTORY)) == 0)
+               if (!strcmp(info->path, FILE_PATH_CONTENT_HISTORY))
                {
                   if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info, settings))
                      return menu_displaylist_process(info);
                   return false;
                }
 
-               if (memcmp(info->path, FILE_PATH_CONTENT_FAVORITES, sizeof(FILE_PATH_CONTENT_FAVORITES)) == 0)
+               if (!strcmp(info->path, FILE_PATH_CONTENT_FAVORITES))
                {
                   if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info, settings))
                      return menu_displaylist_process(info);
