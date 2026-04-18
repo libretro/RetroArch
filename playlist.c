@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <libretro.h>
 #include <boolean.h>
@@ -2588,9 +2589,20 @@ static bool playlist_read_file(playlist_t *playlist)
 #endif
 
    /* If playlist file does not exist,
-    * create an empty playlist instead */
+    * create an empty playlist instead.
+    * Any other error (EMFILE, EACCES, EIO…) must fail the read —
+    * otherwise a transient open failure produces an empty playlist
+    * that later overwrites a valid file on disk. */
    if (!file)
+   {
+      if (errno != ENOENT)
+      {
+         RARCH_ERR("[Playlist] Failed to open \"%s\" for read: %s.\n",
+               playlist->config.path, strerror(errno));
+         return false;
+      }
       return true;
+   }
 
    if (intfstream_is_compressed(file))
       playlist->flags |=  CNT_PLAYLIST_FLG_COMPRESSED;
