@@ -13404,7 +13404,6 @@ static bool setting_append_list(
                   &setting_get_string_representation_st_float_video_refresh_rate_auto;
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-               if (actual_refresh_rate > 0.0)
                {
                   CONFIG_FLOAT(
                      list, list_info,
