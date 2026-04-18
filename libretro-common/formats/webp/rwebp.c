@@ -1113,12 +1113,6 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    skip_enabled = vp8b_bit(&br);
    prob_skip = skip_enabled ? (int)vp8b_lit(&br, 8) : 0;
 
-   /* vp8_decode_mode_mvs reads a flag + 8-bit value from FP BD
-    * before the per-MB loop. Since our BD state diverges slightly
-    * from libvpx at this point, we use unconditional 9-bit skip
-    * to align the BD for better overall MB mode parsing. */
-   { int i; for (i = 0; i < 9; i++) (void)vp8b_bit(&br); }
-
    /* Initialize token partitions */
    {
       const uint8_t *tp_base = p0 + p0s;
@@ -1199,8 +1193,14 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          /* Read segment ID if segmentation is enabled */
          if (seg_enabled)
          {
-            /* Segment ID: 2-bit literal (matching libvpx behavior) */
-            seg_id = (int)vp8b_lit(&br, 2);
+            /* Segment ID: balanced binary tree (VP8 spec) */
+            if (!vp8b_get(&br, seg_prob[0])) {
+               /* Left subtree: seg 0 or 1 */
+               seg_id = vp8b_get(&br, seg_prob[1]) ? 1 : 0;
+            } else {
+               /* Right subtree: seg 2 or 3 */
+               seg_id = vp8b_get(&br, seg_prob[2]) ? 3 : 2;
+            }
          }
 
          /* Compute per-MB quantizer based on segment */
