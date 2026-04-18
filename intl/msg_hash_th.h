@@ -5515,8 +5515,164 @@ MSG_HASH(
    "แสดงข้อความบนหน้าจอ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+   "วิดเจ็ตกราฟิก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
+   "ใช้แอนิเมชัน การแจ้งเตือน ตัวบ่งชี้ และตัวควบคุมที่ตกแต่งแล้ว"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
    "ปรับขนาดวิดเจ็ตกราฟิกโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+   "ปรับขนาดการแจ้งเตือน ตัวบ่งชี้ และตัวควบคุมที่ตกแต่งแล้วโดยอัตโนมัติตามสเกลเมนูปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "การแทนค่าสเกลวิดเจ็ตกราฟิก (เต็มหน้าจอ)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "ใช้การแทนค่า x การปรับสเกลแบบกำหนดเองเมื่อวาดวิดเจ็ตแสดงผลในโหมดเต็มหน้าจอ ใช้ได้เฉพาะเมื่อ 'ปรับสเกลวิดเจ็ตกราฟิกโดยอัตโนมัติ' ถูกปิด สามารถใช้เพื่อเพิ่มหรือลดขนาดของการแจ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "การแทนค่าสเกลวิดเจ็ตกราฟิก (หน้าต่าง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "ใช้การแทนค่า x การปรับสเกลแบบกำหนดเองเมื่อวาดวิดเจ็ตแสดงผลในโหมดหน้าต่าง ใช้ได้เฉพาะเมื่อ 'ปรับสเกลวิดเจ็ตกราฟิกโดยอัตโนมัติ' ถูกปิด สามารถใช้เพื่อเพิ่มหรือลดขนาดของการแจ้ง[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FPS_SHOW,
+   "แสดงเฟรมเรต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_SHOW,
+   "แสดงจำนวนเฟรมต่อวินาทีปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+   "ช่วงเวลาอัปเดตเฟรมเรต (เป็นจำนวนเฟรม)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+   "การแสดงเฟรมเรตจะถูกอัปเดตตามช่วงเวลาที่ตั้งไว้เป็นจำนวนเฟรม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+   "แสดงจำนวนเฟรมที่เรนเดอร์แล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+   "แสดงจำนวนเฟรมปัจจุบันบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+   "การแสดงสถิติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+   "แสดงสถิติทางเทคนิคบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+   "แสดงการใช้หน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+   "แสดงหน่วยความจำที่ใช้และจำนวนทั้งหมดของระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
+   "ช่วงเวลาอัปเดตการใช้หน่วยความจำ (เป็นจำนวนเฟรม)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
+   "การแสดงการใช้หน่วยความจำจะถูกอัปเดตตามช่วงเวลาที่ตั้งไว้เป็นจำนวนเฟรม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "แสดงค่า Ping ของ Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "แสดงค่า Ping ของห้อง Netplay ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "การแจ้งเตือนเริ่มต้น \"โหลดเนื้อหา\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "แสดงแอนิเมชันการตอบสนองสั้น ๆ เมื่อโหลดเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   "การแจ้งเตือนการเชื่อมต่ออินพุต (Autoconfig)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "การแจ้งเตือนความล้มเหลวของการเชื่อมต่ออินพุต (Autoconfig)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "การแจ้งเตือนรหัสโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "แสดงข้อความบนหน้าจอเมื่อมีการใช้รหัสโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "การแจ้งเตือนการแพตช์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "แสดงข้อความบนหน้าจอเมื่อมีการทำ soft‑patching กับ ROMs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+   "แสดงข้อความบนหน้าจอเมื่อเชื่อมต่อหรือยกเลิกการเชื่อมต่ออุปกรณ์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "แสดงข้อความบนหน้าจอเมื่อเชื่อมต่อหรือยกเลิกการเชื่อมต่ออุปกรณ์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
+   "การแจ้งเตือนเมื่อโหลดการปรับแมปอินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
+   "แสดงข้อความบนหน้าจอเมื่อโหลดไฟล์รีแมปอินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "การแจ้งเตือนเมื่อโหลดการแทนที่การตั้งค่าคอนฟิก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "แสดงข้อความบนหน้าจอเมื่อโหลดไฟล์การเขียนทับการตั้งค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "การแจ้งเตือนเมื่อคืนค่าแผ่นดิสก์เริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "แสดงข้อความบนหน้าจอเมื่อคืนค่าแผ่นดิสก์ล่าสุดที่ใช้ของคอนเทนต์หลายแผ่น (multi‑disc) ที่โหลดผ่านเพลย์ลิสต์ M3U โดยอัตโนมัติเมื่อเริ่มต้นๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "การแจ้งเตือนการควบคุมแผ่นดิสก์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "แสดงข้อความบนหน้าจอเมื่อใส่หรือเอาแผ่นดิสก์ออก"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
@@ -5525,6 +5681,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "แสดงข้อความบนหน้าจอเมื่อทำการบันทึกและโหลดบันทึกสถานะ"
+   )
+MSG_HASH( /* FIXME: Rename config key and msg hash */
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+   "การแจ้งเตือนการจำกัดเฟรม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "แสดงตัวบ่งชี้บนหน้าจอเมื่อเปิดใช้งานการเดินหน้าเร็ว การเล่นช้า หรือการย้อนกลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
+   "การแจ้งเตือนจับภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
+   "แสดงข้อความบนหน้าจอเมื่อถ่ายภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "การแจ้งเตือนเมื่อบันทึกภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "กำหนดระยะเวลาของข้อความแจ้งเตือนบันทึกภาพหน้าจอบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
+   "ปกติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   "เร็ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   "เร็วมาก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   "ทันที"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
@@ -5545,6 +5741,82 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
    "แจ้งเตือนอัตราการรีเฟรชหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "แสดงข้อความบนหน้าจอเมื่อกำหนดอัตราการรีเฟรช"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "การแจ้งเตือน Netplay เพิ่มเติม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "แสดงข้อความบนหน้าจอของ Netplay ที่ไม่จำเป็น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "การแจ้งเตือนเฉพาะเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "แสดงการแจ้งเตือนเฉพาะเมื่อเมนูเปิดอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
+   "แบบอักษรการแจ้งเตือน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+   "เลือกแบบอักษรสำหรับการแจ้งเตือนบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
+   "ขนาดการแจ้งเตือน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "ระบุขนาดแบบอักษรเป็นพอยต์ เมื่อใช้วิดเจ็ต ขนาดนี้จะมีผลเฉพาะกับการแสดงสถิติบนหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
+   "ตำแหน่งการแจ้งเตือน (แนวนอน)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
+   "ระบุตำแหน่งแกน X แบบกำหนดเองสำหรับข้อความบนหน้าจอ โดยค่า 0 คือขอบด้านซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
+   "ตำแหน่งการแจ้งเตือน (แนวตั้ง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
+   "ระบุตำแหน่งแกน Y แบบกำหนดเองสำหรับข้อความบนหน้าจอ โดยค่า 0 คือขอบด้านล่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+   "สีการแจ้งเตือน (แดง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
+   "ตั้งค่าค่าแดงของสีข้อความ OSD ค่าใช้ได้อยู่ระหว่าง 0 ถึง 255"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+   "สีการแจ้งเตือน (เขียว)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
+   "ตั้งค่าค่าเขียวของสีข้อความ OSD ค่าใช้ได้อยู่ระหว่าง 0 ถึง 255"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+   "สีการแจ้งเตือน (น้ำเงิน)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
+   "ตั้งค่าค่าน้ำเงินของสีข้อความ OSD ค่าใช้ได้อยู่ระหว่าง 0 ถึง 255"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -5604,6 +5876,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
    "ปิดเมนูและกลับเข้าสู่เนื้อหาโดยอัตโนมัติหลังจากบันทึกหรือโหลดสถานะ การปิดใช้งานส่วนนี้อาจช่วยเพิ่มประสิทธิภาพการบันทึกสถานะให้ดีขึ้นบนอุปกรณ์ที่มีความเร็วต่ำมาก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "ปรับความเร็วของเอฟเฟกต์แอนิเมชันหน้าจอพักเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   "ปิดการทำงานของ Desktop Composition"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+   "ตัวจัดการหน้าต่างใช้การทำงานแบบ Composition เพื่อเพิ่มเอฟเฟกต์ภาพ ตรวจจับหน้าต่างที่ไม่ตอบสนอง และอื่น ๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
+   "บังคับปิดการทำงานของ Composition การปิดใช้งานนี้ใช้ได้เฉพาะบน Windows Vista/7 ในตอนนี้"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -5670,8 +5958,168 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    "แสดงตัวเลือก 'Load Core' ในเมนูหลัก"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
+   "แสดง 'โหลดเนื้อหา'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
+   "แสดงตัวเลือก 'โหลดเนื้อหา' ในเมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
+   "แสดง 'โหลดแผ่นดิสก์'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
+   "แสดงตัวเลือก 'โหลดแผ่นดิสก์' ในเมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
+   "แสดง 'ดัมพ์แผ่นดิสก์'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+   "แสดงตัวเลือก 'ดัมพ์แผ่นดิสก์' ในเมนูหลัก"
+   )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "แสดง 'นำแผ่นดิสก์ออก'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "แสดงตัวเลือก 'นำแผ่นดิสก์ออก' ในเมนูหลัก"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   "แสดง 'ตัวอัปเดตออนไลน์'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   "แสดงตัวเลือก 'ตัวอัปเดตออนไลน์' ในเมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
+   "แสดง 'ตัวดาวน์โหลด Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+   "แสดง 'การอัปเดต Core (และไฟล์ข้อมูล Core)' ในตัวเลือก 'ตัวอัปเดตออนไลน์'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
+   "แสดง 'ข้อมูล'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
+   "แสดงตัวเลือก 'ข้อมูล' ในเมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+   "แสดง 'ไฟล์การตั้งค่า'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+   "แสดงตัวเลือก 'ไฟล์การตั้งค่า' ในเมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
+   "แสดง 'วิธีใช้'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+   "แสดงตัวเลือก 'วิธีใช้' ในเมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+   "แสดง 'ออกจาก RetroArch'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+   "แสดงตัวเลือก 'ออกจาก RetroArch' ในเมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+   "แสดง 'เริ่มใหม่ RetroArch'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
+   "แสดงตัวเลือก 'เริ่มใหม่ RetroArch' ในเมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
+   "แสดง 'การตั้งค่า'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
+   "แสดงเมนู 'การตั้งค่า'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
+   "ตั้งรหัสผ่านสำหรับการเปิดใช้งาน 'การตั้งค่า'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
+   "เมื่อซ่อนแท็บการตั้งค่าโดยกำหนดรหัสผ่าน จะสามารถกู้คืนได้ภายหลังจากเมนู โดยไปที่แท็บเมนูหลัก เลือก 'เปิดใช้งานแท็บการตั้งค่า' แล้วใส่รหัสผ่าน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
+   "แสดง 'รายการโปรด'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+   "แสดงเมนู 'รายการโปรด'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   "แสดง 'รายการโปรด' ก่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   "แสดง 'รายการโปรด' ก่อน 'ประวัติ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
+   "แสดง 'รูปภาพ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
+   "แสดงเมนู 'รูปภาพ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
+   "แสดง 'เพลง'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
+   "แสดงเมนู 'เพลง'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
+   "แสดง 'วิดีโอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
+   "แสดงเมนู 'วิดีโอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
+   "แสดง 'ออนไลน์ Netplay'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "แสดงเมนู 'เล่นออนไลน์ Netplay'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
+   "แสดง 'ประวัติ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
+   "แสดงเมนูประวัติล่าสุด"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "เมนูหลัก"
