@@ -18,7 +18,9 @@
 #include <lists/dir_list.h>
 #include <lists/file_list.h>
 #include <lrc_hash.h>
+#ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#endif
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <time/rtime.h>
@@ -75,7 +77,9 @@ typedef struct
    retro_time_t start_time;
 } task_cloud_sync_state_t;
 
+#ifdef HAVE_THREADS
 static slock_t *tcs_running_lock = NULL;
+#endif
 
 /* Forward declarations for conflict resolution */
 static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_state);
@@ -103,9 +107,13 @@ static void task_cloud_sync_begin_handler(void *user_data, const char *path, boo
       task_set_title(task, strdup("Cloud Sync failed"));
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    }
+#ifdef HAVE_THREADS
    slock_lock(tcs_running_lock);
+#endif
    sync_state->waiting = 0;
+#ifdef HAVE_THREADS
    slock_unlock(tcs_running_lock);
+#endif
 }
 
 static bool tcs_object_member_handler(void *ctx, const char *s, size_t len)
@@ -204,9 +212,13 @@ static void task_cloud_sync_manifest_handler(void *user_data, const char *path,
       RARCH_WARN(CSPFX "Server manifest fetch failed.\n");
       sync_state->failures = true;
       sync_state->phase    = CLOUD_SYNC_PHASE_END;
+#ifdef HAVE_THREADS
       slock_lock(tcs_running_lock);
+#endif
       sync_state->waiting = 0;
+#ifdef HAVE_THREADS
       slock_unlock(tcs_running_lock);
+#endif
       return;
    }
 
@@ -218,9 +230,13 @@ static void task_cloud_sync_manifest_handler(void *user_data, const char *path,
       filestream_close(file);
    }
    sync_state->phase = CLOUD_SYNC_PHASE_READ_LOCAL_MANIFEST;
+#ifdef HAVE_THREADS
    slock_lock(tcs_running_lock);
+#endif
    sync_state->waiting = 0;
+#ifdef HAVE_THREADS
    slock_unlock(tcs_running_lock);
+#endif
 }
 
 static void task_cloud_sync_fetch_server_manifest(task_cloud_sync_state_t *sync_state)
@@ -469,13 +485,17 @@ static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *syn
 {
    file_list_t *list;
    size_t       idx;
+#ifdef HAVE_THREADS
    slock_lock(tcs_running_lock);
+#endif
    list = server ? sync_state->updated_server_manifest : sync_state->updated_local_manifest;
    idx = list->size;
    file_list_append(list, NULL, NULL, 0, 0, 0);
    file_list_set_alt_at_offset(list, idx, key);
    list->list[idx].userdata = hash;
+#ifdef HAVE_THREADS
    slock_unlock(tcs_running_lock);
+#endif
 }
 
 static INLINE int task_cloud_sync_key_cmp(struct item_file *left, struct item_file *right)
@@ -597,9 +617,13 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
       sync_state->failures = true;
    }
 
+#ifdef HAVE_THREADS
    slock_lock(tcs_running_lock);
+#endif
    sync_state->waiting--;
+#ifdef HAVE_THREADS
    slock_unlock(tcs_running_lock);
+#endif
 
    free(fetch_state);
 }
@@ -746,9 +770,13 @@ static void task_cloud_sync_upload_cb(void *user_data, const char *path, bool su
       sync_state->failures = true;
    }
 
+#ifdef HAVE_THREADS
    slock_lock(tcs_running_lock);
+#endif
    sync_state->waiting--;
+#ifdef HAVE_THREADS
    slock_unlock(tcs_running_lock);
+#endif
 }
 
 /**
@@ -885,9 +913,13 @@ static void task_cloud_sync_delete_cb(void *user_data, const char *path, bool su
       }
       RARCH_WARN(CSPFX "Deleting \"%s\" failed.\n", path);
       sync_state->failures = true;
+#ifdef HAVE_THREADS
       slock_lock(tcs_running_lock);
+#endif
       sync_state->waiting--;
+#ifdef HAVE_THREADS
       slock_unlock(tcs_running_lock);
+#endif
       return;
    }
 
@@ -898,9 +930,13 @@ static void task_cloud_sync_delete_cb(void *user_data, const char *path, bool su
    task_cloud_sync_add_to_updated_manifest(sync_state, path, NULL, true);
    task_cloud_sync_add_to_updated_manifest(sync_state, path, NULL, false);
    sync_state->need_manifest_uploaded = true;
+#ifdef HAVE_THREADS
    slock_lock(tcs_running_lock);
+#endif
    sync_state->waiting--;
+#ifdef HAVE_THREADS
    slock_unlock(tcs_running_lock);
+#endif
 }
 
 static void task_cloud_sync_delete_server_file(task_cloud_sync_state_t *sync_state)
@@ -1126,9 +1162,13 @@ static void task_cloud_sync_update_manifest_cb(void *user_data, const char *path
 
    RARCH_LOG(CSPFX "Uploading updated manifest succeeded.\n");
    sync_state->phase = CLOUD_SYNC_PHASE_END;
+#ifdef HAVE_THREADS
    slock_lock(tcs_running_lock);
+#endif
    sync_state->waiting = 0;
+#ifdef HAVE_THREADS
    slock_unlock(tcs_running_lock);
+#endif
 }
 
 static RFILE *task_cloud_sync_write_updated_manifest(file_list_t *manifest, char *path)
@@ -1260,15 +1300,23 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
    if (!(sync_state = (task_cloud_sync_state_t *)task->state))
       goto task_finished;
 
+#ifdef HAVE_THREADS
    slock_lock(tcs_running_lock);
-   /* we can transfer more than one file at a time */
-   if (sync_state->waiting > ((sync_state->phase == CLOUD_SYNC_PHASE_DIFF) ? 4U : 0U))
+#endif
+
+   /* We can transfer more than one file at a time */
+   if (sync_state->waiting > ((sync_state->phase == CLOUD_SYNC_PHASE_DIFF) 
+       ? 4U : 0U))
    {
       task->when = cpu_features_get_time_usec() + 17 * 1000; /* 17ms */
+#ifdef HAVE_THREADS
       slock_unlock(tcs_running_lock);
+#endif
       return;
    }
+#ifdef HAVE_THREADS
    slock_unlock(tcs_running_lock);
+#endif
 
    if (task->flags & RETRO_TASK_FLG_FINISHED)
        goto task_finished;
@@ -1359,8 +1407,10 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
    if (!cloud_sync_enable)
       return;
 
+#ifdef HAVE_THREADS
    if (!tcs_running_lock)
       tcs_running_lock = slock_new();
+#endif
 
    find_data.func = task_cloud_sync_task_finder;
    if (task_queue_find(&find_data))

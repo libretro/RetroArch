@@ -16,6 +16,9 @@
 #ifndef _MMDEVICE_COMMON_H
 #define _MMDEVICE_COMMON_H
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <stdlib.h>
 
 #include <retro_common_api.h>
