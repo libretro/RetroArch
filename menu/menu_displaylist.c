@@ -8189,8 +8189,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK:
-                     if (!strcmp(menu_driver, "rgui"))
-                        build_list[i].checked = false;
+                     build_list[i].checked = (!strcmp(menu_driver, "rgui"));
                      break;
                   default:
                      break;
@@ -9684,17 +9683,22 @@ unsigned menu_displaylist_build_list(
 #if defined(HAVE_CHEEVOS) && defined(HAVE_GFX_WIDGETS)
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (!gfx_widgets)
-                  build_list[i].checked = false;
-               else if (!cheevos_autopad)
+               switch (build_list[i].enum_idx)
                {
-                  if (build_list[i].enum_idx == MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V)
-                     build_list[i].checked = true;
-
-                  if (build_list[i].enum_idx == MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H &&
-                      !(cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER ||
-                        cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER))
-                     build_list[i].checked = true;
+                  case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_ANCHOR:
+                  case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_AUTO:
+                     build_list[i].checked = gfx_widgets;
+                     break;
+                  case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V:
+                     build_list[i].checked = (gfx_widgets && !cheevos_autopad);
+                     break;
+                  case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H:
+                     build_list[i].checked = ((gfx_widgets && !cheevos_autopad) && 
+                     !(cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER || 
+                        cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER));
+                     break;
+                  default:
+                     break;
                }
             }
 #endif
