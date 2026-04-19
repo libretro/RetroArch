@@ -20,6 +20,11 @@
 
 #include <boolean.h>
 #include <audio/audio_resampler.h>
+
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
+
 #include "configuration.h"
 #include "gfx/video_defines.h"
 #include "input/input_defines.h"
