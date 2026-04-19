@@ -824,8 +824,11 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
    }
    else
    {
-      for (p = s; *p == '/'; p++)
+      /* Leave one byte for the eventual '\0' terminator. */
+      for (p = s; *p == '/' && t < PATH_MAX_LENGTH - 1; p++)
          tmp[t++] = '/';
+      if (*p == '/')           /* still more slashes -> input too long */
+         return NULL;
       buf_end = p + strlen(p);
    }
    do
