@@ -52,6 +52,7 @@ jobs:
             rpng
             rzip_chunk_size_test
             net_ifinfo
+            vfs_read_overflow_test
           )
 
           # Per-binary run command (overrides ./<binary> if present).
