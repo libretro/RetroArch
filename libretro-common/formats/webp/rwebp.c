@@ -870,20 +870,36 @@ static const uint8_t kf_bmode_prob[10][10][9] = {
  {{124,68,51,98,125,189,82,82,200},{76,100,69,192,134,147,45,75,83},{57,59,107,115,109,131,43,139,143},{38,43,27,131,152,136,32,34,107},{80,45,17,134,81,175,99,50,100},{48,25,51,199,33,104,33,84,108},{60,53,16,24,158,220,44,24,44},{82,42,51,57,73,70,25,157,113},{51,24,14,115,133,209,18,16,209},{66,47,20,122,148,176,39,30,57}}
 };
 
-/* Decode a B_PRED sub-block mode from the key-frame tree (RFC 6386 §12.1) */
+/* Decode a B_PRED sub-block mode from the key-frame tree (RFC 6386 §12.1).
+ * The tree is NOT a linear chain — it has a branch at node 3:
+ *   node0: p[0] → DC(0) | node1
+ *   node1: p[1] → TM(1) | node2
+ *   node2: p[2] → VE(2) | node3
+ *   node3: p[3] → node4{HE,RD,VR} | node6{LD,VL,HD,HU}
+ *   node4: p[4] → HE(3) | node5
+ *   node5: p[5] → RD(5) | VR(7)
+ *   node6: p[6] → LD(4) | node7
+ *   node7: p[7] → VL(8) | node8
+ *   node8: p[8] → HD(6) | HU(9)
+ * Mode values: DC=0,TM=1,VE=2,HE=3,LD=4,RD=5,HD=6,VR=7,VL=8,HU=9 */
 static int vp8_read_bmode(vp8b *br, int above, int left)
 {
    const uint8_t *p = kf_bmode_prob[above][left];
    if (!vp8b_get(br, p[0])) return 0; /* B_DC_PRED */
    if (!vp8b_get(br, p[1])) return 1; /* B_TM_PRED */
    if (!vp8b_get(br, p[2])) return 2; /* B_VE_PRED */
-   if (!vp8b_get(br, p[3])) return 3; /* B_HE_PRED */
-   if (!vp8b_get(br, p[4])) return 4; /* B_LD_PRED */
-   if (!vp8b_get(br, p[5])) return 5; /* B_RD_PRED */
-   if (!vp8b_get(br, p[6])) return 6; /* B_VR_PRED */
-   if (!vp8b_get(br, p[7])) return 7; /* B_VL_PRED */
-   if (!vp8b_get(br, p[8])) return 8; /* B_HD_PRED */
-   return 9; /* B_HU_PRED */
+   if (!vp8b_get(br, p[3])) {
+      /* Left subtree: HE, RD, VR */
+      if (!vp8b_get(br, p[4])) return 3; /* B_HE_PRED */
+      if (!vp8b_get(br, p[5])) return 5; /* B_RD_PRED */
+      return 6; /* B_VR_PRED */
+   } else {
+      /* Right subtree: LD, VL, HD, HU */
+      if (!vp8b_get(br, p[6])) return 4; /* B_LD_PRED */
+      if (!vp8b_get(br, p[7])) return 7; /* B_VL_PRED */
+      if (!vp8b_get(br, p[8])) return 8; /* B_HD_PRED */
+      return 9; /* B_HU_PRED */
+   }
 }
 
 /* 4x4 sub-block intra prediction for B_PRED.
@@ -1269,10 +1285,6 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          else if (!vp8b_get(&br, vp8_uvmp[1])) uvm = 1;
          else if (!vp8b_get(&br, vp8_uvmp[2])) uvm = 2;
          else uvm = 3;
-
-         /* Skip flag */
-         if (skip_enabled)
-            is_skip = vp8b_get(&br, prob_skip);
 
          /* Gather prediction context */
          if (my > 0) {
