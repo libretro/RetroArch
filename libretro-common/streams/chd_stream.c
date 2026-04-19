@@ -320,6 +320,13 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
             }
             break;
          case CHDSTREAM_TRACK_PRIMARY:
+            /* DVD tracks have no frame count in metadata but are always
+             * the primary data track - select immediately */
+            if (strcmp(iter.type, "DVD") == 0)
+            {
+               *meta = iter;
+               return true;
+            }
             if (strcmp(iter.type, "AUDIO") && iter.frames > largest_size)
             {
                largest_size  = iter.frames;
