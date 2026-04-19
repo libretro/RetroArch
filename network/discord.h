@@ -132,6 +132,9 @@ struct discord_state
    char cheevos_richpresence[256];
    char cheevos_badge_url[256];
 #endif
+   char game_state[128];
+   char game_image_key[32];
+   char game_image_text[128];
 
    bool ready;
    bool avatar_ready;

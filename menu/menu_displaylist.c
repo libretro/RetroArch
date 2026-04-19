@@ -3603,8 +3603,8 @@ static int menu_displaylist_parse_load_content_settings(
                }
 
                if (     settings->bools.quick_menu_show_start_streaming
-                     && memcmp(settings->arrays.record_driver,
-                        "ffmpeg", STRLEN_CONST("ffmpeg")) == 0)
+                     && !strcmp(settings->arrays.record_driver,
+                        "ffmpeg"))
                {
                   if (menu_entries_append(list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
@@ -4204,8 +4204,8 @@ static unsigned menu_displaylist_parse_playlists(
       const char *menu_ident = menu_driver_ident();
       bool show_add_content  = (settings->uints.menu_content_show_add_entry ==
             MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB);
-      bool show_history = !(memcmp(menu_ident, "rgui", 4) == 0)
-                       && !(memcmp(menu_ident, "glui", 4) == 0
+      bool show_history = strcmp(menu_ident, "rgui") != 0
+                       && !((!strcmp(menu_ident, "glui"))
                        && !settings->bools.menu_materialui_show_nav_bar);
 
       if (show_history)
@@ -4686,9 +4686,8 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
          if (
                   string_ends_with_size(path, "_history.lpl",
                   strlen(path), STRLEN_CONST("_history.lpl"))
-               || memcmp(playlist_file,
-                  FILE_PATH_CONTENT_FAVORITES,
-                  strlen(FILE_PATH_CONTENT_FAVORITES)) == 0)
+               || !strcmp(playlist_file,
+                  FILE_PATH_CONTENT_FAVORITES))
             continue;
 
          menu_entries_append(list, path, "",
@@ -4815,21 +4814,21 @@ static bool menu_displaylist_parse_playlist_manager_settings(
 
    /* > Get label values */
 #ifdef HAVE_RGUI
-   if (memcmp(menu_driver, "rgui", 4) == 0 && menu_driver[4] == '\0')
+   if (!strcmp(menu_driver, "rgui"))
    {
       right_thumbnail_label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
       left_thumbnail_label_value  = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
    }
 #endif
 #ifdef HAVE_OZONE
-   if (memcmp(menu_driver, "ozone", 6) == 0)
+   if (!strcmp(menu_driver, "ozone"))
    {
       right_thumbnail_label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
       left_thumbnail_label_value  = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
    }
 #endif
 #ifdef HAVE_MATERIALUI
-   if (memcmp(menu_driver, "glui", 5) == 0)
+   if (!strcmp(menu_driver, "glui"))
    {
       right_thumbnail_label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI;
       left_thumbnail_label_value  = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI;
@@ -5852,7 +5851,7 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
     bool keyboard_added           = false;
     input_driver_state_t *st      = input_state_get_ptr();
     input_driver_t *current_input = st->current_driver;
-    bool is_android_driver        = (memcmp(current_input->ident, "android", 8) == 0);
+    bool is_android_driver        = !strcmp(current_input->ident, "android");
 
     device_lbl[0]                 = '\0';
 
@@ -6757,7 +6756,7 @@ static unsigned menu_displaylist_populate_subsystem(
    int  i       = 0;
 #if defined(HAVE_RGUI)
    const char *menu_driver  = menu_driver_ident();
-   bool is_rgui             = (memcmp(menu_driver, "rgui", 4) == 0);
+   bool is_rgui             = !strcmp(menu_driver, "rgui");
 
    /* Select appropriate 'star' marker for subsystem menu entries
     * (i.e. RGUI does not support unicode, so use a 'standard'
@@ -7378,9 +7377,9 @@ unsigned menu_displaylist_build_list(
                   count++;
 
             /* TODO/FIXME - should we dehardcode this? */
-            if (         memcmp(current_input->ident, "android", 8) == 0
-                  ||    (memcmp(current_input->ident, "cocoa", 6)   == 0
-                     &&  memcmp(os_ver, "iOS", 4) == 0))
+            if (         !strcmp(current_input->ident, "android")
+                  ||    (!strcmp(current_input->ident, "cocoa")
+                     &&  !strcmp(os_ver, "iOS")))
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
                         PARSE_ONLY_BOOL, false) == 0)
@@ -9551,11 +9550,11 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:
          {
             unsigned streaming_mode = settings->uints.streaming_mode;
-            bool is_ffmpeg          = (memcmp(
-                     settings->arrays.record_driver, "ffmpeg", 6) == 0);
+            bool is_ffmpeg          = !strcmp(
+                     settings->arrays.record_driver, "ffmpeg");
             bool has_video          = is_ffmpeg
-               || memcmp(
-                     settings->arrays.record_driver, "avfoundation", 13) == 0;
+               || !strcmp(
+                     settings->arrays.record_driver, "avfoundation");
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_RECORD_DRIVER,                                         PARSE_ONLY_STRING_OPTIONS, true},
                {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,           false},
@@ -15258,11 +15257,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   && !settings->bools.kiosk_mode_enable;
                bool show_settings = settings->bools.menu_content_show_settings
                   && !settings->bools.kiosk_mode_enable
-                  && (        memcmp(menu_ident, "rgui", 4) == 0
-                        || (  memcmp(menu_ident, "glui", 4) == 0
+                  && (        !strcmp(menu_ident, "rgui")
+                        || (  !strcmp(menu_ident, "glui")
                            && !settings->bools.menu_materialui_show_nav_bar));
 
-               if (     memcmp(menu_ident, "glui", 4) == 0 && menu_ident[4] == '\0'
+               if (     !strcmp(menu_ident, "glui")
                      && settings->bools.menu_materialui_show_nav_bar
                      && settings->bools.menu_content_show_playlist_tabs)
                   show_playlists = false;
@@ -15327,8 +15326,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
 
                /* Show History and Favorites in menus without sidebar/tabs */
-               if (         (memcmp(menu_ident, "rgui", 4) == 0)
-                        || ((memcmp(menu_ident, "glui", 4) == 0)
+               if (         !strcmp(menu_ident, "rgui")
+                        || (!strcmp(menu_ident, "glui")
                        && !settings->bools.menu_materialui_show_nav_bar))
                {
                   if (settings->bools.menu_content_show_favorites_first)
@@ -15458,7 +15457,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   if (     !settings->bools.menu_content_show_settings
                         && !settings->bools.kiosk_mode_enable
-                        && !( memcmp(menu_ident, "glui", 4) == 0
+                        && !( !strcmp(menu_ident, "glui")
                            && settings->bools.menu_materialui_show_nav_bar)
                         && settings->paths.menu_content_show_settings_password[0] != '\0')
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(

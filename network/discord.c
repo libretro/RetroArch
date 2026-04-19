@@ -1891,10 +1891,16 @@ void discord_update(enum presence presence)
 
                if (!label)
                   label = path_basename(path_get(RARCH_PATH_BASENAME));
-               discord_st->presence.largeImageKey = system_id;
+               strlcpy(discord_st->game_image_key, system_id,
+                     sizeof(discord_st->game_image_key));
+               discord_st->presence.largeImageKey = discord_st->game_image_key;
 
                if (core_info->display_name)
-                  discord_st->presence.largeImageText = core_info->display_name;
+               {
+                  strlcpy(discord_st->game_image_text, core_info->display_name,
+                        sizeof(discord_st->game_image_text));
+                  discord_st->presence.largeImageText = discord_st->game_image_text;
+               }
 
                discord_st->start_time           = time(0);
                if (discord_st->pause_time != 0)
@@ -1925,7 +1931,9 @@ void discord_update(enum presence presence)
                   discord_st->presence.details = msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME);
 
-               discord_st->presence.state    = label;
+               strlcpy(discord_st->game_state, label,
+                     sizeof(discord_st->game_state));
+               discord_st->presence.state    = discord_st->game_state;
                discord_st->presence.instance = 0;
 
                if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
