@@ -43,6 +43,14 @@
 #include <rthreads/rthreads.h>
 #endif
 
+/* Maximum Content-Length we'll honour from a server, to bound the
+ * realloc() that follows header parsing.  256 MiB is comfortably
+ * larger than any single libretro HTTP payload (core downloads,
+ * thumbnail images, assets bundles) and small enough that a
+ * hostile server cannot drive the client toward OOM by lying in
+ * the Content-Length header. */
+#define NET_HTTP_MAX_CONTENT_LENGTH ((size_t)256 * 1024 * 1024)
+
 enum response_part
 {
    P_HEADER_TOP = 0,
@@ -809,7 +817,9 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (conn->postdata && conn->contentlength)
    {
       state->request.postdata   = malloc(conn->contentlength);
-      memcpy(state->request.postdata, conn->postdata, conn->contentlength);
+      if (state->request.postdata)
+         memcpy(state->request.postdata, conn->postdata, conn->contentlength);
+      /* If malloc failed, the OOM guard further below catches it. */
    }
    state->request.useragent= conn->useragent ? strdup(conn->useragent) : NULL;
    state->request.headers  = conn->headers ? strdup(conn->headers) : NULL;
@@ -819,6 +829,39 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
+
+   /* Any of the strdup / malloc calls above can return NULL on OOM.
+    * The dispatch path in net_http_update() dereferences
+    * request.domain and writes to response.data without guards; fail
+    * the whole setup early here rather than stack up NULL derefs
+    * later.
+    *
+    * Note on cleanup order: net_http_delete() intentionally does not
+    * free response.data or response.headers because successful callers
+    * take ownership of response.data via net_http_data() and of
+    * response.headers via net_http_headers().  On the OOM failure path
+    * those ownership transfers never happen, so we free both here
+    * before calling net_http_delete() (which then cleans up the
+    * request.* fields and the state struct itself). */
+   if (   !state->response.data
+       || !state->response.headers
+       || !state->request.domain
+       || !state->request.path
+       || !state->request.method
+       || (conn->contenttype && !state->request.contenttype)
+       || (conn->postdata && conn->contentlength && !state->request.postdata)
+       || (conn->useragent && !state->request.useragent)
+       || (conn->headers   && !state->request.headers))
+   {
+      if (state->response.data)
+         free(state->response.data);
+      if (state->response.headers)
+         string_list_free(state->response.headers);
+      state->response.data    = NULL;
+      state->response.headers = NULL;
+      net_http_delete(state);
+      return NULL;
+   }
 
    return state;
 }
@@ -1153,16 +1196,35 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
 
       if (response->part == P_HEADER_TOP)
       {
-         if (   scan[0] != 'H' || scan[1] != 'T' || scan[2] != 'T'
+         /* Status line is "HTTP/1.x SSS <reason>\r\n".  The fixed
+          * prefix is 8 bytes, then a space, then 3 status digits ->
+          * minimum line length is 12 bytes excluding the NUL we just
+          * wrote at lineend (lineend - scan >= 12).  Pre-patch this
+          * was not checked and a short malicious line like
+          * "HTTP/1.0\n" let the code read scan[9..11] past the
+          * terminator into whatever followed in the receive buffer. */
+         ssize_t line_len = lineend - scan;
+         if (   line_len < 12
+             || scan[0] != 'H' || scan[1] != 'T' || scan[2] != 'T'
              || scan[3] != 'P' || scan[4] != '/' || scan[5] != '1'
-             || scan[6] != '.')
+             || scan[6] != '.' || scan[8] != ' ')
          {
             response->part = P_DONE;
             state->err     = true;
             return -1;
          }
          {
-            const char *p  = scan + 9;
+            const char *p = scan + 9;
+            /* Also verify the three status chars are digits -- a
+             * non-digit would produce a negative or junk status. */
+            if (   p[0] < '0' || p[0] > '9'
+                || p[1] < '0' || p[1] > '9'
+                || p[2] < '0' || p[2] > '9')
+            {
+               response->part = P_DONE;
+               state->err     = true;
+               return -1;
+            }
             response->status = (p[0] - '0') * 100
                              + (p[1] - '0') * 10
                              + (p[2] - '0');
@@ -1191,12 +1253,43 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
                if (strncasecmp(scan, "Content-Length:",
                      sizeof("Content-Length:") - 1) == 0)
                {
+                  /* Parse Content-Length as unsigned with an explicit
+                   * cap.  Pre-patch the accumulator was a signed ssize_t
+                   * that could overflow (UB) on a very long digit string
+                   * and then sign-extend to a huge size_t when assigned
+                   * to response->len, driving realloc() toward OOM.  Cap
+                   * at NET_HTTP_MAX_CONTENT_LENGTH (256 MiB) which is
+                   * larger than any legitimate single HTTP response in
+                   * the libretro/RetroArch workflow (cores, thumbnails,
+                   * ROM manifests) and leaves a safe headroom before
+                   * buflen can wrap. */
                   char *ptr      = scan + (sizeof("Content-Length:") - 1);
-                  ssize_t val    = 0;
+                  size_t val     = 0;
+                  int    any     = 0;
+                  int    oflow   = 0;
                   while (*ptr == ' ' || *ptr == '\t')
                      ++ptr;
                   while (*ptr >= '0' && *ptr <= '9')
-                     val = val * 10 + (*ptr++ - '0');
+                  {
+                     size_t digit = (size_t)(*ptr++ - '0');
+                     any = 1;
+                     /* Detect overflow against the cap rather than
+                      * against SIZE_MAX, so the later realloc call
+                      * never sees an attacker-chosen huge value. */
+                     if (val > (NET_HTTP_MAX_CONTENT_LENGTH - digit) / 10)
+                     {
+                        oflow = 1;
+                        break;
+                     }
+                     val = val * 10 + digit;
+                  }
+                  if (!any || oflow)
+                  {
+                     /* Malformed header: treat as protocol error. */
+                     response->part = P_DONE;
+                     state->err     = true;
+                     return -1;
+                  }
                   response->bodytype = T_LEN;
                   response->len      = val;
                }
@@ -1234,16 +1327,35 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
       response->pos = 0;
       if (response->bodytype == T_LEN)
       {
+         /* Use a tmp pointer so a realloc failure does not leak the
+          * original buffer AND leave response->data NULL for later
+          * writes to dereference. */
+         char *tmp;
          response->buflen = response->len;
-         response->data   = (char*)realloc(response->data, response->buflen);
+         tmp              = (char*)realloc(response->data, response->buflen);
+         if (!tmp)
+         {
+            response->part = P_DONE;
+            state->err     = true;
+            return -1;
+         }
+         response->data   = tmp;
       }
    }
    else
    {
       if (response->pos >= response->buflen - 64)
       {
+         char *tmp;
          response->buflen *= 2;
-         response->data    = (char*)realloc(response->data, response->buflen);
+         tmp               = (char*)realloc(response->data, response->buflen);
+         if (!tmp)
+         {
+            response->part = P_DONE;
+            state->err     = true;
+            return -1;
+         }
+         response->data    = tmp;
       }
    }
    return len;
