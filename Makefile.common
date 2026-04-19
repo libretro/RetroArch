@@ -2578,7 +2578,7 @@ ifeq ($(HAVE_COCOA_METAL), 1)
 endif
 
 ifeq ($(HAVE_COCOA_COMMON),1)
-   DEFINES += -DHAVE_MAIN -DOSX
+   DEFINES += -DHAVE_MAIN -DOSX -DHAVE_COCOA
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
           ui/drivers/cocoa/cocoa_common.o \
