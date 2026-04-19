@@ -95,9 +95,11 @@ SOURCES_C := \
 	$(CORE_DIR)/database_info.c \
 	$(CORE_DIR)/core_info.c \
 	$(CORE_DIR)/msg_hash.c \
-	$(CORE_DIR)/intl/msg_hash_us.c \
 	$(CORE_DIR)/playlist.c \
+	$(CORE_DIR)/manual_content_scan.c \
 	$(CORE_DIR)/verbosity.c \
+	$(LIBRETRO_COMM_DIR)/formats/m3u/m3u_file.c \
+	$(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.c \
 	$(CORE_DIR)/libretro-db/bintree.c \
 	$(CORE_DIR)/libretro-db/libretrodb.c \
 	$(CORE_DIR)/libretro-db/query.c \
@@ -108,22 +110,29 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
-	$(LIBRETRO_COMM_DIR)/hash/rhash.c \
+	$(LIBRETRO_COMM_DIR)/hash/lrc_hash.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
+	$(DEPS_DIR)/yxml/yxml.c \
 	$(LIBRETRO_COMM_DIR)/formats/json/rjson.c \
+	$(LIBRETRO_COMM_DIR)/formats/xml/rxml.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/lists/dir_list.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION
@@ -134,6 +143,7 @@ SOURCES_C += \
 				 $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c
 DEFINES += -DHAVE_ZLIB
 LIBS += -lz
+LIBS += -lm
 endif
 
 ifeq ($(HAVE_7ZIP), 1)
@@ -142,20 +152,23 @@ SOURCES_C +=  \
 DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
 INCDIRS += -I$(DEPS_DIR)
 
-SOURCES_C += $(DEPS_DIR)/7zip/7zIn.c \
-				 $(DEPS_DIR)/7zip/Bra86.c \
+SOURCES_C += $(DEPS_DIR)/7zip/7zArcIn.c \
+				 $(DEPS_DIR)/7zip/7zBuf.c \
+				 $(DEPS_DIR)/7zip/7zCrc.c \
+				 $(DEPS_DIR)/7zip/7zCrcOpt.c \
+				 $(DEPS_DIR)/7zip/7zDec.c \
 				 $(DEPS_DIR)/7zip/7zFile.c \
 				 $(DEPS_DIR)/7zip/7zStream.c \
-				 $(DEPS_DIR)/7zip/LzFind.c \
-				 $(DEPS_DIR)/7zip/LzmaDec.c \
-				 $(DEPS_DIR)/7zip/LzmaEnc.c \
-				 $(DEPS_DIR)/7zip/7zCrcOpt.c \
-				 $(DEPS_DIR)/7zip/Bra.c \
-				 $(DEPS_DIR)/7zip/7zDec.c \
 				 $(DEPS_DIR)/7zip/Bcj2.c \
-				 $(DEPS_DIR)/7zip/7zCrc.c \
+				 $(DEPS_DIR)/7zip/Bra.c \
+				 $(DEPS_DIR)/7zip/Bra86.c \
+				 $(DEPS_DIR)/7zip/BraIA64.c \
+				 $(DEPS_DIR)/7zip/CpuArch.c \
+				 $(DEPS_DIR)/7zip/Delta.c \
+				 $(DEPS_DIR)/7zip/LzFind.c \
 				 $(DEPS_DIR)/7zip/Lzma2Dec.c \
-				 $(DEPS_DIR)/7zip/7zBuf.c
+				 $(DEPS_DIR)/7zip/LzmaDec.c \
+				 $(DEPS_DIR)/7zip/LzmaEnc.c
 endif
 
 ifeq ($(HAVE_THREADS), 1)
