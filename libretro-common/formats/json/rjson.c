@@ -25,8 +25,19 @@
 #include <stdio.h>  /* snprintf, vsnprintf */
 #include <stdarg.h> /* va_list */
 #include <string.h> /* memcpy */
-#include <stdint.h> /* int64_t */
+#include <stdint.h> /* int64_t, SIZE_MAX */
 #include <stdlib.h> /* malloc, realloc, atof, atoi */
+#include <limits.h> /* INT_MAX */
+
+/* Ceiling for the parser's growing string buffer and the writer's
+ * in-memory buffer.  Reached in practice only by pathologically large
+ * (and almost certainly malformed) JSON inputs on a 32-bit system,
+ * but having an explicit cap avoids undefined behaviour in the
+ * signed-int arithmetic of the writer and the size_t doubling in the
+ * parser wrapping past SIZE_MAX / 2.  Callers with legitimate giant
+ * payloads should not be using these APIs in the first place --
+ * stream in chunks. */
+#define _RJSON_MAX_SIZE ((size_t)256 * 1024 * 1024)
 
 #include <formats/rjson.h>
 #include <compat/posix_string.h>
@@ -139,7 +150,23 @@ static bool _rjson_io_input(rjson_t *json)
 static bool _rjson_grow_string(rjson_t *json)
 {
    char *string;
-   size_t new_string_cap = json->string_cap * 2;
+   size_t new_string_cap;
+   /* Bound the doubling so string_cap * 2 can never wrap past
+    * SIZE_MAX.  Pre-patch a pathological input on 32-bit (string_cap
+    * nearing 2 GiB) doubled to 0 and realloc() returned either NULL
+    * (benign) or a 0-byte pointer (heap overflow on next pushchar).
+    * Post-patch we fail cleanly before the arithmetic wrap. */
+   if (json->string_cap > _RJSON_MAX_SIZE / 2)
+   {
+      if (json->string_cap >= _RJSON_MAX_SIZE)
+      {
+         _rjson_error(json, "string token too large");
+         return false;
+      }
+      new_string_cap = _RJSON_MAX_SIZE;
+   }
+   else
+      new_string_cap = json->string_cap * 2;
    if (json->string != json->inline_string)
       string             = (char*)realloc(json->string, new_string_cap);
    else if ((string      = (char*)malloc(new_string_cap)) != NULL)
@@ -915,7 +942,16 @@ void _rjson_setup(rjson_t *json, rjson_io_t io, void *user_data, int input_len)
 
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size)
 {
-   rjson_t* json = (rjson_t*)malloc(
+   rjson_t* json;
+   /* Clamp io_block_size against negative / tiny / oversized values.
+    * The two internal callers (rjson_open_stream / rjson_open_rfile)
+    * already bound this, but this function is public and can be
+    * reached directly. */
+   if (io_block_size < 16)
+      io_block_size = 16;
+   else if ((size_t)io_block_size > _RJSON_MAX_SIZE)
+      io_block_size = (int)_RJSON_MAX_SIZE;
+   json = (rjson_t*)malloc(
          sizeof(rjson_t) - sizeof(((rjson_t*)0)->input_buf) + io_block_size);
    if (json) _rjson_setup(json, io, user_data, io_block_size);
    return json;
@@ -1290,7 +1326,24 @@ static int _rjsonwriter_memory_io(const void* buf, int len, void *user)
 {
    rjsonwriter_t *writer = (rjsonwriter_t *)user;
    bool is_append        = (buf != writer->buf);
-   int new_cap           = writer->buf_num + (is_append ? len : 0) + 512;
+   size_t append_len     = (is_append ? (size_t)len : 0);
+   size_t target;
+   int    new_cap;
+   /* Detect the int-overflow pre-patch, where buf_num + len + 512
+    * wrapped past INT_MAX and new_cap went negative.  The subsequent
+    * "new_cap > buf_cap" comparison then misbehaved and memcpy wrote
+    * past the existing allocation on a post-overflow buffer that
+    * hadn't been grown.  Do the arithmetic in size_t and cap at
+    * _RJSON_MAX_SIZE (which also fits comfortably in int). */
+   if (len < 0 || (size_t)writer->buf_num > _RJSON_MAX_SIZE - append_len
+                                           - 512)
+   {
+      if (!writer->error_text)
+         writer->error_text = "output buffer too large";
+      return 0;
+   }
+   target = (size_t)writer->buf_num + append_len + 512;
+   new_cap = (int)target;
    if (!writer->final_flush && (is_append || new_cap > writer->buf_cap))
    {
       bool can_realloc   = (writer->buf != writer->inline_buf);
@@ -1376,7 +1429,13 @@ const char *rjsonwriter_get_error(rjsonwriter_t *writer)
 
 void rjsonwriter_raw(rjsonwriter_t *writer, const char *buf, int len)
 {
-   if (writer->buf_num + len > writer->buf_cap)
+   /* Guard against negative len and against buf_num+len signed
+    * overflow.  A caller that somehow passes a huge len would
+    * pre-patch compute a negative sum, skip the flush, then memcpy
+    * past the existing buffer below. */
+   if (len < 0)
+      return;
+   if ((size_t)writer->buf_num + (size_t)len > (size_t)writer->buf_cap)
       rjsonwriter_flush(writer);
    if (len == 1)
    {
@@ -1424,6 +1483,14 @@ void rjsonwriter_rawf(rjsonwriter_t *writer, const char *fmt, ...)
       return;
    }
    rjsonwriter_flush(writer);
+   /* Guard signed-int overflow on newcap: buf_num + need + 1 could
+    * wrap past INT_MAX for a single very large formatted value. */
+   if ((size_t)writer->buf_num + (size_t)need + 1 > _RJSON_MAX_SIZE)
+   {
+      if (!writer->error_text)
+         writer->error_text = "output buffer too large";
+      return;
+   }
    if (writer->buf_num + need >= writer->buf_cap)
    {
       int newcap   = writer->buf_num + need + 1;
