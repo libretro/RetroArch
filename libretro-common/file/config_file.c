@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
@@ -963,17 +964,22 @@ bool config_get_float(config_file_t *conf, const char *key, float *in)
 bool config_get_int(config_file_t *conf, const char *key, int *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
-   errno = 0;
 
    if (entry)
    {
-      int val = (int)strtol(entry->value, NULL, 0);
+      long  val;
+      char *end = NULL;
+      errno = 0;
+      val   = strtol(entry->value, &end, 0);
 
-      if (errno == 0)
-      {
-         *in = val;
-         return true;
-      }
+      if (errno != 0 || end == entry->value || *end != '\0')
+         return false;
+
+      if (val < INT_MIN || val > INT_MAX)
+         return false;
+
+      *in = (int)val;
+      return true;
    }
 
    return false;
@@ -1009,17 +1015,19 @@ bool config_get_size_t(config_file_t *conf, const char *key, size_t *in)
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
-   errno = 0;
 
    if (entry)
    {
-      uint64_t val = (uint64_t)strtoull(entry->value, NULL, 0);
+      uint64_t val;
+      char    *end = NULL;
+      errno = 0;
+      val   = (uint64_t)strtoull(entry->value, &end, 0);
 
-      if (errno == 0)
-      {
-         *in = val;
-         return true;
-      }
+      if (errno != 0 || end == entry->value || *end != '\0')
+         return false;
+
+      *in = val;
+      return true;
    }
    return false;
 }
@@ -1028,17 +1036,22 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
-   errno = 0;
 
    if (entry)
    {
-      unsigned val = (unsigned)strtoul(entry->value, NULL, 0);
+      unsigned long  val;
+      char          *end = NULL;
+      errno = 0;
+      val   = strtoul(entry->value, &end, 0);
 
-      if (errno == 0)
-      {
-         *in = val;
-         return true;
-      }
+      if (errno != 0 || end == entry->value || *end != '\0')
+         return false;
+
+      if (val > UINT_MAX)
+         return false;
+
+      *in = (unsigned)val;
+      return true;
    }
 
    return false;
@@ -1047,17 +1060,22 @@ bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
-   errno = 0;
 
    if (entry)
    {
-      unsigned val = (unsigned)strtoul(entry->value, NULL, 16);
+      unsigned long  val;
+      char          *end = NULL;
+      errno = 0;
+      val   = strtoul(entry->value, &end, 16);
 
-      if (errno == 0)
-      {
-         *in = val;
-         return true;
-      }
+      if (errno != 0 || end == entry->value || *end != '\0')
+         return false;
+
+      if (val > UINT_MAX)
+         return false;
+
+      *in = (unsigned)val;
+      return true;
    }
 
    return false;
