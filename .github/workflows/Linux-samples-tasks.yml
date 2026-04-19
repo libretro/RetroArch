@@ -1,0 +1,88 @@
+name: CI Linux samples/tasks
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'samples/tasks/**'
+      - 'tasks/task_decompress.c'
+      - 'tasks/task_database.c'
+      - 'tasks/task_database_cue.c'
+      - '.github/workflows/Linux-samples-tasks.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'samples/tasks/**'
+      - 'tasks/task_decompress.c'
+      - 'tasks/task_database.c'
+      - 'tasks/task_database_cue.c'
+      - '.github/workflows/Linux-samples-tasks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-tasks:
+    name: Build and run samples/tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential zlib1g-dev
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build database_task
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          make clean all
+          test -x database_task
+
+      - name: Smoke-test database_task argv parsing
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -u
+          # database_task with no args should print the usage line and
+          # exit non-zero.  This catches build regressions in the argv
+          # parsing / main() entry path without depending on the task
+          # queue actually running to completion -- task_push_dbscan
+          # delegates to task_push_manual_content_scan which does not
+          # plumb through the caller's completion callback, so the
+          # loop can only be terminated externally (by timeout or
+          # signal).  The full loop is exercised in local testing; in
+          # CI we settle for the argv smoke.
+          ./database_task > /dev/null 2>&1
+          rc=$?
+          if [[ $rc -eq 0 ]]; then
+            echo "::error title=Test failed::database_task with no args exited 0; expected non-zero (usage)"
+            exit 1
+          fi
+          echo "[pass] database_task no-args exit=$rc (expected non-zero)"
+
+      - name: Build and run archive_name_safety_test
+        shell: bash
+        working-directory: samples/tasks/decompress
+        run: |
+          set -eu
+          make clean all
+          test -x archive_name_safety_test
+          # Regression test for the Zip Slip / absolute-path defences
+          # in tasks/task_decompress.c::archive_name_is_safe().  The
+          # test keeps a verbatim copy of the predicate and runs it
+          # against 23 safe and unsafe inputs.  If task_decompress.c
+          # ever amends the predicate, the copy here must follow.
+          timeout 60 ./archive_name_safety_test
+          echo "[pass] archive_name_safety_test"
