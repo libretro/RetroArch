@@ -2963,7 +2963,6 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
    };
    unsigned i, j;
    char theme_path[NAME_MAX_LENGTH];
-   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    for (j = 0; j < ARRAY_SIZE(ozone_themes); j++)
    {
@@ -2985,9 +2984,9 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
          fill_pathname_join_special(texpath,
                theme_path, OZONE_THEME_TEXTURES_FILES[i],
                sizeof(texpath));
-         gfx_display_load_icon(texpath, supports_rgba,
-               &theme->textures[i], ozone_ctx_icon_load_gen,
-               &ozone_ctx_icon_load_gen);
+         gfx_display_reset_icon_texture(texpath,
+            &theme->textures[i], TEXTURE_FILTER_LINEAR,
+            NULL, NULL);
       }
    }
 }
@@ -9841,7 +9840,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       "cursor_border.png"
    };
    unsigned i;
-   bool supports_rgba             = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    ozone_handle_t *ozone      = (ozone_handle_t*) data;
 
    if (ozone)
@@ -9866,9 +9864,9 @@ static void ozone_context_reset(void *data, bool is_threaded)
          fill_pathname_join_special(texpath,
                ozone->png_path, OZONE_TEXTURES_FILES[i],
                sizeof(texpath));
-         gfx_display_load_icon(texpath, supports_rgba,
-               &ozone->textures[i], ozone_ctx_icon_load_gen,
-               &ozone_ctx_icon_load_gen);
+         gfx_display_reset_icon_texture(texpath,
+               &ozone->textures[i], TEXTURE_FILTER_LINEAR,
+               NULL, NULL);
       }
 
       /* Sidebar textures */
@@ -9890,9 +9888,9 @@ static void ozone_context_reset(void *data, bool is_threaded)
                      sizeof(texpath));
                break;
          }
-         gfx_display_load_icon(texpath, supports_rgba,
-               &ozone->tab_textures[i], ozone_ctx_icon_load_gen,
-               &ozone_ctx_icon_load_gen);
+         gfx_display_reset_icon_texture(texpath,
+               &ozone->tab_textures[i], TEXTURE_FILTER_LINEAR,
+               NULL, NULL);
       }
 
       /* Theme textures */
@@ -9905,9 +9903,9 @@ static void ozone_context_reset(void *data, bool is_threaded)
          fill_pathname_join_special(texpath,
                ozone->icons_path, ozone_entries_icon_texture_path(i),
                sizeof(texpath));
-         gfx_display_load_icon(texpath, supports_rgba,
-               &ozone->icons_textures[i], ozone_ctx_icon_load_gen,
-               &ozone_ctx_icon_load_gen);
+         gfx_display_reset_icon_texture(texpath,
+               &ozone->icons_textures[i], TEXTURE_FILTER_LINEAR,
+               NULL, NULL);
       }
 
       gfx_display_deinit_white_texture();
