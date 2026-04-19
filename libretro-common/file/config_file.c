@@ -503,8 +503,9 @@ static bool config_file_parse_line(config_file_t *conf,
    if (comment)
    {
       char *path           = NULL;
-      bool include_found   = !memcmp(comment, "include ",   8);
-      bool reference_found = !memcmp(comment, "reference ", 10);
+      size_t clen          = strlen(comment);
+      bool include_found   = clen >= 8  && !memcmp(comment, "include ",   8);
+      bool reference_found = clen >= 10 && !memcmp(comment, "reference ", 10);
       /* All comments except those starting with the include or
        * reference directive are ignored */
       if (!include_found && !reference_found)
