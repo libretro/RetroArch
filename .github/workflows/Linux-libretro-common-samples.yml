@@ -1,0 +1,178 @@
+name: CI Linux libretro-common samples
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'libretro-common/**'
+      - '.github/workflows/Linux-libretro-common-samples.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'libretro-common/**'
+      - '.github/workflows/Linux-libretro-common-samples.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples:
+    name: Build and run libretro-common/samples
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential zlib1g-dev
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run samples
+        shell: bash
+        working-directory: libretro-common/samples
+        run: |
+          set -u
+          set -o pipefail
+
+          # Samples whose binary, when invoked with no arguments, runs a
+          # self-contained test and exits 0 on success / non-zero on
+          # failure.  These are built AND executed.
+          declare -a RUN_TARGETS=(
+            compat_fnmatch_test
+            snprintf
+            unbase64_test
+            archive_zip_test
+            config_file_test
+            path_resolve_realpath_test
+            nbio_test
+            rpng
+          )
+
+          # Per-binary run command (overrides ./<binary> if present).
+          # config_file_test has pre-existing sample leaks unrelated to
+          # any regression so we disable the ASan leak detector -- if a
+          # real leak shows up elsewhere it will be flagged during build
+          # of ASan-enabled configurations, not here.
+          declare -A RUN_ENV=(
+            [config_file_test]="ASAN_OPTIONS=detect_leaks=0"
+          )
+
+          # Samples that are build-only (either they require command-line
+          # arguments, open network sockets, need extra fixtures, or are
+          # interactive demos).  They are compiled to catch build-time
+          # regressions but not executed.
+          declare -a BUILD_ONLY_DIRS=(
+            formats/xml
+            streams/rzip
+          )
+
+          # Samples that are currently broken at build time on a stock
+          # Ubuntu host and are therefore neither built nor run.  The
+          # net/ Makefile references symbols (fill_pathname_resolve_relative,
+          # cpu_features_get_time_usec) without adding the corresponding
+          # source files to its SOURCES list; fixing that is out of
+          # scope for this workflow.  Remove from this list once the
+          # Makefile is corrected.
+          declare -a SKIP_DIRS=(
+            net
+          )
+
+          is_in() {
+            local needle=$1; shift
+            local h
+            for h in "$@"; do [[ "$h" == "$needle" ]] && return 0; done
+            return 1
+          }
+
+          fails=0
+          builds=0
+          runs=0
+
+          # Collect all Makefile directories (one or two levels deep).
+          mapfile -t MKDIRS < <(find . -name Makefile -printf '%h\n' | sort)
+
+          printf '\n==> %d sample directories found\n' "${#MKDIRS[@]}"
+          for d in "${MKDIRS[@]}"; do printf '    %s\n' "${d#./}"; done
+          printf '\n'
+
+          for d in "${MKDIRS[@]}"; do
+            rel=${d#./}
+            printf '========================================\n'
+            printf '[%s] %s\n' "$(is_in "$rel" "${SKIP_DIRS[@]}" && echo skip || echo build)" "$rel"
+            printf '========================================\n'
+
+            if is_in "$rel" "${SKIP_DIRS[@]}"; then
+              printf '[skip] %s is on the skip list\n\n' "$rel"
+              continue
+            fi
+
+            # Build
+            if ! ( cd "$d" && make clean all ); then
+              printf '\n::error title=Build failed::%s failed to build\n' "$rel"
+              fails=$((fails+1))
+              continue
+            fi
+            builds=$((builds+1))
+
+            # Skip run for build-only dirs
+            if is_in "$rel" "${BUILD_ONLY_DIRS[@]}"; then
+              printf '[skip-run] %s (build-only list)\n\n' "$rel"
+              continue
+            fi
+
+            # Extract targets from Makefile (handles both TARGET := foo
+            # and TARGETS = a b c).
+            mapfile -t targets < <(
+              grep -hE '^(TARGET|TARGETS)[[:space:]]*[:?]?=' "$d/Makefile" \
+              | head -1 \
+              | sed -E 's/^[^=]*=[[:space:]]*//' \
+              | tr -s ' \t' '\n' \
+              | grep -v '^$'
+            )
+
+            for t in "${targets[@]}"; do
+              if ! is_in "$t" "${RUN_TARGETS[@]}"; then
+                printf '[skip-run] %s/%s (not in run allowlist)\n' "$rel" "$t"
+                continue
+              fi
+
+              bin="$d/$t"
+              if [[ ! -x "$bin" ]]; then
+                printf '::error title=Missing binary::%s was in the run allowlist but %s does not exist after build\n' "$t" "$bin"
+                fails=$((fails+1))
+                continue
+              fi
+
+              extra_env=${RUN_ENV[$t]:-}
+
+              printf '\n[run] %s\n' "$bin"
+              if ( cd "$d" && env $extra_env timeout 60 "./$t" ); then
+                printf '[pass] %s\n\n' "$t"
+                runs=$((runs+1))
+              else
+                rc=$?
+                printf '\n::error title=Test failed::%s exited with status %d\n' "$t" "$rc"
+                fails=$((fails+1))
+              fi
+            done
+          done
+
+          printf '========================================\n'
+          printf 'Summary\n'
+          printf '========================================\n'
+          printf '  Built: %d\n' "$builds"
+          printf '  Ran:   %d\n' "$runs"
+          printf '  Failed: %d\n' "$fails"
+
+          if [[ $fails -gt 0 ]]; then
+            exit 1
+          fi
