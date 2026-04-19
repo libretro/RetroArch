@@ -171,7 +171,13 @@ void retro_vfs_file_open_cdrom(
             if (     path[12] >= '0' && path[12] <= '9'
                   && path[13] >= '0' && path[13] <= '9')
             {
-               stream->cdrom.cur_track = (path[12] - '0') * 10 + (path[13] - '0');
+               unsigned parsed = (path[12] - '0') * 10 + (path[13] - '0');
+               /* Reject track 00 -- track numbers are 1-based, and
+                * cur_track == 0 would later index track[-1] in the
+                * TOC array (OOB read).  Leave the init value (1)
+                * in place on reject. */
+               if (parsed >= 1 && parsed <= 99)
+                  stream->cdrom.cur_track = parsed;
 #ifdef CDROM_DEBUG
                printf("[CDROM] Opening track %d\n", stream->cdrom.cur_track);
                fflush(stdout);
@@ -249,7 +255,13 @@ void retro_vfs_file_open_cdrom(
          if (   path[14] >= '0' && path[14] <= '9'
              && path[15] >= '0' && path[15] <= '9')
          {
-            stream->cdrom.cur_track = (path[14] - '0') * 10 + (path[15] - '0');
+            unsigned parsed = (path[14] - '0') * 10 + (path[15] - '0');
+            /* Reject track 00 -- track numbers are 1-based, and
+             * cur_track == 0 would later index track[-1] in the
+             * TOC array (OOB read).  Leave the init value (1) in
+             * place on reject. */
+            if (parsed >= 1 && parsed <= 99)
+               stream->cdrom.cur_track = parsed;
 #ifdef CDROM_DEBUG
             printf("[CDROM] Opening track %d\n", stream->cdrom.cur_track);
             fflush(stdout);
@@ -396,9 +408,26 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
          && (ext[2] == 'e' || ext[2] == 'E')
          &&  ext[3] == '\0')
    {
-      if ((int64_t)len >= (int64_t)stream->cdrom.cue_len 
-            - stream->cdrom.byte_pos)
-         len = stream->cdrom.cue_len - stream->cdrom.byte_pos - 1;
+      /* Guard against byte_pos being outside the cue buffer (can
+       * happen after a seek -- seek does not clamp).  Treat as
+       * end-of-file. */
+      if (     stream->cdrom.byte_pos < 0
+            || (size_t)stream->cdrom.byte_pos >= stream->cdrom.cue_len)
+         return 0;
+      /* Clamp len against the remaining bytes using unsigned
+       * subtraction.  Computing (byte_pos + len) and comparing
+       * against cue_len wraps uint64_t when len is attacker-
+       * controlled.  The -1 preserves legacy behaviour of stopping
+       * one byte before cue_len so consumers that rely on the cue
+       * buffer being NUL-terminated don't re-read the terminator. */
+      {
+         size_t remaining = stream->cdrom.cue_len
+                          - (size_t)stream->cdrom.byte_pos;
+         if (remaining > 0)
+            remaining -= 1;
+         if (len > (uint64_t)remaining)
+            len = (uint64_t)remaining;
+      }
 #ifdef CDROM_DEBUG
       printf(
             "[CDROM] Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 "...\n",
@@ -406,10 +435,10 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
             stream->cdrom.byte_pos);
       fflush(stdout);
 #endif
-      memcpy(s, stream->cdrom.cue_buf + stream->cdrom.byte_pos, len);
+      memcpy(s, stream->cdrom.cue_buf + stream->cdrom.byte_pos, (size_t)len);
       stream->cdrom.byte_pos += len;
 
-      return len;
+      return (int64_t)len;
    }
    else if ( (ext[0] == 'b' || ext[0] == 'B')
          &&  (ext[1] == 'i' || ext[1] == 'I')
@@ -424,14 +453,28 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       unsigned char rframe = 0;
       size_t skip          = stream->cdrom.byte_pos % 2352;
 
-      if (stream->cdrom.byte_pos >= 
-            vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes)
+      /* Guard against cur_track == 0 (would index track[-1]) and
+       * against an out-of-range byte_pos.  cur_track can become
+       * 0 via a crafted VFS path like "driveN-track00.bin" unless
+       * the parser rejects it (see retro_vfs_file_open_cdrom). */
+      if (stream->cdrom.cur_track == 0
+            || stream->cdrom.cur_track > 99)
          return 0;
-
-      if (stream->cdrom.byte_pos + len > 
-            vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes)
-         len -= (stream->cdrom.byte_pos + len) 
-            - vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes;
+      {
+         size_t track_bytes =
+            vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes;
+         if (     stream->cdrom.byte_pos < 0
+               || (size_t)stream->cdrom.byte_pos >= track_bytes)
+            return 0;
+         /* Clamp len against remaining bytes using unsigned
+          * subtraction.  Computing (byte_pos + len) first is a
+          * uint64_t wrap hazard when len is attacker-controlled. */
+         {
+            size_t remaining = track_bytes - (size_t)stream->cdrom.byte_pos;
+            if (len > (uint64_t)remaining)
+               len = (uint64_t)remaining;
+         }
+      }
 
       cdrom_lba_to_msf(stream->cdrom.cur_lba, &min, &sec, &frame);
       cdrom_lba_to_msf(stream->cdrom.cur_lba 
