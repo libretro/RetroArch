@@ -15,6 +15,10 @@
 
 #include <compat/strl.h>
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 #include <string.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>

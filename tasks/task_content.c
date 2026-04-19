@@ -24,6 +24,10 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
