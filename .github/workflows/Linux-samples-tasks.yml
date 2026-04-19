@@ -64,8 +64,15 @@ jobs:
           # loop can only be terminated externally (by timeout or
           # signal).  The full loop is exercised in local testing; in
           # CI we settle for the argv smoke.
-          ./database_task > /dev/null 2>&1
-          rc=$?
+          #
+          # We capture the exit status via "|| rc=$?" so that the
+          # expected non-zero exit does NOT trip the default "set -e"
+          # that GitHub Actions' bash shell injects (it wraps with
+          # "bash --noprofile --norc -eo pipefail").  Without this
+          # guard the step exits at the binary invocation before our
+          # assertion runs.
+          rc=0
+          ./database_task > /dev/null 2>&1 || rc=$?
           if [[ $rc -eq 0 ]]; then
             echo "::error title=Test failed::database_task with no args exited 0; expected non-zero (usage)"
             exit 1
