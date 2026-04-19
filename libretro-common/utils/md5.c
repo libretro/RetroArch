@@ -36,6 +36,7 @@
  */
 #include <lrc_hash.h>
 
+#include <stdint.h>
 #include <string.h>
 
 /*
@@ -69,16 +70,16 @@
  */
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define MD5_SET(n) \
-	(*(MD5_u32plus *)&ptr[(n) * 4])
+	(*(uint32_t*)&ptr[(n) * 4])
 #define MD5_GET(n) \
 	MD5_SET(n)
 #else
 #define MD5_SET(n) \
 	(ctx->block[(n)] = \
-	(MD5_u32plus)ptr[(n) * 4] | \
-	((MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
-	((MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
-	((MD5_u32plus)ptr[(n) * 4 + 3] << 24))
+	(uint32_t)ptr[(n) * 4] | \
+	((uint32_t)ptr[(n) * 4 + 1] << 8) | \
+	((uint32_t)ptr[(n) * 4 + 2] << 16) | \
+	((uint32_t)ptr[(n) * 4 + 3] << 24))
 #define MD5_GET(n) \
 	(ctx->block[(n)])
 #endif
@@ -89,12 +90,12 @@
  */
 static const void *MD5_body(MD5_CTX *ctx, const void *data, unsigned long size)
 {
-	MD5_u32plus saved_a, saved_b, saved_c, saved_d;
+	uint32_t saved_a, saved_b, saved_c, saved_d;
 	const unsigned char *ptr = (const unsigned char *)data;
-	MD5_u32plus a = ctx->a;
-	MD5_u32plus b = ctx->b;
-	MD5_u32plus c = ctx->c;
-	MD5_u32plus d = ctx->d;
+	uint32_t a = ctx->a;
+	uint32_t b = ctx->b;
+	uint32_t c = ctx->c;
+	uint32_t d = ctx->d;
 
 	do {
 		saved_a = a;
@@ -102,7 +103,7 @@ static const void *MD5_body(MD5_CTX *ctx, const void *data, unsigned long size)
 		saved_c = c;
 		saved_d = d;
 
-/* Round 1 */
+      /* Round 1 */
 		MD5_STEP(MD5_F, a, b, c, d, MD5_SET(0), 0xd76aa478, 7)
 		MD5_STEP(MD5_F, d, a, b, c, MD5_SET(1), 0xe8c7b756, 12)
 		MD5_STEP(MD5_F, c, d, a, b, MD5_SET(2), 0x242070db, 17)
@@ -120,7 +121,7 @@ static const void *MD5_body(MD5_CTX *ctx, const void *data, unsigned long size)
 		MD5_STEP(MD5_F, c, d, a, b, MD5_SET(14), 0xa679438e, 17)
 		MD5_STEP(MD5_F, b, c, d, a, MD5_SET(15), 0x49b40821, 22)
 
-/* Round 2 */
+      /* Round 2 */
 		MD5_STEP(MD5_G, a, b, c, d, MD5_GET(1), 0xf61e2562, 5)
 		MD5_STEP(MD5_G, d, a, b, c, MD5_GET(6), 0xc040b340, 9)
 		MD5_STEP(MD5_G, c, d, a, b, MD5_GET(11), 0x265e5a51, 14)
@@ -138,7 +139,7 @@ static const void *MD5_body(MD5_CTX *ctx, const void *data, unsigned long size)
 		MD5_STEP(MD5_G, c, d, a, b, MD5_GET(7), 0x676f02d9, 14)
 		MD5_STEP(MD5_G, b, c, d, a, MD5_GET(12), 0x8d2a4c8a, 20)
 
-/* Round 3 */
+      /* Round 3 */
 		MD5_STEP(MD5_H, a, b, c, d, MD5_GET(5), 0xfffa3942, 4)
 		MD5_STEP(MD5_H2, d, a, b, c, MD5_GET(8), 0x8771f681, 11)
 		MD5_STEP(MD5_H, c, d, a, b, MD5_GET(11), 0x6d9d6122, 16)
@@ -156,7 +157,7 @@ static const void *MD5_body(MD5_CTX *ctx, const void *data, unsigned long size)
 		MD5_STEP(MD5_H, c, d, a, b, MD5_GET(15), 0x1fa27cf8, 16)
 		MD5_STEP(MD5_H2, b, c, d, a, MD5_GET(2), 0xc4ac5665, 23)
 
-/* Round 4 */
+      /* Round 4 */
 		MD5_STEP(MD5_I, a, b, c, d, MD5_GET(0), 0xf4292244, 6)
 		MD5_STEP(MD5_I, d, a, b, c, MD5_GET(7), 0x432aff97, 10)
 		MD5_STEP(MD5_I, c, d, a, b, MD5_GET(14), 0xab9423a7, 15)
@@ -203,8 +204,8 @@ void MD5_Init(MD5_CTX *ctx)
 
 void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
 {
-	unsigned long used;
-	MD5_u32plus saved_lo = ctx->lo;
+	uint32_t used;
+	uint32_t saved_lo = ctx->lo;
 	if ((ctx->lo = (saved_lo + size) & 0x1fffffff) < saved_lo)
 		ctx->hi++;
 	ctx->hi += size >> 29;
