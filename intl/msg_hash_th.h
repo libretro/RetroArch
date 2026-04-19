@@ -5819,6 +5819,26 @@ MSG_HASH(
    "ตั้งค่าค่าน้ำเงินของสีข้อความ OSD ค่าใช้ได้อยู่ระหว่าง 0 ถึง 255"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   "พื้นหลังการแจ้งเตือน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   "เปิดใช้งานสีพื้นหลังสำหรับ OSD"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
+   "สีพื้นหลังการแจ้งเตือน (แดง)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+   "ตั้งค่าค่าแดงของสีพื้นหลัง OSD ค่าใช้ได้อยู่ระหว่าง 0 ถึง 255"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   "สีพื้นหลังการแจ้งเตือน (เขียว)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
    "กำหนดค่าสีเขียวของสีพื้นหลัง OSD โดยค่าที่ใช้งานได้จะอยู่ระหว่าง 0 ถึง 255"
    )
@@ -5870,12 +5890,120 @@ MSG_HASH(
    "หยุดเนื้อหา เมื่อไม่ได้ใช้งานเมนู"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   "หยุดเนื้อหาเมื่อ RetroArch ไม่ใช่หน้าต่างที่กำลังใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "ออกเมื่อปิดเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "ออกจากโปรแกรมโดยอัตโนมัติเมื่อปิดเนื้อหา ‘CLI’ จะออกก็ต่อเมื่อมีการเปิดเนื้อหาผ่านบรรทัดคำสั่งเท่านั้น"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
    "กลับมาเล่นเนื้อหาต่อหลังจากใช้งานบันทึกสถานะ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
    "ปิดเมนูและกลับเข้าสู่เนื้อหาโดยอัตโนมัติหลังจากบันทึกหรือโหลดสถานะ การปิดใช้งานส่วนนี้อาจช่วยเพิ่มประสิทธิภาพการบันทึกสถานะให้ดีขึ้นบนอุปกรณ์ที่มีความเร็วต่ำมาก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "กลับมาเล่นเนื้อหาต่อหลังจากเปลี่ยนแผ่นดิสก์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "ปิดเมนูโดยอัตโนมัติและกลับมาเล่นเนื้อหาต่อหลังจากใส่หรือโหลดแผ่นดิสก์ใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "การนำทางแบบวนรอบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "การนำทางแบบวนรอบจะทำให้รายการเลื่อนไปยังจุดเริ่มต้นหรือจุดสิ้นสุดโดยอัตโนมัติ เมื่อถึงขอบเขตของรายการทั้งในแนวนอนหรือแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
+   "แสดงการตั้งค่าขั้นสูง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+   "แสดงการตั้งค่าขั้นสูงสำหรับผู้ใช้ระดับเชี่ยวชาญ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
+   "โหมดล็อกการแก้ไข"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
+   "ปกป้องการตั้งค่าโดยการซ่อนการตั้งค่าทั้งหมดที่เกี่ยวข้องกับการปรับแต่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+   "ตั้งรหัสผ่านสำหรับการปิดโหมดล็อกการแก้ไข"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+   "เมื่อมีการตั้งรหัสผ่านขณะเปิดใช้งานโหมดล็อกการแก้ไข จะสามารถปิดโหมดนี้ได้ภายหลังจากเมนู โดยไปที่เมนูหลัก เลือก “ปิดโหมดล็อกการแก้ไข” และกรอกรหัสผ่าน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   "รองรับการใช้งานเมาส์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   "อนุญาตให้ควบคุมเมนูด้วยเมาส์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   "รองรับการใช้งานระบบสัมผัส"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "อนุญาตให้ควบคุมเมนูด้วยหน้าจอสัมผัส"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   "งานแบบแยกเธรด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "ทำงานบนเธรดแยกต่างหาก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "เวลาภาพพักหน้าจอเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "เมื่อเมนูทำงานอยู่ ภาพพักหน้าจอจะปรากฏขึ้นหลังจากไม่มีการใช้งานตามเวลาที่กำหนด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   "แอนิเมชันภาพพักหน้าจอเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   "เปิดใช้งานเอฟเฟกต์แอนิเมชันขณะเมนูภาพพักหน้าจอทำงาน มีผลกระทบต่อประสิทธิภาพเล็กน้อย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "หิมะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   "ทุ่งดวงดาว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   "วังวน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "ความเร็วแอนิเมชันภาพพักหน้าจอเมนู"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
@@ -6121,12 +6249,148 @@ MSG_HASH(
    "แสดงเมนูประวัติล่าสุด"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
+   "แสดง 'นำเข้าเนื้อหา'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
+   "แสดงรายการ 'นำเข้าเนื้อหา' ในเมนูหลักหรือเพลย์ลิสต์"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "เมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
+   "เมนูเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
+   "แสดง 'เพลย์ลิสต์'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
+   "แสดงเพลย์ลิสต์ในเมนูหลัก ไม่ถูกนำมาใช้ใน GLUI หากเปิดใช้งานแท็บเพลย์ลิสต์และแถบนำทางแล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
+   "แสดงแท็บเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
+   "แสดงแท็บเพลย์ลิสต์ ไม่ส่งผลต่อ RGUI ต้องเปิดใช้งานแถบนำทางใน GLUI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
+   "แสดง 'เรียกดู'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
+   "แสดงตัวเลือกการเรียกดูเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
+   "แสดง 'Core ที่ไม่มีคอนเทนต์'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   "ระบุประเภทของ Core (ถ้ามี) ที่จะแสดงในเมนู 'Core ที่ไม่มีคอนเทนต์' เมื่อตั้งเป็น 'กำหนดเอง' จะสามารถเลือก เปิด-ปิด การมองเห็นของแต่ละ Core ได้ผ่านเมนู 'จัดการ Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "ทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   "ใช้ครั้งเดียว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
+   "แสดงวันที่และเวลา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+   "แสดงวันที่และ/หรือเวลาปัจจุบันภายในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+   "รูปแบบของวันที่และเวลา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+   "เปลี่ยนรูปแบบการแสดงวันที่และ/หรือเวลาปัจจุบันภายในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
+   "ตัวคั่นวันที่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
+   "ระบุตัวอักษรที่จะใช้เป็นตัวคั่นระหว่าง ปี/เดือน/วัน เมื่อมีการแสดงวันที่ปัจจุบันภายในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
+   "แสดงระดับแบตเตอรี่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
+   "แสดงระดับแบตเตอรี่ปัจจุบันภายในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+   "แสดงชื่อ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_ENABLE,
+   "แสดงชื่อ Core ปัจจุบันภายในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   "แสดงคำอธิบายใต้เมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   "แสดงข้อมูลเพิ่มเติมสำหรับรายการเมนูต่างๆ"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   "แสดงหน้าจอเริ่มต้น"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   "แสดงหน้าจอเริ่มต้นในเมนู โดยจะถูกตั้งค่าเป็น \"ปิด\" โดยอัตโนมัติหลังจากเริ่มใช้งานโปรแกรมครั้งแรก"
    )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "แสดง 'เล่นต่อ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "แสดงตัวเลือก เล่นต่อ ในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "แสดง 'รีเซ็ต'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "แสดง ตัวเลือกรีเซ็ตเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "แสดง 'ปิดเนื้อหา'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "แสดง 'ตัวเลือกปิดเนื้อหา'"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    "แสดงเมนูย่อย 'บันทึกสถานะ'"
@@ -6144,12 +6408,136 @@ MSG_HASH(
    "แสดงตัวเลือกสำหรับการบันทึก/โหลดสถานะ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "แสดง 'การควบคุมการเล่นซ้ำ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "แสดงตัวเลือกสำหรับการบันทึกหรือการเล่นไฟล์เล่นซ้ำย้อนหลัง"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "แสดง เลิกทำ 'บันทึก/โหลดสถานะ'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "แสดงตัวเลือกสำหรับการเลิกทำ บันทึก/โหลดสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
+   "แสดง 'ตัวเลือก Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
+   "แสดงตัวเลือก 'ตัวเลือก Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "แสดง 'ตัวเลือกการ Flush ลง Disk'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "แสดง 'ตัวเลือกการ Flush ลง Disk' ในเมนู 'ตัวเลือก > จัดการตัวเลือก Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
+   "แสดง 'การควบคุม'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
+   "แสดงตัวเลือก 'การควบคุม'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   "แสดง 'จับภาพหน้าจอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   "แสดงตัวเลือก 'จับภาพหน้าจอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   "แสดง 'เริ่มการบันทึก'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   "แสดงตัวเลือก 'เริ่มการบันทึก'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   "แสดง 'เริ่มการสตรีม'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   "แสดงตัวเลือก 'เริ่มการสตรีม'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
+   "แสดง 'โอเวอร์เลย์บนหน้าจอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   "แสดงตัวเลือก 'โอเวอร์เลย์บนหน้าจอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
+   "แสดง 'เลย์เอาต์วิดีโอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
+   "แสดงตัวเลือก 'เลย์เอาต์วิดีโอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+   "แสดง 'ความหน่วง'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   "แสดงตัวเลือก 'ความหน่วง'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+   "แสดง 'ย้อนกลับ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   "แสดงตัวเลือก 'ย้อนกลับ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+   "แสดง 'บันทึกการเขียนทับ Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+   "แสดงตัวเลือก 'บันทึกการเขียนทับ Core' ในเมนู 'การเขียนทับ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "แสดง 'บันทึกการเขียนทับโฟลเดอร์เนื้อหา'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "แสดงตัวเลือก 'บันทึกการเขียนทับโฟลเดอร์เนื้อหา' ในเมนู 'การเขียนทับ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+   "แสดง 'บันทึกการเขียนทับเกม'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+   "แสดงตัวเลือก 'บันทึกการเขียนทับเกม' ในเมนู 'การเขียนทับ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+   "แสดง 'สูตรโกง'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
+   "แสดงตัวเลือก 'สูตรโกง'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   "แสดง 'เชดเดอร์'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
@@ -6210,10 +6598,230 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
    "แสดงตัวเลือก 'ไดรเวอร์'"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
+   "แสดงการตั้งค่า 'ไดรเวอร์'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+   "แสดง 'วิดีโอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
+   "แสดงการตั้งค่า 'วิดีโอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+   "แสดง 'เสียง'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+   "แสดงการตั้งค่า 'เสียง'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
+   "แสดง 'อินพุต'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
+   "แสดงการตั้งค่า 'อินพุต'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+   "แสดง 'ความหน่วง'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
+   "แสดงการตั้งค่า 'ความหน่วง'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+   "แสดง 'Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
+   "แสดงการตั้งค่า 'Core'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+   "แสดง 'การตั้งค่า'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+   "แสดงตั้งค่า 'การตั้งค่า'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+   "แสดง 'การบันทึก'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+   "แสดงการตั้งค่า 'การบันทึก'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
+   "แสดง 'บันทึก Log'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
+   "ตั้งค่า การบันทึก 'Log'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
+   "ตัวเรียกดูไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
+   "แสดงการตั้งค่า 'ตัวเรียกดูไฟล์'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
+   "แสดง 'การควบคุมเฟรม'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
+   "แสดงการตั้งค่า 'การควบคุมเฟรม'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
+   "แสดง 'การบันทึกวิดีโอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
+   "แสดงการตั้งค่า 'การบันทึกวิดีโอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+   "แสดง 'การแสดงผลบนหน้าจอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+   "แสดงการตั้งค่า 'การแสดงผลบนหน้าจอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
+   "แสดง 'ส่วนติดต่อผู้ใช้' UI'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
+   "แสดงการตั้งค่า 'User Interface'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
+   "แสดง 'บริการ AI'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
+   "แสดงการตั้งค่า 'บริการ AI'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
+   "แสดง 'การช่วยเหลือพิเศษ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   "แสดงการตั้งค่า 'การช่วยเหลือพิเศษ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "แสดง 'การจัดการพลังงาน'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "แสดงการตั้งค่า 'การจัดการพลังงาน'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+   "แสดง 'ความสำเร็จ'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+   "แสดงการตั้งค่า 'ความสำเร็จ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
+   "แสดง 'เครือข่าย'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
+   "แสดงการตั้งค่า 'เครือข่าย'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
+   "แสดง 'เพลย์ลิสต์'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
+   "แสดงการตั้งค่า 'เพลย์ลิสต์'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
+   "แสดง 'ผู้ใช้'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
+   "แสดงการตั้งค่า 'ผู้ใช้'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
+   "แสดง 'ไดเรกทอรี'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
+   "แสดงการตั้งค่า 'ไดเรกทอรี'"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
+   "แสดง 'Steam'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
+   "แสดงการตั้งค่า 'Steam'"
+   )
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
+   "อัปสเกล"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
+   "ปรับสเกลขนาดขององค์ประกอบอินเทอร์เฟซผู้ใช้ในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+   "ภาพพื้นหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "เลือกรูปภาพเพื่อตั้งค่าเป็นพื้นหลังของเมนู รูปภาพที่เลือกเองหรือรูปภาพแบบไดนามิกจะแทนที่ 'ธีมสี' ในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
+   "ความโปร่งใสของภาพพื้นหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+   "ปรับความโปร่งใสของภาพพื้นหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "ความโปร่งใส"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "ปรับความโปร่งใสของพื้นหลังเมนูเริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   "ใช้ธีมสีระบบที่ตั้งค่าไว้เป็นค่าเริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   "ใช้ธีมสีของระบบปฏิบัติการ (ถ้ามี) เขียนทับการตั้งค่าธีม"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    "ภาพตัวอย่างหลัก"
@@ -6258,9 +6866,45 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    "ข้อความเลื่อนแบบสมูท"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
+   "ใช้แอนิเมชันเลื่อนแบบนุ่มนวลเมื่อแสดงข้อความเมนูยาว มีผลกระทบต่อประสิทธิภาพเล็กน้อย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   "จำการเลือกไว้เมื่อเปลี่ยนแท็บ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "จำตำแหน่งเคอร์เซอร์ก่อนหน้าในแท็บ RGUI ไม่มีแท็บ แต่เพลย์ลิสต์และการตั้งค่าทำงานเหมือนแท็บ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "เสมอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   "เฉพาะสำหรับเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   "เฉพาะสำหรับเมนูหลักและการตั้งค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "หน้าเริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "หน้าเมนูเริ่มต้นเมื่อเปิดโปรแกรม"
+   )
 
 /* Settings > AI Service */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
+   "เอาต์พุตของบริการ AI"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    "แสดงคำแปลแบบภาพซ้อนทับบนหน้าจอ (โหมดรูปภาพ), เล่นเป็นเสียงอ่านจากข้อความ (เสียงพูด), หรือใช้โปรแกรมอ่านหน้าจอของระบบอย่างเช่น NVDA (โปรแกรมอ่านหน้าจอ)"
@@ -6305,9 +6949,33 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
    "ภาษาต้นทางที่ต้องการแปล หากตั้งค่าเป็น 'ค่าพื้นฐาน' ระบบจะพยายามตรวจหาภาษาโดยอัตโนมัติ การระบุภาษาที่ชัดเจนจะช่วยให้แปลได้แม่นยำยิ่งขึ้น"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
+   "ภาษาเป้าหมาย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
+   "ภาษาที่บริการจะใช้แปล 'ค่าเริ่มต้น' คือภาษาอังกฤษ ในเมนู"
+   )
 
 /* Settings > Accessibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   "เปิดใช้งานการช่วยการเข้าถึง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   "เปิดใช้งานฟังก์ชันอ่านออกเสียง (Text-to-Speech) เพื่อช่วยในการนำทางเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "ความเร็วในการอ่านออกเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "ความเร็วในการอ่านออกเสียง"
+   )
 
 /* Settings > Power Management */
 
@@ -6318,8 +6986,48 @@ MSG_HASH(
    "ความสำเร็จ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+   "สะสมความสำเร็จ (Achievements) ในเกมคลาสสิก ดูข้อมูลเพิ่มเติมได้ที่ '[https://retroachievements.org]'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "โหมดฮาร์ดคอร์"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
    "ปิดการใช้งานสูตรโกง, การย้อนกลับ, สโลว์โมชัน และการโหลดบันทึกสถานะ, ความสำเร็จ ที่ได้รับในโหมดฮาร์ดคอร์จะถูกทำเครื่องหมายไว้เป็นพิเศษ เพื่อให้คุณสามารถแสดงให้ผู้อื่นเห็นถึง[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+   "ตารางคะแนนผู้นำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
+   "สถานะออนไลน์แบบละเอียด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+   "ส่งข้อมูลบริบทของเกมไปยังเว็บไซต์ RetroAchievements เป็นระยะ จะไม่มีผลหากเปิดใช้งาน 'โหมดฮาร์ดคอร์'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+   "เหรียญตราความสำเร็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+   "แสดงเหรียญตราในรายการความสำเร็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   "ทดสอบความสำเร็จที่ไม่เป็นทางการ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+   "ใช้งานความสำเร็จที่ไม่เป็นทางการ และ/หรือ ฟีเจอร์เวอร์ชันเบต้า เพื่อจุดประสงค์ในการทดสอบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "ปลดล็อคเสียง"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
@@ -6431,12 +7139,380 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "ทุกเกมที่ระบุได้"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   "เกมที่มีระบบความสำเร็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
+   "การแจ้งเตือนการปลดล็อก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
+   "การแจ้งเตือน Mastery"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "แสดงการแจ้งเตือนเมื่อมีการปลดล็อกความสำเร็จทั้งหมดของเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   "ตัวบ่งชี้ความท้าทายที่กำลังทำงาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "แสดงตัวบ่งชี้บนหน้าจอในขณะที่สามารถปลดล็อกความสำเร็จบางอย่างได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "ตัวบ่งชี้ความคืบหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "แสดงตัวบ่งชี้บนหน้าจอเมื่อมีความคืบหน้าในการทำความสำเร็จบางอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "ข้อความเริ่มตารางคะแนนผู้นำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "แสดงรายละเอียดของตารางคะแนนผู้นำเมื่อเริ่มทำงาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "ข้อความส่งคะแนนตารางคะแนนผู้นำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "แสดงข้อความพร้อมคะแนนที่ส่งไปเมื่อการพยายามทำคะแนนในตารางผู้นำสิ้นสุดลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "ข้อความล้มเหลวของตารางคะแนนผู้นำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "แสดงข้อความเมื่อการทำคะแนนในตารางผู้นำล้มเหลว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "ตัวติดตามตารางคะแนนผู้นำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "แสดงตัวติดตามบนหน้าจอพร้อมค่าคะแนนปัจจุบันของตารางคะแนนผู้นำที่กำลังทำงานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   "ข้อความการเข้าสู่ระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   "แสดงข้อความที่เกี่ยวข้องกับการเข้าสู่ระบบบัญชี RetroAchievements"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+   "ข้อความรายละเอียดครบถ้วน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   "แสดงข้อความการวินิจฉัยและข้อผิดพลาดเพิ่มเติม"
+   )
 
 /* Settings > Network */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+   "ประกาศ Netplay ต่อสาธารณะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+   "กำหนดว่าจะประกาศห้องเล่น Netplay ต่อสาธารณะหรือไม่ หากไม่ได้ตั้งค่าไว้ ผู้เล่นคนอื่นจะต้องเชื่อมต่อด้วยตนเองแทนการใช้ล็อบบี้สาธารณะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
+   "ใช้งานเซิร์ฟเวอร์รีเลย์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   "ส่งต่อการเชื่อมต่อ Netplay ผ่านเซิร์ฟเวอร์ตัวกลาง มีประโยชน์ในกรณีที่โฮสต์ (ผู้สร้างห้อง) อยู่หลังไฟร์วอลล์ หรือมีปัญหาเกี่ยวกับ NAT/UPnP"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+   "ตำแหน่งของเซิร์ฟเวอร์รีเลย์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
+   "เลือกเซิร์ฟเวอร์รีเลย์ที่ต้องการใช้งาน โดยปกติแล้วตำแหน่งที่อยู่ใกล้ทางภูมิศาสตร์มากกว่ามักจะมีค่าความหน่วง (Latency) ที่ต่ำกว่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   "ที่อยู่เซิร์ฟเวอร์รีเลย์แบบกำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "กรอกที่อยู่ของเซิร์ฟเวอร์รีเลย์แบบกำหนดเองของคุณที่นี่ รูปแบบ: address หรือ address|port"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "อเมริกาเหนือ (ชายฝั่งตะวันออก, สหรัฐอเมริกา)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "ยุโรปตะวันตก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "อเมริกาใต้ (ตะวันออกเฉียงใต้, บราซิล)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "เอเชียตะวันออกเฉียงใต้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
+   "ที่อยู่เซิฟเวอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+   "ที่อยู่ของโฮสต์ที่ต้องการเชื่อมต่อ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
+   "พอร์ตของที่อยู่ IP โฮสต์ สามารถเป็นได้ทั้งพอร์ต TCP หรือ UDP ในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "จำนวนการเชื่อมต่อสูงสุดพร้อมกัน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "จำนวนการเชื่อมต่อสูงสุดที่โฮสต์จะยอมรับก่อนที่จะปฏิเสธการเชื่อมต่อใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   "ตัวจำกัดค่า Ping"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "ค่าความหน่วงการเชื่อมต่อ (ping) สูงสุดที่โฮสต์จะยอมรับ กำหนดค่าเป็น 0 หากไม่ต้องการจำกัด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
+   "รหัสผ่านเซิฟเวอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
+   "รหัสผ่านที่ใช้โดยไคลเอนต์ในการเชื่อมต่อกับโฮสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+   "รหัสผ่านสำหรับผู้ชมเท่านั้นของเซิร์ฟเวอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+   "รหัสผ่านที่ใช้โดยไคลเอนต์ในการเชื่อมต่อกับโฮสต์ในฐานะผู้ชม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
+   "โหมดผู้ชม Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
+   "เริ่มต้นการเล่นออนไลน์ ในโหมดผู้ชม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
+   "เริ่มต้น Netplay ในโหมดผู้ชมหรือไม่  ถ้าตั้งค่าเป็น true Netplay จะเริ่มต้นในโหมดผู้ชม  สามารถเปลี่ยนโหมดได้ภายหลังเสมอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "แชทแบบเฟด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "ทำให้ข้อความแชทค่อย ๆ จางลงเรื่อยๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
+   "สีแชท (ชื่อเล่น)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME,
+   "รูปแบบ: #RRGGBB หรือ RRGGBB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
+   "สีแชท (ข้อความ)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
+   "รูปแบบ: #RRGGBB หรือ RRGGBB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "อนุญาตให้หยุดชั่วคราว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   "อนุญาตให้ผู้เล่นหยุดเกมชั่วคราวระหว่าง Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+   "อนุญาตให้ไคลเอนต์โหมด Slave ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+   "อนุญาตให้เชื่อมต่อในโหมด Slave ได้  ไคลเอนต์โหมด Slave ต้องการพลังประมวลผลน้อยมากทั้งสองฝั่ง แต่จะได้รับผลกระทบจากความหน่วงของเครือข่ายอย่างมาก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
+   "ไม่อนุญาตให้ไคลเอนต์ที่ไม่ใช่โหมด Slave ใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
+   "ไม่อนุญาตให้เชื่อมต่อที่ไม่ใช่โหมด Slave  ไม่แนะนำ ยกเว้นสำหรับเครือข่ายที่เร็วมากและเครื่องที่มีประสิทธิภาพต่ำมาก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
+   "ตรวจสอบเฟรม Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+   "ความถี่ (เฟรม) ที่ Netplay จะตรวจสอบความสอดคล้องกันระหว่างเครื่อง Host และ Client"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
+   "ความถี่ในหน่วยเฟรมที่ Netplay จะตรวจสอบความสอดคล้องกันระหว่างเครื่อง Host และ Client สำหรับ Core ส่วนใหญ่ ค่านี้จะไม่มีผลที่มองเห็นได้และสามารถข้ามไปได้เลย แต่สำหรับ Core ประเภท Nondeterministic ค่านี้จะ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "เฟรมความหน่วงของอินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "จำนวนเฟรมของความหน่วงอินพุตที่ Netplay ใช้เพื่อซ่อนความหน่วงของเครือข่าย ช่วยลดอาการกระตุกและลดการใช้งาน CPU แต่ต้องแลกมาด้วยความล่าช้าในการตอบสนอง ที่สังเกตเห็นได้ชัดเจน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "จำนวนเฟรมของความหน่วงอินพุตที่ Netplay ใช้เพื่อซ่อนความหน่วงของเครือข่าย\nเมื่ออยู่ในโหมด Netplay ตัวเลือกนี้จะหน่วงการรับข้อมูลอินพุตจากเครื่องโลคอล เพื่อให้เฟรมที่กำลังรันอยู่ใกล[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "ช่วงเฟรมความหน่วงของอินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "ช่วงของจำนวนเฟรมความหน่วงของอินพุตที่อาจถูกนำมาใช้เพื่อซ่อนความหน่วงของเครือข่าย ช่วยลดอาการกระตุกและลดภาระการทำงานของ CPU แต่ต้องแลกมาด้วยความล่าช้าในการตอบสนองที่ไม่สาม[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "ช่วงของจำนวนเฟรมความหน่วงของอินพุตที่ Netplay อาจนำมาใช้เพื่อซ่อนความหน่วงของเครือข่าย\nหากตั้งค่าไว้ Netplay จะปรับจำนวนเฟรมของความหน่วงอินพุตแบบไดนามิก เพื่อรักษาสมดุลระหว่างเวลา[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+   "เมื่อเป็นโฮสต์ จะพยายามรับการเชื่อมต่อจากอินเทอร์เน็ตสาธารณะ โดยใช้ UPnP หรือเทคโนโลยีที่ใกล้เคียงกันเพื่อทะลุผ่าน LAN ออกไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+   "การแชร์อินพุตดิจิทัล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+   "ร้องขออุปกรณ์ %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+   "คำร้องขอเพื่อเล่นด้วยอุปกรณ์อินพุตที่กำหนด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
+   "คำสั่งเครือข่าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
+   "พอร์ตคำสั่งเครือข่าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
+   "พอร์ตพื้นฐานของ Network RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
+   "ผู้เล่น %d Network RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
+   "คำสั่ง stdin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+   "อินเตอร์เฟซคำสั่ง stdin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+   "ดาวน์โหลดรูปตัวอย่างแบบตามคำขอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+   "ดาวน์โหลดรูปตัวอย่างที่ขาดหายไปโดยอัตโนมัติขณะเลือกดูเพลย์ลิสต์ ซึ่งจะส่งผลกระทบต่อประสิทธิภาพการทำงานอย่างรุนแรง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   "ตั้งค่าตัวอัปเดต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   "เข้าถึงการตั้งค่าตัวอัปเดต Core"
+   )
 
 /* Settings > Network > Updater */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
+   "URL ไปยังไดเรกทอรีตัวอัปเดตคอร์บน Buildbot ของ Libretro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
+   "URL ไปยังไดเรกทอรีตัวอัปเดตทรัพยากรบน libretro buildbot"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   "สกัดไฟล์เก็บถาวรที่ดาวน์โหลดมาโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   "หลังจากดาวน์โหลดเสร็จสิ้น จะทำการแตกไฟล์ที่อยู่ในไฟล์เก็บถาวร (Archive) โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "แสดง 'Core ทดลอง'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "รวม 'Core ทดลอง' ไว้ในรายการตัวดาวน์โหลด Core โดยปกติแล้วสิ่งเหล่านี้มีไว้เพื่อการพัฒนา/ทดสอบเท่านั้น และไม่แนะนำให้ใช้งานทั่วไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
+   "สำรองข้อมูล Core เมื่อทำการอัปเดต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   "สร้างสำรองข้อมูลของ Core ที่ติดตั้งไว้โดยอัตโนมัติเมื่อทำการอัปเดตออนไลน์ ช่วยให้สามารถย้อนกลับไปยัง Core ที่ใช้งานได้ตามปกติ หากการอัปเดตทำให้เกิดข้อผิดพลาดหรือประสิทธิภาพลดลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "ขนาดประวัติการสำรองข้อมูล Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "ระบุจำนวนไฟล์สำรองข้อมูลที่สร้างขึ้นโดยอัตโนมัติเพื่อเก็บไว้สำหรับแต่ละ Core ที่ติดตั้ง เมื่อครบตามจำนวนที่กำหนด การสร้างไฟล์สำรองใหม่ผ่านการอัปเดตออนไลน์จะลบไฟล์สำรองที่เก[...]"
+   )
 
 /* Settings > Playlists */
 
@@ -6445,12 +7521,188 @@ MSG_HASH(
    "ประวัติ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+   "เก็บรายการประวัติของเกม รูปภาพ เพลง และวิดีโอที่เพิ่งใช้งานล่าสุดไว้ในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
+   "ขนาดประวัติการใช้งานล่าสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+   "จำกัดจำนวนรายการในเพลย์ลิสต์ประวัติการใช้งานล่าสุดสำหรับเกม รูปภาพ เพลง และวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
+   "ขนาดประวัติรายการโปรด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   "จำกัดจำนวนรายการในเพลย์ลิสต์ 'รายการโปรด' เมื่อครบตามจำนวนที่กำหนด จะไม่สามารถเพิ่มรายการใหม่ได้จนกว่าจะลบรายการเก่าออก การตั้งค่าเป็น -1 จะทำให้สามารถเพิ่มรายการได้ 'ไม่จำกั[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "อนุญาตให้เปลี่ยนชื่อรายการได้"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
    "อนุญาตให้เปลี่ยนชื่อรายการในเพลย์ลิสต์ได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
+   "อนุญาตให้ลบรายการออก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
+   "อนุญาตให้ลบรายการออกจากเพลย์ลิสต์ได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+   "เรียงลำดับเพลย์ลิสต์ตามตัวอักษร"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
+   "เรียงลำดับเพลย์ลิสต์เนื้อหาตามตัวอักษร โดยไม่รวมเพลย์ลิสต์ 'ประวัติการใช้งาน', 'รูปภาพ', 'เพลง' และ 'วิดีโอ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+   "บันทึกเพลย์ลิสต์โดยใช้รูปแบบเก่า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
+   "บันทึกเพลย์ลิสต์โดยใช้รูปแบบข้อความ (Plain-text) ซึ่งเป็นรูปแบบเก่าที่เลิกใช้แล้ว หากปิดการใช้งานนี้ เพลย์ลิสต์จะถูกจัดรูปแบบโดยใช้ JSON แทน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+   "บีบอัดเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
+   "บีบอัดข้อมูลเพลย์ลิสต์เมื่อบันทึกลงดิสก์ ช่วยลดขนาดไฟล์และเวลาในการโหลด โดยแลกกับการใช้งาน CPU ที่เพิ่มขึ้น (เพียงเล็กน้อย) สามารถใช้ได้กับเพลย์ลิสต์ทั้งรูปแบบเก่าและรูปแบบให[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   "แสดง Core ที่เกี่ยวข้องในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   "กำหนดว่าจะให้แสดงแท็ก Core ในเพลย์ลิสต์เมื่อใด (ถ้ามี)การตั้งค่านี้จะถูกละเว้นเมื่อเปิดใช้งานคำอธิบายย่อยในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
+   "แสดงคำอธิบายย่อยในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
+   "แสดงข้อมูลเพิ่มเติมสำหรับแต่ละรายการในเพลย์ลิสต์ เช่น Core ที่เชื่อมโยงอยู่และเวลาที่ใช้เล่น (ถ้ามี) ซึ่งอาจส่งผลต่อประสิทธิภาพการทำงานที่แตกต่างกันออกไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   "แสดงไอคอนเฉพาะเนื้อหาในประวัติและรายการที่ชื่นชอบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   "แสดงไอคอนเฉพาะสำหรับแต่ละรายการในเพลย์ลิสต์ประวัติและรายการที่ชื่นชอบ ซึ่งอาจส่งผลต่อประสิทธิภาพการทำงานที่แตกต่างกันออกไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
+   "เวลาที่ใช้เล่น:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
+   "เล่นล่าสุด:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "จำนวนครั้งที่เล่น:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
+   "วินาที"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "วินาที"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE,
+   "นาที"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL,
+   "นาที"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
+   "ชั่วโมง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
+   "ชั่วโมง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
+   "วัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
+   "วัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
+   "สัปดาห์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL,
+   "สัปดาห์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE,
+   "เดือน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL,
+   "เดือน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
+   "ปี"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
+   "ปี"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
+   "ที่ผ่านมา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   "แสดงหมายเลขรายการในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   "แสดงหมายเลขรายการเมื่อเรียกดูเพลย์ลิสต์ รูปแบบการแสดงผลจะขึ้นอยู่กับไดรเวอร์เมนูที่เลือกใช้ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   "เวลาที่ใช้เล่นในคำอธิบายย่อยของเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   "เลือกประเภทของ log เวลาที่ใช้เล่นที่จะแสดงในคำอธิบายย่อยของเพลย์ลิสต์\nต้องเปิดใช้งาน log เวลาที่ใช้เล่นที่เกี่ยวข้องผ่านเมนูตัวเลือกการบันทึกก่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   "รูปแบบวันที่และเวลา 'เล่นล่าสุด'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   "ตั้งค่ารูปแบบของวันที่และเวลาที่แสดงสำหรับข้อมูล 'เล่นล่าสุด' ตัวเลือกแบบ '(AM/PM)' อาจส่งผลต่อประสิทธิภาพการทำงานเล็กน้อยในบางแพลตฟอร์ม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   "ตรวจสอบไฟล์บีบอัดแบบง่ายๆ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -6480,21 +7732,185 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
    "จัดระเบียบ เพลย์ลิสต์"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   "รายการเกมแบบพกพา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
+   "เมื่อเปิดใช้งาน และมีการเลือกไดเรกทอรี 'ตัวเลือกไฟล์' ไว้ด้วย ค่าปัจจุบันของพารามิเตอร์ 'ตัวเลือกไฟล์' จะถูกบันทึกไว้ในเพลย์ลิสต์ เมื่อมีการโหลดเพลย์ลิสต์นี้ในระบบอื่นที่เปิด[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+   "ใช้ชื่อไฟล์สำหรับการจับคู่รูปภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   "เมื่อเปิดใช้งาน จะค้นหารูปภาพตัวอย่างจากชื่อไฟล์ของรายการ แทนที่จะค้นหาจากชื่อที่แสดงในรายการครับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "อนุญาตให้ใช้ไฟล์ภาพทุกรูปแบบที่รองรับสำหรับรูปภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "เมื่อเปิดใช้งาน จะสามารถเพิ่มรูปภาพตัวอย่างจากไฟล์ภาพทุกประเภทที่ RetroArch รองรับ (เช่น jpeg) แต่อาจส่งผลต่อประสิทธิภาพการทำงานเล็กน้อย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "จัดการ"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
+   "Core เริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+   "ระบุ Core ที่จะใช้เมื่อเรียกใช้เนื้อหาผ่านรายการในเพลย์ลิสต์ที่ยังไม่มีการเชื่อมโยงกับ Core ใดๆ ไว้ก่อนหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
+   "รีเซ็ตการเชื่อมโยง Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
+   "ลบการเชื่อมโยง Core ที่มีอยู่เดิมสำหรับทุกรายการในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+   "โหมดการแสดงชื่อรายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+   "เปลี่ยนวิธีแสดงชื่อรายการเนื้อหาในเพลย์ลิสต์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
+   "วิธีการจัดเรียงตัวเลือก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
+   "กำหนดวิธีการจัดเรียงรายการในเพลย์ลิสต์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   "ลบเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   "ตรวจสอบการเชื่อมโยง Core และลบรายการที่ไม่ถูกต้องหรือรายการที่ซ้ำกันออก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "รีเฟรชเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "เพิ่มเนื้อหาใหม่และลบรายการที่ไม่ถูกต้องออก โดยการทำซ้ำการสแกนเนื้อหาที่ใช้ล่าสุดในการสร้างหรือแก้ไขเพลย์ลิสต์นั้น ๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   "ลบเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   "ลบเพลย์ลิสต์ออกจากระบบไฟล์"
+   )
 
 /* Settings > User */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+   "ความเป็นส่วนตัว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   "เปลี่ยนการตั้งค่าความเป็นส่วนตัว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+   "บัญชีผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+   "จัดการบัญชีผู้ใช้ที่กำหนดค่าไว้ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
+   "ชื่อผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+   "ระบุชื่อผู้ใช้ของคุณที่นี่ ซึ่งจะถูกนำไปใช้สำหรับการเล่นผ่านระบบออนไลน์ (Netplay) และฟังก์ชันอื่น ๆ ที่เกี่ยวข้อง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   "ภาษา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+   "ตั้งค่าภาษาของส่วนประสานผู้ใช้ (UI)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
+   "ปรับเปลี่ยนภาษาของเมนูและข้อความทั้งหมดที่แสดงบนหน้าจอตามภาษาที่คุณเลือกไว้ที่นี่ จำเป็นต้องรีสตาร์ทเพื่อให้การเปลี่ยนแปลงมีผล\nความสมบูรณ์ของการแปลจะแสดงอยู่ถัดจากแต่ล[...]"
+   )
 
 /* Settings > User > Privacy */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   "อนุญาตกล้อง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+   "อนุญาตให้ Core เข้าถึงกล้อง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+   "อนุญาตให้แอป Discord แสดงข้อมูลเกี่ยวกับเนื้อหาที่กำลังเล่น\nใช้งานได้เฉพาะกับโปรแกรมบนเดสก์ท็อปเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
+   "อนุญาตตำแหน่งที่ตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
+   "อนุญาตให้ Core เข้าถึงตำแหน่งที่ตั้งของคุณ"
+   )
 
 /* Settings > User > Accounts */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "สะสมความสำเร็จ ในเกมคลาสสิก ดูข้อมูลเพิ่มเติมได้ที่  'https://retroachievements.org'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "รายละเอียดการเข้าสู่ระบบสำหรับบัญชี RetroAchievements ของคุณ เข้าไปที่ retroachievements.org เพื่อสมัครบัญชีฟรี\nหลังจากลงทะเบียนเสร็จแล้ว คุณต้องระบุชื่อผู้ใช้และรหัสผ่านลงใน RetroArch"
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+   "ชื่อผู้ใช้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
+   "ระบุชื่อผู้ใช้บัญชี RetroAchievements ของคุณ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+   "รหัสผ่าน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
+   "ระบุรหัสผ่านของบัญชี RetroAchievements ของคุณ ความยาวสูงสุด: 255 ตัวอักษร"
+   )
 
 /* Settings > User > Accounts > YouTube */
 
@@ -6508,16 +7924,240 @@ MSG_HASH(
 /* Settings > Directory */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
+   "ไบออส (BIOS), บูต ROM (Boot ROM) และไฟล์เฉพาะของระบบอื่น ๆ จะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    "ดาวน์โหลด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+   "ไฟล์ที่ดาวน์โหลดมาจะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
+   "ทรัพยากร"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
+   "โฟลเดอร์นี้ใช้สำหรับจัดเก็บทรัพยากรเมนูที่ RetroArch เรียกใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
+   "พื้นหลังแบบไดนามิก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+   "โฟลเดอร์นี้ใช้สำหรับจัดเก็บรูปภาพพื้นหลังที่ใช้งานภายในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
+   "ภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
+   "โฟลเดอร์นี้ใช้สำหรับจัดเก็บภาพตัวอย่างที่เป็นหน้าปกเกม ภาพจับภาพหน้าจอ และหน้าจอชื่อเกม"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "เปิดไดเรกทอรีเริ่มต้น"
    )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   "ตั้งค่าโฟลเดอร์เริ่มต้นสำหรับตัวเรียกดูไฟล์"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   "ไฟล์การตั้งค่า"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   "ไฟล์การตั้งค่าเริ่มต้นจะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
+   "ไฟล์ Libretro core จะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
+   "ข้อมูล Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
+   "ไฟล์ข้อมูลแอปพลิเคชันหรือข้อมูล Core จะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
+   "ฐานข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+   "ไฟล์ Database จะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
+   "ไฟล์สูตรโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
+   "ไฟล์สูตรโกงจะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
+   "ตัวกรองวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
+   "ไฟล์วิดีโอฟิลเตอร์ที่ประมวลผลด้วย CPU จะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+   "ตัวกรองเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+   "ไฟล์ออดิโอ DSP ฟิลเตอร์จะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
+   "วิดีโอเชดเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
+   "ไฟล์วิดีโอเชดเดอร์ที่ประมวลผลด้วย GPU จะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+   "การบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+   "ไฟล์ที่บันทึกไว้จะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
+   "การตั้งค่าการบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+   "ไดเรกทอรีสำหรับเก็บการตั้งค่าการบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
+   "โอเวอร์เลย์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+   "ไดเรกทอรีสำหรับเก็บไฟล์โอเวอร์เลย์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "โอเวอร์เลย์คีย์บอร์ด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "ไดเรกทอรีสำหรับเก็บไฟล์โอเวอร์เลย์คีย์บอร์ด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   "เลย์เอาต์วิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
+   "ไดเรกทอรีสำหรับเก็บไฟล์เลย์เอาต์วิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
+   "ภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
+   "ไดเรกทอรีสำหรับเก็บภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
+   "โปรไฟล์คอนโทรลเลอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
+   "ไดเรกทอรีสำหรับเก็บไฟล์โปรไฟล์ที่ใช้สำหรับกำหนดค่าคอนโทรลเลอร์โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
+   "การเปลี่ยนปุ่มกดใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
+   "ไดเรกทอรีสำหรับเก็บไฟล์การเปลี่ยนปุ่มกดใหม่"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "เพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+   "ไดเรกทอรีสำหรับเก็บไฟล์เพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
+   "เพลย์ลิสต์ที่ชอบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY,
+   "ไดเรกทอรีสำหรับบันทึกเพลย์ลิสต์ที่ชื่นชอบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
+   "เพลย์ลิสต์ประวัติการใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
+   "บันทึกเพลย์ลิสต์ประวัติการใช้งานลงในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
+   "เพลย์ลิสต์รูปภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
+   "บันทึกเพลย์ลิสต์ประวัติรูปภาพลงในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   "เพลย์ลิสต์เพลง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   "บันทึกเพลย์ลิสต์เพลงลงในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_VIDEO_HISTORY_DIRECTORY,
+   "เพลย์ลิสต์วิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
+   "บันทึกเพลย์ลิสต์วิดีโอลงในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+   "บันทึกการทำงาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   "บันทึกการทำงาน (Runtime Logs) จะถูกจัดเก็บไว้ในโฟลเดอร์นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
+   "บันทึกไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+   "บันทึกไฟล์เซฟทั้งหมดลงในไดเรกทอรีนี้ หากไม่ได้กำหนดไว้ จะพยายามบันทึกไว้ภายในไดเรกทอรีที่ไฟล์เนื้อหาเปิดทำงานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "บันทึกไฟล์เซฟทั้งหมด (*.srm) ลงในไดเรกทอรีนี้ รวมถึงไฟล์ที่เกี่ยวข้อง เช่น .rt, .psrm และอื่นๆ โดยตัวเลือกจากบรรทัดคำสั่ง (Command Line) จะมีความสำคัญเหนือกว่าค่าที่ตั้งไว้นี้"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -6527,43 +8167,551 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
    "บันทึกสถานะ และการเล่นย้อนหลัง จะถูกจัดเก็บไว้ในโฟลเดอร์นี้ หากไม่ได้ตั้งค่าไว้ ระบบจะพยายามบันทึกไปยังโฟลเดอร์ที่เนื้อหานั้นตั้งอยู่โดยอัตโนมัติ"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
+   "แคช"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
+   "เนื้อหาที่ถูกบีบอัดจะถูกแตกไฟล์ชั่วคราวลงในไดเรกทอรีนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_DIR,
+   "บันทึกเหตุการณ์ของระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_DIR,
+   "บันทึกเหตุการณ์ของระบบจะถูกจัดเก็บไว้ในไดเรกทอรีนี้"
+   )
 
 #ifdef HAVE_MIST
 /* Settings > Steam */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_ENABLE,
+   "เปิดใช้งาน Rich Presence"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_ENABLE,
+   "แชร์สถานะการเล่นของคุณใน RetroArch บน Steam"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
+   "รูปแบบเนื้อหาของ Rich Presence"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
+   "ตัดสินใจว่าข้อมูลใดที่เกี่ยวข้องกับเนื้อหาจะถูกแชร์ออกไป"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "เนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
+   "ชื่อ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+   "ชื่อระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM,
+   "เนื้อหา (ชื่อ ระบบ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE,
+   "เนื้อหา (ชื่อ Core)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE,
+   "เนื้อหา (ชื่อระบบ - ชื่อ Core)"
+   )
 #endif
 
 /* Music */
 
 /* Music > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
+   "เพิ่มลงใน Mixer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+   "เพิ่มแทร็กเสียงนี้ลงในช่องสตรีมเสียงที่ว่างอยู่\nหากไม่มีช่องว่างที่พร้อมใช้งานในขณะนี้ ข้อมูลนี้จะถูกข้ามไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
+   "เพิ่มลงใน Mixer และเล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+   "เพิ่มแทร็กเสียงนี้ลงในช่องสตรีมเสียงที่ว่างอยู่และเล่นทันที\nหากไม่มีช่องว่างที่พร้อมใช้งานในขณะนี้ ข้อมูลนี้จะถูกข้ามไป"
+   )
 
 /* Netplay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
+   "เชื่อมต่อกับ Netplay Host"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
+   "กรอกที่อยู่เซิร์ฟเวอร์ Netplay และเชื่อมต่อในโหมด Client"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
+   "ตัดการเชื่อมต่อจาก Netplay Host"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
+   "ตัดการเชื่อมต่อ Netplay ที่กำลังใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   "ตัวกรองล็อบบี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "เฉพาะห้องที่เชื่อมต่อได้เท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "เฉพาะ Core ที่ติดตั้งแล้วเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
+   "ห้องที่มีรหัสผ่าน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   "รีเฟรชรายชื่อ Netplay Host"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   "สแกนหา Netplay Host"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "รีเฟรชรายชื่อ Netplay LAN"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "สแกนหา Netplay Host บน LAN"
+   )
 
 /* Netplay > Host */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
+   "เริ่ม Netplay Host"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
+   "เริ่ม Netplay ในโหมดโฮสต์ (เซิร์ฟเวอร์)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
+   "หยุด Netplay Host"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "เตะผู้เล่นออก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "เตะผู้เล่นออกจากห้องที่คุณกำลังเป็นโฮสต์อยู่ขณะนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "แบนผู้เล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "แบนผู้เล่นออกจากห้องที่คุณกำลังเป็นโฮสต์อยู่ขณะนี้"
+   )
 
 /* Import Content */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
+   "สแกนไดเรกทอรี"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+   "สแกนไดเรกทอรีเพื่อหาเนื้อหาที่ตรงกับฐานข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
+   "เลือกสิ่งนี้เพื่อสแกนไดเรกทอรีปัจจุบันเพื่อหาเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_FILE,
+   "สแกนไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_FILE,
+   "สแกนไฟล์เพื่อหาเนื้อหาที่ตรงกับฐานข้อมูล"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
    "สแกนเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+   "การสแกนที่กำหนดค่าได้ โดยอ้างอิงตามชื่อไฟล์ของเนื้อหา และ/หรือ ข้อมูลที่ตรงกับฐานข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
+   "สแกน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "วิธีการสแกน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "อัตโนมัติหรือกำหนดเองพร้อมตัวเลือกโดยละเอียด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "ตรวจสอบฐานข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "แบบเข้มงวดจะเพิ่มเฉพาะรายการที่ตรงกับฐานข้อมูลเท่านั้น แบบผ่อนปรนจะเพิ่มไฟล์ที่มีนามสกุลถูกต้องด้วยแม้จะไม่พบข้อมูลที่ตรงกับ CRC/serial แบบกำหนดเองจะตรวจสอบกับไฟล์ XML ที่ผู้ใช้ร[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "ฐานข้อมูลที่ใช้เปรียบเทียบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "จำกัดการค้นหาให้เฉพาะเจาะจงเพียงฐานข้อมูลเดียว หรือเลือกฐานข้อมูลแรกที่พบข้อมูลที่ตรงกัน เพื่อเพิ่มความเร็วในการสแกน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "เพลย์ลิสต์ที่ต้องการอัปเดต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "ผลลัพธ์จะถูกเพิ่มลงในเพลย์ลิสต์นี้ ในกรณีที่เป็นแบบอัตโนมัติ - ทั้งหมด เพลย์ลิสต์ของหลายระบบอาจถูกอัปเดตพร้อมกัน \nหากเลือกแบบกำหนดเองโดยไม่อ้างอิงฐานข้อมูล รายการที่เพิ่มเ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "สแกนไฟล์เดียว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "สแกนไฟล์เพียงไฟล์เดียวแทนที่จะเป็นไดเรกทอรี \nเลือกตำแหน่งเนื้อหาอีกครั้งหลังจากเปลี่ยนรายการนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "ข้ามการอ้างอิงฐานข้อมูลจากเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "ในกรณีที่มีการกำหนดชื่อเพลย์ลิสต์เอง ให้ใช้ชื่อเพลย์ลิสต์นั้นในการค้นหาภาพตัวอย่างเสมอ แม้ว่าจะมีการค้นพบข้อมูลที่ตรงกับฐานข้อมูลก็ตาม"
    )
 
 /* Import Content > Scan File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
+   "เพิ่มลงใน Mixer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+   "เพิ่มลงใน Mixer และเล่น"
+   )
 
 /* Import Content > Content Scan */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+   "ตำแหน่งเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+   "เลือกไดเรกทอรี (หรือไฟล์) เพื่อสแกนหาเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "เพลย์ลิสต์เป้าหมาย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "ชื่อของไฟล์เพลย์ลิสต์ที่สร้างขึ้น ซึ่งจะถูกใช้ในการระบุรูปภาพตัวอย่างของเพลย์ลิสต์ด้วย หากตั้งค่าเป็นอัตโนมัติจะใช้ชื่อเดียวกับฐานข้อมูลที่ตรงกันหรือชื่อไดเรกทอรีของเนื[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "ชื่อเพลย์ลิสต์ที่กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "ชื่อเพลย์ลิสต์ที่กำหนดเองสำหรับเนื้อหาที่สแกนแล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "Core เริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "เลือก Core เริ่มต้นสำหรับใช้ในการเปิดเนื้อหาที่สแกนพบแล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
+   "นามสกุลไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+   "รายการประเภทไฟล์ที่จะรวมอยู่ในการสแกน โดยคั่นด้วยเว้นวรรค หากว่างไว้จะรวมไฟล์ทุกประเภท หรือหากมีการระบุ Core จะรวมไฟล์ทั้งหมดที่ Core นั้นรองรับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "สแกนแบบเรียกซ้ำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "เมื่อเปิดใช้งาน ไดเรกทอรีย่อยทั้งหมดของ 'ไดเรกทอรีเนื้อหา' ที่ระบุไว้จะถูกรวมอยู่ในการสแกนด้วย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+   "สแกนภายในไฟล์บีบอัด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+   "เมื่อเปิดใช้งาน จะมีการค้นหาเนื้อหาที่ถูกต้องหรือรองรับภายในไฟล์บีบอัด (.zip, .7z และอื่นๆ) ซึ่งอาจส่งผลกระทบอย่างมากต่อประสิทธิภาพในการสแกน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
+   "ไฟล์ Arcade DAT"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
    "เลือกไฟล์ Logiqx หรือ MAME List XML DAT เพื่อเปิดใช้งานการตั้งชื่อเนื้อหาอาร์เขตที่สแกนโดยอัตโนมัติ (MAME, FinalBurn Neo และอื่น ๆ)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+   "ตัวกรองไฟล์ Arcade DAT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+   "เมื่อใช้งานไฟล์ Arcade DAT เนื้อหาจะถูกเพิ่มลงในเพลย์ลิสต์ก็ต่อเมื่อพบรายการที่ตรงกันในไฟล์ DAT เท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+   "เขียนทับเพลย์ลิสต์ที่มีอยู่เดิม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
+   "เมื่อเปิดใช้งาน เพลย์ลิสต์ที่มีอยู่เดิมจะถูกลบออกก่อนที่จะเริ่มการสแกนเนื้อหา เมื่อปิดใช้งาน รายการในเพลย์ลิสต์ที่มีอยู่จะถูกเก็บรักษาไว้ และจะมีการเพิ่มเฉพาะเนื้อหาที่ย[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "ตรวจสอบรายการที่มีอยู่เดิม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "เมื่อเปิดใช้งาน รายการในเพลย์ลิสต์ที่มีอยู่เดิมจะได้รับการตรวจสอบก่อนที่จะเริ่มการสแกนเนื้อหาใหม่ โดยรายการที่อ้างอิงถึงเนื้อหาที่สูญหาย และ/หรือไฟล์ที่มีนามสกุลไม่ถูกต้[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
+   "เริ่มสแกน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
+   "สแกนเนื้อหาที่เลือกไว้"
+   )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "กำลังเริ่มต้นรายการ..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   "ปีที่วางขาย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   "จำนวนผู้เล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   "ภูมิภาค"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
+   "แท็ก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
+   "ค้นหาชื่อ ..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
+   "แสดงทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   "ตัวกรองเพิ่มเติม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
+   "ทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
+   "ตัวกรองเพิ่มเติม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
+   "%u รายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   "ตามผู้พัฒนา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   "ตามผู้จำหน่าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   "ตามปีที่เปิดตัว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   "ตามจำนวนผู้เล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "ตามประเภทเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
+   "ตามความสำเร็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
+   "ตามประเภท"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
+   "ตามภาษา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   "ตามภูมิภาค"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
+   "ตามเฉพาะคอนโซล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
+   "ตามเฉพาะแพลตฟอร์ม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
+   "ตามการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
+   "ตามคะแนน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
+   "ตามสื่อ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
+   "ตามการควบคุม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
+   "ตาม Artstyle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
+   "ตามเกมเพลย์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
+   "ตามเนื้อเรื่อง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
+   "ตามจังหวะดำเนินเรื่อง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
+   "ตามมุมมองของผู้เล่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
+   "ตามฉากหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
+   "ตามงานภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VEHICULAR,
+   "ตามพาหนะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
+   "ตามแหล่งที่มา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
+   "ตาม​แฟรนไชส์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
+   "ตามแท็ก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   "ตามชื่อระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
+   "ตั้งค่าตัวกรองช่วงข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "มุมมอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW,
+   "บันทึกเป็นมุมมอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
+   "ลบมุมมองนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
+   "ป้อนชื่อของมุมมองใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS,
+   "มีมุมมองชื่อนี้อยู่แล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED,
+   "บันทึกมุมมองแล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED,
+   "ลบมุมมองแล้ว"
+   )
 
 /* Playlist > Playlist Item */
 
@@ -6588,28 +8736,72 @@ MSG_HASH(
    "ลบออก"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DELETE_ENTRY,
+   "ลบรายการนี้ออกจากเพลย์ลิสต์"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
    "เพิ่มในรายการโปรด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
+   "เพิ่มเนื้อหาไปที่ 'รายการโปรด'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "เพิ่มลงในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "เพิ่มเนื้อหาลงในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "สร้างเพลย์ลิสต์ใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "สร้างเพลย์ลิสต์ใหม่และเพิ่มรายการปัจจุบันลงไป"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
    "กำหนด Core"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "กำหนดคอร์ที่เกี่ยวข้องกับเนื้อหานี้"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
    "ล้าง Core ที่เลือกไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   "รีเซ็ต Core ที่เกี่ยวข้องกับเนื้อหานี้"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "ข้อมูล"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INFORMATION,
+   "ดูข้อมูลเพิ่มเติมเกี่ยวกับเนื้อหาชิ้นนี้"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "ดาวน์โหลดรูปตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "ดาวน์โหลดรูปภาพสกรีนช็อต/หน้าปก/ภาพหน้าจอชื่อเกม สำหรับเนื้อหาปัจจุบัน และอัปเดตไฟล์เดิมที่มีอยู่เดิม"
    )
 
 /* Playlist Item > Set Core Association */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
+   "Core ปัจจุบัน"
+   )
 
 /* Playlist Item > Information */
 
@@ -6617,13 +8809,69 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
    "ชื่อ"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
+   "เส้นทางไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   "รายการ: %lu/%lu"
+   )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
    "เล่นไปแล้ว"
    )
+MSG_HASH( /* FIXME Unused? */
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
+   "เล่นล่าสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
+   "ฐานข้อมูล"
+   )
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
+   "ดำเนินการต่อ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
+   "กลับไปยังเนื้อหาและออกจาก เมนูด่วน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   "รีเซ็ต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+   "เปิดใช้งานการ Soft Reset ส่วนปุ่ม Start ของ RetroPad จะเป็นการ Trigger การ Hard Reset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
+   "ปิดเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
+   "ปิดเนื้อหา การเปลี่ยนแปลงที่ยังไม่ได้บันทึกอาจสูญหายได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   "จับภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
+   "บันทึกภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   "ช่องบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STATE_SLOT,
+   "เปลี่ยนช่องบันทึกที่เลือกอยู่ในขณะนี้"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
    "บันทึกสถานะ"
@@ -6637,6 +8885,10 @@ MSG_HASH(
    "บันทึกสถานะไปยังสล็อตที่เลือกไว้ในปัจจุบัน หมายเหตุ: โดยทั่วไปแล้วไฟล์บันทึกสถานะ จะไม่สามารถนำไปใช้ข้ามระบบได้ และอาจใช้งานไม่ได้กับเวอร์ชันอื่นของ Core นี้"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_STATE,
+   "โหลดสถานะ"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
    "โหลดสถานะจากสล็อตที่เลือกไว้ในปัจจุบัน"
    )
@@ -6645,12 +8897,28 @@ MSG_HASH(
    "โหลดสถานะจากสล็อตที่เลือกไว้ในปัจจุบัน หมายเหตุ: อาจใช้งานไม่ได้หากสถานะถูกบันทึกไว้ด้วยเวอร์ชันอื่นของ Core นี้"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
+   "เลิกโหลดสถานะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
+   "หากมีการโหลดสถานะ เนื้อหาจะย้อนกลับไปยังสถานะก่อนที่จะทำการโหลดนั้น"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
    "เลิกบันทึกสถานะ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "หากมีการบันทึกทับสถานะเดิม ระบบจะย้อนกลับไปใช้การบันทึกสถานะก่อนหน้า ให้โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "ช่องบันทึกรีเพลย์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "เปลี่ยนช่องบันทึกที่เลือกอยู่ในขณะนี้"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
@@ -6673,8 +8941,48 @@ MSG_HASH(
    "หยุดการบันทึก/เล่นซ้ำ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "หยุดการบันทึก/เล่นย้อนหลัง รีเพลย์ ปัจจุบัน"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
    "เพิ่มในรายการโปรด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+   "เพิ่มเนื้อหาไปยัง 'รายการโปรด'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+   "เริ่มการบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+   "เริ่มการบันทึกวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+   "หยุดการบันทึก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+   "หยุดการบันทึกวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
+   "เริ่มสตรีมมิ่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+   "เริ่มสตรีมไปยังปลายทางที่เลือกไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
+   "หยุดสตรีมมิ่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+   "สิ้นสุดการสตรีม"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
@@ -6685,106 +8993,1798 @@ MSG_HASH(
    "เข้าถึงตัวเลือกการบันทึกสถานะ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
+   "ตัวเลือก Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
+   "เปลี่ยนตัวเลือกสำหรับเนื้อหาดังกล่าว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
+   "การควบคุม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
+   "เปลี่ยนตัวเลือกสำหรับเนื้อหาดังกล่าว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
+   "สูตรโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
+   "ตั้งค่าสูตรโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
+   "การควบคุมแผ่น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+   "จัดการรูปภาพแผ่นดิสก์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+   "ตั้งค่า Shader เพื่อเพิ่มคุณภาพของการแสดงผลทางภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
+   "แทนที่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
+   "ตัวเลือกสำหรับการเขียนทับการกำหนดค่าส่วนกลาง"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "ความสำเร็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST,
+   "ดูความสำเร็จ และการตั้งค่าที่เกี่ยวข้อง"
    )
 
 /* Quick Menu > Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST,
+   "จัดการตัวเลือก Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
+   "บันทึกหรือลบการแทนที่ตัวเลือกสำหรับเนื้อหาปัจจุบัน"
+   )
 
 /* Quick Menu > Options > Manage Core Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "บันทึกตัวเลือกสำหรับเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "บันทึกตัวเลือก Core สำหรับเนื้อหาปัจจุบันเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "ลบตัวเลือกสำหรับเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "ลบตัวเลือก Core สำหรับเนื้อหาปัจจุบันเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "บันทึกตัวเลือกสำหรับโฟลเดอร์เนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "บันทึกตัวเลือก Core สำหรับเนื้อหาทั้งหมดที่โหลดจากโฟลเดอร์เดียวกับไฟล์ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "ลบตัวเลือกสำหรับโฟลเดอร์เนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "ลบตัวเลือก Core สำหรับเนื้อหาทั้งหมดที่โหลดจากโฟลเดอร์เดียวกับไฟล์ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
+   "ไฟล์ตัวเลือกที่ใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
+   "ไฟล์ตัวเลือกปัจจุบันที่ใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "รีเซ็ตตัวเลือก Core ทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "ตั้งค่าตัวเลือกทั้งหมดของ Core ปัจจุบันเป็นค่าเริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "เขียนตัวเลือกลงดิสก์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "บังคับให้การตั้งค่าปัจจุบันถูกเขียนลงในไฟล์ตัวเลือกที่ใช้งานอยู่ เพื่อให้มั่นใจว่าตัวเลือกจะถูกเก็บรักษาไว้ในกรณีที่เกิดบั๊กในคอร์ซึ่งทำให้ส่วนหน้า (frontend) ปิดตัวลงอย่างไม่[...]"
+   )
 
 /* Quick Menu > Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
+   "จัดการไฟล์การเปลี่ยนปุ่ม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
+   "โหลด บันทึก หรือลบไฟล์การเปลี่ยนปุ่ม สำหรับเนื้อหาปัจจุบัน"
+   )
 
 /* Quick Menu > Controls > Manage Remap Files */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "ไฟล์การเปลี่ยนปุ่มที่ใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "ไฟล์การเปลี่ยนปุ่มปัจจุบันที่ใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
+   "โหลดไฟล์การเปลี่ยนปุ่ม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
+   "โหลดและแทนที่การกำหนดปุ่มปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   "บันทึกไฟล์การเปลี่ยนปุ่มเป็น..."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   "บันทึกการกำหนดปุ่มปัจจุบันเป็นไฟล์การเปลี่ยนปุ่มใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
+   "บันทึกไฟล์การเปลี่ยนปุ่มของ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "บันทึกไฟล์การเปลี่ยนปุ่มของ Core ซึ่งจะมีผลกับเนื้อหาทั้งหมดที่เปิดด้วย Core นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+   "ลบไฟล์การเปลี่ยนปุ่มของ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "ลบไฟล์การเปลี่ยนปุ่ม ที่มีผลกับเนื้อหาทั้งหมดที่เปิดด้วย Core นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+   "บันทึกไฟล์การเปลี่ยนปุ่มของโฟลเดอร์เนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+   "บันทึกไฟล์การเปลี่ยนปุ่ม ซึ่งจะมีผลกับเนื้อหาทั้งหมดที่โหลดมาจากโฟลเดอร์เดียวกันกับไฟล์ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "ลบไฟล์การเปลี่ยนปุ่มของโฟลเดอร์เนื้อหาเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "ลบไฟล์การเปลี่ยนปุ่ม ที่มีผลกับเนื้อหาทั้งหมดที่โหลดมาจากโฟลเดอร์เดียวกันกับไฟล์ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
+   "บันทึกไฟล์การเปลี่ยนปุ่มของเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "บันทึกไฟล์การเปลี่ยนปุ่มซึ่งจะมีผลกับเนื้อหาปัจจุบันเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+   "ลบไฟล์การเปลี่ยนปุ่มของเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "ลบไฟล์การเปลี่ยนปุ่มที่มีผลกับเนื้อหาปัจจุบันเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
+   "รีเซ็ตการกำหนดปุ่มอินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
+   "ตั้งค่าตัวเลือกการเปลี่ยนปุ่มอินพุตทั้งหมดเป็นค่าเริ่มต้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "อัปเดตไฟล์การเปลี่ยนปุ่มอินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "เขียนทับไฟล์การเปลี่ยนปุ่มที่ใช้งานอยู่ด้วยตัวเลือกการเปลี่ยนปุ่มอินพุตปัจจุบัน"
+   )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE,
+   "ไฟล์การเปลี่ยนปุ่ม"
+   )
 
 /* Quick Menu > Cheats */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
+   "เริ่มหรือดำเนินการค้นหาสูตรโกงต่อ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+   "สแกนหน่วยความจำเพื่อสร้างสูตรโกงใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
+   "โหลดไฟล์สูตรโกง (แทนที่)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+   "โหลดไฟล์สูตรโกงและแทนที่ตัวโกงที่มีอยู่เดิม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+   "โหลดไฟล์สูตรโกง (เพิ่มต่อท้าย)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
+   "โหลดไฟล์สูตรโกงและเพิ่มเข้าไปในรายการสูตรโกงที่มีอยู่เดิม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
+   "โหลดสูตรโกงเฉพาะเกมใหม่อีกครั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+   "โหลดสูตรโกงเฉพาะเกมใหม่อีกครั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
+   "บันทึกไฟล์สูตรโกงเป็น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+   "บันทึกสูตรโกงปัจจุบันเป็นไฟล์สูตรโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
+   "เพิ่มสูตรโกงใหม่ไปที่ด้านบนสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+   "เพิ่มสูตรโกงไปที่ด้านบนสุดของรายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
+   "เพิ่มสูตรโกงใหม่ไปที่ด้านล่างสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+   "เพิ่มสูตรโกงต่อท้ายรายการที่มีอยู่เดิม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+   "ลบสูตรโกงทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+   "ล้างรายการสูตรโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+   "ใช้สูตรโกงอัตโนมัติเมื่อโหลดเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+   "ใช้สูตรโกงโดยอัตโนมัติเมื่อโหลดเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+   "ใช้หลังจากเปิด/ปิดสูตรโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+   "ปรับใช้ Cheat ทันทีหลังจากสลับเปิดใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
+   "ปรับใช้การเปลี่ยนแปลง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   "การเปลี่ยนแปลง Cheat จะมีผลทันที"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT,
+   "สูตรโกง"
+   )
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   "เริ่มหรือเริ่มใหม่การค้นหา Cheat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+   "กด ซ้าย หรือ ขวา เพื่อเปลี่ยนขนาด Bit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
+   "ค้นหาค่าในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+   "กด ซ้าย หรือ ขวา เพื่อเปลี่ยนค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
+   "เท่ากับ %u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
+   "ค้นหาค่าในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
+   "น้อยกว่าก่อนหน้านี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
+   "ค้นหาค่าในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
+   "น้อยกว่าหรือเท่ากับก่อนหน้านี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
+   "ค้นหาค่าในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
+   "มากกว่าก่อนหน้านี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
+   "ค้นหาค่าในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
+   "มากกว่าหรือเท่ากับก่อนหน้านี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
+   "ค้นหาค่าในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
+   "เท่ากับก่อนหน้านี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
+   "ค้นหาค่าในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
+   "ไม่เท่ากับก่อนหน้านี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
+   "ค้นหาค่าในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+   "กด ซ้าย หรือ ขวา เพื่อเปลี่ยนค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
+   "เท่ากับก่อนหน้า +%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
+   "ค้นหาค่าในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+   "กด ซ้าย หรือ ขวา เพื่อเปลี่ยนค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
+   "เท่ากับก่อนหน้า -%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "เพิ่ม %u รายการที่ตรงกันลงในรายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
+   "ลบรายการที่ตรงกัน #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
+   "สร้างรายการที่ตรงกัน #"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
+   "ไฟล์สูตรโกง (แทนที่)"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Append) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
+   "ไฟล์สูตรโกง (เขียนต่อท้าย)"
+   )
 
 /* Quick Menu > Cheats > Cheat Details */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
+   "รายละเอียดสูตรโกง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_IDX,
+   "หมายเลข"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_IDX,
+   "ลำดับของสูตรโกงในรายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
+   "เปิดการใช้งาน"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    "รายละเอียด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
+   "ตัวดำเนินการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
+   "ขนาดการค้นหาหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
+   "ประเภท"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
+   "ค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
+   "ที่อยู่หน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
+   "เรียกดูที่อยู่: %08X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
+   "Maskที่อยู่หน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+   "ที่อยู่ bitmask เมื่อขนาดการค้นหาหน่วยความจำ < 8-bit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+   "จำนวนรอบของการทำงาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+   "จำนวนรอบที่สูตรโกงจะทำงาน ใช้ร่วมกับตัวเลือก 'รอบการทำงาน' อีกสองตัวเพื่อส่งผลต่อพื้นที่ขนาดใหญ่ในหน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "เพิ่มที่อยู่หน่วยความจำในแต่ละรอบของการทำงาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "หลังจากการทำงานแต่ละรอบ 'ที่อยู่หน่วยความจำ' จะเพิ่มขึ้นตามจำนวนเท่าของ 'ขนาดการค้นหาหน่วยความจำ' โดยคำนวณจากค่านี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+   "เพิ่มค่าที่อยู่หน่วยความจำในแต่ละรอบของการทำงาน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+   "หลังจากการทำงานแต่ละรอบ 'ค่า' จะเพิ่มขึ้นตามจำนวนนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
+   "สั่นเมื่อหน่วยความจำมีการเปลี่ยนแปลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
+   "ค่าการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
+   "พอร์ตการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
+   "ความแรงหลักของการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
+   "ระยะเวลาหลักของการสั่น (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
+   "ความแรงรองของการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
+   "ระยะเวลารองของการสั่น (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+   "รหัส"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+   "เพิ่มสูตรโกงใหม่หลังจากนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
+   "เพิ่มสูตรโกงใหม่ก่อนหน้าหน้าชุดนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
+   "คัดลอกสูตรโกงนี้ไว้หลังจากนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
+   "คัดลอกสูตรโกงนี้ไว้ก่อนหน้าชุดนี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
+   "ลบสูตรโกงนี้ออก"
    )
 
 /* Quick Menu > Disc Control */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "ลำดับแผ่นปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "เลือกแผ่นดิสก์ปัจจุบันจากรายการภาพที่พร้อมใช้งาน โดยถาดดิสก์เสมือนสามารถปิดอยู่ได้ตามปกติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "เอาแผ่นออก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   "เปิดถาดดิสก์เสมือน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   "ใส่แผ่นดิสก์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   "ปิดถาดดิสก์เสมือน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+   "โหลดแผ่นดิสก์ใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "เลือกแผ่นดิสก์ใหม่จากระบบไฟล์และเพิ่มเข้าไปในรายการลำดับแผ่น\nหมายเหตุ: นี่เป็นฟีเจอร์แบบเก่า ขอแนะนำให้ใช้ไฟล์เพลย์ลิสต์ M3U สำหรับเกมที่มีหลายแผ่นแทน"
+   )
 
 /* Quick Menu > Shaders */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+   "วิดีโอเชดเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   "เปิดใช้งานไปป์ไลน์เชดเดอร์วิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+   "ติดตามการเปลี่ยนแปลงของไฟล์เชดเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
+   "ใช้การเปลี่ยนแปลงที่ทำกับไฟล์เชดเดอร์บนดิสก์โดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "ติดตามการเปลี่ยนแปลงของไฟล์เชดเดอร์ เมื่อมีการบันทึกการเปลี่ยนแปลงของไฟล์เชดเดอร์บนดิสก์ ไฟล์จะถูกคอมไพล์ใหม่และนำไปใช้กับเนื้อหาโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "จดจำโฟลเดอร์เชดเดอร์ที่ใช้งานล่าสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "เปิดตัวเลือกไฟล์ในโฟลเดอร์ที่ใช้งานล่าสุด เมื่อโหลดค่าเชดเดอร์ที่ตั้งไว้ล่วงหน้าและระดับการประมวลผลเชดเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
+   "โหลดค่าที่ตั้งไว้ล่วงหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+   "โหลดค่าเชดเดอร์ที่ตั้งไว้ล่วงหน้า ระบบประมวลผลเชดเดอร์จะถูกตั้งค่าโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
+   "โหลดค่าเชดเดอร์ที่ตั้งไว้ล่วงหน้าโดยตรง เมนูเชดเดอร์จะได้รับการอัปเดตตามความเหมาะสมปัจจัยการปรับขนาดที่แสดงในเมนูจะเชื่อถือได้ก็ต่อเมื่อค่าที่ตั้งไว้ล่วงหน้านั้นใช้วิธ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "เพิ่มพรีเซ็ตไว้ข้างหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "เพิ่มพรีเซ็ตไว้ข้างหน้าพรีเซ็ตที่โหลดอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "เพิ่มค่าล่วงหน้าต่อท้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "พิ่มพรีเซ็ตต่อท้ายพรีเซ็ตที่โหลดอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "จัดการพรีเซ็ต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "บันทึกหรือเอาพรีเซ็ตเชดเดอร์ออก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "ไฟล์พรีเซ็ตที่ใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "พรีเซ็ตเชดเดอร์ที่กำลังใช้งานอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
+   "ปรับใช้การเปลี่ยนแปลง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+   "การเปลี่ยนแปลงการตั้งค่าเชเดอร์จะมีผลทันที ใช้ตัวเลือกนี้หากคุณมีการเปลี่ยนจำนวนรอบของเชเดอร์, การกรองแสง, การปรับขนาด FBO และอื่นๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
+   "หลังจากเปลี่ยนการตั้งค่าเชดเดอร์ เช่น จำนวนการประมวลผลเชดเดอร์ การกรอง หรือการปรับขนาด FBO ให้ใช้ตัวเลือกนี้เพื่อใช้การเปลี่ยนแปลง\nการเปลี่ยนการตั้งค่าเชดเดอร์เหล่านี้เป็นกา[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
+   "พารามิเตอร์เชดเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+   "แก้ไขเชดเดอร์ที่ใช้งานอยู่โดยตรง การเปลี่ยนแปลงจะไม่ถูกบันทึกลงในไฟล์พรีเซ็ต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
+   "การประมวลผลเชดเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
+   "เพิ่มหรือลดจำนวนการประมวลผลในเชดเดอร์พายป์ไลน์ เชดเดอร์แต่ละตัวสามารถถูกกำหนดให้ทำงานในแต่ละขั้นตอนของพายป์ไลน์ และสามารถปรับขนาดและการกรองได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
+   "RetroArch อนุญาตให้ผสมและจับคู่เชดเดอร์ต่าง ๆ กับจำนวนการประมวลผลเชดเดอร์ที่กำหนดเอง พร้อมตัวกรองฮาร์ดแวร์และตัวปรับสเกลที่กำหนดเอง\nตัวเลือกนี้ใช้เพื่อระบุจำนวนการประมวลผลเชดเ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER,
+   "เชดเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
+   "เส้นทางไปยังเชดเดอร์ เชดเดอร์ทั้งหมดต้องเป็นชนิดเดียวกัน (เช่น Cg, GLSL หรือ Slang) ตั้งค่าไดเรกทอรีเชดเดอร์เพื่อกำหนดตำแหน่งที่เบราว์เซอร์จะเริ่มค้นหาเชดเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILTER,
+   "ตัวกรอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
+   "ตัวกรองฮาร์ดแวร์สำหรับการประมวลผลนี้ หากตั้งค่าเป็น ‘เริ่มต้น’ ตัวกรองจะถูกกำหนดเป็น ‘เชิงเส้น’ หรือ ‘ใกล้เคียงที่สุด’ โดยขึ้นอยู่กับการตั้งค่า ‘การกรองแบบไบไลเนียร์’ ในการ[...]"
+  )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCALE,
+   "อัตราส่วน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
+   "การปรับสเกลสำหรับการประมวลผลนี้ ค่าการปรับสเกลจะสะสม เช่น 2x สำหรับการประมวลผลแรก และ 2x สำหรับการประมวลผลที่สอง จะได้ผลรวมเป็น 4x\nหากมีการปรับสเกลสำหรับการประมวลผลสุดท้าย ผลลัพ[...]"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "พรีเซ็ตแบบง่าย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "บันทึกพรีเซ็ตเชดเดอร์ที่มีการเชื่อมโยงไปยังพรีเซ็ตต้นฉบับที่ถูกโหลด และรวมเฉพาะการเปลี่ยนแปลงของพารามิเตอร์ที่คุณได้แก้ไขไว้เท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "บันทึกพรีเซ็ตปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "บันทึกพรีเซ็ตเชดเดอร์ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   "บันทึกพรีเซ็ตเป็น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+   "บันทึกการตั้งค่าเชดเดอร์ปัจจุบันเป็นพรีเซ็ตเชดเดอร์ใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "บันทึกพรีเซ็ตทั่วโลก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "บันทึกการตั้งค่าเชดเดอร์ปัจจุบันเป็นการตั้งค่าเริ่มต้นทั่วโลก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "บันทึกพรีเซ็ต"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "บันทึกการตั้งค่า Shader ปัจจุบันเป็นค่าเริ่มต้นสำหรับ Core นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "บันทึกพรีเซ็ตไดเรกทอรีเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "บันทึกการตั้งค่า Shader ปัจจุบันเป็นค่าเริ่มต้นสำหรับไฟล์ทั้งหมดในไดเรกทอรีเนื้อหาปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "บันทึกพรีเซ็ตเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "บันทึกการตั้งค่า Shader ปัจจุบันเป็นค่าเริ่มต้นสำหรับเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
+   "ไม่พบพรีเซ็ต Shader อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "ลบพรีเซ็ต Global"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "ลบพรีเซ็ต ทั่วโลก ที่ใช้กับเนื้อหาและ Core ทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "ลบพรีเซ็ต Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "ลบพรีเซ็ต Core ที่ใช้กับเนื้อหาทั้งหมดที่ทำงานด้วย Core ที่โหลดอยู่ในปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "ลบพรีเซ็ตไดเรกทอรีเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "ลบพรีเซ็ตไดเรกทอรีเนื้อหา ที่ใช้กับเนื้อหาทั้งหมดภายในไดเรกทอรีที่กำลังทำงานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "ลบค่าพรีเซ็ตสำหรับเกมนี้ออก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "ลบค่าที่ตั้งไว้ล่วงหน้าสำหรับเกม ใช้สำหรับเกมที่ระบุไว้เท่านั้น"
+   )
 
 /* Quick Menu > Shaders > Shader Parameters */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
+   "ไม่มีพารามิเตอร์เชดเดอร์"
+   )
 
 /* Quick Menu > Overrides */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
+   "ไฟล์เขียนทับที่ใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   "ไฟล์เขียนทับที่กำลังใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
+   "โหลดไฟล์เขียนทับ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
+   "โหลดและแทนที่การกำหนดค่าปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
+   "บันทึกการเขียนทับเป็น"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "บันทึกการกำหนดค่าปัจจุบันเป็นไฟล์เขียนทับใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "บันทึกการเขียนทับ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "บันทึกไฟล์การกำหนดค่าการเขียนทับซึ่งจะใช้กับเนื้อหาทั้งหมดที่โหลดด้วย Core นี้ จะมีความสำคัญเหนือกว่าการกำหนดค่าหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "ลบการเขียนทับ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "ลบไฟล์การกำหนดค่าการเขียนทับซึ่งจะใช้กับเนื้อหาทั้งหมดที่โหลดด้วย Core นี้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "บันทึกการเขียนทับไดเรกทอรีเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "บันทึกไฟล์การกำหนดค่าการเขียนทับ ซึ่งจะใช้กับเนื้อหาทั้งหมดที่โหลดจากไดเรกทอรีเดียวกันกับไฟล์ปัจจุบัน จะมีความสำคัญเหนือกว่าการกำหนดค่าหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "ลบการเขียนทับไดเรกทอรีเนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "ลบไฟล์การกำหนดค่าการเขียนทับ ซึ่งจะใช้กับเนื้อหาทั้งหมดที่โหลดจากไดเรกทอรีเดียวกันกับไฟล์ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "บันทึกการเขียนทับเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "บันทึกไฟล์การกำหนดค่าการเขียนทับ ซึ่งจะใช้สำหรับเนื้อหาปัจจุบันเท่านั้น จะมีความสำคัญเหนือกว่าการกำหนดค่าหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "ลบการเขียนทับเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "ลบไฟล์การกำหนดค่าการเขียนทับซึ่งจะใช้สำหรับเนื้อหาปัจจุบันเท่านั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
+   "ยกเลิกการโหลดการเขียนทับ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
+   "รีเซ็ตตัวเลือกทั้งหมดเป็นค่าการกำหนดค่าทั่วโลก"
+   )
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+   "ไม่มีความสำเร็จที่จะแสดง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "ยกเลิกการหยุดความสำเร็จชั่วคราวในโหมด Hardcore"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "เปิดโหมดความสำเร็จ Hardcore ทิ้งไว้สำหรับเซสชันปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   "ยกเลิกการกลับมาใช้โหมดความสำเร็จ Hardcore ต่อ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "ปล่อยให้โหมดความสำเร็จ Hardcore ถูกปิดใช้งานสำหรับเซสชันปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "ปิดการใช้งานโหมดความสำเร็จ Hardcore ต่อไป"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "คุณต้องโหลด Core ใหม่อีกครั้งเพื่อกลับเข้าสู่โหมดความสำเร็จ Hardcore ต่อไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   "หยุดความสำเร็จชั่วคราวในโหมด Hardcore"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
    "ระงับโหมดฮาร์ดคอร์สำหรับ ความสำเร็จ ในเซสชันปัจจุบัน การดำเนินการนี้จะเปิดใช้งานสูตรโกง, การย้อนกลับ, สโลว์โมชัน และการโหลดบันทึกสถานะ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
+   "กลับมาใช้โหมดความสำเร็จ Hardcore ต่อ"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
    "กลับเข้าสู่โหมดฮาร์ดคอร์สำหรับ ความสำเร็จ ในเซสชันปัจจุบัน การดำเนินการนี้จะปิดใช้งานสูตรโกง, การย้อนกลับ, สโลว์โมชัน และการโหลดบันทึกสถานะ พร้อมทั้งเริ่มเกมใหม่ทันที"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "เซิร์ฟเวอร์ RetroAchievements ไม่สามารถติดต่อได้"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "มีหนึ่งความสำเร็จหรือมากกว่านั้นที่ไม่สามารถส่งไปยังเซิร์ฟเวอร์ได้ จะมีการพยายามส่งใหม่อีกครั้งตราบเท่าที่คุณยังเปิดแอปทิ้งไว้"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
+   "เซิร์ฟเวอร์ RetroAchievements ไม่สามารถติดต่อได้ จะพยายามใหม่อีกครั้งจนกว่าจะสำเร็จหรือจนกว่าแอปจะถูกปิด"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "คำขอที่ค้างอยู่ทั้งหมดได้รับการซิงค์กับเซิร์ฟเวอร์ RetroAchievements สำเร็จแล้ว"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
+   "กำลังระบุตัวตนของเกม"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA,
+   "กำลังดึงข้อมูลเกม"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION,
+   "กำลังเริ่มเซสชัน"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   "ไม่ได้เข้าสู่ระบบ"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "เครือข่ายขัดข้อง"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "เกมที่ไม่รู้จัก"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "ไม่สามารถเปิดใช้งานความสำเร็จกับ Core นี้ได้"
+)
 
 /* Quick Menu > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
+   "ข้อมูลในฐานข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+   "แสดงข้อมูลฐานข้อมูลสำหรับเนื้อหาปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   "ไม่มีข้อมูลที่จะแสดง"
+   )
 
 /* Miscellaneous UI Items */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
+   "ไม่มี Core ที่พร้อมใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
+   "ตอนนี้ไม่มีตัวเลือกสำหรับ Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
+   "ตอนนี้ไม่มีข้อมูล Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
+   "ไม่พบการสำรองข้อมูลพรีเซ็ต Core"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    "ไม่มีรายการโปรดที่ใช้งานได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
+   "ไม่พบประวัติ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
    "ไม่มีรูปภาพที่ใช้งานได้"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+   "ไม่พบเพลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+   "ไม่พบวิดีโอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
+   "ไม่พบข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
+   "ไม่พบรายการเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
+   "ไม่พบการตั้งค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   "ไม่พบอุปกรณ์บลูทูธ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+   "ไม่พบเครือข่าย"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE,
    "ไม่มี Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SEARCH,
+   "ค้นหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
+   "วนภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "สุ่มเลือก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
+   "ย้อนกลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
+   "ตกลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
+   "ไดเรกทอรีหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
+   "ย้อนกลับไปยังไดเรกทอรีหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
+   "ไม่พบไดเรกทอรี"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ITEMS,
+   "ไม่พบรายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SELECT_FILE,
+   "เลือกไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_NORMAL,
+   "ปกติ"
    )
 
 /* Settings Options */
 
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_UNKNOWN_COMPILER,
+   "ไม่ทราบคอมไพเลอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
+   "แชร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
+   "แย่งสิทธิ์ยึดควบคุม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
+   "โหวต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+   "การแชร์สัญญาณอินพุตแบบอนาล็อก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
+   "สูงสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+   "เฉลี่ย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "ไม่แชร์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
+   "ไม่กำหนดวิธีเฉพาะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
+   " เด้งไปทางซ้าย/ขวา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
+   "เลื่อนทางซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
+   "โหมดภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
+   "โหมดเสียง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
+   "โหมดผู้บรรยาย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
+   "ประวัติและรายการโปรด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
+   "เพลย์ลิสต์ทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
+   "ประวัติและรายการโปรด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
+   "ตลอดเวลา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
+   "ไม่เลย"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
    "แยกตาม Core"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
+   "รวม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
+   "ชาร์จ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
+   "กำลังชาร์จ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
+   "เลิกชาร์จ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
+   "ไม่มีแหล่ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
+   "เลือกสิ่งนี้เพื่อตั้งค่าเป็นไดเรกทอรี"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
+   "RetroPad แบบมีอนาล็อก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "ไม่แชร์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN,
+   "ไม่ทราบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
+   "ลง + Y + L1 + R1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HOLD_START,
+   "กด Start ค้างไว้ (2 วินาที)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HOLD_SELECT,
+   "กด Select ค้างไว้ (2 วินาที)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
+   "ลง + Select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
+   "เปลี่ยน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
+   "ไม่เปลี่ยน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
+   "เพิ่มขึ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
+   "ลดลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
+   "= ค่าการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
+   "!= ค่าการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
+   "< ค่าการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
+   "> ค่าการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
+   "เพิ่มขึ้นตามค่าการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
+   "ลดลงตามค่าการสั่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_PORT_16,
+   "ทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   "เลือกค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
+   "เพิ่มตามค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
+   "ลดตามค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
+   "รันสูตรโกงถัดไปถ้าค่า = หน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
+   "รันสูตรโกงถัดไปถ้าค่า != หน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
+   "รันสูตรโกงถัดไปถ้าค่า < หน่วยความจำ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
    "ใช้สูตรถัดไปหาก ค่า > หน่วยความจำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
+   "โปรแกรมจำลอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
+   "1-Bit, ค่าสูงสุด = 0x01"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
+   "2-Bit, ค่าสูงสุด = 0x03"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
+   "4-Bit, ค่าสูงสุด = 0x0F"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
+   "8-Bit, ค่าสูงสุด = 0xFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
+   "16-Bit, ค่าสูงสุด = 0xFFFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
+   "32-Bit, ค่าสูงสุด = 0xFFFFFFFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
+   "ค่าเริ่มต้นของระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
+   "ตามอักษร"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "ไม่แชร์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
+   "แสดงป้ายกำกับเต็ม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+   "ลบ () เนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+   "ลบ [] เนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+   "ลบ () และ []"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+   "คงภูมิภาคเดิมไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+   "คงหมายเลขแผ่นดิสก์ไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+   "คงภูมิภาคและหมายเลขแผ่นดิสก์ไว้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
+   "ค่าเริ่มต้นของระบบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+   "ปกกล่องเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
+   "ภาพหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+   "หน้าเริ่มเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "โลโก้เนื้อหา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
+   "ปกติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+   "เร็ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ON,
+   "เปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OFF,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_YES,
+   "ใช่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO,
+   "ไม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TRUE,
+   "จริง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FALSE,
+   "เท็จ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLED,
+   "เปิดการใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISABLED,
+   "ปิดใช้งาน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
+   "ถูกล็อก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
+   "ปลดล็อก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
+   "ฮาร์ดคอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY,
+   "ไม่เป็นทางการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
+   "ไม่รองรับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY,
+   "ปลดล็อกล่าสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
+   "เกือบสำเร็จแล้ว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
+   "ความท้าที่กำลังดำเนินอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "ไม่แชร์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
+   "ปกติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
+   "เมื่อไม่นานมานี้"
    )
 
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   "ความหนาของส่วนเติมพื้นหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   "เพิ่มความหยาบของลวดลายตารางหมากรุกที่พื้นหลังเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "ส่วนเติมขอบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   "ความหนาของส่วนเติมขอบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   "เพิ่มความหยาบของลวดลายตารางหมากรุกที่ขอบเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "แสดงขอบเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   "ใช้รูปแบบความกว้างเต็มหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   "ปรับขนาดและตำแหน่งของรายการเมนูเพื่อให้ใช้พื้นที่หน้าจอที่มีอยู่ให้เกิดประโยชน์สูงสุด ปิดการใช้งานนี้เพื่อใช้รูปแบบสองคอลัมน์ที่มีความกว้างคงที่แบบคลาสสิก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+   "ตัวกรองแบบ Linear"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
+   "เพิ่มความเบลอเล็กน้อยให้กับเมนูเพื่อช่วยลดความคมของขอบพิกเซลให้ดูนุ่มนวลขึ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   "การปรับขนาดภายใน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   "ปรับขนาดอินเทอร์เฟซเมนูให้ใหญ่ขึ้นก่อนที่จะแสดงผลบนหน้าจอ เมื่อใช้งานร่วมกับการเปิด 'ตัวกรองแบบ Linear สำหรับเมนู' จะช่วยขจัดความผิดเพี้ยนจากการขยายภาพ (พิกเซลไม่เท่ากัน) ในขณะที[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
    "อัตราส่วนภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
+   "เลือกอัตราส่วนภาพของเมนู โดยอัตราส่วนแบบจอกว้างจะช่วยเพิ่มความละเอียดในแนวนอนของอินเทอร์เฟซเมนู (อาจต้องเริ่มระบบใหม่หากปิดการใช้งาน 'ล็อกอัตราส่วนภาพของเมนู')"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "ล็อคอัตราส่วนภาพ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "เพื่อให้แน่ใจว่าเมนูจะแสดงผลด้วยอัตราส่วนภาพที่ถูกต้องเสมอ หากปิดการใช้งานส่วนนี้ เมนูทางลัด จะถูกยืดออกเพื่อให้พอดีกับเนื้อหาที่กำลังโหลดอยู่ในขณะนั้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+   "ธีมสี"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+   "เลือกธีมสีที่แตกต่างออกไป การเลือก 'กำหนดเอง' จะช่วยให้สามารถใช้ไฟล์ค่าล่วงหน้าของธีมเมนูได้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   "ไฟล์ค่าล่วงหน้าของธีมที่กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+   "เลือกไฟล์ค่าล่วงหน้าของธีมเมนูจากโปรแกรมเลือกไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "ความโปร่งใส"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "เปิดใช้งานการแสดงผลเนื้อหาที่พื้นหลังในขณะที่เมนูทางลัด (Quick Menu) ทำงานอยู่ การปิดใช้งานความโปร่งใสอาจทำให้สีของธีมเปลี่ยนไป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
+   "เอฟเฟกต์เงา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
+   "เปิดใช้งานเงาสำหรับข้อความเมนู ขอบ และภาพตัวอย่าง (Thumbnails) ส่งผลต่อประสิทธิภาพเล็กน้อย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
+   "แอนิเมชันพื้นหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
+   "เปิดใช้งานเอฟเฟกต์แอนิเมชันอนุภาค ที่พื้นหลัง ส่งผลต่อประสิทธิภาพอย่างมาก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+   "ความเร็วแอนิเมชันพื้นหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+   "ปรับความเร็วของเอฟเฟกต์แอนิเมชันอนุภาค ที่พื้นหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "แอนิเมชันพื้นหลังของโหมดพักหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "แสดงผลเอฟเฟกต์แอนิเมชันอนุภาค ที่พื้นหลังในขณะที่โหมดพักหน้าจอ ของเมนูทำงานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
+   "แสดงภาพตัวอย่างของเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   "เปิดใช้งานการแสดงภาพตัวอย่างขนาดเล็ก ในขณะที่ดูเพลย์ลิสต์ สามารถสลับการแสดงผลได้ด้วยปุ่ม RetroPad Select เมื่อปิดการใช้งาน คุณยังสามารถสลับไปดูภาพตัวอย่างแบบเต็มหน้าจอได้ด้วยปุ่ม Retro[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "ประเภทของรูปตัวอย่างที่แสดงด้านขวาบนของเพลย์ลิสต์ สามารถสลับเปลี่ยนได้ด้วยการดันอนาล็อกขวา ขึ้น/ซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
+   "รูปตัวอย่างด้านล่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+   "ประเภทของรูปตัวอย่างที่แสดงด้านขวาล่างของเพลย์ลิสต์ สามารถสลับเปลี่ยนได้ด้วยการดันอนาล็อกขวา ลง/ขวา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
+   "สลับรูปตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
+   "สลับตำแหน่งการแสดงผลของ 'รูปตัวอย่างด้านบน' และ 'รูปตัวอย่างด้านล่าง'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   "วิธีการย่อขนาดรูปตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   "รูปแบบการสุ่มตัวอย่างใหม่ที่ใช้เมื่อย่อขนาดรูปตัวอย่างที่มีขนาดใหญ่ให้พอดีกับหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   "หน่วงเวลาการแสดงรูปตัวอย่าง (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   "กำหนดค่าการหน่วงเวลาระหว่างการเลือกรายชื่อในเพลย์ลิสต์กับการโหลดรูปตัวอย่างที่เกี่ยวข้อง การตั้งค่านี้ไว้อย่างน้อย 256 ms จะช่วยให้เลื่อนดูรายชื่อได้อย่างรวดเร็วโดยไม่กระตุ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+   "การรองรับ ASCII แบบขยาย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+   "เปิดใช้งานการแสดงผลตัวอักษร ASCII แบบที่ไม่ใช่มาตรฐาน จำเป็นต้องใช้เพื่อความเข้ากันได้กับบางภาษาในแถบตะวันตกที่ไม่ใช่ภาษาอังกฤษ มีผลกระทบต่อประสิทธิภาพการทำงานในระดับปานกลา[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
+   "สลับไอค่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
+   "ใช้ไอคอนแทนข้อความ เปิด/ปิด เพื่อแสดงรายการตั้งค่าเมนูแบบ 'สวิตช์สลับ'"
    )
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
+   "จุดที่ใกล้ที่สุด (เร็ว)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
+   "Sinc/Lanczos3 (ช้า)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "ไม่แชร์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   "อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   "16:9 (จัดวางกึ่งกลาง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   "16:10 (จัดวางกึ่งกลาง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   "21:9 (จัดวางกึ่งกลาง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   "3:2 (จัดวางกึ่งกลาง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   "5:3 (จัดวางกึ่งกลาง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   "อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+   "ปรับให้พอดีหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
+   "เต็มหน้าจอ (ยืด)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
+   "หิมะ (ตกปรอยๆ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
+   "หิมะ (ตกหนัก)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
+   "ฝนตก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
+   "วังวน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
+   "ทุ่งดวงดาว"
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 
@@ -6792,12 +10792,340 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
    "รูปตัวอย่างรอง"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+   "ประเภทของภาพตัวอย่างที่จะแสดงทางด้านซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "ภาพตัวอย่างไอคอน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "ประเภทของภาพตัวอย่างไอคอนเพลย์ลิสต์ที่จะแสดงผล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
+   "พื้นหลังแบบไดนามิก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
+   "โหลดวอลเปเปอร์ใหม่แบบไดนามิกตามบริบทที่ใช้งานอยู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+   "แอนิเมชันแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+   "เปิดใช้งานแอนิเมชันแนวนอนสำหรับเมนู ซึ่งจะส่งผลต่อประสิทธิภาพการทำงานของเครื่อง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+   "แอนิเมชันไฮไลต์ไอคอนแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+   "แอนิเมชันที่เกิดขึ้นเมื่อเลื่อนเปลี่ยนระหว่างแท็บต่างๆ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+   "แอนิเมชันเคลื่อนที่ ขึ้น/ลง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+   "แอนิเมชันที่เกิดขึ้นเมื่อเคลื่อนที่ขึ้นหรือลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+   "แอนิเมชันเปิด/ปิดเมนูหลัก"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+   "แอนิเมชันที่เกิดขึ้นเมื่อเปิดเมนูย่อย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+   "ค่าอัลฟ่าของธีมสี"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "ไอคอนเมนูปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "ไอคอนเมนูปัจจุบันสามารถซ่อนได้ โดยจะแสดงอยู่ใต้เมนูแนวนอนหรือในชื่อส่วนหัวแทน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "ไม่แชร์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "ปกติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "ชื่อ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_FONT,
+   "แบบอักษร"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "สีตัวอักษร (แดง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "สีตัวอักษร (เขียว)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "สีตัวอักษร (น้ำเงิน)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+   "การจัดวาง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+   "เลือกรูปแบบเลย์เอาต์ที่แตกต่างออกไปสำหรับอินเทอร์เฟซ XMB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_THEME,
+   "ชุดไอคอน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_THEME,
+   "เลือกธีมไอคอนที่แตกต่างออกไปสำหรับ RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
+   "สลับไอค่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
+   "ใช้ไอคอนแทนข้อความ เปิด/ปิด เพื่อแสดงรายการตั้งค่าเมนูแบบ 'สวิตช์สลับ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "เอฟเฟกต์เงา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+   "วาดเงาตกกระทบสำหรับไอคอน รูปตัวอย่างเกม และตัวอักษร ซึ่งจะส่งผลกระทบต่อประสิทธิภาพเพียงเล็กน้อย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+   "เลือกเอฟเฟกต์ภาพพื้นหลังแบบเคลื่อนไหว ซึ่งอาจใช้ทรัพยากร GPU สูงขึ้นอยู่กับเอฟเฟกต์ที่เลือก หากประสิทธิภาพไม่เป็นที่น่าพอใจ ให้ปิดการใช้งานหรือเปลี่ยนกลับไปใช้เอฟเฟกต์ที่เร[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+   "ธีมสี"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+   "เลือกธีมสีพื้นหลังอื่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "การจัดวางรูปตัวอย่างเกมในแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
+   "แสดงรูปตัวอย่างเกมด้านซ้ายไว้ใต้รูปด้านขวา บริเวณฝั่งขวาของหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   "อัตราส่วนรูปตัวอย่างเกม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   "ลดขนาดการแสดงผลรูปตัวอย่างเกมโดยการย่อความกว้างสูงสุดที่อนุญาตให้น้อยลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "ค่าการจางหายในแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
+   "แสดงส่วนหัวชื่อเรื่อง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
+   "ระยะขอบชื่อเรื่อง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   "ระยะห่างของขอบชื่อเรื่องในแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   "เปิดการใช้งานแถบการตั้งค่า"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   "แสดงแถบการตั้งค่าซึ่งประกอบด้วยการตั้งค่าต่าง ๆ ของโปรแกรม"
+   )
 
 /* XMB: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
+   "ริบบิ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
+   "ริบบิ้น (แบบย่อ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
+   "หิมะแบบเรียบง่าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
+   "หิมะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
+   "โบเก้"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
+   "เกล็ดหิมะ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+   "กำหนดเอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
+   "ขาวดำ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
+   "ขาวดำแบบย้อนกลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
+   "อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
+   "สลับสีอัตโนมัติแบบย้อนกลับ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
+   "มืด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT,
+   "สว่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+   "ลำแสงอาทิตย์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
+   "ภาพพื้นหลัง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
+   "ใต้ทะเล"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT,
+   "แบบอักษร"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT,
+   "เลือกแบบอักษรหลักแบบอื่นเพื่อใช้ในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "ขนาดตัวอักษร"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "กำหนดว่าควรจะมีการปรับขนาดตัวอักษรในเมนูแยกต่างหากหรือไม่ และควรปรับขนาดแบบพร้อมกันทั้งหมดหรือแยกปรับตามส่วนต่างๆ ของเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   "ทั่วโลก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "แยกค่าปรับแต่งจากกัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "ปรับขนาดตัวอักษร"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "ปรับขนาดตัวอักษรแบบเชิงเส้นทั่วทั้งเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "ปรับขนาดตัวอักษรของชื่อ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "ปรับขนาดตัวอักษรสำหรับข้อความชื่อเรื่องในส่วนหัวของเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "ปรับขนาดตัวอักษรของแถบด้านข้างซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "ปรับขนาดตัวอักษรสำหรับข้อความในแถบด้านข้างซ้าย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "ปรับขนาดตัวอักษรของป้ายกำกับ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "ปรับขนาดตัวอักษรสำหรับป้ายกำกับของตัวเลือกเมนูและรายการเพลย์ลิสต์ รวมถึงมีผลต่อขนาดตัวอักษรในกล่องช่วยเหลือด้วย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "ปรับขนาดตัวอักษรของป้ายกำกับย่อย"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "ปรับขนาดตัวอักษรสำหรับป้ายกำกับย่อยของตัวเลือกเมนูและรายการเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "ปรับขนาดตัวอักษรของวันที่และเวลา"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "ปรับขนาดตัวอักษรของตัวบ่งชี้วันที่และเวลาที่มุมบนขวาของเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "ปรับขนาดตัวอักษรของส่วนท้ายเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "ปรับขนาดตัวอักษรของข้อความในส่วนท้ายเมนู รวมถึงมีผลต่อขนาดตัวอักษรในแถบด้านข้างรูปภาพตัวอย่างทางด้านขวาด้วย"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
+   "พับแถบด้านข้างลง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
+   "ทำให้แถบด้านข้างพับเก็บอยู่เสมอ"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "ตัดชื่อรายการเพลย์ลิสต์ให้สั้นลง (ต้องรีสตาร์ท)"
@@ -6807,14 +11135,162 @@ MSG_HASH(
    "เอาชื่อผู้ผลิตออกจากเพลย์ลิสต์ เช่น จาก 'Sony - PlayStation' จะกลายเป็น 'PlayStation'"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "เรียงลำดับเพลย์ลิสต์หลังจากตัดชื่อให้สั้นลง (ต้องเริ่มโปรแกรมใหม่)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "เพลย์ลิสต์จะถูกเรียงลำดับใหม่ตามตัวอักษร หลังจากตัดส่วนที่เป็นชื่อผู้ผลิตออกจากชื่อเพลย์ลิสต์แล้ว"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "รูปตัวอย่างรอง"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "แทนที่แผงข้อมูลเมตาของเนื้อหาด้วยรูปภาพตัวอย่างอื่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "ใช้ข้อความวิ่งสำหรับ Content Metadata"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "เมื่อเปิดใช้งาน ข้อมูลเมตาแต่ละรายการของเนื้อหาที่แสดงบนแถบด้านข้างขวาของเพลย์ลิสต์ (เช่น Core ที่ใช้, เวลาที่เล่น) จะแสดงผลเพียงบรรทัดเดียว โดยข้อความที่ยาวเกินความกว้างของแถบ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "ปรับขนาดรูปภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "ปรับขนาดของแถบรูปภาพตัวอย่าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_PADDING_FACTOR,
+   "ปรับระยะขอบ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_PADDING_FACTOR,
+   "ปรับขนาดระยะขอบแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   "ไอคอนส่วนหัว"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   "แสดง 'โลโก้ส่วนหัวสามารถซ่อนได้ ปรับเปลี่ยนตามการนำทาง หรือกำหนดคงที่เป็นแบบคลาสสิก Invader'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
+   "เส้นแบ่งส่วนหัวชื่อเรื่อง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
+   "ความกว้างสำรองสำหรับเส้นแบ่งส่วนหัวและส่วนท้ายชื่อเรื่อง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "ไม่แชร์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   "คงที่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   "ไม่แชร์อินพุต"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NORMAL,
+   "ปกติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_MAXIMUM,
+   "สูงสุด"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "ธีมสี"
+   )
 
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
+   "ไอคอน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
+   "แสดงไอคอนทางด้านซ้ายของรายการเมนูออกาไนเซอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
+   "สลับไอค่อน"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
+   "ใช้ไอคอนแทนข้อความ เปิด/ปิด เพื่อแสดงรายการตั้งค่าเมนูแบบ 'สวิตช์สลับ'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "ไอคอนเพลย์ลิสต์ (ต้องรีสตาร์ท)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "แสดงไอคอนเฉพาะของแต่ละระบบในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   "ปรับเค้าโครงแนวนอนให้เหมาะสม"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   "ปรับเค้าโครงเมนูโดยอัตโนมัติเพื่อให้เหมาะสมกับหน้าจอมากขึ้น เมื่อใช้งานในโหมดแสดงผลแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
+   "แสดงแถบนำทาง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
+   "แสดงแถบทางลัดสำหรับนำทางบนหน้าจออย่างถาวร ช่วยให้สลับระหว่างหมวดหมู่เมนูได้อย่างรวดเร็ว แนะนำสำหรับอุปกรณ์หน้าจอสัมผัส"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+   "หมุนแถบนำทางโดยอัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+   "ย้ายแถบนำทางไปยังด้านขวาของหน้าจอโดยอัตโนมัติ เมื่อใช้งานในโหมดแสดงผลแนวนอน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   "ธีมสี"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+   "เลือกธีมสีพื้นหลังอื่น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "แอนิเมชันการเปลี่ยนผ่านหน้าจอ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "เปิดใช้งานเอฟเฟกต์แอนิเมชันที่ลื่นไหล เมื่อมีการนำทางระหว่างระดับต่างๆ ของเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+   "มุมมองภาพตัวอย่างแนวตั้ง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+   "กำหนดโหมดการแสดงผลภาพตัวอย่างของเพลย์ลิสต์ เมื่อใช้งานในโหมดแสดงผลแนวตั้ง"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
    "มุมมองรูปตัวอย่างแนวนอน"
@@ -6878,12 +11354,92 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD,
    "เขียวมรกต"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
+   "อัตโนมัติ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
+   "รายการ (ขนาดเล็ก)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM,
+   "รายการ (ขนาดกลาง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
+   "ไอคอนคู่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL,
+   "รายการ (ขนาดเล็ก)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM,
+   "รายการ (ขนาดกลาง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE,
+   "รายการ (ขนาดใหญ่)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP,
+   "เดสก์ท็อป"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+   "ปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
+   "เปิด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
+   "ยกเว้นมุมมองภาพตัวอย่าง"
+   )
 
 /* Qt (Desktop Menu) */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFO,
    "ข้อมูล"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
+   "&ไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
+   "&โหลด Core..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
+   "&เลิกโหลด Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
+   "อ&อก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
+   "พารามิเตอร์เชดเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
+   "มืด"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
@@ -6906,6 +11462,14 @@ MSG_HASH(
    "ตัวจัดการไฟล์"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+   "เพลย์ลิสต์ทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
+   "ข้อมูล Core"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "ข้อมูล"
    )
@@ -6914,16 +11478,216 @@ MSG_HASH(
    "หยุด"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW,
+   "มุมมอง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
+   "ไอคอน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
+   "รายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
+   "ล้าง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
+   "ความคืบหน้า:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   "จำกัดจำนวนรายการสูงสุดใน \"เพลย์ลิสต์ทั้งหมด\":"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   "จำกัดจำนวนรายการตารางสูงสุดใน \"เพลย์ลิสต์ทั้งหมด\":"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   "แสดงไฟล์และโฟลเดอร์ที่ซ่อนอยู่:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
+   "สร้างเพลย์ลิสต์ใหม่"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
+   "โปรดป้อนชื่อเพลย์ลิสต์ใหม่:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
+   "ลบเพลย์ลิสต์"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
    "เปลี่ยนชื่อเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   "คุณแน่ใจหรือไม่ว่าต้องการลบเพลย์ลิสต์ \"%1\"?"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_QUESTION,
+   "คำถาม"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
+   "ไม่สามารถลบไฟล์ได้"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    "ไม่สามารถเปลี่ยนชื่อไฟล์ได้"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
+   "กำลังรวบรวมรายชื่อไฟล์..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
+   "กำลังเพิ่มไฟล์ลงในเพลย์ลิสต์..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
+   "รายการในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   "ชื่อ:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH,
+   "เส้นทาง:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
+   "ฐานข้อมูล:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
+   "นามสกุล:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+   "(เว้นวรรคคั่นระหว่างรายการ; ค่าเริ่มต้นคือรวมทั้งหมด)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+   "กรองข้อมูลภายในไฟล์บีบอัด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
+   "(ใช้เพื่อค้นหาภาพตัวอย่าง)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   "คุณแน่ใจหรือไม่ว่าต้องการลบรายการ \"%1\"?"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
+   "กรุณาเลือกเพลย์ลิสต์ก่อนเพียงหนึ่งรายการ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE,
+   "ลบ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY,
+   "เพิ่มรายการ..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ADD_FILES,
+   "เพิ่มไฟล์..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER,
+   "เพิ่มโฟลเดอร์..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_EDIT,
+   "แก้ไข"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES,
+   "เลือกไฟล์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER,
+   "เลือกโฟลเดอร์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
+   "เกิดข้อผิดพลาดในการอัปเดตรายการในเพลย์ลิสต์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
+   "กรุณากรอกข้อมูลในช่องที่จำเป็นให้ครบถ้วน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
+   "อัปเดต RetroArch (รุ่นทดลอง Nightly)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
+   "อัปเดต RetroArch สำเร็จแล้ว กรุณาเริ่มแอปพลิเคชันใหม่เพื่อให้การเปลี่ยนแปลงมีผล ออกแบบมาเพื่อแจ้งให้คุณทราบว่าขั้นตอนเสร็จสมบูรณ์"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
+   "การอัปเดตล้มเหลว"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
+   "ผู้ร่วมพัฒนา"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
+   "เชดเดอร์ปัจจุบัน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
+   "เลื่อนลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
+   "เลื่อนขึ้น"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD,
+   "โหลด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SAVE,
+   "บันทึกเกม"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_REMOVE,
    "ลบออก"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_REMOVE_PASSES,
+   "ลบบัตรผ่าน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_APPLY,
+   "ยื่นสมัคร"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
+   "เพิ่มบัตรผ่าน"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES,
+   "ยกเลิกบัตรผ่านทั้งหมด"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
+   "ไม่มีการใช้ บัตรผ่าน Shader"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
+   "ล้างบัตรผ่าน"
    )
 
 /* Unsorted */
@@ -6937,12 +11701,48 @@ MSG_HASH(
    "ประวัติ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
+   "เริ่มหรือดำเนินการค้นหาสูตรโกงต่อ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "ผู้ใช้"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "จำนวนภาพสูงสุดในห่วงโซ่การสลับ สิ่งนี้สามารถสั่งให้ไดรเวอร์วิดีโอใช้โหมดการบัฟเฟอร์วิดีโอที่เฉพาะเจาะจงได้\nบัฟเฟอร์เดี่ยว - 1\nบัฟเฟอร์คู่ - 2\nบัฟเฟอร์สามชั้น - 3\nการตั้งค่าโหมด[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   "ห่วงโซ่การสลับที่รอได้"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
    "ซิงค์ CPU และ GPU อย่างเข้มงวด ช่วยลดความหน่วงโดยแลกกับประสิทธิภาพที่ลดลง"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "ความหน่วงเฟรมสูงสุด"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   "สั่งให้ไดรเวอร์วิดีโอใช้โหมดการบัฟเฟอร์ที่กำหนดโดยเฉพาะ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+   "ปรับเปลี่ยนค่าที่ตั้งไว้ล่วงหน้าของเชดเดอร์ที่กำลังใช้งานอยู่ในเมนู"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   "ค่าเชดเดอร์ที่ตั้งไว้ล่วงหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "ค่าเชดเดอร์ที่ตั้งไว้ล่วงหน้า"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   "ค่าเชดเดอร์ที่ตั้งไว้ล่วงหน้า"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
@@ -6951,6 +11751,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "ช่วยเหลือ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "ล้าง"
    )
 
 /* Discord Status */
@@ -6986,6 +11790,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
    "เปลี่ยนชื่อหัวข้อ"
+   )
+MSG_HASH(
+   MSG_SHADER,
+   "เชดเดอร์"
+   )
+MSG_HASH(
+   MSG_UNKNOWN,
+   "ไม่ทราบ"
+   )
+MSG_HASH(
+   MSG_RESAMPLER_QUALITY_NORMAL,
+   "ปกติ"
    )
 
 /* Lakka */
