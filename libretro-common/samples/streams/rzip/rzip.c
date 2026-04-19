@@ -243,7 +243,13 @@ int main(int argc, char *argv[])
 
       printf("WARNING: Output file already exists: %s\n", out_file_path);
       printf("         Overwrite? [Y/n]: ");
-      fgets(reply, sizeof(reply), stdin);
+      /* Ignore the fgets return value intentionally -- on EOF or
+       * error we fall through to the reply[0] check below, which
+       * fails the 'Y' comparison (reply[0] stays '\0' from the
+       * initialisation above) and bails out safely without
+       * overwriting.  Cast to void to silence -Wunused-result on
+       * GCC/glibc, which attaches warn_unused_result to fgets. */
+      (void)!fgets(reply, sizeof(reply), stdin);
       if (reply[0] != 'Y')
          goto end;
    }
