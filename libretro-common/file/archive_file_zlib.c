@@ -359,7 +359,14 @@ static int zip_file_decompressed(
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    decomp_state_t* decomp_state = (decomp_state_t*)userdata->cb_data;
-   char last_char = name[strlen(name) - 1];
+   size_t name_len              = name ? strlen(name) : 0;
+   char last_char;
+   /* Reject empty or NULL name -- strlen-1 on empty would read
+    * name[SIZE_MAX].  Malformed archives can have 0-length filename
+    * entries. */
+   if (name_len == 0)
+      return 1;
+   last_char = name[name_len - 1];
    /* Ignore directories. */
    if (last_char == '/' || last_char == '\\')
       return 1;
@@ -538,6 +545,12 @@ static int zip_parse_file_iterate_step_internal(
    if (entry < zip_context->directory || entry >= zip_context->directory_end)
       return 0;
 
+   /* Central-directory fixed header is 46 bytes (highest-offset read
+    * is at +42..+45).  Reject a truncated trailing entry before any
+    * out-of-bounds read. */
+   if ((size_t)(zip_context->directory_end - entry) < 46)
+      return -1;
+
    signature = read_le(zip_context->directory_entry + 0, 4);
 
    if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
@@ -553,6 +566,13 @@ static int zip_parse_file_iterate_step_internal(
    commentlength  = read_le(zip_context->directory_entry + 32, 2); /* file comment length */
 
    if (namelength >= PATH_MAX_LENGTH)
+      return -1;
+
+   /* Variable-length fields (name, extra, comment) follow the 46-byte
+    * fixed header.  Reject if the declared sizes would run past the
+    * end of the directory block. */
+   if ((size_t)(zip_context->directory_end - entry)
+         < (size_t)46 + namelength + extralength + commentlength)
       return -1;
 
    memcpy(filename, zip_context->directory_entry + 46, namelength); /* file name */
