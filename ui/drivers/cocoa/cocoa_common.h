@@ -141,3 +141,5 @@ bool cocoa_get_metrics(
       float *value);
 
 #endif
+
+void cocoa_file_load_with_detect_core(const char *filename);

@@ -45,6 +45,8 @@
 #include "../../configuration.h"
 #include "../../paths.h"
 #include "../../core.h"
+#include "../../menu/menu_cbs.h"
+#include "../../menu/menu_displaylist.h"
 #include "../../retroarch.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"

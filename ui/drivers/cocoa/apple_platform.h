@@ -83,10 +83,10 @@ extern id<ApplePlatform> apple_platform;
 extern id apple_platform;
 #endif
 
-#if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 void rarch_start_draw_observer(void);
 void rarch_stop_draw_observer(void);
 
+#if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 #if defined(HAVE_COCOA_METAL)
 @interface MetalLayerView : UIView
 @property (nonatomic, readonly) CAMetalLayer *metalLayer;
