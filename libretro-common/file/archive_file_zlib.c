@@ -508,10 +508,27 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
          || directory_offset > state->archive_size)
       return -1;
 
+   /* Combined sanity check: the directory must fit entirely within
+    * the archive.  Without this, offset + size could wrap or point
+    * past EOF, producing a large bogus allocation and a short read. */
+   if ((int64_t)directory_offset + (int64_t)directory_size > state->archive_size)
+      return -1;
+
+   /* Reject sizes that would overflow the allocation on 32-bit hosts.
+    * size_t is 32-bit on 3DS / Vita / PSP / Wii / Wii U, where a
+    * directory_size near UINT32_MAX would wrap
+    *     sizeof(zip_context_t) + (size_t)directory_size
+    * to a tiny value, after which directory_end runs off the end of
+    * the allocation. */
+   if ((size_t)directory_size > SIZE_MAX - sizeof(zip_context_t))
+      return -1;
+
    /* This is a ZIP file, allocate one block of memory for both the
     * context and the entire directory, then read the directory.
     */
    zip_context = (zip_context_t*)malloc(sizeof(zip_context_t) + (size_t)directory_size);
+   if (!zip_context)
+      return -1;
    zip_context->state             = state;
    zip_context->directory         = (uint8_t*)(zip_context + 1);
    zip_context->directory_entry   = zip_context->directory;
