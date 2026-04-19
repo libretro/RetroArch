@@ -18,6 +18,8 @@
 #include "../../config.h"
 #endif
 
+#include <TargetConditionals.h>
+
 #if TARGET_OS_IPHONE
 #include <CoreGraphics/CoreGraphics.h>
 #else

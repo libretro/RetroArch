@@ -17,16 +17,16 @@
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
 
+#include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
 #include "cocoa_common.h"
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
-#include <compat/apple_compat.h>
 #include "RetroArchPlaylistManager.h"
 
 #ifdef HAVE_COCOATOUCH
-#import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
+#import "../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
 #if TARGET_OS_TV
 #import <TVServices/TVServices.h>
@@ -34,31 +34,32 @@
 #endif
 #if TARGET_OS_IOS
 #import <MobileCoreServices/MobileCoreServices.h>
-#import "../../../menu/menu_cbs.h"
 #endif
 #endif
 
-#include "../../../configuration.h"
-#include "../../../content.h"
-#include "../../../core_info.h"
-#include "../../../defaults.h"
-#include "../../../frontend/frontend.h"
-#include "../../../file_path_special.h"
-#include "../../../menu/menu_cbs.h"
-#include "../../../paths.h"
-#include "../../../retroarch.h"
-#include "../../../tasks/task_content.h"
-#include "../../../verbosity.h"
+#include "../../configuration.h"
+#include "../../content.h"
+#include "../../core_info.h"
+#include "../../defaults.h"
+#include "../../frontend/frontend.h"
+#include "../../file_path_special.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#include "../../menu/menu_cbs.h"
+#include "../../menu/menu_displaylist.h"
+#endif
+
+#include "../../paths.h"
+#include "../../retroarch.h"
+#include "../../tasks/task_content.h"
+#include "../../verbosity.h"
 
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 
-#ifdef HAVE_MENU
-#include "../../menu/menu_driver.h"
-#endif
-
 #ifdef HAVE_MIST
-#include "steam/steam.h"
+#include "../../steam/steam.h"
 #endif
 
 #if IOS
@@ -102,8 +103,7 @@ static CFRunLoopObserverRef iterate_observer;
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
-   uint32_t runloop_flags;
-   int          ret   = runloop_iterate();
+   int ret = runloop_iterate();
 
    if (ret == -1)
    {
@@ -121,9 +121,8 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
    steam_poll();
 #endif
 
-   runloop_flags = runloop_get_flags();
 #if !TARGET_OS_TV && !defined(OSX)
-   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+   if (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION)
 #endif
       CFRunLoopWakeUp(CFRunLoopGetMain());
 #if TARGET_OS_IOS
@@ -183,8 +182,7 @@ void rarch_stop_draw_observer(void)
    }
 
 #if !TARGET_OS_TV
-   uint32_t runloop_flags = runloop_get_flags();
-   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+   if (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION)
    {
       /* Fast-forward: observer handles all iterations */
       rarch_start_draw_observer();
