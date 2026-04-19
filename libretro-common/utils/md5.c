@@ -35,12 +35,12 @@
  * compile-time configuration.
  */
 
-+/* On Apple platforms MD5 is provided by CommonCrypto, and lrc_hash.h
-+ * aliases MD5_CTX / MD5_Init / MD5_Update / MD5_Final to the CC_*
-+ * equivalents. The Solar Designer implementation below pokes at
-+ * struct members (a, b, c, d, block) that do not exist on
-+ * CC_MD5state_st, so it must be skipped entirely on Apple. */
-+#ifndef __APPLE__
+/* On Apple platforms MD5 is provided by CommonCrypto, and lrc_hash.h
+ * aliases MD5_CTX / MD5_Init / MD5_Update / MD5_Final to the CC_*
+ * equivalents. The Solar Designer implementation below pokes at
+ * struct members (a, b, c, d, block) that do not exist on
+ * CC_MD5state_st, so it must be skipped entirely on Apple. */
+#ifndef __APPLE__
 
 #include <lrc_hash.h>
 
