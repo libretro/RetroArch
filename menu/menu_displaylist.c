@@ -35,6 +35,10 @@
 #include "../config.h"
 #endif
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
 #endif
