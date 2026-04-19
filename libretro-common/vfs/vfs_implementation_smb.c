@@ -14,6 +14,7 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>  /* UINT32_MAX, INT64_MAX -- via compat shim on VC6 */
 #include <string.h>
 #include <errno.h>
 #include <time.h>
@@ -352,7 +353,15 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
    if (!ctx)
        return -1;
 
-   ret = smb2_read(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, s, len);
+   /* smb2_read takes uint32_t count; passing a uint64_t len that
+    * exceeds UINT32_MAX was silently truncated pre-patch.  Cap at
+    * UINT32_MAX so the caller gets back the (partial) byte count
+    * and knows to loop for more.  This matches fread-style
+    * short-read semantics already observed by VFS consumers. */
+   if (len > (uint64_t)UINT32_MAX)
+      len = UINT32_MAX;
+
+   ret = smb2_read(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, s, (uint32_t)len);
 
    return ret;
 }
@@ -370,7 +379,13 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
    if (!ctx)
        return -1;
 
-   ret = smb2_write(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, (void*)s, len);
+   /* smb2_write takes uint32_t count; see retro_vfs_file_read_smb
+    * for the rationale.  Cap at UINT32_MAX and let the caller
+    * re-issue for remaining bytes. */
+   if (len > (uint64_t)UINT32_MAX)
+      len = UINT32_MAX;
+
+   ret = smb2_write(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, (void*)s, (uint32_t)len);
 
    return ret;
 }
@@ -571,8 +586,15 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
    if (smb2_stat(smb_context, rel_path, &st) < 0)
       return 0;
 
+   /* smb2_size is uint64_t; *size is int64_t.  A naked cast on
+    * files > INT64_MAX (8 EiB) would produce a negative value
+    * that callers may interpret as a stat error.  Saturate to
+    * INT64_MAX -- unreachable in practice today, but the fix is
+    * cheap and keeps sign semantics sane. */
    if (size)
-      *size = (int64_t)st.smb2_size;
+      *size = (st.smb2_size > (uint64_t)INT64_MAX)
+         ? INT64_MAX
+         : (int64_t)st.smb2_size;
 
    return RETRO_VFS_STAT_IS_VALID |
          (st.smb2_type == SMB2_TYPE_DIRECTORY ? RETRO_VFS_STAT_IS_DIRECTORY : 0);
