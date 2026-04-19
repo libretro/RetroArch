@@ -1356,7 +1356,7 @@ endif
 
 ifneq ($(findstring Darwin,$(OS)),)
    OBJ += gfx/display_servers/dispserv_apple.o
-#endif
+endif
 
 ifeq ($(HAVE_X11), 1)
    OBJ += input/common/input_x11_common.o \
