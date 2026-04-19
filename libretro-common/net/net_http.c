@@ -250,6 +250,13 @@ void net_http_urlencode(char **dest, const char *source)
    enc   = (char*)malloc(len + 1);
    *dest = enc;
 
+   /* Malloc failure: leave *dest NULL and bail.  Callers that
+    * dereference the result (common in URL-builder flows) will
+    * then hit a single deliberate NULL check instead of a random
+    * crash in the encoding loop below. */
+   if (!enc)
+      return;
+
    /* Second pass: encode */
    for (s = source; *s; s++)
    {
@@ -453,6 +460,12 @@ bool net_http_connection_done(struct http_connection_t *conn)
          size_t domain_len   = strlen(conn->domain);
          size_t path_len     = strlen(conn->scan);
          char* urlcopy       = (char*)malloc(domain_len + path_len + 2);
+         /* Malloc failure: leave conn untouched and return false
+          * so the caller does not use a partially-initialised
+          * connection.  Without this check the following memcpy
+          * would NULL-deref. */
+         if (!urlcopy)
+            return false;
          memcpy(urlcopy, conn->domain, domain_len);
          urlcopy[domain_len] = '\0';
          memcpy(urlcopy + domain_len + 1, conn->scan, path_len + 1);
@@ -530,7 +543,15 @@ void net_http_connection_set_content(
    if (content_length)
    {
       conn->postdata = malloc(content_length);
-      memcpy(conn->postdata, content, content_length);
+      if (conn->postdata)
+         memcpy(conn->postdata, content, content_length);
+      else
+      {
+         /* Malloc failure: leave postdata NULL and reset
+          * contentlength so net_http_send_request does not
+          * advertise a Content-Length it cannot honour. */
+         conn->contentlength = 0;
+      }
    }
 }
 
@@ -1114,8 +1135,8 @@ static bool net_http_send_request(struct http_t *state)
    }
    if (request->method && request->method[0] == 'P')
    {
-      size_t _len, len;
-      char *len_str = NULL;
+      size_t _len;
+      int    len;
       if (     !request->postdata
             && request->method[1] == 'O' /* POST, not PUT */
             && request->contentlength > 0)
@@ -1130,19 +1151,27 @@ static bool net_http_send_request(struct http_t *state)
                sizeof("Content-Type: application/x-www-form-urlencoded\r\n")-1);
       net_http_send_str(state, "Content-Length: ", sizeof("Content-Length: ")-1);
       _len = request->contentlength;
+      /* Use a stack buffer -- the maximum decimal representation
+       * of a size_t is 20 digits (UINT64_MAX) + NUL, well within
+       * 32 bytes.  Pre-patch this was a malloc/snprintf pair
+       * whose malloc was never NULL-checked; a snprintf-into-NULL
+       * crash on OOM was the tail end of that sequence. */
+      {
+         char len_buf[32];
 #ifdef _WIN32
-      len     = snprintf(NULL, 0, "%" PRIuPTR, _len);
-      len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%" PRIuPTR, _len);
+         len = snprintf(len_buf, sizeof(len_buf), "%" PRIuPTR, _len);
 #else
-      len     = snprintf(NULL, 0, "%llu", (long long unsigned)_len);
-      len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%llu", (long long unsigned)_len);
+         len = snprintf(len_buf, sizeof(len_buf), "%llu",
+               (long long unsigned)_len);
 #endif
-      len_str[len] = '\0';
-      net_http_send_str(state, len_str, strlen(len_str));
+         if (len < 0)
+            len = 0;
+         else if ((size_t)len >= sizeof(len_buf))
+            len = sizeof(len_buf) - 1;
+         len_buf[len] = '\0';
+         net_http_send_str(state, len_buf, (size_t)len);
+      }
       net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
-      free(len_str);
    }
    net_http_send_str(state, "User-Agent: ", sizeof("User-Agent: ")-1);
    if (request->useragent)
@@ -1241,7 +1270,21 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
             {
                response->part = P_BODY;
                if (response->bodytype == T_CHUNK)
+               {
                   response->part = P_BODY_CHUNKLEN;
+                  /* The chunked body parser uses response->len as
+                   * the position of the current chunklen line --
+                   * must start at 0.  A hostile server that sent
+                   * both "Content-Length: N" and
+                   * "Transfer-Encoding: chunked" would otherwise
+                   * leave response->len set to N from the
+                   * Content-Length pass, and the first chunked
+                   * parse step computed "response->pos -
+                   * response->len" as an unsigned wrap to a huge
+                   * value.  memchr() at that offset is a wild
+                   * OOB read. */
+                  response->len = 0;
+               }
             }
             scan = lineend + 1;
             continue;
@@ -1396,6 +1439,18 @@ parse_again:
             if (end)
             {
                size_t chunklen = strtoul(response->data + response->len, NULL, 16);
+               /* Cap the chunk length at the same Content-Length
+                * ceiling.  A hostile server sending a chunklen
+                * like ffffffffffffffff drives the client into
+                * an effectively unbounded receive loop (each
+                * net_http_update tick nibbles at response->len
+                * and response->len never reaches zero). */
+               if (chunklen > NET_HTTP_MAX_CONTENT_LENGTH)
+               {
+                  response->part = P_DONE;
+                  state->err     = true;
+                  return false;
+               }
                response->pos   = response->len;
                end++;
 
@@ -1413,9 +1468,17 @@ parse_again:
                response->part = P_BODY;
                if (response->len == 0)
                {
+                  char *tmp;
                   response->part = P_DONE;
                   response->len  = response->pos;
-                  response->data = (char*)realloc(response->data, response->len);
+                  tmp            = (char*)realloc(response->data,
+                        response->len);
+                  if (!tmp)
+                  {
+                     state->err = true;
+                     return false;
+                  }
+                  response->data = tmp;
                   return true;
                }
                goto parse_again;
@@ -1446,24 +1509,46 @@ parse_again:
       {
          response->part = P_DONE;
          if (response->buflen != response->len)
-            response->data = (char*)realloc(response->data, response->len);
+         {
+            char *tmp = (char*)realloc(response->data, response->len);
+            if (!tmp)
+            {
+               state->err = true;
+               return false;
+            }
+            response->data = tmp;
+         }
          return true;
       }
    }
 
    if (response->pos >= response->buflen)
    {
+      char *tmp;
       response->buflen *= 2;
-      response->data    = (char*)realloc(response->data, response->buflen);
+      tmp               = (char*)realloc(response->data, response->buflen);
+      if (!tmp)
+      {
+         state->err = true;
+         return false;
+      }
+      response->data    = tmp;
    }
    return true;
 }
 
 static bool net_http_redirect(struct http_t *state, const char *location)
 {
-   /* This reinitializes state based on the new location */
+   /* This reinitializes state based on the new location.  Every
+    * allocation below is checked; on any failure state->err is
+    * set and we return true (the dispatch loop reads that as
+    * "transfer finished with an error"), leaving the state in a
+    * safe-to-delete shape. */
 
    /* URL may be absolute or relative to the current URL */
+   char *new_domain = NULL;
+   char *new_path   = NULL;
+   char *tmp;
    bool absolute = (!strncmp(location, "http://", sizeof("http://")-1)
                  || !strncmp(location, "https://", sizeof("https://")-1));
 
@@ -1476,33 +1561,55 @@ static bool net_http_redirect(struct http_t *state, const char *location)
       if (!net_http_connection_done(new_url))
       {
          net_http_connection_free(new_url);
+         state->err = true;
          return true;
       }
-      state->ssl = new_url->ssl;
+      new_domain = strdup(new_url->domain);
+      new_path   = strdup(new_url->path);
+      if (!new_domain || !new_path)
+      {
+         free(new_domain);
+         free(new_path);
+         net_http_connection_free(new_url);
+         state->err = true;
+         return true;
+      }
+      state->ssl  = new_url->ssl;
+      state->request.port = new_url->port;
       if (state->request.domain)
          free(state->request.domain);
-      state->request.domain = strdup(new_url->domain);
-      state->request.port = new_url->port;
+      state->request.domain = new_domain;
       if (state->request.path)
          free(state->request.path);
-      state->request.path = strdup(new_url->path);
+      state->request.path = new_path;
       net_http_connection_free(new_url);
    }
    else
    {
       if (*location == '/')
       {
+         new_path = strdup(location);
+         if (!new_path)
+         {
+            state->err = true;
+            return true;
+         }
          if (state->request.path)
             free(state->request.path);
-         state->request.path = strdup(location);
+         state->request.path = new_path;
       }
       else
       {
-         char *path = (char*)malloc(PATH_MAX_LENGTH);
-         fill_pathname_resolve_relative(path, state->request.path,
+         new_path = (char*)malloc(PATH_MAX_LENGTH);
+         if (!new_path)
+         {
+            state->err = true;
+            return true;
+         }
+         fill_pathname_resolve_relative(new_path, state->request.path,
          location, PATH_MAX_LENGTH);
          free(state->request.path);
-         state->request.path = path;
+         state->request.path = new_path;
       }
    }
    state->request_sent       = false;
@@ -1510,8 +1617,16 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    state->response.status    = -1;
    /* Start with larger buffer to reduce reallocations */
    state->response.buflen    = 64 * 1024;
-   state->response.data      = (char*)realloc(state->response.data,
-   state->response.buflen);
+   tmp = (char*)realloc(state->response.data, state->response.buflen);
+   if (!tmp)
+   {
+      /* Keep the existing buffer; state->data is still valid.
+       * Mark the transfer as errored so the dispatch loop tears
+       * it down. */
+      state->err = true;
+      return true;
+   }
+   state->response.data      = tmp;
    state->response.pos       = 0;
    state->response.len       = 0;
    state->response.bodytype  = T_FULL;
