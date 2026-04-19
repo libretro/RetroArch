@@ -691,7 +691,7 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
    if (adapter->slot == -1)
       goto error;
 
-   if (!adapter->name || !*adapter->name)
+   if (!*adapter->name)
       strcpy(adapter->name, "Unknown Controller With No Name");
 
    if (pad_connection_has_interface(hid->slots, adapter->slot))
