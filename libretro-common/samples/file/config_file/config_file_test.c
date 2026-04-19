@@ -227,6 +227,152 @@ static void test_config_get_int_accepts(const char *raw_val, int want_int)
    config_file_free(cfg);
 }
 
+/* Regression for commit <round4-TBD> (config_file_deinitialize
+ * leaves dangling pointers).
+ *
+ * config_file_deinitialize() is a public API.  Pre-patch it freed
+ * entries, includes, references, path and the hash map but left the
+ * struct\'s pointer fields pointing at the just-freed memory.  Any
+ * subsequent call on that struct -- whether accidental double-
+ * deinit, reuse, or another access via the public API -- chased
+ * dangling pointers.  Post-patch all fields are NULLed.
+ *
+ * This test loads a config, deinitializes it without freeing the
+ * struct, then verifies that the struct\'s internal pointers are
+ * all NULL.  On unpatched code several of these would be stale
+ * non-NULL pointers to freed memory.
+ *
+ * Note: this inspects the config_file_t fields directly (white-box
+ * test).  The public header exposes the struct definition so this
+ * is legal, though a little unusual; there is no public getter for
+ * "is this struct still live".  The alternative -- provoking a
+ * real UAF via a second API call -- would fire ASan on unpatched
+ * but also crash on patched for unrelated reasons (add_reference
+ * dereferences conf->path unconditionally).  This direct field
+ * inspection is the cleanest way to assert the patch\'s invariant.
+ */
+static void test_config_file_deinitialize_clears_fields(void)
+{
+   config_file_t *cfg;
+   const char    *tmp_path = "rarch_cfg_deinit_test.cfg";
+   FILE          *fp       = fopen(tmp_path, "wb");
+
+   if (!fp)
+      abort();
+   fputs("foo = \"bar\"\nbaz = \"qux\"\n", fp);
+   fclose(fp);
+
+   cfg = config_file_new(tmp_path);
+   remove(tmp_path);
+   if (!cfg)
+      abort();
+
+   /* Add a reference so conf->references is non-NULL before deinit. */
+   config_file_add_reference(cfg, "some_ref");
+
+   /* Deinitialize without freeing the struct. */
+   config_file_deinitialize(cfg);
+
+   /* Every pointer field must now be NULL.  Pre-patch these would
+    * be stale pointers to freed memory. */
+   if (cfg->entries != NULL)
+   {
+      printf("[FAILED] deinit left entries as dangling %p\n", (void*)cfg->entries);
+      free(cfg);
+      abort();
+   }
+   if (cfg->includes != NULL)
+   {
+      printf("[FAILED] deinit left includes as dangling %p\n", (void*)cfg->includes);
+      free(cfg);
+      abort();
+   }
+   if (cfg->references != NULL)
+   {
+      printf("[FAILED] deinit left references as dangling %p\n", (void*)cfg->references);
+      free(cfg);
+      abort();
+   }
+   if (cfg->path != NULL)
+   {
+      printf("[FAILED] deinit left path as dangling %p\n", (void*)cfg->path);
+      free(cfg);
+      abort();
+   }
+   /* entries_map is cleared by RHMAP_FREE on all versions so we do
+    * not check it here. */
+
+   printf("[SUCCESS] config_file_deinitialize cleared all dangling pointer fields\n");
+   free(cfg);
+}
+
+/* Smoke test for commit <round4-TBD> (isgraph((int)char) UB on
+ * signed-char platforms).
+ *
+ * In the config parser, isgraph() is called on each byte of the
+ * key / unquoted value to find the token end.  Pre-patch the cast
+ * was (int), so bytes >= 0x80 became negative ints on signed-char
+ * platforms.  The C standard says ctype functions must be called
+ * with EOF or an unsigned-char value; anything else is undefined
+ * behaviour.  glibc and musl happen to handle negative arguments
+ * gracefully, but stricter libcs (Solaris, some embedded toolchains)
+ * trip an assert or array-bounds fault.  Post-patch the cast is
+ * (unsigned char).
+ *
+ * This is explicitly a smoke test: glibc and musl do not fire on
+ * the pre-patch code either, so this test passes on both patched
+ * and unpatched sources when run on a typical Linux host.  Its
+ * value is two-fold:
+ *   - Under UBSan with ctype function-arg instrumentation, the
+ *     pre-patch code would trip (currently not wired into this
+ *     test suite).
+ *   - On a stricter libc, the pre-patch code would crash; this
+ *     test therefore documents the expected contract and catches
+ *     any future regression on such a platform.
+ *
+ * The test feeds a config value containing bytes in the 0x80-0xFF
+ * range and verifies the parser does not crash.  Per the isgraph
+ * contract these bytes are non-graph in the C locale, so the parser
+ * will reject the key -- which is the CORRECT behaviour.  The test
+ * passes if the parser completes cleanly rather than crashing.
+ */
+static void test_config_file_high_bit_bytes_smoke(void)
+{
+   /* Config with a high-bit byte (0xC3 0xA9 is UTF-8 "e-acute") in
+    * both the key and the value.  The parser\'s isgraph() check
+    * terminates the key at the first non-graph byte, so this line
+    * is rejected as a syntactic error -- that is fine; what we care
+    * about is that the ctype call did not trip UB on the 0xC3 byte. */
+   const char    *cfgtext  = "caf\xc3\xa9 = \"valu\xc3\xa9\"\n"
+                             "plain = \"ok\"\n";
+   char          *copy     = strdup(cfgtext);
+   config_file_t *cfg      = config_file_new_from_string(copy, NULL);
+   char          *out      = NULL;
+   free(copy);
+
+   if (!cfg)
+   {
+      printf("[FAILED] parser refused to load config containing high-bit bytes\n");
+      abort();
+   }
+
+   /* Sanity: the plain key on the following line should still parse.
+    * This confirms the parser recovered from the rejected key and
+    * kept going rather than bailing on the whole file. */
+   if (!config_get_string(cfg, "plain", &out) || !out || strcmp(out, "ok") != 0)
+   {
+      printf("[FAILED] high-bit byte line disrupted subsequent parsing: plain=%s\n",
+            out ? out : "(null)");
+      free(out);
+      config_file_free(cfg);
+      abort();
+   }
+
+   free(out);
+   config_file_free(cfg);
+   printf("[SUCCESS] high-bit byte in config parsed without crash\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -267,4 +413,7 @@ int main(void)
    test_config_get_int_accepts("-17",   -17);
    test_config_get_int_accepts("0x10",   16);  /* hex via base-0 detection */
    test_config_get_int_accepts("010",     8);  /* octal  via base-0 detection */
+
+   test_config_file_deinitialize_clears_fields();
+   test_config_file_high_bit_bytes_smoke();
 }

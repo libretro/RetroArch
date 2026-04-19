@@ -252,14 +252,19 @@ static void nbio_stdio_resize(void *data, size_t len)
    if (len < handle->len)
       abort();
 
+   /* Attempt the realloc BEFORE committing the new length.  If it
+    * fails, the old pointer and its old size are still valid; the
+    * caller can retry or abandon.  Pre-patch we wrote handle->len
+    * = len first, then on realloc failure the handle claimed it
+    * owned a larger buffer than it actually did -- subsequent
+    * fread/fwrite iterate up to handle->len and walk off the end. */
+   if (!(new_data = realloc(handle->data, len)))
+      return;
+
+   handle->data     = new_data;
    handle->len      = len;
    handle->progress = len;
    handle->op       = -1;
-
-   new_data         = realloc(handle->data, handle->len);
-
-   if (new_data)
-      handle->data  = new_data;
 }
 
 static void *nbio_stdio_get_ptr(void *data, size_t* len)

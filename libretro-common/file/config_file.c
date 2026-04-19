@@ -246,7 +246,7 @@ static char *config_file_extract_value(char *line)
       size_t idx  = 0;
       char *value = NULL;
       /* Find next space character */
-      while (line[idx] && isgraph((int)line[idx]))
+      while (line[idx] && isgraph((unsigned char)line[idx]))
          idx++;
 
       line[idx] = '\0';
@@ -380,7 +380,11 @@ static void config_file_add_sub_conf(config_file_t *conf, char *path,
    {
       node->next        = NULL;
       /* Add include list */
-      node->path        = strdup(path);
+      if (!(node->path = strdup(path)))
+      {
+         free(node);
+         goto realpath;
+      }
 
       if (head)
       {
@@ -393,6 +397,7 @@ static void config_file_add_sub_conf(config_file_t *conf, char *path,
          conf->includes = node;
    }
 
+realpath:
    config_file_get_realpath(s, len, path,
          conf->path);
 }
@@ -569,7 +574,7 @@ static bool config_file_parse_line(config_file_t *conf,
     * then copy once - avoids malloc+realloc growth pattern */
    {
       const char *key_start = line;
-      while (isgraph((int)*line))
+      while (isgraph((unsigned char)*line))
          line++;
       idx = (size_t)(line - key_start);
       if (idx == 0)
@@ -704,6 +709,23 @@ bool config_file_deinitialize(config_file_t *conf)
       free(conf->path);
 
    RHMAP_FREE(conf->entries_map);
+
+   /* NULL out all pointer fields so that a caller who reuses the
+    * struct after deinitialize() -- or who accidentally calls
+    * deinitialize() twice -- does not chase dangling pointers.  The
+    * free() calls above leave every listed field pointing at freed
+    * memory; without these NULLs any subsequent config_* call on
+    * this struct is undefined behaviour.  config_file_free() frees
+    * the struct itself immediately after this, so for that path the
+    * NULLs are redundant but harmless; config_file_deinitialize()
+    * is a public API callable on its own. */
+   conf->entries     = NULL;
+   conf->tail        = NULL;
+   conf->last        = NULL;
+   conf->includes    = NULL;
+   conf->references  = NULL;
+   conf->path        = NULL;
+   /* entries_map is cleared by RHMAP_FREE */
 
    return true;
 }
@@ -1116,11 +1138,19 @@ bool config_get_char(config_file_t *conf, const char *key, char *in)
 bool config_get_string(config_file_t *conf, const char *key, char **str)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
+   char *dup;
 
    if (!entry || !entry->value)
       return false;
 
-   *str = strdup(entry->value);
+   /* strdup can fail; pre-patch the function claimed success with
+    * *str possibly left as NULL or uninitialised garbage.  Callers
+    * that don't defensively zero *str ahead of the call end up
+    * dereferencing a stale pointer. */
+   if (!(dup = strdup(entry->value)))
+      return false;
+
+   *str = dup;
    return true;
 }
 
@@ -1239,9 +1269,20 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    if (!(entry = (struct config_entry_list*)malloc(sizeof(*entry))))
       return;
    entry->readonly  = false;
+   entry->next      = NULL;
    entry->key       = strdup(key);
    entry->value     = strdup(val);
-   entry->next      = NULL;
+   /* If either strdup failed, don't insert a half-initialised entry
+    * into the list or hash map -- RHMAP_SET_STR with a NULL key
+    * is undefined, and subsequent config_get_string/config_set_*
+    * calls on this key would chase a NULL key. */
+   if (!entry->key || !entry->value)
+   {
+      free(entry->key);
+      free(entry->value);
+      free(entry);
+      return;
+   }
    conf->flags     |= CONF_FILE_FLG_MODIFIED;
    if (last)
       last->next    = entry;
