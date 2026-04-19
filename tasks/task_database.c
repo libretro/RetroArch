@@ -1233,7 +1233,7 @@ static enum scan_verdict task_database_iterate_crc_lookup(
    return SCAN_VERDICT_NO_DB_MATCH;
 }
 
-/* There is no Lutro database, but all .lutro files will be recognized. */
+/* There is a Lutro database, but without crc/serial, so all .lutro files will be recognized. */
 static int task_database_iterate_playlist_lutro(
       manual_scan_handle_t *_db,
       database_state_handle_t *db_state,
@@ -1243,6 +1243,13 @@ static int task_database_iterate_playlist_lutro(
    char game_title[NAME_MAX_LENGTH];
    fill_pathname(game_title,
          path_basename(path), "", sizeof(game_title));
+
+   /* Skip if strict scan was asked with specific database */
+   if ( _db->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT &&
+        _db->task_config->database_name &&
+       *_db->task_config->database_name &&
+        memcmp(_db->task_config->database_name, "Lutro",  6) != 0 )
+      return SCAN_VERDICT_NO_DB_MATCH;
 
    scan_results_add(&_db->scan_results,
                     path,
