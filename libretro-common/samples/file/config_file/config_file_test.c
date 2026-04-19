@@ -59,6 +59,58 @@ static void test_config_file_parse_contains(
    free(out);
 }
 
+/* Regression for commit 87f2d0b (memcmp OOB on short '#' comment lines).
+ *
+ * The bug was in config_file_parse_line() reading 8 or 10 bytes past
+ * the end of a shrunken line buffer produced by filestream_getline().
+ * Triggering it requires going through the file path, not the
+ * from-string path: config_file_new_from_string() keeps the entire
+ * string live, while filestream_getline() realloc-shrinks each line
+ * to exactly strlen+1 bytes for any line shorter than ~192 chars.
+ *
+ * Under AddressSanitizer the unpatched code aborts with a
+ * heap-buffer-overflow READ on any short '#' line.  On non-ASan
+ * builds the comparison's result depends on stale heap bytes
+ * adjacent to the allocation -- a real attacker-observable
+ * non-determinism, not a cosmetic issue.
+ */
+static void test_config_file_short_comments(void)
+{
+   const char *content =
+      "#\n"
+      "#h\n"
+      "#hi\n"
+      "#inc\n"
+      "#includ\n"
+      "#includez\n"
+      "#referenc\n"
+      "#referencez\n"
+      "foo = \"bar\"\n";
+   const char *tmp_path = "rarch_cfg_short_comment_test.cfg";
+   FILE          *fp    = fopen(tmp_path, "wb");
+   config_file_t *cfg;
+   char          *out   = NULL;
+
+   if (!fp)
+      abort();
+   fputs(content, fp);
+   fclose(fp);
+
+   cfg = config_file_new(tmp_path);
+   remove(tmp_path);
+   if (!cfg)
+      abort();
+
+   if (!config_get_string(cfg, "foo", &out) || !out || strcmp(out, "bar") != 0)
+   {
+      printf("[FAILED] short-comment regression: foo!=bar (got %s)\n",
+            out ? out : "(null)");
+      abort();
+   }
+   printf("[SUCCESS] short '#' comment lines parsed without OOB\n");
+   free(out);
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -75,4 +127,6 @@ int main(void)
    test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
    test_config_file_parse_contains("foo = \"\"\r\n", "bar", NULL);
    test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
+
+   test_config_file_short_comments();
 }
