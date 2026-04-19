@@ -31,8 +31,18 @@ HTTP_TEST_C = \
 				  $(LIBRETRO_COMM_DIR)/net/net_compat.c \
 				  $(LIBRETRO_COMM_DIR)/net/net_socket.c \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+				  $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
+				  $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 				  $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+				  $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+				  $(LIBRETRO_COMM_DIR)/file/file_path.c \
+				  $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+				  $(LIBRETRO_COMM_DIR)/lists/string_list.c \
+				  $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 				  $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+				  $(LIBRETRO_COMM_DIR)/time/rtime.c \
+				  $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+				  $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 				  net_http_test.c
 
 HTTP_TEST_OBJS := $(HTTP_TEST_C:.c=.o)
@@ -44,14 +54,25 @@ HTTP_PARSE_TEST_C = \
 				  $(LIBRETRO_COMM_DIR)/net/net_socket.c \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
+				  $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 				  $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+				  $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+				  $(LIBRETRO_COMM_DIR)/file/file_path.c \
+				  $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+				  $(LIBRETRO_COMM_DIR)/lists/string_list.c \
+				  $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 				  $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+				  $(LIBRETRO_COMM_DIR)/time/rtime.c \
+				  $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+				  $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 				  net_http_parse_test.c
 
 HTTP_PARSE_TEST_OBJS := $(HTTP_PARSE_TEST_C:.c=.o)
 
 NET_IFINFO_C = \
 					$(LIBRETRO_COMM_DIR)/net/net_ifinfo.c \
+					$(LIBRETRO_COMM_DIR)/net/net_compat.c \
+					$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 					net_ifinfo_test.c
 
 ifeq ($(platform), win)

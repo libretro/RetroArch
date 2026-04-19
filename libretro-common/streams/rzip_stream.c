@@ -40,6 +40,12 @@
 /* Default chunk size: 128kb */
 #define RZIP_DEFAULT_CHUNK_SIZE 131072
 
+/* Upper bound on the per-chunk buffer size a crafted RZIP file is
+ * allowed to request.  The default is 128 KiB; 64 MiB gives plenty
+ * of headroom for legitimate archives while preventing a malformed
+ * file from allocating gigabytes. */
+#define RZIP_MAX_CHUNK_SIZE (64 * 1024 * 1024)
+
 /* Header sizes (in bytes) */
 #define RZIP_HEADER_SIZE 20
 #define RZIP_CHUNK_HEADER_SIZE 4
@@ -122,6 +128,13 @@ static bool rzipstream_read_file_header(rzipstream_t *stream)
                          | ((uint32_t)header_bytes[10] << 16)
                          | ((uint32_t)header_bytes[9]  << 8)
                          |  (uint32_t)header_bytes[8]) == 0)
+      return false;
+
+   /* Sanity-cap the declared chunk size.  Without this, a malformed
+    * RZIP can request a multi-gigabyte allocation on every chunk
+    * read -- and with the derived in_buf_size/out_buf_size multipliers
+    * that compounds to several times more. */
+   if (stream->chunk_size > RZIP_MAX_CHUNK_SIZE)
       return false;
 
    /* Get total uncompressed data size - next 8 bytes */
@@ -462,6 +475,15 @@ static bool rzipstream_read_chunk(rzipstream_t *stream)
                            | ((uint32_t)chunk_header_bytes[1] <<  8)
                            | (uint32_t)chunk_header_bytes[0];
    if (compressed_chunk_size == 0)
+      return false;
+
+   /* A compressed chunk cannot legitimately exceed its uncompressed
+    * counterpart by more than zlib's small worst-case overhead.  Cap
+    * at twice the declared chunk_size (which is itself already
+    * sanity-capped on header read) to reject malformed inputs that
+    * would otherwise provoke multi-gigabyte calloc() calls on each
+    * chunk read. */
+   if (compressed_chunk_size > stream->chunk_size * 2)
       return false;
 
    /* Resize input buffer, if required */

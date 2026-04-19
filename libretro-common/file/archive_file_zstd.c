@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <boolean.h>
@@ -134,6 +135,12 @@ static int zstd_parse_file_iterate_step(void *context,
 
    if (  content_size == ZSTD_CONTENTSIZE_UNKNOWN
       || content_size == ZSTD_CONTENTSIZE_ERROR)
+      return -1;
+
+   /* decompressed_size is a uint32_t and feeds a later malloc; reject
+    * values that would truncate to a smaller size and mismatch the
+    * actual ZSTD_decompress output length. */
+   if (content_size > UINT32_MAX)
       return -1;
 
    ctx->decompressed_size = (uint32_t)content_size;
@@ -288,6 +295,17 @@ static int64_t zstd_file_read(
    content_size = ZSTD_getFrameContentSize(compressed_data, (size_t)file_size);
    if (  content_size == ZSTD_CONTENTSIZE_UNKNOWN
       || content_size == ZSTD_CONTENTSIZE_ERROR)
+   {
+      free(compressed_data);
+      return -1;
+   }
+
+   /* Reject sizes that would overflow the "+1" NUL-byte allocation or
+    * truncate when cast to size_t on 32-bit hosts.  Without this guard
+    * content_size = 0xFFFFFFFF on a 32-bit host wraps the +1 to zero,
+    * malloc(0) may return a non-NULL pointer, and the following
+    * ZSTD_decompress writes 4 GiB into it. */
+   if (content_size >= SIZE_MAX)
    {
       free(compressed_data);
       return -1;

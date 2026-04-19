@@ -51,10 +51,13 @@ jobs:
             snprintf
             unbase64_test
             archive_zip_test
+            archive_zstd_test
             config_file_test
             path_resolve_realpath_test
             nbio_test
             rpng
+            rzip_chunk_size_test
+            net_ifinfo
           )
 
           # Per-binary run command (overrides ./<binary> if present).
@@ -72,18 +75,11 @@ jobs:
           # regressions but not executed.
           declare -a BUILD_ONLY_DIRS=(
             formats/xml
-            streams/rzip
           )
 
           # Samples that are currently broken at build time on a stock
-          # Ubuntu host and are therefore neither built nor run.  The
-          # net/ Makefile references symbols (fill_pathname_resolve_relative,
-          # cpu_features_get_time_usec) without adding the corresponding
-          # source files to its SOURCES list; fixing that is out of
-          # scope for this workflow.  Remove from this list once the
-          # Makefile is corrected.
+          # Ubuntu host and are therefore neither built nor run.
           declare -a SKIP_DIRS=(
-            net
           )
 
           is_in() {
@@ -129,14 +125,16 @@ jobs:
               continue
             fi
 
-            # Extract targets from Makefile (handles both TARGET := foo
-            # and TARGETS = a b c).
+            # Extract targets from Makefile.  Handles:
+            #   TARGET := foo
+            #   TARGETS = a b c
+            #   TARGET_TEST := foo_test     (second target in same Makefile)
             mapfile -t targets < <(
-              grep -hE '^(TARGET|TARGETS)[[:space:]]*[:?]?=' "$d/Makefile" \
-              | head -1 \
+              grep -hE '^(TARGET|TARGETS|TARGET_TEST)[[:space:]]*[:?]?=' "$d/Makefile" \
               | sed -E 's/^[^=]*=[[:space:]]*//' \
               | tr -s ' \t' '\n' \
-              | grep -v '^$'
+              | grep -v '^$' \
+              | sort -u
             )
 
             for t in "${targets[@]}"; do
