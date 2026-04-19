@@ -11185,18 +11185,6 @@ unsigned menu_displaylist_build_list(
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
                switch(build_list[i].enum_idx)
                   {
-                  case MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE:
-                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE:
-                  case MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE:
-                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES:
-                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS:
-                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS:
-                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM:
-                  case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
-                     build_list[i].checked =
-                           (  string_is_equal(settings->arrays.cloud_sync_driver, "webdav")
-                           || string_is_equal(settings->arrays.cloud_sync_driver, "s3"));
-                     break;
                   case MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_URL:
                   case MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD:
