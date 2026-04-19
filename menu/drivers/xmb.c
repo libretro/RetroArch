@@ -524,6 +524,7 @@ static int xmb_menu_entry_action(void *userdata,
       menu_entry_t *entry, size_t i, enum menu_action action);
 static bool xmb_load_image(void *userdata, void *data,
       enum menu_image_type type);
+static void xmb_context_bg_destroy(xmb_handle_t *xmb);
 static void xmb_navigation_set(void *data, bool scroll);
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node,
@@ -1269,9 +1270,23 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
    {
       if (path_is_valid(path))
       {
-         task_push_image_load(path,
-               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
-               menu_display_handle_wallpaper_upload, NULL);
+         if (reset)
+         {
+            xmb_context_bg_destroy(xmb);
+
+            if (!gfx_display_reset_icon_texture(path,
+                  &xmb->textures.bg, TEXTURE_FILTER_LINEAR,
+                  NULL, NULL))
+               task_push_image_load(path,
+                     (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+                     menu_display_handle_wallpaper_upload, NULL);
+
+            gfx_display_init_white_texture();
+         }
+         else
+            task_push_image_load(path,
+                  (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+                  menu_display_handle_wallpaper_upload, NULL);
 
          free(xmb->bg_file_path);
          xmb->bg_file_path = strdup(path);
@@ -6656,7 +6671,6 @@ static void xmb_context_reset_textures(
       unsigned menu_xmb_theme)
 {
    unsigned i;
-   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    /* Invalidate in-flight context texture loads */
    xmb_ctx_icon_load_gen++;
@@ -6681,14 +6695,11 @@ static void xmb_context_reset_textures(
 
       fill_pathname_join_special(texpath,
             iconpath, texture_path, sizeof(texpath));
-      gfx_display_load_icon(texpath, supports_rgba,
-            &xmb->textures.list[i], xmb_ctx_icon_load_gen,
-            &xmb_ctx_icon_load_gen);
+      gfx_display_reset_icon_texture(texpath,
+         &xmb->textures.list[i], TEXTURE_FILTER_LINEAR,
+         NULL, NULL);
    }
 
-   /* Tab node icons will be populated from textures.list[]
-    * once the async loads complete — handled by the draw-time
-    * check in xmb_draw_icon_predot / xmb_frame. */
    xmb->main_menu_node.icon              = 0;
    xmb->settings_tab_node.icon           = 0;
    xmb->history_tab_node.icon            = 0;
@@ -6812,9 +6823,9 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->allow_dynamic_wallpaper       = true;
    }
 
+   xmb_update_dynamic_wallpaper(xmb, true);
    xmb_context_reset_horizontal_list(xmb);
    xmb_set_title(xmb);
-   xmb_update_dynamic_wallpaper(xmb, true);
 
    menu_screensaver_context_destroy(xmb->screensaver);
 
@@ -8080,12 +8091,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       uintptr_t tex_bg = xmb->textures.bg;
       memcpy(tex_list, xmb->textures.list, sizeof(tex_list));
 
-   /* Async icon sync: context textures are loaded asynchronously and
-    * may complete across multiple frames.  Continuously propagate
-    * finished textures into the tab node icon fields.  The writes
-    * are single-pointer stores so there is no race with the async
-    * callback, and the per-frame cost is negligible (a few pointer
-    * comparisons). */
    if (tex_list[XMB_TEXTURE_MAIN_MENU])
       xmb->main_menu_node.icon             = tex_list[XMB_TEXTURE_MAIN_MENU];
    if (tex_list[XMB_TEXTURE_SETTINGS])

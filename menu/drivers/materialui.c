@@ -2561,7 +2561,6 @@ static void materialui_update_savestate_thumbnail_image(void *data)
 static void materialui_context_reset_textures(materialui_handle_t *mui)
 {
    int i;
-   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    /* Loop through all textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
@@ -2570,9 +2569,9 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
       fill_pathname_join_special(texpath,
             mui->icons_path, materialui_texture_path(i),
             sizeof(texpath));
-      gfx_display_load_icon(texpath, supports_rgba,
-            &mui->textures.list[i], mui_icon_load_gen,
-            &mui_icon_load_gen);
+      gfx_display_reset_icon_texture(texpath,
+         &mui->textures.list[i], TEXTURE_FILTER_LINEAR,
+         NULL, NULL);
    }
 }
 
@@ -9917,14 +9916,15 @@ static void materialui_context_reset(void *data, bool is_threaded)
    gfx_display_deinit_white_texture();
    gfx_display_init_white_texture();
    materialui_context_reset_textures(mui);
-   if (mui->textures.playlist.size >= 1)
-      materialui_context_reset_playlist_icons(mui);
-   menu_screensaver_context_destroy(mui->screensaver);
 
    if (path_is_valid(path_menu_wallpaper))
       task_push_image_load(path_menu_wallpaper,
             (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
             menu_display_handle_wallpaper_upload, NULL);
+
+   if (mui->textures.playlist.size >= 1)
+      materialui_context_reset_playlist_icons(mui);
+   menu_screensaver_context_destroy(mui->screensaver);
 
    if (path_is_valid(mui->savestate_thumbnail_file_path))
       materialui_update_savestate_thumbnail_image(mui);
