@@ -244,11 +244,12 @@ check_platform Linux RPILED 'The RPI led driver is' true
 check_platform Darwin METAL 'Metal is' true
 
 if [ "$OS" = 'Darwin' ]; then
+   check_platform Darwin COCOA 'Cocoa is' true
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
    add_opt CRTSWITCHRES no
 
-   if [ "$HAVE_METAL" = yes ]; then
+   if [ "$HAVE_METAL" = yes ] || [ "$HAVE_VULKAN" = yes ]; then
       check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
    else
       check_lib '' COCOA "-framework AppKit" NSApplicationMain

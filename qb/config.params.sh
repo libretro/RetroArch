@@ -214,3 +214,4 @@ HAVE_TEST_DRIVERS=yes      # Test input driver
 HAVE_GAME_AI=no
 HAVE_SMBCLIENT=auto        # SMB client support
 HAVE_BUILTINSMBCLIENT=no   # Use builtin libsmb2
+HAVE_COCOA=auto            # Cocoa support (Darwin/Apple)
