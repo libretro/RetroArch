@@ -4,15 +4,9 @@ on:
   push:
     branches:
       - master
-    paths:
-      - 'libretro-common/**'
-      - '.github/workflows/Linux-libretro-common-samples.yml'
   pull_request:
     branches:
       - master
-    paths:
-      - 'libretro-common/**'
-      - '.github/workflows/Linux-libretro-common-samples.yml'
   workflow_dispatch:
 
 permissions:

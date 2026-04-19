@@ -4,21 +4,9 @@ on:
   push:
     branches:
       - master
-    paths:
-      - 'samples/tasks/**'
-      - 'tasks/task_decompress.c'
-      - 'tasks/task_database.c'
-      - 'tasks/task_database_cue.c'
-      - '.github/workflows/Linux-samples-tasks.yml'
   pull_request:
     branches:
       - master
-    paths:
-      - 'samples/tasks/**'
-      - 'tasks/task_decompress.c'
-      - 'tasks/task_database.c'
-      - 'tasks/task_database_cue.c'
-      - '.github/workflows/Linux-samples-tasks.yml'
   workflow_dispatch:
 
 permissions:
