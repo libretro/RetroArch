@@ -812,18 +812,34 @@ endif
 ifeq ($(HAVE_COREAUDIO), 1)
    DEFINES += -DHAVE_COREAUDIO
    OBJ += audio/drivers/coreaudio.o
+ifeq ($(HAVE_MICROPHONE), 1)
+   OBJ += audio/drivers/coreaudio_mic_macos.o
+endif
    HAVE_COREAUDIO_LIBS = 1
+   LIBS += -framework AudioToolbox -framework AVFoundation -framework Accelerate
 endif
 
 ifeq ($(HAVE_COREAUDIO3), 1)
    DEFINES += -DHAVE_COREAUDIO3
    OBJ += audio/drivers/coreaudio3.o
    HAVE_COREAUDIO_LIBS = 1
-   LIBS += -framework AudioToolBox -framework AVFoundation
+   LIBS += -framework AudioToolbox -framework AVFoundation
 endif
 
 ifeq ($(HAVE_COREAUDIO_LIBS), 1)
    LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
+endif
+
+ifeq ($(HAVE_CORELOCATION), 1)
+   DEFINES += -DHAVE_CORELOCATION
+   OBJ     += location/drivers/corelocation.o
+   LIBS    += -framework CoreLocation
+endif
+
+ifeq ($(HAVE_COCOA), 1)
+   OBJ  += ui/drivers/cocoa/cocoa_common.o
+   OBJ  += ui/drivers/cocoa/RetroArchPlaylistManager.o
+   LIBS += -framework Cocoa -framework AppKit -framework Foundation
 endif
 
 ifeq ($(HAVE_CORETEXT), 1)

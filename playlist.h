@@ -18,10 +18,11 @@
 #ifndef _PLAYLIST_H__
 #define _PLAYLIST_H__
 
+#include <boolean.h>
 #include <stddef.h>
 
 #include <retro_common_api.h>
-#include <boolean.h>
+#include <retro_miscellaneous.h>
 #include <lists/string_list.h>
 
 #include "core_info.h"
