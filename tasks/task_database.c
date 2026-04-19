@@ -1245,10 +1245,9 @@ static int task_database_iterate_playlist_lutro(
          path_basename(path), "", sizeof(game_title));
 
    /* Skip if strict scan was asked with specific database */
-   if ( _db->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT &&
-        _db->task_config->database_name &&
-       *_db->task_config->database_name &&
-        memcmp(_db->task_config->database_name, "Lutro",  6) != 0 )
+   if ((_db->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT)
+       && *_db->task_config->database_name
+       && memcmp(_db->task_config->database_name, "Lutro",  6) != 0 )
       return SCAN_VERDICT_NO_DB_MATCH;
 
    scan_results_add(&_db->scan_results,
