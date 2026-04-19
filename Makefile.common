@@ -836,12 +836,6 @@ ifeq ($(HAVE_CORELOCATION), 1)
    LIBS    += -framework CoreLocation
 endif
 
-ifeq ($(HAVE_COCOA), 1)
-   OBJ  += ui/drivers/cocoa/cocoa_common.o
-   OBJ  += ui/drivers/cocoa/RetroArchPlaylistManager.o
-   LIBS += -framework Cocoa -framework AppKit -framework Foundation
-endif
-
 ifeq ($(HAVE_CORETEXT), 1)
    OBJ += gfx/drivers_font_renderer/coretext.o
 endif
@@ -2587,7 +2581,9 @@ ifeq ($(HAVE_COCOA_COMMON),1)
    DEFINES += -DHAVE_MAIN -DOSX
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
-          ui/drivers/cocoa/cocoa_common.o
+          ui/drivers/cocoa/cocoa_common.o \
+          ui/drivers/cocoa/RetroArchPlaylistManager.o
+   LIBS += -framework Cocoa -framework AppKit -framework Foundation
 
    ifeq ($(HAVE_OPENGL), 1)
            DEFINES += -DGL_SILENCE_DEPRECATION
