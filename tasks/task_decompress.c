@@ -33,6 +33,45 @@ static int file_decompressed_target_file(const char *name,
    return 0;
 }
 
+/* Rejects archive member names that could escape the intended
+ * extraction directory ("Zip Slip"). Returns true if the name is
+ * safe to concatenate onto a target-directory prefix. */
+static bool archive_name_is_safe(const char *name)
+{
+   const char *p;
+   const char *seg_start;
+
+   if (!name || !*name)
+      return false;
+
+   /* Reject absolute paths in either Unix or Windows form. */
+   if (name[0] == '/' || name[0] == '\\')
+      return false;
+   /* Reject drive-letter prefix e.g. "C:..." */
+   if (name[1] == ':')
+      return false;
+
+   /* Reject any ".." path segment.  Treat both '/' and '\\' as
+    * separators so Windows-authored archives can't traverse when
+    * extracted on a POSIX host. */
+   p = seg_start = name;
+   for (;;)
+   {
+      char c = *p;
+      if (c == '/' || c == '\\' || c == '\0')
+      {
+         if ((size_t)(p - seg_start) == 2
+               && seg_start[0] == '.' && seg_start[1] == '.')
+            return false;
+         if (c == '\0')
+            break;
+         seg_start = p + 1;
+      }
+      p++;
+   }
+   return true;
+}
+
 static int file_decompressed_subdir(const char *name,
       const char *valid_exts,
       const uint8_t *cdata,
@@ -41,7 +80,11 @@ static int file_decompressed_subdir(const char *name,
 {
    char path_dir[DIR_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
-   size_t _len        = strlen(name);
+   size_t _len;
+   /* Reject empty names (strlen-1 OOB) and traversal attempts. */
+   if (!archive_name_is_safe(name))
+      return 1;
+   _len = strlen(name);
 
    /* Look at last character. Ignore directories, go to next file. */
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
@@ -113,7 +156,11 @@ static int file_decompressed(const char *name, const char *valid_exts,
 {
    char path[PATH_MAX_LENGTH];
    decompress_state_t *dec = userdata->dec;
-   size_t _len             = strlen(name);
+   size_t _len;
+   /* Reject empty names (strlen-1 OOB) and traversal attempts. */
+   if (!archive_name_is_safe(name))
+      return 1;
+   _len = strlen(name);
    /* Look at last character. Ignore directories, go to next file. */
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
