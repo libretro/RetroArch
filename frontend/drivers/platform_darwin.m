@@ -1013,8 +1013,10 @@ static bool frontend_darwin_check_for_path_changes(
 
 static bool frontend_darwin_is_narrator_running(void)
 {
+#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
       return true;
+#endif
 #if OSX
    return is_narrator_running_macos();
 #else
