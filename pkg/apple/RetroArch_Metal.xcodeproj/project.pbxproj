@@ -13,7 +13,6 @@
 		053FC275214341F000D98D46 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25421433F1700D98D46 /* QtCore.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		05422E432140C8DB00F09961 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
-		05422E442140C8DB00F09961 /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		05422E452140C8DB00F09961 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
 		05422E462140C8DB00F09961 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
 		05422E472140C8DB00F09961 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
@@ -28,7 +27,6 @@
 		05422E512140C8DB00F09961 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EAC1A89E5B4007336C1 /* OpenGL.framework */; };
 		05422E522140C8DB00F09961 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		05422E542140C8DB00F09961 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
-		05770B9920E805160013DABC /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		05A8C7B420DB75A500FF7857 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05A8C74E20DB72F100FF7857 /* Shaders.metal */; };
 		05A8E23820A63CB40084ABDA /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23720A63CB40084ABDA /* Metal.framework */; };
 		05A8E23A20A63CED0084ABDA /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23920A63CED0084ABDA /* IOSurface.framework */; };
@@ -46,7 +44,6 @@
 		0720993E29B1258C001642BB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		0720994029B1258C001642BB /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		0720994429B1258C001642BB /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
-		0720994529B1258C001642BB /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		0720994629B1258C001642BB /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
 		0720994729B1258C001642BB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
 		0720994829B1258C001642BB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
@@ -98,7 +95,6 @@
 		07F2BBC62BE83A4700FD1295 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		07F2BBC82BE83A4700FD1295 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		07F2BBCC2BE83A4700FD1295 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
-		07F2BBCD2BE83A4700FD1295 /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		07F2BBCE2BE83A4700FD1295 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
 		07F2BBCF2BE83A4700FD1295 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
 		07F2BBD02BE83A4700FD1295 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
@@ -206,7 +202,6 @@
 		0566C78E20E49E6800BC768F /* scaler_int.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scaler_int.h; sourceTree = "<group>"; };
 		0566C78F20E49E6800BC768F /* filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filter.h; sourceTree = "<group>"; };
 		0566C79020E49E6800BC768F /* gl_capabilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gl_capabilities.h; sourceTree = "<group>"; };
-		05770B9820E805160013DABC /* menu_pipeline.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = menu_pipeline.metal; sourceTree = "<group>"; };
 		05A8C51B20DB72F000FF7857 /* menu_shader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_shader.h; sourceTree = "<group>"; };
 		05A8C51D20DB72F000FF7857 /* menu_cbs_get_value.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_get_value.c; sourceTree = "<group>"; };
 		05A8C51E20DB72F000FF7857 /* menu_cbs_sublabel.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_sublabel.c; sourceTree = "<group>"; };
@@ -1000,7 +995,6 @@
 			children = (
 				05A8C74820DB72F100FF7857 /* metal_common.h */,
 				05A8C74E20DB72F100FF7857 /* Shaders.metal */,
-				05770B9820E805160013DABC /* menu_pipeline.metal */,
 				05A8C75120DB72F100FF7857 /* metal_shader_types.h */,
 			);
 			path = metal;
@@ -1656,7 +1650,6 @@
 				07ATRANS032025010700000003 /* AppleTranslateBackend.swift in Sources */,
 				07B9B97F2E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */,
 				05422E432140C8DB00F09961 /* griffin_glslang.cpp in Sources */,
-				05422E442140C8DB00F09961 /* menu_pipeline.metal in Sources */,
 				05422E452140C8DB00F09961 /* griffin_cpp.cpp in Sources */,
 				05422E462140C8DB00F09961 /* griffin_objc.m in Sources */,
 				05422E472140C8DB00F09961 /* griffin.c in Sources */,
@@ -1672,7 +1665,6 @@
 				07ATRANS042025010700000004 /* AppleTranslateBackend.swift in Sources */,
 				07B9B9812E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */,
 				0720994429B1258C001642BB /* griffin_glslang.cpp in Sources */,
-				0720994529B1258C001642BB /* menu_pipeline.metal in Sources */,
 				0720994629B1258C001642BB /* griffin_cpp.cpp in Sources */,
 				0720994729B1258C001642BB /* griffin_objc.m in Sources */,
 				0720994829B1258C001642BB /* griffin.c in Sources */,
@@ -1688,7 +1680,6 @@
 				07ATRANS052025010700000005 /* AppleTranslateBackend.swift in Sources */,
 				07B9B9802E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */,
 				07F2BBCC2BE83A4700FD1295 /* griffin_glslang.cpp in Sources */,
-				07F2BBCD2BE83A4700FD1295 /* menu_pipeline.metal in Sources */,
 				07F2BBCE2BE83A4700FD1295 /* griffin_cpp.cpp in Sources */,
 				07F2BBCF2BE83A4700FD1295 /* griffin_objc.m in Sources */,
 				07F2BBD02BE83A4700FD1295 /* griffin.c in Sources */,
@@ -1704,7 +1695,6 @@
 				07ATRANS062025010700000006 /* AppleTranslateBackend.swift in Sources */,
 				07B9B9822E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */,
 				05D7753720A567A700646447 /* griffin_glslang.cpp in Sources */,
-				05770B9920E805160013DABC /* menu_pipeline.metal in Sources */,
 				05D7753520A567A400646447 /* griffin_cpp.cpp in Sources */,
 				509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */,
 				840222FC1A889EE2009AB261 /* griffin.c in Sources */,

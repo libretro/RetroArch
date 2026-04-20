@@ -239,7 +239,7 @@ $(TARGET): $(RARCH_OBJ)
 # Metal.xcodeproj build; the commandline build has to do it by hand.
 # The .metallib must sit next to the retroarch binary at runtime.
 ifeq ($(HAVE_METAL), 1)
-METAL_SHADER_SRCS := gfx/common/metal/Shaders.metal gfx/common/metal/menu_pipeline.metal
+METAL_SHADER_SRCS := gfx/common/metal/Shaders.metal
 METAL_AIR_FILES  := $(METAL_SHADER_SRCS:.metal=.air)
 
 %.air: %.metal
