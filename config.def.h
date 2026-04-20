@@ -503,7 +503,6 @@
 #else
 #define DEFAULT_USE_METAL_ARG_BUFFERS false
 #endif
-#endif
 
 /* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
