@@ -125,7 +125,7 @@ typedef enum
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
 
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
+#if defined(OSX)
 static int speak_pid                            = 0;
 #endif
 
