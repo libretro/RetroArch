@@ -498,12 +498,8 @@
 /* Choose if the screen will be able to write around the notch or not */
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
 
-#ifdef __APPLE__
-#include <Availability.h>
-#if (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000) || \
-      (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000) || \
-      (defined(__TV_OS_VERSION_MIN_REQUIRED)     && __TV_OS_VERSION_MIN_REQUIRED     >= 120000)
-#define DEFAULT_USE_METAL_ARG_BUFFERS true
+#if defined(__APPLE__) && defined(HAVE_VULKAN)
+#define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
 #else
 #define DEFAULT_USE_METAL_ARG_BUFFERS false
 #endif
