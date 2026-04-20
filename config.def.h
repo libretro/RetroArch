@@ -499,6 +499,7 @@
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
 
 #ifdef __APPLE__
+#include <Availability.h>
 #if (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000) || \
       (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000) || \
       (defined(__TV_OS_VERSION_MIN_REQUIRED)     && __TV_OS_VERSION_MIN_REQUIRED     >= 120000)
