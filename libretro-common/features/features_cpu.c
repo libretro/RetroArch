@@ -244,8 +244,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return osGetTime() * 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
    struct timespec tv;
-   tv.tv_sec = 0;
-   tv.tv_nec = 0;
+   tv.tv_sec  = 0;
+   tv.tv_nsec = 0;
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
