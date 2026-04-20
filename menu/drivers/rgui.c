@@ -1400,7 +1400,8 @@ static bool rgui_set_pixel_format_function(void)
       argb32_to_pixel_platform_format = argb32_to_argb4444;
    else if (   string_is_equal(driver_ident, "d3d10")         /* D3D10/11/12 */
             || string_is_equal(driver_ident, "d3d11")
-            || string_is_equal(driver_ident, "d3d12"))
+            || string_is_equal(driver_ident, "d3d12")
+            || string_is_equal(driver_ident, "metal"))        /* Metal */
       argb32_to_pixel_platform_format = argb32_to_bgra4444;
    else if (   string_is_equal(driver_ident, "sdl_dingux")    /* DINGUX SDL */
             || string_is_equal(driver_ident, "sdl_rs90")
