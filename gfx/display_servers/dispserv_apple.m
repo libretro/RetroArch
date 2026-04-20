@@ -25,6 +25,8 @@
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../configuration.h"
+/* For NSWindowStyleMaskTitled polyfill on pre-10.12 SDKs */
+#include <defines/cocoa_defines.h>
 
 #ifdef OSX
 #import <AppKit/AppKit.h>
@@ -58,13 +60,15 @@ static bool apple_display_server_set_window_opacity(void *data, unsigned opacity
 {
    settings_t *settings      = config_get_ptr();
    bool windowed_full        = settings->bools.video_windowed_fullscreen;
-   NSWindow *window          = ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
-   if (windowed_full || !window.keyWindow)
+   NSWindow *window          = [((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]) window];
+   if (windowed_full || ![window isKeyWindow])
       return false;
-   window.alphaValue = (CGFloat)opacity / (CGFloat)100.0f;
+   [window setAlphaValue:(CGFloat)opacity / (CGFloat)100.0f];
    return true;
 }
 
+#ifdef RARCH_HAS_CGDISPLAYMODE_API
+/* Uses GCD (dispatch_once) and Obj-C blocks, both 10.6+. */
 static bool apple_display_server_set_window_progress(void *data, int progress, bool finished)
 {
    static NSProgressIndicator *indicator;
@@ -75,35 +79,36 @@ static bool apple_display_server_set_window_progress(void *data, int progress, b
       [iv setImage:[[NSApplication sharedApplication] applicationIconImage]];
       [dockTile setContentView:iv];
 
-      indicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(0, 0, dockTile.size.width, 20)];
-      indicator.indeterminate = NO;
-      indicator.minValue = 0;
-      indicator.maxValue = 100;
-      indicator.doubleValue = 0;
+      indicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(0, 0, [dockTile size].width, 20)];
+      [indicator setIndeterminate:NO];
+      [indicator setMinValue:0];
+      [indicator setMaxValue:100];
+      [indicator setDoubleValue:0];
 
       // Create a custom view for the dock tile
       [iv addSubview:indicator];
    });
    if (finished)
-      indicator.doubleValue = (double)-1;
+      [indicator setDoubleValue:(double)-1];
    else
-      indicator.doubleValue = (double)progress;
-   indicator.hidden = finished;
+      [indicator setDoubleValue:(double)progress];
+   [indicator setHidden:finished];
    [[NSApp dockTile] display];
    return true;
 }
+#endif /* RARCH_HAS_CGDISPLAYMODE_API */
 
 static bool apple_display_server_set_window_decorations(void *data, bool on)
 {
    settings_t *settings      = config_get_ptr();
    bool windowed_full        = settings->bools.video_windowed_fullscreen;
-   NSWindow *window          = ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
+   NSWindow *window          = [((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]) window];
    if (windowed_full)
       return false;
    if (on)
-      window.styleMask |= NSWindowStyleMaskTitled;
+      [window setStyleMask:([window styleMask] | NSWindowStyleMaskTitled)];
    else
-      window.styleMask &= ~NSWindowStyleMaskTitled;
+      [window setStyleMask:([window styleMask] & ~NSWindowStyleMaskTitled)];
    return true;
 }
 #endif
@@ -578,7 +583,11 @@ const video_display_server_t dispserv_apple = {
    apple_display_server_destroy,
 #ifdef OSX
    apple_display_server_set_window_opacity,
+#ifdef RARCH_HAS_CGDISPLAYMODE_API
    apple_display_server_set_window_progress,
+#else
+   NULL, /* set_window_progress (needs 10.6+ GCD/blocks) */
+#endif
    apple_display_server_set_window_decorations,
 #else
    NULL, /* set_window_opacity */
