@@ -136,7 +136,7 @@
 #if defined(_3DS)
 #include <3ds.h>
 #include <3ds/services/cfgu.h>
-#include "gfx/common/ctr_defines.h"
+#include "../gfx/common/ctr_defines.h"
 #endif
 
 #if defined(DINGUX)
