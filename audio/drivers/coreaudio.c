@@ -14,102 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
+#include <stdatomic.h>
 #include <math.h>
 
-#include <AvailabilityMacros.h>
-
-/* stdatomic.h arrived with C11 (GCC 4.9+, Xcode 5+).
- * GCD arrived in Mac OS X 10.6 Snow Leopard.
- * On older Apple toolchains (e.g. Xcode 3.1 / 10.4-10.5 / PowerPC),
- * shim both to legacy OS X primitives:
- *   - atomic_size_t / atomic_*  -> OSAtomic (libkern/OSAtomic.h, 10.4+)
- *   - dispatch_semaphore_*      -> Mach semaphores (mach/semaphore.h) */
-#if !defined(MAC_OS_X_VERSION_10_7) || \
-    (defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
-     MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_7)
-#define RARCH_COREAUDIO_LEGACY_APPLE 1
-#endif
-
-#ifdef RARCH_COREAUDIO_LEGACY_APPLE
-#include <libkern/OSAtomic.h>
-/* Pull mach_types first; on some older SDKs <mach/mach.h> does not
- * reliably re-expose the typedefs by the time subsequent user headers
- * poke at them.  Then <mach/mach.h> gives us the semaphore_* calls. */
-#include <mach/mach_types.h>
-#include <mach/mach.h>
-#include <mach/task.h>
-#include <mach/semaphore.h>
-#include <mach/clock_types.h>
-#include <mach/sync_policy.h>
-#include <stdint.h>
-
-/* --- atomic shim (size_t, acquire/release subset actually used) --- */
-typedef volatile int32_t atomic_size_t;
-typedef int memory_order;
-#define memory_order_acquire 0
-#define memory_order_release 0
-#define atomic_init(ptr, val) \
-   (*(ptr) = (int32_t)(val))
-#define atomic_load_explicit(ptr, mo) \
-   ((size_t)OSAtomicAdd32Barrier(0, (ptr)))
-#define atomic_fetch_add_explicit(ptr, n, mo) \
-   ((size_t)(OSAtomicAdd32Barrier((int32_t)(n), (ptr)) - (int32_t)(n)))
-#define atomic_fetch_sub_explicit(ptr, n, mo) \
-   ((size_t)(OSAtomicAdd32Barrier(-(int32_t)(n), (ptr)) + (int32_t)(n)))
-
-/* --- GCD semaphore shim (thin wrapper over Mach semaphore_t) ---
- * dispatch_semaphore_t is declared as uintptr_t so its own typedef
- * depends on nothing from the mach headers.  The actual mach calls
- * still take/return semaphore_t, but those calls only appear inside
- * function bodies below, not at file scope. */
-#ifndef NSEC_PER_MSEC
-#define NSEC_PER_MSEC 1000000ULL
-#endif
-#ifndef NSEC_PER_SEC
-#define NSEC_PER_SEC  1000000000ULL
-#endif
-#define DISPATCH_TIME_NOW 0
-
-typedef uintptr_t dispatch_semaphore_t;
-typedef uint64_t  dispatch_time_t;
-
-static INLINE dispatch_semaphore_t dispatch_semaphore_create(long value)
-{
-   semaphore_t s = 0;
-   if (semaphore_create(mach_task_self(), &s, SYNC_POLICY_FIFO,
-            (int)value) != KERN_SUCCESS)
-      return 0;
-   return (dispatch_semaphore_t)s;
-}
-static INLINE void dispatch_semaphore_signal(dispatch_semaphore_t s)
-{
-   if (s)
-      semaphore_signal((semaphore_t)s);
-}
-static INLINE dispatch_time_t dispatch_time(dispatch_time_t base, int64_t delta)
-{
-   (void)base;
-   return (dispatch_time_t)delta;
-}
-static INLINE long dispatch_semaphore_wait(dispatch_semaphore_t s,
-      dispatch_time_t ns)
-{
-   mach_timespec_t ts;
-   if (!s)
-      return -1;
-   ts.tv_sec  = (unsigned int)(ns / NSEC_PER_SEC);
-   ts.tv_nsec = (clock_res_t)(ns % NSEC_PER_SEC);
-   return (semaphore_timedwait((semaphore_t)s, ts) == KERN_SUCCESS) ? 0 : 1;
-}
-static INLINE void dispatch_release(dispatch_semaphore_t s)
-{
-   if (s)
-      semaphore_destroy(mach_task_self(), (semaphore_t)s);
-}
-#else
-#include <stdatomic.h>
 #include <dispatch/dispatch.h>
-#endif
 
 #if TARGET_OS_IPHONE
 #include <AudioToolbox/AudioToolbox.h>
@@ -879,25 +787,3 @@ audio_driver_t audio_coreaudio = {
    coreaudio_buffer_size,
    coreaudio_write_raw
 };
-
-/* Undo the legacy-Apple shim macros so they don't leak into other
- * translation units when this file is #included into griffin.c.
- *
- * Shim typedefs (atomic_size_t, memory_order, dispatch_semaphore_t,
- * dispatch_time_t) are left in place: C89/C99 forbid redefining a
- * typedef even to the same type, but nothing else in the PPC griffin
- * bundle declares these names (task_queue.c's GCD path is gated out
- * by HAVE_GCD; the Obj-C users are in griffin_objc.m, a separate TU).
- * If a future change adds another GCD/atomic user in griffin.c after
- * this point, wrap its typedefs in the same RARCH_COREAUDIO_LEGACY_APPLE
- * gate and include the shim there too. */
-#ifdef RARCH_COREAUDIO_LEGACY_APPLE
-#undef atomic_init
-#undef atomic_load_explicit
-#undef atomic_fetch_add_explicit
-#undef atomic_fetch_sub_explicit
-#undef memory_order_acquire
-#undef memory_order_release
-#undef DISPATCH_TIME_NOW
-#undef RARCH_COREAUDIO_LEGACY_APPLE
-#endif
