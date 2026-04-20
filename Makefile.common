@@ -1644,12 +1644,10 @@ endif
 ifeq ($(HAVE_METAL), 1)
    DEFINES += -DHAVE_METAL
    LIBS += -framework Metal -framework MetalKit -framework QuartzCore
-   # Metal code (metal.m, metal_renderer.m) relies on ARC. Enabled per-file
-   # via an override in the top-level Makefile, since applying -fobjc-arc
-   # globally would break the MRC-written Cocoa code (ui_cocoa.m et al.).
-   OBJ += \
-	  gfx/common/metal/metal_renderer.o \
-	  gfx/drivers/metal.o
+   # Metal code (metal.m) relies on ARC. Enabled per-file via an override
+   # in the top-level Makefile, since applying -fobjc-arc globally would
+   # break the MRC-written Cocoa code (ui_cocoa.m et al.).
+   OBJ += gfx/drivers/metal.o
 endif
 
 ifeq ($(HAVE_MFI), 1)

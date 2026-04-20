@@ -273,7 +273,6 @@ $(OBJDIR)/%.o: %.m
 # compile under ARC — so we cannot set -fobjc-arc globally. Xcode does
 # the equivalent via per-file CLANG_ENABLE_OBJC_ARC=YES build settings.
 $(OBJDIR)/gfx/drivers/metal.o: OBJCFLAGS += -fobjc-arc
-$(OBJDIR)/gfx/common/metal/metal_renderer.o: OBJCFLAGS += -fobjc-arc
 $(OBJDIR)/input/drivers_joypad/mfi_joypad.o: OBJCFLAGS += -fobjc-arc
 
 $(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)

@@ -80,7 +80,6 @@
 #endif
 
 #ifdef HAVE_METAL
-#import "../gfx/common/metal/metal_renderer.m"
 #import "../gfx/drivers/metal.m"
 #endif
 

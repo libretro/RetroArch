@@ -347,7 +347,6 @@
 		05A8C74820DB72F100FF7857 /* metal_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_common.h; sourceTree = "<group>"; };
 		05A8C74E20DB72F100FF7857 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		05A8C75120DB72F100FF7857 /* metal_shader_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_shader_types.h; sourceTree = "<group>"; };
-		05A8C75420DB72F100FF7857 /* metal_renderer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = metal_renderer.m; sourceTree = "<group>"; };
 		05A8C75D20DB72F100FF7857 /* gl_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_common.c; sourceTree = "<group>"; };
 		05A8C75E20DB72F100FF7857 /* d3d_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d_common.c; sourceTree = "<group>"; };
 		05A8C76820DB72F100FF7857 /* vulkan_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vulkan_common.h; sourceTree = "<group>"; };
@@ -1000,7 +999,6 @@
 			isa = PBXGroup;
 			children = (
 				05A8C74820DB72F100FF7857 /* metal_common.h */,
-				05A8C75420DB72F100FF7857 /* metal_renderer.m */,
 				05A8C74E20DB72F100FF7857 /* Shaders.metal */,
 				05770B9820E805160013DABC /* menu_pipeline.metal */,
 				05A8C75120DB72F100FF7857 /* metal_shader_types.h */,
