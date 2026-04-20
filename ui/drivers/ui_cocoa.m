@@ -626,7 +626,7 @@ static ui_application_t ui_application_cocoa = {
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
 #else
-   [[CocoaView get] setFrame: [[self.window contentView] bounds]];
+   [(NSView*)[CocoaView get] setFrame: [[self.window contentView] bounds]];
 #endif
    [[self.window contentView] setAutoresizesSubviews:YES];
 
