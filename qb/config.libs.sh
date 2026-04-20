@@ -244,6 +244,19 @@ check_platform Linux RPILED 'The RPI led driver is' true
 check_platform Darwin METAL 'Metal is' true
 
 if [ "$OS" = 'Darwin' ]; then
+   # macOS: the Metal and Vulkan (MoltenVK) defaults differ from what the
+   # generic qb logic produces.
+   #   * HAVE_METAL defaults to 'no' in config.params.sh so check_platform
+   #     early-outs. Force it on here so the Metal video driver is built,
+   #     unless the user explicitly passed --disable-metal.
+   #   * HAVE_VULKAN must be set to 'yes' before the COCOA_METAL check
+   #     below, which decides which AppKit glue to compile based on
+   #     whether Metal/Vulkan is in play. Link-time libvulkan is not
+   #     required on Darwin; MoltenVK is loaded dynamically at runtime
+   #     by gfx/common/vulkan_common.c.
+   [ "${USER_METAL:-}"  != 'no' ] && HAVE_METAL=yes
+   [ "${USER_VULKAN:-}" != 'no' ] && HAVE_VULKAN=yes
+
    check_platform Darwin COCOA 'Cocoa is' true
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
@@ -259,6 +272,10 @@ if [ "$OS" = 'Darwin' ]; then
    check_lib '' CORELOCATION "-framework CoreLocation"
    check_lib '' IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
    check_lib '' AL "-framework OpenAL" alcOpenDevice
+   # MFi (Made For iPhone) / GameController.framework joypad support.
+   # Used for any modern gamepad on macOS (Xbox, DualShock, DualSense, MFi).
+   # Matches the -DHAVE_MFI default in pkg/apple/BaseConfig.xcconfig.
+   check_lib '' MFI "-framework GameController"
    HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
    HAVE_SW2=no
@@ -584,6 +601,12 @@ check_enabled CXX OPENGL_CORE 'OpenGL core' 'The C++ compiler is' false
 check_enabled THREADS VULKAN vulkan 'Threads are' false
 
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
+   HAVE_VULKAN=yes
+elif [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Darwin' ]; then
+   # macOS: Vulkan is provided by MoltenVK and is loaded dynamically at
+   # runtime via gfx/common/vulkan_common.c (see vksym.h). Link-time
+   # presence of libvulkan is not required, mirroring the Win32 path above
+   # and matching what pkg/apple/Metal.xcconfig does for the Xcode build.
    HAVE_VULKAN=yes
 else
    check_lib '' VULKAN -lvulkan vkCreateInstance

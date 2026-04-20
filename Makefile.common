@@ -1643,12 +1643,21 @@ endif
 
 ifeq ($(HAVE_METAL), 1)
    DEFINES += -DHAVE_METAL
-   LIBS += -framework Metal -framework MetalKit
-   # Metal code relies on ARC (Automatic Reference Counting), enable it
-   DEF_FLAGS += -fobjc-arc
+   LIBS += -framework Metal -framework MetalKit -framework QuartzCore
+   # Metal code (metal.m, metal_renderer.m) relies on ARC. Enabled per-file
+   # via an override in the top-level Makefile, since applying -fobjc-arc
+   # globally would break the MRC-written Cocoa code (ui_cocoa.m et al.).
    OBJ += \
 	  gfx/common/metal/metal_renderer.o \
 	  gfx/drivers/metal.o
+endif
+
+ifeq ($(HAVE_MFI), 1)
+   DEFINES += -DHAVE_MFI
+   LIBS    += -framework GameController -framework CoreHaptics
+   # mfi_joypad.m uses __weak references, which require ARC. Enabled
+   # per-file in the top-level Makefile (see comment above).
+   OBJ     += input/drivers_joypad/mfi_joypad.o
 endif
 
 ifeq ($(HAVE_EGL), 1)
@@ -2575,6 +2584,7 @@ ifeq ($(HAVE_COCOA), 1)
 endif
 ifeq ($(HAVE_COCOA_METAL), 1)
    HAVE_COCOA_COMMON = 1
+   DEFINES += -DHAVE_COCOA_METAL
 endif
 
 ifeq ($(HAVE_COCOA_COMMON),1)

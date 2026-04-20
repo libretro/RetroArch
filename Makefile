@@ -171,7 +171,11 @@ ifneq ($(MOC_HEADERS),)
     RARCH_OBJ += $(MOC_OBJ)
 endif
 
-all: $(TARGET) config.mk
+ifeq ($(HAVE_METAL), 1)
+   METALLIB := default.metallib
+endif
+
+all: $(TARGET) $(METALLIB) config.mk
 
 define INFO
 ASFLAGS: $(ASFLAGS)
@@ -230,6 +234,23 @@ $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
+# Compile the Metal shader library used by gfx/drivers/metal.m via
+# [device newDefaultLibrary]. Xcode produces this automatically for the
+# Metal.xcodeproj build; the commandline build has to do it by hand.
+# The .metallib must sit next to the retroarch binary at runtime.
+ifeq ($(HAVE_METAL), 1)
+METAL_SHADER_SRCS := gfx/common/metal/Shaders.metal gfx/common/metal/menu_pipeline.metal
+METAL_AIR_FILES  := $(METAL_SHADER_SRCS:.metal=.air)
+
+%.air: %.metal
+	@$(if $(Q), $(shell echo echo METAL $<),)
+	$(Q)xcrun -sdk macosx metal $(ARCHFLAGS) -c $< -o $@
+
+default.metallib: $(METAL_AIR_FILES)
+	@$(if $(Q), $(shell echo echo METALLIB $@),)
+	$(Q)xcrun -sdk macosx metallib $(METAL_AIR_FILES) -o $@
+endif
+
 $(OBJDIR)/%.o: %.c config.h config.mk
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
@@ -244,6 +265,16 @@ $(OBJDIR)/%.o: %.m
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo OBJC $<),)
 	$(Q)$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
+
+# ARC (Automatic Reference Counting) overrides. These three Objective-C
+# files use ARC-only constructs (__weak, etc.) and must be built with
+# -fobjc-arc. The rest of the RetroArch Objective-C code is MRC-written
+# (explicit retain/release, NSAutoreleasePool, etc.) and would fail to
+# compile under ARC — so we cannot set -fobjc-arc globally. Xcode does
+# the equivalent via per-file CLANG_ENABLE_OBJC_ARC=YES build settings.
+$(OBJDIR)/gfx/drivers/metal.o: OBJCFLAGS += -fobjc-arc
+$(OBJDIR)/gfx/common/metal/metal_renderer.o: OBJCFLAGS += -fobjc-arc
+$(OBJDIR)/input/drivers_joypad/mfi_joypad.o: OBJCFLAGS += -fobjc-arc
 
 $(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)
 	@mkdir -p $(dir $@)
@@ -264,6 +295,9 @@ install: $(TARGET)
 	mkdir -p $(DESTDIR)$(MAN_DIR)/man6 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(DATA_DIR)/pixmaps 2>/dev/null || /bin/true
 	cp $(TARGET) $(DESTDIR)$(BIN_DIR)
+	@if test "$(HAVE_METAL)" = "1" && test -f default.metallib; then \
+		cp default.metallib $(DESTDIR)$(BIN_DIR)/; \
+	fi
 	cp tools/cg2glsl.py $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	cp retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)
 	cp com.libretro.RetroArch.metainfo.xml $(DESTDIR)$(DATA_DIR)/metainfo
@@ -316,6 +350,7 @@ clean:
 	$(Q)rm -rf $(OBJDIR_BASE)
 	$(Q)rm -f $(TARGET)
 	$(Q)rm -f *.d
+	$(Q)rm -f default.metallib gfx/common/metal/*.air
 
 .PHONY: all install uninstall clean
 

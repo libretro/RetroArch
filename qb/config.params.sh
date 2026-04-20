@@ -215,3 +215,4 @@ HAVE_GAME_AI=no
 HAVE_SMBCLIENT=auto        # SMB client support
 HAVE_BUILTINSMBCLIENT=no   # Use builtin libsmb2
 HAVE_COCOA=auto            # Cocoa support (Darwin/Apple)
+HAVE_MFI=auto              # GameController.framework joypad support (Apple)
