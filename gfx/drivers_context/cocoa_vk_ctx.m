@@ -18,6 +18,8 @@
 #include "../../config.h"
 #endif
 
+#include <TargetConditionals.h>
+
 #if TARGET_OS_IPHONE
 #include <CoreGraphics/CoreGraphics.h>
 #else
@@ -31,16 +33,17 @@
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
+#include "../common/vulkan_common.h"
+#ifdef HAVE_METAL
+#include "../common/metal_common.h"
+#endif
+
 #include "../../ui/drivers/ui_cocoa.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../common/vulkan_common.h"
-#ifdef HAVE_METAL
-#include "../common/metal_common.h"
-#endif
 
 typedef struct cocoa_vk_ctx_data
 {
@@ -237,8 +240,6 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    CocoaView *g_view              = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
-   static bool
-      has_went_fullscreen         = false;
    cocoa_ctx->width               = width;
    cocoa_ctx->height              = height;
 
@@ -263,8 +264,6 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    mode.fullscreen                = fullscreen;
    [apple_platform setVideoMode:mode];
    cocoa_show_mouse(data, !fullscreen);
-
-   has_went_fullscreen            = fullscreen;
 
    return true;
 }

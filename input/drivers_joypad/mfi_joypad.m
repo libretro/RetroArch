@@ -22,11 +22,12 @@
 
 #include <AvailabilityMacros.h>
 
-#include "../input_driver.h"
-#include "../../tasks/tasks_internal.h"
-
 #import <GameController/GameController.h>
 #import <CoreHaptics/CoreHaptics.h>
+
+#include "../../configuration.h"
+#include "../../input/input_driver.h"
+#include "../../tasks/tasks_internal.h"
 
 #ifndef MAX_MFI_CONTROLLERS
 #define MAX_MFI_CONTROLLERS 4
@@ -36,7 +37,6 @@
 #endif
 
 #if TARGET_OS_IOS
-#include "../../configuration.h"
 #define IPHONE_RUMBLE_AVAIL API_AVAILABLE(ios(14.0))
 static CHHapticEngine *deviceHapticEngine IPHONE_RUMBLE_AVAIL;
 static id<CHHapticPatternPlayer> deviceWeakPlayer IPHONE_RUMBLE_AVAIL;
