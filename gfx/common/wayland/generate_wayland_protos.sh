@@ -33,10 +33,10 @@ done
 WAYSCAN="$(exists wayland-scanner || :)"
 
 if [ -n "${CROSS_COMPILE:-}" ] && echo "${CROSS_COMPILE:-}" | grep -q "webos"; then
-   if [ -z "${SDK_PATH:-}" ]; then
-      die 1 "Error: WEBOS=1 but SDK_PATH not set"
+   if [ -z "${STAGING_DIR:-}" ]; then
+      die 1 "Error: WEBOS=1 but STAGING_DIR not set"
    fi
-   WAYSCAN="$SDK_PATH/bin/wayland-scanner"
+   WAYSCAN="$STAGING_DIR/../../bin/wayland-scanner"
 fi
 
 PKGCONFIG="$(exists pkg-config || :)"
@@ -84,10 +84,10 @@ generate_source 'staging/single-pixel-buffer' 'single-pixel-buffer-v1'
 generate_source 'staging/xdg-toplevel-icon' 'xdg-toplevel-icon-v1'
 
 if [ -n "${CROSS_COMPILE:-}" ] && echo "${CROSS_COMPILE:-}" | grep -q "webos"; then
-   if [ -z "${SDK_PATH:-}" ]; then
-      die 1 "Error: WEBOS=1 but SDK_PATH not set"
+   if [ -z "${STAGING_DIR:-}" ]; then
+      die 1 "Error: WEBOS=1 but STAGING_DIR not set"
    fi
-   WAYLAND_PROTOS="$SDK_PATH/arm-webos-linux-gnueabi/sysroot/usr/share"
+   WAYLAND_PROTOS="$STAGING_DIR/usr/share"
 
    generate_source 'wayland-webos' 'webos-shell'
    generate_source 'wayland-webos' 'webos-foreign'
