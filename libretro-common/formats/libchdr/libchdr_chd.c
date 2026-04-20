@@ -656,20 +656,6 @@ static INLINE void map_extract(const uint8_t *base, map_entry *entry)
 }
 
 /*-------------------------------------------------
-    map_assemble - write a single map
-    entry to the datastream
--------------------------------------------------*/
-
-static INLINE void map_assemble(uint8_t *base, map_entry *entry)
-{
-	put_bigendian_uint64_t(&base[0], entry->offset);
-	put_bigendian_uint32_t(&base[8], entry->crc);
-	put_bigendian_uint16(&base[12], entry->length);
-	base[14] = entry->length >> 16;
-	base[15] = entry->flags;
-}
-
-/*-------------------------------------------------
     map_size_v5 - calculate CHDv5 map size
 -------------------------------------------------*/
 static INLINE int map_size_v5(chd_header* header)
