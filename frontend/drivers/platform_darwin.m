@@ -30,7 +30,9 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
+#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
 #import <AVFoundation/AVFoundation.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -1028,6 +1030,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
    else if (speed > 10)
       speed               = 10;
 
+#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
    {
       static dispatch_once_t once;
@@ -1052,6 +1055,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
       [synth speakUtterance:utterance];
       return true;
    }
+#endif
 
 #if defined(OSX)
    return accessibility_speak_macos(speed, speak_text, priority);
