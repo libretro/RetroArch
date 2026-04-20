@@ -640,7 +640,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
 - (bool)readBackBuffer:(uint8_t *)buffer
 {
-   int x, y;
+   size_t x, y;
    NSUInteger dstStride, srcStride;
    uint8_t const *src;
    uint8_t *dst, *tmp;

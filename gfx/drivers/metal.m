@@ -1709,7 +1709,7 @@ typedef struct MTLALIGN(16)
 
 - (void)_updateRenderTargets
 {
-   int i;
+   size_t i;
    NSUInteger width, height;
    if (!_shader || !resize_render_targets)
       return;
@@ -2109,7 +2109,7 @@ typedef struct MTLALIGN(16)
 
 - (bool)loadImages:(const struct texture_image *)images count:(NSUInteger)count
 {
-   int i;
+   size_t i;
    [self _freeImages];
 
    _images = [NSMutableArray arrayWithCapacity:count];

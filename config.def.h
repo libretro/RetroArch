@@ -499,7 +499,13 @@
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
 
 #ifdef __APPLE__
-#define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
+#if (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000) || \
+      (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000) || \
+      (defined(__TV_OS_VERSION_MIN_REQUIRED)     && __TV_OS_VERSION_MIN_REQUIRED     >= 120000)
+#define DEFAULT_USE_METAL_ARG_BUFFERS true
+#else
+#define DEFAULT_USE_METAL_ARG_BUFFERS false
+#endif
 #endif
 
 /* Enable use of shaders */
