@@ -59,7 +59,8 @@
  *   and x86.  Platforms with weak ordering that lack GCC
  *   builtins do not run threaded video in practice.
  */
-#if defined(__GNUC__)
+#if defined(__clang__) || (defined(__GNUC__) && \
+   ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7)))
 #define GFX_THUMB_STATUS_STORE(ptr, val) \
    __atomic_store_n((int*)(ptr), (int)(val), __ATOMIC_RELEASE)
 #define GFX_THUMB_STATUS_LOAD(ptr) \
