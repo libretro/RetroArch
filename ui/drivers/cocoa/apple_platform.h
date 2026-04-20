@@ -49,7 +49,8 @@ typedef enum apple_view_type
 
 #if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
 @interface WindowListener : NSResponder<NSWindowDelegate>
-@property (nonatomic) NSWindow* window;
+/* assign (not retain) - WindowListener is a delegate; the window owns it, not vice versa */
+@property (nonatomic, assign) NSWindow *window;
 @end
 #endif
 
