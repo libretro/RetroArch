@@ -485,9 +485,7 @@ static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
    {
       /* Already hit a marker — pad with zeros */
       while (j->code_bits <= 24)
-      {
          j->code_bits += 8;
-      }
       return;
    }
 
@@ -512,25 +510,42 @@ static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
 
          /* Check each byte for 0xFF.  The compiler will branch-predict
           * these as not-taken since 0xFF is rare in entropy data. */
-         if (b0 == 0xFF) goto handle_ff_at_0;
+         if (b0 == 0xFF)
+            goto handle_ff_at_0;
          j->code_buffer |= (uint32_t)b0 << (24 - j->code_bits);
          j->code_bits   += 8;
-         if (j->code_bits > 24) { s->img_buffer += 1; return; }
+         if (j->code_bits > 24)
+         {
+            s->img_buffer += 1;
+            return;
+         }
 
-         if (b1 == 0xFF) goto handle_ff_at_1;
+         if (b1 == 0xFF)
+            goto handle_ff_at_1;
          j->code_buffer |= (uint32_t)b1 << (24 - j->code_bits);
          j->code_bits   += 8;
-         if (j->code_bits > 24) { s->img_buffer += 2; return; }
+         if (j->code_bits > 24)
+         {
+            s->img_buffer += 2;
+            return;
+         }
 
-         if (b2 == 0xFF) goto handle_ff_at_2;
+         if (b2 == 0xFF)
+            goto handle_ff_at_2;
          j->code_buffer |= (uint32_t)b2 << (24 - j->code_bits);
          j->code_bits   += 8;
-         if (j->code_bits > 24) { s->img_buffer += 3; return; }
+         if (j->code_bits > 24)
+         {
+            s->img_buffer += 3;
+            return;
+         }
 
-         if (b3 == 0xFF) goto handle_ff_at_3;
+         if (b3 == 0xFF)
+            goto handle_ff_at_3;
          j->code_buffer |= (uint32_t)b3 << (24 - j->code_bits);
          j->code_bits   += 8;
          s->img_buffer  += 4;
+
          return;
 
          /* 0xFF handling: consume the bytes before the 0xFF, then
@@ -652,13 +667,12 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
 
 /* _nocheck variant: caller guarantees code_bits >= 16.
  * Used from decode_block where grow_buffer was just called. */
-static INLINE int rjpeg_jpeg_huff_decode_nocheck(rjpeg_jpeg *j, rjpeg_huffman *h)
+static INLINE int rjpeg_jpeg_huff_decode_nocheck(rjpeg_jpeg *j,
+      rjpeg_huffman *h)
 {
    unsigned int temp;
-   int c,k;
-
-   c = (j->code_buffer >> (32 - FAST_BITS)) & ((1 << FAST_BITS)-1);
-   k = h->fast[c];
+   int c = (j->code_buffer >> (32 - FAST_BITS)) & ((1 << FAST_BITS)-1);
+   int k = h->fast[c];
 
    if (k < 255)
    {
@@ -702,23 +716,6 @@ static INLINE int rjpeg_extend_receive(rjpeg_jpeg *j, int n)
    int sgn;
    if (j->code_bits < n)
       rjpeg_grow_buffer_unsafe(j);
-
-   sgn             = (int32_t)j->code_buffer >> 31;
-   k               = RJPEG_LROT(j->code_buffer, n);
-   j->code_buffer  = k & ~rjpeg_bmask[n];
-   k              &= rjpeg_bmask[n];
-   j->code_bits   -= n;
-   return k + (rjpeg_jbias[n] & ~sgn);
-}
-
-/* _nocheck variant: caller guarantees code_bits >= n.
- * After grow_buffer fills to 24+ bits and DC huff_decode consumes
- * at most 16 bits, at least 8 bits remain — enough for any
- * DC category (max 11 bits). */
-static INLINE int rjpeg_extend_receive_nocheck(rjpeg_jpeg *j, int n)
-{
-   unsigned int k;
-   int sgn;
 
    sgn             = (int32_t)j->code_buffer >> 31;
    k               = RJPEG_LROT(j->code_buffer, n);
