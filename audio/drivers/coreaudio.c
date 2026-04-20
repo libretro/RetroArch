@@ -32,10 +32,16 @@
 
 #ifdef RARCH_COREAUDIO_LEGACY_APPLE
 #include <libkern/OSAtomic.h>
+/* Pull mach_types first; on some older SDKs <mach/mach.h> does not
+ * reliably re-expose the typedefs by the time subsequent user headers
+ * poke at them.  Then <mach/mach.h> gives us the semaphore_* calls. */
+#include <mach/mach_types.h>
 #include <mach/mach.h>
-#include <mach/semaphore.h>
 #include <mach/task.h>
+#include <mach/semaphore.h>
 #include <mach/clock_types.h>
+#include <mach/sync_policy.h>
+#include <stdint.h>
 
 /* --- atomic shim (size_t, acquire/release subset actually used) --- */
 typedef volatile int32_t atomic_size_t;
@@ -51,7 +57,11 @@ typedef int memory_order;
 #define atomic_fetch_sub_explicit(ptr, n, mo) \
    ((size_t)(OSAtomicAdd32Barrier(-(int32_t)(n), (ptr)) + (int32_t)(n)))
 
-/* --- GCD semaphore shim (thin wrapper over Mach semaphore_t) --- */
+/* --- GCD semaphore shim (thin wrapper over Mach semaphore_t) ---
+ * dispatch_semaphore_t is declared as uintptr_t so its own typedef
+ * depends on nothing from the mach headers.  The actual mach calls
+ * still take/return semaphore_t, but those calls only appear inside
+ * function bodies below, not at file scope. */
 #ifndef NSEC_PER_MSEC
 #define NSEC_PER_MSEC 1000000ULL
 #endif
@@ -60,21 +70,21 @@ typedef int memory_order;
 #endif
 #define DISPATCH_TIME_NOW 0
 
-typedef semaphore_t dispatch_semaphore_t;
-typedef uint64_t    dispatch_time_t;
+typedef uintptr_t dispatch_semaphore_t;
+typedef uint64_t  dispatch_time_t;
 
 static INLINE dispatch_semaphore_t dispatch_semaphore_create(long value)
 {
-   semaphore_t s;
+   semaphore_t s = 0;
    if (semaphore_create(mach_task_self(), &s, SYNC_POLICY_FIFO,
             (int)value) != KERN_SUCCESS)
       return 0;
-   return s;
+   return (dispatch_semaphore_t)s;
 }
 static INLINE void dispatch_semaphore_signal(dispatch_semaphore_t s)
 {
    if (s)
-      semaphore_signal(s);
+      semaphore_signal((semaphore_t)s);
 }
 static INLINE dispatch_time_t dispatch_time(dispatch_time_t base, int64_t delta)
 {
@@ -89,12 +99,12 @@ static INLINE long dispatch_semaphore_wait(dispatch_semaphore_t s,
       return -1;
    ts.tv_sec  = (unsigned int)(ns / NSEC_PER_SEC);
    ts.tv_nsec = (clock_res_t)(ns % NSEC_PER_SEC);
-   return (semaphore_timedwait(s, ts) == KERN_SUCCESS) ? 0 : 1;
+   return (semaphore_timedwait((semaphore_t)s, ts) == KERN_SUCCESS) ? 0 : 1;
 }
 static INLINE void dispatch_release(dispatch_semaphore_t s)
 {
    if (s)
-      semaphore_destroy(mach_task_self(), s);
+      semaphore_destroy(mach_task_self(), (semaphore_t)s);
 }
 #else
 #include <stdatomic.h>
