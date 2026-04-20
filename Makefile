@@ -351,6 +351,91 @@ clean:
 	$(Q)rm -f $(TARGET)
 	$(Q)rm -f *.d
 	$(Q)rm -f default.metallib gfx/common/metal/*.air
+	$(Q)rm -rf $(BUNDLE)
+
+# ---------------------------------------------------------------------------
+# make bundle — assemble RetroArch.app from the build outputs (macOS only).
+#
+# Mirrors what pkg/apple/RetroArch_Metal.xcodeproj produces, minus code
+# signing, entitlements, asset archives, and framework-wrapped cores. The
+# resulting .app is a plain, ad-hoc bundle suitable for local testing and
+# for distribution outside the App Store.
+#
+# Invoked as `make bundle`. Not part of `all:`; plain `make` builds only
+# the retroarch binary and default.metallib exactly as before.
+#
+# The deployment target in Info.plist (LSMinimumSystemVersion) is derived
+# from the -mmacosx-version-min=X.Y flag the binary was linked with (set
+# earlier in this Makefile via $(MINVERFLAGS) based on the target arch).
+# Build floors per Makefile.common:130-164:
+#    arm64        -> 10.15  (Apple Silicon)
+#    x86_64+Metal -> 10.13
+#    x86_64       -> 10.7
+#    i386         -> 10.6
+#    powerpc      -> 10.5
+# To target a lower OS version than the default for the current arch,
+# cross-compile with ARCH=<arch> (e.g. `ARCH=ppc make && make bundle`)
+# or override BUNDLE_MIN_OS directly.
+#
+# User-overridable variables:
+#    BUNDLE            bundle directory name           (default: RetroArch.app)
+#    BUNDLE_EXECUTABLE binary name inside Contents/MacOS (default: RetroArch)
+#    BUNDLE_IDENTIFIER CFBundleIdentifier              (default: com.libretro.dist.RetroArch)
+#    BUNDLE_VERSION    CFBundleShortVersionString      (default: from version.all)
+#    BUNDLE_BUILD      CFBundleVersion                 (default: 44)
+#    BUNDLE_MIN_OS     LSMinimumSystemVersion          (default: derived from MINVERFLAGS)
+#
+# Example: BUNDLE=RetroArchDev.app BUNDLE_IDENTIFIER=com.example.dev make bundle
+# ---------------------------------------------------------------------------
+
+ifneq ($(findstring Darwin,$(OS)),)
+
+# version.all is a C/Make/shell polyglot, but all lines start with '#' so
+# '-include version.all' is a no-op from Make's perspective. Parse the
+# #define out via shell instead.
+PACKAGE_VERSION    := $(shell grep 'define PACKAGE_VERSION' version.all | cut -d'"' -f2)
+
+BUNDLE             ?= RetroArch.app
+BUNDLE_EXECUTABLE  ?= RetroArch
+BUNDLE_IDENTIFIER  ?= com.libretro.dist.RetroArch
+BUNDLE_VERSION     ?= $(PACKAGE_VERSION)
+BUNDLE_BUILD       ?= 44
+# Extract X.Y from '-mmacosx-version-min=X.Y' inside $(MINVERFLAGS).
+# If nothing matches (e.g. building with a custom toolchain), fall back to 10.13.
+BUNDLE_MIN_OS      ?= $(or $(patsubst -mmacosx-version-min=%,%,$(filter -mmacosx-version-min=%,$(MINVERFLAGS))),10.13)
+INFO_PLIST_SRC     := pkg/apple/OSX/Info_Metal.plist
+
+bundle: $(TARGET) $(METALLIB)
+	@echo "Assembling $(BUNDLE) (min macOS $(BUNDLE_MIN_OS))"
+	$(Q)rm -rf $(BUNDLE)
+	$(Q)mkdir -p $(BUNDLE)/Contents/MacOS
+	$(Q)mkdir -p $(BUNDLE)/Contents/Resources/filters/audio
+	$(Q)mkdir -p $(BUNDLE)/Contents/Resources/filters/video
+	$(Q)cp $(TARGET) $(BUNDLE)/Contents/MacOS/$(BUNDLE_EXECUTABLE)
+	$(Q)chmod +x $(BUNDLE)/Contents/MacOS/$(BUNDLE_EXECUTABLE)
+	$(Q)if [ -f default.metallib ]; then \
+		cp default.metallib $(BUNDLE)/Contents/Resources/default.metallib; \
+	elif [ -f pkg/apple/OSX/Resources/default.metallib ]; then \
+		cp pkg/apple/OSX/Resources/default.metallib $(BUNDLE)/Contents/Resources/default.metallib; \
+	fi
+	$(Q)cp libretro-common/audio/dsp_filters/*.dsp \
+		$(BUNDLE)/Contents/Resources/filters/audio/ 2>/dev/null || true
+	$(Q)cp gfx/video_filters/*.filt \
+		$(BUNDLE)/Contents/Resources/filters/video/ 2>/dev/null || true
+	$(Q)printf 'APPL????' > $(BUNDLE)/Contents/PkgInfo
+	$(Q)sed \
+		-e 's|$$(EXECUTABLE_NAME)|$(BUNDLE_EXECUTABLE)|g' \
+		-e 's|$${PRODUCT_NAME}|$(BUNDLE_EXECUTABLE)|g' \
+		-e 's|$$(PRODUCT_BUNDLE_IDENTIFIER)|$(BUNDLE_IDENTIFIER)|g' \
+		-e 's|$$(MARKETING_VERSION)|$(BUNDLE_VERSION)|g' \
+		-e 's|$$(CURRENT_PROJECT_VERSION)|$(BUNDLE_BUILD)|g' \
+		-e 's|$$(MACOSX_DEPLOYMENT_TARGET)|$(BUNDLE_MIN_OS)|g' \
+		$(INFO_PLIST_SRC) > $(BUNDLE)/Contents/Info.plist
+	@echo "Done. Run with: open $(BUNDLE)"
+
+.PHONY: bundle
+
+endif
 
 .PHONY: all install uninstall clean
 
