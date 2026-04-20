@@ -244,6 +244,32 @@ check_platform Linux RPILED 'The RPI led driver is' true
 check_platform Darwin METAL 'Metal is' true
 
 if [ "$OS" = 'Darwin' ]; then
+   # Detect whether we're building against a pre-10.7 (Lion) macOS target.
+   # Many modern Apple APIs used by RetroArch require 10.7 or later
+   # (Metal, Vulkan/MoltenVK, GCD, NSWindowDelegate protocol, C11
+   # <stdatomic.h>, AVFoundation, @available).  On Tiger/Leopard /
+   # PowerPC / Xcode 3.1 those APIs are absent and builds fail.
+   #
+   # MACOSX_DEPLOYMENT_TARGET (set by the invoker or the toolchain)
+   # takes priority over sw_vers, because on a cross-build the host
+   # OS version may be newer than the target.
+   macos_target_pre_10_7=no
+   macos_target_ver="${MACOSX_DEPLOYMENT_TARGET:-}"
+   if [ -z "$macos_target_ver" ] && command -v sw_vers >/dev/null 2>&1; then
+      macos_target_ver="$(sw_vers -productVersion 2>/dev/null)"
+   fi
+   if [ -n "$macos_target_ver" ]; then
+      mt_major=$(printf %s "$macos_target_ver" | cut -d. -f1)
+      mt_minor=$(printf %s "$macos_target_ver" | cut -d. -f2)
+      [ -z "$mt_major" ] && mt_major=0
+      [ -z "$mt_minor" ] && mt_minor=0
+      if [ "$mt_major" -lt 10 ] || \
+         { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 7 ]; }; then
+         macos_target_pre_10_7=yes
+      fi
+      unset mt_major mt_minor
+   fi
+
    # macOS: the Metal and Vulkan (MoltenVK) defaults differ from what the
    # generic qb logic produces.
    #   * HAVE_METAL defaults to 'no' in config.params.sh so check_platform
@@ -254,8 +280,16 @@ if [ "$OS" = 'Darwin' ]; then
    #     whether Metal/Vulkan is in play. Link-time libvulkan is not
    #     required on Darwin; MoltenVK is loaded dynamically at runtime
    #     by gfx/common/vulkan_common.c.
-   [ "${USER_METAL:-}"  != 'no' ] && HAVE_METAL=yes
-   [ "${USER_VULKAN:-}" != 'no' ] && HAVE_VULKAN=yes
+   # Skip the force-on on pre-10.7 targets — Metal is 10.11+ and
+   # MoltenVK is 10.11+, so neither is buildable on Tiger/Leopard.
+   # That also keeps HAVE_COCOA_METAL off, which in turn avoids code
+   # paths that use the 10.6+ NSWindowDelegate protocol.
+   if [ "$macos_target_pre_10_7" = 'no' ]; then
+      [ "${USER_METAL:-}"  != 'no' ] && HAVE_METAL=yes
+      [ "${USER_VULKAN:-}" != 'no' ] && HAVE_VULKAN=yes
+   else
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; Metal/Vulkan not forced on (neither is available before 10.11)."
+   fi
 
    check_platform Darwin COCOA 'Cocoa is' true
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
@@ -265,32 +299,15 @@ if [ "$OS" = 'Darwin' ]; then
    # The microphone driver (audio/drivers/coreaudio_mic_macos.m) uses
    # C11 <stdatomic.h>, which requires a 10.6/10.7-era SDK or newer.
    # On Xcode 3.1 / 10.4-10.5 / PowerPC the header doesn't exist and
-   # the driver cannot be compiled.  Detect pre-10.7 targets and
-   # auto-disable microphone support unless the user passed
-   # --enable-microphone explicitly.
-   #
-   # MACOSX_DEPLOYMENT_TARGET (set by the invoker or the toolchain)
-   # takes priority over sw_vers, because on a cross-build the host
-   # OS version may be newer than the target.
-   if [ "${USER_MICROPHONE:-}" != 'yes' ] && [ "$HAVE_MICROPHONE" != 'no' ]; then
-      macos_target_ver="${MACOSX_DEPLOYMENT_TARGET:-}"
-      if [ -z "$macos_target_ver" ] && command -v sw_vers >/dev/null 2>&1; then
-         macos_target_ver="$(sw_vers -productVersion 2>/dev/null)"
-      fi
-      if [ -n "$macos_target_ver" ]; then
-         mt_major=$(printf %s "$macos_target_ver" | cut -d. -f1)
-         mt_minor=$(printf %s "$macos_target_ver" | cut -d. -f2)
-         [ -z "$mt_major" ] && mt_major=0
-         [ -z "$mt_minor" ] && mt_minor=0
-         if [ "$mt_major" -lt 10 ] || \
-            { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 7 ]; }; then
-            HAVE_MICROPHONE=no
-            die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling microphone (requires C11 <stdatomic.h>).  Override with --enable-microphone."
-         fi
-         unset mt_major mt_minor
-      fi
-      unset macos_target_ver
+   # the driver cannot be compiled.  Auto-disable microphone support
+   # on pre-10.7 targets unless the user passed --enable-microphone.
+   if [ "$macos_target_pre_10_7" = 'yes' ] && \
+      [ "${USER_MICROPHONE:-}" != 'yes' ] && \
+      [ "$HAVE_MICROPHONE" != 'no' ]; then
+      HAVE_MICROPHONE=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling microphone (requires C11 <stdatomic.h>).  Override with --enable-microphone."
    fi
+   unset macos_target_ver macos_target_pre_10_7
 
    if [ "$HAVE_METAL" = yes ] || [ "$HAVE_VULKAN" = yes ]; then
       check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
