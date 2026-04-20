@@ -257,7 +257,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       }
       else
       {
-         int i;
+         size_t i;
          _buffer   = [_context.device newBufferWithLength:(NSUInteger)(_stride * _atlas->height)
                                                 options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
          void *dst = _buffer.contents;
@@ -1858,12 +1858,12 @@ typedef struct MTLALIGN(16)
 
    @try
    {
-      int i;
+      size_t i;
       texture_t *source = NULL;
       if (!video_shader_load_preset_into_shader(path.UTF8String, shader))
          return NO;
 
-      source            = &_engine.frame.texture[0];
+      source = &_engine.frame.texture[0];
 
       for (i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
       {
