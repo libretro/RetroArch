@@ -26,6 +26,7 @@
 #import <CoreHaptics/CoreHaptics.h>
 
 #include "../../configuration.h"
+#include "../../verbosity.h"
 #include "../../input/input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
