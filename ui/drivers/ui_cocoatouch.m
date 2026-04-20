@@ -29,6 +29,7 @@
 #include "cocoa/apple_platform.h"
 #include "../ui_companion_driver.h"
 #include "../../audio/audio_driver.h"
+#include "../../gfx/video_display_server.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../input/drivers/cocoa_input.h"

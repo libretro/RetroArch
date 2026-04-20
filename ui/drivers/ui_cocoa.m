@@ -39,6 +39,7 @@
 #endif
 
 #include "../ui_companion_driver.h"
+#include "../../gfx/video_display_server.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../frontend/frontend.h"
@@ -59,7 +60,7 @@
 #endif
 
 #ifdef HAVE_MIST
-#include "steam/steam.h"
+#include "../../steam/steam.h"
 #endif
 
 typedef struct ui_application_cocoa
