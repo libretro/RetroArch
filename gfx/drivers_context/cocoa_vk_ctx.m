@@ -34,9 +34,6 @@
 #include <string/stdstring.h>
 
 #include "../common/vulkan_common.h"
-#ifdef HAVE_METAL
-#include "../common/metal_common.h"
-#endif
 
 #include "../../ui/drivers/ui_cocoa.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"

@@ -44,9 +44,6 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#ifdef HAVE_METAL
-#include "../common/metal_common.h"
-#endif
 
 #if defined(HAVE_COCOATOUCH)
 #define GLContextClass  EAGLContext
