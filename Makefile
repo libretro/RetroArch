@@ -404,6 +404,11 @@ BUNDLE_BUILD       ?= 44
 # If nothing matches (e.g. building with a custom toolchain), fall back to 10.13.
 BUNDLE_MIN_OS      ?= $(or $(patsubst -mmacosx-version-min=%,%,$(filter -mmacosx-version-min=%,$(MINVERFLAGS))),10.13)
 INFO_PLIST_SRC     := pkg/apple/OSX/Info_Metal.plist
+# Universal (arm64 + x86_64) MoltenVK.framework shipped in the repo.
+# Only copied when HAVE_VULKAN=1; on pre-Metal / non-Vulkan builds
+# (e.g. ppc 10.5, i386 10.6) the Vulkan code path isn't compiled in
+# and shipping MoltenVK would be dead weight that can't even load.
+MOLTENVK_FRAMEWORK := pkg/apple/Frameworks/MoltenVK.xcframework/macos-arm64_x86_64/MoltenVK.framework
 
 bundle: $(TARGET) $(METALLIB)
 	@echo "Assembling $(BUNDLE) (min macOS $(BUNDLE_MIN_OS))"
@@ -422,6 +427,10 @@ bundle: $(TARGET) $(METALLIB)
 		$(BUNDLE)/Contents/Resources/filters/audio/ 2>/dev/null || true
 	$(Q)cp gfx/video_filters/*.filt \
 		$(BUNDLE)/Contents/Resources/filters/video/ 2>/dev/null || true
+	$(Q)if [ "$(HAVE_VULKAN)" = "1" ] && [ -d $(MOLTENVK_FRAMEWORK) ]; then \
+		mkdir -p $(BUNDLE)/Contents/Frameworks; \
+		cp -R $(MOLTENVK_FRAMEWORK) $(BUNDLE)/Contents/Frameworks/; \
+	fi
 	$(Q)printf 'APPL????' > $(BUNDLE)/Contents/PkgInfo
 	$(Q)sed \
 		-e 's|$$(EXECUTABLE_NAME)|$(BUNDLE_EXECUTABLE)|g' \
@@ -431,6 +440,19 @@ bundle: $(TARGET) $(METALLIB)
 		-e 's|$$(CURRENT_PROJECT_VERSION)|$(BUNDLE_BUILD)|g' \
 		-e 's|$$(MACOSX_DEPLOYMENT_TARGET)|$(BUNDLE_MIN_OS)|g' \
 		$(INFO_PLIST_SRC) > $(BUNDLE)/Contents/Info.plist
+	@# Ad-hoc code signing. On Apple Silicon (and increasingly on Intel with
+	@# hardened runtime enforcement), dyld refuses to load unsigned dylibs
+	@# even for ad-hoc app-internal use — including the MoltenVK framework
+	@# copied in above. `codesign --sign -` produces an ad-hoc signature
+	@# that satisfies the loader without requiring a developer identity.
+	@# Sign nested content first (frameworks), then the outer .app wrapper,
+	@# so the app's seal covers all contents.
+	$(Q)if [ -d $(BUNDLE)/Contents/Frameworks ]; then \
+		for fw in $(BUNDLE)/Contents/Frameworks/*.framework; do \
+			[ -d "$$fw" ] && codesign --force --sign - --timestamp=none "$$fw"; \
+		done; \
+	fi
+	$(Q)codesign --force --sign - --timestamp=none $(BUNDLE)
 	@echo "Done. Run with: open $(BUNDLE)"
 
 .PHONY: bundle

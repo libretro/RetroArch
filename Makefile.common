@@ -133,26 +133,26 @@ ifneq ($(findstring Darwin,$(OS)),)
    ARCHFLAGS=
    MINVERFLAGS=
    ifeq ($(shell uname -p),arm)
-      MINVERFLAGS = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      MINVERFLAGS = -mmacosx-version-min=10.15 # macOS  (Metal, ARM 64bit)
    else ifeq ($(HAVE_METAL),1)
-      MINVERFLAGS = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
+      MINVERFLAGS = -mmacosx-version-min=10.13 # macOS  (Metal, x86 64bit)
    else ifeq ($(shell uname -p),powerpc)
       MINVERFLAGS = -mmacosx-version-min=10.5  # macOSX (PowerPC 32-bit)
    else ifeq ($(shell uname -m),i386)
       MINVERFLAGS = -mmacosx-version-min=10.6  # macOSX (OpenGL, x86 32bit)
    else
-      MINVERFLAGS = -mmacosx-version-min=10.7 -stdlib=libc++ # macOSX (OpenGL, x86 64bit)
+      MINVERFLAGS = -mmacosx-version-min=10.7 # macOSX (OpenGL, x86 64bit)
    endif
 
 	# Build for a specific architecture when ARCH is defined as a switch
    ifeq ($(ARCH),arm64)
-      MINVERFLAGS  = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      MINVERFLAGS  = -mmacosx-version-min=10.15 # macOS  (Metal, ARM 64bit)
       ARCHFLAGS    = -arch arm64
    else ifeq ($(ARCH),x86_64)
       ifeq ($(HAVE_METAL),1)
-         MINVERFLAGS  = -mmacosx-version-min=10.13 -stdlib=libc++
+         MINVERFLAGS  = -mmacosx-version-min=10.13
       else
-         MINVERFLAGS  = -mmacosx-version-min=10.7  -stdlib=libc++
+         MINVERFLAGS  = -mmacosx-version-min=10.7
       endif
       ARCHFLAGS       = -arch x86_64
    else ifeq ($(ARCH),x86)
@@ -1741,6 +1741,18 @@ ifeq ($(HAVE_VULKAN), 1)
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_VULKAN
    INCLUDE_DIRS += -Igfx/include
+
+   # On macOS, the Vulkan loader at gfx/common/vulkan_common.c dlopens
+   # "MoltenVK" by bare name. Embed rpath entries pointing at the Frameworks
+   # dir inside an .app bundle, so that `make bundle` (which copies
+   # pkg/apple/Frameworks/MoltenVK.xcframework/macos-arm64_x86_64/MoltenVK.framework
+   # into Contents/Frameworks) produces a self-contained bundle with no
+   # external MoltenVK dependency. Matches what Xcode's
+   # LD_RUNPATH_SEARCH_PATHS does for the .xcodeproj build.
+   ifneq ($(findstring Darwin,$(OS)),)
+      LDFLAGS += -Xlinker -rpath -Xlinker @executable_path/../Frameworks \
+                 -Xlinker -rpath -Xlinker @executable_path/../Frameworks/MoltenVK.framework
+   endif
 endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
