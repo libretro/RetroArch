@@ -626,7 +626,7 @@ static ui_application_t ui_application_cocoa = {
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
 #else
-   [(NSView*)[CocoaView get] setFrame: [[self.window contentView] bounds]];
+   [(NSView*)[CocoaView get] setFrame: [(NSView*)[self.window contentView] bounds]];
 #endif
    [[self.window contentView] setAutoresizesSubviews:YES];
 
@@ -723,7 +723,7 @@ static ui_application_t ui_application_cocoa = {
    }
 
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-   [_renderView setFrame: [[self.window contentView] bounds]];
+   [_renderView setFrame: [(NSView*)[self.window contentView] bounds]];
 
    self.window.contentView               = _renderView;
    self.window.contentView.nextResponder = _listener;
