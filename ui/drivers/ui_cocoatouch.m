@@ -27,6 +27,11 @@
 
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
+
+#if defined(HAVE_COCOA_METAL)
+#include "../../gfx/common/metal_common.h"
+#endif
+
 #include "../ui_companion_driver.h"
 #include "../../audio/audio_driver.h"
 #include "../../gfx/video_display_server.h"
