@@ -262,6 +262,36 @@ if [ "$OS" = 'Darwin' ]; then
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
    add_opt CRTSWITCHRES no
 
+   # The microphone driver (audio/drivers/coreaudio_mic_macos.m) uses
+   # C11 <stdatomic.h>, which requires a 10.6/10.7-era SDK or newer.
+   # On Xcode 3.1 / 10.4-10.5 / PowerPC the header doesn't exist and
+   # the driver cannot be compiled.  Detect pre-10.7 targets and
+   # auto-disable microphone support unless the user passed
+   # --enable-microphone explicitly.
+   #
+   # MACOSX_DEPLOYMENT_TARGET (set by the invoker or the toolchain)
+   # takes priority over sw_vers, because on a cross-build the host
+   # OS version may be newer than the target.
+   if [ "${USER_MICROPHONE:-}" != 'yes' ] && [ "$HAVE_MICROPHONE" != 'no' ]; then
+      macos_target_ver="${MACOSX_DEPLOYMENT_TARGET:-}"
+      if [ -z "$macos_target_ver" ] && command -v sw_vers >/dev/null 2>&1; then
+         macos_target_ver="$(sw_vers -productVersion 2>/dev/null)"
+      fi
+      if [ -n "$macos_target_ver" ]; then
+         mt_major=$(printf %s "$macos_target_ver" | cut -d. -f1)
+         mt_minor=$(printf %s "$macos_target_ver" | cut -d. -f2)
+         [ -z "$mt_major" ] && mt_major=0
+         [ -z "$mt_minor" ] && mt_minor=0
+         if [ "$mt_major" -lt 10 ] || \
+            { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 7 ]; }; then
+            HAVE_MICROPHONE=no
+            die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling microphone (requires C11 <stdatomic.h>).  Override with --enable-microphone."
+         fi
+         unset mt_major mt_minor
+      fi
+      unset macos_target_ver
+   fi
+
    if [ "$HAVE_METAL" = yes ] || [ "$HAVE_VULKAN" = yes ]; then
       check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
    else
