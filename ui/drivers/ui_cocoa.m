@@ -72,7 +72,9 @@ typedef struct ui_application_cocoa
 static int waiting_argc;
 static char **waiting_argv;
 
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
+extern id<ApplePlatform> apple_platform;
+#elif defined(HAVE_COCOA)
 extern id apple_platform;
 #endif
 
