@@ -24,7 +24,9 @@
 #include <sys/utsname.h>
 
 #include <mach/mach.h>
+#ifdef HAVE_GCD
 #include <dispatch/dispatch.h>
+#endif
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
@@ -127,6 +129,7 @@ static int speak_pid                            = 0;
 
 static char darwin_cpu_model_name[64] = {0};
 
+#ifdef HAVE_GCD
 /* Directory watching implementation using GCD dispatch sources */
 typedef struct darwin_watch_entry
 {
@@ -143,6 +146,7 @@ typedef struct darwin_watch_data
    volatile int32_t has_changes; /* Atomic flag indicating changes occurred */
    int flags;                    /* Event flags to monitor */
 } darwin_watch_data_t;
+#endif
 
 static void CFSearchPathForDirectoriesInDomains(
       char *s, size_t len)
@@ -853,6 +857,7 @@ static bool accessibility_speak_macos(int speed,
 
 #endif
 
+#ifdef HAVE_GCD
 static void frontend_darwin_watch_path_for_changes(
       struct string_list *list, int flags,
       path_change_data_t **change_data)
@@ -1002,6 +1007,7 @@ static bool frontend_darwin_check_for_path_changes(
    /* Atomically read and clear the flag */
    return OSAtomicCompareAndSwap32(1, 0, &watch_data->has_changes);
 }
+#endif
 
 static bool frontend_darwin_is_narrator_running(void)
 {
@@ -1093,8 +1099,13 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* detach_console */
    NULL,                            /* get_lakka_version */
    NULL,                            /* set_screen_brightness */
+#ifdef HAVE_GCD
    frontend_darwin_watch_path_for_changes, /* watch_path_for_changes */
    frontend_darwin_check_for_path_changes, /* check_for_path_changes */
+#else
+   NULL,                            /* watch_path_for_changes */
+   NULL,                            /* check_for_path_changes */
+#endif
    NULL,                            /* set_sustained_performance_mode */
    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
    frontend_darwin_get_user_language, /* get_user_language   */
