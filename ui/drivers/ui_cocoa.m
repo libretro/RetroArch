@@ -631,6 +631,17 @@ static ui_application_t ui_application_cocoa = {
       RARCH_RELEASE(token);
    }
 #endif
+   /* _renderView is kept at +1 by setViewType:; release the balance
+    * here so the last view-type's render view does not leak at
+    * shutdown.  Safe when nil. */
+   RARCH_RELEASE(_renderView);
+#ifdef HAVE_COCOA_METAL
+   /* _listener was created with +new (+1) in applicationDidFinishLaunching:
+    * and installed as the window's delegate / nextResponder, which are
+    * unretained relationships.  Release our own retain so the listener
+    * does not leak at shutdown. */
+   RARCH_RELEASE(_listener);
+#endif
    RARCH_RELEASE(_window);
    RARCH_SUPER_DEALLOC();
 }
@@ -719,6 +730,13 @@ static ui_application_t ui_application_cocoa = {
       _renderView.layer             = nil;
       [_renderView removeFromSuperview];
       self.window.contentView       = nil;
+      /* _renderView holds a +1 retain regardless of which path created
+       * it below (see the RARCH_RETAIN on the [CocoaView get] paths,
+       * and the inherent +1 from +new on the Metal path).  Release it
+       * here so the ownership invariant is balanced before we nil the
+       * ivar.  Under ARC this is a no-op and the implicit __strong
+       * ivar handles the release when _renderView is assigned nil. */
+      RARCH_RELEASE(_renderView);
       _renderView                   = nil;
    }
 
@@ -726,17 +744,27 @@ static ui_application_t ui_application_cocoa = {
    {
       case APPLE_VIEW_TYPE_VULKAN:
          {
-            _renderView                 = [CocoaView get];
+            /* [CocoaView get] returns an unretained pointer to a
+             * singleton.  Retain explicitly so _renderView's +1
+             * ownership invariant matches the Metal path below. */
+            _renderView                 = RARCH_RETAIN([CocoaView get]);
             CAMetalLayer *metal_layer   = [[CAMetalLayer alloc] init];
             metal_layer.device          = MTLCreateSystemDefaultDevice();
             metal_layer.framebufferOnly = YES;
             metal_layer.contentsScale   = [[NSScreen mainScreen] backingScaleFactor];
+            /* CALayer.layer is a strong reference, so the view takes
+             * its own retain.  Autorelease our +1 from +alloc/+init
+             * so we don't leak the layer on every view-type switch. */
             _renderView.layer           = metal_layer;
+            RARCH_AUTORELEASE(metal_layer);
             [_renderView setWantsLayer:YES];
          }
          break;
       case APPLE_VIEW_TYPE_METAL:
          {
+            /* +new returns a +1 object; that retain transfers into
+             * _renderView and satisfies the ivar's ownership
+             * invariant directly.  No extra RARCH_RETAIN needed. */
             MetalView *v            = [MetalView new];
             v.paused                = YES;
             v.enableSetNeedsDisplay = NO;
@@ -744,7 +772,8 @@ static ui_application_t ui_application_cocoa = {
          }
          break;
       case APPLE_VIEW_TYPE_OPENGL:
-         _renderView                = [CocoaView get];
+         /* Same singleton-retain story as the VULKAN case. */
+         _renderView                = RARCH_RETAIN([CocoaView get]);
          break;
       case APPLE_VIEW_TYPE_NONE:
       default:
