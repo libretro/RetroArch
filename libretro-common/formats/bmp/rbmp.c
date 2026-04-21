@@ -307,7 +307,6 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
    {
       /* Palette mode: pre-convert palette to uint32 in target byte order */
       uint32_t pal32[256];
-      int z = 0;
 
       if (psize == 0 || psize > 256)
       {
