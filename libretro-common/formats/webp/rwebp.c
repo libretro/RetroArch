@@ -1250,11 +1250,15 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
             is_skip = vp8b_get(&br, prob_skip);
 
          /* Y mode */
-         if      (!vp8b_get(&br, vp8_ymp[0])) ym = 4; /* B_PRED first */
-         else if (!vp8b_get(&br, vp8_ymp[1])) ym = 0;
-         else if (!vp8b_get(&br, vp8_ymp[2])) ym = 1;
-         else if (!vp8b_get(&br, vp8_ymp[3])) ym = 2;
-         else ym = 3; /* TM_PRED */
+         if (!vp8b_get(&br, vp8_ymp[0])) {
+            ym = 4; /* B_PRED */
+         } else if (!vp8b_get(&br, vp8_ymp[1])) {
+            /* Left subtree: DC, V */
+            ym = vp8b_get(&br, vp8_ymp[2]) ? 1 : 0;
+         } else {
+            /* Right subtree: H, TM */
+            ym = vp8b_get(&br, vp8_ymp[3]) ? 3 : 2;
+         }
 
          if (ym == 4)
          {
