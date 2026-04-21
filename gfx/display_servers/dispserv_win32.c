@@ -22,6 +22,9 @@
  * runtimes is below 0x0601), and the QueryDisplayConfig code path in
  * win32_display_server_get_refresh_rate() gets compiled out, returning
  * a hardcoded 0.0f. */
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601 /* Windows 7 */
+#endif
 #ifndef _WIN32_WINDOWS
 #define _WIN32_WINDOWS 0x0601
 #endif
@@ -32,7 +35,6 @@
 #include <windows.h>
 #include <ntverp.h>
 
-
 #ifndef COBJMACROS
 #define COBJMACROS
 #define COBJMACROS_DEFINED
@@ -41,10 +43,6 @@
 #include <shlobj.h>
 #ifdef COBJMACROS_DEFINED
 #undef COBJMACROS
-#endif
-
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0601 /* Windows 7 */
 #endif
 
 #include "../video_display_server.h"
@@ -69,7 +67,6 @@
    its taskbar button is created by the system.
    When the button is in place, the taskbar sends a
    TaskbarButtonCreated message to the window.
-
    Its value is computed by calling RegisterWindowMessage(
    L("TaskbarButtonCreated")).
    That message must be received by your application before
@@ -109,18 +106,18 @@ typedef struct DISPLAYCONFIG_2DREGION_CUSTOM
 
 typedef struct DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM
 {
-   UINT64                          pixelRate;
-   DISPLAYCONFIG_RATIONAL_CUSTOM          hSyncFreq;
-   DISPLAYCONFIG_RATIONAL_CUSTOM          vSyncFreq;
-   DISPLAYCONFIG_2DREGION_CUSTOM          activeSize;
-   DISPLAYCONFIG_2DREGION_CUSTOM          totalSize;
+   UINT64 pixelRate;
+   DISPLAYCONFIG_RATIONAL_CUSTOM hSyncFreq;
+   DISPLAYCONFIG_RATIONAL_CUSTOM vSyncFreq;
+   DISPLAYCONFIG_2DREGION_CUSTOM activeSize;
+   DISPLAYCONFIG_2DREGION_CUSTOM totalSize;
    union
    {
       struct
       {
-         UINT32 videoStandard  :16;
-         UINT32 vSyncFreqDivider  :6;
-         UINT32 reserved  :10;
+         UINT32 videoStandard      :16;
+         UINT32 vSyncFreqDivider   :6;
+         UINT32 reserved           :10;
       } AdditionalSignalInfo;
       UINT32 videoStandard;
    } dummyunionname;
@@ -134,14 +131,14 @@ typedef struct DISPLAYCONFIG_TARGET_MODE_CUSTOM
 
 typedef struct DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM
 {
-   LUID   adapterId;
+   LUID adapterId;
    UINT32 id;
    union
    {
       UINT32 modeInfoIdx;
       struct
       {
-         UINT32 cloneGroupId  :16;
+         UINT32 cloneGroupId       :16;
          UINT32 sourceModeInfoIdx  :16;
       } dummystructname;
    } dummyunionname;
@@ -151,41 +148,41 @@ typedef struct DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM
 typedef struct DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM
 {
    POINTL PathSourceSize;
-   RECTL  DesktopImageRegion;
-   RECTL  DesktopImageClip;
+   RECTL DesktopImageRegion;
+   RECTL DesktopImageClip;
 } DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM;
 
 typedef struct DISPLAYCONFIG_SOURCE_MODE_CUSTOM
 {
-   UINT32                    width;
-   UINT32                    height;
-   UINT32                    pixelFormat;
-   POINTL                    position;
+   UINT32 width;
+   UINT32 height;
+   UINT32 pixelFormat;
+   POINTL position;
 } DISPLAYCONFIG_SOURCE_MODE_CUSTOM;
 
 typedef struct DISPLAYCONFIG_MODE_INFO_CUSTOM
 {
-   UINT32                       infoType;
-   UINT32                       id;
-   LUID                         adapterId;
+   UINT32 infoType;
+   UINT32 id;
+   LUID adapterId;
    union
    {
-      DISPLAYCONFIG_TARGET_MODE_CUSTOM        targetMode;
-      DISPLAYCONFIG_SOURCE_MODE_CUSTOM        sourceMode;
+      DISPLAYCONFIG_TARGET_MODE_CUSTOM targetMode;
+      DISPLAYCONFIG_SOURCE_MODE_CUSTOM sourceMode;
       DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM desktopImageInfo;
    } dummyunionname;
 } DISPLAYCONFIG_MODE_INFO_CUSTOM;
 
 typedef struct DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM
 {
-   LUID                                  adapterId;
-   UINT32                                id;
+   LUID adapterId;
+   UINT32 id;
    union
    {
       UINT32 modeInfoIdx;
       struct
       {
-         UINT32 desktopModeInfoIdx  :16;
+         UINT32 desktopModeInfoIdx :16;
          UINT32 targetModeInfoIdx  :16;
       } dummystructname;
    } dummyunionname;
@@ -202,7 +199,7 @@ typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM
 {
    DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM sourceInfo;
    DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM targetInfo;
-   UINT32                         flags;
+   UINT32 flags;
 } DISPLAYCONFIG_PATH_INFO_CUSTOM;
 
 typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
@@ -220,14 +217,14 @@ static void *win32_display_server_init(void)
    /* When compiling in C++ mode, GUIDs
       are references instead of pointers */
    if (FAILED(CoCreateInstance(CLSID_TaskbarList, NULL,
-         CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
-         (void**)&dispserv->taskbar_list)))
+               CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
+               (void**)&dispserv->taskbar_list)))
 #else
    /* Mingw GUIDs are pointers
       instead of references since we're in C mode */
    if (FAILED(CoCreateInstance(&CLSID_TaskbarList, NULL,
-         CLSCTX_INPROC_SERVER, &IID_ITaskbarList3,
-         (void**)&dispserv->taskbar_list)))
+               CLSCTX_INPROC_SERVER, &IID_ITaskbarList3,
+               (void**)&dispserv->taskbar_list)))
 #endif
    {
       dispserv->taskbar_list = NULL;
@@ -249,9 +246,9 @@ static void win32_display_server_destroy(void *data)
    if (!dispserv)
       return;
 
-   if (     dispserv->orig_width > 0
-         && dispserv->orig_height > 0
-         && dispserv->orig_refresh > 0)
+   if (   dispserv->orig_width   > 0
+       && dispserv->orig_height  > 0
+       && dispserv->orig_refresh > 0)
       video_display_server_set_resolution(
             dispserv->orig_width,
             dispserv->orig_height,
@@ -274,8 +271,9 @@ static bool win32_display_server_set_window_opacity(
       void *data, unsigned opacity)
 {
 #ifdef HAVE_WINDOW_TRANSP
-   HWND     hwnd  = win32_get_window();
+   HWND hwnd      = win32_get_window();
    LONG_PTR style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+
    /* Set window transparency on Windows 2000 and above */
    if (opacity < 100)
    {
@@ -294,38 +292,39 @@ static bool win32_display_server_set_window_opacity(
 static bool win32_display_server_set_window_progress(
       void *data, int progress, bool finished)
 {
-   uint8_t win32_flags    = 0;
-   HWND              hwnd = win32_get_window();
-   dispserv_win32_t *serv = (dispserv_win32_t*)data;
+   uint8_t win32_flags     = 0;
+   HWND hwnd               = win32_get_window();
+   dispserv_win32_t *serv  = (dispserv_win32_t*)data;
 
    if (!serv)
       return false;
 
 #ifdef HAS_TASKBAR_EXT
-   win32_flags            = win32_get_flags();
+   win32_flags             = win32_get_flags();
+
    if (!serv->taskbar_list || !(win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED))
       return false;
 
    if (progress == -1)
    {
       if (ITaskbarList3_SetProgressState(
-            serv->taskbar_list, hwnd, TBPF_INDETERMINATE) != S_OK)
+               serv->taskbar_list, hwnd, TBPF_INDETERMINATE) != S_OK)
          return false;
    }
    else if (finished)
    {
       if (ITaskbarList3_SetProgressState(
-            serv->taskbar_list, hwnd, TBPF_NOPROGRESS) != S_OK)
+               serv->taskbar_list, hwnd, TBPF_NOPROGRESS) != S_OK)
          return false;
    }
    else if (progress >= 0)
    {
       if (ITaskbarList3_SetProgressState(
-            serv->taskbar_list, hwnd, TBPF_NORMAL) != S_OK)
+               serv->taskbar_list, hwnd, TBPF_NORMAL) != S_OK)
          return false;
 
       if (ITaskbarList3_SetProgressValue(
-            serv->taskbar_list, hwnd, progress, 100) != S_OK)
+               serv->taskbar_list, hwnd, progress, 100) != S_OK)
          return false;
    }
 #endif
@@ -340,19 +339,18 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
    if (!serv)
       return false;
 
-   serv->flags      |= DISPSERV_WIN32_FLAG_DECORATIONS;
+   serv->flags |= DISPSERV_WIN32_FLAG_DECORATIONS;
 
    /* menu_setting performs a reinit instead to properly
-    * apply decoration changes */
-
+      * apply decoration changes */
    return true;
 }
 
 static bool win32_get_video_output(DEVMODE *dm, int mode)
 {
    MONITORINFOEX current_mon;
-   HMONITOR hm_to_use        = NULL;
-   unsigned mon_id           = 0;
+   HMONITOR hm_to_use = NULL;
+   unsigned mon_id    = 0;
 
    memset(dm, 0, sizeof(DEVMODE));
    dm->dmSize = sizeof(DEVMODE);
@@ -376,16 +374,16 @@ static bool win32_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    MONITORINFOEX current_mon;
-   HMONITOR hm_to_use        = NULL;
-   unsigned mon_id           = 0;
-   DEVMODE dm                = {0};
-   LONG res                  = 0;
-   unsigned i                = 0;
-   unsigned curr_bpp         = 0;
+   HMONITOR hm_to_use         = NULL;
+   unsigned mon_id            = 0;
+   DEVMODE dm                 = {0};
+   LONG res                   = 0;
+   unsigned i                 = 0;
+   unsigned curr_bpp          = 0;
 #if _WIN32_WINNT >= 0x0500
-   unsigned curr_orientation = 0;
+   unsigned curr_orientation  = 0;
 #endif
-   dispserv_win32_t *serv    = (dispserv_win32_t*)data;
+   dispserv_win32_t *serv     = (dispserv_win32_t*)data;
 
    if (!serv)
       return false;
@@ -393,15 +391,16 @@ static bool win32_display_server_set_resolution(void *data,
    win32_get_video_output(&dm, -1);
 
    if (serv->orig_width == 0)
-      serv->orig_width  = GetSystemMetrics(SM_CXSCREEN);
+      serv->orig_width   = GetSystemMetrics(SM_CXSCREEN);
    if (serv->orig_height == 0)
-      serv->orig_height = GetSystemMetrics(SM_CYSCREEN);
+      serv->orig_height  = GetSystemMetrics(SM_CYSCREEN);
    if (serv->orig_refresh == 0)
       serv->orig_refresh = video_driver_get_refresh_rate();
 
    /* Used to stop super resolution bug */
    if (width == dm.dmPelsWidth)
       width = 0;
+
    if (width == 0)
       width = dm.dmPelsWidth;
    if (height == 0)
@@ -417,11 +416,11 @@ static bool win32_display_server_set_resolution(void *data,
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
-      if (dm.dmPelsWidth  != width)
+      if (dm.dmPelsWidth        != width)
          continue;
-      if (dm.dmPelsHeight != height)
+      if (dm.dmPelsHeight       != height)
          continue;
-      if (dm.dmBitsPerPel != curr_bpp)
+      if (dm.dmBitsPerPel       != curr_bpp)
          continue;
       if (dm.dmDisplayFrequency != (DWORD)int_hz)
          continue;
@@ -433,12 +432,13 @@ static bool win32_display_server_set_resolution(void *data,
 #endif
 
       dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT
-                  | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
+         | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 #if _WIN32_WINNT >= 0x0500
       dm.dmFields |= DM_DISPLAYORIENTATION;
 #endif
 
       win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+
       res = win32_change_display_settings((const char*)&current_mon.szDevice, &dm, CDS_TEST);
 
       switch (res)
@@ -492,29 +492,29 @@ static int resolution_list_qsort_func(
 static void *win32_display_server_get_resolution_list(
       void *data, unsigned *len)
 {
-   DEVMODE dm                        = {0};
-   unsigned i                        = 0;
-   unsigned j                        = 0;
-   unsigned count                    = 0;
-   unsigned curr_width               = 0;
-   unsigned curr_height              = 0;
-   unsigned curr_bpp                 = 0;
-   unsigned curr_refreshrate         = 0;
+   DEVMODE dm                 = {0};
+   unsigned i                 = 0;
+   unsigned j                 = 0;
+   unsigned count             = 0;
+   unsigned curr_width        = 0;
+   unsigned curr_height       = 0;
+   unsigned curr_bpp          = 0;
+   unsigned curr_refreshrate  = 0;
 #if _WIN32_WINNT >= 0x0500
-   unsigned curr_orientation         = 0;
+   unsigned curr_orientation  = 0;
 #endif
-   bool curr_interlaced              = false;
+   bool curr_interlaced       = false;
    struct video_display_config *conf = NULL;
 
    if (win32_get_video_output(&dm, -1))
    {
-      curr_width                     = dm.dmPelsWidth;
-      curr_height                    = dm.dmPelsHeight;
-      curr_bpp                       = dm.dmBitsPerPel;
-      curr_refreshrate               = dm.dmDisplayFrequency;
+      curr_width        = dm.dmPelsWidth;
+      curr_height       = dm.dmPelsHeight;
+      curr_bpp          = dm.dmBitsPerPel;
+      curr_refreshrate  = dm.dmDisplayFrequency;
 #if _WIN32_WINNT >= 0x0500
-      curr_orientation               = dm.dmDisplayOrientation;
-      curr_interlaced                = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
+      curr_orientation  = dm.dmDisplayOrientation;
+      curr_interlaced   = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
 #endif
    }
 
@@ -548,28 +548,28 @@ static void *win32_display_server_get_resolution_list(
          continue;
 #endif
 
-      conf[j].width       = dm.dmPelsWidth;
-      conf[j].height      = dm.dmPelsHeight;
-      conf[j].bpp         = dm.dmBitsPerPel;
-      conf[j].refreshrate = dm.dmDisplayFrequency;
+      conf[j].width            = dm.dmPelsWidth;
+      conf[j].height           = dm.dmPelsHeight;
+      conf[j].bpp              = dm.dmBitsPerPel;
+      conf[j].refreshrate      = dm.dmDisplayFrequency;
       /* It may be possible to get exact refresh rate via different API - for now, it is integer only */
       conf[j].refreshrate_float = 0.0f;
-      conf[j].idx         = j;
-      conf[j].current     = false;
+      conf[j].idx              = j;
+      conf[j].current          = false;
 #if _WIN32_WINNT >= 0x0500
-      conf[j].interlaced  = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
+      conf[j].interlaced       = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
 #else
-      conf[j].interlaced  = false;
+      conf[j].interlaced       = false;
 #endif
-      conf[j].dblscan     = false; /* no flag for doublescan on this platform */
+      conf[j].dblscan          = false; /* no flag for doublescan on this platform */
 
-      if (     (conf[j].width       == curr_width)
-            && (conf[j].height      == curr_height)
-            && (conf[j].bpp         == curr_bpp)
-            && (conf[j].refreshrate == curr_refreshrate)
-            && (conf[j].interlaced  == curr_interlaced)
+      if (   (conf[j].width       == curr_width)
+          && (conf[j].height      == curr_height)
+          && (conf[j].bpp         == curr_bpp)
+          && (conf[j].refreshrate == curr_refreshrate)
+          && (conf[j].interlaced  == curr_interlaced)
          )
-         conf[j].current  = true;
+         conf[j].current       = true;
 
       j++;
    }
@@ -578,7 +578,7 @@ static void *win32_display_server_get_resolution_list(
          conf, count,
          sizeof(video_display_config_t),
          (int (*)(const void *, const void *))
-               resolution_list_qsort_func);
+         resolution_list_qsort_func);
 
    return conf;
 }
@@ -609,76 +609,75 @@ static void win32_display_server_set_screen_orientation(void *data,
       enum rotation rotation)
 {
    DEVMODE dm = {0};
-
    win32_get_video_output(&dm, -1);
 
    switch (rotation)
    {
       case ORIENTATION_NORMAL:
       default:
+      {
+         int width      = dm.dmPelsWidth;
+
+         if ((  dm.dmDisplayOrientation == DMDO_90
+             || dm.dmDisplayOrientation == DMDO_270)
+             && (width != (int)dm.dmPelsHeight))
          {
-            int width = dm.dmPelsWidth;
-
-            if ((       dm.dmDisplayOrientation == DMDO_90
-                     || dm.dmDisplayOrientation == DMDO_270)
-                     && (width != (int)dm.dmPelsHeight))
-            {
-               /* Device is changing orientations, swap the aspect */
-               dm.dmPelsWidth  = dm.dmPelsHeight;
-               dm.dmPelsHeight = width;
-            }
-
-            dm.dmDisplayOrientation = DMDO_DEFAULT;
-            break;
+            /* Device is changing orientations, swap the aspect */
+            dm.dmPelsWidth  = dm.dmPelsHeight;
+            dm.dmPelsHeight = width;
          }
+
+         dm.dmDisplayOrientation = DMDO_DEFAULT;
+         break;
+      }
       case ORIENTATION_VERTICAL:
+      {
+         int width      = dm.dmPelsWidth;
+
+         if ((  dm.dmDisplayOrientation == DMDO_DEFAULT
+             || dm.dmDisplayOrientation == DMDO_180)
+             && (width != (int)dm.dmPelsHeight))
          {
-            int width = dm.dmPelsWidth;
-
-            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT
-                     || dm.dmDisplayOrientation == DMDO_180)
-                     && (width != (int)dm.dmPelsHeight))
-            {
-               /* Device is changing orientations, swap the aspect */
-               dm.dmPelsWidth  = dm.dmPelsHeight;
-               dm.dmPelsHeight = width;
-            }
-
-            dm.dmDisplayOrientation = DMDO_270;
-            break;
+            /* Device is changing orientations, swap the aspect */
+            dm.dmPelsWidth  = dm.dmPelsHeight;
+            dm.dmPelsHeight = width;
          }
+
+         dm.dmDisplayOrientation = DMDO_270;
+         break;
+      }
       case ORIENTATION_FLIPPED:
+      {
+         int width      = dm.dmPelsWidth;
+
+         if ((  dm.dmDisplayOrientation == DMDO_90
+             || dm.dmDisplayOrientation == DMDO_270)
+             && (width != (int)dm.dmPelsHeight))
          {
-            int width = dm.dmPelsWidth;
-
-            if ((       dm.dmDisplayOrientation == DMDO_90
-                     || dm.dmDisplayOrientation == DMDO_270)
-                     && (width != (int)dm.dmPelsHeight))
-            {
-               /* Device is changing orientations, swap the aspect */
-               dm.dmPelsWidth  = dm.dmPelsHeight;
-               dm.dmPelsHeight = width;
-            }
-
-            dm.dmDisplayOrientation = DMDO_180;
-            break;
+            /* Device is changing orientations, swap the aspect */
+            dm.dmPelsWidth  = dm.dmPelsHeight;
+            dm.dmPelsHeight = width;
          }
+
+         dm.dmDisplayOrientation = DMDO_180;
+         break;
+      }
       case ORIENTATION_FLIPPED_ROTATED:
+      {
+         int width      = dm.dmPelsWidth;
+
+         if ((  dm.dmDisplayOrientation == DMDO_DEFAULT
+             || dm.dmDisplayOrientation == DMDO_180)
+             && (width != (int)dm.dmPelsHeight))
          {
-            int width = dm.dmPelsWidth;
-
-            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT
-                     || dm.dmDisplayOrientation == DMDO_180)
-                     && (width != (int)dm.dmPelsHeight))
-            {
-               /* Device is changing orientations, swap the aspect */
-               dm.dmPelsWidth  = dm.dmPelsHeight;
-               dm.dmPelsHeight = width;
-            }
-
-            dm.dmDisplayOrientation = DMDO_90;
-            break;
+            /* Device is changing orientations, swap the aspect */
+            dm.dmPelsWidth  = dm.dmPelsHeight;
+            dm.dmPelsHeight = width;
          }
+
+         dm.dmDisplayOrientation = DMDO_90;
+         break;
+      }
    }
 
    win32_change_display_settings(NULL, &dm, 0);
@@ -689,26 +688,27 @@ static float win32_display_server_get_refresh_rate(void *data)
 {
 #if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
    UINT32 TopologyID;
-   float refresh_rate                            = 0.0f;
-   unsigned int NumPathArrayElements             = 0;
-   unsigned int NumModeInfoArrayElements         = 0;
-   DISPLAYCONFIG_PATH_INFO_CUSTOM *PathInfoArray = NULL;
-   DISPLAYCONFIG_MODE_INFO_CUSTOM *ModeInfoArray = NULL;
+   float refresh_rate                                = 0.0f;
+   unsigned int NumPathArrayElements                 = 0;
+   unsigned int NumModeInfoArrayElements             = 0;
+   DISPLAYCONFIG_PATH_INFO_CUSTOM *PathInfoArray     = NULL;
+   DISPLAYCONFIG_MODE_INFO_CUSTOM *ModeInfoArray     = NULL;
 #ifdef HAVE_DYLIB
-   static QUERYDISPLAYCONFIG pQueryDisplayConfig;
+   static QUERYDISPLAYCONFIG          pQueryDisplayConfig;
    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
+
    if (!pQueryDisplayConfig || !pGetDisplayConfigBufferSizes)
    {
-      HMODULE user32 = GetModuleHandle("user32.dll");
+      HMODULE user32                  = GetModuleHandle("user32.dll");
       if (!pQueryDisplayConfig)
-         pQueryDisplayConfig        = (QUERYDISPLAYCONFIG)
-         GetProcAddress(user32, "QueryDisplayConfig");
+         pQueryDisplayConfig          = (QUERYDISPLAYCONFIG)
+            GetProcAddress(user32, "QueryDisplayConfig");
       if (!pGetDisplayConfigBufferSizes)
          pGetDisplayConfigBufferSizes = (GETDISPLAYCONFIGBUFFERSIZES)
-         GetProcAddress(user32, "GetDisplayConfigBufferSizes");
+            GetProcAddress(user32, "GetDisplayConfigBufferSizes");
    }
 #else
-   static QUERYDISPLAYCONFIG pQueryDisplayConfig = QueryDisplayConfig;
+   static QUERYDISPLAYCONFIG          pQueryDisplayConfig          = QueryDisplayConfig;
    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
 #endif
 
@@ -726,6 +726,7 @@ static float win32_display_server_get_refresh_rate(void *data)
       malloc(sizeof(DISPLAYCONFIG_PATH_INFO_CUSTOM) * NumPathArrayElements);
    if (!PathInfoArray)
       return 0.0f;
+
    ModeInfoArray = (DISPLAYCONFIG_MODE_INFO_CUSTOM *)
       malloc(sizeof(DISPLAYCONFIG_MODE_INFO_CUSTOM) * NumModeInfoArrayElements);
    if (!ModeInfoArray)
@@ -740,13 +741,14 @@ static float win32_display_server_get_refresh_rate(void *data)
             &NumModeInfoArrayElements,
             ModeInfoArray,
             &TopologyID) == ERROR_SUCCESS
-         && NumPathArrayElements >= 1
-         && PathInfoArray[0].targetInfo.refreshRate.Denominator != 0)
+       && NumPathArrayElements >= 1
+       && PathInfoArray[0].targetInfo.refreshRate.Denominator != 0)
       refresh_rate = (float)PathInfoArray[0].targetInfo.refreshRate.Numerator
          / PathInfoArray[0].targetInfo.refreshRate.Denominator;
 
    free(ModeInfoArray);
    free(PathInfoArray);
+
    return refresh_rate;
 #else
    return 0.0f;
@@ -767,14 +769,14 @@ static void win32_display_server_get_video_output_size(void *data,
 static void win32_display_server_get_video_output_prev(void *data)
 {
    MONITORINFOEX current_mon;
-   HMONITOR hm_to_use        = NULL;
-   unsigned mon_id            = 0;
+   HMONITOR hm_to_use    = NULL;
+   unsigned mon_id       = 0;
    unsigned i;
    DEVMODE dm;
    DEVMODE prev_dm;
-   bool have_prev             = false;
-   unsigned curr_width        = 0;
-   unsigned curr_height       = 0;
+   bool have_prev        = false;
+   unsigned curr_width   = 0;
+   unsigned curr_height  = 0;
 
    if (win32_get_video_output(&dm, -1))
    {
@@ -784,8 +786,8 @@ static void win32_display_server_get_video_output_prev(void *data)
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
-      if (     dm.dmPelsWidth  == curr_width
-            && dm.dmPelsHeight == curr_height)
+      if (   dm.dmPelsWidth  == curr_width
+          && dm.dmPelsHeight == curr_height)
       {
          if (have_prev)
             break;
@@ -808,13 +810,13 @@ static void win32_display_server_get_video_output_prev(void *data)
 static void win32_display_server_get_video_output_next(void *data)
 {
    MONITORINFOEX current_mon;
-   HMONITOR hm_to_use        = NULL;
-   unsigned mon_id            = 0;
+   HMONITOR hm_to_use   = NULL;
+   unsigned mon_id      = 0;
    int i;
    DEVMODE dm;
-   bool found                 = false;
-   unsigned curr_width        = 0;
-   unsigned curr_height       = 0;
+   bool found           = false;
+   unsigned curr_width  = 0;
+   unsigned curr_height = 0;
 
    if (win32_get_video_output(&dm, -1))
    {
@@ -826,8 +828,8 @@ static void win32_display_server_get_video_output_next(void *data)
    {
       if (found)
       {
-         if (     dm.dmPelsWidth  != curr_width
-               || dm.dmPelsHeight != curr_height)
+         if (   dm.dmPelsWidth  != curr_width
+             || dm.dmPelsHeight != curr_height)
          {
             win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
             win32_change_display_settings(
@@ -836,8 +838,8 @@ static void win32_display_server_get_video_output_next(void *data)
          }
       }
 
-      if (     dm.dmPelsWidth  == curr_width
-            && dm.dmPelsHeight == curr_height)
+      if (   dm.dmPelsWidth  == curr_width
+          && dm.dmPelsHeight == curr_height)
          found = true;
    }
 }
