@@ -247,11 +247,19 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
 {
 #ifdef OSX
+#ifdef MAC_OS_X_VERSION_10_6
+    /* CGDisplayModeRef and CGDisplayCopyDisplayMode are 10.6+.
+     * On the 10.5 Leopard SDK only the older CFDictionaryRef-based
+     * CGDisplayCurrentMode API exists; not worth wiring up for a
+     * refresh-rate readout, so fall back to 60. */
     CGDirectDisplayID mainDisplayID = CGMainDisplayID();
     CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
     float currentRate = CGDisplayModeGetRefreshRate(currentMode);
     CFRelease(currentMode);
     return currentRate;
+#else
+    return 60.0f;
+#endif
 #else
     if (@available(iOS 10.3, tvOS 10.2, *))
        return [UIScreen mainScreen].maximumFramesPerSecond;
