@@ -93,10 +93,12 @@
 #endif
 
 #if __has_feature(objc_arc)
+#define RARCH_RETAIN(x)         (x)
 #define RARCH_RELEASE(x)        ((void)0)
 #define RARCH_AUTORELEASE(x)    ((void)0)
 #define RARCH_SUPER_DEALLOC()   ((void)0)
 #else
+#define RARCH_RETAIN(x)         [(x) retain]
 #define RARCH_RELEASE(x)        [(x) release]
 #define RARCH_AUTORELEASE(x)    [(x) autorelease]
 #define RARCH_SUPER_DEALLOC()   [super dealloc]

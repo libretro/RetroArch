@@ -615,6 +615,22 @@ static ui_application_t ui_application_cocoa = {
  * _window manually.  See cocoa_defines.h for the ARC/MRR macro story. */
 - (void)dealloc
 {
+   /* Make sure any outstanding NSProcessInfo activity is ended and
+    * released.  Without this, quitting while the screensaver is
+    * suspended would leak both the activity assertion (leaving
+    * display-sleep disabled system-wide until reboot) and the
+    * retained token itself. */
+#if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1090
+   if (_sleepActivity)
+   {
+      NSProcessInfo *pi = [NSProcessInfo processInfo];
+      id token          = _sleepActivity;
+      _sleepActivity    = nil;
+      if ([pi respondsToSelector:@selector(endActivity:)])
+         [pi endActivity:token];
+      RARCH_RELEASE(token);
+   }
+#endif
    RARCH_RELEASE(_window);
    RARCH_SUPER_DEALLOC();
 }
@@ -808,20 +824,54 @@ static ui_application_t ui_application_cocoa = {
 
 - (bool)setDisableDisplaySleep:(bool)disable
 {
+   /* beginActivityWithOptions:reason: / endActivity: were added in
+    * macOS 10.9.  Guard at compile time so builds against older SDKs
+    * (notably 10.5 via Xcode 3.1 / GCC 4.0, which predate both App
+    * Nap and ARC) still compile, and guard at runtime so a binary
+    * built against a 10.9+ SDK but deployed onto 10.5-10.8 gracefully
+    * no-ops instead of crashing on an unrecognized selector. */
+#if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1090
+   NSProcessInfo *pi = [NSProcessInfo processInfo];
+   if (![pi respondsToSelector:@selector(beginActivityWithOptions:reason:)])
+      return NO;
+
    if (disable)
    {
       if (_sleepActivity == nil)
-         _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
+      {
+         /* The token returned by beginActivityWithOptions:reason: is
+          * autoreleased and owned by the system.  We MUST retain it
+          * or, under MRR, it is deallocated as soon as the current
+          * autorelease pool drains - leaving _sleepActivity as a
+          * dangling pointer.  The next call to endActivity: then
+          * sends isKindOfClass: to freed memory and crashes in
+          * objc_opt_isKindOfClass.  Under ARC a plain `id` ivar is
+          * implicitly __strong so RARCH_RETAIN is a no-op; under MRR
+          * it expands to an explicit -retain. */
+         id token = [pi beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled
+                                          reason:@"disable screen saver"];
+         _sleepActivity = RARCH_RETAIN(token);
+      }
    }
    else
    {
       if (_sleepActivity)
       {
-         [NSProcessInfo.processInfo endActivity:_sleepActivity];
+         /* Capture and nil-out BEFORE calling endActivity: so that a
+          * re-entrant call (for example from a menu write handler
+          * triggered while AppKit is dispatching) cannot observe a
+          * stale pointer and double-end the same activity. */
+         id token       = _sleepActivity;
          _sleepActivity = nil;
+         [pi endActivity:token];
+         RARCH_RELEASE(token);
       }
    }
    return YES;
+#else
+   (void)disable;
+   return NO;
+#endif
 }
 #endif
 
