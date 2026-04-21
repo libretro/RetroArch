@@ -846,40 +846,70 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+   uint8_t            *dst_base;
+   unsigned int        dst_pitch;
+   unsigned int        i;
 
-   if (_dispvars->menu_active)
+   if (!_dispvars->menu_active)
+      return;
+
+   /* The display layer is xres pixels wide; we write `width` pixels
+    * per row into the leading bytes of each destination row, leaving
+    * any pixels beyond `width` untouched. RGUI typically renders at
+    * the full display width, in which case the whole row is written. */
+   dst_base  = (uint8_t*)_dispvars->pages[0].address;
+   dst_pitch = _dispvars->sunxi_disp->xres * 4;
+
+   /* Defensive clamps: the page is xres wide and src_height tall.
+    * Don't run off the end if the caller's frame is bigger. */
    {
-      unsigned int i, j;
+      unsigned int max_w = _dispvars->sunxi_disp->xres;
+      unsigned int max_h = (unsigned int)_dispvars->src_height;
+      if (width  > max_w) width  = max_w;
+      if (height > max_h) height = max_h;
+   }
 
-      /* We have to go on a pixel format conversion adventure for now, until we can
-       * convince RGUI to output in an 8888 format. */
-      unsigned int src_pitch        = width * 2;
-      unsigned int dst_pitch        = _dispvars->sunxi_disp->xres * 4;
-      unsigned int dst_width        = _dispvars->sunxi_disp->xres;
-      uint32_t line[dst_width];
-
-      /* Remember, memcpy() works with 8bits pointers for increments. */
-      char *dst_base_addr           = (char*)(_dispvars->pages[0].address);
+   if (rgb32)
+   {
+      /* Source is already XRGB8888 -- per-row memcpy handles the
+       * difference between source stride (width*4) and dst stride. */
+      const uint8_t *src       = (const uint8_t*)frame;
+      unsigned int   src_pitch = width * 4;
+      unsigned int   row_bytes = (src_pitch < dst_pitch) ? src_pitch : dst_pitch;
 
       for (i = 0; i < height; i++)
-      {
-         for (j = 0; j < src_pitch / 2; j++)
-         {
-            uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j);
-            /* The hex AND is for keeping only the part we need for each component. */
-            uint32_t R = (src_pix << 8) & 0x00FF0000;
-            uint32_t G = (src_pix << 4) & 0x0000FF00;
-            uint32_t B = (src_pix << 0) & 0x000000FF;
-            line[j] = (0 | R | G | B);
-         }
-         memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
-      }
-
-      /* Issue pageflip. Will flip on next vsync. */
-      sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp,
-            _dispvars->sunxi_disp->bits_per_pixel,
-            _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
+         memcpy(dst_base + (dst_pitch * i), src + (src_pitch * i), row_bytes);
    }
+   else
+   {
+      /* RGUI default output is RGBA4444 with channel layout
+       *   R = bits 15..12, G = 11..8, B = 7..4, A = 3..0
+       * Expand each 4-bit channel to 8 bits via nibble replication
+       * (x | (x << 4)) and pack into XRGB8888 for the display layer. */
+      for (i = 0; i < height; i++)
+      {
+         const uint16_t *src_row = (const uint16_t*)frame + (width * i);
+         uint32_t       *dst_row = (uint32_t*)(dst_base + (dst_pitch * i));
+         unsigned int    j;
+
+         for (j = 0; j < width; j++)
+         {
+            uint16_t src_pix = src_row[j];
+            uint32_t r4      = (src_pix >> 12) & 0xF;
+            uint32_t g4      = (src_pix >>  8) & 0xF;
+            uint32_t b4      = (src_pix >>  4) & 0xF;
+            uint32_t r8      = (r4 << 4) | r4;
+            uint32_t g8      = (g4 << 4) | g4;
+            uint32_t b8      = (b4 << 4) | b4;
+            dst_row[j]       = (r8 << 16) | (g8 << 8) | b8;
+         }
+      }
+   }
+
+   /* Issue pageflip. Will flip on next vsync. */
+   sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp,
+         _dispvars->sunxi_disp->bits_per_pixel,
+         _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
 }
 
 static void sunxi_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)

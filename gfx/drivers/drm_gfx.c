@@ -816,8 +816,11 @@ static void drm_set_texture_enable(void *data, bool state, bool full_screen)
 static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   unsigned int i, j;
-   struct drm_video *_drmvars = data;
+   unsigned int i;
+   struct drm_video    *_drmvars = data;
+   struct drm_surface  *surface  = NULL;
+   uint8_t             *dst_base = NULL;
+   unsigned int         dst_pitch;
 
    if (!_drmvars->menu_active)
       return;
@@ -843,36 +846,61 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
       drm_plane_setup(_drmvars->menu_surface);
    }
 
-   /* We have to go on a pixel format conversion adventure
-    * for now, until we can convince RGUI to output
-    * in an 8888 format. */
-   unsigned int src_pitch        = width * 2;
-   unsigned int dst_pitch        = width * 4;
-   unsigned int dst_width        = width;
-   uint32_t line[dst_width];
+   surface   = _drmvars->menu_surface;
+   dst_base  = (uint8_t*)surface->pages[surface->flip_page].buf.map;
+   dst_pitch = surface->pitch;
 
-   /* The output pixel array with the converted pixels. */
-   char *frame_output = (char *) malloc (dst_pitch * height);
-
-   /* Remember, memcpy() works with 8bits pointers for increments. */
-   char *dst_base_addr           = frame_output;
-
-   for (i = 0; i < height; i++)
+   /* Defensive clamps: the dumb buffer was sized at the first
+    * menu frame's dimensions and is never resized within an
+    * active menu session. If the caller hands us something
+    * bigger anyway, write only what fits rather than running
+    * off the end of the mapped region. */
    {
-      for (j = 0; j < src_pitch / 2; j++)
-      {
-         uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j);
-         /* The hex AND is for keeping only the part we need for each component. */
-         uint32_t R = (src_pix << 8) & 0x00FF0000;
-         uint32_t G = (src_pix << 4) & 0x0000FF00;
-         uint32_t B = (src_pix << 0) & 0x000000FF;
-         line[j] = (0 | R | G | B);
-      }
-      memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
+      unsigned int max_w = (unsigned int)surface->src_width;
+      unsigned int max_h = (unsigned int)surface->src_height;
+      if (width  > max_w) width  = max_w;
+      if (height > max_h) height = max_h;
    }
 
-   /* We update the menu surface if menu is active. */
-   drm_surface_update(_drmvars, frame_output, _drmvars->menu_surface);
+   if (rgb32)
+   {
+      /* Source is already XRGB8888 -- just copy row by row to handle
+       * any difference between source stride and dst stride. */
+      const uint8_t *src      = (const uint8_t*)frame;
+      unsigned int   src_pitch = width * 4;
+      unsigned int   row_bytes = (src_pitch < dst_pitch) ? src_pitch : dst_pitch;
+
+      for (i = 0; i < height; i++)
+         memcpy(dst_base + (dst_pitch * i), src + (src_pitch * i), row_bytes);
+   }
+   else
+   {
+      /* RGUI default output is RGBA4444 with channel layout
+       *   R = bits 15..12, G = 11..8, B = 7..4, A = 3..0
+       * Expand each 4-bit channel to 8 bits via nibble replication
+       * (x | (x << 4)) and pack into XRGB8888 for the dumb buffer. */
+      for (i = 0; i < height; i++)
+      {
+         const uint16_t *src_row = (const uint16_t*)frame + (width * i);
+         uint32_t       *dst_row = (uint32_t*)(dst_base + (dst_pitch * i));
+         unsigned int    j;
+
+         for (j = 0; j < width; j++)
+         {
+            uint16_t src_pix = src_row[j];
+            uint32_t r4      = (src_pix >> 12) & 0xF;
+            uint32_t g4      = (src_pix >>  8) & 0xF;
+            uint32_t b4      = (src_pix >>  4) & 0xF;
+            uint32_t r8      = (r4 << 4) | r4;
+            uint32_t g8      = (g4 << 4) | g4;
+            uint32_t b8      = (b4 << 4) | b4;
+            dst_row[j]       = (r8 << 16) | (g8 << 8) | b8;
+         }
+      }
+   }
+
+   /* The bytes are in place in the dumb buffer; commit the page flip. */
+   drm_page_flip(surface);
 }
 
 static void drm_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
