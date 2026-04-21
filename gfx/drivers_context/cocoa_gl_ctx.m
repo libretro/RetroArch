@@ -144,6 +144,11 @@ void *glkitview_init(void)
     * glPushGroupMarkerEXT with no current context and crashes. */
    if (glk_view)
       [glk_view deleteDrawable];
+   /* RELEASE the old view (+1 from the previous [GLKView new]) before
+    * overwriting the static.  Under ARC the strong static would retain/
+    * release on store, but under MRR the raw assignment below would drop
+    * the +1 and leak one GLKView per re-init. */
+   RELEASE(glk_view);
 
    glk_view                      = [GLKView new];
 #if TARGET_OS_IOS
@@ -172,10 +177,8 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
 #ifdef OSX
    [GLContextClass clearCurrentContext];
    [g_ctx clearDrawable];
-   RELEASE(g_ctx);
    if (g_hw_ctx)
       [g_hw_ctx clearDrawable];
-   RELEASE(g_hw_ctx);
    [GLContextClass clearCurrentContext];
 #else
    /* Clean up GLKView's framebuffer resources while context is still valid.
@@ -185,8 +188,18 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
       [glk_view deleteDrawable];
    [EAGLContext setCurrentContext:nil];
 #endif
-   g_hw_ctx = nil;
-   g_ctx = nil;
+   /* RELEASE -releases + nils under MRR, just nils under ARC (see
+    * cocoa_common.h).  Doing this unconditionally matches the OSX
+    * path's previous behaviour and fixes a latent iOS-MRR leak where
+    * the +1 from [[EAGLContext alloc] initWithAPI:...] in set_video_mode
+    * was dropped with a raw 'g_ctx = nil'. */
+   RELEASE(g_ctx);
+   RELEASE(g_hw_ctx);
+#if defined(HAVE_COCOATOUCH)
+   /* glk_view was created with +new (+1) in glkitview_init.  Release
+    * it on destroy so it does not leak across init/destroy cycles. */
+   RELEASE(glk_view);
+#endif
 
    free(cocoa_ctx);
 }
@@ -428,11 +441,21 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 
       if (cocoa_ctx->flags & COCOA_CTX_FLAG_USE_HW_CTX)
       {
+         /* In the normal reinit flow -destroy runs before -set_video_mode
+          * and both statics are already nil here; guard defensively so an
+          * MRR build does not leak the previous +1 if that invariant ever
+          * breaks (e.g. a future caller that re-inits without tearing
+          * down first).  Safe when already nil under both ARC and MRR. */
+         RELEASE(g_ctx);
+         RELEASE(g_hw_ctx);
          g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
          g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:g_hw_ctx];
       }
       else
+      {
+         RELEASE(g_ctx);
          g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
+      }
 
       RELEASE(fmt);
    }
@@ -610,6 +633,13 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height, bool fullscreen)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+
+   /* In the normal reinit flow -destroy runs before -set_video_mode and
+    * both statics are already nil here; guard defensively so an iOS-MRR
+    * build does not leak the previous +1 if that invariant ever breaks
+    * (e.g. a future caller that re-inits without tearing down first). */
+   RELEASE(g_ctx);
+   RELEASE(g_hw_ctx);
 
 #if defined(HAVE_OPENGLES3)
    if (cocoa_ctx->flags & COCOA_CTX_FLAG_USE_HW_CTX)
