@@ -19,6 +19,7 @@
 
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
+#include <defines/cocoa_defines.h>
 
 #include "cocoa_common.h"
 #include "apple_platform.h"
@@ -206,7 +207,17 @@ void rarch_stop_draw_observer(void)
    CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
    if (!view)
    {
-      view = [CocoaView new];
+      /* +new returns +1 owned by the caller.  Autorelease before
+       * handing to nsview_set_ptr, which takes its own retain for
+       * the process-lifetime g_instance slot.  Net result: the
+       * returned pointer obeys the Cocoa +0 "get" convention on
+       * both the first call (where we allocate) and every
+       * subsequent call (where we just read g_instance) - so
+       * callers do not have to guess the retain count.  Under ARC
+       * RARCH_AUTORELEASE is a no-op; the strong local's end-of-
+       * scope release balances +new's +1 after g_instance's
+       * storeStrong has taken its own retain. */
+      view = RARCH_AUTORELEASE([CocoaView new]);
       nsview_set_ptr(view);
 #if defined(IOS)
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
@@ -936,7 +947,25 @@ void *nsview_get_ptr(void)
     return (BRIDGE void *)g_instance;
 }
 
-void nsview_set_ptr(CocoaView *p) { g_instance = p; }
+void nsview_set_ptr(CocoaView *p)
+{
+   /* g_instance is the process-lifetime strong reference to the
+    * CocoaView singleton.  Under MRR we must explicitly retain the
+    * new value and release the old one so g_instance owns a
+    * balanced +1 across reassignments.  In practice there is only
+    * one caller (+[CocoaView get] on its first-time path), but the
+    * invariant matters: callers treat [CocoaView get] as a +0 "get"
+    * accessor, and that only holds if g_instance is the one keeping
+    * the view alive.  Under ARC RARCH_RETAIN and RARCH_RELEASE are
+    * no-ops; the static __strong pointer does retain/release via
+    * objc_storeStrong when assigned. */
+   if (g_instance != p)
+   {
+      RARCH_RETAIN(p);
+      RARCH_RELEASE(g_instance);
+      g_instance = p;
+   }
+}
 
 CocoaView *cocoaview_get(void)
 {
