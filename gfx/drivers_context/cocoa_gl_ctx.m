@@ -462,21 +462,112 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    [apple_platform setVideoMode:mode];
    cocoa_show_mouse(data, !fullscreen);
 #else
-   /* TODO/FIXME: Screen mode support. */
+   /* Hand-rolled fullscreen for the non-Metal path.
+    *
+    * The previous implementation called -[NSView enterFullScreenMode:
+    * withOptions:], which internally captures all displays and moves
+    * the view into an AppKit-manufactured NSWindow.  That replacement
+    * window is a plain NSWindow, not RAWindow, so -[RAWindow sendEvent:]
+    * (the event-pump override that feeds cocoa_input, added in commit
+    * 23a945639) stops firing while fullscreen, and keystrokes / mouse
+    * clicks get dropped.
+    *
+    * Instead, create our own borderless RAWindow covering the chosen
+    * screen, move the CocoaView into it, and show it above the menu
+    * bar.  Because the fullscreen window is itself an RAWindow, our
+    * sendEvent: override keeps firing.  SDL, GLFW, and similar
+    * libraries use this same pattern for pre-Lion fullscreen on macOS.
+    *
+    * Extra constraint: on 10.5 Leopard, -[NSWindow setStyleMask:]
+    * doesn't exist, so we can't toggle the existing window's style
+    * between titled and borderless - the new-window approach is the
+    * only option that works on every macOS version we target.
+    *
+    * HAVE_COCOA_METAL is unaffected: that path goes through
+    * -[apple_platform setVideoMode:] above, which drives the native
+    * -[NSWindow toggleFullScreen:] API on 10.7+. */
+   static NSWindow *saved_windowed_window = NULL;
+   static NSWindow *fullscreen_window     = NULL;
+   static NSRect    saved_view_frame;
+
    if (fullscreen)
    {
       if (!has_went_fullscreen)
       {
-         [g_view enterFullScreenMode:(BRIDGE NSScreen *)cocoa_screen_get_chosen() withOptions:nil];
+         NSScreen *screen        = (BRIDGE NSScreen *)cocoa_screen_get_chosen();
+         NSRect    screen_frame  = [screen frame];
+         /* Look up RAWindow at runtime rather than pulling its
+          * @interface out of ui_cocoa.m into a shared header. */
+         Class     ra_window_cls = NSClassFromString(@"RAWindow");
+
+         /* Remember where the view lived so we can put it back on exit. */
+         saved_windowed_window   = [[g_view window] retain];
+         saved_view_frame        = [g_view frame];
+
+         /* Build the fullscreen host window.  NSBorderlessWindowMask is
+          * 0 on every macOS version, identical 10.5 through modern.
+          * Raising above NSMainMenuWindowLevel is belt-and-braces once
+          * the menu bar is hidden below. */
+         fullscreen_window = [[ra_window_cls alloc]
+               initWithContentRect:screen_frame
+                         styleMask:NSBorderlessWindowMask
+                           backing:NSBackingStoreBuffered
+                             defer:NO];
+         [fullscreen_window setLevel:NSMainMenuWindowLevel + 1];
+         [fullscreen_window setOpaque:YES];
+         [fullscreen_window setHidesOnDeactivate:YES];
+
+         /* Hide menu bar + Dock.  Only valid when fullscreening onto
+          * screen 0 (the screen that owns the menu bar); on a
+          * secondary screen the menu bar stays put and hiding it would
+          * mangle the primary screen. */
+         if ([[NSScreen screens] count] > 0
+               && [screen isEqual:[[NSScreen screens] objectAtIndex:0]])
+            [NSMenu setMenuBarVisible:NO];
+
+         /* Move the CocoaView from the windowed window into the
+          * fullscreen window.  Retain across the move so the view
+          * isn't released by removeFromSuperview... if it happened
+          * to hold the last reference. */
+         [g_view retain];
+         [g_view removeFromSuperviewWithoutNeedingDisplay];
+         [[fullscreen_window contentView] addSubview:g_view];
+         [g_view setFrame:[[fullscreen_window contentView] bounds]];
+         [g_view release];
+
+         /* Order the windowed window out, bring the fullscreen window
+          * up, and route keystrokes to the view. */
+         [saved_windowed_window orderOut:nil];
+         [fullscreen_window makeKeyAndOrderFront:nil];
+         [fullscreen_window makeFirstResponder:g_view];
+
          cocoa_show_mouse(data, false);
       }
    }
    else
    {
-      if (has_went_fullscreen)
+      if (has_went_fullscreen && fullscreen_window)
       {
-         [g_view exitFullScreenModeWithOptions:nil];
-         [[g_view window] makeFirstResponder:g_view];
+         /* Put the view back in the windowed window. */
+         [g_view retain];
+         [g_view removeFromSuperviewWithoutNeedingDisplay];
+         [[saved_windowed_window contentView] addSubview:g_view];
+         [g_view setFrame:saved_view_frame];
+         [g_view release];
+
+         /* Restore the menu bar, tear down the fullscreen window,
+          * bring the windowed window back. */
+         [NSMenu setMenuBarVisible:YES];
+
+         [fullscreen_window orderOut:nil];
+         [fullscreen_window release];
+         fullscreen_window = NULL;
+
+         [saved_windowed_window makeKeyAndOrderFront:nil];
+         [saved_windowed_window makeFirstResponder:g_view];
+         [saved_windowed_window release];
+         saved_windowed_window = NULL;
+
          cocoa_show_mouse(data, true);
       }
 

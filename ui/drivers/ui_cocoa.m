@@ -383,6 +383,14 @@ static ui_application_t ui_application_cocoa = {
 
 @implementation RAWindow
 
+/* A borderless NSWindow (no NSWindowStyleMaskTitled) cannot become
+ * the key window by default - titled is an implicit prerequisite
+ * unless this returns YES explicitly.  The windowed-mode RAWindow
+ * is titled so this has no effect there, but the borderless
+ * fullscreen RAWindow created on the HAVE_COCOA path in
+ * cocoa_gl_ctx.m needs it to receive keystrokes. */
+- (BOOL)canBecomeKeyWindow { return YES; }
+
 #ifdef HAVE_COCOA_METAL
 #define CONVERT_POINT() [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil]
 #else
