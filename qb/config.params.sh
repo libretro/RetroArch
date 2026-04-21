@@ -215,8 +215,5 @@ HAVE_GAME_AI=no
 HAVE_SMBCLIENT=auto        # SMB client support
 HAVE_BUILTINSMBCLIENT=no   # Use builtin libsmb2
 HAVE_COCOA=auto            # Cocoa support (Darwin/Apple)
-# RetroArchPlaylistManager (iOS/tvOS playlist helper, also fine on
-# modern macOS).  Auto-disabled on pre-10.11 macOS targets by
-# config.libs.sh because the file uses Xcode 7-era Obj-C syntax.
-HAVE_RETROARCH_PLAYLIST_MANAGER=auto
+HAVE_RETROARCH_PLAYLIST_MANAGER=auto # iOS/tvOS + macOS 10.11+ playlist helper (see qb/config.libs.sh)
 HAVE_MFI=auto              # GameController.framework joypad support (Apple)

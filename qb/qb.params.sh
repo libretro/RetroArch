@@ -93,6 +93,13 @@ parse_input() # Parse stuff :V
 	config_opts='./configure'
 
 	while read -r VAR _; do
+		# Skip blank lines and comment-only lines.  Only HAVE_* or
+		# bare-name=VALUE assignments are meaningful here; anything
+		# else (like "# comment") would produce a broken eval such
+		# as 'USER_#=auto'.
+		case "$VAR" in
+			''|'#'*) continue ;;
+		esac
 		TMPVAR="${VAR%=*}"
 		NEWVAR="${TMPVAR##HAVE_}"
 		OPTS="${OPTS} $NEWVAR"
