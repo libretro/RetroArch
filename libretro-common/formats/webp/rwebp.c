@@ -987,6 +987,134 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
    }
 }
 
+
+/* VP8 Simple Loop Filter (RFC 6386 §15.2) */
+static INLINE int vp8_sc(int v) { return v < -128 ? -128 : v > 127 ? 127 : v; }
+
+static void vp8_simple_filter(uint8_t *p, int stride, int count, int flimit)
+{
+   int i;
+   for (i = 0; i < count; i++)
+   {
+      int p1 = p[-2*stride], p0 = p[-1*stride], q0 = p[0], q1 = p[stride];
+      int a = vp8_sc(vp8_sc(3 * (q0 - p0) + vp8_sc(p1 - q1)) + 4) >> 3;
+      p[-1*stride] = vp8_cl(p0 + a);
+      p[0]         = vp8_cl(q0 - a);
+      p++;
+   }
+}
+
+static void vp8_loop_filter_simple(uint8_t *y, int ys, uint8_t *u, int uvs, uint8_t *v_plane,
+   int mbw, int mbh, int lf_level, int sharpness,
+   int seg_enabled, int seg_abs, const int *seg_lf, const uint8_t *seg_map)
+{
+   int mx, my, bx, by;
+   for (my = 0; my < mbh; my++)
+   {
+      for (mx = 0; mx < mbw; mx++)
+      {
+         int mb_lf = lf_level;
+         int seg_id = seg_map ? seg_map[my * mbw + mx] : 0;
+         int flimit, ilimit;
+         if (seg_enabled && seg_abs)
+            mb_lf = seg_lf[seg_id];
+         else if (seg_enabled)
+            mb_lf = lf_level + seg_lf[seg_id];
+         if (mb_lf < 0) mb_lf = 0;
+         if (mb_lf > 63) mb_lf = 63;
+         /* Compute filter limit */
+         flimit = 2 * mb_lf + (sharpness > 0 ? (sharpness > 4 ? 2 : 1) : 0);
+         if (flimit > 63) flimit = 63;
+         ilimit = mb_lf;
+         if (sharpness > 0) {
+            ilimit >>= (sharpness > 4 ? 2 : 1);
+            if (ilimit > 9 - sharpness) ilimit = 9 - sharpness;
+         }
+         if (ilimit < 1) ilimit = 1;
+         
+         if (mb_lf == 0) continue;
+         
+         /* Y plane: filter vertical edges (between columns of 4x4 blocks) */
+         for (by = 0; by < 16; by++)
+         {
+            uint8_t *row = y + (my*16+by)*ys + mx*16;
+            /* MB left edge (stronger filter at MB boundary) */
+            if (mx > 0)
+            {
+               int p1=row[-2], p0=row[-1], q0=row[0], q1=row[1];
+               int a = vp8_sc(3*(q0-p0) + vp8_sc(p1-q1));
+               if (a < 0 ? -a : a <= flimit) {
+                  int f = vp8_sc(a + 4) >> 3;
+                  row[-1] = vp8_cl(p0 + f);
+                  row[0]  = vp8_cl(q0 - f);
+               }
+            }
+            /* Sub-block edges at columns 4, 8, 12 */
+            for (bx = 4; bx < 16; bx += 4)
+            {
+               int p1=row[bx-2], p0=row[bx-1], q0=row[bx], q1=row[bx+1];
+               int a = vp8_sc(3*(q0-p0) + vp8_sc(p1-q1));
+               if (a < 0 ? -a : a <= ilimit) {
+                  int f = vp8_sc(a + 4) >> 3;
+                  row[bx-1] = vp8_cl(p0 + f);
+                  row[bx]   = vp8_cl(q0 - f);
+               }
+            }
+         }
+         /* Y plane: filter horizontal edges */
+         for (bx = 0; bx < 16; bx++)
+         {
+            /* MB top edge */
+            if (my > 0)
+            {
+               uint8_t *col = y + (my*16)*ys + mx*16 + bx;
+               int p1=col[-2*ys], p0=col[-ys], q0=col[0], q1=col[ys];
+               int a = vp8_sc(3*(q0-p0) + vp8_sc(p1-q1));
+               if (a < 0 ? -a : a <= flimit) {
+                  int f = vp8_sc(a + 4) >> 3;
+                  col[-ys] = vp8_cl(p0 + f);
+                  col[0]   = vp8_cl(q0 - f);
+               }
+            }
+            /* Sub-block edges at rows 4, 8, 12 */
+            for (by = 4; by < 16; by += 4)
+            {
+               uint8_t *col = y + (my*16+by)*ys + mx*16 + bx;
+               int p1=col[-2*ys], p0=col[-ys], q0=col[0], q1=col[ys];
+               int a = vp8_sc(3*(q0-p0) + vp8_sc(p1-q1));
+               if (a < 0 ? -a : a <= ilimit) {
+                  int f = vp8_sc(a + 4) >> 3;
+                  col[-ys] = vp8_cl(p0 + f);
+                  col[0]   = vp8_cl(q0 - f);
+               }
+            }
+         }
+         /* UV planes: filter at MB edges and 8x8 sub-block edges */
+         /* (simplified: only MB edges for UV) */
+         if (mx > 0) {
+            for (by = 0; by < 8; by++) {
+               uint8_t *ur = u + (my*8+by)*uvs + mx*8;
+               uint8_t *vr = v_plane + (my*8+by)*uvs + mx*8;
+               { int p1=ur[-2],p0=ur[-1],q0=ur[0],q1=ur[1]; int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
+                 if((a<0?-a:a)<=flimit){int f=vp8_sc(a+4)>>3; ur[-1]=vp8_cl(p0+f); ur[0]=vp8_cl(q0-f);} }
+               { int p1=vr[-2],p0=vr[-1],q0=vr[0],q1=vr[1]; int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
+                 if((a<0?-a:a)<=flimit){int f=vp8_sc(a+4)>>3; vr[-1]=vp8_cl(p0+f); vr[0]=vp8_cl(q0-f);} }
+            }
+         }
+         if (my > 0) {
+            for (bx = 0; bx < 8; bx++) {
+               uint8_t *uc = u + my*8*uvs + mx*8 + bx;
+               uint8_t *vc = v_plane + my*8*uvs + mx*8 + bx;
+               { int p1=uc[-2*uvs],p0=uc[-uvs],q0=uc[0],q1=uc[uvs]; int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
+                 if((a<0?-a:a)<=flimit){int f=vp8_sc(a+4)>>3; uc[-uvs]=vp8_cl(p0+f); uc[0]=vp8_cl(q0-f);} }
+               { int p1=vc[-2*uvs],p0=vc[-uvs],q0=vc[0],q1=vc[uvs]; int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
+                 if((a<0?-a:a)<=flimit){int f=vp8_sc(a+4)>>3; vc[-uvs]=vp8_cl(p0+f); vc[0]=vp8_cl(q0-f);} }
+            }
+         }
+      }
+   }
+}
+
 static void vp8_pred16(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t *l, uint8_t tl)
 {
    int i, j;
@@ -1020,7 +1148,8 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
    int qp, y1_dc_q, y1_ac_q, y2_dc_q, y2_ac_q, uv_dc_q, uv_ac_q;
    int skip_enabled, prob_skip, log2parts, num_parts;
-   int seg_enabled, seg_abs, seg_qp[4], seg_prob[3];
+   int filter_type, lf_level, sharpness;
+   int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
    vp8b br;
    vp8b tbr[8]; /* up to 8 token partitions */
    const uint8_t *p0;
@@ -1048,18 +1177,19 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    seg_abs = 0;
    seg_qp[0] = seg_qp[1] = seg_qp[2] = seg_qp[3] = 0;
    seg_prob[0] = seg_prob[1] = seg_prob[2] = 255;
+   seg_lf[0] = seg_lf[1] = seg_lf[2] = seg_lf[3] = 0;
    if (seg_enabled)
    {
       int um = vp8b_bit(&br), ud = vp8b_bit(&br);
       if (ud) {
          seg_abs = vp8b_bit(&br);
          for (i=0;i<4;i++) seg_qp[i] = vp8b_bit(&br) ? vp8b_sig(&br,7) : 0;
-         for (i=0;i<4;i++) if (vp8b_bit(&br)) vp8b_sig(&br,6); /* lf deltas - discard */
+         for (i=0;i<4;i++) seg_lf[i] = vp8b_bit(&br) ? vp8b_sig(&br,6) : 0;
       }
       if (um) for (i=0;i<3;i++) { if (vp8b_bit(&br)) seg_prob[i] = (int)vp8b_lit(&br,8); }
    }
 
-   vp8b_bit(&br); vp8b_lit(&br,6); vp8b_lit(&br,3); /* filter */
+   filter_type = vp8b_bit(&br); lf_level = (int)vp8b_lit(&br,6); sharpness = (int)vp8b_lit(&br,3);
    { int mrd = vp8b_bit(&br);
      if (mrd && vp8b_bit(&br))
      { for(i=0;i<4;i++) if(vp8b_bit(&br)) vp8b_sig(&br,6);
@@ -1174,7 +1304,9 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
       }
    }
 
+   uint8_t *seg_map_buf = NULL;
    ys = mbw * 16; uvs = mbw * 8;
+   seg_map_buf = (uint8_t*)calloc(mbw * mbh, 1);
    yb = (uint8_t*)calloc(ys * mbh * 16, 1);
    ub = (uint8_t*)calloc(uvs * mbh * 8, 1);
    vb = (uint8_t*)calloc(uvs * mbh * 8, 1);
@@ -1228,6 +1360,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                seg_id = vp8b_get(&br, seg_prob[1]);
          }
 
+         if (seg_map_buf) seg_map_buf[my * mbw + mx] = (uint8_t)seg_id;
          /* Compute per-MB quantizer based on segment */
          if (seg_enabled && seg_abs)
             mb_qp = seg_qp[seg_id];
@@ -1454,6 +1587,30 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
             memset(left_nz_v, 0, sizeof(left_nz_v));
             left_nz_dc = 0;
          }
+
+         /* Per-MB simple loop filter */
+         if (filter_type == 1) {
+            int mb_lf_val = lf_level;
+            if (seg_enabled && seg_abs) mb_lf_val = seg_lf[seg_id];
+            else if (seg_enabled) mb_lf_val = lf_level + seg_lf[seg_id];
+            if (mb_lf_val < 0) mb_lf_val = 0; if (mb_lf_val > 63) mb_lf_val = 63;
+            if (mb_lf_val > 0) {
+               int fl = 2 * mb_lf_val, il = mb_lf_val;
+               if (sharpness > 0) { fl += (sharpness > 4) ? 2 : 1; }
+               if (fl > 63) fl = 63;
+               if (sharpness > 0) { il >>= (sharpness > 4) ? 2 : 1; if (il > 9 - sharpness) il = 9 - sharpness; }
+               if (il < 1) il = 1;
+               for (by = 0; by < 16; by++) {
+                  uint8_t *row = yb + (my*16+by)*ys + mx*16;
+                  if (mx > 0) { int p1=row[-2],p0=row[-1],q0=row[0],q1=row[1], a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1)); if((a<0?-a:a)<=fl){int f=vp8_sc(a+4)>>3;row[-1]=vp8_cl(p0+f);row[0]=vp8_cl(q0-f);} }
+                  for (bx = 4; bx < 16; bx += 4) { int p1=row[bx-2],p0=row[bx-1],q0=row[bx],q1=row[bx+1], a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1)); if((a<0?-a:a)<=il){int f=vp8_sc(a+4)>>3;row[bx-1]=vp8_cl(p0+f);row[bx]=vp8_cl(q0-f);} }
+               }
+               for (bx = 0; bx < 16; bx++) {
+                  if (my > 0) { uint8_t *c2=yb+my*16*ys+mx*16+bx; int p1=c2[-2*ys],p0=c2[-ys],q0=c2[0],q1=c2[ys], a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1)); if((a<0?-a:a)<=fl){int f=vp8_sc(a+4)>>3;c2[-ys]=vp8_cl(p0+f);c2[0]=vp8_cl(q0-f);} }
+                  for (by = 4; by < 16; by += 4) { uint8_t *c2=yb+(my*16+by)*ys+mx*16+bx; int p1=c2[-2*ys],p0=c2[-ys],q0=c2[0],q1=c2[ys], a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1)); if((a<0?-a:a)<=il){int f=vp8_sc(a+4)>>3;c2[-ys]=vp8_cl(p0+f);c2[0]=vp8_cl(q0-f);} }
+               }
+            }
+         }
       }
    }
 
@@ -1470,11 +1627,11 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          vp8_yuv2rgb(yb[j*ys+i], ub[(j>>1)*uvs+(i>>1)], vb[(j>>1)*uvs+(i>>1)], &r, &g, &b2);
          pix[j*w+i] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | (uint32_t)b2;
       }
-   free(yb); free(ub); free(vb);
+   free(yb); free(ub); free(vb); free(seg_map_buf);
    *ow = (unsigned)w; *oh = (unsigned)h;
    return pix;
 lfail:
-   free(yb); free(ub); free(vb); free(pix);
+   free(yb); free(ub); free(vb); free(seg_map_buf); free(pix);
    return NULL;
 }
 
