@@ -444,12 +444,23 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-   NSURL *url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
+   /* -[NSBundle URLForResource:withExtension:subdirectory:] is 10.6+
+    * (NS_AVAILABLE(10_6, 4_0)).  On 10.5 Leopard the selector doesn't
+    * exist and the runtime throws "unrecognized selector".  Guard
+    * with respondsToSelector: and fall through to the existing
+    * fill_pathname_join fallback on older systems, which simply
+    * won't do bundle-shipped filter auto-discovery. */
+   NSURL *url = nil;
+   SEL url_for_resource_sel = @selector(URLForResource:withExtension:subdirectory:);
+   if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
+      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
    if (url)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
+   url = nil;
+   if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
+      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
    if (url)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else
