@@ -1179,9 +1179,9 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    ub = (uint8_t*)calloc(uvs * mbh * 8, 1);
    vb = (uint8_t*)calloc(uvs * mbh * 8, 1);
    if (!yb || !ub || !vb) goto lfail;
-   memset(yb, 128, ys * mbh * 16);
-   memset(ub, 128, uvs * mbh * 8);
-   memset(vb, 128, uvs * mbh * 8);
+   memset(yb, 127, ys * mbh * 16);
+   memset(ub, 127, uvs * mbh * 8);
+   memset(vb, 127, uvs * mbh * 8);
 
    /* Non-zero coefficient context tracking (RFC 6386 §13.3).
     * above_nz_*: one entry per sub-block column across the MB row.
@@ -1377,7 +1377,9 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
                      if (bx > 0 && by > 0) stl = sb_dst[-ys-1];
                      else if (by > 0 && mx > 0) stl = sb_dst[-ys-1];
                      else if (bx > 0 && my > 0) stl = yb[(my*16-1)*ys+mx*16+bx*4-1];
-                     else stl = 128;
+                     else if (by > 0) stl = 127; /* above border for first column */
+                     else if (bx > 0) stl = (my > 0) ? yb[(my*16-1)*ys+mx*16+bx*4-1] : 127;
+                     else stl = 127; /* top-left corner */
                      vp8_pred4x4(sb_dst, ys, bmodes[sb_idx], sa, sl, stl);
                      start = 0; /* B_PRED: decode DC from tokens (type 1) */
                   }
