@@ -438,7 +438,17 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    }
 
    [g_ctx setView:g_view];
-   [[g_view window] setColorSpace:[NSColorSpace sRGBColorSpace]];
+   {
+      /* -[NSWindow setColorSpace:] is NS_AVAILABLE_MAC(10_6).  On 10.5
+       * Leopard the selector doesn't exist and the runtime throws
+       * "unrecognized selector".  Without this call the window simply
+       * uses the default colour space (which is what 10.5 always did
+       * anyway), so skip it on systems that lack the method.
+       * +[NSColorSpace sRGBColorSpace] itself is 10.5+ and is safe. */
+      NSWindow *win = [g_view window];
+      if ([win respondsToSelector:@selector(setColorSpace:)])
+         [win setColorSpace:[NSColorSpace sRGBColorSpace]];
+   }
 #ifdef OSX
    [g_ctx makeCurrentContext];
 #else
