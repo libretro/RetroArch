@@ -1587,14 +1587,24 @@ bool rpng_iterate_image(rpng_t *rpng)
           * constant unambiguously 64-bit on LLP64 (Windows) where
           * unsigned long is 32-bit.  rpng_pass_geom's arithmetic is
           * itself size_t-wide after the prior widening commit, so the
-          * pass_size returned here is trustworthy. */
+          * pass_size returned here is trustworthy.
+          *
+          * On ILP32 platforms (e.g. 32-bit PPC / i686), size_t is 32-bit
+          * and pass_size can never reach 2^32, so GCC warns that the
+          * pass_size cap is always false.  Preprocessor-gate it on
+          * 64-bit size_t; the output-size cap remains active on both
+          * 32-bit and 64-bit (width*height*4 can overflow 32-bit even
+          * when each factor is 32-bit). */
          {
             size_t pass_size = 0;
             rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
                            rpng->ihdr.height, NULL, NULL, &pass_size);
             if ((uint64_t)rpng->ihdr.width * rpng->ihdr.height
                      * sizeof(uint32_t) >= 0x100000000ULL
-                  || (uint64_t)pass_size >= 0x100000000ULL)
+#if SIZE_MAX > 0xFFFFFFFFULL
+                  || (uint64_t)pass_size >= 0x100000000ULL
+#endif
+               )
                return false;
          }
 
