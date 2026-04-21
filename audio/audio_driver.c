@@ -723,10 +723,21 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
        * clamps the entire buffer (core audio + voices) as its final step,
        * so an additional pass here would be redundant.  We rely on this
        * because audio_mixer_mix() is called on the same buffer immediately
-       * above, with no intervening modifications. */
+       * above, with no intervening modifications.
+       *
+       * Likewise, when the active driver consumes int16 (the path below
+       * via convert_float_to_s16), saturation is performed by the
+       * conversion itself: the scalar fallback clamps to the s16 range,
+       * and every SIMD variant (SSE2 _mm_packs_epi32, NEON vqmovn_s32,
+       * AltiVec vec_packs, PSP/Allegrex vi2s.q) uses a saturating narrow.
+       * Skipping the float-clamp pass on the s16 path produces a
+       * bit-identical result with one fewer touch of the buffer. */
+      if (
+            (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
 #ifdef HAVE_AUDIOMIXER
-      if (!(audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE))
+         && !(audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
 #endif
+         )
       {
          unsigned i              = 0;
          unsigned total_samples  = output_frames * 2; /* stereo */
