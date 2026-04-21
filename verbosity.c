@@ -321,7 +321,6 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          }
 
 #if TARGET_OS_MAC && !TARGET_OS_IPHONE
-         printf("%s %s", tag_v, buffer);
          if (fp)
          {
             fprintf(fp, "%s %s", tag_v, buffer);
