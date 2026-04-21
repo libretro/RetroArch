@@ -32,7 +32,12 @@
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
+#ifdef HAVE_COCOATOUCH
+/* RetroArchPlaylistManager is iOS/tvOS-only and uses Obj-C
+ * lightweight generics + nullability macros (Xcode 7+, 2015).
+ * Don't pull it into the macOS build - GCC 4.0 can't parse it. */
 #include "../ui/drivers/cocoa/RetroArchPlaylistManager.m"
+#endif
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/cocoa_gl_ctx.m"
 #endif

@@ -128,7 +128,9 @@ void cocoa_show_mouse(void *data, bool state);
 
 void *cocoa_screen_get_chosen(void);
 
+#ifdef HAVE_COCOATOUCH
 bool cocoa_launch_game_by_filename(NSString *filename);
+#endif
 
 #ifdef HAVE_COCOATOUCH
 float cocoa_screen_get_native_scale(void);
