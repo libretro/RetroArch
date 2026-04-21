@@ -17,6 +17,15 @@
 
 #define WIN32_LEAN_AND_MEAN
 
+/* Must be defined BEFORE any Windows headers are pulled in, otherwise
+ * the SDK locks in the toolchain default (which on older mingw-w64
+ * runtimes is below 0x0601), and the QueryDisplayConfig code path in
+ * win32_display_server_get_refresh_rate() gets compiled out, returning
+ * a hardcoded 0.0f. */
+#ifndef _WIN32_WINDOWS
+#define _WIN32_WINDOWS 0x0601
+#endif
+
 /* VC6 needs objbase included before initguid, but nothing else does */
 #include <objbase.h>
 #include <initguid.h>
