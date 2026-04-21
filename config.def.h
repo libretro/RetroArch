@@ -1794,7 +1794,7 @@
 #if defined(HAKCHI)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://hakchicloud.com/Libretro_Cores/"
 #elif defined(WEBOS)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://retroarch-cores.webosbrew.org/armv7a/"
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/webos/armv7a/latest/"
 #elif defined(ANDROID)
 #if defined(ANDROID_ARM_V7)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/"
