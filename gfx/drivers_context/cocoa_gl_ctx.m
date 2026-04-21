@@ -532,7 +532,14 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
          [g_view retain];
          [g_view removeFromSuperviewWithoutNeedingDisplay];
          [[fullscreen_window contentView] addSubview:g_view];
-         [g_view setFrame:[[fullscreen_window contentView] bounds]];
+         /* -[NSWindow contentView] returns id on the 10.5-10.9 SDKs,
+          * which means GCC can resolve -bounds either to -[NSView
+          * bounds] (NSRect) or -[CALayer bounds] (CGRect).  On 32-bit
+          * Darwin those are distinct incompatible structs, so the
+          * implicit CGRect -> NSRect (setFrame:'s parameter) coercion
+          * fails to compile.  Cast the receiver to NSView* so the
+          * right -bounds wins.  Same fix class as 8e428f4e67. */
+         [g_view setFrame:[(NSView*)[fullscreen_window contentView] bounds]];
          [g_view release];
 
          /* Order the windowed window out, bring the fullscreen window
