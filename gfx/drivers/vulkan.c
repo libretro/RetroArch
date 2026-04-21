@@ -8052,7 +8052,13 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
          {
             int idx                = base + i;
             struct vk_texture *tex = &vk->overlay.images[idx];
+#ifdef VULKAN_HDR_SWAPCHAIN
+            VkPipeline pipeline    = (vk->flags & VK_FLAG_SDR_PIPELINE)
+               ? vk->display.pipelines_sdr[3]
+               : vk->display.pipelines[3]; /* Strip with blend */
+#else
             VkPipeline pipeline    = vk->display.pipelines[3]; /* Strip with blend */
+#endif
 
             if (tex->image)
                vulkan_transition_texture(vk, vk->cmd, tex);
