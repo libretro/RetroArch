@@ -34,6 +34,13 @@
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
 
+#if !defined(MAC_OS_X_VERSION_10_6)
+/* Pre-10.6: need the Carbon Process Manager's TransformProcessType()
+ * to promote a bare-binary process to a foreground GUI app that
+ * receives keystrokes.  See the call site below in main() for detail. */
+#include <ApplicationServices/ApplicationServices.h>
+#endif
+
 #if defined(HAVE_COCOA_METAL)
 #include "../../gfx/common/metal_common.h"
 #endif
@@ -1445,11 +1452,26 @@ int main(int argc, char *argv[])
 #endif
       [NSApplication sharedApplication];
 #ifdef MAC_OS_X_VERSION_10_6
-      /* setActivationPolicy: and NSApplicationActivationPolicyRegular
-       * are 10.6+.  Before that, an app becomes a regular GUI app
-       * via Info.plist (CFBundlePackageType=APPL, no LSUIElement
-       * / LSBackgroundOnly), which the PPC bundle already does. */
+      /* setActivationPolicy: is 10.6+.  On Snow Leopard and later,
+       * this is the official way to promote a bare-binary background
+       * process to a regular GUI app that receives keystrokes. */
       [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+#else
+      /* Pre-10.6: setActivationPolicy: doesn't exist.  For bare-
+       * binary builds (no .app bundle wrapping, no Info.plist the
+       * WindowServer can consult), the process starts as a
+       * background-only app and NEVER RECEIVES KEYSTROKES.  Mouse
+       * events still reach the window, but key events go to whatever
+       * app is actually frontmost (Finder or a terminal emulator).
+       *
+       * The pre-10.6 equivalent is the Carbon Process Manager call
+       * TransformProcessType(), available since 10.3 and supporting
+       * plain background-only processes (no LSUIElement / LSBackground-
+       * Only) on 10.5+ per the Leopard HIServices release notes. */
+      {
+         ProcessSerialNumber psn = { 0, kCurrentProcess };
+         TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+      }
 #endif
 
       delegate = [[RetroArch_OSX alloc] init];
