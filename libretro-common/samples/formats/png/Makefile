@@ -1,4 +1,5 @@
 TARGET := rpng
+TARGET_TEST := rpng_chunk_overflow_test
 
 CORE_DIR          := .
 LIBRETRO_PNG_DIR  := ../../../formats/png
@@ -43,11 +44,24 @@ SOURCES_C := 	\
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c
 
+# The chunk-overflow regression test exercises only
+# rpng_iterate_image, which doesn't invoke the inflate stream,
+# but rpng.c itself pulls in trans_stream.h so the
+# trans_stream/zlib objects must still be linked in.
+TEST_SOURCES_C := \
+	$(CORE_DIR)/rpng_chunk_overflow_test.c \
+	$(LIBRETRO_PNG_DIR)/rpng.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c
+
 OBJS := $(SOURCES_C:.c=.o)
+TEST_OBJS := $(TEST_SOURCES_C:.c=.o)
 
 CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DRPNG_TEST -I$(LIBRETRO_COMM_DIR)/include
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET_TEST)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -55,7 +69,10 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET_TEST): $(TEST_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(OBJS) $(TEST_OBJS)
 
 .PHONY: clean

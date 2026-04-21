@@ -58,6 +58,7 @@ jobs:
             rjson_test
             rtga_test
             rbmp_test
+            rpng_chunk_overflow_test
           )
 
           # Per-binary run command (overrides ./<binary> if present).
