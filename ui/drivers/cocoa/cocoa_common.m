@@ -842,7 +842,7 @@ void *cocoa_screen_get_chosen(void)
 
     monitor_index        = settings->uints.video_monitor_index;
 
-    if (monitor_index >= screens.count)
+    if (monitor_index >= [screens count])
         return (BRIDGE void*)screens;
     return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
@@ -1056,10 +1056,10 @@ bool cocoa_get_metrics(
 config_file_t *open_userdefaults_config_file(void)
 {
    config_file_t *conf = NULL;
-   NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
+   NSString *backup = [[NSUserDefaults standardUserDefaults] stringForKey:@FILE_PATH_MAIN_CONFIG];
    if ([backup length] > 0)
    {
-      conf = config_file_new_from_string(backup.UTF8String, path_get(RARCH_PATH_CONFIG));
+      conf = config_file_new_from_string([backup UTF8String], path_get(RARCH_PATH_CONFIG));
       config_set_int(conf, "bundle_assets_extract_last_version", 0);
    }
    return conf;
@@ -1071,7 +1071,7 @@ void write_userdefaults_config_file(void)
                                               encoding:NSUTF8StringEncoding
                                                  error:nil];
    if (conf)
-      [NSUserDefaults.standardUserDefaults setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
+      [[NSUserDefaults standardUserDefaults] setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
 }
 
 #if TARGET_OS_TV
