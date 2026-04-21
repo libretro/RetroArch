@@ -1314,7 +1314,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
             for(j=0;j<16;j++) ly[j]=yb[(my*16+j)*ys+mx*16-1];
             for(j=0;j<8;j++) lu[j]=ub[(my*8+j)*uvs+mx*8-1];
             for(j=0;j<8;j++) lv[j]=vb[(my*8+j)*uvs+mx*8-1];
-         } else { memset(ly,129,16); memset(lu,129,8); memset(lv,129,8); }
+         } else { memset(ly,127,16); memset(lu,127,8); memset(lv,127,8); }
 
          /* Predict */
          if (ym != 4)
