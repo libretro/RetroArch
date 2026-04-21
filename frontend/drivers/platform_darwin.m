@@ -455,14 +455,25 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
       url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
    if (url)
-       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+       /* URLForResource: with a nil name returns a URL pointing at
+        * the first matching .dsp file.  What we want is the directory
+        * it lives in, so strip the last path component.
+        *
+        * The previous code used [[url baseURL] fileSystemRepresentation],
+        * which was wrong on two counts: -baseURL returns nil for URLs
+        * constructed absolutely (which is what URLForResource: returns),
+        * so the result was a NULL source pointer into strlcpy; and on
+        * pre-10.9 SDKs NSURL doesn't declare -fileSystemRepresentation,
+        * so GCC resolved the selector against NSString's version with
+        * an incompatible-receiver warning. */
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[[url path] stringByDeletingLastPathComponent] UTF8String], sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    url = nil;
    if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
       url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
    if (url)
-       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[[url path] stringByDeletingLastPathComponent] UTF8String], sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], application_data, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], application_data, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
