@@ -250,10 +250,15 @@ if [ "$OS" = 'Darwin' ]; then
    # <stdatomic.h>, AVFoundation, @available).  On Tiger/Leopard /
    # PowerPC / Xcode 3.1 those APIs are absent and builds fail.
    #
+   # We also compute macos_target_pre_10_11 for code that requires
+   # Xcode 7-era Obj-C features (nullability macros, lightweight
+   # generics) - those need SDK 10.11 / Xcode 7 or newer.
+   #
    # MACOSX_DEPLOYMENT_TARGET (set by the invoker or the toolchain)
    # takes priority over sw_vers, because on a cross-build the host
    # OS version may be newer than the target.
    macos_target_pre_10_7=no
+   macos_target_pre_10_11=no
    macos_target_ver="${MACOSX_DEPLOYMENT_TARGET:-}"
    if [ -z "$macos_target_ver" ] && command -v sw_vers >/dev/null 2>&1; then
       macos_target_ver="$(sw_vers -productVersion 2>/dev/null)"
@@ -266,6 +271,10 @@ if [ "$OS" = 'Darwin' ]; then
       if [ "$mt_major" -lt 10 ] || \
          { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 7 ]; }; then
          macos_target_pre_10_7=yes
+      fi
+      if [ "$mt_major" -lt 10 ] || \
+         { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 11 ]; }; then
+         macos_target_pre_10_11=yes
       fi
       unset mt_major mt_minor
    fi
@@ -307,7 +316,21 @@ if [ "$OS" = 'Darwin' ]; then
       HAVE_MICROPHONE=no
       die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling microphone (requires C11 <stdatomic.h>).  Override with --enable-microphone."
    fi
-   unset macos_target_ver macos_target_pre_10_7
+
+   # RetroArchPlaylistManager.m/.h uses Obj-C nullability macros
+   # (NS_ASSUME_NONNULL_BEGIN/END, nullable, _Nonnull) and
+   # lightweight generics (NSArray<...>) - all Xcode 7+ (2015)
+   # features requiring SDK 10.11 / iOS 9.0 or newer.  Enable on
+   # iOS/tvOS (any HAVE_COCOATOUCH build is modern enough in
+   # practice) and on macOS 10.11+ targets.  Disable on pre-10.11
+   # macOS where GCC/old-clang can't parse the syntax.
+   if [ "$HAVE_COCOATOUCH" = 'yes' ] || \
+      [ "$macos_target_pre_10_11" = 'no' ]; then
+      HAVE_RETROARCH_PLAYLIST_MANAGER=yes
+   else
+      HAVE_RETROARCH_PLAYLIST_MANAGER=no
+   fi
+   unset macos_target_ver macos_target_pre_10_7 macos_target_pre_10_11
 
    if [ "$HAVE_METAL" = yes ] || [ "$HAVE_VULKAN" = yes ]; then
       check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain

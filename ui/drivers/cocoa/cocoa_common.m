@@ -23,7 +23,7 @@
 #include "cocoa_common.h"
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
-#ifdef HAVE_COCOATOUCH
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
 #include "RetroArchPlaylistManager.h"
 #endif
 
@@ -1197,7 +1197,7 @@ void cocoa_file_load_with_detect_core(const char *filename)
    }
 }
 
-#ifdef HAVE_COCOATOUCH
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
 bool cocoa_launch_game_by_filename(NSString *filename)
 {
    core_info_list_t *core_info_list = NULL;
@@ -1294,4 +1294,4 @@ bool cocoa_launch_game_by_filename(NSString *filename)
    return task_push_load_content_with_new_core_from_companion_ui(
       info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
 }
-#endif /* HAVE_COCOATOUCH */
+#endif /* HAVE_RETROARCH_PLAYLIST_MANAGER */

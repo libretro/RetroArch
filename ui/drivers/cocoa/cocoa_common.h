@@ -29,6 +29,21 @@
 #include <AppKit/AppKit.h>
 #endif
 
+/* RetroArchPlaylistManager.m/.h uses Obj-C nullability macros
+ * (NS_ASSUME_NONNULL_BEGIN/END, nullable, _Nonnull) and
+ * lightweight generics (NSArray<...>) - all Xcode 7+ (2015)
+ * features requiring SDK 10.11 / iOS 9.0 or newer.  Synthesize
+ * HAVE_RETROARCH_PLAYLIST_MANAGER here for build systems that
+ * don't pass it in (e.g. the RetroArch_PPC.xcodeproj, non-qb
+ * builds).  qb/config.libs.sh sets the flag directly for make
+ * builds and takes priority if already defined. */
+#ifndef HAVE_RETROARCH_PLAYLIST_MANAGER
+#if defined(HAVE_COCOATOUCH) || \
+    (defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 101100)
+#define HAVE_RETROARCH_PLAYLIST_MANAGER 1
+#endif
+#endif
+
 #include "../../../retroarch.h"
 
 #if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
@@ -128,7 +143,7 @@ void cocoa_show_mouse(void *data, bool state);
 
 void *cocoa_screen_get_chosen(void);
 
-#ifdef HAVE_COCOATOUCH
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
 bool cocoa_launch_game_by_filename(NSString *filename);
 #endif
 
