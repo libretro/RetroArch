@@ -115,6 +115,7 @@
 /* iOS/OSX specific. Lacks clock_gettime(), so implement it. */
 #ifdef __MACH__
 #include <sys/time.h>
+#include <AvailabilityMacros.h>
 
 #ifndef CLOCK_MONOTONIC
 #define CLOCK_MONOTONIC 0
@@ -124,10 +125,18 @@
 #define CLOCK_REALTIME 0
 #endif
 
-/**
- * TODO/FIXME: clock_gettime function is part of iOS 10 now
- **/
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
+/* clock_gettime() was added in iOS 10.0 / macOS 10.12 Sierra.
+ * On deployment targets below those versions the symbol doesn't
+ * exist in libSystem and the link fails, so fall back to a
+ * gettimeofday() shim.  Gated on MIN_REQUIRED (deployment target)
+ * rather than MAX_ALLOWED (SDK) because the binary needs to run on
+ * the deployment target, and Apple weak-links clock_gettime when
+ * targeting < 10.12 even from a newer SDK. */
+#if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) \
+       && __IPHONE_OS_VERSION_MIN_REQUIRED < 100000) \
+ || (defined(MAC_OS_X_VERSION_MIN_REQUIRED) \
+       && MAC_OS_X_VERSION_MIN_REQUIRED < 101200)
+#define RA_NEEDS_CLOCK_GETTIME_SHIM 1
 static int ra_clock_gettime(int clk_ik, struct timespec *t)
 {
    struct timeval now;
@@ -141,7 +150,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 #endif
 #endif
 
-#if defined(__MACH__) && __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
+#if defined(__MACH__) && defined(RA_NEEDS_CLOCK_GETTIME_SHIM)
 #else
 #define ra_clock_gettime clock_gettime
 #endif
