@@ -429,15 +429,22 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 
       fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+      /* If pixel-format creation failed with NSOpenGLPFAAllowOfflineRenderers
+       * (added in 10.5 - some drivers on early 10.5 builds could reject it
+       * even though the SDK exposed the constant), retry without it.  The
+       * previous guard here was #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050,
+       * which meant "compile this fallback only when targeting pre-10.5" -
+       * the opposite of what was intended and unreachable in practice since
+       * the static `attributes` array above already references
+       * NSOpenGLPFAAllowOfflineRenderers unconditionally, so the file
+       * demands a 10.5+ SDK (MAC_OS_X_VERSION_MAX_ALLOWED >= 1050) just
+       * to compile.  The fallback is now always available at runtime and
+       * only exercised when the first -initWithAttributes: returns nil. */
       if (fmt == nil)
       {
-         /* NSOpenGLFPAAllowOfflineRenderers is
-            not supported on this OS version. */
          attributes[3]  = (NSOpenGLPixelFormatAttribute)0;
          fmt            = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
       }
-#endif
 
       if (cocoa_ctx->flags & COCOA_CTX_FLAG_USE_HW_CTX)
       {
