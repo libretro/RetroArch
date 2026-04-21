@@ -608,38 +608,47 @@ xfail:
 
 /* ===== VP8 Lossy — full decode with coefficients ===== */
 
-typedef struct { const uint8_t *buf, *end; uint32_t range, value; int bit_count; } vp8b;
+typedef struct { const uint8_t *buf, *end; uint32_t range; uint64_t value; int count; } vp8b;
+
+static void vp8b_fill(vp8b *b)
+{
+   int shift = 48 - b->count;
+   while (shift >= 0 && b->buf < b->end)
+   {
+      b->count += 8;
+      b->value |= (uint64_t)(*b->buf++) << shift;
+      shift -= 8;
+   }
+}
 
 static void vp8b_init(vp8b *b, const uint8_t *d, size_t s)
 {
    b->buf = d; b->end = d + s; b->range = 255;
-   b->value = 0; b->bit_count = 0;
-   if (b->buf < b->end) { b->value = (uint32_t)(*b->buf++) << 8; }
-   if (b->buf < b->end) { b->value |= (uint32_t)(*b->buf++); }
+   b->value = 0; b->count = -8;
+   vp8b_fill(b);
 }
 
 static INLINE int vp8b_get(vp8b *b, int prob)
 {
    uint32_t split = 1 + (((b->range - 1) * (uint32_t)prob) >> 8);
-   uint32_t bigsplit = split << 8;
-   int bit;
+   uint64_t bigsplit = (uint64_t)split << 56;
+   int bit, shift;
    if (b->value >= bigsplit)
-   { bit = 1; b->range -= split; b->value -= bigsplit; }
-   else
-   { bit = 0; b->range = split; }
-   while (b->range < 128)
    {
-      b->value <<= 1;
-      b->range <<= 1;
-      if (++b->bit_count == 8)
-      {
-         b->bit_count = 0;
-         if (b->buf < b->end)
-            b->value |= *b->buf++;
-      }
+      bit = 1; b->range -= split; b->value -= bigsplit;
    }
+   else
+   {
+      bit = 0; b->range = split;
+   }
+   shift = 0;
+   while (b->range < 128) { b->range <<= 1; shift++; }
+   b->value <<= shift;
+   b->count -= shift;
+   if (b->count < 0) vp8b_fill(b);
    return bit;
 }
+
 
 static INLINE int     vp8b_bit(vp8b *b)       { return vp8b_get(b, 128); }
 static INLINE uint32_t vp8b_lit(vp8b *b, int n)
@@ -870,18 +879,7 @@ static const uint8_t kf_bmode_prob[10][10][9] = {
  {{190,80,35,99,180,80,126,54,45},{85,126,47,87,176,51,41,20,32},{101,75,128,139,118,146,116,128,85},{56,41,15,176,236,85,37,9,62},{146,36,19,30,171,255,97,27,20},{71,30,17,119,118,255,17,18,138},{101,38,60,138,55,70,43,26,142},{138,45,61,62,219,1,81,188,64},{32,41,20,117,151,142,20,21,163},{112,19,12,61,195,128,48,4,24}}
 };
 
-/* Decode a B_PRED sub-block mode from the key-frame tree (RFC 6386 §12.1).
- * The tree is NOT a linear chain — it has a branch at node 3:
- *   node0: p[0] → DC(0) | node1
- *   node1: p[1] → TM(1) | node2
- *   node2: p[2] → VE(2) | node3
- *   node3: p[3] → node4{HE,RD,VR} | node6{LD,VL,HD,HU}
- *   node4: p[4] → HE(3) | node5
- *   node5: p[5] → RD(5) | VR(7)
- *   node6: p[6] → LD(4) | node7
- *   node7: p[7] → VL(8) | node8
- *   node8: p[8] → HD(6) | HU(9)
- * Mode values: DC=0,TM=1,VE=2,HE=3,LD=4,RD=5,HD=6,VR=7,VL=8,HU=9 */
+/* Decode a B_PRED sub-block mode from the key-frame tree (RFC 6386 §12.1) */
 static int vp8_read_bmode(vp8b *br, int above, int left)
 {
    const uint8_t *p = kf_bmode_prob[above][left];
@@ -889,12 +887,10 @@ static int vp8_read_bmode(vp8b *br, int above, int left)
    if (!vp8b_get(br, p[1])) return 1; /* B_TM_PRED */
    if (!vp8b_get(br, p[2])) return 2; /* B_VE_PRED */
    if (!vp8b_get(br, p[3])) {
-      /* Left subtree: HE, LD, RD */
       if (!vp8b_get(br, p[4])) return 3; /* B_HE_PRED */
       if (!vp8b_get(br, p[5])) return 5; /* B_LD_PRED */
       return 6; /* B_RD_PRED */
    } else {
-      /* Right subtree: VR, VL, HD, HU */
       if (!vp8b_get(br, p[6])) return 4; /* B_VR_PRED */
       if (!vp8b_get(br, p[7])) return 7; /* B_VL_PRED */
       if (!vp8b_get(br, p[8])) return 8; /* B_HD_PRED */
@@ -935,7 +931,7 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
          memset(d+j*s,(uint8_t)v,4);
       }
       break;
-   case 4: /* B_VR_PRED (4) */
+   case 4: /* B_VR_PRED */
       d[3*s+0]=(uint8_t)((l[2]+2*l[1]+l[0]+2)>>2);
       d[2*s+0]=(uint8_t)((l[1]+2*l[0]+tl+2)>>2);
       d[1*s+0]=d[3*s+1]=(uint8_t)((l[0]+2*tl+a[0]+2)>>2);
@@ -947,7 +943,7 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
       d[0*s+3]=(uint8_t)((a[2]+a[3]+1)>>1);
       d[1*s+3]=(uint8_t)((a[1]+2*a[2]+a[3]+2)>>2);
       break;
-   case 5: /* B_LD_PRED (5) */
+   case 5: /* B_LD_PRED */
       d[0*s+0]=(uint8_t)((a[0]+2*a[1]+a[2]+2)>>2);
       d[0*s+1]=d[1*s+0]=(uint8_t)((a[1]+2*a[2]+a[3]+2)>>2);
       d[0*s+2]=d[1*s+1]=d[2*s+0]=(uint8_t)((a[2]+2*a[3]+a[4]+2)>>2);
@@ -956,7 +952,7 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
       d[2*s+3]=d[3*s+2]=(uint8_t)((a[5]+2*a[6]+a[7]+2)>>2);
       d[3*s+3]=(uint8_t)((a[6]+2*a[7]+a[7]+2)>>2);
       break;
-   case 6: /* B_RD_PRED (6) */
+   case 6: /* B_RD_PRED */
       d[3*s+0]=(uint8_t)((l[3]+2*l[2]+l[1]+2)>>2);
       d[2*s+0]=d[3*s+1]=(uint8_t)((l[2]+2*l[1]+l[0]+2)>>2);
       d[1*s+0]=d[2*s+1]=d[3*s+2]=(uint8_t)((l[1]+2*l[0]+tl+2)>>2);
@@ -966,45 +962,28 @@ static void vp8_pred4x4(uint8_t *d, int s, int m,
       d[0*s+3]=(uint8_t)((a[1]+2*a[2]+a[3]+2)>>2);
       break;
    case 7: /* B_VL_PRED */
-      d[0*s+0]=(uint8_t)((a[0]+a[1]+1)>>1);
-      d[1*s+0]=(uint8_t)((a[0]+2*a[1]+a[2]+2)>>2);
-      d[0*s+1]=d[2*s+0]=(uint8_t)((a[1]+a[2]+1)>>1);
-      d[1*s+1]=d[3*s+0]=(uint8_t)((a[1]+2*a[2]+a[3]+2)>>2);
-      d[0*s+2]=d[2*s+1]=(uint8_t)((a[2]+a[3]+1)>>1);
-      d[1*s+2]=d[3*s+1]=(uint8_t)((a[2]+2*a[3]+a[4]+2)>>2);
-      d[0*s+3]=d[2*s+2]=(uint8_t)((a[3]+a[4]+1)>>1);
-      d[1*s+3]=d[3*s+2]=(uint8_t)((a[3]+2*a[4]+a[5]+2)>>2);
-      d[2*s+3]=(uint8_t)((a[4]+a[5]+1)>>1);
-      d[3*s+3]=(uint8_t)((a[4]+2*a[5]+a[6]+2)>>2);
+      d[0*s+0]=(uint8_t)((a[0]+a[1]+1)>>1); d[1*s+0]=(uint8_t)((a[0]+2*a[1]+a[2]+2)>>2);
+      d[0*s+1]=d[2*s+0]=(uint8_t)((a[1]+a[2]+1)>>1); d[1*s+1]=d[3*s+0]=(uint8_t)((a[1]+2*a[2]+a[3]+2)>>2);
+      d[0*s+2]=d[2*s+1]=(uint8_t)((a[2]+a[3]+1)>>1); d[1*s+2]=d[3*s+1]=(uint8_t)((a[2]+2*a[3]+a[4]+2)>>2);
+      d[0*s+3]=d[2*s+2]=(uint8_t)((a[3]+a[4]+1)>>1); d[1*s+3]=d[3*s+2]=(uint8_t)((a[3]+2*a[4]+a[5]+2)>>2);
+      d[2*s+3]=(uint8_t)((a[4]+a[5]+1)>>1); d[3*s+3]=(uint8_t)((a[4]+2*a[5]+a[6]+2)>>2);
       break;
    case 8: /* B_HD_PRED */
-      d[3*s+0]=(uint8_t)((l[3]+l[2]+1)>>1);
-      d[3*s+1]=(uint8_t)((l[3]+2*l[2]+l[1]+2)>>2);
-      d[2*s+0]=d[3*s+2]=(uint8_t)((l[2]+l[1]+1)>>1);
-      d[2*s+1]=d[3*s+3]=(uint8_t)((l[2]+2*l[1]+l[0]+2)>>2);
-      d[1*s+0]=d[2*s+2]=(uint8_t)((l[1]+l[0]+1)>>1);
-      d[1*s+1]=d[2*s+3]=(uint8_t)((l[1]+2*l[0]+tl+2)>>2);
-      d[0*s+0]=d[1*s+2]=(uint8_t)((l[0]+tl+1)>>1);
-      d[0*s+1]=d[1*s+3]=(uint8_t)((l[0]+2*tl+a[0]+2)>>2);
-      d[0*s+2]=(uint8_t)((tl+2*a[0]+a[1]+2)>>2);
-      d[0*s+3]=(uint8_t)((a[0]+2*a[1]+a[2]+2)>>2);
+      d[3*s+0]=(uint8_t)((l[3]+l[2]+1)>>1); d[3*s+1]=(uint8_t)((l[3]+2*l[2]+l[1]+2)>>2);
+      d[2*s+0]=d[3*s+2]=(uint8_t)((l[2]+l[1]+1)>>1); d[2*s+1]=d[3*s+3]=(uint8_t)((l[2]+2*l[1]+l[0]+2)>>2);
+      d[1*s+0]=d[2*s+2]=(uint8_t)((l[1]+l[0]+1)>>1); d[1*s+1]=d[2*s+3]=(uint8_t)((l[1]+2*l[0]+tl+2)>>2);
+      d[0*s+0]=d[1*s+2]=(uint8_t)((l[0]+tl+1)>>1); d[0*s+1]=d[1*s+3]=(uint8_t)((l[0]+2*tl+a[0]+2)>>2);
+      d[0*s+2]=(uint8_t)((tl+2*a[0]+a[1]+2)>>2); d[0*s+3]=(uint8_t)((a[0]+2*a[1]+a[2]+2)>>2);
       break;
    case 9: /* B_HU_PRED */
-      d[0*s+0]=(uint8_t)((l[0]+l[1]+1)>>1);
-      d[0*s+1]=(uint8_t)((l[0]+2*l[1]+l[2]+2)>>2);
-      d[0*s+2]=d[1*s+0]=(uint8_t)((l[1]+l[2]+1)>>1);
-      d[0*s+3]=d[1*s+1]=(uint8_t)((l[1]+2*l[2]+l[3]+2)>>2);
-      d[1*s+2]=d[2*s+0]=(uint8_t)((l[2]+l[3]+1)>>1);
-      d[1*s+3]=d[2*s+1]=(uint8_t)((l[2]+2*l[3]+l[3]+2)>>2);
+      d[0*s+0]=(uint8_t)((l[0]+l[1]+1)>>1); d[0*s+1]=(uint8_t)((l[0]+2*l[1]+l[2]+2)>>2);
+      d[0*s+2]=d[1*s+0]=(uint8_t)((l[1]+l[2]+1)>>1); d[0*s+3]=d[1*s+1]=(uint8_t)((l[1]+2*l[2]+l[3]+2)>>2);
+      d[1*s+2]=d[2*s+0]=(uint8_t)((l[2]+l[3]+1)>>1); d[1*s+3]=d[2*s+1]=(uint8_t)((l[2]+2*l[3]+l[3]+2)>>2);
       d[2*s+2]=d[2*s+3]=d[3*s+0]=d[3*s+1]=d[3*s+2]=d[3*s+3]=(uint8_t)l[3];
       break;
    default:
-   {  int sum=0;
-      for(i=0;i<4;i++) sum+=a[i]+l[i];
-      { uint8_t dc=(uint8_t)((sum+4)>>3);
-        for(j=0;j<4;j++) memset(d+j*s,dc,4); }
-      break;
-   }
+   {  int sum=0; for(i=0;i<4;i++) sum+=a[i]+l[i];
+      { uint8_t dc=(uint8_t)((sum+4)>>3); for(j=0;j<4;j++) memset(d+j*s,dc,4); } break; }
    }
 }
 
@@ -1060,7 +1039,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    mbw = (w+15) >> 4; mbh = (h+15) >> 4;
    p0 = data + 10;
    if ((size_t)(p0 - data) + p0s > len) return NULL;
-   vp8b_init(&br, p0, p0s);
+   vp8b_init(&br, p0, (size_t)(data + len - p0));
 
    vp8b_bit(&br); vp8b_bit(&br); /* color_space, clamping */
 
@@ -1242,14 +1221,11 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          /* Read segment ID if segmentation is enabled */
          if (seg_enabled)
          {
-            /* Segment ID: balanced binary tree (VP8 spec) */
-            if (!vp8b_get(&br, seg_prob[0])) {
-               /* Left subtree: seg 0 or 1 */
-               seg_id = vp8b_get(&br, seg_prob[1]) ? 1 : 0;
-            } else {
-               /* Right subtree: seg 2 or 3 */
-               seg_id = vp8b_get(&br, seg_prob[2]) ? 3 : 2;
-            }
+            /* VP8 segment tree: prob[0] -> left(prob[1]->seg0/seg1) / right(prob[2]->seg2/seg3) */
+            if (vp8b_get(&br, seg_prob[0]))
+               seg_id = 2 + vp8b_get(&br, seg_prob[2]);
+            else
+               seg_id = vp8b_get(&br, seg_prob[1]);
          }
 
          /* Compute per-MB quantizer based on segment */
@@ -1269,11 +1245,11 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          { int q2 = mb_qp + uvdc_dq; uv_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; if(uv_dc_q>132)uv_dc_q=132; }
          { int q2 = mb_qp + uvac_dq; uv_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2]; }
 
-         /* Y mode — keyframe tree: B_PRED first (RFC 6386 §11.2) */
-         if      (!vp8b_get(&br, vp8_ymp[0])) ym = 4; /* B_PRED */
-         else if (!vp8b_get(&br, vp8_ymp[1])) ym = 0; /* DC_PRED */
-         else if (!vp8b_get(&br, vp8_ymp[2])) ym = 1; /* V_PRED */
-         else if (!vp8b_get(&br, vp8_ymp[3])) ym = 2; /* H_PRED */
+         /* Y mode */
+         if      (!vp8b_get(&br, vp8_ymp[0])) ym = 4; /* B_PRED first */
+         else if (!vp8b_get(&br, vp8_ymp[1])) ym = 0;
+         else if (!vp8b_get(&br, vp8_ymp[2])) ym = 1;
+         else if (!vp8b_get(&br, vp8_ymp[3])) ym = 2;
          else ym = 3; /* TM_PRED */
 
          if (ym == 4)
@@ -1318,6 +1294,10 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          else if (!vp8b_get(&br, vp8_uvmp[1])) uvm = 1;
          else if (!vp8b_get(&br, vp8_uvmp[2])) uvm = 2;
          else uvm = 3;
+
+         /* Skip flag */
+         if (skip_enabled)
+            is_skip = vp8b_bit(&br);
 
          /* Gather prediction context */
          if (my > 0) {
