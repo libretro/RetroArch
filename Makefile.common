@@ -2602,8 +2602,15 @@ ifeq ($(HAVE_COCOA_COMMON),1)
    DEFINES += -DHAVE_MAIN -DOSX -DHAVE_COCOA
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
-          ui/drivers/cocoa/cocoa_common.o \
-          ui/drivers/cocoa/RetroArchPlaylistManager.o
+          ui/drivers/cocoa/cocoa_common.o
+   # RetroArchPlaylistManager uses Obj-C lightweight generics and
+   # nullability macros (Xcode 7+, 2015).  Its only consumer,
+   # cocoa_launch_game_by_filename(), is iOS/tvOS-only.  Gate on
+   # HAVE_COCOATOUCH so desktop (macOS) make-builds don't try to
+   # compile it - GCC 4.0 on PPC can't parse the Xcode 7 syntax.
+   ifeq ($(HAVE_COCOATOUCH), 1)
+      OBJ += ui/drivers/cocoa/RetroArchPlaylistManager.o
+   endif
    LIBS += -framework Cocoa -framework AppKit -framework Foundation
 
    ifeq ($(HAVE_OPENGL), 1)
