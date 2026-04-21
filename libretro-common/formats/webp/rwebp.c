@@ -1060,7 +1060,7 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
    mbw = (w+15) >> 4; mbh = (h+15) >> 4;
    p0 = data + 10;
    if ((size_t)(p0 - data) + p0s > len) return NULL;
-   vp8b_init(&br, p0, p0s);
+   vp8b_init(&br, p0, (size_t)(data + len - p0)); /* Use full buffer like libvpx */
 
    vp8b_bit(&br); vp8b_bit(&br); /* color_space, clamping */
 
