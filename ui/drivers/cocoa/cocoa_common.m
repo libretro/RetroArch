@@ -74,8 +74,14 @@ extern bool RAIsVoiceOverRunning(void)
 #import <AppKit/AppKit.h>
 extern bool RAIsVoiceOverRunning(void)
 {
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
+   /* @available is clang-only (Xcode 7+).  GCC 4.0 rejects the
+    * '@' as a stray token.  isVoiceOverEnabled on NSWorkspace is
+    * 10.13+ anyway, so on older SDKs we skip this block entirely
+    * and fall through to the return below. */
    if (@available(macOS 10.13, *))
       return [[NSWorkspace sharedWorkspace] isVoiceOverEnabled];
+#endif
    return false;
 }
 #endif
