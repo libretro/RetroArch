@@ -68,7 +68,7 @@ struct libusb_adapter
    uint8_t name[NAME_MAX_LENGTH];
    uint8_t data[2048];
 
-   int slot;
+   int32_t slot;
 
    sthread_t *thread;
    slock_t *send_control_lock;

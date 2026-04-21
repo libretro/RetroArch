@@ -681,7 +681,7 @@ struct btpad_queue_command
 
 struct btstack_hid_adapter
 {
-   uint32_t slot;
+   int32_t slot;
 
    enum btpad_state state;
 
