@@ -29,6 +29,16 @@
 #define _WIN32_WINDOWS 0x0601
 #endif
 
+/* QueryDisplayConfig and friends are Windows 7+. The SDK shipped
+ * with VS2005 (and some older mingw-w64 versions) does not declare
+ * QDC_DATABASE_CURRENT, even though the runtime symbols are loaded
+ * via GetProcAddress when HAVE_DYLIB is set. Provide a fallback so
+ * the code compiles on those toolchains; on a modern SDK this is a
+ * no-op since the symbol is already defined in wingdi.h. */
+#ifndef QDC_DATABASE_CURRENT
+#define QDC_DATABASE_CURRENT 0x00000004
+#endif
+
 /* VC6 needs objbase included before initguid, but nothing else does */
 #include <objbase.h>
 #include <initguid.h>
