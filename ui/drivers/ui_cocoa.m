@@ -609,11 +609,14 @@ static ui_application_t ui_application_cocoa = {
 
 @synthesize window = _window;
 
-#ifndef HAVE_COCOA_METAL
+#if !__has_feature(objc_arc)
+/* ARC auto-generates -dealloc from strong ivars and forbids explicit
+ * overrides that just call [super dealloc].  On MRR we have to release
+ * _window manually.  See cocoa_defines.h for the ARC/MRR macro story. */
 - (void)dealloc
 {
-   [_window release];
-   [super dealloc];
+   RARCH_RELEASE(_window);
+   RARCH_SUPER_DEALLOC();
 }
 #endif
 
@@ -1119,9 +1122,7 @@ static NSMenuItem *cocoa_menu_item_with_action(NSString *title,
       [item setTarget:target];
    if (tag)
       [item setTag:tag];
-#ifndef HAVE_COCOA_METAL
-   [item autorelease];
-#endif
+   RARCH_AUTORELEASE(item);
    return item;
 }
 
@@ -1140,10 +1141,8 @@ static NSMenu *cocoa_create_app_menu(id delegate)
    [NSApp setServicesMenu:servicesMenu];
    [servicesItem setSubmenu:servicesMenu];
    [menu addItem:servicesItem];
-#ifndef HAVE_COCOA_METAL
-   [servicesItem release];
-   [servicesMenu release];
-#endif
+   RARCH_RELEASE(servicesItem);
+   RARCH_RELEASE(servicesMenu);
 
    [menu addItem:[NSMenuItem separatorItem]];
    [menu addItem:cocoa_menu_item_with_action(@"Hide RetroArch",
@@ -1157,9 +1156,7 @@ static NSMenu *cocoa_create_app_menu(id delegate)
    [menu addItem:cocoa_menu_item_with_action(@"Quit RetroArch",
          @selector(terminate:), @"q", NSEventModifierFlagCommand, NSApp, 0)];
 
-#ifndef HAVE_COCOA_METAL
-   [menu autorelease];
-#endif
+   RARCH_AUTORELEASE(menu);
    return menu;
 }
 
@@ -1181,18 +1178,14 @@ static NSMenu *cocoa_create_file_menu(id delegate)
    NSMenuItem *clearItem = cocoa_menu_item_with_action(@"Clear Menu",
          @selector(clearRecentDocuments:), @"", 0, nil, 0);
    [recentMenu addItem:clearItem];
-#ifndef HAVE_COCOA_METAL
-   [recentItem release];
-   [recentMenu release];
-#endif
+   RARCH_RELEASE(recentItem);
+   RARCH_RELEASE(recentMenu);
 
    [menu addItem:[NSMenuItem separatorItem]];
    [menu addItem:cocoa_menu_item_with_action(@"Close",
          @selector(performClose:), @"w", NSEventModifierFlagCommand, nil, 0)];
 
-#ifndef HAVE_COCOA_METAL
-   [menu autorelease];
-#endif
+   RARCH_AUTORELEASE(menu);
    return menu;
 }
 
@@ -1209,10 +1202,8 @@ static NSMenu *cocoa_create_command_menu(id delegate)
          @selector(basicEvent:), @"", 0, delegate, 22)];
    [audioItem setSubmenu:audioMenu];
    [menu addItem:audioItem];
-#ifndef HAVE_COCOA_METAL
-   [audioItem release];
-   [audioMenu release];
-#endif
+   RARCH_RELEASE(audioItem);
+   RARCH_RELEASE(audioMenu);
 
    /* Disk Options submenu */
    NSMenuItem *diskItem = [[NSMenuItem alloc] initWithTitle:@"Disk Options"
@@ -1227,10 +1218,8 @@ static NSMenu *cocoa_create_command_menu(id delegate)
          @selector(basicEvent:), @"", 0, delegate, 5)];
    [diskItem setSubmenu:diskMenu];
    [menu addItem:diskItem];
-#ifndef HAVE_COCOA_METAL
-   [diskItem release];
-   [diskMenu release];
-#endif
+   RARCH_RELEASE(diskItem);
+   RARCH_RELEASE(diskMenu);
 
    /* Mouse Options submenu */
    NSMenuItem *mouseItem = [[NSMenuItem alloc] initWithTitle:@"Mouse Options"
@@ -1241,10 +1230,8 @@ static NSMenu *cocoa_create_command_menu(id delegate)
          @selector(basicEvent:), @"", 0, delegate, 7)];
    [mouseItem setSubmenu:mouseMenu];
    [menu addItem:mouseItem];
-#ifndef HAVE_COCOA_METAL
-   [mouseItem release];
-   [mouseMenu release];
-#endif
+   RARCH_RELEASE(mouseItem);
+   RARCH_RELEASE(mouseMenu);
 
    /* Save State Options submenu */
    NSMenuItem *stateItem = [[NSMenuItem alloc] initWithTitle:@"Save State Options"
@@ -1257,10 +1244,8 @@ static NSMenu *cocoa_create_command_menu(id delegate)
          @selector(basicEvent:), @"", 0, delegate, 3)];
    [stateItem setSubmenu:stateMenu];
    [menu addItem:stateItem];
-#ifndef HAVE_COCOA_METAL
-   [stateItem release];
-   [stateMenu release];
-#endif
+   RARCH_RELEASE(stateItem);
+   RARCH_RELEASE(stateMenu);
 
    [menu addItem:cocoa_menu_item_with_action(@"Reset",
          @selector(basicEvent:), @"", 0, delegate, 1)];
@@ -1271,9 +1256,7 @@ static NSMenu *cocoa_create_command_menu(id delegate)
    [menu addItem:cocoa_menu_item_with_action(@"Take Screenshot",
          @selector(basicEvent:), @"", 0, delegate, 21)];
 
-#ifndef HAVE_COCOA_METAL
-   [menu autorelease];
-#endif
+   RARCH_AUTORELEASE(menu);
    return menu;
 }
 
@@ -1282,9 +1265,7 @@ static NSMenu *cocoa_create_paths_menu(id delegate)
    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Paths"];
    [menu addItem:cocoa_menu_item_with_action(@"Core Directory",
          @selector(showCoresDirectory:), @"", 0, delegate, 0)];
-#ifndef HAVE_COCOA_METAL
-   [menu autorelease];
-#endif
+   RARCH_AUTORELEASE(menu);
    return menu;
 }
 
@@ -1311,10 +1292,8 @@ static NSMenu *cocoa_create_window_menu(id delegate)
    }
    [scaleItem setSubmenu:scaleMenu];
    [menu addItem:scaleItem];
-#ifndef HAVE_COCOA_METAL
-   [scaleItem release];
-   [scaleMenu release];
-#endif
+   RARCH_RELEASE(scaleItem);
+   RARCH_RELEASE(scaleMenu);
 
    [menu addItem:cocoa_menu_item_with_action(@"Enter Full Screen",
          @selector(toggleFullScreen:), @"f",
@@ -1327,9 +1306,7 @@ static NSMenu *cocoa_create_window_menu(id delegate)
 
    [NSApp setWindowsMenu:menu];
 
-#ifndef HAVE_COCOA_METAL
-   [menu autorelease];
-#endif
+   RARCH_AUTORELEASE(menu);
    return menu;
 }
 
@@ -1345,9 +1322,7 @@ static NSMenu *cocoa_create_help_menu(void)
     * for-Help into. */
    if ([NSApp respondsToSelector:@selector(setHelpMenu:)])
       [NSApp setHelpMenu:menu];
-#ifndef HAVE_COCOA_METAL
-   [menu autorelease];
-#endif
+   RARCH_AUTORELEASE(menu);
    return menu;
 }
 
@@ -1362,54 +1337,40 @@ static void cocoa_create_menu_bar(id delegate)
    submenu = cocoa_create_app_menu(delegate);
    [item setSubmenu:submenu];
    [menubar addItem:item];
-#ifndef HAVE_COCOA_METAL
-   [item release];
-#endif
+   RARCH_RELEASE(item);
 
    /* File menu */
    item = [[NSMenuItem alloc] init];
    [item setSubmenu:cocoa_create_file_menu(delegate)];
    [menubar addItem:item];
-#ifndef HAVE_COCOA_METAL
-   [item release];
-#endif
+   RARCH_RELEASE(item);
 
    /* Command menu */
    item = [[NSMenuItem alloc] init];
    [item setSubmenu:cocoa_create_command_menu(delegate)];
    [menubar addItem:item];
-#ifndef HAVE_COCOA_METAL
-   [item release];
-#endif
+   RARCH_RELEASE(item);
 
    /* Paths menu */
    item = [[NSMenuItem alloc] init];
    [item setSubmenu:cocoa_create_paths_menu(delegate)];
    [menubar addItem:item];
-#ifndef HAVE_COCOA_METAL
-   [item release];
-#endif
+   RARCH_RELEASE(item);
 
    /* Window menu */
    item = [[NSMenuItem alloc] init];
    [item setSubmenu:cocoa_create_window_menu(delegate)];
    [menubar addItem:item];
-#ifndef HAVE_COCOA_METAL
-   [item release];
-#endif
+   RARCH_RELEASE(item);
 
    /* Help menu */
    item = [[NSMenuItem alloc] init];
    [item setSubmenu:cocoa_create_help_menu()];
    [menubar addItem:item];
-#ifndef HAVE_COCOA_METAL
-   [item release];
-#endif
+   RARCH_RELEASE(item);
 
    [NSApp setMainMenu:menubar];
-#ifndef HAVE_COCOA_METAL
-   [menubar release];
-#endif
+   RARCH_RELEASE(menubar);
 }
 
 static NSWindow *cocoa_create_main_window(void)

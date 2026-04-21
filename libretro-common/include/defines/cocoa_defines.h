@@ -73,4 +73,33 @@
 #define HAS_MACOSX_10_12 1
 #endif
 
+/* ARC vs MRR macros.  Under ARC, release/autorelease are forbidden
+ * (compile error); under MRR (Manual Retain-Release / MRC) they are
+ * required.  These macros expand to the right thing for the current
+ * translation unit regardless of which mode it is compiled under.
+ *
+ * Previous convention used `#ifndef HAVE_COCOA_METAL` as a proxy
+ * for 'are we under ARC?' because HAVE_COCOA_METAL builds happened
+ * to enable ARC via CLANG_ENABLE_OBJC_ARC=YES in BaseConfig.xcconfig.
+ * That's brittle - RetroArch_PPC.xcodeproj turns ARC off explicitly
+ * even on the Metal branch, and the qb/make build is always MRR
+ * regardless.  __has_feature(objc_arc) is the canonical discriminator.
+ *
+ * GCC 4.0 (Xcode 3.1) doesn't support __has_feature; polyfill to 0
+ * so the MRR branch is selected (which is correct for GCC 4.0 - it
+ * predates ARC entirely). */
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+
+#if __has_feature(objc_arc)
+#define RARCH_RELEASE(x)        ((void)0)
+#define RARCH_AUTORELEASE(x)    ((void)0)
+#define RARCH_SUPER_DEALLOC()   ((void)0)
+#else
+#define RARCH_RELEASE(x)        [(x) release]
+#define RARCH_AUTORELEASE(x)    [(x) autorelease]
+#define RARCH_SUPER_DEALLOC()   [super dealloc]
+#endif
+
 #endif
