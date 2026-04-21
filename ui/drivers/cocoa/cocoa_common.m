@@ -213,11 +213,18 @@ void rarch_stop_draw_observer(void)
        * returned pointer obeys the Cocoa +0 "get" convention on
        * both the first call (where we allocate) and every
        * subsequent call (where we just read g_instance) - so
-       * callers do not have to guess the retain count.  Under ARC
-       * RARCH_AUTORELEASE is a no-op; the strong local's end-of-
-       * scope release balances +new's +1 after g_instance's
-       * storeStrong has taken its own retain. */
-      view = RARCH_AUTORELEASE([CocoaView new]);
+       * callers do not have to guess the retain count.
+       *
+       * RARCH_AUTORELEASE is a statement-only macro (expands to
+       * ((void)0) under ARC and [x autorelease] under MRR), so it
+       * must be called on its own line after the assignment rather
+       * than wrapping the rvalue.  Under ARC the ((void)0) is a
+       * no-op and the strong local's end-of-scope release balances
+       * +new's +1 after g_instance's storeStrong has taken its
+       * own retain; under MRR the explicit autorelease does the
+       * same balancing once the pool drains. */
+      view = [CocoaView new];
+      RARCH_AUTORELEASE(view);
       nsview_set_ptr(view);
 #if defined(IOS)
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
@@ -958,10 +965,15 @@ void nsview_set_ptr(CocoaView *p)
     * accessor, and that only holds if g_instance is the one keeping
     * the view alive.  Under ARC RARCH_RETAIN and RARCH_RELEASE are
     * no-ops; the static __strong pointer does retain/release via
-    * objc_storeStrong when assigned. */
+    * objc_storeStrong when assigned.
+    *
+    * The (void) cast on RARCH_RETAIN silences -Wunused-value under
+    * ARC, where the macro expands to the bare expression (p); under
+    * MRR it expands to [p retain], where the discarded return value
+    * is conventional and warning-free. */
    if (g_instance != p)
    {
-      RARCH_RETAIN(p);
+      (void)RARCH_RETAIN(p);
       RARCH_RELEASE(g_instance);
       g_instance = p;
    }
