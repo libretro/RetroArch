@@ -1245,6 +1245,10 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          { int q2 = mb_qp + uvdc_dq; uv_dc_q = vp8_dc_qlut[q2<0?0:q2>127?127:q2]; if(uv_dc_q>132)uv_dc_q=132; }
          { int q2 = mb_qp + uvac_dq; uv_ac_q = vp8_ac_qlut[q2<0?0:q2>127?127:q2]; }
 
+         /* Skip flag (after segment, before y_mode — libvpx order) */
+         if (skip_enabled)
+            is_skip = vp8b_get(&br, prob_skip);
+
          /* Y mode */
          if      (!vp8b_get(&br, vp8_ymp[0])) ym = 4; /* B_PRED first */
          else if (!vp8b_get(&br, vp8_ymp[1])) ym = 0;
@@ -1294,10 +1298,6 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
          else if (!vp8b_get(&br, vp8_uvmp[1])) uvm = 1;
          else if (!vp8b_get(&br, vp8_uvmp[2])) uvm = 2;
          else uvm = 3;
-
-         /* Skip flag */
-         if (skip_enabled)
-            is_skip = vp8b_bit(&br);
 
          /* Gather prediction context */
          if (my > 0) {
