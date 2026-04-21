@@ -186,7 +186,8 @@ struct rjpeg
 #endif
 
 /* Auto-detect NEON support */
-#if !defined(RJPEG_NO_SIMD) && !defined(RJPEG_NEON) && (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#if !defined(RJPEG_NO_SIMD) && !defined(RJPEG_NEON) \
+   && (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
 #define RJPEG_NEON
 #endif
 
