@@ -1328,7 +1328,13 @@ static NSMenu *cocoa_create_help_menu(void)
    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Help"];
    [menu addItem:cocoa_menu_item_with_action(@"RetroArch Help",
          @selector(showHelp:), @"?", NSEventModifierFlagCommand, nil, 0)];
-   [NSApp setHelpMenu:menu];
+   /* -[NSApplication setHelpMenu:] is 10.6+.  Runtime-guard so we
+    * don't crash with "unrecognized selector" on 10.5 Leopard.  The
+    * help menu still appears in the menu bar via setMainMenu; this
+    * call is only about telling AppKit which one to route Spotlight-
+    * for-Help into. */
+   if ([NSApp respondsToSelector:@selector(setHelpMenu:)])
+      [NSApp setHelpMenu:menu];
 #ifndef HAVE_COCOA_METAL
    [menu autorelease];
 #endif
