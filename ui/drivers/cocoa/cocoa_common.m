@@ -1059,8 +1059,17 @@ config_file_t *open_userdefaults_config_file(void)
    NSString *backup = [[NSUserDefaults standardUserDefaults] stringForKey:@FILE_PATH_MAIN_CONFIG];
    if ([backup length] > 0)
    {
-      conf = config_file_new_from_string([backup UTF8String], path_get(RARCH_PATH_CONFIG));
-      config_set_int(conf, "bundle_assets_extract_last_version", 0);
+      /* config_file_new_from_string() takes (char*) and mutates it in
+       * place.  -[NSString UTF8String] returns an Apple-owned buffer
+       * that is not writable, so we must strdup() first and free
+       * after. */
+      char *backup_copy = strdup([backup UTF8String]);
+      if (backup_copy)
+      {
+         conf = config_file_new_from_string(backup_copy, path_get(RARCH_PATH_CONFIG));
+         config_set_int(conf, "bundle_assets_extract_last_version", 0);
+         free(backup_copy);
+      }
    }
    return conf;
 }

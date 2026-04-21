@@ -814,9 +814,14 @@ ifeq ($(HAVE_COREAUDIO), 1)
    OBJ += audio/drivers/coreaudio.o
 ifeq ($(HAVE_MICROPHONE), 1)
    OBJ += audio/drivers/coreaudio_mic_macos.o
+   # AVFoundation is 10.7+ and only needed by the microphone driver.
+   # The base coreaudio.c path doesn't use it, so keep it out of the
+   # link line on targets without microphone support (e.g. pre-10.7
+   # / Tiger / Leopard / PowerPC).
+   LIBS += -framework AVFoundation
 endif
    HAVE_COREAUDIO_LIBS = 1
-   LIBS += -framework AudioToolbox -framework AVFoundation -framework Accelerate
+   LIBS += -framework AudioToolbox -framework Accelerate
 endif
 
 ifeq ($(HAVE_COREAUDIO3), 1)
