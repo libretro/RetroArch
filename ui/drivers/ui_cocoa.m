@@ -1447,7 +1447,13 @@ int main(int argc, char *argv[])
    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 #endif
       [NSApplication sharedApplication];
+#ifdef MAC_OS_X_VERSION_10_6
+      /* setActivationPolicy: and NSApplicationActivationPolicyRegular
+       * are 10.6+.  Before that, an app becomes a regular GUI app
+       * via Info.plist (CFBundlePackageType=APPL, no LSUIElement
+       * / LSBackgroundOnly), which the PPC bundle already does. */
       [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+#endif
 
       delegate = [[RetroArch_OSX alloc] init];
       window = cocoa_create_main_window();
