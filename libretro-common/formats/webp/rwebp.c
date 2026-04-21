@@ -1008,107 +1008,39 @@ static void vp8_loop_filter_simple(uint8_t *y, int ys, uint8_t *u, int uvs, uint
    int mbw, int mbh, int lf_level, int sharpness,
    int seg_enabled, int seg_abs, const int *seg_lf, const uint8_t *seg_map)
 {
-   int mx, my, bx, by;
+   int mx, my, by, bx;
    for (my = 0; my < mbh; my++)
    {
       for (mx = 0; mx < mbw; mx++)
       {
          int mb_lf = lf_level;
          int seg_id = seg_map ? seg_map[my * mbw + mx] : 0;
-         int flimit, ilimit;
+         int flimit;
          if (seg_enabled && seg_abs)
             mb_lf = seg_lf[seg_id];
          else if (seg_enabled)
             mb_lf = lf_level + seg_lf[seg_id];
          if (mb_lf < 0) mb_lf = 0;
          if (mb_lf > 63) mb_lf = 63;
-         /* Compute filter limit */
+         if (mb_lf == 0) continue;
          flimit = 2 * mb_lf + (sharpness > 0 ? (sharpness > 4 ? 2 : 1) : 0);
          if (flimit > 63) flimit = 63;
-         ilimit = mb_lf;
-         if (sharpness > 0) {
-            ilimit >>= (sharpness > 4 ? 2 : 1);
-            if (ilimit > 9 - sharpness) ilimit = 9 - sharpness;
-         }
-         if (ilimit < 1) ilimit = 1;
-         
-         if (mb_lf == 0) continue;
-         
-         /* Y plane: filter vertical edges (between columns of 4x4 blocks) */
-         for (by = 0; by < 16; by++)
-         {
-            uint8_t *row = y + (my*16+by)*ys + mx*16;
-            /* MB left edge (stronger filter at MB boundary) */
-            if (mx > 0)
-            {
-               int p1=row[-2], p0=row[-1], q0=row[0], q1=row[1];
-               int a = vp8_sc(3*(q0-p0) + vp8_sc(p1-q1));
-               if (a < 0 ? -a : a <= flimit) {
-                  int f = vp8_sc(a + 4) >> 3;
-                  row[-1] = vp8_cl(p0 + f);
-                  row[0]  = vp8_cl(q0 - f);
-               }
-            }
-            /* Sub-block edges at columns 4, 8, 12 */
-            for (bx = 4; bx < 16; bx += 4)
-            {
-               int p1=row[bx-2], p0=row[bx-1], q0=row[bx], q1=row[bx+1];
-               int a = vp8_sc(3*(q0-p0) + vp8_sc(p1-q1));
-               if (a < 0 ? -a : a <= ilimit) {
-                  int f = vp8_sc(a + 4) >> 3;
-                  row[bx-1] = vp8_cl(p0 + f);
-                  row[bx]   = vp8_cl(q0 - f);
-               }
-            }
-         }
-         /* Y plane: filter horizontal edges */
-         for (bx = 0; bx < 16; bx++)
-         {
-            /* MB top edge */
-            if (my > 0)
-            {
-               uint8_t *col = y + (my*16)*ys + mx*16 + bx;
-               int p1=col[-2*ys], p0=col[-ys], q0=col[0], q1=col[ys];
-               int a = vp8_sc(3*(q0-p0) + vp8_sc(p1-q1));
-               if (a < 0 ? -a : a <= flimit) {
-                  int f = vp8_sc(a + 4) >> 3;
-                  col[-ys] = vp8_cl(p0 + f);
-                  col[0]   = vp8_cl(q0 - f);
-               }
-            }
-            /* Sub-block edges at rows 4, 8, 12 */
-            for (by = 4; by < 16; by += 4)
-            {
-               uint8_t *col = y + (my*16+by)*ys + mx*16 + bx;
-               int p1=col[-2*ys], p0=col[-ys], q0=col[0], q1=col[ys];
-               int a = vp8_sc(3*(q0-p0) + vp8_sc(p1-q1));
-               if (a < 0 ? -a : a <= ilimit) {
-                  int f = vp8_sc(a + 4) >> 3;
-                  col[-ys] = vp8_cl(p0 + f);
-                  col[0]   = vp8_cl(q0 - f);
-               }
-            }
-         }
-         /* UV planes: filter at MB edges and 8x8 sub-block edges */
-         /* (simplified: only MB edges for UV) */
+         /* Y: left MB edge only */
          if (mx > 0) {
-            for (by = 0; by < 8; by++) {
-               uint8_t *ur = u + (my*8+by)*uvs + mx*8;
-               uint8_t *vr = v_plane + (my*8+by)*uvs + mx*8;
-               { int p1=ur[-2],p0=ur[-1],q0=ur[0],q1=ur[1]; int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
-                 if((a<0?-a:a)<=flimit){int f=vp8_sc(a+4)>>3; ur[-1]=vp8_cl(p0+f); ur[0]=vp8_cl(q0-f);} }
-               { int p1=vr[-2],p0=vr[-1],q0=vr[0],q1=vr[1]; int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
-                 if((a<0?-a:a)<=flimit){int f=vp8_sc(a+4)>>3; vr[-1]=vp8_cl(p0+f); vr[0]=vp8_cl(q0-f);} }
+            for (by = 0; by < 16; by++) {
+               uint8_t *row = y + (my*16+by)*ys + mx*16;
+               int p1=row[-2],p0=row[-1],q0=row[0],q1=row[1];
+               int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
+               if ((a<0?-a:a)<=flimit) { int f=vp8_sc(a+4)>>3; row[-1]=vp8_cl(p0+f); row[0]=vp8_cl(q0-f); }
             }
          }
+         /* Y: top MB edge only */
          if (my > 0) {
-            for (bx = 0; bx < 8; bx++) {
-               uint8_t *uc = u + my*8*uvs + mx*8 + bx;
-               uint8_t *vc = v_plane + my*8*uvs + mx*8 + bx;
-               { int p1=uc[-2*uvs],p0=uc[-uvs],q0=uc[0],q1=uc[uvs]; int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
-                 if((a<0?-a:a)<=flimit){int f=vp8_sc(a+4)>>3; uc[-uvs]=vp8_cl(p0+f); uc[0]=vp8_cl(q0-f);} }
-               { int p1=vc[-2*uvs],p0=vc[-uvs],q0=vc[0],q1=vc[uvs]; int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
-                 if((a<0?-a:a)<=flimit){int f=vp8_sc(a+4)>>3; vc[-uvs]=vp8_cl(p0+f); vc[0]=vp8_cl(q0-f);} }
+            for (bx = 0; bx < 16; bx++) {
+               uint8_t *col = y + my*16*ys + mx*16 + bx;
+               int p1=col[-2*ys],p0=col[-ys],q0=col[0],q1=col[ys];
+               int a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1));
+               if ((a<0?-a:a)<=flimit) { int f=vp8_sc(a+4)>>3; col[-ys]=vp8_cl(p0+f); col[0]=vp8_cl(q0-f); }
             }
          }
       }
@@ -1588,34 +1520,15 @@ static uint32_t *vp8_decode(const uint8_t *data, size_t len,
             left_nz_dc = 0;
          }
 
-         /* Per-MB simple loop filter */
-         if (filter_type == 1) {
-            int mb_lf_val = lf_level;
-            if (seg_enabled && seg_abs) mb_lf_val = seg_lf[seg_id];
-            else if (seg_enabled) mb_lf_val = lf_level + seg_lf[seg_id];
-            if (mb_lf_val < 0) mb_lf_val = 0; if (mb_lf_val > 63) mb_lf_val = 63;
-            if (mb_lf_val > 0) {
-               int fl = 2 * mb_lf_val, il = mb_lf_val;
-               if (sharpness > 0) { fl += (sharpness > 4) ? 2 : 1; }
-               if (fl > 63) fl = 63;
-               if (sharpness > 0) { il >>= (sharpness > 4) ? 2 : 1; if (il > 9 - sharpness) il = 9 - sharpness; }
-               if (il < 1) il = 1;
-               for (by = 0; by < 16; by++) {
-                  uint8_t *row = yb + (my*16+by)*ys + mx*16;
-                  if (mx > 0) { int p1=row[-2],p0=row[-1],q0=row[0],q1=row[1], a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1)); if((a<0?-a:a)<=fl){int f=vp8_sc(a+4)>>3;row[-1]=vp8_cl(p0+f);row[0]=vp8_cl(q0-f);} }
-                  for (bx = 4; bx < 16; bx += 4) { int p1=row[bx-2],p0=row[bx-1],q0=row[bx],q1=row[bx+1], a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1)); if((a<0?-a:a)<=il){int f=vp8_sc(a+4)>>3;row[bx-1]=vp8_cl(p0+f);row[bx]=vp8_cl(q0-f);} }
-               }
-               for (bx = 0; bx < 16; bx++) {
-                  if (my > 0) { uint8_t *c2=yb+my*16*ys+mx*16+bx; int p1=c2[-2*ys],p0=c2[-ys],q0=c2[0],q1=c2[ys], a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1)); if((a<0?-a:a)<=fl){int f=vp8_sc(a+4)>>3;c2[-ys]=vp8_cl(p0+f);c2[0]=vp8_cl(q0-f);} }
-                  for (by = 4; by < 16; by += 4) { uint8_t *c2=yb+(my*16+by)*ys+mx*16+bx; int p1=c2[-2*ys],p0=c2[-ys],q0=c2[0],q1=c2[ys], a=vp8_sc(3*(q0-p0)+vp8_sc(p1-q1)); if((a<0?-a:a)<=il){int f=vp8_sc(a+4)>>3;c2[-ys]=vp8_cl(p0+f);c2[0]=vp8_cl(q0-f);} }
-               }
-            }
-         }
       }
    }
 
    free(above_nz_y); free(above_nz_u); free(above_nz_v); free(above_nz_dc); free(above_bmodes);
    } /* end context tracking block */
+
+   /* Apply post-decode simple loop filter */
+   if (filter_type == 1 && lf_level > 0)
+      vp8_loop_filter_simple(yb, ys, ub, uvs, vb, mbw, mbh, lf_level, sharpness, seg_enabled, seg_abs, seg_lf, seg_map_buf);
 
    /* YUV -> ARGB */
    pix = (uint32_t*)malloc((size_t)w * h * sizeof(uint32_t));
