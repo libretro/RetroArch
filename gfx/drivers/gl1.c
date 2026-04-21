@@ -1976,10 +1976,28 @@ static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    if (!is_idle)
       video_driver_cached_frame();
 
-   video_frame_convert_rgba_to_bgr(
-         (const void*)gl1->readback_buffer_screenshot,
-         buffer,
-         num_pixels);
+   {
+      /* Clamp to the region glReadPixels actually wrote.
+       * gl1_readback() clamps its read to
+       * min(vp.{w,h}, video_{width,height}), where video_{width,height}
+       * come from video_info and ultimately video_driver_get_size().
+       * gl1->video_{width,height} holds the core's frame size, not the
+       * window size, so we re-query here to match. Not a hot path. */
+      unsigned vd_w = 0;
+      unsigned vd_h = 0;
+      unsigned rb_w = 0;
+      unsigned rb_h = 0;
+      video_driver_get_size(&vd_w, &vd_h);
+      rb_w = (gl1->vp.width  > vd_w) ? vd_w : gl1->vp.width;
+      rb_h = (gl1->vp.height > vd_h) ? vd_h : gl1->vp.height;
+      video_frame_convert_rgba_to_bgr(
+            (const void*)gl1->readback_buffer_screenshot,
+            buffer,
+            rb_w * sizeof(uint32_t),
+            rb_w * 3,
+            rb_w,
+            rb_h);
+   }
 
    free(gl1->readback_buffer_screenshot);
    gl1->readback_buffer_screenshot = NULL;

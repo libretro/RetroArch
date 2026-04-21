@@ -2331,14 +2331,19 @@ static bool gl2_renderchain_read_viewport(
 
       if (ptr)
       {
-         int y;
-         for (y = 0; y < gl->vp.height; y++)
-         {
-            video_frame_convert_rgba_to_bgr(
-                  (const void*)ptr,
-                  buffer,
-                  gl->vp.width);
-         }
+         /* Clamp to the region glReadPixels actually wrote
+          * (see gl2_renderchain_readback). */
+         unsigned rb_w = (gl->vp.width  > gl->video_width)
+            ? gl->video_width  : gl->vp.width;
+         unsigned rb_h = (gl->vp.height > gl->video_height)
+            ? gl->video_height : gl->vp.height;
+         video_frame_convert_rgba_to_bgr(
+               (const void*)ptr,
+               buffer,
+               rb_w * sizeof(uint32_t),
+               rb_w * 3,
+               rb_w,
+               rb_h);
       }
 #else
       ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
@@ -2381,10 +2386,21 @@ static bool gl2_renderchain_read_viewport(
       if (!is_idle)
          video_driver_cached_frame();
 
-      video_frame_convert_rgba_to_bgr(
-            (const void*)gl->readback_buffer_screenshot,
-            buffer,
-            num_pixels);
+      {
+         /* Clamp to the region glReadPixels actually wrote
+          * (see gl2_renderchain_readback). */
+         unsigned rb_w = (gl->vp.width  > gl->video_width)
+            ? gl->video_width  : gl->vp.width;
+         unsigned rb_h = (gl->vp.height > gl->video_height)
+            ? gl->video_height : gl->vp.height;
+         video_frame_convert_rgba_to_bgr(
+               (const void*)gl->readback_buffer_screenshot,
+               buffer,
+               rb_w * sizeof(uint32_t),
+               rb_w * 3,
+               rb_w,
+               rb_h);
+      }
 
       free(gl->readback_buffer_screenshot);
       gl->readback_buffer_screenshot = NULL;
