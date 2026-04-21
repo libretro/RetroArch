@@ -28,6 +28,7 @@
 #include <stddef.h> /* ptrdiff_t on osx */
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h> /* INT_MAX, SIZE_MAX via stdint */
 
 #include <retro_inline.h>
 
@@ -60,12 +61,24 @@ static INLINE uint8_t rtga_get8(rtga_context *s)
 
 static void rtga_skip(rtga_context *s, int n)
 {
+   ptrdiff_t remaining;
    if (n < 0)
    {
       s->img_buffer = s->img_buffer_end;
       return;
    }
-   s->img_buffer += n;
+   /* Clamp the advance to the remaining input.  Pre-patch a large
+    * attacker-supplied offset (TGA header byte 1, or palette
+    * start) pushed img_buffer past img_buffer_end, which is
+    * pointer arithmetic outside the allocated object (UB per C99).
+    * All callers of rtga_get8 check "buffer < buffer_end" so the
+    * clamped state parses as EOF and the subsequent header checks
+    * or indexed-palette code fail cleanly. */
+   remaining = s->img_buffer_end - s->img_buffer;
+   if ((ptrdiff_t)n > remaining)
+      s->img_buffer = s->img_buffer_end;
+   else
+      s->img_buffer += n;
 }
 
 static int rtga_get16le(rtga_context *s)
@@ -121,9 +134,27 @@ static uint32_t *rtga_tga_load(rtga_context *s,
       )
       return NULL;
 
-   /*   If paletted, then we will use the number of bits from the palette */
+   /*   If paletted, then we will use the number of bits from the palette.
+    *
+    *   tga_palette_bits is attacker-controlled (TGA byte 7, 0..255).
+    *   Pre-patch the indexed-read loop below did
+    *       for (j = 0; j * 8 < tga_palette_bits; ++j)
+    *           raw_data[j] = tga_palette[pal_idx + j];
+    *   raw_data is a 4-byte stack array, so tga_palette_bits > 32
+    *   wrote past the end of raw_data -- a stack buffer overflow of
+    *   up to 28 bytes, directly driven by the TGA header.  Reject
+    *   bogus palette_bits / empty palettes here and everything
+    *   downstream runs with bounded buffers. */
    if (tga_indexed)
+   {
+      if (    tga_palette_len < 1
+           || (    tga_palette_bits != 15
+                && tga_palette_bits != 16
+                && tga_palette_bits != 24
+                && tga_palette_bits != 32))
+         return NULL;
       tga_comp = tga_palette_bits / 8;
+   }
 
    /*   TGA info */
    *x = tga_width;
@@ -131,7 +162,20 @@ static uint32_t *rtga_tga_load(rtga_context *s,
    if (comp)
       *comp = tga_comp;
 
-   output = (uint32_t*)malloc((size_t)tga_width * tga_height * sizeof(uint32_t));
+   /* Bound the output allocation.  TGA dimensions are attacker-
+    * controlled 16-bit values (max 65535), so their product is
+    * up to ~4.29 G pixels.  Pre-patch a 32-bit build could wrap
+    * (size_t)w * h * sizeof(uint32_t) to a small positive size_t
+    * and the per-pixel decode ran off the undersized malloc.
+    * Reject dimensions beyond a sane ceiling so the allocation
+    * never grows anywhere near wrap territory and hostile
+    * headers cannot drive the client into a multi-GiB malloc
+    * attempt.  0x4000 x 0x4000 = 1 GiB of decoded RGBA,
+    * comfortably larger than any real-world libretro asset. */
+   if (tga_width > 0x4000 || tga_height > 0x4000)
+      return NULL;
+   output = (uint32_t*)malloc(
+         (size_t)tga_width * (size_t)tga_height * sizeof(uint32_t));
    if (!output)
       return NULL;
 
@@ -226,19 +270,23 @@ static uint32_t *rtga_tga_load(rtga_context *s,
       int cur_col                = 0;
       int cur_row                = 0;
 
-      /* Load palette if indexed */
+      /* Load palette if indexed.  Header-level checks above have
+       * ensured tga_palette_len >= 1 and tga_palette_bits in
+       * {15,16,24,32}, so n is positive and bounded at
+       * 65535 * 32 / 8 = 262140 bytes -- fits comfortably in int
+       * and in the input length we've already accepted. */
       if (tga_indexed)
       {
          int n;
          rtga_skip(s, tga_palette_start);
-         tga_palette = (unsigned char*)malloc(tga_palette_len * tga_palette_bits / 8);
+         n = tga_palette_len * tga_palette_bits / 8;
+         tga_palette = (unsigned char*)malloc((size_t)n);
          if (!tga_palette)
          {
             free(output);
             return NULL;
          }
-         n = tga_palette_len * tga_palette_bits / 8;
-         if (s->img_buffer + n <= s->img_buffer_end)
+         if (s->img_buffer_end - s->img_buffer >= (ptrdiff_t)n)
          {
             memcpy(tga_palette, s->img_buffer, n);
             s->img_buffer += n;
@@ -325,9 +373,11 @@ static uint32_t *rtga_tga_load(rtga_context *s,
                   | ((uint32_t)g << 8)  | (uint32_t)b;
 
          /* Write to correct position using tracked row/col
-          * (avoids per-pixel division and modulo) */
+          * (avoids per-pixel division and modulo).  Use size_t for
+          * the index so dst_row * tga_width does not overflow
+          * signed int for a legitimate 65535 x 65535 image. */
          dst_row = tga_inverted ? (tga_height - 1 - cur_row) : cur_row;
-         output[dst_row * tga_width + cur_col] = pixel;
+         output[(size_t)dst_row * (size_t)tga_width + (size_t)cur_col] = pixel;
 
          if (++cur_col >= tga_width)
          {
@@ -364,6 +414,15 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
    int comp;
 
    if (!rtga)
+      return IMAGE_PROCESS_ERROR;
+
+   /* Reject sizes that don't fit in int before casting.  A TGA
+    * file larger than INT_MAX handed to an int-taking API would
+    * truncate, the truncated value (potentially negative)
+    * propagated to img_buffer_end = buffer + len, producing
+    * pointer arithmetic outside the source object (UB).  A 2 GiB
+    * TGA is unreasonable; reject early. */
+   if (size > (size_t)INT_MAX)
       return IMAGE_PROCESS_ERROR;
 
    rtga->output_image   = rtga_load_from_memory(rtga->buff_data,

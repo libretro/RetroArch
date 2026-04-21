@@ -56,6 +56,8 @@ jobs:
             cdrom_cuesheet_overflow_test
             http_parse_test
             rjson_test
+            rtga_test
+            rbmp_test
           )
 
           # Per-binary run command (overrides ./<binary> if present).

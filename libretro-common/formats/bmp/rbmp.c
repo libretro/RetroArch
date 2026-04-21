@@ -28,6 +28,7 @@
 #include <stddef.h> /* ptrdiff_t on osx */
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h> /* INT_MAX */
 
 #include <retro_inline.h>
 
@@ -66,13 +67,20 @@ static INLINE unsigned char rbmp_get8(rbmp_context *s)
 
 static void rbmp_skip(rbmp_context *s, int n)
 {
+   ptrdiff_t remaining;
    if (n < 0)
    {
       s->img_buffer = s->img_buffer_end;
       return;
    }
-
-   s->img_buffer += n;
+   /* Clamp to remaining input to avoid pointer arithmetic beyond
+    * img_buffer_end (UB per C99).  Subsequent rbmp_get8 calls
+    * check "buffer < buffer_end" and parse as EOF. */
+   remaining = s->img_buffer_end - s->img_buffer;
+   if ((ptrdiff_t)n > remaining)
+      s->img_buffer = s->img_buffer_end;
+   else
+      s->img_buffer += n;
 }
 
 static int rbmp_get16le(rbmp_context *s)
@@ -193,8 +201,16 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
    if (bpp == 1)
       return 0;
 
+   /* img_y can legitimately be a negative int (top-down BMP).
+    * Pre-patch the code did abs((int)s->img_y) -- if the uint32
+    * happened to be 0x80000000, the cast to int is INT_MIN and
+    * abs(INT_MIN) is undefined behaviour.  Detect that case and
+    * treat as bottom-up zero-height (rejected by the overflow
+    * guard below). */
+   if (s->img_y == 0x80000000u)
+      return 0;
    flip_vertically = ((int) s->img_y) > 0;
-   s->img_y        = abs((int) s->img_y);
+   s->img_y        = (uint32_t)abs((int) s->img_y);
 
    if (hsz == 12)
    {
@@ -298,8 +314,25 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
    }
    s->img_n = ma ? 4 : 3;
 
-   /* Always output as uint32 (4 bytes per pixel) */
-   output = (uint32_t*)malloc(s->img_x * s->img_y * sizeof(uint32_t));
+   /* Always output as uint32 (4 bytes per pixel).
+    *
+    * Pre-patch this multiplied two uint32_t dimensions at uint32_t
+    * width, so img_x * img_y silently wrapped on 32-bit -- e.g.
+    * 0x10001 * 0x10000 = 0x100010000 wraps to 0x10000, and the
+    * subsequent malloc returned a 256 KiB buffer that the pixel
+    * decode loop wrote off the end of (4 GiB+ of writes).  Do
+    * the multiplication in size_t with an explicit ceiling:
+    * 0x4000 x 0x4000 = 256 M pixels = 1 GiB of decoded RGBA is
+    * far beyond any realistic libretro asset, and rejecting at
+    * that ceiling blocks the overflow case AND avoids giving a
+    * malicious BMP a direct route to a multi-GiB allocation
+    * attempt. */
+   if (s->img_x == 0 || s->img_y == 0)
+      return 0;
+   if (s->img_x > 0x4000u || s->img_y > 0x4000u)
+      return 0;
+   output = (uint32_t*)malloc(
+         (size_t)s->img_x * (size_t)s->img_y * sizeof(uint32_t));
    if (!output)
       return 0;
 
@@ -342,7 +375,11 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
       for (j = 0; j < (int)s->img_y; ++j)
       {
          int dst_row = flip_vertically ? (int)(s->img_y - 1 - j) : j;
-         uint32_t *dst = output + dst_row * s->img_x;
+         /* Use size_t for the row-stride offset.  dst_row *
+          * s->img_x in signed-int could overflow for a legitimate
+          * 2 GiB BMP (e.g. 46341 x 46341).  Post-patch the
+          * pointer math matches the size_t-based allocation. */
+         uint32_t *dst = output + (size_t)dst_row * (size_t)s->img_x;
          int col = 0;
 
          for (i = 0; i < (int)s->img_x; i += 2)
