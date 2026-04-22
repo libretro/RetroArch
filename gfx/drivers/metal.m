@@ -691,10 +691,22 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
 - (bool)readBackBuffer:(uint8_t *)buffer
 {
-   size_t x, y;
-   NSUInteger dstStride, srcStride;
-   uint8_t const *src;
-   uint8_t *dst, *tmp;
+   /* Read back the viewport region BGRA -> BGR and flip vertically.
+    *
+    * We stream one row at a time from Metal into a small scratch
+    * buffer, converting as we go. Previously this allocated a
+    * full-frame BGRA copy (width * height * 4 bytes) via malloc(),
+    * which for a 4K capture is ~32 MiB of transient allocation
+    * pressure per screenshot. One row is typically a few KiB and
+    * fits comfortably on the stack (up to 16K width here; beyond
+    * that we fall back to heap for safety). */
+   size_t y;
+   NSUInteger rowBytes, dstStride;
+   uint8_t *dst;
+   uint8_t  stackRow[16 * 1024];
+   uint8_t *row        = stackRow;
+   uint8_t *heapRow    = NULL;
+
    if (!_captureEnabled || _backBuffer == nil)
       return NO;
 
@@ -704,30 +716,36 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       return NO;
    }
 
-   tmp = malloc(_backBuffer.width * _backBuffer.height * 4);
-
-   [_backBuffer getBytes:tmp
-             bytesPerRow:4 * _backBuffer.width
-              fromRegion:MTLRegionMake2D(0, 0, _backBuffer.width, _backBuffer.height)
-             mipmapLevel:0];
-
-   srcStride = _backBuffer.width * 4;
-   src       = tmp + (_viewport.y * srcStride);
+   rowBytes  = _backBuffer.width * 4;
+   if (rowBytes > sizeof(stackRow))
+   {
+      heapRow = (uint8_t *)malloc(rowBytes);
+      if (!heapRow)
+         return NO;
+      row     = heapRow;
+   }
 
    dstStride = _viewport.width * 3;
    dst       = buffer + (_viewport.height - 1) * dstStride;
 
-   for (y = 0; y < _viewport.height; y++, src += srcStride, dst -= dstStride)
+   for (y = 0; y < _viewport.height; y++, dst -= dstStride)
    {
+      size_t x;
+      [_backBuffer getBytes:row
+                bytesPerRow:rowBytes
+                 fromRegion:MTLRegionMake2D(0, (NSUInteger)_viewport.y + y,
+                                            _backBuffer.width, 1)
+                mipmapLevel:0];
+
       for (x = 0; x < _viewport.width; x++)
       {
-         dst[3 * x + 0] = src[4 * (_viewport.x + x) + 0];
-         dst[3 * x + 1] = src[4 * (_viewport.x + x) + 1];
-         dst[3 * x + 2] = src[4 * (_viewport.x + x) + 2];
+         dst[3 * x + 0] = row[4 * (_viewport.x + x) + 0];
+         dst[3 * x + 1] = row[4 * (_viewport.x + x) + 1];
+         dst[3 * x + 2] = row[4 * (_viewport.x + x) + 2];
       }
    }
 
-   free(tmp);
+   free(heapRow);
 
    return YES;
 }
@@ -962,6 +980,48 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (void)discard
 {
+   /* Trim the tail: any node that wasn't touched during this
+    * chain's previous use (allocated == 0) is dropped. Nodes are
+    * appended in alloc order, so once we see the first trailing
+    * unused node the whole tail is unused. We only trim when the
+    * chain was actually used (_allocated > 0) so that a single
+    * quiescent frame doesn't drop the entire chain and force
+    * reallocation on the next use.
+    *
+    * This bounds retained memory to the recent high-water mark
+    * rather than the all-time high-water mark, which previously
+    * grew monotonically: any one-off large allocation (e.g. a
+    * heavy shader pass or a brief geometry spike) kept its
+    * oversized backing node alive for the lifetime of the driver,
+    * across all CHAIN_LENGTH chains. */
+   if (_head && _allocated > 0)
+   {
+      BufferNode *keep = _head;
+      BufferNode *n;
+      for (n = _head; n != nil; n = n.next)
+      {
+         if (n.allocated > 0)
+            keep = n;
+      }
+      if (keep.next)
+      {
+         NSUInteger dropped = 0;
+         for (n = keep.next; n != nil; n = n.next)
+            dropped += n.src.length;
+         _length -= dropped;
+         keep.next = nil;
+      }
+   }
+
+   /* Reset per-node allocated so commitRanges on the next use of
+    * this chain does not didModifyRange: a stale range from this
+    * cycle into a node that gets partially refilled. */
+   {
+      BufferNode *n;
+      for (n = _head; n != nil; n = n.next)
+         n.allocated = 0;
+   }
+
    _current   = _head;
    _offset    = 0;
    _allocated = 0;
@@ -1471,17 +1531,23 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
 {
+   /* pitch is the source row stride in bytes (libretro convention,
+    * matched by the MetalMenu caller which passes BPP * width).
+    * Pass it straight through to Metal: multiplying by 4 here told
+    * the driver to walk 4x the source memory between rows, reading
+    * past the source allocation on every row after the first. The
+    * else-branch already passes pitch straight through. */
    if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
    {
       [_texture replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
                   mipmapLevel:0 withBytes:src
-                  bytesPerRow:(NSUInteger)(4 * pitch)];
+                  bytesPerRow:pitch];
    }
    else
    {
       [_src replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
               mipmapLevel:0 withBytes:src
-              bytesPerRow:(NSUInteger)(pitch)];
+              bytesPerRow:pitch];
       _srcDirty = YES;
    }
 }
@@ -1650,37 +1716,37 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
       _atlas  = _font_driver->get_atlas(_font_data);
       _stride = MTL_ALIGN_BUFFER(_atlas->width);
-      if (_stride == _atlas->width)
-      {
-         _buffer = [_context.device newBufferWithBytes:_atlas->buffer
-                                                length:(NSUInteger)(_stride * _atlas->height)
-                                               options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
 
-         /* Even though newBufferWithBytes will copy the initial contents
-          * from our atlas, it doesn't seem to invalidate the buffer when
-          * doing so, causing corrupted text rendering if we hit this code
-          * path. To work around it we manually invalidate the buffer. */
-#if !defined(HAVE_COCOATOUCH)
-         [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
-#endif
-      }
-      else
+      /* Allocate an uninitialized managed buffer and fill it through
+       * .contents. This collapses two previous branches (fast path
+       * via newBufferWithBytes:, slow path via row memcpy loop) into
+       * one: row memcpy handles both the aligned and padded cases
+       * and avoids the newBufferWithBytes: workaround (which had to
+       * manually didModifyRange: the whole buffer anyway because
+       * the initial copy was not correctly invalidated on macOS). */
+      _buffer = [_context.device newBufferWithLength:(NSUInteger)(_stride * _atlas->height)
+                                             options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
       {
          size_t i;
-         _buffer   = [_context.device newBufferWithLength:(NSUInteger)(_stride * _atlas->height)
-                                                options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
-         void *dst = _buffer.contents;
-         void *src = _atlas->buffer;
-         for (i = 0; i < _atlas->height; i++)
+         uint8_t       *dst = (uint8_t *)_buffer.contents;
+         const uint8_t *src = (const uint8_t *)_atlas->buffer;
+         if (_stride == _atlas->width)
          {
-            memcpy(dst, src, _atlas->width);
-            dst += _stride;
-            src += _atlas->width;
+            memcpy(dst, src, (size_t)_stride * _atlas->height);
          }
-#if !defined(HAVE_COCOATOUCH)
-          [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
-#endif
+         else
+         {
+            for (i = 0; i < _atlas->height; i++)
+            {
+               memcpy(dst, src, _atlas->width);
+               dst += _stride;
+               src += _atlas->width;
+            }
+         }
       }
+#if !defined(HAVE_COCOATOUCH)
+      [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
+#endif
 
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
                                                                                     width:_atlas->width
@@ -1756,8 +1822,15 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       }
 
 #if !defined(HAVE_COCOATOUCH)
-      NSUInteger offset = glyph->atlas_offset_y;
-      NSUInteger len    = glyph->height * _stride;
+      /* didModifyRange takes a BYTE range, not a row index.
+       * Every other call site in this file (lines 958, 1664, 1681,
+       * 3082, 3550) passes bytes. Previously offset was the row
+       * index, which meant the invalidated range almost never
+       * overlapped the actually-modified rows on managed-storage
+       * devices, producing stale/garbled glyphs until the entire
+       * atlas was invalidated by some other path. */
+      NSUInteger offset = (NSUInteger)glyph->atlas_offset_y * _stride;
+      NSUInteger len    = (NSUInteger)glyph->height         * _stride;
       [_buffer didModifyRange:NSMakeRange(offset, len)];
 #endif
 
