@@ -321,7 +321,13 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          }
 
 #if TARGET_OS_MAC && !TARGET_OS_IPHONE
-         if (fp)
+         /* Emit to the terminal unconditionally so Terminal.app and
+          * Xcode's console always see output. The file write is gated
+          * on `initialized` (= a real log file was opened) because fp
+          * defaults to stderr when no file is configured; without the
+          * guard, every line would print twice in the no-file case. */
+         printf("%s %s", tag_v, buffer);
+         if (main_verbosity_st.initialized && fp)
          {
             fprintf(fp, "%s %s", tag_v, buffer);
             fflush(fp);
@@ -363,7 +369,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
             }
 #endif
 
-            if (fp)
+            if (main_verbosity_st.initialized && fp)
             {
                fprintf(fp, "%s %s", tag_v, buffer);
                fflush(fp);
