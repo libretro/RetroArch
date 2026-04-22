@@ -5035,15 +5035,6 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    if (!d3d11)
       return false;
 
-   /*This implementation produces wrong result when using HDR*/
-#ifdef HAVE_DXGI_HDR
-   if ((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE))
-   {
-      RARCH_ERR("[D3D11] HDR screenshot not supported.\n");
-      return false;
-   }
-#endif
-
    /* Get the back buffer. */
    m_SwapChain = d3d11->swapChain;
 #ifdef __cplusplus
@@ -5080,36 +5071,72 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    /* Copy back buffer to back buffer staging. */
    d3d11->context->lpVtbl->CopyResource(d3d11->context, BackBufferStaging, BackBufferResource);
 
-   /* Create the image. */
+   /* Map the staging texture for CPU read. */
    d3d11->context->lpVtbl->Map(d3d11->context, BackBufferStaging, 0, D3D11_MAP_READ, 0, &Map);
    BackBufferData = (const uint8_t*)Map.pData;
 
-   /* Assuming format is DXGI_FORMAT_R8G8B8A8_UNORM */
-   if (StagingDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
    {
+      unsigned vp_x      = (d3d11->vp.x > 0) ? d3d11->vp.x : 0;
       unsigned vp_y      = (d3d11->vp.y > 0) ? d3d11->vp.y : 0;
       unsigned vp_width  = (d3d11->vp.width  > d3d11->vp.full_width)  ? d3d11->vp.full_width  : d3d11->vp.width;
       unsigned vp_height = (d3d11->vp.height > d3d11->vp.full_height) ? d3d11->vp.full_height : d3d11->vp.height;
 
-      BackBufferData += Map.RowPitch * vp_y;
-
-      for (y = 0; y < vp_height; y++, BackBufferData += Map.RowPitch)
-      {
-         bufferRow = buffer + 3 * (vp_height - y - 1) * vp_width;
-
-         for (x = 0; x < vp_width; x++)
-         {
-            bufferRow[3 * x + 2] = BackBufferData[4 * (x + d3d11->vp.x) + 0];
-            bufferRow[3 * x + 1] = BackBufferData[4 * (x + d3d11->vp.x) + 1];
-            bufferRow[3 * x + 0] = BackBufferData[4 * (x + d3d11->vp.x) + 2];
-         }
-      }
       ret = true;
-   }
-   else
-   {
-      RARCH_ERR("[D3D11] Unexpected swapchain format.\n");
-      ret = false;
+
+      switch (StagingDesc.Format)
+      {
+         case DXGI_FORMAT_R8G8B8A8_UNORM:
+            /* SDR RGBA8 -> BGR24 swizzle, bottom-up. */
+            BackBufferData += Map.RowPitch * vp_y;
+            for (y = 0; y < vp_height; y++, BackBufferData += Map.RowPitch)
+            {
+               bufferRow = buffer + 3 * (vp_height - y - 1) * vp_width;
+               for (x = 0; x < vp_width; x++)
+               {
+                  bufferRow[3 * x + 2] = BackBufferData[4 * (x + vp_x) + 0];
+                  bufferRow[3 * x + 1] = BackBufferData[4 * (x + vp_x) + 1];
+                  bufferRow[3 * x + 0] = BackBufferData[4 * (x + vp_x) + 2];
+               }
+            }
+            break;
+
+         case DXGI_FORMAT_B8G8R8A8_UNORM:
+            /* SDR BGRA8 -> BGR24 byte-drop, bottom-up. */
+            BackBufferData += Map.RowPitch * vp_y;
+            for (y = 0; y < vp_height; y++, BackBufferData += Map.RowPitch)
+            {
+               bufferRow = buffer + 3 * (vp_height - y - 1) * vp_width;
+               for (x = 0; x < vp_width; x++)
+               {
+                  bufferRow[3 * x + 0] = BackBufferData[4 * (x + vp_x) + 0];
+                  bufferRow[3 * x + 1] = BackBufferData[4 * (x + vp_x) + 1];
+                  bufferRow[3 * x + 2] = BackBufferData[4 * (x + vp_x) + 2];
+               }
+            }
+            break;
+
+#ifdef HAVE_DXGI_HDR
+         case DXGI_FORMAT_R10G10B10A2_UNORM:
+         case DXGI_FORMAT_R16G16B16A16_FLOAT:
+            /* HDR10 PQ or scRGB: hand off to the CPU HDR decoder.
+             * It undoes the forward HDR encoding using paper_white_nits
+             * and writes sRGB-encoded BGR24 bottom-up. */
+            if (!dxgi_hdr_readback_to_bgr24(
+                     StagingDesc.Format,
+                     Map.pData, Map.RowPitch,
+                     vp_x, vp_y, vp_width, vp_height,
+                     d3d11->hdr.ubo_values.paper_white_nits,
+                     buffer))
+               ret = false;
+            break;
+#endif
+
+         default:
+            RARCH_ERR("[D3D11] Unexpected swapchain format %u.\n",
+                  (unsigned)StagingDesc.Format);
+            ret = false;
+            break;
+      }
    }
 
    d3d11->context->lpVtbl->Unmap(d3d11->context, BackBufferStaging, 0);

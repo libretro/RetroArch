@@ -476,6 +476,26 @@ void dxgi_set_hdr_metadata(
       float                         max_cll,
       float                         max_fall
 );
+
+/* Convert an HDR swapchain-format pixel buffer into SDR BGR24 bottom-up,
+ * suitable for a screenshot.  src_format is the swapchain format:
+ *   - DXGI_FORMAT_R10G10B10A2_UNORM : HDR10 (ST.2084 PQ, BT.2020)
+ *   - DXGI_FORMAT_R16G16B16A16_FLOAT: scRGB (linear BT.709, 1.0 = 80 nits)
+ * paper_white_nits is the user's configured SDR paper-white (typically
+ * 200), used to scale the HDR encoding back down so SDR content in the
+ * original framebuffer maps back to SDR 1.0.  Source is top-down; the
+ * output is laid out bottom-up to match the read_viewport contract.
+ * Returns false if the format is not an HDR format we handle. */
+bool dxgi_hdr_readback_to_bgr24(
+      DXGI_FORMAT  src_format,
+      const void*  src_data,
+      unsigned     src_pitch,
+      unsigned     src_x,
+      unsigned     src_y,
+      unsigned     width,
+      unsigned     height,
+      float        paper_white_nits,
+      uint8_t*     dst_bgr24);
 #endif
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);

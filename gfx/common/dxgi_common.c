@@ -2912,4 +2912,235 @@ void dxgi_set_hdr_metadata(
       g_hdr10_meta_data = hdr10_meta_data;
    }
 }
+
+/* ------------------------------------------------------------------ *
+ *  HDR screenshot readback: CPU-side HDR -> SDR decoder
+ *
+ *  Called from video driver read_viewport implementations when the
+ *  swapchain is in an HDR format.  Mirrors the forward HDR path in
+ *  hdr_sm5.hlsl.h but runs inverse, on the CPU, producing SDR BGR24.
+ *
+ *  The CPU path keeps the driver-side code simple (no extra PSO,
+ *  intermediate render target, descriptor heap slot, or resize
+ *  handling).  A future revision can move this to a GPU tonemap pass
+ *  behind the same signature without caller changes.
+ * ------------------------------------------------------------------ */
+
+#include <math.h>
+#include <stdint.h>
+
+/* IEEE 754 binary16 -> binary32.  Used to decode FP16 scRGB samples. */
+static INLINE float dxgi_half_to_float(uint16_t h)
+{
+   uint32_t sign = (uint32_t)(h >> 15) & 0x1u;
+   uint32_t exp  = (uint32_t)(h >> 10) & 0x1Fu;
+   uint32_t mant = (uint32_t) h        & 0x3FFu;
+   uint32_t f;
+   union { uint32_t u; float f; } u;
+
+   if (exp == 0)
+   {
+      if (mant == 0)
+         f = sign << 31;                     /* signed zero */
+      else
+      {
+         /* Subnormal: normalize. */
+         while (!(mant & 0x400u))
+         {
+            mant <<= 1;
+            exp   -= 1;     /* exp starts at 0, goes negative */
+         }
+         exp  += 1;
+         mant &= ~0x400u;
+         f     = (sign << 31) | ((exp + 127 - 15) << 23) | (mant << 13);
+      }
+   }
+   else if (exp == 0x1F)
+   {
+      /* Inf / NaN: propagate to float32 Inf/NaN with the same mantissa
+       * low bits (clamped away later, so exact bit-pattern doesn't matter). */
+      f = (sign << 31) | (0xFFu << 23) | (mant << 13);
+   }
+   else
+      f = (sign << 31) | ((exp + 127 - 15) << 23) | (mant << 13);
+
+   u.u = f;
+   return u.f;
+}
+
+/* ST.2084 (PQ) EOTF.  Input is the non-linear PQ code value in [0,1];
+ * output is linear light normalized so 1.0 == 10000 nits. */
+static INLINE float dxgi_st2084_to_linear(float pq)
+{
+   static const float m1_inv = 1.0f / 0.1593017578f;
+   static const float m2_inv = 1.0f / 78.84375f;
+   static const float c1     = 0.8359375f;
+   static const float c2     = 18.8515625f;
+   static const float c3     = 18.6875f;
+   float Np, num, den;
+
+   if (pq <= 0.0f)
+      return 0.0f;
+   Np  = powf(pq, m2_inv);
+   num = Np - c1;
+   if (num < 0.0f)
+      num = 0.0f;
+   den = c2 - c3 * Np;
+   if (den <= 0.0f)
+      return 0.0f;
+   return powf(num / den, m1_inv);
+}
+
+/* Linear [0,1] -> sRGB encoded [0,1].  Standard sRGB OETF. */
+static INLINE float dxgi_linear_to_srgb(float l)
+{
+   if (l <= 0.0f)
+      return 0.0f;
+   if (l >= 1.0f)
+      return 1.0f;
+   if (l <= 0.0031308f)
+      return l * 12.92f;
+   return 1.055f * powf(l, 1.0f / 2.4f) - 0.055f;
+}
+
+/* Reverse of the forward "inverse tonemap" used to lift SDR into HDR
+ * at composition time.  sdr = hdr / (1 + hdr * k), where
+ * k = 1 - (paper_white / max_nits).  We always compose with the same
+ * value for max_nits and paper_white at forward time, so this reduces
+ * to a no-op for in-range SDR content and gently compresses super-white.
+ * Applied per-pixel, on the max component, to preserve hue. */
+static INLINE void dxgi_tonemap_to_sdr(float *r, float *g, float *b,
+      float max_nits, float paper_white_nits)
+{
+   float peak_ratio, k, m, denom, scale;
+
+   m = *r;
+   if (*g > m) m = *g;
+   if (*b > m) m = *b;
+   if (m < 1.0e-4f)
+      return;
+
+   peak_ratio = max_nits / paper_white_nits;
+   k          = 1.0f - (1.0f / peak_ratio);
+   denom      = 1.0f + m * k;
+   if (denom < 1.0e-4f)
+      denom = 1.0e-4f;
+
+   scale = 1.0f / denom;
+   *r *= scale;
+   *g *= scale;
+   *b *= scale;
+}
+
+/* BT.2020 -> BT.709 colour-primary rotation.  Matches k2020to709 in
+ * the forward HLSL/GLSL shaders. */
+static INLINE void dxgi_rec2020_to_rec709(float *r, float *g, float *b)
+{
+   float R = *r, G = *g, B = *b;
+   *r =  1.6604910f * R + -0.5876411f * G + -0.0728499f * B;
+   *g = -0.1245505f * R +  1.1328999f * G + -0.0083494f * B;
+   *b = -0.0181508f * R + -0.1005789f * G +  1.1187297f * B;
+}
+
+static INLINE uint8_t dxgi_float_to_unorm8(float x)
+{
+   int v;
+   if (x <= 0.0f) return 0;
+   if (x >= 1.0f) return 255;
+   v = (int)(x * 255.0f + 0.5f);
+   if (v < 0)   v = 0;
+   if (v > 255) v = 255;
+   return (uint8_t)v;
+}
+
+bool dxgi_hdr_readback_to_bgr24(
+      DXGI_FORMAT  src_format,
+      const void*  src_data,
+      unsigned     src_pitch,
+      unsigned     src_x,
+      unsigned     src_y,
+      unsigned     width,
+      unsigned     height,
+      float        paper_white_nits,
+      uint8_t*     dst_bgr24)
+{
+   unsigned y, x;
+
+   if (!src_data || !dst_bgr24 || !width || !height)
+      return false;
+   if (paper_white_nits < 1.0f)
+      paper_white_nits = 200.0f;   /* sane fallback if UBO not populated */
+
+   if (src_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+   {
+      /* HDR10 PQ.  Pixel layout per D3D: 10R | 10G | 10B | 2A (LSB to
+       * MSB inside the uint32), so:
+       *   R =  bits 0..9     (code & 0x3FF)
+       *   G =  bits 10..19  ((code >> 10) & 0x3FF)
+       *   B =  bits 20..29  ((code >> 20) & 0x3FF) */
+      const uint8_t* src_row = (const uint8_t*)src_data
+            + (size_t)src_pitch * src_y;
+
+      for (y = 0; y < height; y++, src_row += src_pitch)
+      {
+         uint8_t* dst = dst_bgr24 + 3 * (size_t)(height - y - 1) * width;
+         const uint32_t* src = (const uint32_t*)src_row + src_x;
+         for (x = 0; x < width; x++)
+         {
+            uint32_t px = src[x];
+            float r_pq = (float)((px      ) & 0x3FFu) * (1.0f / 1023.0f);
+            float g_pq = (float)((px >> 10) & 0x3FFu) * (1.0f / 1023.0f);
+            float b_pq = (float)((px >> 20) & 0x3FFu) * (1.0f / 1023.0f);
+            /* PQ -> linear, normalized so 1.0 = 10000 nits. */
+            float r = dxgi_st2084_to_linear(r_pq);
+            float g = dxgi_st2084_to_linear(g_pq);
+            float b = dxgi_st2084_to_linear(b_pq);
+            /* Rescale to paper-white-relative linear (SDR 1.0 == paper_white).
+             * The forward path scaled by (paper_white / 10000) before PQ
+             * encoding, so we undo it by multiplying by (10000 / paper_white). */
+            float scale = 10000.0f / paper_white_nits;
+            r *= scale;  g *= scale;  b *= scale;
+            /* BT.2020 -> BT.709 so the final sRGB encode is meaningful. */
+            dxgi_rec2020_to_rec709(&r, &g, &b);
+            /* Tonemap any super-white back into [0,1] using the same
+             * peak_ratio the forward inverse-tonemap used. */
+            dxgi_tonemap_to_sdr(&r, &g, &b, paper_white_nits, paper_white_nits);
+            /* sRGB OETF for the BGR24 output. */
+            dst[3 * x + 0] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(b));
+            dst[3 * x + 1] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(g));
+            dst[3 * x + 2] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(r));
+         }
+      }
+      return true;
+   }
+
+   if (src_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+   {
+      /* scRGB: linear BT.709, FP16, 1.0 == 80 nits.
+       * Undo the forward scale of (paper_white / 80) so SDR 1.0 == 1.0. */
+      const uint8_t* src_row = (const uint8_t*)src_data
+            + (size_t)src_pitch * src_y;
+      const float inv_scale  = 80.0f / paper_white_nits;
+
+      for (y = 0; y < height; y++, src_row += src_pitch)
+      {
+         uint8_t* dst = dst_bgr24 + 3 * (size_t)(height - y - 1) * width;
+         const uint16_t* src = (const uint16_t*)src_row + src_x * 4;
+         for (x = 0; x < width; x++)
+         {
+            float r = dxgi_half_to_float(src[4 * x + 0]) * inv_scale;
+            float g = dxgi_half_to_float(src[4 * x + 1]) * inv_scale;
+            float b = dxgi_half_to_float(src[4 * x + 2]) * inv_scale;
+            /* scRGB carries legal negative values for out-of-gamut
+             * colours; clamping in LinearToSRGB handles them. */
+            dst[3 * x + 0] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(b));
+            dst[3 * x + 1] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(g));
+            dst[3 * x + 2] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(r));
+         }
+      }
+      return true;
+   }
+
+   return false;
+}
 #endif

@@ -6079,23 +6079,11 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    const uint8_t*            src_pixels     = NULL;
    uint8_t*                  mapped         = NULL;
    unsigned                  vp_x, vp_y, vp_w, vp_h, y, x;
-   bool                      is_bgra;
+   enum { READBACK_RGBA8, READBACK_BGRA8, READBACK_HDR10, READBACK_SCRGB }
+                             readback_mode;
 
    if (!d3d12)
       return false;
-
-#ifdef HAVE_DXGI_HDR
-   /* HDR readback is not implemented for D3D12.  The backbuffer is in
-    * either HDR10 PQ (RGB10A2) or scRGB (FP16) — converting either back
-    * to SDR requires a dedicated tonemap pass, similar to the Vulkan
-    * driver's hdr_to_sdr pipeline.  Bail out cleanly so the caller can
-    * fall back to the raw-framebuffer path. */
-   if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
-   {
-      RARCH_ERR("[D3D12] HDR screenshot not supported.\n");
-      return false;
-   }
-#endif
 
    if (!is_idle)
       video_driver_cached_frame();
@@ -6139,18 +6127,28 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    tex_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
    tex_desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-   /* Only RGBA8 / BGRA8 are expected in the SDR path.  Anything else
-    * means a format we don't know how to swizzle to BGR24. */
+   /* Classify the source format so we know how to decode it CPU-side
+    * after the readback copy completes. */
    switch (tex_desc.Format)
    {
       case DXGI_FORMAT_R8G8B8A8_UNORM:
       case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-         is_bgra = false;
+         readback_mode = READBACK_RGBA8;
          break;
       case DXGI_FORMAT_B8G8R8A8_UNORM:
       case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-         is_bgra = true;
+         readback_mode = READBACK_BGRA8;
          break;
+#ifdef HAVE_DXGI_HDR
+      case DXGI_FORMAT_R10G10B10A2_UNORM:
+         /* HDR10: ST.2084 PQ, BT.2020 primaries. */
+         readback_mode = READBACK_HDR10;
+         break;
+      case DXGI_FORMAT_R16G16B16A16_FLOAT:
+         /* scRGB: linear BT.709, FP16, 1.0 == 80 nits. */
+         readback_mode = READBACK_SCRGB;
+         break;
+#endif
       default:
          RARCH_ERR("[D3D12] Unexpected swapchain format %u.\n",
                (unsigned)tex_desc.Format);
@@ -6261,34 +6259,53 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    vp_h = (d3d12->vp.height > d3d12->vp.full_height)
          ? d3d12->vp.full_height : d3d12->vp.height;
 
-   src_pixels += (size_t)footprint.Footprint.RowPitch * vp_y;
-
-   /* Unswizzle into the caller's BGR24 bottom-up output buffer,
-    * clamped to the current viewport. */
-   for (y = 0; y < vp_h; y++, src_pixels += footprint.Footprint.RowPitch)
+   switch (readback_mode)
    {
-      uint8_t* dst = buffer + 3 * (vp_h - y - 1) * vp_w;
+      case READBACK_RGBA8:
+      case READBACK_BGRA8:
+         src_pixels += (size_t)footprint.Footprint.RowPitch * vp_y;
+         /* Unswizzle into the caller's BGR24 bottom-up output buffer,
+          * clamped to the current viewport. */
+         for (y = 0; y < vp_h; y++, src_pixels += footprint.Footprint.RowPitch)
+         {
+            uint8_t* dst = buffer + 3 * (vp_h - y - 1) * vp_w;
+            if (readback_mode == READBACK_BGRA8)
+            {
+               /* BGRA source -> BGR dst: drop alpha, keep channel order. */
+               for (x = 0; x < vp_w; x++)
+               {
+                  dst[3 * x + 0] = src_pixels[4 * (x + vp_x) + 0];
+                  dst[3 * x + 1] = src_pixels[4 * (x + vp_x) + 1];
+                  dst[3 * x + 2] = src_pixels[4 * (x + vp_x) + 2];
+               }
+            }
+            else
+            {
+               /* RGBA source -> BGR dst: swap R and B. */
+               for (x = 0; x < vp_w; x++)
+               {
+                  dst[3 * x + 0] = src_pixels[4 * (x + vp_x) + 2];
+                  dst[3 * x + 1] = src_pixels[4 * (x + vp_x) + 1];
+                  dst[3 * x + 2] = src_pixels[4 * (x + vp_x) + 0];
+               }
+            }
+         }
+         break;
 
-      if (is_bgra)
-      {
-         /* BGRA source -> BGR dst: drop alpha, keep channel order. */
-         for (x = 0; x < vp_w; x++)
-         {
-            dst[3 * x + 0] = src_pixels[4 * (x + vp_x) + 0];
-            dst[3 * x + 1] = src_pixels[4 * (x + vp_x) + 1];
-            dst[3 * x + 2] = src_pixels[4 * (x + vp_x) + 2];
-         }
-      }
-      else
-      {
-         /* RGBA source -> BGR dst: swap R and B. */
-         for (x = 0; x < vp_w; x++)
-         {
-            dst[3 * x + 0] = src_pixels[4 * (x + vp_x) + 2];
-            dst[3 * x + 1] = src_pixels[4 * (x + vp_x) + 1];
-            dst[3 * x + 2] = src_pixels[4 * (x + vp_x) + 0];
-         }
-      }
+#ifdef HAVE_DXGI_HDR
+      case READBACK_HDR10:
+      case READBACK_SCRGB:
+         /* HDR10 PQ or scRGB: hand off to the CPU HDR decoder.
+          * It undoes the forward HDR encoding using paper_white_nits
+          * and writes sRGB-encoded BGR24 bottom-up. */
+         dxgi_hdr_readback_to_bgr24(
+               tex_desc.Format,
+               src_pixels, (unsigned)footprint.Footprint.RowPitch,
+               vp_x, vp_y, vp_w, vp_h,
+               d3d12->hdr.ubo_values.paper_white_nits,
+               buffer);
+         break;
+#endif
    }
 
    {
