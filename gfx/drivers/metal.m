@@ -1504,7 +1504,7 @@ static const NSUInteger kConstantAlignment = 4;
    return _frame;
 }
 
-- (void)_convertFormat
+- (void)drawWithContext:(Context *)ctx
 {
    if (   _format == RPixelFormatBGRA8Unorm
        || _format == RPixelFormatBGRX8Unorm)
@@ -1515,11 +1515,6 @@ static const NSUInteger kConstantAlignment = 4;
 
    [_context convertFormat:_format from:_src to:_texture];
    _srcDirty = NO;
-}
-
-- (void)drawWithContext:(Context *)ctx
-{
-   [self _convertFormat];
 }
 
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
@@ -2468,8 +2463,18 @@ font_renderer_t metal_raster_font = {
    @autoreleasepool
    {
       bool statistics_show = video_info->statistics_show;
+      bool menu_is_alive   = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+      id<MTLRenderCommandEncoder> rce;
 
-      [self _beginFrame];
+      /* Begin frame: re-evaluate viewport, push to context if it changed,
+       * then begin the command buffer / render pass. */
+      {
+         video_viewport_t vp = *_viewport;
+         video_driver_update_viewport(_viewport, NO, _keepAspect, YES);
+         if (memcmp(&vp, _viewport, sizeof(vp)) != 0)
+            _context.viewport = _viewport;
+         [_context begin];
+      }
 
       _frameView.frameCount = frameCount;
       if (frame && width && height)
@@ -2478,12 +2483,46 @@ font_renderer_t metal_raster_font = {
          [_frameView updateFrame:frame pitch:pitch];
       }
 
-      [self _drawCore];
-      [self _drawMenu:video_info];
+      rce = _context.rce;
+
+      /* Draw core: back buffer + optional encoder pass. */
+      [_frameView drawWithContext:_context];
+      if ((_frameView.drawState & ViewDrawStateEncoder) != 0)
+      {
+         [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
+         [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
+         if (_frameView.filter == RTextureFilterNearest)
+            [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
+         else
+            [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
+         [_frameView drawWithEncoder:rce];
+      }
+
+      /* Draw menu: textured menu frame if present, otherwise delegate to
+       * the menu driver for widget-based menus. */
+      if (_menu.enabled)
+      {
+         if (_menu.hasFrame)
+         {
+            [_menu.view drawWithContext:_context];
+            [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
+            [rce setRenderPipelineState:_t_pipelineState];
+            if (_menu.view.filter == RTextureFilterNearest)
+               [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
+            else
+               [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
+            [_menu.view drawWithEncoder:rce];
+         }
+#if defined(HAVE_MENU)
+         else
+         {
+            [_context resetRenderViewport:kFullscreenViewport];
+            menu_driver_frame(menu_is_alive, video_info);
+         }
+#endif
+      }
 
 #ifdef HAVE_OVERLAY
-       id<MTLRenderCommandEncoder> rce = _context.rce;
-
       if (_overlay.enabled)
       {
          [_context resetRenderViewport:_overlay.fullscreen ? kFullscreenViewport : kVideoViewport];
@@ -2495,16 +2534,11 @@ font_renderer_t metal_raster_font = {
 #endif
 
       /* Only show statistics when menu is not visible and content is running */
-      if (statistics_show && frame && width && height)
+      if (statistics_show && frame && width && height && !menu_is_alive)
       {
-         bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
-         if (!menu_is_alive)
-         {
-            struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
-
-            if (osd_params)
-               font_driver_render_msg(data, video_info->stat_text, osd_params, NULL);
-         }
+         struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
+         if (osd_params)
+            font_driver_render_msg(data, video_info->stat_text, osd_params, NULL);
       }
 
 #ifdef HAVE_GFX_WIDGETS
@@ -2512,118 +2546,49 @@ font_renderer_t metal_raster_font = {
          gfx_widgets_frame(video_info);
 #endif
 
+      /* Render on-screen message: optional background quad + text. */
       if (msg && *msg)
-         [self _renderMessage:msg data:data];
+      {
+         settings_t *settings    = config_get_ptr();
+         bool msg_bgcolor_enable = settings->bools.video_msg_bgcolor_enable;
+
+         if (msg_bgcolor_enable)
+         {
+            int msg_width         = font_driver_get_message_width(NULL,
+                  msg, strlen(msg), 1.0f);
+            float font_size       = settings->floats.video_font_size;
+            unsigned bgcolor_red  = settings->uints.video_msg_bgcolor_red;
+            unsigned bgcolor_green= settings->uints.video_msg_bgcolor_green;
+            unsigned bgcolor_blue = settings->uints.video_msg_bgcolor_blue;
+            float bgcolor_opacity = settings->floats.video_msg_bgcolor_opacity;
+            float x               = settings->floats.video_msg_pos_x;
+            float y               = 1.0f - settings->floats.video_msg_pos_y;
+            float width_n         = msg_width / (float)_viewport->full_width;
+            float height_n        = font_size / (float)_viewport->full_height;
+            float x2              = 0.005f; /* extend background around text */
+            float y2              = 0.005f;
+            float r               = bgcolor_red   / 255.0f;
+            float g               = bgcolor_green / 255.0f;
+            float b               = bgcolor_blue  / 255.0f;
+            float a               = bgcolor_opacity;
+
+            y                    -= height_n;
+            x                    -= x2;
+            y                    -= y2;
+            width_n              += x2;
+            height_n             += y2;
+
+            [_context resetRenderViewport:kFullscreenViewport];
+            [_context drawQuadX:x y:y w:width_n h:height_n r:r g:g b:b a:a];
+         }
+
+         font_driver_render_msg(data, msg, NULL, NULL);
+      }
+
       [self _endFrame];
    }
 
    return YES;
-}
-
-- (void)_renderMessage:(const char *)msg
-                  data:(void*)data
-{
-   settings_t *settings     = config_get_ptr();
-   bool msg_bgcolor_enable  = settings->bools.video_msg_bgcolor_enable;
-
-   if (msg_bgcolor_enable)
-   {
-      float r, g, b, a;
-      int msg_width         =
-         font_driver_get_message_width(NULL,
-               msg, strlen(msg), 1.0f);
-      float font_size       = settings->floats.video_font_size;
-      unsigned bgcolor_red
-                            = settings->uints.video_msg_bgcolor_red;
-      unsigned bgcolor_green
-                            = settings->uints.video_msg_bgcolor_green;
-      unsigned bgcolor_blue
-                            = settings->uints.video_msg_bgcolor_blue;
-      float bgcolor_opacity = settings->floats.video_msg_bgcolor_opacity;
-      float x               = settings->floats.video_msg_pos_x;
-      float y               = 1.0f - settings->floats.video_msg_pos_y;
-      float width           = msg_width / (float)_viewport->full_width;
-      float height          = font_size / (float)_viewport->full_height;
-
-      float x2              = 0.005f; /* extend background around text */
-      float y2              = 0.005f;
-
-      y                    -= height;
-
-      x                    -= x2;
-      y                    -= y2;
-      width                += x2;
-      height               += y2;
-
-      r                     = bgcolor_red / 255.0f;
-      g                     = bgcolor_green / 255.0f;
-      b                     = bgcolor_blue / 255.0f;
-      a                     = bgcolor_opacity;
-
-      [_context resetRenderViewport:kFullscreenViewport];
-      [_context drawQuadX:x y:y w:width h:height r:r g:g b:b a:a];
-   }
-
-   font_driver_render_msg(data, msg, NULL, NULL);
-}
-
-- (void)_beginFrame
-{
-   video_viewport_t vp = *_viewport;
-   video_driver_update_viewport(_viewport, NO, _keepAspect, YES);
-
-   if (memcmp(&vp, _viewport, sizeof(vp)) != 0)
-      _context.viewport = _viewport;
-
-   [_context begin];
-}
-
-- (void)_drawCore
-{
-   id<MTLRenderCommandEncoder> rce = _context.rce;
-
-   /* draw back buffer */
-   [_frameView drawWithContext:_context];
-
-   if ((_frameView.drawState & ViewDrawStateEncoder) != 0)
-   {
-      [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
-      [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
-      if (_frameView.filter == RTextureFilterNearest)
-         [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
-      else
-         [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
-      [_frameView drawWithEncoder:rce];
-   }
-}
-
-- (void)_drawMenu:(video_frame_info_t *)video_info
-{
-   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
-
-   if (!_menu.enabled)
-      return;
-
-   id<MTLRenderCommandEncoder> rce = _context.rce;
-
-   if (_menu.hasFrame)
-   {
-      [_menu.view drawWithContext:_context];
-      [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
-      [rce setRenderPipelineState:_t_pipelineState];
-      if (_menu.view.filter == RTextureFilterNearest)
-         [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
-      else
-         [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
-      [_menu.view drawWithEncoder:rce];
-   }
-#if defined(HAVE_MENU)
-   else
-   {
-      [_context resetRenderViewport:kFullscreenViewport];
-      menu_driver_frame(menu_is_alive, video_info);
-   }
-#endif
 }
 
 - (void)_endFrame { [_context end]; }
@@ -2921,19 +2886,6 @@ typedef struct MTLALIGN(16)
 
 - (CGRect)frame { return _frame; }
 
-- (void)_convertFormat
-{
-   if (   _format == RPixelFormatBGRA8Unorm
-       || _format == RPixelFormatBGRX8Unorm)
-      return;
-
-   if (!_srcDirty)
-      return;
-
-   [_context convertFormat:_format from:_src to:_texture];
-   _srcDirty = NO;
-}
-
 - (void)_updateHistory
 {
    if (_shader)
@@ -2941,7 +2893,20 @@ typedef struct MTLALIGN(16)
       if (_shader->history_size)
       {
          if (init_history)
-            [self _initHistory];
+         {
+            int i;
+            MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                     width:(NSUInteger)_size.width
+                     height:(NSUInteger)_size.height
+                     mipmapped:false];
+            td.usage = MTLTextureUsageShaderRead
+                     | MTLTextureUsageShaderWrite
+                     | MTLTextureUsageRenderTarget;
+
+            for (i = 0; i < _shader->history_size + 1; i++)
+               [self _initTexture:&_engine.frame.texture[i] withDescriptor:td];
+            init_history = NO;
+         }
          else
          {
             int k;
@@ -3033,22 +2998,6 @@ typedef struct MTLALIGN(16)
    t->size_data.w = 1.0f / td.height;
 }
 
-- (void)_initHistory
-{
-   int i;
-   MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
-            width:(NSUInteger)_size.width
-            height:(NSUInteger)_size.height
-            mipmapped:false];
-   td.usage = MTLTextureUsageShaderRead
-            | MTLTextureUsageShaderWrite
-            | MTLTextureUsageRenderTarget;
-
-   for (i = 0; i < _shader->history_size + 1; i++)
-      [self _initTexture:&_engine.frame.texture[i] withDescriptor:td];
-   init_history = NO;
-}
-
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
 {
    if (_texture)
@@ -3064,7 +3013,14 @@ typedef struct MTLALIGN(16)
 {
    int i;
    _texture = _engine.frame.texture[0].view;
-   [self _convertFormat];
+
+   if (     (_format != RPixelFormatBGRA8Unorm)
+         && (_format != RPixelFormatBGRX8Unorm)
+         && _srcDirty)
+   {
+      [_context convertFormat:_format from:_src to:_texture];
+      _srcDirty = NO;
+   }
 
    if (!_shader || _shader->passes == 0)
       return;
