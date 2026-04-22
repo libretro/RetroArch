@@ -352,6 +352,7 @@ typedef struct
    {
       dxgi_hdr_uniform_t               ubo_values;
       D3D11Buffer                      ubo;
+      D3D11PixelShader                 ps_readback;  /* lazy: HDR -> SDR tonemap PS used by read_viewport */
       float                            menu_nits;
       float                            max_output_nits;
       float                            min_output_nits;
@@ -2783,6 +2784,7 @@ static void d3d11_gfx_free(void* data)
 
 #ifdef HAVE_DXGI_HDR
    Release(d3d11->hdr.ubo);
+   Release(d3d11->hdr.ps_readback);
 #endif
 
    d3d11_release_shader(&d3d11->sprites.shader);
@@ -5016,6 +5018,231 @@ static void d3d11_gfx_viewport_info(void* data, struct video_viewport* vp)
    *vp = d3d11->vp;
 }
 
+#ifdef HAVE_DXGI_HDR
+/* GPU path for HDR screenshot readback.
+ *
+ * Runs a single full-screen pass that samples the captured HDR backbuffer
+ * and writes sRGB-encoded SDR into a B8G8R8A8_UNORM render target, then
+ * copies that to a CPU-mappable staging texture and unswizzles into the
+ * caller's BGR24 output.  Mirrors the Vulkan driver's hdr_to_sdr path
+ * and the CPU implementation in dxgi_hdr_readback_to_bgr24() — either
+ * one should produce visually identical screenshots.
+ *
+ * Returns false on any failure; the caller then falls back to the CPU
+ * decoder so HDR screenshots still work even if the GPU path breaks
+ * (driver PSO compile bug, OOM, unexpected state, etc.). */
+static bool d3d11_gpu_hdr_readback_to_bgr24(
+      d3d11_video_t* d3d11,
+      ID3D11Resource* src_backbuffer_res,
+      DXGI_FORMAT src_format,
+      unsigned full_width,
+      unsigned full_height,
+      unsigned vp_x, unsigned vp_y,
+      unsigned vp_w, unsigned vp_h,
+      uint8_t* buffer)
+{
+   ID3D11Device*        device      = d3d11->device;
+   ID3D11DeviceContext* context     = d3d11->context;
+   d3d11_shader_t*      hdr_shader  = &d3d11->shaders[VIDEO_SHADER_STOCK_HDR];
+   d3d11_texture_t      src_tex     = { 0 };
+   d3d11_texture_t      sdr_tex     = { 0 };
+   ID3D11Texture2D*     staging_tex = NULL;
+   ID3D11Resource*      staging_res = NULL;
+   ID3D11Resource*      sdr_res     = NULL;
+   D3D11_TEXTURE2D_DESC staging_desc;
+   D3D11_MAPPED_SUBRESOURCE map;
+   D3D11_VIEWPORT       vp;
+   D3D11_RECT           sc;
+   unsigned             hdr_mode;
+   unsigned             y, x;
+   UINT                 stride     = sizeof(d3d11_vertex_t);
+   UINT                 offset     = 0;
+   bool                 mapped     = false;
+   bool                 ret        = false;
+
+   if (src_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+      hdr_mode = 1;
+   else if (src_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+      hdr_mode = 2;
+   else
+      return false;
+
+   /* Lazy compile of the readback pixel shader.  Only pays the cost
+    * the first time a screenshot is taken with HDR enabled. */
+   if (!d3d11->hdr.ps_readback)
+   {
+      static const char shader_src[] =
+#include "d3d_shaders/hdr_sm5.hlsl.h"
+         ;
+      D3DBlob ps_code = NULL;
+      if (!d3d_compile(shader_src, sizeof(shader_src), NULL,
+               "PSMainToSDR", "ps_5_0", &ps_code) || !ps_code)
+      {
+         RARCH_ERR("[D3D11] Failed to compile PSMainToSDR for HDR readback.\n");
+         return false;
+      }
+      if (FAILED(device->lpVtbl->CreatePixelShader(device,
+                  ps_code->lpVtbl->GetBufferPointer(ps_code),
+                  ps_code->lpVtbl->GetBufferSize(ps_code),
+                  NULL, &d3d11->hdr.ps_readback)))
+      {
+         ps_code->lpVtbl->Release(ps_code);
+         RARCH_ERR("[D3D11] Failed to create readback PS.\n");
+         return false;
+      }
+      ps_code->lpVtbl->Release(ps_code);
+   }
+
+   /* HDR-format intermediate source: a shader-readable copy of the
+    * swapchain backbuffer.  (The swapchain itself is created with
+    * RENDER_TARGET_OUTPUT only and cannot be bound as an SRV.) */
+   src_tex.desc.Width     = full_width;
+   src_tex.desc.Height    = full_height;
+   src_tex.desc.Format    = src_format;
+   src_tex.desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+   if (!d3d11_init_texture(device, &src_tex))
+      goto cleanup;
+
+   context->lpVtbl->CopyResource(context,
+         (ID3D11Resource*)src_tex.handle, src_backbuffer_res);
+
+   /* SDR render target: receives the tonemap output. */
+   sdr_tex.desc.Width     = full_width;
+   sdr_tex.desc.Height    = full_height;
+   sdr_tex.desc.Format    = DXGI_FORMAT_B8G8R8A8_UNORM;
+   sdr_tex.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+   if (!d3d11_init_texture(device, &sdr_tex))
+      goto cleanup;
+
+   /* Populate the UBO with readback-specific values and push. */
+   {
+      const float          prev_it = d3d11->hdr.ubo_values.inverse_tonemap;
+      const float          prev_h  = d3d11->hdr.ubo_values.hdr10;
+      const unsigned       prev_m  = d3d11->hdr.ubo_values.hdr_mode;
+      const float          prev_sc = d3d11->hdr.ubo_values.scanlines;
+      D3D11_MAPPED_SUBRESOURCE mapped_ubo;
+
+      d3d11->hdr.ubo_values.inverse_tonemap = 0.0f;
+      d3d11->hdr.ubo_values.hdr10           = 0.0f;
+      d3d11->hdr.ubo_values.hdr_mode        = hdr_mode;
+      d3d11->hdr.ubo_values.scanlines       = 0.0f;
+
+      if (SUCCEEDED(context->lpVtbl->Map(context,
+                  (ID3D11Resource*)d3d11->hdr.ubo, 0,
+                  D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
+      {
+         *(dxgi_hdr_uniform_t*)mapped_ubo.pData = d3d11->hdr.ubo_values;
+         context->lpVtbl->Unmap(context,
+               (ID3D11Resource*)d3d11->hdr.ubo, 0);
+      }
+
+      d3d11->hdr.ubo_values.inverse_tonemap = prev_it;
+      d3d11->hdr.ubo_values.hdr10           = prev_h;
+      d3d11->hdr.ubo_values.hdr_mode        = prev_m;
+      d3d11->hdr.ubo_values.scanlines       = prev_sc;
+   }
+
+   /* Bind state: VS / IL / GS from the HDR stock shader, PS from our
+    * readback shader. */
+   context->lpVtbl->IASetInputLayout(context, hdr_shader->layout);
+   context->lpVtbl->VSSetShader(context, hdr_shader->vs, NULL, 0);
+   context->lpVtbl->PSSetShader(context, d3d11->hdr.ps_readback, NULL, 0);
+   context->lpVtbl->GSSetShader(context, hdr_shader->gs, NULL, 0);
+   context->lpVtbl->IASetPrimitiveTopology(context,
+         D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+   context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->hdr.ubo);
+   context->lpVtbl->PSSetConstantBuffers(context, 0, 1, &d3d11->hdr.ubo);
+   context->lpVtbl->PSSetShaderResources(context, 0, 1, &src_tex.view);
+   context->lpVtbl->PSSetSamplers(context, 0, 1,
+         &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+
+   context->lpVtbl->IASetVertexBuffers(context, 0, 1,
+         &d3d11->frame.vbo, &stride, &offset);
+
+   context->lpVtbl->OMSetRenderTargets(context, 1, &sdr_tex.rt_view, NULL);
+   context->lpVtbl->OMSetBlendState(context, d3d11->blend_disable, NULL, 0xFFFFFFFF);
+
+   vp.TopLeftX = 0.0f;
+   vp.TopLeftY = 0.0f;
+   vp.Width    = (float)full_width;
+   vp.Height   = (float)full_height;
+   vp.MinDepth = 0.0f;
+   vp.MaxDepth = 1.0f;
+   sc.left     = 0;
+   sc.top      = 0;
+   sc.right    = (LONG)full_width;
+   sc.bottom   = (LONG)full_height;
+   context->lpVtbl->RSSetViewports(context, 1, &vp);
+   context->lpVtbl->RSSetScissorRects(context, 1, &sc);
+   context->lpVtbl->RSSetState(context, d3d11->scissor_disabled);
+
+   context->lpVtbl->Draw(context, 4, 0);
+
+   /* Unbind SRV before we may read from the same texture as a source
+    * for anything else (and to stop D3D11 complaining about RTV/SRV
+    * aliasing if anything upstream uses the same slot). */
+   {
+      ID3D11ShaderResourceView* null_srv = NULL;
+      context->lpVtbl->PSSetShaderResources(context, 0, 1, &null_srv);
+   }
+
+   /* Staging copy of the SDR RT. */
+   staging_desc                = sdr_tex.desc;
+   staging_desc.MipLevels      = 1;
+   staging_desc.BindFlags      = 0;
+   staging_desc.MiscFlags      = 0;
+   staging_desc.Usage          = D3D11_USAGE_STAGING;
+   staging_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+   if (FAILED(device->lpVtbl->CreateTexture2D(device, &staging_desc,
+               NULL, &staging_tex)))
+      goto cleanup;
+
+#ifdef __cplusplus
+   staging_tex->lpVtbl->QueryInterface(staging_tex, IID_ID3D11Resource, (void**)&staging_res);
+   sdr_tex.handle->lpVtbl->QueryInterface(sdr_tex.handle, IID_ID3D11Resource, (void**)&sdr_res);
+#else
+   staging_tex->lpVtbl->QueryInterface(staging_tex, &IID_ID3D11Resource, (void**)&staging_res);
+   sdr_tex.handle->lpVtbl->QueryInterface(sdr_tex.handle, &IID_ID3D11Resource, (void**)&sdr_res);
+#endif
+   context->lpVtbl->CopyResource(context, staging_res, sdr_res);
+
+   if (FAILED(context->lpVtbl->Map(context, staging_res, 0,
+               D3D11_MAP_READ, 0, &map)))
+      goto cleanup;
+   mapped = true;
+
+   /* BGRA8 -> BGR24, bottom-up, clamped to viewport. */
+   {
+      const uint8_t* src_row = (const uint8_t*)map.pData + (size_t)map.RowPitch * vp_y;
+      for (y = 0; y < vp_h; y++, src_row += map.RowPitch)
+      {
+         uint8_t* dst = buffer + 3 * (size_t)(vp_h - y - 1) * vp_w;
+         for (x = 0; x < vp_w; x++)
+         {
+            dst[3 * x + 0] = src_row[4 * (x + vp_x) + 0];
+            dst[3 * x + 1] = src_row[4 * (x + vp_x) + 1];
+            dst[3 * x + 2] = src_row[4 * (x + vp_x) + 2];
+         }
+      }
+   }
+   ret = true;
+
+cleanup:
+   if (mapped)
+      context->lpVtbl->Unmap(context, staging_res, 0);
+   if (staging_res)
+      staging_res->lpVtbl->Release(staging_res);
+   if (sdr_res)
+      sdr_res->lpVtbl->Release(sdr_res);
+   if (staging_tex)
+      staging_tex->lpVtbl->Release(staging_tex);
+   d3d11_release_texture(&sdr_tex);
+   d3d11_release_texture(&src_tex);
+   return ret;
+}
+#endif /* HAVE_DXGI_HDR */
+
 static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
@@ -5118,9 +5345,19 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 #ifdef HAVE_DXGI_HDR
          case DXGI_FORMAT_R10G10B10A2_UNORM:
          case DXGI_FORMAT_R16G16B16A16_FLOAT:
-            /* HDR10 PQ or scRGB: hand off to the CPU HDR decoder.
-             * It undoes the forward HDR encoding using paper_white_nits
-             * and writes sRGB-encoded BGR24 bottom-up. */
+            /* HDR10 PQ or scRGB.  Try the GPU tonemap pass first — it's
+             * faster and avoids the per-pixel CPU cost at 4K — and fall
+             * back to the CPU decoder on any failure so HDR screenshots
+             * still work even if the GPU path breaks (driver PSO compile
+             * bug, OOM, etc.). */
+            if (d3d11_gpu_hdr_readback_to_bgr24(
+                     d3d11, BackBufferResource, StagingDesc.Format,
+                     StagingDesc.Width, StagingDesc.Height,
+                     vp_x, vp_y, vp_width, vp_height,
+                     buffer))
+               break;
+
+            RARCH_WARN("[D3D11] GPU HDR readback failed, falling back to CPU.\n");
             if (!dxgi_hdr_readback_to_bgr24(
                      StagingDesc.Format,
                      Map.pData, Map.RowPitch,

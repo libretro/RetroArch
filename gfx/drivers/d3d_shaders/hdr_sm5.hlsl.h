@@ -558,4 +558,77 @@ float4 PSMain(PSInput input) : SV_TARGET
       return t0.Sample(s0, input.texcoord);
    }
 };
+
+/* --- Readback path: HDR -> SDR (inverse of the forward composition) ---
+ * Used by the read_viewport screenshot path in the D3D11/D3D12 drivers
+ * to sample the HDR backbuffer (HDR10 PQ or scRGB FP16) and produce
+ * sRGB-encoded bytes that a plain PNG viewer can display correctly.
+ * Mirrors dxgi_hdr_readback_to_bgr24() in gfx/common/dxgi_common.c but
+ * runs on the GPU. */
+
+/* sRGB OETF: linear [0,1] -> sRGB encoded [0,1].  The readback render
+ * target is B8G8R8A8_UNORM (linear), so we apply the encoding ourselves. */
+float3 LinearToSRGB(float3 c)
+{
+   float3 clamped = saturate(c);
+   float3 lo      = clamped * 12.92f;
+   float3 hi      = 1.055f * pow(clamped, 1.0f / 2.4f) - 0.055f;
+   return (clamped <= 0.0031308f) ? lo : hi;
+}
+
+/* Reverse of InverseTonemap(): compresses values above SDR white back
+ * into [0,1] using a hue-preserving operator on the peak channel. */
+float3 Tonemap(const float3 hdr_linear, const float max_nits, const float brightness_nits)
+{
+   const float input_val = max(hdr_linear.r, max(hdr_linear.g, hdr_linear.b));
+   if (input_val < 0.0001f) return hdr_linear;
+   const float peak_ratio = max_nits / brightness_nits;
+   const float k          = 1.0f - (1.0f / peak_ratio);
+   return hdr_linear / max(1.0f + input_val * k, 0.0001f);
+}
+
+/* PQ-encoded BT.2020 HDR10 -> linear BT.709 at paper-white units.
+ * Undoes the forward pass's PQ encode and BT.709->BT.2020 rotation,
+ * and rescales so that SDR paper-white maps back to 1.0. */
+float3 HDR10ToLinear(float3 hdr10, float brightness_nits)
+{
+   float3 linear_2020_10k = ST2084ToLinear(hdr10);
+   float3 linear_709      = mul(k2020to709, linear_2020_10k);
+   /* Forward path multiplied by (brightness_nits / 10000) before PQ
+    * encoding; undo that to bring SDR white back to 1.0. */
+   return linear_709 * (kMaxNitsFor2084 / brightness_nits);
+}
+
+/* Entry point selected by hdr_mode:
+ *   1 = HDR10 PQ backbuffer   -> HDR10ToLinear + Tonemap + sRGB encode
+ *   2 = scRGB FP16 backbuffer -> rescale by (80 / paper_white) + sRGB
+ * The readback RT is B8G8R8A8_UNORM, so we always apply the sRGB OETF. */
+float4 PSMainToSDR(PSInput input) : SV_TARGET
+{
+   float4 src = t0.Sample(s0, input.texcoord);
+   float3 sdr_linear;
+
+   if (global.hdr_mode == 1)
+   {
+      float3 hdr_linear = HDR10ToLinear(src.rgb, global.brightness_nits);
+      sdr_linear        = Tonemap(hdr_linear,
+                                  global.brightness_nits,
+                                  global.brightness_nits);
+   }
+   else if (global.hdr_mode == 2)
+   {
+      /* scRGB: undo forward scale of (brightness_nits / 80).
+       * Negative and >1 values are legal scRGB (wide-gamut / super-white)
+       * and will clamp in LinearToSRGB. */
+      sdr_linear = src.rgb * (kscRGBWhiteNits / global.brightness_nits);
+   }
+   else
+   {
+      /* Passthrough — shouldn't happen on the HDR readback path but
+       * keeps the shader well-defined. */
+      sdr_linear = src.rgb;
+   }
+
+   return float4(LinearToSRGB(sdr_linear), 1.0f);
+}
 )
