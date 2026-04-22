@@ -99,6 +99,33 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    if (!input)
       return ret;
 
+   /* Fast path: source is already BGR24 and no resampling is
+    * needed, so hand the source buffer directly to the PNG
+    * encoder. rpng_save_image_stream walks rows via `data +=
+    * pitch` with a signed pitch, so a bottom-up source is
+    * encoded top-down for free by starting at the last row and
+    * passing a negative row stride (same trick take_screenshot_raw
+    * uses via screenshot_dump's pitch argument).
+    *
+    * This avoids allocating a second full-frame BGR24 buffer and
+    * the flip-and-copy the scaler would otherwise do between them;
+    * at 4K that is ~48 MiB of allocation and copy per screenshot. */
+   if (     (state->flags & SS_TASK_FLAG_BGR24)
+         &&  state->out_width  == state->width
+         &&  state->out_height == state->height)
+   {
+      ret = rpng_save_image_bgr24(
+            state->filename,
+            input,
+            state->out_width,
+            state->out_height,
+            (unsigned)(-state->pitch)
+            );
+      /* state->out_buffer is NULL in this path (see screenshot_dump);
+       * nothing to free. */
+      return ret;
+   }
+
    if (state->flags & SS_TASK_FLAG_BGR24)
       scaler->in_fmt             = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
@@ -109,8 +136,7 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    video_frame_convert_to_bgr24(
          scaler,
          state->out_buffer,
-         (const uint8_t*)state->frame + ((int)state->height - 1)
-         * state->pitch,
+         input,
          state->width,
          state->height,
          -state->pitch,
@@ -431,12 +457,22 @@ static bool screenshot_dump(
    }
 
 #if defined(HAVE_RPNG)
-   if (!(buf = (uint8_t*)malloc(width * height * 3)))
+   /* Only allocate the BGR24 output buffer when screenshot_dump_direct
+    * will actually use the scaler. When the source is already BGR24 at
+    * the output dimensions (typical of the viewport read-back path,
+    * take_screenshot_viewport), the encoder walks the source directly
+    * with negative pitch and no intermediate buffer is needed. */
+   if (  !(state->flags & SS_TASK_FLAG_BGR24)
+       || state->out_width  != width
+       || state->out_height != height)
    {
-      free(state);
-      return false;
+      if (!(buf = (uint8_t*)malloc(state->out_width * state->out_height * 3)))
+      {
+         free(state);
+         return false;
+      }
+      state->out_buffer  = buf;
    }
-   state->out_buffer     = buf;
 #endif
 
    if (use_thread)
