@@ -334,6 +334,7 @@ typedef struct
       D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_view;
       D3D12Resource                    ubo_post;
       D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_post_view;
+      D3D12PipelineState               pso_readback; /* lazy: HDR -> SDR tonemap PSO for read_viewport */
       float                            menu_nits;
       float                            max_output_nits;
       float                            min_output_nits;
@@ -3541,6 +3542,7 @@ static void d3d12_gfx_free(void* data)
 #ifdef HAVE_DXGI_HDR
    Release(d3d12->hdr.ubo);
    Release(d3d12->hdr.ubo_post);
+   Release(d3d12->hdr.pso_readback);
 #endif
 
    Release(d3d12->frame.ubo);
@@ -4043,7 +4045,11 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
    d3d12_create_root_signature(d3d12->device, &desc, &d3d12->desc.cs_rootSignature);
 
    d3d12->desc.rtv_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-   d3d12->desc.rtv_heap.desc.NumDescriptors = countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2;
+   /* countof(renderTargets) swapchain RTs + 2 per shader pass (rt + feedback)
+    * + 1 reserved at the end for the HDR readback tonemap target used by
+    * d3d12_gfx_read_viewport().  The reserved slot is at fixed offset
+    * (countof(renderTargets) + GFX_MAX_SHADERS * 2). */
+   d3d12->desc.rtv_heap.desc.NumDescriptors = countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 1;
    d3d12->desc.rtv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.rtv_heap);
 
@@ -6059,6 +6065,341 @@ static struct video_shader* d3d12_gfx_get_current_shader(void* data)
    return d3d12->shader_preset;
 }
 
+#ifdef HAVE_DXGI_HDR
+/* GPU path for HDR screenshot readback in D3D12.
+ *
+ * Same idea as the D3D11 equivalent: sample the captured HDR backbuffer
+ * through a PSMainToSDR tonemap pass into a B8G8R8A8_UNORM render
+ * target, copy that to a CPU-readable buffer, and unswizzle into BGR24.
+ * Runs on the GPU so the per-pixel decode cost does not happen on the
+ * CPU.  Returns false on any failure so the caller can fall back to the
+ * CPU decoder in dxgi_hdr_readback_to_bgr24(). */
+static bool d3d12_gpu_hdr_readback_to_bgr24(
+      d3d12_video_t* d3d12,
+      DXGI_FORMAT    src_format,
+      unsigned       full_width,
+      unsigned       full_height,
+      unsigned       vp_x, unsigned vp_y,
+      unsigned       vp_w, unsigned vp_h,
+      uint8_t*       buffer)
+{
+   D3D12GraphicsCommandList cmd;
+   d3d12_texture_t hdr_src  = { 0 };
+   d3d12_texture_t sdr_rt   = { 0 };
+   D3D12Resource   readback = NULL;
+   D3D12Resource   back_buffer;
+   D3D12_RESOURCE_DESC  sdr_desc;
+   D3D12_HEAP_PROPERTIES heap_props;
+   D3D12_RESOURCE_DESC   buf_desc;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+   D3D12_TEXTURE_COPY_LOCATION src_loc, dst_loc;
+   D3D12_BOX            src_box;
+   D3D12_VIEWPORT       vp;
+   D3D12_RECT           sc;
+   D3D12_RANGE          read_range;
+   UINT64               total_bytes    = 0;
+   UINT                 num_rows       = 0;
+   UINT64               row_size_bytes = 0;
+   uint8_t*             mapped         = NULL;
+   unsigned             hdr_mode;
+   unsigned             y, x;
+   bool                 ret            = false;
+
+   /* Resolve the UBO-side mode selector. */
+   if (src_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+      hdr_mode = 1;
+   else if (src_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+      hdr_mode = 2;
+   else
+      return false;
+
+   /* Lazy-compile PSMainToSDR into a cached PSO on first use. */
+   if (!d3d12->hdr.pso_readback)
+   {
+      static const char shader_src[] =
+#include "d3d_shaders/hdr_sm5.hlsl.h"
+         ;
+      static const D3D12_INPUT_ELEMENT_DESC input_desc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_vertex_t, color),
+              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+      D3DBlob vs_code = NULL, ps_code = NULL;
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = { d3d12->desc.rootSignature };
+
+      if (   !d3d_compile(shader_src, sizeof(shader_src), NULL,
+                  "VSMain", "vs_5_0", &vs_code)
+          || !d3d_compile(shader_src, sizeof(shader_src), NULL,
+                  "PSMainToSDR", "ps_5_0", &ps_code))
+      {
+         RARCH_ERR("[D3D12] Failed to compile PSMainToSDR for HDR readback.\n");
+         Release(vs_code);
+         Release(ps_code);
+         return false;
+      }
+
+      pso_desc.RTVFormats[0]                = DXGI_FORMAT_B8G8R8A8_UNORM;
+      pso_desc.PrimitiveTopologyType        = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      pso_desc.InputLayout.pInputElementDescs = input_desc;
+      pso_desc.InputLayout.NumElements      = countof(input_desc);
+      pso_desc.BlendState.RenderTarget[0]   = d3d12_blend_disable_desc;
+
+      d3d12_init_pipeline(d3d12->device, vs_code, ps_code, NULL,
+            &pso_desc, &d3d12->hdr.pso_readback);
+
+      Release(vs_code);
+      Release(ps_code);
+
+      if (!d3d12->hdr.pso_readback)
+      {
+         RARCH_ERR("[D3D12] Failed to create PSO for HDR readback.\n");
+         return false;
+      }
+   }
+
+   /* HDR-format intermediate: shader-readable copy of the swapchain
+    * backbuffer (the swapchain itself has no SRV bind flag). */
+   hdr_src.desc.Width     = full_width;
+   hdr_src.desc.Height    = full_height;
+   hdr_src.desc.Format    = src_format;
+   hdr_src.srv_heap       = &d3d12->desc.srv_heap;
+   d3d12_init_texture(d3d12->device, &hdr_src);
+   if (!hdr_src.handle)
+      goto cleanup;
+
+   /* SDR render target: takes the tonemapped output. */
+   sdr_rt.desc.Width     = full_width;
+   sdr_rt.desc.Height    = full_height;
+   sdr_rt.desc.Format    = DXGI_FORMAT_B8G8R8A8_UNORM;
+   sdr_rt.desc.Flags     = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+   sdr_rt.srv_heap       = &d3d12->desc.srv_heap;
+   /* Use the dedicated RTV slot reserved at heap init time; see the
+    * rtv_heap.desc.NumDescriptors computation upstream. */
+   sdr_rt.rt_view.ptr    = d3d12->desc.rtv_heap.cpu.ptr
+         + (size_t)(countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2)
+         * d3d12->desc.rtv_heap.stride;
+   d3d12_init_texture(d3d12->device, &sdr_rt);
+   if (!sdr_rt.handle)
+      goto cleanup;
+
+   /* Describe the readback buffer layout for an SDR-RT-sized copy. */
+   {
+      D3D12_RESOURCE_DESC rt_desc;
+      memset(&rt_desc, 0, sizeof(rt_desc));
+      rt_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      rt_desc.Width              = full_width;
+      rt_desc.Height             = full_height;
+      rt_desc.DepthOrArraySize   = 1;
+      rt_desc.MipLevels          = 1;
+      rt_desc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM;
+      rt_desc.SampleDesc.Count   = 1;
+      rt_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+      rt_desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+      d3d12->device->lpVtbl->GetCopyableFootprints(d3d12->device,
+            &rt_desc, 0, 1, 0, &footprint, &num_rows,
+            &row_size_bytes, &total_bytes);
+   }
+
+   /* Create the readback buffer. */
+   heap_props.Type                 = D3D12_HEAP_TYPE_READBACK;
+   heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+   heap_props.CreationNodeMask     = 1;
+   heap_props.VisibleNodeMask      = 1;
+   buf_desc.Dimension              = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buf_desc.Alignment              = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+   buf_desc.Width                  = total_bytes;
+   buf_desc.Height                 = 1;
+   buf_desc.DepthOrArraySize       = 1;
+   buf_desc.MipLevels              = 1;
+   buf_desc.Format                 = DXGI_FORMAT_UNKNOWN;
+   buf_desc.SampleDesc.Count       = 1;
+   buf_desc.SampleDesc.Quality     = 0;
+   buf_desc.Layout                 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buf_desc.Flags                  = D3D12_RESOURCE_FLAG_NONE;
+   if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(d3d12->device,
+               &heap_props, D3D12_HEAP_FLAG_NONE, &buf_desc,
+               D3D12_RESOURCE_STATE_COPY_DEST, NULL,
+               uuidof(ID3D12Resource), (void**)&readback)))
+      goto cleanup;
+
+   /* Write the readback UBO. */
+   {
+      const float    prev_it = d3d12->hdr.ubo_values.inverse_tonemap;
+      const float    prev_h  = d3d12->hdr.ubo_values.hdr10;
+      const unsigned prev_m  = d3d12->hdr.ubo_values.hdr_mode;
+      const float    prev_sc = d3d12->hdr.ubo_values.scanlines;
+      dxgi_hdr_uniform_t* mapped_ubo;
+      D3D12_RANGE zero_range;
+
+      d3d12->hdr.ubo_values.inverse_tonemap = 0.0f;
+      d3d12->hdr.ubo_values.hdr10           = 0.0f;
+      d3d12->hdr.ubo_values.hdr_mode        = hdr_mode;
+      d3d12->hdr.ubo_values.scanlines       = 0.0f;
+
+      zero_range.Begin = 0;
+      zero_range.End   = 0;
+      if (SUCCEEDED(d3d12->hdr.ubo_post->lpVtbl->Map(
+                  d3d12->hdr.ubo_post, 0, &zero_range, (void**)&mapped_ubo)))
+      {
+         *mapped_ubo = d3d12->hdr.ubo_values;
+         d3d12->hdr.ubo_post->lpVtbl->Unmap(d3d12->hdr.ubo_post, 0, NULL);
+      }
+
+      d3d12->hdr.ubo_values.inverse_tonemap = prev_it;
+      d3d12->hdr.ubo_values.hdr10           = prev_h;
+      d3d12->hdr.ubo_values.hdr_mode        = prev_m;
+      d3d12->hdr.ubo_values.scanlines       = prev_sc;
+   }
+
+   /* Reset the command allocator and record the tonemap pass + copy. */
+   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
+   cmd = d3d12->queue.cmd;
+   cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
+         d3d12->hdr.pso_readback);
+
+   back_buffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
+
+   /* Copy swapchain backbuffer (PRESENT) -> hdr_src (COPY_DEST). */
+   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
+         D3D12_RESOURCE_STATE_PRESENT,
+         D3D12_RESOURCE_STATE_COPY_SOURCE);
+   D3D12_RESOURCE_TRANSITION(cmd, hdr_src.handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_COPY_DEST);
+   cmd->lpVtbl->CopyResource(cmd, hdr_src.handle, back_buffer);
+
+   /* Transition hdr_src back to shader-readable and back_buffer back
+    * to PRESENT so the swapchain stays legal for the next frame. */
+   D3D12_RESOURCE_TRANSITION(cmd, hdr_src.handle,
+         D3D12_RESOURCE_STATE_COPY_DEST,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
+         D3D12_RESOURCE_STATE_COPY_SOURCE,
+         D3D12_RESOURCE_STATE_PRESENT);
+
+   /* Bind descriptor heaps so the SRV/sampler tables resolve. */
+   {
+      D3D12DescriptorHeap heaps[] =
+      {
+         d3d12->desc.srv_heap.handle,
+         d3d12->desc.sampler_heap.handle,
+      };
+      cmd->lpVtbl->SetDescriptorHeaps(cmd, countof(heaps), heaps);
+   }
+
+   /* Bind RT, root signature, descriptor tables, UBO. */
+   cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &sdr_rt.rt_view, FALSE, NULL);
+   cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+         hdr_src.gpu_descriptor[0]);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+         d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+         d3d12->hdr.ubo_post_view.BufferLocation);
+
+   /* Fullscreen quad from the existing frame VBO (verts 0..3). */
+   cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+   vp.TopLeftX = 0.0f;
+   vp.TopLeftY = 0.0f;
+   vp.Width    = (float)full_width;
+   vp.Height   = (float)full_height;
+   vp.MinDepth = 0.0f;
+   vp.MaxDepth = 1.0f;
+   sc.left     = 0;
+   sc.top      = 0;
+   sc.right    = (LONG)full_width;
+   sc.bottom   = (LONG)full_height;
+   cmd->lpVtbl->RSSetViewports(cmd, 1, &vp);
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &sc);
+
+   cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+
+   /* Transition the SDR RT to COPY_SOURCE and copy it into the readback
+    * buffer using the footprint we computed. */
+   D3D12_RESOURCE_TRANSITION(cmd, sdr_rt.handle,
+         D3D12_RESOURCE_STATE_RENDER_TARGET,
+         D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+   src_loc.pResource        = sdr_rt.handle;
+   src_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   src_loc.SubresourceIndex = 0;
+
+   dst_loc.pResource        = readback;
+   dst_loc.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   dst_loc.PlacedFootprint  = footprint;
+
+   src_box.left   = 0;
+   src_box.top    = 0;
+   src_box.front  = 0;
+   src_box.right  = (UINT)full_width;
+   src_box.bottom = full_height;
+   src_box.back   = 1;
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst_loc, 0, 0, 0, &src_loc, &src_box);
+
+   cmd->lpVtbl->Close(cmd);
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
+         (ID3D12CommandList* const*)&d3d12->queue.cmd);
+
+   /* Wait for the GPU before mapping the readback buffer. */
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
+            ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence,
+               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
+
+   read_range.Begin = 0;
+   read_range.End   = (SIZE_T)total_bytes;
+   if (FAILED(readback->lpVtbl->Map(readback, 0, &read_range, (void**)&mapped)))
+      goto cleanup;
+
+   /* Unswizzle BGRA8 (from the sRGB OETF in the shader) to BGR24
+    * bottom-up, clamped to the viewport. */
+   {
+      const uint8_t* src_row = mapped + footprint.Offset
+            + (size_t)footprint.Footprint.RowPitch * vp_y;
+      for (y = 0; y < vp_h; y++, src_row += footprint.Footprint.RowPitch)
+      {
+         uint8_t* dst = buffer + 3 * (size_t)(vp_h - y - 1) * vp_w;
+         for (x = 0; x < vp_w; x++)
+         {
+            dst[3 * x + 0] = src_row[4 * (x + vp_x) + 0];
+            dst[3 * x + 1] = src_row[4 * (x + vp_x) + 1];
+            dst[3 * x + 2] = src_row[4 * (x + vp_x) + 2];
+         }
+      }
+   }
+   {
+      D3D12_RANGE zero_write = { 0, 0 };
+      readback->lpVtbl->Unmap(readback, 0, &zero_write);
+   }
+   ret = true;
+
+cleanup:
+   if (readback)
+      readback->lpVtbl->Release(readback);
+   /* d3d12_release_texture() frees the SRV descriptor slot and the
+    * handle.  The RTV slot on sdr_rt is the fixed reserved one at the
+    * end of the rtv_heap; it is not managed by the bitmap allocator so
+    * there's nothing to free for it. */
+   d3d12_release_texture(&sdr_rt);
+   d3d12_release_texture(&hdr_src);
+   return ret;
+}
+#endif /* HAVE_DXGI_HDR */
+
 static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
    d3d12_video_t*            d3d12      = (d3d12_video_t*)data;
@@ -6154,6 +6495,31 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
                (unsigned)tex_desc.Format);
          return false;
    }
+
+   /* Compute the viewport clamp once so both the GPU HDR path (below)
+    * and the CPU swizzle loops (at the end) can use it. */
+   vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
+   vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
+   vp_w = (d3d12->vp.width  > d3d12->vp.full_width)
+         ? d3d12->vp.full_width  : d3d12->vp.width;
+   vp_h = (d3d12->vp.height > d3d12->vp.full_height)
+         ? d3d12->vp.full_height : d3d12->vp.height;
+
+#ifdef HAVE_DXGI_HDR
+   /* HDR fast path: try the GPU tonemap.  On success we're done and
+    * return before allocating the SDR readback buffer.  On failure we
+    * fall through — the CPU decoder will still work against the raw
+    * readback of the swapchain backbuffer. */
+   if (readback_mode == READBACK_HDR10 || readback_mode == READBACK_SCRGB)
+   {
+      if (d3d12_gpu_hdr_readback_to_bgr24(
+               d3d12, tex_desc.Format,
+               (unsigned)tex_desc.Width, (unsigned)tex_desc.Height,
+               vp_x, vp_y, vp_w, vp_h, buffer))
+         return true;
+      RARCH_WARN("[D3D12] GPU HDR readback failed, falling back to CPU.\n");
+   }
+#endif
 
    /* Ask the device what layout a readback copy of this texture needs.
     * D3D12 requires 256-byte row pitches and 512-byte base offsets in
@@ -6252,13 +6618,7 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 
    src_pixels = mapped + footprint.Offset;
 
-   vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
-   vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
-   vp_w = (d3d12->vp.width  > d3d12->vp.full_width)
-         ? d3d12->vp.full_width  : d3d12->vp.width;
-   vp_h = (d3d12->vp.height > d3d12->vp.full_height)
-         ? d3d12->vp.full_height : d3d12->vp.height;
-
+   /* (vp_x/y/w/h were already computed above for the GPU HDR attempt.) */
    switch (readback_mode)
    {
       case READBACK_RGBA8:
