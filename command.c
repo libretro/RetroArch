@@ -2440,8 +2440,70 @@ void command_event_reinit(const int flags)
    const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
+   /* Snapshot the last cached core frame before tearing the video
+    * driver down.  video_driver_free() nulls frame_cache_data as part
+    * of the reinit cycle (the pointer was borrowed from the core's
+    * own framebuffer and isn't guaranteed to stay live across the
+    * driver swap), so without a snapshot the new driver would come
+    * up with no core image to replay.  Restored + replayed below so
+    * the paused-core background remains visible when reinit is
+    * triggered from inside the menu (e.g. HDR mode toggle).
+    *
+    * The snapshot buffer is static and reused across reinits — we
+    * need it to outlive command_event_reinit because we hand the
+    * pointer to video_st->frame_cache_data for the new driver to
+    * read via video_driver_cached_frame(), and the core's next real
+    * frame will replace the pointer at its leisure.  Resizing in
+    * place on each call keeps it bounded at one buffer's worth. */
+   static void  *cached_snapshot      = NULL;
+   static size_t cached_snapshot_cap  = 0;
+   size_t        want_size            = 0;
+   unsigned      cached_snapshot_w    = 0;
+   unsigned      cached_snapshot_h    = 0;
+   size_t        cached_snapshot_p    = 0;
+
+   if (     video_st
+         && video_st->frame_cache_data
+         && video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID
+         && video_st->frame_cache_height
+         && video_st->frame_cache_pitch)
+      want_size = video_st->frame_cache_pitch
+                * video_st->frame_cache_height;
+   if (want_size > cached_snapshot_cap)
+   {
+      void *tmp = realloc(cached_snapshot, want_size);
+      if (tmp)
+      {
+         cached_snapshot     = tmp;
+         cached_snapshot_cap = want_size;
+      }
+      else
+         want_size           = 0;
+   }
+   if (want_size && cached_snapshot)
+   {
+      memcpy(cached_snapshot, video_st->frame_cache_data, want_size);
+      cached_snapshot_w = video_st->frame_cache_width;
+      cached_snapshot_h = video_st->frame_cache_height;
+      cached_snapshot_p = video_st->frame_cache_pitch;
+   }
 
    video_driver_reinit(flags);
+
+   /* Restore the snapshot and ask the new driver to replay it so the
+    * paused-core background appears in the first post-reinit frame.
+    * The buffer stays live across subsequent frame_cb calls from the
+    * core (which overwrite the pointer) and is either reused on the
+    * next reinit or freed at shutdown. */
+   if (cached_snapshot_p && cached_snapshot_h)
+   {
+      video_st->frame_cache_data   = cached_snapshot;
+      video_st->frame_cache_width  = cached_snapshot_w;
+      video_st->frame_cache_height = cached_snapshot_h;
+      video_st->frame_cache_pitch  = cached_snapshot_p;
+      video_driver_cached_frame();
+   }
+
    /* Poll input to avoid possibly stale data to corrupt things. */
    if (joypad && joypad->poll)
       joypad->poll();

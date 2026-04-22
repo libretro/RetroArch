@@ -3235,6 +3235,18 @@ font_renderer_t metal_raster_font = {
     * Vulkan's behaviour: HDR is effectively an init-time choice that
     * takes effect on the next driver reinit. */
    unsigned _initial_hdr_mode;
+
+   /* Tracks whether _frameView has received any real frame since this
+    * driver instance came up.  When the HDR mode is toggled mid-session
+    * the frontend fires CMD_EVENT_REINIT, destroying and recreating the
+    * driver.  If the user was in the menu with a core paused in the
+    * background, the new driver's frame texture is empty and subsequent
+    * menu-loop frames arrive with frame==NULL, leaving hdrComposite
+    * nothing to sample — the paused core background disappears until
+    * the user F1-cycles.  On the first frame==NULL after reinit we fall
+    * back to the frontend's frame_cache_data to repopulate the texture
+    * ourselves. */
+   bool _frameEverUploaded;
 }
 
 - (instancetype)initWithVideo:(const video_info_t *)video
@@ -3540,8 +3552,33 @@ font_renderer_t metal_raster_font = {
       _frameView.frameCount = frameCount;
       if (frame && width && height)
       {
-         _frameView.size = CGSizeMake(width, height);
+         _frameView.size      = CGSizeMake(width, height);
          [_frameView updateFrame:frame pitch:pitch];
+         _frameEverUploaded   = true;
+      }
+      else if (!_frameEverUploaded)
+      {
+         /* Driver just came up (init or post-reinit).  The frontend
+          * hasn't delivered a real frame yet and — on CMD_EVENT_REINIT
+          * from inside the menu — likely won't until the user leaves
+          * the menu.  Pull the cached frame so the core image reappears
+          * under the menu immediately instead of waiting for an F1
+          * cycle.  Safe to do every frame while the flag is clear; we
+          * latch it after the first successful upload. */
+         video_driver_state_t *video_st = video_state_get_ptr();
+         if (     video_st
+               && video_st->frame_cache_data
+               && video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID
+               && video_st->frame_cache_width
+               && video_st->frame_cache_height
+               && video_st->frame_cache_pitch)
+         {
+            _frameView.size    = CGSizeMake(video_st->frame_cache_width,
+                                            video_st->frame_cache_height);
+            [_frameView updateFrame:video_st->frame_cache_data
+                              pitch:video_st->frame_cache_pitch];
+            _frameEverUploaded = true;
+         }
       }
 
       /* Acquire the frame encoder.  In SDR mode this lazily opens a pass
