@@ -6059,6 +6059,247 @@ static struct video_shader* d3d12_gfx_get_current_shader(void* data)
    return d3d12->shader_preset;
 }
 
+static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
+{
+   d3d12_video_t*            d3d12      = (d3d12_video_t*)data;
+   D3D12GraphicsCommandList  cmd;
+   D3D12Resource             back_buffer = NULL;
+   D3D12Resource             readback    = NULL;
+   D3D12_RESOURCE_DESC       tex_desc;
+   D3D12_HEAP_PROPERTIES     heap_props;
+   D3D12_RESOURCE_DESC       buf_desc;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+   D3D12_TEXTURE_COPY_LOCATION src_loc;
+   D3D12_TEXTURE_COPY_LOCATION dst_loc;
+   D3D12_BOX                 src_box;
+   D3D12_RANGE               read_range;
+   UINT64                    total_bytes    = 0;
+   UINT                      num_rows       = 0;
+   UINT64                    row_size_bytes = 0;
+   const uint8_t*            src_pixels     = NULL;
+   uint8_t*                  mapped         = NULL;
+   unsigned                  vp_x, vp_y, vp_w, vp_h, y, x;
+   bool                      is_bgra;
+
+   if (!d3d12)
+      return false;
+
+#ifdef HAVE_DXGI_HDR
+   /* HDR readback is not implemented for D3D12.  The backbuffer is in
+    * either HDR10 PQ (RGB10A2) or scRGB (FP16) — converting either back
+    * to SDR requires a dedicated tonemap pass, similar to the Vulkan
+    * driver's hdr_to_sdr pipeline.  Bail out cleanly so the caller can
+    * fall back to the raw-framebuffer path. */
+   if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+   {
+      RARCH_ERR("[D3D12] HDR screenshot not supported.\n");
+      return false;
+   }
+#endif
+
+   if (!is_idle)
+      video_driver_cached_frame();
+
+   /* Ensure the cached_frame submission above has finished on the GPU
+    * before we reuse the command allocator. */
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
+            ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence,
+               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
+
+   /* cached_frame rendered into chain.renderTargets[chain.frame_index]
+    * and Present'd it without updating frame_index afterwards, so that
+    * slot still refers to the buffer we want to read back. */
+   back_buffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
+   if (!back_buffer)
+      return false;
+
+   /* We intentionally don't call ID3D12Resource::GetDesc here: the
+    * Windows SDK version takes an out-param while the MinGW header
+    * returns the struct by value, which breaks cross-toolchain builds.
+    * The only fields we need are Format / Width / Height, which we
+    * already know from the swapchain state. */
+   memset(&tex_desc, 0, sizeof(tex_desc));
+   tex_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+   tex_desc.Alignment          = 0;
+   tex_desc.Width              = (UINT64)d3d12->chain.viewport.Width;
+   tex_desc.Height             = (UINT)  d3d12->chain.viewport.Height;
+   tex_desc.DepthOrArraySize   = 1;
+   tex_desc.MipLevels          = 1;
+   tex_desc.Format             = d3d12->chain.formats[d3d12->chain.bit_depth];
+   tex_desc.SampleDesc.Count   = 1;
+   tex_desc.SampleDesc.Quality = 0;
+   tex_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+   tex_desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+   /* Only RGBA8 / BGRA8 are expected in the SDR path.  Anything else
+    * means a format we don't know how to swizzle to BGR24. */
+   switch (tex_desc.Format)
+   {
+      case DXGI_FORMAT_R8G8B8A8_UNORM:
+      case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+         is_bgra = false;
+         break;
+      case DXGI_FORMAT_B8G8R8A8_UNORM:
+      case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+         is_bgra = true;
+         break;
+      default:
+         RARCH_ERR("[D3D12] Unexpected swapchain format %u.\n",
+               (unsigned)tex_desc.Format);
+         return false;
+   }
+
+   /* Ask the device what layout a readback copy of this texture needs.
+    * D3D12 requires 256-byte row pitches and 512-byte base offsets in
+    * readback buffers, so we can't just pick arbitrary dimensions. */
+   d3d12->device->lpVtbl->GetCopyableFootprints(d3d12->device,
+         &tex_desc, 0, 1, 0, &footprint, &num_rows,
+         &row_size_bytes, &total_bytes);
+
+   /* Create a readback heap buffer large enough for the footprint. */
+   heap_props.Type                 = D3D12_HEAP_TYPE_READBACK;
+   heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+   heap_props.CreationNodeMask     = 1;
+   heap_props.VisibleNodeMask      = 1;
+
+   buf_desc.Dimension              = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buf_desc.Alignment              = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+   buf_desc.Width                  = total_bytes;
+   buf_desc.Height                 = 1;
+   buf_desc.DepthOrArraySize       = 1;
+   buf_desc.MipLevels              = 1;
+   buf_desc.Format                 = DXGI_FORMAT_UNKNOWN;
+   buf_desc.SampleDesc.Count       = 1;
+   buf_desc.SampleDesc.Quality     = 0;
+   buf_desc.Layout                 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buf_desc.Flags                  = D3D12_RESOURCE_FLAG_NONE;
+
+   if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(d3d12->device,
+               &heap_props, D3D12_HEAP_FLAG_NONE,
+               &buf_desc, D3D12_RESOURCE_STATE_COPY_DEST, NULL,
+               uuidof(ID3D12Resource), (void**)&readback)))
+   {
+      RARCH_ERR("[D3D12] Failed to create readback buffer.\n");
+      return false;
+   }
+
+   /* Record a tiny command list that transitions the backbuffer to
+    * COPY_SOURCE, copies it into the readback buffer, and transitions
+    * it back to PRESENT so Present on the next frame stays legal. */
+   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
+   cmd = d3d12->queue.cmd;
+   cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
+         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+
+   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
+         D3D12_RESOURCE_STATE_PRESENT,
+         D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+   src_loc.pResource        = back_buffer;
+   src_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   src_loc.SubresourceIndex = 0;
+
+   dst_loc.pResource        = readback;
+   dst_loc.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   dst_loc.PlacedFootprint  = footprint;
+
+   src_box.left   = 0;
+   src_box.top    = 0;
+   src_box.front  = 0;
+   src_box.right  = (UINT)tex_desc.Width;
+   src_box.bottom = tex_desc.Height;
+   src_box.back   = 1;
+
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst_loc, 0, 0, 0, &src_loc, &src_box);
+
+   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
+         D3D12_RESOURCE_STATE_COPY_SOURCE,
+         D3D12_RESOURCE_STATE_PRESENT);
+
+   cmd->lpVtbl->Close(cmd);
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
+         (ID3D12CommandList* const*)&d3d12->queue.cmd);
+
+   /* Wait for the copy to complete before mapping. */
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
+            ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence,
+               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
+
+   read_range.Begin = 0;
+   read_range.End   = (SIZE_T)total_bytes;
+   if (FAILED(readback->lpVtbl->Map(readback, 0, &read_range,
+               (void**)&mapped)))
+   {
+      Release(readback);
+      RARCH_ERR("[D3D12] Failed to map readback buffer.\n");
+      return false;
+   }
+
+   src_pixels = mapped + footprint.Offset;
+
+   vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
+   vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
+   vp_w = (d3d12->vp.width  > d3d12->vp.full_width)
+         ? d3d12->vp.full_width  : d3d12->vp.width;
+   vp_h = (d3d12->vp.height > d3d12->vp.full_height)
+         ? d3d12->vp.full_height : d3d12->vp.height;
+
+   src_pixels += (size_t)footprint.Footprint.RowPitch * vp_y;
+
+   /* Unswizzle into the caller's BGR24 bottom-up output buffer,
+    * clamped to the current viewport. */
+   for (y = 0; y < vp_h; y++, src_pixels += footprint.Footprint.RowPitch)
+   {
+      uint8_t* dst = buffer + 3 * (vp_h - y - 1) * vp_w;
+
+      if (is_bgra)
+      {
+         /* BGRA source -> BGR dst: drop alpha, keep channel order. */
+         for (x = 0; x < vp_w; x++)
+         {
+            dst[3 * x + 0] = src_pixels[4 * (x + vp_x) + 0];
+            dst[3 * x + 1] = src_pixels[4 * (x + vp_x) + 1];
+            dst[3 * x + 2] = src_pixels[4 * (x + vp_x) + 2];
+         }
+      }
+      else
+      {
+         /* RGBA source -> BGR dst: swap R and B. */
+         for (x = 0; x < vp_w; x++)
+         {
+            dst[3 * x + 0] = src_pixels[4 * (x + vp_x) + 2];
+            dst[3 * x + 1] = src_pixels[4 * (x + vp_x) + 1];
+            dst[3 * x + 2] = src_pixels[4 * (x + vp_x) + 0];
+         }
+      }
+   }
+
+   {
+      D3D12_RANGE empty_write = { 0, 0 };
+      readback->lpVtbl->Unmap(readback, 0, &empty_write);
+   }
+
+   Release(readback);
+   return true;
+}
+
 static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
@@ -6490,7 +6731,7 @@ video_driver_t video_d3d12 = {
    NULL, /* set_viewport */
    d3d12_gfx_set_rotation,
    d3d12_gfx_viewport_info,
-   NULL, /* read_viewport  */
+   d3d12_gfx_read_viewport,
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d12_get_overlay_interface,
