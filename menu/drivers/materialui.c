@@ -3991,10 +3991,18 @@ static void materialui_render(void *data,
             mui->scroll_y = 0.0f;
       }
       /* If fullscreen thumbnail view is enabled,
-       * scrolling is disabled - otherwise, just apply
-       * normal pointer acceleration */
+       * scrolling is disabled - otherwise, follow active
+       * touch drags directly and use acceleration for
+       * post-release inertial scrolling */
       else if (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
-         mui->scroll_y -= mui->pointer.y_accel;
+      {
+         if (   (mui->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+             && (mui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
+            mui->scroll_y = mui->pointer_start_scroll_y -
+                  (float)(mui->pointer.y - mui->pointer_start_y);
+         else
+            mui->scroll_y -= mui->pointer.y_accel;
+      }
    }
 
    if (mui->scroll_y < 0.0f)
@@ -10706,6 +10714,10 @@ static int materialui_pointer_down(void *userdata,
    if (!mui)
       return -1;
 
+   /* Any active scroll animation would otherwise fight
+    * direct list dragging */
+   materialui_kill_scroll_animation(mui, menu_st);
+
    /* Get initial pointer location and scroll position */
    mui->pointer_start_x        = x;
    mui->pointer_start_y        = y;
@@ -10783,10 +10795,6 @@ static int materialui_pointer_down(void *userdata,
          return 0;
 
       /* User has 'selected' scrollbar */
-
-      /* > Kill any existing scroll animation
-       *   and reset scroll acceleration */
-      materialui_kill_scroll_animation(mui, menu_st);
 
       /* > Enable dragging */
       mui->flags |= MUI_FLAG_SCROLLBAR_DRAGGED;
