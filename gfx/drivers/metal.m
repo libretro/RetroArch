@@ -329,7 +329,6 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 - (bool)_initConversionFilters;
 #if METAL_HDR_AVAILABLE
 - (bool)_initHDRPipelines;
-- (void)_resizeHDRResourcesForWidth:(NSUInteger)w height:(NSUInteger)h;
 - (void)_runHDRTonemapForReadbackInto:(id<MTLTexture>)dst;
 #endif
 @end
@@ -379,9 +378,30 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    id<MTLTexture> _hdrReadbackTex;     /* BGRA8 landing pad for screenshots */
    NSUInteger _hdrReadbackW, _hdrReadbackH;
 
-   /* Composite ("apply HDR encoding from offscreen to drawable"). */
+   /* SDR overlay offscreen.  In HDR mode, all menu / overlay / OSD / font
+    * draws render into this BGRA8 texture via the stock SDR pipelines (all
+    * compiled against BGRA8).  The HDR composite pass at end-of-frame
+    * samples both the core video source and this overlay, encodes the core
+    * into the HDR drawable's colour space, then alpha-blends the SDR
+    * overlay on top (after applying paper-white scaling so UI brightness
+    * matches the user's configured menu_nits). */
+   id<MTLTexture> _sdrOverlayTex;
+   NSUInteger _sdrOverlayW, _sdrOverlayH;
+   /* True when the SDR overlay encoder has been opened at least once
+    * this frame (and therefore the overlay has been cleared).  If no
+    * UI drew anything, the overlay stays untouched from the previous
+    * frame — we'd either blend in stale or uninitialised content.
+    * Pass 2 of hdrComposite skips when this is false. */
+   bool _sdrOverlayDirty;
+
+   /* Composite pipelines.  Forward-HDR-encode the core source into the
+    * drawable (blending off; drawable just got cleared), and then encode
+    * the BGRA8 SDR overlay on top with Metal alpha blending to composite
+    * the UI layer over the core.  Two variants per HDR output mode. */
    id<MTLRenderPipelineState> _hdrCompositeStateHDR10;
    id<MTLRenderPipelineState> _hdrCompositeStateSCRGB;
+   id<MTLRenderPipelineState> _hdrMenuCompositeStateHDR10;
+   id<MTLRenderPipelineState> _hdrMenuCompositeStateSCRGB;
    /* Tonemap ("run HDR offscreen back down to BGRA8 for readback"). */
    id<MTLRenderPipelineState> _hdrTonemapState;
    /* Sampler used for both composite and tonemap source reads. */
@@ -471,6 +491,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       _hdrUniforms.InverseTonemap  = 1.0f;
       _hdrUniforms.HDR10           = 1.0f;
       _hdrUniforms.HDRMode         = 0u;
+      _hdrUniforms.PaperWhiteNits  = 200.0f;
       _hdrShaderEmitsHDR10 = false;
       _hdrShaderEmitsHDR16 = false;
 #endif
@@ -554,11 +575,13 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 - (void)setHDRMenuNits:(float)nits
 {
 #if METAL_HDR_AVAILABLE
-   /* menu_nits is not sampled by the composite shader itself (the menu is
-    * drawn directly over the HDR backbuffer), but we cache it in case a
-    * future menu-compose path wants it.  Vulkan keeps it as a plain field
-    * on the driver struct for the same reason. */
-   (void)nits;
+   /* Drives the SDR-overlay blend paper-white independently of the core
+    * video paper-white (_hdrUniforms.BrightnessNits).  The composite
+    * fragment scales the decoded sRGB overlay by PaperWhiteNits / 80 in
+    * scRGB mode, and inverse-tonemaps the overlay to PaperWhiteNits
+    * before PQ encoding in HDR10 mode.  Matches Vulkan's hdr.ubo_menu
+    * uniform having its own brightness value. */
+   _hdrUniforms.PaperWhiteNits = nits;
 #else
    (void)nits;
 #endif
@@ -727,7 +750,9 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    psd.label                        = @"clear_state";
 
    MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
-   ca.pixelFormat       = _layer.pixelFormat;
+   /* Always BGRA8Unorm — see comment on _t_pipelineState init.  Clear is
+    * invoked on the SDR overlay offscreen when HDR is on. */
+   ca.pixelFormat       = MTLPixelFormatBGRA8Unorm;
 
    psd.vertexDescriptor = vd;
    psd.vertexFunction   = [_library newFunctionWithName:@"stock_vertex"];
@@ -757,7 +782,10 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    psd.label                      = @"stock";
 
    MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
-   ca.pixelFormat                 = _layer.pixelFormat;
+   /* Always BGRA8Unorm — see _t_pipelineState init.  Menu / snow / ribbon /
+    * widget pipelines all render into the SDR overlay offscreen in HDR
+    * mode; in SDR mode the drawable is BGRA8Unorm anyway. */
+   ca.pixelFormat                 = MTLPixelFormatBGRA8Unorm;
    ca.blendingEnabled             = NO;
    ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
    ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
@@ -947,7 +975,9 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
  * takes care of that when it transitions from OFF -> on. */
 - (bool)_initHDRPipelines
 {
-   if (_hdrCompositeStateHDR10 && _hdrCompositeStateSCRGB && _hdrTonemapState)
+   if (   _hdrCompositeStateHDR10    && _hdrCompositeStateSCRGB
+       && _hdrMenuCompositeStateHDR10 && _hdrMenuCompositeStateSCRGB
+       && _hdrTonemapState)
       return YES;
 
    NSError *err = nil;
@@ -960,37 +990,56 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       return NO;
    }
 
-   /* Composite, HDR10. */
+   /* Helper block: create one composite pipeline variant with the given
+    * pixel format, label, and blend-enable flag.  Blend mode when
+    * enabled matches Vulkan's HDR pipeline (SRC_ALPHA / ONE_MINUS_SRC_ALPHA
+    * for both colour and alpha channels). */
+   id<MTLRenderPipelineState> (^makeComposite)(MTLPixelFormat, NSString *, BOOL) =
+   ^id<MTLRenderPipelineState>(MTLPixelFormat fmt, NSString *label, BOOL blend)
    {
+      NSError *e = nil;
       MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
-      psd.label                        = @"HDR composite (HDR10)";
-      psd.vertexFunction               = vs;
-      psd.fragmentFunction             = fsComp;
-      psd.colorAttachments[0].pixelFormat = MTLPixelFormatRGB10A2Unorm;
-      _hdrCompositeStateHDR10          = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err)
+      psd.label            = label;
+      psd.vertexFunction   = vs;
+      psd.fragmentFunction = fsComp;
+      MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
+      ca.pixelFormat = fmt;
+      if (blend)
       {
-         RARCH_ERR("[Metal] HDR composite(HDR10) pipeline: %s.\n",
-                   err.localizedDescription.UTF8String);
-         return NO;
+         ca.blendingEnabled             = YES;
+         ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
+         ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
+         ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
+         ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
       }
-   }
+      id<MTLRenderPipelineState> s = [_device newRenderPipelineStateWithDescriptor:psd error:&e];
+      if (e)
+      {
+         RARCH_ERR("[Metal] HDR %s pipeline: %s.\n",
+                   label.UTF8String, e.localizedDescription.UTF8String);
+      }
+      return s;
+   };
 
-   /* Composite, scRGB. */
-   {
-      MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
-      psd.label                        = @"HDR composite (scRGB)";
-      psd.vertexFunction               = vs;
-      psd.fragmentFunction             = fsComp;
-      psd.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
-      _hdrCompositeStateSCRGB          = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err)
-      {
-         RARCH_ERR("[Metal] HDR composite(scRGB) pipeline: %s.\n",
-                   err.localizedDescription.UTF8String);
-         return NO;
-      }
-   }
+   _hdrCompositeStateHDR10     = makeComposite(MTLPixelFormatRGB10A2Unorm,
+                                               @"HDR composite core (HDR10)",
+                                               NO);
+   if (!_hdrCompositeStateHDR10) return NO;
+
+   _hdrCompositeStateSCRGB     = makeComposite(MTLPixelFormatRGBA16Float,
+                                               @"HDR composite core (scRGB)",
+                                               NO);
+   if (!_hdrCompositeStateSCRGB) return NO;
+
+   _hdrMenuCompositeStateHDR10 = makeComposite(MTLPixelFormatRGB10A2Unorm,
+                                               @"HDR composite menu (HDR10)",
+                                               YES);
+   if (!_hdrMenuCompositeStateHDR10) return NO;
+
+   _hdrMenuCompositeStateSCRGB = makeComposite(MTLPixelFormatRGBA16Float,
+                                               @"HDR composite menu (scRGB)",
+                                               YES);
+   if (!_hdrMenuCompositeStateSCRGB) return NO;
 
    /* Tonemap (for screenshot/readback path). */
    {
@@ -1024,16 +1073,17 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    return YES;
 }
 
-/* (Re)allocate the HDR readback landing-pad texture to match the drawable.
- * Called from setHDROutputMode on enable and from readBackBuffer on size
- * changes.  The composite path samples from the shader chain's last-pass
- * RT (or the raw frame texture) directly — no offscreen is needed
- * on the composite side. */
-- (void)_resizeHDRResourcesForWidth:(NSUInteger)w height:(NSUInteger)h
+/* (Re)allocate the HDR readback landing-pad + SDR overlay textures to
+ * match the drawable.  Called from setHDROutputMode on enable and from
+ * readBackBuffer on size changes.  The composite path samples directly
+ * from the shader chain's last-pass RT (or the raw frame texture) as
+ * the core source, and from the SDR overlay here as the UI source. */
+- (void)resizeHDRResourcesForWidth:(NSUInteger)w height:(NSUInteger)h
 {
    if (!_hdrEnabled || w == 0 || h == 0)
       return;
-   if (_hdrReadbackTex && _hdrReadbackW == w && _hdrReadbackH == h)
+   if (   _hdrReadbackTex && _hdrReadbackW == w && _hdrReadbackH == h
+       && _sdrOverlayTex  && _sdrOverlayW  == w && _sdrOverlayH  == h)
       return;
 
    _hdrReadbackW = w;
@@ -1060,6 +1110,25 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       STRUCT_ASSIGN(_hdrReadbackTex, rb);
    }
 
+   /* SDR overlay offscreen — BGRA8Unorm for direct compatibility with the
+    * stock/menu/font/clear pipelines (all compiled against BGRA8).
+    * Private storage: we only sample it from the composite fragment, never
+    * CPU-read it. */
+   _sdrOverlayW = w;
+   _sdrOverlayH = h;
+   {
+      MTLTextureDescriptor *td = [MTLTextureDescriptor
+                                   texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                                                width:w
+                                                               height:h
+                                                            mipmapped:NO];
+      td.storageMode = MTLStorageModePrivate;
+      td.usage       = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
+      id<MTLTexture> sdr = [_device newTextureWithDescriptor:td];
+      sdr.label          = @"SDR overlay (HDR)";
+      STRUCT_ASSIGN(_sdrOverlayTex, sdr);
+   }
+
    _hdrUniforms.SourceSize = simd_make_float4((float)w, (float)h,
                                               1.0f / (float)w, 1.0f / (float)h);
    _hdrUniforms.OutputSize = simd_make_float4((float)w, (float)h,
@@ -1076,7 +1145,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    if (mode == _hdrOutputMode && _hdrEnabled == (mode != METAL_HDR_OUTPUT_OFF))
    {
       /* Same mode, just resize. */
-      [self _resizeHDRResourcesForWidth:w height:h];
+      [self resizeHDRResourcesForWidth:w height:h];
       return;
    }
 
@@ -1104,7 +1173,9 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
             wantEDR  = YES;
          }
 
-         if (!_hdrCompositeStateHDR10 || !_hdrCompositeStateSCRGB || !_hdrTonemapState)
+         if (   !_hdrCompositeStateHDR10     || !_hdrCompositeStateSCRGB
+             || !_hdrMenuCompositeStateHDR10 || !_hdrMenuCompositeStateSCRGB
+             || !_hdrTonemapState)
          {
             if (![self _initHDRPipelines])
             {
@@ -1151,7 +1222,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    if (wantEnable)
    {
       _hdrOffscreenFormat = MTLPixelFormatRGBA16Float;
-      [self _resizeHDRResourcesForWidth:w height:h];
+      [self resizeHDRResourcesForWidth:w height:h];
       /* Apply the current HDRMode + tonemap flags with the stored
        * emits-hdr state.  Bounces through the existing setter to keep
        * the logic in one place. */
@@ -1162,34 +1233,49 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    {
       _hdrOffscreenFormat = MTLPixelFormatInvalid;
       STRUCT_ASSIGN(_hdrReadbackTex,  nil);
+      STRUCT_ASSIGN(_sdrOverlayTex,   nil);
       _hdrReadbackW = _hdrReadbackH = 0;
+      _sdrOverlayW  = _sdrOverlayH  = 0;
       _hdrUniforms.HDRMode        = 0u;
       _hdrUniforms.InverseTonemap = 0.0f;
       _hdrUniforms.HDR10          = 0.0f;
    }
 }
 
-/* Composite the source texture into the current drawable through the
- * composite pipeline for the active output mode. Called between the final
- * shader pass (which wrote to source) and any subsequent draws
- * (menu/overlay/OSD).
+/* Composite the core video and SDR UI overlay into the drawable.
  *
- * After this returns the main rce is pointing at the drawable and follow-up
- * draws compose directly on the HDR backbuffer.  The follow-up draws do not
- * have any HDR awareness — menu, overlay, OSD etc. all emit SDR in whatever
- * format the existing pipelines were built for, and the displayed result is
- * the composited HDR image with SDR UI laid over it.  That's the same
- * approach Vulkan uses (and has the same caveat that SDR UI on HDR
- * backbuffers looks a little washed out; paper-white compensates). */
+ * Runs two sequential passes:
+ *
+ *   1. Core pass:  pipeline with blending OFF.  Source texture is the
+ *                  core video (shader chain output or raw frame
+ *                  texture).  The composite fragment HDR-encodes
+ *                  pixels inside CoreViewport and emits transparent
+ *                  black outside.  Drawable is cleared at pass start.
+ *
+ *   2. Menu pass:  pipeline with SRC_ALPHA / ONE_MINUS_SRC_ALPHA
+ *                  blending.  Source texture is _sdrOverlayTex (the
+ *                  BGRA8 offscreen that menu/overlay/OSD rendered
+ *                  into).  The composite fragment HDR-encodes the
+ *                  SDR pixels with the overlay's own alpha, Metal's
+ *                  blender then alpha-composites over the core.
+ *                  The menu pass passes PaperWhiteNits in place of
+ *                  BrightnessNits so UI brightness is driven by
+ *                  video_hdr_menu_nits independent of core paper-white.
+ *                  This second pass is skipped (optimisation) when
+ *                  _sdrOverlayTex is nil.
+ *
+ * Called at end-of-frame.  Ends any in-flight _rce (the SDR overlay
+ * encoder), opens the drawable, runs both passes, leaves _rce = nil. */
 - (void)hdrComposite:(const HDRUniforms *)uniforms
           fromSource:(id<MTLTexture>)source
 {
-   if (!_hdrEnabled || !uniforms || !source)
+   if (!_hdrEnabled || !uniforms)
       return;
    if (_commandBuffer == nil)
       return;
 
-   /* Close any offscreen encoder. */
+   /* Close the SDR overlay encoder so Metal flushes menu/OSD draws
+    * before the menu-composite pass samples _sdrOverlayTex. */
    if (_rce)
    {
       [_rce endEncoding];
@@ -1202,53 +1288,123 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       RARCH_WARN("[Metal] HDR composite: no drawable.\n");
       return;
    }
-
-   MTLRenderPassDescriptor *rpd        = [MTLRenderPassDescriptor new];
-   rpd.colorAttachments[0].texture     = drawable.texture;
-   rpd.colorAttachments[0].loadAction  = MTLLoadActionClear;
-   rpd.colorAttachments[0].clearColor  = _clearColor;
-   rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
    if (_captureEnabled)
-      _backBuffer                      = drawable.texture;
+      _backBuffer = drawable.texture;
 
-   id<MTLRenderPipelineState> state = (_hdrOutputMode == METAL_HDR_OUTPUT_SCRGB)
-      ? _hdrCompositeStateSCRGB
-      : _hdrCompositeStateHDR10;
+   const BOOL scRGB = (_hdrOutputMode == METAL_HDR_OUTPUT_SCRGB);
 
-   id<MTLRenderCommandEncoder> cre = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
-   cre.label = @"HDR composite";
-   [cre setRenderPipelineState:state];
+   /* --- Pass 1: core composite (blending off, clear).
+    * Runs when a core source is available.  When source is nil (no core
+    * has rendered yet — e.g. fresh driver init / post-reinit first
+    * frame), we still need to clear the drawable to a known state
+    * before pass 2 loads it, otherwise the drawable is presented with
+    * uninitialised memory (visible as full green / blue on HDR). */
+   if (source)
+   {
+      MTLRenderPassDescriptor *rpd        = [MTLRenderPassDescriptor new];
+      rpd.colorAttachments[0].texture     = drawable.texture;
+      rpd.colorAttachments[0].loadAction  = MTLLoadActionClear;
+      rpd.colorAttachments[0].clearColor  = _clearColor;
+      rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
 
-   /* The composite always targets the video-viewport rect of the drawable.
-    * The source texture (whether that's the shader chain's last-pass RT or
-    * the raw frame texture in the no-shader path) carries "one frame of
-    * video content" — the outside-viewport area of the drawable stays the
-    * clear colour, matching the SDR driver's letterbox/pillarbox behaviour.
-    * Both sources are sampled with the full 0..1 UV range; the video
-    * viewport is purely a destination-rect thing. */
-   MTLViewport vp = {
-      .originX = (double)_viewport.x,
-      .originY = (double)_viewport.y,
-      .width   = (double)_viewport.width,
-      .height  = (double)_viewport.height,
-      .znear   = 0.0, .zfar = 1.0,
-   };
-   [cre setViewport:vp];
+      id<MTLRenderPipelineState> state = scRGB
+         ? _hdrCompositeStateSCRGB
+         : _hdrCompositeStateHDR10;
 
-   [cre setFragmentBytes:uniforms length:sizeof(*uniforms) atIndex:0];
-   [cre setFragmentTexture:source atIndex:0];
-   [cre setFragmentSamplerState:_hdrSamplerLinear atIndex:0];
-   [cre drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
-   [cre endEncoding];
+      /* Patch CoreViewport into a local uniforms copy; caller's buffer
+       * stays untouched. */
+      HDRUniforms local  = *uniforms;
+      local.CoreViewport = simd_make_float4((float)_viewport.x,
+                                            (float)_viewport.y,
+                                            (float)_viewport.width,
+                                            (float)_viewport.height);
 
-   /* Start a fresh rce on the drawable with load=Load so subsequent
-    * menu/overlay/OSD work appears layered on top of the composite. */
-   MTLRenderPassDescriptor *follow      = [MTLRenderPassDescriptor new];
-   follow.colorAttachments[0].texture     = drawable.texture;
-   follow.colorAttachments[0].loadAction  = MTLLoadActionLoad;
-   follow.colorAttachments[0].storeAction = MTLStoreActionStore;
-   _rce = [_commandBuffer renderCommandEncoderWithDescriptor:follow];
-   _rce.label = @"Frame command encoder (post-HDR)";
+      id<MTLRenderCommandEncoder> cre = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
+      cre.label = @"HDR composite (core)";
+      [cre setRenderPipelineState:state];
+      [cre setFragmentBytes:&local length:sizeof(local) atIndex:0];
+      [cre setFragmentTexture:source atIndex:0];
+      [cre setFragmentSamplerState:_hdrSamplerLinear atIndex:0];
+      [cre drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+      [cre endEncoding];
+   }
+   else
+   {
+      /* Clear-only pass.  MTLLoadActionClear with no draws gives us a
+       * drawable filled with _clearColor, which pass 2's load=Load can
+       * then alpha-blend the menu over. */
+      MTLRenderPassDescriptor *rpd        = [MTLRenderPassDescriptor new];
+      rpd.colorAttachments[0].texture     = drawable.texture;
+      rpd.colorAttachments[0].loadAction  = MTLLoadActionClear;
+      rpd.colorAttachments[0].clearColor  = _clearColor;
+      rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+      id<MTLRenderCommandEncoder> cre = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
+      cre.label = @"HDR composite (clear-only)";
+      [cre endEncoding];
+   }
+
+   /* --- Pass 2: menu composite (alpha blending, load) --- */
+   if (_sdrOverlayTex && _sdrOverlayDirty)
+   {
+      MTLRenderPassDescriptor *rpd        = [MTLRenderPassDescriptor new];
+      rpd.colorAttachments[0].texture     = drawable.texture;
+      rpd.colorAttachments[0].loadAction  = MTLLoadActionLoad;
+      rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+
+      id<MTLRenderPipelineState> state = scRGB
+         ? _hdrMenuCompositeStateSCRGB
+         : _hdrMenuCompositeStateHDR10;
+
+      /* Menu uniforms: CoreViewport covers the FULL drawable so the
+       * overlay is sampled everywhere without letterboxing.  Use the
+       * SDR-shader-path uniforms (InverseTonemap+HDR10 on for HDR10
+       * mode, off for scRGB) regardless of what the caller's uniforms
+       * said about shader-emitted HDR — the overlay is always SDR.
+       * BrightnessNits is replaced with PaperWhiteNits so UI brightness
+       * is independent of core paper-white.  Mirrors Vulkan's
+       * vk->hdr.ubo_menu / is_menu_composite path. */
+      HDRUniforms menuUni = *uniforms;
+      menuUni.CoreViewport = simd_make_float4(0.0f, 0.0f,
+                                              (float)drawable.texture.width,
+                                              (float)drawable.texture.height);
+      menuUni.BrightnessNits = uniforms->PaperWhiteNits;
+      if (scRGB)
+      {
+         /* scRGB menu pass.  Force InverseTonemap=1 to bypass the
+          * shader's shader-emitted-HDR16 passthrough shortcut — the
+          * overlay is always SDR-encoded BGRA8 and must run through
+          * the sRGB-decode + gamut + BrightnessNits/80 scale path.
+          * HDR10 stays 0 (that flag only matters in HDR10 mode). */
+         menuUni.InverseTonemap = 1.0f;
+         menuUni.HDR10          = 0.0f;
+         menuUni.HDRMode        = METAL_HDR_OUTPUT_SCRGB;
+      }
+      else
+      {
+         /* HDR10: legacy inverse tonemap + PQ encoding. */
+         menuUni.InverseTonemap = 1.0f;
+         menuUni.HDR10          = 1.0f;
+         menuUni.HDRMode        = METAL_HDR_OUTPUT_HDR10;
+      }
+      /* Ignore any shader-emitted-HDR semantics for the menu overlay —
+       * it's always SDR, so suppress scanline-mode too. */
+      menuUni.Scanlines      = 0.0f;
+
+      id<MTLRenderCommandEncoder> cre = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
+      cre.label = @"HDR composite (menu)";
+      [cre setRenderPipelineState:state];
+      [cre setFragmentBytes:&menuUni length:sizeof(menuUni) atIndex:0];
+      [cre setFragmentTexture:_sdrOverlayTex atIndex:0];
+      [cre setFragmentSamplerState:_hdrSamplerLinear atIndex:0];
+      [cre drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+      [cre endEncoding];
+   }
+   /* Reset the overlay-dirty flag so next frame starts fresh.  If the
+    * next frame has no UI draws, pass 2 will skip and core-only content
+    * appears. */
+   _sdrOverlayDirty = false;
+   /* Leaves _rce = nil.  Presentation happens in MetalDriver's
+    * end-of-frame via Context::end. */
 }
 
 /* Run the tonemap pipeline over whatever is currently in _backBuffer,
@@ -1453,7 +1609,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       /* Size the readback texture to match the drawable (which is what
        * _backBuffer points at during an active frame).  viewport.width/x
        * etc. index into it after the copy. */
-      [self _resizeHDRResourcesForWidth:_backBuffer.width height:_backBuffer.height];
+      [self resizeHDRResourcesForWidth:_backBuffer.width height:_backBuffer.height];
       if (!_hdrReadbackTex)
       {
          RARCH_WARN("[Metal] HDR readback: no landing pad texture.\n");
@@ -1534,6 +1690,35 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    }
    if (_rce == nil)
    {
+#if METAL_HDR_AVAILABLE
+      /* HDR mode: the frame-encoder targets a BGRA8 SDR overlay offscreen.
+       * Menu / overlay / OSD / widget draws land here through the stock
+       * SDR pipelines (all compiled against BGRA8).  At end of frame the
+       * HDR composite pass samples this texture and alpha-blends it over
+       * the encoded core video into the HDR drawable.  This keeps the UI
+       * rendering in native SDR colour space regardless of whether the
+       * swapchain is PQ or scRGB encoded. */
+      if (_hdrEnabled)
+      {
+         if (!_sdrOverlayTex)
+         {
+            RARCH_ERR("[Metal] HDR: SDR overlay offscreen missing.\n");
+            return nil;
+         }
+         MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
+         /* Clear to fully-transparent black so the core video shows
+          * through where no UI is drawn. */
+         rpd.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 0);
+         rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
+         rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+         rpd.colorAttachments[0].texture    = _sdrOverlayTex;
+         _rce       = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
+         _rce.label = @"SDR overlay encoder (HDR frame)";
+         _sdrOverlayDirty = true;
+         return _rce;
+      }
+#endif
+
       id<CAMetalDrawable> drawable = self.nextDrawable;
       if (!drawable || !drawable.texture)
       {
@@ -2530,15 +2715,13 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       psd.label = @"font pipeline";
 
       MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
-      /* Match whatever pixel format the drawable currently has (SDR: BGRA8;
-       * HDR10: RGB10A2Unorm; scRGB: RGBA16Float).  Metal validates the
-       * pipeline's colour-attachment format against the current render pass's
-       * attachment at encode time, so this must match the actual drawable.
-       * The font shader emits plain SDR values either way — which means on
-       * HDR backbuffers text renders dimmer than expected, but doesn't error.
-       * Fully fixing that needs a separate SDR->HDR composite for the OSD
-       * text layer, which is out of scope for this pass. */
-      ca.pixelFormat                 = _context.drawableFormat;
+      /* Always BGRA8Unorm.  Font glyphs render into the drawable in SDR
+       * mode (drawable is BGRA8) or into the SDR overlay offscreen in HDR
+       * mode (also BGRA8).  Keeping this a compile-time constant avoids
+       * the mode-dependent validation failures we'd get if we tried to
+       * match the HDR drawable format, and keeps font rendering visually
+       * consistent with the rest of the SDR UI pipeline. */
+      ca.pixelFormat                 = MTLPixelFormatBGRA8Unorm;
       ca.blendingEnabled             = YES;
       ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
       ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
@@ -3253,7 +3436,13 @@ font_renderer_t metal_raster_font = {
       psd.label                      = @"Pipeline+Alpha";
 
       ca                             = psd.colorAttachments[0];
-      ca.pixelFormat                 = _layer.pixelFormat;
+      /* Always compile against BGRA8Unorm.  In SDR mode that's the drawable
+       * format too; in HDR mode these pipelines render into a BGRA8 SDR
+       * overlay offscreen that the HDR composite pass alpha-blends on top
+       * of the encoded core video.  This way the menu / overlay / OSD
+       * render in native SDR colour space regardless of output mode,
+       * which avoids the "menu looks wrong on HDR" class of bugs. */
+      ca.pixelFormat                 = MTLPixelFormatBGRA8Unorm;
       ca.blendingEnabled             = YES;
       ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
       ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
@@ -3309,6 +3498,13 @@ font_renderer_t metal_raster_font = {
    video_driver_update_viewport(_viewport, forceFull, _keepAspect, YES);
    _context.viewport       = _viewport; /* Update matrix */
    _viewportMVP.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
+
+#if METAL_HDR_AVAILABLE
+   /* Keep the HDR offscreens matched to the drawable size on resize.
+    * Cheap no-op when already the right size. */
+   if (_context.hdrEnabled)
+      [_context resizeHDRResourcesForWidth:width height:height];
+#endif
 }
 
 #pragma mark - video
@@ -3348,40 +3544,16 @@ font_renderer_t metal_raster_font = {
          [_frameView updateFrame:frame pitch:pitch];
       }
 
-      /* In HDR mode we defer drawable acquisition to the composite pass.
-       * drawWithContext's shader chain either:
-       *   - has a shader: last pass lands in the HDR offscreen (because
-       *                   _updateRenderTargets allocated an RT for it);
-       *   - has no shader: drawWithContext is a no-op here and we'll
-       *                    composite directly from _frameView.frameTexture.
-       * In SDR mode the existing flow is unchanged: acquire the rce
-       * up front (drawable) and let drawWithContext use it for the last
-       * shader pass. */
-      if (!hdrOn)
-         rce = _context.rce;
-      else
-         rce = nil;
+      /* Acquire the frame encoder.  In SDR mode this lazily opens a pass
+       * on the drawable (BGRA8).  In HDR mode it lazily opens a pass on
+       * the BGRA8 SDR overlay offscreen — menu / overlay / OSD / widgets
+       * all render there, and the HDR composite at end-of-frame reads the
+       * overlay texture, alpha-blends it over the encoded core, and
+       * writes the result into the HDR drawable. */
+      rce = _context.rce;
 
       /* Draw core: back buffer + optional encoder pass. */
       [_frameView drawWithContext:_context];
-
-      /* HDR composite: fold the shader chain's last-pass output (or the
-       * raw frame texture if no shader preset is active) into the drawable
-       * via the HDR encode pipeline.  Both sources are sampled into the
-       * video-viewport rect of the drawable, so aspect-ratio / integer-scale
-       * settings are honoured the same way they are in the SDR path.
-       * After this returns, _context.rce points at a fresh encoder on the
-       * (HDR-formatted) drawable with load=Load, so menu / overlay / OSD
-       * work composes on top of the HDR backbuffer. */
-      if (hdrOn)
-      {
-         const HDRUniforms *u     = _context.currentHDRUniforms;
-         id<MTLTexture>    src    = _frameView.shaderOutputTexture;
-         if (!src)
-            src                    = _frameView.frameTexture;
-         [_context hdrComposite:u fromSource:src];
-         rce = _context.rce;
-      }
 
       /* Bind uniforms once for all subsequent encoder work on the main
        * command encoder. FrameView's shader passes can rebind vertex
@@ -3393,7 +3565,9 @@ font_renderer_t metal_raster_font = {
          [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
 
       /* SDR no-shader blit into drawable.  In HDR mode the composite
-       * pass already handled this path, so skip the blit. */
+       * pass at end-of-frame reads the core frame texture directly, so
+       * we skip the blit here; the core never writes into the SDR
+       * overlay. */
       if (!hdrOn && (_frameView.drawState & ViewDrawStateEncoder) != 0)
       {
          [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
@@ -3487,6 +3661,22 @@ font_renderer_t metal_raster_font = {
          }
 
          font_driver_render_msg(data, msg, NULL, NULL);
+      }
+
+      /* End-of-frame HDR composite.  Menu / overlay / OSD / widgets have
+       * rendered into the BGRA8 SDR overlay offscreen (_sdrOverlayTex);
+       * the core source is either shaderOutputTexture (shader chain
+       * active) or frameTexture (no-shader path), or nil (no core frame
+       * yet).  Composite touches the drawable unconditionally to avoid
+       * presenting uninitialised swapchain memory — when src is nil, a
+       * clear-only pass runs in place of the core encode. */
+      if (hdrOn)
+      {
+         const HDRUniforms *u  = _context.currentHDRUniforms;
+         id<MTLTexture>    src = _frameView.shaderOutputTexture;
+         if (!src)
+            src                = _frameView.frameTexture;
+         [_context hdrComposite:u fromSource:src];
       }
 
       [self _endFrame];

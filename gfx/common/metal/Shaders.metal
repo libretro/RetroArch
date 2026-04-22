@@ -802,99 +802,132 @@ inline float4 hdr_sample_sdr_linear(texture2d<float> src,
 
 /* Forward HDR composite.
  *
- * HDRMode == 3  : Source is PQ HDR10 (shader emitted), convert to scRGB.
- * HDRMode == 2  : scRGB output.  Source is either SDR or FP16 HDR.
- * HDRMode == 1  : HDR10 output.  Source is either SDR or already-PQ.
- * HDRMode == 0  : Passthrough (bypass path, rarely used since the composite
- *                 is skipped when HDR is disabled). */
+ * Covers the FULL drawable with a quad.  Inside the core-video viewport
+ * rect (CoreViewport uniform), the source is HDR-encoded and shown;
+ * outside the viewport rect, the fragment emits fully-transparent black
+ * so the drawable's clear colour (or previous contents, if blending is
+ * enabled upstream) is preserved.
+ *
+ * This shader is used in two modes by the driver:
+ *
+ *   1. Core composite pass.  Source is the core video / shader chain
+ *      output.  Blending disabled on the pipeline: the drawable just
+ *      got cleared, and we want the fragment to *replace* drawable
+ *      contents inside the core rect.  Outside the core rect the
+ *      fragment emits alpha=0 and since blending is off we write
+ *      (0,0,0,0) which matches the clear colour — safe.
+ *
+ *      Actually, cleaner: blending is OFF, so we'd clobber the clear
+ *      colour outside the rect.  To avoid that, the driver uses the
+ *      viewport-scissor hint via the Scissor Metal API instead — or
+ *      we set alpha=0 and rely on the clear being (0,0,0,0) too.  The
+ *      driver sets a scissor rect equal to CoreViewport for the core
+ *      pass so this fragment only runs inside the rect.
+ *
+ *   2. Menu composite pass.  Source is the BGRA8 SDR overlay offscreen.
+ *      Blending ENABLED on the pipeline (SRC_ALPHA / ONE_MINUS_SRC_ALPHA).
+ *      The SDR shader path (HDRMode == 1 with InverseTonemap+HDR10, or
+ *      HDRMode == 2 without them, driven by the menu-specific uniforms
+ *      set by the driver) encodes the SDR overlay to the drawable's
+ *      HDR colour space with the overlay's alpha preserved, and Metal's
+ *      blending unit alpha-blends it over the already-written core.
+ *
+ * HDRMode values match the Vulkan reference:
+ *   3 — source is shader-emitted PQ HDR10, swapchain is scRGB (convert)
+ *   2 — swapchain is scRGB; source is SDR (inverse_tonemap+hdr10 off) or HDR16
+ *   1 — swapchain is HDR10 PQ; source is SDR (inverse_tonemap+hdr10 on) or PQ
+ */
 fragment float4 hdr_composite_fragment(
       HDRVertexOut            in       [[ stage_in ]],
       constant HDRUniforms    &u       [[ buffer(0) ]],
       texture2d<float>        src      [[ texture(0) ]],
       sampler                 samp     [[ sampler(0) ]])
 {
+   /* Remap fragment pos in drawable pixel-space to source UV in [0..1]
+    * across CoreViewport.  Fragments outside the rect will sample
+    * out-of-range — we also emit alpha=0 for those so the blend-enabled
+    * menu pass doesn't contaminate outside the rect. */
+   float2 frag_px    = in.position.xy;
+   float2 vp_origin  = u.CoreViewport.xy;
+   float2 vp_size    = u.CoreViewport.zw;
+   float2 core_uv    = (frag_px - vp_origin) / vp_size;
+   bool   in_rect    =    all(core_uv >= float2(0.0f))
+                       && all(core_uv <= float2(1.0f));
+
+   if (!in_rect)
+      return float4(0.0f, 0.0f, 0.0f, 0.0f);
+
    if (u.HDRMode == 3u)
    {
       /* Shader chain emitted PQ HDR10, swapchain is scRGB -> convert. */
-      float4 pq = src.sample(samp, in.texCoord);
+      float4 pq = src.sample(samp, core_uv);
       return float4(hdr::HDR10ToscRGB(pq.rgb), pq.a);
    }
 
    if (u.HDRMode == 2u)
    {
-      /* scRGB swapchain.  Either HDR16 (shader emits linear float) or SDR.
-       * For HDR16 we expect the shader output to already be in linear BT.709
-       * 1.0 = 80 nits, so just pass through.  For SDR, apply gamut rotation
-       * + scale by BrightnessNits / 80. */
+      /* scRGB swapchain.  Shader-emitted HDR16 is already linear
+       * BT.709 1.0=80 nits, pass through.  For SDR, gamut-rotate and
+       * scale to paper-white nits in scRGB units. */
       if (u.InverseTonemap <= 0.0f && u.HDR10 <= 0.0f)
-      {
-         /* Shader already emits scRGB-compatible linear HDR (HDR16 path). */
-         float4 linear = src.sample(samp, in.texCoord);
-         return linear;
-      }
+         return src.sample(samp, core_uv);
 
-      /* High-res SDR with scanlines requested: generate CRT mask in HDR.
-       * Scanlines() returns linear Rec.709 already masked in Rec.709 space;
-       * scRGB units are 1.0 = 80 nits so scale by BrightnessNits/80. */
       if (u.Scanlines > 0.0f && u.OutputSize.y > (240.0f * 4.0f))
       {
-         float3 linear = hdr_crt::Scanlines(src, samp, in.texCoord, u);
-         return float4(linear * (u.BrightnessNits / hdr::kscRGBWhiteNits), 1.0f);
+         float3 linear = hdr_crt::Scanlines(src, samp, core_uv, u);
+         return float4(linear * (u.BrightnessNits / hdr::kscRGBWhiteNits),
+                       1.0f);
       }
 
-      float4 linear  = float4(hdr::To2020(
-                                hdr_sample_sdr_linear(src, samp, in.texCoord).rgb,
-                                u.ExpandGamut),
-                              1.0f);
-      linear.rgb     = hdr::k2020to709 * linear.rgb;
-      linear.rgb    *= u.BrightnessNits / hdr::kscRGBWhiteNits;
-      return linear;
+      float4 sdr_in  = hdr_sample_sdr_linear(src, samp, core_uv);
+      float3 rec2020 = hdr::To2020(sdr_in.rgb, u.ExpandGamut);
+      float3 rec709  = hdr::k2020to709 * rec2020;
+      float3 scrgb   = rec709 * (u.BrightnessNits / hdr::kscRGBWhiteNits);
+      return float4(scrgb, sdr_in.a);
    }
 
    /* HDRMode == 1: HDR10 output. */
 
-   /* Shader already emitted PQ or FP16 HDR content -> pass through, the
-    * shader's output is authoritative.  We rely on set_hdr10()/set_hdr16()
-    * clearing InverseTonemap + HDR10 in the driver wiring. */
+   /* Shader-emitted PQ or FP16: pass through. */
    if (u.InverseTonemap <= 0.0f && u.HDR10 <= 0.0f)
-      return src.sample(samp, in.texCoord);
+      return src.sample(samp, core_uv);
 
-   /* SDR input, both inverse-tonemap and HDR10 encode requested. */
    if (u.InverseTonemap > 0.0f && u.HDR10 > 0.0f)
    {
       if (u.Scanlines > 0.0f && u.OutputSize.y > (240.0f * 4.0f))
       {
          /* Scanlines() returns linear Rec.2020 with inverse-tonemap + mask
           * baked in, so we only need the PQ encode. */
-         float3 hdr_2020 = hdr_crt::Scanlines(src, samp, in.texCoord, u);
+         float3 hdr_2020 = hdr_crt::Scanlines(src, samp, core_uv, u);
          float3 pq       = hdr::HDR10Encode(hdr_2020, u.BrightnessNits);
          return float4(pq, 1.0f);
       }
 
-      float4 linear    = hdr_sample_sdr_linear(src, samp, in.texCoord);
-      float3 rec2020   = hdr::To2020(linear.rgb, u.ExpandGamut);
-      float3 hdr2020   = hdr::InverseTonemap(rec2020,
+      float4 sdr_in    = hdr_sample_sdr_linear(src, samp, core_uv);
+      float3 rec2020   = hdr::To2020(sdr_in.rgb, u.ExpandGamut);
+      float3 hdr_2020  = hdr::InverseTonemap(rec2020,
                                              u.BrightnessNits,
                                              u.BrightnessNits);
-      float3 pq        = hdr::HDR10Encode(hdr2020, u.BrightnessNits);
-      return float4(pq, linear.a);
+      float3 pq        = hdr::HDR10Encode(hdr_2020, u.BrightnessNits);
+      return float4(pq, sdr_in.a);
    }
 
+   /* InverseTonemap alone (no PQ encode) — linear HDR output. */
    if (u.InverseTonemap > 0.0f)
    {
-      float4 linear  = hdr_sample_sdr_linear(src, samp, in.texCoord);
-      float3 rec2020 = hdr::To2020(linear.rgb, u.ExpandGamut);
-      float3 hdr2020 = hdr::InverseTonemap(rec2020,
-                                           u.BrightnessNits,
-                                           u.BrightnessNits);
-      return float4(hdr2020, linear.a);
+      float4 sdr_in   = hdr_sample_sdr_linear(src, samp, core_uv);
+      float3 rec2020  = hdr::To2020(sdr_in.rgb, u.ExpandGamut);
+      float3 hdr_2020 = hdr::InverseTonemap(rec2020,
+                                            u.BrightnessNits,
+                                            u.BrightnessNits);
+      return float4(hdr_2020, sdr_in.a);
    }
 
-   /* HDR10 only */
-   float4 linear    = hdr_sample_sdr_linear(src, samp, in.texCoord);
-   float3 rec2020   = hdr::To2020(linear.rgb, u.ExpandGamut);
-   float3 pq        = hdr::HDR10Encode(rec2020, u.BrightnessNits);
-   return float4(pq, linear.a);
+   /* HDR10 (PQ encode only, no inverse tonemap). */
+   float4 sdr_in  = hdr_sample_sdr_linear(src, samp, core_uv);
+   float3 rec2020 = hdr::To2020(sdr_in.rgb, u.ExpandGamut);
+   float3 pq      = hdr::HDR10Encode(rec2020, u.BrightnessNits);
+   return float4(pq, sdr_in.a);
 }
 
 /* HDR -> SDR screenshot/recording path.

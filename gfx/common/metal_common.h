@@ -225,6 +225,12 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 - (void)setHDRScanlines:(bool)scanlines;
 - (void)setHDRSubpixelLayout:(unsigned)layout;
 
+/* (Re)allocate HDR-mode offscreen textures (readback landing pad and
+ * SDR UI overlay) to match a new drawable size.  Called from
+ * setViewportWidth:height: on window resize; cheap no-op when the
+ * current allocations already match. */
+- (void)resizeHDRResourcesForWidth:(NSUInteger)w height:(NSUInteger)h;
+
 /* Shader-emitted HDR path: set by FrameView after parsing a shader preset,
  * tells the composite fragment to pass the final pass through without
  * inverse-tonemap / PQ encode. */
