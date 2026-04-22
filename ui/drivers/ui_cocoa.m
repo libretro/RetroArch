@@ -41,6 +41,10 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
+/* For NX_DEVICE*KEYMASK - the device-specific L/R modifier-key bits that
+ * ride in NSEvent.modifierFlags alongside the coalesced high-order bits. */
+#include <IOKit/hidsystem/IOLLEvent.h>
+
 #if defined(HAVE_COCOA_METAL)
 #include "../../gfx/common/metal_common.h"
 #endif
@@ -456,9 +460,26 @@ static ui_application_t ui_application_cocoa = {
          break;
       case NSEventTypeFlagsChanged:
          {
+            /* Bits we treat as modifier-key transitions: the eight device-
+             * specific L/R masks from IOKit plus CapsLock (which has no
+             * device-specific bit).  Everything else in modifierFlags is
+             * metadata - notably kCGEventFlagMaskNonCoalesced (0x100) - and
+             * must not be interpreted as a key press, or we end up
+             * synthesising phantom events (a toggle of 0x100 with kc=0 used
+             * to translate to MAC_NATIVE_TO_HID[0]==KEY_A, stuck forever). */
+            static const NSUInteger mod_mask =
+                    NX_DEVICELCTLKEYMASK
+                  | NX_DEVICELSHIFTKEYMASK
+                  | NX_DEVICERSHIFTKEYMASK
+                  | NX_DEVICELCMDKEYMASK
+                  | NX_DEVICERCMDKEYMASK
+                  | NX_DEVICELALTKEYMASK
+                  | NX_DEVICERALTKEYMASK
+                  | NX_DEVICERCTLKEYMASK
+                  | NSEventModifierFlagCapsLock;
             static NSUInteger old_flags           = 0;
             NSUInteger new_flags                  = [event modifierFlags];
-            NSUInteger changed_flags              = new_flags ^ old_flags;
+            NSUInteger changed_flags              = (new_flags ^ old_flags) & mod_mask;
             uint16_t keycode                      = [event keyCode];
             bool down                             = false;
 
