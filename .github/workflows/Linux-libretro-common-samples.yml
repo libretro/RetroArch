@@ -59,6 +59,7 @@ jobs:
             rtga_test
             rbmp_test
             rpng_chunk_overflow_test
+            rpng_roundtrip_test
           )
 
           # Per-binary run command (overrides ./<binary> if present).
@@ -130,8 +131,9 @@ jobs:
             #   TARGET := foo
             #   TARGETS = a b c
             #   TARGET_TEST := foo_test     (second target in same Makefile)
+            #   TARGET_TEST2 := foo_test2   (third target, fourth, ...)
             mapfile -t targets < <(
-              grep -hE '^(TARGET|TARGETS|TARGET_TEST)[[:space:]]*[:?]?=' "$d/Makefile" \
+              grep -hE '^(TARGET|TARGETS|TARGET_TEST[0-9]*)[[:space:]]*[:?]?=' "$d/Makefile" \
               | sed -E 's/^[^=]*=[[:space:]]*//' \
               | tr -s ' \t' '\n' \
               | grep -v '^$' \
