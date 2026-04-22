@@ -2487,9 +2487,17 @@ font_renderer_t metal_raster_font = {
 
       /* Draw core: back buffer + optional encoder pass. */
       [_frameView drawWithContext:_context];
+
+      /* Bind uniforms once for all subsequent encoder work on the main
+       * command encoder. FrameView's shader passes can rebind vertex
+       * slots at shader-reflection-driven indices on the back-buffer
+       * pass, so bind AFTER drawWithContext: returns, not before.
+       * All subsequent blocks (core encoder pass, menu, overlay) reuse
+       * this binding instead of each rebinding the same uniforms. */
+      [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
+
       if ((_frameView.drawState & ViewDrawStateEncoder) != 0)
       {
-         [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
          [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
          if (_frameView.filter == RTextureFilterNearest)
             [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
@@ -2505,7 +2513,6 @@ font_renderer_t metal_raster_font = {
          if (_menu.hasFrame)
          {
             [_menu.view drawWithContext:_context];
-            [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
             [rce setRenderPipelineState:_t_pipelineState];
             if (_menu.view.filter == RTextureFilterNearest)
                [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
@@ -2527,7 +2534,6 @@ font_renderer_t metal_raster_font = {
       {
          [_context resetRenderViewport:_overlay.fullscreen ? kFullscreenViewport : kVideoViewport];
          [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:YES]];
-         [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
          [_overlay drawWithEncoder:rce];
       }
@@ -2563,8 +2569,8 @@ font_renderer_t metal_raster_font = {
             float bgcolor_opacity = settings->floats.video_msg_bgcolor_opacity;
             float x               = settings->floats.video_msg_pos_x;
             float y               = 1.0f - settings->floats.video_msg_pos_y;
-            float width_n         = msg_width / (float)_viewport->full_width;
-            float height_n        = font_size / (float)_viewport->full_height;
+            float bg_w            = msg_width / (float)_viewport->full_width;
+            float bg_h            = font_size / (float)_viewport->full_height;
             float x2              = 0.005f; /* extend background around text */
             float y2              = 0.005f;
             float r               = bgcolor_red   / 255.0f;
@@ -2572,14 +2578,14 @@ font_renderer_t metal_raster_font = {
             float b               = bgcolor_blue  / 255.0f;
             float a               = bgcolor_opacity;
 
-            y                    -= height_n;
+            y                    -= bg_h;
             x                    -= x2;
             y                    -= y2;
-            width_n              += x2;
-            height_n             += y2;
+            bg_w                 += x2;
+            bg_h                 += y2;
 
             [_context resetRenderViewport:kFullscreenViewport];
-            [_context drawQuadX:x y:y w:width_n h:height_n r:r g:g b:b a:a];
+            [_context drawQuadX:x y:y w:bg_w h:bg_h r:r g:g b:b a:a];
          }
 
          font_driver_render_msg(data, msg, NULL, NULL);
