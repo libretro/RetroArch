@@ -51,6 +51,17 @@
 
 #define MTL_ALIGN_BUFFER(size) ((size + kMetalBufferAlignment - 1) & (~(kMetalBufferAlignment - 1)))
 
+/* HDR output modes — shared with metal.m and metal settings.
+ * These are duplicated in metal.m to keep that file self-contained for
+ * the bulk of its HDR logic, but exposed here so overlay/menu code can
+ * query state if needed.
+ * Kept out of the shader struct because the shader-side enum includes an
+ * extra mode (3 = PQ->scRGB for shader-emitted HDR) that is an internal
+ * detail of the composite fragment. */
+#define METAL_HDR_OUTPUT_OFF    0u
+#define METAL_HDR_OUTPUT_HDR10  1u
+#define METAL_HDR_OUTPUT_SCRGB  2u
+
 RETRO_BEGIN_DECLS
 
 extern MTLPixelFormat glslang_format_to_metal(glslang_format fmt);
@@ -163,6 +174,66 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 - (void)setRotation:(unsigned)rotation;
 - (bool)readBackBuffer:(uint8_t *)buffer;
 
+/* HDR.
+ *
+ * Enabling HDR switches the swapchain drawable to RGB10A2Unorm (HDR10) or
+ * RGBA16Float (scRGB), sets up an sRGB offscreen buffer that shader passes
+ * render into instead of the drawable, and inserts a composite pass between
+ * them.  The composite pass does SDR->HDR10 inverse-tonemap / scRGB scale,
+ * or passes through shader-emitted HDR content.
+ *
+ * hdrOutputMode is one of METAL_HDR_OUTPUT_{OFF,HDR10,SCRGB} — the public
+ * settings value.  The composite shader itself also recognises mode 3
+ * (PQ->scRGB) which is selected internally when the shader chain emits PQ
+ * but the swapchain is scRGB.
+ *
+ * Viewport size is used to size the HDR offscreen + readback buffers. */
+@property (nonatomic, readonly) bool hdrEnabled;
+@property (nonatomic, readonly) unsigned hdrOutputMode;
+@property (nonatomic, readonly) MTLPixelFormat hdrOffscreenFormat;
+/* Current CAMetalLayer pixel format — the format downstream pipelines
+ * must compile their colour attachment against to match the drawable.
+ * Matches MTLPixelFormatBGRA8Unorm in SDR mode and an HDR format
+ * (RGB10A2Unorm / RGBA16Float) in HDR mode. */
+@property (nonatomic, readonly) MTLPixelFormat drawableFormat;
+- (void)setHDROutputMode:(unsigned)mode
+             viewportWidth:(unsigned)w
+            viewportHeight:(unsigned)h;
+
+/* Composite the source texture into the current drawable via the HDR encode
+ * pipeline (hdr_composite_fragment).  Must be called while a frame is in
+ * flight (commandBuffer is live).  The source texture is sampled across
+ * the video-viewport rect of the drawable with its full 0..1 UV range;
+ * the area outside the viewport is left as the clear colour
+ * (letterbox / pillarbox).
+ *
+ * After this returns, the main rce points at the drawable with load=Load,
+ * so follow-up draws (menu / overlay / OSD) compose directly on the HDR
+ * backbuffer.
+ *
+ * The uniforms parameter is the already-populated HDRUniforms describing
+ * the current frame's mode / paper-white / expand-gamut state.  The
+ * caller supplies the source explicitly: the shader-chain's last-pass RT
+ * if a preset is active, or the raw frame texture for the no-shader path. */
+- (void)hdrComposite:(const HDRUniforms *)uniforms
+          fromSource:(id<MTLTexture>)source;
+
+/* HDR-specific setters exposed for the poke interface. */
+- (void)setHDRPaperWhiteNits:(float)nits;
+- (void)setHDRMenuNits:(float)nits;
+- (void)setHDRExpandGamut:(unsigned)expandGamut;
+- (void)setHDRScanlines:(bool)scanlines;
+- (void)setHDRSubpixelLayout:(unsigned)layout;
+
+/* Shader-emitted HDR path: set by FrameView after parsing a shader preset,
+ * tells the composite fragment to pass the final pass through without
+ * inverse-tonemap / PQ encode. */
+- (void)setHDRShaderEmitsHDR10:(bool)emitsHDR10
+                    emitsHDR16:(bool)emitsHDR16;
+
+/* Current HDRUniforms for composite pass — updated as settings change. */
+- (const HDRUniforms *)currentHDRUniforms;
+
 @end
 
 @protocol FilterDelegate
@@ -249,6 +320,30 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 @property(nonatomic, readonly) ViewDrawState drawState;
 @property(nonatomic, readonly) struct video_shader *shader;
 @property(nonatomic, readwrite) uint64_t frameCount;
+
+/* Final pass of the shader chain normally renders into the backbuffer
+ * drawable.  When HDR is on, it must render into the HDR offscreen
+ * instead so the composite pass can encode PQ/scRGB. */
+@property(nonatomic, readwrite) BOOL hdrEnabled;
+
+/* Whether the currently loaded shader preset's last pass emits native
+ * HDR10 PQ or FP16 output — set by setShaderFromPath based on the
+ * final pass's slang output format, read by the driver when composing. */
+@property(nonatomic, readonly) BOOL shaderEmitsHDR10;
+@property(nonatomic, readonly) BOOL shaderEmitsHDR16;
+
+/* Current raw frame texture (SDR-linear sRGB content from the core).
+ * Valid after the first updateFrame:pitch: call.  Only needed by the
+ * HDR no-shader path which feeds this texture directly into
+ * Context hdrComposite:fromSource: instead of going through
+ * drawWithEncoder:. */
+@property(nonatomic, readonly) id<MTLTexture> frameTexture;
+
+/* Last shader pass's render target texture.  Nil when no shader preset
+ * is active.  Used by the HDR composite path: when a preset is active,
+ * the last pass writes here (at video-viewport size) and the composite
+ * samples this texture into the video viewport of the drawable. */
+@property(nonatomic, readonly) id<MTLTexture> shaderOutputTexture;
 
 - (void)setFilteringIndex:(int)index smooth:(bool)smooth;
 - (BOOL)setShaderFromPath:(NSString *)path;

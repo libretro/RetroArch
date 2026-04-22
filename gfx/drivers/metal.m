@@ -80,6 +80,154 @@
       x = (__bridge __typeof__(x))(__bridge_retained void *)((NSObject *)__y); \
    }
 
+/* HDR availability gate.
+ *
+ * Compile-time: the SDK must expose CAMetalLayer's wantsExtendedDynamicRangeContent
+ * property and the PQ colour space name.  The PQ colour space name
+ * (kCGColorSpaceITUR_2100_PQ) is the binding constraint on macOS — it was
+ * introduced in 10.15.4 but the symbol is gated to macOS 11.0 in the public
+ * headers.  On iOS / tvOS the whole EDR surface area on CAMetalLayer was
+ * only exposed in the 16.x SDKs.
+ *
+ * We key the compile gate off the Availability.h __MAC_..., __IPHONE_...,
+ * __TVOS_... version tokens rather than AvailabilityMacros.h
+ * MAC_OS_X_VERSION_* constants: the former are defined consistently across
+ * all recent SDKs, while the latter were phased out for newer point releases
+ * and checking them fails silently even when the APIs are in fact present.
+ *
+ * Runtime: the HDR paths are still guarded with @available(...) checks
+ * because RetroArch's Apple deployment targets (macOS 10.13, iOS 11,
+ * tvOS 12.1) are lower than the first HDR-capable OS release on each
+ * platform.  When the runtime gate is false the driver stays in SDR mode.
+ *
+ * METAL_HDR_AVAILABLE guards compile-time only. Whenever we touch an HDR-specific
+ * API inside those blocks, an @available check guards runtime dispatch. */
+#include <Availability.h>
+#if defined(OSX) && defined(__MAC_11_0)
+#  define METAL_HDR_AVAILABLE 1
+#elif defined(HAVE_COCOATOUCH) && (defined(__IPHONE_16_0) || defined(__TVOS_16_0))
+#  define METAL_HDR_AVAILABLE 1
+#else
+#  define METAL_HDR_AVAILABLE 0
+#endif
+
+/* video_hdr_mode values — must match the rest of RetroArch. */
+#define METAL_HDR_MODE_OFF    0u
+#define METAL_HDR_MODE_HDR10  1u
+#define METAL_HDR_MODE_SCRGB  2u
+
+#if METAL_HDR_AVAILABLE
+/* Configure the CAMetalLayer's drawable pixel format, colour space, and
+ * wantsExtendedDynamicRangeContent flag for the requested HDR mode.
+ *
+ * Call this BEFORE any render pipelines are compiled against the layer —
+ * every MTLRenderPipelineState baked against _layer.pixelFormat needs to
+ * know the final format up front.  That means pre-_initMetal for the
+ * driver's own pipelines, pre-Context-construction for the menu/font
+ * pipelines compiled inside _initMenuStates, and pre-setShaderFromPath
+ * for slang shader pipelines.
+ *
+ * At RetroArch's current deploy targets (macOS 10.13 / iOS 11 / tvOS 12.1)
+ * the EDR APIs aren't available without a runtime check, so this function
+ * no-ops on older OSes and leaves the layer as BGRA8.  The caller can
+ * inspect the returned format to see what actually got applied. */
+static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
+      unsigned hdr_mode)
+{
+   if (!layer)
+      return MTLPixelFormatBGRA8Unorm;
+
+   if (hdr_mode == METAL_HDR_MODE_OFF)
+   {
+      layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+      if (@available(macOS 11.0, iOS 16.0, tvOS 16.0, *))
+      {
+         CGColorSpaceRef cs = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+         if (cs)
+         {
+            layer.colorspace = cs;
+            CGColorSpaceRelease(cs);
+         }
+         layer.wantsExtendedDynamicRangeContent = NO;
+      }
+      return MTLPixelFormatBGRA8Unorm;
+   }
+
+   if (@available(macOS 11.0, iOS 16.0, tvOS 16.0, *))
+   {
+      MTLPixelFormat fmt = (hdr_mode == METAL_HDR_MODE_SCRGB)
+         ? MTLPixelFormatRGBA16Float
+         : MTLPixelFormatRGB10A2Unorm;
+      CFStringRef csName = (hdr_mode == METAL_HDR_MODE_SCRGB)
+         ? kCGColorSpaceExtendedLinearSRGB
+         : kCGColorSpaceITUR_2100_PQ;
+
+      layer.pixelFormat = fmt;
+      CGColorSpaceRef cs = CGColorSpaceCreateWithName(csName);
+      if (cs)
+      {
+         layer.colorspace = cs;
+         CGColorSpaceRelease(cs);
+      }
+      layer.wantsExtendedDynamicRangeContent = YES;
+      return fmt;
+   }
+
+   /* HDR requested but OS too old: quietly fall back to SDR. */
+   RARCH_WARN("[Metal] HDR requested but OS is below the minimum for EDR APIs; falling back to SDR.\n");
+   layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+   return MTLPixelFormatBGRA8Unorm;
+}
+
+/* Query whether any connected display currently has EDR headroom above 1.0,
+ * i.e. is HDR-capable in its current state.  This is best-effort: on
+ * multi-display setups we check the main screen, mirroring Vulkan's
+ * single-display assumption.  Returns false when the API isn't available,
+ * so HDR support flags won't be announced on older OSes. */
+static bool metal_display_supports_edr(void)
+{
+#ifdef OSX
+   if (@available(macOS 10.15, *))
+   {
+      NSScreen *screen = [NSScreen mainScreen];
+      if (!screen)
+         return false;
+      /* Potential, not current: the value reflects what the display *could*
+       * produce if EDR were enabled, not what's being used right now.
+       * That's the right signal for "is HDR an available mode".  SDR-only
+       * displays return exactly 1.0. */
+      return screen.maximumPotentialExtendedDynamicRangeColorComponentValue > 1.0;
+   }
+   return false;
+#elif defined(HAVE_COCOATOUCH)
+   /* TARGET_OS_TV / TARGET_OS_IOS are always defined to 0 or 1, not
+    * just present — have to test the value, not defined-ness. */
+#  if TARGET_OS_TV
+   /* tvOS: no NSScreen/UIScreen EDR API parallel to macOS.  The device
+    * itself (Apple TV 4K) advertises HDR capability via AVDisplayCriteria
+    * but that's AVFoundation, not a layer we can plumb into here without
+    * a deeper refactor.  Assume HDR is available when the tvOS gate
+    * passes — the user has to opt in to enable it anyway, and tvOS 16
+    * is only shipping on HDR-capable hardware (Apple TV 4K). */
+   if (@available(tvOS 16.0, *))
+      return true;
+   return false;
+#  else
+   if (@available(iOS 16.0, *))
+   {
+      UIScreen *screen = [UIScreen mainScreen];
+      if (!screen)
+         return false;
+      return screen.potentialEDRHeadroom > 1.0;
+   }
+   return false;
+#  endif
+#else
+   return false;
+#endif
+}
+#endif /* METAL_HDR_AVAILABLE */
+
 /*
  * COMMON
  */
@@ -179,6 +327,11 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
 @interface Context()
 - (bool)_initConversionFilters;
+#if METAL_HDR_AVAILABLE
+- (bool)_initHDRPipelines;
+- (void)_resizeHDRResourcesForWidth:(NSUInteger)w height:(NSUInteger)h;
+- (void)_runHDRTonemapForReadbackInto:(id<MTLTexture>)dst;
+#endif
 @end
 
 @implementation Context
@@ -212,6 +365,33 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
    Uniforms _uniforms;
    Uniforms _uniformsNoRotate;
+
+   /* HDR state.
+    * Compile-time gated because wantsExtendedDynamicRangeContent /
+    * kCGColorSpaceITUR_2100_PQ aren't in older SDKs, but most of the plumbing
+    * below (ivars, pipelines) is independent of the SDK and could live
+    * unconditionally. The METAL_HDR_AVAILABLE gate keeps the whole block
+    * together — simpler to reason about. */
+   bool _hdrEnabled;
+   unsigned _hdrOutputMode;            /* METAL_HDR_OUTPUT_* */
+   MTLPixelFormat _hdrOffscreenFormat; /* RGBA16Float / RGB10A2Unorm etc. */
+   MTLPixelFormat _hdrDrawableFormat;  /* swapchain format when HDR on */
+   id<MTLTexture> _hdrReadbackTex;     /* BGRA8 landing pad for screenshots */
+   NSUInteger _hdrReadbackW, _hdrReadbackH;
+
+   /* Composite ("apply HDR encoding from offscreen to drawable"). */
+   id<MTLRenderPipelineState> _hdrCompositeStateHDR10;
+   id<MTLRenderPipelineState> _hdrCompositeStateSCRGB;
+   /* Tonemap ("run HDR offscreen back down to BGRA8 for readback"). */
+   id<MTLRenderPipelineState> _hdrTonemapState;
+   /* Sampler used for both composite and tonemap source reads. */
+   id<MTLSamplerState> _hdrSamplerLinear;
+
+   HDRUniforms _hdrUniforms;
+   /* Per-mode override flags that track the Vulkan
+    * set_hdr_inverse_tonemap()/set_hdr10() calls. */
+   bool _hdrShaderEmitsHDR10;
+   bool _hdrShaderEmitsHDR16;
 }
 
 - (instancetype)initWithDevice:(id<MTLDevice>)d
@@ -274,6 +454,26 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
       for (i = 0; i < CHAIN_LENGTH; i++)
          _chain[i] = [[BufferChain alloc] initWithDevice:_device blockLen:65536];
+
+#if METAL_HDR_AVAILABLE
+      /* HDR composite & tonemap pipelines are compiled lazily the first
+       * time HDR is enabled; compiling them here would waste memory when
+       * HDR is never turned on.  Just set defaults. */
+      _hdrEnabled         = false;
+      _hdrOutputMode      = METAL_HDR_OUTPUT_OFF;
+      _hdrOffscreenFormat = MTLPixelFormatInvalid;
+      _hdrDrawableFormat  = _layer.pixelFormat;
+      _hdrUniforms.mvp             = _mvp_no_rot;
+      _hdrUniforms.BrightnessNits  = 200.0f;
+      _hdrUniforms.SubpixelLayout  = 0u;
+      _hdrUniforms.Scanlines       = 0.0f;
+      _hdrUniforms.ExpandGamut     = 0u;
+      _hdrUniforms.InverseTonemap  = 1.0f;
+      _hdrUniforms.HDR10           = 1.0f;
+      _hdrUniforms.HDRMode         = 0u;
+      _hdrShaderEmitsHDR10 = false;
+      _hdrShaderEmitsHDR16 = false;
+#endif
    }
    return self;
 }
@@ -292,6 +492,166 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 - (Uniforms *)uniforms
 {
    return &_uniforms;
+}
+
+#pragma mark - HDR
+
+- (bool)hdrEnabled
+{
+#if METAL_HDR_AVAILABLE
+   return _hdrEnabled;
+#else
+   return false;
+#endif
+}
+
+- (unsigned)hdrOutputMode
+{
+#if METAL_HDR_AVAILABLE
+   return _hdrOutputMode;
+#else
+   return METAL_HDR_OUTPUT_OFF;
+#endif
+}
+
+- (MTLPixelFormat)hdrOffscreenFormat
+{
+#if METAL_HDR_AVAILABLE
+   return _hdrOffscreenFormat;
+#else
+   return MTLPixelFormatInvalid;
+#endif
+}
+
+- (MTLPixelFormat)drawableFormat
+{
+   return _layer.pixelFormat;
+}
+
+- (const HDRUniforms *)currentHDRUniforms
+{
+#if METAL_HDR_AVAILABLE
+   return &_hdrUniforms;
+#else
+   return NULL;
+#endif
+}
+
+- (void)setHDRPaperWhiteNits:(float)nits
+{
+#if METAL_HDR_AVAILABLE
+   /* Clamp to avoid division-by-zero / negative paper-white in the shader.
+    * The Vulkan driver does not clamp, but settings UI lets values go to 0
+    * and our Tonemap function would collapse. */
+   if (nits < 1.0f)
+      nits = 1.0f;
+   _hdrUniforms.BrightnessNits = nits;
+#else
+   (void)nits;
+#endif
+}
+
+- (void)setHDRMenuNits:(float)nits
+{
+#if METAL_HDR_AVAILABLE
+   /* menu_nits is not sampled by the composite shader itself (the menu is
+    * drawn directly over the HDR backbuffer), but we cache it in case a
+    * future menu-compose path wants it.  Vulkan keeps it as a plain field
+    * on the driver struct for the same reason. */
+   (void)nits;
+#else
+   (void)nits;
+#endif
+}
+
+- (void)setHDRExpandGamut:(unsigned)expandGamut
+{
+#if METAL_HDR_AVAILABLE
+   _hdrUniforms.ExpandGamut = expandGamut;
+#else
+   (void)expandGamut;
+#endif
+}
+
+- (void)setHDRScanlines:(bool)scanlines
+{
+#if METAL_HDR_AVAILABLE
+   _hdrUniforms.Scanlines = scanlines ? 1.0f : 0.0f;
+#else
+   (void)scanlines;
+#endif
+}
+
+- (void)setHDRSubpixelLayout:(unsigned)layout
+{
+#if METAL_HDR_AVAILABLE
+   _hdrUniforms.SubpixelLayout = layout;
+#else
+   (void)layout;
+#endif
+}
+
+- (void)setHDRShaderEmitsHDR10:(bool)emitsHDR10 emitsHDR16:(bool)emitsHDR16
+{
+#if METAL_HDR_AVAILABLE
+   _hdrShaderEmitsHDR10 = emitsHDR10;
+   _hdrShaderEmitsHDR16 = emitsHDR16;
+
+   /* Mirror the Vulkan vulkan_set_hdr_inverse_tonemap / set_hdr10 logic:
+    * when the chain already outputs in the target HDR space, the
+    * composite pass bypasses inverse-tonemap + PQ encode and either
+    * passes through (mode match) or converts (PQ -> scRGB, mode 3).  */
+   if (_hdrOutputMode == METAL_HDR_OUTPUT_SCRGB)
+   {
+      if (emitsHDR16)
+      {
+         /* Shader emits FP16 scRGB-compatible content — passthrough. */
+         _hdrUniforms.HDRMode        = METAL_HDR_OUTPUT_SCRGB;
+         _hdrUniforms.InverseTonemap = 0.0f;
+         _hdrUniforms.HDR10          = 0.0f;
+      }
+      else if (emitsHDR10)
+      {
+         /* Shader emits PQ HDR10 but swapchain is scRGB — convert. */
+         _hdrUniforms.HDRMode        = 3u;
+         _hdrUniforms.InverseTonemap = 0.0f;
+         _hdrUniforms.HDR10          = 0.0f;
+      }
+      else
+      {
+         /* SDR shader output -> scRGB via inverse-tonemap. */
+         _hdrUniforms.HDRMode        = METAL_HDR_OUTPUT_SCRGB;
+         _hdrUniforms.InverseTonemap = 1.0f;
+         _hdrUniforms.HDR10          = 0.0f;
+      }
+   }
+   else if (_hdrOutputMode == METAL_HDR_OUTPUT_HDR10)
+   {
+      if (emitsHDR10 || emitsHDR16)
+      {
+         /* Shader emits native HDR that the swapchain can accept — passthrough. */
+         _hdrUniforms.HDRMode        = METAL_HDR_OUTPUT_HDR10;
+         _hdrUniforms.InverseTonemap = 0.0f;
+         _hdrUniforms.HDR10          = 0.0f;
+      }
+      else
+      {
+         /* SDR shader output -> HDR10 via inverse-tonemap + PQ encode. */
+         _hdrUniforms.HDRMode        = METAL_HDR_OUTPUT_HDR10;
+         _hdrUniforms.InverseTonemap = 1.0f;
+         _hdrUniforms.HDR10          = 1.0f;
+      }
+   }
+   else
+   {
+      _hdrUniforms.HDRMode        = 0u;
+      _hdrUniforms.InverseTonemap = 0.0f;
+      _hdrUniforms.HDR10          = 0.0f;
+   }
+#else
+   (void)emitsHDR10;
+   (void)emitsHDR16;
+#endif
 }
 
 - (void)setRotation:(unsigned)rotation
@@ -570,6 +930,376 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    return YES;
 }
 
+#if METAL_HDR_AVAILABLE
+
+/* Build the HDR composite + tonemap pipelines.
+ *
+ * Three render pipeline states are created up front:
+ *   - composite(HDR10)  : offscreen (RGBA16Float) -> drawable (RGB10A2Unorm)
+ *   - composite(scRGB)  : offscreen (RGBA16Float) -> drawable (RGBA16Float)
+ *   - tonemap           : offscreen/drawable HDR -> BGRA8Unorm readback
+ *
+ * We need separate composite pipelines because the color attachment's pixel
+ * format is baked into a MTLRenderPipelineState.  The fragment shader itself
+ * is the same in both cases — the HDRMode uniform selects the math.
+ *
+ * _hdrDrawableFormat must be populated before calling this; setHDROutputMode
+ * takes care of that when it transitions from OFF -> on. */
+- (bool)_initHDRPipelines
+{
+   if (_hdrCompositeStateHDR10 && _hdrCompositeStateSCRGB && _hdrTonemapState)
+      return YES;
+
+   NSError *err = nil;
+   id<MTLFunction> vs = [_library newFunctionWithName:@"hdr_composite_vertex"];
+   id<MTLFunction> fsComp = [_library newFunctionWithName:@"hdr_composite_fragment"];
+   id<MTLFunction> fsTone = [_library newFunctionWithName:@"hdr_tonemap_fragment"];
+   if (!vs || !fsComp || !fsTone)
+   {
+      RARCH_ERR("[Metal] HDR pipelines: missing shader functions.\n");
+      return NO;
+   }
+
+   /* Composite, HDR10. */
+   {
+      MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
+      psd.label                        = @"HDR composite (HDR10)";
+      psd.vertexFunction               = vs;
+      psd.fragmentFunction             = fsComp;
+      psd.colorAttachments[0].pixelFormat = MTLPixelFormatRGB10A2Unorm;
+      _hdrCompositeStateHDR10          = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err)
+      {
+         RARCH_ERR("[Metal] HDR composite(HDR10) pipeline: %s.\n",
+                   err.localizedDescription.UTF8String);
+         return NO;
+      }
+   }
+
+   /* Composite, scRGB. */
+   {
+      MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
+      psd.label                        = @"HDR composite (scRGB)";
+      psd.vertexFunction               = vs;
+      psd.fragmentFunction             = fsComp;
+      psd.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
+      _hdrCompositeStateSCRGB          = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err)
+      {
+         RARCH_ERR("[Metal] HDR composite(scRGB) pipeline: %s.\n",
+                   err.localizedDescription.UTF8String);
+         return NO;
+      }
+   }
+
+   /* Tonemap (for screenshot/readback path). */
+   {
+      MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
+      psd.label                        = @"HDR tonemap (readback)";
+      psd.vertexFunction               = vs;
+      psd.fragmentFunction             = fsTone;
+      psd.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+      _hdrTonemapState                 = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err)
+      {
+         RARCH_ERR("[Metal] HDR tonemap pipeline: %s.\n",
+                   err.localizedDescription.UTF8String);
+         return NO;
+      }
+   }
+
+   /* Dedicated linear sampler for composite/tonemap source reads.  We could
+    * reuse _samplers[TEXTURE_FILTER_LINEAR] but tying ownership to the HDR
+    * block keeps the resources a single cohesive group. */
+   {
+      MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
+      sd.label                 = @"HDR composite/tonemap";
+      sd.minFilter             = MTLSamplerMinMagFilterLinear;
+      sd.magFilter             = MTLSamplerMinMagFilterLinear;
+      sd.sAddressMode          = MTLSamplerAddressModeClampToEdge;
+      sd.tAddressMode          = MTLSamplerAddressModeClampToEdge;
+      _hdrSamplerLinear        = [_device newSamplerStateWithDescriptor:sd];
+   }
+
+   return YES;
+}
+
+/* (Re)allocate the HDR readback landing-pad texture to match the drawable.
+ * Called from setHDROutputMode on enable and from readBackBuffer on size
+ * changes.  The composite path samples from the shader chain's last-pass
+ * RT (or the raw frame texture) directly — no offscreen is needed
+ * on the composite side. */
+- (void)_resizeHDRResourcesForWidth:(NSUInteger)w height:(NSUInteger)h
+{
+   if (!_hdrEnabled || w == 0 || h == 0)
+      return;
+   if (_hdrReadbackTex && _hdrReadbackW == w && _hdrReadbackH == h)
+      return;
+
+   _hdrReadbackW = w;
+   _hdrReadbackH = h;
+
+   /* Readback landing pad — BGRA8 so the existing row-copy path in
+    * readBackBuffer works unchanged.
+    * We use Managed on macOS because we'll read straight from it; on iOS
+    * MTLStorageModeShared is the equivalent CPU-visible mode. */
+   {
+      MTLTextureDescriptor *td = [MTLTextureDescriptor
+                                   texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                                                width:w
+                                                               height:h
+                                                            mipmapped:NO];
+#ifdef OSX
+      td.storageMode = MTLStorageModeManaged;
+#else
+      td.storageMode = MTLStorageModeShared;
+#endif
+      td.usage       = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
+      id<MTLTexture> rb = [_device newTextureWithDescriptor:td];
+      rb.label          = @"HDR readback";
+      STRUCT_ASSIGN(_hdrReadbackTex, rb);
+   }
+
+   _hdrUniforms.SourceSize = simd_make_float4((float)w, (float)h,
+                                              1.0f / (float)w, 1.0f / (float)h);
+   _hdrUniforms.OutputSize = simd_make_float4((float)w, (float)h,
+                                              1.0f / (float)w, 1.0f / (float)h);
+}
+
+/* Transition between HDR-off and HDR-on, or between HDR10 and scRGB.
+ * Reconfigures the CAMetalLayer pixel format + colourspace + EDR flag,
+ * compiles pipelines on demand, and sizes the offscreen buffers. */
+- (void)setHDROutputMode:(unsigned)mode
+             viewportWidth:(unsigned)w
+            viewportHeight:(unsigned)h
+{
+   if (mode == _hdrOutputMode && _hdrEnabled == (mode != METAL_HDR_OUTPUT_OFF))
+   {
+      /* Same mode, just resize. */
+      [self _resizeHDRResourcesForWidth:w height:h];
+      return;
+   }
+
+   bool wantEnable = (mode != METAL_HDR_OUTPUT_OFF);
+
+   /* Pick drawable format + colourspace for the layer. */
+   MTLPixelFormat newFmt    = _layer.pixelFormat;
+   CGColorSpaceRef newCS    = NULL;
+   BOOL wantEDR             = NO;
+
+   if (wantEnable)
+   {
+      if (@available(macOS 11.0, iOS 16.0, tvOS 16.0, *))
+      {
+         if (mode == METAL_HDR_OUTPUT_HDR10)
+         {
+            newFmt   = MTLPixelFormatRGB10A2Unorm;
+            newCS    = CGColorSpaceCreateWithName(kCGColorSpaceITUR_2100_PQ);
+            wantEDR  = YES;
+         }
+         else /* scRGB */
+         {
+            newFmt   = MTLPixelFormatRGBA16Float;
+            newCS    = CGColorSpaceCreateWithName(kCGColorSpaceExtendedLinearSRGB);
+            wantEDR  = YES;
+         }
+
+         if (!_hdrCompositeStateHDR10 || !_hdrCompositeStateSCRGB || !_hdrTonemapState)
+         {
+            if (![self _initHDRPipelines])
+            {
+               if (newCS) CGColorSpaceRelease(newCS);
+               RARCH_ERR("[Metal] HDR enable failed: pipelines did not compile.\n");
+               return;
+            }
+         }
+      }
+      else
+      {
+         /* HDR requested but OS too old.  Refuse quietly. */
+         RARCH_WARN("[Metal] HDR requested but the OS does not expose the required APIs.\n");
+         return;
+      }
+   }
+   else
+   {
+      /* Back to SDR. Reset to BGRA8Unorm — the layer's original default. */
+      newFmt   = MTLPixelFormatBGRA8Unorm;
+      newCS    = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+      wantEDR  = NO;
+   }
+
+   /* Apply to layer.  On HDR enable we flip wantsEDR _after_ setting format
+    * + colourspace to avoid a momentary 1-frame state where the compositor
+    * treats sRGB 8-bit content as extended range. */
+   _layer.pixelFormat = newFmt;
+#if METAL_HDR_AVAILABLE
+   if (@available(macOS 11.0, iOS 16.0, tvOS 16.0, *))
+   {
+      if (newCS)
+         _layer.colorspace = newCS;
+      _layer.wantsExtendedDynamicRangeContent = wantEDR;
+   }
+#endif
+   if (newCS)
+      CGColorSpaceRelease(newCS);
+
+   _hdrDrawableFormat = newFmt;
+   _hdrOutputMode     = mode;
+   _hdrEnabled        = wantEnable;
+
+   if (wantEnable)
+   {
+      _hdrOffscreenFormat = MTLPixelFormatRGBA16Float;
+      [self _resizeHDRResourcesForWidth:w height:h];
+      /* Apply the current HDRMode + tonemap flags with the stored
+       * emits-hdr state.  Bounces through the existing setter to keep
+       * the logic in one place. */
+      [self setHDRShaderEmitsHDR10:_hdrShaderEmitsHDR10
+                       emitsHDR16:_hdrShaderEmitsHDR16];
+   }
+   else
+   {
+      _hdrOffscreenFormat = MTLPixelFormatInvalid;
+      STRUCT_ASSIGN(_hdrReadbackTex,  nil);
+      _hdrReadbackW = _hdrReadbackH = 0;
+      _hdrUniforms.HDRMode        = 0u;
+      _hdrUniforms.InverseTonemap = 0.0f;
+      _hdrUniforms.HDR10          = 0.0f;
+   }
+}
+
+/* Composite the source texture into the current drawable through the
+ * composite pipeline for the active output mode. Called between the final
+ * shader pass (which wrote to source) and any subsequent draws
+ * (menu/overlay/OSD).
+ *
+ * After this returns the main rce is pointing at the drawable and follow-up
+ * draws compose directly on the HDR backbuffer.  The follow-up draws do not
+ * have any HDR awareness — menu, overlay, OSD etc. all emit SDR in whatever
+ * format the existing pipelines were built for, and the displayed result is
+ * the composited HDR image with SDR UI laid over it.  That's the same
+ * approach Vulkan uses (and has the same caveat that SDR UI on HDR
+ * backbuffers looks a little washed out; paper-white compensates). */
+- (void)hdrComposite:(const HDRUniforms *)uniforms
+          fromSource:(id<MTLTexture>)source
+{
+   if (!_hdrEnabled || !uniforms || !source)
+      return;
+   if (_commandBuffer == nil)
+      return;
+
+   /* Close any offscreen encoder. */
+   if (_rce)
+   {
+      [_rce endEncoding];
+      _rce = nil;
+   }
+
+   id<CAMetalDrawable> drawable = self.nextDrawable;
+   if (!drawable || !drawable.texture)
+   {
+      RARCH_WARN("[Metal] HDR composite: no drawable.\n");
+      return;
+   }
+
+   MTLRenderPassDescriptor *rpd        = [MTLRenderPassDescriptor new];
+   rpd.colorAttachments[0].texture     = drawable.texture;
+   rpd.colorAttachments[0].loadAction  = MTLLoadActionClear;
+   rpd.colorAttachments[0].clearColor  = _clearColor;
+   rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+   if (_captureEnabled)
+      _backBuffer                      = drawable.texture;
+
+   id<MTLRenderPipelineState> state = (_hdrOutputMode == METAL_HDR_OUTPUT_SCRGB)
+      ? _hdrCompositeStateSCRGB
+      : _hdrCompositeStateHDR10;
+
+   id<MTLRenderCommandEncoder> cre = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
+   cre.label = @"HDR composite";
+   [cre setRenderPipelineState:state];
+
+   /* The composite always targets the video-viewport rect of the drawable.
+    * The source texture (whether that's the shader chain's last-pass RT or
+    * the raw frame texture in the no-shader path) carries "one frame of
+    * video content" — the outside-viewport area of the drawable stays the
+    * clear colour, matching the SDR driver's letterbox/pillarbox behaviour.
+    * Both sources are sampled with the full 0..1 UV range; the video
+    * viewport is purely a destination-rect thing. */
+   MTLViewport vp = {
+      .originX = (double)_viewport.x,
+      .originY = (double)_viewport.y,
+      .width   = (double)_viewport.width,
+      .height  = (double)_viewport.height,
+      .znear   = 0.0, .zfar = 1.0,
+   };
+   [cre setViewport:vp];
+
+   [cre setFragmentBytes:uniforms length:sizeof(*uniforms) atIndex:0];
+   [cre setFragmentTexture:source atIndex:0];
+   [cre setFragmentSamplerState:_hdrSamplerLinear atIndex:0];
+   [cre drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+   [cre endEncoding];
+
+   /* Start a fresh rce on the drawable with load=Load so subsequent
+    * menu/overlay/OSD work appears layered on top of the composite. */
+   MTLRenderPassDescriptor *follow      = [MTLRenderPassDescriptor new];
+   follow.colorAttachments[0].texture     = drawable.texture;
+   follow.colorAttachments[0].loadAction  = MTLLoadActionLoad;
+   follow.colorAttachments[0].storeAction = MTLStoreActionStore;
+   _rce = [_commandBuffer renderCommandEncoderWithDescriptor:follow];
+   _rce.label = @"Frame command encoder (post-HDR)";
+}
+
+/* Run the tonemap pipeline over whatever is currently in _backBuffer,
+ * writing BGRA8 sRGB-encoded pixels into _hdrReadbackTex for the existing
+ * row-by-row copy path in readBackBuffer.  Uses its own short-lived command
+ * buffer so it can run synchronously inside readBackBuffer. */
+- (void)_runHDRTonemapForReadbackInto:(id<MTLTexture>)dst
+{
+   if (!_hdrEnabled || !_hdrTonemapState || !_backBuffer || !dst)
+      return;
+
+   HDRUniforms u = _hdrUniforms;
+   /* Signal the tonemap shader which backbuffer format it's reading.
+    * We reuse HDRMode == 1/2 semantics so the tonemap fragment stays
+    * parallel to the Vulkan hdr_tonemap.frag.  HDRMode-in-composite and
+    * HDRMode-in-tonemap happen to use the same numbers. */
+   u.HDRMode = (_hdrOutputMode == METAL_HDR_OUTPUT_SCRGB)
+      ? METAL_HDR_OUTPUT_SCRGB : METAL_HDR_OUTPUT_HDR10;
+
+   id<MTLCommandBuffer> cb = [_commandQueue commandBuffer];
+   cb.label = @"HDR tonemap (readback)";
+
+   MTLRenderPassDescriptor *rpd        = [MTLRenderPassDescriptor new];
+   rpd.colorAttachments[0].texture     = dst;
+   rpd.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
+   rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+
+   id<MTLRenderCommandEncoder> cre = [cb renderCommandEncoderWithDescriptor:rpd];
+   cre.label = @"HDR tonemap";
+   [cre setRenderPipelineState:_hdrTonemapState];
+   MTLViewport vp = { 0, 0, (double)dst.width, (double)dst.height, 0.0, 1.0 };
+   [cre setViewport:vp];
+   [cre setFragmentBytes:&u length:sizeof(u) atIndex:0];
+   [cre setFragmentTexture:_backBuffer atIndex:0];
+   [cre setFragmentSamplerState:_hdrSamplerLinear atIndex:0];
+   [cre drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+   [cre endEncoding];
+
+#ifdef OSX
+   /* Force a CPU-visible copy for Managed storage so getBytes works. */
+   id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
+   [bce synchronizeResource:dst];
+   [bce endEncoding];
+#endif
+
+   [cb commit];
+   [cb waitUntilCompleted];
+}
+
+#endif /* METAL_HDR_AVAILABLE */
+
 - (Texture *)newTexture:(struct texture_image)image filter:(enum texture_filter_type)filter
 {
    assert(filter >= TEXTURE_FILTER_LINEAR && filter <= TEXTURE_FILTER_MIPMAP_NEAREST);
@@ -706,17 +1436,42 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    uint8_t  stackRow[16 * 1024];
    uint8_t *row        = stackRow;
    uint8_t *heapRow    = NULL;
+   /* Texture we actually pull rows from.  In SDR mode this is _backBuffer
+    * directly (BGRA8Unorm drawable).  In HDR mode it's _hdrReadbackTex,
+    * populated by the tonemap pipeline below — the drawable itself is
+    * RGB10A2Unorm or RGBA16Float and can't be read as BGRA8.
+    * This is the key read_viewport fix for the HDR off / HDR10 / scRGB
+    * tri-state: all three modes converge on the same BGRA8 path here. */
+   id<MTLTexture> srcTex = _backBuffer;
 
    if (!_captureEnabled || _backBuffer == nil)
       return NO;
 
-   if (_backBuffer.pixelFormat != MTLPixelFormatBGRA8Unorm)
+#if METAL_HDR_AVAILABLE
+   if (_hdrEnabled)
    {
-      RARCH_WARN("[Metal] Unexpected pixel format %d.\n", _backBuffer.pixelFormat);
+      /* Size the readback texture to match the drawable (which is what
+       * _backBuffer points at during an active frame).  viewport.width/x
+       * etc. index into it after the copy. */
+      [self _resizeHDRResourcesForWidth:_backBuffer.width height:_backBuffer.height];
+      if (!_hdrReadbackTex)
+      {
+         RARCH_WARN("[Metal] HDR readback: no landing pad texture.\n");
+         return NO;
+      }
+      [self _runHDRTonemapForReadbackInto:_hdrReadbackTex];
+      srcTex = _hdrReadbackTex;
+   }
+#endif
+
+   if (srcTex.pixelFormat != MTLPixelFormatBGRA8Unorm)
+   {
+      RARCH_WARN("[Metal] Unexpected pixel format %d for readback.\n",
+                 (int)srcTex.pixelFormat);
       return NO;
    }
 
-   rowBytes  = _backBuffer.width * 4;
+   rowBytes  = srcTex.width * 4;
    if (rowBytes > sizeof(stackRow))
    {
       heapRow = (uint8_t *)malloc(rowBytes);
@@ -731,11 +1486,11 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    for (y = 0; y < _viewport.height; y++, dst -= dstStride)
    {
       size_t x;
-      [_backBuffer getBytes:row
-                bytesPerRow:rowBytes
-                 fromRegion:MTLRegionMake2D(0, (NSUInteger)_viewport.y + y,
-                                            _backBuffer.width, 1)
-                mipmapLevel:0];
+      [srcTex getBytes:row
+           bytesPerRow:rowBytes
+            fromRegion:MTLRegionMake2D(0, (NSUInteger)_viewport.y + y,
+                                       srcTex.width, 1)
+           mipmapLevel:0];
 
       for (x = 0; x < _viewport.width; x++)
       {
@@ -1775,7 +2530,15 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       psd.label = @"font pipeline";
 
       MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
-      ca.pixelFormat                 = MTLPixelFormatBGRA8Unorm;
+      /* Match whatever pixel format the drawable currently has (SDR: BGRA8;
+       * HDR10: RGB10A2Unorm; scRGB: RGBA16Float).  Metal validates the
+       * pipeline's colour-attachment format against the current render pass's
+       * attachment at encode time, so this must match the actual drawable.
+       * The font shader emits plain SDR values either way — which means on
+       * HDR backbuffers text renders dimmer than expected, but doesn't error.
+       * Fully fixing that needs a separate SDR->HDR composite for the OSD
+       * text layer, which is out of scope for this pass. */
+      ca.pixelFormat                 = _context.drawableFormat;
       ca.blendingEnabled             = YES;
       ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
       ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
@@ -2281,6 +3044,14 @@ font_renderer_t metal_raster_font = {
 
    /* other state */
    Uniforms _viewportMVP;
+
+   /* HDR output mode locked in at initWithVideo time.  Runtime toggling
+    * would require rebuilding every pipeline whose colour attachment was
+    * baked against _layer.pixelFormat (stock blit, menu, font, slang
+    * shader passes) — out of scope for this implementation.  Matching
+    * Vulkan's behaviour: HDR is effectively an init-time choice that
+    * takes effect on the next driver reinit. */
+   unsigned _initial_hdr_mode;
 }
 
 - (instancetype)initWithVideo:(const video_info_t *)video
@@ -2294,6 +3065,28 @@ font_renderer_t metal_raster_font = {
       view.device                   = _device;
       view.delegate                 = self;
       _layer                        = (CAMetalLayer *)view.layer;
+
+      /* Configure the layer for HDR (or SDR) BEFORE building any pipelines.
+       * Pipelines compiled inside _initMetal / Context initWithDevice: bake
+       * the layer's pixelFormat into their state, so flipping the format
+       * after the fact would leave them invalid.  All downstream pipeline
+       * creation sees whatever metal_apply_hdr_layer_config picked.
+       *
+       * We read video_hdr_mode from settings at init time and treat it as
+       * fixed for the lifetime of this driver instance — see comment on
+       * metal_apply_hdr_layer_config. */
+#if METAL_HDR_AVAILABLE
+      {
+         settings_t *settings        = config_get_ptr();
+         unsigned    initial_hdr_mode = settings
+            ? settings->uints.video_hdr_mode
+            : METAL_HDR_MODE_OFF;
+         metal_apply_hdr_layer_config(_layer, initial_hdr_mode);
+         _initial_hdr_mode           = initial_hdr_mode;
+      }
+#else
+      _initial_hdr_mode              = METAL_HDR_MODE_OFF;
+#endif
 
       if (![self _initMetal])
          return nil;
@@ -2343,6 +3136,7 @@ font_renderer_t metal_raster_font = {
          _frameView          = [[FrameView alloc] initWithDescriptor:vd context:_context];
          _frameView.viewport = _viewport;
          [_frameView setFilteringIndex:0 smooth:video->smooth];
+         _frameView.hdrEnabled = (_initial_hdr_mode != METAL_HDR_MODE_OFF);
       }
 
       /* Overlay view */
@@ -2353,6 +3147,67 @@ font_renderer_t metal_raster_font = {
             false,
             video->is_threaded,
             FONT_DRIVER_RENDER_METAL_API);
+
+      /* Tell Context to allocate HDR offscreen + readback textures and
+       * compile its composite/tonemap pipelines.  By this point the CAMetalLayer's
+       * pixelFormat has already been set (above), _initMetal's downstream
+       * pipelines are compiled against that format, and the framebuffer
+       * view / overlays are live.  Deferring until after font_driver init
+       * keeps all HDR-specific resource creation in one easy-to-find block. */
+#if METAL_HDR_AVAILABLE
+      /* Announce HDR capability to the wider driver layer.  RetroArch
+       * uses these flags to gate the HDR menu options and to clamp the
+       * user's selected mode to what the driver can actually do. */
+      {
+         uint32_t disp_flags = video_driver_get_disp_flags();
+         bool edr_supported  = metal_display_supports_edr();
+         disp_flags &= ~(VIDEO_FLAG_HDR_SUPPORT
+                        | VIDEO_FLAG_HDR10_SUPPORT
+                        | VIDEO_FLAG_SCRGB_SUPPORT);
+         if (edr_supported)
+         {
+            /* Both modes map to the same Metal surface path (swap the
+             * CAMetalLayer pixel format + colour space), so whenever
+             * EDR is available we advertise both. */
+            disp_flags |= VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT;
+            disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
+         }
+         video_driver_set_disp_flags(disp_flags);
+         RARCH_LOG("[Metal] HDR capability: display EDR %s, advertising HDR support %s.\n",
+               edr_supported ? "detected" : "not detected",
+               edr_supported ? "YES (HDR10 + scRGB)" : "NO");
+      }
+#else
+      RARCH_LOG("[Metal] HDR support: compiled out (SDK too old for EDR APIs).\n");
+#endif
+
+#if METAL_HDR_AVAILABLE
+
+      if (_initial_hdr_mode != METAL_HDR_MODE_OFF)
+      {
+         /* Viewport isn't finalised yet (no frame has run).  Start with
+          * drawable size as a sensible initial value; the first renderFrame
+          * will re-size if the viewport changes. */
+         CGSize size = view.drawableSize;
+         if (size.width == 0 || size.height == 0)
+            size = CGSizeMake(mode.width, mode.height);
+         [_context setHDROutputMode:_initial_hdr_mode
+                    viewportWidth:(unsigned)size.width
+                   viewportHeight:(unsigned)size.height];
+         /* Push initial paper-white, expand-gamut, scanlines, subpixel
+          * layout from settings so the first composite frame uses the
+          * user-configured values instead of the Context defaults. */
+         settings_t *settings = config_get_ptr();
+         if (settings)
+         {
+            [_context setHDRPaperWhiteNits:settings->floats.video_hdr_paper_white_nits];
+            [_context setHDRMenuNits:settings->floats.video_hdr_menu_nits];
+            [_context setHDRExpandGamut:settings->uints.video_hdr_expand_gamut];
+            [_context setHDRScanlines:settings->bools.video_hdr_scanlines];
+            [_context setHDRSubpixelLayout:settings->uints.video_hdr_subpixel_layout];
+         }
+      }
+#endif
    }
    return self;
 }
@@ -2365,6 +3220,15 @@ font_renderer_t metal_raster_font = {
       _viewport = nil;
    }
    font_driver_free_osd();
+
+#if METAL_HDR_AVAILABLE
+   /* Withdraw the HDR-capability flags so a subsequent driver init (e.g.
+    * after the user switches to Vulkan and back) doesn't see stale bits. */
+   video_driver_set_disp_flags(video_driver_get_disp_flags()
+         & ~(VIDEO_FLAG_HDR_SUPPORT
+            | VIDEO_FLAG_HDR10_SUPPORT
+            | VIDEO_FLAG_SCRGB_SUPPORT));
+#endif
 }
 
 - (bool)_initMetal
@@ -2465,6 +3329,7 @@ font_renderer_t metal_raster_font = {
       bool statistics_show = video_info->statistics_show;
       bool menu_is_alive   = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
       id<MTLRenderCommandEncoder> rce;
+      bool hdrOn           = _context.hdrEnabled;
 
       /* Begin frame: re-evaluate viewport, push to context if it changed,
        * then begin the command buffer / render pass. */
@@ -2483,10 +3348,40 @@ font_renderer_t metal_raster_font = {
          [_frameView updateFrame:frame pitch:pitch];
       }
 
-      rce = _context.rce;
+      /* In HDR mode we defer drawable acquisition to the composite pass.
+       * drawWithContext's shader chain either:
+       *   - has a shader: last pass lands in the HDR offscreen (because
+       *                   _updateRenderTargets allocated an RT for it);
+       *   - has no shader: drawWithContext is a no-op here and we'll
+       *                    composite directly from _frameView.frameTexture.
+       * In SDR mode the existing flow is unchanged: acquire the rce
+       * up front (drawable) and let drawWithContext use it for the last
+       * shader pass. */
+      if (!hdrOn)
+         rce = _context.rce;
+      else
+         rce = nil;
 
       /* Draw core: back buffer + optional encoder pass. */
       [_frameView drawWithContext:_context];
+
+      /* HDR composite: fold the shader chain's last-pass output (or the
+       * raw frame texture if no shader preset is active) into the drawable
+       * via the HDR encode pipeline.  Both sources are sampled into the
+       * video-viewport rect of the drawable, so aspect-ratio / integer-scale
+       * settings are honoured the same way they are in the SDR path.
+       * After this returns, _context.rce points at a fresh encoder on the
+       * (HDR-formatted) drawable with load=Load, so menu / overlay / OSD
+       * work composes on top of the HDR backbuffer. */
+      if (hdrOn)
+      {
+         const HDRUniforms *u     = _context.currentHDRUniforms;
+         id<MTLTexture>    src    = _frameView.shaderOutputTexture;
+         if (!src)
+            src                    = _frameView.frameTexture;
+         [_context hdrComposite:u fromSource:src];
+         rce = _context.rce;
+      }
 
       /* Bind uniforms once for all subsequent encoder work on the main
        * command encoder. FrameView's shader passes can rebind vertex
@@ -2494,9 +3389,12 @@ font_renderer_t metal_raster_font = {
        * pass, so bind AFTER drawWithContext: returns, not before.
        * All subsequent blocks (core encoder pass, menu, overlay) reuse
        * this binding instead of each rebinding the same uniforms. */
-      [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
+      if (rce)
+         [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
 
-      if ((_frameView.drawState & ViewDrawStateEncoder) != 0)
+      /* SDR no-shader blit into drawable.  In HDR mode the composite
+       * pass already handled this path, so skip the blit. */
+      if (!hdrOn && (_frameView.drawState & ViewDrawStateEncoder) != 0)
       {
          [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
          if (_frameView.filter == RTextureFilterNearest)
@@ -2748,6 +3646,51 @@ typedef struct MTLALIGN(16)
    bool resize_render_targets;
    bool init_history;
    video_viewport_t *_viewport;
+
+   /* HDR state.
+    *
+    * _hdrEnabled is the driver-level HDR on/off.  When true, the last
+    * shader pass's RT is allocated as an HDR-capable texture (RGBA16F or
+    * RGB10A2 depending on shader-emitted format).  The driver samples
+    * that RT through shaderOutputTexture and hands it to
+    * Context hdrComposite:fromSource: which encodes PQ / scales scRGB
+    * into the drawable.
+    *
+    * _shaderEmitsHDR{10,16} are set by setShaderFromPath after slang
+    * parsing determines the last pass's output format.  They feed back
+    * into Context to suppress the composite's inverse-tonemap / PQ encode
+    * when the shader preset has already emitted HDR content. */
+   BOOL _hdrEnabled;
+   BOOL _shaderEmitsHDR10;
+   BOOL _shaderEmitsHDR16;
+}
+
+- (BOOL)hdrEnabled { return _hdrEnabled; }
+- (BOOL)shaderEmitsHDR10 { return _shaderEmitsHDR10; }
+- (BOOL)shaderEmitsHDR16 { return _shaderEmitsHDR16; }
+- (id<MTLTexture>)frameTexture { return _engine.frame.texture[0].view; }
+
+- (id<MTLTexture>)shaderOutputTexture
+{
+   if (!_shader || _shader->passes == 0)
+      return nil;
+   return _engine.pass[_shader->passes - 1].rt.view;
+}
+
+- (void)setHdrEnabled:(BOOL)enabled
+{
+   if (_hdrEnabled == enabled)
+      return;
+   _hdrEnabled            = enabled;
+   /* Pipelines for the final shader pass are compiled against a specific
+    * color-attachment pixel format.  A flip between HDR and SDR changes
+    * that format (BGRA8 vs RGBA16Float) so the pipelines need rebuilding.
+    * Forcing resize_render_targets only re-allocates RTs; we also need
+    * a full shader re-process.  Simplest correct thing: signal that we
+    * need RT rebuild and let the driver re-run setShaderFromPath on the
+    * next frame if necessary.  A shader re-process on toggle is a known
+    * cost — Vulkan rebuilds its swapchain too. */
+   resize_render_targets  = YES;
 }
 
 - (instancetype)initWithDescriptor:(ViewDescriptor *)d context:(Context *)c
@@ -3227,7 +4170,23 @@ typedef struct MTLALIGN(16)
       /* Updating framebuffer size */
 
       MTLPixelFormat fmt = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
-      if (   (i      != (_shader->passes - 1))
+      /* When HDR is on, the last pass needs an explicit RT (the HDR
+       * composite pass will later sample from it).  Force allocation
+       * regardless of dimension/format match to the viewport.
+       * We still honour the shader's semantics.format for LAST pass if
+       * it's an explicit HDR format (RGBA16F or RGB10A2 == HDR10 PQ),
+       * otherwise RGBA16F gives comfortable precision for the composite. */
+      BOOL lastPass = (i == (_shader->passes - 1));
+      BOOL forceAllocForHDR = NO;
+      if (lastPass && _hdrEnabled)
+      {
+         forceAllocForHDR = YES;
+         if (fmt != MTLPixelFormatRGBA16Float && fmt != MTLPixelFormatRGB10A2Unorm)
+            fmt = MTLPixelFormatRGBA16Float;
+      }
+
+      if (   (!lastPass)
+          || forceAllocForHDR
           || (width  != _viewport->width)
           || (height != _viewport->height)
           || fmt != MTLPixelFormatBGRA8Unorm)
@@ -3294,6 +4253,12 @@ typedef struct MTLALIGN(16)
 {
    [self _freeVideoShader:_shader];
    _shader                      = nil;
+
+   /* Reset shader-emits-HDR flags.  These propagate to Context after the
+    * pass loop so the composite pipeline knows whether the last pass is
+    * already emitting HDR content. */
+   _shaderEmitsHDR10            = NO;
+   _shaderEmitsHDR16            = NO;
 
    struct video_shader *shader  = (struct video_shader *)calloc(1, sizeof(*shader));
    settings_t        *settings  = config_get_ptr();
@@ -3388,7 +4353,43 @@ typedef struct MTLALIGN(16)
 
             MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
 
-            ca.pixelFormat = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
+            /* Pipeline colour-attachment format must match the render target
+             * the pass will bind.  For intermediate passes this is whatever
+             * the shader asked for, optimised; for the last pass it's the
+             * drawable format in SDR mode, or the HDR offscreen format in
+             * HDR mode.
+             *
+             * Shader-emitted HDR: if the shader preset explicitly requested
+             * A2B10G10R10 (HDR10 PQ) or R16G16B16A16_SFLOAT (FP16 HDR16) as
+             * its last-pass format, honour that even when HDR is on — the
+             * composite fragment switches paths based on that via
+             * Context.setHDRShaderEmitsHDR10/emitsHDR16. */
+            BOOL lastPass = (i == shader->passes - 1);
+            MTLPixelFormat fmt = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
+            BOOL passEmitsHDR10 = NO;
+            BOOL passEmitsHDR16 = NO;
+            if (lastPass)
+            {
+               if (   _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
+                   || _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UINT_PACK32)
+                  passEmitsHDR10 = YES;
+               else if (_engine.pass[i].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+                  passEmitsHDR16 = YES;
+
+               /* Method-scope flags — will be pushed to Context after the loop. */
+               _shaderEmitsHDR10 = passEmitsHDR10;
+               _shaderEmitsHDR16 = passEmitsHDR16;
+
+               if (_hdrEnabled)
+               {
+                  /* Match RT format picked in _updateRenderTargets. */
+                  if (passEmitsHDR10)
+                     fmt = MTLPixelFormatRGB10A2Unorm;
+                  else
+                     fmt = MTLPixelFormatRGBA16Float;
+               }
+            }
+            ca.pixelFormat = fmt;
 
             /* TODO/FIXME (sgc): confirm we never need blending for render passes */
             ca.blendingEnabled             = NO;
@@ -3521,6 +4522,13 @@ typedef struct MTLALIGN(16)
          [self _freeVideoShader:shader];
    }
 
+   /* Tell Context what the shader chain's final output looks like.
+    * This must happen regardless of _hdrEnabled because Context's
+    * composite uniform setup branches on both the driver mode and the
+    * shader-emit state.  When HDR is off, this is a no-op. */
+   [_context setHDRShaderEmitsHDR10:_shaderEmitsHDR10
+                        emitsHDR16:_shaderEmitsHDR16];
+
    resize_render_targets = YES;
    init_history          = YES;
 
@@ -3531,6 +4539,9 @@ typedef struct MTLALIGN(16)
 {
    [self _freeVideoShader:_shader];
    _shader = nil;
+   _shaderEmitsHDR10 = NO;
+   _shaderEmitsHDR16 = NO;
+   [_context setHDRShaderEmitsHDR10:NO emitsHDR16:NO];
    RARCH_LOG("[Metal] Shader cleared, using stock.\n");
 }
 
@@ -4202,6 +5213,53 @@ static void metal_get_video_output_size(void *data,
 #endif
 }
 
+/* HDR poke interface setters.
+ *
+ * These thin wrappers forward to Context.  When METAL_HDR_AVAILABLE is 0
+ * the Context methods are no-ops, so the wrappers stay valid on older OSes
+ * too (the poke interface entries just don't do anything observable).
+ *
+ * Paper-white and expand-gamut affect composite output per frame via the
+ * shared HDRUniforms buffer.  Menu-nits is currently stored but unused;
+ * it's reserved for a future separate-menu-compositor path that matches
+ * Vulkan's vk->hdr.menu_nits.  Scanlines and subpixel layout drive the
+ * CRT-mask branch in hdr_composite_fragment when the output resolution
+ * is tall enough. */
+static void metal_set_hdr_menu_nits(void *data, float menu_nits)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (md)
+      [md.context setHDRMenuNits:menu_nits];
+}
+
+static void metal_set_hdr_paper_white_nits(void *data, float paper_white_nits)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (md)
+      [md.context setHDRPaperWhiteNits:paper_white_nits];
+}
+
+static void metal_set_hdr_expand_gamut(void *data, unsigned expand_gamut)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (md)
+      [md.context setHDRExpandGamut:expand_gamut];
+}
+
+static void metal_set_hdr_scanlines(void *data, bool scanlines)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (md)
+      [md.context setHDRScanlines:scanlines];
+}
+
+static void metal_set_hdr_subpixel_layout(void *data, unsigned subpixel_layout)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (md)
+      [md.context setHDRSubpixelLayout:subpixel_layout];
+}
+
 static const video_poke_interface_t metal_poke_interface = {
    metal_get_flags,
    metal_load_texture,
@@ -4224,10 +5282,11 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_menu_nits */
-   NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   metal_set_hdr_menu_nits,
+   metal_set_hdr_paper_white_nits,
+   metal_set_hdr_expand_gamut,
+   metal_set_hdr_scanlines,
+   metal_set_hdr_subpixel_layout
 };
 
 static void metal_get_poke_interface(void *data,

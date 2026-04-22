@@ -97,4 +97,30 @@ typedef struct
    vector_float4 color;
 } FontFragmentIn;
 
+/* HDR composite pass UBO.
+ * Layout must match the MSL fragment shader (hdr_composite_fragment,
+ * hdr_tonemap_fragment) and the C++-side HDRUniforms in metal.m.
+ * Keep field order and types in sync across all three.
+ *
+ * HDRMode values:
+ *   0 = off (SDR passthrough)
+ *   1 = HDR10  (PQ / BT.2020 / 10-bit swapchain)
+ *   2 = scRGB  (linear / BT.709 / 16F swapchain, 1.0 = 80 nits)
+ *   3 = PQ->scRGB (shader-emitted PQ, convert to scRGB for 16F swapchain)
+ */
+typedef struct
+{
+   matrix_float4x4 mvp;
+   vector_float4   SourceSize;       /* xy = size, zw = 1/size */
+   vector_float4   OutputSize;       /* xy = size, zw = 1/size */
+   float           BrightnessNits;   /* paper-white in nits                 */
+   unsigned int    SubpixelLayout;   /* 0=RGB, 1=RBG, 2=BGR                 */
+   float           Scanlines;        /* >0 enables CRT scanline/mask pass   */
+   unsigned int    ExpandGamut;      /* 0=accurate, 1=expanded709, 2=P3, 3=super */
+   float           InverseTonemap;   /* >0 applies SDR->HDR inverse tonemap */
+   float           HDR10;            /* >0 applies linear->PQ encode        */
+   unsigned int    HDRMode;          /* 0 off, 1 HDR10, 2 scRGB, 3 PQ->scRGB */
+   float           _pad0;            /* keep 16-byte alignment              */
+} HDRUniforms;
+
 #endif
