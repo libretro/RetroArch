@@ -717,32 +717,61 @@ static void mylist_create(my_list **list_p, int initial_capacity,
 static void *input_list_element_constructor(void)
 {
    void *ptr                   = malloc(sizeof(input_list_element));
-   input_list_element *element = (input_list_element*)ptr;
+   input_list_element *element;
 
+   /* NULL-check the outer malloc: the field writes below
+    * (port/device/index/state_size) would NULL-deref on OOM.
+    * The caller (runahead_input_state_set_last) already tolerates
+    * a NULL return: 'if (element) { ... }'.  mylist_resize also
+    * tolerates a NULL constructor result - it just leaves
+    * list->data[i] = NULL. */
+   if (!ptr)
+      return NULL;
+
+   element                     = (input_list_element*)ptr;
    element->port               = 0;
    element->device             = 0;
    element->index              = 0;
    element->state              = (int16_t*)calloc(NAME_MAX_LENGTH,
          sizeof(int16_t));
+   /* NULL-check the inner calloc too.  If it fails the caller's
+    * 'element->state[id] = value' NULL-derefs.  No way to signal
+    * partial-failure through the constructor callback's return
+    * type, so free the outer allocation and return NULL to match
+    * the outer-OOM behaviour. */
+   if (!element->state)
+   {
+      free(ptr);
+      return NULL;
+   }
    element->state_size         = NAME_MAX_LENGTH;
 
    return ptr;
 }
 
-static void input_list_element_realloc(input_list_element *element,
+static bool input_list_element_realloc(input_list_element *element,
       unsigned int new_size)
 {
    if (new_size > element->state_size)
    {
-      element->state = (int16_t*)realloc(element->state,
+      /* realloc-to-tmp: the pre-patch 'element->state = realloc(
+       * element->state, ...)' self-assigns NULL on OOM, which
+       * then made the very next line '&element->state[element->
+       * state_size]' perform pointer arithmetic on NULL (UB) and
+       * the memset trap on a garbage address. */
+      int16_t *tmp = (int16_t*)realloc(element->state,
             new_size * sizeof(int16_t));
+      if (!tmp)
+         return false;
+      element->state = tmp;
       memset(&element->state[element->state_size], 0,
             (new_size - element->state_size) * sizeof(int16_t));
       element->state_size = new_size;
    }
+   return true;
 }
 
-static void input_list_element_expand(input_list_element *element,
+static bool input_list_element_expand(input_list_element *element,
       unsigned int new_index)
 {
    unsigned int new_size = element->state_size;
@@ -750,7 +779,7 @@ static void input_list_element_expand(input_list_element *element,
       new_size = 32;
    while (new_index >= new_size)
       new_size *= 2;
-   input_list_element_realloc(element, new_size);
+   return input_list_element_realloc(element, new_size);
 }
 
 static void input_list_element_destructor(void* element_ptr)
@@ -785,8 +814,12 @@ static void runahead_input_state_set_last(
             && (element->index  == index)
          )
       {
-         if (id >= element->state_size)
-            input_list_element_expand(element, id);
+         /* Gate the state[id] write on expand success: if expand
+          * OOM'd, state_size is still too small and writing to
+          * state[id] would corrupt memory past the buffer. */
+         if (id >= element->state_size
+               && !input_list_element_expand(element, id))
+            return;
          element->state[id] = value;
          return;
       }
@@ -801,8 +834,10 @@ static void runahead_input_state_set_last(
       element->port         = port;
       element->device       = device;
       element->index        = index;
-      if (id >= element->state_size)
-         input_list_element_expand(element, id);
+      /* Same expand-OOM guard as the lookup branch above. */
+      if (id >= element->state_size
+            && !input_list_element_expand(element, id))
+         return;
       element->state[id]    = value;
    }
 }
@@ -917,7 +952,18 @@ static void *runahead_save_state_alloc(void)
    {
       savestate->data       = malloc(runloop_st->runahead_save_state_size);
       savestate->data_const = savestate->data;
-      savestate->size       = runloop_st->runahead_save_state_size;
+      /* Only record a non-zero size on successful alloc.  Pre-
+       * patch: on OOM data was left NULL but size was set to the
+       * requested value, which made downstream consumers treat
+       * the entry as a valid serialized-state buffer of that
+       * size and dereference data when reading.  Keeping size=0
+       * on failure matches the initial-state invariant above
+       * (data/data_const = NULL, size = 0) and makes the
+       * savestate a no-op placeholder that teardown
+       * (runahead_save_state_free) correctly handles via its
+       * free(savestate->data) with NULL being a safe no-op. */
+      if (savestate->data)
+         savestate->size    = runloop_st->runahead_save_state_size;
    }
 
    return savestate;
