@@ -136,8 +136,37 @@ void* ssl_socket_init(int fd, const char *domain)
    return state;
 
 error:
+   /* Pair each non-trivial _init call above (lines 112-118) with
+    * its matching _free.  Pre-patch only free(state) was called,
+    * leaking the five mbedtls sub-context heap allocations that
+    * the _init / _free functions internally manage (entropy
+    * pool buffers, DRBG state buffers, SSL context buffers,
+    * config buffers, X509 chain).
+    *
+    * Mirrors the normal-teardown path in ssl_socket_free below
+    * (lines 355-361) in reverse of init order.  mbedtls_net_free
+    * is intentionally not called for net_ctx (line 111):
+    *   - init sets state->net_ctx.fd from the caller's fd
+    *     parameter at line 120, and the caller still owns that
+    *     fd on this error exit.
+    *   - ssl_socket_free similarly never calls mbedtls_net_free;
+    *     it just socket_close's the fd via ssl_socket_close at
+    *     line 345.
+    *
+    * The if (state) guard is redundant - the state calloc is
+    * NULL-checked at line 102 so we can't reach this label with
+    * state == NULL - but leave it to keep the diff minimal. */
    if (state)
+   {
+      mbedtls_entropy_free(&state->entropy);
+      mbedtls_ctr_drbg_free(&state->ctr_drbg);
+#if defined(MBEDTLS_X509_CRT_PARSE_C)
+      mbedtls_x509_crt_free(&state->ca);
+#endif
+      mbedtls_ssl_config_free(&state->conf);
+      mbedtls_ssl_free(&state->ctx);
       free(state);
+   }
    return NULL;
 }
 

@@ -3521,9 +3521,11 @@ static char *d3d9_hlsl_preprocess_includes(
                         size_t resolved_len = strlen(resolved_inc);
                         while (pos + resolved_len + 2 >= cap)
                         {
+                           char *tmp;
                            cap *= 2;
-                           out  = (char*)realloc(out, cap);
-                           if (!out) { free(resolved_inc); return NULL; }
+                           if (!(tmp = (char*)realloc(out, cap)))
+                           { free(out); free(resolved_inc); return NULL; }
+                           out = tmp;
                         }
                         memcpy(out + pos, resolved_inc, resolved_len);
                         pos += resolved_len;
@@ -3545,9 +3547,11 @@ static char *d3d9_hlsl_preprocess_includes(
       {
          while (pos + line_len + 1 >= cap)
          {
+            char *tmp;
             cap *= 2;
-            out  = (char*)realloc(out, cap);
-            if (!out) return NULL;
+            if (!(tmp = (char*)realloc(out, cap)))
+            { free(out); return NULL; }
+            out = tmp;
          }
          memcpy(out + pos, p, line_len);
          pos += line_len;
@@ -3586,9 +3590,20 @@ static bool d3d9_hlsl_buf_append(char **buf, size_t *pos, size_t *cap,
 {
    while (*pos + len + 1 >= *cap)
    {
+      char  *tmp;
       *cap *= 2;
-      *buf  = (char*)realloc(*buf, *cap);
-      if (!*buf) return false;
+      /* realloc-into-tmp: the pre-patch '*buf = realloc(*buf, *cap)'
+       * form leaked the old buffer on OOM (self-assign overwrites
+       * the only pointer to it with NULL).  On failure free the old
+       * buffer and clear the caller's pointer so they don't double-
+       * free or use a now-invalid pointer. */
+      if (!(tmp = (char*)realloc(*buf, *cap)))
+      {
+         free(*buf);
+         *buf = NULL;
+         return false;
+      }
+      *buf = tmp;
    }
    memcpy(*buf + *pos, str, len);
    *pos += len;
@@ -3756,7 +3771,13 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
                      {
                         size_t len = (size_t)(ob + 1 - p);
                         while (opos + len + 1 >= cap)
-                        { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                        {
+                           char *tmp;
+                           cap *= 2;
+                           if (!(tmp = (char*)realloc(out, cap)))
+                           { free(out); return NULL; }
+                           out = tmp;
+                        }
                         memcpy(out + opos, p, len);
                         opos += len;
                      }
@@ -3805,20 +3826,38 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
                                  size_t sl = snprintf(sem, sizeof(sem),
                                        " : TEXCOORD%d", texcoord_counter++);
                                  while (opos + sl + 2 >= cap)
-                                 { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                                 {
+                                    char *tmp;
+                                    cap *= 2;
+                                    if (!(tmp = (char*)realloc(out, cap)))
+                                    { free(out); return NULL; }
+                                    out = tmp;
+                                 }
                                  memcpy(out + opos, sem, sl);
                                  opos += sl;
                               }
                            }
                            while (opos + 2 >= cap)
-                           { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                           {
+                              char *tmp;
+                              cap *= 2;
+                              if (!(tmp = (char*)realloc(out, cap)))
+                              { free(out); return NULL; }
+                              out = tmp;
+                           }
                            out[opos++] = *mp++;
                         }
                      }
 
                      /* Copy '}' and advance past struct */
                      while (opos + 2 >= cap)
-                     { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                     {
+                        char *tmp;
+                        cap *= 2;
+                        if (!(tmp = (char*)realloc(out, cap)))
+                        { free(out); return NULL; }
+                        out = tmp;
+                     }
                      out[opos++] = '}';
                      p = cb;
                      continue;
@@ -3829,7 +3868,13 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
 
          /* Regular char */
          while (opos + 2 >= cap)
-         { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+         {
+            char *tmp;
+            cap *= 2;
+            if (!(tmp = (char*)realloc(out, cap)))
+            { free(out); return NULL; }
+            out = tmp;
+         }
          out[opos++] = *p++;
       }
 
@@ -4037,7 +4082,13 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
                   /* Copy 'VARNAME;' then add sampler declaration */
                   size_t chunk = (size_t)(after + 1 - p);
                   while (opos + chunk + ilen + 40 >= cap)
-                  { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                  {
+                     char *tmp;
+                     cap *= 2;
+                     if (!(tmp = (char*)realloc(out, cap)))
+                     { free(out); return NULL; }
+                     out = tmp;
+                  }
                   memcpy(out + opos, p, chunk);
                   opos += chunk;
 
@@ -4076,7 +4127,13 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
          }
 
          while (opos + 14 >= cap)
-         { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+         {
+            char *tmp;
+            cap *= 2;
+            if (!(tmp = (char*)realloc(out, cap)))
+            { free(out); return NULL; }
+            out = tmp;
+         }
 
          if (has_paste)
          {
@@ -4095,7 +4152,13 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
 
       /* Regular char */
       while (opos + 2 >= cap)
-      { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+      {
+         char *tmp;
+         cap *= 2;
+         if (!(tmp = (char*)realloc(out, cap)))
+         { free(out); return NULL; }
+         out = tmp;
+      }
       out[opos++] = *p++;
    }
 
@@ -5087,8 +5150,13 @@ struct_ctor_done:
                   if (!already_global)
                   {
                      while (pos + hoist_len + 1 >= cap)
-                     { cap *= 2; out = (char*)realloc(out, cap);
-                       if (!out) return NULL; }
+                     {
+                        char *tmp;
+                        cap *= 2;
+                        if (!(tmp = (char*)realloc(out, cap)))
+                        { free(out); return NULL; }
+                        out = tmp;
+                     }
                      memmove(out + last_func_start + hoist_len,
                            out + last_func_start, pos - last_func_start);
                      memcpy(out + last_func_start, hoist, hoist_len);
