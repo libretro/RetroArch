@@ -1919,6 +1919,21 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                         union string_list_elem_attr attr;
                         attr.i = 0;
 
+                        /* Bail out if either heap allocation failed.
+                         * fill_pathname and fill_pathname_join_special
+                         * both call strlcpy on their destination buffer
+                         * with no NULL guard, so proceeding with a NULL
+                         * rdb_name / rdb_fullpath would segfault.  Free
+                         * the one that did succeed (free(NULL) is a
+                         * no-op so no conditional needed) before taking
+                         * the task-finished exit. */
+                        if (!rdb_name || !rdb_fullpath)
+                        {
+                           free(rdb_name);
+                           free(rdb_fullpath);
+                           goto task_finished;
+                        }
+
                         fill_pathname(rdb_name,
                               manual_scan->task_config->database_name,
                               ".rdb", str_len);
@@ -1929,13 +1944,17 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 
                         dbstate->list = string_list_new();
                         if (!dbstate->list)
-                           goto task_finished;
-                        string_list_append(dbstate->list, rdb_fullpath, attr);
-                        if (rdb_name)
+                        {
+                           /* Earlier code goto'd here without freeing
+                            * the two buffers above, leaking ~8 KiB on
+                            * this OOM path.  Free them explicitly. */
                            free(rdb_name);
-                        if (rdb_fullpath)
                            free(rdb_fullpath);
-
+                           goto task_finished;
+                        }
+                        string_list_append(dbstate->list, rdb_fullpath, attr);
+                        free(rdb_name);
+                        free(rdb_fullpath);
                      }
                      else
                      {
