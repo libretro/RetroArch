@@ -431,11 +431,35 @@ struct string_list *string_list_clone(const struct string_list *src)
       if (slen != 0)
       {
          char *ret = (char*)malloc(slen + 1);
-         if (ret)
+         /* Pre-patch: on malloc failure 'dest->elems[i].data'
+          * silently stayed NULL and the loop moved on.  That left
+          * the caller holding a dest with dest->size set to
+          * src->size but some .data pointers NULL - a trap for
+          * every consumer that assumes .data is non-NULL.
+          * string_list_find_elem (line 349), string_list_
+          * join_concat (line 200), and others all dereference
+          * .data unconditionally.  Single empty-string inputs
+          * are represented by slen == 0 and never hit this
+          * branch, so NULL here always means OOM, not 'empty
+          * element was intended'.
+          *
+          * Tear down the partially-cloned destination and
+          * return NULL.  Callers of string_list_clone already
+          * handle NULL returns (clone-failure is an OOM signal)
+          * - NULL is both safer and more informative than a
+          * silently-corrupted list. */
+         if (!ret)
          {
-            memcpy(ret, _src, slen + 1);  /* memcpy > strcpy: no NUL scan */
-            dest->elems[i].data = ret;
+            size_t j;
+            for (j = 0; j < i; j++)
+               if (dest->elems[j].data)
+                  free(dest->elems[j].data);
+            free(dest->elems);
+            free(dest);
+            return NULL;
          }
+         memcpy(ret, _src, slen + 1);  /* memcpy > strcpy: no NUL scan */
+         dest->elems[i].data = ret;
       }
    }
 
