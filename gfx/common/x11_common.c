@@ -426,10 +426,17 @@ static void x11_init_keyboard_lut(void)
       if (x11_keysym_rlut)
          free(x11_keysym_rlut);
 
-      x11_keysym_rlut = (unsigned*)calloc(++x11_keysym_rlut_size, sizeof(unsigned));
-
-      for (map = map_start; map->rk != RETROK_UNKNOWN; map++)
-         x11_keysym_rlut[map->sym] = (enum retro_key)map->rk;
+      /* NULL-check the calloc: the populate loop below dereferences
+       * x11_keysym_rlut[map->sym] unconditionally, so an OOM here
+       * would segfault.  The reader (x11_keysym_lookup, line ~493)
+       * guards with 'if (x11_keysym_rlut && sym < size)', so leaving
+       * the pointer NULL on failure cleanly disables the rlut path
+       * without further damage. */
+      if (!(x11_keysym_rlut = (unsigned*)calloc(++x11_keysym_rlut_size, sizeof(unsigned))))
+         x11_keysym_rlut_size = 0;
+      else
+         for (map = map_start; map->rk != RETROK_UNKNOWN; map++)
+            x11_keysym_rlut[map->sym] = (enum retro_key)map->rk;
    }
    else
       x11_keysym_rlut_size = 0;
