@@ -233,6 +233,13 @@ void* ssl_socket_init(int fd, const char *domain)
 {
    struct ssl_state *state = (struct ssl_state*)calloc(1, sizeof(*state));
 
+   /* NULL-check before any of the br_ssl_* calls below dereference
+    * state.  The pre-patch form segfaulted on OOM at the first
+    * br_ssl_client_init_full(&state->sc, ...) call.  Caller
+    * (net_http.c line 1030) already NULL-checks our return. */
+   if (!state)
+      return NULL;
+
    initialize();
 
    br_ssl_client_init_full(&state->sc, &state->xc, TAs, TAs_NUM);
