@@ -882,6 +882,50 @@ static bool accessibility_speak_macos(int speed,
 #endif
 
 #ifdef HAVE_GCD
+/* Tear down the per-watcher darwin_watch_data_t: cancel every
+ * dispatch source, close every file descriptor, free the copied
+ * path strings, free the watches array, and free watch_data itself.
+ *
+ * Does NOT release watch_data->queue: that slot holds the handle
+ * returned by dispatch_get_global_queue(), which is a process-wide
+ * singleton that must never be released - dispatch_release on a
+ * global queue is documented as undefined behaviour (on pre-10.8
+ * SDKs where OS_OBJECT_USE_OBJC=0 it over-decrements the refcount;
+ * on newer SDKs it's a no-op macro under ARC, so the bug has been
+ * latent but real).  The earlier teardown code called
+ * 'dispatch_release(watch_data->queue)' under !__has_feature(objc_arc);
+ * that call has been removed here.
+ *
+ * Does NOT touch the path_change_data_t wrapper that points at
+ * watch_data; that's the caller's responsibility. */
+static void darwin_watch_data_free(darwin_watch_data_t *watch_data)
+{
+   size_t i;
+
+   if (!watch_data)
+      return;
+
+   if (watch_data->watches)
+   {
+      for (i = 0; i < watch_data->watch_count; i++)
+      {
+         if (watch_data->watches[i].source)
+         {
+            dispatch_source_cancel(watch_data->watches[i].source);
+#if !__has_feature(objc_arc)
+            dispatch_release(watch_data->watches[i].source);
+#endif
+         }
+         if (watch_data->watches[i].fd >= 0)
+            close(watch_data->watches[i].fd);
+         if (watch_data->watches[i].path)
+            free(watch_data->watches[i].path);
+      }
+      free(watch_data->watches);
+   }
+   free(watch_data);
+}
+
 static void frontend_darwin_watch_path_for_changes(
       struct string_list *list, int flags,
       path_change_data_t **change_data)
@@ -894,33 +938,8 @@ static void frontend_darwin_watch_path_for_changes(
       if (!change_data || !*change_data)
          return;
 
-      watch_data = (darwin_watch_data_t*)((*change_data)->data);
-      if (watch_data)
-      {
-         size_t i;
-         /* Cancel and release all dispatch sources, close file descriptors */
-         for (i = 0; i < watch_data->watch_count; i++)
-         {
-            if (watch_data->watches[i].source)
-            {
-               dispatch_source_cancel(watch_data->watches[i].source);
-#if !__has_feature(objc_arc)
-               dispatch_release(watch_data->watches[i].source);
-#endif
-            }
-            if (watch_data->watches[i].fd >= 0)
-               close(watch_data->watches[i].fd);
-            if (watch_data->watches[i].path)
-               free(watch_data->watches[i].path);
-         }
-#if !__has_feature(objc_arc)
-         if (watch_data->queue)
-            dispatch_release(watch_data->queue);
-#endif
-         if (watch_data->watches)
-            free(watch_data->watches);
-         free(watch_data);
-      }
+      darwin_watch_data_free(
+            (darwin_watch_data_t*)((*change_data)->data));
       free(*change_data);
       *change_data = NULL;
       return;
@@ -1013,8 +1032,25 @@ static void frontend_darwin_watch_path_for_changes(
       (*change_data)->data = watch_data;
    else
    {
-      /* Failed to allocate change_data, cleanup */
-      frontend_darwin_watch_path_for_changes(NULL, 0, &(path_change_data_t*){watch_data});
+      /* path_change_data_t wrapper alloc failed.  The previous code
+       * called frontend_darwin_watch_path_for_changes(NULL, 0,
+       *   &(path_change_data_t*){watch_data})
+       * i.e. it passed a fake path_change_data_t pointer that
+       * actually pointed at watch_data itself (a darwin_watch_data_t).
+       * The teardown branch then read '(*change_data)->data' from
+       * that pointer, which happened to be the 'queue' field of
+       * darwin_watch_data_t (both are void*-sized at offset 0).
+       * So watch_data got set to the global dispatch queue pointer;
+       * the subsequent for-loop walked off the end of that system-
+       * owned struct interpreting arbitrary bytes as watch_count /
+       * watches[], and the final free() free()d the shared global
+       * queue.  The only reason it has not caused user-visible
+       * breakage is that this OOM path is ~never taken in practice.
+       *
+       * Replaced with a direct call to darwin_watch_data_free which
+       * operates on a real darwin_watch_data_t* without the fake
+       * wrapper. */
+      darwin_watch_data_free(watch_data);
    }
 }
 
