@@ -259,26 +259,11 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 
 static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
 {
-#ifdef OSX
-#ifdef MAC_OS_X_VERSION_10_6
-    /* CGDisplayModeRef and CGDisplayCopyDisplayMode are 10.6+.
-     * On the 10.5 Leopard SDK only the older CFDictionaryRef-based
-     * CGDisplayCurrentMode API exists; not worth wiring up for a
-     * refresh-rate readout, so fall back to 60. */
-    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
-    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
-    float currentRate = CGDisplayModeGetRefreshRate(currentMode);
-    CFRelease(currentMode);
-    return currentRate;
-#else
-    return 60.0f;
-#endif
-#else
-    if (@available(iOS 10.3, tvOS 10.2, *))
-       return [UIScreen mainScreen].maximumFramesPerSecond;
-    else
-       return 60;
-#endif
+   /* Body consolidated into cocoa_common.m.  Kept as a named
+    * vtable entry because vulkan.c-style code paths reach the
+    * ctx driver directly via video_context_driver_get_refresh_rate,
+    * bypassing dispserv_apple's own hook. */
+   return cocoa_get_refresh_rate();
 }
 
 static gfx_ctx_proc_t cocoa_gl_gfx_ctx_get_proc_address(const char *symbol_name)
@@ -719,38 +704,11 @@ static bool cocoa_gl_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
 static void cocoa_gl_gfx_ctx_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-#if TARGET_OS_IPHONE
-   /* iOS/tvOS: Return physical screen resolution, not window size */
-   UIScreen *screen = [UIScreen mainScreen];
-   CGRect nativeBounds = screen.nativeBounds;
-   *width  = (unsigned)nativeBounds.size.width;
-   *height = (unsigned)nativeBounds.size.height;
-
-   if (desc && desc_len > 0)
-   {
-      float scale = cocoa_screen_get_native_scale();
-      if (scale >= 3.0f)
-         strlcpy(desc, "Super Retina", desc_len);
-      else if (scale >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
-      else
-         strlcpy(desc, "Standard", desc_len);
-   }
-#else
-   /* macOS: Return display resolution */
-   CGDirectDisplayID display = CGMainDisplayID();
-   *width  = (unsigned)CGDisplayPixelsWide(display);
-   *height = (unsigned)CGDisplayPixelsHigh(display);
-
-   if (desc && desc_len > 0)
-   {
-      float scale = cocoa_screen_get_backing_scale_factor();
-      if (scale >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
-      else
-         strlcpy(desc, "Standard", desc_len);
-   }
-#endif
+   /* Body consolidated into cocoa_common.m.  Kept as a named
+    * vtable entry because video_thread_wrapper.c's
+    * thread_get_video_output_size calls the poke / ctx hook
+    * directly, bypassing dispserv_apple. */
+   cocoa_get_video_output_size(width, height, desc, desc_len);
 }
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {

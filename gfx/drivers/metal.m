@@ -5306,26 +5306,10 @@ static void metal_set_video_mode(void *data,
 
 static float metal_get_refresh_rate(void *data)
 {
-#ifdef OSX
-   CGDirectDisplayID mainDisplayID = CGMainDisplayID();
-   CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
-   double currentRate = CGDisplayModeGetRefreshRate(currentMode);
-   CFRelease(currentMode);
-   return currentRate;
-#else
-   CADisplayLink *displayLink = [CocoaView get].displayLink;
-   if (displayLink)
-   {
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
-      if (@available(iOS 15.0, tvOS 15.0, *))
-         return displayLink.preferredFrameRateRange.preferred;
-#endif
-      return displayLink.preferredFramesPerSecond;
-   }
-   if (@available(iOS 10.3, tvOS 10.2, *))
-      return [UIScreen mainScreen].maximumFramesPerSecond;
-   return 60.0f;
-#endif
+   /* Body consolidated into cocoa_common.m.  Kept as a named
+    * poke entry because video_driver_get_refresh_rate falls back
+    * to poke->get_refresh_rate when dispserv returns 0. */
+   return cocoa_get_refresh_rate();
 }
 
 static void metal_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
@@ -5412,38 +5396,11 @@ static uint32_t metal_get_flags(void *data)
 static void metal_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-#if TARGET_OS_IPHONE
-   /* iOS/tvOS: Return physical screen resolution, not window size */
-   UIScreen *screen = [UIScreen mainScreen];
-   CGRect nativeBounds = screen.nativeBounds;
-   *width  = (unsigned)nativeBounds.size.width;
-   *height = (unsigned)nativeBounds.size.height;
-
-   if (desc && desc_len > 0)
-   {
-      float scale = cocoa_screen_get_native_scale();
-      if (scale >= 3.0f)
-         strlcpy(desc, "Super Retina", desc_len);
-      else if (scale >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
-      else
-         strlcpy(desc, "Standard", desc_len);
-   }
-#else
-   /* macOS: Return display resolution */
-   CGDirectDisplayID display = CGMainDisplayID();
-   *width  = (unsigned)CGDisplayPixelsWide(display);
-   *height = (unsigned)CGDisplayPixelsHigh(display);
-
-   if (desc && desc_len > 0)
-   {
-      float scale = cocoa_screen_get_backing_scale_factor();
-      if (scale >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
-      else
-         strlcpy(desc, "Standard", desc_len);
-   }
-#endif
+   /* Body consolidated into cocoa_common.m.  Kept as a named
+    * poke entry because video_thread_wrapper.c's
+    * thread_get_video_output_size calls poke->get_video_output_size
+    * directly, bypassing dispserv_apple. */
+   cocoa_get_video_output_size(width, height, desc, desc_len);
 }
 
 /* HDR poke interface setters.

@@ -42,17 +42,13 @@
 #else
 #import <ApplicationServices/ApplicationServices.h>
 #endif
-/* The CGDisplayModeRef family (CGDisplayCopyAllDisplayModes,
+/* RARCH_HAS_CGDISPLAYMODE_API is defined in cocoa_common.h.  The
+ * CGDisplayModeRef family (CGDisplayCopyAllDisplayModes,
  * CGDisplayModeGetWidth, CGDisplaySetDisplayMode, ...) arrived in
  * 10.6 Snow Leopard.  The 10.5 SDK only offers the older
  * CGDisplayAvailableModes / CFDictionaryRef path, which is a
  * different enough API that we just stub the resolution list on
  * pre-10.6 targets rather than port to both. */
-#if defined(MAC_OS_X_VERSION_10_6) && \
-    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
-     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6)
-#define RARCH_HAS_CGDISPLAYMODE_API 1
-#endif
 #endif
 
 #ifdef OSX
@@ -578,6 +574,21 @@ static void apple_display_server_destroy(void *data)
    free(apple);
 }
 
+/* Thin wrappers around cocoa_common.m helpers to match the
+ * video_display_server_t signatures (which take a leading void*).
+ * Shared implementation lives in cocoa_common.m so the poke /
+ * gfx_ctx_driver_t vtables can reach it too - see cocoa_common.h. */
+static float apple_display_server_get_refresh_rate(void *data)
+{
+   return cocoa_get_refresh_rate();
+}
+
+static void apple_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+   cocoa_get_video_output_size(width, height, desc, desc_len);
+}
+
 const video_display_server_t dispserv_apple = {
    apple_display_server_init,
    apple_display_server_destroy,
@@ -608,8 +619,8 @@ const video_display_server_t dispserv_apple = {
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
 #endif
-   NULL, /* get_refresh_rate */
-   NULL, /* get_video_output_size */
+   apple_display_server_get_refresh_rate,
+   apple_display_server_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    cocoa_get_metrics,

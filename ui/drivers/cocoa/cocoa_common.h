@@ -29,6 +29,20 @@
 #include <AppKit/AppKit.h>
 #endif
 
+/* The CGDisplayModeRef family (CGDisplayCopyDisplayMode,
+ * CGDisplayCopyAllDisplayModes, CGDisplayModeGetRefreshRate, ...)
+ * arrived in 10.6 Snow Leopard.  The 10.5 Leopard SDK only offers
+ * the older CGDisplayCurrentMode + CFDictionaryRef path.  Sites that
+ * use either API (cocoa_common.m's cocoa_get_refresh_rate and
+ * dispserv_apple.m's resolution-switching code) branch on this
+ * macro.  Defined here so every translation unit sees the same
+ * answer. */
+#if defined(OSX) && defined(MAC_OS_X_VERSION_10_6) && \
+    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
+     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6)
+#define RARCH_HAS_CGDISPLAYMODE_API 1
+#endif
+
 /* RetroArchPlaylistManager.m/.h uses Obj-C nullability macros
  * (NS_ASSUME_NONNULL_BEGIN/END, nullable, _Nonnull) and
  * lightweight generics (NSArray<...>) - all Xcode 7+ (2015)
@@ -156,6 +170,25 @@ float cocoa_screen_get_backing_scale_factor(void);
 bool cocoa_get_metrics(
       void *data, enum display_metric_types type,
       float *value);
+
+/* Shared display-info helpers.
+ *
+ * Three vtables call these via thin wrappers, because different
+ * call sites reach them through different paths:
+ *   - video_driver_get_refresh_rate / _get_video_output_size go
+ *     through dispserv first, poke second.
+ *   - video_context_driver_get_refresh_rate (used by vulkan.c's
+ *     vulkan_get_refresh_rate) goes straight to the gfx_ctx_driver_t
+ *     vtable, bypassing dispserv.
+ *   - video_thread_wrapper.c's thread_get_video_output_size calls
+ *     poke->get_video_output_size directly, bypassing dispserv.
+ *
+ * Each vtable therefore keeps a registered function; the bodies all
+ * funnel here so there is only one implementation per platform. */
+float cocoa_get_refresh_rate(void);
+
+void  cocoa_get_video_output_size(unsigned *width, unsigned *height,
+      char *desc, size_t desc_len);
 
 #endif
 
