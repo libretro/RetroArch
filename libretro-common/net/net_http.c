@@ -1429,7 +1429,19 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          return false;
       response->part      = P_DONE;
       if (response->buflen != response->len)
-         response->data   = (char*)realloc(response->data, response->len);
+      {
+         /* Shrink response->data from buflen bytes to len bytes.
+          * Use a tmp pointer so a realloc() failure (rare on shrink
+          * but not impossible) does not overwrite response->data
+          * with NULL and leak the original buffer.  Sibling shrink
+          * path at ~line 1528 already uses this pattern; this was
+          * the lone holdout.  On failure we keep the oversized-
+          * but-valid buffer - this is a terminal state (P_DONE)
+          * and the caller tears down shortly afterwards. */
+         char *tmp = (char*)realloc(response->data, response->len);
+         if (tmp)
+            response->data = tmp;
+      }
       return true;
    }
 
