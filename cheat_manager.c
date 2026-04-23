@@ -572,7 +572,38 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
             realloc(cheat_st->cheats,
             new_size * sizeof(struct item_cheat));
 
-      cheat_st->cheats = val ? val : NULL;
+      /* realloc-to-tmp: on OOM 'val' is NULL, the original
+       * cheat_st->cheats is still valid.  Pre-patch did
+       * 'cheats = val ? val : NULL' which silently leaked the
+       * valid old buffer (the pointer was the only reference).
+       *
+       * Free the old buffer explicitly on failure.  Also free
+       * per-entry .code/.desc strings for indices still present
+       * in the old buffer - the shrink branch above (lines
+       * 561-569) already handled [new_size, orig_size) but
+       * the [0, min(new_size, orig_size)) entries still hold
+       * live strings.  Without this cleanup we'd swap one leak
+       * (the container) for another (the strings inside).
+       *
+       * The failure contract here is 'size goes to 0, cheats
+       * cleared' (see the 'if (!cheat_st->cheats)' block below
+       * that sets size=0 and buf_size=0, and caller checks
+       * at line ~515 that gate on 'cheat_st->cheats &&'). */
+      if (val)
+         cheat_st->cheats = val;
+      else
+      {
+         unsigned keep = (new_size < orig_size) ? new_size : orig_size;
+         for (i = 0; i < keep; i++)
+         {
+            if (cheat_st->cheats[i].code)
+               free(cheat_st->cheats[i].code);
+            if (cheat_st->cheats[i].desc)
+               free(cheat_st->cheats[i].desc);
+         }
+         free(cheat_st->cheats);
+         cheat_st->cheats = NULL;
+      }
    }
 
    if (!cheat_st->cheats)
@@ -813,30 +844,54 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
                && sys_info->mmaps.descriptors[i].core.ptr
                && sys_info->mmaps.descriptors[i].core.len > 0)
          {
-            cheat_st->num_memory_buffers++;
+            /* Grow both lists atomically and bail on OOM.
+             * Pre-patch:
+             *   - num_memory_buffers++ was done first
+             *   - memory_buf_list = realloc(memory_buf_list, ...)
+             *     self-assigned on OOM (leak + NULL-deref at [i])
+             *   - memory_size_list used realloc-into-tmp with a
+             *     NULL-check but ignored the failure, which left
+             *     the array one element too small while
+             *     num_memory_buffers claimed the new size -
+             *     heap buffer overflow on the [num-1] write
+             *     below.
+             *
+             * Fix: compute new_count and grow both lists into
+             * temp pointers before incrementing num_memory_buffers.
+             * Skip this descriptor on OOM (continue outer loop);
+             * the loop's post-check 'if (cheat_st->num_memory_
+             * buffers == 0)' then falls through to the
+             * RETRO_MEMORY_SYSTEM_RAM fallback path below. */
+            unsigned new_count = cheat_st->num_memory_buffers + 1;
+            uint8_t **new_bufs;
+            unsigned *new_sizes;
 
             if (!cheat_st->memory_buf_list)
-               cheat_st->memory_buf_list = (uint8_t**)calloc(1, sizeof(uint8_t *));
+               new_bufs = (uint8_t**)calloc(1, sizeof(uint8_t *));
             else
-               cheat_st->memory_buf_list = (uint8_t**)realloc(
-                     cheat_st->memory_buf_list, sizeof(uint8_t *) * cheat_st->num_memory_buffers);
+               new_bufs = (uint8_t**)realloc(
+                     cheat_st->memory_buf_list,
+                     sizeof(uint8_t *) * new_count);
+
+            if (!new_bufs)
+               continue;
+            cheat_st->memory_buf_list = new_bufs;
 
             if (!cheat_st->memory_size_list)
-               cheat_st->memory_size_list = (unsigned*)calloc(1, sizeof(unsigned));
+               new_sizes = (unsigned*)calloc(1, sizeof(unsigned));
             else
-            {
-               unsigned *val = (unsigned*)realloc(
+               new_sizes = (unsigned*)realloc(
                      cheat_st->memory_size_list,
-                     sizeof(unsigned) *
-                     cheat_st->num_memory_buffers);
+                     sizeof(unsigned) * new_count);
 
-               if (val)
-                  cheat_st->memory_size_list = val;
-            }
+            if (!new_sizes)
+               continue;
+            cheat_st->memory_size_list = new_sizes;
 
-            cheat_st->memory_buf_list[cheat_st->num_memory_buffers  - 1] = (uint8_t*)sys_info->mmaps.descriptors[i].core.ptr;
-            cheat_st->memory_size_list[cheat_st->num_memory_buffers - 1] = (unsigned)sys_info->mmaps.descriptors[i].core.len;
-            cheat_st->total_memory_size += sys_info->mmaps.descriptors[i].core.len;
+            cheat_st->num_memory_buffers                           = new_count;
+            cheat_st->memory_buf_list[new_count  - 1]              = (uint8_t*)sys_info->mmaps.descriptors[i].core.ptr;
+            cheat_st->memory_size_list[new_count - 1]              = (unsigned)sys_info->mmaps.descriptors[i].core.len;
+            cheat_st->total_memory_size                           += sys_info->mmaps.descriptors[i].core.len;
 
             if (!cheat_st->curr_memory_buf)
                cheat_st->curr_memory_buf = (uint8_t*)sys_info->mmaps.descriptors[i].core.ptr;
@@ -863,6 +918,22 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
             calloc(1, sizeof(uint8_t *));
       cheat_st->memory_size_list    = (unsigned*)
             calloc(1, sizeof(unsigned));
+      /* NULL-check both callocs: the [0] writes below NULL-deref
+       * on OOM.  If either failed, free whichever succeeded and
+       * bail out to MSG_CHEAT_INIT_FAIL with the same path as
+       * the meminfo failure above. */
+      if (!cheat_st->memory_buf_list || !cheat_st->memory_size_list)
+      {
+         char msg[128];
+         size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_INIT_FAIL), sizeof(msg));
+         free(cheat_st->memory_buf_list);
+         cheat_st->memory_buf_list = NULL;
+         free(cheat_st->memory_size_list);
+         cheat_st->memory_size_list = NULL;
+         runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         return 0;
+      }
       cheat_st->num_memory_buffers  = 1;
       cheat_st->memory_buf_list[0]  = (uint8_t*)meminfo.data;
       cheat_st->memory_size_list[0] = (unsigned)meminfo.size;
