@@ -900,6 +900,27 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
 
             *buffer = output_buffer;
          }
+         else
+         {
+            /* Allocation failed.  Previously this branch silently
+             * dropped the bytes_read data, left *total_length
+             * incremented (so the caller thought the buffer had
+             * grown), and returned a positive bytes_read - the
+             * caller's 'while (wl_read_pipe(...) > 0)' loop then
+             * continued and the next iteration wrote at offset
+             * 'pos = *total_length' which sat past the end of the
+             * still-unchanged *buffer, corrupting whatever lived
+             * there.  On realloc failure *buffer is also left
+             * pointing at the old (smaller) allocation, so the
+             * old data is still valid, but the length accounting
+             * is a lie.
+             *
+             * Restore the invariant by rewinding *total_length
+             * and reporting -1 to the caller so its while-loop
+             * terminates. */
+            *total_length = pos;
+            bytes_read    = -1;
+         }
       }
    }
 
