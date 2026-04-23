@@ -656,7 +656,14 @@ static void *avfoundation_init(const char *device, uint64_t caps,
     if (!setupSuccess)
     {
         RARCH_ERR("[Camera] Failed to setup camera.\n");
+        /* Null out frameBuffer on the singleton manager after freeing,
+         * so a subsequent init doesn't observe a stale pointer.  The
+         * main-thread-only access pattern means nothing actually sees
+         * the dangling value between these two statements and the next
+         * init's calloc on the same field, but leaving a dangling
+         * pointer in a singleton ivar is defensive-programming-wrong. */
         free(avf->manager.frameBuffer);
+        avf->manager.frameBuffer = NULL;
         free(avf);
         return NULL;
     }
@@ -741,16 +748,24 @@ static bool avfoundation_poll(void *data,
 
     if (!avf->manager.session.isRunning)
     {
+        /* Session not running yet (or already stopped).  Deliver a
+         * color-bars test pattern so the core gets a well-formed
+         * frame rather than nothing.  Paint into the manager's own
+         * frameBuffer rather than allocating a throwaway: the
+         * generation cost is trivial (two nested loops of direct
+         * assignments, no conversion) and it avoids a calloc+free
+         * pair on every poll while the camera warms up.  Once the
+         * session starts and captureOutput:didOutputSampleBuffer:
+         * begins overwriting frameBuffer with real frames, this
+         * branch stops firing. */
+#ifdef DEBUG
         RARCH_LOG("[Camera] Camera not running, generating color bars...\n");
-        uint32_t *tempBuffer = (uint32_t*)calloc(avf->width * avf->height, sizeof(uint32_t));
-        if (tempBuffer)
-        {
-            generateColorBars(tempBuffer, avf->width, avf->height);
-            frame_raw_cb(tempBuffer, avf->width, avf->height, avf->width * 4);
-            free(tempBuffer);
-            return true;
-        }
-        return false;
+#endif
+        if (!avf->manager.frameBuffer)
+            return false;
+        generateColorBars(avf->manager.frameBuffer, avf->width, avf->height);
+        frame_raw_cb(avf->manager.frameBuffer, avf->width, avf->height, avf->width * 4);
+        return true;
     }
 
 #ifdef DEBUG
