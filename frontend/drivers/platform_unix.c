@@ -2961,10 +2961,37 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list,
       return;
    }
 
-   inotify_data            = (inotify_data_t*)calloc(1, sizeof(*inotify_data));
+   /* NULL-check every allocation step.  Previously this function
+    * called calloc + int_vector_list_new + string_list_new + the
+    * second calloc with no guards, then dereferenced each result
+    * immediately - an OOM on any of them segfaulted, and a partial
+    * success (e.g. inotify_data allocated but wd_list alloc failed)
+    * leaked the earlier allocations together with the already-
+    * established inotify_add_watch kernel watches.  On any failure
+    * below, unwind what we did manage to set up and return with
+    * *change_data left untouched (callers treat NULL *change_data
+    * as 'no watcher is set up'). */
+   if (!(inotify_data = (inotify_data_t*)calloc(1, sizeof(*inotify_data))))
+   {
+      close(fd);
+      return;
+   }
    inotify_data->fd        = fd;
-   inotify_data->wd_list   = int_vector_list_new();
-   inotify_data->path_list = string_list_new();
+
+   if (!(inotify_data->wd_list = int_vector_list_new()))
+   {
+      free(inotify_data);
+      close(fd);
+      return;
+   }
+
+   if (!(inotify_data->path_list = string_list_new()))
+   {
+      int_vector_list_free(inotify_data->wd_list);
+      free(inotify_data);
+      close(fd);
+      return;
+   }
 
    if (flags & PATH_CHANGE_TYPE_MODIFIED)
       inotify_mask |= IN_MODIFY;
@@ -2992,7 +3019,18 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list,
       string_list_append(inotify_data->path_list, list->elems[i].data, attr);
    }
 
-   *change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t));
+   if (!(*change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t))))
+   {
+      /* Rip down everything we built up: the fd, the kernel watches
+       * it owns, both lists, and inotify_data itself.  Closing fd
+       * auto-removes all its inotify_add_watch entries, so we do not
+       * need to iterate wd_list and inotify_rm_watch by hand. */
+      string_list_free(inotify_data->path_list);
+      int_vector_list_free(inotify_data->wd_list);
+      close(inotify_data->fd);
+      free(inotify_data);
+      return;
+   }
    (*change_data)->data = inotify_data;
 #endif
 }
