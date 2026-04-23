@@ -62,6 +62,7 @@ typedef struct network
 } network_video_t;
 
 static unsigned char *network_menu_frame = NULL;
+static size_t network_menu_frame_cap     = 0;
 static unsigned network_menu_width       = 0;
 static unsigned network_menu_height      = 0;
 static unsigned network_menu_pitch       = 0;
@@ -371,6 +372,7 @@ static void network_gfx_free(void *data)
       free(network_video_temp_buf);
 
    network_menu_frame     = NULL;
+   network_menu_frame_cap = 0;
    network_video_temp_buf = NULL;
 
    font_driver_free_osd();
@@ -391,32 +393,29 @@ static void network_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   unsigned pitch = width * 2;
+   unsigned pitch = width * (rgb32 ? 4 : 2);
+   size_t   required;
 
-   if (rgb32)
-      pitch = width * 4;
+   if (!frame || !width || !height || !pitch)
+      return;
 
-   if (network_menu_frame)
+   required = (size_t)pitch * (size_t)height;
+
+   if (required > network_menu_frame_cap)
    {
-      free(network_menu_frame);
-      network_menu_frame = NULL;
+      unsigned char *tmp = (unsigned char*)realloc(
+            network_menu_frame, required);
+      if (!tmp)
+         return;                        /* keep previous frame intact */
+      network_menu_frame     = tmp;
+      network_menu_frame_cap = required;
    }
 
-   if (     !network_menu_frame
-         || (network_menu_width  != width)
-         || (network_menu_height != height)
-         || (network_menu_pitch  != pitch))
-      if (pitch && height)
-         network_menu_frame = (unsigned char*)malloc(pitch * height);
-
-   if (network_menu_frame && frame && pitch && height)
-   {
-      memcpy(network_menu_frame, frame, pitch * height);
-      network_menu_width  = width;
-      network_menu_height = height;
-      network_menu_pitch  = pitch;
-      network_menu_bits   = rgb32 ? 32 : 16;
-   }
+   memcpy(network_menu_frame, frame, required);
+   network_menu_width  = width;
+   network_menu_height = height;
+   network_menu_pitch  = pitch;
+   network_menu_bits   = rgb32 ? 32 : 16;
 }
 
 static void network_get_video_output_size(void *data,

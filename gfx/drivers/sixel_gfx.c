@@ -137,6 +137,7 @@ font_renderer_t sixel_font = {
  */
 
 static unsigned char *sixel_menu_frame = NULL;
+static size_t sixel_menu_frame_cap     = 0;
 static unsigned sixel_menu_width       = 0;
 static unsigned sixel_menu_height      = 0;
 static unsigned sixel_menu_pitch       = 0;
@@ -532,6 +533,7 @@ static void sixel_gfx_free(void *data)
       free(sixel_menu_frame);
       sixel_menu_frame = NULL;
    }
+   sixel_menu_frame_cap = 0;
 
    if (sixel_temp_buf)
    {
@@ -566,29 +568,29 @@ static void sixel_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   unsigned pitch = width * 2;
+   unsigned pitch = width * (rgb32 ? 4 : 2);
+   size_t   required;
 
-   if (rgb32)
-      pitch = width * 4;
+   if (!frame || !width || !height || !pitch)
+      return;
 
-   if (sixel_menu_frame)
+   required = (size_t)pitch * (size_t)height;
+
+   if (required > sixel_menu_frame_cap)
    {
-      free(sixel_menu_frame);
-      sixel_menu_frame = NULL;
+      unsigned char *tmp = (unsigned char*)realloc(
+            sixel_menu_frame, required);
+      if (!tmp)
+         return;                        /* keep previous frame intact */
+      sixel_menu_frame     = tmp;
+      sixel_menu_frame_cap = required;
    }
 
-   if (!sixel_menu_frame || sixel_menu_width != width || sixel_menu_height != height || sixel_menu_pitch != pitch)
-      if (pitch && height)
-         sixel_menu_frame = (unsigned char*)malloc(pitch * height);
-
-   if (sixel_menu_frame && frame && pitch && height)
-   {
-      memcpy(sixel_menu_frame, frame, pitch * height);
-      sixel_menu_width  = width;
-      sixel_menu_height = height;
-      sixel_menu_pitch  = pitch;
-      sixel_menu_bits   = rgb32 ? 32 : 16;
-   }
+   memcpy(sixel_menu_frame, frame, required);
+   sixel_menu_width  = width;
+   sixel_menu_height = height;
+   sixel_menu_pitch  = pitch;
+   sixel_menu_bits   = rgb32 ? 32 : 16;
 }
 
 static void sixel_get_video_output_size(void *data,
