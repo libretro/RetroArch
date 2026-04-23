@@ -1342,7 +1342,19 @@ static void gdrive_do_patch(gdrive_cb_state_t *cb_st)
 
    filestream_seek(cb_st->rfile, 0, SEEK_SET);
    len = filestream_get_size(cb_st->rfile);
-   buf = malloc((size_t)(len + 1));
+   /* filestream_get_size returns negative on error; malloc of
+    * (size_t)(len + 1) would wrap or be zero, and the subsequent
+    * filestream_read(rfile, buf, len) would pass a negative size
+    * down.  Bail early on either error or empty file. */
+   if (len <= 0)
+      return;
+   /* NULL-check the malloc before filestream_read / the HTTP
+    * transfer below dereference 'buf'.  On OOM there's no
+    * recoverable action for a PATCH upload of the save/state
+    * file - silently skip this call and let the sync retry on
+    * the next poll. */
+   if (!(buf = malloc((size_t)(len + 1))))
+      return;
    filestream_read(cb_st->rfile, buf, len);
 
    snprintf(url, sizeof(url),

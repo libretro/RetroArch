@@ -6104,9 +6104,19 @@ static bool netplay_get_cmd(netplay_t *netplay,
                netplay->state_size = state_size;
                for (i = 0; i < netplay->buffer_size; i++)
                {
-                  netplay->buffer[i].state = realloc(netplay->buffer[i].state, netplay->state_size);
-                  if (!netplay->buffer[i].state)
+                  /* realloc-to-tmp to avoid the classic realloc-
+                   * assign-self leak: on OOM realloc returns NULL
+                   * but leaves buffer[i].state pointing at the
+                   * old allocation; self-assign overwrites the
+                   * only pointer and leaks it.  Propagate failure
+                   * up - the caller tears down the netplay
+                   * connection on false return, so the partially-
+                   * grown buffer (0..i-1 at new size, i..end still
+                   * at old size) is about to be torn down anyway. */
+                  void *tmp = realloc(netplay->buffer[i].state, netplay->state_size);
+                  if (!tmp)
                      return false;
+                  netplay->buffer[i].state = tmp;
                }
             }
 

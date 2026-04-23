@@ -397,20 +397,24 @@ static char* s3_sha256_hash(const char *data, size_t len)
 /* URL encode a string according to RFC 3986 */
 static char* s3_url_encode(const char *input)
 {
-   size_t input_len = strlen(input);
+   size_t input_len;
    size_t output_pos = 0;
-
-   /* Worst case: every char needs encoding */
-   char *output = malloc(input_len * 3 + 1); 
-   
+   char *output;
    size_t i;
-   
-   if (!output)
-      return NULL;
-   
+
+   /* NULL-check input BEFORE calling strlen.  The previous form
+    * ran strlen(input) first (line-order: strlen, malloc, then
+    * 'if (!input)'), so the 'if (!input)' check was dead code -
+    * a NULL input segfaulted in strlen before we ever reached
+    * the guard. */
    if (!input)
       return NULL;
 
+   input_len = strlen(input);
+
+   /* Worst case: every char needs encoding */
+   if (!(output = malloc(input_len * 3 + 1)))
+      return NULL;
 
    for (i = 0; i < input_len; i++)
    {
@@ -440,14 +444,21 @@ static char* s3_url_encode(const char *input)
 /* Trim whitespace from string */
 static char* s3_trim_string(const char *input)
 {
-   size_t len = strlen(input);
+   size_t len;
    size_t start = 0;
-   size_t end = len;
+   size_t end;
    size_t trimmed_len = 0;
    char *trimmed = NULL;
 
+   /* NULL-check input BEFORE calling strlen.  Same dead-code bug
+    * as s3_url_encode: the 'if (!input)' check sat after the
+    * strlen call, so NULL input segfaulted before the guard
+    * could fire. */
    if (!input)
       return NULL;
+
+   len = strlen(input);
+   end = len;
 
    /* Find start of non-whitespace */
    while (start < len && (input[start] == ' ' || input[start] == '\t'))
@@ -841,7 +852,15 @@ static char* s3_build_auth_header(const char *method, const char *canonical_uri,
             s3_st->access_key_id, date, s3_st->region, S3_SERVICE);
 
    /* Build authorization header */
-   auth_header = malloc(1024);
+   /* NULL-check the malloc: snprintf-into-NULL segfaults.  Also
+    * free 'signature' on the OOM path - the success path at line
+    * below already free's it, but the pre-patch code would have
+    * crashed before reaching that free. */
+   if (!(auth_header = malloc(1024)))
+   {
+      free(signature);
+      return NULL;
+   }
    snprintf(auth_header, 1024,
             "Authorization: %s Credential=%s, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=%s\r\n"
             "x-amz-date: %s\r\n"
