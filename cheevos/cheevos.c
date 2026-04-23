@@ -406,16 +406,29 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
             else
             {
                struct rcheevos_retry_achievement_info_t* info;
-               info = (struct rcheevos_retry_achievement_info_t*)malloc(sizeof(*info));
-               info->achievement_id = cheevo->id;
-               info->rarity = rarity;
+               /* NULL-check before dereferencing.  The previous code
+                * wrote info->achievement_id / info->rarity on the
+                * next two lines regardless, which would segfault on
+                * OOM.  Falling back to the immediate popup path
+                * matches the '!task' branch above, and we have to
+                * release the task we just allocated or we leak it. */
+               if (!(info = (struct rcheevos_retry_achievement_info_t*)malloc(sizeof(*info))))
+               {
+                  free(task);
+                  rcheevos_show_achievement_popup(cheevo, rarity);
+               }
+               else
+               {
+                  info->achievement_id = cheevo->id;
+                  info->rarity = rarity;
 
-               task->handler = rcheevos_retry_achievement_popup;
-               task->user_data = info;
-               task->progress = 1;
-               task->when = cpu_features_get_time_usec() + 100000; /* first retry in 100ms */
+                  task->handler = rcheevos_retry_achievement_popup;
+                  task->user_data = info;
+                  task->progress = 1;
+                  task->when = cpu_features_get_time_usec() + 100000; /* first retry in 100ms */
 
-               task_queue_push(task);
+                  task_queue_push(task);
+               }
             }
          }
       }
