@@ -1041,14 +1041,22 @@ static void vita2d_apply_state_changes(void *data)
 static void vita2d_set_texture_frame(void *data, const void *frame, bool rgb32,
    unsigned width, unsigned height, float alpha)
 {
-   int i, j;
+   unsigned i;
    void *tex_p;
    unsigned int stride;
    vita_video_t *vita = (vita_video_t*)data;
 
-   if (     (width  != vita->menu.width)
-         && (height != vita->menu.height)
-         && vita->menu.texture)
+   /* Recreate when either dimension changes, not both.  The original
+    * condition used && between the width/height comparisons, so a
+    * resize that only changed one dimension (e.g. 480x272 -> 480x544
+    * when the menu toggles portrait mode, or a width-only change on
+    * menu-size setting updates) would skip the destroy-recreate step;
+    * the subsequent per-pixel write below would then index past the
+    * old texture's allocation (new size > old) or leave stale border
+    * pixels (new size < old). */
+   if (     vita->menu.texture
+         && (   width  != (unsigned)vita->menu.width
+             || height != (unsigned)vita->menu.height))
    {
       vita2d_wait_rendering_done();
       vita2d_free_texture(vita->menu.texture);
@@ -1073,27 +1081,31 @@ static void vita2d_set_texture_frame(void *data, const void *frame, bool rgb32,
    tex_p  = vita2d_texture_get_datap(vita->menu.texture);
    stride = vita2d_texture_get_stride(vita->menu.texture);
 
+   /* Copy row-by-row via memcpy rather than pixel-by-pixel.  The
+    * texture stride (destination) can differ from the source pitch
+    * (width * bpp) for alignment reasons, so a single memcpy of the
+    * whole buffer isn't safe when stride != width*bpp, but a per-row
+    * memcpy handles both cases and is materially faster than the
+    * previous nested loop with per-pixel indexing. */
    if (rgb32)
    {
-      uint32_t         *tex32 = tex_p;
-      const uint32_t *frame32 = frame;
+      uint32_t       *tex32   = (uint32_t*)tex_p;
+      const uint32_t *frame32 = (const uint32_t*)frame;
+      size_t          rowlen  = (size_t)width * 4;
 
-      stride                 /= 4;
-
+      stride /= 4;
       for (i = 0; i < height; i++)
-         for (j = 0; j < width; j++)
-            tex32[j + i*stride] = frame32[j + i*width];
+         memcpy(tex32 + i * stride, frame32 + i * width, rowlen);
    }
    else
    {
-      uint16_t               *tex16 = tex_p;
-      const uint16_t       *frame16 = frame;
+      uint16_t       *tex16   = (uint16_t*)tex_p;
+      const uint16_t *frame16 = (const uint16_t*)frame;
+      size_t          rowlen  = (size_t)width * 2;
 
-      stride                       /= 2;
-
+      stride /= 2;
       for (i = 0; i < height; i++)
-         for (j = 0; j < width; j++)
-            tex16[j + i*stride] = frame16[j + i*width];
+         memcpy(tex16 + i * stride, frame16 + i * width, rowlen);
    }
 }
 
