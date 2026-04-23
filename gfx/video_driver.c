@@ -83,7 +83,10 @@ static gfx_api_gpu_map gpu_map[] = {
    { NULL,                   GFX_CTX_VULKAN_API     },
    { NULL,                   GFX_CTX_DIRECT3D10_API },
    { NULL,                   GFX_CTX_DIRECT3D11_API },
-   { NULL,                   GFX_CTX_DIRECT3D12_API }
+   { NULL,                   GFX_CTX_DIRECT3D12_API },
+#ifdef HAVE_METAL
+   { NULL,                   GFX_CTX_METAL_API      },
+#endif
 };
 
 static const video_display_server_t dispserv_null = {

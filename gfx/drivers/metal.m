@@ -28,6 +28,7 @@
 
 #include <encodings/utf.h>
 #include <compat/strl.h>
+#include <lists/string_list.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <formats/image.h>
@@ -3253,6 +3254,15 @@ font_renderer_t metal_raster_font = {
     * back to the frontend's frame_cache_data to repopulate the texture
     * ourselves. */
    bool _frameEverUploaded;
+
+   /* List of selectable Metal devices reported to the frontend so the
+    * "GPU Index" menu entry can enumerate them.  Owned by this driver
+    * instance: created in init, published via
+    * video_driver_set_gpu_api_devices(), freed in dealloc (where we
+    * also clear the frontend pointer).  On iOS/tvOS this is always a
+    * 1-element list containing the system default device, since
+    * MTLCopyAllDevices() is macOS-only. */
+   struct string_list *_gpu_list;
 }
 
 - (instancetype)initWithVideo:(const video_info_t *)video
@@ -3261,7 +3271,81 @@ font_renderer_t metal_raster_font = {
 {
    if (self = [super init])
    {
-      _device                       = MTLCreateSystemDefaultDevice();
+      /* Build the list of selectable Metal devices and pick one per the
+       * user-configured metal_gpu_index.
+       *
+       * iOS/tvOS: MTLCopyAllDevices() is macOS-only (explicitly marked
+       * API_UNAVAILABLE(ios) in <Metal/MTLDevice.h>), and these platforms
+       * only ever expose a single integrated GPU.  We publish a
+       * one-element list containing the system default device so the
+       * frontend's GPU-index menu entry shows something sensible, and
+       * the setting is effectively a no-op.
+       *
+       * macOS: enumerate every adapter via MTLCopyAllDevices(), honour
+       * settings->ints.metal_gpu_index if it's in range, and fall back
+       * to MTLCreateSystemDefaultDevice() otherwise (matches the
+       * behaviour of every other RetroArch driver that exposes this
+       * setting — see d3d10.c:2725 for the reference pattern).
+       *
+       * The list is stored as a plain C struct string_list, so it's
+       * safe to cross the ARC/MRC TU boundary; ownership is tracked
+       * explicitly and cleared in dealloc. */
+      {
+         union string_list_elem_attr attr = {0};
+         _gpu_list                        = string_list_new();
+
+#if defined(HAVE_COCOATOUCH)
+         _device                          = MTLCreateSystemDefaultDevice();
+
+         if (_gpu_list && _device)
+         {
+            const char *name              = [[_device name] UTF8String];
+            string_list_append(_gpu_list, name ? name : "Default", attr);
+         }
+#else
+         {
+            settings_t               *settings_ptr = config_get_ptr();
+            int                       gpu_index    = settings_ptr
+               ? settings_ptr->ints.metal_gpu_index : 0;
+            NSArray<id<MTLDevice>> *devices        = MTLCopyAllDevices();
+            NSUInteger                count        = devices ? [devices count] : 0;
+            NSUInteger                i;
+
+            if (_gpu_list)
+            {
+               for (i = 0; i < count; i++)
+               {
+                  id<MTLDevice> d            = [devices objectAtIndex:i];
+                  const char   *name         = [[d name] UTF8String];
+                  RARCH_LOG("[Metal] Found GPU #%u: \"%s\".\n",
+                        (unsigned)i, name ? name : "Unknown");
+                  string_list_append(_gpu_list,
+                        name ? name : "Unknown", attr);
+               }
+            }
+
+            if (count > 0 && gpu_index >= 0 && gpu_index < (int)count)
+            {
+               const char *picked_name;
+               _device     = [devices objectAtIndex:gpu_index];
+               picked_name = [[_device name] UTF8String];
+               RARCH_LOG("[Metal] Using GPU #%d: \"%s\".\n",
+                     gpu_index, picked_name ? picked_name : "Unknown");
+            }
+            else
+            {
+               if (gpu_index != 0)
+                  RARCH_WARN("[Metal] metal_gpu_index %d out of range (%u device(s) found), "
+                        "falling back to system default device.\n",
+                        gpu_index, (unsigned)count);
+               _device = MTLCreateSystemDefaultDevice();
+            }
+         }
+#endif
+
+         video_driver_set_gpu_api_devices(GFX_CTX_METAL_API, _gpu_list);
+      }
+
       MetalView *view               = (MetalView *)apple_platform.renderView;
       view.device                   = _device;
       view.delegate                 = self;
@@ -3421,6 +3505,18 @@ font_renderer_t metal_raster_font = {
       _viewport = nil;
    }
    font_driver_free_osd();
+
+   /* Tear down the GPU list we published to the frontend.  We clear
+    * the slot first so any later code paths (e.g. the menu cbs) that
+    * look up the list for GFX_CTX_METAL_API see NULL instead of a
+    * pointer to freed memory before the next driver instance comes
+    * up and repopulates it. */
+   if (_gpu_list)
+   {
+      video_driver_set_gpu_api_devices(GFX_CTX_METAL_API, NULL);
+      string_list_free(_gpu_list);
+      _gpu_list = NULL;
+   }
 
 #if METAL_HDR_AVAILABLE
    /* Withdraw the HDR-capability flags so a subsequent driver init (e.g.

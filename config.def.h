@@ -1791,6 +1791,10 @@
 #define DEFAULT_D3D12_GPU_INDEX 0
 #endif
 
+#ifdef HAVE_METAL
+#define DEFAULT_METAL_GPU_INDEX 0
+#endif
+
 #if defined(HAKCHI)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://hakchicloud.com/Libretro_Cores/"
 #elif defined(WEBOS)

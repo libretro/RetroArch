@@ -13243,6 +13243,27 @@ static bool setting_append_list(
             }
 #endif
 
+#ifdef HAVE_METAL
+            if (string_is_equal(video_driver_get_ident(), "metal"))
+            {
+               CONFIG_INT(
+                     list, list_info,
+                     &settings->ints.metal_gpu_index,
+                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+                     0,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_int_gpu_index;
+            }
+#endif
+
 #ifdef WIIU
             CONFIG_BOOL(
                   list, list_info,
