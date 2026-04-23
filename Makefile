@@ -402,6 +402,13 @@ BUNDLE_BUILD       ?= 44
 # Extract X.Y from '-mmacosx-version-min=X.Y' inside $(MINVERFLAGS).
 # If nothing matches (e.g. building with a custom toolchain), fall back to 10.13.
 BUNDLE_MIN_OS      ?= $(or $(patsubst -mmacosx-version-min=%,%,$(filter -mmacosx-version-min=%,$(MINVERFLAGS))),10.13)
+# Detect legacy macOS targets (< 10.9 Mavericks). Pre-Mavericks codesign
+# predates the `--timestamp` option; the dyld/Gatekeeper enforcement that
+# makes ad-hoc signing worth doing didn't exist yet either, so on legacy
+# targets we skip signing entirely rather than fight an older toolchain.
+# We key off BUNDLE_MIN_OS rather than the build host so cross-compiling
+# for ppc/10.5 on a modern Mac still picks up the legacy path.
+MACOS_LEGACY       := $(shell echo $(BUNDLE_MIN_OS) | awk -F. '{ exit !($$1 < 10 || ($$1 == 10 && $$2 < 9)) }' && echo 1)
 INFO_PLIST_SRC     := pkg/apple/OSX/Info_Metal.plist
 # Universal (arm64 + x86_64) MoltenVK.framework shipped in the repo.
 # Only copied when HAVE_VULKAN=1; on pre-Metal / non-Vulkan builds
@@ -439,19 +446,25 @@ bundle: $(TARGET) $(METALLIB)
 		-e 's|$$(CURRENT_PROJECT_VERSION)|$(BUNDLE_BUILD)|g' \
 		-e 's|$$(MACOSX_DEPLOYMENT_TARGET)|$(BUNDLE_MIN_OS)|g' \
 		$(INFO_PLIST_SRC) > $(BUNDLE)/Contents/Info.plist
-	@# Ad-hoc code signing. On Apple Silicon (and increasingly on Intel with
-	@# hardened runtime enforcement), dyld refuses to load unsigned dylibs
-	@# even for ad-hoc app-internal use — including the MoltenVK framework
-	@# copied in above. `codesign --sign -` produces an ad-hoc signature
-	@# that satisfies the loader without requiring a developer identity.
-	@# Sign nested content first (frameworks), then the outer .app wrapper,
-	@# so the app's seal covers all contents.
-	$(Q)if [ -d $(BUNDLE)/Contents/Frameworks ]; then \
-		for fw in $(BUNDLE)/Contents/Frameworks/*.framework; do \
-			[ -d "$$fw" ] && codesign --force --sign - --timestamp=none "$$fw"; \
-		done; \
+	@# Ad-hoc code signing. On Apple Silicon (and increasingly on Intel
+	@# with hardened runtime enforcement), dyld refuses to load unsigned
+	@# dylibs even for ad-hoc app-internal use — including the MoltenVK
+	@# framework copied in above. `codesign --sign -` produces an ad-hoc
+	@# signature that satisfies the loader without needing a developer
+	@# identity. Sign nested content first (frameworks), then the outer
+	@# .app wrapper, so the app's seal covers all contents.
+	@#
+	@# Skip entirely on pre-Mavericks targets: those toolchains predate
+	@# `--timestamp`, the dyld enforcement that makes this necessary, and
+	@# in some cases ad-hoc signing support altogether.
+	$(Q)if [ "$(MACOS_LEGACY)" != "1" ]; then \
+		if [ -d $(BUNDLE)/Contents/Frameworks ]; then \
+			for fw in $(BUNDLE)/Contents/Frameworks/*.framework; do \
+				[ -d "$$fw" ] && codesign --force --sign - --timestamp=none "$$fw"; \
+			done; \
+		fi; \
+		codesign --force --sign - --timestamp=none $(BUNDLE); \
 	fi
-	$(Q)codesign --force --sign - --timestamp=none $(BUNDLE)
 	@echo "Done. Run with: open $(BUNDLE)"
 
 .PHONY: bundle
