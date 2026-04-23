@@ -172,8 +172,17 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 #ifdef HAVE_COCOA_METAL
       [panel setAllowedFileTypes:@[BOXSTRING(state->filters), BOXSTRING(state->filters_title)]];
 #else
+      /* Under MRC (ui_cocoa.m is built without -fobjc-arc per the
+       * top-level Makefile; see Makefile.common ~line 1654), the
+       * local 'filetypes' is +1 from alloc+initWithObjects.
+       * setAllowedFileTypes: retains its own reference, so after
+       * the call returns we must release the local +1 or it leaks
+       * every time the file picker opens with a filter.  The
+       * HAVE_COCOA_METAL branch above uses @[...] literal syntax
+       * which is already autoreleased. */
       NSArray *filetypes = [[NSArray alloc] initWithObjects:BOXSTRING(state->filters), BOXSTRING(state->filters_title), nil];
       [panel setAllowedFileTypes:filetypes];
+      RARCH_RELEASE(filetypes);
 #endif
    }
 
