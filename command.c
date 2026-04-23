@@ -236,10 +236,25 @@ static void command_network_poll(command_t *handle)
 command_t* command_network_new(uint16_t port)
 {
    struct addrinfo     *res  = NULL;
-   command_t            *cmd = (command_t*)calloc(1, sizeof(*cmd));
-   command_network_t *netcmd = (command_network_t*)calloc(
-                                   1, sizeof(command_network_t));
-   int fd = socket_init((void**)&res, port, NULL,
+   command_t            *cmd = NULL;
+   command_network_t *netcmd = NULL;
+   int                    fd = -1;
+
+   /* Allocate-then-check in sequence, matching command_uds_new.
+    * The previous code allocated cmd + netcmd back-to-back and then
+    * assigned netcmd->net_fd / cmd->userptr before NULL-checking
+    * either pointer - an OOM on either calloc would NULL-deref on
+    * line 252/253.  It also leaked netcmd on the '!cmd' failure
+    * path via the 'error' label (which now cleanly frees both
+    * because they are initialised to NULL up-front; free(NULL) is
+    * a no-op). */
+   if (!(cmd = (command_t*)calloc(1, sizeof(*cmd))))
+      goto error;
+
+   if (!(netcmd = (command_network_t*)calloc(1, sizeof(command_network_t))))
+      goto error;
+
+   fd = socket_init((void**)&res, port, NULL,
          SOCKET_TYPE_DATAGRAM, AF_INET);
 
    RARCH_LOG("[NetCMD] %s %hu.\n",
@@ -271,6 +286,12 @@ command_t* command_network_new(uint16_t port)
 error:
    if (res)
       freeaddrinfo_retro(res);
+   /* The only path that reaches 'error' with fd >= 0 is the
+    * socket_nonblock / socket_bind failure after fd was already
+    * stored in netcmd->net_fd.  Close it so we don't leak the
+    * socket file descriptor along with the allocations. */
+   if (fd >= 0)
+      socket_close(fd);
    free(netcmd);
    free(cmd);
    return NULL;
@@ -351,16 +372,20 @@ command_t* command_stdin_new(void)
 #endif
 #endif
 
-   cmd          = (command_t*)calloc(1, sizeof(command_t));
-   stdincmd     = (command_stdin_t*)calloc(1, sizeof(command_stdin_t));
-
-   if (!cmd)
+   /* Allocate in order with per-step failure handling.  The earlier
+    * form allocated both cmd and stdincmd back-to-back then checked
+    * them, which leaked stdincmd on the '!cmd' failure path (the
+    * '!cmd' return simply dropped the stdincmd pointer).  Also
+    * matches the command_uds_new pattern further down. */
+   if (!(cmd = (command_t*)calloc(1, sizeof(command_t))))
       return NULL;
-   if (!stdincmd)
+
+   if (!(stdincmd = (command_stdin_t*)calloc(1, sizeof(command_stdin_t))))
    {
       free(cmd);
       return NULL;
    }
+
    cmd->userptr = stdincmd;
    cmd->poll    = command_stdin_poll;
    cmd->replier = stdin_command_reply;
@@ -402,16 +427,19 @@ command_t* command_emscripten_new(void)
    command_t *cmd;
    command_emscripten_t *emscriptencmd;
 
-   cmd           = (command_t*)calloc(1, sizeof(command_t));
-   emscriptencmd = (command_emscripten_t*)calloc(1, sizeof(command_emscripten_t));
-
-   if (!cmd)
+   /* Same sequential-allocation-with-per-step-cleanup pattern as
+    * command_stdin_new / command_uds_new.  Previously allocated both
+    * structs before any NULL check, leaking emscriptencmd on the
+    * '!cmd' failure path. */
+   if (!(cmd = (command_t*)calloc(1, sizeof(command_t))))
       return NULL;
-   if (!emscriptencmd)
+
+   if (!(emscriptencmd = (command_emscripten_t*)calloc(1, sizeof(command_emscripten_t))))
    {
       free(cmd);
       return NULL;
    }
+
    cmd->userptr = emscriptencmd;
    cmd->poll    = command_emscripten_poll;
    cmd->replier = emscripten_command_reply;
