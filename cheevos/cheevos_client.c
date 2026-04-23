@@ -319,6 +319,19 @@ void rcheevos_client_server_call(const rc_api_request_t* request,
    rc_client_http_task_data_t *taskdata = (rc_client_http_task_data_t*)
       malloc(sizeof(rc_client_http_task_data_t));
 
+   /* NULL-check the malloc: the two field writes below NULL-deref
+    * on OOM.  On failure invoke the callback with a zeroed server
+    * response so rc_client doesn't wait forever for a reply it
+    * won't get; matches the zeroed-response convention used in
+    * rcheevos_client_http_task_callback above for failed requests. */
+   if (!taskdata)
+   {
+      rc_api_server_response_t server_response;
+      memset(&server_response, 0, sizeof(server_response));
+      callback(&server_response, callback_data);
+      return;
+   }
+
    taskdata->callback      = callback;
    taskdata->callback_data = callback_data;
 
@@ -614,6 +627,15 @@ void rcheevos_client_download_achievement_badges(rc_client_t* client)
    size_t i;
    rc_client_download_queue_t *queue = (rc_client_download_queue_t*)
       calloc(1, sizeof(*queue));
+
+   /* NULL-check the calloc: the five field writes below NULL-deref
+    * on OOM.  Function is void-returning; the user-visible
+    * consequence of skipping on OOM is that badge textures don't
+    * download this session (existing cached badges still display;
+    * missing ones show the default placeholder).  Triggered again
+    * next time the game is loaded. */
+   if (!queue)
+      return;
 
    queue->client = client;
    queue->game   = rc_client_get_game_info(client);
