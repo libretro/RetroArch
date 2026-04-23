@@ -405,23 +405,24 @@ static void vga_set_texture_frame(void *data,
       float alpha)
 {
    vga_t     *vga = (vga_t*)data;
-   unsigned pitch = width * 2;
+   unsigned pitch = width * (rgb32 ? 4 : 2);
 
-   if (rgb32)
-      pitch = width * 4;
+   if (!frame || !width || !height || !pitch)
+      return;
 
-   if (vga->vga_menu_frame)
-      free(vga->vga_menu_frame);
-   vga->vga_menu_frame = NULL;
+   /* vga_menu_frame is always VGA_WIDTH*VGA_HEIGHT regardless of the
+    * incoming source frame size — the source is downscaled into this
+    * fixed-size buffer below.  Allocate once on first call and reuse
+    * thereafter; the original free+malloc per call was pure churn on
+    * a buffer whose size never changes. */
+   if (!vga->vga_menu_frame)
+   {
+      unsigned char *tmp = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
+      if (!tmp)
+         return;                        /* keep previous frame intact (NULL) */
+      vga->vga_menu_frame = tmp;
+   }
 
-   if ( !vga->vga_menu_frame ||
-         vga->vga_menu_width  != width  ||
-         vga->vga_menu_height != height ||
-         vga->vga_menu_pitch  != pitch)
-      if (pitch && height)
-         vga->vga_menu_frame = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
-
-   if (vga->vga_menu_frame && frame && pitch && height)
    {
       unsigned x, y;
 
@@ -444,6 +445,9 @@ static void vga_set_texture_frame(void *data,
             }
          }
       }
+      /* FIXME: rgb32 path does not populate vga_menu_frame - leaves
+       * stale/uninitialized content for the renderer.  Separate pre-
+       * existing bug, not fixed here. */
 
       vga->vga_menu_width  = width;
       vga->vga_menu_height = height;

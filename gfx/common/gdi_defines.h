@@ -35,6 +35,7 @@ typedef struct gdi
    HBITMAP bmp_old;
    uint16_t *temp_buf;
    uint8_t *menu_frame;
+   size_t menu_frame_cap;
 
    unsigned video_width;
    unsigned video_height;
