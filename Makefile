@@ -276,6 +276,8 @@ $(OBJDIR)/%.o: %.m
 $(OBJDIR)/gfx/drivers/metal.o: OBJCFLAGS += -fobjc-arc
 $(OBJDIR)/input/drivers_joypad/mfi_joypad.o: OBJCFLAGS += -fobjc-arc
 $(OBJDIR)/audio/drivers/coreaudio3.o: OBJCFLAGS += -fobjc-arc
+$(OBJDIR)/input/drivers/cocoa_input.o: OBJCFLAGS += -fobjc-arc
+$(OBJDIR)/location/drivers/corelocation.o: OBJCFLAGS += -fobjc-arc
 
 $(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)
 	@mkdir -p $(dir $@)
