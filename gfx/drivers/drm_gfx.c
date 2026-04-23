@@ -232,6 +232,16 @@ static void drm_surface_setup(void *data,  int src_width, int src_height,
 
    surface = *sp;
 
+   /* NULL-check the outer calloc: the surface->... field writes
+    * below would NULL-deref on OOM.  Sibling bug to the one in
+    * dispmanx_surface_setup - the two routines share this
+    * structure (output-pointer + void return) and both had the
+    * same missing checks.  void-returning so callers can't see
+    * an error code; letting the function no-op on OOM beats a
+    * segfault. */
+   if (!surface)
+      return;
+
    /* Setup surface parameters */
    surface->numpages = numpages;
    /* We receive the total pitch, including things that are
@@ -251,6 +261,16 @@ static void drm_surface_setup(void *data,  int src_width, int src_height,
     * and initialize variables inside each page's struct. */
    surface->pages = (struct drm_page*)
       calloc(surface->numpages, sizeof(struct drm_page));
+
+   /* Same NULL-check for the pages array.  Undo the outer
+    * surface allocation on OOM to give callers a consistent
+    * NULL. */
+   if (!surface->pages)
+   {
+      free(surface);
+      *sp = NULL;
+      return;
+   }
 
    for (i = 0; i < surface->numpages; i++)
    {
