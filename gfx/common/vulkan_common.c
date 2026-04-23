@@ -902,6 +902,18 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    const char *required_extensions[3];
    uint32_t required_extension_count = 0;
 
+   /* Both mallocs must have succeeded before the memcpy / field
+    * assignments below dereference the buffers.  The 'end' label
+    * free()s both pointers; free(NULL) is a no-op, so if only one
+    * of the two succeeded it still gets reclaimed.  'instance' was
+    * pre-initialised to VK_NULL_HANDLE at the top of the function,
+    * which is the correct error-return value for this API. */
+   if (!instance_extensions || !instance_layers)
+   {
+      RARCH_ERR("[Vulkan] Out of memory allocating instance extension / layer arrays.\n");
+      goto end;
+   }
+
    memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
    memcpy((void*)instance_layers,     info.ppEnabledLayerNames,     info.enabledLayerCount     * sizeof(const char *));
    info.ppEnabledExtensionNames     = instance_extensions;
