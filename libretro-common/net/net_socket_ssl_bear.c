@@ -42,16 +42,43 @@ static size_t TAs_NUM = 0;
 
 static uint8_t* current_vdn;
 static size_t current_vdn_size;
+/* Set by vdn_append when a realloc() fails during DN accumulation.
+ * BearSSL's x509 decoder drives vdn_append as a void-returning
+ * callback, so we have no failure channel to hand back mid-decode;
+ * instead we latch this flag, skip further appends, and let
+ * append_cert_x509 observe it after the decoder returns. */
+static bool current_vdn_failed;
 
 static uint8_t* blobdup(const void * src, size_t len)
 {
    uint8_t *ret = (uint8_t*)malloc(len);
+   /* Pre-patch: no NULL check, so the next line memcpy'd into NULL
+    * on OOM and crashed.  Return NULL and make it the caller's
+    * problem - all three call sites below now propagate the NULL
+    * back out of append_cert_x509. */
+   if (!ret)
+      return NULL;
    memcpy(ret, src, len);
    return ret;
 }
 static void vdn_append(void* dest_ctx, const void * src, size_t len)
 {
-   current_vdn = (uint8_t*)realloc(current_vdn, current_vdn_size + len);
+   uint8_t *tmp;
+   if (current_vdn_failed)
+      return;
+   /* Use a tmp pointer: the pre-patch form
+    *     current_vdn = (uint8_t*)realloc(current_vdn, ...)
+    * overwrote current_vdn with NULL on realloc failure, leaking
+    * the original buffer, and the subsequent memcpy then
+    * dereferenced NULL.  The callback signature is 'void' so we
+    * cannot signal to the decoder to stop - we just latch the
+    * flag and short-circuit subsequent invocations. */
+   if (!(tmp = (uint8_t*)realloc(current_vdn, current_vdn_size + len)))
+   {
+      current_vdn_failed = true;
+      return;
+   }
+   current_vdn = tmp;
    memcpy(current_vdn + current_vdn_size, src, len);
    current_vdn_size += len;
 }
@@ -64,12 +91,29 @@ static bool append_cert_x509(void* x509, size_t len)
 
    current_vdn              = NULL;
    current_vdn_size         = 0;
+   current_vdn_failed       = false;
 
    br_x509_decoder_init(&dc, vdn_append, NULL);
    br_x509_decoder_push(&dc, x509, len);
+
+   /* If any vdn_append realloc failed during decoding, whatever
+    * bytes we did accumulate in current_vdn are incomplete; drop
+    * the DN buffer and abandon this trust anchor. */
+   if (current_vdn_failed)
+   {
+      free(current_vdn);
+      return false;
+   }
+
    pk                       = br_x509_decoder_get_pkey(&dc);
    if (!pk || !br_x509_decoder_isCA(&dc))
+   {
+      /* Pre-existing leak: the original code returned here without
+       * freeing current_vdn.  Ownership had not yet been transferred
+       * to ta->dn.data, so the buffer was orphaned. */
+      free(current_vdn);
       return false;
+   }
 
    ta->dn.len               = current_vdn_size;
    ta->dn.data              = current_vdn;
@@ -83,14 +127,38 @@ static bool append_cert_x509(void* x509, size_t len)
          ta->pkey.key.rsa.n    = blobdup(pk->key.rsa.n, pk->key.rsa.nlen);
          ta->pkey.key.rsa.elen = pk->key.rsa.elen;
          ta->pkey.key.rsa.e    = blobdup(pk->key.rsa.e, pk->key.rsa.elen);
+         /* If either blobdup OOM'd, we cannot install a half-built
+          * trust anchor - BearSSL dereferences ta->pkey during
+          * every handshake against a cert that chains to this TA,
+          * and a NULL .n or .e is a crash. */
+         if (!ta->pkey.key.rsa.n || !ta->pkey.key.rsa.e)
+         {
+            free(ta->pkey.key.rsa.n);
+            free(ta->pkey.key.rsa.e);
+            free(current_vdn);
+            ta->pkey.key.rsa.n = NULL;
+            ta->pkey.key.rsa.e = NULL;
+            ta->dn.data        = NULL;
+            return false;
+         }
          break;
       case BR_KEYTYPE_EC:
          ta->pkey.key_type     = BR_KEYTYPE_EC;
          ta->pkey.key.ec.curve = pk->key.ec.curve;
          ta->pkey.key.ec.qlen  = pk->key.ec.qlen;
          ta->pkey.key.ec.q     = blobdup(pk->key.ec.q, pk->key.ec.qlen);
+         if (!ta->pkey.key.ec.q)
+         {
+            free(current_vdn);
+            ta->dn.data = NULL;
+            return false;
+         }
          break;
       default:
+         /* Pre-existing leak: same pattern as the '!pk || !isCA'
+          * early return above.  current_vdn was orphaned. */
+         free(current_vdn);
+         ta->dn.data = NULL;
          return false;
    }
 
