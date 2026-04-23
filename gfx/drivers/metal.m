@@ -82,30 +82,36 @@
 
 /* HDR availability gate.
  *
- * Compile-time: the SDK must expose CAMetalLayer's wantsExtendedDynamicRangeContent
- * property and the PQ colour space name.  The PQ colour space name
- * (kCGColorSpaceITUR_2100_PQ) is the binding constraint on macOS — it was
- * introduced in 10.15.4 but the symbol is gated to macOS 11.0 in the public
- * headers.  On iOS / tvOS the whole EDR surface area on CAMetalLayer was
- * only exposed in the 16.x SDKs.
+ * Compile-time: the SDK must expose CAMetalLayer's
+ * wantsExtendedDynamicRangeContent property and the PQ colour space name.
+ * The PQ colour space name (kCGColorSpaceITUR_2100_PQ) is the binding
+ * constraint on macOS — introduced in 10.15.4 but gated to macOS 11.0 in
+ * the public headers.  On iOS the EDR surface area on CAMetalLayer was
+ * only exposed in the 16.x SDKs.  tvOS never got a public EDR path:
+ * wantsExtendedDynamicRangeContent / edrMetadata are not part of the
+ * public tvOS interface regardless of SDK version, so HDR is unsupported
+ * there and the driver stays in SDR.
  *
- * We key the compile gate off the Availability.h __MAC_..., __IPHONE_...,
- * __TVOS_... version tokens rather than AvailabilityMacros.h
- * MAC_OS_X_VERSION_* constants: the former are defined consistently across
- * all recent SDKs, while the latter were phased out for newer point releases
- * and checking them fails silently even when the APIs are in fact present.
+ * We key the compile gate off the Availability.h __MAC_... / __IPHONE_...
+ * version tokens rather than AvailabilityMacros.h MAC_OS_X_VERSION_*
+ * constants: the former are defined consistently across all recent SDKs,
+ * while the latter were phased out for newer point releases and checking
+ * them fails silently even when the APIs are in fact present.
  *
  * Runtime: the HDR paths are still guarded with @available(...) checks
- * because RetroArch's Apple deployment targets (macOS 10.13, iOS 11,
- * tvOS 12.1) are lower than the first HDR-capable OS release on each
- * platform.  When the runtime gate is false the driver stays in SDR mode.
+ * because RetroArch's Apple deployment targets (macOS 10.13, iOS 11) are
+ * lower than the first HDR-capable OS release on each platform.  When
+ * the runtime gate is false the driver stays in SDR mode.
  *
  * METAL_HDR_AVAILABLE guards compile-time only. Whenever we touch an HDR-specific
  * API inside those blocks, an @available check guards runtime dispatch. */
 #include <Availability.h>
-#if defined(OSX) && defined(__MAC_11_0)
+#include <TargetConditionals.h>
+#if defined(TARGET_OS_TV) && TARGET_OS_TV
+#  define METAL_HDR_AVAILABLE 0
+#elif defined(OSX) && defined(__MAC_11_0)
 #  define METAL_HDR_AVAILABLE 1
-#elif defined(HAVE_COCOATOUCH) && (defined(__IPHONE_16_0) || defined(__TVOS_16_0))
+#elif defined(HAVE_COCOATOUCH) && defined(__IPHONE_16_0)
 #  define METAL_HDR_AVAILABLE 1
 #else
 #  define METAL_HDR_AVAILABLE 0
