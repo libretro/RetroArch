@@ -1305,11 +1305,23 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    settings_t *settings     = config_get_ptr();
-   bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
-   const char *current_path = strdup(xmb->savestate_thumbnail_file_path);
+   bool savestate_thumbnail;
+   /* Snapshot the current path on the stack before we clear it, so we
+    * can compare against the new path at the end to decide whether to
+    * reset the thumbnail cache.  Previously this was a heap strdup
+    * assigned to a const char * that was never freed (leak on every
+    * selection change in the state-slot menu), performed BEFORE the
+    * !xmb NULL check below (null-deref if data was ever NULL), and
+    * used heap allocation for a value that lives in a fixed-size
+    * char[PATH_MAX_LENGTH] ivar.  Same fix pattern as the materialui
+    * equivalent (93449d3): stack buffer, after the NULL guard. */
+   char old_path[PATH_MAX_LENGTH];
 
    if (!xmb)
       return;
+
+   savestate_thumbnail        = settings->bools.savestate_thumbnail_enable;
+   strlcpy(old_path, xmb->savestate_thumbnail_file_path, sizeof(old_path));
 
    if (xmb->skip_thumbnail_reset)
       return;
@@ -1356,7 +1368,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcpy(xmb->savestate_thumbnail_file_path, path,
                   sizeof(xmb->savestate_thumbnail_file_path));
 
-            if (!string_is_equal(current_path, xmb->savestate_thumbnail_file_path))
+            if (!string_is_equal(old_path, xmb->savestate_thumbnail_file_path))
                gfx_thumbnail_reset(&xmb->thumbnails.savestate);
 
             xmb->fullscreen_thumbnails_available = true;

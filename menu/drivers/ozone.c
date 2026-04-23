@@ -3892,11 +3892,20 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings     = config_get_ptr();
    ozone_handle_t *ozone    = (ozone_handle_t*)data;
-   bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
-   const char *current_path = strdup(ozone->savestate_thumbnail_file_path);
+   bool savestate_thumbnail;
+   /* Stack-local snapshot of the current path; see materialui (93449d3)
+    * and xmb equivalents for rationale.  Fixes three stacked problems:
+    * null-deref on !data via the strdup-before-guard ordering, leak of
+    * a never-freed heap string assigned to const char *, and needless
+    * heap allocation for a value that lives in a fixed-size
+    * char[PATH_MAX_LENGTH] ivar. */
+   char old_path[PATH_MAX_LENGTH];
 
    if (!ozone)
       return;
+
+   savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
+   strlcpy(old_path, ozone->savestate_thumbnail_file_path, sizeof(old_path));
 
    if (ozone->flags2 & OZONE_FLAG2_SELECTION_CORE_IS_VIEWER_REAL)
       ozone->flags2 |=  OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
@@ -3950,7 +3959,7 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcpy(ozone->savestate_thumbnail_file_path, path,
                   sizeof(ozone->savestate_thumbnail_file_path));
 
-            if (!string_is_equal(current_path,
+            if (!string_is_equal(old_path,
                 ozone->savestate_thumbnail_file_path))
                gfx_thumbnail_reset(&ozone->thumbnails.savestate);
 
