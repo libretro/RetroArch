@@ -131,6 +131,7 @@ typedef struct gl1
    unsigned char *menu_frame;
    unsigned char *video_buf;
    unsigned char *menu_video_buf;
+   size_t menu_frame_cap;
 
    int version_major;
    int version_minor;
@@ -2011,10 +2012,11 @@ static void gl1_set_texture_frame(void *data,
 {
    settings_t *settings      = config_get_ptr();
    bool menu_linear_filter   = settings->bools.menu_linear_filter;
-   unsigned       pitch      = width * 2;
+   unsigned pitch            = width * (rgb32 ? 4 : 2);
    gl1_t              *gl1   = (gl1_t*)data;
+   size_t required;
 
-   if (!gl1)
+   if (!gl1 || !frame || !width || !height || !pitch)
       return;
 
    if (menu_linear_filter)
@@ -2022,40 +2024,35 @@ static void gl1_set_texture_frame(void *data,
    else
       gl1->flags            &= ~GL1_FLAG_MENU_SMOOTH;
 
-   if (rgb32)
-      pitch                  = width * 4;
+   required = (size_t)pitch * (size_t)height;
 
-   if (gl1->menu_frame)
-      free(gl1->menu_frame);
-   gl1->menu_frame           = NULL;
-
-   if (     (!gl1->menu_frame)
-         || (gl1->menu_width  != width)
-         || (gl1->menu_height != height)
-         || (gl1->menu_pitch  != pitch))
+   if (required > gl1->menu_frame_cap)
    {
-      if (pitch && height)
-      {
-         if (gl1->menu_frame)
-            free(gl1->menu_frame);
-
-         /* FIXME? We have to assume the pitch has no
-          * extra padding in it because that will
-          * mess up the POT calculation when we don't
-          * know how many bpp there are. */
-         gl1->menu_frame = (unsigned char*)malloc(pitch * height);
-      }
+      /* FIXME? We have to assume the pitch has no
+       * extra padding in it because that will
+       * mess up the POT calculation when we don't
+       * know how many bpp there are. */
+      unsigned char *tmp = (unsigned char*)realloc(
+            gl1->menu_frame, required);
+      if (!tmp)
+         return;                        /* keep previous frame intact */
+      gl1->menu_frame     = tmp;
+      gl1->menu_frame_cap = required;
    }
 
-   if (gl1->menu_frame && frame && pitch && height)
-   {
-      memcpy(gl1->menu_frame, frame, pitch * height);
-      gl1->menu_width        = width;
-      gl1->menu_height       = height;
-      gl1->menu_pitch        = pitch;
-      gl1->menu_bits         = rgb32 ? 32 : 16;
-      gl1->flags            |= GL1_FLAG_MENU_SIZE_CHANGED;
-   }
+   /* Only set MENU_SIZE_CHANGED when the dimensions the downstream
+    * frame path cares about actually change; otherwise the POT-sized
+    * menu_video_buf would get reallocated on every single frame. */
+   if (     gl1->menu_width  != width
+         || gl1->menu_height != height
+         || gl1->menu_pitch  != pitch)
+      gl1->flags |= GL1_FLAG_MENU_SIZE_CHANGED;
+
+   memcpy(gl1->menu_frame, frame, required);
+   gl1->menu_width  = width;
+   gl1->menu_height = height;
+   gl1->menu_pitch  = pitch;
+   gl1->menu_bits   = rgb32 ? 32 : 16;
 }
 
 static void gl1_set_video_mode(void *data, unsigned width, unsigned height,
