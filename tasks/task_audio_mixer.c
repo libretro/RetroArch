@@ -116,6 +116,7 @@ static void task_audio_mixer_handle_upload_ogg(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 
@@ -147,6 +148,7 @@ static void task_audio_mixer_handle_upload_ogg_and_play(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 
@@ -178,6 +180,7 @@ static void task_audio_mixer_handle_upload_flac(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 
@@ -209,6 +212,7 @@ static void task_audio_mixer_handle_upload_flac_and_play(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 
@@ -240,6 +244,7 @@ static void task_audio_mixer_handle_upload_mp3(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 
@@ -271,6 +276,7 @@ static void task_audio_mixer_handle_upload_mp3_and_play(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 
@@ -302,6 +308,7 @@ static void task_audio_mixer_handle_upload_mod(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 
@@ -333,6 +340,7 @@ static void task_audio_mixer_handle_upload_mod_and_play(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 
@@ -365,6 +373,7 @@ static void task_audio_mixer_handle_upload_wav(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 
@@ -396,6 +405,7 @@ static void task_audio_mixer_handle_upload_wav_and_play(retro_task_t *task,
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
    params.basename             = (img->path && *img->path) ? strdup(path_basename_nocompression(img->path)) : NULL;
+   params.buf_owned            = true;
 
    audio_driver_mixer_add_stream(&params);
 

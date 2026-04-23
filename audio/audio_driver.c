@@ -1419,7 +1419,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    void *buf                     = NULL;
 
    if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
-      return false;
+      goto error;
 
    switch (params->slot_selection_type)
    {
@@ -1436,17 +1436,27 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       default:
          if (!audio_driver_mixer_get_free_stream_slot(
                   &free_slot, params->stream_type))
-            return false;
+            goto error;
          break;
    }
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
-      return false;
+      goto error;
 
-   if (!(buf = malloc(params->bufsize)))
-      return false;
-
-   memcpy(buf, params->buf, params->bufsize);
+   /* If the caller transferred buffer ownership, use it directly;
+    * otherwise make a private copy.  The OGG/FLAC/MP3/MOD loaders
+    * retain the pointer for streaming decode, so taking ownership
+    * avoids a needless per-sound duplication and a matching leak
+    * (the original caller-owned buffer has nowhere to be freed,
+    * since the mixer frees only the internal copy). */
+   if (params->buf_owned)
+      buf = params->buf;
+   else
+   {
+      if (!(buf = malloc(params->bufsize)))
+         return false;
+      memcpy(buf, params->buf, params->bufsize);
+   }
 
    switch (params->type)
    {
@@ -1521,6 +1531,14 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       audio_driver_st.mixer_streams_playing++;
 
    return true;
+
+error:
+   /* On early failure (bad params / no slot), honor the ownership
+    * contract: if the caller transferred buf to us, we free it so
+    * the caller does not double-free and does not leak. */
+   if (params->buf_owned)
+      free(params->buf);
+   return false;
 }
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i)

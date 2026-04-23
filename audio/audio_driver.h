@@ -73,6 +73,14 @@ typedef struct audio_mixer_stream_params
    enum audio_mixer_stream_type stream_type;
    enum audio_mixer_type type;
    enum audio_mixer_state state;
+   /* If true, add_stream takes ownership of buf and the caller must
+    * not free or otherwise reference it after the call returns.  The
+    * buffer will be free()d either directly (WAV, once converted to
+    * PCM) or when the mixer sound is destroyed (OGG/FLAC/MP3/MOD,
+    * which retain the buffer for streaming decode).
+    * If false, add_stream copies buf internally and the caller retains
+    * ownership of the original memory. */
+   bool buf_owned;
 } audio_mixer_stream_params_t;
 #endif
 
