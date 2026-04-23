@@ -168,6 +168,8 @@ typedef struct gl3
    unsigned pbo_readback_index;
    unsigned hw_render_max_width;
    unsigned hw_render_max_height;
+   unsigned menu_texture_width;
+   unsigned menu_texture_height;
    GLuint scratch_vbos[GL_CORE_NUM_VBOS];
    GLuint hw_render_texture;
    GLuint hw_render_fbo;
@@ -182,6 +184,7 @@ typedef struct gl3
    uint16_t flags;
 
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
+   bool menu_texture_rgb32;
 } gl3_t;
 
 typedef struct gl3_video_shader_ctx_init
@@ -4722,18 +4725,38 @@ static void gl3_set_texture_frame(void *data,
       ? GL_LINEAR : GL_NEAREST;
    unsigned base_size   = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl3_t *gl            = (gl3_t*)data;
+   bool recreate;
+
    if (!gl)
       return;
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
-   if (gl->menu_texture)
-      glDeleteTextures(1, &gl->menu_texture);
-   glGenTextures(1, &gl->menu_texture);
-   glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
-   glTexStorage2D(GL_TEXTURE_2D, 1, rgb32
-         ? GL_RGBA8 : GL_RGBA4, width, height);
+   /* glTexStorage2D is immutable — the texture object must be
+    * recreated whenever dimensions or pixel format change.  For
+    * same-size same-format updates we keep the existing texture
+    * and just stream new pixel data via glTexSubImage2D. */
+   recreate = (gl->menu_texture == 0)
+           || (gl->menu_texture_width  != width)
+           || (gl->menu_texture_height != height)
+           || (gl->menu_texture_rgb32  != rgb32);
+
+   if (recreate)
+   {
+      if (gl->menu_texture != 0)
+         glDeleteTextures(1, &gl->menu_texture);
+      glGenTextures(1, &gl->menu_texture);
+      glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
+      glTexStorage2D(GL_TEXTURE_2D, 1, rgb32
+            ? GL_RGBA8 : GL_RGBA4, width, height);
+
+      gl->menu_texture_width  = width;
+      gl->menu_texture_height = height;
+      gl->menu_texture_rgb32  = rgb32;
+   }
+   else
+      glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, base_size);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -4742,6 +4765,10 @@ static void gl3_set_texture_frame(void *data,
                    width, height, GL_RGBA, rgb32
                    ? GL_UNSIGNED_BYTE
                    : GL_UNSIGNED_SHORT_4_4_4_4, frame);
+
+   /* Filter/wrap/swizzle are set every call: the linear-filter menu
+    * setting can toggle at runtime, and the cost of these calls is
+    * negligible compared to the pixel upload above. */
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, menu_filter);
