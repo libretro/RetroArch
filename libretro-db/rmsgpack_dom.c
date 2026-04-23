@@ -506,9 +506,15 @@ int rmsgpack_dom_read_into(intfstream_t *fd, ...)
             case RDT_BINARY:
                buff_value     = va_arg(ap, char *);
                uint_value     = va_arg(ap, uint64_t *);
-               *uint_value    = value->val.binary.len;
+               /* *uint_value is the caller's buffer capacity on entry
+                * and the number of bytes copied on exit.  Compute the
+                * clamped copy length BEFORE overwriting *uint_value,
+                * otherwise the bound check collapses to len > len and
+                * the memcpy can overrun the caller's buffer with
+                * attacker-controlled length from the db file. */
                min_len        = (value->val.binary.len > *uint_value) ?
                   *uint_value : value->val.binary.len;
+               *uint_value    = min_len;
 
                memcpy(buff_value, value->val.binary.buff, (size_t)min_len);
                break;
