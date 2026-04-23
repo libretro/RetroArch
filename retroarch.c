@@ -3430,62 +3430,8 @@ bool command_event(enum event_command cmd, void *data)
                return false;
          }
          break;
-      case CMD_EVENT_LOAD_STATE_SLOT0:
-         configuration_set_int(settings, settings->ints.state_slot, 0);
-
-         if (!handle_load_state_command_event())
-            return false;
-         break;
-      case CMD_EVENT_LOAD_STATE_SLOT1:
-         configuration_set_int(settings, settings->ints.state_slot, 1);
-
-         if (!handle_load_state_command_event())
-            return false;
-         break;
-      case CMD_EVENT_LOAD_STATE_SLOT2:
-         configuration_set_int(settings, settings->ints.state_slot, 2);
-
-         if (!handle_load_state_command_event())
-            return false;
-         break;
-      case CMD_EVENT_LOAD_STATE_SLOT3:
-         configuration_set_int(settings, settings->ints.state_slot, 3);
-
-         if (!handle_load_state_command_event())
-            return false;
-         break;
-      case CMD_EVENT_LOAD_STATE_SLOT4:
-         configuration_set_int(settings, settings->ints.state_slot, 4);
-
-         if (!handle_load_state_command_event())
-            return false;
-         break;
-      case CMD_EVENT_LOAD_STATE_SLOT5:
-         configuration_set_int(settings, settings->ints.state_slot, 5);
-
-         if (!handle_load_state_command_event())
-            return false;
-         break;
-      case CMD_EVENT_LOAD_STATE_SLOT6:
-         configuration_set_int(settings, settings->ints.state_slot, 6);
-
-         if (!handle_load_state_command_event())
-            return false;
-         break;
-      case CMD_EVENT_LOAD_STATE_SLOT7:
-         configuration_set_int(settings, settings->ints.state_slot, 7);
-
-         if (!handle_load_state_command_event())
-            return false;
-         break;
-      case CMD_EVENT_LOAD_STATE_SLOT8:
-         configuration_set_int(settings, settings->ints.state_slot, 8);
-
-         if (!handle_load_state_command_event())
-            return false;
-         break;
-      case CMD_EVENT_LOAD_STATE_SLOT9:
-         configuration_set_int(settings, settings->ints.state_slot, 9);
+      case CMD_EVENT_LOAD_STATE_SLOT:
+         configuration_set_int(settings, settings->ints.state_slot, *(int*)data);
 
          if (!handle_load_state_command_event())
             return false;
@@ -3625,62 +3571,8 @@ bool command_event(enum event_command cmd, void *data)
          if (!command_event_main_state(cmd))
             return false;
          break;
-      case CMD_EVENT_SAVE_STATE_SLOT0:
-         configuration_set_int(settings, settings->ints.state_slot, 0);
-
-         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
-            return false;
-         break;
-      case CMD_EVENT_SAVE_STATE_SLOT1:
-         configuration_set_int(settings, settings->ints.state_slot, 1);
-
-         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
-            return false;
-         break;
-      case CMD_EVENT_SAVE_STATE_SLOT2:
-         configuration_set_int(settings, settings->ints.state_slot, 2);
-
-         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
-            return false;
-         break;
-      case CMD_EVENT_SAVE_STATE_SLOT3:
-         configuration_set_int(settings, settings->ints.state_slot, 3);
-
-         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
-            return false;
-         break;
-      case CMD_EVENT_SAVE_STATE_SLOT4:
-         configuration_set_int(settings, settings->ints.state_slot, 4);
-
-         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
-            return false;
-         break;
-      case CMD_EVENT_SAVE_STATE_SLOT5:
-         configuration_set_int(settings, settings->ints.state_slot, 5);
-
-         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
-            return false;
-         break;
-      case CMD_EVENT_SAVE_STATE_SLOT6:
-         configuration_set_int(settings, settings->ints.state_slot, 6);
-
-         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
-            return false;
-         break;
-      case CMD_EVENT_SAVE_STATE_SLOT7:
-         configuration_set_int(settings, settings->ints.state_slot, 7);
-
-         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
-            return false;
-         break;
-      case CMD_EVENT_SAVE_STATE_SLOT8:
-         configuration_set_int(settings, settings->ints.state_slot, 8);
-
-         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
-            return false;
-         break;
-      case CMD_EVENT_SAVE_STATE_SLOT9:
-         configuration_set_int(settings, settings->ints.state_slot, 9);
+      case CMD_EVENT_SAVE_STATE_SLOT:
+         configuration_set_int(settings, settings->ints.state_slot, *(int*)data);
 
          if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
             return false;
