@@ -33,6 +33,36 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+/* Release helpers that work identically under MRC and ARC.
+ *
+ * The ivars on record_avfoundation_t are Objective-C pointers
+ * (AVAssetWriter*, AVAssetWriterInput*, etc. and dispatch_queue_t)
+ * held in a plain C struct.  Modern clang auto-qualifies ObjC struct
+ * members as __strong under ARC, so assignment through them releases
+ * the prior value automatically - plain `field = nil` is correct.
+ *
+ * Under MRC (RetroArch's top-level qb Makefile builds .m files without
+ * -fobjc-arc, and so do the RetroArch/_Metal/_OSX107/_iOS13 Xcode
+ * projects) no such auto-release happens, so `field = nil` would
+ * overwrite a +1-retained pointer and leak the object.  That is the
+ * historical behaviour: every record_stop leaked four AVAssetWriter
+ * objects and one GCD queue.
+ *
+ * Fix with the macros below: explicit release on the MRC path,
+ * assignment-only on the ARC path.  `[nil release]` is a safe no-op,
+ * but `dispatch_release(NULL)` is undefined, so the DQ macro guards.
+ *
+ * The field expression is evaluated twice by the MRC expansion; all
+ * five call sites use a direct struct-member lvalue with no aliasing
+ * so this is safe. */
+#if __has_feature(objc_arc)
+#  define RA_RELEASE_OBJ(_x)  do { (_x) = nil; } while (0)
+#  define RA_RELEASE_DQ(_x)   do { (_x) = nil; } while (0)
+#else
+#  define RA_RELEASE_OBJ(_x)  do { [(_x) release]; (_x) = nil; } while (0)
+#  define RA_RELEASE_DQ(_x)   do { if (_x) { dispatch_release(_x); (_x) = nil; } } while (0)
+#endif
+
 typedef struct record_avfoundation
 {
    AVAssetWriter *assetWriter;
@@ -140,11 +170,11 @@ static void avfoundation_release_handle(record_avfoundation_t *handle)
    if (!handle)
       return;
    scaler_ctx_gen_reset(&handle->scaler);
-   handle->pixelBufferAdaptor = nil;
-   handle->videoInput         = nil;
-   handle->audioInput         = nil;
-   handle->assetWriter        = nil;
-   handle->encodingQueue      = nil;
+   RA_RELEASE_OBJ(handle->pixelBufferAdaptor);
+   RA_RELEASE_OBJ(handle->videoInput);
+   RA_RELEASE_OBJ(handle->audioInput);
+   RA_RELEASE_OBJ(handle->assetWriter);
+   RA_RELEASE_DQ (handle->encodingQueue);
    free(handle);
 }
 
@@ -343,7 +373,7 @@ static void *avfoundation_record_init(const struct record_params *params)
          else
          {
             RARCH_WARN("[AVFoundation] Cannot add audio input, continuing without audio\n");
-            handle->audioInput = nil;
+            RA_RELEASE_OBJ(handle->audioInput);
          }
       }
 
