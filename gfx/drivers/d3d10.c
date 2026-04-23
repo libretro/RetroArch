@@ -1595,6 +1595,7 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          free(d3d10->pass[i].semantics.cbuffers[j].uniforms);
+         d3d10->pass[i].semantics.cbuffers[j].uniforms = NULL;
          Release(d3d10->pass[i].buffers[j]);
       }
    }
