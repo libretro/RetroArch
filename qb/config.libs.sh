@@ -781,6 +781,18 @@ if [ "$HAVE_CRTSWITCHRES" != no ]; then
    fi
 fi
 
+if [ "$HAVE_LUA" != no ]; then
+   if [ "$HAVE_C99" = 'yes' ] && [ "$C89_BUILD" != '1' ]; then
+      HAVE_LUA=yes
+   else
+      HAVE_LUA=no
+   fi
+fi
+
+if [ "$HAVE_ICONV" = 'auto' ]; then
+   check_lib '' ICONV -liconv iconv_open
+fi
+      
 check_enabled SLANG GLSLANG glslang 'slang is' false
 check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
 check_enabled SLANG OPENGL_CORE 'OpenGL core' 'slang is' false
