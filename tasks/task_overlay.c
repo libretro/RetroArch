@@ -231,6 +231,18 @@ static void task_overlay_desc_populate_eightway_config(
          calloc(1, sizeof(overlay_eightway_config_t));
    eightway              = desc->eightway_config;
 
+   /* NULL-check: the switch body below writes eightway->up etc.
+    * via BIT256_SET which would NULL-deref on OOM.  void-returning
+    * function, so we can't signal failure to the caller.  Leaving
+    * eightway_config = NULL on failure makes input_driver.c's
+    * OVERLAY_TYPE_DPAD_AREA / ABXY_AREA dispatch path take its
+    * 'if (desc->eightway_config)' gate and skip the area's input
+    * handling - strictly better than a crash.  The user-visible
+    * consequence is that this one eightway area is dead until
+    * the overlay is reloaded. */
+   if (!eightway)
+      return;
+
    /* Populate default vals for the eightway type.
     */
    switch (desc->type)
@@ -1110,6 +1122,16 @@ static void task_overlay_handler(retro_task_t *task)
    {
       overlay_task_data_t *data = (overlay_task_data_t*)
          calloc(1, sizeof(*data));
+
+      /* NULL-check before the seven field writes below NULL-deref.
+       * On OOM skip the task_set_data call so the consumer
+       * (input/input_driver.c input_overlay_loaded) sees NULL
+       * task_data.  That consumer now also NULL-checks its
+       * task_data argument (fixed in the same commit) - without
+       * that second fix this branch still crashes at the
+       * consumer, just one call further down the stack. */
+      if (!data)
+         return;
 
       data->overlays                    = loader->overlays;
       data->active                      = loader->active;

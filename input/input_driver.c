@@ -3032,9 +3032,16 @@ static bool input_overlay_poll(
             break;
          case OVERLAY_TYPE_DPAD_AREA:
          case OVERLAY_TYPE_ABXY_AREA:
-            input_overlay_get_eightway_state(
-                  desc, desc->eightway_config,
-                  &out->buttons, x_dist, y_dist);
+            /* Gate on eightway_config because task_overlay_desc_
+             * populate_eightway_config can legitimately fail its
+             * calloc under OOM and leave this field NULL for an
+             * area-type desc that requires it.  Without the
+             * gate input_overlay_get_eightway_state NULL-derefs
+             * on eightway->slope_high below. */
+            if (desc->eightway_config)
+               input_overlay_get_eightway_state(
+                     desc, desc->eightway_config,
+                     &out->buttons, x_dist, y_dist);
             break;
          case OVERLAY_TYPE_ANALOG_RIGHT:
             base = 2;
@@ -6220,7 +6227,36 @@ static void input_overlay_loaded(retro_task_t *task,
    if (err)
       return;
 
+   /* NULL-check task_data: the task producer (task_overlay_handler
+    * in tasks/task_overlay.c) can legitimately fail its data
+    * alloc under OOM and pass NULL here; data->overlays below
+    * would NULL-deref.  Nothing useful to do with a NULL payload
+    * so bail cleanly. */
+   if (!data)
+      return;
+
    ol              = (input_overlay_t*)calloc(1, sizeof(*ol));
+   /* NULL-check the ol calloc: the field writes below NULL-deref
+    * on OOM.  Task_data ownership transferred to us by the
+    * retro_task framework via task_set_data - we must tear it
+    * down cleanly.  image_list entries each have a heap
+    * texture_image* in elems[i].attr.p that move_images would
+    * normally transfer into ol->images; since ol doesn't exist,
+    * free each texture explicitly before string_list_free
+    * (string_list_free only frees the list struct and its
+    * entries' .data strings, not their .attr.p attachments). */
+   if (!ol)
+   {
+      if (data->image_list)
+      {
+         size_t i;
+         for (i = 0; i < data->image_list->size; i++)
+            image_texture_free((struct texture_image*)data->image_list->elems[i].attr.p);
+         string_list_free(data->image_list);
+      }
+      free(data);
+      return;
+   }
    ol->overlays    = data->overlays;
    ol->size        = data->size;
    ol->active      = data->active;
