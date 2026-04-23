@@ -230,6 +230,22 @@ bool content_undo_load_state(void)
 
    /* We need to make a temporary copy of the buffer, to allow the swap below */
    temp_data              = malloc(undo_load_buf.size);
+   /* NULL-check the malloc before the memcpy on the next line
+    * NULL-derefs.  On OOM we also need to tear down the 'blocks'
+    * array built above to match the normal-return cleanup path
+    * at the end of this function.  Not using goto-cleanup because
+    * the existing function structure doesn't have a single exit
+    * point and retrofitting one would churn unrelated code. */
+   if (!temp_data)
+   {
+      for (i = 0; i < num_blocks; i++)
+      {
+         free(blocks[i].data);
+         blocks[i].data = NULL;
+      }
+      free(blocks);
+      return false;
+   }
    temp_data_size         = undo_load_buf.size;
    memcpy(temp_data, undo_load_buf.data, undo_load_buf.size);
 
