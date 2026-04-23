@@ -2484,11 +2484,21 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)data;
-   bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
-   const char *current_path = strdup(mui->savestate_thumbnail_file_path);
+   bool savestate_thumbnail;
+   char old_path[PATH_MAX_LENGTH];
 
    if (!mui)
       return;
+
+   savestate_thumbnail      = settings->bools.savestate_thumbnail_enable;
+
+   /* Snapshot the current path before clearing it, so we can detect
+    * whether the resolved path actually changed and only then reset
+    * the thumbnail.  A stack buffer is sufficient (the field it
+    * mirrors is itself a fixed-size char array) and avoids the leak
+    * + potential NULL-deref of the previous strdup-before-NULL-check
+    * construction. */
+   strlcpy(old_path, mui->savestate_thumbnail_file_path, sizeof(old_path));
 
    mui->savestate_thumbnail_file_path[0] = '\0';
 
@@ -2525,7 +2535,7 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
                strlcpy(mui->savestate_thumbnail_file_path, path,
                      sizeof(mui->savestate_thumbnail_file_path));
 
-            if (!string_is_equal(current_path, mui->savestate_thumbnail_file_path))
+            if (!string_is_equal(old_path, mui->savestate_thumbnail_file_path))
                gfx_thumbnail_reset(&mui->thumbnails.savestate);
 
             materialui_update_fullscreen_thumbnail_label(mui);
