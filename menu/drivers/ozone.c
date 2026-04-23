@@ -4623,6 +4623,14 @@ static ozone_node_t *ozone_copy_node(const ozone_node_t *old_node)
 {
    ozone_node_t *new_node = (ozone_node_t*)malloc(sizeof(*new_node));
 
+   /* NULL-check the malloc: '*new_node = *old_node' on the next
+    * line NULL-derefs on OOM.  Caller in ozone_list_deep_copy
+    * handles a NULL return - it just leaves
+    * dst->list[j].userdata = NULL, which matches the 'no
+    * src_udata' branch. */
+   if (!new_node)
+      return NULL;
+
    *new_node              = *old_node;
    new_node->fullpath     = old_node->fullpath
          ? strdup(old_node->fullpath)
@@ -4662,8 +4670,17 @@ static void ozone_list_deep_copy(const file_list_t *src,
       if (src_adata)
       {
          void *data = malloc(sizeof(menu_file_list_cbs_t));
-         memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
-         dst->list[j].actiondata = data;
+         /* NULL-check the malloc before the memcpy on the next
+          * line NULL-derefs.  On OOM leave actiondata NULL -
+          * matches the 'no src_adata' branch above; file_list
+          * consumers already handle NULL actiondata entries. */
+         if (data)
+         {
+            memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
+            dst->list[j].actiondata = data;
+         }
+         else
+            dst->list[j].actiondata = NULL;
       }
 
       ++j;
