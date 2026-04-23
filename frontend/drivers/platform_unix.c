@@ -453,8 +453,18 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    if (savedState)
    {
       android_app->savedState     = malloc(savedStateSize);
-      android_app->savedStateSize = savedStateSize;
-      memcpy(android_app->savedState, savedState, savedStateSize);
+      /* NULL-check before memcpy on the next line.  Android app
+       * start with saved state is common (screen rotation,
+       * backgrounding/restoration), so this is a realistic OOM
+       * path on low-RAM devices.  On failure skip the saved-state
+       * copy; android_app_entry will start cleanly without it.
+       * We can't fail the whole android_app construction here
+       * because the app-glue thread already expects to exist. */
+      if (android_app->savedState)
+      {
+         android_app->savedStateSize = savedStateSize;
+         memcpy(android_app->savedState, savedState, savedStateSize);
+      }
    }
 
    if (pipe(msgpipe))

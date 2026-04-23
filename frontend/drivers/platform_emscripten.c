@@ -867,6 +867,17 @@ static void platform_emscripten_mount_filesystems(void)
       {
          backend_t fetch = NULL;
          char *base_url  = strdup(line);
+         /* NULL-check strdup before the two base_url[...] = '\0'
+          * writes below NULL-deref.  FetchFS init is a boot-time
+          * operation on the web build; other init failures in
+          * this function (missing env vars, missing manifest file,
+          * fetch backend construction failure) all abort(), so
+          * match that policy here. */
+         if (!base_url)
+         {
+            printf("[FetchFS] out of memory duplicating base URL\n");
+            abort();
+         }
          base_url[strcspn(base_url, "\r\n")] = '\0'; /* drop newline */
          base_url[__len-1] = '\0'; /* drop newline */
          __len = max_line_len;
