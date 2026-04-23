@@ -153,6 +153,7 @@ static bool nbio_linux_iterate(void *data)
 static void nbio_linux_resize(void *data, size_t len)
 {
    struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   void *new_ptr;
    if (!handle)
       return;
 
@@ -166,7 +167,21 @@ static void nbio_linux_resize(void *data, size_t len)
       abort(); /* this one returns void and I can't find any other way
                   for it to report failure */
 
-   handle->ptr = realloc(handle->ptr, len);
+   /* Attempt the realloc BEFORE committing the new length.  If it
+    * fails, the old pointer and its old size are still valid; the
+    * caller can retry or abandon.  Matches the sibling pattern in
+    * nbio_stdio_resize - the pre-patch form
+    *
+    *    handle->ptr = realloc(handle->ptr, len);
+    *    handle->len = len;
+    *
+    * set handle->ptr to NULL on OOM (leaking the old buffer) and
+    * then claimed the new length, so subsequent get_ptr()/read/write
+    * walked a NULL pointer assuming len bytes. */
+   if (!(new_ptr = realloc(handle->ptr, len)))
+      return;
+
+   handle->ptr = new_ptr;
    handle->len = len;
 }
 
