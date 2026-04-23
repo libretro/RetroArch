@@ -2263,6 +2263,23 @@ ifeq ($(HAVE_V4L2),1)
    LIBS += $(V4L2_LIBS)
 endif
 
+# AVFoundation camera + recording (Apple, macOS 10.7+ / iOS).  The
+# 10.7 gate is enforced in qb/config.libs.sh (see the HAVE_AVF block
+# there); this section just wires the object files and frameworks in
+# when HAVE_AVF is on.  Note that HAVE_MICROPHONE and HAVE_COREAUDIO3
+# above also add -framework AVFoundation for their own reasons; make
+# tolerates the repeat and the linker de-duplicates.
+ifeq ($(HAVE_AVF), 1)
+   DEFINES += -DHAVE_AVF
+   OBJ     += camera/drivers/avfoundation.o \
+              record/drivers/record_avfoundation.o
+   LIBS    += -framework AVFoundation -framework CoreVideo \
+              -framework CoreMedia   -framework Accelerate
+   ifeq ($(HAVE_COCOATOUCH), 1)
+      LIBS += -framework UIKit
+   endif
+endif
+
 # FFmpeg
 
 ifeq ($(HAVE_FFMPEG), 1)
