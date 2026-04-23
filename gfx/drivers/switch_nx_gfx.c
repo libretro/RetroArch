@@ -825,8 +825,19 @@ static void switch_set_texture_frame(
         int xsf, ysf, sf;
         struct scaler_ctx *sctx = NULL;
 
+        /* realloc-to-tmp to avoid the classic realloc-assign-self
+         * leak: the pre-patch form 'pixels = realloc(pixels, sz)'
+         * overwrites the only pointer to the old menu-texture
+         * buffer with NULL on OOM, leaking it.  The subsequent
+         * 'if (!pixels) return' catches the crash but not the
+         * leak. */
         if (sw->menu_texture.pixels)
-            sw->menu_texture.pixels = realloc(sw->menu_texture.pixels, sz);
+        {
+            void *tmp = realloc(sw->menu_texture.pixels, sz);
+            if (!tmp)
+                return;
+            sw->menu_texture.pixels = tmp;
+        }
         else
             sw->menu_texture.pixels = malloc(sz);
 

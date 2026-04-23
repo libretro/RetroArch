@@ -360,7 +360,23 @@ static uint32_t get_plane_prop_id(uint32_t obj_id, const char *name)
        * This implementation must be improved. */
       props      = drmModeObjectGetProperties(drm.fd,
             plane->plane_id, DRM_MODE_OBJECT_PLANE);
+      /* drmModeObjectGetProperties returns NULL on kernel/driver
+       * error or if the plane has no properties; previously
+       * 'props->count_props' NULL-deref'd in that case.  Also
+       * malloc on the next line was unchecked and props_info[j]
+       * below would NULL-deref on OOM.  On either failure skip
+       * this plane and continue; the caller falls through to
+       * 'return 0' (not-found) if no plane yields the prop.
+       *
+       * NOTE: pre-existing leaks in this function (plane_resources,
+       * plane, props, props_info are all libdrm-allocated and
+       * never freed even on the success path that 'return's from
+       * inside the loop) are out of scope for this fix. */
+      if (!props)
+         continue;
       props_info = malloc(props->count_props * sizeof *props_info);
+      if (!props_info)
+         continue;
 
       for (j = 0; j < props->count_props; ++j)
          props_info[j] =	drmModeGetProperty(drm.fd, props->props[j]);
