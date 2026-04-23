@@ -5746,7 +5746,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                                        || macro_define_start[comment_len-1] == '\r'))
                                  comment_len--;
                               while (opos + dll + comment_len + 10 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, dl, dll); opos += dll;
                               memcpy(out + opos, macro_define_start, comment_len);
                               opos += comment_len;
@@ -5757,7 +5763,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                            {
                               size_t mid = (size_t)(seq_start - macro_define_end);
                               while (opos + mid + 1 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, macro_define_end, mid);
                               opos += mid;
                            }
@@ -5769,7 +5781,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                                     "[loop] for (int %s = 0; %s <= %d; %s++) {\n",
                                     macro_param, macro_param, max_seq, macro_param);
                               while (opos + lh_len + 1 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, loop_header, lh_len);
                               opos += lh_len;
                            }
@@ -5783,7 +5801,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                                        && bp_src[1] == '\n')
                                  { bp_src += 2; continue; }
                                  while (opos + 2 >= cap)
-                                 { cap *= 2; out = (char*)realloc(out, cap); }
+                                 {
+                                    char *tmp;
+                                    cap *= 2;
+                                    if (!(tmp = (char*)realloc(out, cap)))
+                                    { free(out); return NULL; }
+                                    out = tmp;
+                                 }
                                  out[opos++] = *bp_src++;
                               }
                            }
@@ -5792,7 +5816,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                            {
                               const char *cl = "\n}\n";
                               while (opos + 4 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, cl, 3); opos += 3;
                            }
 
@@ -5800,7 +5830,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                            {
                               size_t tail = src_len_full - (size_t)(seq_end_ptr - source);
                               while (opos + tail + 1 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, seq_end_ptr, tail);
                               opos += tail;
                            }
