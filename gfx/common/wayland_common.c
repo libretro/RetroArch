@@ -545,7 +545,20 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
       return NULL;
    }
 
-   buffer            = calloc(1, sizeof *buffer);
+   /* Guard the calloc before dereferencing buffer below.  The
+    * previous form immediately wrote 'buffer->wl_buffer = ...' with
+    * no check; an OOM returning NULL from calloc would segfault.
+    * On OOM here we also have to munmap the region and close the
+    * fd so we do not leak them - they were both acquired above
+    * specifically to be owned by the shm_buffer_t we are about to
+    * return. */
+   if (!(buffer = calloc(1, sizeof *buffer)))
+   {
+      RARCH_ERR("[Wayland] [SHM] Out of memory allocating shm_buffer_t.\n");
+      munmap(data, size);
+      close(fd);
+      return NULL;
+   }
 
    pool              = wl_shm_create_pool(wl->shm, fd, size);
    buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
