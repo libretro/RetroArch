@@ -115,6 +115,8 @@ enum event_command
    CMD_EVENT_FPS_TOGGLE,
    /* Toggles statistics display. */
    CMD_EVENT_STATISTICS_TOGGLE,
+   /* Initializes video filter. */
+   CMD_EVENT_VIDEO_FILTER_INIT,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
    /* Frees or caches overlay. */

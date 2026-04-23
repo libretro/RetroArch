@@ -14822,7 +14822,8 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_filter;
             MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "filt");
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+                  CMD_EVENT_VIDEO_FILTER_INIT);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             END_SUB_GROUP(list, list_info, parent_group);
