@@ -266,14 +266,16 @@ $(OBJDIR)/%.o: %.m
 	@$(if $(Q), $(shell echo echo OBJC $<),)
 	$(Q)$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
-# ARC (Automatic Reference Counting) overrides. These three Objective-C
-# files use ARC-only constructs (__weak, etc.) and must be built with
-# -fobjc-arc. The rest of the RetroArch Objective-C code is MRC-written
-# (explicit retain/release, NSAutoreleasePool, etc.) and would fail to
-# compile under ARC — so we cannot set -fobjc-arc globally. Xcode does
-# the equivalent via per-file CLANG_ENABLE_OBJC_ARC=YES build settings.
+# ARC (Automatic Reference Counting) overrides. These Objective-C
+# files use ARC-only constructs (__weak, __bridge*, no manual
+# retain/release) and must be built with -fobjc-arc. The rest of the
+# RetroArch Objective-C code is MRC-written (explicit retain/release,
+# NSAutoreleasePool, etc.) and would fail to compile under ARC — so
+# we cannot set -fobjc-arc globally. Xcode does the equivalent via
+# per-file CLANG_ENABLE_OBJC_ARC=YES build settings.
 $(OBJDIR)/gfx/drivers/metal.o: OBJCFLAGS += -fobjc-arc
 $(OBJDIR)/input/drivers_joypad/mfi_joypad.o: OBJCFLAGS += -fobjc-arc
+$(OBJDIR)/audio/drivers/coreaudio3.o: OBJCFLAGS += -fobjc-arc
 
 $(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)
 	@mkdir -p $(dir $@)
