@@ -95,6 +95,13 @@ void* ssl_socket_init(int fd, const char *domain)
    static const char *pers = "libretro";
    struct ssl_state *state = (struct ssl_state*)calloc(1, sizeof(*state));
 
+   /* NULL-check before 'state->domain = domain' on the next line
+    * dereferences state.  Sibling bug in net_socket_ssl_bear.c's
+    * ssl_socket_init was fixed in the previous commit; applying
+    * the same fix here. */
+   if (!state)
+      return NULL;
+
    state->domain           = domain;
 
 #if defined(MBEDTLS_DEBUG_C)
