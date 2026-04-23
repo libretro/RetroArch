@@ -288,6 +288,23 @@ int netplay_rooms_parse(const char *buf, size_t len)
    net_st->rooms_data = (struct netplay_rooms*)
       calloc(1, sizeof(*net_st->rooms_data));
 
+   /* NULL-check: the rjson_parse_quick callbacks below (at
+    * lines ~103, ~108, etc.) dereference net_st->rooms_data
+    * unconditionally in the JSON member / object-start handlers.
+    * On OOM bail before invoking the parser - 'return 0' is the
+    * existing success return, but the caller (parse_lobby_json)
+    * only iterates rooms if net_st->rooms_data is non-NULL, so
+    * the no-rooms-available outcome matches the 'no entries in
+    * the JSON' success path.
+    *
+    * The inner per-room callocs at lines ~105 and ~110 are
+    * still unchecked (they're deep inside rjson callbacks with
+    * no practical way to propagate OOM - fixing them would
+    * require threading an error flag through the entire
+    * parse-context struct, out of scope here). */
+   if (!net_st->rooms_data)
+      return 0;
+
    rjson_parse_quick(buf, len, &ctx, 0,
          netplay_json_object_member,
          netplay_json_string,

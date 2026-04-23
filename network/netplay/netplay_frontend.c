@@ -9770,6 +9770,13 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             /* copy passed interface to local state */
             net_st->core_netpacket_interface = (struct retro_netpacket_callback*)
                malloc(sizeof(*net_st->core_netpacket_interface));
+            /* NULL-check: the struct-assign on the next line
+             * NULL-derefs on OOM.  On failure skip the copy and
+             * the path-redirect; USE_CORE_PACKET_INTERFACE
+             * (line ~9782) correctly reports 'not available'
+             * when the pointer is NULL. */
+            if (!net_st->core_netpacket_interface)
+               break;
             *net_st->core_netpacket_interface = *(struct retro_netpacket_callback*)data;
             /* reset savefile dir as core_netpacket_interface affects it */
             runloop_path_set_redirect(config_get_ptr(),

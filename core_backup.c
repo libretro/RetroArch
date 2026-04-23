@@ -592,6 +592,9 @@ core_backup_list_t *core_backup_list_init(
    /* Create core backup list */
    if (!(backup_list = (core_backup_list_t*)malloc(sizeof(*backup_list))))
    {
+      /* entries was allocated by the previous if-block and
+       * would leak if we only freed dir_list here. */
+      free(entries);
       string_list_free(dir_list);
       return NULL;
    }
