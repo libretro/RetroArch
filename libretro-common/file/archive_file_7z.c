@@ -269,7 +269,18 @@ static int64_t sevenzip_file_read(
                 * We would however need to realloc anyways, because RetroArch
                 * expects a \0 at the end, therefore we allocate new,
                 * copy and free the old one. */
-               *buf = malloc((size_t)(outsize + 1));
+               /* NULL-check the malloc before the NUL-termination
+                * write and the memcpy below dereference '*buf'.  On
+                * OOM mark the extraction failed and break out of the
+                * file-search loop; the '!(file_found && res == SZ_OK)'
+                * branch further down then forces outsize = -1 and
+                * the teardown runs. */
+               if (!(*buf = malloc((size_t)(outsize + 1))))
+               {
+                  res     = SZ_ERROR_MEM;
+                  outsize = -1;
+                  break;
+               }
                ((char*)(*buf))[outsize] = '\0';
                memcpy(*buf, output + offset, outsize);
             }

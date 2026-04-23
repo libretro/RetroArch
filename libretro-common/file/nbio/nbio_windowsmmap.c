@@ -112,6 +112,17 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
    CloseHandle(mem);
 
    handle           = (struct nbio_mmap_win32_t*)malloc(sizeof(struct nbio_mmap_win32_t));
+   /* NULL-check the handle malloc: the field writes below would
+    * segfault on OOM.  On failure unmap the view and close the
+    * file handle - both are resources destined to be owned by
+    * the handle and will leak otherwise. */
+   if (!handle)
+   {
+      if (ptr)
+         UnmapViewOfFile(ptr);
+      CloseHandle(file);
+      return NULL;
+   }
 
    handle->file     = file;
    handle->is_write = is_write;

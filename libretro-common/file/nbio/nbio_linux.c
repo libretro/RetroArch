@@ -113,10 +113,32 @@ static void *nbio_linux_open(const char * filename, unsigned mode)
    }
 
    handle       = (struct nbio_linux_t*)malloc(sizeof(struct nbio_linux_t));
+   /* NULL-check the handle malloc: the next five lines dereferenced
+    * 'handle' unconditionally, so OOM segfaulted.  On failure we
+    * also have to unwind the fd we open()'d above and the aio
+    * context we io_setup()'d - both are resources that would be
+    * owned by the handle had it been allocated. */
+   if (!handle)
+   {
+      io_destroy(ctx);
+      close(fd);
+      return NULL;
+   }
    handle->fd   = fd;
    handle->ctx  = ctx;
    handle->len  = lseek(fd, 0, SEEK_END);
    handle->ptr  = malloc(handle->len);
+   /* Same pattern for the data buffer.  Subsequent begin_read /
+    * begin_write / iterate paths all assume handle->ptr is a valid
+    * buffer of handle->len bytes; passing a NULL through them
+    * would crash in the iocb setup.  Unwind everything we got. */
+   if (!handle->ptr)
+   {
+      free(handle);
+      io_destroy(ctx);
+      close(fd);
+      return NULL;
+   }
    handle->busy = false;
 
    return handle;
