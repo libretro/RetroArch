@@ -287,11 +287,53 @@ bool cheat_manager_copy_idx_to_working(unsigned idx)
 bool cheat_manager_copy_working_to_idx(unsigned idx)
 {
    cheat_manager_t *cheat_st   = &cheat_manager_state;
+   char *saved_desc;
+   char *saved_code;
    if (!cheat_st->cheats || (cheat_st->size < idx + 1))
       return false;
 
+   /* Save cheats[idx]'s own desc/code pointers BEFORE the memcpy
+    * overwrites them with working_cheat's aliases.
+    *
+    * working_cheat.desc / .code hold stale or aliased pointers:
+    * cheat_manager_copy_idx_to_working does a shallow memcpy
+    * from cheats[src] into working_cheat that copies the pointer
+    * values without strdup'ing the strings.  After that,
+    * working_cheat.desc == cheats[src].desc (aliased), or if
+    * cheats[src].desc has since been freed / reassigned (e.g. by
+    * the user deleting a cheat, adding a new one at the same idx,
+    * or by a previous call to this function), working_cheat.desc
+    * dangles.
+    *
+    * The pre-patch code did
+    *
+    *     memcpy(&cheats[idx], &working_cheat, ...);
+    *     if (cheats[idx].desc) free(cheats[idx].desc);
+    *     cheats[idx].desc = strdup(working_desc);
+    *
+    * which freed cheats[idx].desc via the just-memcpy'd pointer.
+    * If that pointer aliased working_cheat.desc, we lost track of
+    * the original cheats[idx] string (memory leak).  Worse, when
+    * the user cancelled a cheat edit via menu_cbs_cancel.c:99's
+    * cheat_manager_copy_working_to_idx(working_cheat.idx) path
+    * after a prior add/delete churn, the dangling working_cheat.
+    * desc would be copied into cheats[idx] and then free()'d,
+    * producing a double-free or a free of freed memory.
+    *
+    * Fix: save cheats[idx]'s current desc/code pointers, do the
+    * memcpy for the scalar fields, restore the saved desc/code,
+    * then free them and reassign from the scratch buffers.  This
+    * keeps ownership local to cheats[idx] across the whole
+    * function regardless of what working_cheat's desc/code
+    * happen to point at. */
+   saved_desc = cheat_st->cheats[idx].desc;
+   saved_code = cheat_st->cheats[idx].code;
+
    memcpy(&cheat_st->cheats[idx], &cheat_st->working_cheat,
          sizeof(struct item_cheat));
+
+   cheat_st->cheats[idx].desc = saved_desc;
+   cheat_st->cheats[idx].code = saved_code;
 
    if (cheat_st->cheats[idx].desc)
       free(cheat_st->cheats[idx].desc);
