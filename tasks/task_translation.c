@@ -469,6 +469,16 @@ static void handle_translation_response(
                int tw, th, tc;
                int d          = 0;
                raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
+               /* NULL-check: the indexed write at the bottom of
+                * this loop body dereferences raw_image_data.  On
+                * OOM jump to finish which NULL-tolerantly frees
+                * raw_image_data_alpha + rpng state; the
+                * translation request fails cleanly. */
+               if (!raw_image_data)
+               {
+                  rpng_free(rpng);
+                  goto finish;
+               }
                for (ui = 0; ui < image_width * image_height * 4; ui++)
                {
                   if (ui % 4 != 3)

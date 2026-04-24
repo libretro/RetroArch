@@ -183,20 +183,35 @@ task_finished:
       }
       else
       {
-         bool mute;
          data          = (http_transfer_data_t*)malloc(sizeof(*data));
-         data->data    = tmp;
-         data->len     = _len;
-         data->headers = net_http_headers_ex(http->handle, http->headers_accept_err);
-         data->status  = net_http_status(http->handle);
+         /* NULL-check: the field writes below NULL-deref on OOM.
+          * Free the already-fetched 'tmp' buffer (which data was
+          * about to take ownership of), set a task error so the
+          * caller sees a clean failure, and skip the task_set_data
+          * attachment. */
+         if (!data)
+         {
+            if (tmp)
+               free(tmp);
+            task_set_error(task, strldup("Out of memory.",
+                  sizeof("Out of memory.")));
+         }
+         else
+         {
+            bool mute;
+            data->data    = tmp;
+            data->len     = _len;
+            data->headers = net_http_headers_ex(http->handle, http->headers_accept_err);
+            data->status  = net_http_status(http->handle);
 
-         task_set_data(task, data);
+            task_set_data(task, data);
 
-         mute          = ((task->flags & RETRO_TASK_FLG_MUTE) > 0);
+            mute          = ((task->flags & RETRO_TASK_FLG_MUTE) > 0);
 
-         if (!mute && net_http_error(http->handle))
-            task_set_error(task, strldup("Download failed.",
-               sizeof("Download failed.")));
+            if (!mute && net_http_error(http->handle))
+               task_set_error(task, strldup("Download failed.",
+                  sizeof("Download failed.")));
+         }
       }
       net_http_delete(http->handle);
    }

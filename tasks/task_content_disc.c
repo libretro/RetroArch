@@ -148,7 +148,15 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             int64_t cue_size     = filestream_get_size(state->file);
             char *cue_data       = (char*)calloc(1, cue_size);
 
-            filestream_read(state->file, cue_data, cue_size);
+            /* NULL-check: filestream_read below writes into
+             * cue_data via fread which NULL-derefs on the
+             * destination pointer.  If alloc fails skip the
+             * read - cue_data is actually unused after the read
+             * (only passed to free at the bottom of this block,
+             * line ~226), so the only consequence of the skip
+             * is that the read happens to not be performed. */
+            if (cue_data)
+               filestream_read(state->file, cue_data, cue_size);
 
             state->stream        = filestream_get_vfs_handle(state->file);
             state->toc           = retro_vfs_file_get_cdrom_toc();

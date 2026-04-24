@@ -136,16 +136,26 @@ static int file_decompressed_subdir(const char *name,
          return 1;
 
    userdata->dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
-   _len  = strlcpy(userdata->dec->callback_error,
-         "Failed to deflate ",
-         CALLBACK_ERROR_SIZE);
-   _len += strlcpy(
-         userdata->dec->callback_error + _len,
-         path,
-         CALLBACK_ERROR_SIZE - _len);
-   userdata->dec->callback_error[  _len] = '.';
-   userdata->dec->callback_error[++_len] = '\n';
-   userdata->dec->callback_error[++_len] = '\0';
+   /* NULL-check: the strlcpy below NULL-derefs on OOM.  The
+    * downstream task_set_error calls (lines 246, 274, 304) accept
+    * NULL, so skipping the error-string population leaves the task
+    * with a NULL error and the user sees no 'Failed to deflate'
+    * message - which is strictly better than segfaulting.  Any
+    * subsequent 'if (dec->callback_error)' downstream is already
+    * NULL-safe. */
+   if (userdata->dec->callback_error)
+   {
+      _len  = strlcpy(userdata->dec->callback_error,
+            "Failed to deflate ",
+            CALLBACK_ERROR_SIZE);
+      _len += strlcpy(
+            userdata->dec->callback_error + _len,
+            path,
+            CALLBACK_ERROR_SIZE - _len);
+      userdata->dec->callback_error[  _len] = '.';
+      userdata->dec->callback_error[++_len] = '\n';
+      userdata->dec->callback_error[++_len] = '\0';
+   }
 
    return 0;
 }
@@ -178,13 +188,17 @@ static int file_decompressed(const char *name, const char *valid_exts,
    }
 
    dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
-   _len  = strlcpy(dec->callback_error, "Failed to deflate ",
-		   CALLBACK_ERROR_SIZE);
-   _len += strlcpy(dec->callback_error + _len,
-		   path, CALLBACK_ERROR_SIZE     - _len);
-   dec->callback_error[  _len] = '.';
-   dec->callback_error[++_len] = '\n';
-   dec->callback_error[++_len] = '\0';
+   /* NULL-check: see twin in file_archived for reasoning. */
+   if (dec->callback_error)
+   {
+      _len  = strlcpy(dec->callback_error, "Failed to deflate ",
+              CALLBACK_ERROR_SIZE);
+      _len += strlcpy(dec->callback_error + _len,
+              path, CALLBACK_ERROR_SIZE     - _len);
+      dec->callback_error[  _len] = '.';
+      dec->callback_error[++_len] = '\n';
+      dec->callback_error[++_len] = '\0';
+   }
 
    return 0;
 }
@@ -206,8 +220,22 @@ static void task_decompress_handler_finished(retro_task_t *task,
       decompress_task_data_t *data =
          (decompress_task_data_t*)calloc(1, sizeof(*data));
 
-      data->source_file = dec->source_file;
-      task_set_data(task, data);
+      /* NULL-check: the ->source_file write below NULL-derefs on
+       * OOM.  task_set_data accepts NULL, but the consumer
+       * (completion callback) would then see a NULL task_data.
+       * If data alloc fails we instead set a task error and free
+       * source_file ourselves so downstream consumers see a
+       * clean error state rather than partial success. */
+      if (data)
+      {
+         data->source_file = dec->source_file;
+         task_set_data(task, data);
+      }
+      else
+      {
+         free(dec->source_file);
+         task_set_error(task, strdup("Out of memory"));
+      }
    }
 
    if (dec->subdir)

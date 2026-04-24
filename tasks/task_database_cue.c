@@ -292,6 +292,12 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len,
       return 0;
 
    disc_data = (char*)malloc(DISC_DATA_SIZE_PS2);
+   /* NULL-check: intfstream_read writes into disc_data via
+    * filestream_read (which calls fread with no NULL-guard on the
+    * dest).  Matches the NULL-checked pattern in the PS1 / PSP
+    * variants above/below. */
+   if (!disc_data)
+      return 0;
 
    if (intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS2) <= 0)
    {
@@ -1515,6 +1521,10 @@ bool intfstream_file_get_serial(const char *name,
          goto error;
 
       data = (uint8_t*)malloc(size);
+      /* NULL-check: intfstream_read below would NULL-deref on
+       * OOM via filestream_read's fread. */
+      if (!data)
+         goto error;
 
       if (intfstream_read(fd, data, size) != (int64_t) size)
       {
@@ -1669,6 +1679,10 @@ bool intfstream_file_get_crc_and_size(const char *name,
          goto error;
 
       data = (uint8_t*)malloc(len);
+      /* NULL-check: intfstream_read below would NULL-deref on
+       * OOM via filestream_read's fread. */
+      if (!data)
+         goto error;
 
       if (intfstream_read(fd, data, len) != (int64_t)len)
          goto error;

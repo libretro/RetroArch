@@ -336,9 +336,18 @@ static void task_save_handler_finished(retro_task_t *task,
       task_set_error(task, strdup("Task canceled"));
 
    task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
-   memcpy(task_data, state, sizeof(*state));
-
-   task_set_data(task, task_data);
+   /* NULL-check: the memcpy below NULL-derefs on OOM.  The
+    * completion callbacks save_state_cb / undo_save_state_cb
+    * used to assume task_data is non-NULL - both have been made
+    * NULL-tolerant to match this code path.  On OOM we leave
+    * task_data unset (NULL); task_set_data is skipped and the
+    * completion callback receives NULL for its task_data
+    * parameter. */
+   if (task_data)
+   {
+      memcpy(task_data, state, sizeof(*state));
+      task_set_data(task, task_data);
+   }
 
    if (state->data)
    {
@@ -736,7 +745,20 @@ static void task_load_handler_finished(retro_task_t *task,
       task_set_error(task, strdup("Task canceled"));
 
    if (!(task_data = (load_task_data_t*)calloc(1, sizeof(*task_data))))
+   {
+      /* Pre-existing leak: old code early-returned without
+       * freeing state.  On OOM set a task error (so the user
+       * sees 'load state failed' rather than silent failure),
+       * free state properly, and return.  The completion
+       * callbacks handle NULL task_data via their own NULL-
+       * checks. */
+      if (!task_get_error(task))
+         task_set_error(task, strdup("Out of memory"));
+      if (state->data)
+         free(state->data);
+      free(state);
       return;
+   }
 
    memcpy(task_data, state, sizeof(*task_data));
 
@@ -1018,11 +1040,22 @@ static void content_load_state_cb(retro_task_t *task,
    unsigned i;
    bool ret;
    load_task_data_t *load_data = (load_task_data_t*)task_data;
-   ssize_t _len                = load_data->size;
+   ssize_t _len;
    unsigned num_blocks         = 0;
-   void *buf                   = load_data->data;
+   void *buf;
    struct sram_block *blocks   = NULL;
    struct string_list *savefile_list = (struct string_list*)savefile_ptr_get();
+
+   /* NULL-check load_data: task_load_handler_finished may fail
+    * to allocate the task_data copy on OOM and leave it NULL.
+    * Skip all processing - the emulator state is unchanged and
+    * the task error (set by the handler) surfaces the failure
+    * to the user. */
+   if (!load_data)
+      return;
+
+   _len = load_data->size;
+   buf  = load_data->data;
 
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -1156,13 +1189,21 @@ static void save_state_cb(retro_task_t *task,
       void *user_data, const char *error)
 {
    save_task_state_t *state   = (save_task_state_t*)task_data;
+   /* NULL-check: task_save_handler_finished may fail to alloc
+    * the task_data copy on OOM and leave it NULL.  Skip the
+    * screenshot hook and free(state) on NULL - free(NULL) is a
+    * no-op but we can't read state->path / state->flags. */
+   if (!state)
+      return;
 #ifdef HAVE_SCREENSHOTS
-   char               *path   = strdup(state->path);
-   if (state->flags & SAVE_TASK_FLAG_THUMBNAIL_ENABLE)
-      take_screenshot(config_get_ptr()->paths.directory_screenshot,
-            path, true,
-            state->flags & SAVE_TASK_FLAG_HAS_VALID_FB, false, true);
-   free(path);
+   {
+      char               *path   = strdup(state->path);
+      if (state->flags & SAVE_TASK_FLAG_THUMBNAIL_ENABLE)
+         take_screenshot(config_get_ptr()->paths.directory_screenshot,
+               path, true,
+               state->flags & SAVE_TASK_FLAG_HAS_VALID_FB, false, true);
+      free(path);
+   }
 #endif
 
    free(state);
@@ -1259,10 +1300,26 @@ static void content_load_and_save_state_cb(retro_task_t *task,
       void *user_data, const char *error)
 {
    load_task_data_t *load_data = (load_task_data_t*)task_data;
-   char                  *path = strdup(load_data->path);
-   void                  *data = load_data->undo_data;
-   size_t                 size = load_data->undo_size;
-   bool               autosave = (load_data->flags & SAVE_TASK_FLAG_AUTOSAVE) ? true : false;
+   char                  *path;
+   void                  *data;
+   size_t                 size;
+   bool               autosave;
+
+   /* NULL-check load_data: task_load_handler_finished may have
+    * failed to allocate the task_data copy on OOM.  Delegate the
+    * NULL-safe no-op to content_load_state_cb (which already
+    * handles NULL via its own guard) and skip the subsequent
+    * save push which would NULL-deref ->path / ->undo_data. */
+   if (!load_data)
+   {
+      content_load_state_cb(task, task_data, user_data, error);
+      return;
+   }
+
+   path     = strdup(load_data->path);
+   data     = load_data->undo_data;
+   size     = load_data->undo_size;
+   autosave = (load_data->flags & SAVE_TASK_FLAG_AUTOSAVE) ? true : false;
 
    content_load_state_cb(task, task_data, user_data, error);
 

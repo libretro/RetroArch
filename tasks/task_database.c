@@ -913,6 +913,20 @@ static enum scan_verdict database_info_list_iterate_found_match(
    database_info_t *db_info_entry =
       &db_state->info->list[db_state->entry_index];
 
+   /* NULL-check both mallocs: the 'db_crc[0] = ...' /
+    * 'entry_path_str[0] = ...' writes below NULL-deref on OOM.
+    * free(NULL) in the teardown at the end of the function is
+    * safe, so we can bail early; clean up whichever succeeded
+    * and return SCAN_VERDICT_ERROR so the scanner continues
+    * with the next content entry rather than silently
+    * mismatching. */
+   if (!db_crc || !entry_path_str)
+   {
+      free(db_crc);
+      free(entry_path_str);
+      return SCAN_VERDICT_ERROR;
+   }
+
    db_crc[0]                      = '\0';
    entry_path_str[0]              = '\0';
 
