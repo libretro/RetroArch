@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: git.libretro.com:5050/libretro-infrastructure/libretro-djgpp-build-container:latest
+      image: reallibretroretroarch/libretro-djgpp-build-container:latest
       options: --user root
 
     steps:

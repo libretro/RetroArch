@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
+      image: reallibretroretroarch/libretro-build-libnx-devkitpro:v4-10-0
       options: --user root
 
     steps:

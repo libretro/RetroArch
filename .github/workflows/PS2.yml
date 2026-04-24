@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-ps2:latest
+      image: reallibretroretroarch/libretro-build-ps2:latest
       options: --user root
 
     steps:
