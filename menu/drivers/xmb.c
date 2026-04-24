@@ -302,7 +302,6 @@ typedef struct
    float zoom;
    float x;
    float y;
-   bool icon_hide;
 } xmb_node_t;
 
 enum xmb_drag_mode
@@ -646,7 +645,6 @@ static xmb_node_t *xmb_alloc_node(void)
    node->thumbnail_icon.icon.texture       = 0;
    node->fullpath     = NULL;
    node->console_name = NULL;
-   node->icon_hide    = false;
 
    return node;
 }
@@ -5536,7 +5534,6 @@ static int xmb_draw_item(
    gfx_display_set_alpha(color, MIN(node->alpha * xmb->alpha_list, xmb->alpha));
 
    if (     (!xmb->assets_missing)
-         && (!node->icon_hide)
          && (color[3] != 0)
          && (  (entry.flags & MENU_ENTRY_FLAG_CHECKED)
             || !( entry_type >= MENU_SETTING_DROPDOWN_ITEM
@@ -7375,8 +7372,12 @@ static void xmb_render(void *data,
    /* Handle any pending icon thumbnail load requests */
    if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
    {
-      /* Limit image loading per frame to prevent slowdowns,
-       * and hide the usual icon while pending */
+      /* Limit synchronous image loading per frame to prevent
+       * frame-time spikes on slow storage (SD card, Android SAF
+       * behind fuse, etc.). Async requests via
+       * gfx_thumbnail_request_stream are not counted — they run on
+       * a worker thread and land via task callback on subsequent
+       * frames, so they do not contribute to this frame's work. */
       uint8_t max_per_frame = 2;
       uint8_t cur_per_frame = 0;
 
@@ -7396,9 +7397,14 @@ static void xmb_render(void *data,
 
          thumbnail_icon = &node->thumbnail_icon;
 
+         /* Budget exceeded: skip this entry this frame, keep
+          * pending_icons raised so we resume next frame. The entry
+          * continues to render its existing icon (default fallback
+          * if nothing has been loaded yet) rather than rendering as
+          * blank, so the user sees a steady draw with icons filling
+          * in progressively, not a wave of empty slots. */
          if (cur_per_frame >= max_per_frame)
          {
-            node->icon_hide = true;
             xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
             continue;
          }
@@ -7406,7 +7412,6 @@ static void xmb_render(void *data,
          if (     thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN
                && *thumbnail_icon->thumbnail_path_data.icon_path)
          {
-            node->icon_hide = false;
             if (!xmb_load_dynamic_icon(
                      thumbnail_icon->thumbnail_path_data.icon_path,
                      &thumbnail_icon->icon))
