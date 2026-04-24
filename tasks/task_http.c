@@ -266,12 +266,19 @@ static void *task_push_http_transfer_generic(
 
    method = net_http_connection_method(conn);
 
+   /* net_http_connection_new() permits a NULL method, so
+    * net_http_connection_method() may legitimately return NULL here.
+    * Treat that as a hard error: we cannot dispatch a request without
+    * a method, and the GET fast-path below would deref NULL. */
+   if (!method)
+      goto error;
+
    /* POST requests usually mutate the server, so assume multiple calls are
     * intended, even if they're duplicated. Additionally, they may differ
     * only by the POST data, and task_http_finder doesn't look at that, so
     * unique requests could be misclassified as duplicates.
     */
-   if (memcmp(method, "GET", 3) == 0 && method[3] == '\0')
+   if (string_is_equal(method, "GET"))
    {
       task_finder_data_t find_data;
       find_data.func     = task_http_finder;
