@@ -3378,6 +3378,17 @@ font_renderer_t metal_raster_font = {
 
       _video                        = *video;
       _viewport                     = (video_viewport_t *)calloc(1, sizeof(video_viewport_t));
+      /* NULL-check: Context's setViewport: (see line ~516)
+       * unconditionally dereferences the pointer via
+       * _viewport = *viewport;  A NULL here would crash on
+       * the first _context.viewport = _viewport assignment
+       * downstream in setVideoMode / show_mouse / frame.
+       * Return nil to fail the init - matches the pattern
+       * used by the _initMetal bailout just above.  ARC will
+       * tear down the partial instance (Metal library/queue
+       * ref-counts, string_list _gpu_list) via dealloc. */
+      if (!_viewport)
+         return nil;
       _viewportMVP.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
 
       _keepAspect                   = _video.force_aspect;
@@ -4590,6 +4601,16 @@ typedef struct MTLALIGN(16)
    _shaderEmitsHDR16            = NO;
 
    struct video_shader *shader  = (struct video_shader *)calloc(1, sizeof(*shader));
+   /* NULL-check: video_shader_load_preset_into_shader below
+    * writes shader->path / shader->passes etc. via field access
+    * with no NULL guard on its second parameter, so a NULL
+    * shader would crash inside the parser.  Return NO here -
+    * caller treats this as a shader-load failure and falls
+    * back to the stock (non-slang) render path.  The @finally
+    * block below is a no-op for NULL shader via the guard in
+    * _freeVideoShader. */
+   if (!shader)
+      return NO;
    settings_t        *settings  = config_get_ptr();
    const char *dir_video_shader = settings->paths.directory_video_shader;
    NSString *shadersPath = [NSString stringWithFormat:@"%s/", dir_video_shader];
