@@ -291,6 +291,14 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
 
    /* Create bitmap context */
    bitmapData = calloc(slot->glyph.height, slot->glyph.width);
+   /* NULL-check: CGBitmapContextCreate tolerates NULL (it will
+    * allocate its own backing store), but the byte-wise copy
+    * into the atlas at lines ~321-325 dereferences bitmapData
+    * as 'src'.  If we proceeded on NULL, CoreGraphics might
+    * give us a valid context, we'd draw into it, and then
+    * NULL-deref on the atlas copy step.  Fail cleanly now. */
+   if (!bitmapData)
+      return false;
    offscreen  = CGBitmapContextCreate(bitmapData, slot->glyph.width, slot->glyph.height,
                                       8, slot->glyph.width, NULL, kCGImageAlphaOnly);
 
