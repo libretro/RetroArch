@@ -87,6 +87,12 @@ static void* sevenzip_stream_new(void)
    struct sevenzip_context_t *sevenzip_context =
          (struct sevenzip_context_t*)calloc(1, sizeof(struct sevenzip_context_t));
 
+   /* NULL-check the calloc: the field writes below NULL-deref
+    * on OOM and the returned NULL is handled by the caller
+    * (sevenzip_parse_file_free at line ~112 NULL-tolerates). */
+   if (!sevenzip_context)
+      return NULL;
+
    /* These are the allocation routines - currently using
     * the non-standard 7zip choices. */
    sevenzip_context->allocImp.Alloc     = sevenzip_stream_alloc_impl;

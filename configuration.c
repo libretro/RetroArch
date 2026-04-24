@@ -6531,6 +6531,26 @@ int8_t config_save_overrides(enum override_type type,
    settings = (settings_t*)calloc(1, sizeof(settings_t));
    conf     = config_file_new_alloc();
 
+   /* NULL-check: both calloc and config_file_new_alloc can
+    * return NULL on OOM.  config_load_file at line ~6552
+    * dereferences settings unconditionally, and all the
+    * config_set_* calls later dereference conf.  Rather than
+    * sprinkle NULL-guards through a 300-line function, bail
+    * out here.  The function-end cleanup at line ~6866 does
+    * free(settings) which is NULL-safe, but conf needs
+    * explicit config_file_free + NULL guard.
+    *
+    * Return -1 to signal hard failure (as distinct from
+    * 'override was not needed' = false/0 at line 6529).
+    * int8_t return value accommodates -1. */
+   if (!settings || !conf)
+   {
+      if (conf)
+         config_file_free(conf);
+      free(settings);
+      return -1;
+   }
+
    /* Get base config directory */
    fill_pathname_application_special(config_directory,
          sizeof(config_directory),
