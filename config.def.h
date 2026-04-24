@@ -498,12 +498,6 @@
 /* Choose if the screen will be able to write around the notch or not */
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
 
-#if defined(__APPLE__) && defined(HAVE_VULKAN)
-#define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
-#else
-#define DEFAULT_USE_METAL_ARG_BUFFERS false
-#endif
-
 /* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
 

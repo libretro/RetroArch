@@ -1396,6 +1396,10 @@ bool config_replace(bool config_save_on_exit, char *path);
 
 bool config_overlay_enable_default(void);
 
+#if defined(__APPLE__) && defined(HAVE_VULKAN)
+bool config_metal_arg_buffers_default(void);
+#endif
+
 void config_set_defaults(void *data);
 
 void config_load(void *data);

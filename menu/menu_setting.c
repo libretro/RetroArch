@@ -13151,7 +13151,7 @@ static bool setting_append_list(
                      &settings->bools.video_use_metal_arg_buffers,
                      MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS,
                      MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-                     DEFAULT_USE_METAL_ARG_BUFFERS,
+                     config_metal_arg_buffers_default(),
                      MENU_ENUM_LABEL_VALUE_OFF,
                      MENU_ENUM_LABEL_VALUE_ON,
                      &group_info,
