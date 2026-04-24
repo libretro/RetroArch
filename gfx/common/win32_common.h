@@ -220,8 +220,6 @@ typedef struct d3dkmt_adapter
    D3DKMT_GETSCANLINE sl;
 } d3dkmt_adapter_t;
 
-static d3dkmt_adapter_t d3dkmt_adapter;
-extern void d3dkmt_init(void);
 extern unsigned d3dkmt_scanline_get(void);
 #endif /* HAVE_D3DKMT */
 
