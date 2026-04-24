@@ -279,6 +279,7 @@
 		05A8C60920DB72F000FF7857 /* pipeline_xmb_ribbon_simple.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_xmb_ribbon_simple.cg.h; sourceTree = "<group>"; };
 		05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_alpha_blend.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_alpha_blend.glsl.vert.h; sourceTree = "<group>"; };
+		05A8C60C20DB72F000FF7857 /* opaque.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opaque.cg.h; sourceTree = "<group>"; };
 		05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_snowflake.glsl.frag.h; sourceTree = "<group>"; };
@@ -902,6 +903,7 @@
 				05A8C60920DB72F000FF7857 /* pipeline_xmb_ribbon_simple.cg.h */,
 				05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */,
 				05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */,
+				05A8C60C20DB72F000FF7857 /* opaque.cg.h */,
 				05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */,
 				05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */,
 				05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */,
@@ -992,6 +994,7 @@
 		05A8C74520DB72F100FF7857 /* metal */ = {
 			isa = PBXGroup;
 			children = (
+				05A8C74820DB72F100FF7857 /* metal_common.h */,
 				05A8C74E20DB72F100FF7857 /* Shaders.metal */,
 				05A8C75120DB72F100FF7857 /* metal_shader_types.h */,
 			);
@@ -1937,6 +1940,7 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
+					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
 				LLVM_LTO = YES_THIN;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
@@ -2020,6 +2024,7 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
+					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
 				LLVM_LTO = YES_THIN;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
