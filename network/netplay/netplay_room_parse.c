@@ -33,6 +33,14 @@ enum netplay_parse_state
    STATE_OBJECT_START,
    STATE_FIELDS_START,
    STATE_FIELDS_OBJECT_START,
+   /* Entered when the inner per-room calloc in
+    * netplay_json_start_object fails or when the preceding
+    * room's allocation failed.  All field-write handlers gate
+    * on STATE_FIELDS_OBJECT_START so they silently skip while
+    * state == STATE_SKIP_OBJECT; netplay_json_end_object pops
+    * back to STATE_ARRAY_START so the next room in the array
+    * can be attempted. */
+   STATE_SKIP_OBJECT,
    STATE_END
 };
 
@@ -98,19 +106,49 @@ static bool netplay_json_start_object(void* ctx)
 
    if (p_ctx->state == STATE_FIELDS_START)
    {
-      p_ctx->state = STATE_FIELDS_OBJECT_START;
+      struct netplay_room *new_room = NULL;
 
       if (!net_st->rooms_data->head)
       {
-         net_st->rooms_data->head      = (struct netplay_room*)calloc(1, sizeof(*net_st->rooms_data->head));
-         net_st->rooms_data->cur       = net_st->rooms_data->head;
+         /* First room in the list */
+         new_room                      = (struct netplay_room*)
+            calloc(1, sizeof(*new_room));
+         if (new_room)
+         {
+            net_st->rooms_data->head   = new_room;
+            net_st->rooms_data->cur    = new_room;
+         }
       }
-      else if (!net_st->rooms_data->cur->next)
+      else if (net_st->rooms_data->cur && !net_st->rooms_data->cur->next)
       {
-         net_st->rooms_data->cur->next = (struct netplay_room*)calloc(1, sizeof(*net_st->rooms_data->cur->next));
-         net_st->rooms_data->cur       = net_st->rooms_data->cur->next;
+         /* Subsequent room: append to the tail.  Gate on
+          * rooms_data->cur being non-NULL - if a prior room's
+          * calloc failed, cur was set to NULL and we'd NULL-
+          * deref 'cur->next' below. */
+         new_room                      = (struct netplay_room*)
+            calloc(1, sizeof(*new_room));
+         if (new_room)
+         {
+            net_st->rooms_data->cur->next = new_room;
+            net_st->rooms_data->cur       = new_room;
+         }
       }
 
+      /* NULL-check: on OOM (inner calloc returned NULL) or on
+       * the 'prior room failed' branch above (new_room stayed
+       * NULL because we didn't enter either 'if' clause), skip
+       * this entire JSON object.  The object-member and value
+       * handlers gate on STATE_FIELDS_OBJECT_START and so will
+       * become no-ops; netplay_json_end_object transitions
+       * SKIP_OBJECT back to ARRAY_START so the next array
+       * element can be attempted. */
+      if (!new_room)
+      {
+         p_ctx->state = STATE_SKIP_OBJECT;
+         return true;
+      }
+
+      p_ctx->state                          = STATE_FIELDS_OBJECT_START;
       net_st->rooms_data->cur->connectable  = true;
       net_st->rooms_data->cur->is_retroarch = true;
    }
@@ -124,7 +162,11 @@ static bool netplay_json_end_object(void* ctx)
 {
    struct netplay_json_context *p_ctx = (struct netplay_json_context*)ctx;
 
-   if (p_ctx->state == STATE_FIELDS_OBJECT_START)
+   /* Transition both the normal case (FIELDS_OBJECT_START) and
+    * the OOM-skip case (SKIP_OBJECT) back to ARRAY_START so the
+    * next room in the array can be attempted. */
+   if (   p_ctx->state == STATE_FIELDS_OBJECT_START
+       || p_ctx->state == STATE_SKIP_OBJECT)
       p_ctx->state = STATE_ARRAY_START;
 
    return true;
@@ -288,20 +330,19 @@ int netplay_rooms_parse(const char *buf, size_t len)
    net_st->rooms_data = (struct netplay_rooms*)
       calloc(1, sizeof(*net_st->rooms_data));
 
-   /* NULL-check: the rjson_parse_quick callbacks below (at
-    * lines ~103, ~108, etc.) dereference net_st->rooms_data
-    * unconditionally in the JSON member / object-start handlers.
-    * On OOM bail before invoking the parser - 'return 0' is the
-    * existing success return, but the caller (parse_lobby_json)
-    * only iterates rooms if net_st->rooms_data is non-NULL, so
-    * the no-rooms-available outcome matches the 'no entries in
-    * the JSON' success path.
+   /* NULL-check: the rjson_parse_quick callbacks below
+    * dereference net_st->rooms_data unconditionally in the JSON
+    * member / object-start handlers.  On OOM bail before
+    * invoking the parser - 'return 0' is the existing success
+    * return, but the caller (parse_lobby_json) only iterates
+    * rooms if net_st->rooms_data is non-NULL, so the no-rooms-
+    * available outcome matches the 'no entries in the JSON'
+    * success path.
     *
-    * The inner per-room callocs at lines ~105 and ~110 are
-    * still unchecked (they're deep inside rjson callbacks with
-    * no practical way to propagate OOM - fixing them would
-    * require threading an error flag through the entire
-    * parse-context struct, out of scope here). */
+    * The inner per-room callocs in netplay_json_start_object
+    * now handle OOM by transitioning the parser state to
+    * STATE_SKIP_OBJECT for the failed room; parsing continues
+    * for subsequent rooms which may succeed. */
    if (!net_st->rooms_data)
       return 0;
 
