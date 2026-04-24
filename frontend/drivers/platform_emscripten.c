@@ -998,8 +998,17 @@ int main(int argc, char *argv[])
    pthread_attr_t attr;
    pthread_t thread;
 #endif
-   /* this never gets freed */
+   /* this never gets freed - emscripten_platform_data is held
+    * for the lifetime of the web-build process */
    emscripten_platform_data = (emscripten_platform_data_t *)calloc(1, sizeof(emscripten_platform_data_t));
+   /* NULL-check: the field writes a few lines down
+    * (emscripten_platform_data->browser, ->os, ->...) NULL-deref
+    * on OOM.  This is main() at process entry - if we can't even
+    * allocate the platform state struct there's no viable path
+    * forward; bail with non-zero so the browser shim can surface
+    * the failure. */
+   if (!emscripten_platform_data)
+      return 1;
 
    PlatformEmscriptenGetSystemInfo(&host_browser, &host_os);
    emscripten_platform_data->browser = host_browser;

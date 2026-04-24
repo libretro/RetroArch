@@ -185,17 +185,33 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
       char *extracted_path                 = (char*)calloc(dwLaunchDataSize, sizeof(char));
       BYTE* pLaunchData                    = (BYTE*)calloc(dwLaunchDataSize, sizeof(BYTE));
 
-      XGetLaunchData(pLaunchData, dwLaunchDataSize);
-      memset(extracted_path, 0, dwLaunchDataSize);
-
-      strlcpy(extracted_path, pLaunchData, dwLaunchDataSize);
-
-      /* Auto-start game */
-      if (extracted_path && *extracted_path)
-         strlcpy(path, extracted_path, sizeof(path));
-
-      if (pLaunchData)
+      /* NULL-check both callocs: memset / XGetLaunchData /
+       * strlcpy below NULL-deref on OOM.  Pre-patch
+       * extracted_path was also leaked on the happy path
+       * because the teardown at the bottom of this block
+       * only freed pLaunchData; the early return on OOM
+       * would have leaked both.  Fix: bail with both
+       * pointers freed (free(NULL) is a no-op so no extra
+       * guard needed). */
+      if (!extracted_path || !pLaunchData)
+      {
+         free(extracted_path);
          free(pLaunchData);
+      }
+      else
+      {
+         XGetLaunchData(pLaunchData, dwLaunchDataSize);
+         memset(extracted_path, 0, dwLaunchDataSize);
+
+         strlcpy(extracted_path, pLaunchData, dwLaunchDataSize);
+
+         /* Auto-start game */
+         if (*extracted_path)
+            strlcpy(path, extracted_path, sizeof(path));
+
+         free(pLaunchData);
+         free(extracted_path);
+      }
    }
 #endif
    if (path && *path)

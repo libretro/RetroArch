@@ -449,6 +449,24 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 
    android_app->mutex    = slock_new();
    android_app->cond     = scond_new();
+   /* NULL-check slock_new / scond_new: both can fail on OOM.
+    * Without the guards here, a NULL mutex would silently turn
+    * every slock_lock/unlock below into a no-op (slock_lock
+    * NULL-tolerates by design), giving a race-prone android_app,
+    * and a NULL cond would NULL-deref in scond_wait below
+    * (pthread_cond_wait(&NULL->cond, ...)).  Fail the whole
+    * android_app construction so ANativeActivity_onCreate returns
+    * cleanly without half-initialised state. */
+   if (!android_app->mutex || !android_app->cond)
+   {
+      if (android_app->mutex)
+         slock_free(android_app->mutex);
+      if (android_app->cond)
+         scond_free(android_app->cond);
+      free(android_app);
+      RARCH_ERR("Failed to allocate android_app locks.\n");
+      return NULL;
+   }
 
    if (savedState)
    {
@@ -471,6 +489,8 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    {
       if (android_app->savedState)
         free(android_app->savedState);
+      slock_free(android_app->mutex);
+      scond_free(android_app->cond);
       free(android_app);
       return NULL;
    }
@@ -479,6 +499,23 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->msgwrite = msgpipe[1];
 
    android_app->thread   = sthread_create(android_app_entry, android_app);
+   /* NULL-check sthread_create: on OOM the thread won't be
+    * spawned and nothing will set android_app->running to true,
+    * so the scond_wait loop below would block indefinitely.
+    * Tear down the partially-constructed android_app (including
+    * the just-created pipe fds) and bail. */
+   if (!android_app->thread)
+   {
+      close(msgpipe[0]);
+      close(msgpipe[1]);
+      if (android_app->savedState)
+         free(android_app->savedState);
+      slock_free(android_app->mutex);
+      scond_free(android_app->cond);
+      free(android_app);
+      RARCH_ERR("Failed to spawn android_app thread.\n");
+      return NULL;
+   }
 
    /* Wait for thread to start. */
    slock_lock(android_app->mutex);
@@ -2691,9 +2728,23 @@ static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
 static void frontend_unix_exec(const char *path, bool should_load_content)
 {
    char *newargv[]    = { NULL, NULL };
-   size_t _len        = strlen(path);
+   size_t _len        = strlen(path) + 1;
 
    newargv[0] = (char*)malloc(_len);
+
+   /* NULL-check malloc: the strlcpy on the next line
+    * NULL-derefs on OOM.  Void function called from within
+    * an exec/fork flow; logging and returning leaves the
+    * caller able to retry or surface an error.  Prior to
+    * this patch _len was strlen(path) (not +1), which meant
+    * strlcpy silently truncated the last character of the
+    * path because strlcpy needs n bytes to write n-1 chars
+    * plus a NUL. */
+   if (!newargv[0])
+   {
+      RARCH_ERR("Failed to allocate argv for exec.\n");
+      return;
+   }
 
    strlcpy(newargv[0], path, _len);
 
@@ -3266,6 +3317,16 @@ static bool accessibility_speak_unix(int speed,
    char* voice_out        = (char*)malloc(3 + strlen(language));
    char* speed_out        = (char*)malloc(3 + 3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+
+   /* NULL-check both mallocs: voice_out[0]='-' and speed_out[0]='-'
+    * below NULL-deref on OOM.  The 'end:' label does NULL-tolerant
+    * free()s on both pointers, so we can simply skip to it on
+    * either failure.  Returning true matches the function's
+    * existing always-true return contract and means the
+    * accessibility request is silently dropped rather than
+    * surfacing a user-visible error for a non-critical feature. */
+   if (!voice_out || !speed_out)
+      goto end;
 
    if (speed < 1)
       speed = 1;
