@@ -7482,6 +7482,61 @@ unsigned menu_displaylist_build_list(
                      count++;
                }
 
+               /* Skip direct savestate hotkeys higher than the max direct slot available */
+               switch (i)
+               {
+                  case RARCH_LOAD_STATE_SLOT0_KEY:
+                  case RARCH_SAVE_STATE_SLOT0_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 0)
+                        continue;
+                     break;
+                  case RARCH_LOAD_STATE_SLOT1_KEY:
+                  case RARCH_SAVE_STATE_SLOT1_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 1)
+                        continue;
+                     break;
+                  case RARCH_LOAD_STATE_SLOT2_KEY:
+                  case RARCH_SAVE_STATE_SLOT2_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 2)
+                        continue;
+                     break;
+                  case RARCH_LOAD_STATE_SLOT3_KEY:
+                  case RARCH_SAVE_STATE_SLOT3_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 3)
+                        continue;
+                     break;
+                  case RARCH_LOAD_STATE_SLOT4_KEY:
+                  case RARCH_SAVE_STATE_SLOT4_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 4)
+                        continue;
+                     break;
+                  case RARCH_LOAD_STATE_SLOT5_KEY:
+                  case RARCH_SAVE_STATE_SLOT5_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 5)
+                        continue;
+                     break;
+                  case RARCH_LOAD_STATE_SLOT6_KEY:
+                  case RARCH_SAVE_STATE_SLOT6_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 6)
+                        continue;
+                     break;
+                  case RARCH_LOAD_STATE_SLOT7_KEY:
+                  case RARCH_SAVE_STATE_SLOT7_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 7)
+                        continue;
+                     break;
+                  case RARCH_LOAD_STATE_SLOT8_KEY:
+                  case RARCH_SAVE_STATE_SLOT8_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 8)
+                        continue;
+                     break;
+                  case RARCH_LOAD_STATE_SLOT9_KEY:
+                  case RARCH_SAVE_STATE_SLOT9_KEY:
+                     if (settings->ints.savestate_max_direct_slot < 9)
+                        continue;
+                     break;
+               }
+
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         (enum msg_hash_enums)(
                            MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i),
@@ -11151,6 +11206,7 @@ unsigned menu_displaylist_build_list(
 #if defined(HAVE_ZLIB)
                {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,         PARSE_ONLY_BOOL, true},
 #endif
+               {MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT,          PARSE_ONLY_INT,  true},
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP,                 PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_REPLAY_AUTO_INDEX,                  PARSE_ONLY_BOOL, true},
