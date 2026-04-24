@@ -297,11 +297,32 @@ void rcheevos_client_http_load_response(const rc_api_request_t* request,
    size_t _len = 0;
    FILE* file  = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
 
+   /* NULL-check the fopen: this is a debug-only override path
+    * (only compiled when CHEEVOS_JSON_OVERRIDE is defined) but
+    * a missing or unreadable override file would NULL-deref the
+    * subsequent fseek/ftell/fread calls.  Match the failure
+    * contract used elsewhere in this file by invoking the
+    * callback with a zeroed/empty response so rc_client doesn't
+    * hang waiting for a reply. */
+   if (!file)
+   {
+      callback(NULL, 0, callback_data);
+      return;
+   }
+
    fseek(file, 0, SEEK_END);
    _len = ftell(file);
    fseek(file, 0, SEEK_SET);
 
    contents = (char*)malloc(_len + 1);
+   /* NULL-check the malloc: without this the contents[_len] = 0
+    * write below and the fread into contents NULL-deref. */
+   if (!contents)
+   {
+      fclose(file);
+      callback(NULL, 0, callback_data);
+      return;
+   }
    fread((void*)contents, 1, _len, file);
    fclose(file);
 
@@ -480,6 +501,17 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
 #endif
 
    taskdata = (rc_client_download_task_data_t*)malloc(sizeof(*taskdata));
+   /* NULL-check: the field writes below NULL-deref on OOM, and
+    * task_push_http_transfer_with_user_agent would dispatch a
+    * task callback with a NULL taskdata that
+    * rcheevos_client_download_task_callback dereferences via
+    * callback_data->queue / badge_fullpath.  On OOM return
+    * false - the caller treats this as a download failure and
+    * the queue (if present) continues with the next badge when
+    * prompted, matching the path_is_valid() early-return at
+    * line 473 above. */
+   if (!taskdata)
+      return false;
    taskdata->queue = queue;
    strlcpy(taskdata->badge_fullpath, badge_fullpath, sizeof(taskdata->badge_fullpath));
    strlcpy(taskdata->badge_name, badge_name, sizeof(taskdata->badge_name));
