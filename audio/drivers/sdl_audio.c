@@ -524,6 +524,8 @@ static void *sdl_audio_list_new(void *u)
 #endif
 }
 
+static void sdl_audio_free(void *data);
+
 static void *sdl_audio_init(const char *device,
       unsigned rate, unsigned latency,
       unsigned block_frames, unsigned *new_rate)
