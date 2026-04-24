@@ -2805,19 +2805,39 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    /* Horizontal tab icon scroll */
    if (horizontal_animation)
    {
+      uintptr_t cat_tag       = (uintptr_t)&xmb->categories_x_pos;
+
       anim_entry.duration     = XMB_DELAY;
       anim_entry.target_value = xmb->icon_spacing_horizontal * -(float)xmb->categories_selection_ptr;
       anim_entry.subject      = &xmb->categories_x_pos;
       anim_entry.easing_enum  = XMB_EASING_XY;
-      /* TODO/FIXME - integer conversion resulted in change of sign */
-      anim_entry.tag          = -1;
+      anim_entry.tag          = cat_tag;
       anim_entry.cb           = NULL;
+
+      /* Kill any in-flight tween on categories_x_pos before pushing a
+       * new one. gfx_animation_push appends rather than replaces, so
+       * rapid left/right input would otherwise stack two or more tweens
+       * that fight each frame over the same float (last-write-wins in
+       * iteration order) and the visible settled position would depend
+       * on which one happens to be appended last. Tagging the tween
+       * and killing prior ones makes back-to-back transitions atomic
+       * and gives a reliable "settled" predicate for callers that want
+       * to know when the horizontal scroll is done. */
+      gfx_animation_kill_by_tag(&cat_tag);
 
       if (anim_entry.subject)
          gfx_animation_push(&anim_entry);
    }
    else
+   {
+      /* Direct-set path: also kill any in-flight tween so it doesn't
+       * clobber the assignment on the next animation tick. This matters
+       * when menu_horizontal_animation was toggled off while a previous
+       * tween was still running. */
+      uintptr_t cat_tag       = (uintptr_t)&xmb->categories_x_pos;
+      gfx_animation_kill_by_tag(&cat_tag);
       xmb->categories_x_pos = xmb->icon_spacing_horizontal * -(float)xmb->categories_selection_ptr;
+   }
 
    /* Check if we are to have horizontal animations. */
    if (horizontal_animation)
@@ -3029,8 +3049,13 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
    int depth                        = 1;
    size_t list_size                 = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
    uintptr_t tag                    = (uintptr_t)&xmb->x;
+   uintptr_t cat_tag                = (uintptr_t)&xmb->categories_x_pos;
 
    gfx_animation_kill_by_tag(&tag);
+   /* Also kill tweens on categories_x_pos: a pending tween would
+    * otherwise clobber the direct assignment below on the next
+    * animation tick. */
+   gfx_animation_kill_by_tag(&cat_tag);
 
    xmb->categories_x_pos           = xmb->icon_spacing_horizontal * -(float)xmb->categories_selection_ptr;
 
@@ -10040,18 +10065,29 @@ static int xmb_pointer_up(void *userdata,
          if (horizontal_animation)
          {
             gfx_animation_ctx_entry_t anim_entry;
+            uintptr_t cat_tag       = (uintptr_t)&xmb->categories_x_pos;
+
             anim_entry.duration     = XMB_DELAY;
             anim_entry.target_value = target_x;
             anim_entry.subject      = &xmb->categories_x_pos;
             anim_entry.easing_enum  = EASING_OUT_QUAD;
-            anim_entry.tag          = -1;
+            anim_entry.tag          = cat_tag;
             anim_entry.cb           = NULL;
+
+            /* See xmb_list_switch for the rationale — same unique-tag
+             * kill-before-push pattern so drag-release doesn't stack
+             * a tween on top of an in-flight tab-switch tween. */
+            gfx_animation_kill_by_tag(&cat_tag);
 
             if (anim_entry.subject)
                gfx_animation_push(&anim_entry);
          }
          else
+         {
+            uintptr_t cat_tag       = (uintptr_t)&xmb->categories_x_pos;
+            gfx_animation_kill_by_tag(&cat_tag);
             xmb->categories_x_pos = target_x;
+         }
       }
 
       xmb->drag_mode = XMB_DRAG_NONE;
