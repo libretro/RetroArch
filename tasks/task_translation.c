@@ -558,8 +558,6 @@ static void handle_translation_response(
       params.bufsize              = response->sound_size;
       params.cb                   = NULL;
       params.basename             = NULL;
-      /* Caller frees response->sound_data below; request a copy. */
-      params.buf_owned            = false;
 
       audio_driver_mixer_add_stream(&params);
    }
