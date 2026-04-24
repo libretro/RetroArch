@@ -375,6 +375,11 @@ if [ "$OS" = 'Darwin' ]; then
    HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
    HAVE_SW2=no
+   # Prefer the system zlib on macOS. The vendored copy in deps/libz
+   # (zlib 1.3) no longer compiles against recent macOS SDKs because
+   # its zutil.h defines fdopen() as a macro that collides with the
+   # fdopen declaration in <stdio.h>. The system libz works fine.
+   [ "$HAVE_BUILTINZLIB" = 'auto' ] && HAVE_BUILTINZLIB=no
 else
    check_lib '' AL -lopenal alcOpenDevice
 fi
