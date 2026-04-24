@@ -468,6 +468,13 @@ typedef struct xmb_handle
    bool show_fullscreen_thumbnails;
    bool want_fullscreen_thumbnails;
    bool skip_thumbnail_reset;
+   /* Set by xmb_populate_entries when a list is pushed and gated deferred
+    * dynamic-icon work is needed. xmb_render fires the actual work once
+    * the horizontal tab animation has settled (categories_x_pos has
+    * reached its target). Lets rapid left/right traversal across
+    * playlists skip the per-tab unload+path_data churn for intermediate
+    * tabs the user never lands on. */
+   bool pending_dynamic_icons_repopulate;
    bool show_thumbnails;
    bool show_mouse;
    bool show_screensaver;
@@ -3480,8 +3487,12 @@ static void xmb_populate_entries(void *data,
 
    if (xmb->is_playlist)
    {
-      if (settings->uints.menu_icon_thumbnails)
-         xmb_populate_dynamic_icons(xmb);
+      /* Defer the dynamic-icon unload + path_data refresh until the
+       * horizontal tab animation has settled. xmb_render re-checks the
+       * is_playlist / menu_icon_thumbnails gates at fire time so that
+       * rapidly traversing a row of playlist tabs only does the work
+       * once, on the tab the user actually stops on. */
+      xmb->pending_dynamic_icons_repopulate = true;
    }
    else if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
       xmb_unload_icon_thumbnail_textures(xmb);
@@ -6957,7 +6968,14 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
          xmb_update_thumbnail_image(xmb);
 
       if (xmb->is_playlist)
+      {
+         /* Synchronous populate during context reset — ensures textures
+          * and path_data are consistent before the next render. Clear
+          * any deferred repopulate flag so xmb_render does not
+          * redundantly repeat this work after the animation settles. */
+         xmb->pending_dynamic_icons_repopulate = false;
          xmb_populate_dynamic_icons(xmb);
+      }
    }
 
    /* Have to reset this, otherwise savestate
@@ -7016,6 +7034,37 @@ static void xmb_render(void *data,
       if (--xmb->pending_context_reset == 0)
          xmb_context_reset_internal(xmb, video_driver_is_threaded(), false,
                settings->uints.menu_xmb_theme);
+   }
+
+   /* Fire deferred dynamic-icon repopulate once the horizontal tab
+    * animation has settled. Set by xmb_populate_entries; held pending
+    * while categories_x_pos is still tweening toward its target.
+    * Re-checks is_playlist and menu_icon_thumbnails at fire time: the
+    * list that was pushed when the flag was set may no longer be the
+    * list the user is looking at (rapid tab traversal, or navigation
+    * during the animation), and the gate uses the *current* state.
+    * If the final list is not a playlist, the pending-icons unload
+    * branch from populate_entries runs here instead. */
+   if (xmb->pending_dynamic_icons_repopulate)
+   {
+      float cat_target = xmb->icon_spacing_horizontal
+            * -(float)xmb->categories_selection_ptr;
+      /* Half-pixel tolerance. categories_x_pos is an exact match at
+       * animation completion (gfx_animation_update assigns target_value
+       * on the final tick), but a tolerance keeps the predicate robust
+       * against any future easing / sub-pixel drift. */
+      if (fabsf(xmb->categories_x_pos - cat_target) < 0.5f)
+      {
+         xmb->pending_dynamic_icons_repopulate = false;
+
+         if (xmb->is_playlist)
+         {
+            if (settings->uints.menu_icon_thumbnails)
+               xmb_populate_dynamic_icons(xmb);
+         }
+         else if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
+            xmb_unload_icon_thumbnail_textures(xmb);
+      }
    }
 
    /* Retry current-menu-icon resolution if a previous xmb_set_title()
@@ -9831,6 +9880,13 @@ static void xmb_context_destroy(void *data)
 
    xmb_unload_thumbnail_textures(xmb);
    xmb_unload_icon_thumbnail_textures(xmb);
+
+   /* Any deferred dynamic-icon repopulate is about to be re-done by the
+    * matching xmb_context_reset_internal (synchronous populate there).
+    * Clear the flag so xmb_render doesn't fire between destroy and
+    * reset, which would walk the selection list with fresh-reset
+    * thumbnail state only to have it all wiped again by the reset. */
+   xmb->pending_dynamic_icons_repopulate = false;
 
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
