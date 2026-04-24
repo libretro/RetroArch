@@ -847,6 +847,7 @@
 #define MENU_ENUM_LABEL_RUN_MUSIC_STR "collection_music"
 #define MENU_ENUM_LABEL_SAMBA_ENABLE_STR "samba_enable"
 #define MENU_ENUM_LABEL_SAVEFILE_DIRECTORY_STR "savefile_directory"
+#define MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT_STR "savestate_max_direct_slot"
 #define MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX_STR "savestate_auto_index"
 #define MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD_STR "savestate_auto_load"
 #define MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE_STR "savestate_thumbnails"

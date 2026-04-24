@@ -88,6 +88,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS), len);
              break;
+          case MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_SAVESTATE_MAX_DIRECT_SLOT), len);
+            break;
           case MENU_ENUM_LABEL_PARENT_DIRECTORY:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY), len);
              break;

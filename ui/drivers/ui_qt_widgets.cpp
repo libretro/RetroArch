@@ -6251,6 +6251,7 @@ QWidget *SavingPage::widget()
    savesGroup->add(MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE);
    savesGroup->add(MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE);
 
+   savestatesGroup->add(MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT);
    savestatesGroup->add(MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX);
 
    autoSavestatesGroup->add(MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD);
