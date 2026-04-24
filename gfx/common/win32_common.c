@@ -169,6 +169,69 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #define MIN_WIDTH  320
 #define MIN_HEIGHT 240
 
+#ifdef HAVE_D3DKMT
+static d3dkmt_adapter_t d3dkmt_adapter;
+
+static void d3dkmt_init(void)
+{
+   if (!pD3DKMTOpenAdapterFromHdc)
+   {
+      unsigned d3dkmt_adapter_hAdapter = 0;
+      unsigned d3dkmt_adapter_VidPnSourceId = 0;
+      unsigned adapter_index = 0;
+      DISPLAY_DEVICE add;
+
+      add.cb = sizeof(add);
+
+      pD3DKMTOpenAdapterFromHdc = (D3DKMTOPENADAPTERFROMHDC)
+            GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTOpenAdapterFromHdc");
+      pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
+            GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTGetScanLine");
+
+      while (EnumDisplayDevices(NULL, adapter_index, &add, 0))
+      {
+         HDC hdc = CreateDC(NULL, add.DeviceName, NULL, NULL);
+         if (hdc != NULL)
+         {
+            D3DKMT_OPENADAPTERFROMHDC OpenAdapterData = {0};
+            OpenAdapterData.hDc = hdc;
+            if (pD3DKMTOpenAdapterFromHdc(&OpenAdapterData) == STATUS_SUCCESS)
+            {
+               d3dkmt_adapter_hAdapter      = OpenAdapterData.hAdapter;
+               d3dkmt_adapter_VidPnSourceId = OpenAdapterData.VidPnSourceId;
+            }
+            DeleteDC(hdc);
+
+            if (d3dkmt_adapter_hAdapter)
+               break;
+         }
+         adapter_index++;
+      }
+
+      memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
+
+      if (pD3DKMTGetScanLine)
+      {
+         D3DKMT_GETSCANLINE sl = {0};
+         sl.hAdapter           = d3dkmt_adapter_hAdapter;
+         sl.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
+         d3dkmt_adapter.sl     = sl;
+      }
+   }
+
+   video_driver_scanline_init();
+}
+
+unsigned d3dkmt_scanline_get(void)
+{
+   if (pD3DKMTGetScanLine)
+   {
+      if (pD3DKMTGetScanLine(&d3dkmt_adapter.sl) == STATUS_SUCCESS)
+         return d3dkmt_adapter.sl.ScanLine;
+   }
+   return 0;
+}
+#endif /* HAVE_D3DKMT */
 
 typedef struct win32_common_state
 {
@@ -1992,6 +2055,10 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    if (class_name)
       wndclass->style        |= CS_CLASSDC;
 
+#ifdef HAVE_D3DKMT
+   d3dkmt_init();
+#endif
+
    return RegisterClassEx(wndclass);
 }
 
@@ -2099,3 +2166,4 @@ HACCEL win32_resources_get_accelerator(void)
    return s_accel_table;
 }
 #endif /* !__WINRT__ */
+

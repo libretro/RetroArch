@@ -597,6 +597,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_allow_dpad,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_rumble_gain,             MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vertical_sync,           MENU_ENUM_SUBLABEL_VIDEO_VSYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_adaptive_vsync,          MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scanline_sync,           MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_allow_rotate,             MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_on_core_shutdown,        MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_category_enable,   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE)
@@ -4700,6 +4701,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_adaptive_vsync);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scanline_sync);
             break;
          case MENU_ENUM_LABEL_INPUT_TURBO_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_turbo_enable);

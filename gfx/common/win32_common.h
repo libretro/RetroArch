@@ -197,6 +197,32 @@ void win32_resources_free(void);
 HACCEL win32_resources_get_accelerator(void);
 #endif /* !__WINRT__ */
 
+#ifdef HAVE_D3DKMT
+#include <sdkddkver.h>
+#if !defined(NTDDI_VERSION) || NTDDI_VERSION < 0x06000000
+# undef NTDDI_VERSION
+# define NTDDI_VERSION 0x06000000   /* NTDDI_LONGHORN / Vista */
+#endif
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
+# undef _WIN32_WINNT
+# define _WIN32_WINNT 0x0600
+#endif
+typedef LONG NTSTATUS;
+#define STATUS_SUCCESS ((NTSTATUS)0)
+#include <d3dkmthk.h>
+typedef NTSTATUS(CALLBACK* D3DKMTOPENADAPTERFROMHDC)(D3DKMT_OPENADAPTERFROMHDC*);
+static D3DKMTOPENADAPTERFROMHDC pD3DKMTOpenAdapterFromHdc;
+typedef NTSTATUS(CALLBACK* D3DKMTGETSCANLINE)(D3DKMT_GETSCANLINE*);
+static D3DKMTGETSCANLINE pD3DKMTGetScanLine;
+
+typedef struct d3dkmt_adapter
+{
+   D3DKMT_GETSCANLINE sl;
+} d3dkmt_adapter_t;
+
+extern unsigned d3dkmt_scanline_get(void);
+#endif /* HAVE_D3DKMT */
+
 RETRO_END_DECLS
 
 #endif

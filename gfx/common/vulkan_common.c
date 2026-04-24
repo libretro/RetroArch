@@ -1831,7 +1831,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
    settings_t                    *settings = config_get_ptr();
-   bool vsync                              = settings->bools.video_vsync;
+   bool vsync                              = settings->bools.video_vsync && !settings->bools.video_scanline_sync;
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;

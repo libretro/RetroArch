@@ -6367,6 +6367,7 @@ void menu_driver_toggle(
    bool input_overlay_enable          = false;
 #endif
    bool video_adaptive_vsync          = false;
+   bool video_scanline_sync           = false;
    bool video_vsync                   = false;
    bool video_frame_delay_auto        = false;
 
@@ -6386,6 +6387,7 @@ void menu_driver_toggle(
       input_overlay_enable            = settings->bools.input_overlay_enable;
 #endif
       video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
+      video_scanline_sync             = settings->bools.video_scanline_sync;
       video_vsync                     = settings->bools.video_vsync;
       video_frame_delay_auto          = settings->bools.video_frame_delay_auto;
    }
@@ -6438,6 +6440,7 @@ void menu_driver_toggle(
 
       /* Menu should always run with swap interval 1 if vsync is on. */
       if (     video_vsync
+            && !video_scanline_sync
             && current_video->set_nonblock_state)
          current_video->set_nonblock_state(
                video_driver_data,

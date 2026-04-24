@@ -669,6 +669,7 @@ typedef struct settings
       bool video_windowed_fullscreen;
       bool video_vsync;
       bool video_adaptive_vsync;
+      bool video_scanline_sync;
       bool video_hard_sync;
       bool video_waitable_swapchains;
       bool video_vfilter;

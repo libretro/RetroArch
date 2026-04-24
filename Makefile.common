@@ -1835,6 +1835,7 @@ ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
+   DEFINES += -DHAVE_D3DKMT
 endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)

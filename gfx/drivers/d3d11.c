@@ -3098,6 +3098,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #endif    /* __WINRT__ */
 
    if (     (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
+         && (d3d11->flags & D3D11_ST_FLAG_VSYNC)
          && (d3d11->frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d11->swapChain)))
    {
       settings_t* settings      = config_get_ptr();
@@ -4966,7 +4967,7 @@ static void d3d11_gfx_set_nonblock_state(void* data,
    if (!d3d11)
       return;
 
-   if (toggle)
+   if (toggle || !swap_interval)
       d3d11->flags     &= ~D3D11_ST_FLAG_VSYNC;
    else
       d3d11->flags     |=  D3D11_ST_FLAG_VSYNC;

@@ -3264,7 +3264,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          /* VSync overrides the mode if the rate is limited by the display. */
          if (      menu_opened /* Menu currently always runs with vsync on. */
-               || (settings->bools.video_vsync
+               || ((settings->bools.video_vsync || settings->bools.video_scanline_sync)
                && (!(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
                && !(input_state_get_ptr()->flags & INP_FLAG_NONBLOCKING)))
          {
@@ -4491,6 +4491,13 @@ void runloop_set_video_swap_interval(
    if (swap_interval_config != 0)
    {
       runloop_st->video_swap_interval_auto = swap_interval_config;
+      return;
+   }
+
+   /* Scanline sync needs swap interval 0 */
+   if (settings->bools.video_scanline_sync)
+   {
+      runloop_st->video_swap_interval_auto = 0;
       return;
    }
 
@@ -7376,7 +7383,9 @@ int runloop_iterate(void)
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
          if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
             return 0;
-         else if (settings->bools.video_vsync && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
+         else if ((  (settings->bools.video_vsync)
+                  || (settings->bools.video_scanline_sync && video_st->scanline[SCANLINE_NEXT]))
+               && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
             goto end;
 
          /* Otherwise run menu in video refresh rate speed. */

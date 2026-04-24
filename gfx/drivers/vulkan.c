@@ -5247,7 +5247,7 @@ static void vulkan_set_nonblock_state(void *data, bool state,
    if (vk->ctx_driver->swap_interval)
    {
       int interval             = 0;
-      if (!state)
+      if (!state && swap_interval)
          interval = swap_interval;
       if (adaptive_vsync_enabled && interval == 1)
          interval = -1;
