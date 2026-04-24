@@ -1830,12 +1830,58 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
 }
 
+/* Walk the visible playlist range and refresh each entry's icon-thumbnail
+ * path_data. Returns true if the refresh actually ran (gates all satisfied),
+ * so the caller can set `pending_icons` to wake the request dispatcher in
+ * xmb_render. The caller is responsible for the `gfx_thumbnail_cancel_pending_requests()`
+ * call that should precede this work, because the two existing callers have
+ * different cancel strategies:
+ *
+ *  - `xmb_populate_dynamic_icons` calls `xmb_unload_icon_thumbnail_textures`
+ *    first, which already cancels and clears pending_icons as part of a full
+ *    texture wipe (used when the displayed list changes).
+ *
+ *  - `xmb_selection_pointer_changed` only cancels — it runs when the cursor
+ *    moves within an unchanged list, so existing per-node textures stay
+ *    valid and an unload would be wasteful.
+ *
+ * That asymmetry is the reason this helper deliberately does not cancel on
+ * its own. */
+static bool xmb_refresh_visible_icon_paths(xmb_handle_t *xmb)
+{
+   unsigned i, end, height, entry_start, entry_end;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
+   size_t selection           = menu_st->selection_ptr;
+
+   if (!(     xmb->is_playlist
+         && gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON)
+         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB))
+         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB))
+         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB))))
+      return false;
+
+   end = (unsigned)selection_buf->size;
+   video_driver_get_size(NULL, &height);
+   xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &entry_start, &entry_end);
+
+   for (i = entry_start; i <= entry_end; i++)
+   {
+      xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
+      if (!node)
+         continue;
+      xmb_set_dynamic_icon_content(xmb, NULL, i, &node->thumbnail_icon);
+   }
+   return true;
+}
+
 /* Is called when the pointer position changes
  * within a list/sub-list (vertically) */
 static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
-   unsigned i, end, height, entry_start, entry_end;
+   unsigned i, end, height;
    size_t num                 = 0;
    int threshold              = 0;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -1856,7 +1902,19 @@ static void xmb_selection_pointer_changed(
    menu_st->entries.begin     = num;
 
    video_driver_get_size(NULL, &height);
-   xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &entry_start, &entry_end);
+
+   /* Refresh icon-thumbnail path_data for currently visible playlist
+    * entries. The helper itself only writes path_data; xmb_render issues
+    * the requests once pending_icons is set. Cancelling first provides
+    * "storm protection during fast jumps" — any in-flight requests from
+    * the previous cursor position stop being relevant the moment the
+    * cursor moves. Skipped entirely on non-playlist lists (helper returns
+    * false before touching anything). */
+   if (xmb_refresh_visible_icon_paths(xmb))
+   {
+      gfx_thumbnail_cancel_pending_requests();
+      xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
+   }
 
    for (i = 0; i < end; i++)
    {
@@ -1870,23 +1928,6 @@ static void xmb_selection_pointer_changed(
 
       iy               = xmb_item_y(xmb, i, selection);
       real_iy          = iy + xmb->margins_screen_top;
-
-      if (     xmb->is_playlist
-            && gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON)
-            && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB))
-            && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB))
-            && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB))
-         )
-      {
-         xmb_icons_t *thumbnail_icon = &node->thumbnail_icon;
-         if (i >= entry_start && i <= entry_end)
-         {
-            /* Playlist updates */
-            xmb_set_dynamic_icon_content(xmb, NULL, i, thumbnail_icon);
-            gfx_thumbnail_cancel_pending_requests();
-            xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
-         }
-      }
 
       if (i == selection)
       {
@@ -2704,44 +2745,20 @@ static void xmb_tab_set_selection(void *data)
 
 static void xmb_populate_dynamic_icons(xmb_handle_t *xmb)
 {
-   unsigned i, entry_start, entry_end, height;
-   struct menu_state *menu_st       = menu_state_get_ptr();
-   menu_list_t *menu_list           = menu_st->entries.list;
-   file_list_t *selection_buf       = MENU_LIST_GET_SELECTION(menu_list, 0);
-   unsigned end                     = (unsigned)selection_buf->size;
-   size_t selection                 = menu_st->selection_ptr;
+   struct menu_state *menu_st = menu_state_get_ptr();
 
-   if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
-   {
-      /*  Clear current textures if they are there  */
-      xmb_unload_icon_thumbnail_textures(xmb);
+   if (!gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
+      return;
 
-      entry_start      = 0;
-      entry_end        = end;
+   /* Used when the displayed list changes (new playlist pushed or context
+    * reset): the previous list's per-node icon textures are stale, so wipe
+    * them before queuing fresh requests. `xmb_unload_icon_thumbnail_textures`
+    * handles the cancel and clears `pending_icons` as part of the wipe;
+    * the helper below only needs to write fresh path_data. */
+   xmb_unload_icon_thumbnail_textures(xmb);
 
-      video_driver_get_size(NULL, &height);
-      xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &entry_start, &entry_end);
-      if (     xmb->is_playlist
-            && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB))
-            && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB))
-            && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB))
-         )
-      {
-         for (i = entry_start; i <= entry_end; i++)
-         {
-            xmb_icons_t *thumbnail_icon;
-            xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
-
-            if (!node)
-               continue;
-
-            thumbnail_icon = &node->thumbnail_icon;
-            xmb_set_dynamic_icon_content(xmb, NULL, i, thumbnail_icon);
-            gfx_thumbnail_cancel_pending_requests();
-            xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
-         }
-      }
-   }
+   if (xmb_refresh_visible_icon_paths(xmb))
+      xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
 }
 
 static void xmb_list_switch(xmb_handle_t *xmb)
