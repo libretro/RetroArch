@@ -5161,20 +5161,29 @@ finish:
       size_t _len;
       char parent_dir_encoded[DIR_MAX_LENGTH];
       file_transfer_t *transf     = (file_transfer_t*)malloc(sizeof(*transf));
-      parent_dir_encoded[0]       = '\0';
+      /* NULL-check transf: the field writes below (->enum_idx,
+       * ->path via strlcpy through fill_pathname_parent_dir)
+       * NULL-deref on OOM.  On failure skip the parent-dir
+       * HTTP transfer entirely - the 'index_dirs' feature
+       * degrades gracefully (no parent-dir nav up from the
+       * current listing) rather than crashing. */
+      if (transf)
+      {
+         parent_dir_encoded[0]       = '\0';
 
-      transf->enum_idx            = MSG_UNKNOWN;
+         transf->enum_idx            = MSG_UNKNOWN;
 
-      _len = fill_pathname_parent_dir(transf->path,
-            state->path, sizeof(transf->path));
-      strlcpy(transf->path       + _len,
-            FILE_PATH_INDEX_DIRS_URL,
-            sizeof(transf->path) - _len);
+         _len = fill_pathname_parent_dir(transf->path,
+               state->path, sizeof(transf->path));
+         strlcpy(transf->path       + _len,
+               FILE_PATH_INDEX_DIRS_URL,
+               sizeof(transf->path) - _len);
 
-      net_http_urlencode_full(parent_dir_encoded, transf->path,
-            sizeof(parent_dir_encoded));
-      task_push_http_transfer_file(parent_dir_encoded, true,
-            "index_dirs", cb_net_generic_subdir, transf);
+         net_http_urlencode_full(parent_dir_encoded, transf->path,
+               sizeof(parent_dir_encoded));
+         task_push_http_transfer_file(parent_dir_encoded, true,
+               "index_dirs", cb_net_generic_subdir, transf);
+      }
    }
 
    if (state)
@@ -5257,10 +5266,19 @@ static int generic_action_ok_network(const char *path,
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
    transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
-   strlcpy(transf->path, url_path, sizeof(transf->path));
+   /* NULL-check transf: strlcpy(transf->path, ...) on the next
+    * line NULL-derefs on OOM.  Skip the HTTP transfer entirely -
+    * the displaylist push below still runs but will show an
+    * empty content list until the user retries.  Degrading to
+    * 'no network content available this session' is strictly
+    * better than crashing mid-menu-navigation. */
+   if (transf)
+   {
+      strlcpy(transf->path, url_path, sizeof(transf->path));
 
-   net_http_urlencode_full(url_path_encoded, url_path, sizeof(url_path_encoded));
-   task_push_http_transfer_file(url_path_encoded, suppress_msg, url_label, callback, transf);
+      net_http_urlencode_full(url_path_encoded, url_path, sizeof(url_path_encoded));
+      task_push_http_transfer_file(url_path_encoded, suppress_msg, url_label, callback, transf);
+   }
 
    return generic_action_ok_displaylist_push(
          path, NULL,
@@ -5586,6 +5604,12 @@ static int action_ok_download_generic(const char *path,
    fill_pathname_join_special(s2, s, path, sizeof(s2));
 
    transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
+   /* NULL-check transf: the ->enum_idx write and strlcpy(transf->
+    * path, ...) below NULL-deref on OOM.  Return 0 (same as the
+    * success path below) to leave the menu state unchanged; the
+    * user can re-trigger the download once memory is available. */
+   if (!transf)
+      return 0;
    transf->enum_idx = enum_idx;
    strlcpy(transf->path, path, sizeof(transf->path));
 
