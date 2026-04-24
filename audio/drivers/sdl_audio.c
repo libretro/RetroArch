@@ -241,6 +241,22 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
 
    RARCH_DBG("[SDL audio] Initialized microphone sample queue with %u bytes.\n", bufsize);
 
+   /* NULL-check fifo_new: hot-path audio callbacks
+    * (sdl_microphone_read_cb, sdl_microphone_read) index into
+    * mic->sample_buffer unconditionally via FIFO_READ_AVAIL and
+    * fifo_read/fifo_write.  fifo_* NULL-deref on a NULL buffer
+    * pointer (see libretro-common/queues/fifo_queue.c).  Bail to
+    * the existing 'error' label on OOM - it frees 'mic' and
+    * returns NULL, same as the outer calloc-failure path at the
+    * top of this function.  'tmp' is freed by the 'if (tmp)'
+    * block below, not here (calloc may have succeeded even if
+    * fifo_new failed, so defer tmp cleanup to after the guard). */
+   if (!mic->sample_buffer)
+   {
+      free(tmp);
+      goto error;
+   }
+
    if (tmp)
    {
       fifo_write(mic->sample_buffer, tmp, bufsize);
@@ -251,6 +267,19 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    return mic;
 
 error:
+   /* HAVE_THREADS may have init'd mic->lock and mic->cond between
+    * the SDL_OpenAudioDevice call and the fifo_new below.
+    * slock_free/scond_free are NULL-tolerant so the earlier goto
+    * error site (device_id == 0) where these are still NULL is
+    * fine too.  'mic' is always non-NULL at this label because
+    * the calloc at the top of the function returns early on
+    * failure without goto'ing here. */
+   if (mic->device_id > 0)
+      SDL_CloseAudioDevice(mic->device_id);
+#ifdef HAVE_THREADS
+   slock_free(mic->lock);
+   scond_free(mic->cond);
+#endif
    free(mic);
    return NULL;
 }
@@ -590,6 +619,22 @@ static void *sdl_audio_init(const char *device,
    bufsize             = sdl->device_spec.samples * 4 * (SDL_AUDIO_BITSIZE(sdl->device_spec.format) / 8);
    tmp                 = calloc(1, bufsize);
    sdl->speaker_buffer = fifo_new(bufsize);
+
+   /* NULL-check fifo_new: hot-path audio callbacks
+    * (sdl_audio_playback_cb, sdl_audio_write) index into
+    * sdl->speaker_buffer unconditionally via FIFO_WRITE_AVAIL /
+    * FIFO_READ_AVAIL and fifo_read/fifo_write.  fifo_* NULL-deref
+    * on a NULL buffer.  Bail via sdl_audio_free which already
+    * handles partial init state (speaker_device guard at line
+    * ~716, speaker_buffer guard at line ~721, HAVE_THREADS locks
+    * nullable).  'tmp' is owned here on failure since we haven't
+    * transferred it to the fifo yet. */
+   if (!sdl->speaker_buffer)
+   {
+      free(tmp);
+      sdl_audio_free(sdl);
+      return NULL;
+   }
 
    if (tmp)
    {
