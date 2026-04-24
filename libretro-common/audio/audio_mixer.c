@@ -1202,7 +1202,42 @@ static void audio_mixer_mix_flac(float* buffer, size_t num_frames,
    if (voice->types.flac.position == voice->types.flac.samples)
    {
 again:
-      temp_samples = (unsigned)drflac_read_pcm_frames_f32( voice->types.flac.stream, AUDIO_MIXER_TEMP_BUFFER, temp_buffer);
+      /* drflac_read_pcm_frames_f32 takes a frame count and
+       * writes frame_count * channel_count floats into the
+       * output buffer.  Request at most AUDIO_MIXER_TEMP_BUFFER
+       * / 2 frames so a stereo FLAC fills temp_buffer[AUDIO_
+       * MIXER_TEMP_BUFFER] exactly, then multiply the return
+       * value by 2 to convert frame count to interleaved float
+       * count.  This matches the convention the downstream code
+       * (info.input_frames = temp_samples / 2, memcpy length
+       * of temp_samples * sizeof(float)) and the sibling mp3
+       * and ogg mix paths already use.
+       *
+       * Pre-patch this passed AUDIO_MIXER_TEMP_BUFFER as the
+       * frame count without the '/ 2' and stored the return as
+       * 'temp_samples' without the '* 2'.  For a stereo FLAC
+       * (by far the most common case) drflac wrote 2 *
+       * AUDIO_MIXER_TEMP_BUFFER = 16384 floats into a 8192-
+       * float stack buffer - a 32 KiB stack overflow.  Any
+       * stereo FLAC asset played through the mixer (cheevo
+       * unlock sounds, menu BGM, user-loaded content via the
+       * audio mixer playlist, etc.) corrupted the stack on
+       * every mix tick.  The downstream 'temp_samples / 2'
+       * and memcpy length were also off by 2x under the old
+       * convention, but the stack overflow hit first.
+       *
+       * For mono FLAC: the '* 2' overstates the float count by
+       * 2x, causing the memcpy / resampler to read
+       * uninitialised stack past the actual data.  That matches
+       * the pre-existing implicit stereo-only assumption of
+       * the FLAC/MP3/OGG mixer paths (voice->types.flac.
+       * buf_samples is sized as TEMP_BUFFER * ratio, with no
+       * per-channel adjustment) rather than introducing new
+       * mono handling here.  Fixing mono playback is a separate
+       * change. */
+      temp_samples = (unsigned)drflac_read_pcm_frames_f32(
+            voice->types.flac.stream,
+            AUDIO_MIXER_TEMP_BUFFER / 2, temp_buffer) * 2;
       if (temp_samples == 0)
       {
          if (voice->repeat)
