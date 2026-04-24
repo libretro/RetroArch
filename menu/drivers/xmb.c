@@ -1094,7 +1094,19 @@ static void xmb_messagebox(void *data, const char *message)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    if (xmb && message && *message)
+   {
+      /* Free any previously-set box_message before overwriting.
+       * The render path at line ~9215 consumes box_message
+       * exactly once (strlcpy to stack msg, then free + NULL),
+       * but nothing prevents xmb_messagebox from being called
+       * twice between renders (e.g. rapid error notifications,
+       * or a second messagebox triggered by a background task
+       * completion before the menu has repainted).  Pre-patch
+       * the second strdup leaked the first one. */
+      if (xmb->box_message)
+         free(xmb->box_message);
       xmb->box_message = strdup(message);
+   }
 }
 
 static void xmb_render_messagebox_internal(
@@ -3085,6 +3097,13 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
       else if (string_ends_with_size(xmb->horizontal_list.list[i].label, ".lvw",
             strlen(xmb->horizontal_list.list[i].label), STRLEN_CONST(".lvw")))
       {
+         /* Free any previously-set console_name before
+          * overwriting; matches the .lpl branch above.
+          * xmb_context_reset_horizontal_list is called on every
+          * theme change / refresh, so without this free the
+          * console_name from the previous reset leaks. */
+         if (node->console_name)
+            free(node->console_name);
          node->console_name = strdup(path + strlen(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW)) + 2);
          node->icon         = xmb->textures.list[XMB_TEXTURE_CURSOR];
       }
@@ -9283,6 +9302,22 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    unsigned vertices_total   = XMB_RIBBON_VERTICES;
    float *dummy              = (float*)calloc(4 * vertices_total, sizeof(float));
    float *ribbon_verts       = (float*)calloc(2 * vertices_total, sizeof(float));
+
+   /* NULL-check both callocs: the for-loop below unconditionally
+    * writes into ribbon_verts via xmb_ribbon_set_vertex, and the
+    * video_coord_array_append call at the bottom passes dummy
+    * as color/tex_coord/lut_tex_coord which the underlying
+    * append implementation would copy from (reading NULL).
+    * Skip ribbon init entirely on OOM - the ribbon is a
+    * decorative background animation; its absence is visually
+    * degraded but not functionally broken.  The free()s at
+    * the bottom are NULL-safe. */
+   if (!dummy || !ribbon_verts)
+   {
+      free(dummy);
+      free(ribbon_verts);
+      return;
+   }
 
    /* Set up vertices */
    for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)

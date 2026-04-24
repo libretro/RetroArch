@@ -11252,6 +11252,24 @@ static void materialui_list_insert(void *userdata,
    {
       node = (materialui_node_t*)malloc(sizeof(materialui_node_t));
 
+      /* NULL-check the malloc: the field writes below
+       * (node->icon_type etc., 24+ lines) unconditionally
+       * dereference node and NULL-deref on OOM.  The existing
+       * 'if (!node) return;' at line ~11290 was dead code -
+       * the dereference at line 11255 crashed first.
+       *
+       * On failure we need to replicate what the 'if (!node)
+       * return;' below was intended to do: store NULL into the
+       * list entry's userdata so subsequent reads see no node
+       * and skip node-specific rendering.  The item stays in
+       * the list but renders without the materialui-specific
+       * node metadata (icons, thumbnails). */
+      if (!node)
+      {
+         list->list[i].userdata = NULL;
+         return;
+      }
+
       node->icon_type                        = MUI_ICON_TYPE_NONE;
       node->icon_texture_index               = 0;
       node->entry_width                      = 0.0f;

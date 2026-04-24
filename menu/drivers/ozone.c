@@ -5235,6 +5235,13 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       else if (string_ends_with_size(ozone->horizontal_list.list[i].label, ".lvw",
             strlen(ozone->horizontal_list.list[i].label), STRLEN_CONST(".lvw")))
       {
+         /* Free any previously-set console_name before
+          * overwriting; matches the .lpl branch above.
+          * ozone_context_reset_horizontal_list is called on
+          * every theme change / refresh, so without this free
+          * the console_name from the previous reset leaks. */
+         if (node->console_name)
+            free(node->console_name);
          node->console_name = strdup(path + strlen(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW)) + 2);
          node->icon = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
       }
