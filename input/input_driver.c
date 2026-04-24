@@ -6147,6 +6147,14 @@ void input_overlay_set_visibility(int overlay_idx,
       input_st->overlay_visibility = (enum overlay_visibility *)calloc(
             MAX_VISIBILITY, sizeof(enum overlay_visibility));
 
+      /* NULL-check: the init loop below and the later
+       * overlay_visibility[overlay_idx] = vis write NULL-deref
+       * on OOM.  Bail early - on failure the overlay stays at
+       * its compile-time default visibility rather than being
+       * explicitly set, which is strictly better than crashing. */
+      if (!input_st->overlay_visibility)
+         return;
+
       for (i = 0; i < MAX_VISIBILITY; i++)
          input_st->overlay_visibility[i] = OVERLAY_VISIBILITY_DEFAULT;
    }

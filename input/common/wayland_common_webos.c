@@ -229,17 +229,36 @@ static void wl_registry_handle_global_webos(void *data,
    {
       display_output_t *od   = (display_output_t*)calloc(1, sizeof(*od));
       output_info_t *oi      = (output_info_t*)calloc(1, sizeof(*oi));
-      od->output             = oi;
-      oi->output             = (struct wl_output*)wl_registry_bind(reg,
-         id, &wl_output_interface, MIN(version, 2));
-      oi->global_id          = id;
-      oi->scale              = 1;
-      wl_output_add_listener(oi->output, &output_listener, oi);
-      wl_list_insert(&wl->all_outputs, &od->link);
+      /* NULL-check both callocs: od->output = oi and oi->output/
+       * global_id/scale writes NULL-deref on OOM.  Free whichever
+       * succeeded and skip adding this output.  Mirrors the fix
+       * in the upstream wayland_common.c sibling. */
+      if (!od || !oi)
+      {
+         free(od);
+         free(oi);
+      }
+      else
+      {
+         od->output             = oi;
+         oi->output             = (struct wl_output*)wl_registry_bind(reg,
+            id, &wl_output_interface, MIN(version, 2));
+         oi->global_id          = id;
+         oi->scale              = 1;
+         wl_output_add_listener(oi->output, &output_listener, oi);
+         wl_list_insert(&wl->all_outputs, &od->link);
+      }
    }
    else if (string_is_equal(interface, "wl_seat"))
    {
       seat_info_t *si = calloc(1, sizeof(*si));
+      /* NULL-check: the field writes below NULL-deref on OOM.
+       * Skip this seat - the compositor will re-emit
+       * wl_registry.global if it needs us to retry, and missing
+       * seats are handled gracefully by downstream input
+       * dispatch (no devices reported from that seat). */
+      if (!si)
+         return;
       si->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 4));
       si->global_id = id;
       si->wl = wl;

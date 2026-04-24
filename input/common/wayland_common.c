@@ -597,6 +597,14 @@ static bool wl_current_outputs_add(gfx_ctx_wayland_data_t *wl,
    {
       surface_output_t *os = (surface_output_t*)
          calloc(1, sizeof(surface_output_t));
+      /* NULL-check: the field writes below NULL-deref on OOM.
+       * Skip this output from the current_outputs list; the
+       * subsequent wl_list_for_each traversal in
+       * wl_current_outputs_remove handles a missing entry
+       * gracefully (the loop simply doesn't find a match and
+       * returns false). */
+      if (!os)
+         return false;
       os->output = oi_found;
       wl_list_insert(&wl->current_outputs, &os->link);
       return true;
@@ -751,12 +759,26 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       output_info_t *oi = (output_info_t*)
          calloc(1, sizeof(output_info_t));
 
-      od->output    = oi;
-      oi->global_id = id;
-      oi->output    = (struct wl_output*)wl_registry_bind(reg,
-            id, &wl_output_interface, MIN(version, 2));
-      wl_output_add_listener(oi->output, &output_listener, oi);
-      wl_list_insert(&wl->all_outputs, &od->link);
+      /* NULL-check both callocs: od->output = oi and
+       * oi->global_id = id NULL-deref on OOM.  Free whichever
+       * succeeded (free(NULL) is a no-op) and skip adding this
+       * output to wl->all_outputs - the compositor will re-emit
+       * wl_registry.global if it needs us to retry, and missing
+       * outputs fall back to sensible defaults downstream. */
+      if (!od || !oi)
+      {
+         free(od);
+         free(oi);
+      }
+      else
+      {
+         od->output    = oi;
+         oi->global_id = id;
+         oi->output    = (struct wl_output*)wl_registry_bind(reg,
+               id, &wl_output_interface, MIN(version, 2));
+         wl_output_add_listener(oi->output, &output_listener, oi);
+         wl_list_insert(&wl->all_outputs, &od->link);
+      }
    }
    else if (string_is_equal(interface, xdg_wm_base_interface.name) && found++)
       wl->xdg_shell = (struct xdg_wm_base*)
@@ -959,6 +981,15 @@ static void wl_data_device_handle_data_offer(void *data,
       struct wl_data_device *data_device, struct wl_data_offer *offer)
 {
    data_offer_ctx *offer_data = (data_offer_ctx*)calloc(1, sizeof *offer_data);
+
+   /* NULL-check: the field writes below NULL-deref on OOM.
+    * On failure skip the offer - wl_data_offer_set_user_data
+    * would have attached this pointer for the listener
+    * callbacks to retrieve, so without it the offer just
+    * doesn't get handled by this client.  That's a lost
+    * drag-and-drop operation rather than a crash. */
+   if (!offer_data)
+      return;
 
    offer_data->offer          = offer;
    offer_data->data_device    = data_device;
