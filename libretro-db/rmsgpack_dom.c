@@ -54,14 +54,28 @@ static int rmsgpack_dom_reader_state_push(
 {
    if ((s->i + 1) == s->capacity)
    {
+      size_t new_capacity;
+      struct rmsgpack_dom_value **new_stack;
+
       if (!s->growable)
          return -1;
 
-      s->capacity *= 2;
-      s->stack     = (struct rmsgpack_dom_value **)
-         realloc(s->stack, s->capacity * sizeof(struct rmsgpack_dom_value *));
-      if (!s->stack)
+      /* realloc-to-tmp: pre-patch was 's->stack = realloc(s->stack,
+       * ...)' which on OOM would leak the old buffer (self-assign
+       * drops the only reference).  Also pre-patch did
+       * 'capacity *= 2' before the realloc, so on failure the
+       * capacity claimed the new size while the allocation was
+       * still the old size - out-of-sync state that would manifest
+       * as a heap-buffer-overflow later if anything else ignored
+       * the -1 return.  Compute new_capacity into a local, realloc
+       * into a tmp, commit both only on success. */
+      new_capacity = s->capacity * 2;
+      new_stack    = (struct rmsgpack_dom_value **)
+         realloc(s->stack, new_capacity * sizeof(struct rmsgpack_dom_value *));
+      if (!new_stack)
          return -1;
+      s->stack    = new_stack;
+      s->capacity = new_capacity;
    }
    s->i++;
    s->stack[s->i] = v;
@@ -429,15 +443,35 @@ struct rmsgpack_dom_reader_state *rmsgpack_dom_reader_state_new(void)
 {
    struct rmsgpack_dom_reader_state *s = (struct rmsgpack_dom_reader_state *)calloc(1,
          sizeof(struct rmsgpack_dom_reader_state));
+   /* NULL-check: the field writes below NULL-deref on OOM. */
+   if (!s)
+      return NULL;
    s->i        = 0;
    s->capacity = 1024;
    s->growable = true;
    s->stack    = (struct rmsgpack_dom_value **)calloc(1024, sizeof(struct rmsgpack_dom_value *));
+   /* NULL-check the stack calloc: consumers (rmsgpack_dom_read
+    * above at line ~422 writes s->stack[0] unconditionally) would
+    * NULL-deref on OOM.  Free the containing state struct and
+    * return NULL so the caller (rmsgpack_dom_read does this via
+    * its own caller chain) can fall through gracefully. */
+   if (!s->stack)
+   {
+      free(s);
+      return NULL;
+   }
    return s;
 }
 
 void rmsgpack_dom_reader_state_free(struct rmsgpack_dom_reader_state *state)
 {
+   /* NULL-check: rmsgpack_dom_reader_state_new can now return
+    * NULL on OOM (this commit).  Callers that defer cleanup to
+    * the end of a function (e.g. input/bsv/bsvmovie.c's
+    * decompress path at line ~1833) may hit this with a NULL
+    * state pointer if the reader_state_new call failed. */
+   if (!state)
+      return;
    free(state->stack);
    free(state);
 }

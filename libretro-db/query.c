@@ -943,7 +943,11 @@ static struct buffer query_parse_method_call(
    invocation->argv = (argi > 0) ? (struct argument*)
       malloc(sizeof(struct argument) * argi) : NULL;
 
-   if (!invocation->argv)
+   /* Gate the OOM branch on 'argi > 0 && !argv' - before this
+    * change a valid zero-arg function call ('foo()') was being
+    * erroneously treated as OOM because argv is legitimately
+    * NULL when argi==0. */
+   if (argi > 0 && !invocation->argv)
    {
       s[0] = 'O';
       s[1] = 'O';
@@ -952,8 +956,9 @@ static struct buffer query_parse_method_call(
       *err = s;
       goto clean;
    }
-   memcpy(invocation->argv, args,
-         sizeof(struct argument) * argi);
+   if (invocation->argv)
+      memcpy(invocation->argv, args,
+            sizeof(struct argument) * argi);
 
    return buff;
 
