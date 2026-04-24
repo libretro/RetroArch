@@ -6880,11 +6880,9 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->assets_missing     = false;
       xmb_context_reset_textures(xmb, iconpath, menu_xmb_theme);
    }
-   else
-   {
-      xmb->allow_horizontal_animation    = true;
-      xmb->allow_dynamic_wallpaper       = true;
-   }
+
+   xmb->allow_horizontal_animation = true;
+   xmb->allow_dynamic_wallpaper    = true;
 
    xmb_context_reset_horizontal_list(xmb);
    xmb_set_title(xmb);
