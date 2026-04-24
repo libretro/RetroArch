@@ -26,6 +26,7 @@
 #include <mach/mach.h>
 #ifdef HAVE_GCD
 #include <dispatch/dispatch.h>
+#include <defines/cocoa_defines.h>
 #endif
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -137,6 +138,19 @@ typedef struct darwin_watch_entry
 {
    int fd;                    /* File descriptor opened with O_EVTONLY */
    dispatch_source_t source;  /* GCD dispatch source for monitoring */
+   /* Per-entry semaphore signalled from the source's cancel
+    * handler.  Needed because dispatch_source_cancel is
+    * asynchronous: it flags the source for cancellation but
+    * any already-dispatched event handler invocation keeps
+    * running to completion on its target queue, which is the
+    * global concurrent queue here.  The event handler
+    * dereferences &watch_data->has_changes, so we cannot free
+    * watch_data until we're sure no in-flight handler remains.
+    * The cancel handler fires once all handler invocations
+    * have drained, so waiting on this semaphore before free()
+    * is the standard safe-teardown pattern for dispatch
+    * sources. */
+   dispatch_semaphore_t cancel_sem;
    char *path;                /* Watched file path */
 } darwin_watch_entry_t;
 
@@ -911,10 +925,29 @@ static void darwin_watch_data_free(darwin_watch_data_t *watch_data)
       {
          if (watch_data->watches[i].source)
          {
+            /* Cancel the source, then wait for the cancel
+             * handler to fire.  dispatch_source_cancel is
+             * asynchronous - it only marks the source as
+             * cancelled.  Any already-dispatched event handler
+             * invocation (the one that reads
+             * &watch_data->has_changes) keeps running to
+             * completion on the global concurrent queue.  The
+             * cancel handler is guaranteed to fire AFTER all
+             * pending event handler invocations have drained,
+             * so dispatch_semaphore_wait(cancel_sem, FOREVER)
+             * is the standard 'wait until source is fully
+             * quiesced' pattern.  Without this wait a racing
+             * event handler would NUL-deref or, worse, write
+             * into freed memory for has_changes. */
             dispatch_source_cancel(watch_data->watches[i].source);
-#if !__has_feature(objc_arc)
-            dispatch_release(watch_data->watches[i].source);
-#endif
+            if (watch_data->watches[i].cancel_sem)
+            {
+               dispatch_semaphore_wait(
+                     watch_data->watches[i].cancel_sem,
+                     DISPATCH_TIME_FOREVER);
+            }
+            RARCH_DISPATCH_RELEASE(watch_data->watches[i].source);
+            RARCH_DISPATCH_RELEASE(watch_data->watches[i].cancel_sem);
          }
          if (watch_data->watches[i].fd >= 0)
             close(watch_data->watches[i].fd);
@@ -984,15 +1017,31 @@ static void frontend_darwin_watch_path_for_changes(
          const char *path = list->elems[i].data;
          int fd           = open(path, O_EVTONLY);
 
-         watch_data->watches[i].fd     = fd;
-         watch_data->watches[i].source = NULL;
-         watch_data->watches[i].path   = NULL;
+         watch_data->watches[i].fd         = fd;
+         watch_data->watches[i].source     = NULL;
+         watch_data->watches[i].path       = NULL;
+         watch_data->watches[i].cancel_sem = NULL;
 
          if (fd >= 0)
          {
-            dispatch_source_t source;
+            dispatch_source_t    source;
+            dispatch_semaphore_t cancel_sem;
 
             watch_data->watches[i].path = strdup(path);
+
+            /* Create cancel semaphore up-front.  If this fails
+             * (realistically only on OOM) we skip source creation
+             * entirely rather than create a source we cannot
+             * safely tear down - without a semaphore the free
+             * path has no way to wait for in-flight event
+             * handlers to drain before the free(). */
+            cancel_sem = dispatch_semaphore_create(0);
+            if (!cancel_sem)
+            {
+               close(fd);
+               watch_data->watches[i].fd = -1;
+               continue;
+            }
 
             /* Create dispatch source for monitoring file events */
             source = dispatch_source_create(
@@ -1003,22 +1052,31 @@ static void frontend_darwin_watch_path_for_changes(
 
             if (source)
             {
-               /* Set up event handler - sets atomic flag when changes occur */
+               /* Set up event handler - sets atomic flag when changes
+                * occur.  This block captures watch_data by pointer and
+                * the cancel-handler synchronisation below is what keeps
+                * the capture safe against the teardown path. */
                dispatch_source_set_event_handler(source, ^{
                   OSAtomicCompareAndSwap32(0, 1, &watch_data->has_changes);
                });
 
-               /* Set up cancellation handler to prevent fd leak */
+               /* Cancel handler signals cancel_sem.  darwin_watch_
+                * data_free will cancel the source and wait on this
+                * semaphore, guaranteeing all pending event handlers
+                * have completed before watch_data is freed. */
                dispatch_source_set_cancel_handler(source, ^{
-                  /* File descriptor is closed in cleanup function */
+                  dispatch_semaphore_signal(cancel_sem);
                });
 
-               watch_data->watches[i].source = source;
+               watch_data->watches[i].source     = source;
+               watch_data->watches[i].cancel_sem = cancel_sem;
                dispatch_resume(source);
             }
             else
             {
-               /* Failed to create dispatch source, close fd */
+               /* Failed to create dispatch source, close fd and
+                * release the unused semaphore. */
+               RARCH_DISPATCH_RELEASE(cancel_sem);
                close(fd);
                watch_data->watches[i].fd = -1;
             }
