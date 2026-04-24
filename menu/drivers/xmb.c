@@ -443,6 +443,11 @@ typedef struct xmb_handle
 
    uint8_t system_tab_end;
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
+   /* Frames remaining to retry xmb_set_title() after a context reset
+    * left an async-loaded sidebar / db-node icon unresolved. Capped
+    * so that a permanently-missing icon asset doesn't cause a
+    * perpetual retry loop. */
+   uint8_t current_menu_icon_retry;
 
    char title_name[NAME_MAX_LENGTH];
    char title_name_alt[NAME_MAX_LENGTH];
@@ -1855,7 +1860,6 @@ static void xmb_selection_pointer_changed(
       real_iy          = iy + xmb->margins_screen_top;
 
       if (     xmb->is_playlist
-            && xmb->allow_horizontal_animation
             && gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON)
             && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB))
             && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB))
@@ -2322,9 +2326,6 @@ static void xmb_set_title(xmb_handle_t *xmb)
          xmb->title_name[sub] = '\0';
    }
 
-   if (!xmb->allow_horizontal_animation)
-      return;
-
    if (config_get_ptr()->uints.menu_xmb_current_menu_icon)
    {
       char label_temp[NAME_MAX_LENGTH];
@@ -2336,6 +2337,15 @@ static void xmb_set_title(xmb_handle_t *xmb)
       const char *label_original   = NULL;
       uintptr_t texture            = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
       bool search                  = true;
+
+      /* Preserve and decrement any in-flight retry countdown from
+       * xmb_render(). Fresh fallback (prev_retry == 0) (re)arms to
+       * ~1s @ 60fps; ongoing retry counts down one frame at a time
+       * so a permanently-missing asset can't spin forever. Cleared
+       * unconditionally first — any fallback branch below will set
+       * the next value. */
+      uint8_t prev_retry           = xmb->current_menu_icon_retry;
+      xmb->current_menu_icon_retry = 0;
 
       menu_entries_get_last_stack(&path, &label, &type, &enum_idx, &entry_idx);
       label_original               = label;
@@ -2489,6 +2499,13 @@ static void xmb_set_title(xmb_handle_t *xmb)
                sidebar_node = (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, i);
                if (sidebar_node && sidebar_node->icon)
                   texture = sidebar_node->icon;
+               else if (sidebar_node)
+                  /* Async load still in flight (e.g. right after a
+                   * fullscreen toggle triggered xmb_context_reset) —
+                   * ask xmb_render() to retry. Fresh trigger arms to
+                   * 60 frames (~1s); ongoing retry decrements one
+                   * step so a missing asset terminates the loop. */
+                  xmb->current_menu_icon_retry = prev_retry ? prev_retry - 1 : 60;
             }
 
             /* Playlists entries */
@@ -2498,7 +2515,23 @@ static void xmb_set_title(xmb_handle_t *xmb)
             if (     pl_entry
                   && (pl_entry->db_name && *pl_entry->db_name)
                   && (db_node = RHMAP_GET_STR(xmb->playlist_db_node_map, pl_entry->db_name)))
-               texture = (enum_idx == MENU_ENUM_LABEL_HORIZONTAL_MENU) ? db_node->icon : db_node->content_icon;
+            {
+               /* Sidebar / content icons load asynchronously via
+                * xmb_context_reset_horizontal_list(). A context reset
+                * (e.g. fullscreen toggle) will zero these handles and
+                * re-queue the loads; xmb_set_title() runs before the
+                * tasks complete. Fall back to the existing `texture`
+                * (XMB_TEXTURE_QUICKMENU by default, or sidebar_node->icon
+                * if that happened to be set above) rather than assigning
+                * a 0 handle — which would blank the icon until the next
+                * navigation refresh. Flag pending so xmb_render() retries. */
+               uintptr_t db_icon = (enum_idx == MENU_ENUM_LABEL_HORIZONTAL_MENU)
+                     ? db_node->icon : db_node->content_icon;
+               if (db_icon)
+                  texture = db_icon;
+               else
+                  xmb->current_menu_icon_retry = prev_retry ? prev_retry - 1 : 60;
+            }
             else
             {
                const playlist_config_t *pl_config = playlist_get_config(playlist_get_cached());
@@ -2677,7 +2710,6 @@ static void xmb_populate_dynamic_icons(xmb_handle_t *xmb)
       video_driver_get_size(NULL, &height);
       xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &entry_start, &entry_end);
       if (     xmb->is_playlist
-            && xmb->allow_horizontal_animation
             && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB))
             && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB))
             && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB))
@@ -6835,9 +6867,18 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->allow_dynamic_wallpaper       = true;
    }
 
-   xmb_update_dynamic_wallpaper(xmb, true);
    xmb_context_reset_horizontal_list(xmb);
    xmb_set_title(xmb);
+   /* Must run after xmb_set_title(): xmb_path_dynamic_wallpaper()
+    * reads xmb->title_name to build the wallpaper filename.  The
+    * previous order invoked this with a stale title_name from the
+    * prior stack position (or empty-string on cold boot, since
+    * xmb_handle_t is calloc-initialized), so the wallpaper loaded
+    * here could briefly be the wrong one until the next
+    * xmb_populate_entries -> xmb_update_dynamic_wallpaper chain
+    * corrected it.  xmb_populate_entries already uses the correct
+    * set_title -> update_dynamic_wallpaper order. */
+   xmb_update_dynamic_wallpaper(xmb, true);
 
    menu_screensaver_context_destroy(xmb->screensaver);
 
@@ -6917,6 +6958,15 @@ static void xmb_render(void *data,
          xmb_context_reset_internal(xmb, video_driver_is_threaded(), false,
                settings->uints.menu_xmb_theme);
    }
+
+   /* Retry current-menu-icon resolution if a previous xmb_set_title()
+    * (typically the one invoked from xmb_context_reset_internal() after
+    * a fullscreen toggle) could not resolve the icon because an
+    * async-loaded sidebar or db-node icon handle was still 0.
+    * xmb_set_title() decrements the counter on each retry and clears
+    * it on success, so the loop terminates either way. */
+   if (xmb->current_menu_icon_retry > 0)
+      xmb_set_title(xmb);
 
    xmb->use_ps3_layout            = xmb_use_ps3_layout(settings->uints.menu_xmb_layout, width, height);
    scale_factor                   = xmb_get_scale_factor(settings->floats.menu_scale_factor,
