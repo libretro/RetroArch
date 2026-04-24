@@ -198,6 +198,15 @@ HACCEL win32_resources_get_accelerator(void);
 #endif /* !__WINRT__ */
 
 #ifdef HAVE_D3DKMT
+#include <sdkddkver.h>
+#if !defined(NTDDI_VERSION) || NTDDI_VERSION < 0x06000000
+# undef NTDDI_VERSION
+# define NTDDI_VERSION 0x06000000   /* NTDDI_LONGHORN / Vista */
+#endif
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
+# undef _WIN32_WINNT
+# define _WIN32_WINNT 0x0600
+#endif
 typedef LONG NTSTATUS;
 #define STATUS_SUCCESS ((NTSTATUS)0)
 #include <d3dkmthk.h>
