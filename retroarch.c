@@ -656,7 +656,7 @@ bool midi_driver_set_all_sounds_off(void)
     * skip this if WASAPI is used and Frame Delay is active.. */
    if (memcmp(audio_state_get_ptr()->current_audio->ident, "wasapi", 6) == 0)
    {
-      if (video_state_get_ptr()->frame_delay_target > 0)
+      if (video_state_get_ptr()->frame_delay_target > 0 || config_get_ptr()->bools.video_scanline_sync)
          return false;
    }
 #endif

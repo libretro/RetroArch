@@ -2611,6 +2611,14 @@ MSG_HASH(
    "VSync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below real time, and be more energy efficient. Not compatible with 'Frame Delay'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Scanline Sync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Synchronize video presentation to scanline position. Reduces latency at the cost of a higher risk of tearing."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Frame Delay"
    )

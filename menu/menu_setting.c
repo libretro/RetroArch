@@ -14539,6 +14539,24 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, MINIMUM_HARD_SYNC_FRAMES, MAXIMUM_HARD_SYNC_FRAMES, 1, true, true);
 
+#ifdef HAVE_D3DKMT
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_scanline_sync,
+                  MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+                  DEFAULT_SCANLINE_SYNC,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+#endif
+
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             {
                CONFIG_BOOL(
