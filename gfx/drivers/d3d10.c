@@ -54,9 +54,10 @@
 #include "../common/dxgi_common.h"
 #include <d3d10.h>
 #include "../common/d3dcompiler_common.h"
-#ifdef HAVE_SLANG
+/* slang_process.h is self-contained - it only defines types and
+ * constants used by pass state.  The actual slang_process() call
+ * sites remain guarded with HAVE_SLANG+HAVE_SPIRV_CROSS. */
 #include "../drivers_shader/slang_process.h"
-#endif
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
