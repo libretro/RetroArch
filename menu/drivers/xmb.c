@@ -1246,11 +1246,34 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
     * then comes 'menu_wallpaper', and then iconset 'bg.png' */
    if (menu_dynamic_wallpaper_enable)
    {
+      const char* const SUPPORTED_DYNAMIC_WALLPAPER_EXTENSIONS[] = {
+   #ifdef HAVE_RPNG
+         ".png",
+   #endif
+   #ifdef HAVE_RJPEG
+         ".jpg", ".jpeg",
+   #endif
+   #ifdef HAVE_RBMP
+         ".bmp",
+   #endif
+   #ifdef HAVE_RTGA
+         ".tga",
+   #endif
+         0
+      };
+      int i = 0;
       size_t _len = fill_pathname_join_special(s,
                dir_dynamic_wallpapers,
                xmb->title_name,
                len);
-      strlcpy(s + _len, ".png", len - _len);
+      while (SUPPORTED_DYNAMIC_WALLPAPER_EXTENSIONS[i] != 0) {
+         const char *extension = SUPPORTED_DYNAMIC_WALLPAPER_EXTENSIONS[i];
+         strlcpy(s + _len, extension, len - _len);
+         if (!string_is_empty(s) && path_is_valid(s)) {
+            break;
+         }
+         i++;
+      }
    }
 
    if (s && *s && path_is_valid(s))
