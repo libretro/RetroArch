@@ -6689,8 +6689,22 @@ static void netplay_handle_slaves(netplay_t *netplay)
                   /* Copy the previous input */
                   istate_out = netplay_input_state_for(&frame->real_input[device],
                         client_num, istate_in->size, true, false);
-                  memcpy(istate_out->data, istate_in->data,
-                        istate_in->size * sizeof(uint32_t));
+                  /* NULL-check: netplay_input_state_for can return
+                   * NULL either on an internal calloc OOM or when
+                   * a 'must_create' request finds an existing slot
+                   * with different size.  The memcpy through
+                   * istate_out->data below NULL-derefs either way.
+                   * Other callsites (3078, 3087, 3095, 3148, 3185,
+                   * 5477, 5766, 8025) NULL-check and continue;
+                   * match that convention.  Skipping just this one
+                   * device-slot copy is consistent with how the
+                   * outer loop handles other per-device failures -
+                   * the frame's have_real gets set below as a
+                   * 'we tried' signal and the next sync pass will
+                   * retry. */
+                  if (istate_out)
+                     memcpy(istate_out->data, istate_in->data,
+                           istate_in->size * sizeof(uint32_t));
                }
             }
             frame->have_real[client_num] = true;
