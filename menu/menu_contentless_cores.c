@@ -122,7 +122,18 @@ static void contentless_cores_init_info_entries(
          char licenses_str[MENU_LABEL_MAX_LENGTH];
          contentless_core_info_entry_t *entry =
                (contentless_core_info_entry_t*)malloc(sizeof(*entry));
-         size_t _len          = strlcpy(licenses_str,
+         size_t _len;
+
+         /* NULL-check entry: the field writes below (licenses_str
+          * strdup, runtime.* init, hashmap insert) NULL-deref on
+          * OOM.  Void-returning function, void caller; skip this
+          * core's info entry and continue the enumeration loop -
+          * the core just won't appear in the contentless-cores
+          * list until next scan. */
+         if (!entry)
+            continue;
+
+         _len                 = strlcpy(licenses_str,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
                sizeof(licenses_str) - 3);
          licenses_str[  _len] = ':';
