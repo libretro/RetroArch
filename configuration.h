@@ -118,6 +118,7 @@ typedef struct settings
       int netplay_check_frames;
       int location_update_interval_ms;
       int location_update_interval_distance;
+      int savestate_max_direct_slot;
       int state_slot;
       int replay_slot;
       int crt_switch_center_adjust;
