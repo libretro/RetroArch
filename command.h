@@ -109,6 +109,8 @@ enum event_command
    CMD_EVENT_VOLUME_DOWN,
    CMD_EVENT_MIXER_VOLUME_UP,
    CMD_EVENT_MIXER_VOLUME_DOWN,
+   /* Toggles Video Filter*/
+   CMD_VIDEO_FILTER_TOGGLE,
    /* Toggles FPS counter. */
    CMD_EVENT_FPS_TOGGLE,
    /* Toggles statistics display. */
@@ -530,6 +532,7 @@ static const struct cmd_map map[] = {
    { "VRR_RUNLOOP_TOGGLE",     RARCH_VRR_RUNLOOP_TOGGLE },
    { "RUNAHEAD_TOGGLE",        RARCH_RUNAHEAD_TOGGLE },
    { "PREEMPT_TOGGLE",         RARCH_PREEMPT_TOGGLE },
+   { "VIDEO_FILTER_TOGGLE",    RARCH_VIDEO_FILTER_TOGGLE },
    { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
    { "STATISTICS_TOGGLE",      RARCH_STATISTICS_TOGGLE },
    { "AI_SERVICE",             RARCH_AI_SERVICE },

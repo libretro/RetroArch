@@ -6521,6 +6521,9 @@ static enum runloop_state_enum runloop_check_state(
    /* Check UI companion hotkey */
    HOTKEY_CHECK(RARCH_UI_COMPANION_TOGGLE, CMD_EVENT_UI_COMPANION_TOGGLE, true, NULL);
 
+   /* Check Video Filter hotkey */
+   HOTKEY_CHECK(RARCH_VIDEO_FILTER_TOGGLE, CMD_VIDEO_FILTER_TOGGLE, true, NULL);
+
    /* Check FPS hotkey */
    HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE, true, NULL);
 
