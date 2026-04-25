@@ -1895,10 +1895,8 @@ bool content_save_state_automatic(void)
       settings->uints.automatic_savestate_interval;
    
    /* Return early if automatic savestate is disabled,
-      no content is loaded, or core doesn't support savestates */
-   if (automatic_savestate_interval == 0
-      || !content_is_inited()
-      || !core_info_current_supports_savestate())
+      safety checks already happen in content_save_state() */
+   if (automatic_savestate_interval == 0)
       return false;
    
    current_time = time(NULL);
@@ -1909,11 +1907,11 @@ bool content_save_state_automatic(void)
       return false;
    
    /* Generate the savestate path */
-   if (!runloop_get_current_savestate_path(savestate_path, 
-                                          sizeof(savestate_path)))
+   if (!runloop_get_savestate_path(savestate_path, 
+                                          sizeof(savestate_path), -1))
    {
       RARCH_WARN("[State] %s\n",
-            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE));
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO));
       return false;
    }
    
@@ -1925,5 +1923,5 @@ bool content_save_state_automatic(void)
    /* Update the last savestate time, rinse/repeat */
    last_automatic_savestate_time = current_time;
    
-   return content_save_state(savestate_path, true);
+   return content_auto_save_state(savestate_path);
 }
