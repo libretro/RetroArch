@@ -11138,6 +11138,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,    PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,                  PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_AUTOMATIC_SAVESTATE_INTERVAL,      PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,               PARSE_ONLY_BOOL, true},
 #if defined(HAVE_ZLIB)
                {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,              PARSE_ONLY_BOOL, true},

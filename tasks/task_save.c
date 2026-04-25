@@ -135,6 +135,9 @@ static struct ram_save_state_buf ram_buf;
 static bool save_state_in_background       = false;
 static bool save_state_disable_undo        = false;
 
+/* Time tracking for automatic savestate interval */
+static time_t last_automatic_savestate_time = 0;
+
 typedef struct rastate_size_info
 {
    size_t total_size;
@@ -1881,4 +1884,46 @@ void set_save_state_in_background(bool state)
 void set_save_state_disable_undo(bool disable)
 {
    save_state_disable_undo = disable;
+}
+
+bool content_save_state_automatic(void)
+{
+   time_t current_time;
+   char savestate_path[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
+   unsigned automatic_savestate_interval = 
+      settings->uints.automatic_savestate_interval;
+   
+   /* Return early if automatic savestate is disabled,
+      no content is loaded, or core doesn't support savestates */
+   if (automatic_savestate_interval == 0
+      || !content_is_inited()
+      || !core_info_current_supports_savestate())
+      return false;
+   
+   current_time = time(NULL);
+   
+   /* Check how long since last autosavestate */
+   if ((current_time - last_automatic_savestate_time) < 
+       (time_t)automatic_savestate_interval)
+      return false;
+   
+   /* Generate the savestate path */
+   if (!runloop_get_current_savestate_path(savestate_path, 
+                                          sizeof(savestate_path)))
+   {
+      RARCH_WARN("[State] %s\n",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE));
+      return false;
+   }
+   
+   /* Trigger the savestate */
+   RARCH_LOG("[State] %s (automatic) to \"%s\".\n",
+         msg_hash_to_str(MSG_SAVING_STATE),
+         savestate_path);
+   
+   /* Update the last savestate time, rinse/repeat */
+   last_automatic_savestate_time = current_time;
+   
+   return content_save_state(savestate_path, true);
 }

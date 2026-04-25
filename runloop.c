@@ -7476,6 +7476,9 @@ int runloop_iterate(void)
       autosave_unlock();
 #endif
 
+   /* Check if we should save state automatically */
+   content_save_state_automatic();
+
 end:
    if (vrr_runloop_enable)
    {

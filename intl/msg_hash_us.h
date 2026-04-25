@@ -4780,6 +4780,18 @@ MSG_HASH(
    "Autosaves the non-volatile SRAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosave."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTOMATIC_SAVESTATE_INTERVAL,
+   "Automatic Savestate Interval"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTOMATIC_SAVESTATE_INTERVAL,
+   "Automatically save a savestate at a regular interval (in seconds). Set to 0 to disable."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUTOMATIC_SAVESTATE_INTERVAL,
+   "Automatically saves a savestate at regular intervals. This is useful for creating periodic backups of your game progress. The interval is measured in seconds. A value of 0 disables automatic savestate saving."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Replay: Checkpoint Interval"
    )
