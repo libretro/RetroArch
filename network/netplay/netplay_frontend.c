@@ -17,6 +17,11 @@
 
 #if defined(_MSC_VER) && !defined(_XBOX)
 #pragma comment(lib, "ws2_32")
+#if defined(__WINRT__)
+#pragma comment(lib, "bcrypt")
+#else
+#pragma comment(lib, "advapi32")
+#endif
 #endif
 
 #include <stdlib.h>
@@ -62,6 +67,20 @@
 #include "../../verbosity.h"
 
 #include "../../tasks/tasks_internal.h"
+
+/* Platform CSPRNG headers for netplay_secure_random_bytes (below).
+ * After the socket headers, so <windows.h> arrives via winsock2. */
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(__WINRT__)
+#include <bcrypt.h>
+#else
+#include <wincrypt.h>
+#endif
+#elif defined(__linux__) && defined(__GLIBC__) \
+   && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 25))
+#include <sys/random.h>
+#include <errno.h>
+#endif
 #include "../../input/input_driver.h"
 
 #ifdef HAVE_MENU
@@ -924,6 +943,76 @@ static uint32_t simple_rand_uint32(unsigned long *simple_rand_next)
    return ((part0 << 30) + (part1 << 15) + part2);
 }
 
+/* Fill buf with len bytes from a platform CSPRNG.  Used to seed the
+ * netplay password challenge salt -- a time(NULL)-seeded LCG let an
+ * attacker who observed one salt predict every subsequent salt
+ * (CWE-330).  Returns false if no source could be used; the caller
+ * then falls back to the LCG. */
+static bool netplay_secure_random_bytes(void *buf, size_t len)
+{
+#if defined(_WIN32) && !defined(_XBOX) && defined(__WINRT__)
+   /* UWP: CryptoAPI is unavailable to store apps. */
+   return BCryptGenRandom(NULL, (PUCHAR)buf, (ULONG)len,
+         BCRYPT_USE_SYSTEM_PREFERRED_RNG) == 0;
+#elif defined(_WIN32) && !defined(_XBOX)
+   /* CryptGenRandom, the call deps/mbedtls/entropy_poll.c makes:
+    * available back to the XP-era toolchains RetroArch still builds. */
+   HCRYPTPROV prov = 0;
+   bool ok         = false;
+   if (CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL,
+            CRYPT_VERIFYCONTEXT))
+   {
+      ok = CryptGenRandom(prov, (DWORD)len, (BYTE*)buf) ? true : false;
+      CryptReleaseContext(prov, 0);
+   }
+   return ok;
+#elif defined(__linux__) && defined(__GLIBC__) \
+   && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 25))
+   /* glibc 2.25+ wraps the getrandom(2) syscall; loop on EINTR. */
+   uint8_t *p   = (uint8_t*)buf;
+   size_t   got = 0;
+   while (got < len)
+   {
+      ssize_t r = getrandom(p + got, len - got, 0);
+      if (r < 0)
+      {
+         if (errno == EINTR)
+            continue;
+         break;
+      }
+      got += (size_t)r;
+   }
+   return got == len;
+#else
+   /* /dev/urandom: macOS (PowerPC builds predate arc4random_buf), the
+    * BSDs, Android, and older glibc.  Fails harmlessly elsewhere. */
+   FILE *fp = fopen("/dev/urandom", "rb");
+   if (fp)
+   {
+      size_t n = fread(buf, 1, len, fp);
+      fclose(fp);
+      return n == len;
+   }
+   return false;
+#endif
+}
+
+/* Constant-time equality compare.  Used at the netplay password
+ * verify path so an attacker cannot recover the server-side hash
+ * byte-by-byte through memcmp early-exit timing (CWE-208).
+ * volatile is a defensive cue; aggressive compilers can still
+ * vectorise -- good enough against network timing. */
+static bool netplay_constant_time_eq(const void *a, const void *b, size_t n)
+{
+   const volatile uint8_t *pa = (const volatile uint8_t*)a;
+   const volatile uint8_t *pb = (const volatile uint8_t*)b;
+   uint8_t                diff = 0;
+   size_t                 i;
+   for (i = 0; i < n; i++)
+      diff |= pa[i] ^ pb[i];
+   return diff == 0;
+}
+
 static void netplay_send_cmd_netpacket(netplay_t *netplay, size_t conn_i,
       const void* buf, size_t len, uint16_t client_id);
 static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
@@ -978,12 +1067,23 @@ static bool netplay_handshake_init_send(netplay_t *netplay,
       if (     *settings->paths.netplay_password
             || *settings->paths.netplay_spectate_password)
       {
-         /* Demand a password */
-         if (netplay->simple_rand_next == 1)
-            netplay->simple_rand_next = (unsigned long) time(NULL);
-         connection->salt = simple_rand_uint32(&netplay->simple_rand_next);
-         if (!connection->salt)
-            connection->salt = 1;
+         uint32_t salt = 0;
+         /* Demand a password.  Prefer the platform CSPRNG; only fall
+          * back to the LCG if no source is available (consoles, very
+          * old glibc), in which case the LCG is at least re-seeded
+          * from microsecond time mixed with the connection's address,
+          * so the seed is not the wall-clock second. */
+         if (!netplay_secure_random_bytes(&salt, sizeof(salt)))
+         {
+            if (netplay->simple_rand_next == 1)
+               netplay->simple_rand_next =
+                    (unsigned long)cpu_features_get_time_usec()
+                  ^ (unsigned long)(uintptr_t)connection;
+            salt = simple_rand_uint32(&netplay->simple_rand_next);
+         }
+         if (!salt)
+            salt = 1;
+         connection->salt = salt;
          header[3] = htonl(connection->salt);
       }
       else
@@ -1735,7 +1835,8 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
          sizeof(password) - 8);
       sha256_hash(hash, (uint8_t *) password, strlen(password));
 
-      if (!memcmp(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
+      if (netplay_constant_time_eq(password_buf.password, hash,
+            NETPLAY_PASS_HASH_LEN))
       {
          correct              = true;
          connection->flags   |= NETPLAY_CONN_FLAG_CAN_PLAY;
@@ -1748,7 +1849,8 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
          sizeof(password) - 8);
       sha256_hash(hash, (uint8_t *) password, strlen(password));
 
-      if (!memcmp(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
+      if (netplay_constant_time_eq(password_buf.password, hash,
+            NETPLAY_PASS_HASH_LEN))
          correct = true;
    }
 
