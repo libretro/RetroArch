@@ -1292,7 +1292,9 @@ const char *config_get_default_joypad(void)
       case JOYPAD_ANDROID:
          return "android";
       case JOYPAD_SDL:
-#ifdef HAVE_SDL2
+#ifdef HAVE_SDL3
+         return "sdl3";
+#elif defined(HAVE_SDL2)
          return "sdl2";
 #else
          return "sdl";

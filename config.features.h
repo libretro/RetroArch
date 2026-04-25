@@ -62,6 +62,12 @@
 #define SUPPORTS_SDL2 false
 #endif
 
+#ifdef HAVE_SDL3
+#define SUPPORTS_SDL3 true
+#else
+#define SUPPORTS_SDL3 false
+#endif
+
 #ifdef HAVE_THREADS
 #define SUPPORTS_THREAD true
 #else

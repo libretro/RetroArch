@@ -416,7 +416,7 @@ static int filebrowser_parse(
                   ? FILE_TYPE_VIDEO_FONT
                   : (enum msg_file_type)type_default;
 
-            if (   type == DISPLAYLIST_CORES_DETECTED 
+            if (   type == DISPLAYLIST_CORES_DETECTED
                 && path_is_compressed_file(file_path))
                file_type = FILE_TYPE_CARCHIVE;
             break;
@@ -2402,6 +2402,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #endif
 #ifdef HAVE_SDL2
          {SUPPORTS_SDL2, "SDL 2"},
+#endif
+#ifdef HAVE_SDL3
+         {SUPPORTS_SDL3, "SDL 3"},
 #endif
 #ifdef HAVE_X11
          {SUPPORTS_X11, "X11"},
@@ -5078,7 +5081,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       if (core_info_find(core_path, &core_info))
       {
-         core_supports_no_game = (core_info->flags 
+         core_supports_no_game = (core_info->flags
                                 & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
          if (core_info->display_name && *core_info->display_name)
             strlcpy(core_name, core_info->display_name, sizeof(core_name));

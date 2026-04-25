@@ -34,6 +34,7 @@ HAVE_WINMM = 1
 
 HAVE_SDL      := 0
 HAVE_SDL2     := 0
+HAVE_SDL3     := 0
 HAVE_RSOUND   := 0
 
 HAVE_STB_FONT := 1
@@ -62,6 +63,11 @@ endif
 ifeq ($(HAVE_SDL2), 1)
 SDL2_LIBS        := -lSDL2
 SDL2_CFLAGS      := -ISDL2 -DHAVE_SDL2
+endif
+
+ifeq ($(HAVE_SDL3), 1)
+SDL3_LIBS        := -lSDL3
+SDL3_CFLAGS      := -ISDL3 -DHAVE_SDL3
 endif
 
 ifeq ($(HAVE_D3D8), 1)

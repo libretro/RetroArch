@@ -49,6 +49,7 @@ HAVE_DYNAMIC=yes           # Dynamic loading of libretro library
 HAVE_SDL=auto              # SDL support
 C89_SDL=no
 HAVE_SDL2=auto             # SDL2 support (disables SDL 1.x)
+HAVE_SDL3=auto             # SDL3 support (disables SDL 1.x and SDL 2.x)
 C89_SDL2=no
 HAVE_LIBUSB=auto           # Libusb HID support
 C89_LIBUSB=no

@@ -223,7 +223,9 @@
 #include "ai/game_ai.h"
 #endif
 
-#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+#if defined(HAVE_SDL3)
+#include <SDL3/SDL.h>
+#elif defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
 #include "SDL.h"
 #endif
 
@@ -4361,7 +4363,7 @@ bool command_event(enum event_command cmd, void *data)
             video_driver_state_t
                *video_st                         = video_state_get_ptr();
             rarch_system_info_t *sys_info        = &runloop_st->system;
-            
+
             /* Restore unpaused state */
             runloop_st->paused_hotkey = false;
             command_event(CMD_EVENT_UNPAUSE, NULL);
@@ -5983,7 +5985,7 @@ static void global_free(struct rarch_state *p_rarch)
    retroarch_override_setting_free_state();
 }
 
-#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX) || defined(HAVE_SDL3)
 static void sdl_exit(void)
 {
    /* Quit any SDL subsystems, then quit
@@ -6085,7 +6087,7 @@ void main_exit(void *args)
    CoUninitialize();
 #endif
 
-#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX) || defined(HAVE_SDL3)
    sdl_exit();
 #endif
 }
@@ -6574,6 +6576,9 @@ static void retroarch_print_features(void)
 #endif
 #ifdef HAVE_SDL2
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
+#endif
+#ifdef HAVE_SDL3
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL3,            "SDL3",            "SDL3 joypad driver");
 #endif
 #ifdef HAVE_X11
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_X11,             "X11",             "X11 input/video drivers");
