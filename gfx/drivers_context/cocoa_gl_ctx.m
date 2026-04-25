@@ -195,11 +195,21 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
     * was dropped with a raw 'g_ctx = nil'. */
    RELEASE(g_ctx);
    RELEASE(g_hw_ctx);
-#if defined(HAVE_COCOATOUCH)
-   /* glk_view was created with +new (+1) in glkitview_init.  Release
-    * it on destroy so it does not leak across init/destroy cycles. */
-   RELEASE(glk_view);
-#endif
+   /* Deliberately NOT releasing glk_view here.  Its real strong owner
+    * is RetroArch_iOS._renderView, which retains the singleton via
+    * setViewType:APPLE_VIEW_TYPE_OPENGL_ES on first init and holds it
+    * for the rest of the process.  On a video reinit (e.g. content
+    * load) the ctx destroy/init pair runs, but setViewType: returns
+    * early on (vt == _vt) and never re-invokes glkitview_init - so
+    * nilling the static here would leave it nil for the remainder of
+    * the session.  The consequence is that swap_buffers'
+    *   if (glk_view) [glk_view display];
+    * becomes a no-op, get_video_size reads zero from glk_view.bounds,
+    * set_video_mode's `glk_view.context = g_ctx` silently misses, and
+    * the screen freezes the moment a core is loaded.  The MRR leak
+    * this previously aimed to plug only matters at app teardown,
+    * which on iOS effectively never runs (RetroArch_iOS is the
+    * UIApplication delegate). */
 
    free(cocoa_ctx);
 }
