@@ -441,45 +441,6 @@ static char* s3_url_encode(const char *input)
    return output;
 }
 
-/* Trim whitespace from string */
-static char* s3_trim_string(const char *input)
-{
-   size_t len;
-   size_t start = 0;
-   size_t end;
-   size_t trimmed_len = 0;
-   char *trimmed = NULL;
-
-   /* NULL-check input BEFORE calling strlen.  Same dead-code bug
-    * as s3_url_encode: the 'if (!input)' check sat after the
-    * strlen call, so NULL input segfaulted before the guard
-    * could fire. */
-   if (!input)
-      return NULL;
-
-   len = strlen(input);
-   end = len;
-
-   /* Find start of non-whitespace */
-   while (start < len && (input[start] == ' ' || input[start] == '\t'))
-      start++;
-
-   /* Find end of non-whitespace */
-   while (end > start && (input[end-1] == ' ' || input[end-1] == '\t'))
-      end--;
-
-   /* Create trimmed string */
-   trimmed_len = end - start;
-   trimmed = malloc(trimmed_len + 1);
-   if (!trimmed)
-      return NULL;
-
-   memcpy(trimmed, input + start, trimmed_len);
-   trimmed[trimmed_len] = '\0';
-
-   return trimmed;
-}
-
 /* Canonicalize query string parameters */
 static char* s3_canonicalize_query_string(const char *query_string)
 {
@@ -600,53 +561,6 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
    free(inner_data);
 
    return output;
-}
-
-/* Calculate HMAC-SHA256 (legacy function for compatibility) */
-static char* s3_hmac_sha256(const char *key, const char *data, char *output)
-{
-   unsigned i;
-   char *hmac_hex = malloc(65);
-   uint8_t binary_key[64];
-   size_t key_len;
-   uint8_t result[32];
-
-   if (!hmac_hex)
-      return NULL;
-
-   key_len = strlen(key);
-
-   /* Convert key to binary */
-   if (key_len <= 64)
-   {
-      memset(binary_key, 0, 64);
-      memcpy(binary_key, key, key_len);
-   }
-   else
-   {
-      /* Hash the key if it's longer than 64 bytes */
-      char temp_hash[65];
-      sha256_hash(temp_hash, (const uint8_t*)key, key_len);
-      for (i = 0; i < 32; i++)
-      {
-         char hex_byte[3] = {temp_hash[i*2], temp_hash[i*2+1], 0};
-         binary_key[i] = (uint8_t)strtol(hex_byte, NULL, 16);
-      }
-      key_len = 32;
-   }
-
-   if (!s3_hmac_sha256_bin(binary_key, key_len, data, result))
-   {
-      free(hmac_hex);
-      return NULL;
-   }
-
-   /* Convert binary result to hex */
-   for (i = 0; i < 32; i++)
-      snprintf(hmac_hex + 2 * i, 3, "%02x", (unsigned)result[i]);
-
-   hmac_hex[64] = '\0';
-   return hmac_hex;
 }
 
 /* Calculate AWS Signature Version 4 signature with proper key derivation */
