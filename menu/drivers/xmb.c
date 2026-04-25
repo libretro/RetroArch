@@ -467,12 +467,15 @@ typedef struct xmb_handle
    bool show_fullscreen_thumbnails;
    bool want_fullscreen_thumbnails;
    bool skip_thumbnail_reset;
-   /* Set by xmb_populate_entries when a list is pushed and gated deferred
-    * dynamic-icon work is needed. xmb_render fires the actual work once
-    * the horizontal tab animation has settled (categories_x_pos has
-    * reached its target). Lets rapid left/right traversal across
-    * playlists skip the per-tab unload+path_data churn for intermediate
-    * tabs the user never lands on. */
+   /* Set by xmb_populate_entries when it wanted to run
+    * xmb_populate_dynamic_icons but deferred the work because the user
+    * is actively mashing / holding a navigation button
+    * (menu_st->scroll.acceleration > 0). xmb_render fires the actual
+    * work on a later frame, once input settles and acceleration drops
+    * to 0. This avoids the per-tab unload+path_data churn for
+    * intermediate tabs the user blows through during held-repeat tab
+    * traversal, without delaying the work behind any visible animation
+    * — the instant input lets go, the populate runs. */
    bool pending_dynamic_icons_repopulate;
    bool show_thumbnails;
    bool show_mouse;
@@ -1525,7 +1528,15 @@ static void xmb_unload_icon_thumbnail_textures(void *xmb_handle_ptr)
    {
       xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
       if (node)
+      {
          gfx_thumbnail_reset(&node->thumbnail_icon.icon);
+         /* Clear resolved path so the lazy resolver in xmb_render sees
+          * "needs path resolution" on the next pending_icons pass. The
+          * upshot: we don't eagerly re-resolve paths for every visible
+          * entry here, we just mark them invalid and let the render
+          * dispatcher resolve one at a time under the per-frame cap. */
+         node->thumbnail_icon.thumbnail_path_data.icon_path[0] = '\0';
+      }
    }
 }
 
@@ -1835,52 +1846,6 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
 }
 
-/* Walk the visible playlist range and refresh each entry's icon-thumbnail
- * path_data. Returns true if the refresh actually ran (gates all satisfied),
- * so the caller can set `pending_icons` to wake the request dispatcher in
- * xmb_render. The caller is responsible for the `gfx_thumbnail_cancel_pending_requests()`
- * call that should precede this work, because the two existing callers have
- * different cancel strategies:
- *
- *  - `xmb_populate_dynamic_icons` calls `xmb_unload_icon_thumbnail_textures`
- *    first, which already cancels and clears pending_icons as part of a full
- *    texture wipe (used when the displayed list changes).
- *
- *  - `xmb_selection_pointer_changed` only cancels — it runs when the cursor
- *    moves within an unchanged list, so existing per-node textures stay
- *    valid and an unload would be wasteful.
- *
- * That asymmetry is the reason this helper deliberately does not cancel on
- * its own. */
-static bool xmb_refresh_visible_icon_paths(xmb_handle_t *xmb)
-{
-   unsigned i, end, height, entry_start, entry_end;
-   struct menu_state *menu_st = menu_state_get_ptr();
-   menu_list_t *menu_list     = menu_st->entries.list;
-   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
-   size_t selection           = menu_st->selection_ptr;
-
-   if (!(     xmb->is_playlist
-         && gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON)
-         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB))
-         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB))
-         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB))))
-      return false;
-
-   end = (unsigned)selection_buf->size;
-   video_driver_get_size(NULL, &height);
-   xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &entry_start, &entry_end);
-
-   for (i = entry_start; i <= entry_end; i++)
-   {
-      xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
-      if (!node)
-         continue;
-      xmb_set_dynamic_icon_content(xmb, NULL, i, &node->thumbnail_icon);
-   }
-   return true;
-}
-
 /* Is called when the pointer position changes
  * within a list/sub-list (vertically) */
 static void xmb_selection_pointer_changed(
@@ -1908,14 +1873,24 @@ static void xmb_selection_pointer_changed(
 
    video_driver_get_size(NULL, &height);
 
-   /* Refresh icon-thumbnail path_data for currently visible playlist
-    * entries. The helper itself only writes path_data; xmb_render issues
-    * the requests once pending_icons is set. Cancelling first provides
-    * "storm protection during fast jumps" — any in-flight requests from
-    * the previous cursor position stop being relevant the moment the
-    * cursor moves. Skipped entirely on non-playlist lists (helper returns
-    * false before touching anything). */
-   if (xmb_refresh_visible_icon_paths(xmb))
+   /* On cursor movement within a playlist, invalidate any in-flight
+    * icon thumbnail requests (they're for the previous cursor position
+    * and no longer relevant) and raise pending_icons so the render
+    * dispatcher will lazily resolve paths + load textures for the new
+    * visible range under its per-frame cap. We deliberately do NOT
+    * eagerly pre-resolve paths for all visible entries here — the
+    * selection pointer can move many times per second during held-down
+    * scrolling, and re-resolving up to ~20 paths per step (including
+    * path_is_valid syscalls, amplified ×5 by playlist_allow_non_png)
+    * is enough to blow frame budgets. Lazy resolution in the
+    * dispatcher gets the same visible result for a fraction of the
+    * work. The is_playlist / title-name gates match the ones the old
+    * xmb_refresh_visible_icon_paths helper used internally. */
+   if (     xmb->is_playlist
+         && gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON)
+         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB))
+         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB))
+         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
    {
       gfx_thumbnail_cancel_pending_requests();
       xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
@@ -2755,14 +2730,21 @@ static void xmb_populate_dynamic_icons(xmb_handle_t *xmb)
    if (!gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
       return;
 
-   /* Used when the displayed list changes (new playlist pushed or context
-    * reset): the previous list's per-node icon textures are stale, so wipe
-    * them before queuing fresh requests. `xmb_unload_icon_thumbnail_textures`
-    * handles the cancel and clears `pending_icons` as part of the wipe;
-    * the helper below only needs to write fresh path_data. */
+   /* Used when the displayed list changes (new playlist pushed or
+    * context reset): wipe the per-node icon textures and path_data so
+    * the render dispatcher will lazily re-resolve and re-load them for
+    * currently-visible entries, under its per-frame cap. Doing the
+    * path resolution upfront for every visible entry here would cost
+    * one path_is_valid syscall per entry (or five per entry with
+    * playlist_allow_non_png enabled, due to the .png/.jpg/.jpeg/.bmp/
+    * .tga fallback chain in gfx_thumbnail_update_path) — enough to
+    * blow a frame budget on the populate frame. */
    xmb_unload_icon_thumbnail_textures(xmb);
 
-   if (xmb_refresh_visible_icon_paths(xmb))
+   if (     xmb->is_playlist
+         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB))
+         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB))
+         && !string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
       xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
 }
 
@@ -3485,12 +3467,22 @@ static void xmb_populate_entries(void *data,
 
    if (xmb->is_playlist)
    {
-      /* Defer the dynamic-icon unload + path_data refresh until the
-       * horizontal tab animation has settled. xmb_render re-checks the
-       * is_playlist / menu_icon_thumbnails gates at fire time so that
-       * rapidly traversing a row of playlist tabs only does the work
-       * once, on the tab the user actually stops on. */
-      xmb->pending_dynamic_icons_repopulate = true;
+      if (settings->uints.menu_icon_thumbnails)
+      {
+         /* Defer the expensive dynamic-icon unload + path_data refresh
+          * when the user is currently mashing or holding a navigation
+          * button (menu_st->scroll.acceleration > 0). Running it for
+          * every intermediate tab during rapid left/right traversal
+          * is pure waste — the work gets clobbered by the next tab's
+          * populate ~16 ms later before any of it becomes visible.
+          * xmb_render fires the deferred call on the next frame where
+          * acceleration has dropped to 0 (i.e. input has settled on
+          * whichever tab the user actually stopped on). */
+         if (menu_st->scroll.acceleration > 0)
+            xmb->pending_dynamic_icons_repopulate = true;
+         else
+            xmb_populate_dynamic_icons(xmb);
+      }
    }
    else if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
       xmb_unload_icon_thumbnail_textures(xmb);
@@ -6318,36 +6310,6 @@ static int xmb_menu_entry_action(
    return generic_menu_entry_action(userdata, entry, i, new_action);
 }
 
-static bool xmb_load_dynamic_icon(const char *icon_path,
-      gfx_thumbnail_t *icon)
-{
-   unsigned width, height;
-   /* Weird unwanted state */
-   if (     icon->status == GFX_THUMBNAIL_STATUS_UNKNOWN
-         && icon->texture > 0)
-      gfx_thumbnail_reset(icon);
-
-   if (gfx_display_reset_icon_texture(
-         icon_path,
-         &icon->texture,
-         TEXTURE_FILTER_LINEAR,
-         &width,
-         &height))
-   {
-      icon->width          = width;
-      icon->height         = height;
-      icon->alpha          = 0.0f;
-      icon->delay_timer    = 0.0f;
-      icon->flags          &= ~(GFX_THUMB_FLAG_FADE_ACTIVE
-                              | GFX_THUMB_FLAG_CORE_ASPECT);
-      icon->status         = GFX_THUMBNAIL_STATUS_AVAILABLE;
-
-      return true;
-   }
-
-   return false;
-}
-
 static void xmb_layout_common(xmb_handle_t *xmb, float scale_factor, unsigned new_font_size)
 {
    float margins_title           = xmb->margins_title;
@@ -6966,10 +6928,9 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
       if (xmb->is_playlist)
       {
-         /* Synchronous populate during context reset — ensures textures
-          * and path_data are consistent before the next render. Clear
-          * any deferred repopulate flag so xmb_render does not
-          * redundantly repeat this work after the animation settles. */
+         /* Synchronous populate — clear any pending deferred flag so
+          * xmb_render does not redundantly repeat this work once input
+          * settles. */
          xmb->pending_dynamic_icons_repopulate = false;
          xmb_populate_dynamic_icons(xmb);
       }
@@ -7033,35 +6994,29 @@ static void xmb_render(void *data,
                settings->uints.menu_xmb_theme);
    }
 
-   /* Fire deferred dynamic-icon repopulate once the horizontal tab
-    * animation has settled. Set by xmb_populate_entries; held pending
-    * while categories_x_pos is still tweening toward its target.
-    * Re-checks is_playlist and menu_icon_thumbnails at fire time: the
-    * list that was pushed when the flag was set may no longer be the
-    * list the user is looking at (rapid tab traversal, or navigation
-    * during the animation), and the gate uses the *current* state.
-    * If the final list is not a playlist, the pending-icons unload
-    * branch from populate_entries runs here instead. */
-   if (xmb->pending_dynamic_icons_repopulate)
+   /* Fire deferred dynamic-icon repopulate once input has settled.
+    * Set by xmb_populate_entries when it wanted to run the work but
+    * the user was mid-mash (menu_st->scroll.acceleration > 0) — the
+    * intermediate tabs blown through during held-repeat don't get
+    * the populate, only whichever tab the user actually stops on.
+    * Re-checks is_playlist and menu_icon_thumbnails at fire time:
+    * the list that was pushed when the flag was set may no longer
+    * be the list being looked at now, and the gate uses the
+    * *current* state. If the final list is not a playlist, the
+    * pending-icons unload branch from populate_entries runs here
+    * instead. */
+   if (      xmb->pending_dynamic_icons_repopulate
+         && (menu_st->scroll.acceleration == 0))
    {
-      float cat_target = xmb->icon_spacing_horizontal
-            * -(float)xmb->categories_selection_ptr;
-      /* Half-pixel tolerance. categories_x_pos is an exact match at
-       * animation completion (gfx_animation_update assigns target_value
-       * on the final tick), but a tolerance keeps the predicate robust
-       * against any future easing / sub-pixel drift. */
-      if (fabsf(xmb->categories_x_pos - cat_target) < 0.5f)
-      {
-         xmb->pending_dynamic_icons_repopulate = false;
+      xmb->pending_dynamic_icons_repopulate = false;
 
-         if (xmb->is_playlist)
-         {
-            if (settings->uints.menu_icon_thumbnails)
-               xmb_populate_dynamic_icons(xmb);
-         }
-         else if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
-            xmb_unload_icon_thumbnail_textures(xmb);
+      if (xmb->is_playlist)
+      {
+         if (settings->uints.menu_icon_thumbnails)
+            xmb_populate_dynamic_icons(xmb);
       }
+      else if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
+         xmb_unload_icon_thumbnail_textures(xmb);
    }
 
    /* Retry current-menu-icon resolution if a previous xmb_set_title()
@@ -7372,16 +7327,23 @@ static void xmb_render(void *data,
    /* Handle any pending icon thumbnail load requests */
    if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
    {
-      /* Limit synchronous image loading per frame to prevent
-       * frame-time spikes on slow storage (SD card, Android SAF
-       * behind fuse, etc.). Async requests via
-       * gfx_thumbnail_request_stream are not counted — they run on
-       * a worker thread and land via task callback on subsequent
-       * frames, so they do not contribute to this frame's work. */
-      uint8_t max_per_frame = 2;
-      uint8_t cur_per_frame = 0;
-
-      /* Based on height of screen calculate the available entries that are visible */
+      /* Walk the visible range and dispatch async stream requests for
+       * each unresolved entry. We deliberately do NOT sync-load on
+       * the main thread here. Doing so blocks the main thread long
+       * enough (PNG/JPEG decode + GPU texture upload, repeated for
+       * 10–20 entries) that the runloop misses several
+       * gfx_animation_update ticks — the next tick advances
+       * delta_time by the full elapsed wall-clock and tween easing
+       * functions evaluate near or past their duration, snapping
+       * any in-flight animation to its end state. The visible
+       * effect: the enter-playlist or tab-switch animation jumps
+       * straight to the end on the load frame.
+       *
+       * Async decode + upload runs on a worker thread and lands via
+       * task callback over the next several frames, keeping the
+       * main thread responsive and animations smooth. Path
+       * resolution stays inline (it's a few stat syscalls per
+       * unresolved entry, cheap enough not to block a frame). */
       if (height)
          xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &first, &last);
 
@@ -7397,38 +7359,40 @@ static void xmb_render(void *data,
 
          thumbnail_icon = &node->thumbnail_icon;
 
-         /* Budget exceeded: skip this entry this frame, keep
-          * pending_icons raised so we resume next frame. The entry
-          * continues to render its existing icon (default fallback
-          * if nothing has been loaded yet) rather than rendering as
-          * blank, so the user sees a steady draw with icons filling
-          * in progressively, not a wave of empty slots. */
-         if (cur_per_frame >= max_per_frame)
-         {
-            xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
+         /* Already resolved and dispatched — nothing to do. */
+         if (thumbnail_icon->icon.status != GFX_THUMBNAIL_STATUS_UNKNOWN)
             continue;
-         }
 
-         if (     thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN
-               && *thumbnail_icon->thumbnail_path_data.icon_path)
-         {
-            if (!xmb_load_dynamic_icon(
-                     thumbnail_icon->thumbnail_path_data.icon_path,
-                     &thumbnail_icon->icon))
-            {
-               gfx_thumbnail_request_stream(
-                     &thumbnail_icon->thumbnail_path_data,
-                     p_anim,
-                     GFX_THUMBNAIL_ICON,
-                     playlist, i,
-                     &thumbnail_icon->icon,
-                     gfx_thumbnail_upscale_threshold,
-                     network_on_demand_thumbnails);
-            }
-            else
-               cur_per_frame++;
-         }
+         /* Lazy path resolution: if icon_path is empty (fresh populate
+          * or prior unload cleared it), resolve now. This is the work
+          * xmb_populate_dynamic_icons and xmb_selection_pointer_changed
+          * used to pay eagerly for every visible entry on every change,
+          * including on each vertical scroll step — a stat-syscall
+          * storm multiplied ×5 by playlist_allow_non_png's extension
+          * fallback chain. Doing it here, once per entry per list
+          * population, eliminates the repeat cost on scroll. */
+         if (!*thumbnail_icon->thumbnail_path_data.icon_path)
+            xmb_set_dynamic_icon_content(xmb, NULL, i, thumbnail_icon);
 
+         /* Dispatch async. gfx_thumbnail_request_stream tolerates an
+          * empty icon_path: it transitions status to MISSING on the
+          * next frame so we stop retrying. */
+         gfx_thumbnail_request_stream(
+               &thumbnail_icon->thumbnail_path_data,
+               p_anim,
+               GFX_THUMBNAIL_ICON,
+               playlist, i,
+               &thumbnail_icon->icon,
+               gfx_thumbnail_upscale_threshold,
+               network_on_demand_thumbnails);
+
+         /* Status will be UNKNOWN until stream_delay elapses, then
+          * transitions PENDING (task queued) or MISSING (no path).
+          * Either way it leaves UNKNOWN within a few frames. While
+          * UNKNOWN, raise pending_icons so we keep ticking the
+          * stream's delay_timer via gfx_thumbnail_request_stream
+          * on subsequent frames; the dispatch above is idempotent
+          * (it returns early once status is no longer UNKNOWN). */
          if (thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
             xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
       }
@@ -9886,11 +9850,11 @@ static void xmb_context_destroy(void *data)
    xmb_unload_thumbnail_textures(xmb);
    xmb_unload_icon_thumbnail_textures(xmb);
 
-   /* Any deferred dynamic-icon repopulate is about to be re-done by the
-    * matching xmb_context_reset_internal (synchronous populate there).
-    * Clear the flag so xmb_render doesn't fire between destroy and
-    * reset, which would walk the selection list with fresh-reset
-    * thumbnail state only to have it all wiped again by the reset. */
+   /* The matching xmb_context_reset_internal will synchronously repopulate
+    * dynamic icons on a playlist. Clear any pending deferred flag so
+    * xmb_render does not fire between destroy and reset, which would walk
+    * the selection list with already-reset thumbnail state only to have
+    * it wiped and redone by the reset. */
    xmb->pending_dynamic_icons_repopulate = false;
 
    xmb_context_destroy_horizontal_list(xmb);
