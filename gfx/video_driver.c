@@ -3314,6 +3314,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->preemptive_frames           = settings->bools.preemptive_frames_enable;
    video_info->runahead_frames             = settings->uints.run_ahead_frames;
    video_info->fps_show                    = settings->bools.video_fps_show;
+   video_info->filter_enable                    = settings->bools.video_filter_enable;
    video_info->memory_show                 = settings->bools.video_memory_show;
    video_info->statistics_show             = settings->bools.video_statistics_show;
    video_info->framecount_show             = settings->bools.video_framecount_show;
@@ -4150,6 +4151,7 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    char status_text[256];
+   settings_t *settings = config_get_ptr();
    static char video_driver_msg[256];
    static retro_time_t last_time;
    static retro_time_t curr_time;
@@ -4561,7 +4563,7 @@ void video_driver_frame(const void *data, unsigned width,
             pitch, runloop_idle);
 
 #ifdef HAVE_VIDEO_FILTER
-   if (render_frame && data && video_st->state_filter)
+   if (settings->bools.video_filter_enable && render_frame && data && video_st->state_filter)
    {
       unsigned output_width                             = 0;
       unsigned output_height                            = 0;

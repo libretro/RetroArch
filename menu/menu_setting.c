@@ -14791,6 +14791,22 @@ static bool setting_append_list(
                   );
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+#ifdef HAVE_VIDEO_FILTER
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_filter_enable,
+                  MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
             CONFIG_PATH(
                   list, list_info,
                   settings->paths.path_softfilter_plugin,

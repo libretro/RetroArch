@@ -441,6 +441,7 @@ typedef struct video_frame_info
    bool runahead_second_instance;
    bool preemptive_frames;
    bool fps_show;
+   bool filter_enable;
    bool memory_show;
    bool statistics_show;
    bool framecount_show;

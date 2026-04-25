@@ -1817,6 +1817,14 @@ MSG_HASH(
    "Change video synchronization settings."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Apply Video Filter. Is a hint that does not necessarily have to be honored by the video driver."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Video Filter Enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Suspend Screensaver"
    )
