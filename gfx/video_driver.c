@@ -5318,11 +5318,6 @@ static INLINE int16_t video_driver_scanline_get(void)
    return -1;
 }
 
-static INLINE void video_driver_scanline_pause(float refresh_rate)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-}
-
 static INLINE void video_driver_scanline_before_frame(video_driver_state_t *video_st,
       float refresh_rate,
       uint16_t frame_time_target,
