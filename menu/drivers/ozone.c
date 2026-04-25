@@ -3109,7 +3109,7 @@ static int ozone_wiggle(ozone_handle_t* ozone, float t)
 }
 
 /* Changes x and y to the current offset of the cursor wiggle animation */
-static void ozone_apply_cursor_wiggle_offset(ozone_handle_t *ozone, int *x, size_t *y)
+static void ozone_apply_cursor_wiggle_offset(ozone_handle_t *ozone, int *x, int *y)
 {
    retro_time_t cur_time, t;
 
@@ -3156,7 +3156,7 @@ static void ozone_draw_cursor_slice(
       int x_offset,
       unsigned width,
       unsigned height,
-      size_t y,
+      int y,
       float alpha,
       math_matrix_4x4 *mymat)
 {
@@ -3164,7 +3164,7 @@ static void ozone_draw_cursor_slice(
          *dispctx                  = p_disp->dispctx;
    float scale_factor              = ozone->last_scale_factor;
    int slice_x                     = x_offset - (12 + 1) * scale_factor;
-   int slice_y                     = (int)y + 8 * scale_factor;
+   int slice_y                     = y + 8 * scale_factor;
    unsigned slice_new_w            = width + (24 + 1) * scale_factor;
    unsigned slice_new_h            = height + 20 * scale_factor;
    unsigned slice_w                = 80;
@@ -3232,7 +3232,7 @@ static void ozone_draw_cursor_fallback(
       int x_offset,
       unsigned width,
       unsigned height,
-      size_t y,
+      int y,
       float alpha)
 {
    gfx_display_set_alpha(ozone->theme_dynamic.selection_border, alpha);
@@ -3245,7 +3245,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_3px,
-         (int)y,
+         y,
          width + ozone->dimensions.spacer_3px * 2,
          height,
          video_width,
@@ -3262,7 +3262,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_5px,
-         (int)(y - ozone->dimensions.spacer_3px),
+         y - ozone->dimensions.spacer_3px,
          width + 1 + ozone->dimensions.spacer_5px * 2,
          ozone->dimensions.spacer_3px,
          video_width,
@@ -3277,7 +3277,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_5px,
-         (int)(y + height),
+         y + (int)height,
          width + 1 + ozone->dimensions.spacer_5px * 2,
          ozone->dimensions.spacer_3px,
          video_width,
@@ -3292,7 +3292,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_5px,
-         (int)y,
+         y,
          ozone->dimensions.spacer_3px,
          height,
          video_width,
@@ -3307,7 +3307,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset + width + ozone->dimensions.spacer_3px,
-         (int)y,
+         y,
          ozone->dimensions.spacer_3px,
          height,
          video_width,
@@ -3325,12 +3325,12 @@ static void ozone_draw_cursor(
       int x_offset,
       unsigned width,
       unsigned height,
-      size_t y,
+      int y,
       float alpha,
       math_matrix_4x4 *mymat)
 {
-   int new_x    = x_offset;
-   size_t new_y = y;
+   int new_x = x_offset;
+   int new_y = y;
 
    /* Apply wiggle animation if needed */
    if (ozone->flags2 & OZONE_FLAG2_CURSOR_WIGGLING)
@@ -3578,7 +3578,7 @@ static void ozone_draw_sidebar(
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
-            selection_y + ozone->animations.scroll_y_sidebar,
+            (int)((float)selection_y + ozone->animations.scroll_y_sidebar),
             ozone->animations.cursor_alpha,
             mymat);
 
@@ -3592,7 +3592,7 @@ static void ozone_draw_sidebar(
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
-            selection_old_y + ozone->animations.scroll_y_sidebar,
+            (int)((float)selection_old_y + ozone->animations.scroll_y_sidebar),
             1 - ozone->animations.cursor_alpha,
             mymat);
 
@@ -5949,7 +5949,7 @@ border_iterate:
             ozone->dimensions_sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             button_height + ozone->dimensions.spacer_1px,
-            selection_y + scroll_y,
+            (int)((float)selection_y + scroll_y),
             ozone->animations.cursor_alpha * alpha,
             mymat);
 
@@ -5962,13 +5962,9 @@ border_iterate:
             video_width,
             video_height,
             (unsigned)ozone->dimensions_sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
-            /* TODO/FIXME - undefined behavior reported by ASAN -
-             *-35.2358 is outside the range of representable values
-             of type 'unsigned int'
-             * */
             entry_width - ozone->dimensions.spacer_5px,
             button_height + ozone->dimensions.spacer_1px,
-            old_selection_y + scroll_y,
+            (int)((float)old_selection_y + scroll_y),
             (1 - ozone->animations.cursor_alpha) * alpha,
             mymat);
 
