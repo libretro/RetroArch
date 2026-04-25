@@ -2487,6 +2487,14 @@ MSG_HASH(
    "VSync é ativado até que o desempenho caia abaixo da taxa de atualização alvo. Pode minimizar travamentos quando o desempenho fica abaixo do tempo real, além de ser mais eficiente energeticamente. Não é compatível com 'Atraso de Quadro (Frame Delay)'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Sincronização de Scanline"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Sincronize a apresentação de vídeo com a posição da scanline. Reduz a latência ao custo de um risco maior de tearing (asgos na tela)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Atraso de Quadro"
    )
