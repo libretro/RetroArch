@@ -791,11 +791,11 @@ static void s3_log_http_failure(const char *path, http_transfer_data_t *data)
    RARCH_WARN(S3_PFX "Failed: %s: HTTP %d\n", path ? path : "<unknown>", data->status);
    for (i = 0; data->headers && i < data->headers->size; i++)
       RARCH_WARN(S3_PFX "%s\n", data->headers->elems[i].data);
+   /* See webdav.c: the buffer is sized exactly to data->len, so
+    * writing a terminator at data->data[data->len] overflows the
+    * heap chunk by one byte.  Use the length-bounded form. */
    if (data->data)
-   {
-      data->data[data->len] = '\0';
-      RARCH_WARN(S3_PFX "%s\n", data->data);
-   }
+      RARCH_WARN(S3_PFX "%.*s\n", (int)data->len, (const char*)data->data);
 }
 
 static void s3_read_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
@@ -1246,10 +1246,8 @@ static void s3_log_multipart_initiate_failure(
          RARCH_WARN(S3_PFX "Multipart initiate header[%zu]: %s\n", i, data->headers->elems[i].data);
 
    if (data && data->data && data->len > 0)
-   {
-      data->data[data->len] = '\0';
-      RARCH_WARN(S3_PFX "Multipart initiate body: %s\n", data->data);
-   }
+      RARCH_WARN(S3_PFX "Multipart initiate body: %.*s\n",
+            (int)data->len, (const char*)data->data);
 }
 
 static bool s3_multipart_fallback_single_put(s3_multipart_state_t *mp_st)

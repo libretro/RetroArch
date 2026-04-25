@@ -172,11 +172,10 @@ static void gdrive_log_http_failure(const char *context,
    if (data && data->headers)
       for (i = 0; i < data->headers->size; i++)
          RARCH_WARN("%s\n", data->headers->elems[i].data);
+   /* See webdav.c: data->data is sized exactly to data->len.
+    * data->data[data->len] = 0 is a one-byte heap overflow. */
    if (data && data->data)
-   {
-      data->data[data->len] = 0;
-      RARCH_WARN("%s\n", data->data);
-   }
+      RARCH_WARN("%.*s\n", (int)data->len, (const char*)data->data);
 }
 
 /* ========== Encoding Helpers ========== */
