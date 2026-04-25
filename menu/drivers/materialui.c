@@ -99,6 +99,12 @@
 /* Animation defines */
 #define MUI_ANIM_DURATION_SCROLL (166.66667f)
 #define MUI_ANIM_DURATION_SCROLL_RESET (83.333333f)
+#define MUI_OVERSCROLL_RESISTANCE 0.35f
+#define MUI_OVERSCROLL_MAX_FRACTION 0.25f
+#define MUI_OVERSCROLL_SPRING_STIFFNESS 70.0f
+#define MUI_OVERSCROLL_SPRING_DAMPING 14.0f
+#define MUI_OVERSCROLL_STOP_DISTANCE 0.5f
+#define MUI_OVERSCROLL_STOP_VELOCITY 5.0f
 /* According to Material UI specifications, animations
  * that affect a large portion of the screen should
  * have a duration of between 250ms and 300ms. This
@@ -578,7 +584,8 @@ enum materialui_handle_flags
    MUI_FLAG_SCROLLBAR_ACTIVE                = (1 << 25),
    MUI_FLAG_SCROLLBAR_DRAGGED               = (1 << 26),
    MUI_FLAG_NAVBAR_MENU_NAVIGATION_WRAPPED  = (1 << 27),
-   MUI_FLAG_COL_DIVIDER_IS_LIST_BG          = (1 << 28)
+   MUI_FLAG_COL_DIVIDER_IS_LIST_BG          = (1 << 28),
+   MUI_FLAG_OVERSCROLL_ACTIVE               = (1 << 29)
 };
 
 typedef struct materialui_handle
@@ -697,6 +704,8 @@ typedef struct materialui_handle
    float thumbnail_stream_delay;
    float fullscreen_thumbnail_alpha;
    float touch_feedback_alpha;
+   float overscroll_velocity;
+   float overscroll_target;
    int16_t pointer_start_x;
    int16_t pointer_start_y;
    bool transition_alpha_lock;
@@ -3400,6 +3409,98 @@ static float materialui_get_scroll(materialui_handle_t *mui,
    return selection_centre - view_centre;
 }
 
+static INLINE float materialui_get_scroll_y_max(
+      materialui_handle_t *mui, unsigned height,
+      unsigned header_height)
+{
+   float scroll_y_max = mui->content_height - (float)height +
+         (float)header_height + (float)mui->nav_bar_layout_height +
+         (float)mui->status_bar.height;
+
+   return (scroll_y_max > 0.0f) ? scroll_y_max : 0.0f;
+}
+
+static INLINE float materialui_get_overscroll_max(
+      materialui_handle_t *mui, unsigned height,
+      unsigned header_height)
+{
+   float view_height = (float)height - (float)header_height -
+         (float)mui->nav_bar_layout_height - (float)mui->status_bar.height;
+
+   return (view_height > 0.0f) ?
+         view_height * MUI_OVERSCROLL_MAX_FRACTION : 0.0f;
+}
+
+static INLINE float materialui_apply_overscroll(
+      float scroll_y, float scroll_y_max, float overscroll_max)
+{
+   if (scroll_y < 0.0f)
+   {
+      scroll_y *= MUI_OVERSCROLL_RESISTANCE;
+
+      if (scroll_y < -overscroll_max)
+         scroll_y = -overscroll_max;
+   }
+   else if (scroll_y > scroll_y_max)
+   {
+      scroll_y = scroll_y_max +
+            ((scroll_y - scroll_y_max) * MUI_OVERSCROLL_RESISTANCE);
+
+      if (scroll_y > scroll_y_max + overscroll_max)
+         scroll_y = scroll_y_max + overscroll_max;
+   }
+
+   return scroll_y;
+}
+
+static INLINE float materialui_clamp_scroll(
+      float scroll_y, float scroll_y_max)
+{
+   if (scroll_y < 0.0f)
+      return 0.0f;
+
+   if (scroll_y > scroll_y_max)
+      return scroll_y_max;
+
+   return scroll_y;
+}
+
+static INLINE float materialui_abs_float(float value)
+{
+   return (value < 0.0f) ? -value : value;
+}
+
+static void materialui_update_overscroll_spring(
+      materialui_handle_t *mui, float target, float delta_time)
+{
+   float delta_time_sec;
+   float displacement;
+   float acceleration;
+
+   if (delta_time <= 0.0f)
+      return;
+
+   delta_time_sec = delta_time / 1000.0f;
+
+   /* Prevent a long frame from injecting excessive energy. */
+   if (delta_time_sec > 0.033333f)
+      delta_time_sec = 0.033333f;
+
+   displacement              = mui->scroll_y - target;
+   acceleration              = (-MUI_OVERSCROLL_SPRING_STIFFNESS * displacement) -
+         (MUI_OVERSCROLL_SPRING_DAMPING * mui->overscroll_velocity);
+   mui->overscroll_velocity += acceleration * delta_time_sec;
+   mui->scroll_y            += mui->overscroll_velocity * delta_time_sec;
+
+   if (   (materialui_abs_float(mui->scroll_y - target) < MUI_OVERSCROLL_STOP_DISTANCE)
+       && (materialui_abs_float(mui->overscroll_velocity) < MUI_OVERSCROLL_STOP_VELOCITY))
+   {
+      mui->scroll_y             = target;
+      mui->overscroll_velocity  = 0.0f;
+      mui->flags               &= ~MUI_FLAG_OVERSCROLL_ACTIVE;
+   }
+}
+
 /* Returns true if specified entry is currently
  * displayed on screen */
 static INLINE bool materialui_entry_onscreen(
@@ -3468,7 +3569,10 @@ static INLINE void materialui_kill_scroll_animation(
    menu_input->pointer.y_accel     = 0.0f;
 
    mui->flags                     &= ~MUI_FLAG_SCROLL_ANIMATION_ACTIVE;
+   mui->flags                     &= ~MUI_FLAG_OVERSCROLL_ACTIVE;
    mui->scroll_animation_selection = 0;
+   mui->overscroll_velocity        = 0.0f;
+   mui->overscroll_target          = 0.0f;
 }
 
 /* ==============================
@@ -3847,7 +3951,9 @@ static void materialui_render(void *data,
       bool is_idle)
 {
    size_t i;
-   float bottom;
+   float scroll_y_max;
+   float overscroll_max;
+   bool list_drag_active;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     * On some platforms (e.g. 32-bit x86 without SSE),
     * gcc can produce inconsistent floating point results
@@ -3860,6 +3966,7 @@ static void materialui_render(void *data,
    settings_t *settings       = config_get_ptr();
    materialui_handle_t *mui   = (materialui_handle_t*)data;
    gfx_display_t *p_disp      = disp_get_ptr();
+   gfx_animation_t *p_anim    = anim_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    menu_input_t *menu_input   = &menu_st->input_state;
@@ -3975,6 +4082,15 @@ static void materialui_render(void *data,
    /* Need to adjust/range-check scroll position first,
     * otherwise cannot determine correct entry index for
     * MENU_ENTRIES_CTL_SET_START */
+   scroll_y_max    = materialui_get_scroll_y_max(mui, height, header_height);
+   overscroll_max  = materialui_get_overscroll_max(mui, height, header_height);
+   list_drag_active =
+            (mui->pointer.type != MENU_POINTER_DISABLED)
+         && (!(mui->flags & MUI_FLAG_SCROLLBAR_DRAGGED))
+         && (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
+         && (mui->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+         && (mui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED);
+
    if (mui->pointer.type != MENU_POINTER_DISABLED)
    {
       /* If user is dragging the scrollbar, scroll
@@ -4001,21 +4117,39 @@ static void materialui_render(void *data,
             mui->scroll_y = 0.0f;
       }
       /* If fullscreen thumbnail view is enabled,
-       * scrolling is disabled - otherwise, just apply
-       * normal pointer acceleration */
+       * scrolling is disabled - otherwise, follow active
+       * touch drags directly and use acceleration for
+       * post-release inertial scrolling */
       else if (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
-         mui->scroll_y -= mui->pointer.y_accel;
+      {
+         if (   (mui->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+             && (mui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
+         {
+            mui->flags              &= ~MUI_FLAG_OVERSCROLL_ACTIVE;
+            mui->overscroll_velocity = 0.0f;
+            mui->scroll_y = materialui_apply_overscroll(
+                  mui->pointer_start_scroll_y -
+                  (float)(mui->pointer.y - mui->pointer_start_y),
+                  scroll_y_max, overscroll_max);
+         }
+         else
+            mui->scroll_y -= mui->pointer.y_accel;
+      }
    }
 
-   if (mui->scroll_y < 0.0f)
-      mui->scroll_y = 0.0f;
+   if (   !list_drag_active
+      && (mui->flags & MUI_FLAG_OVERSCROLL_ACTIVE))
+      materialui_update_overscroll_spring(
+            mui, materialui_clamp_scroll(mui->overscroll_target, scroll_y_max),
+            p_anim->delta_time);
 
-   bottom = mui->content_height - (float)height + (float)header_height +
-         (float)mui->nav_bar_layout_height + (float)mui->status_bar.height;
-   if (mui->scroll_y > bottom)
-      mui->scroll_y = bottom;
+   if (   !list_drag_active
+       && (!(mui->flags & MUI_FLAG_OVERSCROLL_ACTIVE)))
+      mui->scroll_y = materialui_clamp_scroll(mui->scroll_y, scroll_y_max);
 
-   if (mui->content_height < (height - header_height - mui->nav_bar_layout_height - mui->status_bar.height))
+   if (   !list_drag_active
+       && (!(mui->flags & MUI_FLAG_OVERSCROLL_ACTIVE))
+       && (mui->content_height < (height - header_height - mui->nav_bar_layout_height - mui->status_bar.height)))
       mui->scroll_y = 0.0f;
 
    /* Loop over all entries */
@@ -7836,6 +7970,11 @@ static void materialui_update_scrollbar(materialui_handle_t *mui,
    /* > Apply vertical padding to improve visual appearance */
    mui->scrollbar.y += (int)mui->scrollbar.width;
 
+   /* > Ensure overscroll does not move the scrollbar
+    *   outside the list region */
+   if (mui->scrollbar.y < (int)header_height + (int)mui->scrollbar.width)
+      mui->scrollbar.y = (int)header_height + (int)mui->scrollbar.width;
+
    /* > Ensure we don't fall off the bottom of the screen... */
    if (mui->scrollbar.y > y_max)
       mui->scrollbar.y = y_max;
@@ -9367,6 +9506,8 @@ static void materialui_animate_scroll(materialui_handle_t *mui,
 
    /* Kill any existing scroll animation */
    gfx_animation_kill_by_tag(&animation_tag);
+   mui->flags              &= ~MUI_FLAG_OVERSCROLL_ACTIVE;
+   mui->overscroll_velocity = 0.0f;
 
    /* mui->scroll_y will be modified by the animation
     * > Set scroll acceleration to zero to minimise
@@ -10716,6 +10857,10 @@ static int materialui_pointer_down(void *userdata,
    if (!mui)
       return -1;
 
+   /* Any active scroll animation would otherwise fight
+    * direct list dragging */
+   materialui_kill_scroll_animation(mui, menu_st);
+
    /* Get initial pointer location and scroll position */
    mui->pointer_start_x        = x;
    mui->pointer_start_y        = y;
@@ -10793,10 +10938,6 @@ static int materialui_pointer_down(void *userdata,
          return 0;
 
       /* User has 'selected' scrollbar */
-
-      /* > Kill any existing scroll animation
-       *   and reset scroll acceleration */
-      materialui_kill_scroll_animation(mui, menu_st);
 
       /* > Enable dragging */
       mui->flags |= MUI_FLAG_SCROLLBAR_DRAGGED;
@@ -10976,6 +11117,8 @@ static int materialui_pointer_up(void *userdata,
    menu_list_t *menu_list     = menu_st->entries.list;
    size_t entries_end         = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
    materialui_handle_t *mui   = (materialui_handle_t*)userdata;
+   float scroll_y_max;
+   float scroll_y_target;
 
    if (!mui)
       return -1;
@@ -11011,6 +11154,18 @@ static int materialui_pointer_up(void *userdata,
    }
 
    video_driver_get_size(&width, &height);
+
+   scroll_y_max    = materialui_get_scroll_y_max(mui, height, header_height);
+   scroll_y_target = materialui_clamp_scroll(mui->scroll_y, scroll_y_max);
+
+   if (mui->scroll_y != scroll_y_target)
+   {
+      mui->overscroll_velocity    = -mui->pointer.y_accel * 60.0f;
+      mui->overscroll_target      = scroll_y_target;
+      menu_input->pointer.y_accel = 0.0f;
+      mui->flags                 |= MUI_FLAG_OVERSCROLL_ACTIVE;
+      return 0;
+   }
 
    switch (gesture)
    {
