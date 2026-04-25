@@ -12006,6 +12006,8 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_autosave_interval;
 #endif
+
+#ifdef HAVE_THREADS
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.automatic_savestate_interval,
@@ -12022,6 +12024,7 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_autosave_interval;
+#endif
 
             CONFIG_BOOL(
                   list, list_info,
