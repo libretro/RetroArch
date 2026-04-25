@@ -252,9 +252,10 @@ static void http_transfer_progress_cb(retro_task_t *task)
 #endif
 }
 
-static void *task_push_http_transfer_generic(
+static void *task_push_http_transfer_generic_titled(
       struct http_connection_t *conn,
       const char *url, bool mute, bool headers_accept_err,
+      const char *title,
       retro_task_callback_t cb, void *user_data)
 {
    retro_task_t  *t        = NULL;
@@ -321,6 +322,17 @@ static void *task_push_http_transfer_generic(
    else
       t->flags            &= ~RETRO_TASK_FLG_MUTE;
 
+   /* Set t->title BEFORE task_queue_push().  Once the task is on the
+    * queue it can be picked up, run, finished, and freed by a worker
+    * thread before this function returns; any later write to t->* is
+    * a use-after-free.  This bit callers like task_push_http_transfer_file()
+    * which previously assigned t->title after the push -- if a download
+    * failed instantly (DNS failure, ENETUNREACH, cancelled task) the
+    * worker could finalise and free t before t->title was written,
+    * giving glibc a stale pointer to free or strdup later. */
+   if (title)
+      t->title             = strdup(title);
+
    task_queue_push(t);
 
    return t;
@@ -332,6 +344,15 @@ error:
       free(http);
 
    return NULL;
+}
+
+static void *task_push_http_transfer_generic(
+      struct http_connection_t *conn,
+      const char *url, bool mute, bool headers_accept_err,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_http_transfer_generic_titled(
+         conn, url, mute, headers_accept_err, NULL, cb, user_data);
 }
 
 void* task_push_http_transfer(const char *url, bool mute,
@@ -458,17 +479,14 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    size_t _len;
    const char *s               = NULL;
    char tmp[NAME_MAX_LENGTH]   = "";
-   retro_task_t *t             = NULL;
 
    if (!url || !*url)
       return NULL;
 
-   if (!(t = (retro_task_t*)task_push_http_transfer_generic(
-         /* should be using type but some callers now rely on type being ignored */
-         net_http_connection_new(url, "GET", NULL),
-         url, mute, false, cb, transfer_data)))
-      return NULL;
-
+   /* Build the task title BEFORE pushing to the queue.  See the
+    * comment in task_push_http_transfer_generic_titled() -- writing
+    * t->title after the push is a use-after-free if the worker
+    * picks up and finalises the task before the write lands. */
    if (transfer_data)
       s        = transfer_data->path;
    else
@@ -485,8 +503,10 @@ void* task_push_http_transfer_file(const char* url, bool mute,
 
    strlcpy(tmp + _len, s, sizeof(tmp) - _len);
 
-   t->title = strdup(tmp);
-   return t;
+   /* should be using type but some callers now rely on type being ignored */
+   return task_push_http_transfer_generic_titled(
+         net_http_connection_new(url, "GET", NULL),
+         url, mute, false, tmp, cb, transfer_data);
 }
 
 void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
