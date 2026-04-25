@@ -7340,6 +7340,26 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       }
    }
 
+   /* If the driver picked a row pitch wider than width*bpp for this linear
+    * image (i.e. the image has trailing per-row padding), decline the
+    * direct-write SW framebuffer and let the core fall back to its own
+    * tightly packed buffer. vulkan_frame() will then upload it row-by-row
+    * via the slow path. We hit this on MoltenVK / Apple GPUs, where
+    * buffer-backed MTLTextures require bytesPerRow to be aligned to 64 (or
+    * 256 in the simulator), so vkGetImageSubresourceLayout reports a
+    * padded rowPitch for "awkward" widths. Spec-correct host writes at the
+    * reported rowPitch *should* be readable by the GPU sampler at the same
+    * stride on any conformant driver, but in practice this is fragile on
+    * Apple platforms and produces sheared output. The check is a pure
+    * runtime test, so non-Apple drivers that report rowPitch == width*bpp
+    * (the overwhelming majority for retro-friendly widths) keep the
+    * direct-write fast path unchanged. */
+   {
+      unsigned bpp = vulkan_format_to_bpp(chain->texture.format);
+      if (chain->texture.stride != (size_t)framebuffer->width * bpp)
+         return false;
+   }
+
    framebuffer->data         = chain->texture.mapped;
    framebuffer->pitch        = chain->texture.stride;
    framebuffer->format       = vk->video.rgb32
