@@ -448,6 +448,8 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
 #elif defined(HAVE_VITA2D)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
+#elif defined(ANDROID) && defined(HAVE_VULKAN)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VULKAN;
 #elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE) && !defined(__HAIKU__)
