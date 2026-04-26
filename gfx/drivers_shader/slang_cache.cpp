@@ -64,12 +64,17 @@ static bool spirv_cache_get_filename(const char *hash,
       char *cache_file_out, size_t cache_file_out_len)
 {
    char cache_dir[PATH_MAX_LENGTH];
+   int ret;
 
    if (!spirv_cache_get_dir(cache_dir, sizeof(cache_dir)))
       return false;
 
-   snprintf(cache_file_out, cache_file_out_len, "%s/%s.spirv",
+   ret = snprintf(cache_file_out, cache_file_out_len, "%s/%s.spirv",
          cache_dir, hash);
+
+   /* Check if snprintf truncated the output */
+   if (ret < 0 || (size_t)ret >= cache_file_out_len)
+      return false;
 
    return true;
 }
