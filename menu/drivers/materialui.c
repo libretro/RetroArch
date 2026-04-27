@@ -585,7 +585,7 @@ enum materialui_handle_flags
    MUI_FLAG_SCROLLBAR_DRAGGED               = (1 << 26),
    MUI_FLAG_NAVBAR_MENU_NAVIGATION_WRAPPED  = (1 << 27),
    MUI_FLAG_COL_DIVIDER_IS_LIST_BG          = (1 << 28),
-   MUI_FLAG_OVERSCROLL_ACTIVE               = (1 << 29)
+   MUI_FLAG_OVERSCROLL_ACTIVE               = (1 << 29),
    MUI_FLAG_FIRST_FRAME                     = (1 << 30)
 };
 
