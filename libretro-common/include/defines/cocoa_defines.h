@@ -97,11 +97,20 @@
 #define RARCH_RELEASE(x)        ((void)0)
 #define RARCH_AUTORELEASE(x)    ((void)0)
 #define RARCH_SUPER_DEALLOC()   ((void)0)
+#define RARCH_DISPATCH_RELEASE(x) ((void)0)
 #else
 #define RARCH_RETAIN(x)         [(x) retain]
 #define RARCH_RELEASE(x)        [(x) release]
 #define RARCH_AUTORELEASE(x)    [(x) autorelease]
 #define RARCH_SUPER_DEALLOC()   [super dealloc]
+/* GCD object release for MRR.  Use dispatch_release() rather than
+ * [x release] because the latter is a compile error on pre-10.8 SDKs
+ * where OS_OBJECT_USE_OBJC is 0 and dispatch_queue_t is a plain C
+ * handle rather than an Objective-C object.  dispatch_release works
+ * uniformly across all MRR-capable SDKs.  NULL-guarded because
+ * dispatch_release(NULL) is explicitly undefined, unlike
+ * [nil release] which is a defined no-op. */
+#define RARCH_DISPATCH_RELEASE(x) do { if (x) dispatch_release(x); } while (0)
 #endif
 
 #endif

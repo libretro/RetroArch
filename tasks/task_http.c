@@ -183,20 +183,35 @@ task_finished:
       }
       else
       {
-         bool mute;
          data          = (http_transfer_data_t*)malloc(sizeof(*data));
-         data->data    = tmp;
-         data->len     = _len;
-         data->headers = net_http_headers_ex(http->handle, http->headers_accept_err);
-         data->status  = net_http_status(http->handle);
+         /* NULL-check: the field writes below NULL-deref on OOM.
+          * Free the already-fetched 'tmp' buffer (which data was
+          * about to take ownership of), set a task error so the
+          * caller sees a clean failure, and skip the task_set_data
+          * attachment. */
+         if (!data)
+         {
+            if (tmp)
+               free(tmp);
+            task_set_error(task, strldup("Out of memory.",
+                  sizeof("Out of memory.")));
+         }
+         else
+         {
+            bool mute;
+            data->data    = tmp;
+            data->len     = _len;
+            data->headers = net_http_headers_ex(http->handle, http->headers_accept_err);
+            data->status  = net_http_status(http->handle);
 
-         task_set_data(task, data);
+            task_set_data(task, data);
 
-         mute          = ((task->flags & RETRO_TASK_FLG_MUTE) > 0);
+            mute          = ((task->flags & RETRO_TASK_FLG_MUTE) > 0);
 
-         if (!mute && net_http_error(http->handle))
-            task_set_error(task, strldup("Download failed.",
-               sizeof("Download failed.")));
+            if (!mute && net_http_error(http->handle))
+               task_set_error(task, strldup("Download failed.",
+                  sizeof("Download failed.")));
+         }
       }
       net_http_delete(http->handle);
    }
@@ -237,9 +252,10 @@ static void http_transfer_progress_cb(retro_task_t *task)
 #endif
 }
 
-static void *task_push_http_transfer_generic(
+static void *task_push_http_transfer_generic_titled(
       struct http_connection_t *conn,
       const char *url, bool mute, bool headers_accept_err,
+      const char *title,
       retro_task_callback_t cb, void *user_data)
 {
    retro_task_t  *t        = NULL;
@@ -251,12 +267,19 @@ static void *task_push_http_transfer_generic(
 
    method = net_http_connection_method(conn);
 
+   /* net_http_connection_new() permits a NULL method, so
+    * net_http_connection_method() may legitimately return NULL here.
+    * Treat that as a hard error: we cannot dispatch a request without
+    * a method, and the GET fast-path below would deref NULL. */
+   if (!method)
+      goto error;
+
    /* POST requests usually mutate the server, so assume multiple calls are
     * intended, even if they're duplicated. Additionally, they may differ
     * only by the POST data, and task_http_finder doesn't look at that, so
     * unique requests could be misclassified as duplicates.
     */
-   if (memcmp(method, "GET", 3) == 0 && method[3] == '\0')
+   if (string_is_equal(method, "GET"))
    {
       task_finder_data_t find_data;
       find_data.func     = task_http_finder;
@@ -299,6 +322,17 @@ static void *task_push_http_transfer_generic(
    else
       t->flags            &= ~RETRO_TASK_FLG_MUTE;
 
+   /* Set t->title BEFORE task_queue_push().  Once the task is on the
+    * queue it can be picked up, run, finished, and freed by a worker
+    * thread before this function returns; any later write to t->* is
+    * a use-after-free.  This bit callers like task_push_http_transfer_file()
+    * which previously assigned t->title after the push -- if a download
+    * failed instantly (DNS failure, ENETUNREACH, cancelled task) the
+    * worker could finalise and free t before t->title was written,
+    * giving glibc a stale pointer to free or strdup later. */
+   if (title)
+      t->title             = strdup(title);
+
    task_queue_push(t);
 
    return t;
@@ -310,6 +344,15 @@ error:
       free(http);
 
    return NULL;
+}
+
+static void *task_push_http_transfer_generic(
+      struct http_connection_t *conn,
+      const char *url, bool mute, bool headers_accept_err,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_http_transfer_generic_titled(
+         conn, url, mute, headers_accept_err, NULL, cb, user_data);
 }
 
 void* task_push_http_transfer(const char *url, bool mute,
@@ -436,17 +479,14 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    size_t _len;
    const char *s               = NULL;
    char tmp[NAME_MAX_LENGTH]   = "";
-   retro_task_t *t             = NULL;
 
    if (!url || !*url)
       return NULL;
 
-   if (!(t = (retro_task_t*)task_push_http_transfer_generic(
-         /* should be using type but some callers now rely on type being ignored */
-         net_http_connection_new(url, "GET", NULL),
-         url, mute, false, cb, transfer_data)))
-      return NULL;
-
+   /* Build the task title BEFORE pushing to the queue.  See the
+    * comment in task_push_http_transfer_generic_titled() -- writing
+    * t->title after the push is a use-after-free if the worker
+    * picks up and finalises the task before the write lands. */
    if (transfer_data)
       s        = transfer_data->path;
    else
@@ -463,8 +503,10 @@ void* task_push_http_transfer_file(const char* url, bool mute,
 
    strlcpy(tmp + _len, s, sizeof(tmp) - _len);
 
-   t->title = strdup(tmp);
-   return t;
+   /* should be using type but some callers now rely on type being ignored */
+   return task_push_http_transfer_generic_titled(
+         net_http_connection_new(url, "GET", NULL),
+         url, mute, false, tmp, cb, transfer_data);
 }
 
 void* task_push_http_transfer_with_user_agent(const char *url, bool mute,

@@ -108,7 +108,12 @@ enum gl1_flags
    GL1_FLAG_MENU_SMOOTH             = (1 << 9),
    GL1_FLAG_OVERLAY_ENABLE          = (1 << 10),
    GL1_FLAG_OVERLAY_FULLSCREEN      = (1 << 11),
-   GL1_FLAG_FRAME_DUPE_LOCK         = (1 << 12)
+   GL1_FLAG_FRAME_DUPE_LOCK         = (1 << 12),
+   /* GL_UNSIGNED_SHORT_4_4_4_4 is core in GL 1.2; on strict 1.1
+    * implementations it is provided by GL_EXT_packed_pixels.  When
+    * neither is available, the menu path falls back to expanding
+    * RGUI's RGBA4444 framebuffer to BGRA8888 on the CPU. */
+   GL1_FLAG_SUPPORTS_PACKED_PIXELS  = (1 << 13)
 };
 
 typedef struct gl1
@@ -131,6 +136,7 @@ typedef struct gl1
    unsigned char *menu_frame;
    unsigned char *video_buf;
    unsigned char *menu_video_buf;
+   size_t menu_frame_cap;
 
    int version_major;
    int version_minor;
@@ -469,6 +475,25 @@ static void gl1_raster_font_upload_atlas(gl1_raster_t *font)
          }
          break;
    }
+
+   /* The temp buffer is a tightly packed POT-sized GL_LUMINANCE_ALPHA
+    * image: each row is exactly font->tex_width * 2 bytes with no
+    * padding. Force the pixel-unpack state to match that before
+    * uploading. Without this, the upload inherits whatever state the
+    * GL context happens to be in at the time of the first font init.
+    * In practice on Windows/NVIDIA, GL_UNPACK_ROW_LENGTH can come up
+    * non-zero from the WGL/driver setup, which makes glTexImage2D
+    * read source rows at the wrong stride. The texture ends up with
+    * glyphs shifted into wrong slots — visually the title and sidebar
+    * fonts (the first ones uploaded) render as horizontal stripe
+    * patterns instead of letters, while later fonts that re-upload
+    * after gl1_draw_tex has reset state happen to come out correct.
+    *
+    * gl3 follows the same pattern in gl3_raster_font_upload_atlas. */
+#ifndef VITA
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
 
    glTexImage2D(GL_TEXTURE_2D, 0, gl_internal, font->tex_width, font->tex_height,
          0, gl_format, GL_UNSIGNED_BYTE, tmp);
@@ -839,14 +864,29 @@ static void gl1_raster_font_render_msg(
       font->block->fullscreen = full_screen;
 
    {
-      unsigned width          = gl->video_width;
-      unsigned height         = gl->video_height;
+      /* gl->video_width/height holds the core's emulated frame size
+       * (e.g. 256x224), not the window size — gl1 reuses that field
+       * for texture upload bookkeeping. The font viewport must cover
+       * the full window, so use screen_width/height instead. Fall
+       * back to video_width/height if the context driver did not
+       * report a screen size yet. */
+      unsigned width          = gl->screen_width
+         ? gl->screen_width  : gl->video_width;
+      unsigned height         = gl->screen_height
+         ? gl->screen_height : gl->video_height;
       float inv_tex_size_x    = 1.0f / font->tex_width;
       float inv_tex_size_y    = 1.0f / font->tex_height;
-      float inv_win_width     = 1.0f / gl->vp.width;
-      float inv_win_height    = 1.0f / gl->vp.height;
+      float inv_win_width;
+      float inv_win_height;
+      /* setup_viewport may change gl->vp, so capture inv_win_width/height
+       * AFTER it runs — otherwise the vertex math uses one viewport while
+       * the actual glViewport is another, producing stretched/squished
+       * text. The block path defers setup_viewport to flush time and uses
+       * gl->vp as-is. */
       if (!font->block)
          gl1_raster_font_setup_viewport(gl, width, height, font, full_screen);
+      inv_win_width           = 1.0f / gl->vp.width;
+      inv_win_height          = 1.0f / gl->vp.height;
 
       if (msg && *msg
             && font->font_data  && font->font_driver)
@@ -964,6 +1004,17 @@ static void gl1_render_overlay(gl1_t *gl,
 {
    int i;
 
+   /* gl1 reuses video_width/height for the emulated core frame size
+    * (e.g. 256x224 for SNES, 320x240 default for the menu surface),
+    * not the window size. Fullscreen overlays must be drawn into the
+    * actual window viewport, so use screen_width/height instead.
+    * Fall back to the passed-in width/height if the context driver
+    * has not reported a screen size yet. */
+   if (gl->screen_width)
+      width  = gl->screen_width;
+   if (gl->screen_height)
+      height = gl->screen_height;
+
    glEnable(GL_BLEND);
 
    if (gl->flags & GL1_FLAG_OVERLAY_FULLSCREEN)
@@ -974,15 +1025,45 @@ static void gl1_render_overlay(gl1_t *gl,
    gl->coords.color     = gl->overlay_color_coord;
    gl->coords.vertices  = 4 * gl->overlays;
 
+   /* Fixed-function pipeline draws need the projection set, the
+    * modelview reset to identity and the client arrays bound to the
+    * overlay coord buffers. Previously this function only assigned
+    * pointers to gl->coords (which is just a struct field, not GL
+    * state) and pushed PROJECTION without popping it — so glDrawArrays
+    * ran with whatever client array state happened to be active and
+    * nothing rendered. Match the pattern used in
+    * gfx_display_gl1_draw and gl1_raster_font_draw_vertices. */
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
+   glLoadMatrixf(gl->mvp_no_rot.data);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPushMatrix();
    glLoadIdentity();
+
+   glEnable(GL_TEXTURE_2D);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glEnableClientState(GL_COLOR_ARRAY);
+
+   glVertexPointer(2, GL_FLOAT, 0, gl->overlay_vertex_coord);
+   glTexCoordPointer(2, GL_FLOAT, 0, gl->overlay_tex_coord);
+   glColorPointer(4, GL_FLOAT, 0, gl->overlay_color_coord);
 
    for (i = 0; i < (int)gl->overlays; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
       glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
    }
+
+   glDisableClientState(GL_COLOR_ARRAY);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+   glDisableClientState(GL_VERTEX_ARRAY);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPopMatrix();
+   glMatrixMode(GL_PROJECTION);
+   glPopMatrix();
 
    glDisable(GL_BLEND);
    gl->coords.vertex    = gl->vertex_ptr;
@@ -1252,6 +1333,18 @@ static void *gl1_init(const video_info_t *video,
    if (string_list_find_elem(gl1->extensions, "GL_EXT_bgra"))
       gl1->flags     |= GL1_FLAG_SUPPORTS_BGRA;
 
+   /* GL_UNSIGNED_SHORT_4_4_4_4 became core in GL 1.2 (1998); strict
+    * 1.1 implementations may still expose it via GL_EXT_packed_pixels.
+    * If neither is present we fall back to CPU expansion in the menu
+    * path.  Skip on Vita: vitaGL is a fixed-function wrapper and we
+    * have not verified packed-pixel upload paths there. */
+#ifndef VITA
+   if (     gl1->version_major  >  1
+         || (gl1->version_major == 1 && gl1->version_minor >= 2)
+         || string_list_find_elem(gl1->extensions, "GL_EXT_packed_pixels"))
+      gl1->flags     |= GL1_FLAG_SUPPORTS_PACKED_PIXELS;
+#endif
+
    glDisable(GL_BLEND);
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_CULL_FACE);
@@ -1341,18 +1434,31 @@ static void gl1_set_viewport(gl1_t *gl1,
    }
 }
 
-static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy)
+static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy, bool fb_4444)
 {
    uint8_t *frame         = NULL;
    uint8_t *frame_rgba    = NULL;
-   /* FIXME: For now, everything is uploaded as BGRA8888, I could not get 444 or 555 to work, and there is no 565 support in GL 1.1 either. */
-   GLint internalFormat   = GL_RGB8;
-   bool   supports_native = gl1->flags & GL1_FLAG_SUPPORTS_BGRA;
-   GLenum format          = supports_native ? GL_BGRA_EXT : GL_RGBA;
+   /* When fb_4444 is true the source is RGUI's 16bpp framebuffer in
+    * RGBA4444 layout (uint16_t with R in bits 15..12, A in 3..0) and
+    * is uploaded directly via GL_UNSIGNED_SHORT_4_4_4_4 — the channel
+    * order matches GL_RGBA exactly, so no swizzle/expansion is needed.
+    * Otherwise the source is BGRA8888 (or its byte-swapped equivalent
+    * on big-endian builds) and we use the original 32bpp upload path,
+    * which falls back to a CPU swizzle to RGBA8888 when the GL
+    * implementation lacks GL_EXT_bgra. */
+   GLint  internalFormat  = fb_4444 ? GL_RGBA : GL_RGB8;
+   bool   supports_native = (gl1->flags & GL1_FLAG_SUPPORTS_BGRA) ? true : false;
+   GLenum format          = fb_4444
+                              ? GL_RGBA
+                              : (supports_native ? GL_BGRA_EXT : GL_RGBA);
 #ifdef MSB_FIRST
-   GLenum type            = supports_native ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_BYTE;
+   GLenum type            = fb_4444
+                              ? GL_UNSIGNED_SHORT_4_4_4_4
+                              : (supports_native ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_BYTE);
 #else
-   GLenum type            = GL_UNSIGNED_BYTE;
+   GLenum type            = fb_4444
+                              ? GL_UNSIGNED_SHORT_4_4_4_4
+                              : GL_UNSIGNED_BYTE;
 #endif
    float vertices[]       = {
       -1.0f, -1.0f, 0.0f,
@@ -1398,7 +1504,10 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
 
    frame = (uint8_t*)frame_to_copy;
 
-   if (!supports_native)
+   /* The BGRA-fallback swizzle below only applies to the 32bpp upload
+    * path; the 16bpp 4444 path's bytes already match GL_RGBA channel
+    * order. */
+   if (!fb_4444 && !supports_native)
    {
       frame_rgba = (uint8_t*)malloc(pot_width * pot_height * 4);
       if (frame_rgba)
@@ -1429,6 +1538,13 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
    if (frame_rgba)
        free(frame_rgba);
+
+#ifndef VITA
+   /* Restore default row length so subsequent uploads (e.g. font atlas
+    * uploads, or any other glTexImage2D in the rest of the frame path)
+    * don't inherit pot_width as the source stride. */
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
 
    if (tex == gl1->tex)
    {
@@ -1639,17 +1755,29 @@ static bool gl1_frame(void *data, const void *frame,
 
       if (frame_to_copy)
          gl1_draw_tex(gl1, pot_width, pot_height,
-               width, height, gl1->tex, frame_to_copy);
+               width, height, gl1->tex, frame_to_copy, false);
    }
 
 #ifdef HAVE_MENU
    if (gl1->menu_frame && menu_is_alive)
    {
+      bool fb_4444;
+      unsigned bpp;
+
       frame_to_copy = NULL;
       width         = gl1->menu_width;
       height        = gl1->menu_height;
       pitch         = gl1->menu_pitch;
       bits          = gl1->menu_bits;
+
+      /* Decide upload path now that menu_bits has been latched.
+       * Fast path: keep RGUI's native 16bpp RGBA4444 layout end-to-end
+       * and let GL consume it via GL_UNSIGNED_SHORT_4_4_4_4.  Fallback
+       * expands to 32bpp on the CPU and uploads as BGRA8888 (or RGBA8888
+       * on implementations without GL_EXT_bgra). */
+      fb_4444 = (bits == 16)
+             && (gl1->flags & GL1_FLAG_SUPPORTS_PACKED_PIXELS);
+      bpp     = fb_4444 ? 2 : 4;
 
       pot_width     = GET_POT(width);
       pot_height    = GET_POT(height);
@@ -1667,13 +1795,40 @@ static bool gl1_frame(void *data, const void *frame,
 
       if (!gl1->menu_video_buf)
          gl1->menu_video_buf = (unsigned char*)
-            malloc(pot_width * pot_height * 4);
+            malloc((size_t)pot_width * (size_t)pot_height * bpp);
 
       if (bits == 16 && gl1->menu_video_buf)
       {
-         conv_rgba4444_argb8888(gl1->menu_video_buf,
-               gl1->menu_frame, width, height,
-               pot_width * sizeof(unsigned), pitch);
+         if (fb_4444)
+         {
+            /* Direct upload path: RGUI emits its framebuffer in
+             * RGBA4444 (host-endian uint16_t with R in bits 15..12,
+             * G 11..8, B 7..4, A 3..0).  Endianness of the upload is
+             * implicit: glTexImage2D reads each GL_UNSIGNED_SHORT_4_4_4_4
+             * unit using the host's native uint16_t interpretation, so
+             * the same source bytes work on LE and BE hosts without a
+             * byte swap.  Copy width-rows into the top-left of the
+             * pot-padded staging buffer; rows beyond `height` and
+             * pixels beyond `width` are sampled outside the
+             * (norm_width, norm_height) tex-coord rectangle in
+             * gl1_draw_tex and never reach the screen. */
+            unsigned y;
+            const uint8_t *src = (const uint8_t*)gl1->menu_frame;
+            uint8_t       *dst = (uint8_t*)gl1->menu_video_buf;
+            unsigned dst_pitch = pot_width * 2;
+            unsigned row_bytes = width * 2;
+            for (y = 0; y < height; y++)
+               memcpy(dst + dst_pitch * y, src + pitch * y, row_bytes);
+         }
+         else
+         {
+            /* Fallback expansion to 32bpp for GL <1.2 without
+             * GL_EXT_packed_pixels (and for the Vita build).  This
+             * preserves the original behaviour. */
+            conv_rgba4444_argb8888(gl1->menu_video_buf,
+                  gl1->menu_frame, width, height,
+                  pot_width * sizeof(unsigned), pitch);
+         }
 
          frame_to_copy = gl1->menu_video_buf;
 
@@ -1681,12 +1836,12 @@ static bool gl1_frame(void *data, const void *frame,
          {
             glViewport(0, 0, video_width, video_height);
             gl1_draw_tex(gl1, pot_width, pot_height,
-                  width, height, gl1->menu_tex, frame_to_copy);
+                  width, height, gl1->menu_tex, frame_to_copy, fb_4444);
             glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
          }
          else
             gl1_draw_tex(gl1, pot_width, pot_height,
-                  width, height, gl1->menu_tex, frame_to_copy);
+                  width, height, gl1->menu_tex, frame_to_copy, fb_4444);
       }
    }
 
@@ -2011,10 +2166,11 @@ static void gl1_set_texture_frame(void *data,
 {
    settings_t *settings      = config_get_ptr();
    bool menu_linear_filter   = settings->bools.menu_linear_filter;
-   unsigned       pitch      = width * 2;
+   unsigned pitch            = width * (rgb32 ? 4 : 2);
    gl1_t              *gl1   = (gl1_t*)data;
+   size_t required;
 
-   if (!gl1)
+   if (!gl1 || !frame || !width || !height || !pitch)
       return;
 
    if (menu_linear_filter)
@@ -2022,40 +2178,35 @@ static void gl1_set_texture_frame(void *data,
    else
       gl1->flags            &= ~GL1_FLAG_MENU_SMOOTH;
 
-   if (rgb32)
-      pitch                  = width * 4;
+   required = (size_t)pitch * (size_t)height;
 
-   if (gl1->menu_frame)
-      free(gl1->menu_frame);
-   gl1->menu_frame           = NULL;
-
-   if (     (!gl1->menu_frame)
-         || (gl1->menu_width  != width)
-         || (gl1->menu_height != height)
-         || (gl1->menu_pitch  != pitch))
+   if (required > gl1->menu_frame_cap)
    {
-      if (pitch && height)
-      {
-         if (gl1->menu_frame)
-            free(gl1->menu_frame);
-
-         /* FIXME? We have to assume the pitch has no
-          * extra padding in it because that will
-          * mess up the POT calculation when we don't
-          * know how many bpp there are. */
-         gl1->menu_frame = (unsigned char*)malloc(pitch * height);
-      }
+      /* FIXME? We have to assume the pitch has no
+       * extra padding in it because that will
+       * mess up the POT calculation when we don't
+       * know how many bpp there are. */
+      unsigned char *tmp = (unsigned char*)realloc(
+            gl1->menu_frame, required);
+      if (!tmp)
+         return;                        /* keep previous frame intact */
+      gl1->menu_frame     = tmp;
+      gl1->menu_frame_cap = required;
    }
 
-   if (gl1->menu_frame && frame && pitch && height)
-   {
-      memcpy(gl1->menu_frame, frame, pitch * height);
-      gl1->menu_width        = width;
-      gl1->menu_height       = height;
-      gl1->menu_pitch        = pitch;
-      gl1->menu_bits         = rgb32 ? 32 : 16;
-      gl1->flags            |= GL1_FLAG_MENU_SIZE_CHANGED;
-   }
+   /* Only set MENU_SIZE_CHANGED when the dimensions the downstream
+    * frame path cares about actually change; otherwise the POT-sized
+    * menu_video_buf would get reallocated on every single frame. */
+   if (     gl1->menu_width  != width
+         || gl1->menu_height != height
+         || gl1->menu_pitch  != pitch)
+      gl1->flags |= GL1_FLAG_MENU_SIZE_CHANGED;
+
+   memcpy(gl1->menu_frame, frame, required);
+   gl1->menu_width  = width;
+   gl1->menu_height = height;
+   gl1->menu_pitch  = pitch;
+   gl1->menu_bits   = rgb32 ? 32 : 16;
 }
 
 static void gl1_set_video_mode(void *data, unsigned width, unsigned height,

@@ -195,11 +195,21 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
     * was dropped with a raw 'g_ctx = nil'. */
    RELEASE(g_ctx);
    RELEASE(g_hw_ctx);
-#if defined(HAVE_COCOATOUCH)
-   /* glk_view was created with +new (+1) in glkitview_init.  Release
-    * it on destroy so it does not leak across init/destroy cycles. */
-   RELEASE(glk_view);
-#endif
+   /* Deliberately NOT releasing glk_view here.  Its real strong owner
+    * is RetroArch_iOS._renderView, which retains the singleton via
+    * setViewType:APPLE_VIEW_TYPE_OPENGL_ES on first init and holds it
+    * for the rest of the process.  On a video reinit (e.g. content
+    * load) the ctx destroy/init pair runs, but setViewType: returns
+    * early on (vt == _vt) and never re-invokes glkitview_init - so
+    * nilling the static here would leave it nil for the remainder of
+    * the session.  The consequence is that swap_buffers'
+    *   if (glk_view) [glk_view display];
+    * becomes a no-op, get_video_size reads zero from glk_view.bounds,
+    * set_video_mode's `glk_view.context = g_ctx` silently misses, and
+    * the screen freezes the moment a core is loaded.  The MRR leak
+    * this previously aimed to plug only matters at app teardown,
+    * which on iOS effectively never runs (RetroArch_iOS is the
+    * UIApplication delegate). */
 
    free(cocoa_ctx);
 }
@@ -259,26 +269,11 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 
 static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
 {
-#ifdef OSX
-#ifdef MAC_OS_X_VERSION_10_6
-    /* CGDisplayModeRef and CGDisplayCopyDisplayMode are 10.6+.
-     * On the 10.5 Leopard SDK only the older CFDictionaryRef-based
-     * CGDisplayCurrentMode API exists; not worth wiring up for a
-     * refresh-rate readout, so fall back to 60. */
-    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
-    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
-    float currentRate = CGDisplayModeGetRefreshRate(currentMode);
-    CFRelease(currentMode);
-    return currentRate;
-#else
-    return 60.0f;
-#endif
-#else
-    if (@available(iOS 10.3, tvOS 10.2, *))
-       return [UIScreen mainScreen].maximumFramesPerSecond;
-    else
-       return 60;
-#endif
+   /* Body consolidated into cocoa_common.m.  Kept as a named
+    * vtable entry because vulkan.c-style code paths reach the
+    * ctx driver directly via video_context_driver_get_refresh_rate,
+    * bypassing dispserv_apple's own hook. */
+   return cocoa_get_refresh_rate();
 }
 
 static gfx_ctx_proc_t cocoa_gl_gfx_ctx_get_proc_address(const char *symbol_name)
@@ -385,8 +380,10 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+#ifndef HAVE_COCOA_METAL
    static bool
       has_went_fullscreen      = false;
+#endif
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 
@@ -610,9 +607,9 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 
       [[g_view window] setContentSize:NSMakeSize(width, height)];
    }
-#endif
 
    has_went_fullscreen = fullscreen;
+#endif
 
    return true;
 }
@@ -719,38 +716,11 @@ static bool cocoa_gl_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
 static void cocoa_gl_gfx_ctx_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-#if TARGET_OS_IPHONE
-   /* iOS/tvOS: Return physical screen resolution, not window size */
-   UIScreen *screen = [UIScreen mainScreen];
-   CGRect nativeBounds = screen.nativeBounds;
-   *width  = (unsigned)nativeBounds.size.width;
-   *height = (unsigned)nativeBounds.size.height;
-
-   if (desc && desc_len > 0)
-   {
-      float scale = cocoa_screen_get_native_scale();
-      if (scale >= 3.0f)
-         strlcpy(desc, "Super Retina", desc_len);
-      else if (scale >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
-      else
-         strlcpy(desc, "Standard", desc_len);
-   }
-#else
-   /* macOS: Return display resolution */
-   CGDirectDisplayID display = CGMainDisplayID();
-   *width  = (unsigned)CGDisplayPixelsWide(display);
-   *height = (unsigned)CGDisplayPixelsHigh(display);
-
-   if (desc && desc_len > 0)
-   {
-      float scale = cocoa_screen_get_backing_scale_factor();
-      if (scale >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
-      else
-         strlcpy(desc, "Standard", desc_len);
-   }
-#endif
+   /* Body consolidated into cocoa_common.m.  Kept as a named
+    * vtable entry because video_thread_wrapper.c's
+    * thread_get_video_output_size calls the poke / ctx hook
+    * directly, bypassing dispserv_apple. */
+   cocoa_get_video_output_size(width, height, desc, desc_len);
 }
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {

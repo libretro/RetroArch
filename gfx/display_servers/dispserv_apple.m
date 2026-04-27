@@ -42,17 +42,13 @@
 #else
 #import <ApplicationServices/ApplicationServices.h>
 #endif
-/* The CGDisplayModeRef family (CGDisplayCopyAllDisplayModes,
+/* RARCH_HAS_CGDISPLAYMODE_API is defined in cocoa_common.h.  The
+ * CGDisplayModeRef family (CGDisplayCopyAllDisplayModes,
  * CGDisplayModeGetWidth, CGDisplaySetDisplayMode, ...) arrived in
  * 10.6 Snow Leopard.  The 10.5 SDK only offers the older
  * CGDisplayAvailableModes / CFDictionaryRef path, which is a
  * different enough API that we just stub the resolution list on
  * pre-10.6 targets rather than port to both. */
-#if defined(MAC_OS_X_VERSION_10_6) && \
-    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
-     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6)
-#define RARCH_HAS_CGDISPLAYMODE_API 1
-#endif
 #endif
 
 #ifdef OSX
@@ -87,6 +83,33 @@ static bool apple_display_server_set_window_progress(void *data, int progress, b
 
       // Create a custom view for the dock tile
       [iv addSubview:indicator];
+
+      /* This file is compiled under BOTH build systems:
+       *   - qb/top-level Makefile:  MRC (not in the per-file ARC
+       *     override list at Makefile:275 alongside metal.o /
+       *     mfi_joypad.o / coreaudio3.o).
+       *   - pkg/apple/<anyfile>.xcodeproj:  ARC, via griffin_objc.m which
+       *     #include's this file into a TU compiled with
+       *     CLANG_ENABLE_OBJC_ARC=YES (pkg/apple/BaseConfig.xcconfig:182).
+       *
+       * Under MRC, 'iv' is a local +1 from alloc+init.  setContentView:
+       * and addSubview: each retain their own reference, so those are
+       * legitimately owned; the +1 from alloc+init is ours to release
+       * before the local goes out of scope, or it leaks for the app's
+       * lifetime.  Under ARC, the compiler inserts the matching release
+       * at block scope exit automatically.
+       *
+       * RARCH_RELEASE handles both: MRC -> [(x) release], ARC -> ((void)0).
+       * Raw '[iv release]' is a compile error under ARC
+       * ('ARC forbids explicit message send of release') which the
+       * Xcode build would have flagged immediately.
+       *
+       * 'indicator' is intentionally kept +1 - it's a file-scope static
+       * initialised inside dispatch_once, and holding that +1 across
+       * the app lifetime is how we keep it referenced for the
+       * subsequent setDoubleValue / setHidden calls outside the
+       * block. */
+      RARCH_RELEASE(iv);
    });
    if (finished)
       [indicator setDoubleValue:(double)-1];
@@ -332,7 +355,19 @@ static void *apple_display_server_get_resolution_list(
    /* Set length and allocate config array for macOS */
    *len = (unsigned)[configArray count];
    if (!(conf = (struct video_display_config*)calloc(*len, sizeof(struct video_display_config))))
+   {
+      /* displayModes and currentMode are CFRetain'd +1 by their
+       * respective CGDisplayCopy* calls above (~line 250 / 266)
+       * and must be CFRelease'd on every exit path.  The success
+       * return below does this at lines 339-340; the pre-patch
+       * OOM path bypassed both and leaked them until the process
+       * died.  Each is a small CF object (handful of bytes) but
+       * a leak of system-owned Core Graphics state is still
+       * worth plugging. */
+      CFRelease(displayModes);
+      CFRelease(currentMode);
       return NULL;
+   }
 
    for (j = 0; j < *len; j++)
    {
@@ -578,6 +613,21 @@ static void apple_display_server_destroy(void *data)
    free(apple);
 }
 
+/* Thin wrappers around cocoa_common.m helpers to match the
+ * video_display_server_t signatures (which take a leading void*).
+ * Shared implementation lives in cocoa_common.m so the poke /
+ * gfx_ctx_driver_t vtables can reach it too - see cocoa_common.h. */
+static float apple_display_server_get_refresh_rate(void *data)
+{
+   return cocoa_get_refresh_rate();
+}
+
+static void apple_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+   cocoa_get_video_output_size(width, height, desc, desc_len);
+}
+
 const video_display_server_t dispserv_apple = {
    apple_display_server_init,
    apple_display_server_destroy,
@@ -608,8 +658,8 @@ const video_display_server_t dispserv_apple = {
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
 #endif
-   NULL, /* get_refresh_rate */
-   NULL, /* get_video_output_size */
+   apple_display_server_get_refresh_rate,
+   apple_display_server_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    cocoa_get_metrics,

@@ -26,7 +26,6 @@
 #endif
 
 #include <encodings/base64.h>
-#include <formats/rbmp.h>
 #include <formats/rpng.h>
 #include <formats/rjson.h>
 #include <gfx/scaler/pixconv.h>
@@ -470,6 +469,16 @@ static void handle_translation_response(
                int tw, th, tc;
                int d          = 0;
                raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
+               /* NULL-check: the indexed write at the bottom of
+                * this loop body dereferences raw_image_data.  On
+                * OOM jump to finish which NULL-tolerantly frees
+                * raw_image_data_alpha + rpng state; the
+                * translation request fails cleanly. */
+               if (!raw_image_data)
+               {
+                  rpng_free(rpng);
+                  goto finish;
+               }
                for (ui = 0; ui < image_width * image_height * 4; ui++)
                {
                   if (ui % 4 != 3)
@@ -1198,14 +1207,12 @@ static bool http_translate(
       void *userdata)
 {
    uint8_t *bmp_buffer               = NULL;
-   size_t pitch;
    uint64_t buffer_bytes             = 0;
    char *bmp64_buffer                = NULL;
    rjsonwriter_t *jsonwriter         = NULL;
    const char *json_buffer           = NULL;
    http_translate_ctx_t *ctx         = NULL;
    int bmp64_len                     = 0;
-   bool TRANSLATE_USE_BMP            = false;
    bool success                      = false;
    settings_t *settings              = config_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
@@ -1216,28 +1223,17 @@ static bool http_translate(
    access_state_t *access_st         = access_state_get_ptr();
 #endif
 
-   if (TRANSLATE_USE_BMP)
+   /* Encode the framebuffer screenshot as a PNG (BGR24) for the
+    * translation service.  rpng_save_image_bgr24_string handles the
+    * vertical flip via negative stride + bottom-row pointer, so no
+    * intermediate buffer is needed.  Variable is named bmp_buffer for
+    * historical reasons (the request format was originally a BMP
+    * blob gated on an always-false TRANSLATE_USE_BMP local; that
+    * branch has been deleted as dead code). */
    {
-      /*
-        At this point, we should have a screenshot in the buffer,
-        so allocate an array to contain the BMP image along with
-        the BMP header as bytes, and then covert that to a
-        b64 encoded array for transport in JSON.
-      */
-      if (!(bmp_buffer  = (uint8_t*)malloc(width * height * 3 + 54)))
-         goto finish;
-
-      form_bmp_header(bmp_buffer, width, height, false);
-      memcpy(bmp_buffer + 54,
-            bit24_image,
-            width * height * 3 * sizeof(uint8_t));
-      buffer_bytes = sizeof(uint8_t) * (width * height * 3 + 54);
-   }
-   else
-   {
-      pitch        = width * 3;
+      size_t pitch = width * 3;
       bmp_buffer   = rpng_save_image_bgr24_string(
-            bit24_image + width * (height-1) * 3,
+            bit24_image + width * (height - 1) * 3,
             width, height, (signed)-pitch, &buffer_bytes);
    }
 

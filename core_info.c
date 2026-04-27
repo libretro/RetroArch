@@ -307,7 +307,15 @@ static bool CCJSONStringHandler(void *context,
          free(*pCtx->current_string_val);
       *pCtx->current_string_val = strdup(pValue);
 
-      if (pCtx->current_string_list_val)
+      /* Gate the string_list split on strdup success: if strdup
+       * returned NULL (OOM), the assignment above stored NULL
+       * into *current_string_val, and string_split dereferences
+       * its first parameter unconditionally at
+       * libretro-common/lists/string_list.c:252 ('while (*p)' with
+       * p = str).  On OOM just leave current_string_list_val
+       * alone; downstream core_info readers already tolerate
+       * missing split lists. */
+      if (pCtx->current_string_list_val && *pCtx->current_string_val)
       {
          if (*pCtx->current_string_list_val)
             string_list_free(*pCtx->current_string_list_val);

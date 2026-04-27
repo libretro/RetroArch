@@ -81,3 +81,22 @@ jobs:
           # ever amends the predicate, the copy here must follow.
           timeout 60 ./archive_name_safety_test
           echo "[pass] archive_name_safety_test"
+
+      - name: Build and run http_method_match_test (ASan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # Regression test for the heap-buffer-overflow fix in
+          # tasks/task_http.c::task_push_http_transfer_generic().
+          # Pre-fix, an unsafe memcmp(method, "GET", 3) read past
+          # the strdup'd buffer when method was NULL or shorter
+          # than 3 bytes.  Build under AddressSanitizer so a
+          # regression to the unsafe expression is caught at the
+          # bounds level, not just the truth-table level.  If
+          # task_http.c amends the GET-dispatch predicate, the
+          # copy in http_method_match_test.c must follow.
+          make clean all SANITIZER=address
+          test -x http_method_match_test
+          timeout 60 ./http_method_match_test
+          echo "[pass] http_method_match_test"

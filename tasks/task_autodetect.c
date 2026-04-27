@@ -756,7 +756,18 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
           && !string_is_equal(autoconfig_handle->device_info.name,
                fallback_device_name))
       {
-         char *name_backup = strdup(autoconfig_handle->device_info.name);
+         /* Save/restore device_info.name around the fallback-name
+          * autoconfig scan.  device_info.name is a fixed-size
+          * char[128] ivar, not a heap pointer, so the previous
+          * strdup + free was unnecessary heap traffic, and carried
+          * a NULL-deref-on-OOM failure mode (strdup returning NULL
+          * was not checked before strlcpy(name, name_backup, ...)
+          * below).  A stack buffer of matching size sidesteps both
+          * issues. */
+         char name_backup[sizeof(autoconfig_handle->device_info.name)];
+
+         strlcpy(name_backup, autoconfig_handle->device_info.name,
+               sizeof(name_backup));
 
          strlcpy(autoconfig_handle->device_info.name,
                fallback_device_name,
@@ -771,9 +782,6 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
          strlcpy(autoconfig_handle->device_info.name,
                name_backup,
                sizeof(autoconfig_handle->device_info.name));
-
-         free(name_backup);
-         name_backup = NULL;
       }
    }
 

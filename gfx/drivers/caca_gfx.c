@@ -49,6 +49,7 @@ typedef struct caca
    caca_dither_t *dither;
    caca_display_t *display;
    unsigned char *menu_frame;
+   size_t menu_frame_cap;
    unsigned menu_width;
    unsigned menu_height;
    unsigned menu_pitch;
@@ -371,27 +372,29 @@ static void caca_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   caca_t *caca   = (caca_t*)data;
-   unsigned pitch = width * 2;
+   caca_t  *caca    = (caca_t*)data;
+   unsigned pitch   = width * (rgb32 ? 4 : 2);
+   size_t   required;
 
-   if (rgb32)
-      pitch = width * 4;
+   if (!frame || !width || !height || !pitch)
+      return;
 
-   if (caca->menu_frame)
-      free(caca->menu_frame);
-   caca->menu_frame = NULL;
+   required = (size_t)pitch * (size_t)height;
 
-   if (    (!caca->menu_frame)
-         || (caca->menu_width  != width)
-         || (caca->menu_height != height)
-         || (caca->menu_pitch  != pitch))
+   if (required > caca->menu_frame_cap)
    {
-      if (pitch && height)
-         caca->menu_frame = (unsigned char*)malloc(pitch * height);
+      unsigned char *tmp = (unsigned char*)realloc(
+            caca->menu_frame, required);
+      if (!tmp)
+         return;                        /* keep previous frame intact */
+      caca->menu_frame     = tmp;
+      caca->menu_frame_cap = required;
    }
 
-   if (caca->menu_frame && frame && pitch && height)
-      memcpy(caca->menu_frame, frame, pitch * height);
+   memcpy(caca->menu_frame, frame, required);
+   caca->menu_width  = width;
+   caca->menu_height = height;
+   caca->menu_pitch  = pitch;
 }
 
 static const video_poke_interface_t caca_poke_interface = {

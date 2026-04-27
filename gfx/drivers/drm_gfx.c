@@ -232,6 +232,16 @@ static void drm_surface_setup(void *data,  int src_width, int src_height,
 
    surface = *sp;
 
+   /* NULL-check the outer calloc: the surface->... field writes
+    * below would NULL-deref on OOM.  Sibling bug to the one in
+    * dispmanx_surface_setup - the two routines share this
+    * structure (output-pointer + void return) and both had the
+    * same missing checks.  void-returning so callers can't see
+    * an error code; letting the function no-op on OOM beats a
+    * segfault. */
+   if (!surface)
+      return;
+
    /* Setup surface parameters */
    surface->numpages = numpages;
    /* We receive the total pitch, including things that are
@@ -251,6 +261,16 @@ static void drm_surface_setup(void *data,  int src_width, int src_height,
     * and initialize variables inside each page's struct. */
    surface->pages = (struct drm_page*)
       calloc(surface->numpages, sizeof(struct drm_page));
+
+   /* Same NULL-check for the pages array.  Undo the outer
+    * surface allocation on OOM to give callers a consistent
+    * NULL. */
+   if (!surface->pages)
+   {
+      free(surface);
+      *sp = NULL;
+      return;
+   }
 
    for (i = 0; i < surface->numpages; i++)
    {
@@ -360,7 +380,23 @@ static uint32_t get_plane_prop_id(uint32_t obj_id, const char *name)
        * This implementation must be improved. */
       props      = drmModeObjectGetProperties(drm.fd,
             plane->plane_id, DRM_MODE_OBJECT_PLANE);
+      /* drmModeObjectGetProperties returns NULL on kernel/driver
+       * error or if the plane has no properties; previously
+       * 'props->count_props' NULL-deref'd in that case.  Also
+       * malloc on the next line was unchecked and props_info[j]
+       * below would NULL-deref on OOM.  On either failure skip
+       * this plane and continue; the caller falls through to
+       * 'return 0' (not-found) if no plane yields the prop.
+       *
+       * NOTE: pre-existing leaks in this function (plane_resources,
+       * plane, props, props_info are all libdrm-allocated and
+       * never freed even on the success path that 'return's from
+       * inside the loop) are out of scope for this fix. */
+      if (!props)
+         continue;
       props_info = malloc(props->count_props * sizeof *props_info);
+      if (!props_info)
+         continue;
 
       for (j = 0; j < props->count_props; ++j)
          props_info[j] =	drmModeGetProperty(drm.fd, props->props[j]);

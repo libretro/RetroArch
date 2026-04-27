@@ -87,6 +87,22 @@ extern bool RAIsVoiceOverRunning(void)
 }
 #endif
 
+#ifdef OSX
+/* <CoreGraphics/CoreGraphics.h> is a 10.8+ umbrella header.  On the
+ * 10.5 Leopard SDK the CGDirectDisplay + kCGDisplayRefreshRate
+ * symbols come in through <ApplicationServices/ApplicationServices.h>.
+ * RARCH_HAS_CGDISPLAYMODE_API (defined in cocoa_common.h) selects
+ * between the 10.6+ CGDisplayMode API and the 10.5 CFDictionaryRef
+ * path inside cocoa_get_refresh_rate below. */
+#if defined(MAC_OS_X_VERSION_10_8) && \
+    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
+     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_8)
+#import <CoreGraphics/CoreGraphics.h>
+#else
+#import <ApplicationServices/ApplicationServices.h>
+#endif
+#endif /* OSX */
+
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 id<ApplePlatform> apple_platform;
 #else
@@ -943,6 +959,143 @@ float cocoa_screen_get_native_scale(void)
     return ret;
 }
 #endif
+
+/* ---------------------------------------------------------------------
+ * Shared display-info helpers - consolidated from:
+ *   gfx/drivers_context/cocoa_gl_ctx.m : *_get_refresh_rate,
+ *                                         *_get_video_output_size
+ *   gfx/drivers_context/cocoa_vk_ctx.m : *_get_refresh_rate,
+ *                                         *_get_video_output_size
+ *   gfx/drivers/metal.m                : metal_get_refresh_rate,
+ *                                         metal_get_video_output_size
+ * Those vtable hooks now each contain a one-line thunk that calls
+ * into these two helpers so there is a single implementation per
+ * Apple platform.  See cocoa_common.h for why all three vtables
+ * still need a registered function.
+ * --------------------------------------------------------------------- */
+
+float cocoa_get_refresh_rate(void)
+{
+#ifdef OSX
+#ifdef RARCH_HAS_CGDISPLAYMODE_API
+   /* macOS 10.6+: CGDisplayMode API. */
+   CGDirectDisplayID main_id = CGMainDisplayID();
+   CGDisplayModeRef  mode    = CGDisplayCopyDisplayMode(main_id);
+   float             rate    = 0.0f;
+   if (mode)
+   {
+      rate = (float)CGDisplayModeGetRefreshRate(mode);
+      CFRelease(mode);
+   }
+   /* CGDisplayModeGetRefreshRate returns 0 on most built-in LCDs;
+    * hand the caller a sane fallback instead of 0 Hz. */
+   return (rate > 0.0f) ? rate : 60.0f;
+#else
+   /* macOS 10.5 Leopard: CGDisplayCopyDisplayMode doesn't exist.
+    * CGDisplayCurrentMode returns a borrowed CFDictionaryRef
+    * (do NOT CFRelease) carrying kCGDisplayRefreshRate.  Deprecated
+    * in 10.6 but the only option on the 10.5 SDK. */
+   CGDirectDisplayID main_id = CGMainDisplayID();
+   CFDictionaryRef   mode    = CGDisplayCurrentMode(main_id);
+   double            rate    = 0.0;
+   if (mode)
+   {
+      CFNumberRef n = (CFNumberRef)CFDictionaryGetValue(
+            mode, kCGDisplayRefreshRate);
+      if (n)
+         CFNumberGetValue(n, kCFNumberDoubleType, &rate);
+   }
+   return (rate > 0.0) ? (float)rate : 60.0f;
+#endif
+#else /* iOS / tvOS */
+   CADisplayLink *dl = [CocoaView get].displayLink;
+   if (dl)
+   {
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+      if (@available(iOS 15.0, tvOS 15.0, *))
+         return dl.preferredFrameRateRange.preferred;
+#endif
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
+      if (@available(iOS 10.0, tvOS 10.0, *))
+         return dl.preferredFramesPerSecond;
+#endif
+      /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
+       * the number of screen refreshes between callbacks, so
+       * convert to Hz assuming a 60 Hz panel (accurate for every
+       * pre-iOS-10 device - ProMotion is iPad Pro 2017+). */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      {
+         NSInteger fi = dl.frameInterval;
+         return 60.0f / (float)(fi > 0 ? fi : 1);
+      }
+#pragma clang diagnostic pop
+   }
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
+   if (@available(iOS 10.3, tvOS 10.2, *))
+      return [UIScreen mainScreen].maximumFramesPerSecond;
+#endif
+   return 60.0f;
+#endif
+}
+
+void cocoa_get_video_output_size(unsigned *width, unsigned *height,
+      char *desc, size_t desc_len)
+{
+#if TARGET_OS_IPHONE
+   UIScreen *screen = [UIScreen mainScreen];
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000 || __TV_OS_VERSION_MAX_ALLOWED >= 90000
+   if (@available(iOS 8.0, tvOS 9.0, *))
+   {
+      /* nativeBounds is physical pixels, orientation-independent. */
+      CGRect b = screen.nativeBounds;
+      *width   = (unsigned)b.size.width;
+      *height  = (unsigned)b.size.height;
+   }
+   else
+#endif
+   {
+      /* iOS 6/7: no nativeBounds.  UIScreen.bounds is in points and
+       * fixed to portrait orientation pre-iOS-8.  Every iOS 6/7-era
+       * device has an integer scale (1x or 2x), so bounds * scale
+       * gives exact physical pixels. */
+      CGRect  b = screen.bounds;
+      CGFloat s = screen.scale; /* UIScreen.scale is iOS 4+ */
+      *width    = (unsigned)(b.size.width  * s);
+      *height   = (unsigned)(b.size.height * s);
+   }
+
+   if (desc && desc_len > 0)
+   {
+      /* cocoa_screen_get_native_scale is already iOS-6 safe: it
+       * uses respondsToSelector:@selector(nativeScale) and falls
+       * back to UIScreen.scale when nativeScale is unavailable. */
+      float s = cocoa_screen_get_native_scale();
+      if (s >= 3.0f)
+         strlcpy(desc, "Super Retina", desc_len);
+      else if (s >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#else
+   /* macOS: CGDisplayPixelsWide/High is 10.0+, safe back to 10.5. */
+   CGDirectDisplayID d = CGMainDisplayID();
+   *width  = (unsigned)CGDisplayPixelsWide(d);
+   *height = (unsigned)CGDisplayPixelsHigh(d);
+
+   if (desc && desc_len > 0)
+   {
+      /* cocoa_screen_get_backing_scale_factor is 10.5-safe: its
+       * pre-10.7 branch returns 1.0f unconditionally. */
+      float s = cocoa_screen_get_backing_scale_factor();
+      if (s >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#endif
+}
 
 void *nsview_get_ptr(void)
 {

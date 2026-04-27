@@ -581,6 +581,7 @@ bool egl_init_context_common(
             configs, *count, &matched) || !matched)
    {
       RARCH_ERR("[EGL] No EGL configs with appropriate attributes.\n");
+      free(configs);
       return false;
    }
 

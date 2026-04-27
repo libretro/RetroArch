@@ -3521,9 +3521,11 @@ static char *d3d9_hlsl_preprocess_includes(
                         size_t resolved_len = strlen(resolved_inc);
                         while (pos + resolved_len + 2 >= cap)
                         {
+                           char *tmp;
                            cap *= 2;
-                           out  = (char*)realloc(out, cap);
-                           if (!out) { free(resolved_inc); return NULL; }
+                           if (!(tmp = (char*)realloc(out, cap)))
+                           { free(out); free(resolved_inc); return NULL; }
+                           out = tmp;
                         }
                         memcpy(out + pos, resolved_inc, resolved_len);
                         pos += resolved_len;
@@ -3545,9 +3547,11 @@ static char *d3d9_hlsl_preprocess_includes(
       {
          while (pos + line_len + 1 >= cap)
          {
+            char *tmp;
             cap *= 2;
-            out  = (char*)realloc(out, cap);
-            if (!out) return NULL;
+            if (!(tmp = (char*)realloc(out, cap)))
+            { free(out); return NULL; }
+            out = tmp;
          }
          memcpy(out + pos, p, line_len);
          pos += line_len;
@@ -3586,9 +3590,20 @@ static bool d3d9_hlsl_buf_append(char **buf, size_t *pos, size_t *cap,
 {
    while (*pos + len + 1 >= *cap)
    {
+      char  *tmp;
       *cap *= 2;
-      *buf  = (char*)realloc(*buf, *cap);
-      if (!*buf) return false;
+      /* realloc-into-tmp: the pre-patch '*buf = realloc(*buf, *cap)'
+       * form leaked the old buffer on OOM (self-assign overwrites
+       * the only pointer to it with NULL).  On failure free the old
+       * buffer and clear the caller's pointer so they don't double-
+       * free or use a now-invalid pointer. */
+      if (!(tmp = (char*)realloc(*buf, *cap)))
+      {
+         free(*buf);
+         *buf = NULL;
+         return false;
+      }
+      *buf = tmp;
    }
    memcpy(*buf + *pos, str, len);
    *pos += len;
@@ -3756,7 +3771,13 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
                      {
                         size_t len = (size_t)(ob + 1 - p);
                         while (opos + len + 1 >= cap)
-                        { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                        {
+                           char *tmp;
+                           cap *= 2;
+                           if (!(tmp = (char*)realloc(out, cap)))
+                           { free(out); return NULL; }
+                           out = tmp;
+                        }
                         memcpy(out + opos, p, len);
                         opos += len;
                      }
@@ -3805,20 +3826,38 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
                                  size_t sl = snprintf(sem, sizeof(sem),
                                        " : TEXCOORD%d", texcoord_counter++);
                                  while (opos + sl + 2 >= cap)
-                                 { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                                 {
+                                    char *tmp;
+                                    cap *= 2;
+                                    if (!(tmp = (char*)realloc(out, cap)))
+                                    { free(out); return NULL; }
+                                    out = tmp;
+                                 }
                                  memcpy(out + opos, sem, sl);
                                  opos += sl;
                               }
                            }
                            while (opos + 2 >= cap)
-                           { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                           {
+                              char *tmp;
+                              cap *= 2;
+                              if (!(tmp = (char*)realloc(out, cap)))
+                              { free(out); return NULL; }
+                              out = tmp;
+                           }
                            out[opos++] = *mp++;
                         }
                      }
 
                      /* Copy '}' and advance past struct */
                      while (opos + 2 >= cap)
-                     { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                     {
+                        char *tmp;
+                        cap *= 2;
+                        if (!(tmp = (char*)realloc(out, cap)))
+                        { free(out); return NULL; }
+                        out = tmp;
+                     }
                      out[opos++] = '}';
                      p = cb;
                      continue;
@@ -3829,7 +3868,13 @@ static char *d3d9_hlsl_add_struct_semantics(const char *source)
 
          /* Regular char */
          while (opos + 2 >= cap)
-         { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+         {
+            char *tmp;
+            cap *= 2;
+            if (!(tmp = (char*)realloc(out, cap)))
+            { free(out); return NULL; }
+            out = tmp;
+         }
          out[opos++] = *p++;
       }
 
@@ -4037,7 +4082,13 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
                   /* Copy 'VARNAME;' then add sampler declaration */
                   size_t chunk = (size_t)(after + 1 - p);
                   while (opos + chunk + ilen + 40 >= cap)
-                  { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+                  {
+                     char *tmp;
+                     cap *= 2;
+                     if (!(tmp = (char*)realloc(out, cap)))
+                     { free(out); return NULL; }
+                     out = tmp;
+                  }
                   memcpy(out + opos, p, chunk);
                   opos += chunk;
 
@@ -4076,7 +4127,13 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
          }
 
          while (opos + 14 >= cap)
-         { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+         {
+            char *tmp;
+            cap *= 2;
+            if (!(tmp = (char*)realloc(out, cap)))
+            { free(out); return NULL; }
+            out = tmp;
+         }
 
          if (has_paste)
          {
@@ -4095,7 +4152,13 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
 
       /* Regular char */
       while (opos + 2 >= cap)
-      { cap *= 2; out = (char*)realloc(out, cap); if (!out) return NULL; }
+      {
+         char *tmp;
+         cap *= 2;
+         if (!(tmp = (char*)realloc(out, cap)))
+         { free(out); return NULL; }
+         out = tmp;
+      }
       out[opos++] = *p++;
    }
 
@@ -5087,8 +5150,13 @@ struct_ctor_done:
                   if (!already_global)
                   {
                      while (pos + hoist_len + 1 >= cap)
-                     { cap *= 2; out = (char*)realloc(out, cap);
-                       if (!out) return NULL; }
+                     {
+                        char *tmp;
+                        cap *= 2;
+                        if (!(tmp = (char*)realloc(out, cap)))
+                        { free(out); return NULL; }
+                        out = tmp;
+                     }
                      memmove(out + last_func_start + hoist_len,
                            out + last_func_start, pos - last_func_start);
                      memcpy(out + last_func_start, hoist, hoist_len);
@@ -5746,7 +5814,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                                        || macro_define_start[comment_len-1] == '\r'))
                                  comment_len--;
                               while (opos + dll + comment_len + 10 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, dl, dll); opos += dll;
                               memcpy(out + opos, macro_define_start, comment_len);
                               opos += comment_len;
@@ -5757,7 +5831,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                            {
                               size_t mid = (size_t)(seq_start - macro_define_end);
                               while (opos + mid + 1 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, macro_define_end, mid);
                               opos += mid;
                            }
@@ -5769,7 +5849,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                                     "[loop] for (int %s = 0; %s <= %d; %s++) {\n",
                                     macro_param, macro_param, max_seq, macro_param);
                               while (opos + lh_len + 1 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, loop_header, lh_len);
                               opos += lh_len;
                            }
@@ -5783,7 +5869,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                                        && bp_src[1] == '\n')
                                  { bp_src += 2; continue; }
                                  while (opos + 2 >= cap)
-                                 { cap *= 2; out = (char*)realloc(out, cap); }
+                                 {
+                                    char *tmp;
+                                    cap *= 2;
+                                    if (!(tmp = (char*)realloc(out, cap)))
+                                    { free(out); return NULL; }
+                                    out = tmp;
+                                 }
                                  out[opos++] = *bp_src++;
                               }
                            }
@@ -5792,7 +5884,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                            {
                               const char *cl = "\n}\n";
                               while (opos + 4 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, cl, 3); opos += 3;
                            }
 
@@ -5800,7 +5898,13 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                            {
                               size_t tail = src_len_full - (size_t)(seq_end_ptr - source);
                               while (opos + tail + 1 >= cap)
-                              { cap *= 2; out = (char*)realloc(out, cap); }
+                              {
+                                 char *tmp;
+                                 cap *= 2;
+                                 if (!(tmp = (char*)realloc(out, cap)))
+                                 { free(out); return NULL; }
+                                 out = tmp;
+                              }
                               memcpy(out + opos, seq_end_ptr, tail);
                               opos += tail;
                            }
@@ -7748,15 +7852,23 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
 
    if (       (!d3d->menu->tex)
             || (d3d->menu->tex_w != width)
-            || (d3d->menu->tex_h != height))
+            || (d3d->menu->tex_h != height)
+            || (d3d->menu_tex_rgb32 != rgb32))
    {
       if (d3d->menu->tex)
          IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = NULL;
+      /* RGUI sends 16bpp ARGB4444 (the d3d9 case in RGUI's pixel
+       * format dispatcher selects argb32_to_argb4444), so we can
+       * upload it byte-for-byte into a D3DFMT_A4R4G4B4 texture and
+       * skip the per-pixel CPU expansion to ARGB8888 the previous
+       * implementation did every frame.  The rgb32 path is preserved
+       * for callers that hand us 32bpp data; in current practice no
+       * such caller exists, but the API contract supports it. */
       IDirect3DDevice9_CreateTexture(d3d->dev,
             width, height, 1,
-            0, D3D9_ARGB8888_FORMAT,
+            0, rgb32 ? D3D9_ARGB8888_FORMAT : D3D9_ARGB4444_FORMAT,
             D3DPOOL_MANAGED,
             (struct IDirect3DTexture9**)&d3d->menu->tex, NULL);
 
@@ -7768,6 +7880,7 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
 
       d3d->menu->tex_w          = width;
       d3d->menu->tex_h          = height;
+      d3d->menu_tex_rgb32       = rgb32;
    }
 
    d3d->menu->alpha_mod = alpha;
@@ -7775,7 +7888,7 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
    IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex,
          0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    {
-      unsigned h, w;
+      unsigned h;
 
       if (rgb32)
       {
@@ -7791,26 +7904,23 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
       }
       else
       {
-         uint32_t       *dst = (uint32_t*)d3dlr.pBits;
-         const uint16_t *src = (const uint16_t*)frame;
+         /* Direct ARGB4444 upload.  The bit layout produced by
+          * argb32_to_argb4444 (host-endian uint16_t with A in bits
+          * 15..12, R 11..8, G 7..4, B 3..0) matches D3DFMT_A4R4G4B4
+          * exactly: D3D reads the locked memory as host-endian
+          * 16-bit units with the same bit assignments, so the same
+          * source bytes work on LE (PC) and BE (Xbox 360) hosts
+          * without a byte swap. */
+         uint8_t        *dst = (uint8_t*)d3dlr.pBits;
+         const uint8_t  *src = (const uint8_t*)frame;
+         unsigned src_pitch  = width * sizeof(uint16_t);
+         unsigned row_bytes  = width * sizeof(uint16_t);
 
-         for (h = 0; h < height; h++,
-               dst += d3dlr.Pitch >> 2,
-               src += width)
+         for (h = 0; h < height; h++, dst += d3dlr.Pitch, src += src_pitch)
          {
-            for (w = 0; w < width; w++)
-            {
-               uint16_t c = src[w];
-               uint32_t r = (c >> 12) & 0xf;
-               uint32_t g = (c >>  8) & 0xf;
-               uint32_t b = (c >>  4) & 0xf;
-               uint32_t a = (c >>  0) & 0xf;
-               r          = ((r << 4) | r) << 16;
-               g          = ((g << 4) | g) <<  8;
-               b          = ((b << 4) | b) <<  0;
-               a          = ((a << 4) | a) << 24;
-               dst[w]     = r | g | b | a;
-            }
+            memcpy(dst, src, row_bytes);
+            if (d3dlr.Pitch > (int)row_bytes)
+               memset(dst + row_bytes, 0, d3dlr.Pitch - row_bytes);
          }
       }
    }

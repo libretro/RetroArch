@@ -1767,6 +1767,15 @@ static struct config_path_setting *populate_settings_path(
    return tmp;
 }
 
+#if defined(__APPLE__) && defined(HAVE_VULKAN)
+bool config_metal_arg_buffers_default(void)
+{
+   if (__builtin_available(macOS 12.0, iOS 13.0, tvOS 12.0, *))
+      return true;
+   return false;
+}
+#endif
+
 /* ---------------------------------------------------------------------------
  * SETTINGS_*_COUNT_MAX constants are defined above the populate functions.
  * Compile-time check (via negative array) can be added here if needed.
@@ -1961,6 +1970,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_hdr_scanlines",           &settings->bools.video_hdr_scanlines, true, DEFAULT_VIDEO_HDR_SCANLINES, false);
    SETTING_BOOL("video_vsync",                   &settings->bools.video_vsync, true, DEFAULT_VSYNC, false);
    SETTING_BOOL("video_adaptive_vsync",          &settings->bools.video_adaptive_vsync, true, DEFAULT_ADAPTIVE_VSYNC, false);
+   SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_hard_sync",               &settings->bools.video_hard_sync, true, DEFAULT_HARD_SYNC, false);
    SETTING_BOOL("video_waitable_swapchains",     &settings->bools.video_waitable_swapchains, true, DEFAULT_WAITABLE_SWAPCHAINS, false);
    SETTING_BOOL("video_disable_composition",     &settings->bools.video_disable_composition, true, DEFAULT_DISABLE_COMPOSITION, false);
@@ -1968,7 +1978,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_post_filter_record",      &settings->bools.video_post_filter_record, true, DEFAULT_POST_FILTER_RECORD, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
-   SETTING_BOOL("video_use_metal_arg_buffers",   &settings->bools.video_use_metal_arg_buffers, true, DEFAULT_USE_METAL_ARG_BUFFERS, false);
+   SETTING_BOOL("video_use_metal_arg_buffers",   &settings->bools.video_use_metal_arg_buffers, true, config_metal_arg_buffers_default(), false);
 #endif
    SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, DEFAULT_MESSAGE_BGCOLOR_ENABLE, false);
    SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, DEFAULT_WINDOW_DECORATIONS, false);
@@ -2794,6 +2804,9 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_VULKAN
    SETTING_INT("vulkan_gpu_index",               &settings->ints.vulkan_gpu_index, true, DEFAULT_VULKAN_GPU_INDEX, false);
 #endif
+#ifdef HAVE_METAL
+   SETTING_INT("metal_gpu_index",                &settings->ints.metal_gpu_index, true, DEFAULT_METAL_GPU_INDEX, false);
+#endif
 
 #ifdef HAVE_NETWORKING
    SETTING_INT("netplay_check_frames",           &settings->ints.netplay_check_frames, true, DEFAULT_NETPLAY_CHECK_FRAMES, false);
@@ -3563,7 +3576,8 @@ static bool check_menu_driver_compatibility(settings_t *settings)
    switch (video_driver[0])
    {
       case 'd':
-         return (memcmp(video_driver, "d3d9_hlsl", 9) == 0 && video_driver[9] == '\0')
+         return (memcmp(video_driver, "d3d8",     4) == 0 && video_driver[4]  == '\0')
+             || (memcmp(video_driver, "d3d9_hlsl", 9) == 0 && video_driver[9] == '\0')
              || (memcmp(video_driver, "d3d9_cg",  7) == 0 && video_driver[7]  == '\0')
              || (memcmp(video_driver, "d3d10",    5) == 0 && video_driver[5]  == '\0')
              || (memcmp(video_driver, "d3d11",    5) == 0 && video_driver[5]  == '\0')
@@ -6518,6 +6532,26 @@ int8_t config_save_overrides(enum override_type type,
 
    settings = (settings_t*)calloc(1, sizeof(settings_t));
    conf     = config_file_new_alloc();
+
+   /* NULL-check: both calloc and config_file_new_alloc can
+    * return NULL on OOM.  config_load_file at line ~6552
+    * dereferences settings unconditionally, and all the
+    * config_set_* calls later dereference conf.  Rather than
+    * sprinkle NULL-guards through a 300-line function, bail
+    * out here.  The function-end cleanup at line ~6866 does
+    * free(settings) which is NULL-safe, but conf needs
+    * explicit config_file_free + NULL guard.
+    *
+    * Return -1 to signal hard failure (as distinct from
+    * 'override was not needed' = false/0 at line 6529).
+    * int8_t return value accommodates -1. */
+   if (!settings || !conf)
+   {
+      if (conf)
+         config_file_free(conf);
+      free(settings);
+      return -1;
+   }
 
    /* Get base config directory */
    fill_pathname_application_special(config_directory,

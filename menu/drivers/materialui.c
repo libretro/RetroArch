@@ -586,6 +586,7 @@ enum materialui_handle_flags
    MUI_FLAG_NAVBAR_MENU_NAVIGATION_WRAPPED  = (1 << 27),
    MUI_FLAG_COL_DIVIDER_IS_LIST_BG          = (1 << 28),
    MUI_FLAG_OVERSCROLL_ACTIVE               = (1 << 29)
+   MUI_FLAG_FIRST_FRAME                     = (1 << 30)
 };
 
 typedef struct materialui_handle
@@ -2493,11 +2494,21 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)data;
-   bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
-   const char *current_path = strdup(mui->savestate_thumbnail_file_path);
+   bool savestate_thumbnail;
+   char old_path[PATH_MAX_LENGTH];
 
    if (!mui)
       return;
+
+   savestate_thumbnail      = settings->bools.savestate_thumbnail_enable;
+
+   /* Snapshot the current path before clearing it, so we can detect
+    * whether the resolved path actually changed and only then reset
+    * the thumbnail.  A stack buffer is sufficient (the field it
+    * mirrors is itself a fixed-size char array) and avoids the leak
+    * + potential NULL-deref of the previous strdup-before-NULL-check
+    * construction. */
+   strlcpy(old_path, mui->savestate_thumbnail_file_path, sizeof(old_path));
 
    mui->savestate_thumbnail_file_path[0] = '\0';
 
@@ -2534,7 +2545,7 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
                strlcpy(mui->savestate_thumbnail_file_path, path,
                      sizeof(mui->savestate_thumbnail_file_path));
 
-            if (!string_is_equal(current_path, mui->savestate_thumbnail_file_path))
+            if (!string_is_equal(old_path, mui->savestate_thumbnail_file_path))
                gfx_thumbnail_reset(&mui->thumbnails.savestate);
 
             materialui_update_fullscreen_thumbnail_label(mui);
@@ -8312,6 +8323,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (ctx_gen != mui->context_generation)
       goto ctx_destroyed;
 
+   /* First-frame init done — subsequent frames are normal.
+    * Cleared here (not on entry) so that a context-destroyed
+    * mid-frame leaves the flag set for the retry. */
+   mui->flags &= ~MUI_FLAG_FIRST_FRAME;
+
    /* Unbind fonts */
    font_unbind(&mui->font_data.title);
    font_unbind(&mui->font_data.list);
@@ -9249,6 +9265,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->dip_base_unit_size                = mui->last_scale_factor
       * MUI_DIP_BASE_UNIT_SIZE;
    mui->flags                             = 0;
+   mui->flags                            |= MUI_FLAG_FIRST_FRAME;
 
    if (settings->bools.menu_materialui_show_nav_bar)
       mui->flags |= MUI_FLAG_LAST_SHOW_NAVBAR;
@@ -9676,6 +9693,26 @@ static void materialui_init_transition_animation(materialui_handle_t *mui,
    uintptr_t             alpha_tag     = (uintptr_t)&mui->transition_alpha;
    uintptr_t             x_offset_tag  = (uintptr_t)&mui->transition_x_offset;
    unsigned transition_animation       = settings->uints.menu_materialui_transition_animation;
+
+   /* Skip the transition animation on the very first frame after
+    * init: materialui_populate_entries() runs from menu_driver_init
+    * before the first materialui_frame, and this animation zeros
+    * out transition_alpha — which scales the alpha of entry text,
+    * icons, the highlight and other UI chrome but NOT the title
+    * bar or the nav bar.  The result is a few frames of half-
+    * rendered menu (header + nav bar but no entries) until the
+    * alpha animates up to 1.0.
+    *
+    * The menu has no prior state to fade in from at startup, so
+    * skipping the animation here is the right move; matches the
+    * is_first_frame -> animate=false pattern used in ozone. */
+   if (mui->flags & MUI_FLAG_FIRST_FRAME)
+   {
+      mui->transition_alpha    = 1.0f;
+      mui->transition_x_offset = 0.0f;
+      mui->last_stack_size     = stack_size;
+      return;
+   }
 
    /* If animations are disabled, reset alpha/x offset
     * values and return immediately */
@@ -11396,6 +11433,24 @@ static void materialui_list_insert(void *userdata,
    if (!node)
    {
       node = (materialui_node_t*)malloc(sizeof(materialui_node_t));
+
+      /* NULL-check the malloc: the field writes below
+       * (node->icon_type etc., 24+ lines) unconditionally
+       * dereference node and NULL-deref on OOM.  The existing
+       * 'if (!node) return;' at line ~11290 was dead code -
+       * the dereference at line 11255 crashed first.
+       *
+       * On failure we need to replicate what the 'if (!node)
+       * return;' below was intended to do: store NULL into the
+       * list entry's userdata so subsequent reads see no node
+       * and skip node-specific rendering.  The item stays in
+       * the list but renders without the materialui-specific
+       * node metadata (icons, thumbnails). */
+      if (!node)
+      {
+         list->list[i].userdata = NULL;
+         return;
+      }
 
       node->icon_type                        = MUI_ICON_TYPE_NONE;
       node->icon_texture_index               = 0;

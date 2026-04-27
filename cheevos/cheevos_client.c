@@ -297,11 +297,32 @@ void rcheevos_client_http_load_response(const rc_api_request_t* request,
    size_t _len = 0;
    FILE* file  = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
 
+   /* NULL-check the fopen: this is a debug-only override path
+    * (only compiled when CHEEVOS_JSON_OVERRIDE is defined) but
+    * a missing or unreadable override file would NULL-deref the
+    * subsequent fseek/ftell/fread calls.  Match the failure
+    * contract used elsewhere in this file by invoking the
+    * callback with a zeroed/empty response so rc_client doesn't
+    * hang waiting for a reply. */
+   if (!file)
+   {
+      callback(NULL, 0, callback_data);
+      return;
+   }
+
    fseek(file, 0, SEEK_END);
    _len = ftell(file);
    fseek(file, 0, SEEK_SET);
 
    contents = (char*)malloc(_len + 1);
+   /* NULL-check the malloc: without this the contents[_len] = 0
+    * write below and the fread into contents NULL-deref. */
+   if (!contents)
+   {
+      fclose(file);
+      callback(NULL, 0, callback_data);
+      return;
+   }
    fread((void*)contents, 1, _len, file);
    fclose(file);
 
@@ -318,6 +339,19 @@ void rcheevos_client_server_call(const rc_api_request_t* request,
    rcheevos_locals_t *rcheevos_locals   = (rcheevos_locals_t*)get_rcheevos_locals();
    rc_client_http_task_data_t *taskdata = (rc_client_http_task_data_t*)
       malloc(sizeof(rc_client_http_task_data_t));
+
+   /* NULL-check the malloc: the two field writes below NULL-deref
+    * on OOM.  On failure invoke the callback with a zeroed server
+    * response so rc_client doesn't wait forever for a reply it
+    * won't get; matches the zeroed-response convention used in
+    * rcheevos_client_http_task_callback above for failed requests. */
+   if (!taskdata)
+   {
+      rc_api_server_response_t server_response;
+      memset(&server_response, 0, sizeof(server_response));
+      callback(&server_response, callback_data);
+      return;
+   }
 
    taskdata->callback      = callback;
    taskdata->callback_data = callback_data;
@@ -467,6 +501,17 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
 #endif
 
    taskdata = (rc_client_download_task_data_t*)malloc(sizeof(*taskdata));
+   /* NULL-check: the field writes below NULL-deref on OOM, and
+    * task_push_http_transfer_with_user_agent would dispatch a
+    * task callback with a NULL taskdata that
+    * rcheevos_client_download_task_callback dereferences via
+    * callback_data->queue / badge_fullpath.  On OOM return
+    * false - the caller treats this as a download failure and
+    * the queue (if present) continues with the next badge when
+    * prompted, matching the path_is_valid() early-return at
+    * line 473 above. */
+   if (!taskdata)
+      return false;
    taskdata->queue = queue;
    strlcpy(taskdata->badge_fullpath, badge_fullpath, sizeof(taskdata->badge_fullpath));
    strlcpy(taskdata->badge_name, badge_name, sizeof(taskdata->badge_name));
@@ -614,6 +659,15 @@ void rcheevos_client_download_achievement_badges(rc_client_t* client)
    size_t i;
    rc_client_download_queue_t *queue = (rc_client_download_queue_t*)
       calloc(1, sizeof(*queue));
+
+   /* NULL-check the calloc: the five field writes below NULL-deref
+    * on OOM.  Function is void-returning; the user-visible
+    * consequence of skipping on OOM is that badge textures don't
+    * download this session (existing cached badges still display;
+    * missing ones show the default placeholder).  Triggered again
+    * next time the game is loaded. */
+   if (!queue)
+      return;
 
    queue->client = client;
    queue->game   = rc_client_get_game_info(client);

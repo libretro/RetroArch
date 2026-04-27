@@ -217,3 +217,4 @@ HAVE_BUILTINSMBCLIENT=no   # Use builtin libsmb2
 HAVE_COCOA=auto            # Cocoa support (Darwin/Apple)
 HAVE_RETROARCH_PLAYLIST_MANAGER=auto # iOS/tvOS + macOS 10.11+ playlist helper (see qb/config.libs.sh)
 HAVE_MFI=auto              # GameController.framework joypad support (Apple)
+HAVE_AVF=auto              # AVFoundation camera + recording drivers (Apple, macOS 10.7+ / iOS)

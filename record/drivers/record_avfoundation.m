@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <defines/cocoa_defines.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <string/stdstring.h>
@@ -140,11 +141,25 @@ static void avfoundation_release_handle(record_avfoundation_t *handle)
    if (!handle)
       return;
    scaler_ctx_gen_reset(&handle->scaler);
+
+   /* Release (MRC) / auto-release (ARC) the owned Objective-C objects,
+    * then clear the field so any subsequent access sees nil rather
+    * than a dangling pointer.  Under ARC the RARCH_RELEASE is a no-op
+    * and the field-assignment-to-nil releases via __strong auto-
+    * qualification; under MRC RARCH_RELEASE sends -release and the
+    * field-assignment-to-nil just overwrites the now-stale pointer.
+    * See libretro-common/include/defines/cocoa_defines.h. */
+   RARCH_RELEASE(handle->pixelBufferAdaptor);
    handle->pixelBufferAdaptor = nil;
+   RARCH_RELEASE(handle->videoInput);
    handle->videoInput         = nil;
+   RARCH_RELEASE(handle->audioInput);
    handle->audioInput         = nil;
+   RARCH_RELEASE(handle->assetWriter);
    handle->assetWriter        = nil;
+   RARCH_DISPATCH_RELEASE(handle->encodingQueue);
    handle->encodingQueue      = nil;
+
    free(handle);
 }
 
@@ -343,6 +358,7 @@ static void *avfoundation_record_init(const struct record_params *params)
          else
          {
             RARCH_WARN("[AVFoundation] Cannot add audio input, continuing without audio\n");
+            RARCH_RELEASE(handle->audioInput);
             handle->audioInput = nil;
          }
       }

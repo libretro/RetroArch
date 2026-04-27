@@ -135,6 +135,14 @@ enum video_driver_state_flags
    VIDEO_FLAG_THREAD_WRAPPER_ACTIVE               = (1 << 22)
 };
 
+enum video_driver_scanline
+{
+   SCANLINE_NEXT = 0,
+   SCANLINE_TOTAL,
+   SCANLINE_HOLD,
+   SCANLINE_LAST
+};
+
 struct LinkInfo
 {
    struct video_shader_pass *pass;
@@ -441,6 +449,7 @@ typedef struct video_frame_info
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
    bool hard_sync;
+   bool scanline_sync;
    bool runahead;
    bool runahead_second_instance;
    bool preemptive_frames;
@@ -886,6 +895,8 @@ typedef struct
    char title_buf[64];
    char cached_driver_id[32];
 
+   int16_t scanline[SCANLINE_LAST];
+
    uint16_t frame_drop_count;
    uint16_t frame_time_reserve;
    uint8_t frame_delay_target;
@@ -1127,6 +1138,8 @@ void video_driver_set_threaded(bool val);
 
 void video_frame_delay(video_driver_state_t *video_st,
       settings_t *settings);
+
+void video_driver_scanline_init(void);
 
 /**
  * video_context_driver_init:

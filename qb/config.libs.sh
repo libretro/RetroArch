@@ -42,6 +42,8 @@ if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
    [ -d /usr/local/lib ] && add_dirs LIBRARY /usr/local/lib
    DYLIB=-lc;
+elif [ "$OS" = 'Darwin' ]; then
+   DYLIB=
 elif [ "$OS" = 'Haiku' ]; then
    DYLIB=""
    CLIB=-lroot
@@ -330,6 +332,33 @@ if [ "$OS" = 'Darwin' ]; then
    else
       HAVE_RETROARCH_PLAYLIST_MANAGER=no
    fi
+
+   # AVFoundation camera + recording drivers.  The framework itself
+   # is Apple-wide, but the RetroArch driver sources (camera/drivers/
+   # avfoundation.m, record/drivers/record_avfoundation.m) use APIs
+   # that landed in macOS 10.7 (AVCaptureSession, dispatch_queue_t
+   # blocks, @autoreleasepool as a statement).  On iOS/tvOS any
+   # HAVE_COCOATOUCH build is modern enough in practice.  On macOS
+   # gate on the same 10.7 threshold we already use for
+   # Metal/Vulkan/microphone.  Also requires the AVFoundation
+   # framework to be present in the SDK (checked immediately below);
+   # we pre-check it here so the version gate and framework gate are
+   # evaluated together before macos_target_ver goes out of scope.
+   check_lib '' AVFOUNDATION "-framework AVFoundation"
+   if [ "${USER_AVF:-}" = 'no' ]; then
+      HAVE_AVF=no
+   elif [ "$HAVE_AVFOUNDATION" != 'yes' ]; then
+      HAVE_AVF=no
+      [ "${USER_AVF:-}" = 'yes' ] && \
+         die 1 "Forced AVFoundation enable but -framework AVFoundation is not available in the SDK."
+   elif [ "$HAVE_COCOATOUCH" = 'yes' ] || \
+        [ "$macos_target_pre_10_7" = 'no' ]; then
+      HAVE_AVF=yes
+   else
+      HAVE_AVF=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling AVFoundation camera/recording drivers.  Override with --enable-avf."
+   fi
+
    unset macos_target_ver macos_target_pre_10_7 macos_target_pre_10_11
 
    if [ "$HAVE_METAL" = yes ] || [ "$HAVE_VULKAN" = yes ]; then
@@ -338,7 +367,6 @@ if [ "$OS" = 'Darwin' ]; then
       check_lib '' COCOA "-framework AppKit" NSApplicationMain
    fi
 
-   check_lib '' AVFOUNDATION "-framework AVFoundation"
    check_lib '' CORELOCATION "-framework CoreLocation"
    check_lib '' IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
    check_lib '' AL "-framework OpenAL" alcOpenDevice
@@ -349,6 +377,11 @@ if [ "$OS" = 'Darwin' ]; then
    HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
    HAVE_SW2=no
+   # Prefer the system zlib on macOS. The vendored copy in deps/libz
+   # (zlib 1.3) no longer compiles against recent macOS SDKs because
+   # its zutil.h defines fdopen() as a macro that collides with the
+   # fdopen declaration in <stdio.h>. The system libz works fine.
+   [ "$HAVE_BUILTINZLIB" = 'auto' ] && HAVE_BUILTINZLIB=no
 else
    check_lib '' AL -lopenal alcOpenDevice
 fi
@@ -479,12 +512,12 @@ check_enabled HID LIBUSB libusb 'HID is' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 check_lib '' DINPUT -ldinput8
-check_lib '' D3D8 -ld3d8
 check_lib '' D3D9 -ld3d9
 check_lib '' DSOUND -ldsound
 
 check_enabled DINPUT XINPUT xinput 'Dinput is' true
 
+check_platform Win32 D3D8  'Direct3D 8 is'  true
 check_platform Win32 D3D10 'Direct3D 10 is' true
 check_platform Win32 D3D11 'Direct3D 11 is' true
 check_platform Win32 D3D12 'Direct3D 12 is' true

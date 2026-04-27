@@ -188,7 +188,19 @@ static void ex_arena_grow(ex_arena *arena, size_t min_size)
 {
    size_t _len = EX_ARENA_ALIGN_UP(
          MAX(min_size, EX_ARENA_BLOCK_SIZE), EX_ARENA_ALIGNMENT);
-   arena->ptr  = (char *)malloc(_len);
+   char *new_block = (char *)malloc(_len);
+   /* NULL-check: on OOM leave arena->ptr and arena->end
+    * pointing at the current (exhausted) block if there is one,
+    * or both NULL on first grow.  ex_arena_alloc returns the
+    * current arena->ptr as the caller's 'ptr' and the caller
+    * dereferences it, so we need ex_arena_alloc itself to
+    * signal the failure - that's handled by the 'end - ptr'
+    * pointer-subtraction which is defined to be 0 when both
+    * are NULL.  The second check in ex_arena_alloc below
+    * catches the remaining OOM path. */
+   if (!new_block)
+      return;
+   arena->ptr  = new_block;
    arena->end  = arena->ptr + _len;
    RBUF_PUSH(arena->blocks, arena->ptr);
 }
@@ -198,6 +210,12 @@ static void *ex_arena_alloc(ex_arena *arena, size_t len)
    void *ptr  = NULL;
    if (len > (size_t)(arena->end - arena->ptr))
       ex_arena_grow(arena, len);
+   /* Re-check after grow: on OOM the grow function leaves
+    * arena->ptr and arena->end unchanged, so the capacity
+    * check still fails.  Return NULL so callers can bail
+    * rather than dereference stale or NULL storage. */
+   if (len > (size_t)(arena->end - arena->ptr))
+      return NULL;
    ptr        = arena->ptr;
    arena->ptr = (char *)
       EX_ARENA_ALIGN_UP((uintptr_t)(arena->ptr + len), EX_ARENA_ALIGNMENT);
@@ -357,6 +375,14 @@ static void explore_add_unique_string(
          entry                = (explore_string_t*)
             ex_arena_alloc(&state->arena,
                   sizeof(explore_string_t) + _len);
+         /* NULL-check: ex_arena_alloc returns NULL on OOM now.
+          * On failure skip this entry - the surrounding loop
+          * iterates over chars in the input string splitting on
+          * separators, so one missed entry just means one
+          * category value doesn't get indexed this pass.  Picked
+          * up on the next scan once memory is available. */
+         if (!entry)
+            continue;
          memcpy(entry->str, str, _len);
          entry->str[_len]      = '\0';
          RBUF_PUSH(state->by[cat], entry);
@@ -770,7 +796,14 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             size_t _len       = strlen(original_title) + 1;
             e->original_title = (char*)
                ex_arena_alloc(&state->arena, _len);
-            memcpy(e->original_title, original_title, _len);
+            /* NULL-check: arena alloc returns NULL on OOM.  Skip
+             * the memcpy; e->original_title stays NULL (matches
+             * the 'e->original_title = NULL' initialisation a
+             * few lines above).  Callers under
+             * EXPLORE_SHOW_ORIGINAL_TITLE are expected to gate
+             * reads of this field. */
+            if (e->original_title)
+               memcpy(e->original_title, original_title, _len);
          }
 #endif
 
@@ -782,7 +815,12 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             _len       = RBUF_SIZEOF(split_buf);
             e->split   = (explore_string_t **)
                ex_arena_alloc(&state->arena, _len);
-            memcpy(e->split, split_buf, _len);
+            /* NULL-check: arena alloc returns NULL on OOM.  Skip
+             * the memcpy; e->split stays NULL.  Downstream
+             * iteration in the Explore menu checks 'e->split'
+             * before walking the pointer array. */
+            if (e->split)
+               memcpy(e->split, split_buf, _len);
             RBUF_CLEAR(split_buf);
          }
 

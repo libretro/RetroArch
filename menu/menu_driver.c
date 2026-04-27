@@ -1422,6 +1422,13 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
    {
       list->menu_stack[i]           = (file_list_t*)
          malloc(sizeof(*list->menu_stack[i]));
+      /* NULL-check before the three field writes below NULL-deref
+       * on OOM.  menu_list_free tolerates a partially-populated
+       * menu_stack (has 'if (!menu_list->menu_stack[i]) continue'
+       * guards), and the array itself was calloc'd above so
+       * unallocated slots past 'i' are already NULL. */
+      if (!list->menu_stack[i])
+         goto error;
       list->menu_stack[i]->list     = NULL;
       list->menu_stack[i]->capacity = 0;
       list->menu_stack[i]->size     = 0;
@@ -1431,6 +1438,9 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
    {
       list->selection_buf[i]           = (file_list_t*)
          malloc(sizeof(*list->selection_buf[i]));
+      /* Same pattern as the menu_stack loop above. */
+      if (!list->selection_buf[i])
+         goto error;
       list->selection_buf[i]->list     = NULL;
       list->selection_buf[i]->capacity = 0;
       list->selection_buf[i]->size     = 0;
@@ -6357,6 +6367,7 @@ void menu_driver_toggle(
    bool input_overlay_enable          = false;
 #endif
    bool video_adaptive_vsync          = false;
+   bool video_scanline_sync           = false;
    bool video_vsync                   = false;
    bool video_frame_delay_auto        = false;
 
@@ -6376,6 +6387,7 @@ void menu_driver_toggle(
       input_overlay_enable            = settings->bools.input_overlay_enable;
 #endif
       video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
+      video_scanline_sync             = settings->bools.video_scanline_sync;
       video_vsync                     = settings->bools.video_vsync;
       video_frame_delay_auto          = settings->bools.video_frame_delay_auto;
    }
@@ -6428,6 +6440,7 @@ void menu_driver_toggle(
 
       /* Menu should always run with swap interval 1 if vsync is on. */
       if (     video_vsync
+            && !video_scanline_sync
             && current_video->set_nonblock_state)
          current_video->set_nonblock_state(
                video_driver_data,

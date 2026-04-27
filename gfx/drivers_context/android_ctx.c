@@ -96,8 +96,19 @@ static void *android_gfx_ctx_init(void *video_driver)
    android_ctx_data_t        *and       = (android_ctx_data_t*)
       calloc(1, sizeof(*and));
 
-   if (!android_app || !and)
-      return false;
+   /* Separate the two checks so the combined bail doesn't leak
+    * 'and' when it succeeded but android_app was NULL.  In the
+    * pre-patch form both conditions shared one return without
+    * a free.  Also fixed the return value: the pre-patch
+    * 'return false' was 'return 0' which is NULL for a void*-
+    * returning function but sloppy; use NULL explicitly. */
+   if (!and)
+      return NULL;
+   if (!android_app)
+   {
+      free(and);
+      return NULL;
+   }
 
 #ifdef HAVE_OPENGLES
    if (g_es3)

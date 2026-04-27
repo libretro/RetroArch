@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-vita:latest
+      image: reallibretroretroarch/libretro-build-vita:latest
       options: --user root
 
     steps:

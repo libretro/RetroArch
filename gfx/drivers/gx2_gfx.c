@@ -247,6 +247,13 @@ static bool gx2_set_shader(void *data,
 
       wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));
 
+      /* NULL-check the calloc before passing the pointer to
+       * video_shader_load_preset_into_shader, which does not
+       * NULL-check its 'shader' parameter and will NULL-deref
+       * on the first field write. */
+      if (!wiiu->shader_preset)
+         return false;
+
       if (!video_shader_load_preset_into_shader(path, wiiu->shader_preset))
       {
          free(wiiu->shader_preset);

@@ -1658,6 +1658,17 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
    size_t superblock_byte_size = movie->superblocks->object_size*block_byte_size;
    intfstream_t *read_mem      = intfstream_open_memory(encoded,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, encoded_size);
+   /* NULL-check reader_state: rmsgpack_dom_reader_state_new can
+    * now return NULL on OOM.  Bailing to 'exit' hits the
+    * rmsgpack_dom_reader_state_free call at the cleanup label
+    * (which now tolerates NULL) and returns false; the user-
+    * visible outcome is 'STATESTREAM decode failed' which
+    * matches the existing error paths for a malformed frame. */
+   if (!reader_state)
+   {
+      RARCH_ERR("[STATESTREAM] failed to allocate reader state\n");
+      goto exit;
+   }
    if (state_size > movie->last_save_size && movie->superblock_seq)
    {
       free(movie->superblock_seq);

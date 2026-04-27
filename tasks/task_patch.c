@@ -689,6 +689,16 @@ static enum patch_error xdelta_apply_patch(
    } while (stream.avail_in);
 
    *targetdata = (uint8_t*)malloc(*targetlength);
+   /* NULL-check: xd3_decode_memory writes into *targetdata.
+    * Passing NULL is either a crash or an opaque xdelta error
+    * depending on the library version.  On OOM set
+    * PATCH_TARGET_ALLOC_FAILED to match the explicit ENOSPC
+    * error path below and skip the decode. */
+   if (!*targetdata)
+   {
+      error_patch = PATCH_TARGET_ALLOC_FAILED;
+      goto cleanup_stream;
+   }
    switch (xd3_decode_memory(
            patchdata, patchlen,
            sourcedata, sourcelength,
@@ -917,6 +927,23 @@ bool patch_content(
       /* First patch already applied -> index
        * for subsequent patches starts at 1 */
       size_t patch_index     = 1;
+
+      /* NULL-check all four mallocs together: the strlcpy calls
+       * below dereference each buffer, and the loop that follows
+       * does indexed writes into all four.  On OOM free whichever
+       * succeeded (free(NULL) is a no-op) and skip the indexed-
+       * patch scan entirely - returning true matches the behaviour
+       * when no extra indexed patches are found on disk, which is
+       * the expected outcome for nearly all content. */
+      if (   !name_ips_indexed || !name_bps_indexed
+          || !name_ups_indexed || !name_xdelta_indexed)
+      {
+         free(name_ips_indexed);
+         free(name_bps_indexed);
+         free(name_ups_indexed);
+         free(name_xdelta_indexed);
+         return true;
+      }
 
       strlcpy(name_ips_indexed, name_ips, (name_ips_len + 1) * sizeof(char));
       strlcpy(name_bps_indexed, name_bps, (name_bps_len + 1) * sizeof(char));

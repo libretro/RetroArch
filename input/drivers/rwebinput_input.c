@@ -261,10 +261,33 @@ static EM_BOOL rwebinput_keyboard_cb(int event_type,
 
    if (rwebinput->keyboard.count >= rwebinput->keyboard.max_size)
    {
-      size_t new_max = MAX(1, rwebinput->keyboard.max_size << 1);
-      rwebinput->keyboard.events = realloc(rwebinput->keyboard.events,
+      size_t new_max                   = MAX(1, rwebinput->keyboard.max_size << 1);
+      void  *tmp                       = realloc(rwebinput->keyboard.events,
          new_max * sizeof(rwebinput->keyboard.events[0]));
-      rwebinput->keyboard.max_size = new_max;
+      /* Two bugs in the pre-patch form.
+       *
+       * (1) 'events = realloc(events, ...)' is the classic realloc-
+       *     assign-self leak: on OOM realloc returns NULL but the
+       *     original buffer is still valid; the self-assign
+       *     overwrites the only pointer to it, leaking the whole
+       *     pending-event ring.
+       * (2) max_size was being updated unconditionally after the
+       *     realloc, before the return value was even inspected.
+       *     On OOM we then walked into the field writes below
+       *     which NULL-deref'd 'events' - but the recorded
+       *     max_size claimed the larger size, so any surviving
+       *     state said 'the buffer can hold 2N events' while
+       *     actually holding zero.
+       *
+       * On OOM drop this one event on the floor (the keyboard
+       * event ring is bounded and the loss of a single input
+       * event in a memory-starved system is survivable; we were
+       * going to crash previously).  Both max_size and events
+       * stay at their pre-realloc values. */
+      if (!tmp)
+         return EM_TRUE;
+      rwebinput->keyboard.events       = tmp;
+      rwebinput->keyboard.max_size     = new_max;
    }
 
    rwebinput->keyboard.events[rwebinput->keyboard.count].type = event_type;

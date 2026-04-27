@@ -1835,6 +1835,7 @@ ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
+   DEFINES += -DHAVE_D3DKMT
 endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
@@ -2263,6 +2264,23 @@ ifeq ($(HAVE_V4L2),1)
    LIBS += $(V4L2_LIBS)
 endif
 
+# AVFoundation camera + recording (Apple, macOS 10.7+ / iOS).  The
+# 10.7 gate is enforced in qb/config.libs.sh (see the HAVE_AVF block
+# there); this section just wires the object files and frameworks in
+# when HAVE_AVF is on.  Note that HAVE_MICROPHONE and HAVE_COREAUDIO3
+# above also add -framework AVFoundation for their own reasons; make
+# tolerates the repeat and the linker de-duplicates.
+ifeq ($(HAVE_AVF), 1)
+   DEFINES += -DHAVE_AVF
+   OBJ     += camera/drivers/avfoundation.o \
+              record/drivers/record_avfoundation.o
+   LIBS    += -framework AVFoundation -framework CoreVideo \
+              -framework CoreMedia   -framework Accelerate
+   ifeq ($(HAVE_COCOATOUCH), 1)
+      LIBS += -framework UIKit
+   endif
+endif
+
 # FFmpeg
 
 ifeq ($(HAVE_FFMPEG), 1)
@@ -2530,6 +2548,16 @@ ifneq ($(findstring Win32,$(OS)),)
           frontend/drivers/platform_win32.o \
           gfx/display_servers/dispserv_win32.o \
           gfx/common/dx_guids.o
+
+   # Legacy pre-DXGI GUID storage in their own TUs to avoid clashes
+   # between system <d3d8types.h> / <d3d9types.h> and the bundled
+   # <dxsdk/dxgitype.h>. See dx_guids.c header comment.
+   ifeq ($(HAVE_D3D9), 1)
+      OBJ += gfx/common/dx_guids_d3d9.o
+   endif
+   ifeq ($(HAVE_D3D8), 1)
+      OBJ += gfx/common/dx_guids_d3d8.o
+   endif
 
    ifeq ($(HAVE_GDI), 1)
       OBJ += gfx/drivers/gdi_gfx.o

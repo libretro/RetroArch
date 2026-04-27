@@ -3109,7 +3109,7 @@ static int ozone_wiggle(ozone_handle_t* ozone, float t)
 }
 
 /* Changes x and y to the current offset of the cursor wiggle animation */
-static void ozone_apply_cursor_wiggle_offset(ozone_handle_t *ozone, int *x, size_t *y)
+static void ozone_apply_cursor_wiggle_offset(ozone_handle_t *ozone, int *x, int *y)
 {
    retro_time_t cur_time, t;
 
@@ -3156,7 +3156,7 @@ static void ozone_draw_cursor_slice(
       int x_offset,
       unsigned width,
       unsigned height,
-      size_t y,
+      int y,
       float alpha,
       math_matrix_4x4 *mymat)
 {
@@ -3164,7 +3164,7 @@ static void ozone_draw_cursor_slice(
          *dispctx                  = p_disp->dispctx;
    float scale_factor              = ozone->last_scale_factor;
    int slice_x                     = x_offset - (12 + 1) * scale_factor;
-   int slice_y                     = (int)y + 8 * scale_factor;
+   int slice_y                     = y + 8 * scale_factor;
    unsigned slice_new_w            = width + (24 + 1) * scale_factor;
    unsigned slice_new_h            = height + 20 * scale_factor;
    unsigned slice_w                = 80;
@@ -3232,7 +3232,7 @@ static void ozone_draw_cursor_fallback(
       int x_offset,
       unsigned width,
       unsigned height,
-      size_t y,
+      int y,
       float alpha)
 {
    gfx_display_set_alpha(ozone->theme_dynamic.selection_border, alpha);
@@ -3245,7 +3245,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_3px,
-         (int)y,
+         y,
          width + ozone->dimensions.spacer_3px * 2,
          height,
          video_width,
@@ -3262,7 +3262,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_5px,
-         (int)(y - ozone->dimensions.spacer_3px),
+         y - ozone->dimensions.spacer_3px,
          width + 1 + ozone->dimensions.spacer_5px * 2,
          ozone->dimensions.spacer_3px,
          video_width,
@@ -3277,7 +3277,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_5px,
-         (int)(y + height),
+         y + (int)height,
          width + 1 + ozone->dimensions.spacer_5px * 2,
          ozone->dimensions.spacer_3px,
          video_width,
@@ -3292,7 +3292,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_5px,
-         (int)y,
+         y,
          ozone->dimensions.spacer_3px,
          height,
          video_width,
@@ -3307,7 +3307,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset + width + ozone->dimensions.spacer_3px,
-         (int)y,
+         y,
          ozone->dimensions.spacer_3px,
          height,
          video_width,
@@ -3325,12 +3325,12 @@ static void ozone_draw_cursor(
       int x_offset,
       unsigned width,
       unsigned height,
-      size_t y,
+      int y,
       float alpha,
       math_matrix_4x4 *mymat)
 {
-   int new_x    = x_offset;
-   size_t new_y = y;
+   int new_x = x_offset;
+   int new_y = y;
 
    /* Apply wiggle animation if needed */
    if (ozone->flags2 & OZONE_FLAG2_CURSOR_WIGGLING)
@@ -3578,7 +3578,7 @@ static void ozone_draw_sidebar(
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
-            selection_y + ozone->animations.scroll_y_sidebar,
+            (int)((float)selection_y + ozone->animations.scroll_y_sidebar),
             ozone->animations.cursor_alpha,
             mymat);
 
@@ -3592,7 +3592,7 @@ static void ozone_draw_sidebar(
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
-            selection_old_y + ozone->animations.scroll_y_sidebar,
+            (int)((float)selection_old_y + ozone->animations.scroll_y_sidebar),
             1 - ozone->animations.cursor_alpha,
             mymat);
 
@@ -3892,11 +3892,20 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings     = config_get_ptr();
    ozone_handle_t *ozone    = (ozone_handle_t*)data;
-   bool savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
-   const char *current_path = strdup(ozone->savestate_thumbnail_file_path);
+   bool savestate_thumbnail;
+   /* Stack-local snapshot of the current path; see materialui (93449d3)
+    * and xmb equivalents for rationale.  Fixes three stacked problems:
+    * null-deref on !data via the strdup-before-guard ordering, leak of
+    * a never-freed heap string assigned to const char *, and needless
+    * heap allocation for a value that lives in a fixed-size
+    * char[PATH_MAX_LENGTH] ivar. */
+   char old_path[PATH_MAX_LENGTH];
 
    if (!ozone)
       return;
+
+   savestate_thumbnail = settings->bools.savestate_thumbnail_enable;
+   strlcpy(old_path, ozone->savestate_thumbnail_file_path, sizeof(old_path));
 
    if (ozone->flags2 & OZONE_FLAG2_SELECTION_CORE_IS_VIEWER_REAL)
       ozone->flags2 |=  OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
@@ -3950,7 +3959,7 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcpy(ozone->savestate_thumbnail_file_path, path,
                   sizeof(ozone->savestate_thumbnail_file_path));
 
-            if (!string_is_equal(current_path,
+            if (!string_is_equal(old_path,
                 ozone->savestate_thumbnail_file_path))
                gfx_thumbnail_reset(&ozone->thumbnails.savestate);
 
@@ -4614,6 +4623,14 @@ static ozone_node_t *ozone_copy_node(const ozone_node_t *old_node)
 {
    ozone_node_t *new_node = (ozone_node_t*)malloc(sizeof(*new_node));
 
+   /* NULL-check the malloc: '*new_node = *old_node' on the next
+    * line NULL-derefs on OOM.  Caller in ozone_list_deep_copy
+    * handles a NULL return - it just leaves
+    * dst->list[j].userdata = NULL, which matches the 'no
+    * src_udata' branch. */
+   if (!new_node)
+      return NULL;
+
    *new_node              = *old_node;
    new_node->fullpath     = old_node->fullpath
          ? strdup(old_node->fullpath)
@@ -4653,8 +4670,17 @@ static void ozone_list_deep_copy(const file_list_t *src,
       if (src_adata)
       {
          void *data = malloc(sizeof(menu_file_list_cbs_t));
-         memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
-         dst->list[j].actiondata = data;
+         /* NULL-check the malloc before the memcpy on the next
+          * line NULL-derefs.  On OOM leave actiondata NULL -
+          * matches the 'no src_adata' branch above; file_list
+          * consumers already handle NULL actiondata entries. */
+         if (data)
+         {
+            memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
+            dst->list[j].actiondata = data;
+         }
+         else
+            dst->list[j].actiondata = NULL;
       }
 
       ++j;
@@ -5209,6 +5235,13 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       else if (string_ends_with_size(ozone->horizontal_list.list[i].label, ".lvw",
             strlen(ozone->horizontal_list.list[i].label), STRLEN_CONST(".lvw")))
       {
+         /* Free any previously-set console_name before
+          * overwriting; matches the .lpl branch above.
+          * ozone_context_reset_horizontal_list is called on
+          * every theme change / refresh, so without this free
+          * the console_name from the previous reset leaks. */
+         if (node->console_name)
+            free(node->console_name);
          node->console_name = strdup(path + strlen(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW)) + 2);
          node->icon = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
       }
@@ -5916,7 +5949,7 @@ border_iterate:
             ozone->dimensions_sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             button_height + ozone->dimensions.spacer_1px,
-            selection_y + scroll_y,
+            (int)((float)selection_y + scroll_y),
             ozone->animations.cursor_alpha * alpha,
             mymat);
 
@@ -5929,13 +5962,9 @@ border_iterate:
             video_width,
             video_height,
             (unsigned)ozone->dimensions_sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
-            /* TODO/FIXME - undefined behavior reported by ASAN -
-             *-35.2358 is outside the range of representable values
-             of type 'unsigned int'
-             * */
             entry_width - ozone->dimensions.spacer_5px,
             button_height + ozone->dimensions.spacer_1px,
-            old_selection_y + scroll_y,
+            (int)((float)old_selection_y + scroll_y),
             (1 - ozone->animations.cursor_alpha) * alpha,
             mymat);
 
@@ -11932,6 +11961,24 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       ozone->cursor_x_old = ozone->pointer.x;
       ozone->cursor_y_old = ozone->pointer.y;
       ozone->flags       &= ~OZONE_FLAG_FIRST_FRAME;
+
+      /* If ozone_render() hasn't run yet (which is the case at
+       * startup when settings->uints.menu_startup_page != Main Menu —
+       * the runloop's PENDING_STARTUP_PAGE branch handles the list
+       * swap and doesn't fall through to menu_driver_iterate()),
+       * NEED_COMPUTE is still set and entry node positions are
+       * uninitialised.  Drawing entries at this point produces
+       * every entry overlapping at the header offset.  Compute
+       * them inline now so the very first frame renders correctly. */
+      if (ozone->flags & OZONE_FLAG_NEED_COMPUTE)
+      {
+         file_list_t *fl_compute = MENU_LIST_GET_SELECTION(menu_list, 0);
+         ozone_compute_entries_position(ozone,
+               settings->bools.savestate_thumbnail_enable,
+               settings->bools.menu_show_sublabels,
+               fl_compute ? fl_compute->size : 0);
+         ozone->flags &= ~OZONE_FLAG_NEED_COMPUTE;
+      }
    }
 
    /* OSK Fade detection */
@@ -12911,8 +12958,24 @@ static void ozone_toggle(void *userdata, bool menu_on)
    if (!ozone)
       return;
 
-   /* Fade in animation */
-   if (menu_on)
+   /* Fade in animation
+    *
+    * Skip on the very first frame after init: ozone_toggle(true)
+    * fires from retroarch_menu_running() at startup *before* the
+    * first ozone_frame, and this fade-in zeros out
+    * animations.alpha — which scales the alpha of sidebar text,
+    * entry text and entry icons, but NOT the title text, date
+    * text or the background/sidebar quads.  The result is a few
+    * frames of half-rendered menu (background + header but no
+    * entries) until the alpha animates up to 1.0 over ~200ms.
+    *
+    * The menu has no prior state to fade in from at startup, so
+    * skipping the animation here is the right move; it matches
+    * the "is_first_frame -> animate=false" pattern already used
+    * in ozone_populate_entries (ozone_list_open call). Subsequent
+    * toggles (menu hotkey from gameplay) are unaffected because
+    * OZONE_FLAG_FIRST_FRAME has been cleared by then. */
+   if (menu_on && !(ozone->flags & OZONE_FLAG_FIRST_FRAME))
    {
       struct gfx_animation_ctx_entry entry;
 

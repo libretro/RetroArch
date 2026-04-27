@@ -236,10 +236,25 @@ static void command_network_poll(command_t *handle)
 command_t* command_network_new(uint16_t port)
 {
    struct addrinfo     *res  = NULL;
-   command_t            *cmd = (command_t*)calloc(1, sizeof(*cmd));
-   command_network_t *netcmd = (command_network_t*)calloc(
-                                   1, sizeof(command_network_t));
-   int fd = socket_init((void**)&res, port, NULL,
+   command_t            *cmd = NULL;
+   command_network_t *netcmd = NULL;
+   int                    fd = -1;
+
+   /* Allocate-then-check in sequence, matching command_uds_new.
+    * The previous code allocated cmd + netcmd back-to-back and then
+    * assigned netcmd->net_fd / cmd->userptr before NULL-checking
+    * either pointer - an OOM on either calloc would NULL-deref on
+    * line 252/253.  It also leaked netcmd on the '!cmd' failure
+    * path via the 'error' label (which now cleanly frees both
+    * because they are initialised to NULL up-front; free(NULL) is
+    * a no-op). */
+   if (!(cmd = (command_t*)calloc(1, sizeof(*cmd))))
+      goto error;
+
+   if (!(netcmd = (command_network_t*)calloc(1, sizeof(command_network_t))))
+      goto error;
+
+   fd = socket_init((void**)&res, port, NULL,
          SOCKET_TYPE_DATAGRAM, AF_INET);
 
    RARCH_LOG("[NetCMD] %s %hu.\n",
@@ -271,6 +286,12 @@ command_t* command_network_new(uint16_t port)
 error:
    if (res)
       freeaddrinfo_retro(res);
+   /* The only path that reaches 'error' with fd >= 0 is the
+    * socket_nonblock / socket_bind failure after fd was already
+    * stored in netcmd->net_fd.  Close it so we don't leak the
+    * socket file descriptor along with the allocations. */
+   if (fd >= 0)
+      socket_close(fd);
    free(netcmd);
    free(cmd);
    return NULL;
@@ -351,16 +372,20 @@ command_t* command_stdin_new(void)
 #endif
 #endif
 
-   cmd          = (command_t*)calloc(1, sizeof(command_t));
-   stdincmd     = (command_stdin_t*)calloc(1, sizeof(command_stdin_t));
-
-   if (!cmd)
+   /* Allocate in order with per-step failure handling.  The earlier
+    * form allocated both cmd and stdincmd back-to-back then checked
+    * them, which leaked stdincmd on the '!cmd' failure path (the
+    * '!cmd' return simply dropped the stdincmd pointer).  Also
+    * matches the command_uds_new pattern further down. */
+   if (!(cmd = (command_t*)calloc(1, sizeof(command_t))))
       return NULL;
-   if (!stdincmd)
+
+   if (!(stdincmd = (command_stdin_t*)calloc(1, sizeof(command_stdin_t))))
    {
       free(cmd);
       return NULL;
    }
+
    cmd->userptr = stdincmd;
    cmd->poll    = command_stdin_poll;
    cmd->replier = stdin_command_reply;
@@ -402,16 +427,19 @@ command_t* command_emscripten_new(void)
    command_t *cmd;
    command_emscripten_t *emscriptencmd;
 
-   cmd           = (command_t*)calloc(1, sizeof(command_t));
-   emscriptencmd = (command_emscripten_t*)calloc(1, sizeof(command_emscripten_t));
-
-   if (!cmd)
+   /* Same sequential-allocation-with-per-step-cleanup pattern as
+    * command_stdin_new / command_uds_new.  Previously allocated both
+    * structs before any NULL check, leaking emscriptencmd on the
+    * '!cmd' failure path. */
+   if (!(cmd = (command_t*)calloc(1, sizeof(command_t))))
       return NULL;
-   if (!emscriptencmd)
+
+   if (!(emscriptencmd = (command_emscripten_t*)calloc(1, sizeof(command_emscripten_t))))
    {
       free(cmd);
       return NULL;
    }
+
    cmd->userptr = emscriptencmd;
    cmd->poll    = command_emscripten_poll;
    cmd->replier = emscripten_command_reply;
@@ -2440,8 +2468,123 @@ void command_event_reinit(const int flags)
    const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
+   /* Snapshot the last cached core frame before tearing the video
+    * driver down.  video_driver_free() nulls frame_cache_data as part
+    * of the reinit cycle (the pointer was borrowed from the core's
+    * own framebuffer and isn't guaranteed to stay live across the
+    * driver swap), so without a snapshot the new driver would come
+    * up with no core image to replay.  Restored + replayed below so
+    * the paused-core background remains visible when reinit is
+    * triggered from inside the menu (e.g. HDR mode toggle).
+    *
+    * The snapshot buffer is static and reused across reinits — we
+    * need it to outlive command_event_reinit because we hand the
+    * pointer to video_st->frame_cache_data for the new driver to
+    * read via video_driver_cached_frame(), and the core's next real
+    * frame will replace the pointer at its leisure.  Resizing in
+    * place on each call keeps it bounded at one buffer's worth. */
+   static void  *cached_snapshot      = NULL;
+   static size_t cached_snapshot_cap  = 0;
+   size_t        want_size            = 0;
+   unsigned      cached_snapshot_w    = 0;
+   unsigned      cached_snapshot_h    = 0;
+   size_t        cached_snapshot_p    = 0;
+
+   if (     video_st
+         && video_st->frame_cache_data
+         && video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID
+         && video_st->frame_cache_height
+         && video_st->frame_cache_pitch)
+      want_size = video_st->frame_cache_pitch
+                * video_st->frame_cache_height;
+   if (want_size > cached_snapshot_cap)
+   {
+      void *tmp = realloc(cached_snapshot, want_size);
+      if (tmp)
+      {
+         cached_snapshot     = tmp;
+         cached_snapshot_cap = want_size;
+      }
+      else
+         want_size           = 0;
+   }
+   if (want_size && cached_snapshot)
+   {
+      memcpy(cached_snapshot, video_st->frame_cache_data, want_size);
+      cached_snapshot_w = video_st->frame_cache_width;
+      cached_snapshot_h = video_st->frame_cache_height;
+      cached_snapshot_p = video_st->frame_cache_pitch;
+   }
 
    video_driver_reinit(flags);
+
+   /* Restore the snapshot and ask the new driver to replay it so the
+    * paused-core background appears in the first post-reinit frame.
+    * The buffer stays live across subsequent frame_cb calls from the
+    * core (which overwrite the pointer) and is either reused on the
+    * next reinit or freed at shutdown. */
+   if (cached_snapshot_p && cached_snapshot_h)
+   {
+      video_st->frame_cache_data   = cached_snapshot;
+      video_st->frame_cache_width  = cached_snapshot_w;
+      video_st->frame_cache_height = cached_snapshot_h;
+      video_st->frame_cache_pitch  = cached_snapshot_p;
+
+#ifdef HAVE_MENU
+      /* If the menu is alive across the reinit, the runloop's
+       * pre-frame menu work (driver_ctx->render +
+       * set_texture_enable) doesn't get a chance to run before
+       * the cached_frame() replay below.  Two consequences if we
+       * don't reproduce that work here:
+       *
+       * 1. The new video driver instance starts with its
+       *    menu-texture flag (D3D11_ST_FLAG_MENU_ENABLE,
+       *    GL2_FLAG_MENU_TEXTURE_ENABLE, etc.) cleared, so the
+       *    replay frame falls into the driver's "else if
+       *    (statistics_show)" branch and draws OSD stats on the
+       *    bare core framebuffer instead of the menu overlay.
+       *
+       * 2. Menu drivers like ozone cache layout/font dimensions
+       *    keyed on the previous viewport size and only
+       *    recompute them when their render() callback notices a
+       *    width/height change.  If we replay before render()
+       *    runs, the menu draws at the old (windowed) scale into
+       *    the new (fullscreen) viewport, so fonts and widgets
+       *    appear undersized for one frame until the next
+       *    runloop iteration corrects them.
+       *
+       * Mirroring the runloop's pre-frame menu sequence here --
+       * render with the new dimensions, then raise the
+       * texture-enable flag -- keeps the snapshot replay
+       * visually consistent with subsequent frames.
+       *
+       * Gated on a valid snapshot: without one we won't be
+       * pushing a replay frame anyway, and calling render() on a
+       * freshly-(re)initialised menu driver before the runloop
+       * has had a chance to populate it can leave it in a
+       * partially-computed state for the next real frame
+       * (e.g. ozone clears OZONE_FLAG_NEED_COMPUTE after a
+       * premature render). */
+      if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+      {
+         if (     menu_st->driver_ctx
+               && menu_st->driver_ctx->render)
+            menu_st->driver_ctx->render(
+                  menu_st->userdata,
+                  video_st->width,
+                  video_st->height,
+                  false);
+
+         if (     video_st->poke
+               && video_st->poke->set_texture_enable)
+            video_st->poke->set_texture_enable(video_st->data,
+                  true, false);
+      }
+#endif
+
+      video_driver_cached_frame();
+   }
+
    /* Poll input to avoid possibly stale data to corrupt things. */
    if (joypad && joypad->poll)
       joypad->poll();

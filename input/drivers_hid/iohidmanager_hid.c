@@ -650,6 +650,19 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
       started (by deterministic method). if so do not re-add the pad */
    uint32_t device_location_id = iohidmanager_hid_device_get_location_id(device);
 
+   /* Hoist the !hid check above the hid->slots[i] dereference
+    * below.  hid_driver_get_data() can return NULL if a device-
+    * match callback fires before iohidmanager_hid_init's
+    * assignment or after iohidmanager_hid_free's teardown.
+    * The existing 'if (!hid) goto error' guard at line ~669
+    * was dead code because the for-loop directly below this
+    * comment reads hid->slots[i].data unconditionally -
+    * NULL-deref on NULL hid happened before we ever reached
+    * the calloc.  Fix by bailing out now before any hid
+    * dereference. */
+   if (!hid)
+      return;
+
    for (i = 0; i < MAX_USERS; i++)
    {
       struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
@@ -666,8 +679,6 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
 
    if (!(adapter = (struct iohidmanager_hid_adapter*)calloc(1, sizeof(*adapter))))
       return;
-   if (!hid)
-      goto error;
 
    adapter->handle     = device;
    adapter->locationId = device_location_id;

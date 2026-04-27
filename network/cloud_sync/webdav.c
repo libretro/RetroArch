@@ -448,11 +448,17 @@ static void webdav_log_http_failure(const char *path, http_transfer_data_t *data
     RARCH_WARN("[webdav] Failed: %s: HTTP %d\n", path, data->status);
     for (i = 0; data->headers && i < data->headers->size; i++)
         RARCH_WARN("%s\n", data->headers->elems[i].data);
+    /* The buffer returned by net_http_data() is sized exactly to
+     * data->len -- net_http.c shrinks response->data with
+     * realloc(p, response->len) on transition to P_DONE.  Writing a
+     * NUL at data->data[data->len] is therefore a one-byte heap
+     * overflow that corrupts the next chunk's metadata; glibc later
+     * aborts in malloc_printerr from an unrelated free() (typically
+     * the next task_http_transfer_cleanup at startup when cloud
+     * sync issues many requests in quick succession).  Print with
+     * an explicit length instead of relying on NUL-termination. */
     if (data->data)
-    {
-        data->data[data->len] = 0;
-        RARCH_WARN("%s\n", data->data);
-    }
+        RARCH_WARN("%.*s\n", (int)data->len, (const char*)data->data);
 }
 
 static bool webdav_needs_reauth(http_transfer_data_t *data)

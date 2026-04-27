@@ -397,20 +397,24 @@ static char* s3_sha256_hash(const char *data, size_t len)
 /* URL encode a string according to RFC 3986 */
 static char* s3_url_encode(const char *input)
 {
-   size_t input_len = strlen(input);
+   size_t input_len;
    size_t output_pos = 0;
-
-   /* Worst case: every char needs encoding */
-   char *output = malloc(input_len * 3 + 1); 
-   
+   char *output;
    size_t i;
-   
-   if (!output)
-      return NULL;
-   
+
+   /* NULL-check input BEFORE calling strlen.  The previous form
+    * ran strlen(input) first (line-order: strlen, malloc, then
+    * 'if (!input)'), so the 'if (!input)' check was dead code -
+    * a NULL input segfaulted in strlen before we ever reached
+    * the guard. */
    if (!input)
       return NULL;
 
+   input_len = strlen(input);
+
+   /* Worst case: every char needs encoding */
+   if (!(output = malloc(input_len * 3 + 1)))
+      return NULL;
 
    for (i = 0; i < input_len; i++)
    {
@@ -435,38 +439,6 @@ static char* s3_url_encode(const char *input)
    }
    output[output_pos] = '\0';
    return output;
-}
-
-/* Trim whitespace from string */
-static char* s3_trim_string(const char *input)
-{
-   size_t len = strlen(input);
-   size_t start = 0;
-   size_t end = len;
-   size_t trimmed_len = 0;
-   char *trimmed = NULL;
-
-   if (!input)
-      return NULL;
-
-   /* Find start of non-whitespace */
-   while (start < len && (input[start] == ' ' || input[start] == '\t'))
-      start++;
-
-   /* Find end of non-whitespace */
-   while (end > start && (input[end-1] == ' ' || input[end-1] == '\t'))
-      end--;
-
-   /* Create trimmed string */
-   trimmed_len = end - start;
-   trimmed = malloc(trimmed_len + 1);
-   if (!trimmed)
-      return NULL;
-
-   memcpy(trimmed, input + start, trimmed_len);
-   trimmed[trimmed_len] = '\0';
-
-   return trimmed;
 }
 
 /* Canonicalize query string parameters */
@@ -589,53 +561,6 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
    free(inner_data);
 
    return output;
-}
-
-/* Calculate HMAC-SHA256 (legacy function for compatibility) */
-static char* s3_hmac_sha256(const char *key, const char *data, char *output)
-{
-   unsigned i;
-   char *hmac_hex = malloc(65);
-   uint8_t binary_key[64];
-   size_t key_len;
-   uint8_t result[32];
-
-   if (!hmac_hex)
-      return NULL;
-
-   key_len = strlen(key);
-
-   /* Convert key to binary */
-   if (key_len <= 64)
-   {
-      memset(binary_key, 0, 64);
-      memcpy(binary_key, key, key_len);
-   }
-   else
-   {
-      /* Hash the key if it's longer than 64 bytes */
-      char temp_hash[65];
-      sha256_hash(temp_hash, (const uint8_t*)key, key_len);
-      for (i = 0; i < 32; i++)
-      {
-         char hex_byte[3] = {temp_hash[i*2], temp_hash[i*2+1], 0};
-         binary_key[i] = (uint8_t)strtol(hex_byte, NULL, 16);
-      }
-      key_len = 32;
-   }
-
-   if (!s3_hmac_sha256_bin(binary_key, key_len, data, result))
-   {
-      free(hmac_hex);
-      return NULL;
-   }
-
-   /* Convert binary result to hex */
-   for (i = 0; i < 32; i++)
-      snprintf(hmac_hex + 2 * i, 3, "%02x", (unsigned)result[i]);
-
-   hmac_hex[64] = '\0';
-   return hmac_hex;
 }
 
 /* Calculate AWS Signature Version 4 signature with proper key derivation */
@@ -841,7 +766,15 @@ static char* s3_build_auth_header(const char *method, const char *canonical_uri,
             s3_st->access_key_id, date, s3_st->region, S3_SERVICE);
 
    /* Build authorization header */
-   auth_header = malloc(1024);
+   /* NULL-check the malloc: snprintf-into-NULL segfaults.  Also
+    * free 'signature' on the OOM path - the success path at line
+    * below already free's it, but the pre-patch code would have
+    * crashed before reaching that free. */
+   if (!(auth_header = malloc(1024)))
+   {
+      free(signature);
+      return NULL;
+   }
    snprintf(auth_header, 1024,
             "Authorization: %s Credential=%s, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=%s\r\n"
             "x-amz-date: %s\r\n"
@@ -858,11 +791,11 @@ static void s3_log_http_failure(const char *path, http_transfer_data_t *data)
    RARCH_WARN(S3_PFX "Failed: %s: HTTP %d\n", path ? path : "<unknown>", data->status);
    for (i = 0; data->headers && i < data->headers->size; i++)
       RARCH_WARN(S3_PFX "%s\n", data->headers->elems[i].data);
+   /* See webdav.c: the buffer is sized exactly to data->len, so
+    * writing a terminator at data->data[data->len] overflows the
+    * heap chunk by one byte.  Use the length-bounded form. */
    if (data->data)
-   {
-      data->data[data->len] = '\0';
-      RARCH_WARN(S3_PFX "%s\n", data->data);
-   }
+      RARCH_WARN(S3_PFX "%.*s\n", (int)data->len, (const char*)data->data);
 }
 
 static void s3_read_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
@@ -1313,10 +1246,8 @@ static void s3_log_multipart_initiate_failure(
          RARCH_WARN(S3_PFX "Multipart initiate header[%zu]: %s\n", i, data->headers->elems[i].data);
 
    if (data && data->data && data->len > 0)
-   {
-      data->data[data->len] = '\0';
-      RARCH_WARN(S3_PFX "Multipart initiate body: %s\n", data->data);
-   }
+      RARCH_WARN(S3_PFX "Multipart initiate body: %.*s\n",
+            (int)data->len, (const char*)data->data);
 }
 
 static bool s3_multipart_fallback_single_put(s3_multipart_state_t *mp_st)

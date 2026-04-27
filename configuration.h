@@ -136,6 +136,9 @@ typedef struct settings
 #ifdef HAVE_D3D12
       int d3d12_gpu_index;
 #endif
+#ifdef HAVE_METAL
+      int metal_gpu_index;
+#endif
 #ifdef HAVE_WINDOW_OFFSET
       int video_window_offset_x;
       int video_window_offset_y;
@@ -666,6 +669,7 @@ typedef struct settings
       bool video_windowed_fullscreen;
       bool video_vsync;
       bool video_adaptive_vsync;
+      bool video_scanline_sync;
       bool video_hard_sync;
       bool video_waitable_swapchains;
       bool video_vfilter;
@@ -1392,6 +1396,10 @@ bool config_replace(bool config_save_on_exit, char *path);
 #endif
 
 bool config_overlay_enable_default(void);
+
+#if defined(__APPLE__) && defined(HAVE_VULKAN)
+bool config_metal_arg_buffers_default(void);
+#endif
 
 void config_set_defaults(void *data);
 

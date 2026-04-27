@@ -449,18 +449,48 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 
    android_app->mutex    = slock_new();
    android_app->cond     = scond_new();
+   /* NULL-check slock_new / scond_new: both can fail on OOM.
+    * Without the guards here, a NULL mutex would silently turn
+    * every slock_lock/unlock below into a no-op (slock_lock
+    * NULL-tolerates by design), giving a race-prone android_app,
+    * and a NULL cond would NULL-deref in scond_wait below
+    * (pthread_cond_wait(&NULL->cond, ...)).  Fail the whole
+    * android_app construction so ANativeActivity_onCreate returns
+    * cleanly without half-initialised state. */
+   if (!android_app->mutex || !android_app->cond)
+   {
+      if (android_app->mutex)
+         slock_free(android_app->mutex);
+      if (android_app->cond)
+         scond_free(android_app->cond);
+      free(android_app);
+      RARCH_ERR("Failed to allocate android_app locks.\n");
+      return NULL;
+   }
 
    if (savedState)
    {
       android_app->savedState     = malloc(savedStateSize);
-      android_app->savedStateSize = savedStateSize;
-      memcpy(android_app->savedState, savedState, savedStateSize);
+      /* NULL-check before memcpy on the next line.  Android app
+       * start with saved state is common (screen rotation,
+       * backgrounding/restoration), so this is a realistic OOM
+       * path on low-RAM devices.  On failure skip the saved-state
+       * copy; android_app_entry will start cleanly without it.
+       * We can't fail the whole android_app construction here
+       * because the app-glue thread already expects to exist. */
+      if (android_app->savedState)
+      {
+         android_app->savedStateSize = savedStateSize;
+         memcpy(android_app->savedState, savedState, savedStateSize);
+      }
    }
 
    if (pipe(msgpipe))
    {
       if (android_app->savedState)
         free(android_app->savedState);
+      slock_free(android_app->mutex);
+      scond_free(android_app->cond);
       free(android_app);
       return NULL;
    }
@@ -469,6 +499,23 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->msgwrite = msgpipe[1];
 
    android_app->thread   = sthread_create(android_app_entry, android_app);
+   /* NULL-check sthread_create: on OOM the thread won't be
+    * spawned and nothing will set android_app->running to true,
+    * so the scond_wait loop below would block indefinitely.
+    * Tear down the partially-constructed android_app (including
+    * the just-created pipe fds) and bail. */
+   if (!android_app->thread)
+   {
+      close(msgpipe[0]);
+      close(msgpipe[1]);
+      if (android_app->savedState)
+         free(android_app->savedState);
+      slock_free(android_app->mutex);
+      scond_free(android_app->cond);
+      free(android_app);
+      RARCH_ERR("Failed to spawn android_app thread.\n");
+      return NULL;
+   }
 
    /* Wait for thread to start. */
    slock_lock(android_app->mutex);
@@ -2681,9 +2728,23 @@ static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
 static void frontend_unix_exec(const char *path, bool should_load_content)
 {
    char *newargv[]    = { NULL, NULL };
-   size_t _len        = strlen(path);
+   size_t _len        = strlen(path) + 1;
 
    newargv[0] = (char*)malloc(_len);
+
+   /* NULL-check malloc: the strlcpy on the next line
+    * NULL-derefs on OOM.  Void function called from within
+    * an exec/fork flow; logging and returning leaves the
+    * caller able to retry or surface an error.  Prior to
+    * this patch _len was strlen(path) (not +1), which meant
+    * strlcpy silently truncated the last character of the
+    * path because strlcpy needs n bytes to write n-1 chars
+    * plus a NUL. */
+   if (!newargv[0])
+   {
+      RARCH_ERR("Failed to allocate argv for exec.\n");
+      return;
+   }
 
    strlcpy(newargv[0], path, _len);
 
@@ -2961,10 +3022,37 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list,
       return;
    }
 
-   inotify_data            = (inotify_data_t*)calloc(1, sizeof(*inotify_data));
+   /* NULL-check every allocation step.  Previously this function
+    * called calloc + int_vector_list_new + string_list_new + the
+    * second calloc with no guards, then dereferenced each result
+    * immediately - an OOM on any of them segfaulted, and a partial
+    * success (e.g. inotify_data allocated but wd_list alloc failed)
+    * leaked the earlier allocations together with the already-
+    * established inotify_add_watch kernel watches.  On any failure
+    * below, unwind what we did manage to set up and return with
+    * *change_data left untouched (callers treat NULL *change_data
+    * as 'no watcher is set up'). */
+   if (!(inotify_data = (inotify_data_t*)calloc(1, sizeof(*inotify_data))))
+   {
+      close(fd);
+      return;
+   }
    inotify_data->fd        = fd;
-   inotify_data->wd_list   = int_vector_list_new();
-   inotify_data->path_list = string_list_new();
+
+   if (!(inotify_data->wd_list = int_vector_list_new()))
+   {
+      free(inotify_data);
+      close(fd);
+      return;
+   }
+
+   if (!(inotify_data->path_list = string_list_new()))
+   {
+      int_vector_list_free(inotify_data->wd_list);
+      free(inotify_data);
+      close(fd);
+      return;
+   }
 
    if (flags & PATH_CHANGE_TYPE_MODIFIED)
       inotify_mask |= IN_MODIFY;
@@ -2992,7 +3080,18 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list,
       string_list_append(inotify_data->path_list, list->elems[i].data, attr);
    }
 
-   *change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t));
+   if (!(*change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t))))
+   {
+      /* Rip down everything we built up: the fd, the kernel watches
+       * it owns, both lists, and inotify_data itself.  Closing fd
+       * auto-removes all its inotify_add_watch entries, so we do not
+       * need to iterate wd_list and inotify_rm_watch by hand. */
+      string_list_free(inotify_data->path_list);
+      int_vector_list_free(inotify_data->wd_list);
+      close(inotify_data->fd);
+      free(inotify_data);
+      return;
+   }
    (*change_data)->data = inotify_data;
 #endif
 }
@@ -3218,6 +3317,16 @@ static bool accessibility_speak_unix(int speed,
    char* voice_out        = (char*)malloc(3 + strlen(language));
    char* speed_out        = (char*)malloc(3 + 3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+
+   /* NULL-check both mallocs: voice_out[0]='-' and speed_out[0]='-'
+    * below NULL-deref on OOM.  The 'end:' label does NULL-tolerant
+    * free()s on both pointers, so we can simply skip to it on
+    * either failure.  Returning true matches the function's
+    * existing always-true return contract and means the
+    * accessibility request is silently dropped rather than
+    * surfacing a user-visible error for a non-critical feature. */
+   if (!voice_out || !speed_out)
+      goto end;
 
    if (speed < 1)
       speed = 1;

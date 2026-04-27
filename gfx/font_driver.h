@@ -149,6 +149,7 @@ extern font_renderer_t ctr_font;
 extern font_renderer_t wiiu_font;
 extern font_renderer_t vulkan_raster_font;
 extern font_renderer_t metal_raster_font;
+extern font_renderer_t d3d8_font;
 extern font_renderer_t d3d9_font;
 extern font_renderer_t d3d9_cg_font;
 extern font_renderer_t d3d10_font;

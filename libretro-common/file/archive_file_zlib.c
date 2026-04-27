@@ -143,11 +143,33 @@ static bool zlib_stream_decompress_data_to_file_init(
    zip_context->zstream               = NULL;
    zip_context->tmpbuf                = NULL;
 
+   /* NULL-check the decompressed_data malloc: subsequent
+    * consumers (zip_context_iterate, and line 155 below where
+    * zstream->next_out = decompressed_data seeds the inflate
+    * output) unconditionally dereference it.  On OOM fail the
+    * whole context setup via zip_context_free_stream which is
+    * NULL-safe for both zstream and tmpbuf. */
+   if (!zip_context->decompressed_data)
+   {
+      zip_context_free_stream(zip_context, false);
+      return false;
+   }
+
    if (cmode == ZIP_MODE_DEFLATED)
    {
       /* Initialize the zlib inflate machinery */
       zip_context->zstream            = (z_stream*)malloc(sizeof(z_stream));
       zip_context->tmpbuf             = (uint8_t*)malloc(_READ_CHUNK_SIZE);
+
+      /* NULL-check both mallocs: the zstream->next_in etc.
+       * field writes below NULL-deref on OOM for zstream, and
+       * inflate() later reads from tmpbuf.  Fail the context
+       * setup on either failure. */
+      if (!zip_context->zstream || !zip_context->tmpbuf)
+      {
+         zip_context_free_stream(zip_context, false);
+         return false;
+      }
 
       zip_context->zstream->next_in   = NULL;
       zip_context->zstream->avail_in  = 0;
@@ -428,6 +450,20 @@ static int64_t zip_file_read(
       decomp.needle          = strdup(needle);
    if (optional_outfile)
       decomp.opt_file        = strdup(optional_outfile);
+
+   /* NULL-check strdups: zip_file_decompressed (line ~396)
+    * calls strstr(name, decomp_state->needle) which NULL-derefs
+    * if needle was requested but strdup failed.  Bail out of
+    * the extraction; caller treats -1 as 'not found / failed'.
+    * Free whatever strdup succeeded to avoid a leak on
+    * partial-success OOM. */
+   if ((needle && !decomp.needle) ||
+       (optional_outfile && !decomp.opt_file))
+   {
+      free(decomp.needle);
+      free(decomp.opt_file);
+      return -1;
+   }
 
    state.type                = ARCHIVE_TRANSFER_INIT;
    userdata.transfer         = &state;

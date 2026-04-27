@@ -410,6 +410,17 @@ size_t config_file_add_reference(config_file_t *conf, char *path)
    if (!conf->references)
    {
       conf->references       = (struct path_linked_list*)malloc(sizeof(*conf->references));
+      /* NULL-check: the next two field writes NULL-deref on OOM,
+       * and the subsequent path_linked_list_add_path call would
+       * walk ->next through a NULL head.  On OOM bail before
+       * filling short_path - fill_pathname_abbreviated_or_
+       * relative returns the computed length regardless of
+       * whether references was successfully allocated, so
+       * compute-and-return a valid length is also an option, but
+       * returning 0 signals 'no reference added' cleanly and
+       * matches the state (no reference) that persists. */
+      if (!conf->references)
+         return 0;
       conf->references->next = NULL;
       conf->references->path = NULL;
    }

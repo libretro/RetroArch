@@ -79,8 +79,14 @@ static INLINE void init_item_file(struct item_file *item,
     const char *path, const char *label, unsigned type,
     size_t directory_ptr, size_t entry_idx)
 {
-    item->path          = strdup(path);
-    item->label         = strdup(label);
+    /* NULL-gate both strdup calls: strdup(NULL) is undefined
+     * behaviour (glibc crashes).  The sibling file_list_append
+     * uses the same gating pattern.  Callers have been seen to
+     * pass NULL path here via menu_entries_prepend when
+     * msg_hash_to_str returns NULL for an enum that no active
+     * language handler recognises. */
+    item->path          = path  ? strdup(path)  : NULL;
+    item->label         = label ? strdup(label) : NULL;
     item->alt           = NULL;
     item->type          = type;
     item->directory_ptr = directory_ptr;

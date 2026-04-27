@@ -4552,17 +4552,26 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
 
    if (       (!d3d->menu->tex)
             || (d3d->menu->tex_w != width)
-            || (d3d->menu->tex_h != height))
+            || (d3d->menu->tex_h != height)
+            || (d3d->menu_tex_rgb32 != rgb32))
    {
       if (d3d->menu->tex)
          IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = NULL;
       {
+         /* RGUI sends 16bpp ARGB4444 (the d3d9 case in RGUI's pixel
+          * format dispatcher selects argb32_to_argb4444), so we can
+          * upload it byte-for-byte into a D3DFMT_A4R4G4B4 texture and
+          * skip the per-pixel CPU expansion to ARGB8888 the previous
+          * implementation did every frame.  The rgb32 path is preserved
+          * for callers that hand us 32bpp data; in current practice no
+          * such caller exists, but the API contract supports it. */
          void *_tbuf = NULL;
          if (SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
                      width, height, 1, 0,
-                     D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
+                     rgb32 ? D3DFMT_A8R8G8B8 : D3D9_ARGB4444_FORMAT,
+                     D3DPOOL_MANAGED,
                      (struct IDirect3DTexture9**)&_tbuf, NULL)))
             d3d->menu->tex = (LPDIRECT3DTEXTURE9)_tbuf;
       }
@@ -4575,6 +4584,7 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
 
       d3d->menu->tex_w          = width;
       d3d->menu->tex_h          = height;
+      d3d->menu_tex_rgb32       = rgb32;
    }
 
    d3d->menu->alpha_mod = alpha;
@@ -4583,7 +4593,7 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
          0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
       return;
    {
-      unsigned h, w;
+      unsigned h;
 
       if (rgb32)
       {
@@ -4599,26 +4609,23 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
       }
       else
       {
-         uint32_t       *dst = (uint32_t*)d3dlr.pBits;
-         const uint16_t *src = (const uint16_t*)frame;
+         /* Direct ARGB4444 upload.  The bit layout produced by
+          * argb32_to_argb4444 (host-endian uint16_t with A in bits
+          * 15..12, R 11..8, G 7..4, B 3..0) matches D3DFMT_A4R4G4B4
+          * exactly: D3D reads the locked memory as host-endian
+          * 16-bit units with the same bit assignments, so the same
+          * source bytes work on LE (PC) and BE (Xbox 360) hosts
+          * without a byte swap. */
+         uint8_t        *dst = (uint8_t*)d3dlr.pBits;
+         const uint8_t  *src = (const uint8_t*)frame;
+         unsigned src_pitch  = width * sizeof(uint16_t);
+         unsigned row_bytes  = width * sizeof(uint16_t);
 
-         for (h = 0; h < height; h++,
-               dst += d3dlr.Pitch >> 2,
-               src += width)
+         for (h = 0; h < height; h++, dst += d3dlr.Pitch, src += src_pitch)
          {
-            for (w = 0; w < width; w++)
-            {
-               uint16_t c = src[w];
-               uint32_t r = (c >> 12) & 0xf;
-               uint32_t g = (c >>  8) & 0xf;
-               uint32_t b = (c >>  4) & 0xf;
-               uint32_t a = (c >>  0) & 0xf;
-               r          = ((r << 4) | r) << 16;
-               g          = ((g << 4) | g) <<  8;
-               b          = ((b << 4) | b) <<  0;
-               a          = ((a << 4) | a) << 24;
-               dst[w]     = r | g | b | a;
-            }
+            memcpy(dst, src, row_bytes);
+            if (d3dlr.Pitch > (int)row_bytes)
+               memset(dst + row_bytes, 0, d3dlr.Pitch - row_bytes);
          }
       }
    }

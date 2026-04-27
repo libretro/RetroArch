@@ -1080,6 +1080,32 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
          break;
       }
 #endif
+#ifdef HAVE_METAL
+      case GFX_CTX_METAL_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            int metal_gpu_index  = settings->ints.metal_gpu_index;
+            if (metal_gpu_index > 0)
+            {
+               configuration_set_int(settings,
+                     settings->ints.metal_gpu_index,
+                     metal_gpu_index - 1);
+            }
+            else
+            {
+               configuration_set_int(settings,
+                     settings->ints.metal_gpu_index,
+                     (int)list->size - 1);
+            }
+         }
+
+         break;
+      }
+#endif
       default:
          break;
    }

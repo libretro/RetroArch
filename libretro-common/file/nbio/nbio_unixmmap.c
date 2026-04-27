@@ -84,6 +84,17 @@ static void *nbio_mmap_unix_open(const char * filename, unsigned mode)
    }
 
    handle            = malloc(sizeof(struct nbio_mmap_unix_t));
+   /* NULL-check the handle malloc: the four field writes below
+    * would segfault on OOM.  On failure munmap the region and
+    * close the fd we acquired above - both were destined to be
+    * owned by the handle and will leak otherwise. */
+   if (!handle)
+   {
+      if (_len != 0)
+         munmap(ptr, _len);
+      close(fd);
+      return NULL;
+   }
    handle->fd        = fd;
    handle->map_flags = map_flags[mode];
    handle->len       = _len;

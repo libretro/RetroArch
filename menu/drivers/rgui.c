@@ -1396,7 +1396,10 @@ static bool rgui_set_pixel_format_function(void)
       argb32_to_pixel_platform_format = argb32_to_rgb5a3;
    else if (string_is_equal(driver_ident, "psp1"))            /* PSP */
       argb32_to_pixel_platform_format = argb32_to_abgr4444;
-   else if (string_is_equal(driver_ident, "rsx"))             /* PS3 */
+   else if (   string_is_equal(driver_ident, "rsx")            /* PS3 */
+            || string_is_equal(driver_ident, "d3d8")           /* D3D8 (Original Xbox + legacy Windows) */
+            || string_is_equal(driver_ident, "d3d9_hlsl")      /* D3D9 (PC + Xbox 360) */
+            || string_is_equal(driver_ident, "d3d9_cg"))
       argb32_to_pixel_platform_format = argb32_to_argb4444;
    else if (   string_is_equal(driver_ident, "d3d10")         /* D3D10/11/12 */
             || string_is_equal(driver_ident, "d3d11")

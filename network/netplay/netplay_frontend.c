@@ -6104,9 +6104,19 @@ static bool netplay_get_cmd(netplay_t *netplay,
                netplay->state_size = state_size;
                for (i = 0; i < netplay->buffer_size; i++)
                {
-                  netplay->buffer[i].state = realloc(netplay->buffer[i].state, netplay->state_size);
-                  if (!netplay->buffer[i].state)
+                  /* realloc-to-tmp to avoid the classic realloc-
+                   * assign-self leak: on OOM realloc returns NULL
+                   * but leaves buffer[i].state pointing at the
+                   * old allocation; self-assign overwrites the
+                   * only pointer and leaks it.  Propagate failure
+                   * up - the caller tears down the netplay
+                   * connection on false return, so the partially-
+                   * grown buffer (0..i-1 at new size, i..end still
+                   * at old size) is about to be torn down anyway. */
+                  void *tmp = realloc(netplay->buffer[i].state, netplay->state_size);
+                  if (!tmp)
                      return false;
+                  netplay->buffer[i].state = tmp;
                }
             }
 
@@ -6679,8 +6689,22 @@ static void netplay_handle_slaves(netplay_t *netplay)
                   /* Copy the previous input */
                   istate_out = netplay_input_state_for(&frame->real_input[device],
                         client_num, istate_in->size, true, false);
-                  memcpy(istate_out->data, istate_in->data,
-                        istate_in->size * sizeof(uint32_t));
+                  /* NULL-check: netplay_input_state_for can return
+                   * NULL either on an internal calloc OOM or when
+                   * a 'must_create' request finds an existing slot
+                   * with different size.  The memcpy through
+                   * istate_out->data below NULL-derefs either way.
+                   * Other callsites (3078, 3087, 3095, 3148, 3185,
+                   * 5477, 5766, 8025) NULL-check and continue;
+                   * match that convention.  Skipping just this one
+                   * device-slot copy is consistent with how the
+                   * outer loop handles other per-device failures -
+                   * the frame's have_real gets set below as a
+                   * 'we tried' signal and the next sync pass will
+                   * retry. */
+                  if (istate_out)
+                     memcpy(istate_out->data, istate_in->data,
+                           istate_in->size * sizeof(uint32_t));
                }
             }
             frame->have_real[client_num] = true;
@@ -9760,6 +9784,13 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             /* copy passed interface to local state */
             net_st->core_netpacket_interface = (struct retro_netpacket_callback*)
                malloc(sizeof(*net_st->core_netpacket_interface));
+            /* NULL-check: the struct-assign on the next line
+             * NULL-derefs on OOM.  On failure skip the copy and
+             * the path-redirect; USE_CORE_PACKET_INTERFACE
+             * (line ~9782) correctly reports 'not available'
+             * when the pointer is NULL. */
+            if (!net_st->core_netpacket_interface)
+               break;
             *net_st->core_netpacket_interface = *(struct retro_netpacket_callback*)data;
             /* reset savefile dir as core_netpacket_interface affects it */
             runloop_path_set_redirect(config_get_ptr(),

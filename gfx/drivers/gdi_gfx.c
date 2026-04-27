@@ -872,38 +872,29 @@ static void gdi_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   gdi_t *gdi     = (gdi_t*)data;
-   unsigned pitch = width * 2;
+   gdi_t   *gdi     = (gdi_t*)data;
+   unsigned pitch   = width * (rgb32 ? 4 : 2);
+   size_t   required;
 
-   if (rgb32)
-      pitch = width * 4;
+   if (!frame || !width || !height || !pitch)
+      return;
 
-   if (gdi->menu_frame)
-      free(gdi->menu_frame);
-   gdi->menu_frame = NULL;
+   required = (size_t)pitch * (size_t)height;
 
-   if (     !gdi->menu_frame
-         || (gdi->menu_width  != width)
-         || (gdi->menu_height != height)
-         || (gdi->menu_pitch  != pitch))
+   if (required > gdi->menu_frame_cap)
    {
-      if (pitch && height)
-      {
-         unsigned char *tmp = (unsigned char*)malloc(pitch * height);
-
-         if (tmp)
-            gdi->menu_frame = tmp;
-      }
+      uint8_t *tmp = (uint8_t*)realloc(gdi->menu_frame, required);
+      if (!tmp)
+         return;                        /* keep previous frame intact */
+      gdi->menu_frame     = tmp;
+      gdi->menu_frame_cap = required;
    }
 
-   if (gdi->menu_frame && frame && pitch && height)
-   {
-      memcpy(gdi->menu_frame, frame, pitch * height);
-      gdi->menu_width  = width;
-      gdi->menu_height = height;
-      gdi->menu_pitch  = pitch;
-      gdi->menu_bits   = rgb32 ? 32 : 16;
-   }
+   memcpy(gdi->menu_frame, frame, required);
+   gdi->menu_width  = width;
+   gdi->menu_height = height;
+   gdi->menu_pitch  = pitch;
+   gdi->menu_bits   = rgb32 ? 32 : 16;
 }
 
 static void gdi_set_video_mode(void *data, unsigned width, unsigned height,

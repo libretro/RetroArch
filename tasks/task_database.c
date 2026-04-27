@@ -913,6 +913,20 @@ static enum scan_verdict database_info_list_iterate_found_match(
    database_info_t *db_info_entry =
       &db_state->info->list[db_state->entry_index];
 
+   /* NULL-check both mallocs: the 'db_crc[0] = ...' /
+    * 'entry_path_str[0] = ...' writes below NULL-deref on OOM.
+    * free(NULL) in the teardown at the end of the function is
+    * safe, so we can bail early; clean up whichever succeeded
+    * and return SCAN_VERDICT_ERROR so the scanner continues
+    * with the next content entry rather than silently
+    * mismatching. */
+   if (!db_crc || !entry_path_str)
+   {
+      free(db_crc);
+      free(entry_path_str);
+      return SCAN_VERDICT_ERROR;
+   }
+
    db_crc[0]                      = '\0';
    entry_path_str[0]              = '\0';
 
@@ -1919,6 +1933,21 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                         union string_list_elem_attr attr;
                         attr.i = 0;
 
+                        /* Bail out if either heap allocation failed.
+                         * fill_pathname and fill_pathname_join_special
+                         * both call strlcpy on their destination buffer
+                         * with no NULL guard, so proceeding with a NULL
+                         * rdb_name / rdb_fullpath would segfault.  Free
+                         * the one that did succeed (free(NULL) is a
+                         * no-op so no conditional needed) before taking
+                         * the task-finished exit. */
+                        if (!rdb_name || !rdb_fullpath)
+                        {
+                           free(rdb_name);
+                           free(rdb_fullpath);
+                           goto task_finished;
+                        }
+
                         fill_pathname(rdb_name,
                               manual_scan->task_config->database_name,
                               ".rdb", str_len);
@@ -1929,13 +1958,17 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 
                         dbstate->list = string_list_new();
                         if (!dbstate->list)
-                           goto task_finished;
-                        string_list_append(dbstate->list, rdb_fullpath, attr);
-                        if (rdb_name)
+                        {
+                           /* Earlier code goto'd here without freeing
+                            * the two buffers above, leaking ~8 KiB on
+                            * this OOM path.  Free them explicitly. */
                            free(rdb_name);
-                        if (rdb_fullpath)
                            free(rdb_fullpath);
-
+                           goto task_finished;
+                        }
+                        string_list_append(dbstate->list, rdb_fullpath, attr);
+                        free(rdb_name);
+                        free(rdb_fullpath);
                      }
                      else
                      {

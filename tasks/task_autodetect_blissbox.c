@@ -299,10 +299,30 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
             size_t nLength = _tcslen(pInterfaceDetailData->DevicePath) + 1;
             lp_device_path = (TCHAR*)LocalAlloc(LPTR, nLength * sizeof(TCHAR));
 
+            /* NULL-check lp_device_path: strlcpy below NULL-derefs
+             * on LocalAlloc failure.  Skip this device; the inner
+             * 'for (i = 0; SetupDiEnumDeviceInterfaces(...); i++)'
+             * loop advances to the next interface index.  The
+             * outer 'while (!ret)' loop is unaffected (it keys off
+             * SetupDiEnumDeviceInfo returns, not this iterator). */
+            if (!lp_device_path)
+               continue;
+
             strlcpy(lp_device_path,
                   pInterfaceDetailData->DevicePath, nLength);
 
             device_path    = (char*)malloc(nLength);
+
+            /* NULL-check device_path: the indexed write below
+             * NULL-derefs on OOM.  Free the LocalAlloc'd
+             * lp_device_path we just populated and skip this
+             * device. */
+            if (!device_path)
+            {
+               LocalFree(lp_device_path);
+               lp_device_path = NULL;
+               continue;
+            }
 
             for (len = 0; len < nLength; len++)
                device_path[len] = lp_device_path[len];

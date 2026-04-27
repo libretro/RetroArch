@@ -13151,7 +13151,7 @@ static bool setting_append_list(
                      &settings->bools.video_use_metal_arg_buffers,
                      MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS,
                      MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-                     DEFAULT_USE_METAL_ARG_BUFFERS,
+                     config_metal_arg_buffers_default(),
                      MENU_ENUM_LABEL_VALUE_OFF,
                      MENU_ENUM_LABEL_VALUE_ON,
                      &group_info,
@@ -13228,6 +13228,27 @@ static bool setting_append_list(
                CONFIG_INT(
                      list, list_info,
                      &settings->ints.d3d12_gpu_index,
+                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+                     0,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_int_gpu_index;
+            }
+#endif
+
+#ifdef HAVE_METAL
+            if (string_is_equal(video_driver_get_ident(), "metal"))
+            {
+               CONFIG_INT(
+                     list, list_info,
+                     &settings->ints.metal_gpu_index,
                      MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
                      MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
                      0,
@@ -14517,6 +14538,24 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, MINIMUM_HARD_SYNC_FRAMES, MAXIMUM_HARD_SYNC_FRAMES, 1, true, true);
+
+#ifdef HAVE_D3DKMT
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_scanline_sync,
+                  MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+                  DEFAULT_SCANLINE_SYNC,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+#endif
 
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             {
