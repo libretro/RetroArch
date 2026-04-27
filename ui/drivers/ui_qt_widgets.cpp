@@ -7508,13 +7508,25 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog,
                          * Don't just extend this to add all files
                          * in a ZIP, because we might hit something like
                          * MAME/FBA where only the archives themselves
-                         * are valid content. */
-                        pathArray = (QString(pathData)
-			      + QString("#")
-                              + archive_list->elems[0].data).toUtf8();
-                        pathData = pathArray.constData();
+                         /* Only append inner file reference if filter inside archives is enabled */
+                        if (playlistDialog->filterInArchive())
+                        {
+                            pathArray = (QString(pathData)
+                                  + QString("#")
+                                  + archive_list->elems[0].data).toUtf8();
+                            pathData = pathArray.constData();
+                        }
 
                         if (!extensions.isEmpty() && playlistDialog->filterInArchive())
+                        {
+                            /* If the user chose to filter extensions
+                             * inside archives, and this particular file
+                             * inside the archive
+                             * doesn't have one of the chosen extensions,
+                             * then we skip it. */
+                            if (extensions.contains(QFileInfo(pathData).suffix()))
+                               add = true;
+                        }
                         {
                            /* If the user chose to filter extensions
                             * inside archives, and this particular file
