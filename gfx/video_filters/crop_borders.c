@@ -41,12 +41,11 @@ static unsigned crop_borders_generic_threads(void *data)
    return 1;
 }
 
-/* Εδώ είναι η αρχικοποίηση όπως την κάνει το Blargg */
 static void crop_borders_initialize(struct filter_data *filt,
       const struct softfilter_config *config,
       void *userdata)
 {
-   /* Το RetroArch θα ψάξει στο .filt για: crop_borders_crop_x */
+   /* RetroArch wull look at .filt for: crop_borders_crop_x */
    config->get_float(userdata, "crop_x", &filt->crop_x, 0.0f);
    config->get_float(userdata, "crop_y", &filt->crop_y, 0.0f);
 }
@@ -67,7 +66,6 @@ static void *crop_borders_generic_create(const struct softfilter_config *config,
 
    filt->in_fmt = in_fmt;
 
-   /* Καλούμε την initialize όπως το Blargg */
    crop_borders_initialize(filt, config, userdata);
 
    return filt;
@@ -89,7 +87,7 @@ static void crop_borders_generic_destroy(void *data)
    free(filt);
 }
 
-/* Rendering Logic με Float Coordinates */
+/* Rendering Logic with Float Coordinates */
 static void crop_borders_work_cb_xrgb8888(void *data, void *thread_data)
 {
    struct filter_data *filt = (struct filter_data*)data;
