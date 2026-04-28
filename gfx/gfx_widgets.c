@@ -1639,6 +1639,11 @@ void gfx_widgets_frame(void *data)
    /* AI Service overlay */
    if (p_dispwidget->ai_service_overlay_state > 0)
    {
+      video_viewport_t content_vp;
+      int overlay_x             = 0;
+      int overlay_y             = 0;
+      unsigned overlay_width    = video_width;
+      unsigned overlay_height   = video_height;
       float outline_color[16] = {
       0.00, 1.00, 0.00, 1.00,
       0.00, 1.00, 0.00, 1.00,
@@ -1646,6 +1651,13 @@ void gfx_widgets_frame(void *data)
       0.00, 1.00, 0.00, 1.00,
       };
 
+      if (video_driver_get_viewport_info(&content_vp) && content_vp.width && content_vp.height)
+      {
+         overlay_x      = content_vp.x;
+         overlay_y      = content_vp.y;
+         overlay_width  = content_vp.width;
+         overlay_height = content_vp.height;
+      }
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
       if (p_dispwidget->ai_service_overlay_texture)
@@ -1657,11 +1669,11 @@ void gfx_widgets_frame(void *data)
                p_disp,
                video_width,
                video_height,
-               video_width,
-               video_height,
+               overlay_width,
+               overlay_height,
                p_dispwidget->ai_service_overlay_texture,
-               0,
-               0,
+               overlay_x,
+               overlay_y,
                0.0f, /* rad                         */
                1.0f, /* cos(rad)   = cos(0)  = 1.0f */
                0.0f, /* sine(rad)  = sine(0) = 0.0f */
@@ -1676,8 +1688,8 @@ void gfx_widgets_frame(void *data)
             p_disp,
             userdata,
             video_width, video_height,
-            0, 0,
-            video_width,
+            overlay_x, overlay_y,
+            overlay_width,
             p_dispwidget->divider_width_1px,
             video_width,
             video_height,
@@ -1689,9 +1701,9 @@ void gfx_widgets_frame(void *data)
             p_disp,
             userdata,
             video_width, video_height,
-            0,
-            video_height - p_dispwidget->divider_width_1px,
-            video_width,
+            overlay_x,
+            overlay_y + overlay_height - p_dispwidget->divider_width_1px,
+            overlay_width,
             p_dispwidget->divider_width_1px,
             video_width,
             video_height,
@@ -1704,10 +1716,10 @@ void gfx_widgets_frame(void *data)
             userdata,
             video_width,
             video_height,
-            0,
-            0,
+            overlay_x,
+            overlay_y,
             p_dispwidget->divider_width_1px,
-            video_height,
+            overlay_height,
             video_width,
             video_height,
             outline_color,
@@ -1718,10 +1730,10 @@ void gfx_widgets_frame(void *data)
             p_disp,
             userdata,
             video_width, video_height,
-            video_width - p_dispwidget->divider_width_1px,
-            0,
+            overlay_x + overlay_width - p_dispwidget->divider_width_1px,
+            overlay_y,
             p_dispwidget->divider_width_1px,
-            video_height,
+            overlay_height,
             video_width,
             video_height,
             outline_color,
