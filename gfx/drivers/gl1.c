@@ -108,12 +108,13 @@ enum gl1_flags
    GL1_FLAG_MENU_SMOOTH             = (1 << 9),
    GL1_FLAG_OVERLAY_ENABLE          = (1 << 10),
    GL1_FLAG_OVERLAY_FULLSCREEN      = (1 << 11),
-   GL1_FLAG_FRAME_DUPE_LOCK         = (1 << 12),
+   GL1_FLAG_OVERLAY_BACKGROUND_FILL = (1 << 12),
+   GL1_FLAG_FRAME_DUPE_LOCK         = (1 << 13),
    /* GL_UNSIGNED_SHORT_4_4_4_4 is core in GL 1.2; on strict 1.1
     * implementations it is provided by GL_EXT_packed_pixels.  When
     * neither is available, the menu path falls back to expanding
     * RGUI's RGBA4444 framebuffer to BGRA8888 on the CPU. */
-   GL1_FLAG_SUPPORTS_PACKED_PIXELS  = (1 << 13)
+   GL1_FLAG_SUPPORTS_PACKED_PIXELS  = (1 << 14)
 };
 
 typedef struct gl1
@@ -1753,6 +1754,22 @@ static bool gl1_frame(void *data, const void *frame,
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+#ifdef HAVE_OVERLAY
+      /* Render background overlay (behind game viewport) */
+      if ((gl1->flags & GL1_FLAG_OVERLAY_ENABLE) && (gl1->flags & GL1_FLAG_OVERLAY_BACKGROUND_FILL))
+      {
+         /* Save current fullscreen state and force full screen for background overlay */
+         bool saved_fullscreen = (gl1->flags & GL1_FLAG_OVERLAY_FULLSCREEN) != 0;
+         gl1->flags |= GL1_FLAG_OVERLAY_FULLSCREEN;
+
+         gl1_render_overlay(gl1, video_width, video_height);
+
+         /* Restore fullscreen state */
+         if (!saved_fullscreen)
+            gl1->flags &= ~GL1_FLAG_OVERLAY_FULLSCREEN;
+      }
+#endif
+
       if (frame_to_copy)
          gl1_draw_tex(gl1, pot_width, pot_height,
                width, height, gl1->tex, frame_to_copy, false);
@@ -1846,7 +1863,8 @@ static bool gl1_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_OVERLAY
-   if ((gl1->flags & GL1_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
+   if ((gl1->flags & GL1_FLAG_OVERLAY_ENABLE) && overlay_behind_menu
+         && !(gl1->flags & GL1_FLAG_OVERLAY_BACKGROUND_FILL))
       gl1_render_overlay(gl1, video_width, video_height);
 #endif
 
@@ -1880,7 +1898,8 @@ static bool gl1_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if ((gl1->flags & GL1_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu)
+   if ((gl1->flags & GL1_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu
+         && !(gl1->flags & GL1_FLAG_OVERLAY_BACKGROUND_FILL))
       gl1_render_overlay(gl1, video_width, video_height);
 #endif
 
@@ -2579,6 +2598,19 @@ static void gl1_overlay_full_screen(void *data, bool enable)
    }
 }
 
+static void gl1_overlay_background_fill(void *data, bool enable)
+{
+   gl1_t *gl = (gl1_t*)data;
+
+   if (gl)
+   {
+      if (enable)
+         gl->flags |=  GL1_FLAG_OVERLAY_BACKGROUND_FILL;
+      else
+         gl->flags &= ~GL1_FLAG_OVERLAY_BACKGROUND_FILL;
+   }
+}
+
 static void gl1_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    GLfloat *color = NULL;
@@ -2601,6 +2633,7 @@ static const video_overlay_interface_t gl1_overlay_interface = {
    gl1_overlay_vertex_geom,
    gl1_overlay_full_screen,
    gl1_overlay_set_alpha,
+   gl1_overlay_background_fill,
 };
 
 static void gl1_get_overlay_interface(void *data,

@@ -58,10 +58,11 @@ enum gl2_flags
    GL2_FLAG_PBO_READBACK_ENABLE    = (1 << 16),
    GL2_FLAG_OVERLAY_ENABLE         = (1 << 17),
    GL2_FLAG_OVERLAY_FULLSCREEN     = (1 << 18),
-   GL2_FLAG_MENU_TEXTURE_ENABLE    = (1 << 19),
-   GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 20),
-   GL2_FLAG_NONE                   = (1 << 21),
-   GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 22)
+   GL2_FLAG_OVERLAY_BACKGROUND_FILL= (1 << 19),
+   GL2_FLAG_MENU_TEXTURE_ENABLE    = (1 << 20),
+   GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 21),
+   GL2_FLAG_NONE                   = (1 << 22),
+   GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 23)
 };
 
 struct gl2

@@ -44,14 +44,15 @@ enum gl3_flags
    GL3_FLAG_USE_SHARED_CONTEXT     = (1 <<  3),
    GL3_FLAG_OVERLAY_ENABLE         = (1 <<  4),
    GL3_FLAG_OVERLAY_FULLSCREEN     = (1 <<  5),
-   GL3_FLAG_MENU_TEXTURE_ENABLE    = (1 <<  6),
-   GL3_FLAG_MENU_TEXTURE_FULLSCREEN= (1 <<  7),
-   GL3_FLAG_VSYNC                  = (1 <<  8),
-   GL3_FLAG_FULLSCREEN             = (1 <<  9),
-   GL3_FLAG_QUITTING               = (1 << 10),
-   GL3_FLAG_SHOULD_RESIZE          = (1 << 11),
-   GL3_FLAG_KEEP_ASPECT            = (1 << 12),
-   GL3_FLAG_FRAME_DUPE_LOCK        = (1 << 13)
+   GL3_FLAG_OVERLAY_BACKGROUND_FILL= (1 <<  6),
+   GL3_FLAG_MENU_TEXTURE_ENABLE    = (1 <<  7),
+   GL3_FLAG_MENU_TEXTURE_FULLSCREEN= (1 <<  8),
+   GL3_FLAG_VSYNC                  = (1 <<  9),
+   GL3_FLAG_FULLSCREEN             = (1 << 10),
+   GL3_FLAG_QUITTING               = (1 << 11),
+   GL3_FLAG_SHOULD_RESIZE          = (1 << 12),
+   GL3_FLAG_KEEP_ASPECT            = (1 << 13),
+   GL3_FLAG_FRAME_DUPE_LOCK        = (1 << 14)
 };
 
 RETRO_END_DECLS

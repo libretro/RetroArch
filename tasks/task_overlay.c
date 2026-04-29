@@ -852,6 +852,13 @@ static void task_overlay_deferred_load(retro_task_t *task)
       else
          overlay->flags &= ~OVERLAY_FULL_SCREEN;
 
+      strlcpy(conf_key + _len, "_background_fill", sizeof(conf_key) - _len);
+      if (config_get_bool(conf, conf_key, &tmp_bool)
+            && tmp_bool)
+         overlay->flags |= OVERLAY_BACKGROUND_FILL;
+      else
+         overlay->flags &= ~OVERLAY_BACKGROUND_FILL;
+
       /* Precache load image array for simplicity. */
       texture_img = (struct texture_image*)
          calloc(1 + overlay->size, sizeof(struct texture_image));

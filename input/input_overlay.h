@@ -132,7 +132,8 @@ enum OVERLAY_FLAGS
    OVERLAY_AUTO_X_SEPARATION  = (1 << 4),
    OVERLAY_AUTO_Y_SEPARATION  = (1 << 5),
    OVERLAY_HAS_VIEWPORT       = (1 << 6),
-   OVERLAY_VIEWPORT_FILL      = (1 << 7)
+   OVERLAY_VIEWPORT_FILL      = (1 << 7),
+   OVERLAY_BACKGROUND_FILL    = (1 << 8)
 };
 
 enum OVERLAY_DESC_FLAGS
@@ -193,6 +194,7 @@ typedef struct video_overlay_interface
          float x, float y, float w, float h);
    void (*full_screen)(void *data, bool enable);
    void (*set_alpha)(void *data, unsigned image, float mod);
+   void (*background_fill)(void *data, bool enable);
 } video_overlay_interface_t;
 
 typedef struct overlay_eightway_config
@@ -325,7 +327,7 @@ struct overlay
 
    char name[64];
 
-   uint8_t flags;
+   uint16_t flags;
 };
 
 typedef struct input_overlay_state
