@@ -1,0 +1,25 @@
+filter = ntsc_crt
+
+# --- Signal ---
+# Amount of noise added to the analog signal (0 = clean, 10 = very noisy)
+ntsc_crt_noise = 2
+
+# Hue rotation in degrees (0-359)
+ntsc_crt_hue = 0
+
+# 0 = monochrome / 1 = full color
+ntsc_crt_as_color = 1
+
+# --- Monitor ---
+ntsc_crt_brightness  = 0
+ntsc_crt_contrast    = 180
+ntsc_crt_saturation  = 10
+ntsc_crt_black_point = 0
+ntsc_crt_white_point = 100
+
+# --- Display ---
+# 1 = dark gap between scanlines (classic CRT look)
+ntsc_crt_scanlines = 0
+
+# 1 = blend even/odd fields together (reduces flicker, softer look)
+ntsc_crt_blend = 1
