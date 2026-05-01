@@ -3756,18 +3756,22 @@ static bool gl2_frame(void *data, const void *frame,
    /* Render background overlay (behind game viewport) */
    if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && (gl->flags & GL2_FLAG_OVERLAY_BACKGROUND_FILL))
    {
-      /* Save current fullscreen state and force full screen for background overlay */
       uint64_t saved_flags = gl->flags & GL2_FLAG_OVERLAY_FULLSCREEN;
+      struct video_coords saved_coords = gl->coords;
+
       gl->flags |= GL2_FLAG_OVERLAY_FULLSCREEN;
 
       gl2_render_overlay(gl);
 
-      /* Restore fullscreen state and viewport */
+      /* Restore state */
       if (!saved_flags)
          gl->flags &= ~GL2_FLAG_OVERLAY_FULLSCREEN;
 
-      /* Restore viewport for game rendering */
+      gl->coords = saved_coords;
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+
+      /* Re-bind game texture since overlay rendering left overlay texture bound */
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
 #endif
 
