@@ -89,15 +89,32 @@ static int action_cancel_contentless_core(const char *path,
 {
    menu_state_get_ptr()->contentless_core_ptr = 0;
    menu_contentless_cores_flush_runtime();
-   return action_cancel_pop_default(path, label, type, idx) ;
+   return action_cancel_pop_default(path, label, type, idx);
+}
+
+static int action_cancel_state_slot_run(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+   menu_st->driver_data->state_slot_run = 0;
+
+   menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+
+   return action_cancel_pop_default(path, label, type, idx);
 }
 
 #ifdef HAVE_CHEATS
 static int action_cancel_cheat_details(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   cheat_manager_copy_working_to_idx(cheat_manager_state.working_cheat.idx) ;
-   return action_cancel_pop_default(path, label, type, idx) ;
+   cheat_manager_copy_working_to_idx(cheat_manager_state.working_cheat.idx);
+   return action_cancel_pop_default(path, label, type, idx);
 }
 #endif
 
@@ -164,6 +181,9 @@ static int menu_cbs_init_bind_cancel_compare_type(
          return 0;
       case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
          BIND_ACTION_CANCEL(cbs, action_cancel_contentless_core);
+         return 0;
+      case MENU_SETTING_ACTION_STATE_SLOT_RUN:
+         BIND_ACTION_CANCEL(cbs, action_cancel_state_slot_run);
          return 0;
       default:
          break;

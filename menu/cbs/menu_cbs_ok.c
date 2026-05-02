@@ -6742,6 +6742,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_steam_list, ACTION_OK_
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_option_override_list, ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_remap_file_manager_list, ACTION_OK_DL_REMAP_FILE_MANAGER_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_savestate_list, ACTION_OK_DL_SAVESTATE_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_state_slot_run, ACTION_OK_DL_SAVESTATE_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_options_list, ACTION_OK_DL_CORE_OPTIONS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_add_to_playlist_list, ACTION_OK_DL_ADD_TO_PLAYLIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_add_to_playlist_quickmenu, ACTION_OK_DL_ADD_TO_PLAYLIST_QUICKMENU)
@@ -8040,6 +8041,27 @@ static int action_ok_contentless_core_run(const char *path,
       return -1;
    }
 
+   return 0;
+}
+
+static int action_ok_state_slot_run(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   int slot                   = idx - 1;
+   size_t new_selection_ptr   = 0;
+
+   menu_entries_pop_stack(&new_selection_ptr, 0, 0);
+   menu_st->selection_ptr     = 0;
+
+   menu_st->driver_data->state_slot_run = slot;
+
+   menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+
+   action_ok_playlist_entry_collection(path, label, type, idx,
+         menu_st->driver_data->rpl_entry_selection_ptr);
    return 0;
 }
 
@@ -9380,6 +9402,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_LOAD_DISC,                           action_ok_push_load_disc_list},
          {MENU_ENUM_LABEL_SHADER_OPTIONS,                      action_ok_push_default},
          {MENU_ENUM_LABEL_SAVESTATE_LIST,                      action_ok_push_savestate_list},
+         {MENU_ENUM_LABEL_STATE_SLOT_RUN,                      action_ok_push_state_slot_run},
          {MENU_ENUM_LABEL_CORE_OPTIONS,                        action_ok_push_core_options_list},
          {MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST,           action_ok_push_core_option_override_list},
          {MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST,             action_ok_push_remap_file_manager_list},
@@ -10180,6 +10203,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
             BIND_ACTION_OK(cbs, action_ok_contentless_core_run);
+            break;
+         case MENU_SETTING_ACTION_STATE_SLOT_RUN:
+            BIND_ACTION_OK(cbs, action_ok_state_slot_run);
             break;
          default:
             return -1;

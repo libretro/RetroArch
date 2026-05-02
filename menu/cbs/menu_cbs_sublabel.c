@@ -1955,16 +1955,6 @@ static int action_bind_sublabel_playlist_entry(
    unsigned playlist_sublabel_runtime_type   = settings->uints.playlist_sublabel_runtime_type;
    bool content_runtime_log                  = settings->bools.content_runtime_log;
    bool content_runtime_log_aggregate        = settings->bools.content_runtime_log_aggregate;
-   const char *directory_runtime_log         = settings->paths.directory_runtime_log;
-   const char *directory_playlist            = settings->paths.directory_playlist;
-   enum playlist_sublabel_last_played_style_type
-         playlist_sublabel_last_played_style =
-               (enum playlist_sublabel_last_played_style_type)
-                     settings->uints.playlist_sublabel_last_played_style;
-   enum playlist_sublabel_last_played_date_separator_type
-         menu_timedate_date_separator        =
-               (enum playlist_sublabel_last_played_date_separator_type)
-                     settings->uints.menu_timedate_date_separator;
 
    if (!playlist_show_sublabels)
       return 0;
@@ -2027,13 +2017,7 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Check whether runtime info should be loaded from log file */
    if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
-      runtime_update_playlist(
-            playlist, playlist_index,
-            directory_runtime_log,
-            directory_playlist,
-            (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
-            playlist_sublabel_last_played_style,
-            menu_timedate_date_separator);
+      runtime_update_playlist(playlist, playlist_index);
 
    /* Check whether runtime info is valid */
    if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
@@ -3367,6 +3351,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SAVESTATE_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_list);
+            break;
+         case MENU_ENUM_LABEL_STATE_SLOT_RUN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_state);
             break;
          case MENU_ENUM_LABEL_CORE_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_options);

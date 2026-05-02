@@ -214,6 +214,7 @@
 #define MENU_ENUM_LABEL_CORE_LIST_UNLOAD_STR "unload_core"
 #define MENU_ENUM_LABEL_SIDELOAD_CORE_LIST_STR "sideload_core"
 #define MENU_ENUM_LABEL_SAVESTATE_LIST_STR "savestate_list"
+#define MENU_ENUM_LABEL_STATE_SLOT_RUN_STR "state_slot_run"
 #define MENU_ENUM_LABEL_CORE_OPTIONS_STR "core_options"
 #define MENU_ENUM_LABEL_CORE_OPTION_ENTRY_STR "core_option_entry"
 #define MENU_ENUM_LABEL_CORE_SETTINGS_STR "core_settings"

@@ -7012,6 +7012,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
       {
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
@@ -7021,7 +7022,8 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
             int state_slot              = settings->ints.state_slot;
 
             /* State slot dropdown */
-            if (_state_slot == MENU_ENUM_LABEL_STATE_SLOT)
+            if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
+                  || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR))
             {
                state_slot          = i - 1;
                rgui->flags        |= RGUI_FLAG_IS_STATE_SLOT;
@@ -7524,7 +7526,8 @@ static void rgui_populate_entries(
    else
       rgui->flags &= ~RGUI_FLAG_IS_QUICK_MENU;
 
-   if (string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT)
+   if (     string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT
+         || string_is_equal(label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR))
       rgui->flags |=  RGUI_FLAG_IS_STATE_SLOT;
    else
       rgui->flags &= ~RGUI_FLAG_IS_STATE_SLOT;

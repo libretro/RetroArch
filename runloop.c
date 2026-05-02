@@ -4263,6 +4263,7 @@ static bool event_init_content(
 #endif
    const enum rarch_core_type current_core_type = runloop_st->current_core_type;
    uint8_t flags                                = content_get_flags();
+   bool entry_state_load                        = runloop_st->entry_state_slot > -1;
 
    if (current_core_type == CORE_TYPE_PLAIN)
       runloop_st->flags |=  RUNLOOP_FLAG_USE_SRAM;
@@ -4318,6 +4319,22 @@ static bool event_init_content(
 
          if (entry && entry->entry_slot > 0)
             runloop_st->entry_state_slot = entry->entry_slot;
+
+         entry_state_load = runloop_st->entry_state_slot > -1;
+
+         /* Override entry slot in savestate run list */
+         {
+            menu_entry_t menu_entry;
+            MENU_ENTRY_INITIALIZE(menu_entry);
+            menu_entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
+            menu_entry_get(&menu_entry, 0, 0, NULL, true);
+
+            if (string_is_equal(menu_entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR))
+            {
+               runloop_st->entry_state_slot = menu_st->driver_data->state_slot_run;
+               entry_state_load = true;
+            }
+         }
       }
 #endif
 
@@ -4344,7 +4361,7 @@ static bool event_init_content(
       if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
 #endif
       {
-         if (     runloop_st->entry_state_slot > -1
+         if (     entry_state_load
                && !command_event_load_entry_state(settings))
          {
             /* Loading the state failed, reset entry slot */
@@ -4774,6 +4791,15 @@ bool runloop_event_init_core(
 
    /* Set core environment */
    runloop_st->current_core.retro_set_environment(runloop_environment_cb);
+
+#ifdef HAVE_MENU
+   /* Early return for playlist entry savestate menu paths */
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      if (menu_st && menu_st->flags & MENU_ST_FLAG_PRETEND_CORE_INIT)
+         return false;
+   }
+#endif
 
    /* Load any input remap files
     * > Note that we always cache the current global

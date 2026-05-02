@@ -286,7 +286,7 @@ parsed:
       state_slot = (unsigned)val;
    }
 
-   if (     state_slot > 0
+   if (     state_slot >= 0
          && state_slot < 1000)
    {
       runloop_state_t *runloop_st  = runloop_state_get_ptr();
@@ -1312,18 +1312,22 @@ void runtime_log_convert_usec2hms(retro_time_t usec,
 /* Updates specified playlist entry runtime values with
  * contents of associated log file */
 void runtime_update_playlist(
-      playlist_t *playlist, size_t idx,
-      const char *dir_runtime_log,
-      const char *dir_playlist,
-      bool log_per_core,
-      enum playlist_sublabel_last_played_style_type timedate_style,
-      enum playlist_sublabel_last_played_date_separator_type date_separator)
+      playlist_t *playlist, size_t idx)
 {
    char runtime_str[64];
    char last_played_str[64];
    runtime_log_t *runtime_log             = NULL;
    const struct playlist_entry *entry     = NULL;
    struct playlist_entry update_entry     = {0};
+   settings_t *settings                   = config_get_ptr();
+   const char *dir_runtime_log            = settings->paths.directory_runtime_log;
+   const char *dir_playlist               = settings->paths.directory_playlist;
+   unsigned runtime_type                  = settings->uints.playlist_sublabel_runtime_type;
+   bool log_per_core                      = (runtime_type == PLAYLIST_RUNTIME_PER_CORE);
+   enum playlist_sublabel_last_played_style_type
+         timedate_style                   = settings->uints.playlist_sublabel_last_played_style;
+   enum playlist_sublabel_last_played_date_separator_type
+         date_separator                   = settings->uints.menu_timedate_date_separator;
 
    /* Sanity check */
    if (!playlist)

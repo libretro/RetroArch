@@ -320,6 +320,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_REMAP_FILE_FLUSH,
 
    MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
+   MENU_SETTING_ACTION_STATE_SLOT_RUN,
 
    MENU_SETTINGS_LAST
 };
@@ -438,6 +439,7 @@ typedef struct
       unsigned                unsigned_var;
    } scratchpad;
    unsigned rpl_entry_selection_ptr;
+   int16_t state_slot_run;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Used to cache the type and directory

@@ -51,7 +51,8 @@ enum menu_state_flags
    MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11),
    MENU_ST_FLAG_PENDING_RELOAD_CORE         = (1 << 12),
    MENU_ST_FLAG_PENDING_STARTUP_PAGE        = (1 << 13),
-   MENU_ST_FLAG_BLOCK_ALL_INPUT             = (1 << 14)
+   MENU_ST_FLAG_BLOCK_ALL_INPUT             = (1 << 14),
+   MENU_ST_FLAG_PRETEND_CORE_INIT           = (1 << 15)
 };
 
 enum menu_scroll_mode

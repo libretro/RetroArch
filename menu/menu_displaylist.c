@@ -3888,6 +3888,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    }
    else
    {
+      bool savestates_enabled   = core_info_current_supports_savestate();
       const char *playlist_path = NULL;
       const char *playlist_file = NULL;
 #ifdef HAVE_AUDIOMIXER
@@ -3919,7 +3920,18 @@ static int menu_displaylist_parse_horizontal_content_actions(
       menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN),
             MENU_ENUM_LABEL_RUN_STR,
-            MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx, NULL);
+            MENU_ENUM_LABEL_RUN,
+            FILE_TYPE_PLAYLIST_ENTRY, 0, idx, NULL);
+
+      if (     savestates_enabled
+            && settings->bools.quick_menu_show_save_load_state)
+      {
+         menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
+               MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,
+               MENU_ENUM_LABEL_STATE_SLOT_RUN,
+               MENU_SETTING_ACTION, 0, idx, NULL);
+      }
 
       if (!settings->bools.kiosk_mode_enable)
       {
@@ -14363,6 +14375,89 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
                }
 #endif
+
+               if (count == 0)
+                  menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
+                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                        FILE_TYPE_NONE, 0, 0, NULL);
+
+               info->flags    |=  MD_FLAG_NEED_PUSH;
+            }
+            break;
+         case DISPLAYLIST_STATE_SLOT_RUN:
+            {
+               bool savestates_enabled     = true;
+               playlist_t *playlist        = playlist_get_cached();
+               runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+               /* Core must be initialized at least partly to set
+                * savestate sorting paths accordingly. */
+               if (playlist && !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+               {
+                  struct menu_state *menu_st         = menu_state_get_ptr();
+                  const struct playlist_entry *entry = NULL;
+
+                  if (menu_st && menu_st->driver_data)
+                     playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
+
+                  if (*entry->path)
+                  {
+                     path_set(RARCH_PATH_CORE, entry->core_path);
+                     command_event(CMD_EVENT_LOAD_CORE, NULL);
+                     runloop_set_current_core_type(CORE_TYPE_PLAIN, true);
+
+                     savestates_enabled = core_info_current_supports_savestate();
+
+                     menu_st->flags |= MENU_ST_FLAG_PRETEND_CORE_INIT;
+
+                     if (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
+                     {
+                        runloop_st->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
+
+                        if (savestates_enabled)
+                           command_event(CMD_EVENT_CORE_INIT,
+                                 &runloop_st->explicit_current_core_type);
+
+                        menu_st->flags &= ~MENU_ST_FLAG_PRETEND_CORE_INIT;
+
+                        /* Reinit runtime log and read current state slot */
+                        runtime_update_playlist(playlist,
+                              menu_st->driver_data->rpl_entry_selection_ptr);
+                     }
+                  }
+               }
+
+               menu_entries_clear(info->list);
+
+               /* Build the dropdown selector */
+               if (     savestates_enabled
+                     && settings->bools.quick_menu_show_save_load_state)
+               {
+                  int i;
+                  int i_max = count = 1000;
+
+                  for (i = -1; i < i_max; i++)
+                  {
+                     char val[8];
+
+                     if (i < 0)
+                        strlcpy(val, "Auto", sizeof(val));
+                     else
+                        snprintf(val, sizeof(val), "%u", i);
+
+                     menu_entries_append(info->list,
+                           val,
+                           MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,
+                           MSG_UNKNOWN,
+                           MENU_SETTING_ACTION_STATE_SLOT_RUN,
+                           0, 0, NULL);
+                  }
+
+                  /* Pre-select last slot from the runtime log */
+                  menu_st->selection_ptr = runloop_st->entry_state_slot + 1;
+               }
 
                if (count == 0)
                   menu_entries_append(info->list,

@@ -38,6 +38,10 @@
 #include "../paths.h"
 #include "../file_path_special.h"
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
 #include "../tasks/tasks_internal.h"
 
 #define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  16.66667f * 3
@@ -1987,6 +1991,7 @@ void gfx_savestate_thumbnail_get_path(
       int state_slot)
 {
    size_t _len;
+   playlist_t *playlist = playlist_get_cached();
 
    if (!s || !len)
       return;
@@ -1995,6 +2000,36 @@ void gfx_savestate_thumbnail_get_path(
 
    if (!state_name || !*state_name)
       return;
+
+#ifdef HAVE_MENU
+   if (playlist)
+   {
+      struct menu_state *menu_st         = menu_state_get_ptr();
+      runloop_state_t *runloop_st        = runloop_state_get_ptr();
+      const struct playlist_entry *entry = NULL;
+
+      if (menu_st && menu_st->driver_data)
+         playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
+
+      if (*entry->path)
+      {
+         size_t _len;
+         char new_path[PATH_MAX_LENGTH];
+         char entry_basename[PATH_MAX_LENGTH];
+
+         strlcpy(new_path, entry->path, sizeof(new_path));
+         path_remove_extension(new_path);
+
+         _len = strlcpy(entry_basename, path_basename(new_path), sizeof(entry_basename));
+
+         strlcpy(entry_basename + _len, ".state", sizeof(entry_basename) - _len);
+         fill_pathname_join_special(new_path,
+               runloop_st->savestate_dir, entry_basename, sizeof(new_path));
+
+         state_name = strdup(new_path);
+      }
+   }
+#endif /* HAVE_MENU */
 
    _len = strlcpy(s, state_name, len);
 

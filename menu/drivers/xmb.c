@@ -1404,6 +1404,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
       {
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
@@ -1413,7 +1414,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             int state_slot              = settings->ints.state_slot;
 
             /* State slot dropdown */
-            if (_state_slot == MENU_ENUM_LABEL_STATE_SLOT)
+            if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
+                  || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR))
             {
                state_slot         = i - 1;
                xmb->is_state_slot = true;
@@ -3447,7 +3449,9 @@ static void xmb_populate_entries(void *data,
          || string_is_equal(label,
                MENU_ENUM_LABEL_SAVESTATE_LIST_STR);
 
-   xmb->is_state_slot = string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT;
+   xmb->is_state_slot =
+            string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT
+         || string_is_equal(label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR);
 
 #if defined(HAVE_LIBRETRODB)
    /* Explore list */
@@ -3729,6 +3733,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
+      case MENU_ENUM_LABEL_STATE_SLOT_RUN:
       case MENU_ENUM_LABEL_CONFIGURATIONS:
       case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
       case MENU_ENUM_LABEL_REMAP_FILE_LOAD:

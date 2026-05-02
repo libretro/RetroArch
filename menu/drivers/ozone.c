@@ -1987,6 +1987,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
+      case MENU_ENUM_LABEL_STATE_SLOT_RUN:
       case MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE];
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
@@ -3955,6 +3956,7 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
       {
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
@@ -3964,7 +3966,8 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
             int state_slot              = settings->ints.state_slot;
 
             /* State slot dropdown */
-            if (_state_slot == MENU_ENUM_LABEL_STATE_SLOT)
+            if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
+                  || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR))
             {
                state_slot    = i - 1;
                ozone->flags |= OZONE_FLAG_IS_STATE_SLOT;
@@ -4315,17 +4318,6 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
    settings_t *settings              = config_get_ptr();
    bool scroll_content_metadata      = settings->bools.ozone_scroll_content_metadata;
    bool show_entry_idx               = settings->bools.playlist_show_entry_idx;
-   const char *directory_runtime_log = settings->paths.directory_runtime_log;
-   const char *directory_playlist    = settings->paths.directory_playlist;
-   unsigned runtime_type             = settings->uints.playlist_sublabel_runtime_type;
-   enum playlist_sublabel_last_played_style_type
-         runtime_last_played_style   =
-               (enum playlist_sublabel_last_played_style_type)
-                     settings->uints.playlist_sublabel_last_played_style;
-   enum playlist_sublabel_last_played_date_separator_type
-         runtime_date_separator      =
-               (enum playlist_sublabel_last_played_date_separator_type)
-                     settings->uints.menu_timedate_date_separator;
 
    /* Must check whether core corresponds to 'viewer'
     * content even when not using a playlist, otherwise
@@ -4482,13 +4474,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       {
          if (     (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
                || (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU))
-            runtime_update_playlist(
-                  playlist, playlist_index,
-                  directory_runtime_log,
-                  directory_playlist,
-                  (runtime_type == PLAYLIST_RUNTIME_PER_CORE),
-                  runtime_last_played_style,
-                  runtime_date_separator);
+            runtime_update_playlist(playlist, playlist_index);
 
          if (entry->runtime_str && *entry->runtime_str)
             strlcpy(ozone->selection_playtime, entry->runtime_str, sizeof(ozone->selection_playtime));
@@ -12823,7 +12809,8 @@ static void ozone_populate_entries(
    else
       ozone->flags &= ~OZONE_FLAG_IS_CONTENTLESS_CORES;
 
-   if (string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT)
+   if (     string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT
+         || string_is_equal(label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR))
       ozone->flags |=  OZONE_FLAG_IS_STATE_SLOT;
    else
       ozone->flags &= ~OZONE_FLAG_IS_STATE_SLOT;
