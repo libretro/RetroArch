@@ -136,7 +136,7 @@ static bool save_state_in_background       = false;
 static bool save_state_disable_undo        = false;
 
 /* Time tracking for automatic savestate interval */
-static time_t last_automatic_savestate_time = 0;
+static time_t last_savestate_automatic_time = 0;
 
 typedef struct rastate_size_info
 {
@@ -1891,19 +1891,19 @@ bool content_save_state_automatic(void)
    time_t current_time;
    char savestate_path[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
-   unsigned automatic_savestate_interval = 
-      settings->uints.automatic_savestate_interval;
+   unsigned savestate_automatic_interval = 
+      settings->uints.savestate_automatic_interval;
    
    /* Return early if automatic savestate is disabled,
-      safety checks already happen in content_save_state() */
-   if (automatic_savestate_interval == 0)
+      safety checks already happen in content_auto_save_state() */
+   if (savestate_automatic_interval == 0)
       return false;
    
    current_time = time(NULL);
    
    /* Check how long since last autosavestate */
-   if ((current_time - last_automatic_savestate_time) < 
-       (time_t)automatic_savestate_interval)
+   if ((current_time - last_savestate_automatic_time) < 
+       (time_t)savestate_automatic_interval)
       return false;
    
    /* Generate the savestate path */
@@ -1921,7 +1921,7 @@ bool content_save_state_automatic(void)
          savestate_path);
    
    /* Update the last savestate time, rinse/repeat */
-   last_automatic_savestate_time = current_time;
+   last_savestate_automatic_time = current_time;
    
    return content_auto_save_state(savestate_path);
 }

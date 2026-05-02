@@ -1440,10 +1440,10 @@
  * It is measured in seconds. A value of 0 disables automatic savestate saving. */
 #if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS) || defined(DINGUX)
 /* Disabled by default but can be enabled by user */
-#define DEFAULT_AUTOMATIC_SAVESTATE_INTERVAL 0
+#define DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL 0
 #else
 /* Default to disabled on I/O-constrained platforms */
-#define DEFAULT_AUTOMATIC_SAVESTATE_INTERVAL 0
+#define DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL 0
 #endif
 
 /* Take screenshots for save states */

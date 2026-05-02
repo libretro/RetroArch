@@ -12010,10 +12010,10 @@ static bool setting_append_list(
 #ifdef HAVE_THREADS
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.automatic_savestate_interval,
-                  MENU_ENUM_LABEL_AUTOMATIC_SAVESTATE_INTERVAL,
-                  MENU_ENUM_LABEL_VALUE_AUTOMATIC_SAVESTATE_INTERVAL,
-                  DEFAULT_AUTOMATIC_SAVESTATE_INTERVAL,
+                  &settings->uints.savestate_automatic_interval,
+                  MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+                  MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+                  DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
