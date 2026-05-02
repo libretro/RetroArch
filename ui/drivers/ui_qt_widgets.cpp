@@ -5818,6 +5818,8 @@ QWidget *LatencyPage::widget()
 
    rarch_setting_t *hardSyncSetting      = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
 
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_VSYNC));
+
    if (hardSyncSetting)
    {
       CheckableSettingsGroup *hardSyncGroup = new CheckableSettingsGroup(hardSyncSetting);
@@ -5829,9 +5831,10 @@ QWidget *LatencyPage::widget()
 
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY));
-
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_AUDIO_LATENCY));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR));
 
@@ -6762,11 +6765,13 @@ QWidget *VideoPage::widget()
    }
 
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_DRIVER);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX);
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_ROTATION);
+   outputGroup->add(MENU_ENUM_LABEL_SCREEN_ORIENTATION);
    outputGroup->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION), m_resolutionCombo);
-   outputGroup->add(MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE);
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD);
 
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_FULLSCREEN);
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN);
@@ -6781,6 +6786,9 @@ QWidget *VideoPage::widget()
 
    aspectGroup->add(MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER);
    aspectGroup->addRow(new AspectRatioGroup("Aspect Ratio"));
+   aspectGroup->add(MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X);
+   aspectGroup->add(MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y);
+   aspectGroup->add(MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN);
 
    leftWindowedSizeForm->addRow("Scale:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_SCALE));
    leftWindowedSizeForm->addRow("Max Width:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX));
@@ -6828,6 +6836,7 @@ QWidget *VideoPage::widget()
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS);
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY);
+   syncGroup->add(MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC);
    syncGroup->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
@@ -6854,8 +6863,6 @@ QWidget *VideoPage::widget()
 
    modeLayout->addWidget(fullscreenGroup);
    modeLayout->addWidget(windowedGroup);
-
-   aspectGroup->add(MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN);
 
    outputScalingLayout->addWidget(outputGroup);
    outputScalingLayout->addWidget(aspectGroup);
@@ -6992,6 +6999,7 @@ QWidget *CrtSwitchresPage::widget()
 
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION));
    layout->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER), m_crtSuperResolutionCombo);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_HIRES_MENU));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE));
