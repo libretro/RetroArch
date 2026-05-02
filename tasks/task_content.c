@@ -2614,7 +2614,7 @@ void content_set_subsystem(unsigned idx)
 /* Sets the subsystem by name */
 bool content_set_subsystem_by_name(const char* subsystem_name)
 {
-   size_t i;
+   unsigned i;
    runloop_state_t         *runloop_st = runloop_state_get_ptr();
    rarch_system_info_t       *sys_info = &runloop_st->system;
    /* Core not loaded completely, use the data we peeked on load core */

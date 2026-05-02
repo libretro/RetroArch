@@ -184,8 +184,16 @@ clean:
 
 void libretrodb_close(libretrodb_t *db)
 {
+   /* intfstream_close closes the inner file but does not free
+    * the intfstream_t struct itself (existing libretro-common
+    * convention).  Match the cleanup pattern used by
+    * core_info.c / core_backup.c / cdfs.c / rpng_encode.c which
+    * also free the struct after closing. */
    if (db->fd)
+   {
       intfstream_close(db->fd);
+      free(db->fd);
+   }
    if (db->path && *db->path)
       free(db->path);
    db->path = NULL;
@@ -196,6 +204,7 @@ int libretrodb_open(const char *path, libretrodb_t *db, bool write)
 {
    libretrodb_header_t header;
    libretrodb_metadata_t md;
+   int64_t       file_size;
    unsigned mode = write ? RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING : RETRO_VFS_FILE_ACCESS_READ;
    intfstream_t *fd = intfstream_open_file(path, mode, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    db->can_write = write;
@@ -215,8 +224,26 @@ int libretrodb_open(const char *path, libretrodb_t *db, bool write)
       goto error;
 
    header.metadata_offset = swap_if_little64(header.metadata_offset);
-   intfstream_seek(fd, (ssize_t)header.metadata_offset,
-         RETRO_VFS_SEEK_POSITION_START);
+
+   /* Pre-patch the metadata_offset field was an attacker-
+    * controlled uint64 from the .rdb header, cast to ssize_t and
+    * fed straight to intfstream_seek without any bounds check.
+    * On 32-bit that cast truncates; on 64-bit a value past EOF
+    * left the stream in a state where the subsequent
+    * rmsgpack_dom_read_into either failed cleanly or, depending
+    * on the VFS implementation's seek-past-EOF semantics, read
+    * stale buffered bytes.
+    *
+    * Reject metadata_offset that doesn't fit in the actual file
+    * (must leave room for at least the 1-byte fixmap header). */
+   file_size = intfstream_get_size(fd);
+   if (file_size < 0)
+      goto error;
+   if (header.metadata_offset >= (uint64_t)file_size)
+      goto error;
+   if (intfstream_seek(fd, (ssize_t)header.metadata_offset,
+         RETRO_VFS_SEEK_POSITION_START) < 0)
+      goto error;
 
    if (rmsgpack_dom_read_into(fd, "count", &md.count, NULL) < 0)
       goto error;
@@ -227,8 +254,28 @@ int libretrodb_open(const char *path, libretrodb_t *db, bool write)
    return 0;
 
 error:
+   /* Free the strdup'd path (assigned at line 209) on the error
+    * path: pre-this-commit it was leaked unconditionally on bad
+    * magic, bad metadata_offset, or any rmsgpack_dom_read_into
+    * failure.  Reachable on any malformed .rdb the user has, so
+    * the leak compounds across a directory scan.
+    *
+    * Also free the intfstream_t struct itself.  intfstream_close
+    * intentionally only closes the inner file (existing libretro-
+    * common convention -- see the trailing 'free(file)' calls in
+    * core_info.c, core_backup.c, cdfs.c, rpng_encode.c which
+    * compensate for this), but libretrodb_open didn't.  This was
+    * a 48-byte leak per failed open. */
+   if (db->path)
+   {
+      free(db->path);
+      db->path = NULL;
+   }
    if (fd)
+   {
       intfstream_close(fd);
+      free(fd);
+   }
    return -1;
 }
 
@@ -647,8 +694,13 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
    if (!cursor)
       return;
 
+   /* See libretrodb_close: intfstream_close does not free the
+    * struct.  Match the convention. */
    if (cursor->fd)
+   {
       intfstream_close(cursor->fd);
+      free(cursor->fd);
+   }
 
    if (cursor->query)
       libretrodb_query_free(cursor->query);

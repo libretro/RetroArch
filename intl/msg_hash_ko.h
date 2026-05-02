@@ -2551,6 +2551,14 @@ MSG_HASH(
    "설정된 주사율보다 낮은 성능이 감지될 경우 수직 동기화가 자동으로 비활성화됩니다. 퍼포먼스가 떨어질 때 버벅임을 방지할 수 있습니다. '프레임 지연' 기능과 호환되지 않습니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "스캔라인 동기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "동영상 출력을 스캔라인 위치에 맞춰 동기화합니다. 지연 시간이 줄어들지만 티어링 증상이 발생할 확률이 높아집니다. 수직 동기화가 비활성화되어야 합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "프레임 지연"
    )

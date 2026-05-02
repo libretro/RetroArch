@@ -42,6 +42,8 @@ if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
    [ -d /usr/local/lib ] && add_dirs LIBRARY /usr/local/lib
    DYLIB=-lc;
+elif [ "$OS" = 'Darwin' ]; then
+   DYLIB=
 elif [ "$OS" = 'Haiku' ]; then
    DYLIB=""
    CLIB=-lroot
@@ -510,12 +512,12 @@ check_enabled HID LIBUSB libusb 'HID is' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 check_lib '' DINPUT -ldinput8
-check_lib '' D3D8 -ld3d8
 check_lib '' D3D9 -ld3d9
 check_lib '' DSOUND -ldsound
 
 check_enabled DINPUT XINPUT xinput 'Dinput is' true
 
+check_platform Win32 D3D8  'Direct3D 8 is'  true
 check_platform Win32 D3D10 'Direct3D 10 is' true
 check_platform Win32 D3D11 'Direct3D 11 is' true
 check_platform Win32 D3D12 'Direct3D 12 is' true

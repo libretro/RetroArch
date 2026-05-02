@@ -114,6 +114,14 @@ MVK_PLATFORM_SUBDIR="${SWIFT_PLATFORM_TARGET_PREFIX}-$(echo $ARCHS_STANDARD_64_B
 if [ -d "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework" ] ; then
     echo copying moltenvk from "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework"
     cp -R "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework" "${OUTDIR}"
+    # tvOS App Store rejects arm64e; strip it from the fat MoltenVK binary
+    if [ "$PLATFORM_FAMILY_NAME" = "tvOS" -a "$APPSTORE_BUILD" = "1" ] ; then
+        MVK_BIN="${OUTDIR}/MoltenVK.framework/MoltenVK"
+        if lipo -info "$MVK_BIN" 2>/dev/null | grep -q arm64e ; then
+            echo "stripping arm64e from MoltenVK for tvOS App Store build"
+            lipo -remove arm64e "$MVK_BIN" -output "$MVK_BIN"
+        fi
+    fi
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK.framework"
 fi
 

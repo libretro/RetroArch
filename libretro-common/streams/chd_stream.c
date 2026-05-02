@@ -206,6 +206,20 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
             len  = 0;
             while (p[len] && p[len] != ' ')
                len++;
+            /* Pre-this-patch the memcpy/terminator was unbounded.
+             * GDROM_TRACK_METADATA_TAG is read from the .chd
+             * file (chd_get_metadata above) and the value field
+             * after "TYPE:" terminates at the next space; with a
+             * malicious .chd containing no space between "TYPE:"
+             * and a long run of bytes, len can reach almost the
+             * full meta[256] buffer and the memcpy below
+             * stack-overflows md->type (char[64]) into adjacent
+             * frame fields (subtype, pgtype, pgsub, then return
+             * address depending on layout).  Reject as malformed
+             * if the value can't fit in the destination.  Same
+             * guard as the SCD-format parser at line 166. */
+            if (len >= sizeof(md->type))
+               return false;
             memcpy(md->type, p, len);
             md->type[len] = '\0';
             p += len;
@@ -216,6 +230,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
             len  = 0;
             while (p[len] && p[len] != ' ')
                len++;
+            if (len >= sizeof(md->subtype))
+               return false;
             memcpy(md->subtype, p, len);
             md->subtype[len] = '\0';
             p += len;
@@ -232,6 +248,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
             len  = 0;
             while (p[len] && p[len] != ' ')
                len++;
+            if (len >= sizeof(md->pgtype))
+               return false;
             memcpy(md->pgtype, p, len);
             md->pgtype[len] = '\0';
             p += len;
@@ -242,6 +260,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
             len  = 0;
             while (p[len] && p[len] != ' ')
                len++;
+            if (len >= sizeof(md->pgsub))
+               return false;
             memcpy(md->pgsub, p, len);
             md->pgsub[len] = '\0';
             p += len;

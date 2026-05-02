@@ -33,10 +33,12 @@
 #define D3D9_RGB565_FORMAT D3DFMT_LIN_R5G6B5
 #define D3D9_ARGB8888_FORMAT D3DFMT_LIN_A8R8G8B8
 #define D3D9_XRGB8888_FORMAT D3DFMT_LIN_X8R8G8B8
+#define D3D9_ARGB4444_FORMAT D3DFMT_LIN_A4R4G4B4
 #else
 #define D3D9_RGB565_FORMAT D3DFMT_R5G6B5
 #define D3D9_ARGB8888_FORMAT D3DFMT_A8R8G8B8
 #define D3D9_XRGB8888_FORMAT D3DFMT_X8R8G8B8
+#define D3D9_ARGB4444_FORMAT D3DFMT_A4R4G4B4
 #endif
 
 RETRO_BEGIN_DECLS
@@ -90,6 +92,14 @@ typedef struct d3d9_video
 
    /* Only used for Xbox */
    bool widescreen_mode;
+
+   /* Bit-depth of the data most recently uploaded to `menu->tex`.
+    * The menu texture is created with a fixed pixel format (16bpp
+    * ARGB4444 for the RGUI fast path, 32bpp ARGB8888 otherwise),
+    * so we must recreate it when set_menu_texture_frame is called
+    * with a different `rgb32` value.  Defaults to false; the first
+    * call will see a NULL tex and create one regardless. */
+   bool menu_tex_rgb32;
 } d3d9_video_t;
 
 bool d3d9_create_device(void *dev,

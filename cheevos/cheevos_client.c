@@ -294,6 +294,7 @@ void rcheevos_client_http_load_response(const rc_api_request_t* request,
    rc_client_server_callback_t callback, void* callback_data)
 {
    char* contents;
+   long  ftell_ret;
    size_t _len = 0;
    FILE* file  = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
 
@@ -311,8 +312,22 @@ void rcheevos_client_http_load_response(const rc_api_request_t* request,
    }
 
    fseek(file, 0, SEEK_END);
-   _len = ftell(file);
+   ftell_ret = ftell(file);
    fseek(file, 0, SEEK_SET);
+
+   /* ftell can return -1 on stream error.  Pre-patch _len was
+    * declared size_t and assigned directly from ftell, so a
+    * negative return became (size_t)-1 == SIZE_MAX, malloc
+    * (SIZE_MAX + 1) wrapped to malloc(0) returning a tiny
+    * non-NULL block, and the subsequent contents[_len] = 0
+    * write at offset SIZE_MAX corrupted the heap. */
+   if (ftell_ret < 0)
+   {
+      fclose(file);
+      callback(NULL, 0, callback_data);
+      return;
+   }
+   _len = (size_t)ftell_ret;
 
    contents = (char*)malloc(_len + 1);
    /* NULL-check the malloc: without this the contents[_len] = 0
@@ -489,6 +504,39 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
    badge_fullname      = badge_fullpath + strlen(badge_fullpath);
    badge_fullname_size = sizeof(badge_fullpath) - (badge_fullname - badge_fullpath);
+
+   /* badge_name is supplied by the achievement server (or, on a
+    * compromised TLS path, an attacker-controlled MITM).
+    * fill_pathname_slash ensures we are anchored under the
+    * badges directory, but if badge_name contains '..', '/', '\\'
+    * or other path-component separators the resulting filesystem
+    * write escapes that directory.  Validate that badge_name is
+    * a single safe filename component (alphanumerics plus '_' and
+    * '-' suffixed by '_lock' on the lock variant); the underscore
+    * is enough because real badge names from the server are
+    * numeric IDs ("12345") or numeric IDs with a "_lock" suffix.
+    * Reject anything else rather than synthesising a sanitised
+    * version, since a bogus badge name from the server is itself
+    * a signal that something is wrong. */
+   {
+      const char *p;
+      bool        ok = (badge_name && *badge_name);
+      for (p = badge_name; ok && *p; p++)
+      {
+         char c = *p;
+         if (!(   (c >= '0' && c <= '9')
+               || (c >= 'a' && c <= 'z')
+               || (c >= 'A' && c <= 'Z')
+               || c == '_' || c == '-'))
+            ok = false;
+      }
+      if (!ok)
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Rejecting badge with unsafe name.\n");
+         return false;
+      }
+   }
+
    snprintf(badge_fullname, badge_fullname_size, "%s" FILE_PATH_PNG_EXTENSION, badge_name);
 
    if (path_is_valid(badge_fullpath))

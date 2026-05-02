@@ -2616,7 +2616,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
-   "Synchronize video presentation to scanline position. Reduces latency at the cost of a higher risk of tearing."
+   "Synchronize video presentation to scanline position. Reduces latency at the cost of a higher risk of tearing. VSync must be disabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,

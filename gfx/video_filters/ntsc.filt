@@ -1,0 +1,20 @@
+filter = ntsc
+
+# --- System Selection ---
+# Set only one to 1.0
+# If both are 0.0, defaults to 12-phase NES logic
+
+ntsc_atari_mode = 0.0   # 16-phase Atari 2600 logic
+ntsc_c64_mode = 0.0     # 8-phase Commodore 64 logic
+
+
+# --- Global Settings ---
+# 1.0 for PAL/50Hz stability
+
+ntsc_pal_mode = 0.0     
+ntsc_hue = 0.0
+ntsc_saturation = 1.0
+
+# Increase for stronger C64 color bleeding
+ntsc_artifacts = 0.0    
+ntsc_sharpness = 0.3

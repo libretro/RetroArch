@@ -63,20 +63,6 @@
 #define VIDEO_SHADER_STOCK_NOBLEND        (GFX_MAX_SHADERS - 10)
 #define VIDEO_SHADER_STOCK_BLEND_HDR      (GFX_MAX_SHADERS - 11)
 
-#if defined(_XBOX360)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
-#elif defined(HAVE_OPENGLES2)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#elif defined(HAVE_SLANG)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_SLANG
-#elif defined(HAVE_GLSL)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#elif defined(HAVE_CG)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
-#else
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
-#endif
-
 #ifndef MAX_EGLIMAGE_TEXTURES
 #define MAX_EGLIMAGE_TEXTURES 32
 #endif
@@ -1023,9 +1009,38 @@ void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
 
 const char *video_driver_get_ident(void);
 
-void video_driver_get_size(unsigned *width, unsigned *height);
+/**
+ * video_driver_get_output_size / video_driver_set_output_size:
+ *
+ * Get or set the output dimensions -- the size of the area where
+ * the active video driver presents pixels to the user.
+ *
+ * Per-driver mapping of "output area":
+ *   desktop GL/D3D/Vulkan/Metal -- the window's client area
+ *                                  (matches the backbuffer)
+ *   DRM/KMS                     -- the framebuffer scanout
+ *                                  resolution
+ *   libcaca                     -- the canvas grid (terminal cells)
+ *   sixel                       -- the terminal output region
+ *
+ * NOT the libretro core's frame size.  That lives on each driver's
+ * local state (typically the frame_width / frame_height fields after
+ * the gl1 / fpga / gdi / network / sixel / caca renames; gl2 / gl3
+ * still keep their canonical video_width / video_height which mean
+ * the backbuffer size).
+ *
+ * Read by: menu drivers (RGUI, XMB, Ozone, MaterialUI) to size
+ * their canvas; the CRT switcher; the shader subsystem; input
+ * drivers (Android, rwebinput) to scale absolute mouse coordinates
+ * against the visible output area; and other video drivers for
+ * cross-driver coordination.
+ *
+ * Threaded video: the read and write are protected by
+ * video_st->display_lock; safe to call from any thread.
+ */
+void video_driver_get_output_size(unsigned *width, unsigned *height);
 
-void video_driver_set_size(unsigned width, unsigned height);
+void video_driver_set_output_size(unsigned width, unsigned height);
 
 float video_driver_get_aspect_ratio(void);
 

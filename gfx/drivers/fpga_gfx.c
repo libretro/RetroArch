@@ -57,10 +57,10 @@ typedef struct fpga
    unsigned menu_width;
    unsigned menu_height;
    unsigned menu_pitch;
-   unsigned video_width;
-   unsigned video_height;
-   unsigned video_pitch;
-   unsigned video_bits;
+   unsigned frame_width;
+   unsigned frame_height;
+   unsigned frame_pitch;
+   unsigned frame_bits;
    unsigned menu_bits;
    bool rgb32;
 } fpga_t;
@@ -138,16 +138,16 @@ static void *fpga_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   fpga->video_width                    = video->width;
-   fpga->video_height                   = video->height;
+   fpga->frame_width                    = video->width;
+   fpga->frame_height                   = video->height;
    fpga->rgb32                          = video->rgb32;
 
-   fpga->video_bits                     = video->rgb32 ? 32 : 16;
+   fpga->frame_bits                     = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      fpga->video_pitch = video->width * 4;
+      fpga->frame_pitch = video->width * 4;
    else
-      fpga->video_pitch = video->width * 2;
+      fpga->frame_pitch = video->width * 2;
 
    fpga_create(fpga);
 
@@ -168,7 +168,7 @@ static bool fpga_frame(void *data, const void *frame,
    unsigned height           = 0;
    bool draw                 = true;
    fpga_t *fpga              = (fpga_t*)data;
-   unsigned bits             = fpga->video_bits;
+   unsigned bits             = fpga->frame_bits;
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
@@ -180,15 +180,15 @@ static bool fpga_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (     (fpga->video_width  != frame_width)
-         || (fpga->video_height != frame_height)
-         || (fpga->video_pitch  != pitch))
+   if (     (fpga->frame_width  != frame_width)
+         || (fpga->frame_height != frame_height)
+         || (fpga->frame_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         fpga->video_width = frame_width;
-         fpga->video_height = frame_height;
-         fpga->video_pitch = pitch;
+         fpga->frame_width = frame_width;
+         fpga->frame_height = frame_height;
+         fpga->frame_pitch = pitch;
       }
    }
 
@@ -204,9 +204,9 @@ static bool fpga_frame(void *data, const void *frame,
    else
 #endif
    {
-      width         = fpga->video_width;
-      height        = fpga->video_height;
-      pitch         = fpga->video_pitch;
+      width         = fpga->frame_width;
+      height        = fpga->frame_height;
+      pitch         = fpga->frame_pitch;
 
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;

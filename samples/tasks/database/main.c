@@ -72,6 +72,18 @@ void video_display_server_set_window_progress(int progress, bool finished)
    (void)progress; (void)finished;
 }
 
+/* task_database.c's progress_cb is now the shared task_window_progress_cb,
+ * whose definition lives in tasks/task_file_transfer.c.  Pulling that
+ * file in would drag in nbio, the audio mixer, and the image-task
+ * machinery, none of which the dbscan path exercises.  Stub it here
+ * to satisfy the linker; the function is never called on this code
+ * path because no progress_cb is invoked unless a worker thread
+ * publishes progress, and this sample never reaches that state. */
+void task_window_progress_cb(retro_task_t *task)
+{
+   (void)task;
+}
+
 uint64_t frontend_driver_get_free_memory(void)
 {
    return 0;

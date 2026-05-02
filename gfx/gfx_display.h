@@ -83,13 +83,6 @@ enum menu_driver_id_type
    MENU_DRIVER_ID_XMB
 };
 
-enum gfx_display_prim_type
-{
-   GFX_DISPLAY_PRIM_NONE = 0,
-   GFX_DISPLAY_PRIM_TRIANGLESTRIP,
-   GFX_DISPLAY_PRIM_TRIANGLES
-};
-
 enum gfx_display_driver_type
 {
    GFX_VIDEO_DRIVER_GENERIC = 0,
@@ -109,7 +102,8 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_WIIU,
    GFX_VIDEO_DRIVER_GDI,
    GFX_VIDEO_DRIVER_SWITCH,
-   GFX_VIDEO_DRIVER_RSX
+   GFX_VIDEO_DRIVER_RSX,
+   GFX_VIDEO_DRIVER_SDL2
 };
 
 typedef struct gfx_display_ctx_draw gfx_display_ctx_draw_t;
@@ -165,7 +159,6 @@ struct gfx_display_ctx_draw
    float y;
    float rotation;
    float scale_factor;
-   enum gfx_display_prim_type prim_type;
    bool pipeline_active;
 };
 
@@ -361,6 +354,7 @@ extern gfx_display_ctx_driver_t gfx_display_ctx_wiiu;
 extern gfx_display_ctx_driver_t gfx_display_ctx_gdi;
 extern gfx_display_ctx_driver_t gfx_display_ctx_switch;
 extern gfx_display_ctx_driver_t gfx_display_ctx_rsx;
+extern gfx_display_ctx_driver_t gfx_display_ctx_sdl2;
 
 RETRO_END_DECLS
 

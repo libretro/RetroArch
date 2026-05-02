@@ -23,9 +23,6 @@
 #include <retro_timers.h>
 #include <retro_miscellaneous.h>
 
-#ifdef RARCH_INTERNAL
-#include "../gfx/video_display_server.h"
-#endif
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
 
@@ -243,15 +240,6 @@ static bool task_http_finder(retro_task_t *task, void *user_data)
    return false;
 }
 
-static void http_transfer_progress_cb(retro_task_t *task)
-{
-#ifdef RARCH_INTERNAL
-   if (task)
-      video_display_server_set_window_progress(task->progress,
-            ((task->flags & RETRO_TASK_FLG_FINISHED) > 0));
-#endif
-}
-
 static void *task_push_http_transfer_generic_titled(
       struct http_connection_t *conn,
       const char *url, bool mute, bool headers_accept_err,
@@ -312,7 +300,7 @@ static void *task_push_http_transfer_generic_titled(
    t->handler              = task_http_transfer_handler;
    t->state                = http;
    t->callback             = cb;
-   t->progress_cb          = http_transfer_progress_cb;
+   t->progress_cb          = task_window_progress_cb;
    t->cleanup              = task_http_transfer_cleanup;
    t->user_data            = user_data;
    t->progress             = -1;
@@ -491,17 +479,16 @@ void* task_push_http_transfer_file(const char* url, bool mute,
       s        = transfer_data->path;
    else
       s        = url;
-
-   _len        = strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
-   tmp[  _len] = ':';
-   tmp[++_len] = ' ';
-   tmp[++_len] = '\0';
+   _len = 0;
+   strlcpy_append(tmp, sizeof(tmp), &_len,
+         msg_hash_to_str(MSG_DOWNLOADING));
+   strlcpy_append(tmp, sizeof(tmp), &_len, ": ");
 
    if (string_ends_with_size(s, ".index",
             strlen(s), STRLEN_CONST(".index")))
       s       = msg_hash_to_str(MSG_INDEX_FILE);
 
-   strlcpy(tmp + _len, s, sizeof(tmp) - _len);
+   strlcpy_append(tmp, sizeof(tmp), &_len, s);
 
    /* should be using type but some callers now rely on type being ignored */
    return task_push_http_transfer_generic_titled(

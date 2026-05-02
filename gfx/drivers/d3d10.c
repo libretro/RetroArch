@@ -2361,7 +2361,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
    d3d10->device->lpVtbl->OMSetRenderTargets(d3d10->device, 1,
          &d3d10->renderTargetView, NULL);
 
-   video_driver_set_size(d3d10->vp.full_width, d3d10->vp.full_height);
+   video_driver_set_output_size(d3d10->vp.full_width, d3d10->vp.full_height);
    d3d10->viewport.Width  = d3d10->vp.full_width;
    d3d10->viewport.Height = d3d10->vp.full_height;
    d3d10->flags          |= D3D10_ST_FLAG_RESIZE_VIEWPORT;
@@ -2925,7 +2925,7 @@ static bool d3d10_gfx_frame(
       d3d10->flags                       &= ~D3D10_ST_FLAG_RESIZE_CHAIN;
       d3d10->flags                       |=  D3D10_ST_FLAG_RESIZE_VIEWPORT;
 
-      video_driver_set_size(video_width, video_height);
+      video_driver_set_output_size(video_width, video_height);
    }
 
 #if 0
@@ -3343,7 +3343,32 @@ static bool d3d10_gfx_frame(
 
 #ifdef HAVE_GFX_WIDGETS
    if (widgets_active)
+   {
+      /* d3d10_render_overlay binds d3d10->overlays.vbo as the
+       * input vertex buffer and may set a non-screen viewport
+       * (d3d10->frame.viewport when the overlay isn't
+       * fullscreen).  gfx_display_d3d10_draw writes its sprite
+       * vertices into d3d10->sprites.vbo via Map() but reads
+       * back from whatever buffer is currently bound, so without
+       * restoring the binding here the widget draws fetch the
+       * wrong vertex stream and silently produce nothing on
+       * screen — the widget state machine still runs, the
+       * sprites still get written, but the Draw() reads from
+       * overlays.vbo instead.  Mirror the OSD-msg block below:
+       * screen viewport, sprite vbo, sprite blend state. */
+      UINT offset = 0;
+      UINT stride = sizeof(d3d10_sprite_t);
+      d3d10->device->lpVtbl->RSSetViewports(d3d10->device,
+            1, &d3d10->viewport);
+      d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
+            d3d10->blend_enable, NULL,
+            D3D10_DEFAULT_SAMPLE_MASK);
+      d3d10->device->lpVtbl->IASetVertexBuffers(
+            d3d10->device, 0, 1,
+            (D3D10Buffer* const)&d3d10->sprites.vbo,
+            &stride, &offset);
       gfx_widgets_frame(video_info);
+   }
 #endif
 
    if (msg && *msg)
@@ -3488,7 +3513,7 @@ static bool d3d10_gfx_alive(void* data)
    if (     (d3d10->flags & D3D10_ST_FLAG_RESIZE_CHAIN)
          && (d3d10->vp.full_width  != 0)
          && (d3d10->vp.full_height != 0))
-      video_driver_set_size(d3d10->vp.full_width, d3d10->vp.full_height);
+      video_driver_set_output_size(d3d10->vp.full_width, d3d10->vp.full_height);
 
    return !quit;
 }

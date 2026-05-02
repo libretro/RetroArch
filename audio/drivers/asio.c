@@ -55,7 +55,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -644,7 +644,26 @@ static void *asio_load_driver(const CLSID *clsid)
 typedef struct ra_asio
 {
    void              *iasio;        /* COM interface pointer */
-   fifo_buffer_t     *ring;         /* Ring buffer between write() and callback */
+   /* Lock-free SPSC ring buffer between asio_write (producer, main
+    * thread) and asio_cb_buffer_switch (consumer, ASIO callback
+    * thread).  Pre-port this used fifo_buffer_t with no surrounding
+    * lock, which was a real cross-thread race on first/end -- see
+    * commit message.  retro_spsc_t is the SPSC primitive designed
+    * for this exact pattern: lock-free (avoiding the priority-
+    * inversion concern of locking from a real-time audio callback),
+    * acquire/release ordering on the cursors, single-producer /
+    * single-consumer enforced by the type contract.
+    *
+    * Embedded by value (not via pointer) so the lifetime exactly
+    * tracks ra_asio_t.  Initialised with retro_spsc_init in
+    * ra_asio_init / ra_asio_init_via_persistent and freed with
+    * retro_spsc_free in the corresponding teardown paths.  The
+    * `ring_initialized` flag below distinguishes "never-initialised"
+    * from "init succeeded" so cleanup paths know whether to call
+    * retro_spsc_free.  retro_spsc_t doesn't carry that bit
+    * internally because most callers know their own lifecycle. */
+   retro_spsc_t       ring;
+   bool               ring_initialized;
 #ifdef HAVE_THREADS
    scond_t           *cond;
    slock_t           *cond_lock;
@@ -712,7 +731,11 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
    long i;
    void *buf_l  = ad->buf_info[0].buffers[index];
    void *buf_r  = ad->buf_info[1].buffers[index];
-   size_t avail = FIFO_READ_AVAIL(ad->ring);
+   /* Acquire-load on the producer's head cursor.  Pairs with the
+    * release-store inside retro_spsc_write that asio_write
+    * issues on the main thread, so the bytes we're about to read
+    * out via retro_spsc_read are guaranteed visible. */
+   size_t avail = retro_spsc_read_avail(&ad->ring);
    long have    = (long)(avail / (2 * sizeof(float)));
 
    if (have > frames)
@@ -727,7 +750,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          float tmp[2];
          for (i = 0; i < have; i++)
          {
-            fifo_read(ad->ring, tmp, sizeof(tmp));
+            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
             dl[i] = tmp[0];
             dr[i] = tmp[1];
          }
@@ -742,7 +765,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          float tmp[2];
          for (i = 0; i < have; i++)
          {
-            fifo_read(ad->ring, tmp, sizeof(tmp));
+            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
             dl[i] = (double)tmp[0];
             dr[i] = (double)tmp[1];
          }
@@ -757,7 +780,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          float tmp[2];
          for (i = 0; i < have; i++)
          {
-            fifo_read(ad->ring, tmp, sizeof(tmp));
+            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
             dl[i] = (int32_t)((double)tmp[0] * 2147483647.0);
             dr[i] = (int32_t)((double)tmp[1] * 2147483647.0);
          }
@@ -773,7 +796,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          for (i = 0; i < have; i++)
          {
             int32_t l, r;
-            fifo_read(ad->ring, tmp, sizeof(tmp));
+            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
             l = (int32_t)(tmp[0] * 8388607.0f);
             r = (int32_t)(tmp[1] * 8388607.0f);
             l = l >  8388607 ?  8388607 : (l < -8388608 ? -8388608 : l);
@@ -797,7 +820,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          for (i = 0; i < have; i++)
          {
             int32_t l, r;
-            fifo_read(ad->ring, tmp, sizeof(tmp));
+            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
             l = (int32_t)(tmp[0] * 32767.0f);
             r = (int32_t)(tmp[1] * 32767.0f);
             dl[i] = (int16_t)(l > 32767 ? 32767 : (l < -32768 ? -32768 : l));
@@ -826,7 +849,7 @@ static void asio_cb_buffer_switch(long index,
 {
    ra_asio_t *ad = g_asio;
 
-   if (!ad || !ad->ring || ad->is_paused || ad->shutdown)
+   if (!ad || !ad->ring_initialized || ad->is_paused || ad->shutdown)
    {
       if (ad && ad->buf_info[0].buffers[index])
       {
@@ -924,8 +947,11 @@ static void asio_atexit_cleanup(void)
       ASIO_CALL_RELEASE(ad->iasio);
    }
 
-   if (ad->ring)
-      fifo_free(ad->ring);
+   if (ad->ring_initialized)
+   {
+      retro_spsc_free(&ad->ring);
+      ad->ring_initialized = false;
+   }
 
 #ifdef HAVE_THREADS
    if (ad->cond_lock)
@@ -991,7 +1017,11 @@ static void *ra_asio_init(const char *device, unsigned rate,
       if (new_rate)
          *new_rate = ad->sample_rate;
 
-      fifo_clear(ad->ring);
+      /* Discard any stale audio left over from the previous
+       * session.  Safe here because the ASIO callback isn't
+       * running yet (g_asio is still NULL until the next line),
+       * so the SPSC is single-threaded at this point. */
+      retro_spsc_clear(&ad->ring);
 
       g_asio = ad;
       ad->running = true;
@@ -1158,14 +1188,18 @@ static void *ra_asio_init(const char *device, unsigned rate,
 
    /* Create ring buffer BEFORE ASIO buffers — the driver may issue
     * a bufferSwitch callback during ASIOCreateBuffers, and the
-    * callback needs the ring buffer to exist (even if empty). */
+    * callback needs the ring buffer to exist (even if empty).
+    * retro_spsc_init rounds capacity up to a power of 2; the
+    * over-allocation is small (factor of < 2) and irrelevant to
+    * the ASIO latency calculation, which uses ad->buffer_frames
+    * not the ring's actual byte capacity. */
    ad->ring_size = pref_sz * 2 * sizeof(float) * ASIO_RING_MULT;
-   ad->ring      = fifo_new(ad->ring_size);
-   if (!ad->ring)
+   if (!retro_spsc_init(&ad->ring, ad->ring_size))
    {
       RARCH_ERR("[ASIO] Failed to create ring buffer.\n");
       goto error;
    }
+   ad->ring_initialized = true;
 
 #ifdef HAVE_THREADS
    ad->cond      = scond_new();
@@ -1229,8 +1263,11 @@ error:
          ASIO_CALL_DISPOSE_BUFFERS(ad->iasio);
       ASIO_CALL_RELEASE(ad->iasio);
    }
-   if (ad->ring)
-      fifo_free(ad->ring);
+   if (ad->ring_initialized)
+   {
+      retro_spsc_free(&ad->ring);
+      ad->ring_initialized = false;
+   }
 #ifdef HAVE_THREADS
    if (ad->cond_lock)
       slock_free(ad->cond_lock);
@@ -1259,17 +1296,22 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
       if (ad->shutdown)
          return -1;
 
-      avail    = FIFO_WRITE_AVAIL(ad->ring);
+      avail    = retro_spsc_write_avail(&ad->ring);
       to_write = (len < avail) ? len : avail;
       /* Align to frame boundary (stereo float = 8 bytes) */
       to_write = (to_write / 8) * 8;
 
       if (to_write > 0)
       {
-         fifo_write(ad->ring, src, to_write);
-         src     += to_write;
-         len     -= to_write;
-         written += to_write;
+         /* retro_spsc_write returns bytes actually written.  We've
+          * already capped to_write by retro_spsc_write_avail above,
+          * so the return value will equal to_write -- but use it
+          * defensively in case the contract ever changes. */
+         size_t actually_written =
+            retro_spsc_write(&ad->ring, src, to_write);
+         src     += actually_written;
+         len     -= actually_written;
+         written += actually_written;
       }
       else if (!ad->nonblock)
       {
@@ -1346,9 +1388,14 @@ static void ra_asio_free(void *data)
    /* Detach from the callback — silence output while parked */
    g_asio = NULL;
 
-   /* Flush stale audio */
-   if (ad->ring)
-      fifo_clear(ad->ring);
+   /* No retro_spsc_clear here.  The pre-port fifo_clear at this
+    * site was racy with stray ASIO callbacks that may still be
+    * running after ASIO_CALL_STOP returns (some drivers, notably
+    * ASIO4ALL, don't synchronously join their audio thread).
+    * The restart path in ra_asio_init_via_persistent calls
+    * retro_spsc_clear anyway, so any stale data will be flushed
+    * before the next run -- after the callback is provably
+    * stopped (g_asio == NULL gates it). */
 
    /* Store for reuse */
    g_asio_persistent = ad;
@@ -1361,9 +1408,9 @@ static bool ra_asio_use_float(void *data) { return true; }
 static size_t ra_asio_write_avail(void *data)
 {
    ra_asio_t *ad = (ra_asio_t *)data;
-   if (!ad || !ad->ring)
+   if (!ad || !ad->ring_initialized)
       return 0;
-   return FIFO_WRITE_AVAIL(ad->ring);
+   return retro_spsc_write_avail(&ad->ring);
 }
 
 static size_t ra_asio_buffer_size(void *data)

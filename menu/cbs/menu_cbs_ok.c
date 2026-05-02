@@ -1610,7 +1610,6 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          {
             char lpl_basename[NAME_MAX_LENGTH];
-            struct menu_state *menu_st = menu_state_get_ptr();
             filebrowser_clear_type();
             fill_pathname_join_special(tmp,
                   settings->paths.path_content_database,

@@ -151,6 +151,15 @@
 #define MUI_BATTERY_PERCENT_MAX_LENGTH 12
 #define MUI_TIMEDATE_MAX_LENGTH        255
 
+/* Maximum number of playlist tabs whose last-selected
+ * entry index can be cached in mui->playlist_selection[].
+ * Indexed by the user's row in the playlists tab.  Power
+ * users with many cores can have hundreds of playlists --
+ * 1024 covers any plausible setup with comfortable margin
+ * while still bounding mui's heap footprint to ~8 KB for
+ * this cache. */
+#define MUI_PLAYLIST_SELECTION_MAX 1024
+
 /* Allow force enabling secondary thumbnail */
 #define MUI_FORCE_ENABLE_SECONDARY 0
 
@@ -578,7 +587,8 @@ enum materialui_handle_flags
    MUI_FLAG_SCROLLBAR_ACTIVE                = (1 << 25),
    MUI_FLAG_SCROLLBAR_DRAGGED               = (1 << 26),
    MUI_FLAG_NAVBAR_MENU_NAVIGATION_WRAPPED  = (1 << 27),
-   MUI_FLAG_COL_DIVIDER_IS_LIST_BG          = (1 << 28)
+   MUI_FLAG_COL_DIVIDER_IS_LIST_BG          = (1 << 28),
+   MUI_FLAG_FIRST_FRAME                     = (1 << 29)
 };
 
 typedef struct materialui_handle
@@ -676,7 +686,7 @@ typedef struct materialui_handle
    uint32_t flags;
    uint32_t context_generation;
 
-   size_t playlist_selection[NAME_MAX_LENGTH];
+   size_t playlist_selection[MUI_PLAYLIST_SELECTION_MAX];
    size_t playlist_selection_ptr;
    uint8_t mainmenu_selection_ptr;
    uint8_t settings_selection_ptr;
@@ -2624,7 +2634,6 @@ static void materialui_draw_icon(
    draw.coords          = &coords;
    draw.matrix_data     = mymat;
    draw.texture         = texture;
-   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
 
    if (dispctx)
@@ -3343,22 +3352,23 @@ static float materialui_get_scroll(materialui_handle_t *mui,
       gfx_display_t *p_disp)
 {
    size_t i;
+   unsigned height;
    materialui_node_t *node    = NULL;
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *list          = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection           = menu_st->selection_ptr;
    unsigned header_height     = p_disp->header_height;
-   unsigned width             = 0;
-   unsigned height            = 0;
    float view_centre          = 0.0f;
    float selection_centre     = 0.0f;
 
    if (!mui || !list || !list->size)
       return 0;
 
-   /* Get current window size */
-   video_driver_get_size(&width, &height);
+   /* Read cached size from mui rather than locking video_st via
+    * video_driver_get_output_size: mui->last_{width,height} is updated
+    * every frame in materialui_render. */
+   height = mui->last_height;
 
    /* Get the vertical midpoint of the actual
     * list view - i.e. account for header +
@@ -3741,28 +3751,36 @@ static bool materialui_render_process_entry_playlist_desktop(
             if (!last_played_str || !*last_played_str)
                last_played_str = mui->status_bar.last_played_fallback_str;
 
-            /* Generate metadata string */
-            _len  = strlcpy(mui->status_bar.str,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
-                  sizeof(mui->status_bar.str));
-            _len += strlcpy(mui->status_bar.str + _len,
-                    " ",
-                    sizeof(mui->status_bar.str) - _len);
-            _len += strlcpy(mui->status_bar.str + _len,
-                    core_name,
-                    sizeof(mui->status_bar.str) - _len);
-            _len += strlcpy(mui->status_bar.str + _len,
-                    MUI_TICKER_SPACER,
-                    sizeof(mui->status_bar.str) - _len);
-            _len += strlcpy(mui->status_bar.str + _len,
-                    runtime_str,
-                    sizeof(mui->status_bar.str) - _len);
-            _len += strlcpy(mui->status_bar.str + _len,
-                    MUI_TICKER_SPACER,
-                    sizeof(mui->status_bar.str) - _len);
-            strlcpy(mui->status_bar.str + _len,
-                  last_played_str,
-                  sizeof(mui->status_bar.str) - _len);
+            /* Generate metadata string.
+             *
+             * Pre-conversion this used the unsafe pattern
+             *   _len += strlcpy(buf + _len, src, sizeof(buf) - _len)
+             * which is NOT self-bounding: strlcpy returns
+             * strlen(src), not bytes-actually-written, so on a
+             * truncating call (long core_name from a crafted
+             * playlist entry, long runtime / last-played strings,
+             * verbose locale, ...) _len overshoots
+             * sizeof(status_bar.str), the next len-_len subtraction
+             * underflows size_t to ~SIZE_MAX, and the subsequent
+             * strlcpy treats the destination as essentially
+             * infinite.  Adjacent struct fields
+             * (runtime_fallback_str, last_played_fallback_str,
+             * ...) get corrupted on the heap. */
+            _len = 0;
+            strlcpy_append(mui->status_bar.str, sizeof(mui->status_bar.str),
+                  &_len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE));
+            strlcpy_append(mui->status_bar.str, sizeof(mui->status_bar.str),
+                  &_len, " ");
+            strlcpy_append(mui->status_bar.str, sizeof(mui->status_bar.str),
+                  &_len, core_name);
+            strlcpy_append(mui->status_bar.str, sizeof(mui->status_bar.str),
+                  &_len, MUI_TICKER_SPACER);
+            strlcpy_append(mui->status_bar.str, sizeof(mui->status_bar.str),
+                  &_len, runtime_str);
+            strlcpy_append(mui->status_bar.str, sizeof(mui->status_bar.str),
+                  &_len, MUI_TICKER_SPACER);
+            strlcpy_append(mui->status_bar.str, sizeof(mui->status_bar.str),
+                  &_len, last_played_str);
 
             /* All metadata is cached */
             mui->flags |= MUI_FLAG_STATUSBAR_CACHED;
@@ -6184,7 +6202,6 @@ static void materialui_render_background(
    draw.height                = video_height;
    draw.coords                = NULL;
    draw.matrix_data           = NULL;
-   draw.prim_type             = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.vertex                = NULL;
    draw.tex_coord             = NULL;
    draw.vertex_count          = 4;
@@ -8067,7 +8084,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       size_t _len;
       char msg[NAME_MAX_LENGTH];
-      struct menu_state *menu_st  = menu_state_get_ptr();
       const char *str             = menu_input_dialog_get_buffer();
       const char *label           = menu_st->input_dialog_kb_label;
 
@@ -8086,12 +8102,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             NULL);
 
       /* Draw message box */
-      _len        = strlcpy(msg, label, sizeof(msg));
-      msg[  _len] = '\n';
-      msg[++_len] = '\0';
-      strlcpy(msg       + _len,
-            str,
-            sizeof(msg) - _len);
+      _len = 0;
+      strlcpy_append(msg, sizeof(msg), &_len, label);
+      strlcpy_append(msg, sizeof(msg), &_len, "\n");
+      strlcpy_append(msg, sizeof(msg), &_len, str);
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
@@ -8182,6 +8196,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    /* Guard: bail if context was destroyed during the draw pass */
    if (ctx_gen != mui->context_generation)
       goto ctx_destroyed;
+
+   /* First-frame init done — subsequent frames are normal.
+    * Cleared here (not on entry) so that a context-destroyed
+    * mid-frame leaves the flag set for the retry. */
+   mui->flags &= ~MUI_FLAG_FIRST_FRAME;
 
    /* Unbind fonts */
    font_unbind(&mui->font_data.title);
@@ -9110,7 +9129,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    /* Get DPI/screen-size-aware base unit size for
     * UI elements */
-   video_driver_get_size(&width, &height);
+   video_driver_get_output_size(&width, &height);
 
    mui->last_width                        = width;
    mui->last_height                       = height;
@@ -9120,6 +9139,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->dip_base_unit_size                = mui->last_scale_factor
       * MUI_DIP_BASE_UNIT_SIZE;
    mui->flags                             = 0;
+   mui->flags                            |= MUI_FLAG_FIRST_FRAME;
 
    if (settings->bools.menu_materialui_show_nav_bar)
       mui->flags |= MUI_FLAG_LAST_SHOW_NAVBAR;
@@ -9409,7 +9429,14 @@ static void materialui_navigation_set(void *data, bool scroll)
       return;
 
    if (mui->flags & MUI_FLAG_IS_PLAYLIST)
-      mui->playlist_selection[mui->playlist_selection_ptr] = selection;
+   {
+      /* Bound playlist_selection_ptr against the cache size:
+       * users with > MUI_PLAYLIST_SELECTION_MAX playlists would
+       * otherwise OOB-write into adjacent struct fields when
+       * navigating any deep playlist. */
+      if (mui->playlist_selection_ptr < MUI_PLAYLIST_SELECTION_MAX)
+         mui->playlist_selection[mui->playlist_selection_ptr] = selection;
+   }
    else if (mui->flags & MUI_FLAG_IS_PLAYLISTS_TAB)
       mui->playlist_selection_ptr = selection;
    else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU)))
@@ -9545,6 +9572,26 @@ static void materialui_init_transition_animation(materialui_handle_t *mui,
    uintptr_t             alpha_tag     = (uintptr_t)&mui->transition_alpha;
    uintptr_t             x_offset_tag  = (uintptr_t)&mui->transition_x_offset;
    unsigned transition_animation       = settings->uints.menu_materialui_transition_animation;
+
+   /* Skip the transition animation on the very first frame after
+    * init: materialui_populate_entries() runs from menu_driver_init
+    * before the first materialui_frame, and this animation zeros
+    * out transition_alpha — which scales the alpha of entry text,
+    * icons, the highlight and other UI chrome but NOT the title
+    * bar or the nav bar.  The result is a few frames of half-
+    * rendered menu (header + nav bar but no entries) until the
+    * alpha animates up to 1.0.
+    *
+    * The menu has no prior state to fade in from at startup, so
+    * skipping the animation here is the right move; matches the
+    * is_first_frame -> animate=false pattern used in ozone. */
+   if (mui->flags & MUI_FLAG_FIRST_FRAME)
+   {
+      mui->transition_alpha    = 1.0f;
+      mui->transition_x_offset = 0.0f;
+      mui->last_stack_size     = stack_size;
+      return;
+   }
 
    /* If animations are disabled, reset alpha/x offset
     * values and return immediately */
@@ -9764,7 +9811,6 @@ static void materialui_populate_entries(void *data, const char *path,
    mui->playlist = NULL;
    if (mui->flags & MUI_FLAG_IS_PLAYLIST)
    {
-      struct menu_state *menu_st = menu_state_get_ptr();
       menu_list_t *menu_list     = menu_st->entries.list;
       file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
       size_t list_size           = list ? list->size : 0;
@@ -9805,27 +9851,28 @@ static void materialui_populate_entries(void *data, const char *path,
    if (     mui->flags & MUI_FLAG_IS_PLAYLIST
          && !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR))
    {
-      if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
+      if (     (remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
-         menu_state_get_ptr()->selection_ptr = mui->playlist_selection[mui->playlist_selection_ptr];
+            && mui->playlist_selection_ptr < MUI_PLAYLIST_SELECTION_MAX)
+         menu_st->selection_ptr = mui->playlist_selection[mui->playlist_selection_ptr];
    }
    else if (mui->flags & MUI_FLAG_IS_PLAYLISTS_TAB)
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
-         menu_state_get_ptr()->selection_ptr = mui->playlist_selection_ptr;
+         menu_st->selection_ptr = mui->playlist_selection_ptr;
    }
    else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU)))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_MAIN)
-         menu_state_get_ptr()->selection_ptr = mui->mainmenu_selection_ptr;
+         menu_st->selection_ptr = mui->mainmenu_selection_ptr;
    }
    else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS)))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_MAIN)
-         menu_state_get_ptr()->selection_ptr = mui->settings_selection_ptr;
+         menu_st->selection_ptr = mui->settings_selection_ptr;
    }
 
    if (     settings->bools.savestate_thumbnail_enable
@@ -9834,7 +9881,7 @@ static void materialui_populate_entries(void *data, const char *path,
    {
       mui->flags |= MUI_FLAG_IS_SAVESTATE_LIST;
       materialui_update_savestate_thumbnail_path(mui,
-         (unsigned)menu_state_get_ptr()->selection_ptr);
+         (unsigned)menu_st->selection_ptr);
       materialui_update_savestate_thumbnail_image(mui);
    }
    else
@@ -10317,7 +10364,6 @@ static enum menu_action materialui_parse_menu_entry_action(
                materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
             else
             {
-               struct menu_state *menu_st = menu_state_get_ptr();
                size_t selection           = menu_st->selection_ptr;
 
                /* In all other cases, if current selection is off
@@ -10368,12 +10414,10 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   'scan' action *if* current selection is
           *   on screen */
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             size_t selection           = menu_st->selection_ptr;
 
             if (mui->flags & MUI_FLAG_IS_PLAYLISTS_TAB)
             {
-               struct menu_state *menu_st = menu_state_get_ptr();
                size_t selection_total     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
                size_t selection           = menu_st->selection_ptr;
                size_t new_selection       = random_range(0, (unsigned)(selection_total - 1));
@@ -10447,7 +10491,6 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   'start' action *if* current selection is
           *   on screen */
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             size_t selection           = menu_st->selection_ptr;
 
             if (     (mui->flags & MUI_FLAG_IS_PLAYLIST)
@@ -10496,7 +10539,6 @@ static enum menu_action materialui_parse_menu_entry_action(
           * In addition, an 'info' action is only valid in general
           * if the currently selected entry is on screen */
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             size_t selection           = menu_st->selection_ptr;
 
             /* - If this is a playlist, 'info' command is used
@@ -10525,7 +10567,6 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   selected item is on screen. If it
           *   is off screen, must disable input */
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             size_t selection           = menu_st->selection_ptr;
 
             if (!materialui_entry_onscreen(mui, selection))
@@ -10739,14 +10780,11 @@ static int materialui_pointer_down(void *userdata,
    if (       (mui->flags & MUI_FLAG_SCROLLBAR_ACTIVE)
          && (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)))
    {
-      unsigned width;
-      unsigned height;
       int drag_margin_horz;
       int drag_margin_vert;
       gfx_display_t *p_disp  = disp_get_ptr();
       unsigned header_height = p_disp->header_height;
-
-      video_driver_get_size(&width, &height);
+      unsigned height        = mui->last_height;
 
       /* Check whether pointer down event is within
        * vertical list region */
@@ -10980,6 +11018,10 @@ static int materialui_pointer_up(void *userdata,
    if (!mui)
       return -1;
 
+   /* Read cached size from mui rather than locking video_st via
+    * video_driver_get_output_size: mui->last_{width,height} is updated
+    * every frame in materialui_render. */
+
    /* All input is ignored if user was previously
     * dragging the scrollbar */
    if (mui->flags & MUI_FLAG_SCROLLBAR_DRAGGED)
@@ -11010,7 +11052,8 @@ static int materialui_pointer_up(void *userdata,
       return 0;
    }
 
-   video_driver_get_size(&width, &height);
+   width  = mui->last_width;
+   height = mui->last_height;
 
    switch (gesture)
    {
@@ -11071,7 +11114,6 @@ static int materialui_pointer_up(void *userdata,
             {
                int entry_x;
                int entry_y;
-               struct menu_state   *menu_st = menu_state_get_ptr();
                menu_list_t *menu_list       = menu_st->entries.list;
                file_list_t *list            = NULL;
                materialui_node_t *node      = NULL;
@@ -11087,9 +11129,21 @@ static int materialui_pointer_up(void *userdata,
                }
 
                /* Get node (entry) associated with current
-                * pointer item */
+                * pointer item.
+                *
+                * Bound-check ptr against the live list->size:
+                * ptr was set by the render-frame hit-test loop,
+                * which guarantees ptr < entries_end at the point
+                * it ran -- but the list can be repopulated (search
+                * filter, navigation, async list rebuild) before
+                * this event handler executes, leaving ptr stale
+                * and possibly past the new list end.  The
+                * LONG_PRESS case below and the swipe handler at
+                * materialui_pointer_up_swipe_horz_default already
+                * guard with `ptr < entries_end`; mirror that
+                * defence here. */
                list = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
-               if (!list)
+               if (!list || ptr >= list->size)
                   break;
 
                if (!(node = (materialui_node_t*)list->list[ptr].userdata))

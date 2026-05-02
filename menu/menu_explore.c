@@ -1489,8 +1489,9 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                   && !explore_by_info[cat].is_boolean
                   && RBUF_LEN(state->by[cat]) > 1))
          {
-            size_t _len = strlcpy(tmp,
-                  msg_hash_to_str(explore_by_info[cat].by_enum), sizeof(tmp));
+            size_t _len = 0;
+            strlcpy_append(tmp, sizeof(tmp), &_len,
+                  msg_hash_to_str(explore_by_info[cat].by_enum));
 
             if (is_top)
             {
@@ -1502,20 +1503,21 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                            entries[RBUF_LEN(entries) - 1]->str);
                else if (!explore_by_info[cat].is_boolean)
                {
-                  _len += strlcpy (tmp + _len, " (", sizeof(tmp) - _len);
-                  _len += snprintf(tmp + _len,       sizeof(tmp) - _len,
+                  strlcpy_append(tmp, sizeof(tmp), &_len, " (");
+                  _len += snprintf(tmp + _len, sizeof(tmp) - _len,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT),
                         (unsigned)RBUF_LEN(entries));
-                  strlcpy(tmp  + _len, ")",  sizeof(tmp) - _len);
+                  if (_len >= sizeof(tmp))
+                     _len = sizeof(tmp) - 1;
+                  strlcpy_append(tmp, sizeof(tmp), &_len, ")");
                }
             }
             else if (i != state->view_levels)
             {
-               _len += strlcpy(tmp + _len, " (", sizeof(tmp) - _len);
-               _len += strlcpy(tmp + _len,
-                     msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER),
-                     sizeof(tmp)     - _len);
-               strlcpy(tmp + _len, ")", sizeof(tmp) - _len);
+               strlcpy_append(tmp, sizeof(tmp), &_len, " (");
+               strlcpy_append(tmp, sizeof(tmp), &_len,
+                     msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER));
+               strlcpy_append(tmp, sizeof(tmp), &_len, ")");
             }
 
             explore_menu_entry(list, state,

@@ -18,6 +18,14 @@
 
 #include "gfx_display.h"
 
+#ifdef HAVE_SDL2
+/* SDL_version.h is needed for the SDL_VERSION_ATLEAST gate on the
+ * gfx_display_ctx_sdl2 table entry. The driver itself requires
+ * SDL_RenderGeometry (>= 2.0.18); on older SDL the symbol is not
+ * defined in sdl2_gfx.c, so the table entry must be elided too. */
+#include <SDL_version.h>
+#endif
+
 #include "../configuration.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
@@ -101,6 +109,11 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
    &gfx_display_ctx_gdi,
+#endif
+#endif
+#ifdef HAVE_SDL2
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+   &gfx_display_ctx_sdl2,
 #endif
 #endif
    NULL,
@@ -520,7 +533,6 @@ void gfx_display_draw_quad(
    draw.texture         = (texture && *texture)
       ? *texture
       : gfx_white_texture;
-   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
@@ -651,7 +663,6 @@ void gfx_display_draw_texture_slice(
    draw.height              = height;
    draw.coords              = &coords;
    draw.matrix_data         = mymat;
-   draw.prim_type           = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id         = 0;
    coords.color             = (const float*)(color == NULL ? colors : color);
 
@@ -914,7 +925,6 @@ void gfx_display_draw_cursor(
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
    draw.texture         = texture;
-   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;

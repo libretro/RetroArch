@@ -2033,7 +2033,7 @@ void video_driver_set_filtering(unsigned index,
             index, smooth, ctx_scaling);
 }
 
-void video_driver_get_size(unsigned *width, unsigned *height)
+void video_driver_get_output_size(unsigned *width, unsigned *height)
 {
    video_driver_state_t *video_st = &video_driver_st;
 #ifdef HAVE_THREADS
@@ -2055,7 +2055,7 @@ void video_driver_get_size(unsigned *width, unsigned *height)
       *height       = video_st->height;
 }
 
-void video_driver_set_size(unsigned width, unsigned height)
+void video_driver_set_output_size(unsigned width, unsigned height)
 {
    video_driver_state_t *video_st = &video_driver_st;
 #ifdef HAVE_THREADS
@@ -3063,8 +3063,28 @@ bool video_driver_get_viewport_info(struct video_viewport *viewport)
 {
    video_driver_state_t *video_st  = &video_driver_st;
    const video_driver_t *vid       = video_st->current_video;
-   if (!vid || !vid->viewport_info)
+   if (!viewport)
       return false;
+   if (!vid || !vid->viewport_info)
+   {
+      /* Some video drivers don't implement viewport_info (gdi,
+       * caca, sixel, network, fpga, vg, ps2, xenon360, xshm at
+       * the time of writing).  The contract was previously: we
+       * silently returned false and left the caller's struct
+       * untouched.  Several callers in menu_setting.c and
+       * elsewhere ignored the return value and proceeded to
+       * read fields off the struct anyway — and since callers
+       * declare it as a stack local, the reads landed on
+       * uninitialised memory.  In the menu's "Custom Aspect
+       * Ratio" handlers that uninitialised value flowed
+       * straight into settings->video_vp_custom and got
+       * persisted to retroarch.cfg, producing stuff like
+       * custom_viewport_width=57874 / custom_viewport_x=
+       * 972119847 on shutdown.  Zero the struct here so the
+       * worst a misbehaving caller can do is read all zeros. */
+      memset(viewport, 0, sizeof(*viewport));
+      return false;
+   }
    vid->viewport_info(video_st->data, viewport);
    return true;
 }
@@ -3189,10 +3209,13 @@ size_t video_driver_get_window_title(char *s, size_t len)
    video_driver_state_t *video_st = &video_driver_st;
    if (s && (video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE))
    {
-      strlcpy(s, video_st->window_title, len);
+      size_t n = strlcpy(s, video_st->window_title, len);
       video_st->flags &= ~VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+      if (n >= len)
+         return len ? len - 1 : 0;
+      return n;
    }
-   return video_st->window_title_len;
+   return 0;
 }
 
 void video_driver_update_title(void *data)
@@ -5323,13 +5346,15 @@ static INLINE void video_driver_scanline_before_frame(video_driver_state_t *vide
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height = video_st->height;
-   int16_t scanline_next = video_st->scanline[SCANLINE_NEXT];
-   int16_t scanline_hold = video_st->scanline[SCANLINE_HOLD];
-   int16_t scanline      = video_driver_scanline_get();
+   uint16_t video_height  = video_st->height;
+   int16_t scanline_next  = video_st->scanline[SCANLINE_NEXT];
+   int16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
+   int16_t scanline_blank = video_st->scanline[SCANLINE_TOTAL] - video_height;
+   int16_t scanline       = video_driver_scanline_get();
 
-   /* Assume at least some usage in menu */
-   core_run_time = core_run_time < 1000 ? 1000 : core_run_time;
+   /* Minimum usage is vblank */
+   uint16_t min_run_time  = (scanline_blank > 0) ? (double)scanline_blank / (double)video_height * (double)frame_time_target : 1000;
+   core_run_time          = (core_run_time < min_run_time) ? min_run_time : core_run_time;
 
    /* Disable if unsupported */
    if (scanline < 0)
@@ -5357,8 +5382,7 @@ static INLINE void video_driver_scanline_before_frame(video_driver_state_t *vide
    /* Allow change */
    if (!scanline_hold)
    {
-      int16_t scanline_blank = video_st->scanline[SCANLINE_TOTAL] - video_height;
-      int16_t corelines      = video_height * ((double)core_run_time / (double)frame_time_target);
+      int16_t corelines = video_height * ((double)core_run_time / (double)frame_time_target);
 
       /* Fine-tuning */
       if (     scanline > -scanline_blank
@@ -5400,7 +5424,9 @@ static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video
    uint16_t video_height   = video_st->height;
    int16_t scanline_next   = video_st->scanline[SCANLINE_NEXT];
    int16_t scanline_total  = video_st->scanline[SCANLINE_TOTAL];
+   int16_t scanline_blank  = video_st->scanline[SCANLINE_TOTAL] - video_height;
    int16_t scanline_target = (scanline_next < 0) ? video_height + scanline_next : scanline_next;
+   uint16_t min_run_time   = (scanline_blank > 0) ? (double)scanline_blank / (double)video_height * (double)frame_time_target : 1000;
    bool init               = (!scanline_total) ? true : false;
    bool wait               = true;
 
@@ -5411,6 +5437,9 @@ static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video
    /* Reset */
    if (scanline_next == 1)
       scanline_target = video_height - 1;
+
+   /* Minimum usage is vblank */
+   core_run_time = (core_run_time < min_run_time) ? min_run_time : core_run_time;
 
    /* Use CPU friendlier sleep as much as possible */
    if (wait && frame_time_target > core_run_time)

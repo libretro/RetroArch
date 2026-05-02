@@ -22,6 +22,13 @@
 #include "../config.h"
 #endif
 
+#ifdef HAVE_SDL2
+/* For the SDL_VERSION_ATLEAST gate around the SDL2 font case in
+ * font_driver_init_first - sdl2_raster_font is only emitted by
+ * sdl2_gfx.c when SDL >= 2.0.18 (SDL_RenderGeometry availability). */
+#include <SDL_version.h>
+#endif
+
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
 
@@ -153,10 +160,27 @@ static bool font_init_first(
             }
          }
 #endif
+#ifdef HAVE_SDL2
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+      case FONT_DRIVER_RENDER_SDL2:
+         {
+            void *data = sdl2_raster_font.init(video_data,
+                  font_path, font_size, is_threaded);
+            if (data)
+            {
+               *font_driver = &sdl2_raster_font;
+               *font_handle = data;
+               return true;
+            }
+         }
+         break;
+#endif
+#endif
 #ifdef HAVE_D3D8
       case FONT_DRIVER_RENDER_D3D8_API:
       {
          static const font_renderer_t *d3d8_font_backends[] = {
+            &d3d8_font,
             NULL
          };
          unsigned i;

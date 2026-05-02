@@ -419,7 +419,12 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 {
 #ifdef HAVE_STB_VORBIS
-   audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
+   audio_mixer_sound_t* sound;
+
+   if (!buffer || size <= 0)
+      return NULL;
+
+   sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
    if (!sound)
       return NULL;
@@ -723,6 +728,25 @@ static bool audio_mixer_play_flac(
 
    if (!dr_flac)
       return false;
+
+   /* The downstream mixer (audio_mixer_mix_flac) requests
+    * AUDIO_MIXER_TEMP_BUFFER / 2 frames into a stack buffer
+    * sized AUDIO_MIXER_TEMP_BUFFER floats.  drflac writes
+    * frame_count * channel_count floats, so this only fits
+    * exactly for stereo.  Mono fits but the downstream
+    * accounting is wrong (per existing comment); >2 channels
+    * overflows the stack buffer (e.g. 8-channel FLAC writes
+    * 4 * AUDIO_MIXER_TEMP_BUFFER floats = 4x the buffer).
+    * Reject anything that isn't stereo here rather than risk a
+    * stack overflow during mix.  Mono should be fixed
+    * separately by adjusting the mixer's per-channel
+    * accounting. */
+   if (dr_flac->channels != 2)
+   {
+      drflac_close(dr_flac);
+      return false;
+   }
+
    if (dr_flac->sampleRate != s_rate)
    {
       ratio = (double)s_rate / (double)(dr_flac->sampleRate);

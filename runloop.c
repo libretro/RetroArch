@@ -2449,7 +2449,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             RARCH_LOG("[Environ] Setting audio latency to %u ms.\n", audio_latency_new);
 
             command_event(CMD_EVENT_REINIT, &reinit_flags);
-            video_driver_set_aspect_ratio();
+            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
             /* Cannot continue recording with different
              * parameters.
@@ -2688,7 +2688,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             command_event(CMD_EVENT_REINIT, &reinit_flags);
 
             if (no_video_reinit)
-               video_driver_set_aspect_ratio();
+               command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
             if (video_switch_refresh_rate)
                video_display_server_set_refresh_rate(refresh_rate);
@@ -2752,7 +2752,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             memcpy(sys_info->subsystem.data, info,
                   i * sizeof(*sys_info->subsystem.data));
-            sys_info->subsystem.size                 = i;
+            sys_info->subsystem.size                 = (unsigned)i;
             runloop_st->current_core.flags          |=
                   RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS;
          }
@@ -2797,7 +2797,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             sys_info->ports.data = info_ptr;
             memcpy(sys_info->ports.data, info,
                   i * sizeof(*sys_info->ports.data));
-            sys_info->ports.size = i;
+            sys_info->ports.size = (unsigned)i;
          }
          break;
       }
@@ -2919,7 +2919,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             /* Forces recomputation of aspect ratios if
              * using core-dependent aspect ratios. */
-            video_driver_set_aspect_ratio();
+            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
             /* Ignore frame delay target temporarily */
             if (video_frame_delay_auto)
@@ -4491,13 +4491,6 @@ void runloop_set_video_swap_interval(
    if (swap_interval_config != 0)
    {
       runloop_st->video_swap_interval_auto = swap_interval_config;
-      return;
-   }
-
-   /* Scanline sync needs swap interval 0 */
-   if (settings->bools.video_scanline_sync)
-   {
-      runloop_st->video_swap_interval_auto = 0;
       return;
    }
 

@@ -182,7 +182,7 @@ static void cocoa_vk_gfx_ctx_swap_interval(void *data, int i)
    unsigned interval              = (unsigned)i;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
-   if (cocoa_ctx->swap_interval != interval)
+   if (cocoa_ctx->swap_interval != (int)interval)
    {
       cocoa_ctx->swap_interval    = interval;
       if (cocoa_ctx->vk.swapchain)

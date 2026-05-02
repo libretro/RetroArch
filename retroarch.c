@@ -1261,7 +1261,7 @@ static size_t find_driver_nonempty(
 
 int driver_find_index(const char *label, const char *drv)
 {
-   size_t i;
+   int i;
    char str[NAME_MAX_LENGTH];
 
    str[0] = '\0';
@@ -1288,7 +1288,7 @@ int driver_find_index(const char *label, const char *drv)
  **/
 static void driver_find_last(const char *label, char *s, size_t len)
 {
-   size_t i;
+   int i;
    for (i = 0;
          find_driver_nonempty(label, i, s, len) > 0; i++) { }
    if (i)
@@ -1805,7 +1805,7 @@ void drivers_init(
 #endif
 
 #ifdef HAVE_MENU
-   srand(time(NULL));
+   srand((unsigned)time(NULL));
 #endif
 }
 
@@ -3434,7 +3434,7 @@ bool command_event(enum event_command cmd, void *data)
                else
                {
                   msg[0] = '\0';
-                  if (desc && *desc)
+                  if (*desc)
                      _len = snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC),
                         width, height, desc);
@@ -3874,10 +3874,10 @@ bool command_event(enum event_command cmd, void *data)
          /* Closing content via hotkey requires toggling menu
           * and resetting the position later on to prevent
           * going to empty Quick Menu */
-         if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+         if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
          {
-            menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
-            menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
+            menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+            menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          }
 #else
@@ -4022,7 +4022,7 @@ bool command_event(enum event_command cmd, void *data)
 
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
             audio_enable_menu        = settings->bools.audio_enable_menu
-                  && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
+                  && menu_st->flags & MENU_ST_FLAG_ALIVE;
 #endif
 #ifdef HAVE_NETWORKING
             menu_pause_libretro      = settings->bools.menu_pause_libretro
@@ -4046,7 +4046,7 @@ bool command_event(enum event_command cmd, void *data)
 
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
             audio_enable_menu        = settings->bools.audio_enable_menu
-                  && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
+                  && menu_st->flags & MENU_ST_FLAG_ALIVE;
 #endif
 #ifdef HAVE_NETWORKING
             menu_pause_libretro      = settings->bools.menu_pause_libretro
@@ -4678,8 +4678,6 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_MENU
             struct string_list *str_list = (struct string_list*)data;
-            struct menu_state *menu_st   = menu_state_get_ptr();
-            settings_t *settings         = config_get_ptr();
 
             if (str_list)
             {
@@ -4755,9 +4753,6 @@ bool command_event(enum event_command cmd, void *data)
             size_t *playlist_index         = (size_t*)data;
             struct playlist_entry entry    = {0};
             unsigned i                     = 0;
-#ifdef HAVE_MENU
-            struct menu_state *menu_st     = menu_state_get_ptr();
-#endif
 
             /* the update function reads our entry as const,
              * so these casts are safe */
@@ -5310,9 +5305,6 @@ bool command_event(enum event_command cmd, void *data)
                bool eject                      = !disk_control_get_eject_state(
                                                   &sys_info->disk_control);
                bool verbose                    = true;
-#if defined(HAVE_MENU)
-               struct menu_state *menu_st      = menu_state_get_ptr();
-#endif
 
                if (show_msg)
                   verbose                      = *show_msg;
@@ -5416,7 +5408,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_RUMBLE_STOP:
          {
-            size_t i;
+            unsigned i;
             for (i = 0; i < MAX_USERS; i++)
             {
                unsigned joy_idx = settings->uints.input_joypad_index[i];
@@ -6757,7 +6749,7 @@ static void retroarch_print_help(const char *arg0)
 
    fprintf(stdout, "Usage: %s [OPTIONS]... [FILE]\n\n", arg0);
 
-   _len = strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "  -h, --help                     "
          "Show this help message.\n"
          "  -v, --verbose                  "
@@ -6767,30 +6759,29 @@ static void retroarch_print_help(const char *arg0)
          "  -V, --version                  "
          "Show version.\n"
          "      --features                 "
-         "Print available features compiled into program.\n"
-         , sizeof(buf) - _len);
+         "Print available features compiled into program.\n");
 #ifdef HAVE_MENU
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "      --menu                     "
          "Do not require content or libretro core to be loaded,\n"
          "                                 "
          "  starts directly in menu. If no arguments are passed to\n"
          "                                 "
-         "  the program, it is equivalent to using --menu as only argument.\n"
-         , sizeof(buf) - _len);
+         "  the program, it is equivalent to using --menu as only argument.\n");
 #endif
 
 #ifdef HAVE_CONFIGFILE
-   _len += strlcpy(buf + _len, "  -c, --config=FILE              "
-         "Path for config file.\n", sizeof(buf) - _len);
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "  -c, --config=FILE              "
+         "Path for config file.\n");
 #ifdef _WIN32
-   _len += strlcpy(buf + _len, "                                 "
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "                                 "
          "  Defaults to retroarch.cfg in same directory as retroarch.exe.\n"
          "                                 "
-         "  If a default config is not found, the program will attempt to create one.\n"
-         , sizeof(buf) - _len);
+         "  If a default config is not found, the program will attempt to create one.\n");
 #else
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "                                 "
          "  By default looks for config in\n"
          "                                 "
@@ -6802,33 +6793,31 @@ static void retroarch_print_help(const char *arg0)
          "                                 "
          "  If a default config is not found, the program will attempt to create one\n"
          "                                 "
-         "  based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg).\n"
-         , sizeof(buf) - _len);
+         "  based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg).\n");
 #endif
-   _len += strlcpy(buf + _len, "      --appendconfig=FILE        "
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --appendconfig=FILE        "
          "Extra config files are loaded in, and take priority over\n"
          "                                 "
          "  config selected in -c (or default). Multiple configs are\n"
          "                                 "
-         "  delimited by '|'.\n"
-         , sizeof(buf) - _len);
+         "  delimited by '|'.\n");
 #endif
 
    fputs(buf, stdout);
    buf[0] = '\0';
    _len   = 0;
 
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "      --subsystem=NAME           "
          "Use a subsystem of the libretro core. Multiple content\n"
          "                                 "
          "  files are loaded as multiple arguments. If a content\n"
          "                                 "
-         "  file is skipped, use a blank (\"\") command line argument.\n"
-         , sizeof(buf) - _len);
+         "  file is skipped, use a blank (\"\") command line argument.\n");
 
 #ifdef HAVE_DYNAMIC
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "  -L, --libretro=FILE            "
          "Path to libretro implementation. Overrides any config setting.\n"
          "                                 "
@@ -6836,35 +6825,31 @@ static void retroarch_print_help(const char *arg0)
          "                                 "
          "  1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>\n"
          "                                 "
-         "  2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>\n"
-         , sizeof(buf) - _len);
-   _len += strlcpy(buf + _len,
+         "  2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>\n");
+   strlcpy_append(buf, sizeof(buf), &_len,
          "                                 "
          "  3. A core 'short name' (*): <core_name>_libretro OR <core_name>\n"
          "                                 "
          "  (*) If 'file name' or 'short name' do not correspond to an existing full file path,\n"
          "                                 "
-         "  the configured frontend 'cores' directory will be searched for a match.\n"
-         , sizeof(buf) - _len);
+         "  the configured frontend 'cores' directory will be searched for a match.\n");
 #endif
 
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "                                 "
          "  Content must be loaded in an order which depends on the\n"
          "                                 "
          "  particular subsystem used. See verbose log output to learn\n"
          "                                 "
-         "  how a particular subsystem wants content to be loaded.\n"
-         , sizeof(buf) - _len);
+         "  how a particular subsystem wants content to be loaded.\n");
 
 #ifdef HAVE_LIBRETRODB
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "      --scan=PATH|FILE           "
-         "Import content from path.\n"
-         , sizeof(buf) - _len);
+         "Import content from path.\n");
 #endif
 
-   strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "  -f, --fullscreen               "
          "Start the program in fullscreen regardless of config setting.\n"
          "      --set-shader=PATH          "
@@ -6872,8 +6857,7 @@ static void retroarch_print_help(const char *arg0)
          "                                 "
          "  Effectively overrides automatic shader presets.\n"
          "                                 "
-         "  An empty argument \"\" will disable automatic shader presets.\n"
-         , sizeof(buf) - _len);
+         "  An empty argument \"\" will disable automatic shader presets.\n");
 
    fputs(buf, stdout);
    buf[0] = '\0';
@@ -6881,12 +6865,18 @@ static void retroarch_print_help(const char *arg0)
 
    _len += snprintf(buf + _len, sizeof(buf) - _len,"  -N, --nodevice=PORT            "
          "Disconnects controller device connected to PORT (1 to %d).\n", MAX_USERS);
+   if (_len >= sizeof(buf))
+      _len = sizeof(buf) - 1;
    _len += snprintf(buf + _len, sizeof(buf) - _len,"  -A, --dualanalog=PORT          "
          "Connect a DualAnalog controller to PORT (1 to %d).\n", MAX_USERS);
+   if (_len >= sizeof(buf))
+      _len = sizeof(buf) - 1;
    _len += snprintf(buf + _len, sizeof(buf) - _len,"  -d, --device=PORT:ID           "
          "Connect a generic device into PORT of the device (1 to %d).\n", MAX_USERS);
+   if (_len >= sizeof(buf))
+      _len = sizeof(buf) - 1;
 
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "                                 "
          "  Format is PORT:ID, where ID is a number corresponding to the particular device.\n"
          "  -M, --sram-mode=MODE           "
@@ -6894,11 +6884,10 @@ static void retroarch_print_help(const char *arg0)
          "                                 "
          "  'noload-nosave', 'noload-save', 'load-nosave' or 'load-save'.\n"
          "                                 "
-         "  Note: 'noload-save' implies that save files *WILL BE OVERWRITTEN*.\n"
-         , sizeof(buf) - _len);
+         "  Note: 'noload-save' implies that save files *WILL BE OVERWRITTEN*.\n");
 
 #ifdef HAVE_NETWORKING
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "  -H, --host                     "
          "Host netplay as user 1.\n"
          "  -C, --connect=HOST             "
@@ -6910,87 +6899,77 @@ static void retroarch_print_help(const char *arg0)
          "      --nick=NICK                "
          "Picks a username (for use with netplay). Not mandatory.\n"
          "      --check-frames=NUMBER      "
-         "Check frames when using netplay.\n"
-         , sizeof(buf) - _len);
+         "Check frames when using netplay.\n");
 #ifdef HAVE_NETWORK_CMD
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "      --command                  "
          "Sends a command over UDP to an already running program process.\n"
          "                                 "
-         "  Available commands are listed if command is invalid.\n"
-         , sizeof(buf) - _len);
+         "  Available commands are listed if command is invalid.\n");
 #endif
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "  -P, --play-replay=FILE         "
          "Playback a replay file.\n"
          "  -R, --record-replay=FILE       "
          "Start recording a replay file from the beginning.\n"
          "      --eof-exit                 "
-         "Exit upon reaching the end of the replay file.\n"
-         , sizeof(buf) - _len);
+         "Exit upon reaching the end of the replay file.\n");
 #endif
 
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "  -r, --record=FILE              "
          "Path to record video file. Using mkv extension is recommended.\n"
          "      --recordconfig             "
          "Path to settings used during recording.\n"
          "      --size=WIDTHxHEIGHT        "
-         "Overrides output video size when recording.\n"
-         , sizeof(buf) - _len);
+         "Overrides output video size when recording.\n");
 
    fputs(buf, stdout);
    buf[0] = '\0';
    _len   = 0;
 
-   _len   = strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "  -D, --detach                   "
          "Detach program from the running console. Not relevant for all platforms.\n"
          "      --max-frames=NUMBER        "
-         "Runs for the specified number of frames, then exits.\n"
-         , sizeof(buf) - _len);
+         "Runs for the specified number of frames, then exits.\n");
 
 #ifdef HAVE_PATCH
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "  -U, --ups=FILE                 "
          "Specifies path for UPS patch that will be applied to content.\n"
          "      --bps=FILE                 "
          "Specifies path for BPS patch that will be applied to content.\n"
          "      --ips=FILE                 "
-         "Specifies path for IPS patch that will be applied to content.\n"
-         , sizeof(buf) - _len);
+         "Specifies path for IPS patch that will be applied to content.\n");
 #ifdef HAVE_XDELTA
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "      --xdelta=FILE              "
-         "Specifies path for Xdelta patch that will be applied to content.\n"
-         , sizeof(buf) - _len);
+         "Specifies path for Xdelta patch that will be applied to content.\n");
 #endif /* HAVE_XDELTA */
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "      --no-patch                 "
-         "Disables all forms of content patching.\n"
-         , sizeof(buf) - _len);
+         "Disables all forms of content patching.\n");
 #endif /* HAVE_PATCH */
 
 #ifdef HAVE_SCREENSHOTS
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "      --max-frames-ss            "
          "Takes a screenshot at the end of max-frames.\n"
          "      --max-frames-ss-path=FILE  "
-         "Path to save the screenshot to at the end of max-frames.\n"
-         , sizeof(buf) - _len);
+         "Path to save the screenshot to at the end of max-frames.\n");
 #endif
 
 #ifdef HAVE_ACCESSIBILITY
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "      --accessibility            "
-         "Enables accessibility for blind users using text-to-speech.\n"
-         , sizeof(buf) - _len);
+         "Enables accessibility for blind users using text-to-speech.\n");
 #endif
 
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "      --load-menu-on-error       "
          "Open menu instead of quitting if specified core or content fails to load.\n"
          "  -e, --entryslot=NUMBER         "
@@ -6998,8 +6977,7 @@ static void retroarch_print_help(const char *arg0)
          "  -s, --save=PATH                "
          "Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n"
          "  -S, --savestate=PATH           "
-         "Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n"
-         , sizeof(buf) - _len);
+         "Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n");
 
    /* Flush buffer here to avoid the error "error: string length ‘752’
     * is greater than the length ‘509’ ISO C90 compilers are required
@@ -7009,7 +6987,7 @@ static void retroarch_print_help(const char *arg0)
 #if defined(__linux__) || defined(__GNU__) || (defined(BSD) && !defined(__MACH__))
    buf[0] = '\0';
    _len   = 0;
-   _len += strlcpy(buf + _len,
+   strlcpy_append(buf, sizeof(buf), &_len,
          "\nThe following environment variables are supported:\n\n"
          "  LIBRETRO_ASSETS_DIRECTORY\n"
          "  LIBRETRO_AUTOCONFIG_DIRECTORY\n"
@@ -7019,8 +6997,7 @@ static void retroarch_print_help(const char *arg0)
          "  LIBRETRO_SYSTEM_DIRECTORY\n"
          "  LIBRETRO_VIDEO_FILTER_DIRECTORY\n"
          "  LIBRETRO_VIDEO_SHADER_DIRECTORY\n\n"
-         "Refer to `man 6 retroarch' for a description of what they do.\n"
-         , sizeof(buf) - _len);
+         "Refer to `man 6 retroarch' for a description of what they do.\n");
    fputs(buf, stdout);
 #endif
 }

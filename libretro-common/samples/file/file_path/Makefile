@@ -1,9 +1,8 @@
-TARGET := path_resolve_realpath_test
+TARGETS := path_resolve_realpath_test fill_pathname_test
 
 LIBRETRO_COMM_DIR := ../../..
 
-SOURCES := \
-	path_resolve_realpath_test.c \
+COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
@@ -16,19 +15,19 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
-OBJS := $(SOURCES:.c=.o)
+COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -DRARCH_INTERNAL -I$(LIBRETRO_COMM_DIR)/include
 
-all: $(TARGET)
+all: $(TARGETS)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS)
+$(TARGETS): %: %.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGETS) $(addsuffix .o,$(TARGETS)) $(COMMON_OBJS)
 
-.PHONY: clean
+.PHONY: all clean

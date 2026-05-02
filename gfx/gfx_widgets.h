@@ -191,6 +191,22 @@ typedef struct dispgfx_widget
 
 #ifdef HAVE_THREADS
    slock_t* current_msgs_lock;
+   /* Serialises producer and consumer access to msg_queue.
+    * Producers (gfx_widgets_msg_queue_push) can be called from
+    * any thread -- the threaded task system at libretro-common/
+    * queues/task_queue.c runs a worker thread, and several call
+    * paths reach the producer without holding any other lock
+    * (notably gfx/video_driver.c::video_driver_frame, which
+    * releases RUNLOOP_MSG_QUEUE_LOCK before the call).  The
+    * consumer (gfx_widgets_iterate) runs on the main thread
+    * but did not previously serialise its fifo_read against
+    * concurrent producer fifo_writes.  This separates concerns:
+    * current_msgs_lock continues to guard the displayed-message
+    * deque (current_msgs[]); msg_queue_lock guards the FIFO
+    * staging buffer.  Acquired by every fifo_* call site and
+    * by FIFO_*_AVAIL checks where the result is used to gate a
+    * subsequent FIFO operation. */
+   slock_t* msg_queue_lock;
 #endif
    fifo_buffer_t msg_queue;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];

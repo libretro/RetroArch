@@ -39,7 +39,6 @@
 #include "../playlist.h"
 #include "../configuration.h"
 #include "../ui/ui_companion_driver.h"
-#include "../gfx/video_display_server.h"
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #endif
@@ -1667,13 +1666,6 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
 }
 
 #ifdef HAVE_LIBRETRODB
-static void task_database_progress_cb(retro_task_t *task)
-{
-   if (task)
-      video_display_server_set_window_progress(task->progress,
-            ((task->flags & RETRO_TASK_FLG_FINISHED) > 0));
-}
-
 bool task_push_dbscan(
       const char *playlist_directory, /* always from settings */
       const char *content_database,   /* always from settings */
@@ -2607,8 +2599,8 @@ bool task_push_manual_content_scan(
    task->state                   = manual_scan;
    task->title                   = strdup(task_title);
    task->progress                = 0;
-#ifdef HAVE_LIBRETRODB   
-   task->progress_cb             = task_database_progress_cb;
+#ifdef HAVE_LIBRETRODB
+   task->progress_cb             = task_window_progress_cb;
 #else
    task->progress_cb             = NULL;
 #endif

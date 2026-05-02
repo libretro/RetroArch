@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -281,7 +282,7 @@ static void video_shader_replace_wildcards_impl(
                {
                   unsigned viewport_width  = 0;
                   unsigned viewport_height = 0;
-                  video_driver_get_size(&viewport_width, &viewport_height);
+                  video_driver_get_output_size(&viewport_width, &viewport_height);
                   _len = strlcpy(replace_text,
                         (viewport_height > 0 && (float)viewport_width / viewport_height < 1)
                         ? "VIEW-ASPECT-ORIENT-VERT"
@@ -344,6 +345,29 @@ static void video_shader_replace_wildcards_impl(
          {
             char *tmp_ptr;
             size_t prefix = (size_t)(found - src);
+
+            /* _len comes from strlcpy / snprintf return values.
+             * strlcpy returns strlen(source) regardless of the
+             * destination capacity, and snprintf returns the
+             * "would-have-written" length, so on long sources
+             * (content_dir_name, library_name, path_basename,
+             * preset_dir_name, all of which can be up to
+             * DIR_MAX_LENGTH = 4096) _len exceeds
+             * sizeof(replace_text) = 256.  The memcpy below
+             * would then read past the end of replace_text into
+             * adjacent stack memory; the strlcpy further down
+             * would underflow (size_t)(PATH_MAX_LENGTH - prefix
+             * - _len) and write tens of GiB.  Clamp here at the
+             * use site so every preceding branch is covered. */
+            if (_len >= sizeof(replace_text))
+               _len = sizeof(replace_text) - 1;
+
+            /* Also bound prefix + _len against the dst buffer
+             * size so the strlcpy below doesn't underflow its
+             * size argument and walk off the end of dst. */
+            if (prefix >= PATH_MAX_LENGTH || _len >= PATH_MAX_LENGTH - prefix)
+               break;
+
             memcpy(dst, src, prefix);
             memcpy(dst + prefix, replace_text, _len);
             strlcpy(dst + prefix + _len, found + token_len,
@@ -779,14 +803,19 @@ static bool video_shader_parse_pass(config_file_t *conf,
    if (scale->type_x == RARCH_SCALE_ABSOLUTE)
    {
       int iattr          = 0;
+      float fattr        = 0.0f;
       if (config_get_int(conf, shader_var, &iattr))
          scale->abs_x    = iattr;
+      else if (config_get_float(conf, shader_var, &fattr))
+         scale->abs_x    = (unsigned)roundf(fattr);
       else
       {
          _len = strlcpy(shader_var, "scale_x", sizeof(shader_var));
          strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
          if (config_get_int(conf, shader_var, &iattr))
             scale->abs_x = iattr;
+         else if (config_get_float(conf, shader_var, &fattr))
+            scale->abs_x = (unsigned)roundf(fattr);
       }
    }
    else
@@ -809,14 +838,19 @@ static bool video_shader_parse_pass(config_file_t *conf,
    if (scale->type_y == RARCH_SCALE_ABSOLUTE)
    {
       int iattr          = 0;
+      float fattr        = 0.0f;
       if (config_get_int(conf, shader_var, &iattr))
          scale->abs_y    = iattr;
+      else if (config_get_float(conf, shader_var, &fattr))
+         scale->abs_y    = (unsigned)roundf(fattr);
       else
       {
          _len = strlcpy(shader_var, "scale_y", sizeof(shader_var));
          strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
          if (config_get_int(conf, shader_var, &iattr))
             scale->abs_y = iattr;
+         else if (config_get_float(conf, shader_var, &fattr))
+            scale->abs_y = (unsigned)roundf(fattr);
       }
    }
    else
@@ -3035,9 +3069,15 @@ bool video_shader_combine_preset_and_apply(
    char *combined_preset_path;
    char combined_preset_name[NAME_MAX_LENGTH];
    const char *preset_ext                = video_shader_get_preset_extension(type);
-   struct video_shader *shader_to_append = (struct video_shader*) calloc(1, sizeof(*shader_to_append));
-   struct video_shader *combined_shader  = (struct video_shader*) calloc(1, sizeof(*combined_shader));
+   struct video_shader *shader_to_append;
+   struct video_shader *combined_shader;
    size_t _len;
+
+   if (!preset_ext || !preset_path || !temp_dir)
+      return false;
+
+   shader_to_append = (struct video_shader*) calloc(1, sizeof(*shader_to_append));
+   combined_shader  = (struct video_shader*) calloc(1, sizeof(*combined_shader));
 
    if (!shader_to_append || !combined_shader)
    {

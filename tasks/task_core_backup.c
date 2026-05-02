@@ -35,6 +35,7 @@
 #include "../verbosity.h"
 #include "../core_info.h"
 #include "../core_backup.h"
+#include "tasks_internal.h"
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
 #include "../menu/menu_driver.h"
@@ -631,6 +632,7 @@ void *task_push_core_backup(
    task->state            = backup_handle;
    task->title            = strdup(task_title);
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
 
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -1085,6 +1087,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    task->state            = backup_handle;
    task->title            = strdup(task_title);
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_restore;
    task->flags           |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 

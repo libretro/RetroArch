@@ -43,40 +43,59 @@
 #define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  16.66667f * 3
 #define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
 
-/* Helpers for cross-thread thumbnail status synchronisation.
+/* The thumbnail .status field is atomically-typed (see the
+ * gfx_thumbnail_t comment in gfx_thumbnail.h).  Reads and writes
+ * therefore must go through the retro_atomic API rather than
+ * plain assignment / dereference; on the C11 stdatomic and C++11
+ * std::atomic backends, plain access to such a field is illegal.
  *
- * The main thread writes texture/width/height then publishes
- * status = AVAILABLE.  The video thread reads status; if it
- * sees AVAILABLE, the data fields must be visible.
+ * The two cross-thread sites in this file are noted at the
+ * call sites:
+ *  - The release-stores in gfx_thumbnail_handle_upload publish
+ *    prior texture / width / height writes.
+ *  - The acquire-load in gfx_thumbnail_draw pairs with those.
+ * All other accesses are single-threaded; they go through the
+ * retro_atomic API only because the field's atomic-typed
+ * storage requires it.  The cost on weak-memory ARM/PowerPC is
+ * one extra ldar/stlr per cold-path access; on x86 TSO the
+ * barriers compile out entirely.
  *
- * On GCC/Clang (covers ARM64, x86, PowerPC, MIPS):
- *   release-store / acquire-load give the required ordering.
- * On MSVC (x86/x64 only in RetroArch's target matrix):
- *   x86 total-store-order makes plain volatile sufficient,
- *   but _InterlockedOr gives an explicit acquire load.
- * Fallback:
- *   Plain volatile read/write — sufficient on single-core
- *   and x86.  Platforms with weak ordering that lack GCC
- *   builtins do not run threaded video in practice.
- */
-#if defined(__clang__) || (defined(__GNUC__) && \
-   ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7)))
-#define GFX_THUMB_STATUS_STORE(ptr, val) \
-   __atomic_store_n((int*)(ptr), (int)(val), __ATOMIC_RELEASE)
-#define GFX_THUMB_STATUS_LOAD(ptr) \
-   ((enum gfx_thumbnail_status)__atomic_load_n((int*)(ptr), __ATOMIC_ACQUIRE))
-#elif defined(_MSC_VER)
-#include <intrin.h>
-#define GFX_THUMB_STATUS_STORE(ptr, val) \
-   _InterlockedExchange((volatile long*)(ptr), (long)(val))
-#define GFX_THUMB_STATUS_LOAD(ptr) \
-   ((enum gfx_thumbnail_status)_InterlockedOr((volatile long*)(ptr), 0))
+ * The wrappers are static-inline (rather than function-like
+ * macros) so callers have a clear function boundary.  GCC 13+
+ * at -O3 emits a spurious -Wstringop-overflow on the inlined
+ * __atomic_* primitive when called from gfx_thumbnail_request,
+ * because the optimiser cannot prove the @c thumbnail argument
+ * non-NULL across every `goto end:` flow-graph path; the
+ * suppression below is a targeted fix that does not affect
+ * codegen.  No effect on non-GCC backends. */
+
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 12
+#  define GFX_THUMB_STATUS_DIAG_PUSH \
+   _Pragma("GCC diagnostic push") \
+   _Pragma("GCC diagnostic ignored \"-Wstringop-overflow\"")
+#  define GFX_THUMB_STATUS_DIAG_POP \
+   _Pragma("GCC diagnostic pop")
 #else
-#define GFX_THUMB_STATUS_STORE(ptr, val) \
-   do { (*(volatile int*)(ptr)) = (int)(val); } while(0)
-#define GFX_THUMB_STATUS_LOAD(ptr) \
-   ((enum gfx_thumbnail_status)(*(volatile int*)(ptr)))
+#  define GFX_THUMB_STATUS_DIAG_PUSH
+#  define GFX_THUMB_STATUS_DIAG_POP
 #endif
+
+GFX_THUMB_STATUS_DIAG_PUSH
+static INLINE void gfx_thumb_status_store(
+      retro_atomic_int_t *ptr, enum gfx_thumbnail_status val)
+{
+   retro_atomic_store_release_int(ptr, (int)val);
+}
+
+static INLINE enum gfx_thumbnail_status gfx_thumb_status_load(
+      retro_atomic_int_t *ptr)
+{
+   return (enum gfx_thumbnail_status)retro_atomic_load_acquire_int(ptr);
+}
+GFX_THUMB_STATUS_DIAG_POP
+
+#define GFX_THUMB_STATUS_STORE(ptr, val) gfx_thumb_status_store((ptr), (val))
+#define GFX_THUMB_STATUS_LOAD(ptr)       gfx_thumb_status_load((ptr))
 
 /* Utility structure, sent as userdata when pushing
  * an image load */
@@ -152,9 +171,9 @@ static void gfx_thumbnail_init_fade(
    /* A 'fade in' animation is triggered if:
     * - Thumbnail is available
     * - Thumbnail is missing and 'fade_missing' is enabled */
-   if (   (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+   if (   (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_AVAILABLE)
        || (p_gfx_thumb->fade_missing
-       && (thumbnail->status == GFX_THUMBNAIL_STATUS_MISSING)))
+       && (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_MISSING)))
    {
       if (p_gfx_thumb->fade_duration > 0.0f)
       {
@@ -198,7 +217,7 @@ static void gfx_thumbnail_handle_upload(
       goto end;
 
    /* Only process image if we are waiting for it */
-   if (thumbnail_tag->thumbnail->status != GFX_THUMBNAIL_STATUS_PENDING)
+   if (GFX_THUMB_STATUS_LOAD(&thumbnail_tag->thumbnail->status) != GFX_THUMBNAIL_STATUS_PENDING)
       goto end;
 
    /* Sanity check: if thumbnail already has a texture,
@@ -300,6 +319,7 @@ static bool gfx_thumbnail_get_path(
                *path          = path_data->left_path;
                return true;
             }
+            break;
          case GFX_THUMBNAIL_ICON:
             if (*path_data->icon_path)
             {
@@ -345,7 +365,7 @@ void gfx_thumbnail_request(
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
    gfx_thumbnail_reset(thumbnail);
-   thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
 
    /* Update/extract thumbnail path */
    if (gfx_thumbnail_is_enabled(path_data, thumbnail_id))
@@ -374,7 +394,7 @@ void gfx_thumbnail_request(
                         thumbnail_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
                         gfx_thumbnail_upscale_threshold,
                         gfx_thumbnail_handle_upload, thumbnail_tag))
-                  thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
+                  GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
             }
 #ifdef HAVE_NETWORKING
             /* Handle on demand thumbnail downloads */
@@ -432,7 +452,7 @@ void gfx_thumbnail_request(
 
 end:
    /* Trigger 'fade in' animation, if required */
-   if (thumbnail->status != GFX_THUMBNAIL_STATUS_PENDING)
+   if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) != GFX_THUMBNAIL_STATUS_PENDING)
       gfx_thumbnail_init_fade(p_gfx_thumb,
             thumbnail);
 }
@@ -458,7 +478,7 @@ void gfx_thumbnail_request_file(
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
    gfx_thumbnail_reset(thumbnail);
-   thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
 
    /* Check if file path is valid */
    if (   (!file_path || !*file_path)
@@ -479,7 +499,7 @@ void gfx_thumbnail_request_file(
          file_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
          gfx_thumbnail_upscale_threshold,
          gfx_thumbnail_handle_upload, thumbnail_tag))
-      thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
+      GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
 }
 
 /* Resets (and free()s the current texture of) the
@@ -501,7 +521,7 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    }
 
    /* Reset all parameters */
-   thumbnail->status      = GFX_THUMBNAIL_STATUS_UNKNOWN;
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_UNKNOWN);
    thumbnail->texture     = 0;
    thumbnail->width       = 0;
    thumbnail->height      = 0;
@@ -548,7 +568,7 @@ void gfx_thumbnail_request_stream(
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
    if (   !thumbnail
-       || (thumbnail->status != GFX_THUMBNAIL_STATUS_UNKNOWN))
+       || (GFX_THUMB_STATUS_LOAD(&thumbnail->status) != GFX_THUMBNAIL_STATUS_UNKNOWN))
       return;
 
    /* Check if stream delay timer has elapsed */
@@ -563,7 +583,7 @@ void gfx_thumbnail_request_stream(
           * > Reset thumbnail and set missing status
           *   to prevent repeated load attempts */
          gfx_thumbnail_reset(thumbnail);
-         thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+         GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
          thumbnail->alpha  = 1.0f;
          return;
       }
@@ -614,8 +634,8 @@ void gfx_thumbnail_request_streams(
 
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
-   process_r = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
-   process_l = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
+   process_r = (GFX_THUMB_STATUS_LOAD(&right_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN);
+   process_l = (GFX_THUMB_STATUS_LOAD(&left_thumbnail->status)  == GFX_THUMBNAIL_STATUS_UNKNOWN);
 
    if (process_r || process_l)
    {
@@ -651,14 +671,14 @@ void gfx_thumbnail_request_streams(
             if (request_r)
             {
                gfx_thumbnail_reset(right_thumbnail);
-               right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+               GFX_THUMB_STATUS_STORE(&right_thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                right_thumbnail->alpha  = 1.0f;
             }
 
             if (request_l)
             {
                gfx_thumbnail_reset(left_thumbnail);
-               left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
+               GFX_THUMB_STATUS_STORE(&left_thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                left_thumbnail->alpha   = 1.0f;
             }
 
@@ -711,7 +731,7 @@ void gfx_thumbnail_process_stream(
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
-      if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
          gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
 
@@ -728,7 +748,7 @@ void gfx_thumbnail_process_stream(
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
                gfx_thumbnail_reset(thumbnail);
-               thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+               GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                thumbnail->alpha  = 1.0f;
                return;
             }
@@ -747,7 +767,7 @@ void gfx_thumbnail_process_stream(
        * > If status is GFX_THUMBNAIL_STATUS_UNKNOWN,
        *   thumbnail is already in a blank state - but we
        *   must ensure that delay timer is set to zero */
-      if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN)
          thumbnail->delay_timer = 0.0f;
       /* In all other cases, reset thumbnail */
       else
@@ -785,8 +805,8 @@ void gfx_thumbnail_process_streams(
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
-      bool process_r = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
-      bool process_l = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      bool process_r = (GFX_THUMB_STATUS_LOAD(&right_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      bool process_l = (GFX_THUMB_STATUS_LOAD(&left_thumbnail->status)  == GFX_THUMBNAIL_STATUS_UNKNOWN);
 
       if (process_r || process_l)
       {
@@ -823,14 +843,14 @@ void gfx_thumbnail_process_streams(
                if (request_r)
                {
                   gfx_thumbnail_reset(right_thumbnail);
-                  right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+                  GFX_THUMB_STATUS_STORE(&right_thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                   right_thumbnail->alpha  = 1.0f;
                }
 
                if (request_l)
                {
                   gfx_thumbnail_reset(left_thumbnail);
-                  left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
+                  GFX_THUMB_STATUS_STORE(&left_thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
                   left_thumbnail->alpha   = 1.0f;
                }
 
@@ -859,12 +879,12 @@ void gfx_thumbnail_process_streams(
        *   thumbnail is already in a blank state - but we
        *   must ensure that delay timer is set to zero
        * > In all other cases, reset thumbnail */
-      if (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      if (GFX_THUMB_STATUS_LOAD(&right_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN)
          right_thumbnail->delay_timer = 0.0f;
       else
          gfx_thumbnail_reset(right_thumbnail);
 
-      if (left_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      if (GFX_THUMB_STATUS_LOAD(&left_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN)
          left_thumbnail->delay_timer = 0.0f;
       else
          gfx_thumbnail_reset(left_thumbnail);
@@ -1037,7 +1057,12 @@ void gfx_thumbnail_draw(
          thumb_snapshot.height  = thumb_height;
          thumb_snapshot.alpha   = thumb_alpha;
          thumb_snapshot.flags   = thumb_flags;
-         thumb_snapshot.status  = GFX_THUMBNAIL_STATUS_AVAILABLE;
+         /* Local snapshot: initialise the atomic-typed status
+          * field via _init since this is its first write --
+          * direct assignment to the C11/C++11 atomic forms is
+          * illegal.  This local is never observed by another
+          * thread, so no ordering is required. */
+         retro_atomic_int_init(&thumb_snapshot.status, GFX_THUMBNAIL_STATUS_AVAILABLE);
          thumb_snapshot.delay_timer = 0.0f;
          gfx_thumbnail_get_draw_dimensions(
                &thumb_snapshot, width, height, scale_factor,
@@ -1077,7 +1102,6 @@ void gfx_thumbnail_draw(
       draw.coords          = &coords;
       draw.matrix_data     = &mymat;
       draw.texture         = thumb_texture;
-      draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
       draw.pipeline_id     = 0;
 
       /* Set thumbnail alignment within bounding box */
@@ -1316,8 +1340,20 @@ void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
  * Note: Returned object must be free()d */
 gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void)
 {
+   /* Use calloc rather than malloc.  gfx_thumbnail_path_reset()
+    * resets the string buffers and the playlist_*_mode fields
+    * but does NOT touch playlist_index, leaving it as garbage
+    * from malloc until the first set_content_*() call.  Read
+    * sites in xmb (xmb_set_title) sample
+    * thumbnail_path_data->playlist_index before any setter has
+    * necessarily run, then pass it to playlist_get_index() --
+    * which is bounds-checked, so a garbage index just returns
+    * a stale pl_entry rather than crashing, but the code is
+    * latently UB and a future read site without the same defence
+    * would inherit a real bug.  Zero-init via calloc closes
+    * the window without churning path_reset's API. */
    gfx_thumbnail_path_data_t *path_data = (gfx_thumbnail_path_data_t*)
-      malloc(sizeof(*path_data));
+      calloc(1, sizeof(*path_data));
    if (!path_data)
       return NULL;
 
@@ -1915,6 +1951,7 @@ size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data,
    size_t _len;
    char *last_slash;
    char tmp_buf[NAME_MAX_LENGTH];
+   const char *dir_start;
    if (!path_data || !*path_data->content_path)
       return 0;
    if (!(last_slash = find_last_slash(path_data->content_path)))
@@ -1922,7 +1959,24 @@ size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data,
    _len = last_slash + 1 - path_data->content_path;
    if (!((_len > 1) && (_len < PATH_MAX_LENGTH)))
       return 0;
-   strlcpy(tmp_buf, path_data->content_path, _len * sizeof(char));
+   /* The historical implementation copied the whole directory
+    * portion of content_path into tmp_buf and then took its
+    * basename.  But content_path is sized PATH_MAX_LENGTH (2048)
+    * and tmp_buf only NAME_MAX_LENGTH (256), so a directory
+    * portion longer than 255 chars (reachable on systems with
+    * deep folder hierarchies) caused strlcpy to write up to
+    * _len-1 bytes into the 256-byte tmp_buf -- a stack overflow.
+    *
+    * Since the goal is the *basename* of the directory (i.e.
+    * the segment between the second-to-last and last slashes),
+    * skip the prefix copy: we only need the tail.  Anchor the
+    * copy at the latest position that still lets the segment
+    * fit in tmp_buf, then take its basename. */
+   dir_start = path_data->content_path;
+   if (_len > sizeof(tmp_buf))
+      dir_start = last_slash + 1 - sizeof(tmp_buf);
+   strlcpy(tmp_buf, dir_start,
+         (last_slash - dir_start + 1) * sizeof(char));
    return strlcpy(s, path_basename_nocompression(tmp_buf), len);
 }
 
@@ -1934,6 +1988,9 @@ void gfx_savestate_thumbnail_get_path(
 {
    size_t _len;
 
+   if (!s || !len)
+      return;
+
    s[0] = '\0';
 
    if (!state_name || !*state_name)
@@ -1941,10 +1998,39 @@ void gfx_savestate_thumbnail_get_path(
 
    _len = strlcpy(s, state_name, len);
 
+   /* The historical implementation accumulated _len from
+    * strlcpy / snprintf returns and used `len - _len` as the
+    * size for subsequent calls.  That pattern is NOT
+    * self-bounding: strlcpy returns strlen(@src), and snprintf
+    * returns the would-be length on truncation, so on any
+    * truncating call _len overshoots @len, the next len-_len
+    * subtraction underflows size_t to ~SIZE_MAX, and the
+    * subsequent strlcpy treats the destination as essentially
+    * infinite.  Reachable when state_name approaches PATH_MAX_LENGTH
+    * (e.g. content loaded from a deep directory tree, since
+    * runloop_st->name.savestate is sized PATH_MAX_LENGTH) and
+    * the slot suffix or extension push the total past @len.
+    *
+    * Clamp _len after each truncation so the chain stays inside
+    * the buffer instead of running off the end. */
+   if (_len >= len)
+      _len = len - 1;
+
    if (state_slot > 0)
-      _len += snprintf(s + _len, len - _len, "%d", state_slot);
+   {
+      int n = snprintf(s + _len, len - _len, "%d", state_slot);
+      if (n < 0)
+         return;
+      _len += (size_t)n;
+      if (_len >= len)
+         _len = len - 1;
+   }
    else if (state_slot < 0)
-      _len  = fill_pathname_join_delim(s, state_name, "auto", '.', len);
+   {
+      _len = fill_pathname_join_delim(s, state_name, "auto", '.', len);
+      if (_len >= len)
+         _len = len - 1;
+   }
 
    strlcpy(s + _len, FILE_PATH_PNG_EXTENSION, len - _len);
 }

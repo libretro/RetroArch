@@ -281,8 +281,15 @@ void tpool_wait(tpool_t *tp)
    {
       /* working_cond is dual use. It signals when we're not stopping but the
        * working_cnt is 0 indicating there isn't any work processing. If we
-       * are stopping it will trigger when there aren't any threads running. */
-      if ((!tp->stop && tp->working_cnt != 0) || (tp->stop && tp->thread_cnt != 0))
+       * are stopping it will trigger when there aren't any threads running.
+       *
+       * The non-stopping branch must also wait while work_first is non-NULL:
+       * a tpool_wait racing tpool_add_work would otherwise return before any
+       * worker has dequeued the just-added work (working_cnt still 0).  The
+       * worker's completion path signals working_cond only when both
+       * working_cnt == 0 and work_first == NULL, so this predicate matches
+       * the signal exactly. */
+      if ((!tp->stop && (tp->work_first || tp->working_cnt != 0)) || (tp->stop && tp->thread_cnt != 0))
          scond_wait(tp->working_cond, tp->work_mutex);
       else
          break;

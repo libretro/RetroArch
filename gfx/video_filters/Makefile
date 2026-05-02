@@ -105,6 +105,7 @@ asflags += -mfpu=neon
 endif
 
 objects += blargg_ntsc_snes.$(DYLIB) \
+			  dedither.$(DYLIB) \
 			  phosphor2x.$(DYLIB) \
 			  epx.$(DYLIB) \
 			  lq2x.$(DYLIB) \
@@ -118,6 +119,7 @@ objects += blargg_ntsc_snes.$(DYLIB) \
 			  normal2x_width.$(DYLIB) \
 			  normal2x_height.$(DYLIB) \
 			  normal4x.$(DYLIB) \
+			  pixel_art_aa.$(DYLIB) \
 			  scanline2x.$(DYLIB) \
 			  grid2x.$(DYLIB) \
 			  grid3x.$(DYLIB) \
@@ -130,7 +132,10 @@ objects += blargg_ntsc_snes.$(DYLIB) \
 			  upscale_256x_320x240.$(DYLIB) \
 			  picoscale_256x_320x240.$(DYLIB) \
 			  upscale_240x160_320x240.$(DYLIB) \
-			  upscale_mix_240x160_320x240.$(DYLIB)
+			  upscale_mix_240x160_320x240.$(DYLIB) \
+			  crop_borders.$(DYLIB) \
+			  ntsc.$(DYLIB) \
+			  ntsc_crt.$(DYLIB)
 
 all: build;
 

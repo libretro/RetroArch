@@ -1918,7 +1918,7 @@ static void check_variables(bool firststart)
    fft_ms_var.key = "ffmpeg_fft_multisample";
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &fft_ms_var) && fft_ms_var.value)
-      FFT_MULTISAMPLE_STR = strtoul(fft_ms_var.value, NULL, 0);
+      FFT_MULTISAMPLE_STR = (unsigned)strtoul(fft_ms_var.value, NULL, 0);
 #endif
 
    color_var.key = "ffmpeg_color_space";
@@ -2502,7 +2502,7 @@ void CORE_PREFIX(retro_run)(void)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
    else if (FFT_STR)
    {
-      unsigned       fft_frames = to_read_frames;
+      unsigned       fft_frames = (unsigned)to_read_frames;
       const int16_t *buffer = audio_buffer;
 
       while (fft_frames)
@@ -2518,7 +2518,7 @@ void CORE_PREFIX(retro_run)(void)
          buffer += to_read * 2;
          fft_frames -= to_read;
       }
-      hwfft_render(FFT_STR, HW_RENDER_STR.get_current_framebuffer(), FFT_WIDTH_STR, FFT_HEIGHT_STR);
+      hwfft_render(FFT_STR, (GLuint)HW_RENDER_STR.get_current_framebuffer(), FFT_WIDTH_STR, FFT_HEIGHT_STR);
       CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID,
             FFT_WIDTH_STR, FFT_HEIGHT_STR, FFT_WIDTH_STR * sizeof(uint32_t));
    }

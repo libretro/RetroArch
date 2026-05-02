@@ -215,10 +215,6 @@ struct vk_draw_triangles
    VkSampler sampler;            /* ptr alignment */
    size_t uniform_size;
    unsigned vertices;
-   /* When true, vertices are groups of 4 (quads) and will be
-    * drawn with the shared index buffer via vkCmdDrawIndexed.
-    * When false, vertices are drawn directly via vkCmdDraw. */
-   bool indexed_quads;
 };
 
 typedef struct vk
@@ -298,9 +294,22 @@ typedef struct vk
 
    struct
    {
-      VkPipeline pipelines[9 * 2];
+      /* Layout: every menu draw uses a triangle-strip topology, so this
+       * driver only keeps STRIP variants:
+       *   [0] alpha_blend, no blend
+       *   [1] alpha_blend, blend
+       *   [2] ribbon
+       *   [3] ribbon_simple
+       *   [4] snow_simple
+       *   [5] snow
+       *   [6] bokeh
+       *   [7] snowflake
+       * All entries are TRIANGLE_STRIP topology.  The history of this
+       * array previously included parallel TRIANGLE_LIST variants in
+       * even slots; they were built at init and never used. */
+      VkPipeline pipelines[8];
 #ifdef VULKAN_HDR_SWAPCHAIN
-      VkPipeline pipelines_sdr[9 * 2]; /* SDR offscreen variants */
+      VkPipeline pipelines_sdr[8]; /* SDR offscreen variants, same layout */
 #endif
       struct vk_texture blank_texture;
    } display;
@@ -945,29 +954,7 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
    vkCmdBindVertexBuffers(vk->cmd, 0, 1,
          &call->vbo->buffer, &call->vbo->offset);
 
-   /* Use indexed draw for quad-based geometry.
-    * Quads use 4 vertices each with the shared index buffer,
-    * saving 33% VBO bandwidth compared to 6 vertices per quad. */
-   if (call->indexed_quads && vk->quad_ibo.buffer != VK_NULL_HANDLE)
-   {
-      unsigned num_quads   = call->vertices / 4;
-      /* Guard against exceeding IBO capacity to prevent
-       * out-of-bounds index reads
-       * (VUID-vkCmdDrawIndexed-indexSize-00463). */
-      if (num_quads <= vk->quad_ibo.num_quads)
-      {
-         unsigned index_count = num_quads * 6;
-         vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
-               0, VK_INDEX_TYPE_UINT16);
-         vkCmdDrawIndexed(vk->cmd, index_count, 1, 0, 0, 0);
-      }
-      else
-         vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
-   }
-   else
-   {
-      vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
-   }
+   vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
 }
 
 
@@ -1017,6 +1004,7 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
       enum vk_texture_type type)
 {
    unsigned i;
+   uint64_t buffer_size_64;
    uint32_t buffer_width;
    struct vk_texture tex;
    VkImageCreateInfo info;
@@ -1051,11 +1039,18 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    /* Align stride to 4 bytes to make sure we can use compute shader uploads without too many problems. */
    buffer_width                      = width * vulkan_format_to_bpp(format);
    buffer_width                      = (buffer_width + 3u) & ~3u;
+   /* Compute the buffer size in 64-bit. width*bpp*height as a 32-bit
+    * unsigned would wrap for sufficiently large dimensions (e.g. an
+    * upscaled shader render target chain), leaving the staging buffer
+    * underallocated relative to the upload memcpy loop further down
+    * and producing a heap overflow on the host side. VkDeviceSize is
+    * 64-bit; widen the math to match. */
+   buffer_size_64                    = (uint64_t)buffer_width * (uint64_t)height;
 
    buffer_info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
    buffer_info.pNext                 = NULL;
    buffer_info.flags                 = 0;
-   buffer_info.size                  = buffer_width * height;
+   buffer_info.size                  = buffer_size_64;
    buffer_info.usage                 = 0;
    buffer_info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    buffer_info.queueFamilyIndexCount = 0;
@@ -1281,6 +1276,20 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
             vkDestroyImage(device, tex.image, NULL);
          if (tex.buffer)
             vkDestroyBuffer(device, tex.buffer, NULL);
+         /* The `if (old)` cleanup further below is skipped by this
+          * early return, but old->view/image/buffer were already
+          * destroyed at the top of the `if (old)` block above and
+          * old->memory still owns a live VkDeviceMemory.  Free it
+          * here, otherwise it leaks across the call.  Mirrors the
+          * unmap-before-free done in the pilfer branch. */
+         if (old)
+         {
+            if (old->mapped)
+               vkUnmapMemory(device, old->memory);
+            if (old->memory != VK_NULL_HANDLE)
+               vkFreeMemory(device, old->memory, NULL);
+            memset(old, 0, sizeof(*old));
+         }
          memset(&tex, 0, sizeof(tex));
          return tex;
       }
@@ -1291,8 +1300,18 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
 
    if (old)
    {
+      /* old->view/image/buffer were already destroyed at the top of
+       * the `if (old)` block above.  In the no-pilfer path we did not
+       * take ownership of old->memory, so it still owns a live
+       * VkDeviceMemory; free it here.  Unmap first to mirror the
+       * pilfer branch and to avoid free-while-mapped, which the spec
+       * permits but MoltenVK has historically handled poorly. */
       if (old->memory != VK_NULL_HANDLE)
+      {
+         if (old->mapped)
+            vkUnmapMemory(device, old->memory);
          vkFreeMemory(device, old->memory, NULL);
+      }
       memset(old, 0, sizeof(*old));
    }
 
@@ -1365,14 +1384,18 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                const uint8_t *src = NULL;
                void *ptr          = NULL;
                unsigned bpp       = vulkan_format_to_bpp(tex.format);
-               unsigned stride    = tex.width * bpp;
+               /* Source stride and per-row copy size in size_t to keep
+                * the pointer math and memcpy length safe even when
+                * width*bpp would otherwise wrap a 32-bit unsigned. */
+               size_t stride      = (size_t)tex.width * (size_t)bpp;
+               size_t row_bytes   = (size_t)width     * (size_t)bpp;
 
                vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
 
                dst                = (uint8_t*)ptr;
                src                = (const uint8_t*)initial;
                for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
-                  memcpy(dst, src, width * bpp);
+                  memcpy(dst, src, row_bytes);
 
                if (     (tex.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
                      && (tex.memory != VK_NULL_HANDLE))
@@ -1738,23 +1761,27 @@ static const float *gfx_display_vk_get_default_tex_coords(void)
 }
 
 #ifdef HAVE_SHADERPIPELINE
-static unsigned to_menu_pipeline(
-      enum gfx_display_prim_type type, unsigned pipeline)
+static unsigned to_menu_pipeline(unsigned pipeline)
 {
+   /* The display pipeline array slots [2..7] hold the six menu
+    * shader pipelines (ribbon, ribbon_simple, snow_simple, snow,
+    * bokeh, snowflake) in that order.  VIDEO_SHADER_MENU through
+    * VIDEO_SHADER_MENU_6 are consecutive descending #defines, so
+    * the mapping is a simple offset. */
    switch (pipeline)
    {
       case VIDEO_SHADER_MENU:
-         return 6 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 2;
       case VIDEO_SHADER_MENU_2:
-         return 8 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 3;
       case VIDEO_SHADER_MENU_3:
-         return 10 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 4;
       case VIDEO_SHADER_MENU_4:
-         return 12 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 5;
       case VIDEO_SHADER_MENU_5:
-         return 14 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 6;
       case VIDEO_SHADER_MENU_6:
-         return 16 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 7;
       default:
          break;
    }
@@ -1837,7 +1864,6 @@ static void gfx_display_vk_draw_pipeline(
                + 3 * sizeof(float), &yflip, sizeof(yflip));
          draw->coords          = &blank_coords;
          blank_coords.vertices = 4;
-         draw->prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
          break;
    }
 
@@ -1951,7 +1977,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_6:
          {
             struct vk_draw_triangles call;
-            unsigned idx = to_menu_pipeline(draw->prim_type, draw->pipeline_id);
+            unsigned idx = to_menu_pipeline(draw->pipeline_id);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
             call.pipeline     = (vk->flags & VK_FLAG_SDR_PIPELINE)
@@ -1966,7 +1992,6 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
             call.uniform_size = draw->backend_data_size;
             call.vbo          = &range;
             call.vertices     = draw->coords->vertices;
-            call.indexed_quads = false;
 
             vulkan_draw_triangles(vk, &call);
          }
@@ -1976,10 +2001,11 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       default:
          {
             struct vk_draw_triangles call;
+            /* Slot 0 = no blend, slot 1 = blend.  Both are TRIANGLE_STRIP
+             * (every menu draw is a tristrip; see the comment on
+             * display.pipelines for the layout). */
             unsigned
-               disp_pipeline  =
-                 ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1)
-               | (((vk->flags & VK_FLAG_DISPLAY_BLEND) > 0) << 0);
+               disp_pipeline  = ((vk->flags & VK_FLAG_DISPLAY_BLEND) > 0);
 #ifdef VULKAN_HDR_SWAPCHAIN
             call.pipeline     = (vk->flags & VK_FLAG_SDR_PIPELINE)
                ? vk->display.pipelines_sdr[disp_pipeline]
@@ -1998,7 +2024,6 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
             call.uniform_size = sizeof(math_matrix_4x4);
             call.vbo          = &range;
             call.vertices     = draw->coords->vertices;
-            call.indexed_quads = false;
 
             vulkan_draw_triangles(vk, &call);
          }
@@ -2483,7 +2508,6 @@ static void vulkan_font_render_msg(
     * Vulkan commands directly we eliminate:
     *   - packing/unpacking through struct vk_draw_triangles
     *   - the generic vulkan_draw_triangles() indirection
-    *   - the runtime branch on indexed_quads (always true for fonts)
     *   - the null-check on texture->image (always valid for fonts)
     */
 
@@ -3463,13 +3487,12 @@ static void vulkan_init_pipelines(vk_t *vk)
    vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
          1, &pipe, NULL, &vk->pipelines.alpha_blend);
 
-   /* Build display pipelines. */
-   for (i = 0; i < 4; i++)
+   /* Build display pipelines (STRIP topology only).
+    *   [0]: blend off, [1]: blend on. */
+   input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+   for (i = 0; i < 2; i++)
    {
-      input_assembly.topology = i & 2 ?
-         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP :
-         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-      blend_attachment.blendEnable = i & 1;
+      blend_attachment.blendEnable = i;
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->display.pipelines[i]);
    }
@@ -3497,13 +3520,16 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->pipelines.hdr);
 
-      /* Build display hdr pipelines. */
-      for (i = 4; i < 6; i++)
-      {
-         input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-         vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-               1, &pipe, NULL, &vk->display.pipelines[i]);
-      }
+      /* The previous code built two additional display pipelines
+       * here (in old slots 4 and 5) using the hdr_frag shader.  Both
+       * iterations of that loop produced identical pipeline objects
+       * (no varying state between them), and no consumer ever
+       * indexed slots 4 or 5 -- they were copy-paste residue from
+       * the SDR-side loop above and went unused even with HDR
+       * enabled.  The dedicated `vk->pipelines.hdr` field built
+       * just above is the actual HDR composition pipeline; it is
+       * still used by vulkan_run_hdr_pipeline at the swapchain
+       * presentation path. */
 
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
@@ -3536,10 +3562,13 @@ static void vulkan_init_pipelines(vk_t *vk)
     * readback_render_pass. */
    pipe.renderPass = vk->render_pass;
 
-   /* Other menu pipelines. */
-   for (i = 0; i < (int)ARRAY_SIZE(vk->display.pipelines) - 6; i++)
+   /* Other menu pipelines.  Six STRIP-only variants populate
+    * slots [2..7]: ribbon, ribbon_simple, snow_simple, snow,
+    * bokeh, snowflake.  See display.pipelines for layout. */
+   input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+   for (i = 0; i < 6; i++)
    {
-      switch (i >> 1)
+      switch (i)
       {
          case 0:
             module_info.codeSize   = sizeof(pipeline_ribbon_vert);
@@ -3551,27 +3580,9 @@ static void vulkan_init_pipelines(vk_t *vk)
             module_info.pCode      = pipeline_ribbon_simple_vert;
             break;
 
-         case 2:
-            module_info.codeSize   = sizeof(alpha_blend_vert);
-            module_info.pCode      = alpha_blend_vert;
-            break;
-
-         case 3:
-            module_info.codeSize   = sizeof(alpha_blend_vert);
-            module_info.pCode      = alpha_blend_vert;
-            break;
-
-         case 4:
-            module_info.codeSize   = sizeof(alpha_blend_vert);
-            module_info.pCode      = alpha_blend_vert;
-            break;
-
-         case 5:
-            module_info.codeSize   = sizeof(alpha_blend_vert);
-            module_info.pCode      = alpha_blend_vert;
-            break;
-
          default:
+            module_info.codeSize   = sizeof(alpha_blend_vert);
+            module_info.pCode      = alpha_blend_vert;
             break;
       }
 
@@ -3580,7 +3591,7 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[0].module);
 
-      switch (i >> 1)
+      switch (i)
       {
          case 0:
             module_info.codeSize   = sizeof(pipeline_ribbon_frag);
@@ -3621,7 +3632,7 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[1].module);
 
-      switch (i >> 1)
+      switch (i)
       {
          case 0:
          case 1:
@@ -3634,12 +3645,8 @@ static void vulkan_init_pipelines(vk_t *vk)
             break;
       }
 
-      input_assembly.topology = i & 1 ?
-         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP :
-         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-            1, &pipe, NULL, &vk->display.pipelines[6 + i]);
+            1, &pipe, NULL, &vk->display.pipelines[2 + i]);
 
       vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
@@ -3695,16 +3702,15 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->pipelines.alpha_blend_sdr);
 
-      /* SDR display pipelines 0-3.
+      /* SDR display pipelines, slots [0..1].  STRIP-only, see the
+       * matching comment on the main display.pipelines build above.
        * Reuse the alpha_blend vertex shader (stages[0]) and
        * alpha_blend fragment shader (stages[1]) still alive
        * from just above. */
-      for (i = 0; i < 4; i++)
+      input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+      for (i = 0; i < 2; i++)
       {
-         input_assembly.topology = i & 2 ?
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP :
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-         blend_attachment.blendEnable = i & 1;
+         blend_attachment.blendEnable = i;
          vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
                1, &pipe, NULL, &vk->display.pipelines_sdr[i]);
       }
@@ -3713,10 +3719,12 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
-      /* SDR menu shader pipelines 6+ */
-      for (i = 0; i < (int)ARRAY_SIZE(vk->display.pipelines) - 6; i++)
+      /* SDR menu shader pipelines, slots [2..7].  STRIP-only;
+       * mirror of the main display.pipelines build. */
+      input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+      for (i = 0; i < 6; i++)
       {
-         switch (i >> 1)
+         switch (i)
          {
             case 0:
                module_info.codeSize = sizeof(pipeline_ribbon_vert);
@@ -3736,7 +3744,7 @@ static void vulkan_init_pipelines(vk_t *vk)
          vkCreateShaderModule(vk->context->device,
                &module_info, NULL, &shader_stages[0].module);
 
-         switch (i >> 1)
+         switch (i)
          {
             case 0:
                module_info.codeSize = sizeof(pipeline_ribbon_frag);
@@ -3770,7 +3778,7 @@ static void vulkan_init_pipelines(vk_t *vk)
          vkCreateShaderModule(vk->context->device,
                &module_info, NULL, &shader_stages[1].module);
 
-         switch (i >> 1)
+         switch (i)
          {
             case 0:
             case 1:
@@ -3783,12 +3791,8 @@ static void vulkan_init_pipelines(vk_t *vk)
                break;
          }
 
-         input_assembly.topology = i & 1 ?
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP :
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
          vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-               1, &pipe, NULL, &vk->display.pipelines_sdr[6 + i]);
+               1, &pipe, NULL, &vk->display.pipelines_sdr[2 + i]);
 
          vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
          vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
@@ -3855,10 +3859,20 @@ static void vulkan_init_samplers(vk_t *vk)
 
 static void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer)
 {
-   vkUnmapMemory(device, buffer->memory);
-   vkFreeMemory(device, buffer->memory, NULL);
+   /* Order: unmap (only if mapped) -> destroy buffer -> free memory.
+    * vkFreeMemory must not be called while a VkBuffer is still bound
+    * to the memory (VUID-vkFreeMemory-memory-00677), and vkUnmapMemory
+    * must not be called on memory that is not currently mapped.
+    * vulkan_create_buffer leaves buffer->mapped == NULL when the
+    * initial vkMapMemory fails, so the mapped check is required. */
+   if (buffer->mapped)
+      vkUnmapMemory(device, buffer->memory);
 
-   vkDestroyBuffer(device, buffer->buffer, NULL);
+   if (buffer->buffer != VK_NULL_HANDLE)
+      vkDestroyBuffer(device, buffer->buffer, NULL);
+
+   if (buffer->memory != VK_NULL_HANDLE)
+      vkFreeMemory(device, buffer->memory, NULL);
 
    memset(buffer, 0, sizeof(*buffer));
 }
@@ -4471,8 +4485,10 @@ static void vulkan_init_quad_ibo(vk_t *vk, unsigned max_quads)
    if (res != VK_SUCCESS || !mapped)
    {
       RARCH_ERR("[Vulkan] Failed to map quad IBO memory (VkResult: %d).\n", res);
-      vkFreeMemory(device, vk->quad_ibo.memory, NULL);
+      /* Destroy the buffer before freeing the memory it is bound to
+       * (VUID-vkFreeMemory-memory-00677). */
       vkDestroyBuffer(device, vk->quad_ibo.buffer, NULL);
+      vkFreeMemory(device, vk->quad_ibo.memory, NULL);
       vk->quad_ibo.buffer    = VK_NULL_HANDLE;
       vk->quad_ibo.memory    = VK_NULL_HANDLE;
       vk->quad_ibo.num_quads = 0;
@@ -4938,8 +4954,9 @@ static void *vulkan_init(const video_info_t *video,
    temp_height = mode_height;
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
-   video_driver_get_size(&temp_width, &temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
+   else
+      video_driver_get_output_size(&temp_width, &temp_height);
    vk->video_width       = temp_width;
    vk->video_height      = temp_height;
    vk->translate_x       = 0.0;
@@ -5287,7 +5304,7 @@ static bool vulkan_alive(void *data)
 
    if (temp_width != 0 && temp_height != 0)
    {
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
       vk->video_width  = temp_width;
       vk->video_height = temp_height;
    }
@@ -6217,7 +6234,7 @@ static bool vulkan_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   int i, j, k;
+   int j, k;
    VkSubmitInfo submit_info;
    VkClearValue clear_color;
    VkRenderPassBeginInfo rp_info;
@@ -6727,6 +6744,7 @@ static bool vulkan_frame(void *data, const void *frame,
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
           ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
          || message_visible
+         || statistics_show
 #ifdef HAVE_GFX_WIDGETS       
          || widgets_visible
 #endif
@@ -6841,6 +6859,7 @@ static bool vulkan_frame(void *data, const void *frame,
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
           ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
          || message_visible
+         || statistics_show
 #ifdef HAVE_GFX_WIDGETS       
          || widgets_visible
 #endif
@@ -8100,12 +8119,14 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
          {
             int idx                = base + i;
             struct vk_texture *tex = &vk->overlay.images[idx];
+            /* Slot [1] is alpha-blend, TRIANGLE_STRIP (the only
+             * topology this driver builds; see display.pipelines). */
 #ifdef VULKAN_HDR_SWAPCHAIN
             VkPipeline pipeline    = (vk->flags & VK_FLAG_SDR_PIPELINE)
-               ? vk->display.pipelines_sdr[3]
-               : vk->display.pipelines[3]; /* Strip with blend */
+               ? vk->display.pipelines_sdr[1]
+               : vk->display.pipelines[1];
 #else
-            VkPipeline pipeline    = vk->display.pipelines[3]; /* Strip with blend */
+            VkPipeline pipeline    = vk->display.pipelines[1];
 #endif
 
             if (tex->image)

@@ -299,12 +299,26 @@ int image_transfer_process(
       unsigned tmp_pitch, width2, i;
       const uint16_t *src = NULL;
       uint16_t *dst       = NULL;
-      void *tmp           = malloc((*width) * (*height) * sizeof(uint32_t));
+      /* (size_t) casts on width and height: pre-patch the uint32
+       * multiplication width * height * 4 wrapped on 32-bit Wii
+       * (Gekko is a 32-bit PowerPC) for any image with
+       * width*height > 2^30, the malloc returned an undersized
+       * buffer, and the memcpy below ran off the end.  This file
+       * is reached only after rpng/rjpeg has already accepted the
+       * image; on 32-bit (which is where this matters) those
+       * decoders cap dimensions at 0x4000 which closes the
+       * primitive at the source.  The casts here keep the
+       * arithmetic safe regardless of upstream caps and on any
+       * platform where image_transfer.c is compiled, including
+       * future 64-bit Wii-class targets. */
+      void *tmp           = malloc(
+            (size_t)(*width) * (size_t)(*height) * sizeof(uint32_t));
 
       if (!tmp)
          return IMAGE_PROCESS_ERROR;
 
-      memcpy(tmp, *buf, (*width) * (*height) * sizeof(uint32_t));
+      memcpy(tmp, *buf,
+            (size_t)(*width) * (size_t)(*height) * sizeof(uint32_t));
       tmp_pitch = ((*width) * sizeof(uint32_t)) >> 1;
 
       *width  &= ~3;

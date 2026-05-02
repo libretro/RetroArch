@@ -1368,7 +1368,7 @@ static void *gx2_init(const video_info_t *video,
       wiiu->vp.full_height = wiiu->render_mode.height;
    }
 
-   video_driver_set_size(wiiu->vp.width, wiiu->vp.height);
+   video_driver_set_output_size(wiiu->vp.width, wiiu->vp.height);
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 

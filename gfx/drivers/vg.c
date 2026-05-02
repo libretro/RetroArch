@@ -145,7 +145,7 @@ static void *vg_init(const video_info_t *video,
    RARCH_LOG("[VG] Detecting screen resolution: %ux%u.\n", temp_width, temp_height);
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
 
    interval = video->vsync ? 1 : 0;
 
@@ -164,7 +164,7 @@ static void *vg_init(const video_info_t *video,
 
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
-      video_driver_get_size(&temp_width, &temp_height);
+      video_driver_get_output_size(&temp_width, &temp_height);
 
       win_width  = temp_width;
       win_height = temp_height;
@@ -174,8 +174,6 @@ static void *vg_init(const video_info_t *video,
          || !vg->ctx_driver->set_video_mode(vg->ctx_data,
             win_width, win_height, video->fullscreen))
       goto error;
-
-   video_driver_get_size(&temp_width, &temp_height);
 
    temp_width        = 0;
    temp_height       = 0;
@@ -195,10 +193,10 @@ static void *vg_init(const video_info_t *video,
    {
       RARCH_LOG("[VG] Verified window resolution %ux%u.\n",
             temp_width, temp_height);
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
    }
-
-   video_driver_get_size(&temp_width, &temp_height);
+   else
+      video_driver_get_output_size(&temp_width, &temp_height);
 
    vg->mScreenAspect = (float)temp_width / temp_height;
 
@@ -442,7 +440,7 @@ static bool vg_alive(void *data)
             &quit, &resize, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
 
    return !quit;
 }

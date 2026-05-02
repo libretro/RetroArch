@@ -185,11 +185,53 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
    path_length = strlen(path);
    tmp         = buffer;
 
-   while (tmp < buffer + sizeof(buffer))
+   /* The directory record layout (ECMA-119 §9.1) is:
+    *   byte  0:  record length (1 byte; 0 = end of records)
+    *   byte  1:  extended-attr length
+    *   bytes 2-9: location-of-extent (LE+BE) -- we use bytes 2..4
+    *   bytes 10-17: data length (LE+BE) -- we use bytes 10..13
+    *   ...
+    *   byte 32:  filename length
+    *   bytes 33..32+filename_length: filename
+    *
+    * Pre-this-patch the read at tmp[33 + path_length] and the
+    * subsequent reads at tmp[2..4]/tmp[10..13] could run off the
+    * end of the 2048-byte stack buffer when a malformed disc
+    * image had a record positioned (or chained via the
+    * tmp += tmp[0] advance) so that tmp + 33 + path_length lay
+    * past buffer + sizeof(buffer).  An attacker who can place a
+    * crafted sector at the directory offset gets:
+    *  - a 1-byte info-leak from adjacent stack via the
+    *    tmp[33 + path_length] comparison vs ';' / '\0';
+    *  - filename-length bytes leaked via strncasecmp's
+    *    short-circuit timing;
+    *  - up to 4 bytes of attacker-influenced stack data feeding
+    *    `sector` (tmp[2..4]) and `file->size` (tmp[10..13]),
+    *    redirecting the next intfstream_read.
+    *
+    * The advance "tmp += tmp[0]" itself can land tmp anywhere
+    * up to 255 bytes ahead.  The guard tmp < buffer + sizeof
+    * only catches the case where the loop body re-runs; it does
+    * not protect against a single iteration whose body reads
+    * past the buffer.
+    *
+    * Tighten the guard so the entire record (header through the
+    * byte at offset 33 + path_length) must fit, and require the
+    * record's claimed length to be at least large enough to
+    * cover the filename comparison. */
+   while (   tmp < buffer + sizeof(buffer)
+          && (size_t)(tmp - buffer) + 33 + path_length < sizeof(buffer))
    {
       /* The first byte of the record is the length of
        * the record - if 0, we reached the end of the data */
       if (!*tmp)
+         break;
+
+      /* Reject records whose claimed length cannot accommodate
+       * the filename comparison below.  A legitimate ECMA-119
+       * directory record has length >= 33 + filename_length
+       * + 1 (the version-separator byte). */
+      if (tmp[0] < 33 + path_length + 1)
          break;
 
       /* filename is 33 bytes into the record and
@@ -431,11 +473,13 @@ static cdfs_track_t* cdfs_open_cue_track(
    if (!cue_contents)
    {
       intfstream_close(cue_stream);
+      free(cue_stream);
       return NULL;
    }
 
    intfstream_read(cue_stream, cue_contents, stream_size);
    intfstream_close(cue_stream);
+   free(cue_stream);
 
    cue_contents[stream_size] = '\0';
 

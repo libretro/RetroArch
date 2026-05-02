@@ -103,7 +103,9 @@ bool net_http_error(struct http_t *state);
  *
  * @return the response headers. The returned buffer is owned by the
  * caller of net_http_new; it is not freed by net_http_delete.
- * If the status is not 20x and accept_error is false, it returns NULL.
+ * On a transport error, NULL is returned unless accept_error is true.
+ * Headers are returned for any response that was parsed successfully,
+ * including HTTP error statuses such as 401 (needed for auth challenges).
  **/
 struct string_list *net_http_headers(struct http_t *state);
 struct string_list *net_http_headers_ex(struct http_t *state, bool accept_error);

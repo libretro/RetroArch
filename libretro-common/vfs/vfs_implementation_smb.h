@@ -66,7 +66,7 @@ int retro_vfs_stat_smb(const char *path, int64_t *size);
 int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream);
 
 /* Context management */
-void smb_shutdown();
+void smb_shutdown(void);
 
 #ifdef __cplusplus
 }

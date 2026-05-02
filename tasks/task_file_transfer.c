@@ -24,7 +24,28 @@
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
 
+#ifdef RARCH_INTERNAL
+#include "../gfx/video_display_server.h"
+#endif
+
 bool task_image_load_handler(retro_task_t *task);
+
+/* Forward task progress to the platform's window/taskbar progress
+ * indicator (e.g. ITaskbarList3 on Win32). Wire this as a task's
+ * progress_cb to have the desktop reflect that task's progress.
+ *
+ * Lives in this always-built TU (rather than the network-gated
+ * task_http.c where it originated) so non-network tasks -- core
+ * backup, manual content scan, etc. -- can use it without pulling
+ * in HAVE_NETWORKING. */
+void task_window_progress_cb(retro_task_t *task)
+{
+#ifdef RARCH_INTERNAL
+   if (task)
+      video_display_server_set_window_progress(task->progress,
+            ((task->flags & RETRO_TASK_FLG_FINISHED) > 0));
+#endif
+}
 
 /* Default number of nbio_iterate() calls per handler tick.
  * Callers may override by setting nbio->pos_increment to a

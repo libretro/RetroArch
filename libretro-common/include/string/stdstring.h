@@ -355,6 +355,38 @@ void string_replace_multi_space_with_single_space(char *str);
  **/
 size_t string_remove_all_whitespace(char *str_trimmed, const char *str);
 
+/**
+ * strlcpy_append:
+ * @s                  : destination buffer
+ * @len                : total size of @s, including space for the NUL
+ * @pos                : in-out cursor.  On entry, the offset within
+ *                       @s where @src should be appended; on
+ *                       successful return advanced past the appended
+ *                       bytes.  On truncation clamped to @len - 1 so
+ *                       subsequent calls in a chain short-circuit.
+ * @src                : NUL-terminated source string to append
+ *
+ * Bound-checked replacement for the unsafe pattern
+ *
+ *     *pos += strlcpy(@s + *pos, @src, @len - *pos);
+ *
+ * which is widely used to build strings piece-by-piece but is
+ * NOT self-bounding -- strlcpy returns strlen(@src) regardless
+ * of how much was actually written, so on truncation *pos
+ * overshoots @len and the next @len - *pos subtraction underflows
+ * size_t, corrupting subsequent appends.
+ *
+ * On success returns 0 and advances *pos by strlen(@src).  On
+ * truncation (the appended bytes plus a NUL would exceed @len)
+ * returns -1, leaves @s NUL-terminated at @len - 1, and clamps
+ * *pos to @len - 1 so a chain of strlcpy_append calls can
+ * short-circuit cleanly -- the caller need only check the bitwise
+ * OR of the chain's results once at the end.
+ *
+ * @return 0 on success, -1 on truncation or invalid arguments
+ **/
+int strlcpy_append(char *s, size_t len, size_t *pos, const char *src);
+
 /* Retrieve the last occurance of the given character in a string. */
 int string_index_last_occurance(const char *str, char c);
 

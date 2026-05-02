@@ -629,9 +629,17 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    if ((content_buf_size = filestream_get_size(file)) < 0)
       goto error;
 
-   if (!(content_buf = malloc((size_t)(content_buf_size + 1))))
+   /* Reject sizes that would not survive the cast to size_t for
+    * the malloc below.  Pre-patch the only check here was a
+    * tautological '(int64_t)(uint64_t)X != X' (which is false
+    * for any positive int64_t), and on 32-bit hosts any file
+    * larger than ~4 GiB silently truncated through (size_t),
+    * the malloc was undersized, and the filestream_read below
+    * overran it. */
+   if ((uint64_t)content_buf_size + 1 > (uint64_t)((size_t)-1))
       goto error;
-   if ((int64_t)(uint64_t)(content_buf_size + 1) != (content_buf_size + 1))
+
+   if (!(content_buf = malloc((size_t)(content_buf_size + 1))))
       goto error;
 
    if ((ret = filestream_read(file, content_buf, (int64_t)content_buf_size)) <

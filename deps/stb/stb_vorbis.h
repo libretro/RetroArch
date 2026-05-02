@@ -3702,12 +3702,12 @@ void stb_vorbis_seek_start(stb_vorbis *f)
 
 unsigned int stb_vorbis_stream_length_in_samples(stb_vorbis *f)
 {
-   unsigned int restore_offset, previous_safe;
-   unsigned int end, last_page_loc;
+   uint32_t restore_offset, previous_safe;
+   uint32_t end, last_page_loc;
 
    if (IS_PUSH_MODE(f)) return error(f, VORBIS_invalid_api_mixing);
    if (!f->total_samples) {
-      unsigned int last;
+      uint32_t last;
       uint32_t lo,hi;
       char header[6];
 

@@ -2492,7 +2492,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
-   "Sincronize a apresentação de vídeo com a posição da scanline. Reduz a latência ao custo de um risco maior de tearing (asgos na tela)."
+   "Sincronize a apresentação de vídeo com a posição da scanline. Reduz a latência ao custo de um risco maior de tearing (rasgos na tela). O VSync deve estar desativado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -6505,11 +6505,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-   "Mostrar \"Gravar opções em disco\""
+   "Mostrar 'Gravar Opções no Disco'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-   "Mostra a opção \"Gravar opções em disco\" dentro do menu Opções -> Gerenciar opções do núcleo."
+   "Mostre a entrada 'Gravar Opções no Disco' no menu 'Opções > Gerenciar Configurações do Núcleo'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -9138,7 +9138,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
-   "Controle de disco"
+   "Controle de Disco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_OPTIONS,
@@ -9232,7 +9232,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
-   "Gravar opções em disco"
+   "Gravar Opções no Disco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
@@ -13357,7 +13357,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
-   "O núcleo não suporte Controle de Disco."
+   "O núcleo não suporta Controle de Disco."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,

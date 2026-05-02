@@ -92,6 +92,16 @@
 #define GL_UNSIGNED_INT_8_8_8_8_REV       0x8367
 #endif
 
+#if defined(HAVE_OPENGLES2)
+#define GL2_DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#elif defined(HAVE_GLSL)
+#define GL2_DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#elif defined(HAVE_CG)
+#define GL2_DEFAULT_SHADER_TYPE RARCH_SHADER_CG
+#else
+#define GL2_DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
+#endif
+
 #if defined(HAVE_PSGL)
 #define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
@@ -511,23 +521,6 @@ static void *gfx_display_gl2_get_default_mvp(void *data)
    return &gl->mvp_no_rot;
 }
 
-static GLenum gfx_display_prim_to_gl_enum(
-      enum gfx_display_prim_type type)
-{
-   switch (type)
-   {
-      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-         return GL_TRIANGLE_STRIP;
-      case GFX_DISPLAY_PRIM_TRIANGLES:
-         return GL_TRIANGLES;
-      case GFX_DISPLAY_PRIM_NONE:
-      default:
-         break;
-   }
-
-   return 0;
-}
-
 static void gfx_display_gl2_blend_begin(void *data)
 {
    gl2_t             *gl          = (gl2_t*)data;
@@ -650,8 +643,8 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       : (math_matrix_4x4*)&gl->mvp_no_rot);
 
 
-   glDrawArrays(gfx_display_prim_to_gl_enum(
-            draw->prim_type), 0, draw->coords->vertices);
+   /* Menu draws use a triangle-strip layout. */
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
 
    gl->coords.color     = gl->white_color_ptr;
 }
@@ -2991,7 +2984,7 @@ static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_typ
 
    if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
    {
-      type = DEFAULT_SHADER_TYPE;
+      type = GL2_DEFAULT_SHADER_TYPE;
 
       if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
          type = RARCH_SHADER_GLSL;
@@ -4548,16 +4541,15 @@ static void *gl2_init(const video_info_t *video,
 
       if (vendor && *vendor)
       {
-        _len                   = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
-        gl->device_str[  _len]  = ' ';
-        gl->device_str[++_len]  = '\0';
+         strlcpy_append(gl->device_str, sizeof(gl->device_str), &_len, vendor);
+         strlcpy_append(gl->device_str, sizeof(gl->device_str), &_len, " ");
       }
 
       if (renderer && *renderer)
-        strlcpy(gl->device_str + _len, renderer, sizeof(gl->device_str) - _len);
+         strlcpy_append(gl->device_str, sizeof(gl->device_str), &_len, renderer);
 
       if (version && *version)
-        video_driver_set_gpu_api_version_string(version);
+         video_driver_set_gpu_api_version_string(version);
    }
 
 #ifdef _WIN32
@@ -4657,9 +4649,9 @@ static void *gl2_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
-
-   video_driver_get_size(&temp_width, &temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
+   else
+      video_driver_get_output_size(&temp_width, &temp_height);
    gl->video_width       = temp_width;
    gl->video_height      = temp_height;
 
@@ -4872,7 +4864,7 @@ static bool gl2_alive(void *data)
 
    if (temp_width != 0 && temp_height != 0)
    {
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
       gl->video_width  = temp_width;
       gl->video_height = temp_height;
    }

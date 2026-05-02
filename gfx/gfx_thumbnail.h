@@ -28,6 +28,7 @@
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 
 #include "gfx_animation.h"
 
@@ -185,7 +186,20 @@ enum gfx_thumbnail_flags
 };
 
 /* Holds all runtime parameters associated with
- * an entry thumbnail */
+ * an entry thumbnail.
+ *
+ * @c status is read by the video thread (via
+ * gfx_thumbnail_draw) and written by both the upload-callback
+ * thread (release-store after publishing texture/width/height)
+ * and the main thread (a number of plain transitions during menu
+ * processing).  retro_atomic_int_t backs the field with an
+ * atomic-typed integer that is safe to read/write through the
+ * retro_atomic_*_int API on every supported backend.
+ *
+ * Same size and alignment as plain int on every backend; struct
+ * layout is unchanged.  The cost of the acquire/release barriers
+ * on weak-memory ARM/PowerPC is negligible at this field's
+ * access rates (menu and frame draw, never per-sample). */
 typedef struct
 {
    uintptr_t texture;
@@ -193,9 +207,36 @@ typedef struct
    unsigned height;
    float alpha;
    float delay_timer;
-   enum gfx_thumbnail_status status;
+   retro_atomic_int_t status;
    uint8_t flags;
 } gfx_thumbnail_t;
+
+/* Field-by-field initializer for non-trivial gfx_thumbnail_t.
+ *
+ * Now that .status is atomically-typed, a wholesale
+ * memset(t, 0, sizeof(*t)) of a struct containing this type
+ * warns under CXX_BUILD's C++ compile (the struct is no longer
+ * trivially-copyable per C++11), even though the resulting
+ * bytes are identical.  RetroArch's CXX_BUILD mode
+ * compiles every .c file as C++, so this helper is required
+ * for clean builds, not just style.
+ *
+ * gfx_thumbnail_init_blank zero-inits the small struct field
+ * by field, using retro_atomic_int_init() for the atomic field
+ * so the first write is well-defined under C11 stdatomic and
+ * C++11 std::atomic.  Equivalent in effect to the pre-port
+ * memset on every real backend (status field is also zero ->
+ * UNKNOWN). */
+static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
+{
+   t->texture     = 0;
+   t->width       = 0;
+   t->height      = 0;
+   t->alpha       = 0.0f;
+   t->delay_timer = 0.0f;
+   retro_atomic_int_init(&t->status, 0 /* GFX_THUMBNAIL_STATUS_UNKNOWN */);
+   t->flags       = 0;
+}
 
 /* Holds all configuration parameters associated
  * with a thumbnail shadow effect */

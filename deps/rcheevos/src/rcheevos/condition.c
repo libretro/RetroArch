@@ -166,7 +166,7 @@ static int rc_parse_operator(const char** memaddr) {
 void rc_condition_convert_to_operand(const rc_condition_t* condition, rc_operand_t* operand, rc_parse_state_t* parse) {
   if (condition->oper == RC_OPERATOR_NONE) {
     if (operand != &condition->operand1)
-      memcpy(operand, &condition->operand1, sizeof(*operand));
+      *operand = condition->operand1;
   }
   else {
     uint8_t new_size = RC_MEMSIZE_32_BITS;

@@ -543,7 +543,6 @@ namespace hdr
 namespace hdr_crt
 {
    constant float  kBeamWidth            = 0.5f;
-   constant uint   kChannelMask          = 3u;
    constant uint   kFirstChannelShift    = 2u;
 
    constant uint   kRedId                = 0u;

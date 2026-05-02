@@ -2161,25 +2161,14 @@ static int action_bind_sublabel_core_backup_entry(
    const char *crc = list->list[i].alt
       ? list->list[i].alt
       : list->list[i].path;
-   /* Set sublabel prefix */
-   size_t _len     = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);
-
+   size_t _len = 0;
+   strlcpy_append(s, len, &_len,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC));
    /* Add CRC string */
    if (!crc || !*crc)
-   {
-      s[  _len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '\0';
-   }
+      strlcpy_append(s, len, &_len, "00000000");
    else
-      strlcpy(s + _len, crc, len - _len);
-
+      strlcpy_append(s, len, &_len, crc);
    return 1;
 }
 

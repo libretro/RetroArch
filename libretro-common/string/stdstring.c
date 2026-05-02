@@ -353,9 +353,23 @@ size_t word_wrap_wideglyph(char *s, size_t len,
    int additional_counter_normalized = wideglyph_width - 100;
 
    /* Early return if src string length is less
-    * than line width */
+    * than line width.
+    *
+    * NOTE on the strlcpy clamp: strlcpy returns strlen(src),
+    * which exceeds bytes-actually-written if the destination
+    * was too small (truncation case).  Callers (xmb, ozone,
+    * materialui messagebox helpers) use the returned value as
+    * the length argument to memchr() over the destination
+    * buffer; an inflated return walks memchr past the buffer
+    * end into adjacent stack memory.  Clamp the return to the
+    * true bytes-written count: min(strlen(src), len - 1). */
    if (src_end - src < line_width)
-      return strlcpy(s, src, len);
+   {
+      size_t copied = strlcpy(s, src, len);
+      if (copied >= len)
+         copied = (len > 0) ? len - 1 : 0;
+      return copied;
+   }
 
    while (*src != '\0')
    {
@@ -363,8 +377,15 @@ size_t word_wrap_wideglyph(char *s, size_t len,
       unsigned char_len   = (unsigned)(utf8skip(src, 1) - src);
       counter_normalized += 100;
 
-      /* Prevent buffer overflow */
-      if (char_len >= len)
+      /* Prevent buffer overflow.  `remaining` is computed from
+       * the original `len` and the current write offset rather
+       * than tracking it via `len -= char_len` -- the rewinds
+       * at lastspace/lastwideglyph below move `s` backwards
+       * without a matching `len += ...`, which would otherwise
+       * desync the two and break the buffer-space accounting
+       * for the early-return strlcpys. */
+      remaining = len - (size_t)(s - s_start);
+      if (char_len >= remaining)
          break;
 
       if (*src == ' ')
@@ -380,8 +401,10 @@ size_t word_wrap_wideglyph(char *s, size_t len,
           * length is less than line width */
          if (src_end - src <= line_width)
          {
-            remaining = len - (size_t)(s - s_start);
-            return (size_t)(s - s_start) + strlcpy(s, src, remaining);
+            size_t copied = strlcpy(s, src, remaining);
+            if (copied >= remaining)
+               copied = (remaining > 0) ? remaining - 1 : 0;
+            return (size_t)(s - s_start) + copied;
          }
       }
       else if (char_len >= 3)
@@ -392,7 +415,6 @@ size_t word_wrap_wideglyph(char *s, size_t len,
          counter_normalized += additional_counter_normalized;
       }
 
-      len -= char_len;
       while (char_len--)
          *s++ = *src++;
 
@@ -416,8 +438,12 @@ size_t word_wrap_wideglyph(char *s, size_t len,
              * length is less than line width */
             if (src_end - src <= line_width)
             {
+               size_t copied;
                remaining = len - (size_t)(s - s_start);
-               return (size_t)(s - s_start) + strlcpy(s, src, remaining);
+               copied    = strlcpy(s, src, remaining);
+               if (copied >= remaining)
+                  copied = (remaining > 0) ? remaining - 1 : 0;
+               return (size_t)(s - s_start) + copied;
             }
          }
          else if (lastspace)
@@ -434,8 +460,12 @@ size_t word_wrap_wideglyph(char *s, size_t len,
              * length is less than line width */
             if (src_end - src < line_width)
             {
+               size_t copied;
                remaining = len - (size_t)(s - s_start);
-               return (size_t)(s - s_start) + strlcpy(s, src, remaining);
+               copied    = strlcpy(s, src, remaining);
+               if (copied >= remaining)
+                  copied = (remaining > 0) ? remaining - 1 : 0;
+               return (size_t)(s - s_start) + copied;
             }
          }
       }
@@ -495,9 +525,15 @@ char* string_tokenize(char **str, const char *delim)
    if (!(token = (char *)malloc((_len + 1) * sizeof(char))))
       return NULL;
 
-   /* Copy token */
+   /* Copy token.  strlcpy already NUL-terminates within the
+    * `_len + 1` byte limit -- _len is bounded above by
+    * strlen(str_ptr) (computed at lines 489-492), so the
+    * terminator lands exactly at token[_len] without needing
+    * a separate write here.  The redundant token[_len] = '\0'
+    * also tripped -Wstringop-overflow under some gcc
+    * configurations (the analyser couldn't constrain _len
+    * relative to the malloc'd size). */
    strlcpy(token, str_ptr, (_len + 1) * sizeof(char));
-   token[_len] = '\0';
    /* Update input string pointer */
    *str = delim_ptr ? delim_ptr + delim_len : NULL;
    return token;
@@ -678,6 +714,51 @@ size_t string_remove_all_whitespace(char *s, const char *str)
          *s++ = *str;
    *s = '\0';
    return s - start;
+}
+
+/**
+ * strlcpy_append:
+ *
+ * See header (libretro-common/include/string/stdstring.h) for the
+ * full contract.  Bound-checked append; advances *pos by
+ * strlen(@src) on success, returns -1 on truncation.
+ *
+ * Truncation is signalled when *pos >= len already, or when
+ * strlcpy returns a value >= the remaining capacity.  In either
+ * case the destination is left NUL-terminated (strlcpy guarantees
+ * this when its size argument is non-zero) and *pos is clamped to
+ * len - 1 so subsequent calls in a chain become no-ops that also
+ * return -1.
+ **/
+int strlcpy_append(char *s, size_t len, size_t *pos, const char *src)
+{
+   size_t remaining;
+   size_t n;
+
+   if (!s || !pos || !src || len == 0)
+      return -1;
+
+   if (*pos >= len)
+   {
+      /* Already saturated; clamp and report truncation. */
+      *pos = len - 1;
+      return -1;
+   }
+
+   remaining = len - *pos;
+   n         = strlcpy(s + *pos, src, remaining);
+
+   if (n >= remaining)
+   {
+      /* strlcpy truncated.  s + len - 1 is NUL-terminated by
+       * strlcpy's contract.  Clamp *pos so subsequent appends
+       * short-circuit. */
+      *pos = len - 1;
+      return -1;
+   }
+
+   *pos += n;
+   return 0;
 }
 
 /**

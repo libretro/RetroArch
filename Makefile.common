@@ -364,6 +364,7 @@ OBJ += \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
+       $(LIBRETRO_COMM_DIR)/queues/retro_spsc.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o
 
@@ -2549,6 +2550,16 @@ ifneq ($(findstring Win32,$(OS)),)
           gfx/display_servers/dispserv_win32.o \
           gfx/common/dx_guids.o
 
+   # Legacy pre-DXGI GUID storage in their own TUs to avoid clashes
+   # between system <d3d8types.h> / <d3d9types.h> and the bundled
+   # <dxsdk/dxgitype.h>. See dx_guids.c header comment.
+   ifeq ($(HAVE_D3D9), 1)
+      OBJ += gfx/common/dx_guids_d3d9.o
+   endif
+   ifeq ($(HAVE_D3D8), 1)
+      OBJ += gfx/common/dx_guids_d3d8.o
+   endif
+
    ifeq ($(HAVE_GDI), 1)
       OBJ += gfx/drivers/gdi_gfx.o
       LIBS += -lmsimg32
@@ -2680,7 +2691,12 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/upscale_256x_320x240.o \
           gfx/video_filters/picoscale_256x_320x240.o \
           gfx/video_filters/upscale_240x160_320x240.o \
-          gfx/video_filters/upscale_mix_240x160_320x240.o
+          gfx/video_filters/upscale_mix_240x160_320x240.o \
+          gfx/video_filters/dedither.o \
+          gfx/video_filters/pixel_art_aa.o \
+          gfx/video_filters/crop_borders.o \
+          gfx/video_filters/ntsc.o \
+          gfx/video_filters/ntsc_crt.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)

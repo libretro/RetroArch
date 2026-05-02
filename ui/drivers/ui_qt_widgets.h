@@ -18,8 +18,8 @@
 #include <QSlider>
 #include <QSpinBox>
 #include <QStackedWidget>
+#include <QString>
 #include <QStyledItemDelegate>
-#include <QTabWidget>
 #include <QToolButton>
 
 #include <retro_common_api.h>
@@ -56,6 +56,27 @@ class OptionsCategory;
 class QListWidget;
 class QStackedLayout;
 #endif
+
+/* Content schema describing a single playlist row. Replaces the
+ * QHash<QString,QString> previously stored in PlaylistModel and
+ * passed around as the playlist row payload. The field set is the
+ * same keys the QHash carried; making it a struct removes a class
+ * of stringly-typed lookup bugs and a lot of toUtf8/from-key
+ * round trips at call sites. */
+struct PlaylistEntry
+{
+   QString path;
+   QString label;
+   QString labelNoExt;
+   QString corePath;
+   QString coreName;
+   QString crc32;
+   QString dbName;
+   QString plName;
+   QString plPath;
+   unsigned index = 0;
+};
+Q_DECLARE_METATYPE(PlaylistEntry)
 
 class FormLayout : public QFormLayout
 {
@@ -841,9 +862,9 @@ public:
    const QStringList getSelectedExtensions();
    bool filterInArchive();
    bool nameFieldEnabled();
-   void setEntryValues(const QHash<QString, QString> &contentHash);
+   void setEntryValues(const PlaylistEntry &entry);
 public slots:
-   bool showDialog(const QHash<QString, QString> &hash = QHash<QString, QString>());
+   bool showDialog(const PlaylistEntry &entry = PlaylistEntry());
    void hideDialog();
    void onAccepted();
    void onRejected();
@@ -895,6 +916,28 @@ protected:
    QString m_displayName = "General";
 };
 
+/* SimplePage:
+ *   Trivial OptionsPage subclass whose widget() is a one-shot
+ *   create_widget(displaylist) call. Consolidates ~11 near-identical
+ *   leaf Page classes that only differ in display name and displaylist
+ *   enum. Use this for any page that does not need custom layout,
+ *   custom slots, or its own load()/apply(). */
+class SimplePage : public OptionsPage
+{
+   Q_OBJECT
+public:
+   SimplePage(enum menu_displaylist_ctl_state state,
+         QObject *parent = nullptr)
+      : OptionsPage(parent), m_state(state) {}
+   SimplePage(enum menu_displaylist_ctl_state state,
+         msg_hash_enums name,
+         QObject *parent = nullptr)
+      : OptionsPage(parent), m_state(state) { setDisplayName(name); }
+   QWidget *widget(); /* defined inline at end of header, after create_widget() */
+private:
+   enum menu_displaylist_ctl_state m_state;
+};
+
 class OptionsCategory : public QObject
 {
    Q_OBJECT
@@ -936,14 +979,6 @@ public:
    QVector<OptionsPage*> pages();
 };
 
-class DriversPage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   DriversPage(QObject *parent = nullptr);
-   QWidget *widget();
-};
-
 /***********************************************************
    AI Service
 ************************************************************/
@@ -952,14 +987,6 @@ class AIServiceCategory : public OptionsCategory
 public:
    AIServiceCategory(QWidget *parent);
    QVector<OptionsPage*> pages();
-};
-
-class AIServicePage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   AIServicePage(QObject *parent = nullptr);
-   QWidget *widget();
 };
 
 /************************************************************
@@ -1039,14 +1066,6 @@ public:
    QWidget *widget();
 };
 
-class MenuSoundsPage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   MenuSoundsPage(QObject *parent = nullptr);
-   QWidget *widget();
-};
-
 /************************************************************
    Input
 ************************************************************/
@@ -1109,14 +1128,6 @@ public:
    QVector<OptionsPage*> pages();
 };
 
-class CorePage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   CorePage(QObject *parent = nullptr);
-   QWidget *widget();
-};
-
 /************************************************************
    Configuration
 ************************************************************/
@@ -1125,14 +1136,6 @@ class ConfigurationCategory : public OptionsCategory
 public:
    ConfigurationCategory(QWidget *parent);
    QVector<OptionsPage*> pages();
-};
-
-class ConfigurationPage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   ConfigurationPage(QObject *parent = nullptr);
-   QWidget *widget();
 };
 
 /************************************************************
@@ -1163,14 +1166,6 @@ public:
    QVector<OptionsPage*> pages();
 };
 
-class LoggingPage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   LoggingPage(QObject *parent = nullptr);
-   QWidget *widget();
-};
-
 /************************************************************
    Frame Throttle
 ************************************************************/
@@ -1179,22 +1174,6 @@ class FrameThrottleCategory : public OptionsCategory
 public:
    FrameThrottleCategory(QWidget *parent);
    QVector<OptionsPage*> pages();
-};
-
-class FrameThrottlePage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   FrameThrottlePage(QObject *parent = nullptr);
-   QWidget *widget();
-};
-
-class RewindPage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   RewindPage(QObject *parent = nullptr);
-   QWidget *widget();
 };
 
 /************************************************************
@@ -1241,14 +1220,6 @@ class ViewsPage : public OptionsPage
    Q_OBJECT
 public:
    ViewsPage(QObject *parent = nullptr);
-   QWidget *widget();
-};
-
-class QuickMenuPage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   QuickMenuPage(QObject *parent = nullptr);
    QWidget *widget();
 };
 
@@ -1344,14 +1315,6 @@ private:
    QGroupBox* createMitmServerGroup();
 };
 
-class UpdaterPage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   UpdaterPage(QObject *parent = nullptr);
-   QWidget *widget();
-};
-
 /************************************************************
    Playlists
 ************************************************************/
@@ -1406,14 +1369,6 @@ public:
    QVector<OptionsPage*> pages();
 };
 
-class DirectoryPage : public OptionsPage
-{
-   Q_OBJECT
-public:
-   DirectoryPage(QObject *parent = nullptr);
-   QWidget *widget();
-};
-
 static inline QWidget *create_widget(enum menu_displaylist_ctl_state name)
 {
    unsigned i;
@@ -1437,6 +1392,11 @@ static inline QWidget *create_widget(enum menu_displaylist_ctl_state name)
    widget->setLayout(layout);
 
    return widget;
+}
+
+inline QWidget *SimplePage::widget()
+{
+   return create_widget(m_state);
 }
 
 #endif

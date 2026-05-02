@@ -383,7 +383,7 @@ int rc_api_process_fetch_games_list_server_response(rc_api_fetch_games_list_resp
 
   entry = response->entries;
   while (rc_json_get_next_object_field(&iterator, &field)) {
-    entry->id = strtol(field.name, &end, 10);
+    entry->id = (uint32_t)strtol(field.name, &end, 10);
 
     field.name = "";
     if (!rc_json_get_string(&entry->name, &response->response.buffer, &field, ""))

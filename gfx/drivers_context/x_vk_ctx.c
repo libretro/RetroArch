@@ -490,10 +490,16 @@ error:
    if (vi)
       XFree(vi);
 
-   gfx_ctx_x_vk_destroy_resources(x);
-
-   if (x)
-      free(x);
+   /* Do not destroy `x` here.  The caller in
+    * gfx/drivers/vulkan.c::vulkan_init treats a false return
+    * from set_video_mode as a failure of the in-flight `vk_t`
+    * construction and runs vulkan_free() on it, which calls
+    * ctx_driver->destroy(ctx_data) -- i.e. gfx_ctx_x_vk_destroy()
+    * -- on the very pointer we already freed.  That second call
+    * walks freed memory in gfx_ctx_x_vk_destroy_resources() and
+    * then free()s the same pointer again.  Leave cleanup to the
+    * caller's single normal-path destroy.  Cocoa / Android
+    * already do this; this matches them. */
    g_x11_screen = 0;
 
    return false;

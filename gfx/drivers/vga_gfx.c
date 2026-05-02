@@ -47,10 +47,10 @@ typedef struct vga
    unsigned vga_menu_height;
    unsigned vga_menu_pitch;
    unsigned vga_menu_bits;
-   unsigned vga_video_width;
-   unsigned vga_video_height;
-   unsigned vga_video_pitch;
-   unsigned vga_video_bits;
+   unsigned vga_frame_width;
+   unsigned vga_frame_height;
+   unsigned vga_frame_pitch;
+   unsigned vga_frame_bits;
 
    bool color;
    bool vga_rgb32;
@@ -198,19 +198,19 @@ static void *vga_gfx_init(const video_info_t *video,
    *input              = NULL;
    *input_data         = NULL;
 
-   vga->vga_video_width    = video->width;
-   vga->vga_video_height   = video->height;
+   vga->vga_frame_width    = video->width;
+   vga->vga_frame_height   = video->height;
    vga->vga_rgb32          = video->rgb32;
 
    if (video->rgb32)
    {
-      vga->vga_video_pitch = video->width * 4;
-      vga->vga_video_bits  = 32;
+      vga->vga_frame_pitch = video->width * 4;
+      vga->vga_frame_bits  = 32;
    }
    else
    {
-      vga->vga_video_pitch = video->width * 2;
-      vga->vga_video_bits  = 16;
+      vga->vga_frame_pitch = video->width * 2;
+      vga->vga_frame_bits  = 16;
    }
 
    vga->vga_frame          = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
@@ -245,15 +245,15 @@ static bool vga_gfx_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (     (vga->vga_video_width  != frame_width)
-         || (vga->vga_video_height != frame_height)
-         || (vga->vga_video_pitch  != pitch))
+   if (     (vga->vga_frame_width  != frame_width)
+         || (vga->vga_frame_height != frame_height)
+         || (vga->vga_frame_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         vga->vga_video_width = frame_width;
-         vga->vga_video_height = frame_height;
-         vga->vga_video_pitch = pitch;
+         vga->vga_frame_width = frame_width;
+         vga->vga_frame_height = frame_height;
+         vga->vga_frame_pitch = pitch;
       }
    }
 
@@ -269,10 +269,10 @@ static bool vga_gfx_frame(void *data, const void *frame,
    else
 #endif
    {
-      width         = vga->vga_video_width;
-      height        = vga->vga_video_height;
-      pitch         = vga->vga_video_pitch;
-      bits          = vga->vga_video_bits;
+      width         = vga->vga_frame_width;
+      height        = vga->vga_frame_height;
+      pitch         = vga->vga_frame_pitch;
+      bits          = vga->vga_frame_bits;
 
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
@@ -353,9 +353,16 @@ static void vga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool vga_gfx_alive(void *data)
 {
-   vga_t *vga = (vga_t*)data;
-   /* TODO/FIXME - check if this is valid */
-   video_driver_set_size(vga->vga_video_width, vga->vga_video_height);
+   /* Publish the actual VGA framebuffer dimensions as the output
+    * size, not the core's frame size.  video_driver_set_output_size
+    * feeds the value used by menu drivers, the CRT switcher and the
+    * input subsystem to size their output and absolute-coordinate
+    * ranges; passing the core's frame dimensions would lie to all
+    * of them.  The VGA framebuffer is statically VGA_WIDTH x
+    * VGA_HEIGHT (320x200 mode 13h); the core's frame is scaled
+    * into that fixed-size framebuffer per-pixel in vga_gfx_frame. */
+   (void)data;
+   video_driver_set_output_size(VGA_WIDTH, VGA_HEIGHT);
    return true;
 }
 

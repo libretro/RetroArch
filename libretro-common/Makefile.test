@@ -23,6 +23,12 @@ TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
+TEST_RPNG = test/formats/test_rpng
+TEST_RPNG_SRC = test/formats/test_rpng.c formats/png/rpng.c \
+		streams/trans_stream.c streams/trans_stream_zlib.c \
+		streams/trans_stream_pipe.c
+TEST_RPNG_LIBS = -lz
+
 all:
 	# Build and execute tests in order, to avoid coverage file collision
 	# string
@@ -45,12 +51,17 @@ all:
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_GENERIC_QUEUE_SRC) -o $(TEST_GENERIC_QUEUE)
 	$(TEST_GENERIC_QUEUE)
 	lcov -c -d . -o `dirname $(TEST_GENERIC_QUEUE)`/coverage.info
+	# rpng
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RPNG_SRC) $(TEST_RPNG_LIBS) -o $(TEST_RPNG)
+	$(TEST_RPNG)
+	lcov -c -d . -o `dirname $(TEST_RPNG)`/coverage.info
 	
 	lcov -o test/coverage.info \
 	     -a test/utils/coverage.info \
 	     -a test/string/coverage.info \
 	     -a test/lists/coverage.info \
-	     -a test/queues/coverage.info
+	     -a test/queues/coverage.info \
+	     -a test/formats/coverage.info
 	genhtml -o test/coverage/ test/coverage.info
 
 clean:

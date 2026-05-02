@@ -72,8 +72,19 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
    if (!(g_d3d9_dll  = dylib_load("d3d9d.dll")))
 #endif
    if (!(g_d3d9_dll  = dylib_load("d3d9.dll")))
+   {
+      /* On a system where the D3D9 user-mode runtime is missing, the
+       * caller would otherwise see only the generic "Cannot open video
+       * driver" message. Surface the real cause here. */
+      RARCH_ERR("[D3D9] Failed to load d3d9.dll: %s\n",
+            dylib_error() ? dylib_error() : "(no error reported)");
+      RARCH_ERR("[D3D9] The DirectX 9 runtime is not present on this "
+            "system. Install it or pick a different video driver.\n");
       return false;
-   D3D9Create                 = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9");
+   }
+   if (!(D3D9Create = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9")))
+      RARCH_ERR("[D3D9] d3d9.dll does not export Direct3DCreate9: %s\n",
+            dylib_error() ? dylib_error() : "(no error reported)");
 #else
    D3D9Create                 = Direct3DCreate9;
 #endif
@@ -325,13 +336,25 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
    if (!windowed_enable)
    {
 #ifdef _XBOX
+      /* Xbox: query the actual display size, publish it to video_st
+       * and track it in d3d->vp.full_width/full_height so subsequent
+       * read sites can pull from the local field instead of locking
+       * video_st. */
       unsigned width  = 0;
       unsigned height = 0;
       d3d9_get_video_size(d3d, &width, &height);
-      video_driver_set_size(width, height);
+      video_driver_set_output_size(width, height);
+      d3d->vp.full_width  = width;
+      d3d->vp.full_height = height;
+      d3dpp->BackBufferWidth  = width;
+      d3dpp->BackBufferHeight = height;
+#else
+      /* Non-Xbox: by the time make_d3dpp runs, d3d9_*_init_internal
+       * has already published the size and written d3d->vp.
+       * full_width/full_height; read from there. */
+      d3dpp->BackBufferWidth  = d3d->vp.full_width;
+      d3dpp->BackBufferHeight = d3d->vp.full_height;
 #endif
-      video_driver_get_size(&d3dpp->BackBufferWidth,
-            &d3dpp->BackBufferHeight);
    }
 
 #ifdef _XBOX

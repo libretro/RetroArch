@@ -274,7 +274,7 @@ static void sdl_joypad_destroy(void)
 
 static void *sdl_joypad_init(void *data)
 {
-   size_t i;
+   unsigned i;
    unsigned num_sticks;
 #ifdef HAVE_SDL2
    uint32_t subsystem           = SDL_INIT_GAMECONTROLLER;

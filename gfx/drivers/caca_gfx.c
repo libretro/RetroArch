@@ -53,9 +53,9 @@ typedef struct caca
    unsigned menu_width;
    unsigned menu_height;
    unsigned menu_pitch;
-   unsigned video_width;
-   unsigned video_height;
-   unsigned video_pitch;
+   unsigned frame_width;
+   unsigned frame_height;
+   unsigned frame_pitch;
    bool rgb32;
 } caca_t;
 
@@ -196,22 +196,29 @@ static void caca_create(caca_t *caca)
    caca->display = caca_create_display(NULL);
    caca->cv      = caca_get_canvas(caca->display);
 
-   if (!caca->video_width || !caca->video_height)
+   if (!caca->frame_width || !caca->frame_height)
    {
-      caca->video_width  = caca_get_canvas_width(caca->cv);
-      caca->video_height = caca_get_canvas_height(caca->cv);
+      caca->frame_width  = caca_get_canvas_width(caca->cv);
+      caca->frame_height = caca_get_canvas_height(caca->cv);
    }
 
    if (caca->rgb32)
-      caca->dither = caca_create_dither(32, caca->video_width,
-            caca->video_height, caca->video_pitch,
+      caca->dither = caca_create_dither(32, caca->frame_width,
+            caca->frame_height, caca->frame_pitch,
             0x00FF0000, 0xFF00, 0xFF, 0x0);
    else
-      caca->dither = caca_create_dither(16, caca->video_width,
-            caca->video_height, caca->video_pitch,
+      caca->dither = caca_create_dither(16, caca->frame_width,
+            caca->frame_height, caca->frame_pitch,
             0xF800, 0x7E0, 0x1F, 0x0);
 
-   video_driver_set_size(caca->video_width, caca->video_height);
+   /* Publish the canvas (terminal grid) size as the surface size,
+    * not the core's frame size.  video_driver_set_output_size feeds the
+    * value used by menu drivers, the CRT switcher and the input
+    * subsystem to size their output; passing the core's frame
+    * dimensions instead would lie to all of them. */
+   video_driver_set_output_size(
+         caca_get_canvas_width(caca->cv),
+         caca_get_canvas_height(caca->cv));
 }
 
 static void *caca_init(const video_info_t *video,
@@ -225,14 +232,14 @@ static void *caca_init(const video_info_t *video,
    *input               = NULL;
    *input_data          = NULL;
 
-   caca->video_width    = video->width;
-   caca->video_height   = video->height;
+   caca->frame_width    = video->width;
+   caca->frame_height   = video->height;
    caca->rgb32          = video->rgb32;
 
    if (video->rgb32)
-      caca->video_pitch = video->width * 4;
+      caca->frame_pitch = video->width * 4;
    else
-      caca->video_pitch = video->width * 2;
+      caca->frame_pitch = video->width * 2;
 
    caca_create(caca);
 
@@ -268,15 +275,15 @@ static bool caca_frame(void *data, const void *frame,
    if (!frame || !frame_width || !frame_height)
       return true;
 
-   if (     (caca->video_width  != frame_width)
-         || (caca->video_height != frame_height)
-         || (caca->video_pitch  != pitch))
+   if (     (caca->frame_width  != frame_width)
+         || (caca->frame_height != frame_height)
+         || (caca->frame_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         caca->video_width  = frame_width;
-         caca->video_height = frame_height;
-         caca->video_pitch  = pitch;
+         caca->frame_width  = frame_width;
+         caca->frame_height = frame_height;
+         caca->frame_pitch  = pitch;
          caca_free(caca);
          caca_create(caca);
       }
@@ -337,7 +344,10 @@ static bool caca_frame(void *data, const void *frame,
 static bool caca_alive(void *data)
 {
    caca_t *caca              = (caca_t*)data;
-   video_driver_set_size(caca->video_width, caca->video_height);
+   /* Canvas size, not core frame size -- see comment in caca_create. */
+   video_driver_set_output_size(
+         caca_get_canvas_width(caca->cv),
+         caca_get_canvas_height(caca->cv));
    return true;
 }
 

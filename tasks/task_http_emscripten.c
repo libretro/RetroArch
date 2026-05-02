@@ -308,16 +308,16 @@ void* task_push_http_transfer_file(const char* url, bool mute,
       s        = transfer_data->path;
    else
       s        = url;
-
-   _len        = strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
-   tmp[  _len] = ' ';
-   tmp[++_len] = '\0';
+   _len = 0;
+   strlcpy_append(tmp, sizeof(tmp), &_len,
+         msg_hash_to_str(MSG_DOWNLOADING));
+   strlcpy_append(tmp, sizeof(tmp), &_len, " ");
 
    if (string_ends_with_size(s, ".index",
             strlen(s), STRLEN_CONST(".index")))
       s = msg_hash_to_str(MSG_INDEX_FILE);
 
-   strlcpy(tmp + _len, s, sizeof(tmp) - _len);
+   strlcpy_append(tmp, sizeof(tmp), &_len, s);
 
    t->title = strdup(tmp);
    return t;

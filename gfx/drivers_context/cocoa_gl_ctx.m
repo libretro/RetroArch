@@ -380,8 +380,10 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+#ifndef HAVE_COCOA_METAL
    static bool
       has_went_fullscreen      = false;
+#endif
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 
@@ -605,9 +607,9 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 
       [[g_view window] setContentSize:NSMakeSize(width, height)];
    }
-#endif
 
    has_went_fullscreen = fullscreen;
+#endif
 
    return true;
 }

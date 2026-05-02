@@ -69,6 +69,14 @@
    coords[5] = yamt; \
    coords[7] = yamt
 
+#if defined(HAVE_SLANG)
+#define GL3_DEFAULT_SHADER_TYPE RARCH_SHADER_SLANG
+#elif defined(HAVE_GLSL)
+#define GL3_DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#else
+#define GL3_DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
+#endif
+
 struct gl3_streamed_texture
 {
    GLuint tex;
@@ -641,7 +649,6 @@ static void gfx_display_gl3_draw_pipeline(
                   + 3 * sizeof(float), &yflip, sizeof(yflip));
             draw->coords          = &blank_coords;
             blank_coords.vertices = 4;
-            draw->prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
             break;
       }
    }
@@ -649,23 +656,6 @@ static void gfx_display_gl3_draw_pipeline(
 
    t += 0.01;
 #endif
-}
-
-static GLenum gfx_display_prim_to_gl3_enum(
-      enum gfx_display_prim_type type)
-{
-   switch (type)
-   {
-      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-         return GL_TRIANGLE_STRIP;
-      case GFX_DISPLAY_PRIM_TRIANGLES:
-         return GL_TRIANGLES;
-      case GFX_DISPLAY_PRIM_NONE:
-      default:
-         break;
-   }
-
-   return 0;
 }
 
 static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
@@ -695,8 +685,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
             draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
          : (math_matrix_4x4*)&gl->mvp_no_rot);
 
-      glDrawArrays(gfx_display_prim_to_gl3_enum(
-               draw->prim_type), 0, draw->coords->vertices);
+      /* Menu draws use a triangle-strip layout. */
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
    }
 #ifdef HAVE_SLANG
    else
@@ -797,18 +787,9 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
             4 * sizeof(float), (void *)(uintptr_t)0);
 
-      switch (draw->prim_type)
-      {
-         case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
-            break;
-         case GFX_DISPLAY_PRIM_TRIANGLES:
-            glDrawArrays(GL_TRIANGLES, 0, draw->coords->vertices);
-            break;
-         case GFX_DISPLAY_PRIM_NONE:
-         default:
-            break;
-      }
+      /* See the matching comment in the chain.active branch above:
+       * every caller passes TRIANGLESTRIP. */
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
 
       glDisableVertexAttribArray(0);
       glDisableVertexAttribArray(1);
@@ -2155,38 +2136,38 @@ static bool gl3_init_pipelines(gl3_t *gl)
  **/
 static enum rarch_shader_type gl3_get_fallback_shader_type(enum rarch_shader_type type)
 {
-#if defined(HAVE_SLANG) || defined(HAVE_GLSL) || defined(HAVE_CG)
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
    int i;
    gfx_ctx_flags_t flags;
    flags.flags     = 0;
    video_context_driver_get_flags(&flags);
 
-   if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
+   /* No context driver advertises GFX_CTX_FLAGS_SHADERS_CG for the
+    * "glcore" video driver -- audited x_ctx.c, wgl_ctx.c, drm_ctx.c,
+    * wayland_ctx.c, etc.  Cg requires the legacy fixed-function / ARB
+    * asm pipeline that Core Profile contexts don't expose, so no
+    * RARCH_SHADER_CG path is wired up here.  GLSL and slang are both
+    * Core Profile-compatible and remain valid; in practice context
+    * drivers advertise SLANG for glcore but the GLSL fallback is kept
+    * for builds without slang/spirv-cross. */
+   if (type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
    {
-      type = DEFAULT_SHADER_TYPE;
+      type = GL3_DEFAULT_SHADER_TYPE;
 
-      if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
+      if (type != RARCH_SHADER_GLSL && type != RARCH_SHADER_SLANG)
          type = RARCH_SHADER_SLANG;
    }
 
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < 2; i++)
    {
       switch (type)
       {
-         case RARCH_SHADER_CG:
-#ifdef HAVE_CG
-            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-               return type;
-#endif
-            type = RARCH_SHADER_SLANG;
-            break;
-
          case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                return type;
 #endif
-            type = RARCH_SHADER_CG;
+            type = RARCH_SHADER_SLANG;
             break;
 
          case RARCH_SHADER_SLANG:
@@ -2258,11 +2239,6 @@ static const shader_backend_t *gl3_shader_driver_set_backend(
 
    switch (fallback)
    {
-#ifdef HAVE_CG
-      case RARCH_SHADER_CG:
-         RARCH_LOG("[GLCore] Using Cg shader backend.\n");
-         return &gl_cg_backend;
-#endif
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
          RARCH_LOG("[GLCore] Using GLSL shader backend.\n");
@@ -3024,8 +3000,9 @@ static void *gl3_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
-   video_driver_get_size(&temp_width, &temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
+   else
+      video_driver_get_output_size(&temp_width, &temp_height);
    gl->video_width  = temp_width;
    gl->video_height = temp_height;
 
@@ -3326,7 +3303,7 @@ static bool gl3_alive(void *data)
 
    if (temp_width != 0 && temp_height != 0)
    {
-      video_driver_set_size(temp_width, temp_height);
+      video_driver_set_output_size(temp_width, temp_height);
       gl->video_width  = temp_width;
       gl->video_height = temp_height;
    }

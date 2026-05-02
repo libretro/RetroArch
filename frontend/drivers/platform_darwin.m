@@ -27,6 +27,7 @@
 #ifdef HAVE_GCD
 #include <dispatch/dispatch.h>
 #include <defines/cocoa_defines.h>
+#include <retro_atomic.h>
 #endif
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -144,7 +145,7 @@ typedef struct darwin_watch_entry
     * any already-dispatched event handler invocation keeps
     * running to completion on its target queue, which is the
     * global concurrent queue here.  The event handler
-    * dereferences &watch_data->has_changes, so we cannot free
+    * dereferences &watch_data->event_count, so we cannot free
     * watch_data until we're sure no in-flight handler remains.
     * The cancel handler fires once all handler invocations
     * have drained, so waiting on this semaphore before free()
@@ -159,7 +160,27 @@ typedef struct darwin_watch_data
    dispatch_queue_t queue;       /* Dispatch queue for event handlers */
    darwin_watch_entry_t *watches; /* Array of watch entries */
    size_t watch_count;           /* Number of active watches */
-   volatile int32_t has_changes; /* Atomic flag indicating changes occurred */
+   /* Monotonic event counter.  Setter (GCD event handler thread)
+    * increments via retro_atomic_fetch_add_int when the
+    * filesystem reports an event; reader (main thread, in
+    * frontend_darwin_check_for_path_changes) acquire-loads it
+    * and compares against last_seen below.
+    *
+    * The previous design used a binary flag set/cleared via
+    * OSAtomicCompareAndSwap32, but Apple deprecated OSAtomic.h
+    * in 10.12 (2016) in favour of <stdatomic.h>.  Replacing the
+    * flag with a counter is also strictly more flexible: the
+    * "did anything change?" semantic is preserved exactly
+    * (now != last_seen), and the count is available if a future
+    * caller wants to batch events.  retro_atomic.h provides the
+    * portable fetch_add / load_acquire primitives needed; no
+    * compare-exchange operation is necessary, because the
+    * monotonic counter never needs to be read-and-cleared
+    * atomically (last_seen is main-thread-only state). */
+   retro_atomic_int_t event_count;
+   /* Reader-side cursor.  Touched only by the main thread in
+    * frontend_darwin_check_for_path_changes; not atomic. */
+   int last_seen;
    int flags;                    /* Event flags to monitor */
 } darwin_watch_data_t;
 #endif
@@ -929,8 +950,8 @@ static void darwin_watch_data_free(darwin_watch_data_t *watch_data)
              * handler to fire.  dispatch_source_cancel is
              * asynchronous - it only marks the source as
              * cancelled.  Any already-dispatched event handler
-             * invocation (the one that reads
-             * &watch_data->has_changes) keeps running to
+             * invocation (the one that increments
+             * &watch_data->event_count) keeps running to
              * completion on the global concurrent queue.  The
              * cancel handler is guaranteed to fire AFTER all
              * pending event handler invocations have drained,
@@ -938,7 +959,7 @@ static void darwin_watch_data_free(darwin_watch_data_t *watch_data)
              * is the standard 'wait until source is fully
              * quiesced' pattern.  Without this wait a racing
              * event handler would NUL-deref or, worse, write
-             * into freed memory for has_changes. */
+             * into freed memory for event_count. */
             dispatch_source_cancel(watch_data->watches[i].source);
             if (watch_data->watches[i].cancel_sem)
             {
@@ -989,7 +1010,12 @@ static void frontend_darwin_watch_path_for_changes(
    watch_data->watches = (darwin_watch_entry_t*)calloc(
          list->size, sizeof(darwin_watch_entry_t));
    watch_data->flags = flags;
-   watch_data->has_changes = 0;
+   /* watch_data was calloc'd, so event_count and last_seen are
+    * already zero-bit; but plain assignment to a
+    * retro_atomic_int_t is illegal under the C11 stdatomic
+    * backend, so use the init helper for the atomic field. */
+   retro_atomic_int_init(&watch_data->event_count, 0);
+   watch_data->last_seen = 0;
 
    if (!watch_data->watches)
    {
@@ -1052,12 +1078,25 @@ static void frontend_darwin_watch_path_for_changes(
 
             if (source)
             {
-               /* Set up event handler - sets atomic flag when changes
-                * occur.  This block captures watch_data by pointer and
-                * the cancel-handler synchronisation below is what keeps
-                * the capture safe against the teardown path. */
+               /* Set up event handler - bump the atomic event
+                * counter when a filesystem event fires.  This
+                * block captures watch_data by pointer and the
+                * cancel-handler synchronisation below is what
+                * keeps the capture safe against the teardown
+                * path.
+                *
+                * fetch_add (rather than the previous CAS(0, 1))
+                * always stores, but the rate is bounded by GCD
+                * vnode events (sub-millisecond/day in normal
+                * use), so the extra store cost is below
+                * measurement noise.  In return we get a
+                * monotonic counter that the reader can compare
+                * against its last_seen cursor without losing
+                * notifications, and we drop the dependency on
+                * OSAtomic.h which Apple deprecated in 10.12. */
                dispatch_source_set_event_handler(source, ^{
-                  OSAtomicCompareAndSwap32(0, 1, &watch_data->has_changes);
+                  retro_atomic_fetch_add_int(
+                        &watch_data->event_count, 1);
                });
 
                /* Cancel handler signals cancel_sem.  darwin_watch_
@@ -1122,8 +1161,30 @@ static bool frontend_darwin_check_for_path_changes(
 
    watch_data = (darwin_watch_data_t*)(change_data->data);
 
-   /* Atomically read and clear the flag */
-   return OSAtomicCompareAndSwap32(1, 0, &watch_data->has_changes);
+   /* Acquire-load the producer's counter and compare against
+    * our reader-side cursor.  If they differ, at least one
+    * event fired since the last call -- update the cursor and
+    * return true.
+    *
+    * No CAS is needed because last_seen is main-thread-only
+    * state.  The acquire-load pairs with the producer's
+    * fetch_add (which has acq_rel semantics in retro_atomic.h),
+    * so any data the producer published before its increment
+    * is visible to us by the time we read here.
+    *
+    * The counter is monotonic and never reset, so over a long
+    * enough run it would wrap around -- but on a 32-bit signed
+    * int at filesystem-event rates this takes hundreds of
+    * years.  The `now != last_seen` comparison remains correct
+    * across wraparound under modular int arithmetic; any non-
+    * zero (now - last_seen) means the producer advanced. */
+   {
+      int now = retro_atomic_load_acquire_int(
+            &watch_data->event_count);
+      bool changed = (now != watch_data->last_seen);
+      watch_data->last_seen = now;
+      return changed;
+   }
 }
 #endif
 

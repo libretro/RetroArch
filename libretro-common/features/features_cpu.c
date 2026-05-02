@@ -614,56 +614,78 @@ uint64_t cpu_features_get(void)
    const int avx_flags = (1 << 27) | (1 << 28);
 #endif
 #if defined(__MACH__)
-   size_t _len          = sizeof(size_t);
-   if (sysctlbyname("hw.optional.floatingpoint", NULL, &_len, NULL, 0) == 0)
+   /* sysctlbyname() returns 0 (success) whenever the key exists, regardless
+    * of its value. On Intel Macs the hw.optional.* keys are always present
+    * but report 0 when the feature is unsupported (e.g. avx512f on pre-Skylake
+    * Xeon CPUs). We therefore have to read the value, not just the success
+    * code. */
+   int      _val        = 0;
+   size_t   _len        = sizeof(_val);
+   if (   sysctlbyname("hw.optional.floatingpoint", &_val, &_len, NULL, 0) == 0
+       && _val)
       cpu |= RETRO_SIMD_CMOV;
 
 #if defined(CPU_X86)
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.mmx", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.mmx", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_MMX | RETRO_SIMD_MMXEXT;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse2", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse2", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE2;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse3", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse3", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE3;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.supplementalsse3", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.supplementalsse3", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSSE3;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse4_1", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse4_1", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE4;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.sse4_2", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.sse4_2", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_SSE42;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.aes", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.aes", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_AES;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.avx1_0", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.avx1_0", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_AVX;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.avx2_0", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.avx2_0", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_AVX2;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.avx512f", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.avx512f", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_AVX512;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.altivec", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.altivec", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_VMX;
 #else
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.neon", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.neon", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_NEON;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.neon_fp16", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.neon_fp16", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_VFPV3;
-   _len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.neon_hpfp", NULL, &_len, NULL, 0) == 0)
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.neon_hpfp", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_VFPV4;
 #endif
 #elif defined(_XBOX1)

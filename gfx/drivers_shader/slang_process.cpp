@@ -1334,6 +1334,71 @@ static bool validate_type_for_texture_semantic(const spirv_cross::SPIRType &type
           && (type.columns  == 1);
 }
 
+/* Validate that a texture semantic's array index falls inside the
+ * range admitted by the host filter chain.  The shader source is
+ * untrusted (preset packs are downloadable / shipped third-party),
+ * and the index suffix in arrayed semantic names like
+ * `OriginalHistory42` / `PassFeedback9` / `User7` is parsed via
+ * strtoul in slang_name_to_texture_semantic_array() with no upper
+ * bound.  The downstream resize_minimum() call in
+ * set_ubo_texture_offset() and the direct-binding loop below would
+ * otherwise grow reflection->semantic_textures[sem] to the index+1
+ * the shader requested -- which on a malicious preset can be near
+ * UINT32_MAX, producing an unhandled std::bad_alloc that terminates
+ * RetroArch.  PASS_OUTPUT was already bounded against
+ * reflection->pass_number; extend the same defensive shape to the
+ * other arrayed semantics with their natural caps.  USER is the
+ * lookup name for LUTs, ORIGINAL_HISTORY is bounded by the per-
+ * frame ring used by init_history(), and PASS_FEEDBACK is bounded
+ * by the maximum number of passes the chain can hold. */
+static bool validate_texture_semantic_index(slang_reflection *reflection,
+      slang_texture_semantic tex_sem, unsigned index)
+{
+   unsigned cap = 0;
+   const char *cap_label = NULL;
+
+   switch (tex_sem)
+   {
+      case SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT:
+         cap       = reflection->pass_number;
+         cap_label = "preceding passes";
+         break;
+      case SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK:
+         cap       = GFX_MAX_SHADERS;
+         cap_label = "GFX_MAX_SHADERS";
+         break;
+      case SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY:
+         cap       = GFX_MAX_FRAME_HISTORY;
+         cap_label = "GFX_MAX_FRAME_HISTORY";
+         break;
+      case SLANG_TEXTURE_SEMANTIC_USER:
+         cap       = GFX_MAX_TEXTURES;
+         cap_label = "GFX_MAX_TEXTURES";
+         break;
+      default:
+         /* Non-arrayed semantics (Original, Source) -- index is
+          * always 0 by construction in slang_name_to_texture_
+          * semantic_array(). */
+         return true;
+   }
+
+   if (index >= cap)
+   {
+      if (tex_sem == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT)
+         RARCH_ERR("[Slang] Non causal filter chain detected. "
+               "Shader is trying to use output from pass #%u,"
+               " but this shader is pass #%u.\n",
+               index, reflection->pass_number);
+      else
+         RARCH_ERR("[Slang] Texture semantic %s index #%u exceeds"
+               " bound (%s = %u).\n",
+               texture_semantic_names[tex_sem],
+               index, cap_label, cap);
+      return false;
+   }
+   return true;
+}
+
 static bool add_active_buffer_ranges(
       const spirv_cross::Compiler &compiler,
       const spirv_cross::Resource &resource,
@@ -1360,15 +1425,10 @@ static bool add_active_buffer_ranges(
             *reflection->texture_semantic_uniform_map,
             name, &tex_sem_index);
 
-      if (tex_sem == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT &&
-            tex_sem_index >= reflection->pass_number)
-      {
-         RARCH_ERR("[Slang] Non causal filter chain detected. "
-               "Shader is trying to use output from pass #%u,"
-               " but this shader is pass #%u.\n",
-               tex_sem_index, reflection->pass_number);
+      if (tex_sem != SLANG_INVALID_TEXTURE_SEMANTIC &&
+            !validate_texture_semantic_index(reflection,
+                  tex_sem, tex_sem_index))
          return false;
-      }
 
       if (sem != SLANG_INVALID_SEMANTIC)
       {
@@ -1680,16 +1740,7 @@ bool slang_reflect(
             *reflection->texture_semantic_map,
             fragment.sampled_images[i].name, &array_index);
 
-      if (index == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT &&
-            array_index >= reflection->pass_number)
-      {
-         RARCH_ERR("[Slang] Non causal filter chain detected. "
-               "Shader is trying to use output from pass #%u,"
-               " but this shader is pass #%u.\n",
-               array_index, reflection->pass_number);
-         return false;
-      }
-      else if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
+      if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
       {
          RARCH_ERR("[Slang] Texture name '%s' not found in semantic map, "
                    "Probably the texture name or pass alias is not defined "
@@ -1697,6 +1748,9 @@ bool slang_reflect(
                    fragment.sampled_images[i].name.c_str());
          return false;
       }
+
+      if (!validate_texture_semantic_index(reflection, index, array_index))
+         return false;
 
       resize_minimum(reflection->semantic_textures[index], array_index + 1);
       slang_texture_semantic_meta &semantic =

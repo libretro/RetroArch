@@ -658,6 +658,28 @@ static bool rpng_process_ihdr(struct png_ihdr *ihdr)
          return false;
    }
 
+   /* On 32-bit hosts the per-row decode mallocs cannot fit much
+    * more than 1 GiB of decoded RGBA, and an undersized malloc
+    * combined with attacker-controlled dimensions has historically
+    * been the heap-overflow primitive prompting the 0x4000 caps
+    * in rbmp.c, rtga.c and rwebp.c.  Keep the tight cap there.
+    *
+    * On 64-bit the (size_t) casts in rpng_reverse_filter_init and
+    * the final allocator make the per-row arithmetic overflow-safe
+    * regardless of dimensions, and the 4 GiB output guard further
+    * down in rpng_iterate_image already rejects images whose
+    * decoded buffer cannot be addressed.  Loading a 30000x30000
+    * RGBA image on a desktop with the RAM to spare is a legitimate
+    * use case (cf. IrfanView), so do not impose the 0x4000 cap
+    * there. */
+#if SIZE_MAX <= 0xFFFFFFFFu
+   if (ihdr->width > 0x4000u || ihdr->height > 0x4000u)
+   {
+      fprintf(stderr, "[RPNG] Error in line %d.\n", __LINE__);
+      return false;
+   }
+#endif
+
 #ifdef RPNG_TEST
    fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
          ihdr->width, ihdr->height,
@@ -695,6 +717,15 @@ static bool rpng_process_ihdr(struct png_ihdr *ihdr)
       default:
          return false;
    }
+
+   /* See the matching comment in the RPNG_TEST/DEBUG variant
+    * above.  Cap only on 32-bit; 64-bit lets the (size_t)
+    * widening + 4 GiB output guard handle large legitimate
+    * images. */
+#if SIZE_MAX <= 0xFFFFFFFFu
+   if (ihdr->width > 0x4000u || ihdr->height > 0x4000u)
+      return false;
+#endif
 
    return true;
 }
@@ -1063,7 +1094,7 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
             rpng_passes[pngp->pass_pos].stride_y - 1) / rpng_passes[pngp->pass_pos].stride_y;
 
       if (!(pngp->data = (uint32_t*)malloc(
-            pngp->pass_width * pngp->pass_height * sizeof(uint32_t))))
+            (size_t)pngp->pass_width * (size_t)pngp->pass_height * sizeof(uint32_t))))
          return -1;
 
       pngp->ihdr        = *ihdr;
@@ -1371,11 +1402,11 @@ end:
 #ifdef GEKKO
    /* We often use these in textures, make sure 
     * they're 32-byte aligned */
-   *data = (uint32_t*)memalign(32, rpng->ihdr.width *
-         rpng->ihdr.height * sizeof(uint32_t));
+   *data = (uint32_t*)memalign(32, (size_t)rpng->ihdr.width *
+         (size_t)rpng->ihdr.height * sizeof(uint32_t));
 #else
-   *data = (uint32_t*)malloc(rpng->ihdr.width *
-         rpng->ihdr.height * sizeof(uint32_t));
+   *data = (uint32_t*)malloc((size_t)rpng->ihdr.width *
+         (size_t)rpng->ihdr.height * sizeof(uint32_t));
 #endif
    if (!*data)
       goto false_end;

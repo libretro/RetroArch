@@ -387,11 +387,44 @@ static int rmsgpack_read_buff(intfstream_t *fd, size_t size, char **pbuff, uint6
 {
    ssize_t read_len;
    uint64_t tmp_len   = 0;
+   int64_t  remaining;
+   int64_t  here;
+   int64_t  total;
 
    if (rmsgpack_read_uint(fd, &tmp_len, size) == -1)
       return -1;
 
+   /* Pre-patch tmp_len was an attacker-controlled uint64 fed
+    * directly into malloc((size_t)(tmp_len + 1)).  Three
+    * problems:
+    *   - tmp_len = UINT64_MAX wraps to malloc(0) returning a
+    *     small block; the subsequent intfstream_read with
+    *     (size_t)UINT64_MAX bytes would heap-overflow on any
+    *     stream that could deliver them.
+    *   - tmp_len = 0xFFFFFFFE forces a ~4 GiB malloc on 64-bit
+    *     (which Linux overcommit happily grants) for a 5-byte
+    *     STR32 input, OOM-killing the process.  On 32-bit the
+    *     (size_t) cast truncates and creates a heap overflow.
+    *   - Even when malloc returns NULL the code dereferenced
+    *     *pbuff at line 396 and (*pbuff)[read_len] at line 404.
+    *
+    * Fix: bound tmp_len against the remaining bytes in the
+    * stream (a buffer can't legitimately claim more bytes than
+    * are left to read), reject the SIZE_MAX edge to avoid the
+    * +1 wrap, and NULL-check the malloc. */
+   here  = intfstream_tell(fd);
+   total = intfstream_get_size(fd);
+   if (here < 0 || total < 0 || here > total)
+      return -1;
+   remaining = total - here;
+   if (tmp_len > (uint64_t)remaining)
+      return -1;
+   if (tmp_len >= (uint64_t)((size_t)-1))
+      return -1;
+
    *pbuff             = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char));
+   if (!*pbuff)
+      return -1;
 
    if ((read_len      = intfstream_read(fd, *pbuff, (size_t)tmp_len)) == -1)
    {
@@ -412,6 +445,29 @@ static int rmsgpack_read_map(intfstream_t *fd, uint32_t len,
 {
    int rv;
    unsigned i;
+   int64_t  here, total;
+
+   /* Pre-patch len was an attacker-controlled uint32 from the
+    * file (MAP16 or MAP32 header) handed straight to the callback
+    * which calloc'd 'len * sizeof(rmsgpack_dom_pair)' (~80 bytes
+    * per pair).  A 5-byte MAP32 header '0xdf 0x10 0x00 0x00 0x00'
+    * (len = 2^28) demanded a ~21 GiB calloc, OOM-killing the
+    * process.  Even where calloc succeeded, the subsequent
+    * iteration recursed into rmsgpack_read len times, doubling
+    * the dom reader stack on each recursion until it ran out.
+    *
+    * A map cannot legitimately claim more entries than the
+    * stream has bytes left to encode them: the smallest possible
+    * key+value pair is 2 bytes (one type byte each).  Reject
+    * len > remaining_bytes / 2. */
+   here  = intfstream_tell(fd);
+   total = intfstream_get_size(fd);
+   if (here >= 0 && total >= 0 && here <= total)
+   {
+      uint64_t remaining = (uint64_t)(total - here);
+      if ((uint64_t)len > remaining / 2u)
+         return -1;
+   }
 
    if (     (     callbacks->read_map_start)
          && (rv = callbacks->read_map_start(len, data)) < 0)
@@ -433,6 +489,20 @@ static int rmsgpack_read_array(intfstream_t *fd, uint32_t len,
 {
    int rv;
    unsigned i;
+   int64_t  here, total;
+
+   /* Same primitive as rmsgpack_read_map above.  Smallest
+    * possible array element is 1 byte (a fixint), so len cannot
+    * legitimately exceed the number of bytes left in the
+    * stream. */
+   here  = intfstream_tell(fd);
+   total = intfstream_get_size(fd);
+   if (here >= 0 && total >= 0 && here <= total)
+   {
+      uint64_t remaining = (uint64_t)(total - here);
+      if ((uint64_t)len > remaining)
+         return -1;
+   }
 
    if (     (     callbacks->read_array_start)
          && (rv = callbacks->read_array_start(len, data)) < 0)

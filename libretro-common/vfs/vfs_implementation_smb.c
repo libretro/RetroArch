@@ -36,7 +36,7 @@ static bool smb_initialized = false;
 static int max_context_configured = 0;
 static const struct smb_settings *smb_cfg = NULL;
 
-static struct smb2_context *get_smb_context()
+static struct smb2_context *get_smb_context(void)
 {
    int idx;
 
@@ -81,7 +81,7 @@ bool smb_init_cfg(const struct smb_settings *new_cfg)
 }
 
 /* Initialize SMB context */
-static bool smb_init()
+static bool smb_init(void)
 {
    char server[256];
    char share[256];
@@ -220,7 +220,7 @@ void smb_close_context(int index)
 }
 
 /* Shutdown SMB context - called on exit */
-void smb_shutdown()
+void smb_shutdown(void)
 {
    int i;
 

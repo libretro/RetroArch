@@ -855,7 +855,7 @@ static uint32_t rvz_get_group_decompression_size(rcheevos_rvz_file_t* rvz,
             /* This is a partition data group */
             /* Calculate blocks per group based on chunk_size
              * chunk_size is in ISO space (with headers), convert to decrypted space */
-            uint32_t adjusted_chunk_size = ((uint64_t)chunk_size * RVZ_WII_SECTOR_DATA_SIZE) / RVZ_WII_SECTOR_SIZE;
+            uint32_t adjusted_chunk_size = (uint32_t)(((uint64_t)chunk_size * RVZ_WII_SECTOR_DATA_SIZE) / RVZ_WII_SECTOR_SIZE);
             uint32_t blocks_per_group = adjusted_chunk_size / RVZ_WII_SECTOR_DATA_SIZE;
             uint32_t group_offset_in_partition = group_index - pdata->group_index;
             uint32_t total_blocks = pdata->number_of_sectors;
@@ -2262,7 +2262,7 @@ static int rvz_calculate_partition_offsets_stateless(
    offsets->file_offset = (offsets->block_index * RVZ_WII_SECTOR_DATA_SIZE) + offsets->offset_in_block;
 
    /* Calculate effective chunk size (decrypted group size) */
-   effective_chunk_size = ((uint64_t)chunk_size * RVZ_WII_SECTOR_DATA_SIZE) / RVZ_WII_SECTOR_SIZE;
+   effective_chunk_size = (uint32_t)(((uint64_t)chunk_size * RVZ_WII_SECTOR_DATA_SIZE) / RVZ_WII_SECTOR_SIZE);
 
    /* Calculate group index */
    file_block = offsets->file_offset / effective_chunk_size;
@@ -2307,7 +2307,7 @@ static size_t rvz_read_partition_data_stateless(
    uint64_t bytes_left_in_block;
 
    /* Calculate effective chunk size (decrypted group size) */
-   effective_chunk_size = ((uint64_t)chunk_size * RVZ_WII_SECTOR_DATA_SIZE) / RVZ_WII_SECTOR_SIZE;
+   effective_chunk_size = (uint32_t)(((uint64_t)chunk_size * RVZ_WII_SECTOR_DATA_SIZE) / RVZ_WII_SECTOR_SIZE);
 
    /* Get the decompressed chunk data */
    chunk_data = rvz_get_chunk(handle, offsets->group_index, &chunk_data_size);

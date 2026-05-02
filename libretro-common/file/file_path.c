@@ -347,6 +347,8 @@ size_t fill_pathname(char *s, const char *in_path,
 {
    char *tok   = NULL;
    size_t _len = strlcpy(s, in_path, len);
+   if (_len >= len)
+      _len = (len > 0) ? len - 1 : 0;
    if ((tok = (char*)strrchr(path_basename(s), '.')))
    {
       *tok = '\0'; _len = tok - s;

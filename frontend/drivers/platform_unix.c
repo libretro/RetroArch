@@ -2186,8 +2186,20 @@ static void android_app_destroy(struct android_app *android_app)
 static bool frontend_unix_set_gamemode(bool on)
 {
 #ifdef FERAL_GAMEMODE
-   int gamemode_status  = gamemode_query_status();
-   bool gamemode_active = (gamemode_status == 2);
+   /* Once gamemode_query_status() reports failure (typically because
+    * libgamemode.so is not installed), there is no point repeatedly
+    * re-probing on every config load or menu toggle - the result will
+    * not change for the lifetime of the process, and each probe emits
+    * a warning. Latch the unavailable state and short-circuit. */
+   static bool gamemode_unavailable = false;
+   int gamemode_status;
+   bool gamemode_active;
+
+   if (gamemode_unavailable)
+      return false;
+
+   gamemode_status  = gamemode_query_status();
+   gamemode_active  = (gamemode_status == 2);
 
    if (gamemode_status < 0)
    {
@@ -2196,6 +2208,7 @@ static bool frontend_unix_set_gamemode(bool on)
                "https://github.com/FeralInteractive/gamemode needs to be installed.\n",
                gamemode_error_string());
 
+      gamemode_unavailable = true;
       return false;
    }
 

@@ -1383,7 +1383,7 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
    {
       len           = response->pos;
       response->pos = 0;
-      if (response->bodytype == T_LEN)
+      if (response->bodytype == T_LEN && response->len > 0)
       {
          /* Use a tmp pointer so a realloc failure does not leak the
           * original buffer AND leave response->data NULL for later
@@ -1428,7 +1428,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
       if (response->bodytype != T_FULL)
          return false;
       response->part      = P_DONE;
-      if (response->buflen != response->len)
+      if (response->buflen != response->len && response->len > 0)
       {
          /* Shrink response->data from buflen bytes to len bytes.
           * Use a tmp pointer so a realloc() failure (rare on shrink
@@ -1535,7 +1535,7 @@ parse_again:
       else if (response->pos == response->len)
       {
          response->part = P_DONE;
-         if (response->buflen != response->len)
+         if (response->buflen != response->len && response->len > 0)
          {
             char *tmp = (char*)realloc(response->data, response->len);
             if (!tmp)
@@ -1804,13 +1804,15 @@ int net_http_status(struct http_t *state)
  *
  * @return the response headers. The returned buffer is owned by the
  * caller of net_http_new; it is not freed by net_http_delete().
- * If the status is not 20x and accept_err is false, it returns NULL.
+ * On a transport error, NULL is returned unless accept_err is true.
+ * Headers are returned for any response that was parsed successfully,
+ * including HTTP error statuses such as 401 (needed for auth challenges).
  **/
 struct string_list *net_http_headers_ex(struct http_t *state, bool accept_err)
 {
    if (!state)
       return NULL;
-   if (!accept_err && !state->err)
+   if (!accept_err && state->err)
       return NULL;
    return state->response.headers;
 }

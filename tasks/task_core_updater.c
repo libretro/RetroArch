@@ -476,6 +476,7 @@ void *task_push_get_core_updater_list(
    task->state            = list_handle;
    task->title            = strdup(msg_hash_to_str(MSG_FETCHING_CORE_LIST));
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -1118,6 +1119,7 @@ void *task_push_core_updater_download(
    task->state            = download_handle;
    task->title            = strdup(task_title);
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_updater_download;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
@@ -1547,6 +1549,7 @@ void task_push_update_installed_cores(
    task->state            = update_installed_handle;
    task->title            = strdup(msg_hash_to_str(MSG_FETCHING_CORE_LIST));
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
    task->flags           |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* Push task */
@@ -1869,6 +1872,7 @@ void *task_push_play_feature_delivery_core_install(
    task->state            = pfd_install_handle;
    task->title            = strdup(task_title);
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_updater_download;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
@@ -2239,6 +2243,7 @@ void task_push_play_feature_delivery_switch_installed_cores(
    task->state            = pfd_switch_cores_handle;
    task->title            = strdup(msg_hash_to_str(MSG_SCANNING_CORES));
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* Push task */

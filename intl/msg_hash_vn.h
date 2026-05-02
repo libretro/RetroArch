@@ -2547,6 +2547,14 @@ MSG_HASH(
    "VSync được bật cho đến khi hiệu suất giảm xuống dưới tốc độ làm mới mục tiêu. Có thể giảm thiểu hiện tượng giật hình khi hiệu suất giảm xuống dưới thời gian thực và tiết kiệm năng lượng hơn. Không tương thích với 'Độ trễ khung hình'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Đồng bộ theo dòng quét"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Đồng bộ việc hiển thị video theo vị trí dòng quét. Giảm độ trễ nhưng tăng nguy cơ bị xé hình. Cần tắt VSync."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Độ trễ khung hình"
    )

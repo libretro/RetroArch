@@ -4288,6 +4288,11 @@ static void *d3d12_gfx_init(const video_info_t* video,
    else
       d3d12->flags &= ~D3D12_ST_FLAG_WAITABLE_SWAPCHAINS;
 
+   if (video->vsync)
+      d3d12->flags |=  D3D12_ST_FLAG_VSYNC;
+   else
+      d3d12->flags &= ~D3D12_ST_FLAG_VSYNC;
+
    d3d_input_driver(settings->arrays.input_driver,
          settings->arrays.input_joypad_driver, input, input_data);
 
@@ -4416,7 +4421,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    matrix_4x4_identity(d3d12->identity);
 
    d3d12_gfx_set_rotation(d3d12, 0);
-   video_driver_set_size(d3d12->vp.full_width, d3d12->vp.full_height);
+   video_driver_set_output_size(d3d12->vp.full_width, d3d12->vp.full_height);
    d3d12->chain.viewport.Width  = d3d12->vp.full_width;
    d3d12->chain.viewport.Height = d3d12->vp.full_height;
 
@@ -4426,11 +4431,6 @@ static void *d3d12_gfx_init(const video_info_t* video,
       d3d12->flags             |=  D3D12_ST_FLAG_KEEP_ASPECT;
    else
       d3d12->flags             &= ~D3D12_ST_FLAG_KEEP_ASPECT;
-
-   if (video->vsync)
-      d3d12->flags             |=  D3D12_ST_FLAG_VSYNC;
-   else
-      d3d12->flags             &= ~D3D12_ST_FLAG_VSYNC;
 
    d3d12->format                = (video->rgb32)
       ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
@@ -4836,7 +4836,7 @@ static bool d3d12_gfx_frame(
             d3d12->flags                       &= ~D3D12_ST_FLAG_RESIZE_CHAIN;
             d3d12->flags                       |=  D3D12_ST_FLAG_RESIZE_VIEWPORT;
 
-            video_driver_set_size(video_width, video_height);
+            video_driver_set_output_size(video_width, video_height);
 
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
@@ -5796,7 +5796,34 @@ static bool d3d12_gfx_frame(
 
 #ifdef HAVE_GFX_WIDGETS
    if (widgets_active)
+   {
+      /* d3d12_render_overlay binds d3d12->overlays.vbo_view as
+       * the input vertex buffer and may set frame.viewport /
+       * frame.scissorRect (when the overlay isn't fullscreen).
+       * Restore the same sprite-pipeline state the OSD-msg
+       * block below uses, so widget draws land against the
+       * sprite vbo with a screen-space viewport.  Without this
+       * the widget state machine still runs and writes to
+       * sprites.vbo, but the GPU draws read from
+       * overlays.vbo_view → silent no-op on screen, which is
+       * the symptom users see when an overlay is active.
+       *
+       * The PSO has to be reset too even though
+       * d3d12_render_overlay also uses sprites.pipe_blend,
+       * because in HDR mode the OSD block selects
+       * pipe_blend_hdr and we want to match. */
+#ifdef HAVE_DXGI_HDR
+      if (   (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+          || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+         cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend_hdr);
+      else
+#endif
+         cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
+      cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
+      cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
+      cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
       gfx_widgets_frame(video_info);
+   }
 #endif
 
    if (msg && *msg)
@@ -6049,7 +6076,7 @@ static bool d3d12_gfx_alive(void* data)
    if (     (d3d12->flags & D3D12_ST_FLAG_RESIZE_CHAIN)
          && (d3d12->vp.full_width  != 0)
          && (d3d12->vp.full_height != 0))
-      video_driver_set_size(d3d12->vp.full_width, d3d12->vp.full_height);
+      video_driver_set_output_size(d3d12->vp.full_width, d3d12->vp.full_height);
 
    return !quit;
 }
@@ -6090,7 +6117,6 @@ static bool d3d12_gpu_hdr_readback_to_bgr24(
    d3d12_texture_t sdr_rt   = { 0 };
    D3D12Resource   readback = NULL;
    D3D12Resource   back_buffer;
-   D3D12_RESOURCE_DESC  sdr_desc;
    D3D12_HEAP_PROPERTIES heap_props;
    D3D12_RESOURCE_DESC   buf_desc;
    D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;

@@ -661,7 +661,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
    vita->video_width  = temp_width;
    vita->video_height = temp_height;
 
-   video_driver_set_size(temp_width, temp_height);
+   video_driver_set_output_size(temp_width, temp_height);
    vita2d_set_viewport_wrapper(vita, temp_width, temp_height, false, true);
 
    if (input && input_data)

@@ -226,7 +226,14 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
    }
 
    RARCH_ERR("[Vulkan] win32_set_video_mode failed.\n");
-   gfx_ctx_w_vk_destroy(data);
+   /* Do not destroy `data` here.  The caller in
+    * gfx/drivers/vulkan.c::vulkan_init treats a false return
+    * from set_video_mode as a failure of the in-flight `vk_t`
+    * construction and runs vulkan_free() on it, which calls
+    * ctx_driver->destroy(ctx_data) -- i.e. gfx_ctx_w_vk_destroy()
+    * -- on the very pointer we already freed.  Leave cleanup
+    * to the caller's single normal-path destroy.  Cocoa /
+    * Android already do this; this matches them. */
    return false;
 }
 

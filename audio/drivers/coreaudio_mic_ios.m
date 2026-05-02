@@ -87,15 +87,19 @@ static OSStatus coreaudio_input_callback(
             if (FIFO_WRITE_AVAIL(microphone->sample_buffer) >= actual_bytes)
                 fifo_write(microphone->sample_buffer,
                       bufferList.mBuffers[0].mData, actual_bytes);
+#ifdef DEBUG
             else if (microphone->drop_count++ % 1000 == 0)
                 RARCH_WARN("[CoreAudio] FIFO full, dropping %u bytes.\n",
                            (unsigned)actual_bytes);
+#endif
             scond_signal(microphone->fifo_cond);
             slock_unlock(microphone->fifo_lock);
         }
     }
+#ifdef DEBUG
     else if (status != noErr)
         RARCH_ERR("[CoreAudio] Failed to render audio: %d.\n", (int)status);
+#endif
 
     return noErr;
 }
@@ -105,10 +109,7 @@ static void *coreaudio_microphone_init(void)
 {
    coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)calloc(1, sizeof(*microphone));
    if (!microphone)
-   {
-      RARCH_ERR("[CoreAudio] Failed to allocate microphone driver.\n");
       return NULL;
-   }
 
    microphone->sample_rate = 0;
    microphone->nonblock    = false;
@@ -150,14 +151,11 @@ static void coreaudio_microphone_free(void *driver_context)
 static int coreaudio_microphone_read(void *driver_context,
       void *microphone_context, void *buf, size_t size)
 {
-   coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)driver_context;
    size_t avail, read_amt;
+   coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)driver_context;
 
    if (!microphone || !buf)
-   {
-      RARCH_ERR("[CoreAudio] Invalid parameters in read.\n");
       return -1;
-   }
 
    slock_lock(microphone->fifo_lock);
 
@@ -219,10 +217,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
 {
    coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)driver_context;
    if (!microphone)
-   {
-      RARCH_ERR("[CoreAudio] Invalid driver context.\n");
       return NULL;
-   }
 
    /* Guard against calling open_mic twice without close_mic */
    if (microphone->audio_unit)
@@ -300,10 +295,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
       }
       microphone->sample_buffer = fifo_new(fifoBufferSize);
       if (!microphone->sample_buffer)
-      {
-         RARCH_ERR("[CoreAudio] Failed to create sample buffer.\n");
          return NULL;
-      }
    }
 
    /* Initialize audio unit */
@@ -436,10 +428,7 @@ static void coreaudio_microphone_close_mic(void *driver_context, void *microphon
 {
    coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)microphone_context;
    if (!microphone)
-   {
-      RARCH_ERR("[CoreAudio] Failed to close microphone.\n");
       return;
-   }
 
    if (microphone->is_running)
    {
@@ -472,10 +461,7 @@ static bool coreaudio_microphone_start_mic(void *driver_context, void *microphon
 {
    coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)microphone_context;
    if (!microphone)
-   {
-      RARCH_ERR("[CoreAudio] Failed to start microphone.\n");
       return false;
-   }
 
    if (microphone->sample_buffer)
    {
@@ -501,10 +487,7 @@ static bool coreaudio_microphone_stop_mic(void *driver_context, void *microphone
 {
    coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)microphone_context;
    if (!microphone)
-   {
-      RARCH_ERR("[CoreAudio] Failed to stop microphone.\n");
       return false;
-   }
 
    if (microphone->is_running)
    {

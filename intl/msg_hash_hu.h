@@ -2515,6 +2515,14 @@ MSG_HASH(
    "A VSync aktív, amíg a teljesítmény a megcélzott képfrissítés alá nem esik. Minimalizálhatja a döcögősséget amikor a teljesítmény nem éri el a valós időt, és energiát takaríthat meg. Nem kompatibilis "
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Scanline szinkronizálás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "A videomegjelenítés szinkronizálása a scanline (letapogatási sor) helyzetéhez. Csökkenti a késleltetés, a tearing nagyobb kockázata mellett. A VSync ki kell legyen kapcsolva."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Képvárakoztatás"
    )
@@ -2734,6 +2742,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "A köztes puffer mérete (képkockákban), a WASAPI illesztő megosztott módú használata esetén."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "ASIO vezérlőpult megnyitása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Az ASIO meghajtó vezérlőpaneljének megnyitása, az eszköz útválasztás és puffer beállításaihoz."
    )
 
 /* Settings > Audio > Output */

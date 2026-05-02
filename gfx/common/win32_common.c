@@ -508,6 +508,14 @@ static LRESULT CALLBACK wnd_proc_common(
       bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
+#ifdef HAVE_TASKBAR
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+   if (   !(g_win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED)
+       && g_win32->taskbar_message
+       && message == g_win32->taskbar_message)
+      g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
+#endif
+
    switch (message)
    {
       case WM_SYSCOMMAND:
@@ -709,6 +717,13 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
    bool quit                     = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
 
+#ifdef HAVE_TASKBAR
+   if (   !(g_win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED)
+       && g_win32->taskbar_message
+       && message == g_win32->taskbar_message)
+      g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
+#endif
+
    switch (message)
    {
       case WM_KEYUP:                /* Key released */
@@ -771,10 +786,6 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_MOUSEWHEEL:
       case WM_MOUSEHWHEEL:
       case WM_NCLBUTTONDBLCLK:
-#ifdef HAVE_TASKBAR
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
-#endif
          break;
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
@@ -793,10 +804,6 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
             return ret;
-#ifdef HAVE_TASKBAR
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
-#endif
          break;
       case WM_SETFOCUS:
 #ifdef HAVE_CLIP_WINDOW
@@ -830,6 +837,13 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
    bool quit                     = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
 
+#ifdef HAVE_TASKBAR
+   if (   !(g_win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED)
+       && g_win32->taskbar_message
+       && message == g_win32->taskbar_message)
+      g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
+#endif
+
    switch (message)
    {
       case WM_KEYUP:                /* Key released */
@@ -857,10 +871,6 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_MOUSEWHEEL:
       case WM_MOUSEHWHEEL:
       case WM_NCLBUTTONDBLCLK:
-#ifdef HAVE_TASKBAR
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
-#endif
          break;
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
@@ -879,10 +889,6 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
             return ret;
-#ifdef HAVE_TASKBAR
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
-#endif
          break;
       case WM_SETFOCUS:
 #ifdef HAVE_CLIP_WINDOW
@@ -935,6 +941,13 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
    bool keydown                  = true;
    bool quit                     = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+#ifdef HAVE_TASKBAR
+   if (   !(g_win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED)
+       && g_win32->taskbar_message
+       && message == g_win32->taskbar_message)
+      g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
+#endif
 
    switch (message)
    {
@@ -1074,10 +1087,6 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_MOUSEWHEEL:
       case WM_MOUSEHWHEEL:
       case WM_NCLBUTTONDBLCLK:
-#ifdef HAVE_TASKBAR
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
-#endif
 #if !defined(_XBOX)
          {
             void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
@@ -1104,10 +1113,6 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
             return ret;
-#ifdef HAVE_TASKBAR
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
-#endif
          break;
       case WM_SETFOCUS:
 #ifdef HAVE_CLIP_WINDOW
@@ -1334,6 +1339,72 @@ static LRESULT wnd_proc_wm_gdi_create(HWND hwnd)
    return 0;
 }
 
+/* Shared WM_PAINT body for all three GDI window procs (dinput,
+ * winraw, common).  Presents gdi->bmp scaled into the
+ * aspect-ratio-aware viewport rect (gdi->vp), filling the area
+ * outside the rect with black to produce letterbox / pillarbox
+ * bars.  Reads bmp_width / bmp_height for the source rect (the
+ * DDB's actual size); when RGUI is alive bmp holds the menu image
+ * at the menu's resolution while gdi->frame_width still tracks
+ * the core, so frame_width is only the fallback. */
+static void wnd_proc_gdi_paint(gdi_t *gdi)
+{
+   int       vp_x   = gdi->vp.x;
+   int       vp_y   = gdi->vp.y;
+   unsigned  vp_w   = gdi->vp.width  ? gdi->vp.width  : gdi->screen_width;
+   unsigned  vp_h   = gdi->vp.height ? gdi->vp.height : gdi->screen_height;
+   unsigned  src_w  = gdi->bmp_width  ? gdi->bmp_width  : gdi->frame_width;
+   unsigned  src_h  = gdi->bmp_height ? gdi->bmp_height : gdi->frame_height;
+
+   /* Letterbox / pillarbox bars: paint the four areas outside the
+    * viewport rect black before the StretchBlt.  We do this even
+    * when the viewport happens to fill the whole window — extra
+    * FillRects on zero-area regions are cheap. */
+   if (vp_x > 0 || vp_y > 0
+         || vp_x + (int)vp_w  < (int)gdi->screen_width
+         || vp_y + (int)vp_h  < (int)gdi->screen_height)
+   {
+      RECT rect;
+      HBRUSH black = (HBRUSH)GetStockObject(BLACK_BRUSH);
+      /* Top */
+      if (vp_y > 0)
+      {
+         rect.left = 0; rect.top = 0;
+         rect.right = (LONG)gdi->screen_width; rect.bottom = vp_y;
+         FillRect(gdi->winDC, &rect, black);
+      }
+      /* Bottom */
+      if (vp_y + (int)vp_h < (int)gdi->screen_height)
+      {
+         rect.left = 0; rect.top = vp_y + (int)vp_h;
+         rect.right = (LONG)gdi->screen_width; rect.bottom = (LONG)gdi->screen_height;
+         FillRect(gdi->winDC, &rect, black);
+      }
+      /* Left */
+      if (vp_x > 0)
+      {
+         rect.left = 0; rect.top = vp_y;
+         rect.right = vp_x; rect.bottom = vp_y + (int)vp_h;
+         FillRect(gdi->winDC, &rect, black);
+      }
+      /* Right */
+      if (vp_x + (int)vp_w < (int)gdi->screen_width)
+      {
+         rect.left = vp_x + (int)vp_w; rect.top = vp_y;
+         rect.right = (LONG)gdi->screen_width; rect.bottom = vp_y + (int)vp_h;
+         FillRect(gdi->winDC, &rect, black);
+      }
+   }
+
+   gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+   StretchBlt(gdi->winDC,
+         vp_x, vp_y, vp_w, vp_h,
+         gdi->memDC,
+         0, 0, src_w, src_h,
+         SRCCOPY);
+   SelectObject(gdi->memDC, gdi->bmp_old);
+}
+
 #ifdef HAVE_DINPUT
 LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -1342,35 +1413,9 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       return wnd_proc_wm_gdi_create(hwnd);
    else if (message == WM_PAINT)
    {
-      win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-      gdi_t *gdi                    = (gdi_t*)video_driver_get_ptr();
-
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
       if (gdi && gdi->memDC)
-      {
-         gdi->bmp_old    = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
-
-         /* Draw video content */
-         StretchBlt(
-               gdi->winDC,
-               0,
-               0,
-               gdi->screen_width,
-               gdi->screen_height,
-               gdi->memDC,
-               0,
-               0,
-               gdi->video_width,
-               gdi->video_height,
-               SRCCOPY);
-
-         SelectObject(gdi->memDC, gdi->bmp_old);
-      }
-
-#ifdef HAVE_TASKBAR
-      if (     g_win32->taskbar_message
-            && message == g_win32->taskbar_message)
-         g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
-#endif
+         wnd_proc_gdi_paint(gdi);
    }
 
    return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
@@ -1385,35 +1430,9 @@ LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
       return wnd_proc_wm_gdi_create(hwnd);
    else if (message == WM_PAINT)
    {
-      win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-      gdi_t *gdi                    = (gdi_t*)video_driver_get_ptr();
-
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
       if (gdi && gdi->memDC)
-      {
-         gdi->bmp_old    = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
-
-         /* Draw video content */
-         StretchBlt(
-               gdi->winDC,
-               0,
-               0,
-               gdi->screen_width,
-               gdi->screen_height,
-               gdi->memDC,
-               0,
-               0,
-               gdi->video_width,
-               gdi->video_height,
-               SRCCOPY);
-
-         SelectObject(gdi->memDC, gdi->bmp_old);
-      }
-
-#ifdef HAVE_TASKBAR
-      if (     g_win32->taskbar_message
-            && message == g_win32->taskbar_message)
-         g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
-#endif
+         wnd_proc_gdi_paint(gdi);
    }
 
    return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
@@ -1427,35 +1446,9 @@ LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       return wnd_proc_wm_gdi_create(hwnd);
    else if (message == WM_PAINT)
    {
-      win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-      gdi_t *gdi                    = (gdi_t*)video_driver_get_ptr();
-
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
       if (gdi && gdi->memDC)
-      {
-         gdi->bmp_old    = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
-
-         /* Draw video content */
-         StretchBlt(
-               gdi->winDC,
-               0,
-               0,
-               gdi->screen_width,
-               gdi->screen_height,
-               gdi->memDC,
-               0,
-               0,
-               gdi->video_width,
-               gdi->video_height,
-               SRCCOPY);
-
-         SelectObject(gdi->memDC, gdi->bmp_old);
-      }
-
-#ifdef HAVE_TASKBAR
-      if (     g_win32->taskbar_message
-            && message == g_win32->taskbar_message)
-         g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
-#endif
+         wnd_proc_gdi_paint(gdi);
    }
 
    return wnd_proc_common_internal(hwnd, message, wparam, lparam);

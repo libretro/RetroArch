@@ -15,6 +15,7 @@
 
 #include <compat/strl.h>
 #include <retro_environment.h>
+#include <gfx/scaler/pixconv.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -1142,33 +1143,13 @@ void dxgi_copy(
          {
             case DXGI_FORMAT_R8G8B8A8_UNORM:
             {
-               {
-                  const UINT16* src_ptr = (const UINT16*)src_data;
-                  UINT32*       dst_ptr = (UINT32*)dst_data;
-                  int sp = src_pitch;
-                  int dp = dst_pitch;
-                  if (sp)
-                     sp -= width * sizeof(*src_ptr);
-                  if (dp)
-                     dp -= width * sizeof(*dst_ptr);
-                  for (i = 0; i < height; i++)
-                  {
-                     for (j = 0; j < width; j++)
-                     {
-                        unsigned r = 0, g = 0, b = 0;
-                        UINT16 src_val = *src_ptr++;
-                        r = (src_val >> 11) & 31;
-                        r = (r << 3) | (r >> 2);
-                        g = (src_val >> 5) & 63;
-                        g = (g << 2) | (g >> 4);
-                        b = (src_val >> 0) & 31;
-                        b = (b << 3) | (b >> 2);
-                        *dst_ptr++ = (r << 0) | (g << 8) | (b << 16) | (255 << 24);
-                     }
-                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
-                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
-                  }
-               }
+               /* RGB565 -> R8G8B8A8 (byte order [r g b a]) is exactly
+                * conv_rgb565_abgr8888 in pixconv (uint32 LE
+                * (a << 24) | (b << 16) | (g << 8) | r). */
+               int sp = src_pitch ? src_pitch : (int)(width * sizeof(UINT16));
+               int dp = dst_pitch ? dst_pitch : (int)(width * sizeof(UINT32));
+               conv_rgb565_abgr8888(dst_data, src_data,
+                     width, height, dp, sp);
                break;
             }
             case DXGI_FORMAT_B8G8R8X8_UNORM:
@@ -1329,33 +1310,13 @@ void dxgi_copy(
             }
             case DXGI_FORMAT_B8G8R8A8_UNORM:
             {
-               {
-                  const UINT16* src_ptr = (const UINT16*)src_data;
-                  UINT32*       dst_ptr = (UINT32*)dst_data;
-                  int sp = src_pitch;
-                  int dp = dst_pitch;
-                  if (sp)
-                     sp -= width * sizeof(*src_ptr);
-                  if (dp)
-                     dp -= width * sizeof(*dst_ptr);
-                  for (i = 0; i < height; i++)
-                  {
-                     for (j = 0; j < width; j++)
-                     {
-                        unsigned r = 0, g = 0, b = 0;
-                        UINT16 src_val = *src_ptr++;
-                        r = (src_val >> 11) & 31;
-                        r = (r << 3) | (r >> 2);
-                        g = (src_val >> 5) & 63;
-                        g = (g << 2) | (g >> 4);
-                        b = (src_val >> 0) & 31;
-                        b = (b << 3) | (b >> 2);
-                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0) | (255 << 24);
-                     }
-                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
-                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
-                  }
-               }
+               /* RGB565 -> B8G8R8A8 (byte order [b g r a]) is exactly
+                * conv_rgb565_argb8888 in pixconv (uint32 LE
+                * (a << 24) | (r << 16) | (g << 8) | b). */
+               int sp = src_pitch ? src_pitch : (int)(width * sizeof(UINT16));
+               int dp = dst_pitch ? dst_pitch : (int)(width * sizeof(UINT32));
+               conv_rgb565_argb8888(dst_data, src_data,
+                     width, height, dp, sp);
                break;
             }
             case DXGI_FORMAT_EX_A4R4G4B4_UNORM:

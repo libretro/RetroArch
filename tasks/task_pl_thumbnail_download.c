@@ -617,6 +617,7 @@ bool task_push_pl_thumbnail_download(
    task->state                   = pl_thumb;
    task->title                   = strdup(system);
    task->progress                = 0;
+   task->progress_cb             = task_window_progress_cb;
    task->flags                  |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    task_queue_push(task);

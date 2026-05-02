@@ -189,6 +189,13 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
    msg->msg_transition_animation = 0.0f;
 }
 
+/* Forward declaration: msg_queue_free is defined further below
+ * (around line 550) but is needed by msg_queue_push for the
+ * race-loss rollback path added in the producer-locking fix. */
+static void gfx_widgets_msg_queue_free(
+      dispgfx_widget_t *p_dispwidget,
+      disp_widget_msg_t *msg);
+
 void gfx_widgets_msg_queue_push(
       retro_task_t *task,
       const char *msg,
@@ -203,7 +210,18 @@ void gfx_widgets_msg_queue_push(
    disp_widget_msg_t    *msg_widget = NULL;
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
-   if (FIFO_WRITE_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
+   /* The outer FIFO_WRITE_AVAIL fast-path check that used to wrap
+    * this function body has been removed: reading the FIFO cursors
+    * outside msg_queue_lock is a data race against the producer
+    * lock-protected fifo_write below (TSan-detectable; benign on
+    * x86 TSO but real on weak-memory hardware).  The locked
+    * avail re-check at the fifo_write site is the correctness gate.
+    *
+    * Removing the outer gate also fixes a latent behaviour bug:
+    * the update-existing branch (else clause below) does not write
+    * to the FIFO -- it only mutates an already-tracked widget --
+    * so suppressing it on FIFO-full was wrong.  Existing widgets
+    * now get updated regardless of FIFO state. */
    {
       /* Get current msg if it exists */
       if (task && task->frontend_userdata)
@@ -376,8 +394,45 @@ void gfx_widgets_msg_queue_push(
                msg_widget->text_height *= 2;
          }
 
-         fifo_write(&p_dispwidget->msg_queue,
-               &msg_widget, sizeof(msg_widget));
+         /* Lock the FIFO across the avail re-check + fifo_write so
+          * concurrent producers can't both pass the check and
+          * overwrite each other's data.  fifo_write itself does no
+          * bounds checking -- it silently wraps -- so the inner
+          * avail check is the actual gate.
+          *
+          * The outer FIFO_WRITE_AVAIL_NONPTR check at the top of
+          * this function is a fast-path bail and is intentionally
+          * left unlocked: a stale read there at worst causes us to
+          * skip a single message that we could have queued, which
+          * is recoverable on the next call.  The check below is the
+          * one whose accuracy matters for correctness. */
+         {
+#ifdef HAVE_THREADS
+            bool fifo_full;
+            slock_lock(p_dispwidget->msg_queue_lock);
+            fifo_full = (FIFO_WRITE_AVAIL_NONPTR(p_dispwidget->msg_queue)
+                  < sizeof(msg_widget));
+            if (!fifo_full)
+               fifo_write(&p_dispwidget->msg_queue,
+                     &msg_widget, sizeof(msg_widget));
+            slock_unlock(p_dispwidget->msg_queue_lock);
+
+            if (fifo_full)
+            {
+               /* Lost the race against another producer.  Roll back
+                * the widget we just allocated -- nobody else has a
+                * reference to it yet (we only got here from the
+                * spawn-new branch, where msg_widget is freshly
+                * allocated above), so this is safe. */
+               gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
+               free(msg_widget);
+               return;
+            }
+#else
+            fifo_write(&p_dispwidget->msg_queue,
+                  &msg_widget, sizeof(msg_widget));
+#endif
+         }
       }
       /* Update task info */
       else
@@ -666,7 +721,6 @@ void gfx_widgets_draw_icon(
    draw.coords          = &coords;
    draw.matrix_data     = &mymat;
    draw.texture         = texture;
-   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
 
    if (draw.height > 0 && draw.width > 0)
@@ -962,9 +1016,16 @@ void gfx_widgets_iterate(
 
    /* Messages queue */
 
-   /* Consume one message if available */
-   if ((FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
-         && !(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MOVING)
+   /* Consume one message if available.  The outer condition no
+    * longer reads FIFO_READ_AVAIL_NONPTR -- doing so outside
+    * msg_queue_lock would race with concurrent producer fifo_writes
+    * (TSan-detectable; benign on x86 TSO but real on weak-memory
+    * hardware).  The locked re-check at the fifo_read site below
+    * is the correctness gate.  current_msgs_size and the MOVING
+    * flag remain in the outer guard -- they are unrelated to the
+    * msg_queue race; their own synchronisation discipline is
+    * handled by current_msgs_lock and is unchanged here. */
+   if (    !(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MOVING)
          && (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs)))
    {
       disp_widget_msg_t *msg_widget = NULL;
@@ -975,9 +1036,21 @@ void gfx_widgets_iterate(
 
       if (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs))
       {
+         /* Lock around the FIFO read to serialise against
+          * concurrent producer fifo_writes.  Held strictly inside
+          * current_msgs_lock (which protects current_msgs[]) --
+          * lock order is consistent with all other call sites:
+          * msg_queue_lock is always the inner lock when both
+          * are held. */
+#ifdef HAVE_THREADS
+         slock_lock(p_dispwidget->msg_queue_lock);
+#endif
          if (FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
             fifo_read(&p_dispwidget->msg_queue,
                   &msg_widget, sizeof(msg_widget));
+#ifdef HAVE_THREADS
+         slock_unlock(p_dispwidget->msg_queue_lock);
+#endif
 
          if (msg_widget)
          {
@@ -1278,6 +1351,13 @@ static void gfx_widgets_draw_task_msg(
          texture    = MENU_WIDGETS_ICON_HOURGLASS;
          color      = msg_queue_bar;
          radians    = msg->hourglass_rotation;
+         /* The display drivers that consume this rotation via the
+          * cosine/sine pair (gl, gl1, glcore, vulkan) need the
+          * trig values recomputed to match the live rotation -
+          * leaving them at the zero-rotation defaults above pins
+          * the hourglass icon to its starting orientation. */
+         cosine     = cosf(radians);
+         sine       = sinf(radians);
       }
       else if (msg->flags & DISPWIDG_FLAG_POSITIVE)
       {
@@ -1639,6 +1719,11 @@ void gfx_widgets_frame(void *data)
    /* AI Service overlay */
    if (p_dispwidget->ai_service_overlay_state > 0)
    {
+      video_viewport_t content_vp;
+      int overlay_x             = 0;
+      int overlay_y             = 0;
+      unsigned overlay_width    = video_width;
+      unsigned overlay_height   = video_height;
       float outline_color[16] = {
       0.00, 1.00, 0.00, 1.00,
       0.00, 1.00, 0.00, 1.00,
@@ -1646,6 +1731,13 @@ void gfx_widgets_frame(void *data)
       0.00, 1.00, 0.00, 1.00,
       };
 
+      if (video_driver_get_viewport_info(&content_vp) && content_vp.width && content_vp.height)
+      {
+         overlay_x      = content_vp.x;
+         overlay_y      = content_vp.y;
+         overlay_width  = content_vp.width;
+         overlay_height = content_vp.height;
+      }
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
       if (p_dispwidget->ai_service_overlay_texture)
@@ -1657,11 +1749,11 @@ void gfx_widgets_frame(void *data)
                p_disp,
                video_width,
                video_height,
-               video_width,
-               video_height,
+               overlay_width,
+               overlay_height,
                p_dispwidget->ai_service_overlay_texture,
-               0,
-               0,
+               overlay_x,
+               overlay_y,
                0.0f, /* rad                         */
                1.0f, /* cos(rad)   = cos(0)  = 1.0f */
                0.0f, /* sine(rad)  = sine(0) = 0.0f */
@@ -1676,8 +1768,8 @@ void gfx_widgets_frame(void *data)
             p_disp,
             userdata,
             video_width, video_height,
-            0, 0,
-            video_width,
+            overlay_x, overlay_y,
+            overlay_width,
             p_dispwidget->divider_width_1px,
             video_width,
             video_height,
@@ -1689,9 +1781,9 @@ void gfx_widgets_frame(void *data)
             p_disp,
             userdata,
             video_width, video_height,
-            0,
-            video_height - p_dispwidget->divider_width_1px,
-            video_width,
+            overlay_x,
+            overlay_y + overlay_height - p_dispwidget->divider_width_1px,
+            overlay_width,
             p_dispwidget->divider_width_1px,
             video_width,
             video_height,
@@ -1704,10 +1796,10 @@ void gfx_widgets_frame(void *data)
             userdata,
             video_width,
             video_height,
-            0,
-            0,
+            overlay_x,
+            overlay_y,
             p_dispwidget->divider_width_1px,
-            video_height,
+            overlay_height,
             video_width,
             video_height,
             outline_color,
@@ -1718,10 +1810,10 @@ void gfx_widgets_frame(void *data)
             p_disp,
             userdata,
             video_width, video_height,
-            video_width - p_dispwidget->divider_width_1px,
-            0,
+            overlay_x + overlay_width - p_dispwidget->divider_width_1px,
+            overlay_y,
             p_dispwidget->divider_width_1px,
-            video_height,
+            overlay_height,
             video_width,
             video_height,
             outline_color,
@@ -1980,6 +2072,8 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 
    slock_free(p_dispwidget->current_msgs_lock);
    p_dispwidget->current_msgs_lock = NULL;
+   slock_free(p_dispwidget->msg_queue_lock);
+   p_dispwidget->msg_queue_lock = NULL;
 #endif
 
    p_dispwidget->msg_queue_tasks_count = 0;
@@ -2131,6 +2225,7 @@ bool gfx_widgets_init(
 
 #ifdef HAVE_THREADS
       p_dispwidget->current_msgs_lock = slock_new();
+      p_dispwidget->msg_queue_lock    = slock_new();
 #endif
 
       fill_pathname_join_special(

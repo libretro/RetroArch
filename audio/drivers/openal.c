@@ -134,7 +134,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
                if (string_is_equal(device, list->elems[i].data))
                {
                   RARCH_DBG("[OpenAL] Found device #%d: \"%s\".\n", i, list->elems[i].data);
-                  idx_found = i;
+                  idx_found = (int32_t)i;
                   dev_id    = strdup(list->elems[i].data);
                   break;
                }
@@ -144,7 +144,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
 
             if (idx_found == -1 && isdigit(device[0]))
             {
-               idx_found = strtoul(device, NULL, 0);
+               idx_found = (int32_t)strtoul(device, NULL, 0);
                RARCH_LOG("[OpenAL] Fallback, device index is a single number index instead: %d.\n", idx_found);
 
                if (idx_found != -1)
@@ -190,7 +190,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
       _latency        = latency * rate * 2 * sizeof(int16_t);
    }
 
-   al->num_buffers = _latency / (1000 * OPENAL_BUFSIZE);
+   al->num_buffers = (ALsizei)(_latency / (1000 * OPENAL_BUFSIZE));
    if (al->num_buffers < 2)
       al->num_buffers = 2;
 
@@ -263,7 +263,7 @@ static ssize_t al_write(void *data, const void *s, size_t len)
       if (!al_get_buffer(al, &buffer))
          break;
 
-      alBufferData(buffer, al->format, buf, rc, al->rate);
+      alBufferData(buffer, al->format, buf, (ALsizei)rc, al->rate);
       alSourceQueueBuffers(al->source, 1, &buffer);
 
       _len           += rc;

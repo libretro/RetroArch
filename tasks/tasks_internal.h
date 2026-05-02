@@ -52,6 +52,18 @@ typedef struct nbio_buf
    unsigned bufsize;
 } nbio_buf_t;
 
+/* Generic progress_cb that forwards a task's progress (0-100) to the
+ * platform's window/taskbar progress indicator (e.g. ITaskbarList3 on
+ * Win32). Set this on any task whose progress should be reflected on
+ * the taskbar -- aggregating tasks (e.g. the Core Updater's outer
+ * task) need to do this manually because their inner http transfers
+ * run muted and so their own progress callbacks never fire.
+ *
+ * Available regardless of HAVE_NETWORKING: implementation lives in
+ * task_file_transfer.c so non-network long-running tasks (manual
+ * content scan, core backup, ...) can use it too. */
+void task_window_progress_cb(retro_task_t *task);
+
 #ifdef HAVE_NETWORKING
 typedef struct
 {

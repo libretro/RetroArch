@@ -1023,6 +1023,19 @@ void task_free_title(retro_task_t *task)
 #endif
 }
 
+void task_free_error(retro_task_t *task)
+{
+#ifdef HAVE_THREADS
+   slock_lock(property_lock);
+#endif
+   if (task->error)
+      free(task->error);
+   task->error = NULL;
+#ifdef HAVE_THREADS
+   slock_unlock(property_lock);
+#endif
+}
+
 void* task_get_data(retro_task_t *task)
 {
    void *data = NULL;

@@ -22,6 +22,7 @@
 #include <stddef.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -36,6 +37,8 @@
 #include "../../msg_hash.h"
 
 #include "../natt.h"
+
+RETRO_BEGIN_DECLS
 
 typedef struct netplay netplay_t;
 
@@ -213,4 +216,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state,
 #endif
 
 extern const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS];
+
+RETRO_END_DECLS
+
 #endif

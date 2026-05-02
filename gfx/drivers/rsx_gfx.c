@@ -1566,7 +1566,7 @@ static void* rsx_init(const video_info_t* video,
    rsx->vp.full_width        = rsx->width;
    rsx->vp.full_height       = rsx->height;
    rsx->rgb32                = video->rgb32;
-   video_driver_set_size(rsx->vp.width, rsx->vp.height);
+   video_driver_set_output_size(rsx->vp.width, rsx->vp.height);
    rsx_set_viewport(rsx, rsx->vp.width, rsx->vp.height, false, true);
 
    if (input && input_data)

@@ -35,450 +35,165 @@ int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
       const char *path)
 {
+   /* Build queries of the shape {'KEY':"PATH"} (or {'KEY':PATH}
+    * for numeric/rating fields, or the DEVELOPER glob form).
+    *
+    * Pre-this-rewrite each case unrolled the per-character
+    * writes with s[++_len]= and then a path strlcpy followed
+    * by another short s[++_len]= chain.  None of those writes
+    * was bounded against len; if the caller's buffer was
+    * smaller than the prefix's length the writes ran off the
+    * end of s, and after the path strlcpy the trailing
+    * s[_len]='"';s[++_len]='}' sequence could OOB-write up to
+    * 3 bytes when path filled s.  Naively replacing the chain
+    * with _len += strlcpy(s+_len, lit, len-_len) does not
+    * help: strlcpy returns strlen(source) regardless of
+    * truncation, so on overflow _len passes len and the next
+    * (len - _len) underflows size_t, producing an
+    * unbounded-size strlcpy and the same OOB.
+    *
+    * Use strlcpy_append (libretro-common/string/stdstring.c),
+    * which is bound-checked and clamps *pos to len - 1 on
+    * truncation, so subsequent calls in the chain short-
+    * circuit safely.  The caller checks the final return
+    * value to detect any truncation in the chain. */
    size_t _len = 0;
+
+   if (!s || len == 0)
+      return -1;
 
    switch (type)
    {
       case DATABASE_QUERY_ENTRY:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'n';
-         s[++_len]  = 'a';
-         s[++_len]  = 'm';
-         s[++_len]  = 'e';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'name':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_PUBLISHER:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'p';
-         s[++_len]  = 'u';
-         s[++_len]  = 'b';
-         s[++_len]  = 'l';
-         s[++_len]  = 'i';
-         s[++_len]  = 's';
-         s[++_len]  = 'h';
-         s[++_len]  = 'e';
-         s[++_len]  = 'r';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'publisher':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_DEVELOPER:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'd';
-         s[++_len]  = 'e';
-         s[++_len]  = 'v';
-         s[++_len]  = 'e';
-         s[++_len]  = 'l';
-         s[++_len]  = 'o';
-         s[++_len]  = 'p';
-         s[++_len]  = 'e';
-         s[++_len]  = 'r';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = 'g';
-         s[++_len]  = 'l';
-         s[++_len]  = 'o';
-         s[++_len]  = 'b';
-         s[++_len]  = '(';
-         s[++_len]  = '\'';
-         s[++_len]  = '*';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '*';
-         s[++_len]  = '\'';
-         s[++_len]  = ')';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'developer':glob('*");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "*')}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_ORIGIN:
-         s[  _len]  = '{';
-	      s[++_len]  = '\'';
-         s[++_len]  = 'o';
-         s[++_len]  = 'r';
-         s[++_len]  = 'i';
-         s[++_len]  = 'g';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'origin':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_FRANCHISE:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'f';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 'n';
-         s[++_len]  = 'c';
-         s[++_len]  = 'h';
-         s[++_len]  = 'i';
-         s[++_len]  = 's';
-         s[++_len]  = 'e';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'franchise':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 's';
-         s[++_len]  = 'r';
-         s[++_len]  = 'b';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'esrb_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_BBFC_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'b';
-         s[++_len]  = 'b';
-         s[++_len]  = 'f';
-         s[++_len]  = 'c';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[++_len]  = '"';
-         s[++_len]  = '}';
-         s[++_len] = '\0';
+         /* Pre-rewrite this case wrote s[++_len] = '"' after
+          * the path strlcpy instead of s[_len] = '"', leaving
+          * the strlcpy's NUL terminator embedded in the query
+          * and silently breaking BBFC searches.  Fix while
+          * rewriting. */
+         strlcpy_append(s, len, &_len, "{'bbfc_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_ELSPA_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 'l';
-         s[++_len]  = 's';
-         s[++_len]  = 'p';
-         s[++_len]  = 'a';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'elspa_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_ESRB_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 's';
-         s[++_len]  = 'r';
-         s[++_len]  = 'b';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'esrb_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_PEGI_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'p';
-         s[++_len]  = 'e';
-         s[++_len]  = 'g';
-         s[++_len]  = 'i';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'pegi_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_CERO_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'c';
-         s[++_len]  = 'e';
-         s[++_len]  = 'r';
-         s[++_len]  = 'o';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'cero_rating':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_ENHANCEMENT_HW:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 'n';
-         s[++_len]  = 'h';
-         s[++_len]  = 'a';
-         s[++_len]  = 'n';
-         s[++_len]  = 'c';
-         s[++_len]  = 'e';
-         s[++_len]  = 'm';
-         s[++_len]  = 'e';
-         s[++_len]  = 'n';
-         s[++_len]  = 't';
-         s[++_len]  = '_';
-         s[++_len]  = 'h';
-         s[++_len]  = 'w';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'enhancement_hw':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 'd';
-         s[++_len]  = 'g';
-         s[++_len]  = 'e';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]   = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'edge_rating':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'e';
-         s[++_len]  = 'd';
-         s[++_len]  = 'g';
-         s[++_len]  = 'e';
-         s[++_len]  = '_';
-         s[++_len]  = 'i';
-         s[++_len]  = 's';
-         s[++_len]  = 's';
-         s[++_len]  = 'u';
-         s[++_len]  = 'e';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'edge_issue':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'f';
-         s[++_len]  = 'a';
-         s[++_len]  = 'm';
-         s[++_len]  = 'i';
-         s[++_len]  = 't';
-         s[++_len]  = 's';
-         s[++_len]  = 'u';
-         s[++_len]  = '_';
-         s[++_len]  = 'r';
-         s[++_len]  = 'a';
-         s[++_len]  = 't';
-         s[++_len]  = 'i';
-         s[++_len]  = 'n';
-         s[++_len]  = 'g';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'famitsu_rating':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'r';
-         s[++_len]  = 'e';
-         s[++_len]  = 'l';
-         s[++_len]  = 'e';
-         s[++_len]  = 'a';
-         s[++_len]  = 's';
-         s[++_len]  = 'e';
-         s[++_len]  = 'm';
-         s[++_len]  = 'o';
-         s[++_len]  = 'n';
-         s[++_len]  = 't';
-         s[++_len]  = 'h';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'releasemonth':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'r';
-         s[++_len]  = 'e';
-         s[++_len]  = 'l';
-         s[++_len]  = 'e';
-         s[++_len]  = 'a';
-         s[++_len]  = 's';
-         s[++_len]  = 'e';
-         s[++_len]  = 'y';
-         s[++_len]  = 'e';
-         s[++_len]  = 'a';
-         s[++_len]  = 'r';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'releaseyear':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_MAX_USERS:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'u';
-         s[++_len]  = 's';
-         s[++_len]  = 'e';
-         s[++_len]  = 'r';
-         s[++_len]  = 's';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'users':");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_GENRE:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'g';
-         s[++_len]  = 'e';
-         s[++_len]  = 'n';
-         s[++_len]  = 'r';
-         s[++_len]  = 'e';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'genre':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_ENTRY_REGION:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = 'r';
-         s[++_len]  = 'e';
-         s[++_len]  = 'g';
-         s[++_len]  = 'i';
-         s[++_len]  = 'o';
-         s[++_len]  = 'n';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'region':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
       case DATABASE_QUERY_NONE:
-         s[  _len]  = '{';
-         s[++_len]  = '\'';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '\'';
-         s[++_len]  = ':';
-         s[++_len]  = '"';
-         s[++_len]  = '\0';
-         _len      += strlcpy(s + _len, path, len - _len);
-         s[  _len]  = '"';
-         s[++_len]  = '}';
-         s[++_len]  = '\0';
+         strlcpy_append(s, len, &_len, "{'':':\"");
+         strlcpy_append(s, len, &_len, path);
+         if (strlcpy_append(s, len, &_len, "\"}"))
+            return -1;
          break;
    }
 

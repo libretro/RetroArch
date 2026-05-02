@@ -374,8 +374,24 @@
 #endif
 
 /* --- SAL 2 misc ------------------------------------------------------ */
+/* _Inexpressible_(s) marks an annotation size expression that the
+ * static analyser cannot easily evaluate; on a real SAL implementation
+ * the SDK consumes `s` inside its annotation metadata. When the SDK's
+ * <sal.h> is present and active (modern MSVC), _Inexpressible_ is
+ * defined elsewhere only under _PREFAST_ -- so for normal compilation
+ * the SDK leaves it undefined and falls back to whatever the
+ * environment provides. If we stub it to empty, the argument is
+ * discarded, and any enclosing function-like macro receives an empty
+ * argument list -- triggering C4003 on MSVC for sites like
+ *   _In_reads_opt_(_Inexpressible_(p->q != 0))
+ * because the SDK's _In_reads_opt_(size) ultimately invokes
+ * _Pre_opt_count_(size), which does not accept zero arguments.
+ *
+ * Defining the stub as `(s)` (the parenthesised expression) keeps the
+ * token stream non-empty for any enclosing macro and parses as a valid
+ * size expression. */
 #ifndef _Inexpressible_
-#define _Inexpressible_(s)
+#define _Inexpressible_(s) (s)
 #endif
 #ifndef _Use_decl_annotations_
 #define _Use_decl_annotations_

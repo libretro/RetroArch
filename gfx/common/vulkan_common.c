@@ -265,13 +265,26 @@ static bool vulkan_emulated_mailbox_init(
    mailbox->flags               = 0;
 
    if (!(mailbox->cond      = scond_new()))
-      return false;
+      goto error;
    if (!(mailbox->lock      = slock_new()))
-      return false;
+      goto error;
    if (!(mailbox->thread    = sthread_create(vulkan_emulated_mailbox_loop,
                mailbox)))
-      return false;
+      goto error;
    return true;
+
+error:
+   /* Tear down anything we managed to allocate before failing.
+    * vulkan_emulated_mailbox_deinit() is null-safe and ends with
+    * a memset, so the struct is left in the same shape a caller
+    * would see after a successful init+deinit cycle -- callers
+    * that ignore our return value (the two sites in
+    * vulkan_create_swapchain) will then take the
+    * mailbox.swapchain == VK_NULL_HANDLE branch in
+    * vulkan_acquire_next_image and skip the emulated path
+    * cleanly instead of dereferencing a NULL lock/cond. */
+   vulkan_emulated_mailbox_deinit(mailbox);
+   return false;
 }
 
 static void vulkan_debug_mark_object(VkDevice device,
@@ -432,21 +445,12 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
       goto end;
    }
 
+   /* Required extensions: presence already validated by the
+    * vulkan_find_extensions() check above. Append in one shot. */
    memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
-   count += num_exts;
-
    for (i = 0; i < num_exts; i++)
-   {
-      if (vulkan_find_extensions(&exts[i], 1, properties, property_count))
-      {
-         RARCH_DBG("[Vulkan] Device extension supported: %s.\n", exts[i]);
-         enabled[count++] = exts[i];
-      }
-      else
-      {
-         RARCH_DBG("[Vulkan] Device extension NOT supported: %s.\n", exts[i]);
-      }
-   }
+      RARCH_DBG("[Vulkan] Device extension supported: %s.\n", exts[i]);
+   count += num_exts;
 
    for (i = 0; i < num_optional_exts; i++)
    {
@@ -1831,7 +1835,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
    settings_t                    *settings = config_get_ptr();
-   bool vsync                              = settings->bools.video_vsync && !settings->bools.video_scanline_sync;
+   bool vsync                              = settings->bools.video_vsync;
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
@@ -2179,6 +2183,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
                   && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
                {
                   format = formats[i];
+                  vk->context.flags |= VK_CTX_FLAG_HDR_SCRGB;
                   RARCH_LOG("[Vulkan] Selecting R16G16B16A16_SFLOAT swapchain with scRGB colour space.\n");
                   break;
                }
@@ -2300,6 +2305,15 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          && (desired_swapchain_images > surface_properties.maxImageCount))
       desired_swapchain_images = surface_properties.maxImageCount;
 
+   /* Cap our request to what we can actually hold. Per-image arrays
+    * (swapchain_images, swapchain_fences, the various semaphore
+    * arrays, vk->swapchain[], readback.staging[]) are all sized to
+    * VULKAN_MAX_SWAPCHAIN_IMAGES at compile time. The post-create
+    * fill below also clamps defensively in case a driver returns
+    * more images than requested. */
+   if (desired_swapchain_images > VULKAN_MAX_SWAPCHAIN_IMAGES)
+      desired_swapchain_images = VULKAN_MAX_SWAPCHAIN_IMAGES;
+
    if (surface_properties.supportedTransforms
          & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
       pre_transform            = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
@@ -2415,12 +2429,50 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, NULL);
+
+   /* Even after capping minImageCount above, drivers may legally
+    * return more images than requested. Clamp before the fill call
+    * so we don't write past swapchain_images[] and so every
+    * downstream loop bounded by num_swapchain_images stays inside
+    * its compile-time-sized array. */
+   if (vk->context.num_swapchain_images > VULKAN_MAX_SWAPCHAIN_IMAGES)
+   {
+      RARCH_WARN("[Vulkan] Swapchain returned %u images, clamping to %u.\n",
+            vk->context.num_swapchain_images,
+            (unsigned)VULKAN_MAX_SWAPCHAIN_IMAGES);
+      vk->context.num_swapchain_images = VULKAN_MAX_SWAPCHAIN_IMAGES;
+   }
+
    vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
 
    if (old_swapchain == VK_NULL_HANDLE)
       RARCH_LOG("[Vulkan] Got %u swapchain images.\n",
             vk->context.num_swapchain_images);
+
+   /* Pre-create the per-image present-side semaphores up-front for every
+    * image in the new swapchain.  vulkan_acquire_next_image only allocates
+    * swapchain_semaphores[index] for the image actually returned by
+    * vkAcquireNextImageKHR, leaving slots for not-yet-acquired images at
+    * VK_NULL_HANDLE.  On the swapchain recreate path the prior teardown
+    * memsets the array to zero, and at least one path through the recreate
+    * can reach vulkan_present with current_swapchain_index pointing at an
+    * image whose slot has not yet been re-populated.  NVIDIA real-FSE on
+    * Win11 then segfaults inside vkQueuePresentKHR when handed
+    * VK_NULL_HANDLE in pWaitSemaphores. */
+   {
+      VkSemaphoreCreateInfo sem_info_pre;
+      unsigned sem_idx;
+      sem_info_pre.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+      sem_info_pre.pNext = NULL;
+      sem_info_pre.flags = 0;
+      for (sem_idx = 0; sem_idx < vk->context.num_swapchain_images; sem_idx++)
+      {
+         if (vk->context.swapchain_semaphores[sem_idx] == VK_NULL_HANDLE)
+            vkCreateSemaphore(vk->context.device, &sem_info_pre,
+                  NULL, &vk->context.swapchain_semaphores[sem_idx]);
+      }
+   }
 
    /* Force driver to reset swapchain image handles. */
    vk->context.flags                 |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;

@@ -1612,7 +1612,7 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
    for (p = 0; p < max_users; p++)
    {
       /* Check full digital joypad */
-      int16_t joypad_state = (int16_t)(state_cb(p, RETRO_DEVICE_JOYPAD,
+      int16_t joypad_state = (int16_t)(state_cb((unsigned)p, RETRO_DEVICE_JOYPAD,
             0, RETRO_DEVICE_ID_JOYPAD_MASK));
       if (joypad_state != preempt->joypad_state[p])
       {

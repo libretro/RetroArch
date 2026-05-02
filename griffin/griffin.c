@@ -815,6 +815,7 @@ INPUT (HID)
 FIFO BUFFER
 ============================================================ */
 #include "../libretro-common/queues/fifo_queue.c"
+#include "../libretro-common/queues/retro_spsc.c"
 
 /*============================================================
 AUDIO RESAMPLER
@@ -1004,6 +1005,8 @@ FILTERS
 ============================================================ */
 #ifdef HAVE_FILTERS_BUILTIN
 #ifdef HAVE_VIDEO_FILTER
+#include "../gfx/video_filters/dedither.c"
+#include "../gfx/video_filters/pixel_art_aa.c"
 #include "../gfx/video_filters/2xsai.c"
 #include "../gfx/video_filters/super2xsai.c"
 #include "../gfx/video_filters/supereagle.c"
@@ -1031,6 +1034,7 @@ FILTERS
 #include "../gfx/video_filters/picoscale_256x_320x240.c"
 #include "../gfx/video_filters/upscale_240x160_320x240.c"
 #include "../gfx/video_filters/upscale_mix_240x160_320x240.c"
+#include "../gfx/video_filters/ntsc_crt.c"
 #endif
 
 #ifdef HAVE_DSP_FILTER

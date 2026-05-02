@@ -42,6 +42,7 @@
 #include <string.h>
 #include <retro_inline.h>
 #include <retro_math.h>
+#include <math.h>
 
 #ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
@@ -708,23 +709,6 @@ static const float d3d9_hlsl_tex_coords[8] = {
 
 static LPDIRECT3DTEXTURE9 d3d9_hlsl_white_texture = NULL;
 
-static INT32 gfx_display_prim_to_d3d9_hlsl_enum(
-      enum gfx_display_prim_type prim_type)
-{
-   switch (prim_type)
-   {
-      case GFX_DISPLAY_PRIM_TRIANGLES:
-      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-         return D3DPT_TRIANGLESTRIP;
-      case GFX_DISPLAY_PRIM_NONE:
-      default:
-         break;
-   }
-
-   /* TODO/FIXME - hack */
-   return 0;
-}
-
 static void gfx_display_d3d9_hlsl_blend_begin(void *data)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;
@@ -776,7 +760,6 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
 {
    unsigned i;
    LPDIRECT3DDEVICE9 dev;
-   D3DPRIMITIVETYPE type;
    bool has_vertex_data;
    unsigned start                = 0;
    unsigned count                = 0;
@@ -944,17 +927,66 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
          y2 = cy + hh;
       }
 
-      quad[0].x = x1; quad[0].y = y1; quad[0].z = 0.5f;
-      quad[0].u = 0.0f; quad[0].v = 0.0f; quad[0].color = col[0];
+      /* Apply draw->rotation around the quad center.  Rotation is
+       * computed in pixel space (using draw->width / draw->height as
+       * the icon's true square extents) and then converted back to
+       * normalised [0,1], so a non-square viewport does not skew the
+       * rotated icon. */
+      if (draw->rotation != 0.0f)
+      {
+         float cx     = (x1 + x2) * 0.5f;
+         float cy     = (y1 + y2) * 0.5f;
+         float half_w = draw->width  * 0.5f;
+         float half_h = draw->height * 0.5f;
+         if (draw->scale_factor && draw->scale_factor != 1.0f)
+         {
+            half_w *= draw->scale_factor;
+            half_h *= draw->scale_factor;
+         }
+         {
+            float c            = cosf(draw->rotation);
+            float s            = sinf(draw->rotation);
+            float inv_vw       = 1.0f / (float)video_width;
+            float inv_vh       = 1.0f / (float)video_height;
+            /* Pixel-space corner offsets (dx, dy) for each of the
+             * four quad vertices.  Order matches the (x1,y1)..
+             * (x2,y2) layout used immediately below. */
+            float ox[4]        = { -half_w,  half_w, -half_w,  half_w };
+            float oy[4]        = { -half_h, -half_h,  half_h,  half_h };
+            float rx[4], ry[4];
+            int   k;
+            for (k = 0; k < 4; k++)
+            {
+               rx[k] = (ox[k] * c - oy[k] * s) * inv_vw;
+               ry[k] = (ox[k] * s + oy[k] * c) * inv_vh;
+            }
+            quad[0].x = cx + rx[0]; quad[0].y = cy + ry[0]; quad[0].z = 0.5f;
+            quad[0].u = 0.0f; quad[0].v = 0.0f; quad[0].color = col[0];
 
-      quad[1].x = x2; quad[1].y = y1; quad[1].z = 0.5f;
-      quad[1].u = 1.0f; quad[1].v = 0.0f; quad[1].color = col[1];
+            quad[1].x = cx + rx[1]; quad[1].y = cy + ry[1]; quad[1].z = 0.5f;
+            quad[1].u = 1.0f; quad[1].v = 0.0f; quad[1].color = col[1];
 
-      quad[2].x = x1; quad[2].y = y2; quad[2].z = 0.5f;
-      quad[2].u = 0.0f; quad[2].v = 1.0f; quad[2].color = col[2];
+            quad[2].x = cx + rx[2]; quad[2].y = cy + ry[2]; quad[2].z = 0.5f;
+            quad[2].u = 0.0f; quad[2].v = 1.0f; quad[2].color = col[2];
 
-      quad[3].x = x2; quad[3].y = y2; quad[3].z = 0.5f;
-      quad[3].u = 1.0f; quad[3].v = 1.0f; quad[3].color = col[3];
+            quad[3].x = cx + rx[3]; quad[3].y = cy + ry[3]; quad[3].z = 0.5f;
+            quad[3].u = 1.0f; quad[3].v = 1.0f; quad[3].color = col[3];
+         }
+      }
+      else
+      {
+         quad[0].x = x1; quad[0].y = y1; quad[0].z = 0.5f;
+         quad[0].u = 0.0f; quad[0].v = 0.0f; quad[0].color = col[0];
+
+         quad[1].x = x2; quad[1].y = y1; quad[1].z = 0.5f;
+         quad[1].u = 1.0f; quad[1].v = 0.0f; quad[1].color = col[1];
+
+         quad[2].x = x1; quad[2].y = y2; quad[2].z = 0.5f;
+         quad[2].u = 0.0f; quad[2].v = 1.0f; quad[2].color = col[2];
+
+         quad[3].x = x2; quad[3].y = y2; quad[3].z = 0.5f;
+         quad[3].u = 1.0f; quad[3].v = 1.0f; quad[3].color = col[3];
+      }
 
       /* Top-down ortho: maps X [0,1]→[-1,1], Y [0,1]→[1,-1] (Y=0 at top).
        * Row-major layout for mul(vector, matrix) in the stock HLSL vertex shader.
@@ -1049,13 +1081,20 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
    if (draw && draw->texture)
       gfx_display_d3d9_bind_texture(draw, d3d);
 
-   type  = (D3DPRIMITIVETYPE)gfx_display_prim_to_d3d9_hlsl_enum(draw->prim_type);
    start = d3d->menu_display.offset;
-   count = draw->coords->vertices -
-         ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP)
-          ? 2 : 0);
 
-   IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
+   /* Menu draws use a triangle-strip layout.  Harden against vertices < 3
+    * (the count formula vertices - 2 would otherwise underflow the
+    * unsigned subtraction and pass a huge primitive count to the GPU --
+    * see d3d8.c for the matching guard). */
+   if (draw->coords->vertices < 3)
+   {
+      d3d->menu_display.offset += draw->coords->vertices;
+      return;
+   }
+   count = draw->coords->vertices - 2;
+
+   IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP, start, count);
 
    d3d->menu_display.offset += draw->coords->vertices;
 }
@@ -1202,7 +1241,6 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
           * ca->coords.vertices (which ribbon needs at 8064). */
          blank_coords.vertices = 4;
          draw->coords          = &blank_coords;
-         draw->prim_type = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
 
          /* Set blend state for particle effects */
          IDirect3DDevice9_SetRenderState(d3d->dev,
@@ -1556,7 +1594,8 @@ static void d3d9_font_render_msg(
    if (!d3d)
       return;
 
-   video_driver_get_size(&width, &height);
+   width  = d3d->vp.full_width;
+   height = d3d->vp.full_height;
    if (!width || !height)
       return;
 
@@ -6851,7 +6890,10 @@ static void d3d9_hlsl_set_viewport(void *data,
    int y               = 0;
    struct video_viewport vp;
 
-   video_driver_get_size(&width, &height);
+   /* Width/height parameters are intentionally overwritten here:
+    * the caller's values are not used (pre-existing behaviour). */
+   width  = d3d->vp.full_width;
+   height = d3d->vp.full_height;
 
    vp.full_width  = width;
    vp.full_height = height;
@@ -6913,7 +6955,6 @@ static void d3d9_hlsl_set_osd_msg(void *data,
 static bool d3d9_hlsl_initialize(
       d3d9_video_t *d3d, const video_info_t *info)
 {
-   unsigned width, height;
    bool ret             = true;
 
    if (!d3d->d3d9)
@@ -6948,9 +6989,10 @@ static bool d3d9_hlsl_initialize(
       return false;
    }
 
-   video_driver_get_size(&width, &height);
+   /* d3d->vp.full_* was written by the caller (d3d9_hlsl_init_internal
+    * has already called set_size at this point). */
    d3d9_hlsl_set_viewport(d3d,
-      width, height, false, true);
+      d3d->vp.full_width, d3d->vp.full_height, false, true);
 
    font_driver_init_osd(d3d, info,
          false,
@@ -7095,10 +7137,6 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use;
 #endif
-#ifdef HAVE_WINDOW
-   unsigned win_width        = 0;
-   unsigned win_height       = 0;
-#endif
    unsigned full_x           = 0;
    unsigned full_y           = 0;
    settings_t    *settings   = config_get_ptr();
@@ -7153,19 +7191,23 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
    {
       unsigned new_width  = info->fullscreen ? full_x : info->width;
       unsigned new_height = info->fullscreen ? full_y : info->height;
-      video_driver_set_size(new_width, new_height);
-   }
+      video_driver_set_output_size(new_width, new_height);
+      d3d->vp.full_width  = new_width;
+      d3d->vp.full_height = new_height;
 
 #ifdef HAVE_WINDOW
-   video_driver_get_size(&win_width, &win_height);
-
-   if (!win32_set_video_mode(d3d, win_width, win_height,
-         info->fullscreen))
-   {
-      RARCH_ERR("[D3D9 HLSL] win32_set_video_mode failed.\n");
-      return false;
-   }
+      /* Use new_width / new_height directly rather than reading
+       * them back via video_driver_get_output_size: nothing in the
+       * codebase writes video_st->width / height between the
+       * set_size above and this call except us. */
+      if (!win32_set_video_mode(d3d, new_width, new_height,
+            info->fullscreen))
+      {
+         RARCH_ERR("[D3D9 HLSL] win32_set_video_mode failed.\n");
+         return false;
+      }
 #endif
+   }
 
    d3d->video_info = *info;
 
@@ -7237,18 +7279,15 @@ error:
 
 static void d3d9_hlsl_viewport_info(void *data, struct video_viewport *vp)
 {
-   unsigned width, height;
    d3d9_video_t *d3d   = (d3d9_video_t*)data;
-
-   video_driver_get_size(&width, &height);
 
    vp->x               = d3d->out_vp.X;
    vp->y               = d3d->out_vp.Y;
    vp->width           = d3d->out_vp.Width;
    vp->height          = d3d->out_vp.Height;
 
-   vp->full_width      = width;
-   vp->full_height     = height;
+   vp->full_width      = d3d->vp.full_width;
+   vp->full_height     = d3d->vp.full_height;
 }
 
 #ifdef HAVE_OVERLAY
@@ -7852,15 +7891,23 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
 
    if (       (!d3d->menu->tex)
             || (d3d->menu->tex_w != width)
-            || (d3d->menu->tex_h != height))
+            || (d3d->menu->tex_h != height)
+            || (d3d->menu_tex_rgb32 != rgb32))
    {
       if (d3d->menu->tex)
          IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = NULL;
+      /* RGUI sends 16bpp ARGB4444 (the d3d9 case in RGUI's pixel
+       * format dispatcher selects argb32_to_argb4444), so we can
+       * upload it byte-for-byte into a D3DFMT_A4R4G4B4 texture and
+       * skip the per-pixel CPU expansion to ARGB8888 the previous
+       * implementation did every frame.  The rgb32 path is preserved
+       * for callers that hand us 32bpp data; in current practice no
+       * such caller exists, but the API contract supports it. */
       IDirect3DDevice9_CreateTexture(d3d->dev,
             width, height, 1,
-            0, D3D9_ARGB8888_FORMAT,
+            0, rgb32 ? D3D9_ARGB8888_FORMAT : D3D9_ARGB4444_FORMAT,
             D3DPOOL_MANAGED,
             (struct IDirect3DTexture9**)&d3d->menu->tex, NULL);
 
@@ -7872,6 +7919,7 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
 
       d3d->menu->tex_w          = width;
       d3d->menu->tex_h          = height;
+      d3d->menu_tex_rgb32       = rgb32;
    }
 
    d3d->menu->alpha_mod = alpha;
@@ -7879,7 +7927,7 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
    IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex,
          0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    {
-      unsigned h, w;
+      unsigned h;
 
       if (rgb32)
       {
@@ -7895,26 +7943,23 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
       }
       else
       {
-         uint32_t       *dst = (uint32_t*)d3dlr.pBits;
-         const uint16_t *src = (const uint16_t*)frame;
+         /* Direct ARGB4444 upload.  The bit layout produced by
+          * argb32_to_argb4444 (host-endian uint16_t with A in bits
+          * 15..12, R 11..8, G 7..4, B 3..0) matches D3DFMT_A4R4G4B4
+          * exactly: D3D reads the locked memory as host-endian
+          * 16-bit units with the same bit assignments, so the same
+          * source bytes work on LE (PC) and BE (Xbox 360) hosts
+          * without a byte swap. */
+         uint8_t        *dst = (uint8_t*)d3dlr.pBits;
+         const uint8_t  *src = (const uint8_t*)frame;
+         unsigned src_pitch  = width * sizeof(uint16_t);
+         unsigned row_bytes  = width * sizeof(uint16_t);
 
-         for (h = 0; h < height; h++,
-               dst += d3dlr.Pitch >> 2,
-               src += width)
+         for (h = 0; h < height; h++, dst += d3dlr.Pitch, src += src_pitch)
          {
-            for (w = 0; w < width; w++)
-            {
-               uint16_t c = src[w];
-               uint32_t r = (c >> 12) & 0xf;
-               uint32_t g = (c >>  8) & 0xf;
-               uint32_t b = (c >>  4) & 0xf;
-               uint32_t a = (c >>  0) & 0xf;
-               r          = ((r << 4) | r) << 16;
-               g          = ((g << 4) | g) <<  8;
-               b          = ((b << 4) | b) <<  0;
-               a          = ((a << 4) | a) << 24;
-               dst[w]     = r | g | b | a;
-            }
+            memcpy(dst, src, row_bytes);
+            if (d3dlr.Pitch > (int)row_bytes)
+               memset(dst + row_bytes, 0, d3dlr.Pitch - row_bytes);
          }
       }
    }
@@ -8118,7 +8163,9 @@ static void d3d9_hlsl_set_resize(d3d9_video_t *d3d,
 
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
-   video_driver_set_size(new_width, new_height);
+   video_driver_set_output_size(new_width, new_height);
+   d3d->vp.full_width     = new_width;
+   d3d->vp.full_height    = new_height;
 }
 
 static bool d3d9_hlsl_alive(void *data)
@@ -8130,8 +8177,11 @@ static bool d3d9_hlsl_alive(void *data)
    bool        resize    = false;
    d3d9_video_t *d3d     = (d3d9_video_t*)data;
 
-   /* Needed because some context drivers don't track their sizes */
-   video_driver_get_size(&temp_width, &temp_height);
+   /* Read from local bookkeeping rather than video_st (which would
+    * acquire context_lock + display_lock).  d3d->vp.full_* is
+    * written at every set_size call site in this driver. */
+   temp_width  = d3d->vp.full_width;
+   temp_height = d3d->vp.full_height;
 
    win32_check_window(NULL, &quit, &resize, &temp_width, &temp_height);
 
@@ -8149,7 +8199,11 @@ static bool d3d9_hlsl_alive(void *data)
 
    if (  temp_width  != 0 &&
          temp_height != 0)
-      video_driver_set_size(temp_width, temp_height);
+   {
+      video_driver_set_output_size(temp_width, temp_height);
+      d3d->vp.full_width  = temp_width;
+      d3d->vp.full_height = temp_height;
+   }
 
    return ret;
 }
@@ -8210,15 +8264,14 @@ static INLINE bool d3d9_hlsl_device_get_render_target_data(
 
 static bool d3d9_hlsl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   unsigned width, height;
    D3DLOCKED_RECT rect;
    LPDIRECT3DSURFACE9 target = NULL;
    LPDIRECT3DSURFACE9 dest   = NULL;
    bool ret                  = true;
    d3d9_video_t *d3d         = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9 d3dr    = d3d->dev;
-
-   video_driver_get_size(&width, &height);
+   unsigned width            = d3d->vp.full_width;
+   unsigned height           = d3d->vp.full_height;
 
    if (
             !(d3dr &&

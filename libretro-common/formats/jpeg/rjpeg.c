@@ -2583,6 +2583,24 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
    if (s->img_x == 0)
       return 0;
 
+   /* On 32-bit hosts the (size_t) casts on the malloc sites below
+    * are not enough by themselves: the per-component arena and
+    * iter_output buffers can still demand multi-hundred-MB
+    * allocations that fragment or fail the address space, even
+    * with overflow-safe arithmetic.  Cap dimensions on 32-bit
+    * (matching the cap rbmp.c, rtga.c and rwebp.c apply) to
+    * preserve the previous host-resource ceiling there.
+    *
+    * On 64-bit hosts the SIZE_MAX/4 guard further down in this
+    * function plus the (size_t) casts make the allocations safe
+    * regardless of dimensions, and a desktop user loading a
+    * large legitimate JPEG (cf. IrfanView, image-pipeline tools)
+    * is a real use case.  Do not cap there. */
+#if SIZE_MAX <= 0xFFFFFFFFu
+   if (s->img_x > 0x4000u || s->img_y > 0x4000u)
+      return 0;
+#endif
+
    c = rjpeg_get8(s);
 
    /* JFIF requires */
@@ -4149,7 +4167,11 @@ static int rjpeg_iterate_init_resample(rjpeg_t *rjpeg)
          r->resample = j->resample_row_hv_2_kernel;
    }
 
-   rjpeg->iter_output = (uint8_t *)malloc(4 * j->img_x * j->img_y);
+   /* (size_t) casts: img_x and img_y are uint32_t.  Even with the
+    * 0x4000 cap above this only matters on 32-bit hosts, but the
+    * cast makes the expression robust against future cap changes. */
+   rjpeg->iter_output = (uint8_t *)malloc(
+         (size_t)4 * (size_t)j->img_x * (size_t)j->img_y);
    if (!rjpeg->iter_output)
       return 0;
 
@@ -4653,7 +4675,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
 
       /* Allocate output buffer */
       proc->output = (uint8_t *) malloc(
-            proc->n * j->img_x * j->img_y);
+            (size_t)proc->n * (size_t)j->img_x * (size_t)j->img_y);
       if (!proc->output)
       {
          rjpeg_process_free(proc);

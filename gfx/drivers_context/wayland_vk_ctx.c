@@ -216,7 +216,16 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    return true;
 
 error:
-   gfx_ctx_wl_destroy(data);
+   /* Do not destroy `wl` here.  The caller in
+    * gfx/drivers/vulkan.c::vulkan_init treats a false return
+    * from set_video_mode as a failure of the in-flight `vk_t`
+    * construction and runs vulkan_free() on it, which calls
+    * ctx_driver->destroy(ctx_data) -- i.e. gfx_ctx_wl_destroy()
+    * -- on the very pointer we already freed.  That second call
+    * walks freed memory in gfx_ctx_wl_destroy_resources() and
+    * then free()s the same pointer again.  Leave cleanup to the
+    * caller's single normal-path destroy.  Cocoa / Android
+    * already do this; this matches them. */
    return false;
 }
 

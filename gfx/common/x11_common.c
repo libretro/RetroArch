@@ -224,6 +224,24 @@ void x11_set_window_attr(Display *dpy, Window win)
 static bool xss_screensaver_inhibit(Display *dpy, bool enable)
 {
     int dummy, min, maj;
+    /* Guard against being called with a NULL Display.  This
+     * happens with the SDL2 video driver under HAVE_X11 +
+     * HAVE_XSCRNSAVER builds without HAVE_DBUS: SDL2's
+     * sdl2_set_handles() in gfx/common/sdl2_common.c sets the
+     * display *type* to RARCH_DISPLAY_X11 (so the gate in
+     * x11_suspend_screensaver passes) and routes the SDL-owned
+     * X Display through video_driver_display_set(), but the
+     * file-scope g_x11_dpy here stays at its initial NULL --
+     * it's only assigned in the xvideo / GL / X11-direct init
+     * paths.  libX11's XQueryExtension() then SEGVs at a tiny
+     * offset off the NULL display pointer.  Most desktop builds
+     * never hit this because HAVE_DBUS is on and
+     * dbus_suspend_screensaver() short-circuits before this
+     * line; surfaced by the ASan+UBSan CI workflow's headless
+     * SDL2 smoke (b9777c8 + d967813), where dbus-1 isn't
+     * apt-installed but libXss is. */
+    if (!dpy)
+       return false;
     if (       !XScreenSaverQueryExtension(dpy, &dummy, &dummy)
             || !XScreenSaverQueryVersion(dpy, &maj, &min)
             || (maj < 1)
@@ -234,12 +252,30 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable)
     return true;
 }
 #else
-static bool xss_screensaver_inhibit(Display *dpy, bool enable)
-{
-    (void) dpy;
-    return false;
-}
+static bool xss_screensaver_inhibit(Display *dpy, bool enable) { return false; }
 #endif
+
+/* Probe once for xdg-screensaver and its xset backend dependency.
+ * xdg-screensaver's "X11" backend shells out to xset; if xset is missing
+ * (common on minimal installs / containers / some WMs without
+ * x11-xserver-utils), invoking xdg-screensaver spams stderr with
+ * "xset: not found" and "Illegal number" without us ever knowing why.
+ * Check up front so we can silently no-op instead. */
+static bool xdg_screensaver_probe(void)
+{
+   /* Both are needed: xdg-screensaver itself, and xset which it execs.
+    * `command -v` is a POSIX shell builtin so this works under /bin/sh
+    * on every platform that has system(). Redirecting both streams
+    * keeps the probe silent. */
+   int ret = system("command -v xdg-screensaver >/dev/null 2>&1 && "
+                "command -v xset >/dev/null 2>&1");
+   if (ret == -1 || WEXITSTATUS(ret) != 0)
+   {
+      RARCH_LOG("[X11] xdg-screensaver or xset not available; screensaver suspension disabled.\n");
+      return false;
+   }
+   return true;
+}
 
 static void xdg_screensaver_inhibit(Window wnd)
 {
@@ -294,6 +330,14 @@ bool x11_suspend_screensaver(void *data, bool enable)
     {
        if (xdg_screensaver_available)
        {
+          static bool probed = false;
+          if (!probed)
+          {
+             xdg_screensaver_available = xdg_screensaver_probe();
+             probed = true;
+          }
+          if (!xdg_screensaver_available)
+             return true;
           xdg_screensaver_inhibit(wnd);
           return xdg_screensaver_available;
        }
