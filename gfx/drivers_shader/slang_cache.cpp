@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <vfs/vfs.h>
@@ -26,18 +27,14 @@
 static bool spirv_cache_get_dir(char *cache_dir_out, size_t cache_dir_out_len)
 {
    settings_t *settings = config_get_ptr();
-   int ret;
 
    if (!settings || !settings->paths.directory_cache[0])
       return false;
 
    /* Build the spirv subdirectory path */
-   ret = snprintf(cache_dir_out, cache_dir_out_len, "%s/%s",
-         settings->paths.directory_cache, SPIRV_CACHE_SUBDIR);
-
-   /* Check if snprintf truncated the output */
-   if (ret < 0 || (size_t)ret >= cache_dir_out_len)
-      return false;
+   fill_pathname_join_special(cache_dir_out,
+         settings->paths.directory_cache, SPIRV_CACHE_SUBDIR,
+         cache_dir_out_len);
 
    return true;
 }
@@ -69,17 +66,14 @@ static bool spirv_cache_get_filename(const char *hash,
       char *cache_file_out, size_t cache_file_out_len)
 {
    char cache_dir[PATH_MAX_LENGTH];
-   int ret;
+   char hash_filename[128];
 
    if (!spirv_cache_get_dir(cache_dir, sizeof(cache_dir)))
       return false;
 
-   ret = snprintf(cache_file_out, cache_file_out_len, "%s/%s.spirv",
-         cache_dir, hash);
-
-   /* Check if snprintf truncated the output */
-   if (ret < 0 || (size_t)ret >= cache_file_out_len)
-      return false;
+   snprintf(hash_filename, sizeof(hash_filename), "%s.spirv", hash);
+   fill_pathname_join_special(cache_file_out, cache_dir, hash_filename,
+         cache_file_out_len);
 
    return true;
 }
@@ -93,12 +87,15 @@ static bool spirv_cache_get_filename(const char *hash,
  */
 static bool spirv_cache_write_string(RFILE *file, const std::string &str)
 {
-   uint32_t len = str.length();
+   uint32_t _len;
+   if (str.length() > UINT32_MAX)
+      return false;
+   _len = (uint32_t)str.length();
 
-   if (filestream_write(file, &len, sizeof(uint32_t)) != sizeof(uint32_t))
+   if (filestream_write(file, &_len, sizeof(uint32_t)) != sizeof(uint32_t))
       return false;
 
-   if (len > 0 && filestream_write(file, str.c_str(), len) != len)
+   if (_len > 0 && filestream_write(file, str.c_str(), _len) != _len)
       return false;
 
    return true;
@@ -113,29 +110,30 @@ static bool spirv_cache_write_string(RFILE *file, const std::string &str)
  */
 static bool spirv_cache_read_string(RFILE *file, std::string &str_out)
 {
-   uint32_t len;
+   uint32_t _len;
+   char *buf;
 
-   if (filestream_read(file, &len, sizeof(uint32_t)) != sizeof(uint32_t))
+   if (filestream_read(file, &_len, sizeof(uint32_t)) != sizeof(uint32_t))
       return false;
 
-   if (len == 0)
+   if (_len == 0)
    {
       str_out.clear();
       return true;
    }
 
    /* Allocate and read string */
-   char *buf = new char[len + 1];
+   buf = new char[_len + 1];
    if (!buf)
       return false;
 
-   if (filestream_read(file, buf, len) != len)
+   if (filestream_read(file, buf, _len) != _len)
    {
       delete[] buf;
       return false;
    }
 
-   buf[len] = '\0';
+   buf[_len] = '\0';
    str_out = buf;
    delete[] buf;
 
@@ -144,18 +142,18 @@ static bool spirv_cache_read_string(RFILE *file, std::string &str_out)
 
 extern "C" {
 
-bool spirv_cache_compute_hash(const char *vertex_source, const char *fragment_source,
-      char *hash_out)
+bool spirv_cache_compute_hash(const char *vertex_source, const char *fragment_source, char *hash_out)
 {
+   uint8_t *combined;
+   size_t vertex_len, fragment_len, total_len;
    if (!vertex_source || !fragment_source || !hash_out)
       return false;
 
    /* Build combined hash input: vertex + "|" + fragment */
-   size_t vertex_len = strlen(vertex_source);
-   size_t fragment_len = strlen(fragment_source);
-   size_t total_len = vertex_len + 1 + fragment_len;  /* 1 for "|" separator */
-
-   uint8_t *combined = new uint8_t[total_len];
+   vertex_len   = strlen(vertex_source);
+   fragment_len = strlen(fragment_source);
+   total_len    = vertex_len + 1 + fragment_len;  /* 1 for "|" separator */
+   combined     = new uint8_t[total_len];
    if (!combined)
       return false;
 
@@ -173,8 +171,8 @@ bool spirv_cache_compute_hash(const char *vertex_source, const char *fragment_so
 bool spirv_cache_load(const char *hash, struct glslang_output *output)
 {
    RFILE *file;
-   char cache_file[PATH_MAX_LENGTH];
    uint8_t version;
+   char cache_file[PATH_MAX_LENGTH];
    uint32_t vertex_size, fragment_size, param_count, i;
    uint16_t rt_format;
 
@@ -269,10 +267,10 @@ error:
 bool spirv_cache_save(const char *hash, const struct glslang_output *output)
 {
    RFILE *file;
+   uint16_t rt_format;
    char cache_file[PATH_MAX_LENGTH];
    uint8_t version = SPIRV_CACHE_VERSION;
    uint32_t vertex_size, fragment_size, param_count, i;
-   uint16_t rt_format;
 
    if (!hash || !output)
       return false;
@@ -294,7 +292,9 @@ bool spirv_cache_save(const char *hash, const struct glslang_output *output)
       goto error;
 
    /* Write vertex SPIR-V */
-   vertex_size = output->vertex.size();
+   if (output->vertex.size() > UINT32_MAX)
+      goto error;
+   vertex_size = (uint32_t)output->vertex.size();
    if (filestream_write(file, &vertex_size, sizeof(uint32_t)) != sizeof(uint32_t))
       goto error;
    if (vertex_size > 0)
@@ -304,7 +304,9 @@ bool spirv_cache_save(const char *hash, const struct glslang_output *output)
    }
 
    /* Write fragment SPIR-V */
-   fragment_size = output->fragment.size();
+   if (output->fragment.size() > UINT32_MAX)
+      goto error;
+   fragment_size = (uint32_t)output->fragment.size();
    if (filestream_write(file, &fragment_size, sizeof(uint32_t)) != sizeof(uint32_t))
       goto error;
    if (fragment_size > 0)
@@ -314,7 +316,9 @@ bool spirv_cache_save(const char *hash, const struct glslang_output *output)
    }
 
    /* Write parameters */
-   param_count = output->meta.parameters.size();
+   if (output->meta.parameters.size() > UINT32_MAX)
+      goto error;
+   param_count = (uint32_t)output->meta.parameters.size();
    if (filestream_write(file, &param_count, sizeof(uint32_t)) != sizeof(uint32_t))
       goto error;
 
@@ -359,3 +363,4 @@ error:
 }
 
 } /* extern "C" */
+
