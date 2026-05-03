@@ -5610,7 +5610,7 @@ unsigned menu_event(
             setting_type = ST_BOOL;
 #endif
 
-         if (setting_type == ST_BOOL)
+         if (!(menu_st->flags & MENU_ST_FLAG_PREVENT_BOOL_SPECIAL_FILTER) && setting_type == ST_BOOL)
          {
             char value[8];
 
