@@ -4082,6 +4082,21 @@ void runloop_event_deinit_core(void)
       autosave_deinit();
 #endif
 
+   /* Remap save and cleanup logic should be placed before
+    * core_unload_game(), to ensure that input description data
+    * does not become invalid before remaps are saved. */
+   if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
+         || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
+         || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
+         || (runloop_st->name.remapfile && *runloop_st->name.remapfile)
+      )
+   {
+      input_remapping_deinit(settings->bools.remap_save_on_exit);
+      input_remapping_set_defaults(true);
+   }
+   else
+      input_remapping_restore_global_config(true, false);
+
    core_unload_game();
 
    /* Reset core sensor tracking — the core is going away */
@@ -4113,18 +4128,6 @@ void runloop_event_deinit_core(void)
             );
       runloop_st->fastmotion_override.pending = false;
    }
-
-   if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
-         || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
-         || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
-         || (runloop_st->name.remapfile && *runloop_st->name.remapfile)
-      )
-   {
-      input_remapping_deinit(settings->bools.remap_save_on_exit);
-      input_remapping_set_defaults(true);
-   }
-   else
-      input_remapping_restore_global_config(true, false);
 
    RARCH_LOG("[Core] Unloading core symbols...\n");
    uninit_libretro_symbols(&runloop_st->current_core);
