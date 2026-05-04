@@ -564,7 +564,8 @@ bool gfx_ctx_wl_init_webos(
 
    if (wl->shell_surface == NULL)
    {
-      RARCH_LOG("[wayland/webOS] Can't create shell surface");
+      RARCH_ERR("[wayland/webOS] Can't create shell surface");
+      return false;
    }
 
    wl_shell_surface_set_toplevel(wl->shell_surface);
@@ -574,7 +575,8 @@ bool gfx_ctx_wl_init_webos(
 
    if (wl->webos_shell_surface == NULL)
    {
-      RARCH_LOG("[wayland/webOS] Can't create webos shell surface");
+      RARCH_ERR("[wayland/webOS] Can't create webos shell surface");
+      return false;
    }
 
    wl_webos_shell_surface_add_listener(wl->webos_shell_surface,
