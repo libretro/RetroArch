@@ -5032,7 +5032,7 @@ void input_event_osk_append(
 void *input_driver_init_wrap(input_driver_t *input, const char *name)
 {
    void *ret = NULL;
-   if (!input)
+   if (!input || !input->init)
       return NULL;
    if ((ret = input->init(name)))
    {
