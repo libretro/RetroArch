@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "wayland_common.h"
+#include "../gfx/video_driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
 
