@@ -19301,8 +19301,9 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-#ifdef HAVE_XMB
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+#if defined(HAVE_XMB) || defined (HAVE_OZONE)
+         if (     string_is_equal(settings->arrays.menu_driver, "xmb")
+               || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -19329,7 +19330,10 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 #endif
+         }
 
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         {
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_xmb_animation_horizontal_highlight,
@@ -20545,6 +20549,21 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_ozone_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, OZONE_COLOR_THEME_LAST-1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.ozone_show_sidebar,
+                  MENU_ENUM_LABEL_OZONE_SHOW_SIDEBAR,
+                  MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+                  DEFAULT_OZONE_SHOW_SIDEBAR,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             CONFIG_BOOL(
                   list, list_info,

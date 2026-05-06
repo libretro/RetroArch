@@ -1152,6 +1152,7 @@ typedef struct settings
       bool vibrate_on_keypress;
       bool enable_device_vibration;
       bool ozone_collapse_sidebar;
+      bool ozone_show_sidebar;
       bool ozone_truncate_playlist_name;
       bool ozone_sort_after_truncate_playlist_name;
       bool ozone_scroll_content_metadata;
