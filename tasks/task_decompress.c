@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string/stdstring.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <retro_miscellaneous.h>
@@ -34,38 +33,88 @@ static int file_decompressed_target_file(const char *name,
    return 0;
 }
 
+/* Rejects archive member names that could escape the intended
+ * extraction directory ("Zip Slip"). Returns true if the name is
+ * safe to concatenate onto a target-directory prefix. */
+static bool archive_name_is_safe(const char *name)
+{
+   const char *p;
+   const char *seg_start;
+
+   if (!name || !*name)
+      return false;
+
+   /* Reject absolute paths in either Unix or Windows form. */
+   if (name[0] == '/' || name[0] == '\\')
+      return false;
+   /* Reject drive-letter prefix e.g. "C:..." */
+   if (name[1] == ':')
+      return false;
+
+   /* Reject any ".." path segment.  Treat both '/' and '\\' as
+    * separators so Windows-authored archives can't traverse when
+    * extracted on a POSIX host. */
+   p = seg_start = name;
+   for (;;)
+   {
+      char c = *p;
+      if (c == '/' || c == '\\' || c == '\0')
+      {
+         if ((size_t)(p - seg_start) == 2
+               && seg_start[0] == '.' && seg_start[1] == '.')
+            return false;
+         if (c == '\0')
+            break;
+         seg_start = p + 1;
+      }
+      p++;
+   }
+   return true;
+}
+
 static int file_decompressed_subdir(const char *name,
       const char *valid_exts,
       const uint8_t *cdata,
-      unsigned cmode, uint32_t csize,uint32_t size,
+      unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    char path_dir[DIR_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
-   size_t _len        = strlen(name);
+   size_t _len;
+   /* Reject empty names (strlen-1 OOB) and traversal attempts. */
+   if (!archive_name_is_safe(name))
+      return 1;
+   _len = strlen(name);
 
    /* Look at last character. Ignore directories, go to next file. */
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
+
    /* Loop multiple subdirs */
    if (strchr(userdata->dec->subdir, '|'))
    {
-      const char *subdir = NULL;
-      char *save         = NULL;
-      char temp[PATH_MAX_LENGTH];
+      const char *subdir = userdata->dec->subdir;
+      bool found         = false;
 
-      strlcpy(temp, userdata->dec->subdir, sizeof(temp));
-      subdir = strtok_r(temp, "|", &save);
-
-      while (subdir)
+      while (*subdir)
       {
-         if (strstr(name, subdir) == name)
-            break;
+         const char *end = strchr(subdir, '|');
+         size_t len      = end ? (size_t)(end - subdir) : strlen(subdir);
 
-         subdir = strtok_r(NULL, "|", &save);
+         if (strncmp(name, subdir, len) == 0
+               && (name[len] == '/' || name[len] == '\\' || name[len] == '\0'))
+         {
+            found = true;
+            break;
+         }
+
+         if (end)
+            subdir = end + 1;
+         else
+            break;
       }
 
-      if (!subdir)
+      if (!found)
          return 1;
    }
    else if (strstr(name, userdata->dec->subdir) != name)
@@ -87,16 +136,26 @@ static int file_decompressed_subdir(const char *name,
          return 1;
 
    userdata->dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
-   _len  = strlcpy(userdata->dec->callback_error,
-         "Failed to deflate ",
-         CALLBACK_ERROR_SIZE);
-   _len += strlcpy(
-		   userdata->dec->callback_error + _len,
-		   path,
-         CALLBACK_ERROR_SIZE - _len);
-   userdata->dec->callback_error[  _len] = '.';
-   userdata->dec->callback_error[++_len] = '\n';
-   userdata->dec->callback_error[++_len] = '\0';
+   /* NULL-check: the strlcpy below NULL-derefs on OOM.  The
+    * downstream task_set_error calls (lines 246, 274, 304) accept
+    * NULL, so skipping the error-string population leaves the task
+    * with a NULL error and the user sees no 'Failed to deflate'
+    * message - which is strictly better than segfaulting.  Any
+    * subsequent 'if (dec->callback_error)' downstream is already
+    * NULL-safe. */
+   if (userdata->dec->callback_error)
+   {
+      _len  = strlcpy(userdata->dec->callback_error,
+            "Failed to deflate ",
+            CALLBACK_ERROR_SIZE);
+      _len += strlcpy(
+            userdata->dec->callback_error + _len,
+            path,
+            CALLBACK_ERROR_SIZE - _len);
+      userdata->dec->callback_error[  _len] = '.';
+      userdata->dec->callback_error[++_len] = '\n';
+      userdata->dec->callback_error[++_len] = '\0';
+   }
 
    return 0;
 }
@@ -107,7 +166,11 @@ static int file_decompressed(const char *name, const char *valid_exts,
 {
    char path[PATH_MAX_LENGTH];
    decompress_state_t *dec = userdata->dec;
-   size_t _len             = strlen(name);
+   size_t _len;
+   /* Reject empty names (strlen-1 OOB) and traversal attempts. */
+   if (!archive_name_is_safe(name))
+      return 1;
+   _len = strlen(name);
    /* Look at last character. Ignore directories, go to next file. */
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
@@ -125,13 +188,17 @@ static int file_decompressed(const char *name, const char *valid_exts,
    }
 
    dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
-   _len  = strlcpy(dec->callback_error, "Failed to deflate ",
-		   CALLBACK_ERROR_SIZE);
-   _len += strlcpy(dec->callback_error + _len,
-		   path, CALLBACK_ERROR_SIZE     - _len);
-   dec->callback_error[  _len] = '.';
-   dec->callback_error[++_len] = '\n';
-   dec->callback_error[++_len] = '\0';
+   /* NULL-check: see twin in file_archived for reasoning. */
+   if (dec->callback_error)
+   {
+      _len  = strlcpy(dec->callback_error, "Failed to deflate ",
+              CALLBACK_ERROR_SIZE);
+      _len += strlcpy(dec->callback_error + _len,
+              path, CALLBACK_ERROR_SIZE     - _len);
+      dec->callback_error[  _len] = '.';
+      dec->callback_error[++_len] = '\n';
+      dec->callback_error[++_len] = '\0';
+   }
 
    return 0;
 }
@@ -153,8 +220,22 @@ static void task_decompress_handler_finished(retro_task_t *task,
       decompress_task_data_t *data =
          (decompress_task_data_t*)calloc(1, sizeof(*data));
 
-      data->source_file = dec->source_file;
-      task_set_data(task, data);
+      /* NULL-check: the ->source_file write below NULL-derefs on
+       * OOM.  task_set_data accepts NULL, but the consumer
+       * (completion callback) would then see a NULL task_data.
+       * If data alloc fails we instead set a task error and free
+       * source_file ourselves so downstream consumers see a
+       * clean error state rather than partial success. */
+      if (data)
+      {
+         data->source_file = dec->source_file;
+         task_set_data(task, data);
+      }
+      else
+      {
+         free(dec->source_file);
+         task_set_error(task, strdup("Out of memory"));
+      }
    }
 
    if (dec->subdir)
@@ -259,11 +340,9 @@ static bool task_decompress_finder(
       retro_task_t *task, void *user_data)
 {
    decompress_state_t *dec = (decompress_state_t*)task->state;
-
    if (task->handler != task_decompress_handler)
       return false;
-
-   return string_is_equal(dec->source_file, (const char*)user_data);
+   return !strcmp(dec->source_file, (const char*)user_data);
 }
 
 bool task_check_decompress(const char *source_file)
@@ -294,87 +373,91 @@ void *task_push_decompress(
    const char *ext            = NULL;
    decompress_state_t *s      = NULL;
    retro_task_t *t            = NULL;
-
    tmp[0] = '\0';
-
-   if (string_is_empty(target_dir) || string_is_empty(source_file))
+   if (!target_dir || !*target_dir || !source_file || !*source_file)
       return NULL;
-
    ext = path_get_extension(source_file);
-
    /* ZIP or APK only */
    if (
          !path_is_valid(source_file) ||
          (
-             !string_is_equal_noncase(ext, "zip")
-          && !string_is_equal_noncase(ext, "apk")
+             strcasecmp(ext, "zip") != 0
+          && strcasecmp(ext, "apk") != 0
 #ifdef HAVE_7ZIP
-          && !string_is_equal_noncase(ext, "7z")
+          && strcasecmp(ext, "7z")  != 0
+#endif
+#ifdef HAVE_ZSTD
+          && strcasecmp(ext, "zst") != 0
 #endif
          )
       )
       return NULL;
-
    if (!valid_ext || !valid_ext[0])
       valid_ext   = NULL;
-
    if (task_check_decompress(source_file))
       return NULL;
-
    if (!(s = (decompress_state_t*)calloc(1, sizeof(*s))))
       return NULL;
-
    if (!(t = task_init()))
    {
       free(s);
       return NULL;
    }
-
    s->source_file      = strdup(source_file);
    s->target_dir       = strdup(target_dir);
-
+   if (!s->source_file || !s->target_dir)
+      goto error;
    s->valid_ext        = valid_ext ? strdup(valid_ext) : NULL;
    s->archive.type     = ARCHIVE_TRANSFER_INIT;
    s->userdata         = (struct archive_extract_userdata*)
       calloc(1, sizeof(*s->userdata));
-
+   if (!s->userdata)
+      goto error;
    t->frontend_userdata= frontend_userdata;
-
    t->state            = s;
    t->handler          = task_decompress_handler;
-
-   if (!string_is_empty(subdir))
+   if (subdir && *subdir)
    {
       s->subdir        = strdup(subdir);
+      if (!s->subdir)
+         goto error;
       t->handler       = task_decompress_handler_subdir;
    }
-   else if (!string_is_empty(target_file))
+   else if (target_file && *target_file)
    {
       s->target_file   = strdup(target_file);
+      if (!s->target_file)
+         goto error;
       t->handler       = task_decompress_handler_target_file;
    }
-
    t->callback         = cb;
    t->user_data        = user_data;
-
    _len                = strlcpy(tmp,
 		   msg_hash_to_str(MSG_EXTRACTING), sizeof(tmp));
    tmp[  _len]         = ':';
    tmp[++_len]         = ' ';
    tmp[++_len]         = '\0';
-   _len               += strlcpy(tmp + _len,
+   strlcpy(tmp + _len,
          path_basename(source_file),
                          sizeof(tmp) - _len);
-   tmp[++_len]         = '\0';
-
    t->title            = strdup(tmp);
+   if (!t->title)
+      goto error;
    t->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       t->flags        |=  RETRO_TASK_FLG_MUTE;
    else
       t->flags        &= ~RETRO_TASK_FLG_MUTE;
-
    task_queue_push(t);
-
    return t;
+error:
+   free(s->source_file);
+   free(s->target_dir);
+   free(s->valid_ext);
+   free(s->subdir);
+   free(s->target_file);
+   free(s->userdata);
+   free(s);
+   free(t);
+   return NULL;
 }

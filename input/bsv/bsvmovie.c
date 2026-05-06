@@ -822,6 +822,25 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
    if (intfstream_read(handle->file, &(handle->key_event_count), 1) == 1)
    {
       int i;
+      /* key_events is a fixed-size bsv_key_data_t[128] (input_driver.h
+       * line ~259); key_event_count is uint8_t and read straight from
+       * the .bsv file with no inherent bound (max 255).  Pre-this-patch
+       * a malformed replay file could supply 129..255 here and the
+       * intfstream_read into &handle->key_events[i] would OOB-write up
+       * to (255-128)*12 = 1524 bytes past the end of the array, into
+       * adjacent fields of bsv_movie_t (input_event_count,
+       * input_events[]) and beyond.  Reject as malformed -- a
+       * legitimate writer cannot produce more than 128 key events per
+       * frame because it shares the same backing array. */
+      if (handle->key_event_count > ARRAY_SIZE(handle->key_events))
+      {
+         RARCH_ERR("[Replay] key_event_count %u exceeds storage capacity %u; rejecting malformed replay\n",
+               (unsigned)handle->key_event_count,
+               (unsigned)ARRAY_SIZE(handle->key_events));
+         if (end_movie)
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+         return false;
+      }
       for (i = 0; i < handle->key_event_count; i++)
       {
          if (intfstream_read(handle->file, &(handle->key_events[i]),
@@ -849,6 +868,27 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
       {
          int i;
          handle->input_event_count = swap_if_big16(handle->input_event_count);
+         /* Same shape as the key_event_count check above: input_events
+          * is bsv_input_data_t[512] (input_driver.h line ~260) but
+          * input_event_count is uint16_t read straight from the .bsv
+          * (max 65535).  Pre-this-patch a malformed replay file with
+          * a count of 65535 would have driven the loop below into
+          * (65535-512)*8 = 520184 bytes of OOB heap-write past
+          * input_events[], corrupting the rest of the bsv_movie_t
+          * struct (rewind state, statestream pointers, save buffers)
+          * and far beyond.  bsv_movie_t is heap-allocated via calloc
+          * in tasks/task_movie.c::bsv_movie_init_internal so this is
+          * a heap-buffer-overflow with attacker-chosen 8-byte values
+          * at attacker-chosen offsets up to ~500KB. */
+         if (handle->input_event_count > ARRAY_SIZE(handle->input_events))
+         {
+            RARCH_ERR("[Replay] input_event_count %u exceeds storage capacity %u; rejecting malformed replay\n",
+                  (unsigned)handle->input_event_count,
+                  (unsigned)ARRAY_SIZE(handle->input_events));
+            if (end_movie)
+               input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            return false;
+         }
          for (i = 0; i < handle->input_event_count; i++)
          {
             if (intfstream_read(handle->file, &(handle->input_events[i]),
@@ -1313,6 +1353,7 @@ bool replay_check_same_timeline(bsv_movie_t *movie,
    free(buf1);
    free(buf2);
    intfstream_close(check_stream);
+   free(check_stream);
    intfstream_seek(movie->file, movie_pos, SEEK_SET);
    return ret;
 }
@@ -1641,6 +1682,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    RARCH_DBG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused, %d skipped [%d checks], %d distinct [%d hashes])\n", total_checkpoints, total_blocks, reused_blocks, skipped_blocks, memcmps, uint32s_index_count(movie->blocks), hashes);
    RARCH_DBG("[STATESTREAM] %d superblocks (%d reused, %d distinct); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_superblocks, reused_superblocks, uint32s_index_count(movie->superblocks), total_kbs_input, total_kbs_written, ((float)total_encode_micros) / (float)1000000.0);
    intfstream_close(out_stream);
+   free(out_stream);
    return encoded_size;
 }
 
@@ -1658,6 +1700,17 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
    size_t superblock_byte_size = movie->superblocks->object_size*block_byte_size;
    intfstream_t *read_mem      = intfstream_open_memory(encoded,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, encoded_size);
+   /* NULL-check reader_state: rmsgpack_dom_reader_state_new can
+    * now return NULL on OOM.  Bailing to 'exit' hits the
+    * rmsgpack_dom_reader_state_free call at the cleanup label
+    * (which now tolerates NULL) and returns false; the user-
+    * visible outcome is 'STATESTREAM decode failed' which
+    * matches the existing error paths for a malformed frame. */
+   if (!reader_state)
+   {
+      RARCH_ERR("[STATESTREAM] failed to allocate reader state\n");
+      goto exit;
+   }
    if (state_size > movie->last_save_size && movie->superblock_seq)
    {
       free(movie->superblock_seq);
@@ -1832,6 +1885,7 @@ exit:
    /* uint32s_index_commit(movie->superblocks); */
    rmsgpack_dom_reader_state_free(reader_state);
    intfstream_close(read_mem);
+   free(read_mem);
    if (!ret)
    {
       RARCH_ERR("[STATESTREAM] made it to end without superblock seq\n");

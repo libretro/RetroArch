@@ -45,6 +45,31 @@
 @property (assign) size_t height;
 
 - (bool)setupCameraSession;
+- (void)teardownScratchBuffers;
+@end
+
+/* Private class extension: cached per-frame scratch buffers.
+ * captureOutput:didOutputSampleBuffer: used to malloc + free four full-
+ * frame buffers per callback (intermediate colour-converted, rotated,
+ * optional mirrored, and scaled).  For a typical 720p BGRA camera that
+ * was ~3.5 MB × 4 allocations × 30 fps = hundreds of MB/s of allocator
+ * churn on the main thread (the capture delegate queue is the main
+ * queue — see setSampleBufferDelegate:queue: below).  Cache the
+ * buffers on the manager and grow only when the required size
+ * exceeds the current capacity; free them in teardownScratchBuffers
+ * on driver teardown.  Ivars are plain C pointers so the file remains
+ * identically correct under MRC and ARC. */
+@interface AVCameraManager ()
+{
+   void    *_intermediateBuf;
+   size_t   _intermediateCap;
+   void    *_rotatedBuf;
+   size_t   _rotatedCap;
+   void    *_mirroredBuf;
+   size_t   _mirroredCap;
+   void    *_scaledBuf;
+   size_t   _scaledCap;
+}
 @end
 
 @implementation AVCameraManager
@@ -123,13 +148,21 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 #ifdef DEBUG
         RARCH_LOG("[Camera] Processing frame %zux%zu format: %u.\n", sourceWidth, sourceHeight, (unsigned int)pixelFormat);
 #endif
-        // Create intermediate buffer for full-size converted image
-        uint32_t *intermediateBuffer = (uint32_t*)malloc(sourceWidth * sourceHeight * 4);
-        if (!intermediateBuffer) {
-            RARCH_ERR("[Camera] Failed to allocate intermediate buffer.\n");
-            CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
-            return;
+        // Intermediate buffer for full-size converted image.  Cached on
+        // the manager - grown only when the required size exceeds the
+        // current capacity.  See class extension above for rationale.
+        size_t intermediateSize = sourceWidth * sourceHeight * 4;
+        if (intermediateSize > _intermediateCap) {
+            void *tmp = realloc(_intermediateBuf, intermediateSize);
+            if (!tmp) {
+                RARCH_ERR("[Camera] Failed to allocate intermediate buffer.\n");
+                CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
+                return;
+            }
+            _intermediateBuf = tmp;
+            _intermediateCap = intermediateSize;
         }
+        uint32_t *intermediateBuffer = (uint32_t*)_intermediateBuf;
 
         vImage_Buffer srcBuffer = {}, intermediateVBuffer = {}, dstBuffer = {};
         vImage_Error err = kvImageNoError;
@@ -201,14 +234,12 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
             default:
                 RARCH_ERR("[Camera] Unsupported pixel format: %u.\n", (unsigned int)pixelFormat);
-                free(intermediateBuffer);
                 CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
                 return;
         }
 
         if (err != kvImageNoError) {
             RARCH_ERR("[Camera] Error converting color format: %ld.\n", err);
-            free(intermediateBuffer);
             CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
             return;
         }
@@ -232,20 +263,27 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                 // TODO: Add an API to retroarch to allow for mirroring of front camera
                 shouldMirror = true; // Mirror front camera
                 #endif
+#ifdef DEBUG
                 RARCH_LOG("[Camera] Using 270-degree rotation with mirroring for front camera in portrait mode.\n");
+#endif
             }
         }
 #endif
 
-        // Rotate image
-        vImage_Buffer rotatedBuffer = {};
-        rotatedBuffer.data = malloc(sourceWidth * sourceHeight * 4);
-        if (!rotatedBuffer.data) {
-            RARCH_ERR("[Camera] Failed to allocate rotation buffer.\n");
-            free(intermediateBuffer);
-            CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
-            return;
+        // Rotate image (cached scratch buffer)
+        size_t rotatedSize = sourceWidth * sourceHeight * 4;
+        if (rotatedSize > _rotatedCap) {
+            void *tmp = realloc(_rotatedBuf, rotatedSize);
+            if (!tmp) {
+                RARCH_ERR("[Camera] Failed to allocate rotation buffer.\n");
+                CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
+                return;
+            }
+            _rotatedBuf = tmp;
+            _rotatedCap = rotatedSize;
         }
+        vImage_Buffer rotatedBuffer = {};
+        rotatedBuffer.data = _rotatedBuf;
 
         // Set dimensions based on rotation angle
         if (rotationDegrees == 90 || rotationDegrees == 270) {
@@ -267,24 +305,30 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
         if (err != kvImageNoError) {
             RARCH_ERR("[Camera] Error rotating image: %ld.\n", err);
-            free(rotatedBuffer.data);
-            free(intermediateBuffer);
             CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
             return;
         }
 
-        // Mirror the image if needed
-        if (shouldMirror) {
-            vImage_Buffer mirroredBuffer = {};
-            mirroredBuffer.data = malloc(rotatedBuffer.height * rotatedBuffer.rowBytes);
-            if (!mirroredBuffer.data) {
-                RARCH_ERR("[Camera] Failed to allocate mirror buffer.\n");
-                free(rotatedBuffer.data);
-                free(intermediateBuffer);
-                CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
-                return;
-            }
+        // Mirror the image if needed.  On success, the scale step below
+        // reads from the mirrored buffer; on failure it falls back to
+        // rotated.  Unlike the original code we don't swap pointers —
+        // each scratch has a stable identity across frames.
+        vImage_Buffer *scaleSource = &rotatedBuffer;
+        vImage_Buffer mirroredBuffer = {};
 
+        if (shouldMirror) {
+            size_t mirroredSize = rotatedBuffer.height * rotatedBuffer.rowBytes;
+            if (mirroredSize > _mirroredCap) {
+                void *tmp = realloc(_mirroredBuf, mirroredSize);
+                if (!tmp) {
+                    RARCH_ERR("[Camera] Failed to allocate mirror buffer.\n");
+                    CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
+                    return;
+                }
+                _mirroredBuf = tmp;
+                _mirroredCap = mirroredSize;
+            }
+            mirroredBuffer.data = _mirroredBuf;
             mirroredBuffer.width = rotatedBuffer.width;
             mirroredBuffer.height = rotatedBuffer.height;
             mirroredBuffer.rowBytes = rotatedBuffer.rowBytes;
@@ -292,17 +336,15 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             err = vImageHorizontalReflect_ARGB8888(&rotatedBuffer, &mirroredBuffer, kvImageNoFlags);
 
             if (err == kvImageNoError) {
-                // Free rotated buffer and use mirrored buffer for scaling
-                free(rotatedBuffer.data);
-                rotatedBuffer = mirroredBuffer;
+                scaleSource = &mirroredBuffer;
             } else {
                 RARCH_ERR("[Camera] Error mirroring image: %ld.\n", err);
-                free(mirroredBuffer.data);
+                /* scaleSource stays pointed at rotatedBuffer */
             }
         }
 
         // Calculate aspect fill scaling
-        float sourceAspect = (float)rotatedBuffer.width / rotatedBuffer.height;
+        float sourceAspect = (float)scaleSource->width / scaleSource->height;
         float targetAspect = (float)self.width / self.height;
 
         vImage_Buffer scaledBuffer = {};
@@ -318,30 +360,32 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             scaledHeight = (size_t)(self.width / sourceAspect);
         }
 
+#ifdef DEBUG
         RARCH_LOG("[Camera] Aspect fill scaling from %zux%zu to %zux%zu.\n",
-                  rotatedBuffer.width, rotatedBuffer.height, scaledWidth, scaledHeight);
+                  scaleSource->width, scaleSource->height, scaledWidth, scaledHeight);
+#endif
 
-        scaledBuffer.data = malloc(scaledWidth * scaledHeight * 4);
-        if (!scaledBuffer.data) {
-            RARCH_ERR("[Camera] Failed to allocate scaled buffer.\n");
-            free(rotatedBuffer.data);
-            free(intermediateBuffer);
-            CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
-            return;
+        size_t scaledSize = scaledWidth * scaledHeight * 4;
+        if (scaledSize > _scaledCap) {
+            void *tmp = realloc(_scaledBuf, scaledSize);
+            if (!tmp) {
+                RARCH_ERR("[Camera] Failed to allocate scaled buffer.\n");
+                CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
+                return;
+            }
+            _scaledBuf = tmp;
+            _scaledCap = scaledSize;
         }
-
+        scaledBuffer.data = _scaledBuf;
         scaledBuffer.width = scaledWidth;
         scaledBuffer.height = scaledHeight;
         scaledBuffer.rowBytes = scaledWidth * 4;
 
         // Scale maintaining aspect ratio
-        err = vImageScale_ARGB8888(&rotatedBuffer, &scaledBuffer, NULL, kvImageHighQualityResampling);
+        err = vImageScale_ARGB8888(scaleSource, &scaledBuffer, NULL, kvImageHighQualityResampling);
 
         if (err != kvImageNoError) {
             RARCH_ERR("[Camera] Error scaling image: %ld.\n", err);
-            free(scaledBuffer.data);
-            free(rotatedBuffer.data);
-            free(intermediateBuffer);
             CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
             return;
         }
@@ -360,12 +404,20 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                    self.width * 4);
         }
 
-        // Clean up
-        free(scaledBuffer.data);
-        free(rotatedBuffer.data);
-        free(intermediateBuffer);
+        /* Scratch buffers retained on the manager; freed on teardown. */
         CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
     } // End of autorelease pool
+}
+
+- (void)teardownScratchBuffers {
+    if (_intermediateBuf) { free(_intermediateBuf); _intermediateBuf = NULL; }
+    _intermediateCap = 0;
+    if (_rotatedBuf)      { free(_rotatedBuf);      _rotatedBuf      = NULL; }
+    _rotatedCap = 0;
+    if (_mirroredBuf)     { free(_mirroredBuf);     _mirroredBuf     = NULL; }
+    _mirroredCap = 0;
+    if (_scaledBuf)       { free(_scaledBuf);       _scaledBuf       = NULL; }
+    _scaledCap = 0;
 }
 
 - (AVCaptureDevice *)selectCameraDevice {
@@ -604,7 +656,14 @@ static void *avfoundation_init(const char *device, uint64_t caps,
     if (!setupSuccess)
     {
         RARCH_ERR("[Camera] Failed to setup camera.\n");
+        /* Null out frameBuffer on the singleton manager after freeing,
+         * so a subsequent init doesn't observe a stale pointer.  The
+         * main-thread-only access pattern means nothing actually sees
+         * the dangling value between these two statements and the next
+         * init's calloc on the same field, but leaving a dangling
+         * pointer in a singleton ivar is defensive-programming-wrong. */
         free(avf->manager.frameBuffer);
+        avf->manager.frameBuffer = NULL;
         free(avf);
         return NULL;
     }
@@ -629,6 +688,12 @@ static void avfoundation_free(void *data)
         free(avf->manager.frameBuffer);
         avf->manager.frameBuffer = NULL;
     }
+
+    /* The manager is a singleton; its scratch buffers from the per-
+     * frame conversion/rotation/mirror/scale pipeline persist across
+     * driver instances.  Free them here so a subsequent init starts
+     * clean and stale capacity from a prior session does not linger. */
+    [avf->manager teardownScratchBuffers];
 
     free(avf);
     RARCH_LOG("[Camera] AVFoundation camera freed.\n");
@@ -683,16 +748,24 @@ static bool avfoundation_poll(void *data,
 
     if (!avf->manager.session.isRunning)
     {
+        /* Session not running yet (or already stopped).  Deliver a
+         * color-bars test pattern so the core gets a well-formed
+         * frame rather than nothing.  Paint into the manager's own
+         * frameBuffer rather than allocating a throwaway: the
+         * generation cost is trivial (two nested loops of direct
+         * assignments, no conversion) and it avoids a calloc+free
+         * pair on every poll while the camera warms up.  Once the
+         * session starts and captureOutput:didOutputSampleBuffer:
+         * begins overwriting frameBuffer with real frames, this
+         * branch stops firing. */
+#ifdef DEBUG
         RARCH_LOG("[Camera] Camera not running, generating color bars...\n");
-        uint32_t *tempBuffer = (uint32_t*)calloc(avf->width * avf->height, sizeof(uint32_t));
-        if (tempBuffer)
-        {
-            generateColorBars(tempBuffer, avf->width, avf->height);
-            frame_raw_cb(tempBuffer, avf->width, avf->height, avf->width * 4);
-            free(tempBuffer);
-            return true;
-        }
-        return false;
+#endif
+        if (!avf->manager.frameBuffer)
+            return false;
+        generateColorBars(avf->manager.frameBuffer, avf->width, avf->height);
+        frame_raw_cb(avf->manager.frameBuffer, avf->width, avf->height, avf->width * 4);
+        return true;
     }
 
 #ifdef DEBUG

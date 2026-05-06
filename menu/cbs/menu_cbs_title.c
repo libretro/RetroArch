@@ -21,6 +21,7 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 
+#include "../../msg_hash_lbl_str.h"
 #include "../../configuration.h"
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
@@ -43,39 +44,31 @@
    return action_get_title_generic(s, len, path, msg_hash_to_str(lbl)); \
 } \
 
-/* Safely append a short suffix (e.g. ": " or " - ") to s at offset _len.
- * Returns the new write position. If there is not enough room, the buffer
- * is left untouched and the original _len is returned. */
-static size_t safe_strbuf_append(char *s, size_t len, size_t _len,
-      const char *suffix)
-{
-   size_t suffix_len = strlen(suffix);
-   if (_len + suffix_len < len)
-   {
-      memcpy(s + _len, suffix, suffix_len);
-      _len        += suffix_len;
-      s[_len]      = '\0';
-   }
-   return _len;
-}
-
 static void sanitize_to_string(char *s, const char *lbl, size_t len)
 {
-   char *pos;
-   strlcpy(s, lbl, len);
-   /* Replace underscores with spaces in a single pass */
-   for (pos = s; *pos != '\0'; ++pos)
+   const char *src = lbl;
+   const char *end = s + len - 1;
+   char *dst = s;
+
+   if (len == 0)
+      return;
+
+   /* Combine copy and replace into a single pass */
+   while (*src != '\0' && dst < end)
    {
-      if (*pos == '_')
-         *pos = ' ';
+      *dst = (*src == '_') ? ' ' : *src;
+      ++src;
+      ++dst;
    }
+
+   *dst = '\0';
 }
 
 #define DEFAULT_TITLE_MACRO(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
    const char *str = msg_hash_to_str(lbl); \
-   if (s && !string_is_empty(str)) \
+   if (s && str && (*str != '\0')) \
       sanitize_to_string(s, str, len); \
    return 1; \
 }
@@ -85,11 +78,16 @@ static void sanitize_to_string(char *s, const char *lbl, size_t len)
 { \
    size_t _len = 0; \
    const char *title = msg_hash_to_str(lbl); \
-   if (!string_is_empty(title)) \
-      _len = strlcpy(s, title, len); \
-   if (!string_is_empty(path)) \
+   if (title && *title) \
    { \
-      _len = safe_strbuf_append(s, len, _len, ": "); \
+      _len = strlcpy(s, title, len); \
+      if (_len >= len) \
+         _len = len - 1; \
+   } \
+   if (path && *path && _len + STRLEN_CONST(": ") < len) \
+   { \
+      memcpy(s + _len, ": ", STRLEN_CONST(": ")); \
+      _len += STRLEN_CONST(": "); \
       strlcpy(s + _len, path, len - _len); \
    } \
    return 1; \
@@ -124,11 +122,22 @@ static void action_get_title_fill_path_search_filter_default(
 {
    size_t _len       = 0;
    const char *title = msg_hash_to_str(lbl);
-   if (!string_is_empty(title))
-      _len           = strlcpy(s, title, len);
-   _len = safe_strbuf_append(s, len, _len, " ");
-   if (!string_is_empty(path))
-      strlcpy(s + _len, path, len - _len);
+
+   if (title && *title != '\0')
+   {
+      _len = strlcpy(s, title, len);
+      if (_len >= len)
+         _len = len - 1;
+      if (_len + 1 < len)
+      {
+         s[_len]     = ' ';
+         s[_len + 1] = '\0';
+         _len++;
+      }
+   }
+
+   if (path && *path != '\0')
+      _len += strlcpy(s + _len, path, len - _len);
 
    menu_entries_search_append_terms_string(s, len);
 }
@@ -164,13 +173,11 @@ static int action_get_title_icon_thumbnails(
 {
    enum msg_hash_enums label_value = MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS;
    const char *title               = msg_hash_to_str(label_value);
-
-   if (s && !string_is_empty(title))
+   if (s && title && *title != '\0')
    {
       sanitize_to_string(s, title, len);
       return 1;
    }
-
    return 0;
 }
 
@@ -194,7 +201,7 @@ static int action_get_title_thumbnails(
 #endif
 #endif
    title = msg_hash_to_str(label_value);
-   if (s && !string_is_empty(title))
+   if (s && title && *title)
    {
       sanitize_to_string(s, title, len);
       return 1;
@@ -229,7 +236,7 @@ static int action_get_title_left_thumbnails(
 
    title = msg_hash_to_str(label_value);
 
-   if (s && !string_is_empty(title))
+   if (s && title && *title)
    {
       sanitize_to_string(s, title, len);
       return 1;
@@ -247,7 +254,7 @@ static int action_get_title_core_options_list(
 
    /* If this is an options subcategory, fetch
     * the category description */
-   if (!string_is_empty(category))
+   if (category && *category)
    {
       core_option_manager_t *coreopts = NULL;
 
@@ -259,10 +266,10 @@ static int action_get_title_core_options_list(
    /* If this isn't a subcategory (or something
     * went wrong...), use top level core options
     * menu label */
-   if (string_is_empty(title))
+   if (!title || !*title)
       title = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS);
 
-   if (s && !string_is_empty(title))
+   if (s && title && *title)
    {
       strlcpy(s, title, len);
       return 1;
@@ -275,115 +282,80 @@ static int action_get_title_dropdown_item(
       const char *path, const char *label, unsigned menu_type,
       char *s, size_t len)
 {
-   /* Sanity check */
-   if (!string_is_empty(path))
+   if (!path || !*path)
+      return 0;
+
+   if (string_starts_with_size(path, "core_option_", STRLEN_CONST("core_option_")))
    {
-	   if (string_starts_with_size(path, "core_option_",
-				   STRLEN_CONST("core_option_")))
-	   {
-		   /* This is a core options item */
-		   core_option_manager_t *coreopts = NULL;
-         const char *opt = strrchr(path, '_');
-		   if (opt && opt[1] != '\0')
-		   {
-			   retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+      core_option_manager_t *coreopts = NULL;
+      const char *opt = strrchr(path, '_');
+      if (opt && opt[1] != '\0')
+      {
+         retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
-			   if (coreopts)
-			   {
-				   unsigned option_index = string_to_unsigned(opt+1);
-				   const char *title     = core_option_manager_get_desc(
-						   coreopts, option_index, true);
+         if (coreopts)
+         {
+            unsigned option_index = string_to_unsigned(opt + 1);
+            const char *title     = core_option_manager_get_desc(
+                  coreopts, option_index, true);
 
-				   if (s && !string_is_empty(title))
-				   {
-					   strlcpy(s, title, len);
-                  return 1;
-				   }
-			   }
-		   }
-	   }
-	   else
-	   {
-		   /* This is a 'normal' drop down list */
+            if (s && title && *title)
+            {
+               strlcpy(s, title, len);
+               return 1;
+            }
+         }
+      }
+   }
+   else
+   {
+      enum msg_hash_enums enum_idx = (enum msg_hash_enums)
+         (string_to_unsigned(path) + 2);
 
-		   /* In msg_hash.h, msg_hash_enums are generated via
-		    * the following macro:
-		    *    #define MENU_LABEL(STR) \
-		    *       MENU_ENUM_LABEL_##STR, \
-		    *       MENU_ENUM_SUBLABEL_##STR, \
-		    *       MENU_ENUM_LABEL_VALUE_##STR
-		    * to get 'MENU_ENUM_LABEL_VALUE_' from a
-		    * 'MENU_ENUM_LABEL_', we therefore add 2... */
-		   enum msg_hash_enums enum_idx = (enum msg_hash_enums)
-			   (string_to_unsigned(path) + 2);
+      if ((enum_idx > MSG_UNKNOWN) && (enum_idx < MSG_LAST))
+      {
+         switch (enum_idx)
+         {
+            case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
+               return action_get_title_thumbnails(
+                     path, label, menu_type, s, len);
+            case MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS:
+               return action_get_title_left_thumbnails(
+                     path, label, menu_type, s, len);
+            default:
+               if ((enum_idx >= MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE) &&
+                     (enum_idx <= MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE_LAST))
+                  enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE;
+               else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE) &&
+                     (enum_idx <= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE_LAST))
+                  enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE;
+               else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX) &&
+                     (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST))
+                  enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX;
+               else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE) &&
+                     (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE_LAST))
+                  enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE;
+               else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME) &&
+                     (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME_LAST))
+                  enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME;
+               else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX) &&
+                     (enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST))
+                  enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX;
+               else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT) &&
+                     (enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
+                  enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT;
 
-		   /* Check if enum index is valid
-		    * Note: This is a very crude check, but better than nothing */
-		   if ((enum_idx > MSG_UNKNOWN) && (enum_idx < MSG_LAST))
-		   {
-			   /* An annoyance: MENU_ENUM_LABEL_THUMBNAILS and
-			    * MENU_ENUM_LABEL_LEFT_THUMBNAILS require special
-			    * treatment, since their titles depend upon the
-			    * current menu driver... */
-			   switch (enum_idx)
-			   {
-				   case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
-					   return action_get_title_thumbnails(
-							   path, label, menu_type, s, len);
-				   case MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS:
-					   return action_get_title_left_thumbnails(
-							   path, label, menu_type, s, len);
-				   default:
-					   {
-						   /* Submenu label exceptions */
-						   /* Device Type */
-						   if ((enum_idx >= MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE;
-
-						   /* Analog to Digital Type */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE;
-
-						   /* Device Index */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX;
-
-						   /* Device Reservation Type */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE;
-
-						   /* Reserved Device Name */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME;
-
-						   /* Mouse Index */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX;
-
-						   /* Mapped Port (virtual -> 'physical' port mapping) */
-						   else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT) &&
-								   (enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
-							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT;
-
-						   {
-							   const char *title = msg_hash_to_str(enum_idx);
-							   if (s && !string_is_empty(title))
-							   {
-						              sanitize_to_string(s, title, len);
-							      return 1;
-							   }
-						   }
-					   }
-					   break;
-			   }
-		   }
-	   }
+               {
+                  const char *title = msg_hash_to_str(enum_idx);
+                  if (s && title && *title)
+                  {
+                     sanitize_to_string(s, title, len);
+                     return 1;
+                  }
+               }
+               break;
+         }
+      }
    }
 
    return 0;
@@ -400,11 +372,11 @@ static int action_get_title_mixer_stream_actions(const char *path, const char *l
 
 static int action_get_title_deferred_playlist_list(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       const char *playlist_file = path_basename_nocompression(path);
 
-      if (!string_is_empty(playlist_file))
+      if (playlist_file && *playlist_file)
       {
          if (string_is_equal_noncase(path_get_extension(playlist_file),
                   "lpl"))
@@ -441,22 +413,26 @@ static int action_get_title_deferred_core_backup_list(
    size_t _len;
    core_info_t *core_info = NULL;
 
-   if (string_is_empty(core_path) || string_is_empty(prefix))
+   if (!core_path || !*core_path || !prefix || !*prefix)
       return 0;
 
-   _len      = strlcpy(s, prefix, len);
-   _len      = safe_strbuf_append(s, len, _len, ": ");
+   _len = strlcpy(s, prefix, len);
 
-   /* Search for specified core
-    * > If core is found, add display name */
+   if (_len + 2 < len)
+   {
+      s[_len]     = ':';
+      s[_len + 1] = ' ';
+      _len       += 2;
+      s[_len]     = '\0';
+   }
+
    if (   core_info_find(core_path, &core_info)
        && core_info->display_name)
       strlcpy(s + _len, core_info->display_name, len - _len);
    else
    {
-      /* > If not, use core file name */
       const char *core_filename = path_basename_nocompression(core_path);
-      if (!string_is_empty(core_filename))
+      if (core_filename && *core_filename)
          strlcpy(s + _len, core_filename, len - _len);
    }
 
@@ -491,7 +467,7 @@ static int action_get_core_information_list(
    {
       core_info_t *core_info_menu = NULL;
 
-      if (string_is_empty(path))
+      if (!path || !*path)
          goto error;
 
       /* Core updater/manager entry - search for
@@ -502,7 +478,7 @@ static int action_get_core_information_list(
    else
       core_info_get_current_core(&core_info);
 
-   if (!core_info || string_is_empty(core_info->display_name))
+   if (!core_info || !core_info->display_name || !*core_info->display_name)
       goto error;
 
    /* Copy display name */
@@ -521,9 +497,18 @@ static int action_get_core_information_steam_list(
       const char *path, const char *label, unsigned menu_type,
       char *s, size_t len)
 {
-   size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), len);
-   _len = safe_strbuf_append(s, len, _len, " - ");
-   strlcpy(s + _len, path, len - _len);
+   const char *info = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION);
+   size_t info_len  = strlen(info);
+
+   if (info_len + 3 < len)
+   {
+      memcpy(s, info, info_len);
+      memcpy(s + info_len, " - ", 3);
+      strlcpy(s + info_len + 3, path, len - info_len - 3);
+   }
+   else
+      strlcpy(s, info, len);
+
    return 1;
 }
 #endif
@@ -534,7 +519,7 @@ static int action_get_title_dropdown_input_description_common(
    size_t _len;
    const char *input_label_ptr = input_name;
 
-   if (!string_is_empty(input_label_ptr))
+   if (input_label_ptr && *input_label_ptr)
    {
       /* Strip off 'Auto:' prefix, if required */
       if (string_starts_with_size(input_label_ptr, "Auto:",
@@ -549,7 +534,7 @@ static int action_get_title_dropdown_input_description_common(
    /* Build title string */
    _len  = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
    _len += snprintf(s + _len, len - _len, " %u - ", port + 1);
-   if (!string_is_empty(input_label_ptr))
+   if (input_label_ptr && *input_label_ptr)
       strlcpy(s + _len, input_label_ptr, len - _len);
    else
       strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -606,6 +591,7 @@ DEFAULT_TITLE_MACRO(action_get_configurations_list,             MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_core_option_override_list,       MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST)
 DEFAULT_TITLE_MACRO(action_get_quick_menu_list,                 MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_savestate_list,                  MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST)
+DEFAULT_TITLE_MACRO(action_get_state_slot_run,                  MENU_ENUM_LABEL_VALUE_LOAD_STATE)
 DEFAULT_TITLE_MACRO(action_get_input_remapping_options_list,    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_remap_file_manager_list,         MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST)
 DEFAULT_TITLE_MACRO(action_get_shader_options_list,             MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS)
@@ -825,12 +811,11 @@ static int action_get_title_deferred_database_manager_list(
       const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   if (!string_is_empty(path))
+   if (path && *path != '\0')
    {
       fill_pathname(s, path_basename(path), "", len);
       return 0;
-   }   
-
+   }
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    return 0;
 }
@@ -838,10 +823,30 @@ static int action_get_title_deferred_database_manager_list(
 static int action_get_sideload_core_list(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST), len);
-   _len = safe_strbuf_append(s, len, _len, " ");
-   if (!string_is_empty(path))
-      strlcpy(s + _len, path, len - _len);
+   const char *str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST);
+   size_t str_len  = strlen(str);
+
+   if (str_len + 1 < len)
+   {
+      size_t _len;
+      memcpy(s, str, str_len);
+      s[str_len] = ' ';
+      _len       = str_len + 1;
+
+      if (path && *path)
+      {
+         size_t path_len = strlen(path);
+         if (_len + path_len >= len)
+            path_len = len - _len - 1;
+         memcpy(s + _len, path, path_len);
+         _len += path_len;
+      }
+
+      s[_len] = '\0';
+   }
+   else
+      strlcpy(s, str, len);
+
    return 0;
 }
 
@@ -850,18 +855,24 @@ static int action_get_title_default(const char *path, const char *label,
 {
    size_t _len = strlcpy(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
-   if (!string_is_empty(path))
+   if (_len >= len)
+      _len = len - 1;
+   if (path && *path)
    {
-      _len = safe_strbuf_append(s, len, _len, ": ");
+      if (_len + STRLEN_CONST(": ") < len)
+      {
+         s[_len]     = ':';
+         s[_len + 1] = ' ';
+         _len       += 2;
+         s[_len]     = '\0';
+      }
 #if IOS
       fill_pathname_abbreviate_special(s + _len, path, len - _len);
 #else
       strlcpy(s + _len, path, len - _len);
 #endif
    }
-
    menu_entries_search_append_terms_string(s, len);
-
    return 0;
 }
 
@@ -875,7 +886,6 @@ static int action_get_title_group_settings(const char *path, const char *label,
       enum msg_hash_enums val;
       bool is_playlist_tab;
    } title_info_list_t;
-
    /* Note: MENU_ENUM_LABEL_HORIZONTAL_MENU *is* a playlist
     * tab, but its actual title is set elsewhere - so treat
     * it as a generic top-level item */
@@ -894,7 +904,6 @@ static int action_get_title_group_settings(const char *path, const char *label,
       {MENU_ENUM_LABEL_NETPLAY_TAB,           MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,           false },
       {MENU_ENUM_LABEL_HORIZONTAL_MENU,       MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,       false },
    };
-
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
    {
       if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
@@ -907,9 +916,8 @@ static int action_get_title_group_settings(const char *path, const char *label,
          return 0;
       }
    }
-
    /* Split label on '|' without heap allocation */
-   if (!string_is_empty(label))
+   if (label && *label)
    {
       const char *sep = strchr(label, '|');
       if (sep)
@@ -923,14 +931,18 @@ static int action_get_title_group_settings(const char *path, const char *label,
          _len = first_len;
          if (sep[1] != '\0')
          {
-            _len = safe_strbuf_append(s, len, _len, " - ");
+            if (_len + STRLEN_CONST(" - ") < len)
+            {
+               memcpy(s + _len, " - ", STRLEN_CONST(" - "));
+               _len        += STRLEN_CONST(" - ");
+               s[_len]      = '\0';
+            }
             strlcpy(s + _len, sep + 1, len - _len);
          }
       }
       else
          strlcpy(s, label, len);
    }
-
    return 0;
 }
 
@@ -1168,6 +1180,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_add_content_list},
       {MENU_ENUM_LABEL_SAVESTATE_LIST,
          action_get_savestate_list},
+      {MENU_ENUM_LABEL_STATE_SLOT_RUN,
+         action_get_state_slot_run},
       {MENU_ENUM_LABEL_CORE_OPTIONS,
          action_get_title_core_options_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST,
@@ -1288,7 +1302,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    {
       const char *parent_group   = cbs->setting->parent_group;
 
-      if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
+      if (string_is_equal(parent_group, MENU_ENUM_LABEL_MAIN_MENU_STR)
             && cbs->setting->type == ST_GROUP)
       {
          BIND_ACTION_GET_TITLE(cbs, action_get_title_group_settings);
@@ -1310,7 +1324,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
     *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
     * i.e. cannot use a normal string_is_equal() */
    if (string_starts_with(label,
-      msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+      MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL_STR))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_database_manager_list);
       return 0;

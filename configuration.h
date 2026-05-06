@@ -136,6 +136,9 @@ typedef struct settings
 #ifdef HAVE_D3D12
       int d3d12_gpu_index;
 #endif
+#ifdef HAVE_METAL
+      int metal_gpu_index;
+#endif
 #ifdef HAVE_WINDOW_OFFSET
       int video_window_offset_x;
       int video_window_offset_y;
@@ -429,7 +432,7 @@ typedef struct settings
       float video_msg_color_g;
       float video_msg_color_b;
       float video_msg_bgcolor_opacity;
-      float video_hdr_max_nits;
+      float video_hdr_menu_nits;
       float video_hdr_paper_white_nits;
 
       float menu_scale_factor;
@@ -541,10 +544,19 @@ typedef struct settings
       char audio_device[NAME_MAX_LENGTH];
       char camera_device[NAME_MAX_LENGTH];
       char netplay_mitm_server[NAME_MAX_LENGTH];
+#ifdef HAVE_NETWORKING
+#ifdef HAVE_CLOUDSYNC
       char webdav_url[NAME_MAX_LENGTH];
       char webdav_username[NAME_MAX_LENGTH];
       char webdav_password[NAME_MAX_LENGTH];
       char google_drive_refresh_token[2048];
+#ifdef HAVE_S3
+      char s3_url[NAME_MAX_LENGTH];
+      char access_key_id[128];
+      char secret_access_key[186]; /* TODO/RESEARCH - check size, ex https://github.com/winscp/winscp/pull/15/files */
+#endif
+#endif
+#endif
 
       char crt_switch_timings[NAME_MAX_LENGTH];
       char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];
@@ -657,6 +669,7 @@ typedef struct settings
       bool video_windowed_fullscreen;
       bool video_vsync;
       bool video_adaptive_vsync;
+      bool video_scanline_sync;
       bool video_hard_sync;
       bool video_waitable_swapchains;
       bool video_vfilter;
@@ -669,6 +682,7 @@ typedef struct settings
       bool video_dingux_ipu_keep_aspect;
       bool video_scale_integer;
       bool video_shader_enable;
+      bool video_shader_deferred_loading;
       bool video_shader_watch_files;
       bool video_shader_remember_last_dir;
       bool video_shader_preset_save_reference_enable;
@@ -1087,6 +1101,7 @@ typedef struct settings
       bool sort_savestates_by_content_enable;
       bool sort_screenshots_by_content_enable;
       bool config_save_on_exit;
+      bool config_save_minimal;
       bool remap_save_on_exit;
 
       bool show_hidden_files;
@@ -1381,6 +1396,10 @@ bool config_replace(bool config_save_on_exit, char *path);
 #endif
 
 bool config_overlay_enable_default(void);
+
+#if defined(__APPLE__) && defined(HAVE_VULKAN)
+bool config_metal_arg_buffers_default(void);
+#endif
 
 void config_set_defaults(void *data);
 

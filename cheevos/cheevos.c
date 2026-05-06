@@ -90,7 +90,12 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* client */
    {{0}},/* memory */
 #ifdef HAVE_THREADS
-   CMD_EVENT_NONE, /* queued_command */
+   /* queued_command (atomic). CMD_EVENT_NONE == 0; static
+    * zero-initialization satisfies all retro_atomic.h backends. */
+   0,
+   /* load_generation (atomic). Starts at 0; bumped by
+    * rcheevos_unload and rcheevos_load. */
+   0,
 #endif
    "",   /* user_agent_prefix */
    "",   /* user_agent_core */
@@ -406,16 +411,29 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
             else
             {
                struct rcheevos_retry_achievement_info_t* info;
-               info = (struct rcheevos_retry_achievement_info_t*)malloc(sizeof(*info));
-               info->achievement_id = cheevo->id;
-               info->rarity = rarity;
+               /* NULL-check before dereferencing.  The previous code
+                * wrote info->achievement_id / info->rarity on the
+                * next two lines regardless, which would segfault on
+                * OOM.  Falling back to the immediate popup path
+                * matches the '!task' branch above, and we have to
+                * release the task we just allocated or we leak it. */
+               if (!(info = (struct rcheevos_retry_achievement_info_t*)malloc(sizeof(*info))))
+               {
+                  free(task);
+                  rcheevos_show_achievement_popup(cheevo, rarity);
+               }
+               else
+               {
+                  info->achievement_id = cheevo->id;
+                  info->rarity = rarity;
 
-               task->handler = rcheevos_retry_achievement_popup;
-               task->user_data = info;
-               task->progress = 1;
-               task->when = cpu_features_get_time_usec() + 100000; /* first retry in 100ms */
+                  task->handler = rcheevos_retry_achievement_popup;
+                  task->user_data = info;
+                  task->progress = 1;
+                  task->when = cpu_features_get_time_usec() + 100000; /* first retry in 100ms */
 
-               task_queue_push(task);
+                  task_queue_push(task);
+               }
             }
          }
       }
@@ -791,6 +809,17 @@ bool rcheevos_unload(void)
 {
    const bool was_loaded = rcheevos_is_game_loaded();
 
+#ifdef HAVE_THREADS
+   /* Bump the load generation FIRST, before any other state
+    * mutation. Any background load callback already in flight
+    * captured the previous generation at submit time; bumping
+    * here makes its eventual generation check fail, so it
+    * silently drops without writing FINALIZE_LOAD into
+    * queued_command. The atomic store synchronizes with the
+    * acquire-load on the bg thread. */
+   retro_atomic_inc_int(&rcheevos_locals.load_generation);
+#endif
+
 #ifdef HAVE_GFX_WIDGETS
    rcheevos_hide_widgets(gfx_widgets_ready());
    gfx_widget_set_cheevos_set_loading(false);
@@ -799,7 +828,8 @@ bool rcheevos_unload(void)
    rc_client_unload_game(rcheevos_locals.client);
 
 #ifdef HAVE_THREADS
-   rcheevos_locals.queued_command = CMD_EVENT_NONE;
+   retro_atomic_store_release_int(&rcheevos_locals.queued_command,
+         CMD_EVENT_NONE);
 #endif
 
    if (rcheevos_locals.memory.count > 0)
@@ -823,7 +853,8 @@ bool rcheevos_unload(void)
    }
 
 #ifdef HAVE_THREADS
-   rcheevos_locals.queued_command = CMD_EVENT_NONE;
+   retro_atomic_store_release_int(&rcheevos_locals.queued_command,
+         CMD_EVENT_NONE);
 #endif
 
    if (!config_get_ptr()->arrays.cheevos_token[0])
@@ -906,7 +937,8 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
             /* have to "schedule" this.
              * CMD_EVENT_REWIND_DEINIT should
              * only be called on the main thread */
-            rcheevos_locals.queued_command = CMD_EVENT_REWIND_DEINIT;
+            retro_atomic_store_release_int(&rcheevos_locals.queued_command,
+                  CMD_EVENT_REWIND_DEINIT);
          }
          else
 #endif
@@ -930,7 +962,8 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
             /* have to "schedule" this.
              * CMD_EVENT_REWIND_INIT should
              * only be called on the main thread */
-            rcheevos_locals.queued_command = CMD_EVENT_REWIND_INIT;
+            retro_atomic_store_release_int(&rcheevos_locals.queued_command,
+                  CMD_EVENT_REWIND_INIT);
          }
          else
 #endif
@@ -1101,14 +1134,23 @@ Test all the achievements (call once per frame).
 void rcheevos_test(void)
 {
 #ifdef HAVE_THREADS
-   if (rcheevos_locals.queued_command != CMD_EVENT_NONE)
+   /* Snapshot the queued command once with an acquire-load. The
+    * matching release-stores are at the writer sites in this file
+    * (rcheevos_unload, the rewind toggles, and the bg-thread
+    * finalize at the bottom of rcheevos_client_load_game_callback).
+    * Without the snapshot the three reads at the previous
+    * !=NONE / ==FINALIZE / dispatch sites could each see a
+    * different value if a writer fires between them. */
+   int cmd = retro_atomic_load_acquire_int(&rcheevos_locals.queued_command);
+   if (cmd != CMD_EVENT_NONE)
    {
-      if (rcheevos_locals.queued_command == CMD_CHEEVOS_FINALIZE_LOAD)
+      if (cmd == CMD_CHEEVOS_FINALIZE_LOAD)
          rcheevos_finalize_game_load_on_ui_thread();
       else
-         command_event(rcheevos_locals.queued_command, NULL);
+         command_event((enum event_command)cmd, NULL);
 
-      rcheevos_locals.queued_command = CMD_EVENT_NONE;
+      retro_atomic_store_release_int(&rcheevos_locals.queued_command,
+            CMD_EVENT_NONE);
    }
 #endif
 
@@ -1635,6 +1677,29 @@ static void rcheevos_client_load_game_callback(int result,
    const settings_t *settings   = config_get_ptr();
    const rc_client_game_t *game = rc_client_get_game_info(client);
 
+#ifdef HAVE_THREADS
+   /* Stale-load filter. The userdata is the load_generation
+    * captured at rc_client_begin_identify_and_load_game time;
+    * if it no longer matches, the user has unloaded or started
+    * a new load while this one was in flight, and any further
+    * mutation of rcheevos_locals here would target the new
+    * session's state.
+    *
+    * The check is HAVE_THREADS-gated because only the threaded
+    * code path captures a real generation as userdata; the
+    * single-threaded build passes NULL (which would compare
+    * against the initial generation 0 and either match-or-miss
+    * unpredictably as the counter wraps). */
+   if (!task_is_on_main_thread())
+   {
+      intptr_t captured_gen = (intptr_t)userdata;
+      int      current_gen  = retro_atomic_load_acquire_int(
+            &rcheevos_locals.load_generation);
+      if ((intptr_t)current_gen != captured_gen)
+         return;
+   }
+#endif
+
 #if defined(HAVE_GFX_WIDGETS)
    gfx_widget_set_cheevos_set_loading(false);
 #endif
@@ -1720,7 +1785,22 @@ static void rcheevos_client_load_game_callback(int result,
    /* Have to "schedule" this. Game image should not be
     * loaded into memory on background thread */
    if (!task_is_on_main_thread())
-      rcheevos_locals.queued_command = (enum event_command)CMD_CHEEVOS_FINALIZE_LOAD;
+   {
+      /* Re-check the generation just before publishing.
+       * Between the entry check and here we ran a long
+       * sequence of work (potentially seconds with slow
+       * network or disk); the user may have unloaded or
+       * started a new load in that window. The captured
+       * generation is in userdata. */
+      intptr_t captured_gen = (intptr_t)userdata;
+      int      current_gen  = retro_atomic_load_acquire_int(
+            &rcheevos_locals.load_generation);
+      if ((intptr_t)current_gen != captured_gen)
+         return;
+
+      retro_atomic_store_release_int(&rcheevos_locals.queued_command,
+            CMD_CHEEVOS_FINALIZE_LOAD);
+   }
    else
 #endif
       rcheevos_finalize_game_load_on_ui_thread();
@@ -1739,7 +1819,16 @@ bool rcheevos_load(const void *data)
       && settings->bools.cheevos_enable;
 
 #ifdef HAVE_THREADS
-   rcheevos_locals.queued_command = CMD_EVENT_NONE;
+   /* Bump the load generation. Any background callback from a
+    * prior rc_client_begin_identify_and_load_game whose
+    * userdata-captured generation no longer matches will drop
+    * silently rather than writing FINALIZE_LOAD into
+    * queued_command and causing a stale finalize to be applied
+    * to the new game's state. See the matching comment in
+    * cheevos_locals.h. */
+   retro_atomic_inc_int(&rcheevos_locals.load_generation);
+   retro_atomic_store_release_int(&rcheevos_locals.queued_command,
+         CMD_EVENT_NONE);
 #endif
 
    /* If achievements are not enabled, or the core doesn't
@@ -1750,7 +1839,7 @@ bool rcheevos_load(const void *data)
       return false;
    }
 
-   if (string_is_empty(settings->arrays.cheevos_username))
+   if (!*settings->arrays.cheevos_username)
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login (no username)\n");
       runloop_msg_queue_push(
@@ -1852,8 +1941,26 @@ bool rcheevos_load(const void *data)
       }
 #endif
 
-      rc_client_begin_identify_and_load_game(rcheevos_locals.client, console_id,
-         info->path, (const uint8_t*)info->data, info->size, rcheevos_client_load_game_callback, NULL);
+      {
+#ifdef HAVE_THREADS
+         /* Capture the current load generation; the callback
+          * compares this against the live value to detect a
+          * stale completion (i.e. the user closed/changed
+          * content while the load was in flight). The cast
+          * loses information only if HAVE_THREADS is enabled
+          * and a generation counter overflows intptr_t, which
+          * would require ~2^31 (or ~2^63) load events. */
+         intptr_t gen = (intptr_t)retro_atomic_load_acquire_int(
+               &rcheevos_locals.load_generation);
+         rc_client_begin_identify_and_load_game(rcheevos_locals.client, console_id,
+            info->path, (const uint8_t*)info->data, info->size,
+            rcheevos_client_load_game_callback, (void*)gen);
+#else
+         rc_client_begin_identify_and_load_game(rcheevos_locals.client, console_id,
+            info->path, (const uint8_t*)info->data, info->size,
+            rcheevos_client_load_game_callback, NULL);
+#endif
+      }
    }
 
    return true;

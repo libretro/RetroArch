@@ -15,6 +15,10 @@
 
 #include <compat/strl.h>
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 #include <string.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -53,6 +57,7 @@
 #endif
 #include "../../tasks/tasks_internal.h"
 
+#include "../../msg_hash_lbl_str.h"
 #include "../../playlist.h"
 #include "../../runtime_file.h"
 
@@ -181,7 +186,7 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
                tmp[_len + 1] = '\0';
                _len = strlcpy(tmp + _len + 1, entry->runtime.last_played_str, sizeof(tmp) - _len - 1);
             }
-            if (!string_is_empty(tmp))
+            if (*tmp)
             {
                size_t slen = strlen(s);
                strlcpy(s + slen, tmp, len - slen);
@@ -239,7 +244,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_stop_recording,          
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_crt_switchres,             MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_enable,      MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_paper_white_nits,      MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_max_nits,      MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_menu_nits,      MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_expand_gamut,      MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_scanlines,      MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_subpixel_layout,      MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT)
@@ -262,8 +267,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_sync_thumbs,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_sync_system,        MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_driver,             MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_url,                MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_s3_url,             MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_username,           MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_password,           MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_access_key_id,      MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_secret_access_key,  MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_logging_settings_list,         MENU_ENUM_SUBLABEL_LOGGING_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_interface_settings_list,  MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ai_service_settings_list,  MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS)
@@ -531,6 +539,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_hard_sync_frames,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_threaded,                MENU_ENUM_SUBLABEL_VIDEO_THREADED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings,                      MENU_ENUM_SUBLABEL_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_config_save_on_exit,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_config_save_minimal,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_save_on_exit,            MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_configuration_settings_list,   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_configurations_list_list,      MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST)
@@ -588,6 +597,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_allow_dpad,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_rumble_gain,             MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vertical_sync,           MENU_ENUM_SUBLABEL_VIDEO_VSYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_adaptive_vsync,          MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scanline_sync,           MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_allow_rotate,             MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_on_core_shutdown,        MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_category_enable,   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE)
@@ -1501,17 +1511,15 @@ static int action_bind_sublabel_core_info_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   if (!list || string_is_empty(list->list[i].label))
+   if (!list || (!list->list[i].label || !*list->list[i].label))
       return 0;
-
-   if (strstr(list->list[i].label, "(md5)"))
    {
       int pos = string_find_index_substring_string(list->list[i].label, "(md5)");
-      strlcpy(s, list->list[i].label + pos, len);
+      if (pos >= 0)
+         strlcpy(s, list->list[i].label + pos, len);
+      else
+         strlcpy(s, list->list[i].label, len);
    }
-   else
-      strlcpy(s, list->list[i].label, len);
-
    return 0;
 }
 
@@ -1620,7 +1628,7 @@ static int action_bind_sublabel_subsystem_load(
       if (j != content_get_subsystem_rom_id() - 1)
          _len += strlcpy(buf + _len, "\n", sizeof(buf) - _len);
    }
-   if (!string_is_empty(buf))
+   if (*buf)
       strlcpy(s, buf, len);
    return 0;
 }
@@ -1696,7 +1704,7 @@ static int action_bind_sublabel_input_remap_port(
     * This is difficult to obtain here - the only
     * way to get it is to parse the entry label
     * (input_remap_port_p<port_index+1>) */
-   if (   string_is_empty(entry.label)
+   if (   !*entry.label
        || (sscanf(entry.label,
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
                   &display_port) != 1)
@@ -1740,7 +1748,7 @@ static int action_bind_sublabel_cheat_desc(
       {
          const char *code = cheat_manager_get_code(cheat_index);
          _len += strlcpy(s + _len,
-               !string_is_empty(code)
+               (code && *code)
                   ? code
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                len - _len);
@@ -1772,22 +1780,22 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
       ": %s (%s)\n"
       "%s: %s (%s)\n"
       "%s: %s ",
-      !string_is_empty(room->retroarch_version)
+      (*room->retroarch_version)
       ? room->retroarch_version
       : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-      (!string_is_empty(room->frontend) &&
-         !string_is_equal_case_insensitive(room->frontend, "N/A"))
+      (*room->frontend
+      && !string_is_equal_case_insensitive(room->frontend, "N/A"))
             ? room->frontend
             : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
       room->corename, room->coreversion,
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT),
-      (!string_is_empty(room->gamename) &&
-         !string_is_equal_case_insensitive(room->gamename, "N/A"))
+      (*room->gamename
+       && !string_is_equal_case_insensitive(room->gamename, "N/A"))
             ? room->gamename
             : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
-   if (     string_is_empty(room->subsystem_name)
+   if (     !*room->subsystem_name
          || string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
       _len += snprintf(s + _len, len - _len, "(%08lX)\n",
             (unsigned long)(unsigned)room->gamecrc);
@@ -1947,16 +1955,6 @@ static int action_bind_sublabel_playlist_entry(
    unsigned playlist_sublabel_runtime_type   = settings->uints.playlist_sublabel_runtime_type;
    bool content_runtime_log                  = settings->bools.content_runtime_log;
    bool content_runtime_log_aggregate        = settings->bools.content_runtime_log_aggregate;
-   const char *directory_runtime_log         = settings->paths.directory_runtime_log;
-   const char *directory_playlist            = settings->paths.directory_playlist;
-   enum playlist_sublabel_last_played_style_type
-         playlist_sublabel_last_played_style =
-               (enum playlist_sublabel_last_played_style_type)
-                     settings->uints.playlist_sublabel_last_played_style;
-   enum playlist_sublabel_last_played_date_separator_type
-         menu_timedate_date_separator        =
-               (enum playlist_sublabel_last_played_date_separator_type)
-                     settings->uints.menu_timedate_date_separator;
 
    if (!playlist_show_sublabels)
       return 0;
@@ -1986,9 +1984,9 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Only add sublabel if a core is currently assigned
     * > Both core name and core path must be valid */
-   if (     string_is_empty(entry->core_name)
+   if (     (!entry->core_name || !*entry->core_name)
          || string_is_equal(entry->core_name, "DETECT")
-         || string_is_empty(entry->core_path)
+         || (!entry->core_path || !*entry->core_path)
          || string_is_equal(entry->core_path, "DETECT"))
       return 0;
 
@@ -2009,7 +2007,7 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Note: This looks heavy, but each string_is_equal() call will
     * return almost immediately */
-   if (   !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+   if (   !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
        && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))
        && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
        && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB))
@@ -2019,13 +2017,7 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Check whether runtime info should be loaded from log file */
    if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
-      runtime_update_playlist(
-            playlist, playlist_index,
-            directory_runtime_log,
-            directory_playlist,
-            (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
-            playlist_sublabel_last_played_style,
-            menu_timedate_date_separator);
+      runtime_update_playlist(playlist, playlist_index);
 
    /* Check whether runtime info is valid */
    if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
@@ -2046,7 +2038,7 @@ static int action_bind_sublabel_playlist_entry(
          strlcpy(tmp + n, entry->last_played_str, sizeof(tmp) - n);
       }
 
-      if (!string_is_empty(tmp))
+      if (*tmp)
          strlcpy(s + _len, tmp, len - _len);
    }
 
@@ -2064,7 +2056,7 @@ static int action_bind_sublabel_core_options(
 
    /* If this is an options subcategory, fetch
     * the category info string */
-   if (!string_is_empty(category))
+   if (category && *category)
    {
       core_option_manager_t *coreopts = NULL;
 
@@ -2076,10 +2068,10 @@ static int action_bind_sublabel_core_options(
    /* If this isn't a subcategory (or something
     * went wrong...), use top level core options
     * menu sublabel */
-   if (string_is_empty(info))
+   if (!info || !*info)
       info = msg_hash_to_str(MENU_ENUM_SUBLABEL_CORE_OPTIONS);
 
-   if (!string_is_empty(info))
+   if (info && *info)
    {
       strlcpy(s, info, len);
       return 1;
@@ -2099,7 +2091,7 @@ static int action_bind_sublabel_core_option(
    {
       const char *info = core_option_manager_get_info(opt,
             type - MENU_SETTINGS_CORE_OPTION_START, true);
-      if (!string_is_empty(info))
+      if (info && *info)
          strlcpy(s, info, len);
    }
    return 0;
@@ -2152,25 +2144,14 @@ static int action_bind_sublabel_core_backup_entry(
    const char *crc = list->list[i].alt
       ? list->list[i].alt
       : list->list[i].path;
-   /* Set sublabel prefix */
-   size_t _len     = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);
-
+   size_t _len = 0;
+   strlcpy_append(s, len, &_len,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC));
    /* Add CRC string */
-   if (string_is_empty(crc))
-   {
-      s[  _len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '0';
-      s[++_len] = '\0';
-   }
+   if (!crc || !*crc)
+      strlcpy_append(s, len, &_len, "00000000");
    else
-      strlcpy(s + _len, crc, len - _len);
-
+      strlcpy_append(s, len, &_len, crc);
    return 1;
 }
 
@@ -3370,6 +3351,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SAVESTATE_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_list);
+            break;
+         case MENU_ENUM_LABEL_STATE_SLOT_RUN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_state);
             break;
          case MENU_ENUM_LABEL_CORE_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_options);
@@ -4694,6 +4678,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_adaptive_vsync);
             break;
+         case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scanline_sync);
+            break;
          case MENU_ENUM_LABEL_INPUT_TURBO_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_turbo_enable);
             break;
@@ -4950,6 +4937,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);
             break;
+         case MENU_ENUM_LABEL_CONFIG_SAVE_MINIMAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_minimal);
+            break;
          case MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_save_on_exit);
             break;
@@ -5167,8 +5157,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_paper_white_nits);
             break;
-         case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_max_nits);
+         case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_menu_nits);
             break;
          case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_expand_gamut);
@@ -5249,12 +5239,21 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CLOUD_SYNC_URL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_url);
             break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_s3_url);
+            break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_username);
             break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_password);
             break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID:
+           BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_access_key_id);
+           break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY:
+           BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_secret_access_key);
+           break;
          case MENU_ENUM_LABEL_LOGGING_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_logging_settings_list);
             break;

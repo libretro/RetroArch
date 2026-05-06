@@ -108,6 +108,21 @@ void task_push_steam_core_dlc_install(
    steam_core_dlc_install_state_t* state = (steam_core_dlc_install_state_t*)calloc(1,
          sizeof(steam_core_dlc_install_state_t));
 
+   /* NULL-check both allocations: the state->app_id / state->name
+    * writes below NULL-deref on calloc failure, and task->handler
+    * / task->state writes NULL-deref on task_init failure.  On OOM
+    * free the one that succeeded (free(NULL) is a no-op) and
+    * return silently; the caller is menu Steam-DLC action which
+    * has no task-return channel - the DLC simply won't install,
+    * which is the same observable behaviour as the task running
+    * and failing. */
+   if (!task || !state)
+   {
+      free(task);
+      free(state);
+      return;
+   }
+
    state->app_id         = app_id;
    state->name           = strdup(name);
    state->has_downloaded = false;

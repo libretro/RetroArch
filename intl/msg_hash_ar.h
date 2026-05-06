@@ -409,7 +409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "تحديث التراكبات"
+   "تحديث طبقات اللمس"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
@@ -1164,7 +1164,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
-   "ملف التراكب."
+   "ملف الطبقة اللمس."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
@@ -1228,7 +1228,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "تغيير تراكب العرض و تراكب لوحة المفاتيح و إعدادات الإشعارات على الشاشة."
+   "تغيير طبقة العرض وطبقة لوحة المفاتيح و إعدادات الإشعارات على الشاشة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1491,11 +1491,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   "نظام تشغيل القائمة"
+   "القائمة"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "نوع الواجهة الرئيسية. (يتطلب إعادة التشغيل)"
+   "مشغيل القائمة المراد استخدامه. (إعادة التشغيل مطلوبة)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -3658,6 +3658,10 @@ MSG_HASH(
    "المظهر"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+   "تغيير إعدادات مظهر شاشة القائمة."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
    "رؤية عنصر القائمة"
    )
@@ -4544,14 +4548,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_FILE,
    "فحص الملف بحثًا عن محتوى يطابق قاعدة البيانات."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "فحص يدوي"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "فحص قابل للتكوين يعتمد على أسماء ملفات المحتوى. لا يتطلب تطابق المحتوى مع قاعدة البيانات."
-   )
 
 /* Import Content > Scan File */
 
@@ -4564,32 +4560,8 @@ MSG_HASH(
    "إضافة إلى Mixer واللعب"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "مسار المحتوى"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "حدد مسار لفحصه بحثًا عن المحتوى."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "اسم النظام"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "حدد 'اسم النظام' الذي سيتم الربط به بين المحتوى الممسح. يستخدم للاسم لملف قائمة التشغيل الذي تم إنشاؤه وتحديد الصور المصغرة لقائمة التشغيل."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "اسم النظام المخصص"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "حدد 'اسم النظام' يدويا للمحتوى الذي تم مسحه. يستخدم فقط عندما يتم تعيين 'اسم النظام' إلى '<Custom>'."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "النواة الافتراضية"
@@ -6708,6 +6680,10 @@ MSG_HASH(
    "نقل شريط التنقل تلقائياً إلى الجانب الأيمن من الشاشة عند استخدام توجيهات العرض الأفقي."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   "لون السمة"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
    "تمكين تأثيرات الرسوم المتحركة السلس عند التنقل بين مختلف مستويات القائمة."
    )
@@ -6785,30 +6761,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
    "أصفر"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI,
-   "واجهة UI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK,
-   "واجهة المستخدم داكن"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
-   "ظلام الأوزون"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD,
-   "نورد"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
-   "مظلم غروفبوكس"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
-   "الظلام المشمس"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,

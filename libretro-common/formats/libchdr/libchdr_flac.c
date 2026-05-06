@@ -9,7 +9,7 @@
 ***************************************************************************/
 
 #include <string.h>
-#include <stdbool.h>
+#include <boolean.h>
 
 #include <libchdr/flac.h>
 #ifdef HAVE_DR_FLAC

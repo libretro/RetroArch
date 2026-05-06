@@ -13,6 +13,454 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+
+/* The current coreaudio implementation uses C11 <stdatomic.h> and Grand
+ * Central Dispatch (<dispatch/dispatch.h>), both of which require
+ * Mac OS X 10.6/10.7-era toolchains or newer.  On older SDKs (Xcode 3.1
+ * / 10.4-10.5 / PowerPC) neither header exists, so fall back to the
+ * pre-rewrite implementation that uses RetroArch's portable slock/scond
+ * primitives and a fifo_buffer_t.                                     */
+#include <AvailabilityMacros.h>
+#if !defined(MAC_OS_X_VERSION_10_7) || \
+    (defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+     MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_7)
+#define RARCH_COREAUDIO_LEGACY 1
+#endif
+
+#ifdef RARCH_COREAUDIO_LEGACY
+/* =====================================================================
+ * Legacy implementation (pre-10.7): slock_t + scond_t + fifo_buffer_t.
+ * Restored from 5b9763b3 ("coreaudio: prevent null buffer by forcing
+ * min latency") for use with Xcode 3.1 and similar older toolchains.
+ * ===================================================================== */
+
+#include <stdlib.h>
+
+#if TARGET_OS_IPHONE
+#include <AudioToolbox/AudioToolbox.h>
+#else
+#include <CoreAudio/CoreAudio.h>
+#endif
+
+#include <CoreAudio/CoreAudioTypes.h>
+#include <AudioUnit/AudioUnit.h>
+#include <AudioUnit/AUComponent.h>
+
+#include <boolean.h>
+#include <queues/fifo_queue.h>
+#include <rthreads/rthreads.h>
+#include <retro_endianness.h>
+#include <string/stdstring.h>
+
+#include <defines/cocoa_defines.h>
+
+#include "../audio_driver.h"
+#include "../../verbosity.h"
+
+typedef struct coreaudio
+{
+   slock_t *lock;
+   scond_t *cond;
+#if !HAS_MACOSX_10_12
+   ComponentInstance dev;
+#else
+   AudioComponentInstance dev;
+#endif
+   fifo_buffer_t *buffer;
+   size_t buffer_size;
+   bool dev_alive;
+   bool is_paused;
+   bool nonblock;
+} coreaudio_t;
+
+static void coreaudio_free(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+
+   if (!dev)
+      return;
+
+   if (dev->dev_alive)
+   {
+      AudioOutputUnitStop(dev->dev);
+#if !HAS_MACOSX_10_12
+      CloseComponent(dev->dev);
+#else
+      AudioComponentInstanceDispose(dev->dev);
+#endif
+   }
+
+   if (dev->buffer)
+      fifo_free(dev->buffer);
+
+   slock_free(dev->lock);
+   scond_free(dev->cond);
+
+   free(dev);
+}
+
+static OSStatus coreaudio_audio_write_cb(void *userdata,
+      AudioUnitRenderActionFlags *action_flags,
+      const AudioTimeStamp *time_stamp, UInt32 bus_number,
+      UInt32 number_frames, AudioBufferList *io_data)
+{
+   unsigned write_avail;
+   void     *outbuf = NULL;
+   coreaudio_t *dev = (coreaudio_t*)userdata;
+
+   (void)time_stamp;
+   (void)bus_number;
+   (void)number_frames;
+
+   if (!io_data || io_data->mNumberBuffers != 1)
+      return noErr;
+
+   write_avail = io_data->mBuffers[0].mDataByteSize;
+   outbuf      = io_data->mBuffers[0].mData;
+
+   slock_lock(dev->lock);
+
+   if (FIFO_READ_AVAIL(dev->buffer) < write_avail)
+   {
+      *action_flags = kAudioUnitRenderAction_OutputIsSilence;
+      /* Seems to be needed. */
+      memset(outbuf, 0, write_avail);
+   }
+   else
+      fifo_read(dev->buffer, outbuf, write_avail);
+   slock_unlock(dev->lock);
+   scond_signal(dev->cond);
+   return noErr;
+}
+
+#if !TARGET_OS_IPHONE
+static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
+{
+   int i;
+   UInt32 device_count;
+   AudioObjectPropertyAddress propaddr;
+   AudioDeviceID *devices = NULL;
+   UInt32 size = 0;
+
+   propaddr.mSelector = kAudioHardwarePropertyDevices;
+#if HAS_MACOSX_10_12
+   propaddr.mScope    = kAudioObjectPropertyScopeOutput;
+#else
+   propaddr.mScope    = kAudioObjectPropertyScopeGlobal;
+#endif
+   propaddr.mElement  = kAudioObjectPropertyElementMaster;
+
+   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size) != noErr)
+      return;
+
+   device_count = size / sizeof(AudioDeviceID);
+   devices      = (AudioDeviceID*)malloc(size);
+
+   if (devices && AudioObjectGetPropertyData(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size, devices) == noErr)
+   {
+#if HAS_MACOSX_10_12
+#else
+      propaddr.mScope    = kAudioDevicePropertyScopeOutput;
+#endif
+      propaddr.mSelector = kAudioDevicePropertyDeviceName;
+
+      for (i = 0; i < (int)device_count; i ++)
+      {
+         char device_name[1024];
+         device_name[0] = 0;
+         size           = 1024;
+
+         if (AudioObjectGetPropertyData(devices[i],
+                  &propaddr, 0, 0, &size, device_name) == noErr
+               && string_is_equal(device_name, device))
+         {
+            AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
+                  kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
+            break;
+         }
+      }
+   }
+
+   free(devices);
+}
+#endif
+
+static void *coreaudio_init(const char *device,
+      unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
+{
+   size_t fifo_size;
+   UInt32 i_size;
+   AudioStreamBasicDescription real_desc;
+#if !HAS_MACOSX_10_12
+   Component comp;
+#else
+   AudioComponent comp;
+#endif
+#ifndef TARGET_OS_IPHONE
+   AudioChannelLayout layout               = {0};
+#endif
+   AURenderCallbackStruct cb               = {0};
+   AudioStreamBasicDescription stream_desc = {0};
+#if !HAS_MACOSX_10_12
+   ComponentDescription desc               = {0};
+#else
+   AudioComponentDescription desc          = {0};
+#endif
+   coreaudio_t *dev                        = (coreaudio_t*)
+      calloc(1, sizeof(*dev));
+   if (!dev)
+      return NULL;
+
+   dev->lock = slock_new();
+   dev->cond = scond_new();
+
+   /* Create AudioComponent */
+   desc.componentType         = kAudioUnitType_Output;
+#if TARGET_OS_IPHONE
+   desc.componentSubType      = kAudioUnitSubType_RemoteIO;
+#else
+   desc.componentSubType      = kAudioUnitSubType_HALOutput;
+#endif
+   desc.componentManufacturer = kAudioUnitManufacturer_Apple;
+
+#if !HAS_MACOSX_10_12
+   if (!(comp = FindNextComponent(NULL, &desc)))
+      goto error;
+#else
+   if (!(comp = AudioComponentFindNext(NULL, &desc)))
+      goto error;
+#endif
+
+#if !HAS_MACOSX_10_12
+   if ((OpenAComponent(comp, &dev->dev) != noErr))
+      goto error;
+#else
+   if ((AudioComponentInstanceNew(comp, &dev->dev) != noErr))
+      goto error;
+#endif
+
+#if !TARGET_OS_IPHONE
+   if (device)
+      coreaudio_choose_output_device(dev, device);
+#endif
+
+   dev->dev_alive                = true;
+
+   /* Set audio format */
+   stream_desc.mSampleRate       = rate;
+   stream_desc.mBitsPerChannel   = sizeof(float) * CHAR_BIT;
+   stream_desc.mChannelsPerFrame = 2;
+   stream_desc.mBytesPerPacket   = 2 * sizeof(float);
+   stream_desc.mBytesPerFrame    = 2 * sizeof(float);
+   stream_desc.mFramesPerPacket  = 1;
+   stream_desc.mFormatID         = kAudioFormatLinearPCM;
+   stream_desc.mFormatFlags      = kAudioFormatFlagIsFloat
+                                 | kAudioFormatFlagIsPacked;
+
+   if (!is_little_endian())
+      stream_desc.mFormatFlags  |= kAudioFormatFlagIsBigEndian;
+
+   if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
+         kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr)
+      goto error;
+
+   /* Check returned audio format. */
+   i_size = sizeof(real_desc);
+   if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
+            kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
+      goto error;
+
+   if (real_desc.mChannelsPerFrame != stream_desc.mChannelsPerFrame)
+      goto error;
+   if (real_desc.mBitsPerChannel != stream_desc.mBitsPerChannel)
+      goto error;
+   if (real_desc.mFormatFlags != stream_desc.mFormatFlags)
+      goto error;
+   if (real_desc.mFormatID != stream_desc.mFormatID)
+      goto error;
+
+   RARCH_LOG("[CoreAudio] Using output sample rate of %.1f Hz.\n",
+         (float)real_desc.mSampleRate);
+   *new_rate = real_desc.mSampleRate;
+
+   /* Set channel layout (fails on iOS). */
+#ifndef TARGET_OS_IPHONE
+   layout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
+   if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_AudioChannelLayout,
+         kAudioUnitScope_Input, 0, &layout, sizeof(layout)) != noErr)
+      goto error;
+#endif
+
+   /* Set callbacks and finish up. */
+   cb.inputProc       = coreaudio_audio_write_cb;
+   cb.inputProcRefCon = dev;
+
+   if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_SetRenderCallback,
+         kAudioUnitScope_Input, 0, &cb, sizeof(cb)) != noErr)
+      goto error;
+
+   if (AudioUnitInitialize(dev->dev) != noErr)
+      goto error;
+
+   /* Enforce minimum latency to prevent buffer issues */
+   if (latency < 8)
+      latency        = 8;
+
+   fifo_size         = (latency * (*new_rate)) / 1000;
+   fifo_size        *= 2 * sizeof(float);
+   dev->buffer_size  = fifo_size;
+
+   if (!(dev->buffer = fifo_new(fifo_size)))
+      goto error;
+
+   RARCH_LOG("[CoreAudio] Using buffer size of %u bytes: (latency = %u ms).\n",
+         (unsigned)fifo_size, latency);
+
+   if (AudioOutputUnitStart(dev->dev) != noErr)
+      goto error;
+
+   return dev;
+
+error:
+   RARCH_ERR("[CoreAudio] Failed to initialize driver.\n");
+   coreaudio_free(dev);
+   return NULL;
+}
+
+static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
+{
+   coreaudio_t *dev   = (coreaudio_t*)data;
+   const uint8_t *buf = (const uint8_t*)buf_;
+   size_t _len        = 0;
+
+   while (!dev->is_paused && len > 0)
+   {
+      size_t write_avail;
+
+      slock_lock(dev->lock);
+
+      write_avail = FIFO_WRITE_AVAIL(dev->buffer);
+      if (write_avail > len)
+         write_avail = len;
+
+      fifo_write(dev->buffer, buf, write_avail);
+      buf     += write_avail;
+      _len    += write_avail;
+      len     -= write_avail;
+
+      if (dev->nonblock)
+      {
+         slock_unlock(dev->lock);
+         break;
+      }
+
+#if TARGET_OS_IOS
+      if (write_avail == 0 && !scond_wait_timeout(
+               dev->cond, dev->lock, 300000))
+      {
+         slock_unlock(dev->lock);
+         break;
+      }
+#else
+      if (write_avail == 0)
+         scond_wait(dev->cond, dev->lock);
+#endif
+      slock_unlock(dev->lock);
+   }
+
+   return _len;
+}
+
+static void coreaudio_set_nonblock_state(void *data, bool state)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   if (dev)
+      dev->nonblock = state;
+}
+
+static bool coreaudio_alive(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   if (!dev)
+      return false;
+   return !dev->is_paused;
+}
+
+static bool coreaudio_stop(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   if (dev)
+   {
+      dev->is_paused = (AudioOutputUnitStop(dev->dev) == noErr) ? true : false;
+      if (dev->is_paused)
+         return true;
+   }
+   return false;
+}
+
+static bool coreaudio_start(void *data, bool is_shutdown)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   if (dev)
+   {
+      dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
+      if (!dev->is_paused)
+         return true;
+   }
+   return false;
+}
+
+static bool coreaudio_use_float(void *data) { return true; }
+
+static size_t coreaudio_write_avail(void *data)
+{
+   size_t avail;
+   coreaudio_t *dev = (coreaudio_t*)data;
+
+   slock_lock(dev->lock);
+   avail = FIFO_WRITE_AVAIL(dev->buffer);
+   slock_unlock(dev->lock);
+
+   return avail;
+}
+
+static size_t coreaudio_buffer_size(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   return dev->buffer_size;
+}
+
+/* TODO/FIXME - implement */
+static void *coreaudio_device_list_new(void *data) { return NULL; }
+static void coreaudio_device_list_free(void *data, void *array_list_data) { }
+
+audio_driver_t audio_coreaudio = {
+   coreaudio_init,
+   coreaudio_write,
+   coreaudio_stop,
+   coreaudio_start,
+   coreaudio_alive,
+   coreaudio_set_nonblock_state,
+   coreaudio_free,
+   coreaudio_use_float,
+   "coreaudio",
+   coreaudio_device_list_new,
+   coreaudio_device_list_free,
+   coreaudio_write_avail,
+   coreaudio_buffer_size,
+   NULL /* write_raw — legacy path uses the frontend's software resampler */
+};
+
+#else
+/* =====================================================================
+ * Modern implementation (10.7+): C11 atomics + GCD semaphore +
+ * Accelerate.framework resampler.
+ * ===================================================================== */
+
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <math.h>
@@ -787,3 +1235,5 @@ audio_driver_t audio_coreaudio = {
    coreaudio_buffer_size,
    coreaudio_write_raw
 };
+
+#endif /* RARCH_COREAUDIO_LEGACY */

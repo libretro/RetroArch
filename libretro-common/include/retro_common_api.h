@@ -40,6 +40,8 @@ special technique is called for.
 
 #define RETRO_BEGIN_DECLS
 #define RETRO_END_DECLS
+#define RETRO_BEGIN_DECLS_CXX
+#define RETRO_END_DECLS_CXX
 
 #ifdef __cplusplus
 
@@ -50,6 +52,13 @@ special technique is called for.
 #undef RETRO_END_DECLS
 #define RETRO_BEGIN_DECLS extern "C" {
 #define RETRO_END_DECLS }
+/* Force C++ linkage for a region inside a header that may be included
+ * from within a caller's extern "C" { ... } block -- needed when the
+ * region pulls in a C++ standard library header (e.g. <atomic>). */
+#undef RETRO_BEGIN_DECLS_CXX
+#undef RETRO_END_DECLS_CXX
+#define RETRO_BEGIN_DECLS_CXX extern "C++" {
+#define RETRO_END_DECLS_CXX }
 #endif
 
 #else
@@ -71,7 +80,7 @@ typedef __int64 ssize_t;
 typedef int ssize_t;
 #endif
 #endif
-#elif defined(__MACH__)
+#elif defined(__MACH__) && defined(__APPLE__)
 #include <sys/types.h>
 #endif
 

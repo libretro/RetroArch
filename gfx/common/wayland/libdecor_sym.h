@@ -11,7 +11,7 @@
 #define RA_WAYLAND_INTERFACE(iface)
 #endif
 
-#include <stdbool.h>
+#include <boolean.h>
 
 #ifdef HAVE_LIBDECOR_H
 RA_WAYLAND_MODULE(WAYLAND_LIBDECOR)

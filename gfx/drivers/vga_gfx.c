@@ -47,10 +47,10 @@ typedef struct vga
    unsigned vga_menu_height;
    unsigned vga_menu_pitch;
    unsigned vga_menu_bits;
-   unsigned vga_video_width;
-   unsigned vga_video_height;
-   unsigned vga_video_pitch;
-   unsigned vga_video_bits;
+   unsigned vga_frame_width;
+   unsigned vga_frame_height;
+   unsigned vga_frame_pitch;
+   unsigned vga_frame_bits;
 
    bool color;
    bool vga_rgb32;
@@ -198,19 +198,19 @@ static void *vga_gfx_init(const video_info_t *video,
    *input              = NULL;
    *input_data         = NULL;
 
-   vga->vga_video_width    = video->width;
-   vga->vga_video_height   = video->height;
+   vga->vga_frame_width    = video->width;
+   vga->vga_frame_height   = video->height;
    vga->vga_rgb32          = video->rgb32;
 
    if (video->rgb32)
    {
-      vga->vga_video_pitch = video->width * 4;
-      vga->vga_video_bits  = 32;
+      vga->vga_frame_pitch = video->width * 4;
+      vga->vga_frame_bits  = 32;
    }
    else
    {
-      vga->vga_video_pitch = video->width * 2;
-      vga->vga_video_bits  = 16;
+      vga->vga_frame_pitch = video->width * 2;
+      vga->vga_frame_bits  = 16;
    }
 
    vga->vga_frame          = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
@@ -245,15 +245,15 @@ static bool vga_gfx_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (     (vga->vga_video_width  != frame_width)
-         || (vga->vga_video_height != frame_height)
-         || (vga->vga_video_pitch  != pitch))
+   if (     (vga->vga_frame_width  != frame_width)
+         || (vga->vga_frame_height != frame_height)
+         || (vga->vga_frame_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         vga->vga_video_width = frame_width;
-         vga->vga_video_height = frame_height;
-         vga->vga_video_pitch = pitch;
+         vga->vga_frame_width = frame_width;
+         vga->vga_frame_height = frame_height;
+         vga->vga_frame_pitch = pitch;
       }
    }
 
@@ -269,10 +269,10 @@ static bool vga_gfx_frame(void *data, const void *frame,
    else
 #endif
    {
-      width         = vga->vga_video_width;
-      height        = vga->vga_video_height;
-      pitch         = vga->vga_video_pitch;
-      bits          = vga->vga_video_bits;
+      width         = vga->vga_frame_width;
+      height        = vga->vga_frame_height;
+      pitch         = vga->vga_frame_pitch;
+      bits          = vga->vga_frame_bits;
 
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
@@ -353,9 +353,16 @@ static void vga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool vga_gfx_alive(void *data)
 {
-   vga_t *vga = (vga_t*)data;
-   /* TODO/FIXME - check if this is valid */
-   video_driver_set_size(vga->vga_video_width, vga->vga_video_height);
+   /* Publish the actual VGA framebuffer dimensions as the output
+    * size, not the core's frame size.  video_driver_set_output_size
+    * feeds the value used by menu drivers, the CRT switcher and the
+    * input subsystem to size their output and absolute-coordinate
+    * ranges; passing the core's frame dimensions would lie to all
+    * of them.  The VGA framebuffer is statically VGA_WIDTH x
+    * VGA_HEIGHT (320x200 mode 13h); the core's frame is scaled
+    * into that fixed-size framebuffer per-pixel in vga_gfx_frame. */
+   (void)data;
+   video_driver_set_output_size(VGA_WIDTH, VGA_HEIGHT);
    return true;
 }
 
@@ -405,23 +412,24 @@ static void vga_set_texture_frame(void *data,
       float alpha)
 {
    vga_t     *vga = (vga_t*)data;
-   unsigned pitch = width * 2;
+   unsigned pitch = width * (rgb32 ? 4 : 2);
 
-   if (rgb32)
-      pitch = width * 4;
+   if (!frame || !width || !height || !pitch)
+      return;
 
-   if (vga->vga_menu_frame)
-      free(vga->vga_menu_frame);
-   vga->vga_menu_frame = NULL;
+   /* vga_menu_frame is always VGA_WIDTH*VGA_HEIGHT regardless of the
+    * incoming source frame size — the source is downscaled into this
+    * fixed-size buffer below.  Allocate once on first call and reuse
+    * thereafter; the original free+malloc per call was pure churn on
+    * a buffer whose size never changes. */
+   if (!vga->vga_menu_frame)
+   {
+      unsigned char *tmp = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
+      if (!tmp)
+         return;                        /* keep previous frame intact (NULL) */
+      vga->vga_menu_frame = tmp;
+   }
 
-   if ( !vga->vga_menu_frame ||
-         vga->vga_menu_width  != width  ||
-         vga->vga_menu_height != height ||
-         vga->vga_menu_pitch  != pitch)
-      if (pitch && height)
-         vga->vga_menu_frame = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
-
-   if (vga->vga_menu_frame && frame && pitch && height)
    {
       unsigned x, y;
 
@@ -444,6 +452,9 @@ static void vga_set_texture_frame(void *data,
             }
          }
       }
+      /* FIXME: rgb32 path does not populate vga_menu_frame - leaves
+       * stale/uninitialized content for the renderer.  Separate pre-
+       * existing bug, not fixed here. */
 
       vga->vga_menu_width  = width;
       vga->vga_menu_height = height;
@@ -476,7 +487,7 @@ static const video_poke_interface_t vga_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -518,6 +529,8 @@ video_driver_t video_vga = {
 #endif
    vga_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

@@ -337,11 +337,14 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
    const struct font_glyph* glyph_q = NULL;
    int delta_x       = 0;
    vita_font_t *font = (vita_font_t*)data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                     = font->font_driver->get_glyph;
+   void *font_data   = font->font_data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   glyph_q = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -354,7 +357,7 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -381,15 +384,34 @@ static void vita2d_font_render_line(
    int y           = roundf((1.0f - pos_y) * height);
    int delta_x     = 0;
    int delta_y     = 0;
+   const char* msg_end = msg + msg_len;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                     = font->font_driver->get_glyph;
+   void *font_data   = font->font_data;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that vita2d_font_get_message_width 
+    * would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= vita2d_font_get_message_width(font, msg, msg_len, scale);
-         break;
-      case TEXT_ALIGN_CENTER:
-         x -= vita2d_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = get_glyph(font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
+
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    for (i = 0; i < msg_len; i++)
@@ -405,7 +427,7 @@ static void vita2d_font_render_line(
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -456,20 +478,19 @@ static void vita2d_font_render_message(
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / vita->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = (delim) ? (delim - msg) : strlen(msg);
-
+      size_t msg_len;
+      const char *delim = msg;
+      while (*delim && *delim != '\n')
+         delim++;
+      msg_len = delim - msg;
       /* Draw the line */
       vita2d_font_render_line(vita, font, glyph_q, msg, msg_len,
             scale, color, pos_x, pos_y - (float)lines * line_height,
             width, height, x, text_align);
-
-      if (!delim)
+      if (!*delim)
          break;
-
       msg += msg_len + 1;
       lines++;
    }
@@ -505,11 +526,11 @@ static void vita2d_font_render_msg(
       drop_y                  = params->drop_y;
       drop_mod                = params->drop_mod;
       drop_alpha              = params->drop_alpha;
-      r    				         = FONT_COLOR_GET_RED(params->color);
-      g    				         = FONT_COLOR_GET_GREEN(params->color);
-      b    				         = FONT_COLOR_GET_BLUE(params->color);
-      alpha    		         = FONT_COLOR_GET_ALPHA(params->color);
-      color    		         = RGBA8(r,g,b,alpha);
+      r    		      = FONT_COLOR_GET_RED(params->color);
+      g    		      = FONT_COLOR_GET_GREEN(params->color);
+      b    		      = FONT_COLOR_GET_BLUE(params->color);
+      alpha    		      = FONT_COLOR_GET_ALPHA(params->color);
+      color    		      = RGBA8(r,g,b,alpha);
    }
    else
    {
@@ -528,8 +549,8 @@ static void vita2d_font_render_msg(
       r                       = (video_msg_color_r * 255);
       g                       = (video_msg_color_g * 255);
       b                       = (video_msg_color_b * 255);
-      alpha			            = 255;
-      color 		            = RGBA8(r,g,b,alpha);
+      alpha		      = 255;
+      color 		      = RGBA8(r,g,b,alpha);
 
       drop_x                  = -2;
       drop_y                  = -2;
@@ -561,11 +582,12 @@ static const struct font_glyph *vita2d_font_get_glyph(
 {
    vita_font_t *font = (vita_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 
-static bool vita2d_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
+static bool vita2d_font_get_line_metrics(void* data,
+   struct font_line_metrics **metrics)
 {
    vita_font_t *font = (vita_font_t*)data;
    if (font && font->font_driver && font->font_data)
@@ -608,7 +630,8 @@ static void *vita2d_gfx_init(const video_info_t *video,
    *input_data        = NULL;
 
    vita2d_init_advanced_with_msaa((1 * 1024 * 1024), SCE_GXM_MULTISAMPLE_4X,
-    sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITATV? VITA2D_VIDEO_MODE_1280x720 : VITA2D_VIDEO_MODE_960x544 );
+   (sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITATV)
+   ? VITA2D_VIDEO_MODE_1280x720 : VITA2D_VIDEO_MODE_960x544 );
    vita2d_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
    vita2d_set_vblank_wait(video->vsync);
 
@@ -638,7 +661,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
    vita->video_width  = temp_width;
    vita->video_height = temp_height;
 
-   video_driver_set_size(temp_width, temp_height);
+   video_driver_set_output_size(temp_width, temp_height);
    vita2d_set_viewport_wrapper(vita, temp_width, temp_height, false, true);
 
    if (input && input_data)
@@ -749,12 +772,13 @@ static bool vita2d_frame(void *data, const void *frame,
       vita2d_update_viewport(vita);
 
    video_mode_data = vita2d_get_video_mode_data();
-   temp_width = video_mode_data.width;
-   temp_height = video_mode_data.height;
+   temp_width      = video_mode_data.width;
+   temp_height     = video_mode_data.height;
 
    vita2d_start_drawing();
 
-   vita2d_draw_rectangle(0,0,temp_width,temp_height,vita2d_get_clear_color());
+   vita2d_draw_rectangle(0,0, temp_width, temp_height,
+      vita2d_get_clear_color());
 
    if (vita->texture)
    {
@@ -767,7 +791,7 @@ static bool vita2d_frame(void *data, const void *frame,
       {
          const float radian = 270 * 0.0174532925f;
          const float rad = vita->rotation * radian;
-         float scalex = vita->vp.width / (float)vita->width;
+         float scalex = vita->vp.width  / (float)vita->width;
          float scaley = vita->vp.height / (float)vita->height;
          vita2d_draw_texture_scale_rotate(vita->texture,vita->vp.x,
                vita->vp.y, scalex, scaley, rad);
@@ -824,8 +848,7 @@ static bool vita2d_frame(void *data, const void *frame,
    if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
-
-   if (!string_is_empty(msg))
+   if (msg && *msg)
       font_driver_render_msg(vita, msg, NULL, NULL);
 
    vita2d_end_drawing();
@@ -834,7 +857,8 @@ static bool vita2d_frame(void *data, const void *frame,
    return true;
 }
 
-static void vita2d_set_nonblock_state(void *data, bool toggle, bool c, unsigned d)
+static void vita2d_set_nonblock_state(void *data, bool toggle,
+   bool c, unsigned d)
 {
    vita_video_t *vita = (vita_video_t *)data;
 
@@ -949,9 +973,11 @@ static void vita2d_set_viewport_wrapper(void *data, unsigned vp_width,
 
    vita->vp.full_width  = vp_width;
    vita->vp.full_height = vp_height;
-   video_driver_update_viewport(&vita->vp, force_full, vita->keep_aspect, true);
+   video_driver_update_viewport(&vita->vp, force_full,
+   vita->keep_aspect, true);
 
-   vita2d_set_viewport(vita->vp.x, vita->vp.y, vita->vp.width, vita->vp.height);
+   vita2d_set_viewport(vita->vp.x, vita->vp.y, vita->vp.width,
+   vita->vp.height);
    vita2d_set_projection(vita, &ortho, allow_rotate);
 }
 
@@ -979,7 +1005,8 @@ static void vita2d_viewport_info(void *data,
        *vp = vita->vp;
 }
 
-static void vita2d_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
+static void vita2d_set_filtering(void *data, unsigned index,
+   bool smooth, bool ctx_scaling)
 {
    vita_video_t *vita = (vita_video_t *)data;
 
@@ -1012,16 +1039,24 @@ static void vita2d_apply_state_changes(void *data)
 }
 
 static void vita2d_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+   unsigned width, unsigned height, float alpha)
 {
-   int i, j;
+   unsigned i;
    void *tex_p;
    unsigned int stride;
    vita_video_t *vita = (vita_video_t*)data;
 
-   if (     (width  != vita->menu.width)
-         && (height != vita->menu.height)
-         && vita->menu.texture)
+   /* Recreate when either dimension changes, not both.  The original
+    * condition used && between the width/height comparisons, so a
+    * resize that only changed one dimension (e.g. 480x272 -> 480x544
+    * when the menu toggles portrait mode, or a width-only change on
+    * menu-size setting updates) would skip the destroy-recreate step;
+    * the subsequent per-pixel write below would then index past the
+    * old texture's allocation (new size > old) or leave stale border
+    * pixels (new size < old). */
+   if (     vita->menu.texture
+         && (   width  != (unsigned)vita->menu.width
+             || height != (unsigned)vita->menu.height))
    {
       vita2d_wait_rendering_done();
       vita2d_free_texture(vita->menu.texture);
@@ -1046,27 +1081,31 @@ static void vita2d_set_texture_frame(void *data, const void *frame, bool rgb32,
    tex_p  = vita2d_texture_get_datap(vita->menu.texture);
    stride = vita2d_texture_get_stride(vita->menu.texture);
 
+   /* Copy row-by-row via memcpy rather than pixel-by-pixel.  The
+    * texture stride (destination) can differ from the source pitch
+    * (width * bpp) for alignment reasons, so a single memcpy of the
+    * whole buffer isn't safe when stride != width*bpp, but a per-row
+    * memcpy handles both cases and is materially faster than the
+    * previous nested loop with per-pixel indexing. */
    if (rgb32)
    {
-      uint32_t         *tex32 = tex_p;
-      const uint32_t *frame32 = frame;
+      uint32_t       *tex32   = (uint32_t*)tex_p;
+      const uint32_t *frame32 = (const uint32_t*)frame;
+      size_t          rowlen  = (size_t)width * 4;
 
-      stride                 /= 4;
-
+      stride /= 4;
       for (i = 0; i < height; i++)
-         for (j = 0; j < width; j++)
-            tex32[j + i*stride] = frame32[j + i*width];
+         memcpy(tex32 + i * stride, frame32 + i * width, rowlen);
    }
    else
    {
-      uint16_t               *tex16 = tex_p;
-      const uint16_t       *frame16 = frame;
+      uint16_t       *tex16   = (uint16_t*)tex_p;
+      const uint16_t *frame16 = (const uint16_t*)frame;
+      size_t          rowlen  = (size_t)width * 2;
 
-      stride                       /= 2;
-
+      stride /= 2;
       for (i = 0; i < height; i++)
-         for (j = 0; j < width; j++)
-            tex16[j + i*stride] = frame16[j + i*width];
+         memcpy(tex16 + i * stride, frame16 + i * width, rowlen);
    }
 }
 
@@ -1193,12 +1232,12 @@ static const video_poke_interface_t vita_poke_interface = {
    NULL, /* get_current_shader */
    vita2d_get_current_sw_framebuffer,
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
    NULL  /* set_hdr_subpixel_layout */
- };
+};
 
 static void vita2d_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
@@ -1370,6 +1409,8 @@ video_driver_t video_vita2d = {
 #endif
    vita2d_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    vita2d_widgets_enabled
 #endif

@@ -254,7 +254,16 @@ enum global_flags
 {
    GLOB_FLG_ERR_ON_INIT          = (1 << 0),
    GLOB_FLG_LAUNCHED_FROM_CLI    = (1 << 1),
-   GLOB_FLG_CLI_LOAD_MENU_ON_ERR = (1 << 2)
+   GLOB_FLG_CLI_LOAD_MENU_ON_ERR = (1 << 2),
+   /* Set on entry to retroarch_main_init (right after its setjmp
+    * is established) and cleared on every exit. retroarch_fail
+    * checks this flag before longjmp'ing - the error_sjlj_context
+    * jmp_buf is only valid while retroarch_main_init is on the
+    * stack; calling retroarch_fail from any other context (e.g.
+    * a reinit-time drivers_init invoked via command_event_reinit)
+    * with the flag clear means the longjmp would land in stale
+    * stack memory. */
+   GLOB_FLG_INIT_IN_PROGRESS     = (1 << 3)
 };
 
 typedef struct global

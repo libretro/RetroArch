@@ -133,26 +133,26 @@ ifneq ($(findstring Darwin,$(OS)),)
    ARCHFLAGS=
    MINVERFLAGS=
    ifeq ($(shell uname -p),arm)
-      MINVERFLAGS = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      MINVERFLAGS = -mmacosx-version-min=10.15 # macOS  (Metal, ARM 64bit)
    else ifeq ($(HAVE_METAL),1)
-      MINVERFLAGS = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
+      MINVERFLAGS = -mmacosx-version-min=10.13 # macOS  (Metal, x86 64bit)
    else ifeq ($(shell uname -p),powerpc)
       MINVERFLAGS = -mmacosx-version-min=10.5  # macOSX (PowerPC 32-bit)
    else ifeq ($(shell uname -m),i386)
       MINVERFLAGS = -mmacosx-version-min=10.6  # macOSX (OpenGL, x86 32bit)
    else
-      MINVERFLAGS = -mmacosx-version-min=10.7 -stdlib=libc++ # macOSX (OpenGL, x86 64bit)
+      MINVERFLAGS = -mmacosx-version-min=10.7 # macOSX (OpenGL, x86 64bit)
    endif
 
 	# Build for a specific architecture when ARCH is defined as a switch
    ifeq ($(ARCH),arm64)
-      MINVERFLAGS  = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      MINVERFLAGS  = -mmacosx-version-min=10.15 # macOS  (Metal, ARM 64bit)
       ARCHFLAGS    = -arch arm64
    else ifeq ($(ARCH),x86_64)
       ifeq ($(HAVE_METAL),1)
-         MINVERFLAGS  = -mmacosx-version-min=10.13 -stdlib=libc++
+         MINVERFLAGS  = -mmacosx-version-min=10.13
       else
-         MINVERFLAGS  = -mmacosx-version-min=10.7  -stdlib=libc++
+         MINVERFLAGS  = -mmacosx-version-min=10.7
       endif
       ARCHFLAGS       = -arch x86_64
    else ifeq ($(ARCH),x86)
@@ -341,16 +341,11 @@ OBJ += \
        gfx/video_driver.o \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
+       gfx/gfx_thumbnail.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o
-
-ifeq ($(HAVE_MENU), 1)
-   OBJ += \
-       gfx/gfx_thumbnail_path.o \
-       gfx/gfx_thumbnail.o
-endif
 
 ifeq ($(HAVE_MICROPHONE), 1)
    DEFINES += -DHAVE_MICROPHONE
@@ -369,6 +364,7 @@ OBJ += \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
+       $(LIBRETRO_COMM_DIR)/queues/retro_spsc.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o
 
@@ -434,6 +430,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
        $(LIBRETRO_COMM_DIR)/time/rtime.o \
        manual_content_scan.o \
+       tasks/task_database.o \
        disk_control_interface.o
 
 ifeq ($(HAVE_CONFIGFILE), 1)
@@ -526,34 +523,21 @@ endif
 
 ifeq ($(HAVE_QT), 1)
    OBJ += ui/drivers/ui_qt.o \
-          ui/drivers/qt/gridview.o \
-          ui/drivers/qt/qt_dialogs.o \
-          ui/drivers/qt/qt_widgets.o \
-          ui/drivers/qt/qt_playlist.o \
-          ui/drivers/qt/qt_downloads.o
-    ifeq ($(HAVE_MENU), 1)
-       OBJ += ui/drivers/qt/qt_options.o
-    endif
+          ui/drivers/ui_qt_widgets.o
 
    MOC_HEADERS += ui/drivers/ui_qt.h \
-                  ui/drivers/qt/ui_qt_load_core_window.h \
-                  ui/drivers/qt/gridview.h \
-                  ui/drivers/qt/qt_dialogs.h \
-                  ui/drivers/qt/qt_widgets.h
-   ifeq ($(HAVE_MENU), 1)
-      MOC_HEADERS += ui/drivers/qt/qt_options.h
-   endif
+                  ui/drivers/ui_qt_widgets.h
 
    DEFINES += -DHAVE_MAIN
 ifeq ($(HAVE_QT6), 1)
-   CXXFLAGS += -DQT_DISABLE_DEPRECATED_BEFORE=0x060000 $(QT6CORE_CFLAGS) $(QT6GUI_CFLAGS) $(QT6WIDGETS_CFLAGS) $(QT6CONCURRENT_CFLAGS) $(QT6NETWORK_CFLAGS)
+   CXXFLAGS += -DQT_DISABLE_DEPRECATED_BEFORE=0x060000 $(QT6CORE_CFLAGS) $(QT6GUI_CFLAGS) $(QT6WIDGETS_CFLAGS)
    #DEF_FLAGS += $(QT6WEBENGINE_CFLAGS)
-   LIBS += $(QT6CORE_LIBS) $(QT6GUI_LIBS) $(QT6WIDGETS_LIBS) $(QT6CONCURRENT_LIBS) $(QT6NETWORK_LIBS)
+   LIBS += $(QT6CORE_LIBS) $(QT6GUI_LIBS) $(QT6WIDGETS_LIBS)
    #LIBS += $(QT6WEBENGINE_LIBS)
 else
-   DEF_FLAGS += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) $(QT5NETWORK_CFLAGS)
+   DEF_FLAGS += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS)
    #DEF_FLAGS += $(QT5WEBENGINE_CFLAGS)
-   LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS) $(QT5CONCURRENT_LIBS) $(QT5NETWORK_LIBS)
+   LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS)
    #LIBS += $(QT5WEBENGINE_LIBS)
 endif
 
@@ -583,7 +567,6 @@ ifeq ($(HAVE_LIBRETRODB), 1)
           libretro-db/rmsgpack.o \
           libretro-db/rmsgpack_dom.o \
           database_info.o \
-          tasks/task_database.o \
           tasks/task_database_cue.o
 
    ifeq ($(HAVE_MENU), 1)
@@ -830,18 +813,33 @@ endif
 ifeq ($(HAVE_COREAUDIO), 1)
    DEFINES += -DHAVE_COREAUDIO
    OBJ += audio/drivers/coreaudio.o
+ifeq ($(HAVE_MICROPHONE), 1)
+   OBJ += audio/drivers/coreaudio_mic_macos.o
+   # AVFoundation is 10.7+ and only needed by the microphone driver.
+   # The base coreaudio.c path doesn't use it, so keep it out of the
+   # link line on targets without microphone support (e.g. pre-10.7
+   # / Tiger / Leopard / PowerPC).
+   LIBS += -framework AVFoundation
+endif
    HAVE_COREAUDIO_LIBS = 1
+   LIBS += -framework AudioToolbox -framework Accelerate
 endif
 
 ifeq ($(HAVE_COREAUDIO3), 1)
    DEFINES += -DHAVE_COREAUDIO3
    OBJ += audio/drivers/coreaudio3.o
    HAVE_COREAUDIO_LIBS = 1
-   LIBS += -framework AudioToolBox -framework AVFoundation
+   LIBS += -framework AudioToolbox -framework AVFoundation
 endif
 
 ifeq ($(HAVE_COREAUDIO_LIBS), 1)
    LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
+endif
+
+ifeq ($(HAVE_CORELOCATION), 1)
+   DEFINES += -DHAVE_CORELOCATION
+   OBJ     += location/drivers/corelocation.o
+   LIBS    += -framework CoreLocation
 endif
 
 ifeq ($(HAVE_CORETEXT), 1)
@@ -949,7 +947,6 @@ endif
 ifeq ($(HAVE_DSOUND), 1)
    OBJ += audio/drivers/dsound.o
    DEFINES += -DHAVE_DSOUND
-   HAVE_DX_COMMON  = 1
    LIBS += -ldsound
 endif
 
@@ -958,6 +955,12 @@ ifeq ($(HAVE_WASAPI), 1)
    OBJ += audio/drivers/wasapi.o
    DEFINES += -DHAVE_WASAPI
    LIBS += -lole32 -lksuser
+endif
+
+ifeq ($(HAVE_ASIO), 1)
+   OBJ += audio/drivers/asio.o
+   DEFINES += -DHAVE_ASIO
+   LIBS += -lole32
 endif
 
 ifeq ($(HAVE_XAUDIO), 1)
@@ -1238,8 +1241,8 @@ endif
 
 ifeq ($(TARGET), retroarch_orbis)
    OBJ +=  input/drivers/ps4_input.o \
-			  input/drivers_joypad/ps4_joypad.o \
-			  audio/drivers/psp_audio.o
+	   input/drivers_joypad/ps4_joypad.o \
+	   audio/drivers/psp_audio.o
 endif
 
 ifeq ($(TARGET), retroarch_vita)
@@ -1294,6 +1297,7 @@ endif
 
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
+        gfx/display_servers/dispserv_wl.o \
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland_common.o \
@@ -1347,7 +1351,6 @@ OBJ += \
 #Input
 
 ifeq ($(HAVE_DINPUT), 1)
-   HAVE_DX_COMMON  = 1
    LIBS += -ldinput8 -lole32
    DEFINES += -DHAVE_DINPUT
    OBJ += input/drivers/dinput.o
@@ -1365,6 +1368,10 @@ endif
 
 ifeq ($(HAVE_OPENDINGUX_FBDEV), 1)
    OBJ += gfx/drivers_context/opendingux_fbdev_ctx.o
+endif
+
+ifneq ($(findstring Darwin,$(OS)),)
+   OBJ += gfx/display_servers/dispserv_apple.o
 endif
 
 ifeq ($(HAVE_X11), 1)
@@ -1460,6 +1467,7 @@ ifneq ($(findstring Win32,$(OS)),)
 ifeq ($(HAVE_WINRAWINPUT), 1)
    DEFINES += -DHAVE_WINRAWINPUT
    OBJ     += input/drivers/winraw_input.o
+   OBJ     += input/drivers_joypad/winraw_joypad.o
 endif
 endif
 
@@ -1601,8 +1609,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 
    ifeq ($(HAVE_FFMPEG), 1)
       ifneq ($(HAVE_OPENGLES), 1)
-         OBJ += cores/libretro-ffmpeg/ffmpeg_fft.o
-         DEFINES += -DHAVE_GL_FFT
          INCLUDE_DIRS += -I$(DEPS_DIR)
       endif
    endif
@@ -1643,12 +1649,19 @@ endif
 
 ifeq ($(HAVE_METAL), 1)
    DEFINES += -DHAVE_METAL
-   LIBS += -framework Metal -framework MetalKit
-   # Metal code relies on ARC (Automatic Reference Counting), enable it
-   DEF_FLAGS += -fobjc-arc
-   OBJ += \
-	  gfx/common/metal/metal_renderer.o \
-	  gfx/drivers/metal.o
+   LIBS += -framework Metal -framework MetalKit -framework QuartzCore
+   # Metal code (metal.m) relies on ARC. Enabled per-file via an override
+   # in the top-level Makefile, since applying -fobjc-arc globally would
+   # break the MRC-written Cocoa code (ui_cocoa.m et al.).
+   OBJ += gfx/drivers/metal.o
+endif
+
+ifeq ($(HAVE_MFI), 1)
+   DEFINES += -DHAVE_MFI
+   LIBS    += -framework GameController -framework CoreHaptics
+   # mfi_joypad.m uses __weak references, which require ARC. Enabled
+   # per-file in the top-level Makefile (see comment above).
+   OBJ     += input/drivers_joypad/mfi_joypad.o
 endif
 
 ifeq ($(HAVE_EGL), 1)
@@ -1739,6 +1752,18 @@ ifeq ($(HAVE_VULKAN), 1)
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_VULKAN
    INCLUDE_DIRS += -Igfx/include
+
+   # On macOS, the Vulkan loader at gfx/common/vulkan_common.c dlopens
+   # "MoltenVK" by bare name. Embed rpath entries pointing at the Frameworks
+   # dir inside an .app bundle, so that `make bundle` (which copies
+   # pkg/apple/Frameworks/MoltenVK.xcframework/macos-arm64_x86_64/MoltenVK.framework
+   # into Contents/Frameworks) produces a self-contained bundle with no
+   # external MoltenVK dependency. Matches what Xcode's
+   # LD_RUNPATH_SEARCH_PATHS does for the .xcodeproj build.
+   ifneq ($(findstring Darwin,$(OS)),)
+      LDFLAGS += -Xlinker -rpath -Xlinker @executable_path/../Frameworks \
+                 -Xlinker -rpath -Xlinker @executable_path/../Frameworks/MoltenVK.framework
+   endif
 endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
@@ -1793,17 +1818,9 @@ endif
 ifeq ($(HAVE_D3D9), 1)
    HAVE_D3D_COMMON = 1
    DEFINES += -DHAVE_D3D9
-   ifeq ($(HAVE_D3DX9), 1)
-      HAVE_D3DX_COMMON = 1
-   endif
    ifneq ($(HAVE_DYLIB), 1)
       LIBS += $(D3D9_LIBS)
-      ifeq ($(HAVE_D3DX9), 1)
-         LIBS += $(D3DX9_LIBS)
-      endif
    endif
-   HAVE_DX_COMMON  = 1
-   OBJ  += gfx/drivers_font/d3d9x_w32_font.o
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
       OBJ  += gfx/drivers/d3d9cg.o
@@ -1826,6 +1843,7 @@ ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
+   DEFINES += -DHAVE_D3DKMT
 endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
@@ -1837,25 +1855,10 @@ endif
 
 ifeq ($(HAVE_D3D8), 1)
    HAVE_D3D_COMMON = 1
-   HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
-   ifeq ($(HAVE_D3DX8), 1)
-      HAVE_D3DX_COMMON = 1
-   endif
    ifneq ($(HAVE_DYLIB), 1)
       LIBS += $(D3D8_LIBS)
-      ifeq ($(HAVE_D3DX8), 1)
-         LIBS += $(D3DX8_LIBS)
-      endif
    endif
-endif
-
-ifeq ($(HAVE_D3DX_COMMON), 1)
-   DEFINES += -DHAVE_D3DX
-endif
-
-ifeq ($(HAVE_DX_COMMON), 1)
-   LIBS += -ldxguid
 endif
 
 ifeq ($(HAVE_D3D8), 1)
@@ -1893,8 +1896,7 @@ ifeq ($(HAVE_SLANG),1)
    DEFINES += -DHAVE_SLANG
    OBJ += gfx/drivers_shader/slang_process.o
    OBJ += gfx/drivers_shader/glslang_util.o
-   OBJ += gfx/drivers_shader/glslang_util_cxx.o
-   OBJ += gfx/drivers_shader/slang_reflection.o
+   OBJ += gfx/drivers_shader/slang_cache.o
 endif
 
 ifeq ($(HAVE_SHADERS_COMMON), 1)
@@ -2029,7 +2031,8 @@ ifeq ($(HAVE_ZSTD),1)
            $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress.o \
            $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress_block.o
 
-   OBJ +=  $(ZSOBJ)
+   OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_zstd.o \
+           $(ZSOBJ)
 endif
 
 ifeq ($(HAVE_IBXM), 1)
@@ -2247,6 +2250,11 @@ ifeq ($(HAVE_RBMP), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.o
 endif
 
+ifeq ($(HAVE_RWEBP), 1)
+   DEFINES += -DHAVE_RWEBP
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.o
+endif
+
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/rjson.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
@@ -2262,6 +2270,23 @@ ifeq ($(HAVE_V4L2),1)
    endif
    DEFINES += -DHAVE_V4L2
    LIBS += $(V4L2_LIBS)
+endif
+
+# AVFoundation camera + recording (Apple, macOS 10.7+ / iOS).  The
+# 10.7 gate is enforced in qb/config.libs.sh (see the HAVE_AVF block
+# there); this section just wires the object files and frameworks in
+# when HAVE_AVF is on.  Note that HAVE_MICROPHONE and HAVE_COREAUDIO3
+# above also add -framework AVFoundation for their own reasons; make
+# tolerates the repeat and the linker de-duplicates.
+ifeq ($(HAVE_AVF), 1)
+   DEFINES += -DHAVE_AVF
+   OBJ     += camera/drivers/avfoundation.o \
+              record/drivers/record_avfoundation.o
+   LIBS    += -framework AVFoundation -framework CoreVideo \
+              -framework CoreMedia   -framework Accelerate
+   ifeq ($(HAVE_COCOATOUCH), 1)
+      LIBS += -framework UIKit
+   endif
 endif
 
 # FFmpeg
@@ -2349,16 +2374,13 @@ ifeq ($(HAVE_NETWORKING), 1)
           network/natt.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
+	  tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
 
    ifeq ($(HAVE_EMSCRIPTEN), 1)
      OBJ += tasks/task_http_emscripten.o
    else
      OBJ += tasks/task_http.o
-   endif
-
-   ifeq ($(HAVE_MENU), 1)
-      OBJ += tasks/task_pl_thumbnail_download.o
    endif
 
    ifeq ($(HAVE_MENU_COMMON), 1)
@@ -2509,34 +2531,10 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifeq ($(HAVE_DISCORD), 1)
-      NEED_CXX_LINKER = 1
       HAVE_PRESENCE = 1
       DEFINES += -DHAVE_DISCORD
-      INCLUDE_DIRS += -Ideps/discord-rpc/include
-
-      ifneq ($(HAVE_THREADS), 1)
-         DEFINES += -DDISCORD_DISABLE_IO_THREAD
-      endif
-
-      OBJ     += deps/discord-rpc/src/discord_rpc.o \
-                 deps/discord-rpc/src/rpc_connection.o \
-                 deps/discord-rpc/src/serialization.o
 
       OBJ     += network/discord.o
-
-      ifneq ($(findstring Win32,$(OS)),)
-         OBJ  += deps/discord-rpc/src/discord_register_win.o \
-                 deps/discord-rpc/src/connection_win.o
-         LIBS += -lpsapi -ladvapi32
-      endif
-      ifneq ($(findstring Linux,$(OS)),)
-         OBJ  += deps/discord-rpc/src/discord_register_linux.o \
-                 deps/discord-rpc/src/connection_unix.o
-      endif
-      ifneq ($(findstring Darwin,$(OS)),)
-         OBJ  += deps/discord-rpc/src/discord_register_osx.o \
-                 deps/discord-rpc/src/connection_unix.o
-      endif
    endif
 
    ifeq ($(HAVE_TRANSLATE), 1)
@@ -2556,7 +2554,18 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
           gfx/common/win32_common.o \
           frontend/drivers/platform_win32.o \
-          gfx/display_servers/dispserv_win32.o
+          gfx/display_servers/dispserv_win32.o \
+          gfx/common/dx_guids.o
+
+   # Legacy pre-DXGI GUID storage in their own TUs to avoid clashes
+   # between system <d3d8types.h> / <d3d9types.h> and the bundled
+   # <dxsdk/dxgitype.h>. See dx_guids.c header comment.
+   ifeq ($(HAVE_D3D9), 1)
+      OBJ += gfx/common/dx_guids_d3d9.o
+   endif
+   ifeq ($(HAVE_D3D8), 1)
+      OBJ += gfx/common/dx_guids_d3d8.o
+   endif
 
    ifeq ($(HAVE_GDI), 1)
       OBJ += gfx/drivers/gdi_gfx.o
@@ -2575,8 +2584,6 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
           cores/libretro-ffmpeg/ffmpeg_core.o \
-          cores/libretro-ffmpeg/packet_buffer.o \
-          cores/libretro-ffmpeg/video_buffer.o \
           $(LIBRETRO_COMM_DIR)/rthreads/tpool.o
 
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS) $(AVDEVICE_LIBS)
@@ -2629,13 +2636,24 @@ ifeq ($(HAVE_COCOA), 1)
 endif
 ifeq ($(HAVE_COCOA_METAL), 1)
    HAVE_COCOA_COMMON = 1
+   DEFINES += -DHAVE_COCOA_METAL
 endif
 
 ifeq ($(HAVE_COCOA_COMMON),1)
-   DEFINES += -DHAVE_MAIN -DOSX
+   DEFINES += -DHAVE_MAIN -DOSX -DHAVE_COCOA
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
           ui/drivers/cocoa/cocoa_common.o
+   # RetroArchPlaylistManager uses Obj-C lightweight generics and
+   # nullability macros (Xcode 7+, 2015).  It's fine on iOS/tvOS and
+   # modern macOS (10.11+), but GCC 4.0 / old clang on pre-10.11
+   # macOS SDKs can't parse the syntax.  HAVE_RETROARCH_PLAYLIST_MANAGER
+   # is set by qb/config.libs.sh based on the macOS target version
+   # (or HAVE_COCOATOUCH on iOS/tvOS).
+   ifeq ($(HAVE_RETROARCH_PLAYLIST_MANAGER), 1)
+      OBJ += ui/drivers/cocoa/RetroArchPlaylistManager.o
+   endif
+   LIBS += -framework Cocoa -framework AppKit -framework Foundation
 
    ifeq ($(HAVE_OPENGL), 1)
            DEFINES += -DGL_SILENCE_DEPRECATION
@@ -2680,7 +2698,12 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/upscale_256x_320x240.o \
           gfx/video_filters/picoscale_256x_320x240.o \
           gfx/video_filters/upscale_240x160_320x240.o \
-          gfx/video_filters/upscale_mix_240x160_320x240.o
+          gfx/video_filters/upscale_mix_240x160_320x240.o \
+          gfx/video_filters/dedither.o \
+          gfx/video_filters/pixel_art_aa.o \
+          gfx/video_filters/crop_borders.o \
+          gfx/video_filters/ntsc.o \
+          gfx/video_filters/ntsc_crt.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)

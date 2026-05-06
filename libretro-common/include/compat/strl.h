@@ -43,7 +43,7 @@
 
 RETRO_BEGIN_DECLS
 
-#ifdef __MACH__
+#if defined(__MACH__) && defined(__APPLE__)
 #ifndef HAVE_STRL
 #define HAVE_STRL
 #endif

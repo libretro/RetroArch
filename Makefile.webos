@@ -66,7 +66,7 @@ HAVE_FREETYPE = 1
 HAVE_GDI = 0
 HAVE_GETADDRINFO = 1
 HAVE_GETOPT_LONG = 1
-HAVE_GLSL = 1
+HAVE_GLSL ?= 1
 HAVE_GLSLANG = 0
 HAVE_GLSLANG_HLSL = 0
 HAVE_GLSLANG_OGLCOMPILER = 0
@@ -187,7 +187,10 @@ ifeq ($(HAVE_OPENGLES3_2),1)
 endif
 ifeq ($(HAVE_WAYLAND),1)
   DEFINES += -DHAVE_WAYLAND=1
-  WAYLAND_LIBS = -lwayland-client -lwayland-cursor -lwayland-egl
+  WAYLAND_LIBS = -lwayland-client -lwayland-cursor
+  ifeq ($(HAVE_EGL),1)
+    WAYLAND_LIBS += -lwayland-egl
+  endif
 endif
 ifeq ($(HAVE_WEBOS_EXTRA_PROTOS),1)
   DEFINES += -DHAVE_WEBOS_EXTRA_PROTOS=1

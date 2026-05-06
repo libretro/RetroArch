@@ -20,6 +20,10 @@
 #include "Ppmd7.h"
 #endif
 
+#ifdef HAVE_ZSTD
+#include <zstd.h>
+#endif
+
 #define k_Copy 0
 #define k_Delta 3
 #define k_LZMA2 0x21
@@ -31,6 +35,10 @@
 #define k_ARM   0x3030501
 #define k_ARMT  0x3030701
 #define k_SPARC 0x3030805
+
+#ifdef HAVE_ZSTD
+#define k_ZSTD 0x4F71101
+#endif
 
 
 #ifdef _7ZIP_PPMD_SUPPPORT
@@ -281,6 +289,9 @@ static BoolInt IS_MAIN_METHOD(uint32_t m)
     #ifdef _7ZIP_PPMD_SUPPPORT
     case k_PPMD:
     #endif
+    #ifdef HAVE_ZSTD
+    case k_ZSTD:
+    #endif
       return True;
   }
   return False;
@@ -444,6 +455,20 @@ static SRes SzFolder_Decode2(const CSzFolder *folder,
       else if (coder->MethodID == k_PPMD)
       {
         RINOK(SzDecodePpmd(propsData + coder->PropsOffset, coder->PropsSize, inSize, inStream, outBufCur, outSizeCur, allocMain));
+      }
+      #endif
+      #ifdef HAVE_ZSTD
+      else if (coder->MethodID == k_ZSTD)
+      {
+        Byte *inBuf = (Byte *)ISzAlloc_Alloc(allocMain, (size_t)inSize);
+        size_t ret;
+        if (!inBuf)
+          return SZ_ERROR_MEM;
+        RINOK(SzDecodeCopy(inSize, inStream, inBuf));
+        ret = ZSTD_decompress(outBufCur, outSizeCur, inBuf, (size_t)inSize);
+        ISzAlloc_Free(allocMain, inBuf);
+        if (ZSTD_isError(ret) || ret != outSizeCur)
+          return SZ_ERROR_DATA;
       }
       #endif
       else

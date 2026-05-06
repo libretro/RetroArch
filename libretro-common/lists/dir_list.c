@@ -21,6 +21,8 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
 #if defined(_WIN32) && defined(_XBOX)
 #include <xtl.h>
@@ -35,31 +37,71 @@
 #include <compat/strl.h>
 #include <retro_dirent.h>
 
-#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
 static int qstrcmp_plain(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_;
    const struct string_list_elem *b = (const struct string_list_elem*)b_;
+   const char *s1 = a->data;
+   const char *s2 = b->data;
 
-   return strcasecmp(a->data, b->data);
+   for (;;)
+   {
+      int c1 = tolower((unsigned char)*s1);
+      int c2 = tolower((unsigned char)*s2);
+      if (c1 != c2)
+         return c1 - c2;
+      if (c1 == '\0')
+         return 0;
+      s1++;
+      s2++;
+   }
+}
+
+/**
+ * find_ext_dot:
+ * @path : file path
+ *
+ * Finds the '.' that begins the file extension, considering only
+ * dots after the last directory separator. This avoids treating
+ * dots in directory names (e.g. ".config") as extension separators.
+ *
+ * @return pointer to the extension '.', or to the trailing '\0'
+ * if no extension is found.
+ **/
+static const char *find_ext_dot(const char *path)
+{
+   const char *last_slash = strrchr(path, '/');
+#ifdef _WIN32
+   {
+      const char *last_bslash = strrchr(path, '\\');
+      if (last_bslash && (!last_slash || last_bslash > last_slash))
+         last_slash = last_bslash;
+   }
+#endif
+   {
+      const char *start = last_slash ? last_slash + 1 : path;
+      const char *dot   = strrchr(start, '.');
+      return dot ? dot : path + strlen(path);
+   }
 }
 
 static int qstrcmp_plain_noext(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_;
    const struct string_list_elem *b = (const struct string_list_elem*)b_;
-
-   const char *ext_a = path_get_extension(a->data);
-   size_t l_a = string_is_empty(ext_a) ? strlen(a->data) : (size_t)(ext_a - a->data - 1);
-   const char *ext_b = path_get_extension(b->data);
-   size_t l_b = string_is_empty(ext_b) ? strlen(b->data) : (size_t)(ext_b - b->data - 1);
-
-   int rv = strncasecmp(a->data, b->data, MIN(l_a, l_b));
-   if (rv == 0 && l_a != l_b)
-       return (int)(l_a - l_b);
-   return rv;
+   const char *ea = find_ext_dot(a->data);
+   const char *eb = find_ext_dot(b->data);
+   size_t la      = (size_t)(ea - a->data);
+   size_t lb      = (size_t)(eb - b->data);
+   size_t len     = la < lb ? la : lb;
+   int rv         = strncasecmp(a->data, b->data, len);
+   if (rv != 0)
+      return rv;
+   if (la != lb)
+      return (la < lb) ? -1 : 1;
+   return 0;
 }
 
 static int qstrcmp_dir(const void *a_, const void *b_)
@@ -167,7 +209,7 @@ static int dir_list_read(const char *dir,
    {
       union string_list_elem_attr attr;
       char file_path[PATH_MAX_LENGTH];
-      const char *name                = retro_dirent_get_name(entry);
+      const char *name = retro_dirent_get_name(entry);
 
       if (name[0] == '.' || name[0] == '$')
       {
@@ -194,15 +236,19 @@ static int dir_list_read(const char *dir,
             continue;
 
 #if defined(IOS) || defined(OSX)
-         if (string_ends_with(name, ".framework"))
          {
-            attr.i = RARCH_PLAIN_FILE;
-            if (!string_list_append(list, file_path, attr))
+            size_t name_len = strlen(name);
+            if (name_len >= 10
+                  && !memcmp(name + name_len - 10, ".framework", 10))
             {
-               retro_closedir(entry);
-               return -1;
+               attr.i = RARCH_PLAIN_FILE;
+               if (!string_list_append(list, file_path, attr))
+               {
+                  retro_closedir(entry);
+                  return -1;
+               }
+               continue;
             }
-            continue;
          }
 #endif
          if (recursive)

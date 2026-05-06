@@ -209,7 +209,13 @@ struct retro_task
     * Human-readable details about an error that occurred while running the task.
     * Should be created and assigned within \c handler if there was an error.
     * Will be cleaned up by the task queue with \c free() upon this task's completion.
+    *
+    * If \c handler may set this more than once on the same task,
+    * call \c task_free_error before the subsequent \c task_set_error
+    * to avoid leaking the previous string.
+    *
     * @see task_set_error
+    * @see task_free_error
     */
    char *error;
 
@@ -230,8 +236,14 @@ struct retro_task
     * May be \c NULL,
     * but if not then it will be disposed of by the task system with \c free()
     * upon this task's completion.
-    * Can be modified or replaced at any time.
+    *
+    * Can be modified or replaced at any time, but \c task_set_title
+    * does \em not free the previous value: callers must call
+    * \c task_free_title first to avoid leaking the prior title.
+    *
     * @see strdup
+    * @see task_set_title
+    * @see task_free_title
     */
    char *title;
 
@@ -413,12 +425,27 @@ void task_set_flags(retro_task_t *task, uint8_t flags, bool set);
  * Sets \c task::error to the given value.
  * Thread-safe if the task queue is threaded.
  *
+ * Ownership of \c error transfers to the task; the task system
+ * will \c free() it when the task completes (or via
+ * \c task_free_error).  \c error must therefore point to memory
+ * obtained via \c malloc / \c strdup / similar -- string
+ * literals or stack buffers will cause an invalid free later.
+ *
+ * @warning This does \em not free the previous error message.
+ * When replacing an already-set error, callers \em must call
+ * \c task_free_error first to avoid a leak:
+ * @code
+ *    task_free_error(task);
+ *    task_set_error(task, strdup("New error"));
+ * @endcode
+ * Alternatively, guard with \c task_get_error so the second
+ * \c task_set_error is skipped when an error is already set.
+ *
  * @param task The task to modify.
  * Behavior is undefined if \c NULL.
  * @param error The error message to set.
  * @see retro_task::error
- * @warning This does not free the existing error message.
- * The caller must do that itself.
+ * @see task_free_error
  */
 void task_set_error(retro_task_t *task, char *error);
 
@@ -437,13 +464,25 @@ void task_set_progress(retro_task_t *task, int8_t progress);
  * Sets \c task::title to the given value.
  * Thread-safe if the task queue is threaded.
  *
+ * Ownership of \c title transfers to the task; the task system
+ * will \c free() it when the task completes (or via
+ * \c task_free_title).  \c title must therefore point to memory
+ * obtained via \c malloc / \c strdup / similar -- string
+ * literals or stack buffers will cause an invalid free later.
+ *
+ * @warning This does \em not free the previous title.  When
+ * replacing an already-set title, callers \em must call
+ * \c task_free_title first to avoid a leak:
+ * @code
+ *    task_free_title(task);
+ *    task_set_title(task, strdup("New title"));
+ * @endcode
+ *
  * @param task The task to modify.
  * Behavior is undefined if \c NULL.
  * @param title The title to set.
  * @see retro_task::title
  * @see task_free_title
- * @warning This does not free the existing title.
- * The caller must do that itself.
  */
 void task_set_title(retro_task_t *task, char *title);
 
@@ -466,6 +505,15 @@ void task_set_data(retro_task_t *task, void *data);
  * @see task_set_title
  */
 void task_free_title(retro_task_t *task);
+
+/**
+ * Frees the \c task's error message, if any.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to modify.
+ * @see task_set_error
+ */
+void task_free_error(retro_task_t *task);
 
 /**
  * Returns \c task::error.

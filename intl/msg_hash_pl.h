@@ -2391,28 +2391,8 @@ MSG_HASH(
    "Wyłączony"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Szczytowa luminancja"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Ustaw szczytową luminancję (w cd/m2) którą twój wyświetlacz może odworzyć. Po ustawieniu nie zmieniaj jej. Użyj białej luminancji papierowej, aby ustawić jasność. Zobacz RTings.com dla szczytowej luminancji wyświetlacza. Na niektórych wyświetlaczach z włączonymi skanliniami (poniżej) może być konieczne podkręcenie tego (i białego papieru), aby zwiększyć ogólną jasność."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Lampa biała papierowa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Po ustawieniu szczytowej luminancji należy użyć tego jako standardowego ustawienia jasności. Technicznie ustawia to luminancję, przy której biały papier powinien być tj. czytelny tekst lub luminancja w górnej części zakresu SDR (standard dynamic range)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Wzmocnienie kolorów"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Używa pełnego zakresu kolorów twojego wyświetlacza do stworzenia jaśniejszego, bardziej nasyconego obrazu. Dla kolorów bardziej wiernych do oryginalnego projektu gry, ustaw to na DOKŁADNY."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
@@ -2690,6 +2670,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "Pośrednia długość bufora (w klatkach), gdy używany jest sterownik WASAPI w trybie współdzielonym."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Otwórz panel sterowania ASIO"
    )
 
 /* Settings > Audio > Output */
@@ -7244,10 +7228,6 @@ MSG_HASH(
    "Odśwież listę odtwarzania"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Dodaj nową zawartość i usuń nieprawidłowe wpisy, powtarzając operację 'Skanowanie ręczne' używaną ostatnio do tworzenia lub edycji playlisty."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Usuń playlistę"
    )
@@ -7753,14 +7733,6 @@ MSG_HASH(
    "Skanuje zgodny plik."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Ręczne skanowanie"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Konfigurowalne skanowanie na podstawie nazw plików zawartości. Nie wymaga zawartości do dopasowania bazy danych."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Skanuj"
    )
@@ -7776,32 +7748,8 @@ MSG_HASH(
    "Dodaj do miksera i odtwarzaj"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Katalog zawartości"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Wybierz katalog do skanowania treści."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Nazwa systemu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Określ 'nazwę systemu', z którą można powiązać zeskanowane treści. Używane jako nazwa wygenerowanego pliku playlisty i identyfikacji miniatur playlisty."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Niestandardowa systemu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Ręcznie określ 'nazwę systemu' dla zeskanowanych treści. Używane tylko wtedy, gdy 'Nazwa systemu' jest ustawiona na '<Niestandardowy>'."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Domyślny rdzeń"

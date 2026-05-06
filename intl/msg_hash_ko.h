@@ -1147,6 +1147,26 @@ MSG_HASH(
    "클라우드 저장소 계정의 비밀번호입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "액세스 키 ID"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "클라우드 저장소 계정의 액세스 키 ID입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "비밀 액세스 키"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "클라우드 저장소 계정의 비밀 액세스 키입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "클라우드 저장소의 S3 엔드포인트 URL입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "로그"
    )
@@ -2443,20 +2463,20 @@ MSG_HASH(
    "끔"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "최대 휘도"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "밝기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "디스플레이가 표현할 수 있는 최대 휘도(cd/m2)를 설정합니다. 한 번 설정하고 나면 변경하지 마십시오. 화면의 밝기는 페이퍼 화이트 휘도를 통해 설정해야 합니다. RTings.com 등의 사이트에서 디스플레이의 최대 휘도를 찾을 수 있습니다. 일부 디스플레이에서 스캔라인을 사용하려면(아래 참조) 이 값(과 페이퍼 화이트 휘도)을 더 높게 설정하여 전체적인 밝기를 끌어올려야 할 [...]"
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "HDR 디스플레이 사용 시 메뉴의 밝기(cd/m2, 니트)입니다. 설정 > 비디오 > HDR에서 HDR을 활성화했을 경우에만 표시됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "페이퍼 화이트 휘도"
+   "밝기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "최대 휘도를 설정하고 나면, 이 값으로 일반적인 밝기를 조절합니다. 기술적으로 이 값은 흰 종이가 어느 정도의 휘도로 표시되어야 하는지, 또는 SDR (Standard Dynamic Range) 범위에서의 최대 휘도를 설정합니다."
+   "HDR 밝기 수준(니트)을 설정합니다. 디스플레이의 물리적 밝기 설정과 함께 설정되어야 합니다. 좋은 시작점으로는 이 설정을 80으로 설정하고, 디스플레이의 밝기를 최대로 설정해보는 것을 추천합니다. 아니면, 이 설정을 디스플레이의 최대 니트 값으로 설정하고, 디스플레이가 올바르게 보일 때까지 디스플레이의 밝기를 낮춰보는 것도 좋습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2529,6 +2549,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
    "설정된 주사율보다 낮은 성능이 감지될 경우 수직 동기화가 자동으로 비활성화됩니다. 퍼포먼스가 떨어질 때 버벅임을 방지할 수 있습니다. '프레임 지연' 기능과 호환되지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "스캔라인 동기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "동영상 출력을 스캔라인 위치에 맞춰 동기화합니다. 지연 시간이 줄어들지만 티어링 증상이 발생할 확률이 높아집니다. 수직 동기화가 비활성화되어야 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -2754,6 +2782,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "WASAPI 드라이버를 공유 모드로 사용할 경우 사용할 중간 버퍼의 길이(프레임)입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "ASIO 제어판 열기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "ASIO 드라이버 제어판에서 장치 라우팅과 버퍼 설정 등을 변경할 수 있습니다."
    )
 
 /* Settings > Audio > Output */
@@ -4547,6 +4583,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
    "종료 시 구성 파일에 변경사항을 저장합니다. 메뉴에서 설정을 변경할 경우 유용합니다. 구성 파일을 덮어쓰며, #include와 주석은 보존되지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "구성 저장 최소화하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "기본값에서 변경된 설정만을 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "사용할 경우, 구성을 저장할 때 기본값에서 다른 값으로 변경된 설정들만을 기록합니다. 구성 파일의 크기가 작아지고, 직접 관리가 용이해집니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -7957,7 +8005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "실행목록에 마지막으로 수행한 '수동 검색'을 반복하여 새로운 콘텐츠를 추가하고 올바르지 않은 항목을 제거합니다."
+   "실행목록에 마지막으로 수행한 콘텐츠 검색 작업을 반복하여 새로운 콘텐츠를 추가하고 올바르지 않은 항목을 제거합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -8534,11 +8582,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "수동 검색"
+   "콘텐츠 검색"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "콘텐츠 파일 이름을 기반으로 구성 가능한 스캔입니다. 데이터베이스와 일치하는 내용이 필요하지 않습니다."
+   "콘텐츠 파일명 또는 데이터베이스 일치에 기반한 구성 가능한 검색을 수행합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -8604,31 +8652,31 @@ MSG_HASH(
    "믹서에 추가 후 재생"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "콘텐츠 디렉토리"
+   "콘텐츠 경로"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "콘텐츠를 검색할 디렉토리입니다."
+   "콘텐츠를 검색할 디렉토리(또는 파일)입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "시스템 이름"
+   "대상 실행목록"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "검색된 콘텐츠를 분류할 '시스템 이름'입니다. 생성될 실행목록의 이름과 미리보기를 찾는 데 사용됩니다."
+   "생성될 재생목록의 파일명이자, 재생목록의 미리보기를 판별하는 데 사용될 이름입니다. 자동으로 설정할 경우 데이터베이스 이름 또는 콘텐츠 디렉토리 이름을 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "사용자 정의 시스템 이름"
+   "커스텀 재생목록 이름"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "검색된 콘텐츠의 '시스템 이름'을 직접 지정합니다. '시스템 이름'이 '<사용자 정의>'일 때만 사용됩니다."
+   "검색된 콘텐츠를 저장할 커스텀 재생목록의 이름입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,

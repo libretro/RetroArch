@@ -1095,6 +1095,26 @@ MSG_HASH(
    "Ditt lösenord för ditt molnlagringskonto."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Åtkomstnyckel-ID"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Ditt åtkomstnyckel-ID för ditt molnlagringskonto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Hemlig åtkomstnyckel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Din hemliga åtkomstnyckel för ditt molnlagringskonto."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "Din S3-slutpunkts-URL för molnlagring."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Loggning"
    )
@@ -2307,28 +2327,20 @@ MSG_HASH(
    "Av"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Högsta ljusstyrka"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Ljusstyrka"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Ställ in den maximala luminansen (i cd/m2) som din skärm kan återge. När du har ställt in den ska du inte ändra den. Använd Paper White Luminance för att ställa in ljusstyrkan. Se RTings.com för din skärms maximala luminans. På vissa skärmar med skanningslinjer aktiverade (nedan) kan du behöva överdriva detta (och pappervit) för att höja den totala ljusstyrkan."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Ljusstyrka på menyn i cd/m2 (nits) vid användning av en HDR-skärm. Endast synlig när HDR är aktiverat i Inställningar > Video > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Pappersvitt ljusstyrka"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "När maximal luminans har ställts in använder du denna som standardinställning för ljusstyrka. Tekniskt sett ställer detta in den luminans som papperets vita yta ska ha, dvs. läsbar text eller luminans i toppen av SDR-intervallet (Standard Dynamic Range)."
+   "Ljusstyrka"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Färgförstärkning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Använder skärmens hela färgskala för att skapa en ljusare och mer mättad bild. För färger som är mer trogna den ursprungliga speldesignen, ange detta till NOGGRANN."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
@@ -7664,10 +7676,6 @@ MSG_HASH(
    "Uppdatera spellista"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Lägg till nytt innehåll och ta bort ogiltiga poster genom att upprepa ”Manuell skanning” som senast användes för att skapa eller redigera spellistan."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Radera Spellista"
    )
@@ -8225,14 +8233,6 @@ MSG_HASH(
    "Söker igenom en fil efter innehåll som matchar databasen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Manuell genomsökning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Konfigurerbar genomsökning baserad på filnamnet på innehåll. Kräver inte att innehåll matchar databasen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Sök igenom"
    )
@@ -8296,31 +8296,11 @@ MSG_HASH(
    "Lägg till i Mixer och spela"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Innehållets katalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Välj en katalog för att söka efter innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Systemets namn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Ange ett 'systemnamn' med vilket du kan associera skannat innehåll. Används för att namnge den genererade spellistfilen och för att identifiera spellistminiatyrer."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Anpassat systemnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Ange manuellt ett 'systemnamn' för skannat innehåll. Används endast när 'Systemnamn' är satt till '<Custom>'."
+   "Namn för anpassad spellista"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,

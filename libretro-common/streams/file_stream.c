@@ -36,7 +36,6 @@
 
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
-#include <string/stdstring.h>
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
@@ -109,8 +108,7 @@ bool filestream_exists(const char *path)
 
    if (!path || !*path)
       return false;
-   if (!(dummy = filestream_open(
-         path,
+   if (!(dummy = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return false;
@@ -212,111 +210,135 @@ int filestream_getc(RFILE *stream)
    return EOF;
 }
 
-int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
+int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
 {
    char buf[4096];
-   char subfmt[64];
+   char subfmt[256];
    va_list args_copy;
    const char *bufiter  = buf;
    int        ret       = 0;
    int64_t startpos     = filestream_tell(stream);
-   int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
-
+   int64_t maxlen       = filestream_read(stream, buf, sizeof(buf) - 1);
+ 
    if (maxlen <= 0)
       return EOF;
-
+ 
    buf[maxlen] = '\0';
-
-   /* Have to copy the input va_list here
-    * > Calling va_arg() on 'args' directly would
-    *   cause the va_list to have an indeterminate value
-    *   in the function calling filestream_vscanf(),
-    *   leading to unexpected behaviour */
+ 
 #ifdef __va_copy
    __va_copy(args_copy, *args);
 #else
    va_copy(args_copy, *args);
 #endif
-
-   while (*format)
+ 
+   while (*format && *bufiter)
    {
       if (*format == '%')
       {
-         int sublen       = 0;
-         char* subfmtiter = subfmt;
-         bool asterisk    = false;
-
-         *subfmtiter++    = *format++; /* '%' */
-
+         int        sublen     = 0; /* Fix 4: initialize to 0 */
+         char      *subfmtiter = subfmt;
+         char      *subfmtend  = subfmt + sizeof(subfmt) - 4; /* reserve room for %n\0 */
+         bool       asterisk   = false;
+ 
+         *subfmtiter++ = *format++; /* '%' */
+ 
+         /* handle %% literal percent */
+         if (*format == '%')
+         {
+            if (*bufiter != '%')
+               break;
+            bufiter++;
+            format++;
+            continue;
+         }
+ 
          /* %[*][width][length]specifier */
-
          if (*format == '*')
          {
             asterisk      = true;
             *subfmtiter++ = *format++;
          }
-
-         while (ISDIGIT((unsigned char)*format))
-            *subfmtiter++ = *format++; /* width */
-
-         /* length */
+ 
+         /* width digits */
+         while (*format >= '0' && *format <= '9' && subfmtiter < subfmtend)
+            *subfmtiter++ = *format++;
+ 
+         /* length modifier */
          if (*format == 'h' || *format == 'l')
          {
-            if (format[1] == format[0])
+            if (format[1] == format[0] && subfmtiter < subfmtend)
                *subfmtiter++ = *format++;
-            *subfmtiter++    = *format++;
+            if (subfmtiter < subfmtend)
+               *subfmtiter++ = *format++;
          }
-         else if (
-               *format == 'j' ||
-               *format == 'z' ||
-               *format == 't' ||
-               *format == 'L')
+         else if (*format == 'j' || *format == 'z'
+               || *format == 't' || *format == 'L')
          {
-            *subfmtiter++ = *format++;
+            if (subfmtiter < subfmtend)
+               *subfmtiter++ = *format++;
          }
-
-         /* specifier - always a single character (except ]) */
+ 
+         /* specifier */
          if (*format == '[')
          {
-            while (*format != ']')
+            /* Fix 2: bounds-check subfmt and guard against missing ']' */
+            *subfmtiter++ = *format++; /* '[' */
+ 
+            /* handle negation */
+            if (*format == '^' && subfmtiter < subfmtend)
                *subfmtiter++ = *format++;
-            *subfmtiter++    = *format++;
+ 
+            /* handle literal ']' as first character in scanset */
+            if (*format == ']' && subfmtiter < subfmtend)
+               *subfmtiter++ = *format++;
+ 
+            while (*format && *format != ']' && subfmtiter < subfmtend)
+               *subfmtiter++ = *format++;
+ 
+            if (*format == ']')
+               *subfmtiter++ = *format++;
+            else
+               break; /* malformed format string — missing ']' */
          }
+         else if (*format)
+            *subfmtiter++ = *format++;
          else
-            *subfmtiter++    = *format++;
-
-         *subfmtiter++       = '%';
-         *subfmtiter++       = 'n';
-         *subfmtiter++       = '\0';
-
-         if (sizeof(void*) != sizeof(long*))
-            abort(); /* all pointers must have the same size */
-
+            break; /* format string ended after '%' + modifiers with no specifier */
+ 
+         /* append %n to measure consumed characters */
+         *subfmtiter++ = '%';
+         *subfmtiter++ = 'n';
+         *subfmtiter   = '\0';
+ 
          if (asterisk)
          {
             int v = sscanf(bufiter, subfmt, &sublen);
             if (v == EOF)
-               return EOF;
-            if (v != 0)
                break;
+            /* Fix 1: do NOT increment ret for suppressed assignments */
+            if (sublen == 0)
+               break; /* no input consumed — stop */
          }
          else
          {
             int v = sscanf(bufiter, subfmt, va_arg(args_copy, void*), &sublen);
             if (v == EOF)
-               return EOF;
+               break;
             if (v != 1)
                break;
+            ret++;  /* Fix 1: only increment for actual assignments */
          }
-
-         ret++;
+ 
          bufiter += sublen;
       }
       else if (isspace((unsigned char)*format))
       {
+         /* a single whitespace in format matches zero or more in input */
          while (isspace((unsigned char)*bufiter))
             bufiter++;
-         format++;
+         /* skip all contiguous whitespace in format too */
+         while (isspace((unsigned char)*format))
+            format++;
       }
       else
       {
@@ -326,11 +348,12 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
          format++;
       }
    }
-
+ 
    va_end(args_copy);
+ 
    filestream_seek(stream, startpos + (bufiter - buf),
          RETRO_VFS_SEEK_POSITION_START);
-
+ 
    return ret;
 }
 
@@ -370,7 +393,7 @@ int64_t filestream_tell(RFILE *stream)
 {
    int64_t output;
 
-   if (filestream_size_cb)
+   if (filestream_tell_cb)
       output = filestream_tell_cb(stream->hfile);
    else
       output = retro_vfs_file_tell_impl(
@@ -606,9 +629,17 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    if ((content_buf_size = filestream_get_size(file)) < 0)
       goto error;
 
-   if (!(content_buf = malloc((size_t)(content_buf_size + 1))))
+   /* Reject sizes that would not survive the cast to size_t for
+    * the malloc below.  Pre-patch the only check here was a
+    * tautological '(int64_t)(uint64_t)X != X' (which is false
+    * for any positive int64_t), and on 32-bit hosts any file
+    * larger than ~4 GiB silently truncated through (size_t),
+    * the malloc was undersized, and the filestream_read below
+    * overran it. */
+   if ((uint64_t)content_buf_size + 1 > (uint64_t)((size_t)-1))
       goto error;
-   if ((int64_t)(uint64_t)(content_buf_size + 1) != (content_buf_size + 1))
+
+   if (!(content_buf = malloc((size_t)(content_buf_size + 1))))
       goto error;
 
    if ((ret = filestream_read(file, content_buf, (int64_t)content_buf_size)) <
@@ -656,41 +687,52 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
 
 char *filestream_getline(RFILE *stream)
 {
-   char *newline_tmp  = NULL;
-   size_t cur_size    = 8;
+   char  *newline     = NULL;
+   char  *newline_tmp = NULL;
+   size_t cur_size    = 256;
    size_t idx         = 0;
-   int in             = 0;
-   char *newline      = (char*)malloc(9);
+   int    in;
 
-   if (!stream || !newline)
+   if (!stream)
+      return NULL;
+
+   newline = (char*)malloc(cur_size + 1);
+   if (!newline)
+      return NULL;
+
+   in = filestream_getc(stream);
+   if (in == EOF)
    {
-      if (newline)
-         free(newline);
+      free(newline);
       return NULL;
    }
 
-   in = filestream_getc(stream);
-
    while (in != EOF && in != '\n')
    {
+      newline[idx++] = (char)in;
       if (idx == cur_size)
       {
-         cur_size    *= 2;
-
-         if (!(newline_tmp = (char*)realloc(newline, cur_size + 1)))
+         cur_size   *= 2;
+         newline_tmp = (char*)realloc(newline, cur_size + 1);
+         if (!newline_tmp)
          {
             free(newline);
             return NULL;
          }
-
-         newline     = newline_tmp;
+         newline = newline_tmp;
       }
-
-      newline[idx++] = in;
-      in             = filestream_getc(stream);
+      in = filestream_getc(stream);
    }
 
-   newline[idx]      = '\0';
+   /* Shrink to fit if we overallocated significantly */
+   if (cur_size > idx + 64)
+   {
+      newline_tmp = (char*)realloc(newline, idx + 1);
+      if (newline_tmp)
+         newline = newline_tmp;
+   }
+
+   newline[idx] = '\0';
    return newline;
 }
 

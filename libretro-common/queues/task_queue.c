@@ -201,11 +201,23 @@ static void retro_task_internal_gather(void)
       if (task->cleanup)
           task->cleanup(task);
 
+#ifdef HAVE_THREADS
+      slock_lock(property_lock);
+#endif
       if (task->error)
+      {
          free(task->error);
+         task->error = NULL;
+      }
 
       if (task->title)
+      {
          free(task->title);
+         task->title = NULL;
+      }
+#ifdef HAVE_THREADS
+      slock_unlock(property_lock);
+#endif
 
       free(task);
    }
@@ -296,10 +308,21 @@ static void retro_task_regular_retrieve(task_retriever_data_t *data)
       if (task->handler != data->handler)
          continue;
 
-      /* Create new link */
-      info       = (task_retriever_info_t*)
-         malloc(sizeof(task_retriever_info_t));
-      info->data = malloc(data->element_size);
+      /* Create new link.  NULL-check both allocations: the previous
+       * form dereferenced info on the very next line, and passed
+       * info->data (potentially NULL from the second malloc) into
+       * data->func which is free to dereference it.  On OOM just
+       * skip this task - the retriever already tolerates tasks
+       * being absent from the result list (data->func returning
+       * false is the documented 'skip' signal). */
+      if (!(info = (task_retriever_info_t*)
+            malloc(sizeof(task_retriever_info_t))))
+         continue;
+      if (!(info->data = malloc(data->element_size)))
+      {
+         free(info);
+         continue;
+      }
       info->next = NULL;
 
       /* Call retriever function and fill info-specific data */
@@ -995,6 +1018,19 @@ void task_free_title(retro_task_t *task)
    if (task->title)
       free(task->title);
    task->title = NULL;
+#ifdef HAVE_THREADS
+   slock_unlock(property_lock);
+#endif
+}
+
+void task_free_error(retro_task_t *task)
+{
+#ifdef HAVE_THREADS
+   slock_lock(property_lock);
+#endif
+   if (task->error)
+      free(task->error);
+   task->error = NULL;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
 #endif

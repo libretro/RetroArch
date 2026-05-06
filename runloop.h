@@ -288,16 +288,17 @@ struct runloop
 
    struct
    {
+      /* TODO/FIXME: Same type for all */
       char *remapfile;
-      char savefile [PATH_MAX_LENGTH*2];
-      char savestate[PATH_MAX_LENGTH*2];
-      char replay   [PATH_MAX_LENGTH*2];
-      char cheatfile[PATH_MAX_LENGTH*2];
-      char ups      [PATH_MAX_LENGTH*2];
-      char bps      [PATH_MAX_LENGTH*2];
-      char ips      [PATH_MAX_LENGTH*2];
-      char xdelta   [PATH_MAX_LENGTH*2];
-      char label    [PATH_MAX_LENGTH*2];
+      char label    [PATH_MAX_LENGTH];
+      char savefile [PATH_MAX_LENGTH];
+      char savestate[PATH_MAX_LENGTH];
+      char replay   [PATH_MAX_LENGTH];
+      char cheatfile[PATH_MAX_LENGTH];
+      char ups      [PATH_MAX_LENGTH];
+      char bps      [PATH_MAX_LENGTH];
+      char ips      [PATH_MAX_LENGTH];
+      char xdelta   [PATH_MAX_LENGTH];
    } name;
 
    bool perfcnt_enable;

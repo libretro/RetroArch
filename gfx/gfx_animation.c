@@ -21,7 +21,6 @@
 #include <encodings/utf.h>
 #include <retro_math.h>
 #include <retro_miscellaneous.h>
-#include <string/stdstring.h>
 #include <features/features_cpu.h>
 #include <array/rbuf.h>
 
@@ -1314,7 +1313,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
    gfx_animation_t *p_anim      = &anim_st;
 
    /* Sanity check */
-   if (    string_is_empty(ticker->src_str)
+   if (    (!ticker->src_str || !*ticker->src_str)
        || (ticker->dst_str_len < 1)
        || (ticker->field_width < 1)
        || (!ticker->font && (ticker->glyph_width < 1)))

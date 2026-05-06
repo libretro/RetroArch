@@ -30,6 +30,7 @@
 #endif
 
 #include "../common/wayland_common.h"
+#include "../gfx/video_driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/wayland_common.h"
 #include "../../input/input_driver.h"
@@ -608,14 +609,14 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    if (wl->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-   if (string_is_equal(video_ident, "glcore") || string_is_equal(video_ident, "gl"))
+   if (string_is_equal(video_ident, "glcore"))
    {
-      if (string_is_equal(video_ident, "glcore"))
-      {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
-      }
+   }
+   else if (string_is_equal(video_ident, "gl"))
+   {
 #ifdef HAVE_GLSL
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
@@ -659,11 +660,11 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,
    gfx_ctx_wl_get_video_size_common,
-   gfx_ctx_wl_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   gfx_ctx_wl_get_metrics_common,
+   NULL, /* metrics - handled by display server */
    NULL,
    gfx_ctx_wl_update_title_common,
    gfx_ctx_wl_check_window,

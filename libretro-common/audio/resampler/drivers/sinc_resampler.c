@@ -38,7 +38,6 @@
 #include <memalign.h>
 
 #include <audio/audio_resampler.h>
-/* BUG FIX: removed duplicate #include <filters.h> that was here */
 
 #ifdef __SSE__
 #include <xmmintrin.h>
@@ -146,19 +145,13 @@ static void resampler_sinc_process_neon_kaiser(void *re_, struct resampler_data 
          {
             /* C89: all declarations at top of block */
             int i;
-            unsigned phase;
-            const float *phase_table;
-            const float *delta_table;
-            float32x4_t delta;
-            float32x4_t p1, p2;
             float32x2_t p3, p4;
-
-            phase           = resamp->time >> resamp->subphase_bits;
-            phase_table     = resamp->phase_table + phase * taps2;
-            delta_table     = phase_table + taps;
-            delta           = vdupq_n_f32((resamp->time & resamp->subphase_mask) * resamp->subphase_mod);
-            p1 = vdupq_n_f32(0.0f);
-            p2 = vdupq_n_f32(0.0f);
+            unsigned phase           = resamp->time >> resamp->subphase_bits;
+            const float *phase_table = resamp->phase_table + phase * taps2;
+            const float *delta_table = phase_table + taps;
+            float32x4_t delta        = vdupq_n_f32((resamp->time & resamp->subphase_mask) * resamp->subphase_mod);
+            float32x4_t p1           = vdupq_n_f32(0.0f);
+            float32x4_t p2           = vdupq_n_f32(0.0f);
 
             for (i = 0; i < (int)taps; i += 8)
             {
@@ -219,10 +212,9 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
             {
                /* C89: declarations at top of block */
                int i;
-               float32x4_t p1, p2;
                float32x2_t p3, p4;
-               p1 = vdupq_n_f32(0.0f);
-               p2 = vdupq_n_f32(0.0f);
+               float32x4_t p1 = vdupq_n_f32(0.0f);
+               float32x4_t p2 = vdupq_n_f32(0.0f);
 
                for (i = 0; i < (int)taps; i += 8)
                {
@@ -277,20 +269,13 @@ static void resampler_sinc_process_avx_kaiser(void *re_, struct resampler_data *
             /* C89: all declarations at top of block */
             int i;
             __m256 res_l, res_r;
-            unsigned phase;
-            float *phase_table;
-            float *delta_table;
-            __m256 delta;
-            __m256 sum_l;
-            __m256 sum_r;
-
-            phase           = resamp->time >> resamp->subphase_bits;
-            phase_table     = resamp->phase_table + phase * taps2;
-            delta_table     = phase_table + taps;
-            delta           = _mm256_set1_ps((float)
+            unsigned phase     = resamp->time >> resamp->subphase_bits;
+            float *phase_table = resamp->phase_table + phase * taps2;
+            float *delta_table = phase_table + taps;
+            __m256 delta       = _mm256_set1_ps((float)
                   (resamp->time & resamp->subphase_mask) * resamp->subphase_mod);
-            sum_l           = _mm256_setzero_ps();
-            sum_r           = _mm256_setzero_ps();
+            __m256 sum_l       = _mm256_setzero_ps();
+            __m256 sum_r       = _mm256_setzero_ps();
 
             for (i = 0; i < (int)taps; i += 8)
             {
@@ -351,15 +336,10 @@ static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
             /* C89: all declarations at top of block */
             int i;
             __m256 res_l, res_r;
-            unsigned phase;
-            float *phase_table;
-            __m256 sum_l;
-            __m256 sum_r;
-
-            phase           = resamp->time >> resamp->subphase_bits;
-            phase_table     = resamp->phase_table + phase * taps;
-            sum_l           = _mm256_setzero_ps();
-            sum_r           = _mm256_setzero_ps();
+            unsigned phase     = resamp->time >> resamp->subphase_bits;
+            float *phase_table = resamp->phase_table + phase * taps;
+            __m256 sum_l       = _mm256_setzero_ps();
+            __m256 sum_r       = _mm256_setzero_ps();
 
             for (i = 0; i < (int)taps; i += 8)
             {
@@ -421,20 +401,13 @@ static void resampler_sinc_process_sse_kaiser(void *re_, struct resampler_data *
             /* C89: all declarations at top of block */
             int i;
             __m128 sum;
-            unsigned phase;
-            float *phase_table;
-            float *delta_table;
-            __m128 delta;
-            __m128 sum_l;
-            __m128 sum_r;
-
-            phase           = resamp->time >> resamp->subphase_bits;
-            phase_table     = resamp->phase_table + phase * taps2;
-            delta_table     = phase_table + taps;
-            delta           = _mm_set1_ps((float)
+            unsigned phase     = resamp->time >> resamp->subphase_bits;
+            float *phase_table = resamp->phase_table + phase * taps2;
+            float *delta_table = phase_table + taps;
+            __m128 delta       = _mm_set1_ps((float)
                   (resamp->time & resamp->subphase_mask) * resamp->subphase_mod);
-            sum_l           = _mm_setzero_ps();
-            sum_r           = _mm_setzero_ps();
+            __m128 sum_l       = _mm_setzero_ps();
+            __m128 sum_r       = _mm_setzero_ps();
 
             for (i = 0; i < (int)taps; i += 4)
             {
@@ -505,15 +478,10 @@ static void resampler_sinc_process_sse(void *re_, struct resampler_data *data)
             /* C89: all declarations at top of block */
             int i;
             __m128 sum;
-            unsigned phase;
-            float *phase_table;
-            __m128 sum_l;
-            __m128 sum_r;
-
-            phase           = resamp->time >> resamp->subphase_bits;
-            phase_table     = resamp->phase_table + phase * taps;
-            sum_l           = _mm_setzero_ps();
-            sum_r           = _mm_setzero_ps();
+            unsigned phase     = resamp->time >> resamp->subphase_bits;
+            float *phase_table = resamp->phase_table + phase * taps;
+            __m128 sum_l       = _mm_setzero_ps();
+            __m128 sum_r       = _mm_setzero_ps();
 
             for (i = 0; i < (int)taps; i += 4)
             {
@@ -583,26 +551,18 @@ static void resampler_sinc_process_c_kaiser(void *re_, struct resampler_data *da
          {
             /* C89: all declarations at top of block */
             int i;
-            int taps_aligned;
-            float sum_l;
-            float sum_r;
-            unsigned phase;
-            float *phase_table;
-            float *delta_table;
-            float delta;
-
-            sum_l       = 0.0f;
-            sum_r       = 0.0f;
-            phase       = resamp->time >> resamp->subphase_bits;
-            phase_table = resamp->phase_table + phase * taps2;
-            delta_table = phase_table + taps;
-            delta       = (float)
+            float sum_l        = 0.0f;
+            float sum_r        = 0.0f;
+            unsigned phase     = resamp->time >> resamp->subphase_bits;
+            float *phase_table = resamp->phase_table + phase * taps2;
+            float *delta_table = phase_table + taps;
+            float delta        = (float)
                (resamp->time & resamp->subphase_mask) * resamp->subphase_mod;
 
             /* Manual 4x unroll for scalar path.
              * Taps is guaranteed to be a multiple of 4 
                (see SIMD alignment in init). */
-            taps_aligned = (int)taps & ~3;
+            int taps_aligned   = (int)taps & ~3;
             for (i = 0; i < taps_aligned; i += 4)
             {
                float s0 = phase_table[i]     + delta_table[i]     * delta;
@@ -658,19 +618,12 @@ static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
          {
             /* C89: all declarations at top of block */
             int i;
-            int taps_aligned;
-            float sum_l;
-            float sum_r;
-            unsigned phase;
-            float *phase_table;
-
-            sum_l       = 0.0f;
-            sum_r       = 0.0f;
-            phase       = resamp->time >> resamp->subphase_bits;
-            phase_table = resamp->phase_table + phase * taps;
-
+            float sum_l        = 0.0f;
+            float sum_r        = 0.0f;
+            unsigned phase     = resamp->time >> resamp->subphase_bits;
+            float *phase_table = resamp->phase_table + phase * taps;
             /* Manual 4x unroll for scalar path. */
-            taps_aligned = (int)taps & ~3;
+            int taps_aligned   = (int)taps & ~3;
             for (i = 0; i < taps_aligned; i += 4)
             {
                float s0 = phase_table[i];
@@ -712,9 +665,6 @@ static void resampler_sinc_free(void *data)
    free(resamp);
 }
 
-/* C89 FIX: changed 'bool calculate_delta' to 'int calculate_delta'
- * throughout table init functions. C89 has no bool type. */
-
 static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
       double cutoff,
       float *phase_table, int phases, int taps, int calculate_delta)
@@ -738,7 +688,7 @@ static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
          window_phase        = 2.0 * window_phase - 1.0;    /* [-1, 1) */
          sinc_phase          = sidelobes * window_phase;
 
-         /* BUG FIX: clamp argument to sqrt to avoid NaN from
+         /* clamp argument to sqrt to avoid NaN from
           * floating-point precision loss at boundaries where
           * 1 - window_phase^2 can go slightly negative.
           * Also use double-precision sqrt() instead of sqrtf()
@@ -779,7 +729,7 @@ static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
          window_phase        = 2.0 * window_phase - 1.0;    /* (-1, 1] */
          sinc_phase          = sidelobes * window_phase;
 
-         /* BUG FIX: same clamp + double-precision sqrt as above. */
+         /* Same clamp + double-precision sqrt as above. */
          arg                 = 1.0 - window_phase * window_phase;
          if (arg < 0.0)
             arg = 0.0;

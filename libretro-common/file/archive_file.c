@@ -358,7 +358,8 @@ bool file_archive_extract_file(
          && userdata.found_file
       )
    {
-      if (!string_is_empty(userdata.first_extracted_file_path))
+      if (    userdata.first_extracted_file_path 
+          && *userdata.first_extracted_file_path)
          strlcpy(s, userdata.first_extracted_file_path, len);
       return true;
    }
@@ -581,9 +582,18 @@ const struct file_archive_file_backend *file_archive_get_7z_file_backend(void)
 #endif
 }
 
+const struct file_archive_file_backend *file_archive_get_zstd_file_backend(void)
+{
+#ifdef HAVE_ZSTD
+   return &zstd_backend;
+#else
+   return NULL;
+#endif
+}
+
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
-#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB) || defined(HAVE_ZSTD)
    char newpath[PATH_MAX_LENGTH];
    const char *file_ext          = NULL;
    char *last                    = NULL;
@@ -605,6 +615,11 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
          || string_is_equal_noncase(file_ext, "apk")
       )
       return &zlib_backend;
+#endif
+
+#ifdef HAVE_ZSTD
+   if (string_is_equal_noncase(file_ext, "zst"))
+      return &zstd_backend;
 #endif
 #endif
 

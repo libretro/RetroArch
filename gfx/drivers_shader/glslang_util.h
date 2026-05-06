@@ -20,9 +20,6 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
-#include <lists/string_list.h>
-
-#include "slang_reflection.h"
 #include "../video_shader_parse.h"
 
 typedef enum glslang_format
@@ -70,6 +67,48 @@ typedef enum glslang_format
    SLANG_FORMAT_MAX
 } glslang_format;
 
+/* Textures with built-in meaning. */
+typedef enum slang_texture_semantic
+{
+   /* The input texture to the filter chain.
+    * Canonical name: "Original". */
+   SLANG_TEXTURE_SEMANTIC_ORIGINAL         = 0,
+
+   /* The output from pass N - 1 if executing pass N, or ORIGINAL
+    * if pass #0 is executed.
+    * Canonical name: "Source".
+    */
+   SLANG_TEXTURE_SEMANTIC_SOURCE           = 1,
+
+   /* The original inputs with a history back in time.
+    * Canonical name: "OriginalHistory#", e.g. "OriginalHistory2" <- Two frames back.
+    * "OriginalHistory0" is an alias for SEMANTIC_ORIGINAL.
+    * Size name: "OriginalHistorySize#".
+    */
+   SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY = 2,
+
+   /* The output from pass #N, where pass #0 is the first pass.
+    * Canonical name: "PassOutput#", e.g. "PassOutput3".
+    * Size name: "PassOutputSize#".
+    */
+   SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT      = 3,
+
+   /* The output from pass #N, one frame ago where pass #0 is the first pass.
+    * It is not valid to use the pass feedback from a pass which is not offscreen.
+    * Canonical name: "PassFeedback#", e.g. "PassFeedback2".
+    */
+   SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK    = 4,
+
+   /* Inputs from static textures, defined by the user.
+    * There is no canonical name, and the only way to use these semantics are by
+    * remapping.
+    */
+   SLANG_TEXTURE_SEMANTIC_USER             = 5,
+
+   SLANG_NUM_TEXTURE_SEMANTICS,
+   SLANG_INVALID_TEXTURE_SEMANTIC       = -1
+} slang_texture_semantic;
+
 typedef enum glslang_filter_chain_filter
 {
    GLSLANG_FILTER_CHAIN_LINEAR  = 0,
@@ -94,6 +133,26 @@ typedef enum glslang_filter_chain_scale
    GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT,
    GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE
 } glslang_filter_chain_scale;
+
+/* Single contiguous char buffer with '\0'-delimited
+ * lines stored back-to-back.  An offset table provides O(1) indexed access.
+ *
+ * Memory layout of data[]:
+ *   "line0\0line1\0line2\0"
+ *
+ * line_offsets[i] gives the byte position of the i-th line inside data[].
+ * Each line is individually null-terminated.
+ */
+struct shader_line_buf
+{
+   char    *data;          /* Contiguous buffer, lines separated by '\0' */
+   size_t   len;           /* Current used length (includes null terminators) */
+   size_t   cap;           /* Allocated capacity of data[]                   */
+   size_t  *line_offsets;  /* Byte offset of each line start within data[]   */
+   size_t   num_lines;     /* Number of lines stored                         */
+   size_t   lines_cap;     /* Allocated capacity for line_offsets[]           */
+   bool _single_alloc;
+};
 
 RETRO_BEGIN_DECLS
 
@@ -120,16 +179,27 @@ const char *glslang_format_to_string(glslang_format fmt);
 
 enum glslang_format glslang_find_format(const char *fmt);
 
-/* Reads a shader file and outputs its contents as a string list.
+/* Initialize a shader_line_buf to empty state. Returns false on alloc failure. */
+bool shader_line_buf_init(struct shader_line_buf *buf);
+
+/* Free all memory owned by a shader_line_buf. */
+void shader_line_buf_free(struct shader_line_buf *buf);
+
+/* Return pointer to the null-terminated line at the given index.
+ * Valid until the next append (which may realloc). */
+const char *shader_line_buf_get(const struct shader_line_buf *buf, size_t index);
+
+/* Reads a shader file and outputs its contents into a shader_line_buf.
    Takes the path of the shader file and appends each line of the file
-   to the output string list.
+   to the output buffer.
    If the root_file argument is set to true, it expects the first line of the file
-   to be a valid '#version' string
-   Handles '#include' statements by recursively parsing included files and appending their contents.
-   Returns a Bool indicating if parsing was successful.
+   to be a valid '#version' string.
+   Handles '#include' statements by recursively parsing included files
+   and appending their contents.
+   Returns a bool indicating if parsing was successful.
  */
 bool glslang_read_shader_file(const char *path,
-      struct string_list *output, bool root_file, bool is_optional);
+      struct shader_line_buf *output, bool root_file, bool is_optional);
 
 bool slang_texture_semantic_is_array(enum slang_texture_semantic sem);
 

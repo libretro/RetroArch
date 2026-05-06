@@ -186,7 +186,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
       input_config_set_mouse_display_name(i, name);
 
-      RARCH_LOG("[WinRaw] Mouse #%u: \"%s\".\n", i + 1, name);
+      RARCH_LOG("[WinRaw] Found mouse #%u: \"%s\".\n", i + 1, name);
    }
 }
 
@@ -397,7 +397,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       {
          settings_t *settings = config_get_ptr();
          if (     settings->bools.input_overlay_enable
-               && !string_is_empty(settings->paths.path_overlay))
+               && *settings->paths.path_overlay)
             getcursorpos = true;
       }
 

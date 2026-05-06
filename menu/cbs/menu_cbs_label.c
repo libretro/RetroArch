@@ -56,11 +56,11 @@ static int action_bind_label_playlist_collection_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       const char *playlist_file = path_basename_nocompression(path);
 
-      if (!string_is_empty(playlist_file))
+      if (playlist_file && *playlist_file)
       {
          if (string_is_equal_noncase(path_get_extension(playlist_file),
                   "lpl"))

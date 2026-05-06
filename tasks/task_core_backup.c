@@ -35,6 +35,7 @@
 #include "../verbosity.h"
 #include "../core_info.h"
 #include "../core_backup.h"
+#include "tasks_internal.h"
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
 #include "../menu/menu_driver.h"
@@ -166,14 +167,14 @@ static bool task_core_backup_finder(retro_task_t *task, void *user_data)
    if (!backup_handle)
       return false;
 
-   if (string_is_empty(backup_handle->core_path))
+   if (!backup_handle->core_path || !*backup_handle->core_path)
       return false;
 
    core_filename_a = path_basename((const char*)user_data);
    core_filename_b = path_basename(backup_handle->core_path);
 
-   if (string_is_empty(core_filename_a) ||
-       string_is_empty(core_filename_b))
+   if (   (!core_filename_a || !*core_filename_a)
+       || (!core_filename_b || !*core_filename_b))
       return false;
 
    return string_is_equal(core_filename_a, core_filename_b);
@@ -556,7 +557,7 @@ void *task_push_core_backup(
    char task_title[128];
 
    /* Sanity check */
-   if (    string_is_empty(core_path)
+   if (    (!core_path || !*core_path)
        || !path_is_valid(core_path))
       goto error;
 
@@ -569,7 +570,7 @@ void *task_push_core_backup(
       goto error;
 
    /* Get core name */
-   if (!string_is_empty(core_display_name))
+   if (core_display_name && *core_display_name)
       core_name = core_display_name;
    else
    {
@@ -584,7 +585,7 @@ void *task_push_core_backup(
          /* If not, use core file name */
          core_name = path_basename(core_path);
 
-         if (string_is_empty(core_name))
+         if (!core_name || !*core_name)
             goto error;
       }
    }
@@ -594,7 +595,7 @@ void *task_push_core_backup(
                sizeof(core_backup_handle_t))))
       goto error;
 
-   backup_handle->dir_core_assets            = string_is_empty(dir_core_assets) ? NULL : strdup(dir_core_assets);
+   backup_handle->dir_core_assets            = (!dir_core_assets || !*dir_core_assets) ? NULL : strdup(dir_core_assets);
    backup_handle->core_path                  = strdup(core_path);
    backup_handle->core_name                  = strdup(core_name);
    backup_handle->backup_path                = NULL;
@@ -631,6 +632,7 @@ void *task_push_core_backup(
    task->state            = backup_handle;
    task->title            = strdup(task_title);
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
 
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -963,9 +965,9 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    core_path[0]  = '\0';
 
    /* Sanity check */
-   if (    string_is_empty(backup_path)
+   if (    (!backup_path || !*backup_path)
        || !path_is_valid(backup_path)
-       ||  string_is_empty(dir_libretro)
+       ||  (!dir_libretro || !*dir_libretro)
        || !core_loaded)
       goto error;
 
@@ -1011,8 +1013,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    {
       /* > If not, use core file name */
       core_name = path_basename(core_path);
-
-      if (string_is_empty(core_name))
+      if (!core_name || !*core_name)
          goto error;
    }
 
@@ -1086,6 +1087,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    task->state            = backup_handle;
    task->title            = strdup(task_title);
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_restore;
    task->flags           |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 

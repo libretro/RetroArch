@@ -58,7 +58,7 @@ enum thread_cmd
    CMD_POKE_SHOW_MOUSE,
    CMD_POKE_GRAB_MOUSE_TOGGLE,
 
-   CMD_POKE_SET_HDR_MAX_NITS,
+   CMD_POKE_SET_HDR_MENU_NITS,
    CMD_POKE_SET_HDR_PAPER_WHITE_NITS,
    CMD_POKE_SET_HDR_EXPAND_GAMUT,
    CMD_POKE_SET_HDR_SCANLINES,
@@ -67,7 +67,7 @@ enum thread_cmd
    CMD_DUMMY = INT_MAX
 };
 
-typedef int (*custom_command_method_t)(void*);
+typedef uintptr_t (*custom_command_method_t)(void*);
 
 typedef bool (*custom_font_command_method_t)(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
@@ -140,7 +140,7 @@ typedef struct thread_packet
       {
          custom_command_method_t method;
          void* data;
-         int return_value;
+         uintptr_t return_value;
       } custom_command;
 
       struct
@@ -158,7 +158,7 @@ typedef struct thread_packet
 
       struct
       {
-         float max_nits;
+         float menu_nits;
          float paper_white_nits;
          unsigned expand_gamut;
          bool scanlines;
@@ -272,8 +272,14 @@ bool video_thread_font_init(
       custom_font_command_method_t func,
       bool is_threaded);
 
-unsigned video_thread_texture_handle(void *data,
+uintptr_t video_thread_texture_handle(void *data,
       custom_command_method_t func);
+
+/* Barrier: wait until the video thread is idle (no pending frame).
+ * Must be called from the main thread before freeing GPU resources
+ * that an in-flight frame might reference.  No-op on non-threaded
+ * video or when called from the video thread. */
+void video_thread_wait_idle(void);
 
 RETRO_END_DECLS
 

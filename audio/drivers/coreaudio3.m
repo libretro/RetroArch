@@ -48,19 +48,9 @@ static inline size_t rb_len(ringbuffer_h r)
    return atomic_load_explicit(&r->len, memory_order_relaxed);
 }
 
-static inline size_t rb_cap(ringbuffer_h r)
-{
-   return (r->read_ptr + r->cap - r->write_ptr) % r->cap;
-}
-
 static inline size_t rb_avail(ringbuffer_h r)
 {
    return r->cap - rb_len(r);
-}
-
-static inline void rb_advance_write(ringbuffer_h r)
-{
-   r->write_ptr = (r->write_ptr + 1) % r->cap;
 }
 
 static inline void rb_advance_write_n(ringbuffer_h r, size_t n)

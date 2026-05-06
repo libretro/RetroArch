@@ -32,10 +32,6 @@
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
 
-#if defined(_WIN32) && !defined(SOCKET)
-#include <winsock2.h>
-#endif
-
 #include "input_defines.h"
 #include "input_types.h"
 #ifdef HAVE_OVERLAY
@@ -318,6 +314,7 @@ struct input_keyboard_line
    input_keyboard_line_complete_t cb;
    size_t ptr;
    size_t size;
+   size_t capacity;  /* Allocated size of buffer (excluding NUL) */
    bool enabled;
 };
 
@@ -348,18 +345,6 @@ struct remote_message
    int index;
    int id;
    uint16_t state;
-};
-
-struct input_remote
-{
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#ifdef _WIN32
-   SOCKET net_fd[MAX_USERS];
-#else
-   int net_fd[MAX_USERS];
-#endif
-#endif
-   bool state[RARCH_BIND_LIST_END];
 };
 
 typedef struct
@@ -658,6 +643,17 @@ typedef struct
 
    /* primitives */
    bool analog_requested[MAX_USERS];
+
+   /* Per-port joypad state bitmask cache.
+    * Populated lazily on the first JOYPAD query for each mapped_port
+    * within a frame, then reused for subsequent individual button
+    * queries to the same port.  Avoids up to 32 indirect
+    * joypad->button()/axis() calls per port when cores use the
+    * old per-button query pattern instead of JOYPAD_MASK.
+    * Invalidated at the start of each input_driver_poll(). */
+   int32_t joypad_state_cache[MAX_USERS];
+   bool    joypad_state_cache_valid[MAX_USERS];
+
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
 
@@ -1270,6 +1266,7 @@ extern input_device_driver_t qnx_joypad;
 extern input_device_driver_t mfi_joypad;
 extern input_device_driver_t dos_joypad;
 extern input_device_driver_t rwebpad_joypad;
+extern input_device_driver_t winraw_joypad;
 extern input_device_driver_t test_joypad;
 
 #ifdef HAVE_HID

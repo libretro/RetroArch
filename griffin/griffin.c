@@ -14,6 +14,20 @@
 * You should have received a copy of the GNU General Public License along with RetroArch.
 * If not, see <http://www.gnu.org/licenses/>.
 */
+
+/* Emit DirectX COM GUID storage inline rather than requiring
+ * dxguid.lib from the legacy June 2010 DirectX SDK. The Windows 7.x
+ * Platform SDK (shipped with MSVC 2010 and earlier) does not ship
+ * that library. Including <initguid.h> before any DX header causes
+ * DEFINE_GUID() to emit storage rather than extern references.
+ *
+ * Skipped on UWP/WinRT and Xbox, where dxguid.lib ships with the
+ * modern Windows SDK or GUIDs come from a console SDK. */
+#if defined(_WIN32) && !defined(_XBOX) \
+ && (!defined(WINAPI_FAMILY) || (WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP))
+#include <initguid.h>
+#endif
+
 #define VFS_FRONTEND
 #include <retro_environment.h>
 
@@ -132,6 +146,10 @@ ARCHIVE FILE
 
 #ifdef HAVE_7ZIP
 #include "../libretro-common/file/archive_file_7z.c"
+#endif
+
+#ifdef HAVE_ZSTD
+#include "../libretro-common/file/archive_file_zstd.c"
 #endif
 
 /*============================================================
@@ -280,12 +298,8 @@ VIDEO CONTEXT
 
 #if !defined(__WINRT__)
 #include "../gfx/display_servers/dispserv_win32.c"
-#endif
-
-#if defined(HAVE_FFMPEG)
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
-#include "../cores/libretro-ffmpeg/ffmpeg_fft.c"
-#endif
+#else
+#include "../gfx/display_servers/dispserv_uwp.c"
 #endif
 
 #endif
@@ -314,6 +328,7 @@ VIDEO CONTEXT
 
 #ifdef HAVE_WAYLAND
 #include "../gfx/drivers_context/wayland_ctx.c"
+#include "../gfx/display_servers/dispserv_wl.c"
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers_context/wayland_vk_ctx.c"
 #endif
@@ -422,6 +437,9 @@ VIDEO IMAGE
 #ifdef HAVE_RBMP
 #include "../libretro-common/formats/bmp/rbmp.c"
 #endif
+#ifdef HAVE_RWEBP
+#include "../libretro-common/formats/webp/rwebp.c"
+#endif
 
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 #ifdef HAVE_RWAV
@@ -465,8 +483,12 @@ VIDEO DRIVER
 #include "../gfx/drivers/d3d10.c"
 #endif
 
-#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) \
+ || (defined(HAVE_D3D9) && defined(HAVE_HLSL))
 #include "../gfx/common/d3dcompiler_common.c"
+#endif
+
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
 #include "../gfx/common/dxgi_common.c"
 #endif
 
@@ -586,10 +608,6 @@ FONTS
 
 #include "../gfx/font_driver.c"
 
-#if defined(HAVE_D3D9) && defined(HAVE_D3DX)
-#include "../gfx/drivers_font/d3d9x_w32_font.c"
-#endif
-
 #if defined(HAVE_STB_FONT)
 #include "../gfx/drivers_font_renderer/stb_unicode.c"
 #include "../gfx/drivers_font_renderer/stb.c"
@@ -637,6 +655,7 @@ INPUT
 #ifdef HAVE_WINRAWINPUT
 /* winraw only available since XP */
 #include "../input/drivers/winraw_input.c"
+#include "../input/drivers_joypad/winraw_joypad.c"
 #endif
 #endif
 
@@ -796,6 +815,7 @@ INPUT (HID)
 FIFO BUFFER
 ============================================================ */
 #include "../libretro-common/queues/fifo_queue.c"
+#include "../libretro-common/queues/retro_spsc.c"
 
 /*============================================================
 AUDIO RESAMPLER
@@ -969,7 +989,6 @@ DRIVERS
 #endif
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
-#include "../gfx/gfx_thumbnail_path.c"
 #include "../gfx/gfx_thumbnail.c"
 #ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mixer.c"
@@ -988,6 +1007,8 @@ FILTERS
 ============================================================ */
 #ifdef HAVE_FILTERS_BUILTIN
 #ifdef HAVE_VIDEO_FILTER
+#include "../gfx/video_filters/dedither.c"
+#include "../gfx/video_filters/pixel_art_aa.c"
 #include "../gfx/video_filters/2xsai.c"
 #include "../gfx/video_filters/super2xsai.c"
 #include "../gfx/video_filters/supereagle.c"
@@ -1015,6 +1036,7 @@ FILTERS
 #include "../gfx/video_filters/picoscale_256x_320x240.c"
 #include "../gfx/video_filters/upscale_240x160_320x240.c"
 #include "../gfx/video_filters/upscale_mix_240x160_320x240.c"
+#include "../gfx/video_filters/ntsc_crt.c"
 #endif
 
 #ifdef HAVE_DSP_FILTER
@@ -1574,12 +1596,6 @@ HTTP SERVER
 ============================================================ */
 #if defined(HAVE_DISCORD)
 #include "../network/discord.c"
-#if defined(_WIN32)
-#include "../deps/discord-rpc/src/discord_register_win.c"
-#endif
-#if defined(__linux__)
-#include "../deps/discord-rpc/src/discord_register_linux.c"
-#endif
 #endif
 
 /*============================================================
@@ -1693,8 +1709,6 @@ ANDROID PLAY FEATURE DELIVERY
 FFMPEG
 ============================================================ */
 #ifdef HAVE_FFMPEG
-#include "../cores/libretro-ffmpeg/packet_buffer.c"
-#include "../cores/libretro-ffmpeg/video_buffer.c"
 #include "../libretro-common/rthreads/tpool.c"
 #endif
 
@@ -1722,6 +1736,9 @@ CLOUD SYNC
 #endif
 #ifdef HAVE_SMBCLIENT
 #include "../network/cloud_sync/smb.c"
+#endif
+#ifdef HAVE_S3
+#include "../network/cloud_sync/s3.c"
 #endif
 #endif
 

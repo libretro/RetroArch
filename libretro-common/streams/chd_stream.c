@@ -25,11 +25,11 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <compat/strl.h>
 
 #include <streams/chd_stream.h>
 #include <retro_endianness.h>
 #include <libchdr/chd.h>
-#include <string/stdstring.h>
 
 #define SECTOR_RAW_SIZE 2352
 #define SECTOR_SIZE 2048
@@ -97,11 +97,47 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, CDROM_TRACK_METADATA2_FORMAT,
-            &md->track, md->type,
-            md->subtype, &md->frames, &md->pregap,
-            md->pgtype, md->pgsub,
-            &md->postgap);
+      const char *ptr = meta;
+      size_t remaining = strlen(meta);
+
+      while (remaining)
+      {
+         size_t klen, vlen;
+         const char *val;
+         const char *end;
+         const char *key = ptr;
+         const char *sep = (const char *)memchr(key, ':', remaining);
+         if (!sep)
+            break;
+
+         klen       = sep - key;
+         val        = sep + 1;
+         remaining -= klen + 1;
+
+         end        = (const char *)memchr(val, ' ', remaining);
+         vlen       = end ? (size_t)(end - val) : remaining;
+
+         if (klen == 5 && !memcmp(key, "TRACK", 5))
+            md->track = (unsigned)strtoul(val, NULL, 10);
+         else if (klen == 4 && !memcmp(key, "TYPE", 4))
+            strlcpy(md->type, val, vlen + 1 < sizeof(md->type) ? vlen + 1 : sizeof(md->type));
+         else if (klen == 7 && !memcmp(key, "SUBTYPE", 7))
+            strlcpy(md->subtype, val, vlen + 1 < sizeof(md->subtype) ? vlen + 1 : sizeof(md->subtype));
+         else if (klen == 6 && !memcmp(key, "FRAMES", 6))
+            md->frames = (unsigned)strtoul(val, NULL, 10);
+         else if (klen == 6 && !memcmp(key, "PREGAP", 6))
+            md->pregap = (unsigned)strtoul(val, NULL, 10);
+         else if (klen == 6 && !memcmp(key, "PGTYPE", 6))
+            strlcpy(md->pgtype, val, vlen + 1 < sizeof(md->pgtype) ? vlen + 1 : sizeof(md->pgtype));
+         else if (klen == 5 && !memcmp(key, "PGSUB", 5))
+            strlcpy(md->pgsub, val, vlen + 1 < sizeof(md->pgsub) ? vlen + 1 : sizeof(md->pgsub));
+         else if (klen == 7 && !memcmp(key, "POSTGAP", 7))
+            md->postgap = (unsigned)strtoul(val, NULL, 10);
+
+         ptr = end ? end + 1 : val + vlen;
+         remaining -= end ? vlen + 1 : vlen;
+      }
+
       md->extra = padding_frames(md->frames);
       return true;
    }
@@ -111,9 +147,44 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, CDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
-             md->subtype, &md->frames);
-      md->extra = padding_frames(md->frames);
+      size_t len;
+      const char *start;
+      const char *p = meta;
+
+      if (strncmp(p, "TRACK:", 6) != 0)
+         return false;
+      p += 6;
+      md->track = strtoul(p, (char **)&p, 10);
+
+      if (*p++ != ' ' || strncmp(p, "TYPE:", 5) != 0)
+         return false;
+      p     += 5;
+      start  = p;
+      while (*p && *p != ' ')
+         p++;
+      len = p - start;
+      if (len == 0 || len >= sizeof(md->type))
+         return false;
+      memcpy(md->type, start, len);
+      md->type[len] = '\0';
+
+      if (*p++ != ' ' || strncmp(p, "SUBTYPE:", 8) != 0)
+         return false;
+      p += 8;
+      start = p;
+      while (*p && *p != ' ')
+         p++;
+      len = p - start;
+      if (len == 0 || len >= sizeof(md->subtype))
+         return false;
+      memcpy(md->subtype, start, len);
+      md->subtype[len] = '\0';
+
+      if (*p++ != ' ' || strncmp(p, "FRAMES:", 7) != 0)
+         return false;
+      p += 7;
+      md->frames = strtoul(p, NULL, 10);
+      md->extra  = padding_frames(md->frames);
       return true;
    }
 
@@ -122,9 +193,84 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, GDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
-             md->subtype, &md->frames, &md->pad, &md->pregap, md->pgtype,
-             md->pgsub, &md->postgap);
+      char *p = meta;
+      while (*p)
+      {
+         size_t len;
+
+         if (strncmp(p, "TRACK:", 6) == 0)
+            md->track = strtoul(p + 6, &p, 10);
+         else if (strncmp(p, "TYPE:", 5) == 0)
+         {
+            p   += 5;
+            len  = 0;
+            while (p[len] && p[len] != ' ')
+               len++;
+            /* Pre-this-patch the memcpy/terminator was unbounded.
+             * GDROM_TRACK_METADATA_TAG is read from the .chd
+             * file (chd_get_metadata above) and the value field
+             * after "TYPE:" terminates at the next space; with a
+             * malicious .chd containing no space between "TYPE:"
+             * and a long run of bytes, len can reach almost the
+             * full meta[256] buffer and the memcpy below
+             * stack-overflows md->type (char[64]) into adjacent
+             * frame fields (subtype, pgtype, pgsub, then return
+             * address depending on layout).  Reject as malformed
+             * if the value can't fit in the destination.  Same
+             * guard as the SCD-format parser at line 166. */
+            if (len >= sizeof(md->type))
+               return false;
+            memcpy(md->type, p, len);
+            md->type[len] = '\0';
+            p += len;
+         }
+         else if (strncmp(p, "SUBTYPE:", 8) == 0)
+         {
+            p   += 8;
+            len  = 0;
+            while (p[len] && p[len] != ' ')
+               len++;
+            if (len >= sizeof(md->subtype))
+               return false;
+            memcpy(md->subtype, p, len);
+            md->subtype[len] = '\0';
+            p += len;
+         }
+         else if (strncmp(p, "FRAMES:", 7) == 0)
+            md->frames = strtoul(p + 7, &p, 10);
+         else if (strncmp(p, "PAD:", 4) == 0)
+            md->pad = strtoul(p + 4, &p, 10);
+         else if (strncmp(p, "PREGAP:", 7) == 0)
+            md->pregap = strtoul(p + 7, &p, 10);
+         else if (strncmp(p, "PGTYPE:", 7) == 0)
+         {
+            p   += 7;
+            len  = 0;
+            while (p[len] && p[len] != ' ')
+               len++;
+            if (len >= sizeof(md->pgtype))
+               return false;
+            memcpy(md->pgtype, p, len);
+            md->pgtype[len] = '\0';
+            p += len;
+         }
+         else if (strncmp(p, "PGSUB:", 6) == 0)
+         {
+            p   += 6;
+            len  = 0;
+            while (p[len] && p[len] != ' ')
+               len++;
+            if (len >= sizeof(md->pgsub))
+               return false;
+            memcpy(md->pgsub, p, len);
+            md->pgsub[len] = '\0';
+            p += len;
+         }
+         else if (strncmp(p, "POSTGAP:", 8) == 0)
+            md->postgap = strtoul(p + 8, &p, 10);
+         else
+            p++;
+      }
       md->extra = padding_frames(md->frames);
       return true;
    }
@@ -194,6 +340,13 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
             }
             break;
          case CHDSTREAM_TRACK_PRIMARY:
+            /* DVD tracks have no frame count in metadata but are always
+             * the primary data track - select immediately */
+            if (strcmp(iter.type, "DVD") == 0)
+            {
+               *meta = iter;
+               return true;
+            }
             if (strcmp(iter.type, "AUDIO") && iter.frames > largest_size)
             {
                largest_size  = iter.frames;
@@ -223,17 +376,13 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    chdstream_t *stream     = NULL;
    chd_file *chd           = NULL;
    chd_error err           = chd_open(path, CHD_OPEN_READ, NULL, &chd);
-
    if (err != CHDERR_NONE)
       return NULL;
-
    if (!chdstream_find_track(chd, track, &meta))
       goto error;
-
    stream                  = (chdstream_t*)malloc(sizeof(*stream));
    if (!stream)
       goto error;
-
    stream->chd             = NULL;
    stream->swab            = false;
    stream->frame_size      = 0;
@@ -245,52 +394,50 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->offset          = 0;
    stream->hunkmem         = NULL;
    stream->hunknum         = -1;
-
    hd                      = chd_get_header(chd);
    hunkmem                 = (uint8_t*)malloc(hd->hunkbytes);
    if (!hunkmem)
       goto error;
-
    stream->hunkmem         = hunkmem;
-
-   if (string_is_equal(meta.type, "MODE1_RAW"))
-      stream->frame_size   = SECTOR_RAW_SIZE;
-   else if (string_is_equal(meta.type, "MODE2_RAW"))
-      stream->frame_size   = SECTOR_RAW_SIZE;
-   else if (string_is_equal(meta.type, "MODE1"))
-      stream->frame_size   = SECTOR_SIZE;
-   else if (string_is_equal(meta.type, "AUDIO"))
+   switch (meta.type[0])
    {
-      stream->frame_size   = SECTOR_RAW_SIZE;
-      stream->swab         = true;
+      case 'M':
+         if (meta.type[5] == '_')
+         {
+            if (meta.type[6] == 'R') /* MODE1_RAW or MODE2_RAW */
+               stream->frame_size = SECTOR_RAW_SIZE;
+            else /* MODE2_FORM... (unhandled, treat like default)*/
+               stream->frame_size = hd->unitbytes;
+         }
+         else /* MODE1 */
+            stream->frame_size = SECTOR_SIZE;
+         break;
+      case 'A': /* AUDIO */
+         stream->frame_size   = SECTOR_RAW_SIZE;
+         stream->swab         = true;
+         break;
+      case 'D': /* DVD */
+         stream->frame_size   = hd->unitbytes;
+         meta.frames          = hd->totalhunks;
+         break;
+      default:
+         stream->frame_size   = hd->unitbytes;
+         break;
    }
-   else if (string_is_equal(meta.type, "DVD"))
-   {
-      stream->frame_size   = hd->unitbytes;
-      meta.frames          = hd->totalhunks;
-   }
-   else
-      stream->frame_size   = hd->unitbytes;
-
    /* Only include pregap data if it was in the track file */
    if (meta.pgtype[0] != 'V')
       pregap               = meta.pregap;
-
    stream->chd             = chd;
    stream->frames_per_hunk = hd->hunkbytes / hd->unitbytes;
    stream->track_frame     = meta.frame_offset;
    stream->track_start     = (size_t)pregap * stream->frame_size;
    stream->track_end       = stream->track_start +
                              (size_t)meta.frames * stream->frame_size;
-
    return stream;
-
 error:
    chdstream_close(stream);
-
    if (chd)
       chd_close(chd);
-
    return NULL;
 }
 

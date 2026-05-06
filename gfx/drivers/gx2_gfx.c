@@ -237,7 +237,7 @@ static bool gx2_set_shader(void *data,
    if (wiiu->shader_preset)
       gx2_free_shader_preset(wiiu);
 
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       if (type != RARCH_SHADER_SLANG)
       {
@@ -246,6 +246,13 @@ static bool gx2_set_shader(void *data,
       }
 
       wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));
+
+      /* NULL-check the calloc before passing the pointer to
+       * video_shader_load_preset_into_shader, which does not
+       * NULL-check its 'shader' parameter and will NULL-deref
+       * on the first field write. */
+      if (!wiiu->shader_preset)
+         return false;
 
       if (!video_shader_load_preset_into_shader(path, wiiu->shader_preset))
       {
@@ -700,6 +707,10 @@ static void gx2_font_free(void* data, bool is_threaded)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
+   /* Ensure the GPU has finished any draws referencing the
+    * font atlas and UBO before freeing the backing memory. */
+   GX2DrawDone();
+
    if (font->texture.surface.image)
       MEM1_free(font->texture.surface.image);
    if (font->ubo_tex)
@@ -712,13 +723,17 @@ static int gx2_font_get_message_width(void* data, const char* msg,
 {
    int i;
    int delta_x = 0;
+   void *font_data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
    const struct font_glyph* glyph_q = NULL;
    gx2_font_t                *font  = (gx2_font_t*)data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   get_glyph = font->font_driver->get_glyph;
+   font_data = font->font_data;
+   glyph_q   = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -731,8 +746,7 @@ static int gx2_font_get_message_width(void* data, const char* msg,
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -756,18 +770,34 @@ static void gx2_font_render_line(
    int i;
    int count;
    sprite_vertex_t *v;
+   const char* msg_end              = msg + msg_len;
    int x                            = pre_x;
    int y                            = roundf((1.0 - pos_y) * height);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t) = font->font_driver->get_glyph;
+   void *font_data      = font->font_data;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that gx2_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= gx2_font_get_message_width(font, msg, msg_len, scale);
-         break;
+      int width_accum     = 0;
+      const char *scan    = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = get_glyph(font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-      case TEXT_ALIGN_CENTER:
-         x -= gx2_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    v       = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
@@ -783,8 +813,7 @@ static void gx2_font_render_line(
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph  = glyph_q))
             continue;
 
@@ -857,15 +886,14 @@ static void gx2_font_render_message(
    int x                                  = roundf(pos_x * width);
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / wiiu->vp.height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
-
+      size_t msg_len = 0;
+      while (msg[msg_len] && msg[msg_len] != '\n')
+         msg_len++;
       /* Draw the line */
       if ((wiiu->vertex_cache.current + (msg_len * 4)
-		      <= wiiu->vertex_cache.size))
+              <= wiiu->vertex_cache.size))
          gx2_font_render_line(wiiu,
                font,
                glyph_q,
@@ -877,10 +905,8 @@ static void gx2_font_render_message(
                height,
                x,
                text_align);
-
-      if (!delim)
+      if (!msg[msg_len])
          break;
-
       msg += msg_len + 1;
       lines++;
    }
@@ -966,7 +992,7 @@ static const struct font_glyph* gx2_font_get_glyph(void* data, uint32_t code)
 {
    gx2_font_t* font = (gx2_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 
@@ -1342,7 +1368,7 @@ static void *gx2_init(const video_info_t *video,
       wiiu->vp.full_height = wiiu->render_mode.height;
    }
 
-   video_driver_set_size(wiiu->vp.width, wiiu->vp.height);
+   video_driver_set_output_size(wiiu->vp.width, wiiu->vp.height);
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 
@@ -2404,6 +2430,10 @@ static void gx2_unload_texture(void *data,
    if (!texture)
       return;
 
+   /* Ensure the GPU has finished any draws referencing this
+    * texture before freeing the backing memory. */
+   GX2DrawDone();
+
    MEM2_free(texture->surface.image);
    free(texture);
 }
@@ -2523,7 +2553,7 @@ static const video_poke_interface_t gx2_poke_interface = {
    gx2_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -2559,6 +2589,8 @@ video_driver_t video_wiiu =
 #endif
    gx2_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    gx2_widgets_enabled
 #endif

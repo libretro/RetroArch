@@ -24,11 +24,18 @@
 #include <queues/task_queue.h>
 #include <string/stdstring.h>
 #include <retro_timers.h>
+#include <defines/cocoa_defines.h>
 
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
+
+#if defined(HAVE_COCOA_METAL)
+#include "../../gfx/common/metal_view.h"
+#endif
+
 #include "../ui_companion_driver.h"
 #include "../../audio/audio_driver.h"
+#include "../../gfx/video_display_server.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../input/drivers/cocoa_input.h"
@@ -531,7 +538,10 @@ enum
 #endif
 
 @interface RetroArch_iOS () <UITextFieldDelegate>
-@property (nonatomic, strong) UITextField *keyboardTextField;
+/* 'retain' works identically to 'strong' under ARC but unlike 'strong'
+ * is also accepted by the pre-ARC compiler - so the file remains
+ * buildable under MRR without a separate code path. */
+@property (nonatomic, retain) UITextField *keyboardTextField;
 @property (nonatomic, copy) void(^keyboardCompletionCallback)(const char *);
 @property (nonatomic, assign) char **keyboardBufferPtr;
 @property (nonatomic, assign) size_t *keyboardSizePtr;
@@ -557,6 +567,14 @@ enum
    if (_renderView != nil)
    {
       [_renderView removeFromSuperview];
+      /* _renderView holds a +1 retain regardless of which path below
+       * created it (the Metal / Vulkan branches take +1 directly from
+       * +new; the OPENGL_ES branch retains the singleton returned by
+       * glkitview_init()).  Release it here so the ownership invariant
+       * is balanced before we nil the ivar.  Under ARC this is a
+       * no-op and the implicit __strong ivar handles the release when
+       * _renderView is assigned nil. */
+      RARCH_RELEASE(_renderView);
       _renderView = nil;
    }
 
@@ -564,6 +582,9 @@ enum
    {
 #ifdef HAVE_COCOA_METAL
        case APPLE_VIEW_TYPE_VULKAN:
+         /* +new returns a +1 object; that retain transfers into
+          * _renderView and satisfies the ivar's ownership invariant
+          * directly.  No extra RARCH_RETAIN needed. */
          _renderView = [MetalLayerView new];
 #if TARGET_OS_IOS
          _renderView.multipleTouchEnabled = YES;
@@ -582,7 +603,12 @@ enum
          break;
 #endif
        case APPLE_VIEW_TYPE_OPENGL_ES:
-         _renderView = (BRIDGE GLKView*)glkitview_init();
+         /* glkitview_init() returns an unretained pointer to the
+          * cocoa_gl_ctx.m singleton.  Retain explicitly so _renderView
+          * matches the +1 invariant the Metal / Vulkan paths get from
+          * +new.  Under ARC RARCH_RETAIN is a no-op and the implicit
+          * __strong ivar assignment takes the retain via objc_storeStrong. */
+         _renderView = RARCH_RETAIN((BRIDGE GLKView*)glkitview_init());
          break;
 
        case APPLE_VIEW_TYPE_NONE:
@@ -596,7 +622,16 @@ enum
 #if TARGET_OS_IOS
    if (@available(iOS 13.4, *))
    {
-      [_renderView addInteraction:[[UIPointerInteraction alloc] initWithDelegate:self]];
+      /* +[UIPointerInteraction alloc] initWithDelegate: returns +1.
+       * -addInteraction: retains internally, so autorelease our own
+       * +1 to balance under MRR.  ARC already releases on scope
+       * exit; the macro is a no-op there.  RARCH_AUTORELEASE is a
+       * statement-only macro (it expands to ((void)0) under ARC)
+       * so it must appear on its own line rather than wrapping the
+       * rvalue. */
+      UIPointerInteraction *interaction = [[UIPointerInteraction alloc] initWithDelegate:self];
+      RARCH_AUTORELEASE(interaction);
+      [_renderView addInteraction:interaction];
       _renderView.userInteractionEnabled = YES;
    }
 #endif
@@ -694,10 +729,18 @@ enum
       }
    }
 
-   /* Configure KSCrash for local storage only */
+   /* Configure KSCrash for local storage only.
+    * Autorelease the +1 from +new: -installWithConfiguration: keeps
+    * its own reference via config.reportStoreConfiguration retain and
+    * KSCrash's own retain of the config, so our local can be released
+    * at autorelease-pool drain without dangling any of those.
+    * RARCH_AUTORELEASE is a statement-only macro; call it on its own
+    * line after the assignment.  No-op under ARC. */
    KSCrashConfiguration *config = [KSCrashConfiguration new];
+   RARCH_AUTORELEASE(config);
    config.installPath = crashReportsPath;
    KSCrashReportStoreConfiguration *storeConfig = [KSCrashReportStoreConfiguration new];
+   RARCH_AUTORELEASE(storeConfig);
    storeConfig.reportsPath = crashReportsPath;
    storeConfig.appName = @"RetroArch";
    storeConfig.maxReportCount = 10; /* Keep last 10 crash reports */
@@ -745,7 +788,12 @@ enum
       if (!report)
          continue;
 
+      /* -mutableCopy returns +1.  Inside a for-loop that's a
+       * per-iteration leak under MRR; autorelease so it is cleaned up
+       * when the pool drains at the next run-loop iteration.
+       * Statement-only macro, so on its own line.  No-op under ARC. */
       NSMutableDictionary *mutableReport = [report.value mutableCopy];
+      RARCH_AUTORELEASE(mutableReport);
 
       /* Remove binary_images to reduce file size */
       if ([mutableReport objectForKey:@"binary_images"])
@@ -770,8 +818,12 @@ enum
                                                                error:nil];
       if (minifiedData)
       {
+         /* +1 from alloc+init; per-iteration leak inside the for-loop
+          * under MRR without an autorelease.  Statement-only macro, so
+          * on its own line.  No-op under ARC. */
          NSString *jsonString = [[NSString alloc] initWithData:minifiedData
                                                       encoding:NSUTF8StringEncoding];
+         RARCH_AUTORELEASE(jsonString);
          if (jsonString)
          {
             /* Log with a unique marker that can be extracted with grep/sed */
@@ -811,7 +863,11 @@ enum
 
       // Define the original and new file paths
       NSString *originalPath = [cachesDirectory stringByAppendingPathComponent:@"RetroArch/config/retroarch.cfg"];
+      /* +1 from alloc+init; autorelease so scope-exit cleans up under
+       * MRR the same way ARC does.  Statement-only macro, so on its
+       * own line.  No-op under ARC. */
       NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+      RARCH_AUTORELEASE(dateFormatter);
       [dateFormatter setDateFormat:@"HHmm-yyMMdd"];
       NSString *timestamp = [dateFormatter stringFromDate:[NSDate date]];
       NSString *newPath = [cachesDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"RetroArch/config/RetroArch-%@.cfg", timestamp]];
@@ -834,8 +890,16 @@ enum
 
    [self setDelegate:self];
 
-   /* Setup window */
-   self.window        = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   /* Setup window.
+    * self.window is a retain property (see apple_platform.h); the
+    * setter takes its own retain.  Autorelease the +1 from alloc+init
+    * via a temp so the setter's retain is the sole owner under MRR.
+    * Under ARC the strong setter retains and ARC scope-releases the
+    * temp.  Statement-only macro, so RARCH_AUTORELEASE goes on its
+    * own line. */
+   UIWindow *win      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   RARCH_AUTORELEASE(win);
+   self.window        = win;
    [self.window makeKeyAndVisible];
 
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
@@ -1050,7 +1114,11 @@ enum
    // Handle topshelf URLs: retroarch://topshelf?path=...&core_path=...
    if ([url.host isEqualToString:@"topshelf"])
    {
+      /* +1 from alloc+init; autorelease so scope-exit balances under
+       * MRR.  Statement-only macro, so on its own line.  No-op under
+       * ARC. */
       NSURLComponents *comp = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+      RARCH_AUTORELEASE(comp);
       NSString *ns_path, *ns_core_path;
       char path[PATH_MAX_LENGTH];
       char core_path[PATH_MAX_LENGTH];
@@ -1146,7 +1214,14 @@ enum
    /* Initialize hidden keyboard text field for iOS native keyboard support */
    if (!self.keyboardTextField)
    {
-      self.keyboardTextField = [[UITextField alloc] initWithFrame:CGRectMake(0, -100, 1, 1)];
+      /* self.keyboardTextField is a retain property (see private
+       * category above); the setter takes its own retain.  Autorelease
+       * the +1 from alloc+init via a temp so the setter's retain is
+       * the sole owner under MRR.  Statement-only macro, so
+       * RARCH_AUTORELEASE goes on its own line.  No-op under ARC. */
+      UITextField *tf = [[UITextField alloc] initWithFrame:CGRectMake(0, -100, 1, 1)];
+      RARCH_AUTORELEASE(tf);
+      self.keyboardTextField = tf;
       self.keyboardTextField.delegate = self;
       self.keyboardTextField.autocapitalizationType = UITextAutocapitalizationTypeNone;
       self.keyboardTextField.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -1170,7 +1245,11 @@ enum
 {
     for (MXMetricPayload *payload in payloads)
     {
+        /* +1 from alloc+init; per-iteration leak inside the loop under
+         * MRR without an autorelease.  Statement-only macro, so on its
+         * own line.  No-op under ARC. */
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        RARCH_AUTORELEASE(json);
         RARCH_LOG("[Cocoa] Got Metric Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
 }
@@ -1179,7 +1258,11 @@ enum
 {
     for (MXDiagnosticPayload *payload in payloads)
     {
+        /* +1 from alloc+init; per-iteration leak inside the loop under
+         * MRR without an autorelease.  Statement-only macro, so on its
+         * own line.  No-op under ARC. */
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        RARCH_AUTORELEASE(json);
         RARCH_LOG("[Cocoa] Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
 }
@@ -1307,6 +1390,27 @@ enum
       }
    }
 }
+
+#if !__has_feature(objc_arc)
+/* RetroArch_iOS is the UIApplication delegate and therefore a
+ * process-lifetime singleton - this dealloc effectively never runs in
+ * practice.  Keeping it for symmetry with ui_cocoa.m's dealloc and so
+ * the ownership picture is complete for anyone reading the file: every
+ * retained ivar / property has a paired release here, and _renderView
+ * is released by -setViewType: whenever it is reassigned (see above).
+ * No-op under ARC where retained ivars/properties are released
+ * automatically. */
+- (void)dealloc
+{
+   RARCH_RELEASE(_renderView);
+   RARCH_RELEASE(_window);
+   RARCH_RELEASE(_documentsDirectory);
+   RARCH_RELEASE(_bgDate);
+   RARCH_RELEASE(_keyboardTextField);
+   RARCH_RELEASE(_keyboardCompletionCallback);
+   RARCH_SUPER_DEALLOC();
+}
+#endif
 
 @end
 

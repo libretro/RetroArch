@@ -24,9 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>  /* INT_MAX, LONG_MAX -- both C89 */
 #include <sys/types.h>
-
-#include <string/stdstring.h> /* string_is_empty */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -713,11 +712,28 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
 int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t len)
 {
 #ifdef _WIN32
-   if (stream && stream->fp && _chsize(_fileno(stream->fp), len) == 0)
+   /* _chsize takes a long and silently truncates lengths > LONG_MAX
+    * (2 GiB on Windows) -- present on all Windows CRTs including
+    * VC6.  _chsize_s takes __int64 and was added in the Secure CRT
+    * (VS 2005, _MSC_VER 1400).  Prefer the 64-bit variant when
+    * available, and on older MSVC / MinGW with legacy msvcrt fall
+    * back to _chsize only for lengths that fit in long -- return
+    * an error for larger lengths rather than silently truncating
+    * the file. */
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+   if (stream && stream->fp && _chsize_s(_fileno(stream->fp), len) == 0)
    {
 	   stream->size = len;
 	   return 0;
    }
+#else
+   if (stream && stream->fp && len >= 0 && len <= (int64_t)LONG_MAX
+         && _chsize(_fileno(stream->fp), (long)len) == 0)
+   {
+	   stream->size = len;
+	   return 0;
+   }
+#endif
 #elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && (!defined(SWITCH) || defined(HAVE_LIBNX))
    if (stream && stream->fp && ftruncate(fileno(stream->fp), (off_t)len) == 0)
    {
@@ -794,16 +810,31 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
    {
-      if (stream->mappos > stream->mapsize)
+      if (stream->mappos >= stream->mapsize)
+      {
+         /* At or past EOF: 0 bytes is the correct return for
+          * fread-style semantics on a legitimate read that reached
+          * EOF, -1 if we were already past EOF (corrupt state). */
+         if (stream->mappos == stream->mapsize)
+            return 0;
          return -1;
+      }
 
-      if (stream->mappos + len > stream->mapsize)
-         len = stream->mapsize - stream->mappos;
+      /* Clamp len against the remaining mapped bytes.  Done as an
+       * unsigned subtraction *before* computing mappos+len to avoid
+       * integer overflow: mappos+len can wrap past mapsize when
+       * both operands are large uint64_t values, defeating the
+       * naive "mappos + len > mapsize" bound check. */
+      {
+         uint64_t remaining = stream->mapsize - stream->mappos;
+         if (len > remaining)
+            len = remaining;
+      }
 
-      memcpy(s, &stream->mapped[stream->mappos], len);
+      memcpy(s, &stream->mapped[stream->mappos], (size_t)len);
       stream->mappos += len;
 
-      return len;
+      return (int64_t)len;
    }
 #endif
 
@@ -1009,7 +1040,7 @@ const char *retro_vfs_file_get_path_impl(
    return stream->orig_path;
 }
 
-int retro_vfs_stat_impl(const char *path, int32_t *size)
+int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 {
    int ret                   = RETRO_VFS_STAT_IS_VALID;
 
@@ -1049,7 +1080,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          return 0;
 
       if (size)
-         *size                  = (int32_t)stat_buf.st_size;
+         *size                  = (int64_t)stat_buf.st_size;
 
       if (FIO_S_ISDIR(stat_buf.st_mode))
          ret              |= RETRO_VFS_STAT_IS_DIRECTORY;
@@ -1061,24 +1092,64 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          return 0;
 
       if (size)
-         *size = (int32_t)stat_buf.st_size;
+         *size = (int64_t)stat_buf.st_size;
 
       if ((stat_buf.st_mode & S_IFMT) == S_IFDIR)
          ret  |= RETRO_VFS_STAT_IS_DIRECTORY;
 #elif defined(_WIN32)
-      /* Windows */
-      struct _stat stat_buf;
-#if defined(LEGACY_WIN32)
-      char *path_local          = utf8_to_local_string_alloc(path);
+      /* Windows
+       * Older MSVC _stat may fail on directory paths 
+       * with a trailing backslash */
+      struct _stat64 stat_buf;
+      char path_buf[PATH_MAX_LENGTH];
+      const char *stat_path = path;
       DWORD file_info;
+#if defined(LEGACY_WIN32)
+      char *path_local;
+#else
+      wchar_t *path_wide;
+#endif
+      size_t _len = strlcpy(path_buf, path, sizeof(path_buf));
+
+      if (_len > 0 && _len < sizeof(path_buf))
+      {
+         while (_len > 0 && 
+               (path_buf[_len - 1] == '\\' || path_buf[_len - 1] == '/'))
+         {
+            /* Keep drive roots like "C:\" intact */
+            if (_len == 3 &&
+                  ((((path_buf[0] >= 'A') && (path_buf[0] <= 'Z')) ||
+                    ((path_buf[0] >= 'a') && (path_buf[0] <= 'z'))) &&
+                   path_buf[1] == ':' && path_buf[2] == '\\'))
+               break;
+
+            path_buf[--_len] = '\0';
+         }
+
+         stat_path = path_buf;
+      }
+#if defined(LEGACY_WIN32)
+      path_local                = utf8_to_local_string_alloc(stat_path);
 
       if (!path_local)
          return 0;
 
       file_info                 = GetFileAttributes(path_local);
 
+      /* Use _stat64 explicitly to match the struct _stat64 buffer
+       * declared above. The bare _stat is a macro that expands to
+       * _stat64i32 on VS2005+ (or _stat32 with _USE_32BIT_TIME_T),
+       * neither of which match struct _stat64 -- passing the wrong
+       * struct silently truncates st_size. _stat64 has been in MSVC
+       * since VS2003 (_MSC_VER >= 1300) and is provided by mingw-w64.
+       * VC6 has no 64-bit time_t at all; _stati64 is the only match. */
+#if defined(_MSC_VER) && _MSC_VER < 1300
       if (file_info == INVALID_FILE_ATTRIBUTES
-            || _stat(path_local, &stat_buf) != 0)
+            || _stati64(path_local, (struct _stati64*)&stat_buf) != 0)
+#else
+      if (file_info == INVALID_FILE_ATTRIBUTES
+            || _stat64(path_local, &stat_buf) != 0)
+#endif
       {
          free(path_local);
          return 0;
@@ -1086,8 +1157,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
       free(path_local);
 #else
-      wchar_t *path_wide        = utf8_to_utf16_string_alloc(path);
-      DWORD file_info;
+      path_wide                 = utf8_to_utf16_string_alloc(stat_path);
 
       if (!path_wide)
          return 0;
@@ -1095,7 +1165,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       file_info                 = GetFileAttributesW(path_wide);
 
       if (file_info == INVALID_FILE_ATTRIBUTES
-            || _wstat(path_wide, &stat_buf) != 0)
+            || _wstat64(path_wide, &stat_buf) != 0)
       {
          free(path_wide);
          return 0;
@@ -1105,7 +1175,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 #endif
 
       if (size)
-         *size = (int32_t)stat_buf.st_size;
+         *size = (int64_t)stat_buf.st_size;
 
       if (file_info & FILE_ATTRIBUTE_DIRECTORY)
          ret  |= RETRO_VFS_STAT_IS_DIRECTORY;
@@ -1125,7 +1195,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          return 0;
 
       if (size)
-         *size = (int32_t)stat_buf.st_size;
+         *size = (int64_t)stat_buf.st_size;
 
       if (S_ISDIR(stat_buf.st_mode))
          ret |= RETRO_VFS_STAT_IS_DIRECTORY;
@@ -1133,13 +1203,19 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
 #else
       /* Every other platform */
+#if defined(_LARGEFILE64_SOURCE)
+      struct stat64 stat_buf;
+      if (stat64(path, &stat_buf) < 0)
+         return 0;
+#else
       struct stat stat_buf;
 
       if (stat(path, &stat_buf) < 0)
          return 0;
+#endif
 
       if (size)
-         *size = (int32_t)stat_buf.st_size;
+         *size = (int64_t)stat_buf.st_size;
 
       if (S_ISDIR(stat_buf.st_mode))
          ret |= RETRO_VFS_STAT_IS_DIRECTORY;
@@ -1147,6 +1223,28 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
 #endif
    }
+   return ret;
+}
+
+int retro_vfs_stat_impl(const char *path, int32_t *size)
+{
+   int64_t size64 = 0;
+   int ret = retro_vfs_stat_64_impl(path, size ? &size64 : NULL);
+
+   /* If a file is larger than 2 GiB, size64 holds the correct value
+    * but a naked (int32_t) cast would truncate -- worse, on files in
+    * (INT32_MAX, UINT32_MAX] the high bit wraps and callers see a
+    * negative size that they may interpret as an error.  Saturate to
+    * INT_MAX so a caller using the legacy API gets a clamped-large
+    * value rather than a corrupted one, and migrate to
+    * retro_vfs_stat_64_impl for files that need the real size.
+    * INT_MAX is used instead of INT32_MAX for C89 / VC6 portability
+    * (stdint.h's INT32_MAX is a C99 addition; INT_MAX is C89).  int
+    * is 32-bit on all MSVC targets including VC6, so INT_MAX ==
+    * INT32_MAX everywhere this code runs. */
+   if (size)
+      *size = (size64 > (int64_t)INT_MAX) ? INT_MAX : (int32_t)size64;
+
    return ret;
 }
 
@@ -1198,23 +1296,20 @@ int retro_vfs_mkdir_impl(const char *dir)
       /* On GEKKO platforms, mkdir() fails if
        * the path has a trailing slash. We must
        * therefore remove it. */
-      int ret = -1;
-      if (!string_is_empty(dir))
+      int ret       = -1;
+      char *dir_buf = strdup(dir);
+
+      if (dir_buf)
       {
-         char *dir_buf = strdup(dir);
+         size_t _len = strlen(dir_buf);
 
-         if (dir_buf)
-         {
-            size_t _len = strlen(dir_buf);
+         if (_len > 0)
+            if (dir_buf[_len - 1] == '/')
+               dir_buf[_len - 1] = '\0';
 
-            if (_len > 0)
-               if (dir_buf[_len - 1] == '/')
-                   dir_buf[_len - 1] = '\0';
+         ret = mkdir(dir_buf, 0750);
 
-            ret = mkdir(dir_buf, 0750);
-
-            free(dir_buf);
-         }
+         free(dir_buf);
       }
 #else
       int ret = mkdir(dir, 0750);
@@ -1369,7 +1464,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 #elif defined(VITA)
    rdir->directory       = sceIoDopen(name);
 #elif defined(_3DS)
-   rdir->directory       = !string_is_empty(name) ? opendir(name) : NULL;
+   rdir->directory       = opendir(name);
    rdir->entry           = NULL;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
    rdir->error           = sysFsOpendir(name, &rdir->directory);
@@ -1476,7 +1571,7 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
    {
       char full[PATH_MAX_LENGTH];
       const char *name = retro_vfs_dirent_get_name_impl(rdir);
-      int32_t sz = 0;
+      int64_t sz = 0;
       int st = 0;
 
       if (!name)

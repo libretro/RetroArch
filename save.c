@@ -72,7 +72,7 @@ struct autosave
 {
    void *buffer;
    const void *retro_buffer;
-   const char *path;
+   char *path;
    slock_t *lock;
    slock_t *cond_lock;
    scond_t *cond;
@@ -152,13 +152,11 @@ static void autosave_thread(void *data)
             }
          }
 
+         /* Only copy from first difference onward */
          if (differ)
-         {
-            /* Only copy from first difference onward */
             memcpy((unsigned char*)save->buffer + offset,
                    (const unsigned char*)save->retro_buffer + offset,
                    save->bufsize - offset);
-         }
 
          /* Clear dirty flag regardless — we've checked */
          save->flags &= ~AUTOSAVE_FLAG_DIRTY;
@@ -240,10 +238,22 @@ static autosave_t *autosave_new(const char *path,
    if (compress)
       handle->flags             |= AUTOSAVE_FLAG_COMPRESS_FILES;
    handle->retro_buffer          = data;
-   handle->path                  = path;
+   /* Own the path string rather than borrowing it. The caller's
+    * path comes from task_save_files->elems[i].data, freed by
+    * path_deinit_savefile() during the deinit chain. The worker
+    * thread reads handle->path via intfstream_open_*(). Owning
+    * the string keeps the lifetime contract local to
+    * autosave_new/autosave_free rather than depending on top-
+    * level deinit ordering at every call site. */
+   if (!(handle->path = strdup(path)))
+   {
+      free(handle);
+      return NULL;
+   }
 
    if (!(buf = malloc(len)))
    {
+      free(handle->path);
       free(handle);
       return NULL;
    }
@@ -265,6 +275,7 @@ static autosave_t *autosave_new(const char *path,
          slock_free(handle->cond_lock);
       if (handle->cond)
          scond_free(handle->cond);
+      free(handle->path);
       free(handle->buffer);
       free(handle);
       return NULL;
@@ -278,6 +289,7 @@ static autosave_t *autosave_new(const char *path,
       slock_free(handle->lock);
       slock_free(handle->cond_lock);
       scond_free(handle->cond);
+      free(handle->path);
       free(handle->buffer);
       free(handle);
       return NULL;
@@ -307,6 +319,10 @@ static void autosave_free(autosave_t *handle)
    if (handle->buffer)
       free(handle->buffer);
    handle->buffer = NULL;
+
+   if (handle->path)
+      free(handle->path);
+   handle->path = NULL;
 
    free(handle);
 }
@@ -475,7 +491,7 @@ static bool content_load_ram_file(unsigned slot)
     * not exist. This is a common enough occurrence
     * that we should check before attempting to
     * invoke the relevant read_file() function */
-   if (    string_is_empty(ram.path)
+   if (    (!ram.path || !*ram.path)
        || !path_is_valid(ram.path))
       return false;
 
@@ -581,7 +597,7 @@ static bool content_save_ram_file(unsigned slot, bool compress)
    /* Quick check: if the file already exists and matches
     * current memory contents, skip the write entirely.
     * This is the common case when autosave has been running. */
-   if (   !string_is_empty(ram.path)
+   if (   ram.path && *ram.path
        &&  path_is_valid(ram.path))
    {
 #if defined(HAVE_ZLIB)

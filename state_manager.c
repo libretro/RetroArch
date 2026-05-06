@@ -180,37 +180,7 @@ static size_t state_manager_raw_maxsize(size_t uncomp)
 }
 
 /*
- * See state_manager_raw_compress for information about this.
- * When you're done with it, send it to free().
- */
-static void *state_manager_raw_alloc(size_t len, uint16_t uniq)
-{
-   size_t  _len  = (len + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
-   uint16_t *ret = (uint16_t*)calloc(_len + sizeof(uint16_t) * 4 + 16, 1);
-
-   if (!ret)
-      return NULL;
-
-   /* Force in a different byte at the end, so we don't need to check
-    * bounds in the innermost loop (it's expensive).
-    *
-    * There is also a large amount of data that's the same, to stop
-    * the other scan.
-    *
-    * There is also some padding at the end. This is so we don't
-    * read outside the buffer end if we're reading in large blocks;
-    *
-    * It doesn't make any difference to us, but sacrificing 16 bytes to get
-    * Valgrind happy is worth it. */
-   ret[_len / sizeof(uint16_t) + 3] = uniq;
-
-   return ret;
-}
-
-/*
  * Takes two savestates and creates a patch that turns 'src' into 'dst'.
- * Both 'src' and 'dst' must be returned from state_manager_raw_alloc(),
- * with the same 'len', and different 'uniq'.
  *
  * 'patch' must be size 'state_manager_raw_maxsize(len)' or more.
  * Returns the number of bytes actually written to 'patch'.
@@ -361,10 +331,16 @@ static void state_manager_free(state_manager_t *state)
 
    if (state->data)
       free(state->data);
-   if (state->thisblock)
-      free(state->thisblock);
-   if (state->nextblock)
-      free(state->nextblock);
+   /* thisblock and nextblock share a single allocation;
+    * after pointer swaps, either could point to the base.
+    * Free whichever has the lower address. */
+   if (state->thisblock || state->nextblock)
+   {
+      uint8_t *base = state->thisblock;
+      if (state->nextblock && (!base || state->nextblock < base))
+         base = state->nextblock;
+      free(base);
+   }
 #if STRICT_BUF_SIZE
    if (state->debugblock)
       free(state->debugblock);
@@ -378,9 +354,8 @@ static void state_manager_free(state_manager_t *state)
 static state_manager_t *state_manager_new(
       size_t state_size, size_t buffer_size)
 {
-   size_t max_comp_size, block_size;
-   uint8_t *next_block    = NULL;
-   uint8_t *this_block    = NULL;
+   size_t max_comp_size, block_size, alloc_size, single_block_alloc;
+   uint8_t *block_buf     = NULL;
    uint8_t *state_data    = NULL;
    state_manager_t *state = (state_manager_t*)calloc(1, sizeof(*state));
 
@@ -395,17 +370,28 @@ static state_manager_t *state_manager_new(
    if (!state_data)
       goto error;
 
-   this_block         = (uint8_t*)state_manager_raw_alloc(state_size, 0);
-   next_block         = (uint8_t*)state_manager_raw_alloc(state_size, 1);
+   /* Combine thisblock and nextblock into a single allocation.
+    * Each block needs: block_size rounded to uint16_t alignment,
+    * plus padding (4 uint16_t + 16 bytes).
+    * We allocate one contiguous buffer and split it in two. */
+   single_block_alloc = block_size + sizeof(uint16_t) * 4 + 16;
+   alloc_size         = single_block_alloc * 2;
+   block_buf          = (uint8_t*)calloc(alloc_size, 1);
 
-   if (!this_block || !next_block)
+   if (!block_buf)
       goto error;
+
+   /* Set up sentinel bytes.
+    * thisblock gets uniq=0 (already zero from calloc).
+    * nextblock gets uniq=1. */
+   ((uint16_t*)block_buf)[block_size / sizeof(uint16_t) + 3] = 0;
+   ((uint16_t*)(block_buf + single_block_alloc))[block_size / sizeof(uint16_t) + 3] = 1;
 
    state->blocksize   = block_size;
    state->maxcompsize = max_comp_size;
    state->data        = state_data;
-   state->thisblock   = this_block;
-   state->nextblock   = next_block;
+   state->thisblock   = block_buf;
+   state->nextblock   = block_buf + single_block_alloc;
    state->capacity    = buffer_size;
 
    state->head        = state->data + sizeof(size_t);
@@ -421,7 +407,8 @@ static state_manager_t *state_manager_new(
 error:
    if (state_data)
       free(state_data);
-   state_manager_free(state);
+   if (block_buf)
+      free(block_buf);
    free(state);
 
    return NULL;

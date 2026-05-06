@@ -268,7 +268,7 @@ static bool ITifJSONObjectEndHandler(void *context)
    /* Copy values read from JSON file */
    input_test_steps[current_test_step].expected_button = pCtx->expected_button;
 
-   if (!string_is_empty(pCtx->message))
+   if (pCtx->message && *pCtx->message)
       strlcpy(
             input_test_steps[current_test_step].message, pCtx->message,
             sizeof(input_test_steps[current_test_step].message));
@@ -305,7 +305,7 @@ static bool ITifJSONNumberHandler(void* context, const char *s, size_t len)
    ITifJSONContext *pCtx = (ITifJSONContext*)context;
 
    /* ignore unknown members */
-   if (pCtx->current_entry_uint_val && len && !string_is_empty(s))
+   if (pCtx->current_entry_uint_val && len && (s && *s))
       *pCtx->current_entry_uint_val = string_to_unsigned(s);
 
    pCtx->current_entry_uint_val = NULL;
@@ -317,7 +317,7 @@ static bool ITifJSONStringHandler(void* context, const char *s, size_t len)
 {
    ITifJSONContext *pCtx = (ITifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && len && !string_is_empty(s))
+   if (pCtx->current_entry_str_val && len && (s && *s))
    {
       if (*pCtx->current_entry_str_val)
          free(*pCtx->current_entry_str_val);
@@ -341,7 +341,7 @@ static bool input_test_file_read(const char* file_path)
    rjson_t* parser;
 
    /* Sanity check */
-   if (    string_is_empty(file_path)
+   if (  (!file_path || !*file_path)
        || !path_is_valid(file_path)
       )
       return false;

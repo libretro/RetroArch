@@ -15,6 +15,7 @@
 
 #include <features/features_cpu.h>
 #include <retro_assert.h>
+#include <compat/strl.h>
 
 #include "cheevos_locals.h"
 #include "cheevos_client.h"

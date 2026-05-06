@@ -531,7 +531,7 @@ static void sdl_rs90_blit_text16(
          screen_height - vid->frame_padding_y)
       return;
 
-   while (!string_is_empty(str))
+   while (str && *str)
    {
       /* Check for out of bounds x coordinates */
       if (x_pos + FONT_WIDTH_STRIDE + 1 >=
@@ -614,7 +614,7 @@ static void sdl_rs90_blit_text32(
          screen_height - vid->frame_padding_y)
       return;
 
-   while (!string_is_empty(str))
+   while (str && *str)
    {
       /* Check for out of bounds x coordinates */
       if (x_pos + FONT_WIDTH_STRIDE + 1 >=
@@ -734,7 +734,7 @@ static void sdl_rs90_input_driver_init(
 
    /* If input driver name is empty, cannot
     * initialise anything... */
-   if (string_is_empty(input_drv_name))
+   if (!input_drv_name || !*input_drv_name)
       return;
 
    if (string_is_equal(input_drv_name, "sdl_dingux"))
@@ -1410,7 +1410,7 @@ static const video_poke_interface_t sdl_rs90_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -1449,6 +1449,8 @@ video_driver_t video_sdl_rs90 = {
 #endif
    sdl_rs90_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

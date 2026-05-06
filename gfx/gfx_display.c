@@ -14,9 +14,20 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <string/stdstring.h>
+
 #include "gfx_display.h"
 
+#ifdef HAVE_SDL2
+/* SDL_version.h is needed for the SDL_VERSION_ATLEAST gate on the
+ * gfx_display_ctx_sdl2 table entry. The driver itself requires
+ * SDL_RenderGeometry (>= 2.0.18); on older SDL the symbol is not
+ * defined in sdl2_gfx.c, so the table entry must be elided too. */
+#include <SDL_version.h>
+#endif
+
 #include "../configuration.h"
+#include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_MIST
@@ -100,6 +111,11 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_gdi,
 #endif
 #endif
+#ifdef HAVE_SDL2
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+   &gfx_display_ctx_sdl2,
+#endif
+#endif
    NULL,
 };
 
@@ -124,22 +140,6 @@ static float gfx_display_get_dpi_scale_internal(
     * (or window) in terms of pixels */
    diagonal_pixels = (float)sqrt(
          (double)((width * width) + (height * height)));
-
-   /* TODO/FIXME: On Mac, calling video_context_driver_get_metrics()
-    * here causes RetroArch to crash (EXC_BAD_ACCESS). This is
-    * unfortunate, and needs to be fixed at the gfx context driver
-    * level. Until this is done, all we can do is fallback to using
-    * the old legacy 'magic number' scaling on Mac platforms. */
-#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
-   if (true)
-   {
-      scale        = (diagonal_pixels / 6.5f) / 212.0f;
-      scale_cached = true;
-      last_width   = width;
-      last_height  = height;
-      return scale;
-   }
-#endif
 
    /* Get pixel scale relative to baseline 1080p display */
    pixel_scale   = diagonal_pixels / (float)DIAGONAL_PIXELS_1080P;
@@ -455,14 +455,14 @@ void gfx_display_draw_text(
 void gfx_display_draw_bg(
       gfx_display_t *p_disp,
       gfx_display_ctx_draw_t *draw,
+      struct video_coords *coords,
       void *userdata, bool add_opacity_to_wallpaper,
       float override_opacity)
 {
-   static struct video_coords coords;
    const float           *new_vertex = NULL;
    const float        *new_tex_coord = NULL;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (!dispctx || !draw)
+   if (!dispctx || !draw || !coords)
       return;
 
    if (draw->vertex)
@@ -475,13 +475,13 @@ void gfx_display_draw_bg(
    else if (dispctx->get_default_tex_coords)
       new_tex_coord                  = dispctx->get_default_tex_coords();
 
-   coords.vertices                   = (unsigned)draw->vertex_count;
-   coords.vertex                     = new_vertex;
-   coords.tex_coord                  = new_tex_coord;
-   coords.lut_tex_coord              = new_tex_coord;
-   coords.color                      = (const float*)draw->color;
+   coords->vertices                  = (unsigned)draw->vertex_count;
+   coords->vertex                    = new_vertex;
+   coords->tex_coord                 = new_tex_coord;
+   coords->lut_tex_coord             = new_tex_coord;
+   coords->color                     = (const float*)draw->color;
 
-   draw->coords                      = &coords;
+   draw->coords                      = coords;
    draw->scale_factor                = 1.0f;
    draw->rotation                    = 0.0f;
 
@@ -533,7 +533,6 @@ void gfx_display_draw_quad(
    draw.texture         = (texture && *texture)
       ? *texture
       : gfx_white_texture;
-   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
@@ -664,7 +663,6 @@ void gfx_display_draw_texture_slice(
    draw.height              = height;
    draw.coords              = &coords;
    draw.matrix_data         = mymat;
-   draw.prim_type           = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id         = 0;
    coords.color             = (const float*)(color == NULL ? colors : color);
 
@@ -927,7 +925,6 @@ void gfx_display_draw_cursor(
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
    draw.texture         = texture;
-   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
@@ -1075,7 +1072,7 @@ bool gfx_display_reset_textures_list_buffer(
    ti.width         = 0;
    ti.height        = 0;
    ti.pixels        = NULL;
-   ti.supports_rgba = video_driver_supports_rgba();
+   ti.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
    {
@@ -1111,9 +1108,9 @@ bool gfx_display_reset_textures_list(
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
-   ti.supports_rgba              = video_driver_supports_rgba();
+   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
-   if (string_is_empty(texture_path))
+   if (!texture_path || !*texture_path)
       return false;
 
    fill_pathname_join_special(texpath,
@@ -1150,9 +1147,9 @@ bool gfx_display_reset_icon_texture(
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
-   ti.supports_rgba              = video_driver_supports_rgba();
+   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
-   if (string_is_empty(texture_path))
+   if (!texture_path || !*texture_path)
       return false;
    if (!image_texture_load(&ti, texture_path))
       return false;
@@ -1171,6 +1168,51 @@ bool gfx_display_reset_icon_texture(
    image_texture_free(&ti);
 
    return true;
+}
+
+/* -----------------------------------------------------------------------
+ * Platform-adaptive icon/texture loading
+ *
+ * Dispatches to either the synchronous (blocking) or asynchronous
+ * (task-queue) icon loading path depending on the platform.
+ *
+ * Platforms that define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS get the
+ * pre-async behavior: image_texture_load -> video_driver_texture_load
+ * in one call, no task queue involvement.  This avoids frame-spread
+ * I/O and GL context contention on platforms where the async path is
+ * actually slower (e.g. Android behind SAF / fuse storage).
+ *
+ * To opt a new platform into the synchronous path, add it to the
+ * ifdef below.
+ * ----------------------------------------------------------------------- */
+
+#if 0 
+#define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
+#endif
+
+bool gfx_display_load_icon(
+      const char *fullpath,
+      bool supports_rgba,
+      uintptr_t *target_texture,
+      uint64_t generation,
+      uint64_t *generation_ptr)
+{
+#ifdef GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
+   /* Synchronous path - identical to pre-async behavior.
+    * Generation counter is irrelevant: the load completes
+    * before this function returns, so there is no in-flight
+    * callback that could write to a freed pointer. */
+   (void)supports_rgba;
+   (void)generation;
+   (void)generation_ptr;
+   return gfx_display_reset_icon_texture(
+         fullpath, target_texture,
+         TEXTURE_FILTER_LINEAR, NULL, NULL);
+#else
+   return task_push_icon_load(
+         fullpath, supports_rgba,
+         target_texture, generation, generation_ptr);
+#endif
 }
 
 void gfx_display_deinit_white_texture(void)

@@ -13,12 +13,31 @@
 
 #include <stdarg.h>
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <profileapi.h>
-#else
-#include <time.h>
+#if defined(_WIN32)
+  #if defined(_MSC_VER) && _MSC_VER < 1700
+    #include <windows.h>  /* pre-VS2012 SDKs lack profileapi.h; windows.h brings the functions */
+  #else
+    #include <profileapi.h>
+  #endif
+#endif
+
+/* clock_gettime() was added to Darwin in iOS 10.0 / macOS 10.12.  On
+ * earlier deployment targets the symbol doesn't exist in libSystem
+ * and rc_client_clock_get_now_millisecs() below fails to link.
+ * Disable the CLOCK_MONOTONIC branch there so the function falls
+ * through to the clock()+time() #else fallback.  MIN_REQUIRED is
+ * the deployment target - what the binary must be able to run on -
+ * which is the right version to gate on here. */
+#if defined(__APPLE__) && defined(__MACH__)
+#include <AvailabilityMacros.h>
+#if (defined(MAC_OS_X_VERSION_MIN_REQUIRED) \
+       && MAC_OS_X_VERSION_MIN_REQUIRED < 101200) \
+ || (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) \
+       && __IPHONE_OS_VERSION_MIN_REQUIRED < 100000)
+#ifdef CLOCK_MONOTONIC
+#undef CLOCK_MONOTONIC
+#endif
+#endif
 #endif
 
 #define RC_CLIENT_UNKNOWN_GAME_ID (uint32_t)-1

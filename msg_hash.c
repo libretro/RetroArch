@@ -14,11 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
+#include <compat/strl.h>
+#include <string/stdstring.h> /* for string_replace_substring */
 #include <lrc_hash.h>
-#include <string/stdstring.h>
 #include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
@@ -43,8 +44,8 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
    int ret = msg_hash_get_help_us_enum(msg, s, len);
    /* Replace line-breaks with "empty line-breaks" for readability */
    const char *temp = string_replace_substring(s, strlen(s),
-         "\n",    STRLEN_CONST("\n"),
-         "\n \n", STRLEN_CONST("\n \n"));
+         "\n",    (sizeof("\n")-1),
+         "\n \n", (sizeof("\n \n")-1));
 
    if (temp)
    {
@@ -140,6 +141,8 @@ const char *get_user_language_iso639_1(bool limit)
           return "no";
       case RETRO_LANGUAGE_IRISH:
           return "ga";
+      case RETRO_LANGUAGE_THAI:
+          return "th";
    }
    return "en";
 }
@@ -564,6 +567,18 @@ static const char *msg_hash_to_str_ga(enum msg_hash_enums msg)
 
    return "null";
 }
+
+static const char *msg_hash_to_str_th(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_th.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
 #endif
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
@@ -678,14 +693,15 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
       case RETRO_LANGUAGE_IRISH:
          ret = msg_hash_to_str_ga(msg);
          break;
+      case RETRO_LANGUAGE_THAI:
+         ret = msg_hash_to_str_th(msg);
+         break;
       default:
          break;
    }
 #endif
-
-   if (ret && !string_is_equal(ret, "null"))
+   if (ret && strcmp(ret, "null") != 0)
       return ret;
-
    return msg_hash_to_str_us(msg);
 }
 
@@ -736,6 +752,8 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_FILE_GONG_CAPS                                              0x7c8558d0U
 #define MENU_VALUE_FILE_TGA                                                    0x0b88ae01U
 #define MENU_VALUE_FILE_BMP                                                    0x0b886244U
+#define MENU_VALUE_FILE_WEBP                                                   0x7ca00b53U
+#define MENU_VALUE_FILE_WEBP_CAPS                                              0x7c8df2d3U
 
 #define MENU_VALUE_MD5                                                         0x0b888fabU
 #define MENU_VALUE_SHA1                                                        0x7c9de632U
@@ -920,6 +938,9 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_TGA;
       case MENU_VALUE_FILE_BMP:
          return FILE_TYPE_BMP;
+      case MENU_VALUE_FILE_WEBP:
+      case MENU_VALUE_FILE_WEBP_CAPS:
+         return FILE_TYPE_WEBP;
 #endif
 #ifdef HAVE_EASTEREGG
       case MENU_VALUE_FILE_GONG:

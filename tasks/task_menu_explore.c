@@ -170,8 +170,8 @@ bool task_push_menu_explore_init(const char *directory_playlist,
    retro_task_t *task                       = NULL;
    menu_explore_init_handle_t *menu_explore = NULL;
 
-   if (   string_is_empty(directory_playlist)
-       || string_is_empty(directory_database))
+   if (   (!directory_playlist || !*directory_playlist)
+       || (!directory_database || !*directory_database))
       goto error;
 
    task         = task_init();

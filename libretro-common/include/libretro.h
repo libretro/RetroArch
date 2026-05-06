@@ -485,6 +485,7 @@ enum retro_language
    RETRO_LANGUAGE_GALICIAN            = 33,
    RETRO_LANGUAGE_NORWEGIAN           = 34,
    RETRO_LANGUAGE_IRISH               = 35,
+   RETRO_LANGUAGE_THAI                = 36,
    RETRO_LANGUAGE_LAST,
 
    /** Defined to ensure that <tt>sizeof(retro_language) == sizeof(int)</tt>. Do not use. */
@@ -2936,6 +2937,19 @@ typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const cha
 typedef int (RETRO_CALLCONV *retro_vfs_stat_t)(const char *path, int32_t *size);
 
 /**
+ * Gets information about the given file (64-bit size).
+ *
+ * @param path The path to the file to query.
+ * @param[out] size The reported size of the file in bytes.
+ * May be \c NULL, in which case this value is ignored.
+ * @return A bitmask of \c RETRO_VFS_STAT flags,
+ * or 0 if \c path doesn't refer to a valid file.
+ * @see RETRO_VFS_STAT
+ * @since VFS API v4
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_stat_64_t)(const char *path, int64_t *size);
+
+/**
  * Creates a directory at the given path.
  *
  * @param dir The desired location of the new directory.
@@ -3090,6 +3104,10 @@ struct retro_vfs_interface
 
    /** @copydoc retro_vfs_closedir_t */
    retro_vfs_closedir_t closedir;
+
+   /* VFS API v4 */
+   /** @copydoc retro_vfs_stat_64_t */
+   retro_vfs_stat_64_t stat_64;
 };
 
 /**
@@ -4229,6 +4247,9 @@ struct retro_log_callback
 
 /** Indicates CPU support for the ASIMD instruction set. */
 #define RETRO_SIMD_ASIMD    (1 << 21)
+
+/** Indicates CPU support for the AVX512 instruction set. */
+#define RETRO_SIMD_AVX512   (1 << 22)
 
 /** @} */
 

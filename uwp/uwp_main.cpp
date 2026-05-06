@@ -498,7 +498,7 @@ void App::OnSuspending(IInspectable const& sender, SuspendingEventArgs const& ar
          if (!path_is_empty(RARCH_PATH_CONFIG))
          {
          const char* config_path = path_get(RARCH_PATH_CONFIG);
-         bool path_exists        = !string_is_empty(config_path);
+         bool path_exists        = config_path && *config_path;
 
          if (path_exists)
          {
@@ -867,46 +867,6 @@ extern "C" {
       return true;
    }
 
-   bool win32_get_metrics(void* data,
-         enum display_metric_types type, float* value)
-   {
-      switch (type)
-      {
-         case DISPLAY_METRIC_PIXEL_WIDTH:
-            *value                 = uwp_get_width();
-            return true;
-         case DISPLAY_METRIC_PIXEL_HEIGHT:
-            *value				 = uwp_get_height();
-            return true;
-         case DISPLAY_METRIC_MM_WIDTH:
-            /* 25.4 mm in an inch. */
-            {
-               int pixels_x        = DisplayInformation::GetForCurrentView().ScreenWidthInRawPixels();
-               int raw_dpi_x       = DisplayInformation::GetForCurrentView().RawDpiX();
-               int physical_width  = pixels_x / raw_dpi_x;
-               *value              = 254 * physical_width / 10;
-            }
-            return true;
-         case DISPLAY_METRIC_MM_HEIGHT:
-            /* 25.4 mm in an inch. */
-            {
-               int pixels_y        = DisplayInformation::GetForCurrentView().ScreenHeightInRawPixels();
-               int raw_dpi_y       = DisplayInformation::GetForCurrentView().RawDpiY();
-               int physical_height = pixels_y / raw_dpi_y;
-               *value              = 254 * physical_height / 10;
-            }
-            return true;
-         case DISPLAY_METRIC_DPI:
-            *value                 = DisplayInformation::GetForCurrentView().RawDpiX();
-            return true;
-         case DISPLAY_METRIC_NONE:
-         default:
-            *value                 = 0;
-            break;
-      }
-      return false;
-   }
-
    void win32_check_window(void *data,
          bool *quit, bool *resize, unsigned *width, unsigned *height)
    {
@@ -1020,6 +980,51 @@ extern "C" {
       }
       current_width = returnValue;
       return returnValue;
+   }
+
+   float uwp_get_refresh_rate(void)
+   {
+      float ret              = 0.0f;
+      volatile bool finished = false;
+      CoreApplication::MainView().CoreWindow().Dispatcher().RunAsync(
+            CoreDispatcherPriority::Normal,
+            DispatchedHandler([&ret, &finished]()
+               {
+               if (is_running_on_xbox())
+               {
+                  auto hdi = winrt::Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+                  if (hdi)
+                     ret = static_cast<float>(hdi.GetCurrentDisplayMode().RefreshRate());
+               }
+               finished = true;
+               }));
+      auto corewindow = CoreWindow::GetForCurrentThread();
+      while (!finished)
+      {
+         if (corewindow)
+            corewindow.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+      }
+      return ret;
+   }
+
+   float uwp_get_dpi(void)
+   {
+      float ret              = 0.0f;
+      volatile bool finished = false;
+      CoreApplication::MainView().CoreWindow().Dispatcher().RunAsync(
+            CoreDispatcherPriority::Normal,
+            DispatchedHandler([&ret, &finished]()
+               {
+               ret     = DisplayInformation::GetForCurrentView().RawDpiX();
+               finished = true;
+               }));
+      auto corewindow = CoreWindow::GetForCurrentThread();
+      while (!finished)
+      {
+         if (corewindow)
+            corewindow.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+      }
+      return ret;
    }
 
    void uwp_fill_installed_core_packages(struct string_list *list)

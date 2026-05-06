@@ -265,13 +265,26 @@ static bool vulkan_emulated_mailbox_init(
    mailbox->flags               = 0;
 
    if (!(mailbox->cond      = scond_new()))
-      return false;
+      goto error;
    if (!(mailbox->lock      = slock_new()))
-      return false;
+      goto error;
    if (!(mailbox->thread    = sthread_create(vulkan_emulated_mailbox_loop,
                mailbox)))
-      return false;
+      goto error;
    return true;
+
+error:
+   /* Tear down anything we managed to allocate before failing.
+    * vulkan_emulated_mailbox_deinit() is null-safe and ends with
+    * a memset, so the struct is left in the same shape a caller
+    * would see after a successful init+deinit cycle -- callers
+    * that ignore our return value (the two sites in
+    * vulkan_create_swapchain) will then take the
+    * mailbox.swapchain == VK_NULL_HANDLE branch in
+    * vulkan_acquire_next_image and skip the emulated path
+    * cleanly instead of dereferencing a NULL lock/cond. */
+   vulkan_emulated_mailbox_deinit(mailbox);
+   return false;
 }
 
 static void vulkan_debug_mark_object(VkDevice device,
@@ -291,36 +304,6 @@ static void vulkan_debug_mark_object(VkDevice device,
       info.pObjectName                   = merged_name;
       vkSetDebugUtilsObjectNameEXT(device, &info);
    }
-}
-
-static bool vulkan_buffer_chain_suballoc(struct vk_buffer_chain *chain,
-      size_t len, struct vk_buffer_range *range)
-{
-   VkDeviceSize next_offset = chain->offset + len;
-   if (next_offset <= chain->current->buffer.size)
-   {
-      range->data   = (uint8_t*)chain->current->buffer.mapped + chain->offset;
-      range->buffer = chain->current->buffer.buffer;
-      range->offset = chain->offset;
-      chain->offset = (next_offset + chain->alignment - 1)
-         & ~(chain->alignment - 1);
-      return true;
-   }
-   return false;
-}
-
-static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
-      const struct vulkan_context *context,
-      size_t len, VkBufferUsageFlags usage)
-{
-   struct vk_buffer_node *node = (struct vk_buffer_node*)
-      malloc(sizeof(*node));
-   if (!node)
-      return NULL;
-   node->buffer = vulkan_create_buffer(
-         context, len, usage);
-   node->next   = NULL;
-   return node;
 }
 
 static bool vulkan_load_instance_symbols(gfx_ctx_vulkan_data_t *vk)
@@ -462,21 +445,12 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
       goto end;
    }
 
+   /* Required extensions: presence already validated by the
+    * vulkan_find_extensions() check above. Append in one shot. */
    memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
-   count += num_exts;
-
    for (i = 0; i < num_exts; i++)
-   {
-      if (vulkan_find_extensions(&exts[i], 1, properties, property_count))
-      {
-         RARCH_DBG("[Vulkan] Device extension supported: %s.\n", exts[i]);
-         enabled[count++] = exts[i];
-      }
-      else
-      {
-         RARCH_DBG("[Vulkan] Device extension NOT supported: %s.\n", exts[i]);
-      }
-   }
+      RARCH_DBG("[Vulkan] Device extension supported: %s.\n", exts[i]);
+   count += num_exts;
 
    for (i = 0; i < num_optional_exts; i++)
    {
@@ -546,7 +520,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
       vkGetPhysicalDeviceProperties(gpus[i],
             &gpu_properties);
 
-      RARCH_LOG("[Vulkan] Found GPU at index %d: \"%s\".\n", i, gpu_properties.deviceName);
+      RARCH_LOG("[Vulkan] Found GPU #%d: \"%s\".\n", i, gpu_properties.deviceName);
 
       string_list_append(vk->gpu_list, gpu_properties.deviceName, attr);
    }
@@ -555,7 +529,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
    if (0 <= gpu_index && gpu_index < (int)gpu_count)
    {
-      RARCH_LOG("[Vulkan] Using GPU index %d.\n", gpu_index);
+      RARCH_LOG("[Vulkan] Using GPU #%d: \"%s\".\n", gpu_index, vk->gpu_list->elems[gpu_index].data);
       vk->context.gpu = gpus[gpu_index];
    }
    else
@@ -775,8 +749,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
    }
 
-   RARCH_LOG("[Vulkan] Using GPU: \"%s\".\n", vk->context.gpu_properties.deviceName);
-
    {
       char version_str[128];
       size_t _len            = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
@@ -933,6 +905,18 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
 
    const char *required_extensions[3];
    uint32_t required_extension_count = 0;
+
+   /* Both mallocs must have succeeded before the memcpy / field
+    * assignments below dereference the buffers.  The 'end' label
+    * free()s both pointers; free(NULL) is a no-op, so if only one
+    * of the two succeeded it still gets reclaimed.  'instance' was
+    * pre-initialised to VK_NULL_HANDLE at the top of the function,
+    * which is the correct error-return value for this API. */
+   if (!instance_extensions || !instance_layers)
+   {
+      RARCH_ERR("[Vulkan] Out of memory allocating instance extension / layer arrays.\n");
+      goto end;
+   }
 
    memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
    memcpy((void*)instance_layers,     info.ppEnabledLayerNames,     info.enabledLayerCount     * sizeof(const char *));
@@ -1431,51 +1415,6 @@ static void vulkan_create_wait_fences(gfx_ctx_vulkan_data_t *vk)
    vk->context.current_frame_index = 0;
 }
 
-bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
-      struct vk_buffer_chain *chain,
-      size_t len, struct vk_buffer_range *range)
-{
-   if (!chain->head)
-   {
-      if (!(chain->head = vulkan_buffer_chain_alloc_node(context,
-            chain->block_size, chain->usage)))
-         return false;
-
-      chain->current = chain->head;
-      chain->offset  = 0;
-   }
-
-   if (!vulkan_buffer_chain_suballoc(chain, len, range))
-   {
-      /* We've exhausted the current chain, traverse list until we
-       * can find a block we can use. Usually, we just step once. */
-      while (chain->current->next)
-      {
-         chain->current = chain->current->next;
-         chain->offset  = 0;
-         if (vulkan_buffer_chain_suballoc(chain, len, range))
-            return true;
-      }
-
-      /* We have to allocate a new node, might allocate larger
-       * buffer here than block_size in case we have
-       * a very large allocation. */
-      if (len < chain->block_size)
-         len = chain->block_size;
-
-      if (!(chain->current->next = vulkan_buffer_chain_alloc_node(
-                  context, len, chain->usage)))
-         return false;
-
-      chain->current = chain->current->next;
-      chain->offset  = 0;
-      /* This cannot possibly fail. */
-      retro_assert(vulkan_buffer_chain_suballoc(chain, len, range));
-   }
-   return true;
-}
-
-
 void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer)
 {
    static unsigned object_count;
@@ -1493,118 +1432,6 @@ void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory)
    static unsigned object_count;
    vulkan_debug_mark_object(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)memory, "RetroArch memory", ++object_count);
 }
-
-struct vk_buffer vulkan_create_buffer(
-      const struct vulkan_context *context,
-      size_t len, VkBufferUsageFlags usage)
-{
-   struct vk_buffer buffer;
-   VkMemoryRequirements mem_reqs;
-   VkBufferCreateInfo info;
-   VkMemoryAllocateInfo alloc;
-
-   info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-   info.pNext                 = NULL;
-   info.flags                 = 0;
-   info.size                  = len;
-   info.usage                 = usage;
-   info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
-   info.queueFamilyIndexCount = 0;
-   info.pQueueFamilyIndices   = NULL;
-   vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
-   vulkan_debug_mark_buffer(context->device, buffer.buffer);
-
-   vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
-
-   alloc.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-   alloc.pNext                = NULL;
-   alloc.allocationSize       = mem_reqs.size;
-   alloc.memoryTypeIndex      = vulkan_find_memory_type(
-         &context->memory_properties,
-         mem_reqs.memoryTypeBits,
-           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-   vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
-   vulkan_debug_mark_memory(context->device, buffer.memory);
-   vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
-
-   buffer.size                = len;
-
-   vkMapMemory(context->device,
-         buffer.memory, 0, buffer.size, 0, &buffer.mapped);
-   return buffer;
-}
-
-void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer)
-{
-   vkUnmapMemory(device, buffer->memory);
-   vkFreeMemory(device, buffer->memory, NULL);
-
-   vkDestroyBuffer(device, buffer->buffer, NULL);
-
-   memset(buffer, 0, sizeof(*buffer));
-}
-
-struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
-      VkDevice device,
-      const struct vk_descriptor_manager *manager)
-{
-   unsigned i;
-   VkDescriptorPoolCreateInfo pool_info;
-   VkDescriptorSetAllocateInfo alloc_info;
-   struct vk_descriptor_pool *pool =
-      (struct vk_descriptor_pool*)malloc(sizeof(*pool));
-   if (!pool)
-      return NULL;
-
-   pool_info.sType                 = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-   pool_info.pNext                 = NULL;
-   pool_info.flags                 = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-   pool_info.maxSets               = VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS;
-   pool_info.poolSizeCount         = manager->num_sizes;
-   pool_info.pPoolSizes            = manager->sizes;
-
-   pool->pool                      = VK_NULL_HANDLE;
-   for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
-      pool->sets[i]                = VK_NULL_HANDLE;
-   pool->next                      = NULL;
-
-   vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool);
-
-   /* Just allocate all descriptor sets up front. */
-   alloc_info.sType                = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-   alloc_info.pNext                = NULL;
-   alloc_info.descriptorPool       = pool->pool;
-   alloc_info.descriptorSetCount   = 1;
-   alloc_info.pSetLayouts          = &manager->set_layout;
-
-   for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
-      vkAllocateDescriptorSets(device, &alloc_info, &pool->sets[i]);
-
-   return pool;
-}
-
-VkDescriptorSet vulkan_descriptor_manager_alloc(
-      VkDevice device, struct vk_descriptor_manager *manager)
-{
-   if (manager->count >= VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
-   {
-      while (manager->current->next)
-      {
-         manager->current = manager->current->next;
-         manager->count   = 0;
-         return manager->current->sets[manager->count++];
-      }
-
-      manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
-      retro_assert(manager->current->next);
-
-      manager->current = manager->current->next;
-      manager->count   = 0;
-   }
-   return manager->current->sets[manager->count++];
-}
-
 
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
@@ -2203,8 +2030,87 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, NULL);
+   if (format_count > ARRAY_SIZE(formats))
+      format_count = ARRAY_SIZE(formats);
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, formats);
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR) && defined(VULKAN_HDR_SWAPCHAIN)
+   /* Hybrid GPU workaround (e.g. Nvidia Optimus / AMD switchable).
+    * The display is often physically connected to the integrated GPU,
+    * so the discrete GPU may not report HDR surface formats even though
+    * the display supports HDR.  Query all other physical devices for
+    * HDR formats and merge them in — on Windows the DWM compositor
+    * handles presentation, so HDR formats reported by ANY device for
+    * this surface will work. */
+   if (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT)
+   {
+      bool have_hdr = false;
+      for (i = 0; i < format_count && !have_hdr; i++)
+      {
+         if (  (  vulkan_is_hdr10_format(formats[i].format)
+               && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+            || (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+               && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT))
+            have_hdr = true;
+      }
+
+      if (!have_hdr)
+      {
+         uint32_t gpu_count = 0;
+         VkPhysicalDevice gpus_all[8];
+
+         vkEnumeratePhysicalDevices(vk->context.instance, &gpu_count, NULL);
+         if (gpu_count > ARRAY_SIZE(gpus_all))
+            gpu_count = ARRAY_SIZE(gpus_all);
+         vkEnumeratePhysicalDevices(vk->context.instance, &gpu_count, gpus_all);
+
+         for (i = 0; i < gpu_count; i++)
+         {
+            uint32_t j, other_count = 0;
+            VkSurfaceFormatKHR other_formats[256];
+            VkPhysicalDeviceProperties props;
+
+            if (gpus_all[i] == vk->context.gpu)
+               continue;
+
+            vkGetPhysicalDeviceSurfaceFormatsKHR(
+                  gpus_all[i], vk->vk_surface, &other_count, NULL);
+            if (other_count == 0)
+               continue;
+            if (other_count > ARRAY_SIZE(other_formats))
+               other_count = ARRAY_SIZE(other_formats);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(
+                  gpus_all[i], vk->vk_surface, &other_count, other_formats);
+
+            vkGetPhysicalDeviceProperties(gpus_all[i], &props);
+
+            for (j = 0; j < other_count; j++)
+            {
+               bool is_hdr_fmt =
+                  (  vulkan_is_hdr10_format(other_formats[j].format)
+                  && other_formats[j].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+                  || (  other_formats[j].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+                     && other_formats[j].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT);
+
+               if (is_hdr_fmt && format_count < ARRAY_SIZE(formats))
+               {
+                  RARCH_LOG("[Vulkan] HDR format %u/colorspace %u found on GPU \"%s\", "
+                        "merging into surface format list.\n",
+                        other_formats[j].format,
+                        other_formats[j].colorSpace,
+                        props.deviceName);
+                  formats[format_count++] = other_formats[j];
+                  have_hdr = true;
+               }
+            }
+
+            if (have_hdr)
+               break; /* Found HDR formats from another GPU */
+         }
+      }
+   }
+#endif
 
    format.format = VK_FORMAT_UNDEFINED;
    if (     format_count == 1
@@ -2231,31 +2137,36 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
           * The colorspace extension alone is not enough — some
           * drivers expose the extension without any HDR surface
           * formats. */
-         video_driver_unset_hdr_support();
-         video_driver_unset_hdr10_support();
-         video_driver_unset_scrgb_support();
-         for (i = 0; i < format_count; i++)
          {
-            if (  vulkan_is_hdr10_format(formats[i].format)
-               && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
-               video_driver_set_hdr10_support();
-            if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
-               && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
-               video_driver_set_scrgb_support();
+            uint32_t disp_flags = video_driver_get_disp_flags();
+            disp_flags &= ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
+            for (i = 0; i < format_count; i++)
+            {
+               if (  vulkan_is_hdr10_format(formats[i].format)
+                  && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+                  disp_flags |= VIDEO_FLAG_HDR10_SUPPORT;
+               if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
+                  && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
+                  disp_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
+            }
+            if (disp_flags & (VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT))
+               disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
+            video_driver_set_disp_flags(disp_flags);
          }
-         if (video_driver_supports_hdr10() || video_driver_supports_scrgb())
-            video_driver_set_hdr_support();
 
          /* Clamp the selected mode if the surface doesn't support it */
-         if (video_hdr_mode == 2 && !video_driver_supports_scrgb())
          {
-            RARCH_WARN("[Vulkan] scRGB not available on this surface, falling back.\n");
-            video_hdr_mode = video_driver_supports_hdr10() ? 1 : 0;
-         }
-         if (video_hdr_mode == 1 && !video_driver_supports_hdr10())
-         {
-            RARCH_WARN("[Vulkan] HDR10 not available on this surface, falling back.\n");
-            video_hdr_mode = 0;
+            uint32_t disp_flags = video_driver_get_disp_flags();
+            if (video_hdr_mode == 2 && !(disp_flags & VIDEO_FLAG_SCRGB_SUPPORT))
+            {
+               RARCH_WARN("[Vulkan] scRGB not available on this surface, falling back.\n");
+               video_hdr_mode = (disp_flags & VIDEO_FLAG_HDR10_SUPPORT) ? 1 : 0;
+            }
+            if (video_hdr_mode == 1 && !(disp_flags & VIDEO_FLAG_HDR10_SUPPORT))
+            {
+               RARCH_WARN("[Vulkan] HDR10 not available on this surface, falling back.\n");
+               video_hdr_mode = 0;
+            }
          }
 
          if (video_hdr_mode > 0)
@@ -2272,6 +2183,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
                   && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
                {
                   format = formats[i];
+                  vk->context.flags |= VK_CTX_FLAG_HDR_SCRGB;
                   RARCH_LOG("[Vulkan] Selecting R16G16B16A16_SFLOAT swapchain with scRGB colour space.\n");
                   break;
                }
@@ -2393,6 +2305,15 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          && (desired_swapchain_images > surface_properties.maxImageCount))
       desired_swapchain_images = surface_properties.maxImageCount;
 
+   /* Cap our request to what we can actually hold. Per-image arrays
+    * (swapchain_images, swapchain_fences, the various semaphore
+    * arrays, vk->swapchain[], readback.staging[]) are all sized to
+    * VULKAN_MAX_SWAPCHAIN_IMAGES at compile time. The post-create
+    * fill below also clamps defensively in case a driver returns
+    * more images than requested. */
+   if (desired_swapchain_images > VULKAN_MAX_SWAPCHAIN_IMAGES)
+      desired_swapchain_images = VULKAN_MAX_SWAPCHAIN_IMAGES;
+
    if (surface_properties.supportedTransforms
          & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
       pre_transform            = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
@@ -2431,11 +2352,19 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.compositeAlpha         = composite;
    info.presentMode            = swapchain_present_mode;
    info.clipped                = VK_TRUE;
-   info.oldSwapchain           = old_swapchain;
 
-   info.oldSwapchain = VK_NULL_HANDLE;
+   /* TODO/FIXME:
+    * Weird shenanigans necessary for Apple otherwise the following happens:
+    * The menu sometimes refuses to display, but still responds to input. 
+    * This happens about 1/5 times on macOS but 100% in the quick menu on iOS
+    */
+#ifdef __APPLE__
+   info.oldSwapchain           = NULL;
    if (old_swapchain != VK_NULL_HANDLE)
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+#else
+   info.oldSwapchain           = old_swapchain;
+#endif
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    if (vk->fse_supported)
@@ -2457,6 +2386,12 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          return false;
       }
    }
+
+   /* See TODO/FIXME note above - part of the same rubber bandaid hack 'fix' */
+#ifndef __APPLE__
+   if (old_swapchain != VK_NULL_HANDLE)
+      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+#endif
 
    vk->context.swapchain_width        = swapchain_size.width;
    vk->context.swapchain_height       = swapchain_size.height;
@@ -2494,12 +2429,50 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, NULL);
+
+   /* Even after capping minImageCount above, drivers may legally
+    * return more images than requested. Clamp before the fill call
+    * so we don't write past swapchain_images[] and so every
+    * downstream loop bounded by num_swapchain_images stays inside
+    * its compile-time-sized array. */
+   if (vk->context.num_swapchain_images > VULKAN_MAX_SWAPCHAIN_IMAGES)
+   {
+      RARCH_WARN("[Vulkan] Swapchain returned %u images, clamping to %u.\n",
+            vk->context.num_swapchain_images,
+            (unsigned)VULKAN_MAX_SWAPCHAIN_IMAGES);
+      vk->context.num_swapchain_images = VULKAN_MAX_SWAPCHAIN_IMAGES;
+   }
+
    vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
 
    if (old_swapchain == VK_NULL_HANDLE)
       RARCH_LOG("[Vulkan] Got %u swapchain images.\n",
             vk->context.num_swapchain_images);
+
+   /* Pre-create the per-image present-side semaphores up-front for every
+    * image in the new swapchain.  vulkan_acquire_next_image only allocates
+    * swapchain_semaphores[index] for the image actually returned by
+    * vkAcquireNextImageKHR, leaving slots for not-yet-acquired images at
+    * VK_NULL_HANDLE.  On the swapchain recreate path the prior teardown
+    * memsets the array to zero, and at least one path through the recreate
+    * can reach vulkan_present with current_swapchain_index pointing at an
+    * image whose slot has not yet been re-populated.  NVIDIA real-FSE on
+    * Win11 then segfaults inside vkQueuePresentKHR when handed
+    * VK_NULL_HANDLE in pWaitSemaphores. */
+   {
+      VkSemaphoreCreateInfo sem_info_pre;
+      unsigned sem_idx;
+      sem_info_pre.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+      sem_info_pre.pNext = NULL;
+      sem_info_pre.flags = 0;
+      for (sem_idx = 0; sem_idx < vk->context.num_swapchain_images; sem_idx++)
+      {
+         if (vk->context.swapchain_semaphores[sem_idx] == VK_NULL_HANDLE)
+            vkCreateSemaphore(vk->context.device, &sem_info_pre,
+                  NULL, &vk->context.swapchain_semaphores[sem_idx]);
+      }
+   }
 
    /* Force driver to reset swapchain image handles. */
    vk->context.flags                 |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
@@ -2830,306 +2803,4 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 #ifdef HAVE_THREADS
    slock_unlock(vk->context.queue_lock);
 #endif
-}
-
-void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
-      VkRenderPass *render_pass)
-{
-   VkAttachmentReference color_ref;
-   VkRenderPassCreateInfo rp_info;
-   VkAttachmentDescription attachment;
-   VkSubpassDescription subpass;
-
-   rp_info.sType                = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-   rp_info.pNext                = NULL;
-   rp_info.flags                = 0;
-   rp_info.attachmentCount      = 1;
-   rp_info.pAttachments         = &attachment;
-   rp_info.subpassCount         = 1;
-   rp_info.pSubpasses           = &subpass;
-   rp_info.dependencyCount      = 0;
-   rp_info.pDependencies        = NULL;
-
-   color_ref.attachment         = 0;
-   color_ref.layout             = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-   /* We will always write to the entire framebuffer,
-    * so we don't really need to clear. */
-   attachment.flags             = 0;
-   attachment.format            = format;
-   attachment.samples           = VK_SAMPLE_COUNT_1_BIT;
-   attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-   attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
-   attachment.stencilLoadOp     = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-   attachment.stencilStoreOp    = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-   attachment.initialLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-   attachment.finalLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-   subpass.flags                     = 0;
-   subpass.pipelineBindPoint         = VK_PIPELINE_BIND_POINT_GRAPHICS;
-   subpass.inputAttachmentCount      = 0;
-   subpass.pInputAttachments         = NULL;
-   subpass.colorAttachmentCount      = 1;
-   subpass.pColorAttachments         = &color_ref;
-   subpass.pResolveAttachments       = NULL;
-   subpass.pDepthStencilAttachment   = NULL;
-   subpass.preserveAttachmentCount   = 0;
-   subpass.pPreserveAttachments      = NULL;
-
-   vkCreateRenderPass(device, &rp_info, NULL, render_pass);
-}
-
-void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
-{
-   VkClearColorValue color;
-   VkImageSubresourceRange range;
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_UNDEFINED,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-
-   color.float32[0]     = 0.0f;
-   color.float32[1]     = 0.0f;
-   color.float32[2]     = 0.0f;
-   color.float32[3]     = 0.0f;
-   range.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   range.baseMipLevel   = 0;
-   range.levelCount     = 1;
-   range.baseArrayLayer = 0;
-   range.layerCount     = 1;
-
-   vkCmdClearColorImage(cmd,
-         image,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         &color,
-         1,
-         &range);
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-}
-
-void vulkan_framebuffer_generate_mips(
-      VkFramebuffer framebuffer,
-      VkImage image,
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      unsigned levels
-      )
-{
-   unsigned i;
-   /* This is run every frame, so make sure
-    * we aren't opting into the "lazy" way of doing this. :) */
-   VkImageMemoryBarrier barriers[2];
-
-   /* First, transfer the input mip level to TRANSFER_SRC_OPTIMAL.
-    * This should allow the surface to stay compressed.
-    * All subsequent mip-layers are now transferred into DST_OPTIMAL from
-    * UNDEFINED at this point.
-    */
-
-   /* Input */
-   barriers[0].sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-   barriers[0].pNext                           = NULL;
-   barriers[0].srcAccessMask                   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-   barriers[0].dstAccessMask                   = VK_ACCESS_TRANSFER_READ_BIT;
-   barriers[0].oldLayout                       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-   barriers[0].newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-   barriers[0].srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-   barriers[0].dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-   barriers[0].image                           = image;
-   barriers[0].subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   barriers[0].subresourceRange.baseMipLevel   = 0;
-   barriers[0].subresourceRange.levelCount     = 1;
-   barriers[0].subresourceRange.baseArrayLayer = 0;
-   barriers[0].subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
-
-   /* The rest of the mip chain */
-   barriers[1].sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-   barriers[1].pNext                           = NULL;
-   barriers[1].srcAccessMask                   = 0;
-   barriers[1].dstAccessMask                   = VK_ACCESS_TRANSFER_WRITE_BIT;
-   barriers[1].oldLayout                       = VK_IMAGE_LAYOUT_UNDEFINED;
-   barriers[1].newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-   barriers[1].srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-   barriers[1].dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-   barriers[1].image                           = image;
-   barriers[1].subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   barriers[1].subresourceRange.baseMipLevel   = 1;
-   barriers[1].subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS;
-   barriers[1].subresourceRange.baseArrayLayer = 0;
-   barriers[1].subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
-
-   vkCmdPipelineBarrier(cmd,
-         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         0,
-         0,
-         NULL,
-         0,
-         NULL,
-         2,
-         barriers);
-
-   for (i = 1; i < levels; i++)
-   {
-      unsigned src_width, src_height, target_width, target_height;
-      VkImageBlit blit_region = {{0}};
-
-      /* For subsequent passes, we have to transition
-       * from DST_OPTIMAL to SRC_OPTIMAL,
-       * but only do so one mip-level at a time. */
-      if (i > 1)
-      {
-         barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-         barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
-         barriers[0].subresourceRange.baseMipLevel = i - 1;
-         barriers[0].subresourceRange.levelCount   = 1;
-         barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-         barriers[0].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-
-         vkCmdPipelineBarrier(cmd,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               0,
-               0,
-               NULL,
-               0,
-               NULL,
-               1,
-               barriers);
-      }
-
-      src_width                                 = MAX(size.width >> (i - 1), 1u);
-      src_height                                = MAX(size.height >> (i - 1), 1u);
-      target_width                              = MAX(size.width >> i, 1u);
-      target_height                             = MAX(size.height >> i, 1u);
-
-      blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-      blit_region.srcSubresource.mipLevel       = i - 1;
-      blit_region.srcSubresource.baseArrayLayer = 0;
-      blit_region.srcSubresource.layerCount     = 1;
-      blit_region.dstSubresource                = blit_region.srcSubresource;
-      blit_region.dstSubresource.mipLevel       = i;
-      blit_region.srcOffsets[1].x               = src_width;
-      blit_region.srcOffsets[1].y               = src_height;
-      blit_region.srcOffsets[1].z               = 1;
-      blit_region.dstOffsets[1].x               = target_width;
-      blit_region.dstOffsets[1].y               = target_height;
-      blit_region.dstOffsets[1].z               = 1;
-
-      vkCmdBlitImage(cmd,
-            image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &blit_region, VK_FILTER_LINEAR);
-   }
-
-   /* We are now done, and we have all mip-levels except
-    * the last in TRANSFER_SRC_OPTIMAL,
-    * and the last one still on TRANSFER_DST_OPTIMAL,
-    * so do a final barrier which
-    * moves everything to SHADER_READ_ONLY_OPTIMAL in
-    * one go along with the execution barrier to next pass.
-    * Read-to-read memory barrier, so only need execution
-    * barrier for first transition.
-    */
-   barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
-   barriers[0].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
-   barriers[0].subresourceRange.baseMipLevel = 0;
-   barriers[0].subresourceRange.levelCount   = levels - 1;
-   barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-   barriers[0].newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-   /* This is read-after-write barrier. */
-   barriers[1].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-   barriers[1].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
-   barriers[1].subresourceRange.baseMipLevel = levels - 1;
-   barriers[1].subresourceRange.levelCount   = 1;
-   barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-   barriers[1].newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-   vkCmdPipelineBarrier(cmd,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         0,
-         0,
-         NULL,
-         0,
-         NULL,
-         2, barriers);
-
-   /* Next pass will wait for ALL_GRAPHICS_BIT, and since
-    * we have dstStage as FRAGMENT_SHADER,
-    * the dependency chain will ensure we don't start
-    * next pass until the mipchain is complete. */
-}
-
-void vulkan_framebuffer_copy(VkImage image,
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      VkImage src_image, VkImageLayout src_layout)
-{
-   VkImageCopy region;
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
-         cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_UNDEFINED,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-
-   region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.srcSubresource.mipLevel       = 0;
-   region.srcSubresource.baseArrayLayer = 0;
-   region.srcSubresource.layerCount     = 1;
-   region.srcOffset.x                   = 0;
-   region.srcOffset.y                   = 0;
-   region.srcOffset.z                   = 0;
-   region.dstSubresource                = region.srcSubresource;
-   region.dstOffset.x                   = 0;
-   region.dstOffset.y                   = 0;
-   region.dstOffset.z                   = 0;
-   region.extent.width                  = size.width;
-   region.extent.height                 = size.height;
-   region.extent.depth                  = 1;
-
-   vkCmdCopyImage(cmd,
-         src_image, src_layout,
-         image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         1, &region);
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
 }

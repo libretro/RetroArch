@@ -43,6 +43,7 @@
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #endif
+#include <compat/strl.h>
 
 #ifdef ANDROID
 #include <android/log.h>
@@ -62,7 +63,6 @@
 #endif
 
 #include <file/file_path.h>
-#include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <compat/fopen_utf8.h>
 #include <time/rtime.h>
@@ -254,9 +254,9 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          int prio = ANDROID_LOG_INFO;
          if (tag)
          {
-            if (string_is_equal(FILE_PATH_LOG_WARN, tag))
+            if (memcmp(tag, FILE_PATH_LOG_WARN, sizeof(FILE_PATH_LOG_WARN)) == 0)
                prio = ANDROID_LOG_WARN;
-            else if (string_is_equal(FILE_PATH_LOG_ERROR, tag))
+            else if (memcmp(tag, FILE_PATH_LOG_ERROR, sizeof(FILE_PATH_LOG_ERROR)) == 0)
                prio = ANDROID_LOG_ERROR;
          }
          __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
@@ -276,18 +276,15 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          r = vsnprintf(buffer, sizeof(buffer), fmt, ap);
          if (r < 0)
          {
-            size_t _len;
             buffer[sizeof(buffer) - 1] = '\0';
-            _len = strlen(buffer);
-            if (_len > 0)
-               buffer[_len - 1] = '\n';
+            if (buffer[0] != '\0')
+               buffer[sizeof(buffer) - 2] = '\n';
             else
             {
                buffer[0] = '\n';
                buffer[1] = '\0';
             }
          }
-
          if (fp)
          {
             fprintf(fp, "%s %s", tag_v, buffer);
@@ -323,9 +320,14 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
             buffer[1] = '\0';
          }
 
-#if TARGET_OS_OSX
+#if TARGET_OS_MAC && !TARGET_OS_IPHONE
+         /* Emit to the terminal unconditionally so Terminal.app and
+          * Xcode's console always see output. The file write is gated
+          * on `initialized` (= a real log file was opened) because fp
+          * defaults to stderr when no file is configured; without the
+          * guard, every line would print twice in the no-file case. */
          printf("%s %s", tag_v, buffer);
-         if (fp)
+         if (main_verbosity_st.initialized && fp)
          {
             fprintf(fp, "%s %s", tag_v, buffer);
             fflush(fp);
@@ -367,7 +369,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
             }
 #endif
 
-            if (fp)
+            if (main_verbosity_st.initialized && fp)
             {
                fprintf(fp, "%s %s", tag_v, buffer);
                fflush(fp);
@@ -523,7 +525,7 @@ void rarch_log_file_init(
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
     * log files, since user may decide to switch at any moment...) */
-   if (string_is_empty(timestamped_log_file_name))
+   if (!timestamped_log_file_name[0])
    {
       struct tm tm_;
       time_t cur_time = time(NULL);
@@ -541,12 +543,12 @@ void rarch_log_file_init(
    }
 
    /* If nothing has changed, do nothing */
-   if ((!log_to_file && !logging_to_file)
+   if (  (!log_to_file && !logging_to_file)
        || (log_to_file && logging_to_file))
       return;
 
    /* If we are currently logging to file and wish to stop,
-    * de-initialise existing logger... */
+    * deinitialise existing logger... */
    if (!log_to_file && logging_to_file)
    {
       retro_main_log_file_deinit();
@@ -563,7 +565,7 @@ void rarch_log_file_init(
    if (main_verbosity_st.fp)
       retro_main_log_file_deinit();
 
-   /* > Get directory/file paths */
+   /* Get directory/file paths */
    if (main_verbosity_st.override_active)
    {
       /* Get log directory */
@@ -583,7 +585,7 @@ void rarch_log_file_init(
       /* Get log file path */
       strlcpy(log_file_path, override_path, sizeof(log_file_path));
    }
-   else if (!string_is_empty(log_dir))
+   else if (log_dir && *log_dir)
    {
       /* Get log directory */
       strlcpy(log_directory, log_dir, sizeof(log_directory));
@@ -599,11 +601,11 @@ void rarch_log_file_init(
    else
        log_file_path[0] = '\0';
 
-   /* > Attempt to initialise log file */
-   if (!string_is_empty(log_file_path))
+   /* Attempt to initialise log file */
+   if (log_file_path[0])
    {
       /* Create log directory, if required */
-      if (     !string_is_empty(log_directory)
+      if (     log_directory[0]
             && !path_is_directory(log_directory)
             && !path_mkdir(log_directory))
       {

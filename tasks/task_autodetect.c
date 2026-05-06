@@ -22,7 +22,7 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <lists/string_list.h>
+#include <retro_dirent.h>
 #include <string/stdstring.h>
 #include <file/config_file.h>
 
@@ -42,6 +42,7 @@
 #include "../menu/menu_driver.h"
 #endif
 
+#include "../retroarch.h"
 #include "../runloop.h"
 
 enum autoconfig_handle_flags
@@ -178,7 +179,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (     (entry  = config_get_entry(config, config_key))
-            && !string_is_empty(entry->value)
+            && (entry->value && *entry->value)
             &&  string_is_equal(entry->value,
                 autoconfig_handle->device_info.name))
          affinity += 20;
@@ -190,7 +191,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
                sizeof(config_key) - _len);
       if (     affinity >= 20
             && (entry = config_get_entry(config, config_key))
-            && !string_is_empty(entry->value))
+            && (entry->value && *entry->value))
       {
          if (strstr(autoconfig_handle->device_info.phys,
                        entry->value))
@@ -224,10 +225,10 @@ static void input_autoconfigure_set_config_file(
    autoconfig_handle->autoconfig_file = config;
 
    /* > Extract config file path + name */
-   if (!string_is_empty(config->path))
+   if ((config->path && *config->path))
    {
       const char *config_file_name = path_basename_nocompression(config->path);
-      if (!string_is_empty(config_file_name))
+      if (config_file_name && *config_file_name)
          strlcpy(autoconfig_handle->device_info.config_name,
                config_file_name,
                sizeof(autoconfig_handle->device_info.config_name));
@@ -242,7 +243,7 @@ static void input_autoconfigure_set_config_file(
                "_alt%d",alternative);
 
    if (  (entry = config_get_entry(config, config_key))
-         && !string_is_empty(entry->value))
+         && (entry->value && *entry->value))
       strlcpy(autoconfig_handle->device_info.display_name,
             entry->value,
             sizeof(autoconfig_handle->device_info.display_name));
@@ -260,62 +261,63 @@ static bool input_autoconfigure_scan_config_files_external(
 {
    const char *dir_autoconfig           = autoconfig_handle->dir_autoconfig;
    const char *dir_driver_autoconfig    = autoconfig_handle->dir_driver_autoconfig;
-   struct string_list *config_file_list = NULL;
    unsigned max_affinity                = 0;
    bool match_found                     = false;
-   bool dir_driver_iterated             = false;
+   config_file_t *best_config           = NULL;
+   const char *dirs[2];
+   unsigned num_dirs = 0;
+   unsigned d;
 
-   /* First attempt to fetch from autoconfig base directory */
-   if (     !string_is_empty(dir_autoconfig)
+   if (     (dir_autoconfig && *dir_autoconfig)
          && path_is_directory(dir_autoconfig))
-      config_file_list = dir_list_new_special(
-            dir_autoconfig, DIR_LIST_AUTOCONFIG,
-            "cfg", false);
+      dirs[num_dirs++] = dir_autoconfig;
 
-list_iterate:
-   if (config_file_list && config_file_list->size)
+   if (     (dir_driver_autoconfig && *dir_driver_autoconfig)
+         && path_is_directory(dir_driver_autoconfig))
+      dirs[num_dirs++] = dir_driver_autoconfig;
+
+   for (d = 0; d < num_dirs; d++)
    {
-      size_t i;
-      config_file_t *best_config = NULL;
+      struct RDIR *rdir = retro_opendir(dirs[d]);
+      if (!rdir)
+         continue;
 
-      /* Loop through external config files */
-      for (i = 0; i < config_file_list->size; i++)
+      while (retro_readdir(rdir))
       {
-         const char *config_file_path = config_file_list->elems[i].data;
-         config_file_t *config        = NULL;
-         unsigned affinity            = 0;
+         const char *entry_name    = retro_dirent_get_name(rdir);
+         char config_file_path[PATH_MAX_LENGTH];
+         config_file_t *config     = NULL;
+         unsigned affinity         = 0;
 
-         if (string_is_empty(config_file_path))
+         if (     (!entry_name || !*entry_name)
+               || !string_is_equal_noncase(
+                     path_get_extension(entry_name), "cfg"))
             continue;
 
-         /* Load autoconfig file */
+         fill_pathname_join_special(config_file_path,
+               dirs[d], entry_name, sizeof(config_file_path));
+
          if (!(config = config_file_new_from_path_to_string(config_file_path)))
             continue;
 
-         /* Check for a match */
-         if (autoconfig_handle && config)
-            affinity = input_autoconfigure_get_config_file_affinity(
-                  autoconfig_handle, config);
+         affinity = input_autoconfigure_get_config_file_affinity(
+               autoconfig_handle, config);
 
          if (affinity > max_affinity)
          {
             if (best_config)
-            {
                config_file_free(best_config);
-               best_config = NULL;
-            }
 
-            /* 'Cache' config file for later processing */
             best_config  = config;
             config       = NULL;
             max_affinity = affinity;
 
-            /* An affinity of 6x is a 'perfect' match,
-             * and means we can return immediately */
             if (affinity >= 60)
-               break;
+            {
+               retro_closedir(rdir);
+               goto done;
+            }
          }
-         /* No match - just clean up config file */
          else
          {
             config_file_free(config);
@@ -323,45 +325,29 @@ list_iterate:
          }
       }
 
-      /* If we reach this point and a config file has
-       * been cached, then we have a match */
+      retro_closedir(rdir);
+
       if (best_config)
-      {
-         if (autoconfig_handle && best_config)
-            input_autoconfigure_set_config_file(
-                  autoconfig_handle, best_config,
-                  max_affinity % 10);
-         match_found = true;
-      }
-
-      RARCH_DBG("[Autoconf] Config files scanned: driver \"%s\", name \"%s\" (%04x/%04x), phys \"%s\", affinity %d.\n",
-            autoconfig_handle->device_info.joypad_driver,
-            autoconfig_handle->device_info.name,
-            autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
-            autoconfig_handle->device_info.phys,
-            max_affinity);
+         break;
    }
 
-   string_list_free(config_file_list);
-   config_file_list = NULL;
-
-   if (match_found)
-      return true;
-   else if (!match_found && !dir_driver_iterated)
+done:
+   if (best_config)
    {
-      /* Attempt to fetch file listing from driver-specific
-       * autoconfig directory */
-      if (     !string_is_empty(dir_driver_autoconfig)
-            && path_is_directory(dir_driver_autoconfig))
-         config_file_list = dir_list_new_special(
-               dir_driver_autoconfig, DIR_LIST_AUTOCONFIG,
-               "cfg", false);
-
-      dir_driver_iterated = true;
-      goto list_iterate;
+      input_autoconfigure_set_config_file(
+            autoconfig_handle, best_config,
+            max_affinity % 10);
+      match_found = true;
    }
 
-   return false;
+   RARCH_DBG("[Autoconf] Config files scanned: driver \"%s\", name \"%s\" (%04x/%04x), phys \"%s\", affinity %d.\n",
+         autoconfig_handle->device_info.joypad_driver,
+         autoconfig_handle->device_info.name,
+         autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
+         autoconfig_handle->device_info.phys,
+         max_affinity);
+
+   return match_found;
 }
 
 /* Attempts to find an internal autoconfig definition
@@ -381,7 +367,7 @@ static bool input_autoconfigure_scan_config_files_internal(
       config_file_t *config = NULL;
       unsigned affinity     = 0;
 
-      if (string_is_empty(input_builtin_autoconfs[i]))
+      if (!input_builtin_autoconfs[i] || !*input_builtin_autoconfs[i])
          continue;
 
       /* Load autoconfig string */
@@ -443,12 +429,12 @@ static void reallocate_port_if_needed(
    char settings_value[NAME_MAX_LENGTH];
    char settings_value_device_name[NAME_MAX_LENGTH];
    unsigned prev_assigned_player_slots[MAX_USERS] = {0};
-   unsigned int settings_value_vendor_id;
-   unsigned int settings_value_product_id;
-   unsigned first_free_player_slot = MAX_USERS + 1;
-   bool device_has_reserved_slot   = false;
-   bool no_reservation_at_all      = true;
-   settings_t *settings            = config_get_ptr();
+   unsigned int settings_value_vendor_id  = 0;
+   unsigned int settings_value_product_id = 0;
+   unsigned first_free_player_slot        = MAX_USERS + 1;
+   bool device_has_reserved_slot          = false;
+   bool no_reservation_at_all             = true;
+   settings_t *settings                   = config_get_ptr();
 
    for (player = 0; player < MAX_USERS; player++)
    {
@@ -486,17 +472,42 @@ static void reallocate_port_if_needed(
       else
          settings_value[0] = '\0';
 
-      if (!string_is_empty(settings_value))
+      if (*settings_value)
       {
+         char *endptr;
+         char *colon;
+         unsigned long parsed_vid;
+         unsigned long parsed_pid;
+
          RARCH_DBG("[Autoconf] Examining reserved device for player %d "
                    "type %d: \"%s\" against \"%04x:%04x\".\n",
                    player+1,
                    settings->uints.input_device_reservation_type[player],
                    settings_value, vendor_id, product_id);
 
-         if (sscanf(settings_value, "%04x:%04x ",
-             &settings_value_vendor_id,
-             &settings_value_product_id) != 2)
+         colon      = strchr(settings_value, ':');
+         parsed_vid = strtoul(settings_value, &endptr, 16);
+
+         if (colon && endptr == colon)
+         {
+            parsed_pid = strtoul(colon + 1, &endptr, 16);
+            if (endptr != colon + 1 && (*endptr == ' ' || *endptr == '\0'))
+            {
+               settings_value_vendor_id  = (unsigned int)parsed_vid;
+               settings_value_product_id = (unsigned int)parsed_pid;
+               device_has_reserved_slot  = (  vendor_id  == settings_value_vendor_id
+                                           && product_id == settings_value_product_id);
+            }
+            else
+            {
+               strlcpy(settings_value_device_name, settings_value,
+                       sizeof(settings_value_device_name));
+               device_has_reserved_slot =
+                     string_is_equal(device_name, settings_value_device_name)
+                  || string_is_equal(device_display_name, settings_value_device_name);
+            }
+         }
+         else
          {
             strlcpy(settings_value_device_name, settings_value,
                     sizeof(settings_value_device_name));
@@ -504,18 +515,16 @@ static void reallocate_port_if_needed(
                   string_is_equal(device_name, settings_value_device_name)
                || string_is_equal(device_display_name, settings_value_device_name);
          }
-         else
-            device_has_reserved_slot = (  vendor_id  == settings_value_vendor_id
-                                       && product_id == settings_value_product_id);
 
          if (device_has_reserved_slot)
          {
             unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
+            const char *a = input_config_get_device_name(prev_assigned_port);
             if (     detected_port != prev_assigned_port
-                 && !string_is_empty(input_config_get_device_name(prev_assigned_port))
+                 && (a && *a)
                  && (( settings_value_vendor_id  == input_config_get_device_vid(prev_assigned_port)
                  && settings_value_product_id == input_config_get_device_pid(prev_assigned_port))
-                 || strcmp(input_config_get_device_name(prev_assigned_port), settings_value_device_name) == 0))
+                 || strcmp(a, settings_value_device_name) == 0))
             {
                RARCH_DBG("[Autoconf] Same type of device already took this slot, continuing search...\n");
                device_has_reserved_slot = false;
@@ -571,9 +580,6 @@ static void reallocate_port_if_needed(
       RARCH_DBG("[Autoconf] Device \"%s\" (%x:%x) is not reserved for "
             "any player slot.\n",
             device_name, vendor_id, product_id);
-      /* Fallback in case no reservation is set up at all - to preserve
-       * any previous setup where input_joypad_index may have been
-       * customized. */
       if (   no_reservation_at_all
             || prev_assigned_player_slots[detected_port] == first_free_player_slot)
          return;
@@ -615,24 +621,24 @@ static void cb_input_autoconfigure_connect(
    /* Copy task handle parameters into global
     * state objects:
     * > Name */
-   if (!string_is_empty(autoconfig_handle->device_info.name))
+   if (*autoconfig_handle->device_info.name)
       input_config_set_device_name(port,
             autoconfig_handle->device_info.name);
    else
       input_config_clear_device_name(port);
 
    /* > Display name */
-   if (!string_is_empty(autoconfig_handle->device_info.display_name))
+   if (*autoconfig_handle->device_info.display_name)
       input_config_set_device_display_name(port,
             autoconfig_handle->device_info.display_name);
-   else if (!string_is_empty(autoconfig_handle->device_info.name))
+   else if (*autoconfig_handle->device_info.name)
       input_config_set_device_display_name(port,
             autoconfig_handle->device_info.name);
    else
       input_config_clear_device_display_name(port);
 
    /* > Driver */
-   if (!string_is_empty(autoconfig_handle->device_info.joypad_driver))
+   if (*autoconfig_handle->device_info.joypad_driver)
       input_config_set_device_joypad_driver(port,
             autoconfig_handle->device_info.joypad_driver);
    else
@@ -642,7 +648,7 @@ static void cb_input_autoconfigure_connect(
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
    input_config_set_device_pid(port, autoconfig_handle->device_info.pid);
 
-   if (!string_is_empty(autoconfig_handle->device_info.config_name))
+   if (*autoconfig_handle->device_info.config_name)
       input_config_set_device_config_name(port,
             autoconfig_handle->device_info.config_name);
    else
@@ -701,7 +707,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    autoconfig_handle = (autoconfig_handle_t*)task->state;
 
    if (   !autoconfig_handle
-       || string_is_empty(autoconfig_handle->device_info.name)
+       || !*autoconfig_handle->device_info.name
        || !(autoconfig_handle->flags & AUTOCONF_FLAG_AUTOCONFIG_ENABLED))
    {
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
@@ -746,11 +752,22 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
             "test"))
          fallback_device_name = "Test Gamepad";
 #endif
-      if (   !string_is_empty(fallback_device_name)
+      if (   (fallback_device_name && *fallback_device_name)
           && !string_is_equal(autoconfig_handle->device_info.name,
                fallback_device_name))
       {
-         char *name_backup = strdup(autoconfig_handle->device_info.name);
+         /* Save/restore device_info.name around the fallback-name
+          * autoconfig scan.  device_info.name is a fixed-size
+          * char[128] ivar, not a heap pointer, so the previous
+          * strdup + free was unnecessary heap traffic, and carried
+          * a NULL-deref-on-OOM failure mode (strdup returning NULL
+          * was not checked before strlcpy(name, name_backup, ...)
+          * below).  A stack buffer of matching size sidesteps both
+          * issues. */
+         char name_backup[sizeof(autoconfig_handle->device_info.name)];
+
+         strlcpy(name_backup, autoconfig_handle->device_info.name,
+               sizeof(name_backup));
 
          strlcpy(autoconfig_handle->device_info.name,
                fallback_device_name,
@@ -765,17 +782,14 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
          strlcpy(autoconfig_handle->device_info.name,
                name_backup,
                sizeof(autoconfig_handle->device_info.name));
-
-         free(name_backup);
-         name_backup = NULL;
       }
    }
 
    /* Get display name for task status message */
    device_display_name = autoconfig_handle->device_info.display_name;
-   if (string_is_empty(device_display_name))
+   if (!device_display_name || !*device_display_name)
       device_display_name = autoconfig_handle->device_info.name;
-   if (string_is_empty(device_display_name))
+   if (!device_display_name || !*device_display_name)
       device_display_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
    /* Generate task status message
@@ -816,7 +830,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 
    /* Update task title */
    task_free_title(task);
-   if (!string_is_empty(task_title))
+   if (*task_title)
    {
       task_set_title(task, strdup(task_title));
       RARCH_LOG("[Autoconf] %s.\n", task_title);
@@ -903,19 +917,19 @@ bool input_autoconfigure_connect(
    autoconfig_handle->dir_driver_autoconfig        = NULL;
    autoconfig_handle->autoconfig_file              = NULL;
 
-   if (!string_is_empty(name))
+   if (name && *name)
       strlcpy(autoconfig_handle->device_info.name, name,
             sizeof(autoconfig_handle->device_info.name));
 
-   if (!string_is_empty(display_name))
+   if (display_name && *display_name)
       strlcpy(autoconfig_handle->device_info.display_name, display_name,
             sizeof(autoconfig_handle->device_info.display_name));
 
-   if (!string_is_empty(phys))
+   if (phys && *phys)
        strlcpy(autoconfig_handle->device_info.phys, phys,
              sizeof(autoconfig_handle->device_info.phys));
 
-   if ((driver_valid = !string_is_empty(driver)))
+   if ((driver_valid = (driver && *driver)))
       strlcpy(autoconfig_handle->device_info.joypad_driver,
             driver, sizeof(autoconfig_handle->device_info.joypad_driver));
 
@@ -926,7 +940,7 @@ bool input_autoconfigure_connect(
     *   - If driver-specific directory is unavailable,
     *     we scan the base autoconfig directory as
     *     a fallback */
-   if (!string_is_empty(dir_autoconfig))
+   if (dir_autoconfig && *dir_autoconfig)
    {
       autoconfig_handle->dir_autoconfig = strdup(dir_autoconfig);
 
@@ -939,7 +953,7 @@ bool input_autoconfigure_connect(
                autoconfig_handle->device_info.joypad_driver,
                sizeof(dir_driver_autoconfig));
 
-         if (!string_is_empty(dir_driver_autoconfig))
+         if (*dir_driver_autoconfig)
             autoconfig_handle->dir_driver_autoconfig =
                   strdup(dir_driver_autoconfig);
       }
@@ -962,14 +976,14 @@ bool input_autoconfigure_connect(
     * > Can skip this check if autoconfig notifications
     *   have been disabled by the user */
    if (   !(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS)
-       && !string_is_empty(autoconfig_handle->device_info.name))
+       && (*autoconfig_handle->device_info.name))
    {
       const char *last_device_name = input_config_get_device_name(port);
       uint16_t last_vid            = input_config_get_device_vid(port);
       uint16_t last_pid            = input_config_get_device_pid(port);
       bool last_autoconfigured     = input_config_get_device_autoconfigured(port);
 
-      if (  !string_is_empty(last_device_name)
+      if (  (last_device_name && *last_device_name)
           && string_is_equal(autoconfig_handle->device_info.name,
                last_device_name)
           && (autoconfig_handle->device_info.vid == last_vid)
@@ -1045,9 +1059,9 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 
       /* Get display name for task status message */
       device_display_name = autoconfig_handle->device_info.display_name;
-      if (string_is_empty(device_display_name))
+      if (!device_display_name || !*device_display_name)
          device_display_name = autoconfig_handle->device_info.name;
-      if (string_is_empty(device_display_name))
+      if (!device_display_name || !*device_display_name)
          device_display_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
       /* Set task title */
@@ -1059,7 +1073,7 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
       task_free_title(task);
       if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS))
          task_set_title(task, strdup(task_title));
-      if (!string_is_empty(task_title))
+      if (*task_title)
          RARCH_LOG("[Autoconf] %s.\n", task_title);
    }
 
@@ -1128,11 +1142,11 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
 
    /* Use display_name as name instead since autoconfig display_name
     * is destroyed already, and real name does not matter at this point */
-   if (input_st && !string_is_empty(input_st->input_device_info[port].display_name))
+   if (input_st && *input_st->input_device_info[port].display_name)
       strlcpy(autoconfig_handle->device_info.name,
             input_st->input_device_info[port].display_name,
             sizeof(autoconfig_handle->device_info.name));
-   else if (!string_is_empty(name))
+   else if (name && *name)
       strlcpy(autoconfig_handle->device_info.name,
             name, sizeof(autoconfig_handle->device_info.name));
 

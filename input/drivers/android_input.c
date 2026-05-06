@@ -162,9 +162,6 @@ typedef struct android_input
    char device_model[256];
 } android_input_t;
 
-static void frontend_android_get_version_sdk(int32_t *sdk);
-static void frontend_android_get_name(char *s, size_t len);
-
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t len, int id);
 void (*engine_handle_dpad)(struct android_app *, AInputEvent*, int, int);
@@ -362,7 +359,7 @@ bool android_input_can_be_keyboard(void *data, int port)
         return false;
 
     state_device_t *device = &android->pad_states[port];
-    if (!device->id && string_is_empty(device->name))
+    if (!device->id && !*device->name)
         return false;
 
     return android_input_can_be_keyboard_jni(device->id);
@@ -757,7 +754,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
       AInputEvent *event,size_t motion_ptr,int source)
 {
    unsigned video_width, video_height;
-   video_driver_get_size(&video_width, &video_height);
+   video_driver_get_output_size(&video_width, &video_height);
 
    float x       = 0;
    float x_delta = 0;
@@ -1122,16 +1119,36 @@ static bool is_configured_as_physical_keyboard(int vendor_id, int product_id, co
     char keyboard_name[256];
     settings_t *settings = config_get_ptr();
 
-    if (sscanf(settings->arrays.input_android_physical_keyboard, "%04x:%04x ", &keyboard_vendor_id, &keyboard_product_id) != 2)
     {
-        strlcpy(keyboard_name, settings->arrays.input_android_physical_keyboard, sizeof(keyboard_name));
-        is_keyboard   = string_is_equal(device_name, keyboard_name);
-        compare_by_id = false;
-    }
-    else
-    {
-        is_keyboard   = (vendor_id == keyboard_vendor_id && product_id == keyboard_product_id);
-        compare_by_id = true;
+        const char *str = settings->arrays.input_android_physical_keyboard;
+        char *end       = NULL;
+        long vid, pid;
+
+        vid = strtol(str, &end, 16);
+        if (end && end != str && *end == ':')
+        {
+            const char *pid_start = end + 1;
+            pid = strtol(pid_start, &end, 16);
+            if (end && end != pid_start && (*end == ' ' || *end == '\0'))
+            {
+                keyboard_vendor_id  = (int)vid;
+                keyboard_product_id = (int)pid;
+                is_keyboard         = (vendor_id == keyboard_vendor_id && product_id == keyboard_product_id);
+                compare_by_id       = true;
+            }
+            else
+            {
+                strlcpy(keyboard_name, str, sizeof(keyboard_name));
+                is_keyboard   = string_is_equal(device_name, keyboard_name);
+                compare_by_id = false;
+            }
+        }
+        else
+        {
+            strlcpy(keyboard_name, str, sizeof(keyboard_name));
+            is_keyboard   = string_is_equal(device_name, keyboard_name);
+            compare_by_id = false;
+        }
     }
 
     if (is_keyboard)
@@ -1451,7 +1468,7 @@ static void handle_hotplug(android_input_t *android,
 
    /* if device was not keyboard only, yet did not match any of the devices
     * then try to autoconfigure as gamepad based on device_name. */
-   else if (!string_is_empty(device_name))
+   else if (*device_name)
       strlcpy(name_buf, device_name, sizeof(name_buf));
 
    if (strstr(android_app->current_ime, "net.obsidianx.android.mogaime"))

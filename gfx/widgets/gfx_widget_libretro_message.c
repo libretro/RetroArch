@@ -14,6 +14,8 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -164,7 +166,7 @@ void gfx_widget_set_libretro_message(
    gfx_widget_font_data_t *font_msg_queue     = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
    /* Ensure we have a valid message string */
-   if (string_is_empty(msg))
+   if (!msg || !*msg)
       return;
 
    /* Cache message parameters */
@@ -237,7 +239,7 @@ static void gfx_widget_libretro_message_layout(
    /* Update values that are dependent upon message length */
    state->bg_width     = state->text_padding * 2;
 
-   if (!string_is_empty(state->message))
+   if (*state->message)
       state->bg_width += font_driver_get_message_width(
             font_msg_queue->font, state->message,
             state->message_len, 1.0f);

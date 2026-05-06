@@ -26,7 +26,6 @@
 
 #include <retro_miscellaneous.h>
 #include <libretro_dspfilter.h>
-#include <string/stdstring.h>
 
 #define sqr(a) ((a) * (a))
 

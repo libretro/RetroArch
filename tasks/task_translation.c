@@ -26,7 +26,6 @@
 #endif
 
 #include <encodings/base64.h>
-#include <formats/rbmp.h>
 #include <formats/rpng.h>
 #include <formats/rjson.h>
 #include <gfx/scaler/pixconv.h>
@@ -336,7 +335,8 @@ static void handle_translation_response(
    {
       RARCH_ERR("[Translation] %s\n", response->error);
 #ifdef HAVE_GFX_WIDGETS
-      if (string_is_equal(response->error, "No text found.") && gfx_widgets_paused)
+      if (   string_is_equal(response->error, "No text found.") 
+          && gfx_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
          p_dispwidget->ai_service_overlay_state = 2;
@@ -457,7 +457,8 @@ static void handle_translation_response(
             do
             {
                retval = rpng_process_image(rpng, &raw_image_data_alpha,
-                     (size_t)new_image_size, &image_width, &image_height);
+                     (size_t)new_image_size, &image_width, &image_height,
+                     false);
             } while (retval == IMAGE_PROCESS_NEXT);
 
             /* Returned output from the png processor is an upside down RGBA
@@ -468,6 +469,16 @@ static void handle_translation_response(
                int tw, th, tc;
                int d          = 0;
                raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
+               /* NULL-check: the indexed write at the bottom of
+                * this loop body dereferences raw_image_data.  On
+                * OOM jump to finish which NULL-tolerantly frees
+                * raw_image_data_alpha + rpng state; the
+                * translation request fails cleanly. */
+               if (!raw_image_data)
+               {
+                  rpng_free(rpng);
+                  goto finish;
+               }
                for (ui = 0; ui < image_width * image_height * 4; ui++)
                {
                   if (ui % 4 != 3)
@@ -574,59 +585,82 @@ static void handle_translation_response(
          char t = response->key_presses[i];
          if (i == _len - 1 || t == ' ' || t == ',')
          {
+            size_t key_len;
             if (i == _len - 1 && t != ' ' && t!= ',')
                i++;
 
-            if (i-start > 7)
+            key_len = i - start;
+            if (key_len > 7)
             {
                start = i;
                continue;
             }
 
-            strlcpy(key, response->key_presses + start, i-start+1);
+            memcpy(key, response->key_presses + start, key_len);
+            key[key_len] = '\0';
 
+            switch (key_len)
+            {
+               case 1:
 #ifdef HAVE_ACCESSIBILITY
-            if (string_is_equal(key, "b"))
-               input_st->ai_gamepad_state[0]  = 2;
-            if (string_is_equal(key, "y"))
-               input_st->ai_gamepad_state[1]  = 2;
-            if (string_is_equal(key, "select"))
-               input_st->ai_gamepad_state[2]  = 2;
-            if (string_is_equal(key, "start"))
-               input_st->ai_gamepad_state[3]  = 2;
-
-            if (string_is_equal(key, "up"))
-               input_st->ai_gamepad_state[4]  = 2;
-            if (string_is_equal(key, "down"))
-               input_st->ai_gamepad_state[5]  = 2;
-            if (string_is_equal(key, "left"))
-               input_st->ai_gamepad_state[6]  = 2;
-            if (string_is_equal(key, "right"))
-               input_st->ai_gamepad_state[7]  = 2;
-
-            if (string_is_equal(key, "a"))
-               input_st->ai_gamepad_state[8]  = 2;
-            if (string_is_equal(key, "x"))
-               input_st->ai_gamepad_state[9]  = 2;
-            if (string_is_equal(key, "l"))
-               input_st->ai_gamepad_state[10] = 2;
-            if (string_is_equal(key, "r"))
-               input_st->ai_gamepad_state[11] = 2;
-
-            if (string_is_equal(key, "l2"))
-               input_st->ai_gamepad_state[12] = 2;
-            if (string_is_equal(key, "r2"))
-               input_st->ai_gamepad_state[13] = 2;
-            if (string_is_equal(key, "l3"))
-               input_st->ai_gamepad_state[14] = 2;
-            if (string_is_equal(key, "r3"))
-               input_st->ai_gamepad_state[15] = 2;
+                  if (key[0] == 'b')
+                     input_st->ai_gamepad_state[0]  = 2;
+                  else if (key[0] == 'y')
+                     input_st->ai_gamepad_state[1]  = 2;
+                  else if (key[0] == 'a')
+                     input_st->ai_gamepad_state[8]  = 2;
+                  else if (key[0] == 'x')
+                     input_st->ai_gamepad_state[9]  = 2;
+                  else if (key[0] == 'l')
+                     input_st->ai_gamepad_state[10] = 2;
+                  else if (key[0] == 'r')
+                     input_st->ai_gamepad_state[11] = 2;
 #endif
-
-            if (string_is_equal(key, "pause"))
-               command_event(CMD_EVENT_PAUSE, NULL);
-            if (string_is_equal(key, "unpause"))
-               command_event(CMD_EVENT_UNPAUSE, NULL);
+                  break;
+               case 2:
+#ifdef HAVE_ACCESSIBILITY
+                  if (memcmp(key, "up", 2) == 0)
+                     input_st->ai_gamepad_state[4]  = 2;
+                  else if (memcmp(key, "l2", 2) == 0)
+                     input_st->ai_gamepad_state[12] = 2;
+                  else if (memcmp(key, "r2", 2) == 0)
+                     input_st->ai_gamepad_state[13] = 2;
+                  else if (memcmp(key, "l3", 2) == 0)
+                     input_st->ai_gamepad_state[14] = 2;
+                  else if (memcmp(key, "r3", 2) == 0)
+                     input_st->ai_gamepad_state[15] = 2;
+#endif
+                  break;
+               case 4:
+#ifdef HAVE_ACCESSIBILITY
+                  if (memcmp(key, "down", 4) == 0)
+                     input_st->ai_gamepad_state[5]  = 2;
+                  else if (memcmp(key, "left", 4) == 0)
+                     input_st->ai_gamepad_state[6]  = 2;
+#endif
+                  break;
+               case 5:
+#ifdef HAVE_ACCESSIBILITY
+                  if (memcmp(key, "start", 5) == 0)
+                     input_st->ai_gamepad_state[3]  = 2;
+                  else if (memcmp(key, "right", 5) == 0)
+                     input_st->ai_gamepad_state[7]  = 2;
+                  else
+#endif
+                  if (memcmp(key, "pause", 5) == 0)
+                     command_event(CMD_EVENT_PAUSE, NULL);
+                  break;
+               case 6:
+#ifdef HAVE_ACCESSIBILITY
+                  if (memcmp(key, "select", 6) == 0)
+                     input_st->ai_gamepad_state[2]  = 2;
+#endif
+                  break;
+               case 7:
+                  if (memcmp(key, "unpause", 7) == 0)
+                     command_event(CMD_EVENT_UNPAUSE, NULL);
+                  break;
+            }
 
             start = i+1;
          }
@@ -851,7 +885,7 @@ bool run_translation_service(settings_t *settings, bool paused)
          playlist_get_index_by_path(
             current_playlist, path_get(RARCH_PATH_CONTENT), &entry);
 
-         if (entry && !string_is_empty(entry->label))
+         if (entry && entry->label && *entry->label)
             lbl = entry->label;
       }
 
@@ -1173,14 +1207,12 @@ static bool http_translate(
       void *userdata)
 {
    uint8_t *bmp_buffer               = NULL;
-   size_t pitch;
    uint64_t buffer_bytes             = 0;
    char *bmp64_buffer                = NULL;
    rjsonwriter_t *jsonwriter         = NULL;
    const char *json_buffer           = NULL;
    http_translate_ctx_t *ctx         = NULL;
    int bmp64_len                     = 0;
-   bool TRANSLATE_USE_BMP            = false;
    bool success                      = false;
    settings_t *settings              = config_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
@@ -1191,28 +1223,17 @@ static bool http_translate(
    access_state_t *access_st         = access_state_get_ptr();
 #endif
 
-   if (TRANSLATE_USE_BMP)
+   /* Encode the framebuffer screenshot as a PNG (BGR24) for the
+    * translation service.  rpng_save_image_bgr24_string handles the
+    * vertical flip via negative stride + bottom-row pointer, so no
+    * intermediate buffer is needed.  Variable is named bmp_buffer for
+    * historical reasons (the request format was originally a BMP
+    * blob gated on an always-false TRANSLATE_USE_BMP local; that
+    * branch has been deleted as dead code). */
    {
-      /*
-        At this point, we should have a screenshot in the buffer,
-        so allocate an array to contain the BMP image along with
-        the BMP header as bytes, and then covert that to a
-        b64 encoded array for transport in JSON.
-      */
-      if (!(bmp_buffer  = (uint8_t*)malloc(width * height * 3 + 54)))
-         goto finish;
-
-      form_bmp_header(bmp_buffer, width, height, false);
-      memcpy(bmp_buffer + 54,
-            bit24_image,
-            width * height * 3 * sizeof(uint8_t));
-      buffer_bytes = sizeof(uint8_t) * (width * height * 3 + 54);
-   }
-   else
-   {
-      pitch        = width * 3;
+      size_t pitch = width * 3;
       bmp_buffer   = rpng_save_image_bgr24_string(
-            bit24_image + width * (height-1) * 3,
+            bit24_image + width * (height - 1) * 3,
             width, height, (signed)-pitch, &buffer_bytes);
    }
 
@@ -1295,7 +1316,7 @@ static bool http_translate(
             separator = '&';
 
          /* source lang */
-         if (!string_is_empty(source_lang))
+         if (source_lang && *source_lang)
          {
             new_ai_service_url[  _len] = separator;
             new_ai_service_url[++_len] = '\0';
@@ -1309,7 +1330,7 @@ static bool http_translate(
          }
 
          /* target lang */
-         if (!string_is_empty(target_lang))
+         if (target_lang && *target_lang)
          {
             new_ai_service_url[  _len] = separator;
             new_ai_service_url[++_len] = '\0';

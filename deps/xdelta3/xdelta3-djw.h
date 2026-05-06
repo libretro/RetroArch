@@ -1712,7 +1712,7 @@ xd3_decode_huff (xd3_stream     *stream,
       if ((ret = djw_decode_prefix (stream, & bstate, & input, input_end,
 				    cl_inorder, cl_base, cl_limit,
 				    & cl_minlen, & cl_maxlen, cl_mtf,
-				    groups, clen[0]))) { goto fail; }
+				    groups, (uint8_t *)clen))) { goto fail; }
 
       /* Prepare the actual decoding tables. */
       for (gp = 0; gp < groups; gp += 1)

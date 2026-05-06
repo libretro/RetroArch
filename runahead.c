@@ -201,10 +201,17 @@ void runahead_secondary_core_destroy(void *data)
 
    dylib_close(runloop_st->secondary_lib_handle);
    runloop_st->secondary_lib_handle = NULL;
-   filestream_delete(runloop_st->secondary_library_path);
+   /* Delete the on-disk copy of the secondary core and free the
+    * path string. The NULL check guards both: filestream_delete
+    * is currently NULL-safe but the explicit guard here also
+    * documents the intent and protects against future changes
+    * to the VFS layer's NULL handling. */
    if (runloop_st->secondary_library_path)
+   {
+      filestream_delete(runloop_st->secondary_library_path);
       free(runloop_st->secondary_library_path);
-   runloop_st->secondary_library_path = NULL;
+      runloop_st->secondary_library_path = NULL;
+   }
 }
 
 static char *get_tmpdir_alloc(const char *override_dir)
@@ -334,7 +341,7 @@ static char *copy_core_to_temp_file(
    int64_t  dll_file_size      = 0;
    const char  *core_base_name = path_basename_nocompression(core_path);
 
-   if (string_is_empty(core_base_name))
+   if (!core_base_name || !*core_base_name)
       return NULL;
 
    if (!(tmpdir = get_tmpdir_alloc(dir_libretro)))
@@ -629,12 +636,23 @@ static void mylist_resize(my_list *list,
 
    if (new_size > list->capacity)
    {
+      void **new_data;
+
       if (new_capacity < list->capacity * 2)
          new_capacity = list->capacity * 2;
 
-      /* try to realloc */
-      list->data      = (void**)realloc(
+      /* Try to realloc. On OOM, leave the list at its current
+       * capacity and silently no-op the resize - the caller
+       * (mylist_add_element) tolerates list->data[old_size]
+       * being NULL: runahead_input_state_set_last guards on
+       * 'if (element)' before writing to it, and downstream
+       * code already accepts that runahead state may be
+       * incomplete. */
+      new_data = (void**)realloc(
             (void*)list->data, new_capacity * sizeof(void*));
+      if (!new_data)
+         return;
+      list->data = new_data;
 
       for (i = list->capacity; i < new_capacity; i++)
          list->data[i] = NULL;
@@ -670,9 +688,16 @@ static void mylist_resize(my_list *list,
 
 static void *mylist_add_element(my_list *list)
 {
-   int old_size = list->size;
-   if (list)
-      mylist_resize(list, old_size + 1, true);
+   int old_size;
+   if (!list)
+      return NULL;
+   old_size = list->size;
+   mylist_resize(list, old_size + 1, true);
+   /* mylist_resize may have failed to grow on OOM, in which case
+    * list->size is still old_size and list->data[old_size] is
+    * out of bounds. Re-check before returning. */
+   if (list->size <= old_size)
+      return NULL;
    return list->data[old_size];
 }
 
@@ -706,43 +731,80 @@ static void mylist_create(my_list **list_p, int initial_capacity,
       mylist_destroy(list_p);
 
    list               = (my_list*)malloc(sizeof(my_list));
+   if (!list)
+   {
+      *list_p         = NULL;
+      return;
+   }
    *list_p            = list;
    list->size         = 0;
    list->constructor  = constructor;
    list->destructor   = destructor;
    list->data         = (void**)calloc(initial_capacity, sizeof(void*));
-   list->capacity     = initial_capacity;
+   /* On calloc OOM, leave list->data NULL and capacity 0;
+    * mylist_resize's realloc grows from there on first add and
+    * a subsequent realloc(NULL, n) is well-defined. */
+   list->capacity     = list->data ? initial_capacity : 0;
 }
 
 static void *input_list_element_constructor(void)
 {
    void *ptr                   = malloc(sizeof(input_list_element));
-   input_list_element *element = (input_list_element*)ptr;
+   input_list_element *element;
 
+   /* NULL-check the outer malloc: the field writes below
+    * (port/device/index/state_size) would NULL-deref on OOM.
+    * The caller (runahead_input_state_set_last) already tolerates
+    * a NULL return: 'if (element) { ... }'.  mylist_resize also
+    * tolerates a NULL constructor result - it just leaves
+    * list->data[i] = NULL. */
+   if (!ptr)
+      return NULL;
+
+   element                     = (input_list_element*)ptr;
    element->port               = 0;
    element->device             = 0;
    element->index              = 0;
    element->state              = (int16_t*)calloc(NAME_MAX_LENGTH,
          sizeof(int16_t));
+   /* NULL-check the inner calloc too.  If it fails the caller's
+    * 'element->state[id] = value' NULL-derefs.  No way to signal
+    * partial-failure through the constructor callback's return
+    * type, so free the outer allocation and return NULL to match
+    * the outer-OOM behaviour. */
+   if (!element->state)
+   {
+      free(ptr);
+      return NULL;
+   }
    element->state_size         = NAME_MAX_LENGTH;
 
    return ptr;
 }
 
-static void input_list_element_realloc(input_list_element *element,
+static bool input_list_element_realloc(input_list_element *element,
       unsigned int new_size)
 {
    if (new_size > element->state_size)
    {
-      element->state = (int16_t*)realloc(element->state,
+      /* realloc-to-tmp: the pre-patch 'element->state = realloc(
+       * element->state, ...)' self-assigns NULL on OOM, which
+       * then made the very next line '&element->state[element->
+       * state_size]' perform pointer arithmetic on NULL (UB) and
+       * the memset trap on a garbage address. */
+      int16_t *tmp = (int16_t*)realloc(element->state,
             new_size * sizeof(int16_t));
+      if (!tmp)
+         return false;
+      element->state = tmp;
       memset(&element->state[element->state_size], 0,
             (new_size - element->state_size) * sizeof(int16_t));
       element->state_size = new_size;
    }
+   return true;
 }
 
-static void input_list_element_expand(input_list_element *element,
+static bool input_list_element_expand(input_list_element *element,
       unsigned int new_index)
 {
    unsigned int new_size = element->state_size;
@@ -750,7 +812,7 @@ static void input_list_element_expand(input_list_element *element,
       new_size = 32;
    while (new_index >= new_size)
       new_size *= 2;
-   input_list_element_realloc(element, new_size);
+   return input_list_element_realloc(element, new_size);
 }
 
 static void input_list_element_destructor(void* element_ptr)
@@ -785,8 +847,12 @@ static void runahead_input_state_set_last(
             && (element->index  == index)
          )
       {
-         if (id >= element->state_size)
-            input_list_element_expand(element, id);
+         /* Gate the state[id] write on expand success: if expand
+          * OOM'd, state_size is still too small and writing to
+          * state[id] would corrupt memory past the buffer. */
+         if (id >= element->state_size
+               && !input_list_element_expand(element, id))
+            return;
          element->state[id] = value;
          return;
       }
@@ -801,8 +867,10 @@ static void runahead_input_state_set_last(
       element->port         = port;
       element->device       = device;
       element->index        = index;
-      if (id >= element->state_size)
-         input_list_element_expand(element, id);
+      /* Same expand-OOM guard as the lookup branch above. */
+      if (id >= element->state_size
+            && !input_list_element_expand(element, id))
+         return;
       element->state[id]    = value;
    }
 }
@@ -917,7 +985,18 @@ static void *runahead_save_state_alloc(void)
    {
       savestate->data       = malloc(runloop_st->runahead_save_state_size);
       savestate->data_const = savestate->data;
-      savestate->size       = runloop_st->runahead_save_state_size;
+      /* Only record a non-zero size on successful alloc.  Pre-
+       * patch: on OOM data was left NULL but size was set to the
+       * requested value, which made downstream consumers treat
+       * the entry as a valid serialized-state buffer of that
+       * size and dereference data when reading.  Keeping size=0
+       * on failure matches the initial-state invariant above
+       * (data/data_const = NULL, size = 0) and makes the
+       * savestate a no-op placeholder that teardown
+       * (runahead_save_state_free) correctly handles via its
+       * free(savestate->data) with NULL being a safe no-op. */
+      if (savestate->data)
+         savestate->size    = runloop_st->runahead_save_state_size;
    }
 
    return savestate;
@@ -1566,7 +1645,7 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
    for (p = 0; p < max_users; p++)
    {
       /* Check full digital joypad */
-      int16_t joypad_state = (int16_t)(state_cb(p, RETRO_DEVICE_JOYPAD,
+      int16_t joypad_state = (int16_t)(state_cb((unsigned)p, RETRO_DEVICE_JOYPAD,
             0, RETRO_DEVICE_ID_JOYPAD_MASK));
       if (joypad_state != preempt->joypad_state[p])
       {

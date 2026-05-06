@@ -24,6 +24,10 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -59,6 +63,7 @@
 #include <lists/dir_list.h>
 #include <vfs/vfs_implementation.h>
 #include <array/rbuf.h>
+#include "../msg_hash_lbl_str.h"
 
 #include <retro_miscellaneous.h>
 
@@ -183,7 +188,7 @@ static bool content_file_override_get_ext(
    size_t num_overrides;
    size_t i;
 
-   if (p_content && !string_is_empty(ext))
+   if (p_content && (ext && *ext))
    {
       if ((num_overrides = RBUF_LEN(p_content->content_override_list)) >= 1)
       {
@@ -216,58 +221,60 @@ bool content_file_override_set(
 {
    size_t i;
    content_state_t *p_content = content_state_get_ptr();
-
    if (!p_content || !overrides)
       return false;
-
    /* Free any existing override list */
    content_file_override_free(p_content);
-
    for (i = 0; overrides[i].extensions; i++)
    {
-      char *tok, *save        = NULL;
-      char *overrides_ext_cpy = strdup(overrides[i].extensions);
-
-      /* Get list of extensions affected by overrides */
-      for ( tok = strtok_r(overrides_ext_cpy, "|", &save); tok;
-            tok = strtok_r(NULL, "|", &save))
+      const char *ptr = overrides[i].extensions;
+      while (*ptr)
       {
-         size_t num_entries;
-         const char *ext                   = tok;
+         char ext[32];
+         size_t num_entries, _len;
          content_file_override_t *override = NULL;
+         /* Find next '|' delimiter or end of string */
+         const char *delim = ptr;
+         while (*delim && *delim != '|')
+            delim++;
+         _len              = (size_t)(delim - ptr);
 
-         /* Check whether extension has already been
-          * registered */
-         if (   string_is_empty(ext)
-             || content_file_override_get_ext(p_content, ext, NULL))
-            continue;
-
-         /* Add current override to the list */
-         num_entries = RBUF_LEN(p_content->content_override_list);
-
-         if (!RBUF_TRYFIT(p_content->content_override_list,
-               num_entries + 1))
+         /* Extract extension token */
+         if (_len > 0 && _len < sizeof(ext))
          {
-            free(overrides_ext_cpy);
-            return false;
+            memcpy(ext, ptr, _len);
+            ext[_len] = '\0';
+
+            /* Check whether extension has already been
+             * registered */
+            if (!content_file_override_get_ext(p_content, ext, NULL))
+            {
+               /* Add current override to the list */
+               num_entries = RBUF_LEN(p_content->content_override_list);
+               if (!RBUF_TRYFIT(p_content->content_override_list,
+                     num_entries + 1))
+                  return false;
+
+               RBUF_RESIZE(p_content->content_override_list,
+                     num_entries + 1);
+
+               RARCH_LOG("[Content Override] File Extension: '%3s' - need_fullpath: %s, persistent_data: %s\n",
+                     ext, overrides[i].need_fullpath ? "TRUE" : "FALSE",
+                     overrides[i].persistent_data    ? "TRUE" : "FALSE");
+
+               override                  = &p_content->content_override_list[num_entries];
+               override->ext             = strdup(ext);
+               override->need_fullpath   = overrides[i].need_fullpath;
+               override->persistent_data = overrides[i].persistent_data;
+            }
          }
 
-         RBUF_RESIZE(p_content->content_override_list,
-               num_entries + 1);
-
-         RARCH_LOG("[Content Override] File Extension: '%3s' - need_fullpath: %s, persistent_data: %s\n",
-               ext, overrides[i].need_fullpath ? "TRUE" : "FALSE",
-               overrides[i].persistent_data    ? "TRUE" : "FALSE");
-
-         override                  = &p_content->content_override_list[num_entries];
-         override->ext             = strdup(ext);
-         override->need_fullpath   = overrides[i].need_fullpath;
-         override->persistent_data = overrides[i].persistent_data;
+         /* Advance past token and delimiter */
+         ptr += _len;
+         if (*ptr == '|')
+            ptr++;
       }
-
-      free(overrides_ext_cpy);
    }
-
    return true;
 }
 
@@ -385,7 +392,7 @@ static void content_file_list_free(
       {
          const char *path = file_list->temporary_files->elems[i].data;
 
-         if (string_is_empty(path))
+         if (!path || !*path)
             continue;
 
          RARCH_LOG("[Content] %s: \"%s\".\n",
@@ -454,7 +461,7 @@ static content_file_list_t *content_file_list_init(size_t len)
 static const char *content_file_list_append_temporary(
       content_file_list_t *file_list, const char *path)
 {
-   if (file_list && !string_is_empty(path))
+   if (file_list && (path && *path))
    {
       union string_list_elem_attr attr;
       attr.i = 0;
@@ -522,7 +529,7 @@ static bool content_file_list_set_info(
     *   (persistent copies of each parameter)
     *   to minimise complications when passing
     *   extended path info to cores */
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       char dir [DIR_MAX_LENGTH];
       char name[NAME_MAX_LENGTH];
@@ -558,12 +565,12 @@ static bool content_file_list_set_info(
             _len = PATH_MAX_LENGTH;
 
          strlcpy(archive_path, path, _len * sizeof(char));
-         if (!string_is_empty(archive_path))
+         if (*archive_path)
             file_info->archive_path = strdup(archive_path);
 
          /* Extract name of file in archive */
          archive_delim++;
-         if (!string_is_empty(archive_delim))
+         if (archive_delim && *archive_delim)
             file_info->archive_file = strdup(archive_delim);
 
          /* Extract parent directory - may be used
@@ -592,18 +599,18 @@ static bool content_file_list_set_info(
       }
       path_remove_extension(name);
 
-      if (!string_is_empty(dir))
+      if (*dir)
       {
          /* Remove any trailing slash */
          char *last_slash     = find_last_slash(dir);
          if (last_slash && (last_slash[1] == '\0'))
             *last_slash       = '\0';
 
-         if (!string_is_empty(dir))
+         if (*dir)
             file_info->dir    = strdup(dir);
       }
 
-      if (!string_is_empty(name))
+      if (*name)
          file_info->name      = strdup(name);
    }
 
@@ -689,20 +696,20 @@ static void content_information_ctx_init(
 
    if (runloop_st)
    {
-      if (!string_is_empty(runloop_st->name.ips))
+      if (*runloop_st->name.ips)
          content_ctx->name_ips      = strdup(runloop_st->name.ips);
-      if (!string_is_empty(runloop_st->name.bps))
+      if (*runloop_st->name.bps)
          content_ctx->name_bps      = strdup(runloop_st->name.bps);
-      if (!string_is_empty(runloop_st->name.ups))
+      if (*runloop_st->name.ups)
          content_ctx->name_ups      = strdup(runloop_st->name.ups);
-      if (!string_is_empty(runloop_st->name.xdelta))
+      if (*runloop_st->name.xdelta)
          content_ctx->name_xdelta   = strdup(runloop_st->name.xdelta);
    }
 
    if (settings)
    {
       const char *path_dir_system = settings->paths.directory_system;
-      if (!string_is_empty(path_dir_system))
+      if (path_dir_system && *path_dir_system)
          content_ctx->directory_system = strdup(path_dir_system);
    }
 
@@ -717,11 +724,16 @@ static void content_information_ctx_init(
       if (settings)
       {
          const char *path_dir_cache = settings->paths.directory_cache;
-         if (!string_is_empty(path_dir_cache))
+         if (path_dir_cache && *path_dir_cache)
+         {
             content_ctx->directory_cache = strdup(path_dir_cache);
+
+            if (!path_is_directory(path_dir_cache))
+               path_mkdir(path_dir_cache);
+         }
       }
 
-      if (!string_is_empty(sysinfo->valid_extensions))
+      if (sysinfo->valid_extensions && *sysinfo->valid_extensions)
          content_ctx->valid_extensions = strdup(sysinfo->valid_extensions);
 
       if (sysinfo->block_extract)
@@ -893,7 +905,7 @@ static bool content_file_extract_from_archive(
    /* Attempt to extract file  */
    if (!file_archive_extract_file(
          *content_path, valid_exts,
-         string_is_empty(content_ctx->directory_cache) ?
+         (!content_ctx->directory_cache || !*content_ctx->directory_cache) ?
                NULL : content_ctx->directory_cache,
          tmp_path, sizeof(tmp_path)))
    {
@@ -934,7 +946,7 @@ static void content_file_get_path(
    bool path_is_inside_archive;
    const char *content_path = content->elems[idx].data;
 
-   if (string_is_empty(content_path))
+   if (!content_path || !*content_path)
       return;
 
 #if defined(ANDROID) && defined(HAVE_SAF)
@@ -992,7 +1004,7 @@ static void content_file_get_path(
 
          archive_file = archive_list->elems[0].data;
 
-         if (!string_is_empty(archive_file))
+         if (archive_file && *archive_file)
          {
             char info_path[PATH_MAX_LENGTH];
             /* Build 'complete' archive file path */
@@ -1093,7 +1105,7 @@ static bool content_file_load(
 
       /* If content is missing and core requires content,
        * return an error */
-      if (string_is_empty(content_path))
+      if (!content_path || !*content_path)
       {
          if ((content->elems[i].attr.i & BLCK_REQUIRED) != 0)
          {
@@ -1169,13 +1181,13 @@ static bool content_file_load(
                   RARCH_LOG("[Content] Core does not support VFS"
                      " - copying to cache directory...\n");
 
-                  if (!string_is_empty(content_ctx->directory_cache))
+                  if (content_ctx->directory_cache && *content_ctx->directory_cache)
                      strlcpy(new_basedir, content_ctx->directory_cache,
                         sizeof(new_basedir));
                   else
                      new_basedir[0] = '\0';
 
-                  if (   string_is_empty  (new_basedir)
+                  if ( (!new_basedir || !*new_basedir)
                      || !path_is_directory(new_basedir)
                      || !is_path_accessible_using_standard_io(new_basedir))
                   {
@@ -1278,7 +1290,7 @@ static bool content_file_load(
    {
       const char *first_content_path =
             p_content->content_list->entries[0].full_path;
-      if (!string_is_empty(first_content_path))
+      if (first_content_path && *first_content_path)
       {
          if (first_content_type == RARCH_CONTENT_NONE)
          {
@@ -1408,7 +1420,7 @@ static void content_file_set_attributes(
       attr.i |= BLCK_PERSISTENT;
 #endif
 
-      if (string_is_empty(content_path))
+      if (!content_path || !*content_path)
       {
          if (  (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
              && content_ctx->flags
@@ -1598,10 +1610,7 @@ static bool content_load(content_ctx_info_t *info,
       return false;
 
    if (p_content->flags & CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT)
-   {
-      command_event(CMD_EVENT_CORE_INIT, NULL);
       content_clear_subsystem();
-   }
 
 #ifdef HAVE_GFX_WIDGETS
 #ifdef HAVE_CONFIGFILE
@@ -1643,6 +1652,7 @@ static bool content_load(content_ctx_info_t *info,
 void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   const char *a = NULL;
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
    runloop_state_t       *runloop_st = runloop_state_get_ptr();
    rarch_system_info_t   *sys_info   = &runloop_st->system;
@@ -1668,17 +1678,20 @@ void menu_content_environment_get(int *argc, char *argv[],
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
       wrap_args->config_path   = path_get(RARCH_PATH_CONFIG);
-   if (!string_is_empty(dir_get_ptr(RARCH_DIR_SAVEFILE)))
+   a = dir_get_ptr(RARCH_DIR_SAVEFILE);
+   if (a && *a)
       wrap_args->sram_path     = dir_get_ptr(RARCH_DIR_SAVEFILE);
-   if (!string_is_empty(dir_get_ptr(RARCH_DIR_SAVESTATE)))
+   a = dir_get_ptr(RARCH_DIR_SAVESTATE);
+   if (a && *a)
       wrap_args->state_path    = dir_get_ptr(RARCH_DIR_SAVESTATE);
    if (!path_is_empty(RARCH_PATH_CONTENT))
       wrap_args->content_path  = path_get(RARCH_PATH_CONTENT);
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
-      wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE))
-         ? NULL
-         : path_get(RARCH_PATH_CORE);
+   {
+      a = path_get(RARCH_PATH_CORE);
+      wrap_args->libretro_path = (a && *a) ? a : NULL;
+   }
 }
 
 /**
@@ -1703,7 +1716,7 @@ static void task_push_to_history_list(
       const char *path_content          = path_get(RARCH_PATH_CONTENT);
       struct retro_system_info *sysinfo = &runloop_st->system.info;
 
-      if (!string_is_empty(path_content))
+      if (path_content && *path_content)
       {
          strlcpy(tmp, path_content, sizeof(tmp));
          /* Path can be relative here.
@@ -1720,7 +1733,7 @@ static void task_push_to_history_list(
          menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 
-      if (sysinfo && !string_is_empty(tmp))
+      if (sysinfo && *tmp)
       {
          const char *core_path      = NULL;
          const char *core_name      = NULL;
@@ -1765,17 +1778,16 @@ static void task_push_to_history_list(
                if (core_info)
                   core_name         = core_info->display_name;
 
-               if (string_is_empty(core_name))
+               if (!core_name || !*core_name)
                   core_name         = sysinfo->library_name;
 
                if (launched_from_companion_ui)
                {
                   /* Database name + checksum are supplied
                    * by the companion UI itself */
-                  if (!string_is_empty(p_content->companion_ui_crc32))
+                  if (*p_content->companion_ui_crc32)
                      crc32 = p_content->companion_ui_crc32;
-
-                  if (!string_is_empty(p_content->companion_ui_db_name))
+                  if (*p_content->companion_ui_db_name)
                      db_name = p_content->companion_ui_db_name;
                }
 #ifdef HAVE_MENU
@@ -1799,7 +1811,7 @@ static void task_push_to_history_list(
             }
          }
 
-         if (!string_is_empty(runloop_st->name.label))
+         if (*runloop_st->name.label)
             label = runloop_st->name.label;
 
          if (
@@ -1863,7 +1875,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
 
    if (   !settings
        || !settings->bools.history_list_enable
-       || string_is_empty(content_path))
+       || (!content_path || !*content_path))
       return false;
 
    switch (path_is_media_type(content_path))
@@ -1891,7 +1903,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
       {
          core_info_t *core_info = NULL;
 
-         if (  !string_is_empty(core)
+         if (  (core && *core)
              && core_info_find(core, &core_info))
          {
             /* Set core path and core display name */
@@ -1935,7 +1947,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
       }
    }
 
-   if (  !string_is_empty(core_path)
+   if (  (core_path && *core_path)
        && playlist_hist)
    {
       struct playlist_entry new_entry = {0};
@@ -1975,7 +1987,7 @@ static bool command_event_cmd_exec(
    if (path_get(RARCH_PATH_CONTENT) != data)
    {
       path_clear(RARCH_PATH_CONTENT);
-      if (!string_is_empty(data))
+      if (data && *data)
          path_set(RARCH_PATH_CONTENT, data);
    }
 
@@ -2078,7 +2090,7 @@ bool task_push_load_content_from_playlist_from_menu(
 
       /* Register content path */
       path_clear(RARCH_PATH_CONTENT);
-      if (!string_is_empty(fullpath))
+      if (fullpath && *fullpath)
          path_set(RARCH_PATH_CONTENT, fullpath);
 
       /* Load content and update content history */
@@ -2231,7 +2243,7 @@ bool task_push_load_contentless_core_from_menu(
    bool flush_menu                       = true;
    const char *menu_label                = NULL;
 
-   if (string_is_empty(core_path))
+   if (!core_path || !*core_path)
       return false;
 
    content_information_ctx_init(&content_ctx, settings, runloop_st, false);
@@ -2279,8 +2291,8 @@ bool task_push_load_contentless_core_from_menu(
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
-   if (   string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB))
-       || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+   if (   string_is_equal(menu_label, MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR)
+       || string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST_STR))
       flush_menu = false;
 
    /* Push Quick Menu onto menu stack */
@@ -2442,11 +2454,11 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    path_set(RARCH_PATH_CONTENT, fullpath);
    path_set(RARCH_PATH_CORE,    core_path);
 
-   if (!string_is_empty(db_name))
+   if (db_name && *db_name)
       strlcpy(p_content->companion_ui_db_name,
             db_name, sizeof(p_content->companion_ui_db_name));
 
-   if (!string_is_empty(crc32))
+   if (crc32 && *crc32)
       strlcpy(p_content->companion_ui_crc32,
             crc32, sizeof(p_content->companion_ui_crc32));
 
@@ -2599,7 +2611,7 @@ void content_set_subsystem(unsigned idx)
 /* Sets the subsystem by name */
 bool content_set_subsystem_by_name(const char* subsystem_name)
 {
-   size_t i;
+   unsigned i;
    runloop_state_t         *runloop_st = runloop_state_get_ptr();
    rarch_system_info_t       *sys_info = &runloop_st->system;
    /* Core not loaded completely, use the data we peeked on load core */

@@ -1139,6 +1139,26 @@ MSG_HASH(
    "Mật khẩu tài khoản lưu trữ đám mây."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID khóa truy cập"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "ID khóa truy cập của bạn cho tài khoản lưu trữ đám mây."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Khóa truy cập bí mật"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Khóa truy cập bí mật của bạn cho tài khoản lưu trữ đám mây."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "URL điểm cuối S3 của bạn cho lưu trữ đám mây."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Ghi nhật ký"
    )
@@ -2435,20 +2455,20 @@ MSG_HASH(
    "Tắt"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Độ sáng tối đa"
+   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   "Độ sáng"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Đặt độ sáng đỉnh (tính bằng cd/m²) mà màn hình của bạn có thể hiển thị. Khi đã đặt thì đừng thay đổi nữa. Hãy dùng Paper White Luminance để chỉnh độ sáng tổng thể. Xem RTings.com để biết độ sáng đỉnh của màn hình bạn. Với một số màn hình khi bật scanlines (bên dưới), bạn có thể cần tăng cao hơn mức này (và cả paper white) để làm hình ảnh tổng thể sáng hơn."
+   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   "Độ sáng của menu (đơn vị cd/m2 - nits) khi sử dụng màn hình HDR. Chỉ hiển thị khi HDR được bật trong Cài đặt > Video > HDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Độ sáng trắng chuẩn"
+   "Độ sáng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Khi đã đặt độ sáng đỉnh, hãy dùng nó làm mức sáng tiêu chuẩn. Về mặt kỹ thuật, mục này đặt độ sáng tại mức “paper white”, tức là độ sáng của chữ dễ đọc hoặc mức sáng cao nhất trong dải SDR (Standard Dynamic Range)."
+   "Thiết lập mức độ sáng HDR (đơn vị nit). Sử dụng kết hợp với thiết lập độ sáng vật lý của màn hình. Để bắt đầu, hãy đặt giá trị này là 80 và chỉnh độ sáng màn hình lên tối đa. Hoặc, đặt giá trị này bằng mức nit tối đa của màn hình, sau đó giảm độ sáng màn hình xuống đến khi hình ảnh trông phù hợp."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2456,7 +2476,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Sử dụng dải màu đầy đủ của màn hình để tạo ra hình ảnh sáng hơn, bão hòa hơn. Để có màu sắc trung thực hơn với thiết kế trò chơi gốc, hãy đặt tùy chọn này thành CHÍNH XÁC."
+   "Sử dụng toàn bộ dải màu của màn hình để tạo hình ảnh sáng hơn và rực rỡ hơn. Để màu sắc trung thực hơn với thiết kế gốc của trò chơi, hãy đặt tùy chọn này thành “Chính xác”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
@@ -2525,6 +2545,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
    "VSync được bật cho đến khi hiệu suất giảm xuống dưới tốc độ làm mới mục tiêu. Có thể giảm thiểu hiện tượng giật hình khi hiệu suất giảm xuống dưới thời gian thực và tiết kiệm năng lượng hơn. Không tương thích với 'Độ trễ khung hình'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Đồng bộ theo dòng quét"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Đồng bộ việc hiển thị video theo vị trí dòng quét. Giảm độ trễ nhưng tăng nguy cơ bị xé hình. Cần tắt VSync."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -2746,6 +2774,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "Chiều dài bộ đệm trung gian (tính theo khung) khi sử dụng trình điều khiển WASAPI ở chế độ chia sẻ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Mở bảng điều khiển ASIO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Mở bảng điều khiển driver ASIO để cấu hình định tuyến thiết bị và các thiết lập bộ đệm."
    )
 
 /* Settings > Audio > Output */
@@ -4539,6 +4575,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
    "Lưu thay đổi vào file cấu hình khi thoát. Hữu ích cho các thay đổi thực hiện trong menu. Ghi đè file cấu hình, #include và các chú thích sẽ không được giữ lại."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Lưu Cấu Hình Tối Thiểu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Chỉ lưu những thiết lập khác với mặc định."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Khi bật, chỉ lưu các giá trị cấu hình đã thay đổi so với giá trị mặc định. Giúp tạo ra một tệp cấu hình nhỏ gọn và dễ quản lý hơn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -7949,7 +7997,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Thêm trò chơi mới và xóa các mục không hợp lệ bằng cách lặp lại thao tác 'Quét Thủ Công' được sử dụng lần cuối để tạo hoặc chỉnh sửa danh sách phát."
+   "Thêm nội dung mới và xóa các mục không hợp lệ bằng cách lặp lại thao tác quét nội dung đã dùng để tạo hoặc chỉnh sửa danh sách phát lần cuối."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -8534,11 +8582,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Quét Thủ Công"
+   "Quét trò chơi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Quét có thể cấu hình dựa trên tên file trò chơi. Không yêu cầu nội dung phải khớp với cơ sở dữ liệu."
+   "Quét có thể tùy chỉnh dựa trên tên tệp trò chơi và/hoặc khớp cơ sở dữ liệu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -8604,31 +8652,31 @@ MSG_HASH(
    "Thêm vào Bộ trộn và Phát"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Thư mục trò chơi"
+   "Vị Trí trò chơi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Chọn một thư mục để quét trò chơi."
+   "Chọn thư mục (hoặc tệp) để quét nội dung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Tên hệ thống"
+   "Danh sách phát mục tiêu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Chỉ định ‘tên hệ thống’ để liên kết với trò chơi đã quét. Dùng để đặt tên file danh sách phát tạo ra và nhận diện hình thu nhỏ của danh sách phát."
+   "Tên tệp danh sách phát được tạo, cũng dùng để nhận diện hình thu nhỏ của danh sách phát. Thiết lập tự động sẽ sử dụng cùng tên với cơ sở dữ liệu hoặc thư mục nội dung tương ứng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Tên hệ thống tùy chỉnh"
+   "Tên danh sách phát tùy chỉnh"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Chỉ định thủ công ‘tên hệ thống’ cho trò chơi đã quét. Chỉ dùng khi ‘Tên hệ thống’ được đặt là ‘<Tùy chỉnh>’."
+   "Tên danh sách phát tùy chỉnh cho nội dung đã quét."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,

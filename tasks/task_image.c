@@ -21,7 +21,6 @@
 #include <file/nbio.h>
 #include <formats/image.h>
 #include <compat/strl.h>
-#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
 
@@ -29,6 +28,7 @@
 #include "tasks_internal.h"
 
 #include "../configuration.h"
+#include "../gfx/video_driver.h"
 
 enum image_status_enum
 {
@@ -64,7 +64,6 @@ struct nbio_image_handle
 
 static int cb_image_upload_generic(void *data, size_t len)
 {
-   unsigned r_shift, g_shift, b_shift, a_shift;
    nbio_handle_t             *nbio = (nbio_handle_t*)data;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
@@ -80,16 +79,13 @@ static int cb_image_upload_generic(void *data, size_t len)
          break;
    }
 
-   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
-         &a_shift, &image->ti);
-
-   image_texture_color_convert(r_shift, g_shift, b_shift,
-         a_shift, &image->ti);
+   /* All decoders now output the correct channel order directly
+    * based on supports_rgba, so no post-processing swap is needed. */
 
    image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
    image->flags                   |=  IMAGE_FLAG_IS_BLOCKING;
    image->flags                   |=  IMAGE_FLAG_IS_FINISHED;
-   nbio->is_finished                        = true;
+   nbio->is_finished               = true;
 
    return 0;
 }
@@ -107,7 +103,8 @@ static int task_image_process(
    if ((retval = image_transfer_process(
          image->handle,
          image->type,
-         &image->ti.pixels, image->size, width, height)) == IMAGE_PROCESS_ERROR)
+         &image->ti.pixels, image->size, width, height,
+         image->ti.supports_rgba)) == IMAGE_PROCESS_ERROR)
       return IMAGE_PROCESS_ERROR;
 
    image->ti.width  = *width;
@@ -124,8 +121,8 @@ static int cb_image_thumbnail(void *data, size_t len)
    struct nbio_image_handle *image  = (struct nbio_image_handle*)nbio->data;
    int retval                       = image ? task_image_process(image, &width, &height) : IMAGE_PROCESS_ERROR;
 
-   if ((retval == IMAGE_PROCESS_ERROR)    ||
-       (retval == IMAGE_PROCESS_ERROR_END)
+   if (   (retval == IMAGE_PROCESS_ERROR)
+       || (retval == IMAGE_PROCESS_ERROR_END)
       )
       return -1;
 
@@ -151,7 +148,8 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 
    do
    {
-      if ((retval = task_image_process(image, &width, &height)) != IMAGE_PROCESS_NEXT)
+      if ((retval = task_image_process(image, &width, &height)) 
+          != IMAGE_PROCESS_NEXT)
          break;
    }while (cpu_features_get_time_usec() - start_time
          < image->frame_duration);
@@ -250,8 +248,7 @@ static bool upscale_image(
       struct texture_image *image_src,
       struct texture_image *image_dst)
 {
-   uint32_t x_ratio, y_ratio;
-   unsigned y_dst;
+   unsigned y_src;
    size_t total_pixels;
 
    /* Sanity check */
@@ -269,25 +266,46 @@ static bool upscale_image(
    if (total_pixels == 0 || total_pixels > UPSCALE_MAX_PIXELS)
       return false;
 
-   /* Allocate pixel buffer */
-   if (!(image_dst->pixels = (uint32_t*)calloc(total_pixels, sizeof(uint32_t))))
+   /* Allocate pixel buffer.
+    * malloc (not calloc) is sufficient: the loop below writes every
+    * destination pixel before returning — first by building the top
+    * row of each scale_factor-high block via the x_src expansion
+    * loop, then by memcpy'ing that row into the remaining rows of
+    * the block. No pixel is ever read before being written, so the
+    * zero-fill that calloc would do is wasted work. */
+   if (!(image_dst->pixels = (uint32_t*)malloc(total_pixels * sizeof(uint32_t))))
       return false;
 
-   /* Perform nearest neighbour resampling */
-   x_ratio = ((image_src->width  << 16) / image_dst->width);
-   y_ratio = ((image_src->height << 16) / image_dst->height);
-
-   for (y_dst = 0; y_dst < image_dst->height; y_dst++)
+   /* Fast path for integer scale factors: expand each source pixel
+    * into a scale_factor-wide run, then memcpy to duplicate rows */
+   for (y_src = 0; y_src < image_src->height; y_src++)
    {
-      unsigned x_dst;
-      unsigned y_src      = (y_dst * y_ratio) >> 16;
-      uint32_t *dst_row   = image_dst->pixels + ((size_t)y_dst * image_dst->width);
-      uint32_t *src_row   = image_src->pixels + ((size_t)y_src * image_src->width);
+      unsigned x_src;
+      uint32_t *src_row     = image_src->pixels
+                            + ((size_t)y_src * image_src->width);
+      uint32_t *dst_first   = image_dst->pixels
+                            + ((size_t)y_src * scale_factor * image_dst->width);
+      size_t dst_row_bytes  = (size_t)image_dst->width * sizeof(uint32_t);
 
-      for (x_dst = 0; x_dst < image_dst->width; x_dst++)
+      /* Build the first scaled row by expanding each source pixel */
+      for (x_src = 0; x_src < image_src->width; x_src++)
       {
-         unsigned x_src = (x_dst * x_ratio) >> 16;
-         dst_row[x_dst] = src_row[x_src];
+         unsigned k;
+         uint32_t px        = src_row[x_src];
+         uint32_t *dst_px   = dst_first + (size_t)x_src * scale_factor;
+
+         for (k = 0; k < scale_factor; k++)
+            dst_px[k] = px;
+      }
+
+      /* Duplicate the first scaled row for the remaining (scale_factor-1) rows */
+      {
+         unsigned row_copy;
+         for (row_copy = 1; row_copy < scale_factor; row_copy++)
+         {
+            uint32_t *dst_dup = dst_first + (size_t)row_copy * image_dst->width;
+            memcpy(dst_dup, dst_first, dst_row_bytes);
+         }
       }
    }
 
@@ -371,10 +389,10 @@ bool task_image_load_handler(retro_task_t *task)
                 && ((image->ti.width  < image->upscale_threshold)
                 ||  (image->ti.height < image->upscale_threshold)))
             {
-               unsigned min_size                  = (image->ti.width < image->ti.height)
-                                                    ? image->ti.width : image->ti.height;
-               unsigned scale_factor_int          = ((image->upscale_threshold + min_size - 1)
-                                                    / min_size);
+               unsigned min_size = (image->ti.width < image->ti.height)
+                                  ? image->ti.width : image->ti.height;
+               unsigned scale_factor_int = ((image->upscale_threshold 
+               + min_size - 1) / min_size);
                struct texture_image img_resampled = {
                   NULL,
                   0,
@@ -488,6 +506,9 @@ bool task_push_image_load(const char *fullpath,
       case IMAGE_TYPE_TGA:
          nbio->type = NBIO_TYPE_TGA;
          break;
+      case IMAGE_TYPE_WEBP:
+         nbio->type = NBIO_TYPE_WEBP;
+         break;
       default:
          nbio->type = NBIO_TYPE_NONE;
          break;
@@ -502,6 +523,104 @@ bool task_push_image_load(const char *fullpath,
    t->user_data       = user_data;
 
    task_queue_push(t);
+
+   return true;
+}
+
+/* -----------------------------------------------------------------------
+ * Async icon/texture loading
+ *
+ * Wraps task_push_image_load with a built-in callback that uploads the
+ * decoded image to the GPU via video_driver_texture_load and stores the
+ * resulting handle at *target_texture.
+ *
+ * A generation counter prevents stale callbacks from writing into freed
+ * memory when the owning list is rebuilt or destroyed between queue and
+ * completion.
+ *
+ * The generation counter must be a static local (or file-static) in the
+ * calling module — NOT inside a heap-allocated struct that could be freed.
+ * Each subsystem (ozone, xmb, explore, contentless) maintains its own
+ * counter so bumping one doesn't invalidate another's in-flight loads.
+ *
+ * Usage (in caller):
+ *   static uint64_t my_gen = 0;
+ *   my_gen++;                    // invalidate previous batch
+ *   for (i = 0; i < N; i++)
+ *      task_push_icon_load(path, rgba, &node->icon, my_gen, &my_gen);
+ * ----------------------------------------------------------------------- */
+
+typedef struct
+{
+   uintptr_t *target;          /* where to store the GPU texture handle  */
+   uint64_t   generation;      /* snapshot of gen counter at queue time  */
+   uint64_t  *generation_ptr;  /* pointer to the STATIC gen counter      */
+} icon_load_tag_t;
+
+static void cb_task_icon_load(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
+{
+   struct texture_image *img = (struct texture_image*)task_data;
+   icon_load_tag_t      *tag = (icon_load_tag_t*)user_data;
+
+   if (!tag)
+      goto end;
+
+   /* Generation check: if the counter was bumped since this task was
+    * queued, the target pointer may be invalid — skip the write.
+    * generation_ptr points to a static variable in the calling module
+    * so it is always valid (never freed). */
+   if (tag->generation != *tag->generation_ptr)
+      goto end;
+
+   if (!img || img->width < 1 || img->height < 1 || !img->pixels)
+      goto end;
+
+   video_driver_texture_load(img, TEXTURE_FILTER_LINEAR,
+         tag->target);
+
+end:
+   if (img)
+   {
+      image_texture_free(img);
+      free(img);
+   }
+   free(tag);
+}
+
+bool task_push_icon_load(const char *fullpath,
+      bool supports_rgba,
+      uintptr_t *target_texture,
+      uint64_t generation,
+      uint64_t *generation_ptr)
+{
+   icon_load_tag_t *tag = NULL;
+
+   if (!fullpath || !target_texture || !generation_ptr)
+      return false;
+
+   /* Unload the previous texture now, while we are on the main
+    * thread and the video context is guaranteed alive.  Doing
+    * this in the async callback is unsafe because a context
+    * destroy/recreate cycle may have freed the handle between
+    * queue time and callback time. */
+   if (*target_texture)
+      video_driver_texture_unload(target_texture);
+
+   tag = (icon_load_tag_t*)malloc(sizeof(*tag));
+   if (!tag)
+      return false;
+
+   tag->target         = target_texture;
+   tag->generation     = generation;
+   tag->generation_ptr = generation_ptr;
+
+   if (!task_push_image_load(fullpath, supports_rgba, 0,
+         cb_task_icon_load, tag))
+   {
+      free(tag);
+      return false;
+   }
 
    return true;
 }

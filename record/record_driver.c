@@ -33,6 +33,7 @@
 #include "record_driver.h"
 #include "drivers/record_ffmpeg.h"
 #include "drivers/record_wav.h"
+#include "drivers/record_avfoundation.h"
 
 static recording_state_t recording_state = {0};
 
@@ -46,6 +47,9 @@ static const record_driver_t record_null = {
 };
 
 const record_driver_t *record_drivers[] = {
+#ifdef HAVE_AVF
+   &record_avfoundation,
+#endif
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
 #endif
@@ -150,7 +154,7 @@ bool recording_deinit(void)
    /* Push recording to video history playlist */
 #ifdef HAVE_FFMPEG
    if (     history_list_enable
-         && !string_is_empty(recording_st->path))
+         && *recording_st->path)
    {
       struct playlist_entry entry = {0};
 
@@ -217,7 +221,7 @@ bool recording_init(void)
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
 
-   if (!string_is_empty(recording_st->path))
+   if (*recording_st->path)
       strlcpy(output, recording_st->path, sizeof(output));
    else
    {
@@ -226,7 +230,7 @@ bool recording_init(void)
       unsigned video_stream_port    = settings->uints.video_stream_port;
       if (recording_st->streaming_enable)
       {
-         if (!string_is_empty(stream_url))
+         if (stream_url && *stream_url)
             strlcpy(output, stream_url, sizeof(output));
          else
          {
@@ -242,38 +246,33 @@ bool recording_init(void)
          if (!path_is_directory(recording_st->output_dir))
             path_mkdir(recording_st->output_dir);
          /* Fallback to core name if started without content */
-         if (string_is_empty(game_name))
-            game_name          = runloop_st->system.info.library_name;
+         if (!game_name || !*game_name)
+            game_name = runloop_st->system.info.library_name;
 
-         if (video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
          {
-            fill_str_dated_filename(buf, game_name,
-                     "mkv", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
-         }
-         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
-               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
-         {
-            fill_str_dated_filename(buf, game_name,
-                     "webm", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
-         }
-         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
-               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
-         {
-            fill_str_dated_filename(buf, game_name,
-                     "gif", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
-         }
-         else
-         {
-            fill_str_dated_filename(buf, game_name,
-                     "png", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
+            const char *ext = "mkv";
+#ifdef HAVE_AVF
+            if (string_is_equal(settings->arrays.record_driver,
+                     "avfoundation"))
+               ext = "mov";
+            else
+#endif
+            if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
+                  && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+               ext = "webm";
+            else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
+                  && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
+               ext = "gif";
+            else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_APNG)
+               ext = "png";
+
+            fill_str_dated_filename(buf, game_name, ext, sizeof(buf));
+            fill_pathname_join_special(output,
+                  recording_st->output_dir, buf, sizeof(output));
          }
 
          /* Cache path for playlist saving */
-         if (!string_is_empty(output))
+         if (*output)
             strlcpy(recording_st->path, output, sizeof(recording_st->path));
       }
    }
@@ -299,7 +298,7 @@ bool recording_init(void)
       : FFEMU_PIX_RGB565;
    params.config                    = NULL;
 
-   if (!string_is_empty(recording_st->config))
+   if (*recording_st->config)
       params.config                 = recording_st->config;
    else
    {
@@ -428,7 +427,7 @@ void recording_driver_update_streaming_url(void)
    switch (settings->uints.streaming_mode)
    {
       case STREAMING_MODE_TWITCH:
-         if (!string_is_empty(settings->arrays.twitch_stream_key))
+         if (*settings->arrays.twitch_stream_key)
          {
             size_t _len = strlcpy(settings->paths.path_stream_url,
                   twitch_url,
@@ -439,7 +438,7 @@ void recording_driver_update_streaming_url(void)
          }
          break;
       case STREAMING_MODE_YOUTUBE:
-         if (!string_is_empty(settings->arrays.youtube_stream_key))
+         if (*settings->arrays.youtube_stream_key)
          {
             size_t _len = strlcpy(settings->paths.path_stream_url,
                   youtube_url,
@@ -460,7 +459,7 @@ void recording_driver_update_streaming_url(void)
          }
          break;
       case STREAMING_MODE_FACEBOOK:
-         if (!string_is_empty(settings->arrays.facebook_stream_key))
+         if (*settings->arrays.facebook_stream_key)
          {
             size_t _len = strlcpy(settings->paths.path_stream_url,
                   facebook_url,

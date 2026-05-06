@@ -141,17 +141,14 @@ char *string_trim_whitespace_left(char *const s)
    if (s && *s)
    {
       char *current  = s;
-
-      while (*current && ISSPACE((unsigned char)*current))
+      while (*current && (*current == ' ' || *current == '\t' || *current == '\n' || *current == '\r' || *current == '\v' || *current == '\f'))
          ++current;
-
       if (s != current)
       {
          size_t _len = strlen(current);
          memmove(s, current, _len + 1);
       }
    }
-
    return s;
 }
 
@@ -251,7 +248,7 @@ size_t word_wrap(
          if (src_end - src <= line_width)
          {
             _len = len - (size_t)(s - s_start);
-            return strlcpy(s, src, _len);
+            return (size_t)(s - s_start) + strlcpy(s, src, _len);
          }
       }
 
@@ -278,14 +275,14 @@ size_t word_wrap(
             if (src_end - src < line_width)
             {
                _len = len - (size_t)(s - s_start);
-               return strlcpy(s, src, _len);
+               return (size_t)(s - s_start) + strlcpy(s, src, _len);
             }
          }
       }
    }
 
    *s = '\0';
-   return 0;
+   return (size_t)(s - s_start);
 }
 
 /**
@@ -356,9 +353,23 @@ size_t word_wrap_wideglyph(char *s, size_t len,
    int additional_counter_normalized = wideglyph_width - 100;
 
    /* Early return if src string length is less
-    * than line width */
+    * than line width.
+    *
+    * NOTE on the strlcpy clamp: strlcpy returns strlen(src),
+    * which exceeds bytes-actually-written if the destination
+    * was too small (truncation case).  Callers (xmb, ozone,
+    * materialui messagebox helpers) use the returned value as
+    * the length argument to memchr() over the destination
+    * buffer; an inflated return walks memchr past the buffer
+    * end into adjacent stack memory.  Clamp the return to the
+    * true bytes-written count: min(strlen(src), len - 1). */
    if (src_end - src < line_width)
-      return strlcpy(s, src, len);
+   {
+      size_t copied = strlcpy(s, src, len);
+      if (copied >= len)
+         copied = (len > 0) ? len - 1 : 0;
+      return copied;
+   }
 
    while (*src != '\0')
    {
@@ -366,8 +377,15 @@ size_t word_wrap_wideglyph(char *s, size_t len,
       unsigned char_len   = (unsigned)(utf8skip(src, 1) - src);
       counter_normalized += 100;
 
-      /* Prevent buffer overflow */
-      if (char_len >= len)
+      /* Prevent buffer overflow.  `remaining` is computed from
+       * the original `len` and the current write offset rather
+       * than tracking it via `len -= char_len` -- the rewinds
+       * at lastspace/lastwideglyph below move `s` backwards
+       * without a matching `len += ...`, which would otherwise
+       * desync the two and break the buffer-space accounting
+       * for the early-return strlcpys. */
+      remaining = len - (size_t)(s - s_start);
+      if (char_len >= remaining)
          break;
 
       if (*src == ' ')
@@ -383,8 +401,10 @@ size_t word_wrap_wideglyph(char *s, size_t len,
           * length is less than line width */
          if (src_end - src <= line_width)
          {
-            remaining = len - (size_t)(s - s_start);
-            return strlcpy(s, src, remaining);
+            size_t copied = strlcpy(s, src, remaining);
+            if (copied >= remaining)
+               copied = (remaining > 0) ? remaining - 1 : 0;
+            return (size_t)(s - s_start) + copied;
          }
       }
       else if (char_len >= 3)
@@ -395,7 +415,6 @@ size_t word_wrap_wideglyph(char *s, size_t len,
          counter_normalized += additional_counter_normalized;
       }
 
-      len -= char_len;
       while (char_len--)
          *s++ = *src++;
 
@@ -419,8 +438,12 @@ size_t word_wrap_wideglyph(char *s, size_t len,
              * length is less than line width */
             if (src_end - src <= line_width)
             {
+               size_t copied;
                remaining = len - (size_t)(s - s_start);
-               return strlcpy(s, src, remaining);
+               copied    = strlcpy(s, src, remaining);
+               if (copied >= remaining)
+                  copied = (remaining > 0) ? remaining - 1 : 0;
+               return (size_t)(s - s_start) + copied;
             }
          }
          else if (lastspace)
@@ -437,15 +460,19 @@ size_t word_wrap_wideglyph(char *s, size_t len,
              * length is less than line width */
             if (src_end - src < line_width)
             {
+               size_t copied;
                remaining = len - (size_t)(s - s_start);
-               return strlcpy(s, src, remaining);
+               copied    = strlcpy(s, src, remaining);
+               if (copied >= remaining)
+                  copied = (remaining > 0) ? remaining - 1 : 0;
+               return (size_t)(s - s_start) + copied;
             }
          }
       }
    }
 
    *s = '\0';
-   return 0;
+   return (size_t)(s - s_start);
 }
 
 /**
@@ -478,10 +505,10 @@ char* string_tokenize(char **str, const char *delim)
    size_t delim_len = 0;
 
    /* Sanity checks */
-   if (!str || string_is_empty(delim))
+   if (!str || !delim || !*delim)
       return NULL;
 
-   /* Note: we don't check string_is_empty() here,
+   /* Note: we don't check if string is empty here,
     * empty strings are valid */
    if (!(str_ptr = *str))
       return NULL;
@@ -498,9 +525,15 @@ char* string_tokenize(char **str, const char *delim)
    if (!(token = (char *)malloc((_len + 1) * sizeof(char))))
       return NULL;
 
-   /* Copy token */
+   /* Copy token.  strlcpy already NUL-terminates within the
+    * `_len + 1` byte limit -- _len is bounded above by
+    * strlen(str_ptr) (computed at lines 489-492), so the
+    * terminator lands exactly at token[_len] without needing
+    * a separate write here.  The redundant token[_len] = '\0'
+    * also tripped -Wstringop-overflow under some gcc
+    * configurations (the analyser couldn't constrain _len
+    * relative to the malloc'd size). */
    strlcpy(token, str_ptr, (_len + 1) * sizeof(char));
-   token[_len] = '\0';
    /* Update input string pointer */
    *str = delim_ptr ? delim_ptr + delim_len : NULL;
    return token;
@@ -513,21 +546,22 @@ char* string_tokenize(char **str, const char *delim)
  * Leaf function.
  *
  * Removes every instance of character @c from @s
+ *
+ * Returns the length of the resulting string.
  **/
-void string_remove_all_chars(char *s, char c)
+size_t string_remove_all_chars(char *s, char c)
 {
-   char *read_ptr  = s;
-   char *write_ptr = s;
-
-   while (*read_ptr != '\0')
+   char *dst = s;
+   char *src = s;
+   while (*src)
    {
       /* Only write if the character is not the one to remove */
-      if (*read_ptr != c)
-         *write_ptr++ = *read_ptr;
-      read_ptr++;
+      if (*src != c)
+         *dst++ = *src;
+      src++;
    }
-
-   *write_ptr = '\0';
+   *dst = '\0';
+   return (size_t)(dst - s);
 }
 
 /**
@@ -558,7 +592,7 @@ unsigned string_to_unsigned(const char *str)
 {
    const char *ptr = NULL;
 
-   if (string_is_empty(str))
+   if (!str || !*str)
       return 0;
 
    for (ptr = str; *ptr != '\0'; ptr++)
@@ -584,7 +618,7 @@ unsigned string_hex_to_unsigned(const char *str)
    const char *hex_str = str;
    const char *ptr     = NULL;
 
-   if (string_is_empty(str))
+   if (!str || !*str)
       return 0;
 
    /* Remove leading '0x', if present */
@@ -592,7 +626,7 @@ unsigned string_hex_to_unsigned(const char *str)
        && (str[1] == 'x' || str[1] == 'X'))
    {
       hex_str = str + 2;
-      if (string_is_empty(hex_str))
+      if (!hex_str || !*hex_str)
          return 0;
    }
 
@@ -633,8 +667,6 @@ int string_count_occurrences_single_character(const char *str, char c)
  *
  * Replaces all spaces with given character @c.
  **/
-/* FIX: Added unsigned char cast to ISSPACE argument for
- * correct behaviour with high-byte / signed char inputs. */
 void string_replace_whitespace_with_single_character(char *s, char c)
 {
    for (; *s; s++)
@@ -649,7 +681,6 @@ void string_replace_whitespace_with_single_character(char *s, char c)
  *
  * Replaces multiple spaces with a single space in a string.
  **/
-/* FIX: Added unsigned char cast to ISSPACE arguments. */
 void string_replace_multi_space_with_single_space(char *s)
 {
    char *str_trimmed  = s;
@@ -673,14 +704,61 @@ void string_replace_multi_space_with_single_space(char *s)
  * Leaf function.
  *
  * Remove all spaces from the given string.
+ * Returns the length of the resulting string.
  **/
-/* FIX: Added unsigned char cast to ISSPACE argument. */
-void string_remove_all_whitespace(char *s, const char *str)
+size_t string_remove_all_whitespace(char *s, const char *str)
 {
+   char *start = (char*)s;
    for (; *str; str++)
       if (!ISSPACE((unsigned char)*str))
          *s++ = *str;
    *s = '\0';
+   return s - start;
+}
+
+/**
+ * strlcpy_append:
+ *
+ * See header (libretro-common/include/string/stdstring.h) for the
+ * full contract.  Bound-checked append; advances *pos by
+ * strlen(@src) on success, returns -1 on truncation.
+ *
+ * Truncation is signalled when *pos >= len already, or when
+ * strlcpy returns a value >= the remaining capacity.  In either
+ * case the destination is left NUL-terminated (strlcpy guarantees
+ * this when its size argument is non-zero) and *pos is clamped to
+ * len - 1 so subsequent calls in a chain become no-ops that also
+ * return -1.
+ **/
+int strlcpy_append(char *s, size_t len, size_t *pos, const char *src)
+{
+   size_t remaining;
+   size_t n;
+
+   if (!s || !pos || !src || len == 0)
+      return -1;
+
+   if (*pos >= len)
+   {
+      /* Already saturated; clamp and report truncation. */
+      *pos = len - 1;
+      return -1;
+   }
+
+   remaining = len - *pos;
+   n         = strlcpy(s + *pos, src, remaining);
+
+   if (n >= remaining)
+   {
+      /* strlcpy truncated.  s + len - 1 is NUL-terminated by
+       * strlcpy's contract.  Clamp *pos so subsequent appends
+       * short-circuit. */
+      *pos = len - 1;
+      return -1;
+   }
+
+   *pos += n;
+   return 0;
 }
 
 /**
@@ -722,4 +800,94 @@ void string_copy_only_ascii(char *s, const char *str)
       if (*str > 0x1F && *str < 0x7F)
          *s++ = *str;
    *s = '\0';
+}
+
+/**
+ * string_ext_list_find:
+ *
+ * Checks whether a single extension token already exists
+ * in a '|'-delimited string. Exact token matching only.
+ **/
+bool string_ext_list_find(const char *delim_str, size_t delim_len,
+      const char *ext, size_t ext_len)
+{
+   const char *p   = delim_str;
+   const char *end = delim_str + delim_len;
+
+   while (p < end)
+   {
+      const char *tok_end = (const char*)memchr(p, '|', end - p);
+      size_t tok_len;
+
+      if (!tok_end)
+         tok_end = end;
+
+      tok_len = tok_end - p;
+
+      if (tok_len == ext_len && memcmp(p, ext, ext_len) == 0)
+         return true;
+
+      p = tok_end + 1;
+   }
+
+   return false;
+}
+
+/**
+ * string_ext_list_append_dedup:
+ *
+ * Appends a single extension to a '|'-delimited destination buffer,
+ * but only if that extension is not already present.
+ **/
+void string_ext_list_append_dedup(char *dst, size_t *dst_len,
+      size_t dst_size, const char *ext, size_t ext_len)
+{
+   if (ext_len == 0)
+      return;
+   if (string_ext_list_find(dst, *dst_len, ext, ext_len))
+      return;
+   if (*dst_len + 1 + ext_len + 1 > dst_size)
+      return;
+
+   if (*dst_len > 0)
+      dst[(*dst_len)++] = '|';
+
+   memcpy(dst + *dst_len, ext, ext_len);
+   *dst_len += ext_len;
+   dst[*dst_len] = '\0';
+}
+
+/**
+ * string_ext_list_merge_dedup:
+ *
+ * Splits a '|'-delimited source string and appends each unique
+ * extension to the destination buffer via string_ext_list_append_dedup.
+ **/
+void string_ext_list_merge_dedup(char *dst, size_t *dst_len,
+      size_t dst_size, const char *src)
+{
+   const char *p;
+   const char *end;
+
+   if (!src || !*src)
+      return;
+
+   end = src + strlen(src);
+   p   = src;
+
+   while (p < end)
+   {
+      const char *tok_end = (const char*)memchr(p, '|', end - p);
+      size_t tok_len;
+
+      if (!tok_end)
+         tok_end = end;
+
+      tok_len = tok_end - p;
+
+      if (tok_len > 0)
+         string_ext_list_append_dedup(dst, dst_len, dst_size, p, tok_len);
+
+      p = tok_end + 1;
+   }
 }

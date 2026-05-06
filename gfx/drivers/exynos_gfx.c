@@ -29,6 +29,7 @@
 #include <exynos/exynos_fimg2d.h>
 
 #include <retro_inline.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -560,7 +561,7 @@ static int exynos_open(struct exynos_data *pdata)
    g_drm_evctx.version                  = DRM_EVENT_CONTEXT_VERSION;
    g_drm_evctx.page_flip_handler        = exynos_page_flip_handler;
 
-   strncpy(pdata->drmname, buf, sizeof(buf));
+   strlcpy(pdata->drmname, buf, sizeof(pdata->drmname));
    g_drm_fd = fd;
 
    RARCH_LOG("[Exynos] using DRM device \"%s\" with connector id %u.\n",
@@ -1454,7 +1455,7 @@ static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* load_texture */
    NULL, /* unload_texture */
    NULL, /* set_video_mode */
-   drm_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
@@ -1471,7 +1472,7 @@ static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -1511,6 +1512,8 @@ video_driver_t video_exynos = {
 #endif
    exynos_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

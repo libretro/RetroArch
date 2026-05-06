@@ -39,7 +39,12 @@
 
 #ifdef HAVE_SHADERPIPELINE
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
+#include "../drivers/gl_shaders/pipeline_xmb_ribbon.cg.h"
+#include "../drivers/gl_shaders/pipeline_snow_simple.cg.h"
+#include "../drivers/gl_shaders/pipeline_snow_heavy.cg.h"
 #include "../drivers/gl_shaders/pipeline_snow.cg.h"
+#include "../drivers/gl_shaders/pipeline_bokeh.cg.h"
+#include "../drivers/gl_shaders/pipeline_snowflake.cg.h"
 #endif
 
 #include "../include/Cg/cg.h"
@@ -51,6 +56,73 @@
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
 #endif
+
+#if defined(HAVE_OPENGLES)
+#define CG(src)   "" #src
+#define GLSL(src) "#extension GL_OES_standard_derivatives : enable\n" \
+                  "#ifdef GL_ES\n" \
+                  "  #ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
+                  "    precision highp float;\n" \
+                  "  #else\n" \
+                  "    precision mediump float;\n" \
+                  "  #endif\n" \
+                  "#else\n" \
+                  "  precision mediump float;\n" \
+                  "#endif\n" #src
+#define GLSL_STANDARD_DERIVATIVES(src) "#version 130\n" \
+                  "#extension GL_OES_standard_derivatives : enable\n" \
+                  "#ifdef GL_ES\n" \
+                  "  #ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
+                  "    precision highp float;\n" \
+                  "  #else\n" \
+                  "    precision mediump float;\n" \
+                  "  #endif\n" \
+                  "#else\n" \
+                  "  precision mediump float;\n" \
+                  "#endif\n" #src
+#else
+#define CG(src)   "" #src
+#define GLSL(src) "" #src
+#define GLSL_STANDARD_DERIVATIVES(src) "" #src
+#endif
+
+#ifndef GLSL_300
+#define GLSL_300(src)   "#version 300 es\n"   #src
+#endif
+
+static const char *stock_cg_gl_program = CG(
+      struct input
+      {
+        float2 tex_coord;
+        float4 color;
+        float4 vertex_coord;
+        uniform float4x4 mvp_matrix;
+        uniform sampler2D texture;
+      };
+
+      struct vertex_data
+      {
+        float2 tex;
+        float4 color;
+      };
+
+      void main_vertex
+      (
+        out float4 oPosition : POSITION,
+        input IN,
+        out vertex_data vert
+      )
+      {
+        oPosition = mul(IN.mvp_matrix, IN.vertex_coord);
+        vert = vertex_data(IN.tex_coord, IN.color);
+      }
+
+      float4 main_fragment(input IN, vertex_data vert, uniform sampler2D s0 : TEXUNIT0) : COLOR
+      {
+        return vert.color * tex2D(s0, vert.tex);
+      }
+);
+
 
 #define PREV_TEXTURES         (GFX_MAX_TEXTURES - 1)
 
@@ -137,8 +209,6 @@ struct uniform_cg
       cgGLSetTextureParameter(param, texture); \
       cgGLEnableTextureParameter(param); \
    }
-
-#include "../drivers/gl_shaders/opaque.cg.h"
 
 static void gl_cg_set_uniform_parameter(
       void *data,
@@ -602,13 +672,13 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
       RARCH_LOG("[Cg] Found semantic \"%s\" in prog #%u.\n", semantic, i);
 
       if (
-            string_is_equal(semantic, "TEXCOORD") ||
-            string_is_equal(semantic, "TEXCOORD0")
+               string_is_equal(semantic, "TEXCOORD")
+            || string_is_equal(semantic, "TEXCOORD0")
          )
          cg->prg[i].tex     = param;
       else if (
-            string_is_equal(semantic, "COLOR") ||
-            string_is_equal(semantic, "COLOR0")
+               string_is_equal(semantic, "COLOR")
+            || string_is_equal(semantic, "COLOR0")
             )
             cg->prg[i].color   = param;
       else if (string_is_equal(semantic, "POSITION"))
@@ -660,7 +730,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
 
    cg->shader->passes = 1;
 
-   if (string_is_empty(path))
+   if (!path || !*path)
    {
       RARCH_LOG("[Cg] Loading stock Cg file.\n");
       cg->prg[1] = cg->prg[0];
@@ -918,35 +988,55 @@ static void gl_cg_init_menu_shaders(void *data)
       return;
 
 #ifdef HAVE_SHADERPIPELINE
-   shader_prog_info.combined = stock_xmb_ribbon_simple;
    shader_prog_info.is_file  = false;
 
+   shader_prog_info.combined = stock_xmb_ribbon;
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU,
          &cg->prg[VIDEO_SHADER_MENU],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU);
 
    shader_prog_info.combined = stock_xmb_ribbon_simple;
-   shader_prog_info.is_file  = false;
-
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU_2,
          &cg->prg[VIDEO_SHADER_MENU_2],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_2);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_2);
 
-   shader_prog_info.combined = stock_xmb_snow;
-   shader_prog_info.is_file  = false;
-
+   shader_prog_info.combined = stock_xmb_simple_snow;
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU_3,
          &cg->prg[VIDEO_SHADER_MENU_3],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_3);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_3);
+
+   shader_prog_info.combined = stock_xmb_snow_heavy;
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_4,
+         &cg->prg[VIDEO_SHADER_MENU_4],
+         &shader_prog_info);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_4);
+
+   shader_prog_info.combined = stock_xmb_bokeh;
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_5,
+         &cg->prg[VIDEO_SHADER_MENU_5],
+         &shader_prog_info);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_5);
+
+   shader_prog_info.combined = stock_xmb_snowflake;
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_6,
+         &cg->prg[VIDEO_SHADER_MENU_6],
+         &shader_prog_info);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_6);
 #endif
 }
 
@@ -1001,13 +1091,13 @@ static void *gl_cg_init(void *data, const char *path)
       enum rarch_shader_type type =
          video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
 
-      if (!string_is_empty(path) && type != RARCH_SHADER_CG)
+      if (path && *path && type != RARCH_SHADER_CG)
       {
          RARCH_ERR("[Cg] Invalid shader type, falling back to stock.\n");
          path = NULL;
       }
 
-      if (!string_is_empty(path) && is_preset)
+      if (path && *path && is_preset)
       {
          if (!gl_cg_load_preset(cg, path))
             goto error;

@@ -117,6 +117,21 @@ endif
 
 OBJECTS :=  ../../libretro-common/net/net_compat.o \
 				../../libretro-common/net/net_socket.o \
+				../../libretro-common/compat/compat_strl.o \
+				../../libretro-common/compat/fopen_utf8.o \
+				../../libretro-common/compat/compat_posix_string.o \
+				../../libretro-common/encodings/encoding_utf.o \
+				../../libretro-common/encodings/encoding_crc32.o \
+				../../libretro-common/features/features_cpu.o \
+				../../libretro-common/file/file_path.o \
+				../../libretro-common/file/file_path_io.o \
+				../../libretro-common/formats/json/rjson.o \
+				../../libretro-common/streams/file_stream.o \
+				../../libretro-common/streams/interface_stream.o \
+				../../libretro-common/streams/memory_stream.o \
+				../../libretro-common/string/stdstring.o \
+				../../libretro-common/time/rtime.o \
+				../../libretro-common/vfs/vfs_implementation.o \
 				net_retropad_core.o
 
 CFLAGS += -I../../libretro-common/include -Wall -pedantic $(fpic)

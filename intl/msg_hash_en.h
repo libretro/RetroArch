@@ -1392,12 +1392,8 @@ MSG_HASH(
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Specify a 'system name' with which to associate scanned content. Used to name the system to the generated playlist file and to identify playlist thumbnails."
-   )
 
 /* Explore tab */
 MSG_HASH(

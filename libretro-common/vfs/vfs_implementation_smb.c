@@ -14,6 +14,7 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>  /* UINT32_MAX, INT64_MAX -- via compat shim on VC6 */
 #include <string.h>
 #include <errno.h>
 #include <time.h>
@@ -35,7 +36,7 @@ static bool smb_initialized = false;
 static int max_context_configured = 0;
 static const struct smb_settings *smb_cfg = NULL;
 
-static struct smb2_context *get_smb_context()
+static struct smb2_context *get_smb_context(void)
 {
    int idx;
 
@@ -80,7 +81,7 @@ bool smb_init_cfg(const struct smb_settings *new_cfg)
 }
 
 /* Initialize SMB context */
-static bool smb_init()
+static bool smb_init(void)
 {
    char server[256];
    char share[256];
@@ -94,7 +95,7 @@ static bool smb_init()
    if (!network_init())
       return false;
 
-   if (!smb_cfg || string_is_empty(smb_cfg->server_address))
+   if (!smb_cfg || (!smb_cfg->server_address || !*smb_cfg->server_address))
       return false;
 
    unsigned max_smb_contexts = smb_cfg->num_contexts;
@@ -116,19 +117,19 @@ static bool smb_init()
       strlcpy(server, smb_cfg->server_address, sizeof(server));
 
       /* Set credentials */
-      if (!string_is_empty(smb_cfg->username))
+      if (smb_cfg->username && *smb_cfg->username)
       {
          username = (char*)smb_cfg->username;
          smb2_set_user(smb_context, username);
       }
 
-      if (!string_is_empty(smb_cfg->password))
+      if (smb_cfg->password && *smb_cfg->password)
          smb2_set_password(smb_context, smb_cfg->password);
 
-      if (!string_is_empty(smb_cfg->workgroup))
+      if (smb_cfg->workgroup && *smb_cfg->workgroup)
          smb2_set_domain(smb_context, smb_cfg->workgroup);
 
-      if (!string_is_empty(smb_cfg->share))
+      if (smb_cfg->share && *smb_cfg->share)
          strlcpy(share, smb_cfg->share, sizeof(share));
       else
          share[0] = '\0';
@@ -175,9 +176,9 @@ static bool smb_init()
                }
 
                smb2_set_user(smb_context, username);
-               if (!string_is_empty(smb_cfg->password))
+               if (smb_cfg->password && *smb_cfg->password)
                   smb2_set_password(smb_context, smb_cfg->password);
-               if (!string_is_empty(smb_cfg->workgroup))
+               if (smb_cfg->workgroup && *smb_cfg->workgroup)
                   smb2_set_domain(smb_context, smb_cfg->workgroup);
                smb2_set_timeout(smb_context, smb_cfg->timeout);
             }
@@ -219,7 +220,7 @@ void smb_close_context(int index)
 }
 
 /* Shutdown SMB context - called on exit */
-void smb_shutdown()
+void smb_shutdown(void)
 {
    int i;
 
@@ -259,7 +260,7 @@ static bool smb_build_path(char *dest, size_t dest_size, const char *relative_pa
    temp_path[0] = '\0';
 
    /* Add base folder if specified */
-   if (!string_is_empty(smb_cfg->subdir))
+   if (smb_cfg->subdir && *smb_cfg->subdir)
    {
       strlcpy(temp_path, smb_cfg->subdir, sizeof(temp_path));
       if (temp_path[0] != '\0' && temp_path[strlen(temp_path) - 1] != '/')
@@ -352,7 +353,15 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
    if (!ctx)
        return -1;
 
-   ret = smb2_read(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, s, len);
+   /* smb2_read takes uint32_t count; passing a uint64_t len that
+    * exceeds UINT32_MAX was silently truncated pre-patch.  Cap at
+    * UINT32_MAX so the caller gets back the (partial) byte count
+    * and knows to loop for more.  This matches fread-style
+    * short-read semantics already observed by VFS consumers. */
+   if (len > (uint64_t)UINT32_MAX)
+      len = UINT32_MAX;
+
+   ret = smb2_read(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, s, (uint32_t)len);
 
    return ret;
 }
@@ -370,7 +379,13 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
    if (!ctx)
        return -1;
 
-   ret = smb2_write(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, (void*)s, len);
+   /* smb2_write takes uint32_t count; see retro_vfs_file_read_smb
+    * for the rationale.  Cap at UINT32_MAX and let the caller
+    * re-issue for remaining bytes. */
+   if (len > (uint64_t)UINT32_MAX)
+      len = UINT32_MAX;
+
+   ret = smb2_write(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, (void*)s, (uint32_t)len);
 
    return ret;
 }
@@ -544,7 +559,7 @@ int retro_vfs_closedir_smb(smb_dir_handle* dh)
    return 0;
 }
 
-int retro_vfs_stat_smb(const char *path, int32_t *size)
+int retro_vfs_stat_smb(const char *path, int64_t *size)
 {
    char rel_path[PATH_MAX_LENGTH];
    struct smb2_stat_64 st;
@@ -571,8 +586,15 @@ int retro_vfs_stat_smb(const char *path, int32_t *size)
    if (smb2_stat(smb_context, rel_path, &st) < 0)
       return 0;
 
+   /* smb2_size is uint64_t; *size is int64_t.  A naked cast on
+    * files > INT64_MAX (8 EiB) would produce a negative value
+    * that callers may interpret as a stat error.  Saturate to
+    * INT64_MAX -- unreachable in practice today, but the fix is
+    * cheap and keeps sign semantics sane. */
    if (size)
-      *size = (int32_t)st.smb2_size;
+      *size = (st.smb2_size > (uint64_t)INT64_MAX)
+         ? INT64_MAX
+         : (int64_t)st.smb2_size;
 
    return RETRO_VFS_STAT_IS_VALID |
          (st.smb2_type == SMB2_TYPE_DIRECTORY ? RETRO_VFS_STAT_IS_DIRECTORY : 0);

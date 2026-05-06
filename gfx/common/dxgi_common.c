@@ -14,8 +14,8 @@
  */
 
 #include <compat/strl.h>
-#include <string/stdstring.h>
 #include <retro_environment.h>
+#include <gfx/scaler/pixconv.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -143,154 +143,6 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
    return NULL;
 }
 
-/* clang-format off */
-/*                                                        r, g, b, a,     r,  g,  b,  a */
-
-#define DXGI_FORMAT_R8G8B8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,     0,  8, 16, 24
-#define DXGI_FORMAT_B8G8R8X8_UNORM_DESCS       UINT32,    8, 8, 8, 0,    16,  8,  0,  0
-#define DXGI_FORMAT_B8G8R8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,    16,  8,  0, 24
-#define DXGI_FORMAT_A8_UNORM_DESCS             UINT8,     0, 0, 0, 8,     0,  0,  0,  0
-#define DXGI_FORMAT_R8_UNORM_DESCS             UINT8,     8, 0, 0, 0,     0,  0,  0,  0
-#define DXGI_FORMAT_B5G6R5_UNORM_DESCS         UINT16,    5, 6, 5, 0,    11,  5,  0,  0
-#define DXGI_FORMAT_B5G5R5A1_UNORM_DESCS       UINT16,    5, 5, 5, 1,    10,  5,  0, 11
-#define DXGI_FORMAT_B4G4R4A4_UNORM_DESCS       UINT16,    4, 4, 4, 4,     8,  4,  0, 12
-#define DXGI_FORMAT_EX_A4R4G4B4_UNORM_DESCS    UINT16,    4, 4, 4, 4,     4,  8, 12,  0
-
-#define FORMAT_PROCESS_( \
-      src_type, src_rb, src_gb, src_bb, src_ab, src_rs, src_gs, src_bs, src_as, dst_type, dst_rb, \
-      dst_gb, dst_bb, dst_ab, dst_rs, dst_gs, dst_bs, dst_as) \
-   do \
-   { \
-      if (    (sizeof(src_type) == sizeof(dst_type)) \
-          && ((src_rs == dst_rs && src_rb == dst_rb) || !dst_rb) \
-          && ((src_gs == dst_gs && src_gb == dst_gb) || !dst_gb) \
-          && ((src_bs == dst_bs && src_bb == dst_bb) || !dst_bb) \
-          && ((src_as == dst_as && src_ab == dst_ab) || !dst_ab)) \
-      { \
-         const UINT8* in  = (const UINT8*)src_data; \
-         UINT8*       out = (UINT8*)dst_data; \
-         for (i = 0; i < height; i++) \
-         { \
-            memcpy(out, in, width * sizeof(src_type)); \
-            in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(src_type)); \
-            out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(dst_type)); \
-         } \
-      } \
-      else \
-      { \
-         const src_type* src_ptr = (const src_type*)src_data; \
-         dst_type*       dst_ptr = (dst_type*)dst_data; \
-         if (src_pitch) \
-            src_pitch -= width * sizeof(*src_ptr); \
-         if (dst_pitch) \
-            dst_pitch -= width * sizeof(*dst_ptr); \
-         for (i = 0; i < height; i++) \
-         { \
-            for (j = 0; j < width; j++) \
-            { \
-               unsigned r, g, b, a; \
-               src_type src_val = *src_ptr++; \
-               if (src_rb) \
-               { \
-                  r = (src_val >> src_rs) & ((1 << src_rb) - 1); \
-                  r = (src_rb < dst_rb) \
-                            ? (r << (dst_rb - src_rb)) | \
-                                    (r >> ((2 * src_rb > dst_rb) ? 2 * src_rb - dst_rb : 0)) \
-                            : r >> (src_rb - dst_rb); \
-               } \
-               if (src_gb) \
-               { \
-                  g = (src_val >> src_gs) & ((1 << src_gb) - 1); \
-                  g = (src_gb < dst_gb) \
-                            ? (g << (dst_gb - src_gb)) | \
-                                    (g >> ((2 * src_gb > dst_gb) ? 2 * src_gb - dst_gb : 0)) \
-                            : g >> (src_gb - dst_gb); \
-               } \
-               if (src_bb) \
-               { \
-                  b = (src_val >> src_bs) & ((1 << src_bb) - 1); \
-                  b = (src_bb < dst_bb) \
-                            ? (b << (dst_bb - src_bb)) | \
-                                    (b >> ((2 * src_bb > dst_bb) ? 2 * src_bb - dst_bb : 0)) \
-                            : b >> (src_bb - dst_bb); \
-               } \
-               if (src_ab) \
-               { \
-                  a = (src_val >> src_as) & ((1 << src_ab) - 1); \
-                  a = (src_ab < dst_ab) \
-                            ? (a << (dst_ab - src_ab)) | \
-                                    (a >> ((2 * src_ab > dst_ab) ? 2 * src_ab - dst_ab : 0)) \
-                            : a >> (src_ab - dst_ab); \
-               } \
-               *dst_ptr++ = ((src_rb ? r : 0) << dst_rs) | ((src_gb ? g : 0) << dst_gs) | \
-                            ((src_bb ? b : 0) << dst_bs) | \
-                            ((src_ab ? a : ((1 << dst_ab) - 1)) << dst_as); \
-            } \
-            src_ptr = (src_type*)((UINT8*)src_ptr + src_pitch); \
-            dst_ptr = (dst_type*)((UINT8*)dst_ptr + dst_pitch); \
-         } \
-      } \
-   } while (0)
-
-#define FORMAT_PROCESS(args) FORMAT_PROCESS_ args
-
-#define FORMAT_SRC(st) \
-   case st: \
-   { \
-      switch ((unsigned)dst_format) \
-      { \
-         case DXGI_FORMAT_R8G8B8A8_UNORM: \
-         { \
-             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_R8G8B8A8_UNORM_DESCS)); \
-             break; \
-         } \
-         case DXGI_FORMAT_B8G8R8X8_UNORM: \
-         { \
-             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B8G8R8X8_UNORM_DESCS)); \
-             break; \
-         } \
-         case DXGI_FORMAT_A8_UNORM: \
-         { \
-             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_A8_UNORM_DESCS)); \
-             break; \
-         } \
-         case DXGI_FORMAT_R8_UNORM: \
-         { \
-             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_R8_UNORM_DESCS)); \
-             break; \
-         } \
-         case DXGI_FORMAT_B5G6R5_UNORM: \
-         { \
-             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B5G6R5_UNORM_DESCS)); \
-             break; \
-         } \
-         case DXGI_FORMAT_B5G5R5A1_UNORM: \
-         { \
-             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B5G5R5A1_UNORM_DESCS)); \
-             break; \
-         } \
-         case DXGI_FORMAT_B4G4R4A4_UNORM: \
-         { \
-             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B4G4R4A4_UNORM_DESCS)); \
-             break; \
-         } \
-         case DXGI_FORMAT_B8G8R8A8_UNORM: \
-         { \
-             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_B8G8R8A8_UNORM_DESCS)); \
-             break; \
-         } \
-         case DXGI_FORMAT_EX_A4R4G4B4_UNORM: \
-         { \
-             FORMAT_PROCESS((st##_DESCS, DXGI_FORMAT_EX_A4R4G4B4_UNORM_DESCS)); \
-             break; \
-         } \
-         default: \
-            break; \
-      } \
-      break; \
-   }
-
-/* clang-format on */
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4293)
@@ -309,15 +161,2251 @@ void dxgi_copy(
 
    switch ((unsigned)src_format)
    {
-      FORMAT_SRC(DXGI_FORMAT_R8G8B8A8_UNORM);
-      FORMAT_SRC(DXGI_FORMAT_B8G8R8X8_UNORM);
-      FORMAT_SRC(DXGI_FORMAT_A8_UNORM);
-      FORMAT_SRC(DXGI_FORMAT_R8_UNORM);
-      FORMAT_SRC(DXGI_FORMAT_B5G6R5_UNORM);
-      FORMAT_SRC(DXGI_FORMAT_B5G5R5A1_UNORM);
-      FORMAT_SRC(DXGI_FORMAT_B4G4R4A4_UNORM);
-      FORMAT_SRC(DXGI_FORMAT_B8G8R8A8_UNORM);
-      FORMAT_SRC(DXGI_FORMAT_EX_A4R4G4B4_UNORM);
+      case DXGI_FORMAT_R8G8B8A8_UNORM:
+      {
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT32));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT32));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT32));
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8X8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        g = (src_val >> 8) & 255;
+                        b = (src_val >> 16) & 255;
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_A8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        a = (src_val >> 24) & 255;
+                        *dst_ptr++ = (a << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_R8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        *dst_ptr++ = (r << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G6R5_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        r = r >> 3;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 2;
+                        b = (src_val >> 16) & 255;
+                        b = b >> 3;
+                        *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G5R5A1_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        r = r >> 3;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 3;
+                        b = (src_val >> 16) & 255;
+                        b = b >> 3;
+                        a = (src_val >> 24) & 255;
+                        a = a >> 7;
+                        *dst_ptr++ = (r << 10) | (g << 5) | (b << 0) | (a << 11);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B4G4R4A4_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        r = r >> 4;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 4;
+                        b = (src_val >> 16) & 255;
+                        b = b >> 4;
+                        a = (src_val >> 24) & 255;
+                        a = a >> 4;
+                        *dst_ptr++ = (r << 8) | (g << 4) | (b << 0) | (a << 12);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8A8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        g = (src_val >> 8) & 255;
+                        b = (src_val >> 16) & 255;
+                        a = (src_val >> 24) & 255;
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0) | (a << 24);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        r = r >> 4;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 4;
+                        b = (src_val >> 16) & 255;
+                        b = b >> 4;
+                        a = (src_val >> 24) & 255;
+                        a = a >> 4;
+                        *dst_ptr++ = (r << 4) | (g << 8) | (b << 12) | (a << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+      case DXGI_FORMAT_B8G8R8X8_UNORM:
+      {
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        g = (src_val >> 8) & 255;
+                        b = (src_val >> 0) & 255;
+                        *dst_ptr++ = (r << 0) | (g << 8) | (b << 16) | (255 << 24);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8X8_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT32));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT32));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT32));
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_A8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        src_ptr++;
+                        *dst_ptr++ = (255 << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_R8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        *dst_ptr++ = (r << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G6R5_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        r = r >> 3;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 2;
+                        b = (src_val >> 0) & 255;
+                        b = b >> 3;
+                        *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G5R5A1_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        r = r >> 3;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 3;
+                        b = (src_val >> 0) & 255;
+                        b = b >> 3;
+                        *dst_ptr++ = (r << 10) | (g << 5) | (b << 0) | (1 << 11);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B4G4R4A4_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        r = r >> 4;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 4;
+                        b = (src_val >> 0) & 255;
+                        b = b >> 4;
+                        *dst_ptr++ = (r << 8) | (g << 4) | (b << 0) | (15 << 12);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8A8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        g = (src_val >> 8) & 255;
+                        b = (src_val >> 0) & 255;
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0) | (255 << 24);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        r = r >> 4;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 4;
+                        b = (src_val >> 0) & 255;
+                        b = b >> 4;
+                        *dst_ptr++ = (r << 4) | (g << 8) | (b << 12) | (15 << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+      case DXGI_FORMAT_A8_UNORM:
+      {
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT8 src_val = *src_ptr++;
+                        a = (src_val >> 0) & 255;
+                        *dst_ptr++ = (0 << 0) | (0 << 8) | (0 << 16) | (a << 24);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8X8_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        src_ptr++;
+                        *dst_ptr++ = (0 << 16) | (0 << 8) | (0 << 0);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_A8_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT8));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT8));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT8));
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_R8_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        src_ptr++;
+                        *dst_ptr++ = (0 << 0);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G6R5_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        src_ptr++;
+                        *dst_ptr++ = (0 << 11) | (0 << 5) | (0 << 0);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G5R5A1_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT8 src_val = *src_ptr++;
+                        a = (src_val >> 0) & 255;
+                        a = a >> 7;
+                        *dst_ptr++ = (0 << 10) | (0 << 5) | (0 << 0) | (a << 11);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B4G4R4A4_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT8 src_val = *src_ptr++;
+                        a = (src_val >> 0) & 255;
+                        a = a >> 4;
+                        *dst_ptr++ = (0 << 8) | (0 << 4) | (0 << 0) | (a << 12);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8A8_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT8 src_val = *src_ptr++;
+                        a = (src_val >> 0) & 255;
+                        *dst_ptr++ = (0 << 16) | (0 << 8) | (0 << 0) | (a << 24);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT8 src_val = *src_ptr++;
+                        a = (src_val >> 0) & 255;
+                        a = a >> 4;
+                        *dst_ptr++ = (0 << 4) | (0 << 8) | (0 << 12) | (a << 0);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+      case DXGI_FORMAT_R8_UNORM:
+      {
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT8 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        *dst_ptr++ = (r << 0) | (0 << 8) | (0 << 16) | (255 << 24);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8X8_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT8 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        *dst_ptr++ = (r << 16) | (0 << 8) | (0 << 0);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_A8_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        src_ptr++;
+                        *dst_ptr++ = (255 << 0);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_R8_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT8));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT8));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT8));
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G6R5_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT8 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        r = r >> 3;
+                        *dst_ptr++ = (r << 11) | (0 << 5) | (0 << 0);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G5R5A1_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT8 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        r = r >> 3;
+                        *dst_ptr++ = (r << 10) | (0 << 5) | (0 << 0) | (1 << 11);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B4G4R4A4_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT8 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        r = r >> 4;
+                        *dst_ptr++ = (r << 8) | (0 << 4) | (0 << 0) | (15 << 12);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8A8_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT8 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        *dst_ptr++ = (r << 16) | (0 << 8) | (0 << 0) | (255 << 24);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+            {
+               {
+                  const UINT8* src_ptr = (const UINT8*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT8 src_val = *src_ptr++;
+                        r = (src_val >> 0) & 255;
+                        r = r >> 4;
+                        *dst_ptr++ = (r << 4) | (0 << 8) | (0 << 12) | (15 << 0);
+                     }
+                     src_ptr = (UINT8*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+      case DXGI_FORMAT_B5G6R5_UNORM:
+      {
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            {
+               /* RGB565 -> R8G8B8A8 (byte order [r g b a]) is exactly
+                * conv_rgb565_abgr8888 in pixconv (uint32 LE
+                * (a << 24) | (b << 16) | (g << 8) | r). */
+               int sp = src_pitch ? src_pitch : (int)(width * sizeof(UINT16));
+               int dp = dst_pitch ? dst_pitch : (int)(width * sizeof(UINT32));
+               conv_rgb565_abgr8888(dst_data, src_data,
+                     width, height, dp, sp);
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8X8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 11) & 31;
+                        r = (r << 3) | (r >> 2);
+                        g = (src_val >> 5) & 63;
+                        g = (g << 2) | (g >> 4);
+                        b = (src_val >> 0) & 31;
+                        b = (b << 3) | (b >> 2);
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        src_ptr++;
+                        *dst_ptr++ = (255 << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_R8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 11) & 31;
+                        r = (r << 3) | (r >> 2);
+                        *dst_ptr++ = (r << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G6R5_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT16));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT16));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT16));
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G5R5A1_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 11) & 31;
+                        g = (src_val >> 5) & 63;
+                        g = g >> 1;
+                        b = (src_val >> 0) & 31;
+                        *dst_ptr++ = (r << 10) | (g << 5) | (b << 0) | (1 << 11);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B4G4R4A4_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 11) & 31;
+                        r = r >> 1;
+                        g = (src_val >> 5) & 63;
+                        g = g >> 2;
+                        b = (src_val >> 0) & 31;
+                        b = b >> 1;
+                        *dst_ptr++ = (r << 8) | (g << 4) | (b << 0) | (15 << 12);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8A8_UNORM:
+            {
+               /* RGB565 -> B8G8R8A8 (byte order [b g r a]) is exactly
+                * conv_rgb565_argb8888 in pixconv (uint32 LE
+                * (a << 24) | (r << 16) | (g << 8) | b). */
+               int sp = src_pitch ? src_pitch : (int)(width * sizeof(UINT16));
+               int dp = dst_pitch ? dst_pitch : (int)(width * sizeof(UINT32));
+               conv_rgb565_argb8888(dst_data, src_data,
+                     width, height, dp, sp);
+               break;
+            }
+            case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 11) & 31;
+                        r = r >> 1;
+                        g = (src_val >> 5) & 63;
+                        g = g >> 2;
+                        b = (src_val >> 0) & 31;
+                        b = b >> 1;
+                        *dst_ptr++ = (r << 4) | (g << 8) | (b << 12) | (15 << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+      case DXGI_FORMAT_B5G5R5A1_UNORM:
+      {
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 10) & 31;
+                        r = (r << 3) | (r >> 2);
+                        g = (src_val >> 5) & 31;
+                        g = (g << 3) | (g >> 2);
+                        b = (src_val >> 0) & 31;
+                        b = (b << 3) | (b >> 2);
+                        a = (src_val >> 11) & 1;
+                        a = (a << 7) | (a >> 0);
+                        *dst_ptr++ = (r << 0) | (g << 8) | (b << 16) | (a << 24);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8X8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 10) & 31;
+                        r = (r << 3) | (r >> 2);
+                        g = (src_val >> 5) & 31;
+                        g = (g << 3) | (g >> 2);
+                        b = (src_val >> 0) & 31;
+                        b = (b << 3) | (b >> 2);
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        a = (src_val >> 11) & 1;
+                        a = (a << 7) | (a >> 0);
+                        *dst_ptr++ = (a << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_R8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 10) & 31;
+                        r = (r << 3) | (r >> 2);
+                        *dst_ptr++ = (r << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G6R5_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 10) & 31;
+                        g = (src_val >> 5) & 31;
+                        g = (g << 1) | (g >> 4);
+                        b = (src_val >> 0) & 31;
+                        *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G5R5A1_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT16));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT16));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT16));
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B4G4R4A4_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 10) & 31;
+                        r = r >> 1;
+                        g = (src_val >> 5) & 31;
+                        g = g >> 1;
+                        b = (src_val >> 0) & 31;
+                        b = b >> 1;
+                        a = (src_val >> 11) & 1;
+                        a = (a << 3) | (a >> 0);
+                        *dst_ptr++ = (r << 8) | (g << 4) | (b << 0) | (a << 12);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 10) & 31;
+                        r = (r << 3) | (r >> 2);
+                        g = (src_val >> 5) & 31;
+                        g = (g << 3) | (g >> 2);
+                        b = (src_val >> 0) & 31;
+                        b = (b << 3) | (b >> 2);
+                        a = (src_val >> 11) & 1;
+                        a = (a << 7) | (a >> 0);
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0) | (a << 24);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 10) & 31;
+                        r = r >> 1;
+                        g = (src_val >> 5) & 31;
+                        g = g >> 1;
+                        b = (src_val >> 0) & 31;
+                        b = b >> 1;
+                        a = (src_val >> 11) & 1;
+                        a = (a << 3) | (a >> 0);
+                        *dst_ptr++ = (r << 4) | (g << 8) | (b << 12) | (a << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+      case DXGI_FORMAT_B4G4R4A4_UNORM:
+      {
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 8) & 15;
+                        r = (r << 4) | (r >> 0);
+                        g = (src_val >> 4) & 15;
+                        g = (g << 4) | (g >> 0);
+                        b = (src_val >> 0) & 15;
+                        b = (b << 4) | (b >> 0);
+                        a = (src_val >> 12) & 15;
+                        a = (a << 4) | (a >> 0);
+                        *dst_ptr++ = (r << 0) | (g << 8) | (b << 16) | (a << 24);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8X8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 8) & 15;
+                        r = (r << 4) | (r >> 0);
+                        g = (src_val >> 4) & 15;
+                        g = (g << 4) | (g >> 0);
+                        b = (src_val >> 0) & 15;
+                        b = (b << 4) | (b >> 0);
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        a = (src_val >> 12) & 15;
+                        a = (a << 4) | (a >> 0);
+                        *dst_ptr++ = (a << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_R8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 8) & 15;
+                        r = (r << 4) | (r >> 0);
+                        *dst_ptr++ = (r << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G6R5_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 8) & 15;
+                        r = (r << 1) | (r >> 3);
+                        g = (src_val >> 4) & 15;
+                        g = (g << 2) | (g >> 2);
+                        b = (src_val >> 0) & 15;
+                        b = (b << 1) | (b >> 3);
+                        *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G5R5A1_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 8) & 15;
+                        r = (r << 1) | (r >> 3);
+                        g = (src_val >> 4) & 15;
+                        g = (g << 1) | (g >> 3);
+                        b = (src_val >> 0) & 15;
+                        b = (b << 1) | (b >> 3);
+                        a = (src_val >> 12) & 15;
+                        a = a >> 3;
+                        *dst_ptr++ = (r << 10) | (g << 5) | (b << 0) | (a << 11);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B4G4R4A4_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT16));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT16));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT16));
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 8) & 15;
+                        r = (r << 4) | (r >> 0);
+                        g = (src_val >> 4) & 15;
+                        g = (g << 4) | (g >> 0);
+                        b = (src_val >> 0) & 15;
+                        b = (b << 4) | (b >> 0);
+                        a = (src_val >> 12) & 15;
+                        a = (a << 4) | (a >> 0);
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0) | (a << 24);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 8) & 15;
+                        g = (src_val >> 4) & 15;
+                        b = (src_val >> 0) & 15;
+                        a = (src_val >> 12) & 15;
+                        *dst_ptr++ = (r << 4) | (g << 8) | (b << 12) | (a << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+      case DXGI_FORMAT_B8G8R8A8_UNORM:
+      {
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        g = (src_val >> 8) & 255;
+                        b = (src_val >> 0) & 255;
+                        a = (src_val >> 24) & 255;
+                        *dst_ptr++ = (r << 0) | (g << 8) | (b << 16) | (a << 24);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8X8_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT32));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT32));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT32));
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_A8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        a = (src_val >> 24) & 255;
+                        *dst_ptr++ = (a << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_R8_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        *dst_ptr++ = (r << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G6R5_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        r = r >> 3;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 2;
+                        b = (src_val >> 0) & 255;
+                        b = b >> 3;
+                        *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G5R5A1_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        r = r >> 3;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 3;
+                        b = (src_val >> 0) & 255;
+                        b = b >> 3;
+                        a = (src_val >> 24) & 255;
+                        a = a >> 7;
+                        *dst_ptr++ = (r << 10) | (g << 5) | (b << 0) | (a << 11);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B4G4R4A4_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        r = r >> 4;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 4;
+                        b = (src_val >> 0) & 255;
+                        b = b >> 4;
+                        a = (src_val >> 24) & 255;
+                        a = a >> 4;
+                        *dst_ptr++ = (r << 8) | (g << 4) | (b << 0) | (a << 12);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8A8_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT32));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT32));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT32));
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+            {
+               {
+                  const UINT32* src_ptr = (const UINT32*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT32 src_val = *src_ptr++;
+                        r = (src_val >> 16) & 255;
+                        r = r >> 4;
+                        g = (src_val >> 8) & 255;
+                        g = g >> 4;
+                        b = (src_val >> 0) & 255;
+                        b = b >> 4;
+                        a = (src_val >> 24) & 255;
+                        a = a >> 4;
+                        *dst_ptr++ = (r << 4) | (g << 8) | (b << 12) | (a << 0);
+                     }
+                     src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+      case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+      {
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R8G8B8A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 4) & 15;
+                        r = (r << 4) | (r >> 0);
+                        g = (src_val >> 8) & 15;
+                        g = (g << 4) | (g >> 0);
+                        b = (src_val >> 12) & 15;
+                        b = (b << 4) | (b >> 0);
+                        a = (src_val >> 0) & 15;
+                        a = (a << 4) | (a >> 0);
+                        *dst_ptr++ = (r << 0) | (g << 8) | (b << 16) | (a << 24);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8X8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 4) & 15;
+                        r = (r << 4) | (r >> 0);
+                        g = (src_val >> 8) & 15;
+                        g = (g << 4) | (g >> 0);
+                        b = (src_val >> 12) & 15;
+                        b = (b << 4) | (b >> 0);
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        a = (src_val >> 0) & 15;
+                        a = (a << 4) | (a >> 0);
+                        *dst_ptr++ = (a << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_R8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT8*       dst_ptr = (UINT8*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 4) & 15;
+                        r = (r << 4) | (r >> 0);
+                        *dst_ptr++ = (r << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT8*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G6R5_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 4) & 15;
+                        r = (r << 1) | (r >> 3);
+                        g = (src_val >> 8) & 15;
+                        g = (g << 2) | (g >> 2);
+                        b = (src_val >> 12) & 15;
+                        b = (b << 1) | (b >> 3);
+                        *dst_ptr++ = (r << 11) | (g << 5) | (b << 0);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B5G5R5A1_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 4) & 15;
+                        r = (r << 1) | (r >> 3);
+                        g = (src_val >> 8) & 15;
+                        g = (g << 1) | (g >> 3);
+                        b = (src_val >> 12) & 15;
+                        b = (b << 1) | (b >> 3);
+                        a = (src_val >> 0) & 15;
+                        a = a >> 3;
+                        *dst_ptr++ = (r << 10) | (g << 5) | (b << 0) | (a << 11);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B4G4R4A4_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT16*       dst_ptr = (UINT16*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 4) & 15;
+                        g = (src_val >> 8) & 15;
+                        b = (src_val >> 12) & 15;
+                        a = (src_val >> 0) & 15;
+                        *dst_ptr++ = (r << 8) | (g << 4) | (b << 0) | (a << 12);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT16*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_B8G8R8A8_UNORM:
+            {
+               {
+                  const UINT16* src_ptr = (const UINT16*)src_data;
+                  UINT32*       dst_ptr = (UINT32*)dst_data;
+                  int sp = src_pitch;
+                  int dp = dst_pitch;
+                  if (sp)
+                     sp -= width * sizeof(*src_ptr);
+                  if (dp)
+                     dp -= width * sizeof(*dst_ptr);
+                  for (i = 0; i < height; i++)
+                  {
+                     for (j = 0; j < width; j++)
+                     {
+                        unsigned r = 0, g = 0, b = 0, a = 0;
+                        UINT16 src_val = *src_ptr++;
+                        r = (src_val >> 4) & 15;
+                        r = (r << 4) | (r >> 0);
+                        g = (src_val >> 8) & 15;
+                        g = (g << 4) | (g >> 0);
+                        b = (src_val >> 12) & 15;
+                        b = (b << 4) | (b >> 0);
+                        a = (src_val >> 0) & 15;
+                        a = (a << 4) | (a >> 0);
+                        *dst_ptr++ = (r << 16) | (g << 8) | (b << 0) | (a << 24);
+                     }
+                     src_ptr = (UINT16*)((UINT8*)src_ptr + sp);
+                     dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+                  }
+               }
+               break;
+            }
+            case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+            {
+               {
+                  const UINT8* in  = (const UINT8*)src_data;
+                  UINT8*       out = (UINT8*)dst_data;
+                  for (i = 0; i < height; i++)
+                  {
+                     memcpy(out, in, width * sizeof(UINT16));
+                     in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT16));
+                     out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT16));
+                  }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
 
       default:
          break;
@@ -432,7 +2520,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
    DXGIOutput best_output    = NULL;
    DXGIOutput current_output = NULL;
    DXGIAdapter dxgi_adapter  = NULL;
-   UINT i                    = 0;
+   UINT adapter_idx          = 0;
    bool supported            = false;
    float best_intersect_area = -1;
 
@@ -449,16 +2537,6 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
          return false;
       }
    }
-
-#ifdef __cplusplus
-   if (FAILED(factory->EnumAdapters1(0, &dxgi_adapter)))
-#else
-   if (FAILED(factory->lpVtbl->EnumAdapters1(factory, 0, &dxgi_adapter)))
-#endif
-   {
-      RARCH_ERR("[DXGI] Failed to enumerate adapters.\n");
-      return false;
-   }
 #else
 #ifdef __cplusplus
    if (!factory->IsCurrent())
@@ -472,77 +2550,110 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
          return false;
       }
    }
+#endif
 
+   /* Enumerate ALL adapters to find the output the window is on.
+    * On multi-GPU systems (e.g. Nvidia Optimus) the display may be
+    * connected to an adapter other than index 0. */
 #ifdef __cplusplus
-   if (FAILED(factory->EnumAdapters1(0, &dxgi_adapter)))
+   while (SUCCEEDED(factory->EnumAdapters1(adapter_idx, &dxgi_adapter)))
 #else
-   if (FAILED(factory->lpVtbl->EnumAdapters1(factory, 0, &dxgi_adapter)))
+   while (SUCCEEDED(factory->lpVtbl->EnumAdapters1(factory, adapter_idx, &dxgi_adapter)))
 #endif
    {
-      RARCH_ERR("[DXGI] Failed to enumerate adapters.\n");
-      return false;
+      UINT i = 0;
+#ifdef __cplusplus
+      while (  dxgi_adapter->EnumOutputs(i, &current_output)
+            != DXGI_ERROR_NOT_FOUND)
+#else
+      while (  dxgi_adapter->lpVtbl->EnumOutputs(dxgi_adapter, i, &current_output)
+            != DXGI_ERROR_NOT_FOUND)
+#endif
+      {
+         RECT r, rect;
+         DXGI_OUTPUT_DESC desc;
+         int intersect_area;
+         int bx1, by1, bx2, by2;
+         int ax1               = 0;
+         int ay1               = 0;
+         int ax2               = 0;
+         int ay2               = 0;
+
+         if (win32_get_client_rect(&rect))
+         {
+            ax1                = rect.left;
+            ay1                = rect.top;
+            ax2                = rect.right;
+            ay2                = rect.bottom;
+         }
+
+         /* Get the rectangle bounds of current output */
+#ifdef __cplusplus
+         if (FAILED(current_output->GetDesc(&desc)))
+#else
+         if (FAILED(current_output->lpVtbl->GetDesc(current_output, &desc)))
+#endif
+         {
+            RARCH_ERR("[DXGI] Failed to get DXGI output description.\n");
+            i++;
+            continue;
+         }
+
+         /* TODO/FIXME - DesktopCoordinates won't work for WinRT */
+         r                      = desc.DesktopCoordinates;
+         bx1                    = r.left;
+         by1                    = r.top;
+         bx2                    = r.right;
+         by2                    = r.bottom;
+
+         /* Compute the intersection */
+         intersect_area         = dxgi_compute_intersection_area(
+               ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
+
+         if (intersect_area > best_intersect_area)
+         {
+            if (best_output)
+            {
+#ifdef __cplusplus
+               best_output->Release();
+#else
+               Release(best_output);
+#endif
+            }
+            best_output         = current_output;
+#ifdef __cplusplus
+            best_output->AddRef();
+#else
+            AddRef(best_output);
+#endif
+            best_intersect_area = (float)intersect_area;
+         }
+
+         i++;
+      }
+
+      if (current_output)
+      {
+#ifdef __cplusplus
+         current_output->Release();
+#else
+         Release(current_output);
+#endif
+         current_output = NULL;
+      }
+#ifdef __cplusplus
+      dxgi_adapter->Release();
+#else
+      Release(dxgi_adapter);
+#endif
+      dxgi_adapter = NULL;
+      adapter_idx++;
    }
-#endif
 
-#ifdef __cplusplus
-   while (  dxgi_adapter->EnumOutputs(i, &current_output)
-         != DXGI_ERROR_NOT_FOUND)
-#else
-   while (  dxgi_adapter->lpVtbl->EnumOutputs(dxgi_adapter, i, &current_output)
-         != DXGI_ERROR_NOT_FOUND)
-#endif
+   if (!best_output)
    {
-      RECT r, rect;
-      DXGI_OUTPUT_DESC desc;
-      int intersect_area;
-      int bx1, by1, bx2, by2;
-      int ax1               = 0;
-      int ay1               = 0;
-      int ax2               = 0;
-      int ay2               = 0;
-
-      if (win32_get_client_rect(&rect))
-      {
-         ax1                = rect.left;
-         ay1                = rect.top;
-         ax2                = rect.right;
-         ay2                = rect.bottom;
-      }
-
-      /* Get the rectangle bounds of current output */
-#ifdef __cplusplus
-      if (FAILED(current_output->GetDesc(&desc)))
-#else
-      if (FAILED(current_output->lpVtbl->GetDesc(current_output, &desc)))
-#endif
-      {
-         RARCH_ERR("[DXGI] Failed to get DXGI output description.\n");
-         goto error;
-      }
-
-      /* TODO/FIXME - DesktopCoordinates won't work for WinRT */
-      r                      = desc.DesktopCoordinates;
-      bx1                    = r.left;
-      by1                    = r.top;
-      bx2                    = r.right;
-      by2                    = r.bottom;
-
-      /* Compute the intersection */
-      intersect_area         = dxgi_compute_intersection_area(
-            ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
-
-      if (intersect_area > best_intersect_area)
-      {
-         best_output         = current_output;
-#if defined(__cplusplus)
-         best_output->AddRef();
-#else
-         AddRef(best_output);
-#endif
-         best_intersect_area = (float)intersect_area;
-      }
-
-      i++;
+      RARCH_ERR("[DXGI] No output found for HDR check.\n");
+      return false;
    }
 
 #ifdef __cplusplus
@@ -563,25 +2674,24 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
       {
          supported = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
 
+	 /* When Windows reports HDR support (PQ/ST.2084),
+	  * scRGB (R16G16B16A16_FLOAT + G10_NONE_P709) is
+	  * always available — the Windows HDR compositor
+	  * guarantees both paths. */
          if (supported)
          {
-            video_driver_set_hdr_support();
-            video_driver_set_hdr10_support();
-            /* When Windows reports HDR support (PQ/ST.2084),
-             * scRGB (R16G16B16A16_FLOAT + G10_NONE_P709) is
-             * always available — the Windows HDR compositor
-             * guarantees both paths. */
-            video_driver_set_scrgb_support();
+            uint32_t disp_flags = video_driver_get_disp_flags();
+            disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
+            disp_flags |= VIDEO_FLAG_HDR10_SUPPORT;
+            disp_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
+            video_driver_set_disp_flags(disp_flags);
          }
          else
          {
             settings_t*    settings           = config_get_ptr();
             settings->flags                  |= SETTINGS_FLG_MODIFIED;
             settings->uints.video_hdr_mode    = 0;
-
-            video_driver_unset_hdr_support();
-            video_driver_unset_hdr10_support();
-            video_driver_unset_scrgb_support();
+            video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
          }
       }
       else
@@ -599,15 +2709,10 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
       RARCH_ERR("[DXGI] Failed to get DXGI Output 6 from best output.\n");
    }
 
-error:
 #ifdef __cplusplus
    best_output->Release();
-   current_output->Release();
-   dxgi_adapter->Release();
 #else
    Release(best_output);
-   Release(current_output);
-   Release(dxgi_adapter);
 #endif
 
    return supported;
@@ -665,6 +2770,7 @@ void dxgi_set_hdr_metadata(
       float                         max_fall
 )
 {
+   /* TODO/FIXME - static globals - not thread-safe */
    static DXGI_HDR_METADATA_HDR10 g_hdr10_meta_data = {0};
    static const display_chromaticities_t
       display_chromaticity_list[]                   =
@@ -736,18 +2842,18 @@ void dxgi_set_hdr_metadata(
    hdr10_meta_data.WhitePoint[1]                =
       (UINT16)(chroma->white_y * 50000.0f);
    hdr10_meta_data.MaxMasteringLuminance        =
-      (UINT)(max_output_nits * 10000.0f);
+      (UINT)(max_output_nits);              /* Units: 1 nit */
    hdr10_meta_data.MinMasteringLuminance        =
-      (UINT)(min_output_nits * 10000.0f);
+      (UINT)(min_output_nits * 10000.0f);   /* Units: 0.0001 nits */
    hdr10_meta_data.MaxContentLightLevel         =
       (UINT16)(max_cll);
    hdr10_meta_data.MaxFrameAverageLightLevel    =
       (UINT16)(max_fall);
 
-   if (g_hdr10_meta_data.RedPrimary                 != hdr10_meta_data.RedPrimary            ||
-       g_hdr10_meta_data.GreenPrimary               != hdr10_meta_data.GreenPrimary          ||
-       g_hdr10_meta_data.BluePrimary                != hdr10_meta_data.BluePrimary           ||
-       g_hdr10_meta_data.WhitePoint                 != hdr10_meta_data.WhitePoint            ||
+   if (memcmp(g_hdr10_meta_data.RedPrimary,   hdr10_meta_data.RedPrimary,   sizeof(hdr10_meta_data.RedPrimary))   ||
+       memcmp(g_hdr10_meta_data.GreenPrimary, hdr10_meta_data.GreenPrimary, sizeof(hdr10_meta_data.GreenPrimary)) ||
+       memcmp(g_hdr10_meta_data.BluePrimary,  hdr10_meta_data.BluePrimary,  sizeof(hdr10_meta_data.BluePrimary))  ||
+       memcmp(g_hdr10_meta_data.WhitePoint,   hdr10_meta_data.WhitePoint,   sizeof(hdr10_meta_data.WhitePoint))   ||
        g_hdr10_meta_data.MaxContentLightLevel       != hdr10_meta_data.MaxContentLightLevel  ||
        g_hdr10_meta_data.MaxMasteringLuminance      != hdr10_meta_data.MaxMasteringLuminance ||
        g_hdr10_meta_data.MinMasteringLuminance      != hdr10_meta_data.MinMasteringLuminance ||
@@ -766,5 +2872,236 @@ void dxgi_set_hdr_metadata(
       }
       g_hdr10_meta_data = hdr10_meta_data;
    }
+}
+
+/* ------------------------------------------------------------------ *
+ *  HDR screenshot readback: CPU-side HDR -> SDR decoder
+ *
+ *  Called from video driver read_viewport implementations when the
+ *  swapchain is in an HDR format.  Mirrors the forward HDR path in
+ *  hdr_sm5.hlsl.h but runs inverse, on the CPU, producing SDR BGR24.
+ *
+ *  The CPU path keeps the driver-side code simple (no extra PSO,
+ *  intermediate render target, descriptor heap slot, or resize
+ *  handling).  A future revision can move this to a GPU tonemap pass
+ *  behind the same signature without caller changes.
+ * ------------------------------------------------------------------ */
+
+#include <math.h>
+#include <stdint.h>
+
+/* IEEE 754 binary16 -> binary32.  Used to decode FP16 scRGB samples. */
+static INLINE float dxgi_half_to_float(uint16_t h)
+{
+   uint32_t sign = (uint32_t)(h >> 15) & 0x1u;
+   uint32_t exp  = (uint32_t)(h >> 10) & 0x1Fu;
+   uint32_t mant = (uint32_t) h        & 0x3FFu;
+   uint32_t f;
+   union { uint32_t u; float f; } u;
+
+   if (exp == 0)
+   {
+      if (mant == 0)
+         f = sign << 31;                     /* signed zero */
+      else
+      {
+         /* Subnormal: normalize. */
+         while (!(mant & 0x400u))
+         {
+            mant <<= 1;
+            exp   -= 1;     /* exp starts at 0, goes negative */
+         }
+         exp  += 1;
+         mant &= ~0x400u;
+         f     = (sign << 31) | ((exp + 127 - 15) << 23) | (mant << 13);
+      }
+   }
+   else if (exp == 0x1F)
+   {
+      /* Inf / NaN: propagate to float32 Inf/NaN with the same mantissa
+       * low bits (clamped away later, so exact bit-pattern doesn't matter). */
+      f = (sign << 31) | (0xFFu << 23) | (mant << 13);
+   }
+   else
+      f = (sign << 31) | ((exp + 127 - 15) << 23) | (mant << 13);
+
+   u.u = f;
+   return u.f;
+}
+
+/* ST.2084 (PQ) EOTF.  Input is the non-linear PQ code value in [0,1];
+ * output is linear light normalized so 1.0 == 10000 nits. */
+static INLINE float dxgi_st2084_to_linear(float pq)
+{
+   static const float m1_inv = 1.0f / 0.1593017578f;
+   static const float m2_inv = 1.0f / 78.84375f;
+   static const float c1     = 0.8359375f;
+   static const float c2     = 18.8515625f;
+   static const float c3     = 18.6875f;
+   float Np, num, den;
+
+   if (pq <= 0.0f)
+      return 0.0f;
+   Np  = powf(pq, m2_inv);
+   num = Np - c1;
+   if (num < 0.0f)
+      num = 0.0f;
+   den = c2 - c3 * Np;
+   if (den <= 0.0f)
+      return 0.0f;
+   return powf(num / den, m1_inv);
+}
+
+/* Linear [0,1] -> sRGB encoded [0,1].  Standard sRGB OETF. */
+static INLINE float dxgi_linear_to_srgb(float l)
+{
+   if (l <= 0.0f)
+      return 0.0f;
+   if (l >= 1.0f)
+      return 1.0f;
+   if (l <= 0.0031308f)
+      return l * 12.92f;
+   return 1.055f * powf(l, 1.0f / 2.4f) - 0.055f;
+}
+
+/* Reverse of the forward "inverse tonemap" used to lift SDR into HDR
+ * at composition time.  sdr = hdr / (1 + hdr * k), where
+ * k = 1 - (paper_white / max_nits).  We always compose with the same
+ * value for max_nits and paper_white at forward time, so this reduces
+ * to a no-op for in-range SDR content and gently compresses super-white.
+ * Applied per-pixel, on the max component, to preserve hue. */
+static INLINE void dxgi_tonemap_to_sdr(float *r, float *g, float *b,
+      float max_nits, float paper_white_nits)
+{
+   float peak_ratio, k, m, denom, scale;
+
+   m = *r;
+   if (*g > m) m = *g;
+   if (*b > m) m = *b;
+   if (m < 1.0e-4f)
+      return;
+
+   peak_ratio = max_nits / paper_white_nits;
+   k          = 1.0f - (1.0f / peak_ratio);
+   denom      = 1.0f + m * k;
+   if (denom < 1.0e-4f)
+      denom = 1.0e-4f;
+
+   scale = 1.0f / denom;
+   *r *= scale;
+   *g *= scale;
+   *b *= scale;
+}
+
+/* BT.2020 -> BT.709 colour-primary rotation.  Matches k2020to709 in
+ * the forward HLSL/GLSL shaders. */
+static INLINE void dxgi_rec2020_to_rec709(float *r, float *g, float *b)
+{
+   float R = *r, G = *g, B = *b;
+   *r =  1.6604910f * R + -0.5876411f * G + -0.0728499f * B;
+   *g = -0.1245505f * R +  1.1328999f * G + -0.0083494f * B;
+   *b = -0.0181508f * R + -0.1005789f * G +  1.1187297f * B;
+}
+
+static INLINE uint8_t dxgi_float_to_unorm8(float x)
+{
+   int v;
+   if (x <= 0.0f) return 0;
+   if (x >= 1.0f) return 255;
+   v = (int)(x * 255.0f + 0.5f);
+   if (v < 0)   v = 0;
+   if (v > 255) v = 255;
+   return (uint8_t)v;
+}
+
+bool dxgi_hdr_readback_to_bgr24(
+      DXGI_FORMAT  src_format,
+      const void*  src_data,
+      unsigned     src_pitch,
+      unsigned     src_x,
+      unsigned     src_y,
+      unsigned     width,
+      unsigned     height,
+      float        paper_white_nits,
+      uint8_t*     dst_bgr24)
+{
+   unsigned y, x;
+
+   if (!src_data || !dst_bgr24 || !width || !height)
+      return false;
+   if (paper_white_nits < 1.0f)
+      paper_white_nits = 200.0f;   /* sane fallback if UBO not populated */
+
+   if (src_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+   {
+      /* HDR10 PQ.  Pixel layout per D3D: 10R | 10G | 10B | 2A (LSB to
+       * MSB inside the uint32), so:
+       *   R =  bits 0..9     (code & 0x3FF)
+       *   G =  bits 10..19  ((code >> 10) & 0x3FF)
+       *   B =  bits 20..29  ((code >> 20) & 0x3FF) */
+      const uint8_t* src_row = (const uint8_t*)src_data
+            + (size_t)src_pitch * src_y;
+
+      for (y = 0; y < height; y++, src_row += src_pitch)
+      {
+         uint8_t* dst = dst_bgr24 + 3 * (size_t)(height - y - 1) * width;
+         const uint32_t* src = (const uint32_t*)src_row + src_x;
+         for (x = 0; x < width; x++)
+         {
+            uint32_t px = src[x];
+            float r_pq = (float)((px      ) & 0x3FFu) * (1.0f / 1023.0f);
+            float g_pq = (float)((px >> 10) & 0x3FFu) * (1.0f / 1023.0f);
+            float b_pq = (float)((px >> 20) & 0x3FFu) * (1.0f / 1023.0f);
+            /* PQ -> linear, normalized so 1.0 = 10000 nits. */
+            float r = dxgi_st2084_to_linear(r_pq);
+            float g = dxgi_st2084_to_linear(g_pq);
+            float b = dxgi_st2084_to_linear(b_pq);
+            /* Rescale to paper-white-relative linear (SDR 1.0 == paper_white).
+             * The forward path scaled by (paper_white / 10000) before PQ
+             * encoding, so we undo it by multiplying by (10000 / paper_white). */
+            float scale = 10000.0f / paper_white_nits;
+            r *= scale;  g *= scale;  b *= scale;
+            /* BT.2020 -> BT.709 so the final sRGB encode is meaningful. */
+            dxgi_rec2020_to_rec709(&r, &g, &b);
+            /* Tonemap any super-white back into [0,1] using the same
+             * peak_ratio the forward inverse-tonemap used. */
+            dxgi_tonemap_to_sdr(&r, &g, &b, paper_white_nits, paper_white_nits);
+            /* sRGB OETF for the BGR24 output. */
+            dst[3 * x + 0] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(b));
+            dst[3 * x + 1] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(g));
+            dst[3 * x + 2] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(r));
+         }
+      }
+      return true;
+   }
+
+   if (src_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+   {
+      /* scRGB: linear BT.709, FP16, 1.0 == 80 nits.
+       * Undo the forward scale of (paper_white / 80) so SDR 1.0 == 1.0. */
+      const uint8_t* src_row = (const uint8_t*)src_data
+            + (size_t)src_pitch * src_y;
+      const float inv_scale  = 80.0f / paper_white_nits;
+
+      for (y = 0; y < height; y++, src_row += src_pitch)
+      {
+         uint8_t* dst = dst_bgr24 + 3 * (size_t)(height - y - 1) * width;
+         const uint16_t* src = (const uint16_t*)src_row + src_x * 4;
+         for (x = 0; x < width; x++)
+         {
+            float r = dxgi_half_to_float(src[4 * x + 0]) * inv_scale;
+            float g = dxgi_half_to_float(src[4 * x + 1]) * inv_scale;
+            float b = dxgi_half_to_float(src[4 * x + 2]) * inv_scale;
+            /* scRGB carries legal negative values for out-of-gamut
+             * colours; clamping in LinearToSRGB handles them. */
+            dst[3 * x + 0] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(b));
+            dst[3 * x + 1] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(g));
+            dst[3 * x + 2] = dxgi_float_to_unorm8(dxgi_linear_to_srgb(r));
+         }
+      }
+      return true;
+   }
+
+   return false;
 }
 #endif

@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-psl1ght:latest
+      image: reallibretroretroarch/libretro-build-psl1ght:latest
       options: --user root
 
     steps:

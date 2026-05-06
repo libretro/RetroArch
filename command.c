@@ -236,10 +236,25 @@ static void command_network_poll(command_t *handle)
 command_t* command_network_new(uint16_t port)
 {
    struct addrinfo     *res  = NULL;
-   command_t            *cmd = (command_t*)calloc(1, sizeof(*cmd));
-   command_network_t *netcmd = (command_network_t*)calloc(
-                                   1, sizeof(command_network_t));
-   int fd = socket_init((void**)&res, port, NULL,
+   command_t            *cmd = NULL;
+   command_network_t *netcmd = NULL;
+   int                    fd = -1;
+
+   /* Allocate-then-check in sequence, matching command_uds_new.
+    * The previous code allocated cmd + netcmd back-to-back and then
+    * assigned netcmd->net_fd / cmd->userptr before NULL-checking
+    * either pointer - an OOM on either calloc would NULL-deref on
+    * line 252/253.  It also leaked netcmd on the '!cmd' failure
+    * path via the 'error' label (which now cleanly frees both
+    * because they are initialised to NULL up-front; free(NULL) is
+    * a no-op). */
+   if (!(cmd = (command_t*)calloc(1, sizeof(*cmd))))
+      goto error;
+
+   if (!(netcmd = (command_network_t*)calloc(1, sizeof(command_network_t))))
+      goto error;
+
+   fd = socket_init((void**)&res, port, NULL,
          SOCKET_TYPE_DATAGRAM, AF_INET);
 
    RARCH_LOG("[NetCMD] %s %hu.\n",
@@ -271,6 +286,12 @@ command_t* command_network_new(uint16_t port)
 error:
    if (res)
       freeaddrinfo_retro(res);
+   /* The only path that reaches 'error' with fd >= 0 is the
+    * socket_nonblock / socket_bind failure after fd was already
+    * stored in netcmd->net_fd.  Close it so we don't leak the
+    * socket file descriptor along with the allocations. */
+   if (fd >= 0)
+      socket_close(fd);
    free(netcmd);
    free(cmd);
    return NULL;
@@ -351,16 +372,20 @@ command_t* command_stdin_new(void)
 #endif
 #endif
 
-   cmd          = (command_t*)calloc(1, sizeof(command_t));
-   stdincmd     = (command_stdin_t*)calloc(1, sizeof(command_stdin_t));
-
-   if (!cmd)
+   /* Allocate in order with per-step failure handling.  The earlier
+    * form allocated both cmd and stdincmd back-to-back then checked
+    * them, which leaked stdincmd on the '!cmd' failure path (the
+    * '!cmd' return simply dropped the stdincmd pointer).  Also
+    * matches the command_uds_new pattern further down. */
+   if (!(cmd = (command_t*)calloc(1, sizeof(command_t))))
       return NULL;
-   if (!stdincmd)
+
+   if (!(stdincmd = (command_stdin_t*)calloc(1, sizeof(command_stdin_t))))
    {
       free(cmd);
       return NULL;
    }
+
    cmd->userptr = stdincmd;
    cmd->poll    = command_stdin_poll;
    cmd->replier = stdin_command_reply;
@@ -402,16 +427,19 @@ command_t* command_emscripten_new(void)
    command_t *cmd;
    command_emscripten_t *emscriptencmd;
 
-   cmd           = (command_t*)calloc(1, sizeof(command_t));
-   emscriptencmd = (command_emscripten_t*)calloc(1, sizeof(command_emscripten_t));
-
-   if (!cmd)
+   /* Same sequential-allocation-with-per-step-cleanup pattern as
+    * command_stdin_new / command_uds_new.  Previously allocated both
+    * structs before any NULL check, leaking emscriptencmd on the
+    * '!cmd' failure path. */
+   if (!(cmd = (command_t*)calloc(1, sizeof(command_t))))
       return NULL;
-   if (!emscriptencmd)
+
+   if (!(emscriptencmd = (command_emscripten_t*)calloc(1, sizeof(command_emscripten_t))))
    {
       free(cmd);
       return NULL;
    }
+
    cmd->userptr = emscriptencmd;
    cmd->poll    = command_emscripten_poll;
    cmd->replier = emscripten_command_reply;
@@ -436,30 +464,29 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    const char *directory_cache    = settings->paths.directory_cache;
    const char *directory_system   = settings->paths.directory_system;
    const char *path_username      = settings->paths.username;
-
-   if (string_is_equal(arg, "video_fullscreen"))
+   if (memcmp(arg, "video_fullscreen", sizeof("video_fullscreen")) == 0)
    {
       if (video_fullscreen)
          value = "true";
       else
          value = "false";
    }
-   else if (string_is_equal(arg, "savefile_directory"))
+   else if (memcmp(arg, "savefile_directory", sizeof("savefile_directory")) == 0)
       value = dir_get_ptr(RARCH_DIR_SAVEFILE);
-   else if (string_is_equal(arg, "savestate_directory"))
+   else if (memcmp(arg, "savestate_directory", sizeof("savestate_directory")) == 0)
       value = dir_get_ptr(RARCH_DIR_SAVESTATE);
-   else if (string_is_equal(arg, "runtime_log_directory"))
+   else if (memcmp(arg, "runtime_log_directory", sizeof("runtime_log_directory")) == 0)
       value = dir_runtime_log;
-   else if (string_is_equal(arg, "log_dir"))
+   else if (memcmp(arg, "log_dir", sizeof("log_dir")) == 0)
       value = log_dir;
-   else if (string_is_equal(arg, "cache_directory"))
+   else if (memcmp(arg, "cache_directory", sizeof("cache_directory")) == 0)
       value = directory_cache;
-   else if (string_is_equal(arg, "system_directory"))
+   else if (memcmp(arg, "system_directory", sizeof("system_directory")) == 0)
       value = directory_system;
-   else if (string_is_equal(arg, "netplay_nickname"))
+   else if (memcmp(arg, "netplay_nickname", sizeof("netplay_nickname")) == 0)
       value = path_username;
 #ifdef HAVE_BSV_MOVIE
-   else if (string_is_equal(arg, "active_replay"))
+   else if (memcmp(arg, "active_replay", sizeof("active_replay")) == 0)
    {
       input_driver_state_t *input_st = input_state_get_ptr();
       value            = value_dynamic;
@@ -477,7 +504,6 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    }
    #endif
    /* TODO: query any string */
-
    _len  = strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
    _len += strlcpy(reply + _len, arg, sizeof(reply)  - _len);
    reply[  _len] = ' ';
@@ -691,7 +717,7 @@ static bool udp_send_packet(const char *host, uint16_t port, const char *msg)
 bool command_network_send(const char *cmd_)
 {
    char buf[4096];
-   char *save           = NULL;
+   char *ptr;
    const char *cmd      = NULL;
    const char *host     = NULL;
    const char *port_str = NULL;
@@ -710,13 +736,22 @@ bool command_network_send(const char *cmd_)
 
    memcpy(buf, cmd_, len + 1);
 
-   cmd = strtok_r(buf, ";", &save);
-   if (!cmd)
-      return false;
+   cmd = buf;
+   ptr = strchr(buf, ';');
+   if (ptr)
+   {
+      *ptr++ = '\0';
+      host   = ptr;
+      ptr    = strchr(ptr, ';');
+      if (ptr)
+      {
+         *ptr++   = '\0';
+         port_str = ptr;
+      }
+   }
 
-   host     = strtok_r(NULL, ";", &save);
-   if (host)
-      port_str = strtok_r(NULL, ";", &save);
+   if (!cmd || !*cmd)
+      return false;
 
    if (!host || !*host)
    {
@@ -896,7 +931,12 @@ bool command_read_ram(command_t *cmd, const char *arg)
    unsigned int nbytes        = 0;
    unsigned int addr          = -1;
 
-   if (sscanf(arg, "%x %u", &addr, &nbytes) == 2)
+   char *end          = NULL;
+   addr               = (unsigned int)strtoul(arg, &end, 16);
+   if (end && *end == ' ')
+      nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
+
+   if (end && *end == ' ' && nbytes > 0)
    {
       size_t _len             = 0;
       char *reply_at          = NULL;
@@ -1076,37 +1116,37 @@ bool command_get_status(command_t *cmd, const char* arg)
 
       core_info_get_current_core(&core_info);
 
-      _len = strlcpy(reply, "GET_STATUS ", sizeof(reply));
+      _len = 0;
+      strlcpy_append(reply, sizeof(reply), &_len, "GET_STATUS ");
 
       if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-         _len += strlcpy(reply + _len, "PAUSED", sizeof(reply) - _len);
+         strlcpy_append(reply, sizeof(reply), &_len, "PAUSED");
       else
-         _len += strlcpy(reply + _len, "PLAYING", sizeof(reply) - _len);
+         strlcpy_append(reply, sizeof(reply), &_len, "PLAYING");
 
-      _len += strlcpy(reply + _len, " ", sizeof(reply) - _len);
+      strlcpy_append(reply, sizeof(reply), &_len, " ");
 
       if (core_info && core_info->system_id)
-         _len += strlcpy(reply + _len, core_info->system_id,
-               sizeof(reply) - _len);
+         strlcpy_append(reply, sizeof(reply), &_len, core_info->system_id);
       else if (runloop_st->system.info.library_name)
-         _len += strlcpy(reply + _len, runloop_st->system.info.library_name,
-               sizeof(reply) - _len);
+         strlcpy_append(reply, sizeof(reply), &_len,
+               runloop_st->system.info.library_name);
       else
-         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+         strlcpy_append(reply, sizeof(reply), &_len, "UNKNOWN");
 
-      _len += strlcpy(reply + _len, ",", sizeof(reply) - _len);
+      strlcpy_append(reply, sizeof(reply), &_len, ",");
 
       basename_path = path_get(RARCH_PATH_BASENAME);
       if (basename_path)
       {
          const char *basename = path_basename(basename_path);
          if (basename)
-            _len += strlcpy(reply + _len, basename, sizeof(reply) - _len);
+            strlcpy_append(reply, sizeof(reply), &_len, basename);
          else
-            _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+            strlcpy_append(reply, sizeof(reply), &_len, "UNKNOWN");
       }
       else
-         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+         strlcpy_append(reply, sizeof(reply), &_len, "UNKNOWN");
 
       _len += snprintf(reply + _len, sizeof(reply) - _len,
             ",crc32=%lx\n", (unsigned long)content_get_crc());
@@ -1132,8 +1172,15 @@ bool command_read_memory(command_t *cmd, const char *arg)
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    const rarch_system_info_t* sys_info= &runloop_st->system;
 
-   if (sscanf(arg, "%x %u", &address, &nbytes) != 2)
-      return false;
+   {
+      char *end       = NULL;
+      address         = (unsigned int)strtoul(arg, &end, 16);
+      if (!(end && *end == ' '))
+         return false;
+      nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
+      if (nbytes == 0)
+         return false;
+   }
 
    /* Ensure large enough to return all requested bytes or an error message */
    alloc_size = 64 + nbytes * 3;
@@ -1326,7 +1373,7 @@ static size_t command_event_save_config(const char *config_path,
    char *s, size_t len)
 {
    size_t _len      = 0;
-   bool path_exists = !string_is_empty(config_path);
+   bool path_exists = *config_path;
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
 
@@ -1351,7 +1398,7 @@ static size_t command_event_save_config(const char *config_path,
       return _len;
    }
 
-   if (!string_is_empty(str))
+   if (str && *str)
    {
       _len = snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
@@ -1424,10 +1471,12 @@ size_t command_event_save_auto_state(void)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *name_savestate  = runloop_st->name.savestate;
    char savestate_name_auto[PATH_MAX_LENGTH];
+   const char *a = NULL;
 
    if (!core_info_current_supports_savestate())
       return 0;
-   if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
+   a = path_basename(path_get(RARCH_PATH_BASENAME));
+   if (!a || !*a)
       return 0;
    _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
@@ -1615,7 +1664,7 @@ static void command_scan_states(
       const char *end      = NULL;
       const char *dir_elem = dir_list->elems[i].data;
 
-      if (string_is_empty(dir_elem))
+      if (!dir_elem || !*dir_elem)
          continue;
 
       _len = strlen(dir_elem);
@@ -1624,7 +1673,7 @@ static void command_scan_states(
       /* Only consider files with a '.state' extension
        * > i.e. Ignore '.state.auto', '.state.bak', etc. */
       ext = path_get_extension(elem_base);
-      if (    string_is_empty(ext)
+      if (    (!ext || !*ext)
           || !string_starts_with_size(ext, "state", STRLEN_CONST("state")))
          continue;
 
@@ -1823,7 +1872,7 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
     * > Conservative behaviour, designed to minimise
     *   the risk of deleting multiple incorrect files
     *   in case of accident */
-   if (!string_is_empty(state_to_delete))
+   if (*state_to_delete)
    {
       filestream_delete(state_to_delete);
       RARCH_DBG("[State] Garbage collect, deleting \"%s\".\n",state_to_delete);
@@ -1930,7 +1979,7 @@ void command_event_set_replay_garbage_collect(
       const char *end                 = NULL;
       const char *dir_elem            = dir_list->elems[i].data;
 
-      if (string_is_empty(dir_elem))
+      if (!dir_elem || !*dir_elem)
          continue;
 
       _len = fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
@@ -1938,7 +1987,7 @@ void command_event_set_replay_garbage_collect(
       /* Only consider files with a '.replayXX' extension
        * > i.e. Ignore '.replay.auto', '.replay.bak', etc. */
       ext = path_get_extension(elem_base);
-      if (    string_is_empty(ext)
+      if (    (!ext || !*ext)
           || !string_starts_with_size(ext, "replay", STRLEN_CONST("REPLAY")))
          continue;
 
@@ -1970,7 +2019,7 @@ void command_event_set_replay_garbage_collect(
     * > Conservative behaviour, designed to minimise
     *   the risk of deleting multiple incorrect files
     *   in case of accident */
-   if (!string_is_empty(oldest_save) && (cnt > max_to_keep))
+   if (oldest_save && *oldest_save && (cnt > max_to_keep))
       filestream_delete(oldest_save);
 
    dir_list_free(dir_list);
@@ -1981,7 +2030,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
 {
    enum  rarch_shader_type type = video_shader_parse_type(arg);
    settings_t  *settings        = config_get_ptr();
-   bool apply_new_shader        = !string_is_empty(arg);
+   bool apply_new_shader        = arg && *arg;
 
    configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
    if (apply_new_shader)
@@ -2024,9 +2073,9 @@ bool command_event_save_core_config(
 
    msg[0]                          = '\0';
 
-   if (!string_is_empty(dir_menu_config))
+   if (dir_menu_config && *dir_menu_config)
       _len = strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
-   else if (!string_is_empty(rarch_path_config)) /* Fallback */
+   else if (rarch_path_config && *rarch_path_config) /* Fallback */
       _len = fill_pathname_basedir(config_dir, rarch_path_config,
             sizeof(config_dir));
 
@@ -2419,8 +2468,128 @@ void command_event_reinit(const int flags)
    const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
+   /* Snapshot the last cached core frame before tearing the video
+    * driver down.  video_driver_free() nulls frame_cache_data as part
+    * of the reinit cycle (the pointer was borrowed from the core's
+    * own framebuffer and isn't guaranteed to stay live across the
+    * driver swap), so without a snapshot the new driver would come
+    * up with no core image to replay.  Restored + replayed below so
+    * the paused-core background remains visible when reinit is
+    * triggered from inside the menu (e.g. HDR mode toggle).
+    *
+    * The snapshot buffer is static and reused across reinits — we
+    * need it to outlive command_event_reinit because we hand the
+    * pointer to video_st->frame_cache_data for the new driver to
+    * read via video_driver_cached_frame(), and the core's next real
+    * frame will replace the pointer at its leisure.  Resizing in
+    * place on each call keeps it bounded at one buffer's worth. */
+   static void  *cached_snapshot      = NULL;
+   static size_t cached_snapshot_cap  = 0;
+   size_t        want_size            = 0;
+   unsigned      cached_snapshot_w    = 0;
+   unsigned      cached_snapshot_h    = 0;
+   size_t        cached_snapshot_p    = 0;
+
+   if (     video_st
+         && video_st->frame_cache_data
+         && video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID
+         && video_st->frame_cache_height
+         && video_st->frame_cache_pitch)
+      want_size = video_st->frame_cache_pitch
+                * video_st->frame_cache_height;
+   if (want_size > cached_snapshot_cap)
+   {
+      void *tmp = realloc(cached_snapshot, want_size);
+      if (tmp)
+      {
+         cached_snapshot     = tmp;
+         cached_snapshot_cap = want_size;
+      }
+      else
+         want_size           = 0;
+   }
+   if (want_size && cached_snapshot)
+   {
+      memcpy(cached_snapshot, video_st->frame_cache_data, want_size);
+      cached_snapshot_w = video_st->frame_cache_width;
+      cached_snapshot_h = video_st->frame_cache_height;
+      cached_snapshot_p = video_st->frame_cache_pitch;
+   }
 
    video_driver_reinit(flags);
+
+   /* Restore the snapshot and ask the new driver to replay it so the
+    * paused-core background appears in the first post-reinit frame.
+    * The buffer stays live across subsequent frame_cb calls from the
+    * core (which overwrite the pointer) and is reused on the next
+    * reinit.  The static cached_snapshot itself is not freed at
+    * shutdown - it's a one-shot leak bounded at one framebuffer's
+    * worth of memory, reclaimed by the OS on process exit.  Adding
+    * a teardown hook would mean wiring command_event_reinit's
+    * statics into retroarch_deinit_drivers; the size cap makes the
+    * leak benign in practice, so we leave it. */
+   if (cached_snapshot_p && cached_snapshot_h)
+   {
+      video_st->frame_cache_data   = cached_snapshot;
+      video_st->frame_cache_width  = cached_snapshot_w;
+      video_st->frame_cache_height = cached_snapshot_h;
+      video_st->frame_cache_pitch  = cached_snapshot_p;
+
+#ifdef HAVE_MENU
+      /* If the menu is alive across the reinit, the runloop's
+       * pre-frame menu work (driver_ctx->render +
+       * set_texture_enable) doesn't get a chance to run before
+       * the cached_frame() replay below.  Two consequences if we
+       * don't reproduce that work here:
+       *
+       * 1. The new video driver instance starts with its
+       *    menu-texture flag (D3D11_ST_FLAG_MENU_ENABLE,
+       *    GL2_FLAG_MENU_TEXTURE_ENABLE, etc.) cleared, so the
+       *    replay frame falls into the driver's "else if
+       *    (statistics_show)" branch and draws OSD stats on the
+       *    bare core framebuffer instead of the menu overlay.
+       *
+       * 2. Menu drivers like ozone cache layout/font dimensions
+       *    keyed on the previous viewport size and only
+       *    recompute them when their render() callback notices a
+       *    width/height change.  If we replay before render()
+       *    runs, the menu draws at the old (windowed) scale into
+       *    the new (fullscreen) viewport, so fonts and widgets
+       *    appear undersized for one frame until the next
+       *    runloop iteration corrects them.
+       *
+       * Mirroring the runloop's pre-frame menu sequence here --
+       * render with the new dimensions, then raise the
+       * texture-enable flag -- keeps the snapshot replay
+       * visually consistent with subsequent frames.
+       *
+       * Gated on a valid snapshot: without one we won't be
+       * pushing a replay frame anyway, and calling render() on a
+       * freshly-(re)initialised menu driver before the runloop
+       * has had a chance to populate it can leave it in a
+       * partially-computed state for the next real frame
+       * (e.g. ozone clears OZONE_FLAG_NEED_COMPUTE after a
+       * premature render). */
+      if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+      {
+         if (     menu_st->driver_ctx
+               && menu_st->driver_ctx->render)
+            menu_st->driver_ctx->render(
+                  menu_st->userdata,
+                  video_st->width,
+                  video_st->height,
+                  false);
+
+         if (     video_st->poke
+               && video_st->poke->set_texture_enable)
+            video_st->poke->set_texture_enable(video_st->data,
+                  true, false);
+      }
+#endif
+
+      video_driver_cached_frame();
+   }
+
    /* Poll input to avoid possibly stale data to corrupt things. */
    if (joypad && joypad->poll)
       joypad->poll();

@@ -28,7 +28,6 @@
 
 #include <file/file_path.h>
 #include <compat/strl.h>
-#include <string/stdstring.h>
 #include <gfx/video_frame.h>
 
 #ifdef HAVE_RBMP
@@ -100,6 +99,33 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    if (!input)
       return ret;
 
+   /* Fast path: source is already BGR24 and no resampling is
+    * needed, so hand the source buffer directly to the PNG
+    * encoder. rpng_save_image_stream walks rows via `data +=
+    * pitch` with a signed pitch, so a bottom-up source is
+    * encoded top-down for free by starting at the last row and
+    * passing a negative row stride (same trick take_screenshot_raw
+    * uses via screenshot_dump's pitch argument).
+    *
+    * This avoids allocating a second full-frame BGR24 buffer and
+    * the flip-and-copy the scaler would otherwise do between them;
+    * at 4K that is ~48 MiB of allocation and copy per screenshot. */
+   if (     (state->flags & SS_TASK_FLAG_BGR24)
+         &&  state->out_width  == state->width
+         &&  state->out_height == state->height)
+   {
+      ret = rpng_save_image_bgr24(
+            state->filename,
+            input,
+            state->out_width,
+            state->out_height,
+            (unsigned)(-state->pitch)
+            );
+      /* state->out_buffer is NULL in this path (see screenshot_dump);
+       * nothing to free. */
+      return ret;
+   }
+
    if (state->flags & SS_TASK_FLAG_BGR24)
       scaler->in_fmt             = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
@@ -110,8 +136,7 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    video_frame_convert_to_bgr24(
          scaler,
          state->out_buffer,
-         (const uint8_t*)state->frame + ((int)state->height - 1)
-         * state->pitch,
+         input,
          state->width,
          state->height,
          -state->pitch,
@@ -323,12 +348,19 @@ static bool screenshot_dump(
       video_driver_state_t *video_st = video_state_get_ptr();
       if (video_st)
       {
-         state->out_width       = (video_st->frame_cache_width  <= 4)
+         state->out_width        = (video_st->frame_cache_width  <= 4)
                ? video_st->av_info.geometry.base_width
                : video_st->frame_cache_width;
-         state->out_height      = (video_st->frame_cache_height <= 4)
+         state->out_height       = (video_st->frame_cache_height <= 4)
                ? video_st->av_info.geometry.base_height
                : video_st->frame_cache_height;
+      }
+
+      /* Fallback to display size if smaller than core output */
+      if (state->out_width > width || state->out_height > height)
+      {
+         state->out_width        = width;
+         state->out_height       = height;
       }
 
       state->flags              |= SS_TASK_FLAG_SILENCE;
@@ -352,14 +384,14 @@ static bool screenshot_dump(
       {
          char new_screenshot_dir[DIR_MAX_LENGTH];
 
-         if (!string_is_empty(screenshot_dir))
+         if (screenshot_dir && *screenshot_dir)
          {
             const char *content_dir = path_get(RARCH_PATH_BASENAME);
 
             /* Append content directory name to screenshot
              * path, if required */
             if (    settings->bools.sort_screenshots_by_content_enable
-                && !string_is_empty(content_dir))
+                && content_dir && *content_dir)
             {
                char content_dir_name[DIR_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,
@@ -388,7 +420,7 @@ static bool screenshot_dump(
                   return false;
                }
 
-               if (string_is_empty(sysinfo.library_name))
+               if (!sysinfo.library_name || !*sysinfo.library_name)
                   screenshot_name = "RetroArch";
                else
                   screenshot_name = sysinfo.library_name;
@@ -409,7 +441,7 @@ static bool screenshot_dump(
                   sizeof(state->shotname) - _len);
          }
 
-         if (     string_is_empty(new_screenshot_dir)
+         if (     !*new_screenshot_dir
                || settings->bools.screenshots_in_content_dir)
             fill_pathname_basedir(new_screenshot_dir, name_base,
                   sizeof(new_screenshot_dir));
@@ -425,12 +457,22 @@ static bool screenshot_dump(
    }
 
 #if defined(HAVE_RPNG)
-   if (!(buf = (uint8_t*)malloc(width * height * 3)))
+   /* Only allocate the BGR24 output buffer when screenshot_dump_direct
+    * will actually use the scaler. When the source is already BGR24 at
+    * the output dimensions (typical of the viewport read-back path,
+    * take_screenshot_viewport), the encoder walks the source directly
+    * with negative pitch and no intermediate buffer is needed. */
+   if (  !(state->flags & SS_TASK_FLAG_BGR24)
+       || state->out_width  != width
+       || state->out_height != height)
    {
-      free(state);
-      return false;
+      if (!(buf = (uint8_t*)malloc(state->out_width * state->out_height * 3)))
+      {
+         free(state);
+         return false;
+      }
+      state->out_buffer  = buf;
    }
-   state->out_buffer     = buf;
 #endif
 
    if (use_thread)
@@ -455,7 +497,7 @@ static bool screenshot_dump(
       else
 #endif
       {
-         if (!savestate & settings->bools.notification_show_screenshot)
+         if (!savestate && settings->bools.notification_show_screenshot)
             task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
       }
 
@@ -647,12 +689,10 @@ bool take_screenshot(
       if (video_gpu_screenshot && !savestate)
          prefer_vp_read           = true;
    }
-
    /* No way to infer screenshot directory. */
-   if (     string_is_empty(screenshot_dir)
-         && string_is_empty(name_base))
+   if (     (!screenshot_dir || !*screenshot_dir)
+         && (!name_base || !*name_base))
       return false;
-
    ret       = take_screenshot_choice(
          video_st,
          screenshot_dir,
@@ -666,10 +706,9 @@ bool take_screenshot(
          (video_st->current_video->read_frame_raw != NULL),
          video_st->pix_fmt
          );
-
    if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)
          && (!(runloop_flags & RUNLOOP_FLAG_IDLE)))
          video_driver_cached_frame();
-
    return ret;
 }
+

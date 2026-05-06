@@ -14,11 +14,11 @@
 
 #include <time.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <dlfcn.h>
 
+#include <boolean.h>
 #include "wayland_common.h"
 #include "wayland_common_backport.h"
 #include "../../verbosity.h"

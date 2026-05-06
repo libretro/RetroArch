@@ -68,7 +68,7 @@ struct libusb_adapter
    uint8_t name[NAME_MAX_LENGTH];
    uint8_t data[2048];
 
-   int slot;
+   int32_t slot;
 
    sthread_t *thread;
    slock_t *send_control_lock;
@@ -294,7 +294,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    device_name   = (const char*)adapter->name;
 
-   if (string_is_empty((const char*)adapter->name))
+   if ((!(const char*)adapter->name || !*(const char*)adapter->name))
       goto error;
 
    adapter->send_control_lock = slock_new();

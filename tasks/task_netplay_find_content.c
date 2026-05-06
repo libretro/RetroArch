@@ -122,7 +122,7 @@ static bool find_content_by_crc(playlist_config_t *playlist_config,
             continue;
 
          if (string_is_equal(entry->crc32, crc_ident)
-               && !string_is_empty(entry->path))
+               && (entry->path && *entry->path))
          {
             if (!string_list_append(paths, entry->path, attr))
             {
@@ -200,7 +200,7 @@ static bool find_content_by_name(playlist_config_t *playlist_config,
             {
                const char *extension = path_get_extension(entry->path);
 
-               if (string_is_empty(extension) || !string_list_find_elem(
+               if ((!extension || !*extension) || !string_list_find_elem(
                      extensions, extension))
                   continue;
             }
@@ -256,15 +256,15 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       goto finished; /* We already have what we need. */
 
    /* We really can't do much without the core's path. */
-   if (string_is_empty(data->core))
+   if (!*data->core)
    {
       title =
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE);
       goto finished;
    }
 
-   if (string_is_empty(data->content) ||
-         string_is_equal_case_insensitive(data->content, "N/A"))
+   if ( !*data->content
+       || string_is_equal_case_insensitive(data->content, "N/A"))
    {
       title        =
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND);
@@ -294,13 +294,13 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       }
    }
 
-   if (     string_is_empty(data->subsystem)
+   if (     !*data->subsystem
          || string_is_equal_case_insensitive(data->subsystem, "N/A"))
    {
       if (     data->current.core_loaded
             && data->extensions
-            && !string_is_empty(data->current.content)
-            && !string_is_empty(data->current.extension))
+            && *data->current.content
+            && *data->current.extension)
       {
          if (     !data->current.subsystem_content
                || !data->current.subsystem_content->size)
@@ -456,7 +456,7 @@ static bool static_load(const char *core, const char *subsystem,
 #define ARG(arg) (void*)(arg)
    netplay_driver_ctl(RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS, NULL);
 
-   if (string_is_empty(hostname))
+   if (!hostname || !*hostname)
    {
       if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ADD_FORK_ARG, ARG("-H")))
          goto failure;
@@ -468,7 +468,7 @@ static bool static_load(const char *core, const char *subsystem,
          goto failure;
    }
 
-   if (!string_is_empty(subsystem))
+   if (subsystem && *subsystem)
    {
       const struct string_list *subsystem_content =
          (const struct string_list*)content;
@@ -562,7 +562,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (string_is_empty(data->hostname))
+            if (!*data->hostname)
             {
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
             }
@@ -609,10 +609,10 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (string_is_empty(data->hostname))
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
-            else
+            if (*data->hostname)
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+            else
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
             task_push_load_new_core(data->core,
                NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
@@ -627,7 +627,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                for (i = 0; i < subsystem_content->size; i++)
                   content_add_subsystem(subsystem_content->elems[i].data);
 
-               if (!string_is_empty(data->hostname))
+               if (*data->hostname)
                   command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
                      data->hostname);
 
@@ -662,7 +662,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (string_is_empty(data->hostname))
+            if (!*data->hostname)
             {
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
             }
@@ -692,7 +692,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
 
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-               if (string_is_empty(data->hostname))
+               if (!*data->hostname)
                {
                   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
                }
@@ -706,7 +706,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                task_push_load_new_core(data->core,
                   NULL, NULL, CORE_TYPE_PLAIN, NULL, NULL);
 
-               if (!string_is_empty(data->current.subsystem))
+               if (*data->current.subsystem)
                {
                   content_clear_subsystem();
                   content_set_subsystem_by_name(data->current.subsystem);
@@ -825,12 +825,12 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
    data->current.crc = content_get_crc();
 
    pbasename  = path_get(RARCH_PATH_BASENAME);
-   if (!string_is_empty(pbasename))
+   if (pbasename && *pbasename)
       strlcpy(data->current.content, path_basename(pbasename),
          sizeof(data->current.content));
 
    pcontent   = path_get(RARCH_PATH_CONTENT);
-   if (!string_is_empty(pcontent))
+   if (pcontent && *pcontent)
    {
       strlcpy(data->current.content_path, pcontent,
          sizeof(data->current.content_path));
@@ -839,7 +839,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
    }
 
    psubsystem = path_get(RARCH_PATH_SUBSYSTEM);
-   if (!string_is_empty(psubsystem))
+   if (psubsystem && *psubsystem)
       strlcpy(data->current.subsystem, psubsystem,
          sizeof(data->current.subsystem));
 
@@ -878,7 +878,7 @@ bool task_push_netplay_content_reload(const char *hostname)
       return false;
 
    pcore = path_get(RARCH_PATH_CORE);
-   if (string_is_empty(pcore) || string_is_equal(pcore, "builtin"))
+   if ((!pcore || !*pcore) || string_is_equal(pcore, "builtin"))
       return false; /* Nothing to reload. */
 
    data  = (struct netplay_crc_scan_data*)calloc(1, sizeof(*data));
@@ -904,8 +904,7 @@ bool task_push_netplay_content_reload(const char *hostname)
    if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
       const char *psubsystem = path_get(RARCH_PATH_SUBSYSTEM);
-
-      if (!string_is_empty(psubsystem))
+      if (psubsystem && *psubsystem)
       {
          strlcpy(data->current.subsystem, psubsystem,
             sizeof(data->current.subsystem));
@@ -923,12 +922,10 @@ bool task_push_netplay_content_reload(const char *hostname)
       else if (!path_is_empty(RARCH_PATH_BASENAME))
       {
          const char *pcontent = path_get(RARCH_PATH_CONTENT);
-
-         if (!string_is_empty(pcontent))
+         if (pcontent && *pcontent)
          {
             strlcpy(data->current.content_path, pcontent,
                sizeof(data->current.content_path));
-
             scan_state.state |= STATE_LOAD;
          }
       }

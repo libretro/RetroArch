@@ -1,0 +1,290 @@
+name: CI Linux samples/gfx
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-gfx:
+    name: Build and run samples/gfx
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run vulkan_extension_count_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_extension_count
+        run: |
+          set -eu
+          # Regression test for the heap-overflow fix in
+          # gfx/common/vulkan_common.c::vulkan_find_device_extensions.
+          # Pre-fix the function appended the required-extension list
+          # twice -- once via memcpy at the top of the body, then
+          # again in a per-element loop -- consuming
+          # (count_initial + 2*num_required + num_optional) slots in
+          # the caller's buffer.  vulkan_context_create_device_wrapper
+          # sized its malloc for (count_initial + num_required +
+          # num_optional) entries, so a libretro core using the Vulkan
+          # HW context-negotiation interface against a GPU exposing at
+          # least one optional extension hit a one-element heap-buffer-
+          # overflow (8 bytes on 64-bit) at the end of the malloc'd
+          # block.  Build under AddressSanitizer so any reintroduction
+          # of the duplicate write is caught at the bounds level.  If
+          # vulkan_common.c amends the append-to-enabled[] block, the
+          # verbatim copy in vulkan_extension_count_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_extension_count_test
+          timeout 60 ./vulkan_extension_count_test
+          echo "[pass] vulkan_extension_count_test"
+
+      - name: Build and run vulkan_swapchain_clamp_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_swapchain_clamp
+        run: |
+          set -eu
+          # Regression test for the unclamped-swapchain-image-count
+          # fix in gfx/common/vulkan_common.c::vulkan_create_swapchain.
+          # Pre-fix the two vkGetSwapchainImagesKHR calls (count
+          # query + image fill) had no clamp between them, so a driver
+          # returning more than VULKAN_MAX_SWAPCHAIN_IMAGES (8) images
+          # on the second call wrote past context.swapchain_images[8]
+          # and every loop bounded by num_swapchain_images walked past
+          # its compile-time-sized companion array (~12 such loops
+          # across init/deinit/textures/buffers/descriptor pools/
+          # command buffers/readback and direct vk->swapchain[i]
+          # uses).  Build under AddressSanitizer so any reintroduction
+          # of either the request-side or the post-create clamp is
+          # caught at the bounds level.  If vulkan_common.c amends
+          # the cap or the post-create clamp, the verbatim copies in
+          # vulkan_swapchain_clamp_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_swapchain_clamp_test
+          timeout 60 ./vulkan_swapchain_clamp_test
+          echo "[pass] vulkan_swapchain_clamp_test"
+
+      - name: Build and run vulkan_texture_size_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_texture_size
+        run: |
+          set -eu
+          # Regression test for the 32-bit-overflow fix in
+          # gfx/drivers/vulkan.c::vulkan_create_texture's staging-
+          # buffer sizing.  Pre-fix the buffer_info.size calculation
+          # (buffer_width * height) was unsigned*unsigned in 32-bit
+          # before being widened to VkDeviceSize on assignment.  With
+          # dimensions large enough to wrap (e.g. 65536x16385x4 ->
+          # 0x1_0004_0000 truncates to 0x40000), the staging buffer
+          # was malloc'd at the wrapped (small) size while the per-row
+          # upload memcpy loop walked the full width x height,
+          # writing past the mapped region into adjacent heap memory.
+          # Reachable from libretro cores supplying oversized
+          # retro_framebuffer dimensions and from vulkan_load_texture
+          # / vulkan_set_texture_frame.  Build under AddressSanitizer
+          # so any reintroduction of the 32-bit arithmetic is caught
+          # at the bounds level.  If vulkan.c amends the size
+          # calculation or upload-loop strides, the verbatim copies
+          # in vulkan_texture_size_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_texture_size_test
+          timeout 60 ./vulkan_texture_size_test
+          echo "[pass] vulkan_texture_size_test"
+
+      - name: Build and run slang_texture_index_bounds_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/slang_texture_index_bounds
+        run: |
+          set -eu
+          # Regression test for the texture-semantic index-bounds
+          # fix in gfx/drivers_shader/slang_process.cpp::
+          # validate_texture_semantic_index().  Pre-fix only
+          # SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT was bounded against
+          # reflection->pass_number; ORIGINAL_HISTORY, PASS_FEEDBACK
+          # and USER had no upper bound on their array index.  The
+          # index suffix in arrayed semantic names like
+          # `OriginalHistory42` is parsed via strtoul in
+          # slang_name_to_texture_semantic_array() and propagates
+          # into the downstream resize_minimum() calls in
+          # set_ubo_texture_offset() and the direct sampler-binding
+          # loop.  A malicious slang shader declaring
+          # `OriginalHistory4294967294` makes std::vector::resize
+          # request ~128 GiB, throwing std::bad_alloc which
+          # propagates unhandled out of the filter-chain create
+          # path, terminating the process.  Reachable from any
+          # malicious slang preset (downloaded via Online Updater
+          # or shipped third-party).  Build under AddressSanitizer
+          # so any reintroduction is caught at the bounds level.
+          # If slang_process.cpp amends the cap table or the
+          # dispatch structure, the verbatim copy in
+          # slang_texture_index_bounds_test.c must follow.
+          make clean all SANITIZER=address
+          test -x slang_texture_index_bounds_test
+          timeout 60 ./slang_texture_index_bounds_test
+          echo "[pass] slang_texture_index_bounds_test"
+
+      - name: Build and run vulkan_mailbox_init_leak_test (ASan + LSan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_mailbox_init_leak
+        run: |
+          set -eu
+          # Regression test for the partial-init leak fix in
+          # gfx/common/vulkan_common.c::vulkan_emulated_mailbox_init.
+          # Pre-fix the function had three sequential allocations
+          # (scond_new, slock_new, sthread_create) and on any of the
+          # latter two failures returned `false` directly, leaking
+          # the already-allocated cond and/or lock.  Both production
+          # call sites in vulkan_create_swapchain ignore the return
+          # value, so an init failure also left vk->mailbox.lock ==
+          # NULL and vk->mailbox.cond == NULL while VK_DATA_FLAG_
+          # EMULATING_MAILBOX was still set, setting up a NULL-deref
+          # the next time vulkan_acquire_next_image routed into
+          # vulkan_emulated_mailbox_acquire_next_image (slock_lock
+          # on a NULL pointer).  Fix routes every early failure
+          # through `goto error` to a single deinit call, which is
+          # null-safe and ends with a memset, leaving the struct in
+          # the same shape the deinit-on-shutdown path produces and
+          # tripping the existing `mailbox.swapchain == VK_NULL_
+          # HANDLE` guard at vulkan_acquire_next_image.  Build under
+          # AddressSanitizer with leak detection so any
+          # reintroduction is caught at the leak level.  If
+          # vulkan_common.c amends the init or deinit, the verbatim
+          # copies in vulkan_mailbox_init_leak_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_mailbox_init_leak_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 60 \
+             ./vulkan_mailbox_init_leak_test
+          echo "[pass] vulkan_mailbox_init_leak_test"
+
+      - name: Build and run vulkan_ctx_double_free_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_ctx_double_free
+        run: |
+          set -eu
+          # Regression test for the double-free / use-after-free
+          # fix in the Vulkan context drivers' set_video_mode error
+          # paths: gfx/drivers_context/wayland_vk_ctx.c,
+          # w_vk_ctx.c, x_vk_ctx.c.  Pre-fix each set_video_mode
+          # called its own destroy()/destroy_resources()+free() on
+          # ctx_data before returning false; the caller in
+          # gfx/drivers/vulkan.c::vulkan_init then ran
+          # vulkan_free()->ctx_driver->destroy(ctx_data) on the
+          # already-freed pointer (UAF read of struct fields, then
+          # a second free of the same allocation).  Reachable from
+          # vulkan_surface_create() failure (missing extension /
+          # driver issue), Wayland's set_video_mode_common_*
+          # helpers failing, X11's XGetVisualInfo returning NULL,
+          # or win32_set_video_mode failing.  Cocoa (cocoa_vk_ctx)
+          # and Android (android_vk_ctx) already handle this
+          # correctly by returning false without freeing -- the
+          # fix makes Wayland/Win32/X11 match.  Build under
+          # AddressSanitizer so any reintroduction is caught at
+          # the bounds level (UAF + double-free both fire).  If
+          # any of the three context drivers amends the
+          # set_video_mode error path to once again destroy
+          # ctx_data, the verbatim copy in
+          # vulkan_ctx_double_free_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_ctx_double_free_test
+          timeout 60 ./vulkan_ctx_double_free_test
+          echo "[pass] vulkan_ctx_double_free_test"
+
+      - name: Build and run gfx_thumbnail_status_atomic_test (TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_status_atomic
+        run: |
+          set -eu
+          # Regression test for the cross-thread thumbnail status
+          # synchronisation in gfx/gfx_thumbnail.c.  The .status
+          # field is read by the video thread (gfx_thumbnail_draw)
+          # and written by the upload-callback thread
+          # (gfx_thumbnail_handle_upload), with a release-store /
+          # acquire-load pairing that guards the texture / width /
+          # height fields published alongside the AVAILABLE
+          # status.  Pre-port the file used a hand-rolled
+          # __atomic_* / _Interlocked / volatile shim.  Post-port
+          # the .status field is retro_atomic_int_t and the
+          # accesses route through retro_atomic_*_int macros.
+          #
+          # ThreadSanitizer is the right validator for this test:
+          # it instruments every atomic load and store and would
+          # flag a missing-barrier regression as a data race, even
+          # on x86 TSO where the hardware otherwise hides the bug.
+          # ASan/UBSan would not catch barrier removal at all
+          # (no out-of-bounds access, no UB).  The test also
+          # carries static-assertion checks that validate the
+          # struct layout invariant (.status size == sizeof(int))
+          # so the field's atomic type does not change the
+          # gfx_thumbnail_t ABI.  If gfx_thumbnail.c amends
+          # GFX_THUMB_STATUS_STORE / GFX_THUMB_STATUS_LOAD or the
+          # .status field type, the verbatim copies in
+          # gfx_thumbnail_status_atomic_test.c must follow.
+          make clean all SANITIZER=thread
+          test -x gfx_thumbnail_status_atomic_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 \
+             ./gfx_thumbnail_status_atomic_test
+          echo "[pass] gfx_thumbnail_status_atomic_test"
+
+      - name: Build and run gfx_widgets_msg_queue_race_test (TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_widgets_msg_queue_race
+        run: |
+          set -eu
+          # Regression test for the producer-producer race fix on
+          # dispgfx_widget_t::msg_queue in gfx/gfx_widgets.c.
+          # Pre-fix the FIFO had no dedicated lock: producers could
+          # be invoked from any thread (the threaded task system at
+          # libretro-common/queues/task_queue.c runs a worker
+          # thread; gfx/video_driver.c::video_driver_frame released
+          # RUNLOOP_MSG_QUEUE_LOCK before calling the producer, so
+          # main-thread producers ran unlocked) yet there was no
+          # lock dedicated to msg_queue itself.  Post-fix a
+          # msg_queue_lock is acquired around every fifo_write (in
+          # gfx_widgets_msg_queue_push), every fifo_read (in
+          # gfx_widgets_iterate), and the avail-check that gates
+          # them.  The outer fast-path FIFO_*_AVAIL checks that
+          # used to wrap the function bodies were dropped: reading
+          # the FIFO cursors outside the lock is itself a data
+          # race against the locked writes (TSan-detectable;
+          # benign on x86 TSO but real on weak-memory hardware).
+          #
+          # ThreadSanitizer is the right validator: it instruments
+          # every memory access on fifo_buffer_t::end and
+          # ::first and would flag a missing-lock regression as a
+          # data race on the producer side, the consumer side, or
+          # the avail check.  ASan/UBSan would not catch the lock
+          # removal at all.  halt_on_error=1 makes TSan exit
+          # non-zero on the first observed race, which is what we
+          # want for CI: any race here means the production
+          # locking discipline is broken.
+          #
+          # The test mirrors the post-fix locking protocol of
+          # gfx_widgets_msg_queue_push and gfx_widgets_iterate's
+          # FIFO interaction; the widget allocation, font
+          # measurement, and animation push that wrap the actual
+          # FIFO calls in production are not part of the race and
+          # are stripped from the test.  If gfx_widgets.c amends
+          # the locking around msg_queue, the verbatim copies in
+          # gfx_widgets_msg_queue_race_test.c must follow.
+          make clean all SANITIZER=thread
+          test -x gfx_widgets_msg_queue_race_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 \
+             ./gfx_widgets_msg_queue_race_test
+          echo "[pass] gfx_widgets_msg_queue_race_test"

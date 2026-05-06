@@ -85,6 +85,7 @@
 #include "../../defaults.h"
 #include "../../msg_hash.h"
 #include "../../paths.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
@@ -448,18 +449,48 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 
    android_app->mutex    = slock_new();
    android_app->cond     = scond_new();
+   /* NULL-check slock_new / scond_new: both can fail on OOM.
+    * Without the guards here, a NULL mutex would silently turn
+    * every slock_lock/unlock below into a no-op (slock_lock
+    * NULL-tolerates by design), giving a race-prone android_app,
+    * and a NULL cond would NULL-deref in scond_wait below
+    * (pthread_cond_wait(&NULL->cond, ...)).  Fail the whole
+    * android_app construction so ANativeActivity_onCreate returns
+    * cleanly without half-initialised state. */
+   if (!android_app->mutex || !android_app->cond)
+   {
+      if (android_app->mutex)
+         slock_free(android_app->mutex);
+      if (android_app->cond)
+         scond_free(android_app->cond);
+      free(android_app);
+      RARCH_ERR("Failed to allocate android_app locks.\n");
+      return NULL;
+   }
 
    if (savedState)
    {
       android_app->savedState     = malloc(savedStateSize);
-      android_app->savedStateSize = savedStateSize;
-      memcpy(android_app->savedState, savedState, savedStateSize);
+      /* NULL-check before memcpy on the next line.  Android app
+       * start with saved state is common (screen rotation,
+       * backgrounding/restoration), so this is a realistic OOM
+       * path on low-RAM devices.  On failure skip the saved-state
+       * copy; android_app_entry will start cleanly without it.
+       * We can't fail the whole android_app construction here
+       * because the app-glue thread already expects to exist. */
+      if (android_app->savedState)
+      {
+         android_app->savedStateSize = savedStateSize;
+         memcpy(android_app->savedState, savedState, savedStateSize);
+      }
    }
 
    if (pipe(msgpipe))
    {
       if (android_app->savedState)
         free(android_app->savedState);
+      slock_free(android_app->mutex);
+      scond_free(android_app->cond);
       free(android_app);
       return NULL;
    }
@@ -468,6 +499,23 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->msgwrite = msgpipe[1];
 
    android_app->thread   = sthread_create(android_app_entry, android_app);
+   /* NULL-check sthread_create: on OOM the thread won't be
+    * spawned and nothing will set android_app->running to true,
+    * so the scond_wait loop below would block indefinitely.
+    * Tear down the partially-constructed android_app (including
+    * the just-created pipe fds) and bail. */
+   if (!android_app->thread)
+   {
+      close(msgpipe[0]);
+      close(msgpipe[1]);
+      if (android_app->savedState)
+         free(android_app->savedState);
+      slock_free(android_app->mutex);
+      scond_free(android_app->cond);
+      free(android_app);
+      RARCH_ERR("Failed to spawn android_app thread.\n");
+      return NULL;
+   }
 
    /* Wait for thread to start. */
    slock_lock(android_app->mutex);
@@ -512,7 +560,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
          savedState, savedStateSize);
 }
 
-static void frontend_android_get_name(char *s, size_t len)
+void frontend_android_get_name(char *s, size_t len)
 {
    system_property_get("getprop", "ro.product.model", s);
 }
@@ -523,29 +571,31 @@ static void frontend_android_get_version(int32_t *major,
    char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("getprop", "ro.build.version.release",
          os_version_str);
-
    *major  = 0;
    *minor  = 0;
    *rel    = 0;
 
-   /* Parse out the OS version numbers from the system properties. */
    if (os_version_str[0])
    {
-      /* Try to parse out the version numbers from the string. */
-      int num_read = sscanf(os_version_str, "%d.%d.%d", major, minor, rel);
+      int32_t *components[] = { major, minor, rel };
+      const char *ptr = os_version_str;
+      int i;
 
-      if (num_read > 0)
+      for (i = 0; i < 3 && *ptr; i++)
       {
-         if (num_read < 2)
-            *minor = 0;
-         if (num_read < 3)
-            *rel = 0;
-         return;
+         char *end;
+         long val = strtol(ptr, &end, 10);
+         if (end == ptr)
+            break;
+         *components[i] = (int32_t)val;
+         if (*end == '.')
+            end++;
+         ptr = end;
       }
    }
 }
 
-static void frontend_android_get_version_sdk(int32_t *sdk)
+void frontend_android_get_version_sdk(int32_t *sdk)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("getprop", "ro.build.version.sdk", os_version_str);
@@ -657,7 +707,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       generic_action_ok_displaylist_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
             serialized_path,
-            msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+            MENU_ENUM_LABEL_FAVORITES_STR,
             MENU_SETTING_ACTION,
             0,
             0,
@@ -1451,24 +1501,20 @@ static void frontend_unix_set_screen_brightness(int value)
    char *buffer = NULL;
    char svalue[16] = {0};
    unsigned int max_brightness = 100;
-
    /* Device tree should have 'label = "backlight";' if control is desirable */
    filestream_read_file("/sys/class/backlight/backlight/max_brightness",
-                        (void **)&buffer, NULL);
+         (void **)&buffer, NULL);
    if (buffer)
    {
-      sscanf(buffer, "%u", &max_brightness);
+      max_brightness = (unsigned int)strtoul(buffer, NULL, 10);
       free(buffer);
    }
-
    /* Calculate the brightness */
    value = (value * max_brightness) / 100;
-
    snprintf(svalue, sizeof(svalue), "%d\n", value);
    filestream_write_file("/sys/class/backlight/backlight/brightness",
-                         svalue, strlen(svalue));
+         svalue, strlen(svalue));
 }
-
 #endif
 
 static void frontend_unix_get_env(int *argc,
@@ -1603,7 +1649,7 @@ static void frontend_unix_get_env(int *argc,
          strlcpy(path, argv, sizeof(path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (!string_is_empty(path))
+      if (*path)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Auto-start game \"%s\".\n", path);
@@ -1628,7 +1674,7 @@ static void frontend_unix_get_env(int *argc,
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (!string_is_empty(internal_storage_path))
+      if (*internal_storage_path)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Android internal storage location: \"%s\".\n",
@@ -1650,7 +1696,7 @@ static void frontend_unix_get_env(int *argc,
          strlcpy(apk_dir, argv, sizeof(apk_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (!string_is_empty(apk_dir))
+      if (*apk_dir)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] APK location \"%s\".\n", apk_dir);
@@ -1672,7 +1718,7 @@ static void frontend_unix_get_env(int *argc,
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (!string_is_empty(internal_storage_app_path))
+      if (*internal_storage_app_path)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Android external files location \"%s\".\n",
@@ -1700,12 +1746,12 @@ static void frontend_unix_get_env(int *argc,
       /* set paths depending on the ability to write
        * to internal_storage_path */
 
-      if (!string_is_empty(internal_storage_path))
+      if (*internal_storage_path)
       {
          if (test_permissions(internal_storage_path))
             storage_permissions = INTERNAL_STORAGE_WRITABLE;
       }
-      else if (!string_is_empty(internal_storage_app_path))
+      else if (*internal_storage_app_path)
       {
          if (test_permissions(internal_storage_app_path))
             storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
@@ -1714,7 +1760,7 @@ static void frontend_unix_get_env(int *argc,
          storage_permissions = INTERNAL_STORAGE_NOT_WRITABLE;
 
       /* code to populate default paths*/
-      if (!string_is_empty(app_dir))
+      if (*app_dir)
       {
          __android_log_print(ANDROID_LOG_INFO,
             "RetroArch", "[ENV] Application location: \"%s\".\n", app_dir);
@@ -1896,7 +1942,7 @@ static void frontend_unix_get_env(int *argc,
       strlcpy(base_path, "retroarch", sizeof(base_path));
 #endif
 
-   if (!string_is_empty(libretro_directory))
+   if (libretro_directory && *libretro_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], libretro_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    else
@@ -1916,14 +1962,14 @@ static void frontend_unix_get_env(int *argc,
             "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    else
 #endif
-   if (!string_is_empty(libretro_directory))
+   if (libretro_directory && *libretro_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    else
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
             "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 #endif
-   if (!string_is_empty(libretro_autoconfig_directory))
+   if (libretro_autoconfig_directory && *libretro_autoconfig_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
 	    libretro_autoconfig_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
@@ -1937,7 +1983,7 @@ static void frontend_unix_get_env(int *argc,
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else
 #endif
-   if (!string_is_empty(libretro_assets_directory))
+   if (libretro_assets_directory && *libretro_assets_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_ASSETS], libretro_assets_directory,
 	      sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else if (path_is_directory("/usr/local/share/retroarch/assets"))
@@ -2000,7 +2046,7 @@ static void frontend_unix_get_env(int *argc,
             "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else
 #endif
-   if (!string_is_empty(libretro_video_filter_directory))
+   if (libretro_video_filter_directory && *libretro_video_filter_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
 	      libretro_video_filter_directory,
 	      sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
@@ -2036,21 +2082,21 @@ static void frontend_unix_get_env(int *argc,
          "records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], base_path,
          "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
-   if (!string_is_empty(libretro_database_directory))
+   if (libretro_database_directory && *libretro_database_directory)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_DATABASE],
 	       libretro_database_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
              "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   if (!string_is_empty(libretro_video_shader_directory))
+   if (libretro_video_shader_directory && *libretro_video_shader_directory)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
 	       libretro_video_shader_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
              "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-   if (!string_is_empty(libretro_cheats_directory))
+   if (libretro_cheats_directory && *libretro_cheats_directory)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_CHEATS],
 	       libretro_cheats_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
@@ -2073,7 +2119,7 @@ static void frontend_unix_get_env(int *argc,
          "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], base_path,
          "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   if (!string_is_empty(libretro_system_directory))
+   if (libretro_system_directory && *libretro_system_directory)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
 	       libretro_system_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
@@ -2140,8 +2186,20 @@ static void android_app_destroy(struct android_app *android_app)
 static bool frontend_unix_set_gamemode(bool on)
 {
 #ifdef FERAL_GAMEMODE
-   int gamemode_status  = gamemode_query_status();
-   bool gamemode_active = (gamemode_status == 2);
+   /* Once gamemode_query_status() reports failure (typically because
+    * libgamemode.so is not installed), there is no point repeatedly
+    * re-probing on every config load or menu toggle - the result will
+    * not change for the lifetime of the process, and each probe emits
+    * a warning. Latch the unavailable state and short-circuit. */
+   static bool gamemode_unavailable = false;
+   int gamemode_status;
+   bool gamemode_active;
+
+   if (gamemode_unavailable)
+      return false;
+
+   gamemode_status  = gamemode_query_status();
+   gamemode_active  = (gamemode_status == 2);
 
    if (gamemode_status < 0)
    {
@@ -2150,6 +2208,7 @@ static bool frontend_unix_set_gamemode(bool on)
                "https://github.com/FeralInteractive/gamemode needs to be installed.\n",
                gamemode_error_string());
 
+      gamemode_unavailable = true;
       return false;
    }
 
@@ -2261,6 +2320,10 @@ static void frontend_unix_init(void *data)
          "setScreenOrientation", "(I)V");
    GET_METHOD_ID(env, android_app->doVibrate, class,
          "doVibrate", "(IIII)V");
+   GET_METHOD_ID(env, android_app->doVibrateJoypad, class,
+         "doVibrateJoypad", "(IIII)V");
+   GET_METHOD_ID(env, android_app->doVibrateUSB, class,
+         "doVibrateUSB", "(III)Z");
    GET_METHOD_ID(env, android_app->doHapticFeedback, class,
          "doHapticFeedback", "(I)V");
    GET_METHOD_ID(env, android_app->getUserLanguageString, class,
@@ -2358,7 +2421,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    if (!g_android->is_play_store_build)
    {
-      if (!string_is_empty(internal_storage_path))
+      if (*internal_storage_path)
       {
          if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
          {
@@ -2394,7 +2457,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             msg_hash_to_str(MSG_REMOVABLE_STORAGE),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   if (!string_is_empty(internal_storage_app_path))
+   if (*internal_storage_app_path)
    {
       if (g_android->is_play_store_build)
       {
@@ -2416,7 +2479,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
-   if (!string_is_empty(app_dir))
+   if (*app_dir)
       menu_entries_append(list,
             app_dir,
             msg_hash_to_str(MSG_APPLICATION_DIR),
@@ -2444,7 +2507,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   sizeof(aux_path));
 
          (*env)->ReleaseStringUTFChars(env, jstr, str);
-         if (!string_is_empty(aux_path))
+         if (*aux_path)
             menu_entries_append(list,
                   aux_path,
                   msg_hash_to_str(MSG_APPLICATION_DIR),
@@ -2456,19 +2519,19 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 #elif defined(WEBOS)
    if (path_is_directory("/media/developer/temp"))
       menu_entries_append(list, "/media/developer/temp",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
    if (path_is_directory("/media/internal"))
       menu_entries_append(list, "/media/internal",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
    if (path_is_directory("/tmp/usb"))
       menu_entries_append(list, "/tmp/usb",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #else
@@ -2503,38 +2566,38 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       }
    }
 
-   if (!string_is_empty(base_path))
+   if (*base_path)
    {
       menu_entries_append(list, base_path,
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
-   if (!string_is_empty(home))
+   if (home && *home)
    {
       menu_entries_append(list, home,
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory(udisks_media_path))
    {
       menu_entries_append(list, udisks_media_path,
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory("/media"))
    {
       menu_entries_append(list, "/media",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory("/mnt"))
    {
       menu_entries_append(list, "/mnt",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
@@ -2547,7 +2610,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 #endif
    {
       menu_entries_append(list, "/",
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
@@ -2678,9 +2741,23 @@ static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
 static void frontend_unix_exec(const char *path, bool should_load_content)
 {
    char *newargv[]    = { NULL, NULL };
-   size_t _len        = strlen(path);
+   size_t _len        = strlen(path) + 1;
 
    newargv[0] = (char*)malloc(_len);
+
+   /* NULL-check malloc: the strlcpy on the next line
+    * NULL-derefs on OOM.  Void function called from within
+    * an exec/fork flow; logging and returning leaves the
+    * caller able to retry or surface an error.  Prior to
+    * this patch _len was strlen(path) (not +1), which meant
+    * strlcpy silently truncated the last character of the
+    * path because strlcpy needs n bytes to write n-1 chars
+    * plus a NUL. */
+   if (!newargv[0])
+   {
+      RARCH_ERR("Failed to allocate argv for exec.\n");
+      return;
+   }
 
    strlcpy(newargv[0], path, _len);
 
@@ -2873,8 +2950,10 @@ static void frontend_unix_destroy_signal_handler_state(void)
    unix_sighandler_quit = 0;
 }
 
-/* To free change_data, call the function again with a NULL string_list while providing change_data again */
-static void frontend_unix_watch_path_for_changes(struct string_list *list, int flags, path_change_data_t **change_data)
+/* To free change_data, call the function again with a NULL 
+ * string_list while providing change_data again */
+static void frontend_unix_watch_path_for_changes(struct string_list *list,
+   int flags, path_change_data_t **change_data)
 {
 #ifdef HAS_INOTIFY
    int major = 0;
@@ -2888,15 +2967,12 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
    {
       if (change_data && *change_data)
       {
-         /* free the original data */
          inotify_data = (inotify_data_t*)((*change_data)->data);
 
          if (inotify_data->wd_list->count > 0)
          {
             for (i = 0; i < inotify_data->wd_list->count; i++)
-            {
                inotify_rm_watch(inotify_data->fd, inotify_data->wd_list->data[i]);
-            }
          }
 
          int_vector_list_free(inotify_data->wd_list);
@@ -2921,42 +2997,27 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
       return;
    }
 
-   /* get_os doesn't provide all three */
-   sscanf(buffer.release, "%d.%d.%u", &major, &minor, &krel);
+   {
+      char *ptr = buffer.release;
+      char *end = NULL;
 
-   /* check if we are actually running on a high enough kernel version as well */
-   if (major < 2)
+      major = (int)strtoul(ptr, &end, 10);
+      if (end && *end == '.')
+      {
+         ptr   = end + 1;
+         minor = (int)strtoul(ptr, &end, 10);
+      }
+      if (end && *end == '.')
+      {
+         ptr  = end + 1;
+         krel = (unsigned)strtoul(ptr, &end, 10);
+      }
+   }
+
+   if (major < 2 || (major == 2 && (minor < 6 || (minor == 6 && krel < 13))))
    {
       RARCH_WARN("[watch_path_for_changes] inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
       return;
-   }
-   else if (major == 2)
-   {
-      if (minor < 6)
-      {
-         RARCH_WARN("[watch_path_for_changes] inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
-         return;
-      }
-      else if (minor == 6)
-      {
-         if (krel < 13)
-         {
-            RARCH_WARN("[watch_path_for_changes] inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
-            return;
-         }
-         else
-         {
-            /* anything >= 2.6.13 is supported */
-         }
-      }
-      else
-      {
-         /* anything >= 2.7 is supported */
-      }
-   }
-   else
-   {
-      /* anything >= 3 is supported */
    }
 
    fd = inotify_init();
@@ -2970,16 +3031,42 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
    if (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK))
    {
       RARCH_WARN("[watch_path_for_changes] Could not set socket to non-blocking.\n");
+      close(fd);
       return;
    }
 
-   inotify_data            = (inotify_data_t*)calloc(1, sizeof(*inotify_data));
+   /* NULL-check every allocation step.  Previously this function
+    * called calloc + int_vector_list_new + string_list_new + the
+    * second calloc with no guards, then dereferenced each result
+    * immediately - an OOM on any of them segfaulted, and a partial
+    * success (e.g. inotify_data allocated but wd_list alloc failed)
+    * leaked the earlier allocations together with the already-
+    * established inotify_add_watch kernel watches.  On any failure
+    * below, unwind what we did manage to set up and return with
+    * *change_data left untouched (callers treat NULL *change_data
+    * as 'no watcher is set up'). */
+   if (!(inotify_data = (inotify_data_t*)calloc(1, sizeof(*inotify_data))))
+   {
+      close(fd);
+      return;
+   }
    inotify_data->fd        = fd;
 
-   inotify_data->wd_list   = int_vector_list_new();
-   inotify_data->path_list = string_list_new();
+   if (!(inotify_data->wd_list = int_vector_list_new()))
+   {
+      free(inotify_data);
+      close(fd);
+      return;
+   }
 
-   /* handle other flags here as new ones are added */
+   if (!(inotify_data->path_list = string_list_new()))
+   {
+      int_vector_list_free(inotify_data->wd_list);
+      free(inotify_data);
+      close(fd);
+      return;
+   }
+
    if (flags & PATH_CHANGE_TYPE_MODIFIED)
       inotify_mask |= IN_MODIFY;
    if (flags & PATH_CHANGE_TYPE_WRITE_FILE_CLOSED)
@@ -2996,11 +3083,28 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
       int wd = inotify_add_watch(fd, list->elems[i].data, inotify_mask);
       union string_list_elem_attr attr = {0};
 
+      if (wd < 0)
+      {
+         RARCH_WARN("[watch_path_for_changes] Could not add watch for %s.\n", list->elems[i].data);
+         continue;
+      }
+
       int_vector_list_append(inotify_data->wd_list, wd);
       string_list_append(inotify_data->path_list, list->elems[i].data, attr);
    }
 
-   *change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t));
+   if (!(*change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t))))
+   {
+      /* Rip down everything we built up: the fd, the kernel watches
+       * it owns, both lists, and inotify_data itself.  Closing fd
+       * auto-removes all its inotify_add_watch entries, so we do not
+       * need to iterate wd_list and inotify_rm_watch by hand. */
+      string_list_free(inotify_data->path_list);
+      int_vector_list_free(inotify_data->wd_list);
+      close(inotify_data->fd);
+      free(inotify_data);
+      return;
+   }
    (*change_data)->data = inotify_data;
 #endif
 }
@@ -3227,6 +3331,16 @@ static bool accessibility_speak_unix(int speed,
    char* speed_out        = (char*)malloc(3 + 3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
 
+   /* NULL-check both mallocs: voice_out[0]='-' and speed_out[0]='-'
+    * below NULL-deref on OOM.  The 'end:' label does NULL-tolerant
+    * free()s on both pointers, so we can simply skip to it on
+    * either failure.  Returning true matches the function's
+    * existing always-true return contract and means the
+    * accessibility request is silently dropped rather than
+    * surfacing a user-visible error for a non-critical feature. */
+   if (!voice_out || !speed_out)
+      goto end;
+
    if (speed < 1)
       speed = 1;
    else if (speed > 10)
@@ -3328,6 +3442,21 @@ static bool accessibility_speak_android(int speed,
 }
 #endif
 
+static enum rarch_display_type frontend_unix_get_display_type(void)
+{
+#if defined(ANDROID)
+   return RARCH_DISPLAY_NONE;
+#elif defined(HAVE_WAYLAND)
+   if (getenv("WAYLAND_DISPLAY"))
+      return RARCH_DISPLAY_WAYLAND;
+#endif
+#if defined(HAVE_X11)
+   if (getenv("DISPLAY"))
+      return RARCH_DISPLAY_X11;
+#endif
+   return RARCH_DISPLAY_NONE;
+}
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* get_env */
    frontend_unix_init,          /* init */
@@ -3392,6 +3521,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #else
    NULL,
 #endif
+   frontend_unix_get_display_type,
 #ifdef ANDROID
    "android",                    /* ident               */
 #else

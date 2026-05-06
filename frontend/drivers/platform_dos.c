@@ -121,6 +121,15 @@ static void frontend_dos_exec(const char *path, bool should_load_game)
 #endif
 
 	newargv[0] = (char*)malloc(_len);
+	/* NULL-check malloc: the strlcpy on the next line
+	 * NULL-derefs on OOM.  Void function called from within an
+	 * exec/fork flow; logging and returning leaves the caller
+	 * able to surface the failure. */
+	if (!newargv[0])
+	{
+		RARCH_ERR("Failed to allocate argv for exec.\n");
+		return;
+	}
 	strlcpy(newargv[0], path, _len);
 
 	execv(path, newargv);
@@ -202,6 +211,7 @@ frontend_ctx_driver_t frontend_ctx_dos = {
 	NULL,                         /* is_narrator_running */
 	NULL,                         /* accessibility_speak */
 	NULL,                         /* set_gamemode        */
+	NULL, /* get_display_type */
 	"dos",                        /* ident               */
    NULL                          /* get_video_driver    */
 };

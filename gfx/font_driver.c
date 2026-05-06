@@ -15,10 +15,18 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
+#endif
+
+#ifdef HAVE_SDL2
+/* For the SDL_VERSION_ATLEAST gate around the SDL2 font case in
+ * font_driver_init_first - sdl2_raster_font is only emitted by
+ * sdl2_gfx.c when SDL >= 2.0.18 (SDL_RenderGeometry availability). */
+#include <SDL_version.h>
 #endif
 
 #include "font_driver.h"
@@ -152,10 +160,27 @@ static bool font_init_first(
             }
          }
 #endif
+#ifdef HAVE_SDL2
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+      case FONT_DRIVER_RENDER_SDL2:
+         {
+            void *data = sdl2_raster_font.init(video_data,
+                  font_path, font_size, is_threaded);
+            if (data)
+            {
+               *font_driver = &sdl2_raster_font;
+               *font_handle = data;
+               return true;
+            }
+         }
+         break;
+#endif
+#endif
 #ifdef HAVE_D3D8
       case FONT_DRIVER_RENDER_D3D8_API:
       {
          static const font_renderer_t *d3d8_font_backends[] = {
+            &d3d8_font,
             NULL
          };
          unsigned i;
@@ -177,29 +202,31 @@ static bool font_init_first(
 #endif
 #ifdef HAVE_D3D9
       case FONT_DRIVER_RENDER_D3D9_API:
-      {
-         static const font_renderer_t *d3d9_font_backends[] = {
-#if defined(_WIN32) && defined(HAVE_D3DX)
-            &d3d9x_win32_font,
-#endif
-            NULL
-         };
-         unsigned i;
-
-         for (i = 0; i < ARRAY_SIZE(d3d9_font_backends); i++)
          {
-            void *data = d3d9_font_backends[i] ? d3d9_font_backends[i]->init(
-                  video_data, font_path, font_size, is_threaded) : NULL;
+            void *data = d3d9_font.init(video_data,
+                  font_path, font_size, is_threaded);
             if (data)
             {
-               *font_driver = d3d9_font_backends[i];
+               *font_driver = &d3d9_font;
                *font_handle = data;
-
                return true;
             }
          }
-      }
       break;
+#ifdef HAVE_CG
+      case FONT_DRIVER_RENDER_D3D9_CG_API:
+         {
+            void *data = d3d9_cg_font.init(video_data,
+                  font_path, font_size, is_threaded);
+            if (data)
+            {
+               *font_driver = &d3d9_cg_font;
+               *font_handle = data;
+               return true;
+            }
+         }
+      break;
+#endif
 #endif
 #ifdef HAVE_D3D10
       case FONT_DRIVER_RENDER_D3D10_API:
@@ -662,18 +689,41 @@ static INLINE unsigned font_get_arabic_replacement(
 }
 /* clang-format on */
 
-static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, size_t buffer_size)
+static char* font_driver_reshape_msg(const char* msg, unsigned char *s, size_t len)
 {
-   const unsigned char *src        = (const unsigned char*)msg;
+   const unsigned char *src;
    bool                 reverse    = false;
-   size_t              msg_size    = (strlen(msg) * 2) + 1;
-   /* Fallback to heap allocated buffer if the buffer is too small */
+   size_t               msg_len    = strlen(msg);
    /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
-   unsigned char*       dst_buffer = (buffer_size < msg_size)
-                                   ? (unsigned char*)malloc(msg_size)
-                                   : buffer;
-   unsigned char *dst              = (unsigned char*)dst_buffer;
+   size_t               _len       = (msg_len * 2) + 1;
+   unsigned char       *dst        = s;
 
+   if (len < _len)
+   {
+      /* Input too long for the buffer: truncate to fit.
+       * With a 512-byte caller buffer the limit is 255 source bytes,
+       * which exceeds any realistic on-screen message.  This path
+       * is effectively dead code for normal HUD/OSD rendering.
+       *
+       * Place the truncated, null-terminated copy in the upper half
+       * of the buffer (offset len/2).  The output grows forward
+       * from s[0] at most 2x the source consumption rate, so
+       * dst can never overtake src: after consuming k source bytes,
+       * dst <= 2k while src = len/2 + k, and 2k < len/2 + k
+       * holds for all k < len/2, which is guaranteed since
+       * msg_len < len/2. */
+      unsigned char *copy_dst;
+      msg_len = (len / 2) - 1;
+      /* Back up to a UTF-8 character boundary */
+      while (msg_len > 0 && IS_MBCONT((const unsigned char*)&msg[msg_len]))
+         msg_len--;
+      copy_dst = s + (len / 2);
+      memcpy(copy_dst, msg, msg_len);
+      copy_dst[msg_len] = '\0';
+      msg = (const char*)copy_dst;
+   }
+
+   src = (const unsigned char*)msg;
 
    while (*src || reverse)
    {
@@ -757,8 +807,7 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
    }
 
    *dst = '\0';
-
-   return (char*)dst_buffer;
+   return (char*)s;
 }
 #endif
 
@@ -773,18 +822,16 @@ void font_driver_render_msg(void *data, const char *msg,
    if (renderer && renderer->render_msg)
    {
 #ifdef HAVE_LANGEXTRA
-      unsigned char tmp_buffer[64];
+      /* It needs to be this big because of the Statistics text
+       * unfortunately */
+      unsigned char tmp_buffer[1536];
       char *new_msg = font_driver_reshape_msg(msg,
-      tmp_buffer, sizeof(tmp_buffer));
+            tmp_buffer, sizeof(tmp_buffer));
 #else
       char *new_msg = (char*)msg;
 #endif
       renderer->render_msg(data,
             font->renderer_data, new_msg, params);
-#ifdef HAVE_LANGEXTRA
-      if (new_msg != (char*)tmp_buffer)
-         free(new_msg);
-#endif
    }
 }
 
@@ -815,8 +862,6 @@ int font_driver_get_message_width(void *font_data,
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    const font_renderer_t *renderer = font ? font->renderer : NULL;
-   if (len == 0 && msg)
-      len = strlen(msg);
    if (renderer && renderer->get_message_width)
       return renderer->get_message_width(font->renderer_data, msg, len, scale);
    return -1;
@@ -880,20 +925,88 @@ int font_driver_get_line_centre_offset(font_data_t *font, float scale)
    return (int)roundf((1.58f * 0.5f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f) / 2.0f);
 }
 
+#ifdef HAVE_THREADS
+typedef struct
+{
+   const font_renderer_t *renderer;
+   void                  *renderer_data;
+   bool                   is_threaded;
+} font_free_cmd_t;
+
+static uintptr_t font_driver_free_wrap(void *data)
+{
+   font_free_cmd_t *cmd = (font_free_cmd_t*)data;
+   if (cmd->renderer && cmd->renderer->free)
+      cmd->renderer->free(cmd->renderer_data, cmd->is_threaded);
+   return 0;
+}
+#endif
+
+/* Free the renderer-owned state (glyph atlas / GPU textures / etc.)
+ * behind a (renderer, handle) pair.  Shared between the normal
+ * font_driver_free teardown path and the OOM cleanup path in
+ * font_driver_init_first; keeping the thread-dispatch logic in one
+ * place avoids the two call sites drifting out of sync.
+ *
+ * When threaded video is active, font resources (GPU textures, GL
+ * names, D3D COM objects) belong to the video thread's rendering
+ * context.  Freeing them on the main thread races with the video
+ * thread's draw calls:
+ *
+ *  - GL: context is single-threaded; gl2_raster_font_free
+ *    calls make_current to steal the context, but the video
+ *    thread may be mid-frame.
+ *  - D3D11: ImmediateContext is not thread-safe; Release on
+ *    the main thread while the video thread draws is UB.
+ *  - D3D12: fenceValue++ from the main thread races with
+ *    the video thread's own fence signalling.
+ *  - Vulkan: vkQueueWaitIdle under queue_lock only drains
+ *    submitted work, not command buffers being recorded.
+ *
+ * Dispatch renderer->free to the video thread via
+ * video_thread_texture_handle so it runs serialised with
+ * the video thread's frame rendering.  This is the same
+ * pattern used by texture load/unload.
+ *
+ * video_thread_texture_handle is self-safe: if the wrapper
+ * is not active (VIDEO_FLAG_THREAD_WRAPPER_ACTIVE not set),
+ * it falls back to calling func(data) on the current thread.
+ * If called from the video thread itself, it calls func
+ * directly (no deadlock). */
+static void font_driver_release_renderer_state(
+      const font_renderer_t *renderer, void *renderer_data,
+      bool is_threaded)
+{
+   if (!renderer || !renderer->free)
+      return;
+
+#ifdef HAVE_THREADS
+   if (is_threaded)
+   {
+      font_free_cmd_t cmd;
+      cmd.renderer      = renderer;
+      cmd.renderer_data = renderer_data;
+      cmd.is_threaded   = is_threaded;
+      video_thread_texture_handle(&cmd, font_driver_free_wrap);
+      return;
+   }
+#endif
+
+   renderer->free(renderer_data, is_threaded);
+}
+
 void font_driver_free(font_data_t *font)
 {
    if (font)
    {
-      const font_renderer_t *renderer;
       bool is_threaded        = false;
 #ifdef HAVE_THREADS
       bool *is_threaded_tmp   = video_driver_get_threaded();
       is_threaded             = *is_threaded_tmp;
 #endif
-      renderer                = font ? font->renderer : NULL;
 
-      if (renderer && renderer->free)
-         renderer->free(font->renderer_data, is_threaded);
+      font_driver_release_renderer_state(font->renderer,
+            font->renderer_data, is_threaded);
 
       font->renderer      = NULL;
       font->renderer_data = NULL;
@@ -933,6 +1046,18 @@ font_data_t *font_driver_init_first(
          font->size          = font_size;
          return font;
       }
+
+      /* Wrapper malloc failed after font_init_first (or
+       * video_thread_font_init) had already succeeded.  The raster
+       * font's init path allocates the glyph atlas / GPU textures /
+       * COM objects behind font_handle; returning NULL here without
+       * releasing them would leak the entire raster-font state and,
+       * on subsequent re-init attempts, accumulate.  Dispatch via
+       * the shared helper so threaded-video builds free GPU state
+       * on the video thread, matching the normal teardown path. */
+      font_driver_release_renderer_state(
+            (const font_renderer_t*)font_driver,
+            font_handle, is_threaded);
    }
 
    return NULL;

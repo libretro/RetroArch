@@ -602,7 +602,7 @@ static bool gl_glsl_compile_programs(
       /* If we load from GLSLP (preset),
        * load the file here.
        */
-      if (     !string_is_empty(pass->source.path)
+      if (     *pass->source.path
             && !gl_glsl_load_source_path(pass, pass->source.path))
       {
          RARCH_ERR("[GLSL] Failed to load GLSL shader: %s.\n",
@@ -1067,13 +1067,13 @@ static void *gl_glsl_init(void *data, const char *path)
       enum rarch_shader_type type =
          video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
 
-      if (!string_is_empty(path) && type != RARCH_SHADER_GLSL)
+      if (path && *path && type != RARCH_SHADER_GLSL)
       {
          RARCH_ERR("[GLSL] Invalid shader type, falling back to stock.\n");
          path = NULL;
       }
 
-      if (!string_is_empty(path))
+      if (path && *path)
       {
          bool ret = false;
 

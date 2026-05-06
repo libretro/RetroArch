@@ -15,7 +15,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <math.h>
 #include <malloc.h>
 
@@ -27,6 +26,7 @@
 
 #include <encodings/utf.h>
 #include <libretro_gskit_ps2.h>
+#include <boolean.h>
 
 #include "../video_defines.h"
 #include "../../driver.h"
@@ -202,11 +202,14 @@ static int ps2_font_get_message_width(void* data, const char* msg,
    const struct font_glyph* glyph_q = NULL;
    int delta_x      = 0;
    ps2_font_t* font = (ps2_font_t*)data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                    = font->font_driver->get_glyph;
+   void *font_data  = font->font_data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   glyph_q = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -219,8 +222,7 @@ static int ps2_font_get_message_width(void* data, const char* msg,
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-         font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -232,40 +234,61 @@ static int ps2_font_get_message_width(void* data, const char* msg,
 
 static void ps2_font_render_line(
       ps2_video_t *ps2,
-      ps2_font_t* font, const char* msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
+      ps2_font_t* font,
+      const struct font_glyph* glyph_q,
+      const char* msg,
+      size_t msg_len,
+      float scale,
+      const unsigned int color,
+      float pos_x,
       float pos_y,
-      unsigned width, unsigned height, unsigned text_align)
+      unsigned width,
+      unsigned height,
+      unsigned text_align)
 {
    int i;
-   const struct font_glyph* glyph_q = NULL;
-   int x            = roundf(pos_x * width);
-   int y            = roundf((1.0f - pos_y) * height);
-   int delta_x      = 0;
-   int delta_y      = 0;
+   const char* msg_end = msg + msg_len;
+   int x               = roundf(pos_x * width);
+   int y               = roundf((1.0f - pos_y) * height);
+   int delta_x         = 0;
+   int delta_y         = 0;
    /* We need to >> 1, because GS_SETREG_RGBAQ expects 0x80 as max color */
-   int color_a      = (int)(((color & 0xFF000000) >> 24) >> 2);
-   int color_b      = (int)(((color & 0x00FF0000) >> 16) >> 1);
-   int color_g      = (int)(((color & 0x0000FF00) >> 8)  >> 1);
-   int color_r      = (int)(((color & 0x000000FF) >> 0)  >> 1);
+   int color_a         = (int)(((color & 0xFF000000) >> 24) >> 2);
+   int color_b         = (int)(((color & 0x00FF0000) >> 16) >> 1);
+   int color_g         = (int)(((color & 0x0000FF00) >> 8)  >> 1);
+   int color_r         = (int)(((color & 0x000000FF) >> 0)  >> 1);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                       = font->font_driver->get_glyph;
+   void *font_data     = font->font_data;
 
    /* Enable Alpha for font */
    gsKit_set_primalpha(ps2->gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
    ps2->gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
    gsKit_set_test(ps2->gsGlobal, GS_ATEST_ON);
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that ps2_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= ps2_font_get_message_width(font, msg, msg_len, scale);
-         break;
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = get_glyph(font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-      case TEXT_ALIGN_CENTER:
-         x -= ps2_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
-
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -280,8 +303,7 @@ static void ps2_font_render_line(
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -330,23 +352,22 @@ static void ps2_font_render_message(
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    int lines                              = 0;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = (float)line_metrics->height * scale / (float)height;
 
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
-
-      /* Draw the line */
-      ps2_font_render_line(ps2, font, msg, msg_len,
+      const char* scan = msg;
+      while (*scan && *scan != '\n')
+         scan++;
+      ps2_font_render_line(ps2, font, glyph_q, msg, (size_t)(scan - msg),
             scale, color, pos_x, pos_y - (float)lines * line_height,
             width, height, text_align);
-      if (!delim)
+      if (!*scan)
          break;
-
-      msg += msg_len + 1;
+      msg = scan + 1;
       lines++;
    }
 }
@@ -436,7 +457,7 @@ static const struct font_glyph* ps2_font_get_glyph(
 {
    ps2_font_t* font = (ps2_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 
@@ -934,7 +955,7 @@ static bool ps2_frame(void *data, const void *frame,
          font_driver_render_msg(ps2, video_info->stat_text, osd_params, NULL);
    }
 
-   if (!string_is_empty(msg))
+   if (msg)
       font_driver_render_msg(ps2, msg, NULL, NULL);
 
    if (gsGlobal->DoubleBuffering == GS_SETTING_OFF)
@@ -1124,7 +1145,7 @@ static const video_poke_interface_t ps2_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    ps2_get_hw_render_interface,
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -1158,6 +1179,8 @@ video_driver_t video_ps2 = {
 #endif
    ps2_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

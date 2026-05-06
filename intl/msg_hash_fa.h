@@ -1718,10 +1718,6 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "اوج روشنایی"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -2740,12 +2736,8 @@ MSG_HASH(
 /* Import Content > Scan File */
 
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "نام سیستم"
-   )
 
 /* Explore tab */
 MSG_HASH(

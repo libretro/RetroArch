@@ -30,7 +30,7 @@ static void wiiu_hid_report_hid_error(const char *msg, wiiu_adapter_t *adapter, 
 {
    int16_t hid_err_code = err & 0xffff;
    int16_t err_category = (err >> 16) & 0xffff;
-   const char *device   = string_is_empty(adapter->device_name) ? "unknown" : adapter->device_name;
+   const char *device   = (adapter->device_name && *adapter->device_name) ? adapter->device_name : "unknown";
 
    switch (hid_err_code)
    {

@@ -53,7 +53,7 @@ static void android_display_dpi_get_density(char *s, size_t len)
       inited_once = true;
    }
 
-   if (!string_is_empty(string))
+   if (*string)
    {
       strlcpy(s, string, len);
       return;
@@ -83,7 +83,7 @@ bool android_display_get_metrics(void *data,
          {
             char density[PROP_VALUE_MAX];
             android_display_dpi_get_density(density, sizeof(density));
-            if (string_is_empty(density))
+            if (!*density)
                goto dpi_fallback;
             if ((dpi = atoi(density)) <= 0)
                goto dpi_fallback;
@@ -131,6 +131,11 @@ const video_display_server_t dispserv_android = {
    NULL, /* get_output_options */
    android_display_server_set_screen_orientation,
    NULL, /* get_screen_orientation */
+   NULL, /* get_refresh_rate */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   android_display_get_metrics,
    android_display_server_get_flags,
    "android"
 };
