@@ -652,6 +652,7 @@ struct ozone_handle
    char thumbnails_right_status_prev;
 
    bool show_thumbnail_bar;
+   bool show_sidebar;
    bool show_playlist_tabs;
    bool sidebar_collapsed;
    bool font_unicode;
@@ -1970,7 +1971,6 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENT_LIST];
       case MENU_ENUM_LABEL_STATE_SLOT:
-         return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_REPLAY_SLOT:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_SAVESTATE_LIST:
@@ -2088,6 +2088,8 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_UPDATER_SETTINGS:
       case MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST:
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_UPDATER];
+      case MENU_ENUM_LABEL_SETTINGS:
+            return ozone->tab_textures[OZONE_TAB_TEXTURE_SETTINGS];
       case MENU_ENUM_LABEL_UPDATE_LAKKA:
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_MAIN_MENU];
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
@@ -3456,6 +3458,12 @@ static void ozone_draw_sidebar(
    unsigned horizontal_list_size     = 0;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
+   if (!ozone->show_sidebar)
+   {
+      ozone->dimensions_sidebar_width = 0;
+      return;
+   }
+
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
@@ -4189,8 +4197,11 @@ static void ozone_sidebar_update_collapse(ozone_handle_t *ozone,
    if (ozone_get_horizontal_selection_type(ozone) == MENU_EXPLORE_TAB)
       is_playlist = true;
 
+   if (!ozone->show_sidebar)
+      goto end;
+
    /* Do not animate sidebar above first depth level */
-   if (ozone->depth > 1)
+   if (ozone->depth > 1 || !config_get_ptr()->bools.menu_horizontal_animation)
       allow_animation = false;
 
    /* To collapse or not to collapse */
@@ -4256,6 +4267,24 @@ static void ozone_sidebar_update_collapse(ozone_handle_t *ozone,
       }
    }
 
+   if (allow_animation)
+   {
+      /* Cursor animation */
+      ozone->animations.cursor_alpha = 0.0f;
+
+      entry.cb                       = NULL;
+      entry.duration                 = ANIMATION_CURSOR_DURATION;
+      entry.easing_enum              = OZONE_EASING_ALPHA;
+      entry.subject                  = &ozone->animations.cursor_alpha;
+      entry.tag                      = tag;
+      entry.target_value             = 1.0f;
+      entry.userdata                 = NULL;
+
+      gfx_animation_push(&entry);
+   }
+   else
+      ozone->animations.cursor_alpha = 1.0f;
+
 end:
    ozone_entries_update_thumbnail_bar(ozone, config_get_ptr()->bools.savestate_thumbnail_enable,
          is_playlist, allow_animation);
@@ -4267,6 +4296,10 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
    struct gfx_animation_ctx_entry entry;
 
    ozone->selection_old           = ozone->selection;
+
+   if (!ozone->show_sidebar)
+      return;
+
    if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
       ozone->flags               |=  OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    else
@@ -4275,19 +4308,6 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
 
    /* Remember last selection per tab */
    ozone->tab_selection[ozone->categories_selection_ptr] = ozone->selection;
-
-   /* Cursor animation */
-   ozone->animations.cursor_alpha = 0.0f;
-
-   entry.cb                       = NULL;
-   entry.duration                 = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum              = OZONE_EASING_ALPHA;
-   entry.subject                  = &ozone->animations.cursor_alpha;
-   entry.tag                      = tag;
-   entry.target_value             = 1.0f;
-   entry.userdata                 = NULL;
-
-   gfx_animation_push(&entry);
 
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
 
@@ -4553,6 +4573,9 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone,
 
    ozone->categories_active_idx_old = ozone->categories_selection_ptr;
 
+   if (!ozone->show_sidebar)
+      return;
+
    if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
       ozone->flags                 |=  OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    else
@@ -4568,19 +4591,6 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone,
       || ((remember_selection_type == MENU_REMEMBER_SELECTION_PLAYLISTS) && (ozone->flags & OZONE_FLAG_IS_PLAYLIST))
       || ((remember_selection_type == MENU_REMEMBER_SELECTION_MAIN) && (ozone_main_tab_selected)))
       ozone_tab_set_selection(ozone);
-
-   /* Cursor animation */
-   ozone->animations.cursor_alpha   = 0.0f;
-
-   entry.cb                         = NULL;
-   entry.duration                   = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum                = OZONE_EASING_ALPHA;
-   entry.subject                    = &ozone->animations.cursor_alpha;
-   entry.tag                        = tag;
-   entry.target_value               = 1.0f;
-   entry.userdata                   = NULL;
-
-   gfx_animation_push(&entry);
 
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
 
@@ -5352,7 +5362,7 @@ static int ozone_get_entries_padding_old_list(ozone_handle_t* ozone)
 
 static int ozone_get_entries_padding(ozone_handle_t* ozone)
 {
-   if (ozone->depth == 1)
+   if (ozone->depth == 1 && ozone->show_sidebar)
       return ozone->dimensions.entry_padding_horizontal_half;
    return ozone->dimensions.entry_padding_horizontal_full;
 }
@@ -8773,6 +8783,10 @@ static enum menu_action ozone_parse_menu_entry_action(
          break;
       case MENU_ACTION_LEFT:
          ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
+
+         if (!ozone->show_sidebar)
+            break;
+
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
             new_action      = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
@@ -8809,6 +8823,10 @@ static enum menu_action ozone_parse_menu_entry_action(
          break;
       case MENU_ACTION_RIGHT:
          ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
+
+         if (!ozone->show_sidebar)
+            break;
+
          if (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR))
          {
             if (ozone->depth == 1)
@@ -8955,6 +8973,16 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
+         }
+         else if (ozone->depth == 1)
+         {
+            /* Reset sidebar selection to Main Menu if stuck */
+            if (!ozone->show_sidebar && ozone->categories_selection_ptr > 0)
+               ozone_change_tab(ozone, MENU_ENUM_LABEL_MAIN_MENU, MENU_SETTINGS);
+
+            /* Jump to first item on Main Menu */
+            menu_st->selection_ptr = 0;
+            ozone_selection_changed(ozone, false);
          }
 
          if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
@@ -12697,6 +12725,7 @@ static void ozone_populate_entries(
       return;
 
    ozone->show_playlist_tabs            = settings->bools.menu_content_show_playlist_tabs;
+   ozone->show_sidebar                  = settings->bools.ozone_show_sidebar;
 
    if ((menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE) > 0)
    {
@@ -12851,6 +12880,16 @@ static void ozone_populate_entries(
 #endif
 
    ozone_set_header(ozone);
+
+   /* Refresh sidebar after enabling it and returning from Appearance menu */
+   if (     ozone->show_sidebar
+         && ozone->depth == 1
+         && ozone->dimensions_sidebar_width == 0
+         && ozone->categories_selection_ptr == 0)
+      ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
+
+   if (!settings->bools.menu_horizontal_animation)
+      ozone->flags2 |= OZONE_FLAG2_BLOCK_ANIMATION;
 
    if (animate)
       if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)

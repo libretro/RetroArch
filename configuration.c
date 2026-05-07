@@ -2167,6 +2167,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_collapse_sidebar",        &settings->bools.ozone_collapse_sidebar, true, DEFAULT_OZONE_COLLAPSE_SIDEBAR, false);
+   SETTING_BOOL("ozone_show_sidebar",            &settings->bools.ozone_show_sidebar, true, DEFAULT_OZONE_SHOW_SIDEBAR, false);
    SETTING_BOOL("ozone_scroll_content_metadata", &settings->bools.ozone_scroll_content_metadata, true, DEFAULT_OZONE_SCROLL_CONTENT_METADATA, false);
 #endif
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)

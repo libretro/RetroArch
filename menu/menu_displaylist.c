@@ -4194,6 +4194,14 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
    return count;
 }
 
+static bool menu_history_in_main_menu(const char *menu_ident,
+      settings_t *settings)
+{
+   return   (!strcmp(menu_ident, "rgui"))
+         || (!strcmp(menu_ident, "glui") && !settings->bools.menu_materialui_show_nav_bar)
+         || (!strcmp(menu_ident, "ozone") && !settings->bools.ozone_show_sidebar);
+}
+
 static unsigned menu_displaylist_parse_playlists(
       file_list_t *info_list,
       unsigned type_default,
@@ -4225,9 +4233,7 @@ static unsigned menu_displaylist_parse_playlists(
       const char *menu_ident = menu_driver_ident();
       bool show_add_content  = (settings->uints.menu_content_show_add_entry ==
             MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB);
-      bool show_history = strcmp(menu_ident, "rgui") != 0
-                       && !((!strcmp(menu_ident, "glui"))
-                       && !settings->bools.menu_materialui_show_nav_bar);
+      bool show_history      = !menu_history_in_main_menu(menu_ident, settings);
 
       if (show_history)
       {
@@ -12057,6 +12063,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON,                        PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_HEADER_ICON,                            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_HEADER_SEPARATOR,                       PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_OZONE_SHOW_SIDEBAR,                           PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR,                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,     PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MATERIALUI_SHOW_NAV_BAR,                      PARSE_ONLY_BOOL,   true},
@@ -15409,9 +15416,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   && !settings->bools.kiosk_mode_enable;
                bool show_settings = settings->bools.menu_content_show_settings
                   && !settings->bools.kiosk_mode_enable
-                  && (        !strcmp(menu_ident, "rgui")
-                        || (  !strcmp(menu_ident, "glui")
-                           && !settings->bools.menu_materialui_show_nav_bar));
+                  && menu_history_in_main_menu(menu_ident, settings);
 
                if (     !strcmp(menu_ident, "glui")
                      && settings->bools.menu_materialui_show_nav_bar
@@ -15478,9 +15483,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
 
                /* Show History and Favorites in menus without sidebar/tabs */
-               if (         !strcmp(menu_ident, "rgui")
-                        || (!strcmp(menu_ident, "glui")
-                       && !settings->bools.menu_materialui_show_nav_bar))
+               if (menu_history_in_main_menu(menu_ident, settings))
                {
                   if (settings->bools.menu_content_show_favorites_first)
                   {

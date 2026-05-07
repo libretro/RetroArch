@@ -12555,6 +12555,14 @@ MSG_HASH(
    "Have the left sidebar always collapsed."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Show the Sidebar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Allow left sidebar navigation and playlists."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Truncate Playlist Names (Restart required)"
    )

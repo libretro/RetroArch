@@ -579,6 +579,7 @@
 #define MENU_ENUM_LABEL_OZONE_FONT_STR "ozone_font"
 #define MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME_STR "ozone_menu_color_theme"
 #define MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR_STR "ozone_collapse_sidebar"
+#define MENU_ENUM_LABEL_OZONE_SHOW_SIDEBAR_STR "ozone_show_sidebar"
 #define MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME_STR "ozone_truncate_playlist_name"
 #define MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME_STR "ozone_sort_after_truncate_playlist_name"
 #define MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA_STR "ozone_scroll_content_metadata"
