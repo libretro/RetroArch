@@ -1469,8 +1469,7 @@ static bool add_active_buffer_ranges(
       }
       else
       {
-         /* TODO - Try to print name */
-         RARCH_ERR("[Slang] Unknown semantic found.\n");
+         RARCH_ERR("[Slang] Unknown semantic found: \"%s\".\n", name.c_str());
          return false;
       }
    }
@@ -1742,7 +1741,7 @@ bool slang_reflect(
 
       if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
       {
-         RARCH_ERR("[Slang] Texture name '%s' not found in semantic map, "
+         RARCH_ERR("[Slang] Texture name \"%s\" not found in semantic map, "
                    "Probably the texture name or pass alias is not defined "
                    "in the preset (Non-semantic textures not supported yet)\n",
                    fragment.sampled_images[i].name.c_str());
