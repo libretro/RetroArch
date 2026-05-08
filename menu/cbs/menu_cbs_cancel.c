@@ -168,8 +168,8 @@ static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
    return -1;
 }
 
-static int menu_cbs_init_bind_cancel_compare_type(
-      menu_file_list_cbs_t *cbs, unsigned type)
+static int menu_cbs_init_bind_cancel_compare_type(menu_file_list_cbs_t *cbs,
+      const char *label, const char *menu_label, unsigned type)
 {
    switch (type)
    {
@@ -187,6 +187,12 @@ static int menu_cbs_init_bind_cancel_compare_type(
          return 0;
       default:
          break;
+   }
+
+   if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
+   {
+      BIND_ACTION_CANCEL(cbs, action_cancel_state_slot_run);
+      return 0;
    }
 
 #ifdef HAVE_CHEATS
@@ -229,7 +235,10 @@ static int menu_cbs_init_bind_cancel_compare_type(
 }
 
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len)
 {
    if (cbs)
    {
@@ -238,8 +247,8 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       if (menu_cbs_init_bind_cancel_compare_label(cbs, label) == 0)
          return 0;
 
-      if (menu_cbs_init_bind_cancel_compare_type(
-               cbs, type) == 0)
+      if (menu_cbs_init_bind_cancel_compare_type(cbs, label,
+            menu_label, type) == 0)
          return 0;
    }
 

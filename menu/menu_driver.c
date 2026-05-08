@@ -2552,7 +2552,7 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_cancel.c, then map this callback to the entry. */
-   menu_cbs_init_bind_cancel(cbs, path, label, type, idx);
+   menu_cbs_init_bind_cancel(cbs, path, label, lbl_len, type, idx, menu_lbl, menu_lbl_len);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_scan.c, then map this callback to the entry. */
