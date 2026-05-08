@@ -82,6 +82,14 @@ MSG_HASH(
    "Selecteer welke core te gebruiken."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Ontlaad core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Laat de geladen core los."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Bladeren naar een libretro core implementatie. Waar de browser begint hangt af van uw Core Directory pad. Indien leeg, zal het beginnen in root.\nAls Core Directory een map is, zal het menu die gebruiken als bovenste map. Als Core Directory een volledig pad is, zal het starten in de map waar het bestand zich bevindt."
    )
@@ -148,6 +156,10 @@ MSG_HASH(
    "Open het traditionele bureaublad menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Kioskmodus uitschakelen"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Toon alle configuratie gerelateerde instellingen."
    )
@@ -200,8 +212,48 @@ MSG_HASH(
    "Opnieuw opstarten"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Herstart RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "Afsluiten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Sluit RetroArch. Configuratie opslaan bij het afsluiten staat aan."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Sluit RetroArch. Configuratie opslaan bij het afsluiten staat uit."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Sluit RetroArch af. Het programma stoppen op een harde manier (SIGKILL, enz.) zal RetroArch stoppen zonder de configuratie op te slaan. Op Unix-likes kan SIGINT/SIGTERM een schone de-initialisatie toestaan, wat configuratie opslaan bij het afsluiten inhoud als dat aan staat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Synchroniseer nu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Handmatig cloud synchronisatie activeren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Conflicten oplossen: lokale versie behouden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Los alle conflicten op door lokale bestanden te uploaden naar de server."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Conflicten oplossen: versie van de server behouden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Los alle conflicten op door serverbestanden te downloaden, waardoor lokale kopieën worden vervangen."
    )
 
 /* Main Menu > Load Core */
@@ -470,6 +522,10 @@ MSG_HASH(
    "Vereiste Graphics API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Volledig pad"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Slagstaat Ondersteuning"
    )
@@ -490,6 +546,14 @@ MSG_HASH(
    "Deterministisch (Opslaan/Laden, Terugspoelen, Run-Ahead, Netplay)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "Opmerking: 'Systeembestanden staan in de Inhoudsmap' staat aan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "Aan het zoeken in %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Ontbrekend, Noodzakelijk:"
    )
@@ -508,6 +572,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Geïnstalleerde Core Vergrendelen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Voorkom wijziging van de momenteel geïnstalleerde core. Kan worden gebruikt om ongewenste updates te voorkomen wanneer de inhoud een specifieke core versie vereist (bijv.  Arcade ROM sets) of als de eigen slagstaatindeling van de core veranderd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -579,6 +647,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "CPU Architectuur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT beschikbaar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   "Bundel id"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -771,6 +847,22 @@ MSG_HASH(
    "Huidige configuratie opslaan in apart bestand."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Configuratie opslaan als"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Huidige configuratie opslaan als aangepast configuratiebestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Hoofdconfiguratie opslaan"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Huidige configuratie opslaan als hoofdconfiguratie."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Fabrieksinstellingen resetten"
    )
@@ -827,6 +919,10 @@ MSG_HASH(
    "Geluid"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Wijzig de instellingen voor audio-invoer/uitvoer."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Invoer"
    )
@@ -863,12 +959,128 @@ MSG_HASH(
    "Instellingen voor opslaan wijzigen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "Cloud-synchronisatie"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "Wijzig cloud-synchronisatie instellingen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "Zet Cloud-synchronisatie aan"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "Probeer om configuraties, sram en staat aan naar cloud opslagprovider te synchroniseren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "Destructieve Cloud-synchronisatie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Synchronisatie: opgeslagen bestanden/slagstaten"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Synchronisatie: Configuratiebestanden"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Synchronisatie: Miniatuurafbeeldingen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Synchronisatie: Systeembestanden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Wanneer ingeschakeld, worden opgeslagen bestanden/slagstaten naar de cloud gesynchroniseerd."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Wanneer ingeschakeld, worden configuratiebestanden gesynchroniseerd naar de cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Indien ingeschakeld, worden miniatuurafbeeldingen naar de cloud gesynchroniseerd. Niet aanbevolen behalve voor grote collecties van aangepaste miniatuurafbeeldingen; anders is de miniatuurdownloader een betere keuze."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Indien ingeschakeld, zullen systeembestanden worden gesynchroniseerd naar de cloud. Dit kan de tijd die nodig is om te synchroniseren aanzienlijk verlengen; gebruik met voorzichtigheid."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "Indien uitgeschakeld, worden bestanden verplaatst naar een backupmap voordat ze worden overschreven of verwijderd."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Synchronisatiemodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Automatisch: Synchroniseer bij het opstarten van RetroArch en wanneer cores ontladen worden. Handmatig: synchroniseren alleen wanneer de knop 'Nu synchroniseren' handmatig geactiveerd is."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Automatisch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Handmatig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "Cloud-synchronisatie Backend"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "Welk netwerkprotocol te gebruiken voor cloudopslag."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "Cloudopslag URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "De URL voor het API-startpunt voor de cloud opslagdienst."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Gebruikersnaam"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "Je gebruikersnaam voor je cloudopslagaccount."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "Wachtwoord"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "Uw wachtwoord voor uw cloudopslagaccount."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Toegangssleutel-ID"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   "Je toegangssleutel-ID voor uw cloudopslagaccount."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Geheime toegangssleutel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   "Je geheime toegangssleutel voor je cloudopslagaccount."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   "Je S3 eindpunt URL voor cloudopslag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -881,6 +1093,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Bestandbeheer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "Instellingen voor bestandsbeheer wijzigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
@@ -1043,6 +1259,10 @@ MSG_HASH(
    "Gebruiker"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Privacy, account en gebruikersnaam instellingen wijzigen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Map"
    )
@@ -1087,12 +1307,40 @@ MSG_HASH(
    "Invoer"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Invoerstuurprogramma om te gebruiken. Sommige videostuurprogramma's dwingen een ander invoerstuurprogramma af. (Opnieuw opstarten vereist)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "De linuxraw input driver vereist een actieve TTY. Toetsenbord gebeurtenissen worden direct van de TTY gelezen wat het eenvoudiger maakt, maar niet zo flexibel als udev. Muizen, enz. worden helemaal niet ondersteund. Deze driver gebruikt de oudere joystick API (/dev/input/js*)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
    "Invoerstuurprogramma. Het videostuurprogramma kan een ander invoerstuurprogramma afdwingen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   "Te gebruiken Controller driver (opnieuw opstarten vereist)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "DirectInput controller stuurprogramma."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Linux stuurprogramma voor controllers aangesloten op een parallelle poort via speciale adapters."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "Controller stuurprogramma gebaseerd op SDL-bibliotheken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "Controller driver met udev interface, algemeen aanbevolen. Gebruikt de recente evdev joypad API voor joystick ondersteuning. Het ondersteunt hotplugging en force feedback.\nStandaard in de meeste distro's zijn /dev/input nodes alleen root-only (mode 600). Je kan een udev regel instellen die deze toegankelijk maakt voor niet-root."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "XInput controller driver. Vooral voor XBox controllers."
    )
 
 MSG_HASH(
@@ -1244,6 +1492,10 @@ MSG_HASH(
    "PulseAudio stuurprogramma. Als het systeem PulseAudio gebruikt, zorg er dan voor dat dit stuurprogramma gebruikt wordt in plaats van bijv. ALSA."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "PipeWire stuurprogramma. Als het systeem gebruik maakt van PipeWire, zorg ervoor dat je dit stuurprogramma gebruikt in plaats van bijv. PulseAudio."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Jack Audio Verbindingskit stuurprogramma."
    )
@@ -1251,6 +1503,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    "Microfoon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Te gebruiken microfoonstuurprogramma"
    )
 #endif
 MSG_HASH(
@@ -1288,6 +1544,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
    "Locatiestuurprogramma om te gebruiken."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Menu driver om te gebruiken. (Opnieuw opstarten vereist)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1397,6 +1657,46 @@ MSG_HASH(
    "Zwarte Frame Injectie"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "WAARSCHUWING: Snelle knippering kan afbeelding inbranden op sommige schermen. Gebruik op eigen risico // Voeg zwarte frame(s) toe tussen frames. Kan bewegingsonscherpte aanzienlijk verminderen door CRT scan te emuleren, maar ten koste van helderheid."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Voegt zwarte frame(s) binnen tussen frames toe voor verbeterde bewegingsduidelijkheid. Gebruik alleen de optie voor de vernieuwingsfrequentie van je huidige scherm. Niet voor gebruik bij frequenties die geen veelvoud zijn van 60Hz zoals 144Hz, 165Hz, etc. Niet combineren met Swap Interval > 1, sub-frames, Frame Delay of Synchronisatie naar Exacte Inhoud Vernieuwingsfrequentie . VRR van het systeem aan laten staan is ok, maar die instelling niet. Als je tijdelijke afbeelding retentie ziet, moet j[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Invoegen van Zwart Frame - Donkere Frames"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Pas het aantal zwarte frames aan in de totale BFI scan outsequentie. Meer betekendt aan hogere bewegingsduidelijkheid, minder is hogere helderheid. Niet van toepassing bij 120 Hz, aangezien er slechts 1 BFI-frame is om met een totaal te werken. Instellingen hoger dan mogelijk zullen je beperken tot het maximaal mogelijke voor je gekozen vernieuwingsfrequentie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Past het aantal weergegeven frames aan in de Bfi sequentie die zwart zijn. Meer zwarte frames verhoogt bewegingshelderheid maar vermindert de helderheid. Niet van toepassing bij 120hz omdat er maar één totaal 60Hz extra frame is, Het moet dus zwart zijn, anders zou BFI helemaal niet actief zijn."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "WAARSCHUWING: Snelle knipperen kan afbeeldingen in sommige schermen inbranden. Gebruik op eigen risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm verticaal te verdelen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames er zijn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Voegt extra shader frame(s) binnen voor mogelijke shader effecten die zijn ontworpen om sneller te draaien dan de snelheid van de inhoud. Gebruik alleen de optie voor uw huidige ververskoers voor weergave. Niet voor gebruik bij frequenties die geen veelvoud zijn van 60Hz zoals 144Hz, 165Hz, etc. Niet combineren met Swap Interval > 1, BFI, Frame Delay, of synchroniseren naar Exact Content Framerate. VRR van het systeem aan laten staan is ok, maar die instelling niet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Rollende scanlijn simulatie"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "WAARSCHUWING: Een snelle knippering kan afbeeldingen in sommige schermen inbranden. Gebruik op eigen risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm verticaal omhoog te delen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames er zijn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Simuleert een basis rollende scanlijn over meerdere sub-frames door het scherm verticaal te delen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames er van de bovenkant van het scherm naar beneden zijn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilineaire Filtering"
    )
@@ -1476,6 +1776,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Laad elk actief CPU-aangedreven videofilter af."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Volledig scherm inschakelen over de notch op Android- en iOS-apparaten"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -1492,12 +1796,32 @@ MSG_HASH(
    "Schakel tussen native en ultrabrede superresoluties."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "Horizontale Centering"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Blader door deze opties als de afbeelding niet goed op het scherm is gecentreerd."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Horizontale grootte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Ga door deze opties heen om de horizontale instellingen aan te passen om de afbeeldingsgrootte te wijzigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "Verticale Centering"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
    "Blader door deze opties als de afbeelding niet goed op het scherm is gecentreerd."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Gebruik menu met hoge resolutie"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -1523,6 +1847,10 @@ MSG_HASH(
    "Welke monitor te verkiezen. 0 (standaard) betekent dat geen bepaalde monitor de voorkeur heeft, 1 en hoger (1 is eerste monitor), stelt RetroArch voor om die specifieke monitor te gebruiken."
    )
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Optimaliseren voor Wii U GamePad (Opnieuw opstarten vereist)"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "Gebruik een exacte 2x schaal van de GamePad als de weergave. Uitschakelen om op de oorspronkelijke TV-resolutie weer te geven."
@@ -1593,6 +1921,14 @@ MSG_HASH(
    "De vernieuwingsfrequentie zoals gerapporteerd door het beeldschermstuurprogramma."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Automatisch vernieuwingsfrequentie wisselen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Automatisch vernieuwingsfrequentie wisselen op basis van de huidige inhoud."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Alleen in Exclusieve Volle-Scherm Modus"
    )
@@ -1603,6 +1939,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "Alle Volle-Scherm Modi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Automatische vernieuwingsfrequentie PAL-drempel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Maximale vernieuwingsfrequentie die als PAL moet worden beschouwd."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -1625,6 +1969,10 @@ MSG_HASH(
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "Volledig Scherm"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "Schermvullend venstermodus"
@@ -1746,6 +2094,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    "Schalen in gehele getallen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Alleen schaal video in gehele stappen. De basisgrootte is afhankelijk van core-gerapporteerde geometrie en hoogte-breedteverhouding."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,

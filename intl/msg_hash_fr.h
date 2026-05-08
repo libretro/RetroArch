@@ -11791,6 +11791,14 @@ MSG_HASH(
    "Barre latérale gauche toujours réduite."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Afficher la barre latérale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Autoriser la navigation et les listes de lecture dans une barre latérale gauche."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Tronquer le nom des listes de lecture (Redémarrage requis)"
    )

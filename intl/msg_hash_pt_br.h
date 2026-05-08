@@ -11659,6 +11659,14 @@ MSG_HASH(
    "Ter a barra lateral esquerda sempre recolhida."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Mostrar a Barra Lateral"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Permitir navegação na barra lateral esquerda e playlists."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Encurtar Nomes da Playlist (Requer reinício)"
    )

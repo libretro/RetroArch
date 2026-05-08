@@ -11863,6 +11863,14 @@ MSG_HASH(
    "Luôn thu gọn thanh bên trái."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Hiển thị thanh bên"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Cho phép điều hướng bằng thanh bên trái và danh sách phát."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Rút ngắn tên danh sách phát (Cần khởi động lại)"
    )

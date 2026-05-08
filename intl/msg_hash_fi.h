@@ -9895,6 +9895,14 @@ MSG_HASH(
    "Pidä vasen sivupalkki aina pienennettynä."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Näytä sivupalkki"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Salli vasemman sivupalkin navigointi ja soittolistat."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Poista valmistajan nimet soittolistoista. Esimerkiksi \"Sony - PlayStation\" muuttuu muotoon \"PlayStation\"."
    )

@@ -11799,6 +11799,14 @@ MSG_HASH(
    "Mantener la barra lateral izquierda oculta en todo momento."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Mostrar barra lateral"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Muestra la barra lateral de la izquierda para navegar y acceder a las listas de reproducción."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Partir nombres de lista de reproducción (es necesario reiniciar)"
    )

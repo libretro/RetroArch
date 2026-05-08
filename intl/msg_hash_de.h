@@ -11555,6 +11555,14 @@ MSG_HASH(
    "Die linke Seitenleiste immer einklappen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Seitenleiste anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Navigation und Wiedergabelisten in der linken Seitenleiste erlauben."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Wiedergabelistennamen kürzen (Neustart erforderlich)"
    )

@@ -11759,6 +11759,14 @@ MSG_HASH(
    "Manté la barra lateral sempre replegada."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Mostra la barra lateral"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Permet la navegació per la barra lateral esquerra i les llistes de reproducció."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Parteix els noms de la llista de reproducció (Es requereix reiniciar)"
    )

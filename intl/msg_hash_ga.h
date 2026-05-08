@@ -11875,6 +11875,14 @@ MSG_HASH(
    "Bíodh an barra taoibh clé fillte i gcónaí."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Taispeáin an Barra Taoibh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Ceadaigh nascleanúint agus seinmliostaí sa bharra taoibh chlé."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Gearr Ainmneacha Seinmliostaí (Atosú ag teastáil)"
    )
