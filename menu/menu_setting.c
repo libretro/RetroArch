@@ -9301,6 +9301,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES:
       case MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC:
       case MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY:
       case MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY:
       case MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLIST_TABS:
       case MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE:
@@ -19604,6 +19605,21 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.menu_xmb_show_horizontal_list,
+                  MENU_ENUM_LABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+                  MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+                  DEFAULT_XMB_SHOW_HORIZONTAL_LIST,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.menu_xmb_show_title_header,
                   MENU_ENUM_LABEL_MENU_XMB_SHOW_TITLE_HEADER,
                   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
@@ -20230,20 +20246,22 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 
 #ifdef HAVE_NETWORKING
-            CONFIG_BOOL(
+            CONFIG_UINT(
                   list, list_info,
-                  &settings->bools.menu_content_show_netplay,
+                  &settings->uints.menu_content_show_netplay,
                   MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY,
                   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
                   DEFAULT_CONTENT_SHOW_NETPLAY,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_add_content_entry_display_type;
+            menu_settings_list_current_add_range(list, list_info, 0, MENU_ADD_CONTENT_ENTRY_DISPLAY_LAST-1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 #endif
 
             CONFIG_UINT(

@@ -332,6 +332,7 @@ typedef struct settings
       unsigned menu_scroll_delay;
       unsigned menu_content_show_add_entry;
       unsigned menu_content_show_contentless_cores;
+      unsigned menu_content_show_netplay;
       unsigned menu_screensaver_timeout;
       unsigned menu_screensaver_animation;
       unsigned menu_remember_selection;
@@ -879,6 +880,7 @@ typedef struct settings
       bool menu_rgui_switch_icons;
       bool menu_rgui_particle_effect_screensaver;
       bool menu_xmb_shadows_enable;
+      bool menu_xmb_show_horizontal_list;
       bool menu_xmb_show_title_header;
       bool menu_xmb_switch_icons;
       bool menu_xmb_vertical_thumbnails;
@@ -888,7 +890,6 @@ typedef struct settings
       bool menu_content_show_images;
       bool menu_content_show_music;
       bool menu_content_show_video;
-      bool menu_content_show_netplay;
       bool menu_content_show_history;
       bool menu_content_show_playlists;
       bool menu_content_show_playlist_tabs;
