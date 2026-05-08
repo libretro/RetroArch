@@ -1561,6 +1561,9 @@ static void gfx_widgets_draw_regular_msg(
       /* For warnings and errors, flip the 'i' upside down so it becomes '!' */
       bool invert_y = (msg->flags & (  DISPWIDG_FLAG_CATEGORY_WARNING
                                      | DISPWIDG_FLAG_CATEGORY_ERROR)) != 0;
+      float radians = (invert_y ? M_PI : 0.0f);
+      float cosine  = cosf(radians);
+      float sine    = sinf(radians);
 
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
@@ -1576,9 +1579,9 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->msg_queue_rect_start_x
                   + (p_dispwidget->msg_queue_height / 10.0f),
             video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y,
-            0.0f, /* rad                         */
-            (invert_y ? -1.0f : 1.0f), /* cosine */
-            0.0f, /* sine(rad)  = sine(0) = 0.0f */
+            radians,
+            cosine,
+            sine,
             msg_queue_info);
 
       if (dispctx && dispctx->blend_end)
