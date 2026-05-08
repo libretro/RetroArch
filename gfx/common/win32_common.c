@@ -1207,11 +1207,9 @@ LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
 
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 extern void create_gl_context(HWND hwnd, bool *quit);
 extern void create_gles_context(HWND hwnd, bool *quit);
-#endif
 
 static LRESULT wnd_proc_wgl_wm_create(HWND hwnd)
 {

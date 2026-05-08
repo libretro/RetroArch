@@ -1724,7 +1724,7 @@ endif
 
 ifeq ($(HAVE_VULKAN), 1)
    ifneq ($(findstring Win32,$(OS)),)
-      WANT_WGL = 1
+      OBJ += gfx/drivers_context/w_vk_ctx.o
       # Trivial temporary workaround for MinGW and glslang.
       CXXFLAGS += -fpermissive
    endif
@@ -1961,10 +1961,6 @@ endif
 
 ifeq ($(WANT_WGL), 1)
    OBJ += gfx/drivers_context/wgl_ctx.o
-   ifeq ($(HAVE_VULKAN),1)
-      OBJ += gfx/drivers_context/w_vk_ctx.o
-   endif
-   LIBS += -lcomctl32
 endif
 
 # Compression/Archive
