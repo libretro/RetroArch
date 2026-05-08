@@ -4199,7 +4199,8 @@ static bool menu_history_in_main_menu(const char *menu_ident,
 {
    return   (!strcmp(menu_ident, "rgui"))
          || (!strcmp(menu_ident, "glui") && !settings->bools.menu_materialui_show_nav_bar)
-         || (!strcmp(menu_ident, "ozone") && !settings->bools.ozone_show_sidebar);
+         || (!strcmp(menu_ident, "ozone") && !settings->bools.ozone_show_sidebar)
+         || (!strcmp(menu_ident, "xmb") && !settings->bools.menu_xmb_show_horizontal_list);
 }
 
 static unsigned menu_displaylist_parse_playlists(
@@ -12097,6 +12098,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,                          PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN,                        PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE,                         PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_XMB_SHOW_TITLE_HEADER,                   PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN,                        PARSE_ONLY_INT,    true},
                {MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,      PARSE_ONLY_INT,    true},

@@ -269,21 +269,20 @@ static int action_right_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_XMB
-   struct menu_state    *menu_st       = menu_state_get_ptr();
+   settings_t *settings                = config_get_ptr();
+   struct menu_state *menu_st          = menu_state_get_ptr();
    const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
-   const char *menu_ident              = (driver_ctx && driver_ctx->ident)
-      ? driver_ctx->ident
-      : NULL;
+   const char *menu_ident              = (driver_ctx && driver_ctx->ident) ? driver_ctx->ident : NULL;
    size_t _len                         = (driver_ctx && driver_ctx->list_get_size)
-      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN)
-      : 0;
+         ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN)
+         : 0;
    /* Tab switching functionality only applies
     * to XMB */
    if (  (_len == 1)
+       && settings->bools.menu_xmb_show_horizontal_list
        && string_is_equal(menu_ident, "xmb"))
    {
       size_t horiz_size = 0, tabs_size = 0, selection = 0;
-      settings_t            *settings  = config_get_ptr();
       bool menu_nav_wraparound_enable  = settings->bools.menu_navigation_wraparound_enable;
       if (driver_ctx)
       {

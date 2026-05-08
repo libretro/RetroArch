@@ -128,7 +128,6 @@ enum
 #endif
 #ifdef HAVE_NETWORKING
    XMB_TEXTURE_NETPLAY,
-   XMB_TEXTURE_NETPLAY_ALT,
    XMB_TEXTURE_ROOM,
    XMB_TEXTURE_ROOM_LAN,
    XMB_TEXTURE_ROOM_RELAY,
@@ -481,6 +480,7 @@ typedef struct xmb_handle
    bool show_mouse;
    bool show_screensaver;
    bool show_playlist_tabs;
+   bool show_horizontal_list;
    bool use_ps3_layout;
    bool last_use_ps3_layout;
    bool assets_missing;
@@ -568,6 +568,8 @@ static INLINE float xmb_item_y(const xmb_handle_t *xmb,
 
    if (i < (int)current)
    {
+      if (!xmb->show_horizontal_list)
+         return icon_spacing_vertical * (i - (int)current + xmb->above_subitem_offset);
       if (xmb->depth > 1)
          return icon_spacing_vertical * (i - (int)current + xmb->above_subitem_offset);
       return icon_spacing_vertical    * (i - (int)current + xmb->above_item_offset);
@@ -3365,6 +3367,7 @@ static void xmb_populate_entries(void *data,
       return;
 
    xmb->show_playlist_tabs            = settings->bools.menu_content_show_playlist_tabs;
+   xmb->show_horizontal_list          = settings->bools.menu_xmb_show_horizontal_list;
 
    xmb->skip_thumbnail_reset          = false;
    if (xmb->is_quick_menu && depth < xmb->old_depth)
@@ -3677,6 +3680,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_MAIN_MENU:
          return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
       case MENU_ENUM_LABEL_SETTINGS_TAB:
+      case MENU_ENUM_LABEL_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_SETTINGS];
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
@@ -6268,6 +6272,22 @@ static enum menu_action xmb_parse_menu_entry_action(
                menu_st->selection_ptr = 0;
                xmb_selection_pointer_changed(xmb, true);
             }
+            else if (!config_get_ptr()->bools.menu_xmb_show_horizontal_list)
+            {
+               /* Reset horizontal list to Main Menu */
+               file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
+               file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+               size_t stack_size          = menu_stack->size;
+
+               if (menu_stack->list[stack_size - 1].label)
+                  free(menu_stack->list[stack_size - 1].label);
+               menu_stack->list[stack_size - 1].label = NULL;
+
+               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+               menu_stack->list[stack_size - 1].type  = MENU_SETTINGS;
+
+               menu_driver_deferred_push_content_list(selection_buf);
+            }
             else if (config_get_ptr()->bools.input_menu_allow_tabs_back)
             {
                /* Jump to Main Menu */
@@ -6639,8 +6659,6 @@ static const char *xmb_texture_path(unsigned id)
 #ifdef HAVE_NETWORKING
       case XMB_TEXTURE_NETPLAY:
          return "netplay.png";
-      case XMB_TEXTURE_NETPLAY_ALT:
-         return "../../../ozone/png/sidebar/netplay.png";
       case XMB_TEXTURE_ROOM:
          return "menu_room.png";
       case XMB_TEXTURE_ROOM_LAN:
@@ -6797,19 +6815,6 @@ static void xmb_context_reset_textures(
    {
       char texpath[PATH_MAX_LENGTH];
       const char *texture_path = xmb_texture_path(i);
-
-#ifdef HAVE_NETWORKING
-      if (     (i == XMB_TEXTURE_NETPLAY)
-            && (menu_xmb_theme == XMB_ICON_THEME_MONOCHROME))
-      {
-         char alt_path[PATH_MAX_LENGTH];
-         fill_pathname_join_special(alt_path,
-               iconpath, xmb_texture_path(XMB_TEXTURE_NETPLAY_ALT),
-               sizeof(alt_path));
-         if (path_is_valid(alt_path))
-            texture_path = xmb_texture_path(XMB_TEXTURE_NETPLAY_ALT);
-      }
-#endif
 
       fill_pathname_join_special(texpath,
             iconpath, texture_path, sizeof(texpath));
@@ -7124,7 +7129,7 @@ static void xmb_render(void *data,
          {
             /* Only allow horizontal category switching at the top level (depth == 1)
              * When in submenus (depth > 1), horizontal drag is disabled */
-            if (xmb->depth == 1)
+            if (xmb->depth == 1 && xmb->show_horizontal_list)
             {
                /* Apply horizontal drag to categories */
                size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end + 1;
@@ -8597,7 +8602,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       dispctx->blend_begin(userdata);
 
    /* Horizontal tab icons */
-   if (!xmb->assets_missing)
+   if (!xmb->assets_missing && xmb->show_horizontal_list)
    {
       unsigned horizontal_list_size = (xmb->show_playlist_tabs)
             ? (unsigned)xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
@@ -10172,7 +10177,7 @@ static int xmb_pointer_up(void *userdata,
    if (xmb->drag_mode == XMB_DRAG_HORIZONTAL || xmb->drag_mode == XMB_DRAG_VERTICAL)
    {
       /* Snap horizontal scrolling to final category position */
-      if (xmb->drag_mode == XMB_DRAG_HORIZONTAL)
+      if (xmb->drag_mode == XMB_DRAG_HORIZONTAL && xmb->show_horizontal_list)
       {
          settings_t *settings      = config_get_ptr();
          bool horizontal_animation = settings->bools.menu_horizontal_animation;
