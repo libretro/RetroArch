@@ -2008,23 +2008,35 @@ void gfx_savestate_thumbnail_get_path(
       runloop_state_t *runloop_st        = runloop_state_get_ptr();
       const struct playlist_entry *entry = NULL;
 
-      if (menu_st && menu_st->driver_data)
+      if (menu_st && menu_st->driver_data && !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
          playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
 
-      if (*entry->path)
+      if (entry && *entry->path)
       {
          size_t _len;
          char new_path[PATH_MAX_LENGTH];
          char entry_basename[PATH_MAX_LENGTH];
+         char old_savefile_dir[PATH_MAX_LENGTH];
+         char old_savestate_dir[PATH_MAX_LENGTH];
+
+         strlcpy(old_savefile_dir, runloop_st->savefile_dir, sizeof(old_savefile_dir));
+         strlcpy(old_savestate_dir, runloop_st->savestate_dir, sizeof(old_savestate_dir));
 
          strlcpy(new_path, entry->path, sizeof(new_path));
          path_remove_extension(new_path);
 
          _len = strlcpy(entry_basename, path_basename(new_path), sizeof(entry_basename));
+         _len = strlcpy(entry_basename + _len, ".state", sizeof(entry_basename) - _len);
 
-         strlcpy(entry_basename + _len, ".state", sizeof(entry_basename) - _len);
+         /* Set temporary save redirection paths */
+         runloop_path_set_redirect(config_get_ptr(), old_savefile_dir, old_savestate_dir);
+
          fill_pathname_join_special(new_path,
                runloop_st->savestate_dir, entry_basename, sizeof(new_path));
+
+         /* Restore current save redirection paths */
+         dir_set(RARCH_DIR_CURRENT_SAVEFILE, old_savefile_dir);
+         dir_set(RARCH_DIR_CURRENT_SAVESTATE, old_savestate_dir);
 
          state_name = strdup(new_path);
       }

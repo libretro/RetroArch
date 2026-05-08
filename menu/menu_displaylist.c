@@ -14421,30 +14421,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (menu_st && menu_st->driver_data)
                      playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
 
-                  if (*entry->path)
+                  if (entry && *entry->path)
                   {
                      path_set(RARCH_PATH_CORE, entry->core_path);
                      command_event(CMD_EVENT_LOAD_CORE, NULL);
                      runloop_set_current_core_type(CORE_TYPE_PLAIN, true);
 
-                     savestates_enabled = core_info_current_supports_savestate();
-
-                     menu_st->flags |= MENU_ST_FLAG_PRETEND_CORE_INIT;
-
-                     if (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
-                     {
-                        runloop_st->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
-
-                        if (savestates_enabled)
-                           command_event(CMD_EVENT_CORE_INIT,
-                                 &runloop_st->explicit_current_core_type);
-
-                        menu_st->flags &= ~MENU_ST_FLAG_PRETEND_CORE_INIT;
-
-                        /* Reinit runtime log and read current state slot */
+                     /* Reinit runtime log and read current state slot */
+                     if (core_info_current_supports_savestate())
                         runtime_update_playlist(playlist,
                               menu_st->driver_data->rpl_entry_selection_ptr);
-                     }
                   }
                }
 

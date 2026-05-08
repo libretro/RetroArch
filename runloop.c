@@ -4814,15 +4814,6 @@ bool runloop_event_init_core(
    /* Set core environment */
    runloop_st->current_core.retro_set_environment(runloop_environment_cb);
 
-#ifdef HAVE_MENU
-   /* Early return for playlist entry savestate menu paths */
-   {
-      struct menu_state *menu_st = menu_state_get_ptr();
-      if (menu_st && menu_st->flags & MENU_ST_FLAG_PRETEND_CORE_INIT)
-         return false;
-   }
-#endif
-
    /* Load any input remap files
     * > Note that we always cache the current global
     *   input settings when initialising a core
