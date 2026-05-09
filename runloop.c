@@ -260,8 +260,13 @@
    memcpy(&current_core->x, &func, sizeof(func)); \
    if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "runloop_init_libretro_symbols()"); } \
 } while (0)
+#define SYMBOL_OPTIONAL(x) do { \
+   function_t func = dylib_proc(lib_handle_local, #x); \
+   memcpy(&current_core->x, &func, sizeof(func)); \
+} while (0)
 #else
 #define SYMBOL(x) current_core->x = x
+#define SYMBOL_OPTIONAL(x) current_core->x = NULL
 #endif
 
 #define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
@@ -312,6 +317,9 @@
             x(retro_get_region); \
             x(retro_get_memory_data); \
             x(retro_get_memory_size);
+
+#define CORE_OPTIONAL_SYMBOLS(x) \
+            x(retro_set_video_refresh_ext);
 
 #ifdef _WIN32
 #define PERF_LOG_FMT "[PERF] Avg (%s): %I64u ticks, %I64u runs.\n"
@@ -3458,8 +3466,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                return false;
             }
 
-            /* The core might request a mic before the mic driver 
-             * is initialized, so we still have to see if the 
+            /* The core might request a mic before the mic driver
+             * is initialized, so we still have to see if the
              * frontend intends to init a mic driver. */
             if (!driver && memcmp(settings->arrays.microphone_driver,
                      "null", sizeof("null")) == 0)
@@ -3578,6 +3586,68 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+
+      case RETRO_ENVIRONMENT_SET_MULTI_SCREEN_AVAILABILITY:
+         {
+            video_driver_state_t *video_st = video_state_get_ptr();
+            const struct retro_multi_screen_info *info =
+                  (const struct retro_multi_screen_info*)data;
+
+            if (!info)
+               return true; /* Core querying support */
+
+            RARCH_LOG("[Environ] SET_MULTI_SCREEN_AVAILABILITY: %u screens @ %ux%u.\n",
+                  info->num_screens, info->screen_width, info->screen_height);
+
+            memcpy(&video_st->multi_screen_info, info, sizeof(*info));
+            /* Enable main screen (0) and first aux screen (1) by default if core supports 2+ screens */
+            if (info->num_screens > 1)
+               video_st->active_screen_mask = (1 << 0) | (1 << 1);
+            else
+               video_st->active_screen_mask = (1 << 0);
+
+            /* If core supports extended video refresh, register our multi-screen frame handler */
+            if (runloop_st->current_core.retro_set_video_refresh_ext)
+               runloop_st->current_core.retro_set_video_refresh_ext(video_driver_frame_ext_wrapper);
+
+            /* Auto-initialize aux stream slot 0 if configured and core supports 2+ screens */
+            if (info->num_screens > 1)
+            {
+               settings_t *settings = config_get_ptr();
+               if (settings && !string_is_empty(settings->paths.aux_screen_url[0]))
+               {
+                  RARCH_LOG("[Environ] Auto-initializing aux stream slot 0: '%s' width=%u height=%u\n",
+                        settings->paths.aux_screen_url[0], info->screen_width, info->screen_height);
+                  bool init_result = recording_init_aux(0, settings->paths.aux_screen_url[0], 0,
+                        info->screen_width, info->screen_height, 0);
+                  RARCH_LOG("[Environ] recording_init_aux returned: %s\n", init_result ? "SUCCESS" : "FAILED");
+               }
+            }
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_GET_MULTI_SCREEN_ACTIVE:
+         {
+            video_driver_state_t *video_st = video_state_get_ptr();
+            struct retro_multi_screen_query *query =
+                  (struct retro_multi_screen_query*)data;
+
+            if (!query)
+               return false;
+
+            /* Return currently active screens */
+            query->num_active_screens = 0;
+            for (unsigned i = 0; i < 5; i++)
+            {
+               if (video_st->active_screen_mask & (1 << i))
+               {
+                  query->active_screen_ids[query->num_active_screens] = i;
+                  query->num_active_screens++;
+               }
+            }
+         }
+         break;
+
       default:
          RARCH_LOG("[Environ] UNSUPPORTED (#%u).\n", cmd);
          return false;
@@ -3734,6 +3804,7 @@ bool runloop_init_libretro_symbols(
 #endif
 
             CORE_SYMBOLS(SYMBOL);
+            CORE_OPTIONAL_SYMBOLS(SYMBOL_OPTIONAL);
          }
          break;
       case CORE_TYPE_DUMMY:

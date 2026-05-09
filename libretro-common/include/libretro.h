@@ -2517,19 +2517,22 @@ enum retro_mod
                                             * The frontend will take care of connecting players together,
                                             * and the core only needs to send the actual data as needed for
                                             * the emulation, while handshake and connection management happen
-                                            * in the background.
+                                            * as transparently as possible. */
+
+#define RETRO_ENVIRONMENT_SET_MULTI_SCREEN_AVAILABILITY 82
+                                           /* const struct retro_multi_screen_info * --
+                                            * Notifies the frontend that this core supports multiple screens.
+                                            * Call this in retro_load_game() if the emulated platform has
+                                            * multiple displays (e.g. Nintendo DS, 3DS, Wii U GamePad).
                                             *
-                                            * When two or more players are connected and this interface has
-                                            * been set, time manipulation features (such as pausing, slow motion,
-                                            * fast forward, rewinding, save state loading, etc.) are disabled to
-                                            * avoid interrupting communication.
-                                            *
-                                            * Should be set in either retro_init or retro_load_game, but not both.
-                                            *
-                                            * When not set, a frontend may use state serialization-based
-                                            * multiplayer, where a deterministic core supporting multiple
-                                            * input devices does not need to take any action on its own.
+                                            * After calling this, the core may use retro_video_refresh_ext_t
+                                            * to submit frames from multiple screens.
                                             */
+
+#define RETRO_ENVIRONMENT_GET_MULTI_SCREEN_ACTIVE 83
+                                           /* struct retro_multi_screen_query * --
+                                            * Queries which screens the frontend wants active.
+                                            * Useful when streaming/casting auxiliary screens. */
 
 /**
  * Returns the device's current power state as reported by the frontend.
@@ -7477,6 +7480,43 @@ typedef void (RETRO_CALLCONV *retro_video_refresh_t)(const void *data, unsigned 
       unsigned height, size_t pitch);
 
 /**
+ * Extended video refresh callback for multi-screen support.
+ * Called by the core to submit a frame from a specific screen.
+ *
+ * @param data The frame buffer to render.
+ * @param width The width of the frame.
+ * @param height The height of the frame.
+ * @param pitch The number of bytes between the start of each row.
+ * @param screen_id The screen identifier (0 = main screen, 1+ = auxiliary screens).
+ *
+ * @see RETRO_ENVIRONMENT_SET_MULTI_SCREEN_AVAILABILITY
+ * @see retro_set_video_refresh_ext
+ */
+typedef void (RETRO_CALLCONV *retro_video_refresh_ext_t)(const void *data, unsigned width,
+      unsigned height, size_t pitch, unsigned screen_id);
+
+/**
+ * Multi-screen capability info passed to RETRO_ENVIRONMENT_SET_MULTI_SCREEN_AVAILABILITY.
+ * Core declares how many screens it supports and their properties.
+ */
+struct retro_multi_screen_info
+{
+   unsigned num_screens;        /* Total screens available (e.g., 2 for DS, 3 for some arcade) */
+   unsigned screen_width;     /* Width of each screen (assumed same for all) */
+   unsigned screen_height;    /* Height of each screen (assumed same for all) */
+};
+
+/**
+ * Query for RETRO_ENVIRONMENT_GET_MULTI_SCREEN_ACTIVE.
+ * Frontend tells core which screens are currently active.
+ */
+struct retro_multi_screen_query
+{
+   unsigned num_active_screens; /* How many screens frontend wants */
+   unsigned active_screen_ids[4]; /* Which screen IDs to render (0=main, 1=aux1, etc.) */
+};
+
+/**
  * Renders a single audio frame. Should only be used if implementation generates a single sample at a time.
  *
  * @param left The left audio sample represented as a signed 16-bit native endian.
@@ -7558,6 +7598,16 @@ RETRO_API void retro_set_environment(retro_environment_t cb);
  * @note Guaranteed to have been called before the first call to \c retro_run() is made.
  */
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb);
+
+/**
+ * Sets the extended video refresh callback for multi-screen support.
+ *
+ * @param cb The function which is used when rendering a frame with screen ID.
+ *
+ * @note Guaranteed to have been called before the first call to \c retro_run() is made.
+ * @note Only valid after RETRO_ENVIRONMENT_SET_MULTI_SCREEN_AVAILABILITY has been called.
+ */
+RETRO_API void retro_set_video_refresh_ext(retro_video_refresh_ext_t cb);
 
 /**
  * Sets the audio sample callback.

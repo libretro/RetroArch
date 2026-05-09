@@ -874,6 +874,14 @@ typedef struct
     */
    gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
 
+   /* Multi-screen support */
+   struct retro_multi_screen_info multi_screen_info;
+   unsigned active_screen_mask;                  /* Bitmask of active screens (bit 0 = screen 0, etc.) */
+   const void *multi_screen_cache_data[5];       /* Frame cache for each screen (0-4 = main + 4 aux) */
+   unsigned multi_screen_cache_width[5];
+   unsigned multi_screen_cache_height[5];
+   size_t multi_screen_cache_pitch[5];
+
    char cli_shader_path[PATH_MAX_LENGTH];
    char window_title[512];
    char window_title_prev[512];
@@ -1291,6 +1299,22 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
  **/
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
+
+/**
+ * video_driver_frame_ext:
+ * @data                 : pointer to data of the video frame.
+ * @width                : width of the video frame.
+ * @height               : height of the video frame.
+ * @pitch                : pitch of the video frame.
+ * @screen_id            : screen identifier (0 = main, 1+ = auxiliary).
+ *
+ * Video frame render callback function with multi-screen support.
+ * Screen 0 is rendered to display; other screens are cached for streaming.
+ **/
+void video_driver_frame_ext(const void *data, unsigned width,
+      unsigned height, size_t pitch, unsigned screen_id);
+void video_driver_frame_ext_wrapper(const void *data, unsigned width,
+      unsigned height, size_t pitch, unsigned screen_id);
 
 void video_driver_update_title(void *data);
 
