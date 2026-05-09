@@ -37,6 +37,7 @@
 #include "input_driver.h"
 #include "../verbosity.h"
 #include "../tasks/task_content.h"
+#include "../runloop.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
 #include "../record/record_driver.h"
@@ -1661,6 +1662,9 @@ void dsu_client_poll(dsu_state_t *dsu)
 
                      msg_len += snprintf(msg + msg_len, sizeof(msg) - msg_len,
                            "%u", (unsigned)attached_port + 1);
+                     RARCH_LOG("[DSU] %s\n", msg);
+                     runloop_msg_queue_push(msg, msg_len, 1, 180, true, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   }
                   else if (was_connected && !dsu->controllers[controller_slot].connected)
                      dsu_detach_controller(dsu, controller_slot);

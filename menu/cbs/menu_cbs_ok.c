@@ -4607,6 +4607,13 @@ static int action_ok_start_recording(const char *path,
 static int action_ok_start_streaming(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   unsigned i;
+   recording_state_t *recording_st = recording_state_get_ptr();
+
+   for (i = 0; i < 4; i++)
+      if (recording_st->aux_streams[i].active)
+         return generic_action_ok_command(CMD_EVENT_RESUME);
+
    streaming_set_state(true);
    command_event(CMD_EVENT_RECORD_INIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
@@ -4630,7 +4637,12 @@ static int action_ok_start_aux_streaming(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned i;
+   recording_state_t *recording_st = recording_state_get_ptr();
    settings_t *settings = config_get_ptr();
+
+   if (recording_st->enable && recording_st->streaming_enable)
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+
    for (i = 0; i < MAX_USERS; i++)
    {
       const char *url = settings->paths.aux_screen_url[i];

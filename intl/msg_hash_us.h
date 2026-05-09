@@ -7847,8 +7847,16 @@ MSG_HASH(
    "Start Aux Streaming"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_START_AUX_STREAMING,
+   "Start auxiliary screen streaming."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_STOP_AUX_STREAMING,
    "Stop Aux Streaming"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_AUX_STREAMING,
+   "End auxiliary screen streaming."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,

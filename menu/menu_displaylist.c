@@ -3621,7 +3621,8 @@ static int menu_displaylist_parse_load_content_settings(
 
                if (     settings->bools.quick_menu_show_start_streaming
                      && !strcmp(settings->arrays.record_driver,
-                        "ffmpeg"))
+                        "ffmpeg")
+                     && !aux_active)
                {
                   if (menu_entries_append(list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
@@ -3630,7 +3631,8 @@ static int menu_displaylist_parse_load_content_settings(
                      count++;
                }
 
-               if (memcmp(settings->arrays.record_driver,
+               if (     !recording_st->streaming_enable
+                     && memcmp(settings->arrays.record_driver,
                         "ffmpeg", STRLEN_CONST("ffmpeg")) == 0)
                {
                   enum msg_hash_enums aux_label = aux_active

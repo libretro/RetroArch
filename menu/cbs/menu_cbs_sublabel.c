@@ -238,8 +238,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_main_config,                 ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_reset_to_default_config,          MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_override_options,             MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_start_streaming,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_start_aux_streaming,         MENU_ENUM_SUBLABEL_QUICK_MENU_START_AUX_STREAMING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_start_recording,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_stop_streaming,             MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_stop_aux_streaming,          MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_AUX_STREAMING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_stop_recording,             MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_crt_switchres,             MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_enable,      MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE)
@@ -2509,11 +2511,17 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_start_streaming);
             break;
+         case MENU_ENUM_LABEL_QUICK_MENU_START_AUX_STREAMING:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_start_aux_streaming);
+            break;
          case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_start_recording);
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_stop_streaming);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_STOP_AUX_STREAMING:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_stop_aux_streaming);
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_stop_recording);
