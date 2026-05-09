@@ -6621,7 +6621,8 @@ int8_t config_save_overrides(enum override_type type,
 
    if (conf)
    {
-      /* Turbo fire settings are saved to remaps and therefore skipped from overrides */
+      /* Turbo fire settings are saved to remaps and therefore skipped from overrides
+       * Also savestate slot is saved to runtime logs, so skip it here */
       for (i = 0; i < (unsigned)bool_settings_size; i++)
       {
          if (string_starts_with(bool_settings[i].ident, "input_turbo"))
@@ -6639,6 +6640,8 @@ int8_t config_save_overrides(enum override_type type,
       for (i = 0; i < (unsigned)int_settings_size; i++)
       {
          if (string_starts_with(int_settings[i].ident, "input_turbo"))
+            continue;
+         if (string_starts_with(int_settings[i].ident, "state_slot"))
             continue;
 
          if ((*int_settings[i].ptr) != (*int_overrides[i].ptr))
