@@ -7102,6 +7102,13 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
                                        | RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL
                                         );
 
+   /* Reset savestate thumbnails always */
+   if (selection < list_size)
+   {
+      rgui_update_savestate_thumbnail_path(rgui, (unsigned)selection);
+      rgui_update_savestate_thumbnail_image(rgui);
+   }
+
    /* Update thumbnail content/path */
    if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
          || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
@@ -7160,13 +7167,6 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
 
       if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
          has_thumbnail = gfx_thumbnail_update_path(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT) || has_thumbnail;
-   }
-
-   /* Reset savestate thumbnails always */
-   if (selection < list_size)
-   {
-      rgui_update_savestate_thumbnail_path(rgui, (unsigned)selection);
-      rgui_update_savestate_thumbnail_image(rgui);
    }
 
    /* Check whether thumbnails should be loaded */
