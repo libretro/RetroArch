@@ -3926,9 +3926,11 @@ static int menu_displaylist_parse_horizontal_content_actions(
       {
          bool savestates_enabled     = core_info_current_supports_savestate();
          playlist_t *playlist        = playlist_get_cached();
-         runloop_state_t *runloop_st = runloop_state_get_ptr();
 
-         if (playlist && !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+         /* Trust core info for showing state load menu per playlist entry, because
+          * 'core_info_current_supports_savestate()' requires a core to be loaded,
+          * otherwise it defaults to true */
+         if (playlist)
          {
             struct menu_state *menu_st         = menu_state_get_ptr();
             const struct playlist_entry *entry = NULL;
@@ -3938,15 +3940,12 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
             if (entry && *entry->path)
             {
-               path_set(RARCH_PATH_CORE, entry->core_path);
-               command_event(CMD_EVENT_LOAD_CORE, NULL);
-               runloop_set_current_core_type(CORE_TYPE_PLAIN, true);
-
-               /* Reinit runtime log and read current state slot */
-               savestates_enabled = core_info_current_supports_savestate();
-               if (savestates_enabled)
-                  runtime_update_playlist(playlist,
-                        menu_st->driver_data->rpl_entry_selection_ptr);
+               core_info_t *core_info = NULL;
+               if (core_info_find(entry->core_path, &core_info))
+               {
+                  if (core_info->savestate_support_level < CORE_INFO_SAVESTATE_BASIC)
+                     savestates_enabled = false;
+               }
             }
          }
 
@@ -14432,6 +14431,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_STATE_SLOT_RUN:
             {
+               bool savestates_enabled     = core_info_current_supports_savestate();
+               playlist_t *playlist        = playlist_get_cached();
+               runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+               /* Load the core for getting the final state path for thumbnails */
+               if (playlist && !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+               {
+                  struct menu_state *menu_st         = menu_state_get_ptr();
+                  const struct playlist_entry *entry = NULL;
+
+                  if (menu_st && menu_st->driver_data)
+                     playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
+
+                  if (entry && *entry->path)
+                  {
+                     path_set(RARCH_PATH_CORE, entry->core_path);
+                     command_event(CMD_EVENT_LOAD_CORE, NULL);
+                     runloop_set_current_core_type(CORE_TYPE_PLAIN, true);
+
+                     /* Reinit runtime log and read current state slot */
+                     savestates_enabled = core_info_current_supports_savestate();
+                     if (savestates_enabled)
+                        runtime_update_playlist(playlist,
+                              menu_st->driver_data->rpl_entry_selection_ptr);
+                  }
+               }
+
                menu_entries_clear(info->list);
 
                /* Build the dropdown selector */
