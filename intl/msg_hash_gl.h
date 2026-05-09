@@ -6245,10 +6245,6 @@ MSG_HASH(
    "Amosar 'Xogo en Rede'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Amosar o menú 'Xogo en rede'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Mostrar \"Historial\""
    )

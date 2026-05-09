@@ -6029,10 +6029,6 @@ MSG_HASH(
    "'Netplay' Göster"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "'Netplay' menüsünü göster."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "'Geçmiş' Göster"
    )

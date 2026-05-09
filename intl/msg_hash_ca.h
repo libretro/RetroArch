@@ -6366,7 +6366,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Mostra el menú «Joc en xarxa»."
+   "Mostra l'entrada 'Joc en xarxa' dins del menú principal o de les llistes de reproducció."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -11515,6 +11515,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
    "Factor d’esvaïment vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Mostra la llista horitzontal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,

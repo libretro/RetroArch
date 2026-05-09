@@ -6241,10 +6241,6 @@ MSG_HASH(
    "แสดง 'ออนไลน์ Netplay'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "แสดงเมนู 'เล่นออนไลน์ Netplay'"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "แสดง 'ประวัติ'"
    )

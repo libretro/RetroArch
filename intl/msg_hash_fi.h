@@ -5093,10 +5093,6 @@ MSG_HASH(
    "Näytä \"Verkkopeli\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Näytä 'Verkkopeli'-valikko."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Näytä \"Historia\""
    )

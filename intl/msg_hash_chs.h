@@ -6069,10 +6069,6 @@ MSG_HASH(
    "显示「联机」页"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "显示“网络联机”菜单。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "显示「历史」页"
    )

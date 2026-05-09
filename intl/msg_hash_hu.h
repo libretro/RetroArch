@@ -6349,10 +6349,6 @@ MSG_HASH(
    "\"Netplay\" látható"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "A 'Netplay' menü megjelenítése."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "\"Előzmények\" látható"
    )

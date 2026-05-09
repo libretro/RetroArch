@@ -6385,10 +6385,6 @@ MSG_HASH(
    "Показывать 'Сетевая игра'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Показывать меню 'Сетевая игра'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Показывать 'История запуска'"
    )

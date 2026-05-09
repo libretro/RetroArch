@@ -6333,10 +6333,6 @@ MSG_HASH(
    "Показати 'Netplay'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Показати меню 'Netplay'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Показати \"Історія\""
    )

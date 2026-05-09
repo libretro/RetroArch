@@ -6306,7 +6306,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Zobraziť menu 'Netplay'."
+   "Zobraziť položku „Netplay“ v hlavnom menu alebo v zoznamoch skladieb."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -11313,6 +11313,10 @@ MSG_HASH(
    "Faktor vertikálneho prelínania"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Zobraziť vodorovný zoznam"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Zobraziť hlavičku názvu"
    )
@@ -11545,6 +11549,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "Mať ľavý bočný panel vždy zbalený."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Zobraziť bočný panel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Povoliť navigáciu v ľavom bočnom paneli a zoznamy skladieb."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,

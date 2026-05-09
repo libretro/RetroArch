@@ -6374,7 +6374,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Taispeáin an roghchlár 'Netplay'."
+   "Taispeáin an iontráil 'Netplay' taobh istigh den Phríomh-Roghchlár nó Seinmliostaí."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -11619,6 +11619,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
    "Fachtóir Céimnithe Ingearach"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Taispeáin Liosta Cothrománach"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,

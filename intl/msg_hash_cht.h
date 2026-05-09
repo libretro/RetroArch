@@ -5617,10 +5617,6 @@ MSG_HASH(
    "顯示「連線對戰」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "顯示「連線遊戲」選單。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "顯示「歷史」"
    )

@@ -6366,7 +6366,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Muestra el menú Juego en red."
+   "Muestra la opción Juego en red dentro del menú principal o en las listas de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -11555,6 +11555,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
    "Fundido vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Mostrar lista horizontal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,

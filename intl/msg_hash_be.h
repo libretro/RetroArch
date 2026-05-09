@@ -5833,10 +5833,6 @@ MSG_HASH(
    "Паказ 'Сеткавая гульня'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Паказваць меню 'Сеткавая гульня'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Паказ 'Гісторыя'"
    )

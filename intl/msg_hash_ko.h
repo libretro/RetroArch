@@ -6405,10 +6405,6 @@ MSG_HASH(
    "'넷플레이' 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "'넷플레이' 메뉴를 표시합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "'최근 실행' 표시"
    )

@@ -3466,11 +3466,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
-   "Playlists com Clique Único"
+   "Listas de Reprodução com Clique Único"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
-   "Pular o menu 'Executar' ao iniciar entradas da playlist. Pressione o Direcional enquanto segura OK para acessar o menu 'Executar'."
+   "Pular o menu 'Executar' ao iniciar entradas da lista de reprodução. Pressione o Direcional enquanto segura OK para acessar o menu 'Executar'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
@@ -4464,7 +4464,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
-   "Mostrar \"Gerenciar núcleos\""
+   "Mostrar 'Gerenciar núcleos'"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
@@ -5165,7 +5165,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
-   "Exibir sobreposição"
+   "Exibir Sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
@@ -5640,7 +5640,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-   "Exibir contagem de quadros"
+   "Exibir Contagem de Quadros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
@@ -5648,7 +5648,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-   "Exibir estatísticas"
+   "Exibir Estatísticas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
@@ -5656,7 +5656,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
-   "Exibir uso da memória"
+   "Exibir Uso de Memória"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
@@ -6310,7 +6310,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Mostra o menu \"Netplay\"."
+   "Mostrar a opção 'Netplay' no Menu Principal ou nas Listas de Reprodução."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6346,7 +6346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
-   "Exibir Abas de Playlist"
+   "Mostrar Abas de Listas de Reprodução"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
@@ -6382,7 +6382,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
-   "Mostrar data e hora"
+   "Mostrar Data e Hora"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
@@ -6406,7 +6406,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
-   "Mostrar nível de bateria"
+   "Mostrar Nível de Bateria"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
@@ -6629,7 +6629,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   "Exibe a opção \"Adicionar em uma lista\"."
+   "Exibir opção 'Adicionar em uma lista'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
@@ -11421,6 +11421,10 @@ MSG_HASH(
    "Desvanecimento vertical"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Mostrar Lista Horizontal"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Mostrar cabeçalho"
    )
@@ -11845,7 +11849,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
-   "Mostrar barra de navegação"
+   "Mostrar Barra de Navegação"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
@@ -11893,7 +11897,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "Mostrar miniatura secundária nas listas"
+   "Mostrar Miniatura Secundária em Visualizações de Lista"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
@@ -13257,7 +13261,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ADD_TO_PLAYLIST_FAILED,
-   "Lista de reprodução cheia"
+   "Falha ao adicionar à lista de reprodução: lista cheia"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,

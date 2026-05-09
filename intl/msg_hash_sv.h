@@ -6105,10 +6105,6 @@ MSG_HASH(
    "Visa 'Netplay'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Visa 'Netplay'-menyn."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Visa 'Historik'"
    )

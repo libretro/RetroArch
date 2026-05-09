@@ -6337,10 +6337,6 @@ MSG_HASH(
    "Afficher 'Jeu en réseau'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Afficher le menu 'Jeu en réseau'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Afficher 'Historique'"
    )
