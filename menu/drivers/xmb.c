@@ -5243,7 +5243,7 @@ static int xmb_draw_item(
       if (*entry.value)
       {
          bool found = false;
-         if (memcmp(entry.value, "...", 4) == 0)
+         if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE)))
             found   = true;
          else if (string_starts_with_size(entry.value, "(", STRLEN_CONST("("))
                && string_ends_with(entry.value, ")"))

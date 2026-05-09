@@ -5430,7 +5430,7 @@ static void ozone_draw_entry_value(
    {
       if (*entry->value)
       {
-         if (memcmp(entry->value, "...", 3) == 0 && entry->value[3] == '\0')
+         if (string_is_equal(entry->value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE)))
             return;
          if (string_starts_with_size(entry->value, "(", STRLEN_CONST("("))
                && string_ends_with  (entry->value, ")"))

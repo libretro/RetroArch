@@ -5775,8 +5775,8 @@ static void rgui_render(void *data, unsigned width, unsigned height,
 
                   if (!entry_selected &&
                         (     string_is_equal(entry_value, "null")
-                           || string_is_equal(entry_value, "OFF")
-                           || string_is_equal(entry_value, "...")))
+                           || string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+                           || string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE))))
                      entry_value_color = rgui->colors.disabled_color;
 
                   /* Print entry value */
