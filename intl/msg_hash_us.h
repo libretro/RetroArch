@@ -6685,7 +6685,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Show the options for undoing save/load state."
+   "Show the options for undoing save/load state. RetroPad Start triggers save/load undo when hidden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -15177,7 +15177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Undoing save state"
+   "Undoing save state..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
