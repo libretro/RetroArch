@@ -930,8 +930,9 @@ static bool init_thread(ffmpeg_t *handle)
    handle->lock       = slock_new();
    handle->cond_lock  = slock_new();
    handle->cond       = scond_new();
-   handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) *
-         handle->params.channels * MAX_FRAMES / 60); /* Some arbitrary max size. */
+   if (handle->config.audio_enable)
+      handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) *
+            handle->params.channels * MAX_FRAMES / 60); /* Some arbitrary max size. */
    handle->attr_fifo  = fifo_new(sizeof(struct record_video_data) * MAX_FRAMES);
    handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
          handle->video.pix_size * MAX_FRAMES);
@@ -1086,6 +1087,12 @@ static void *ffmpeg_new(const struct record_params *params)
                params->video_record_threads
                );
          break;
+   }
+
+   if (params->channels == 0)
+   {
+      handle->config.audio_enable = false;
+      RARCH_LOG("[FFmpeg] Audio disabled for video-only recording stream.\n");
    }
 
    if (!ffmpeg_init_muxer_pre(handle))
