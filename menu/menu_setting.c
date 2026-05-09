@@ -3736,6 +3736,30 @@ static size_t setting_get_string_representation_uint_menu_timedate_date_separato
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_time_show(
+   rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case TIME_SHOW_HM:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIMEDATE_HM), len);
+         case TIME_SHOW_HMS:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS), len);
+         case TIME_SHOW_HM_AMPM:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM), len);
+         case TIME_SHOW_HMS_AMPM:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM), len);
+         case TIME_SHOW_OFF:
+         default:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+      }
+   }
+
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_menu_add_content_entry_display_type(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -17589,6 +17613,25 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
          menu_settings_list_current_add_range(list, list_info, 1, 512, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_time_show,
+               MENU_ENUM_LABEL_TIME_SHOW,
+               MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+               DEFAULT_TIME_SHOW,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_time_show;
+         menu_settings_list_current_add_range(list, list_info, 0, TIME_SHOW_LAST - 1, 1, true, true);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
          CONFIG_BOOL(
                list, list_info,

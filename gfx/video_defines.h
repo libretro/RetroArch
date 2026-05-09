@@ -111,6 +111,16 @@ enum autoswitch_refresh_rate
    AUTOSWITCH_REFRESH_RATE_LAST
 };
 
+enum time_show_type
+{
+   TIME_SHOW_OFF = 0,
+   TIME_SHOW_HM,
+   TIME_SHOW_HMS,
+   TIME_SHOW_HM_AMPM,
+   TIME_SHOW_HMS_AMPM,
+   TIME_SHOW_LAST
+};
+
 enum rarch_display_type
 {
    /* Non-bindable types like consoles, KMS, VideoCore, etc. */

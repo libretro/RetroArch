@@ -5859,6 +5859,14 @@ MSG_HASH(
    "Memory usage display will be updated at the set interval in frames."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Display Time"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Display the current time in the preferred format."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Display Netplay Ping"
    )
