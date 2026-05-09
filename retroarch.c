@@ -149,6 +149,7 @@
 #include "gfx/gfx_widgets.h"
 #endif
 
+#include "input/input_driver.h"
 #include "input/input_remapping.h"
 
 #ifdef HAVE_CHEEVOS
@@ -3816,6 +3817,10 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             video_driver_restore_cached(settings);
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+            input_dsu_broadcast_current_state();
+#endif
+
             if (    (flags & CONTENT_ST_FLAG_IS_INITED)
                   && load_dummy_core)
             {
@@ -4196,6 +4201,22 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RECORD_DEINIT:
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+         {
+            unsigned i;
+            settings_t *settings = config_get_ptr();
+            /* Broadcast stream stop to all connected DSU servers */
+            input_dsu_broadcast_stream_status(
+                  0u, 0u, 0u, 0u, "");
+            /* Broadcast aux stream stop to each active aux slot */
+            for (i = 0; i < MAX_USERS; i++)
+            {
+               if (i < 4 && rec_st->aux_streams[i].active)
+                  input_dsu_broadcast_aux_stream_status(i, 0u, 0u, 0u,
+                        rec_st->aux_streams[i].stream_url);
+            }
+         }
+#endif
          rec_st->enable = false;
          streaming_set_state(false);
          if (!recording_deinit())
@@ -4208,6 +4229,25 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
             return false;
          }
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+         /* Broadcast stream start to all connected DSU servers */
+         {
+            unsigned i;
+            settings_t *settings = config_get_ptr();
+            input_dsu_broadcast_stream_status(
+                  1u, 0u,
+                  settings->uints.streaming_mode, 0u,
+                  settings->paths.path_stream_url);
+            /* Broadcast aux stream start to each active aux slot */
+            for (i = 0; i < MAX_USERS; i++)
+            {
+               if (i < 4 && rec_st->aux_streams[i].active)
+                  input_dsu_broadcast_aux_stream_status(i, 1u, 0u,
+                        settings->uints.streaming_mode,
+                        rec_st->aux_streams[i].stream_url);
+            }
+         }
+#endif
          break;
       case CMD_EVENT_HISTORY_DEINIT:
          if (g_defaults.content_history)
@@ -6284,6 +6324,10 @@ int rarch_main(int argc, char *argv[], void *data)
    }
 
    settings = config_get_ptr();
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   input_dsu_init();
+#endif
 
 #ifdef HAVE_SMBCLIENT
    retroarch_smb_init();
@@ -8386,6 +8430,10 @@ bool retroarch_main_init(int argc, char *argv[])
             settings,
             settings->uints.input_max_users);
 #endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   if (!input_st->dsu)
+      input_dsu_init();
+#endif
    input_mapper_reset(&input_st->mapper);
    command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
 
@@ -8530,6 +8578,10 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                input_remote_free(input_st->remote,
                      config_get_ptr()->uints.input_max_users);
             input_st->remote = NULL;
+#endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+            if (input_st->dsu)
+               input_dsu_deinit();
 #endif
             input_mapper_reset(&input_st->mapper);
 

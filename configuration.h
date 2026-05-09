@@ -247,6 +247,11 @@ typedef struct settings
       unsigned savestate_max_keep;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
+      unsigned network_dsu_player_server_port[MAX_USERS];
+      unsigned aux_screen_mode[MAX_USERS];
+      unsigned aux_screen_port[MAX_USERS];
+      unsigned aux_screen_quality[MAX_USERS];
+      unsigned aux_screen_scale_factor[MAX_USERS];
       unsigned keymapper_port;
       unsigned cloud_sync_sync_mode;
       unsigned video_window_opacity;
@@ -592,6 +597,10 @@ typedef struct settings
 
       char netplay_server[NAME_MAX_LENGTH];
       char netplay_custom_mitm_server[NAME_MAX_LENGTH];
+      char network_dsu_player_server_address[MAX_USERS][64];
+      char aux_screen_url[MAX_USERS][8192]; /* TODO/FIXME - check size */
+      char aux_screen_title[MAX_USERS][512]; /* TODO/FIXME - check size */
+      char aux_screen_config[MAX_USERS][PATH_MAX_LENGTH];
       char network_buildbot_url[NAME_MAX_LENGTH];
       char network_buildbot_assets_url[NAME_MAX_LENGTH];
       char menu_content_show_settings_password[NAME_MAX_LENGTH];
@@ -1081,6 +1090,17 @@ typedef struct settings
       bool keymapper_enable;
       bool network_remote_enable;
       bool network_remote_enable_user[MAX_USERS];
+      bool network_dsu_player_broadcast_state[MAX_USERS];
+      bool network_dsu_player_allow_remote_commands[MAX_USERS];
+      bool network_dsu_player_allow_stream_control[MAX_USERS];
+      bool network_dsu_player_allow_aux_streaming[MAX_USERS];
+      bool network_dsu_player_addon[MAX_USERS];
+      bool network_dsu_player_accel[MAX_USERS];
+      bool network_dsu_player_gyro[MAX_USERS];
+      bool network_dsu_player_touch[MAX_USERS];
+      bool network_dsu_player_keyboard[MAX_USERS];
+      bool network_dsu_player_mouse[MAX_USERS];
+      bool network_dsu_player_gamepad[MAX_USERS];
       bool load_dummy_on_core_shutdown;
       bool core_option_category_enable;
       bool core_info_cache_enable;

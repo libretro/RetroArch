@@ -2533,6 +2533,11 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += cores/libretro-net-retropad/net_retropad_core.o
    endif
+
+   ifeq ($(HAVE_DSU), 1)
+      DEFINES += -DHAVE_DSU
+      OBJ += input/input_dsu.o
+   endif
 endif
 
 ifneq ($(findstring FPGA,$(OS)),)

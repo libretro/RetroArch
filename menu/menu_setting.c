@@ -358,6 +358,9 @@ enum settings_list_type
 #ifdef HAVE_SMBCLIENT
    SETTINGS_LIST_SMBCLIENT,
 #endif
+#ifdef HAVE_DSU
+   SETTINGS_LIST_DSU_CLIENT,
+#endif
    SETTINGS_LIST_MANUAL_CONTENT_SCAN
 };
 
@@ -3064,6 +3067,36 @@ static size_t setting_get_string_representation_streaming_mode(
    return 0;
 }
 
+static size_t setting_get_string_representation_aux_streaming_mode(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   /* Aux streaming mode is always "Custom" - read-only */
+   return strlcpy(s, "Custom", len);
+}
+
+static size_t setting_get_string_representation_aux_screen_quality(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting && setting->value.target.unsigned_integer)
+   {
+      unsigned val = *setting->value.target.unsigned_integer;
+      switch (val)
+      {
+         case RECORD_CONFIG_TYPE_STREAMING_CUSTOM:
+            return strlcpy(s, "Custom", len);
+         case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
+            return strlcpy(s, "Low", len);
+         case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
+            return strlcpy(s, "Medium", len);
+         case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
+            return strlcpy(s, "High", len);
+         default:
+            break;
+      }
+   }
+   return strlcpy(s, "Custom", len);
+}
+
 static size_t setting_get_string_representation_video_stream_quality(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -3253,7 +3286,7 @@ static size_t setting_get_string_representation_password(
 {
    if (setting)
    {
-      if (   setting->value.target.string 
+      if (   setting->value.target.string
           && setting->value.target.string[0] != '\0')
          return strlcpy(s, "********", len);
       if (config_get_ptr()->arrays.cheevos_token[0])
@@ -16801,6 +16834,14 @@ static bool setting_append_list(
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+            CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_AUXILIARY_SCREEN_STREAMING,
+               MENU_ENUM_LABEL_VALUE_AUXILIARY_SCREEN_STREAMING,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
             CONFIG_UINT(
                list, list_info,
                &settings->uints.video_record_quality,
@@ -16996,6 +17037,172 @@ static bool setting_append_list(
                   );
 
             END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
+
+            /* Auxiliary Screen Streaming */
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUXILIARY_SCREEN_STREAMING),
+                  parent_group);
+
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_AUXILIARY_SCREEN_STREAMING);
+
+            {
+               unsigned max_users = settings->uints.input_max_users;
+               unsigned aux_max_users = (max_users > 4) ? 4 : max_users;
+               unsigned u;
+               char s1[32], s2[64];
+               size_t _len;
+
+               /* Add per-player menu entries */
+               for (u = 0; u < aux_max_users; u++)
+               {
+                  snprintf(s1, sizeof(s1), "Screen %u", u + 1);
+
+                  snprintf(s2, sizeof(s2), "%u_player_aux_streaming", u + 1);
+
+                  enum msg_hash_enums screen_enum;
+                  switch (u)
+                  {
+                     case 0: screen_enum = MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS; break;
+                     case 1: screen_enum = MENU_ENUM_LABEL_AUX_SCREEN_2_SETTINGS; break;
+                     case 2: screen_enum = MENU_ENUM_LABEL_AUX_SCREEN_3_SETTINGS; break;
+                     case 3: screen_enum = MENU_ENUM_LABEL_AUX_SCREEN_4_SETTINGS; break;
+                     default: screen_enum = MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS; break;
+                  }
+
+                  CONFIG_ACTION_ALT(
+                        list, list_info,
+                        s2,
+                        s1,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group);
+                  (*list)[list_info->index - 1].index = u + 1;
+                  MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, screen_enum);
+               }
+
+               /* Add per-player setting groups */
+               for (u = 0; u < aux_max_users; u++)
+               {
+                  char player_group_label[64];
+                  snprintf(player_group_label, sizeof(player_group_label), "Screen %u", u + 1);
+
+                  START_GROUP(list, list_info, &group_info,
+                        player_group_label,
+                        parent_group);
+                  MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                        (enum msg_hash_enums)(MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS + u));
+
+                  _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_MODE_STR, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_AUX_SCREEN_MODE), u + 1);
+
+                  CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.aux_screen_mode[u],
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_MODE + u),
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_NETWORK_AUX_SCREEN_MODE),
+                     STREAMING_MODE_CUSTOM,
+                     &group_info,
+                     &subgroup_info,
+                     player_group_label,
+                     NULL,
+                     general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = NULL;
+                  (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_aux_streaming_mode;
+                  (*list)[list_info->index - 1].name = strdup(s2);
+                  SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+                  _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_QUALITY_STR, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  strlcpy(s2, "Aux Stream Quality", sizeof(s2));
+
+                  CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.aux_screen_quality[u],
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_QUALITY + u),
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_NETWORK_AUX_SCREEN_QUALITY),
+                     RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+                     &group_info,
+                     &subgroup_info,
+                     player_group_label,
+                     NULL,
+                     general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_aux_screen_quality;
+                  (*list)[list_info->index - 1].offset_by = RECORD_CONFIG_TYPE_STREAMING_CUSTOM;
+                  (*list)[list_info->index - 1].name = strdup(s2);
+                  menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_STREAMING_CUSTOM, RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY, 1, true, true);
+
+                  _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_TITLE_STR, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_AUX_SCREEN_TITLE), u + 1);
+
+                  CONFIG_STRING(
+                     list, list_info,
+                     settings->paths.aux_screen_title[u],
+                     sizeof(settings->paths.aux_screen_title[u]),
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_TITLE + u),
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_NETWORK_AUX_SCREEN_TITLE),
+                     "",
+                     &group_info,
+                     &subgroup_info,
+                     player_group_label,
+                     general_write_handler,
+                     general_read_handler);
+                  SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+                  (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_STRING_LINE_EDIT;
+                  (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
+                  (*list)[list_info->index - 1].name = strdup(s2);
+
+                  _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_CONFIG_STR, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_AUX_SCREEN_CONFIG), u + 1);
+
+                  CONFIG_PATH(
+                     list, list_info,
+                     settings->paths.aux_screen_config[u],
+                     sizeof(settings->paths.aux_screen_config[u]),
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_CONFIG + u),
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_NETWORK_AUX_SCREEN_CONFIG),
+                     "",
+                     &group_info,
+                     &subgroup_info,
+                     player_group_label,
+                     general_write_handler,
+                     general_read_handler);
+                  MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
+                  (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_FILE_SELECTOR;
+                  (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
+                  (*list)[list_info->index - 1].name = strdup(s2);
+
+                  _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_URL_STR, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_AUX_SCREEN_URL), u + 1);
+
+                  CONFIG_STRING(
+                     list, list_info,
+                     settings->paths.aux_screen_url[u],
+                     sizeof(settings->paths.aux_screen_url[u]),
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_URL + u),
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_NETWORK_AUX_SCREEN_URL),
+                     "udp://127.0.0.1:56400",
+                     &group_info,
+                     &subgroup_info,
+                     player_group_label,
+                     general_write_handler,
+                     general_read_handler);
+                  SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+                  (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_STRING_LINE_EDIT;
+                  (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
+                  (*list)[list_info->index - 1].name = strdup(s2);
+
+                  END_GROUP(list, list_info, parent_group);
+               }
+            }
+
             END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_INPUT_HOTKEY:
@@ -23620,6 +23827,16 @@ static bool setting_append_list(
          }
 #endif
 
+#ifdef HAVE_DSU
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_DSU_CLIENT_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
+
          START_SUB_GROUP(list, list_info, "Netplay", &group_info, &subgroup_info, parent_group);
 
          {
@@ -24183,6 +24400,113 @@ static bool setting_append_list(
                   MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user));
                }
             }
+#ifdef HAVE_DSU
+            {
+               unsigned max_users = settings->uints.input_max_users;
+               const char *lbl_dsu_addon = MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ADDON_STR;
+               const char *val_dsu_addon = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_ADDON);
+               const char *lbl_dsu_accel = MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ACCEL_STR;
+               const char *val_dsu_accel = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_ACCEL);
+               const char *lbl_dsu_gyro  = MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_GYRO_STR;
+               const char *val_dsu_gyro  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_GYRO);
+               const char *lbl_dsu_touch = MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_TOUCH_STR;
+               const char *val_dsu_touch = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_TOUCH);
+               const char *lbl_dsu_mouse = MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_MOUSE_STR;
+               const char *val_dsu_mouse = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_MOUSE);
+               unsigned u;
+               char s1[32], s2[64];
+               size_t _len;
+
+               for (u = 0; u < max_users; u++)
+               {
+                  _len = strlcpy(s1, lbl_dsu_addon, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  snprintf(s2, sizeof(s2), val_dsu_addon, u + 1);
+                  CONFIG_BOOL_ALT(list, list_info,
+                        &settings->bools.network_dsu_player_addon[u],
+                        s1, s2, false,
+                        MENU_ENUM_LABEL_VALUE_OFF, MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info, &subgroup_info, parent_group,
+                        general_write_handler, general_read_handler, SD_FLAG_ADVANCED);
+                  MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                        (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ADDON + u));
+               }
+               for (u = 0; u < max_users; u++)
+               {
+                  _len = strlcpy(s1, lbl_dsu_accel, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  snprintf(s2, sizeof(s2), val_dsu_accel, u + 1);
+                  CONFIG_BOOL_ALT(list, list_info,
+                        &settings->bools.network_dsu_player_accel[u],
+                        s1, s2, true,
+                        MENU_ENUM_LABEL_VALUE_OFF, MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info, &subgroup_info, parent_group,
+                        general_write_handler, general_read_handler, SD_FLAG_ADVANCED);
+                  MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                        (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ACCEL + u));
+               }
+               for (u = 0; u < max_users; u++)
+               {
+                  _len = strlcpy(s1, lbl_dsu_gyro, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  snprintf(s2, sizeof(s2), val_dsu_gyro, u + 1);
+                  CONFIG_BOOL_ALT(list, list_info,
+                        &settings->bools.network_dsu_player_gyro[u],
+                        s1, s2, true,
+                        MENU_ENUM_LABEL_VALUE_OFF, MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info, &subgroup_info, parent_group,
+                        general_write_handler, general_read_handler, SD_FLAG_ADVANCED);
+                  MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                        (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_GYRO + u));
+               }
+               for (u = 0; u < max_users; u++)
+               {
+                  _len = strlcpy(s1, lbl_dsu_touch, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  snprintf(s2, sizeof(s2), val_dsu_touch, u + 1);
+                  CONFIG_BOOL_ALT(list, list_info,
+                        &settings->bools.network_dsu_player_touch[u],
+                        s1, s2, true,
+                        MENU_ENUM_LABEL_VALUE_OFF, MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info, &subgroup_info, parent_group,
+                        general_write_handler, general_read_handler, SD_FLAG_ADVANCED);
+                  MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                        (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_TOUCH + u));
+               }
+               for (u = 0; u < max_users; u++)
+               {
+                  _len = strlcpy(s1, lbl_dsu_mouse, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                  snprintf(s2, sizeof(s2), val_dsu_mouse, u + 1);
+                  CONFIG_BOOL_ALT(list, list_info,
+                        &settings->bools.network_dsu_player_mouse[u],
+                        s1, s2, false,
+                        MENU_ENUM_LABEL_VALUE_OFF, MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info, &subgroup_info, parent_group,
+                        general_write_handler, general_read_handler, SD_FLAG_ADVANCED);
+                  MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                        (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_MOUSE + u));
+               }
+               {
+                  const char *lbl_dsu_gamepad = MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_GAMEPAD_STR;
+                  const char *val_dsu_gamepad = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_GAMEPAD);
+                  for (u = 0; u < max_users; u++)
+                  {
+                     _len = strlcpy(s1, lbl_dsu_gamepad, sizeof(s1));
+                     snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+                     snprintf(s2, sizeof(s2), val_dsu_gamepad, u + 1);
+                     CONFIG_BOOL_ALT(list, list_info,
+                           &settings->bools.network_dsu_player_gamepad[u],
+                           s1, s2, true,
+                           MENU_ENUM_LABEL_VALUE_OFF, MENU_ENUM_LABEL_VALUE_ON,
+                           &group_info, &subgroup_info, parent_group,
+                           general_write_handler, general_read_handler, SD_FLAG_ADVANCED);
+                     MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                           (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_GAMEPAD + u));
+                  }
+               }
+            }
+#endif
 
             CONFIG_BOOL(
                   list, list_info,
@@ -25740,6 +26064,152 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
 #endif
+#ifdef HAVE_DSU
+      case SETTINGS_LIST_DSU_CLIENT:
+         START_GROUP(list, list_info, &group_info,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DSU_CLIENT_SETTINGS),
+            parent_group);
+
+         parent_group = MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS_STR;
+
+         {
+            unsigned max_users = settings->uints.input_max_users;
+            unsigned u;
+            char s1[32], s2[64];
+            size_t _len;
+
+            for (u = 0; u < max_users; u++)
+            {
+               _len = strlcpy(s1, "Player ", sizeof(s1));
+               snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+
+               START_SUB_GROUP(list, list_info, s1, &group_info, &subgroup_info, parent_group);
+
+               _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_SERVER_ADDRESS_STR, sizeof(s1));
+               snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+               snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_SERVER_ADDRESS), u + 1);
+
+               CONFIG_STRING(
+                  list, list_info,
+                  settings->paths.network_dsu_player_server_address[u],
+                  sizeof(settings->paths.network_dsu_player_server_address[u]),
+                  (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_SERVER_ADDRESS + u),
+                  (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_SERVER_ADDRESS),
+                  "127.0.0.1",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  NULL,
+                  NULL);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+               _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_KEYBOARD_STR, sizeof(s1));
+               snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+               snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_KEYBOARD), u + 1);
+
+               CONFIG_BOOL_ALT(
+                  list, list_info,
+                  &settings->bools.network_dsu_player_keyboard[u],
+                  s1, s2,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
+               MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_KEYBOARD + u));
+
+               _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_BROADCAST_STATE_STR, sizeof(s1));
+               snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+               snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_BROADCAST_STATE), u + 1);
+
+               CONFIG_BOOL_ALT(
+                  list, list_info,
+                  &settings->bools.network_dsu_player_broadcast_state[u],
+                  s1, s2,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
+               MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_BROADCAST_STATE + u));
+
+               _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ALLOW_REMOTE_COMMANDS_STR, sizeof(s1));
+               snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+               snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_ALLOW_REMOTE_COMMANDS), u + 1);
+
+               CONFIG_BOOL_ALT(
+                  list, list_info,
+                  &settings->bools.network_dsu_player_allow_remote_commands[u],
+                  s1, s2,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
+               MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ALLOW_REMOTE_COMMANDS + u));
+
+               _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ALLOW_STREAM_CONTROL_STR, sizeof(s1));
+               snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+               snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_ALLOW_STREAM_CONTROL), u + 1);
+
+               CONFIG_BOOL_ALT(
+                  list, list_info,
+                  &settings->bools.network_dsu_player_allow_stream_control[u],
+                  s1, s2,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
+               MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ALLOW_STREAM_CONTROL + u));
+
+               _len = strlcpy(s1, MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ALLOW_AUX_STREAMING_STR, sizeof(s1));
+               snprintf(s1 + _len, sizeof(s1) - _len, "%u", u + 1);
+               snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_DSU_PLAYER_ALLOW_AUX_STREAMING), u + 1);
+
+               CONFIG_BOOL_ALT(
+                  list, list_info,
+                  &settings->bools.network_dsu_player_allow_aux_streaming[u],
+                  s1, s2,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
+               MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ALLOW_AUX_STREAMING + u));
+
+               END_SUB_GROUP(list, list_info, parent_group);
+            }
+         }
+
+         END_GROUP(list, list_info, parent_group);
+         break;
+#endif
       case SETTINGS_LIST_NONE:
       default:
          break;
@@ -25896,6 +26366,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
 #ifdef HAVE_SMBCLIENT
       SETTINGS_LIST_SMBCLIENT,
 #endif
+#ifdef HAVE_DSU
+      SETTINGS_LIST_DSU_CLIENT,
+#endif
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
    settings_t *settings                 = config_get_ptr();
@@ -25917,6 +26390,32 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
 
    for (i = 0; i < ARRAY_SIZE(list_types); i++)
    {
+      const char *list_type_str = "UNKNOWN";
+      switch (list_types[i])
+      {
+         case SETTINGS_LIST_MAIN_MENU: list_type_str = "MAIN_MENU"; break;
+         case SETTINGS_LIST_DRIVERS: list_type_str = "DRIVERS"; break;
+         case SETTINGS_LIST_CORE: list_type_str = "CORE"; break;
+         case SETTINGS_LIST_CONFIGURATION: list_type_str = "CONFIGURATION"; break;
+         case SETTINGS_LIST_LOGGING: list_type_str = "LOGGING"; break;
+         case SETTINGS_LIST_SAVING: list_type_str = "SAVING"; break;
+         case SETTINGS_LIST_CLOUD_SYNC: list_type_str = "CLOUD_SYNC"; break;
+         case SETTINGS_LIST_REWIND: list_type_str = "REWIND"; break;
+         case SETTINGS_LIST_CHEATS: list_type_str = "CHEATS"; break;
+         case SETTINGS_LIST_VIDEO: list_type_str = "VIDEO"; break;
+         case SETTINGS_LIST_AUDIO: list_type_str = "AUDIO"; break;
+         case SETTINGS_LIST_INPUT: list_type_str = "INPUT"; break;
+         case SETTINGS_LIST_RECORDING: list_type_str = "RECORDING"; break;
+         case SETTINGS_LIST_PLAYLIST: list_type_str = "PLAYLIST"; break;
+         case SETTINGS_LIST_NETPLAY: list_type_str = "NETPLAY"; break;
+#ifdef HAVE_SMBCLIENT
+         case SETTINGS_LIST_SMBCLIENT: list_type_str = "SMBCLIENT"; break;
+#endif
+#ifdef HAVE_DSU
+         case SETTINGS_LIST_DSU_CLIENT: list_type_str = "DSU_CLIENT"; break;
+#endif
+         default: break;
+      }
       if (!setting_append_list(
                settings, global,
                list_types[i], &list, list_info, root))

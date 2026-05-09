@@ -66,9 +66,15 @@ static int deferred_push_dlist(
       enum menu_displaylist_ctl_state state,
       settings_t *settings)
 {
-   if (!menu_displaylist_ctl(state, info, settings))
+   int ctl_result = 0;
+
+   ctl_result = menu_displaylist_ctl(state, info, settings);
+
+   if (!ctl_result)
       return -1;
+
    menu_displaylist_process(info);
+
    return 0;
 }
 
@@ -234,6 +240,28 @@ GENERIC_DEFERRED_PUSH(deferred_push_ai_service_settings_list,            DISPLAY
 GENERIC_DEFERRED_PUSH(deferred_push_accessibility_settings_list,         DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_recording_settings_list,        DISPLAYLIST_RECORDING_SETTINGS_LIST)
+static int deferred_push_auxiliary_screen_streaming_list(menu_displaylist_info_t *info)
+{
+   settings_t *settings = config_get_ptr();
+   return deferred_push_dlist(info, DISPLAYLIST_AUXILIARY_SCREEN_STREAMING_LIST, settings);
+}
+static int deferred_push_aux_screen_settings_list(menu_displaylist_info_t *info)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned val = info->directory_ptr;
+   char header_label[256];
+
+   if (val == 0)
+      val = 1;
+
+   /* Set path to screen number for DISPLAYLIST_AUX_SCREEN_SETTINGS_LIST */
+   snprintf(header_label, sizeof(header_label), "%u", val);
+   if (info->path)
+      free(info->path);
+   info->path = strdup(header_label);
+
+   return deferred_push_dlist(info, DISPLAYLIST_AUX_SCREEN_SETTINGS_LIST, settings);
+}
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_list,          DISPLAYLIST_PLAYLIST_MANAGER_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_settings,      DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS)
@@ -293,6 +321,40 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_game_ai_options,             DISPLAYLIS
 #ifdef HAVE_SMBCLIENT
 GENERIC_DEFERRED_PUSH(deferred_push_smb_client_settings_list,       DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_smb_client_options,             DISPLAYLIST_OPTIONS_SMB_CLIENT)
+#endif
+
+#ifdef HAVE_DSU
+static int deferred_push_dsu_client_settings_list(menu_displaylist_info_t *info)
+{
+   settings_t *settings = config_get_ptr();
+   RARCH_LOG("[DSU] deferred_push_dsu_client_settings_list called, pushing DISPLAYLIST_DSU_CLIENT_SETTINGS_LIST\n");
+   return deferred_push_dlist(info, DISPLAYLIST_DSU_CLIENT_SETTINGS_LIST, settings);
+}
+static int deferred_push_dsu_client_player_settings_list(menu_displaylist_info_t *info)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned player      = info->directory_ptr;
+   char player_label[32];
+
+   if (player == 0)
+      player = 1;
+
+   snprintf(player_label, sizeof(player_label), "%u", player);
+
+   if (info->path)
+      free(info->path);
+   info->path = strdup(player_label);
+
+   RARCH_LOG("[DSU] deferred_push_dsu_client_player_settings_list called, player=%u\n",
+         player);
+
+   return deferred_push_dlist(info, DISPLAYLIST_DSU_CLIENT_PLAYER_SETTINGS_LIST, settings);
+}
+static int deferred_push_dsu_client_remote_settings_list(menu_displaylist_info_t *info)
+{
+   settings_t *settings = config_get_ptr();
+   return deferred_push_dlist(info, DISPLAYLIST_DSU_CLIENT_REMOTE_SETTINGS_LIST, settings);
+}
 #endif
 
 static int general_push(menu_displaylist_info_t *info,
@@ -358,8 +420,8 @@ static int general_push(menu_displaylist_info_t *info,
          {
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
-            if (    sysinfo 
-                &&  sysinfo->valid_extensions 
+            if (    sysinfo
+                &&  sysinfo->valid_extensions
                 && *sysinfo->valid_extensions)
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), sysinfo->valid_extensions);
          }
@@ -371,8 +433,8 @@ static int general_push(menu_displaylist_info_t *info,
             if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
             {
                struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
-               if (    sysinfo 
-                   &&  sysinfo->valid_extensions 
+               if (    sysinfo
+                   &&  sysinfo->valid_extensions
                    && *sysinfo->valid_extensions)
                   valid_extensions = sysinfo->valid_extensions;
             }
@@ -430,11 +492,11 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if (defined(HAVE_FFMPEG) && !defined(__WINRT__)) || defined(HAVE_MPV)
    if (multimedia_builtin_mediaplayer_enable)
    {
       struct retro_system_info sysinfo = {0};
-#if defined(HAVE_FFMPEG)
+#if defined(HAVE_FFMPEG) && !defined(__WINRT__)
       libretro_ffmpeg_retro_get_system_info(&sysinfo);
 #elif defined(HAVE_MPV)
       libretro_mpv_retro_get_system_info(&sysinfo);
@@ -680,6 +742,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_INFORMATION, deferred_push_information},
       {MENU_ENUM_LABEL_SHADER_OPTIONS, deferred_push_shader_options},
       {MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST, deferred_user_binds_list},
+      {MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS, deferred_push_aux_screen_settings_list},
+      {MENU_ENUM_LABEL_AUX_SCREEN_2_SETTINGS, deferred_push_aux_screen_settings_list},
+      {MENU_ENUM_LABEL_AUX_SCREEN_3_SETTINGS, deferred_push_aux_screen_settings_list},
+      {MENU_ENUM_LABEL_AUX_SCREEN_4_SETTINGS, deferred_push_aux_screen_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST, deferred_push_input_retropad_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST, deferred_push_input_hotkey_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS, deferred_push_quick_menu_override_options},
@@ -693,6 +759,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, deferred_push_dropdown_box_list_manual_content_scan_system_name},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, deferred_push_dropdown_box_list_manual_content_scan_core_name},
       {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST, deferred_push_recording_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUXILIARY_SCREEN_STREAMING_LIST, deferred_push_auxiliary_screen_streaming_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUX_SCREEN_SETTINGS_LIST, deferred_push_aux_screen_settings_list},
       {MENU_ENUM_LABEL_COLLECTION, deferred_push_content_collection_list},
       {MENU_ENUM_LABEL_SETTINGS,   deferred_push_settings},
       {MENU_ENUM_LABEL_CONFIGURATIONS_LIST, deferred_push_configurations_list},
@@ -769,6 +837,14 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST, deferred_push_smb_client_settings_list},
       {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS, deferred_push_smb_client_options},
 #endif
+#ifdef HAVE_DSU
+      {MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_SETTINGS_LIST, deferred_push_dsu_client_settings_list},
+      {MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS, deferred_push_dsu_client_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_PLAYER_SETTINGS_LIST, deferred_push_dsu_client_player_settings_list},
+      {MENU_ENUM_LABEL_DSU_CLIENT_PLAYER_SETTINGS, deferred_push_dsu_client_player_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_REMOTE_SETTINGS_LIST, deferred_push_dsu_client_remote_settings_list},
+      {MENU_ENUM_LABEL_DSU_CLIENT_REMOTE_SETTINGS, deferred_push_dsu_client_remote_settings_list},
+#endif
    };
 
    /* Fast path: try O(1) enum_idx switch first before O(n) string scan */
@@ -796,6 +872,18 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_recording_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_AUXILIARY_SCREEN_STREAMING_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_auxiliary_screen_streaming_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_AUX_SCREEN_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_aux_screen_settings_list);
+            break;
+         case MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS:
+         case MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS + 1:
+         case MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS + 2:
+         case MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS + 3:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_aux_screen_settings_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_retropad_binds_list);
@@ -1164,13 +1252,30 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_smb_client_options);
             break;
 #endif
+#ifdef HAVE_DSU
+         case MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS:
+            RARCH_LOG("[DSU] case MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS hit, binding deferred_push_dsu_client_settings_list\n");
+         case MENU_ENUM_LABEL_VALUE_DSU_CLIENT_SETTINGS:
+         case MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dsu_client_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DSU_CLIENT_PLAYER_SETTINGS:
+         case MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_PLAYER_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dsu_client_player_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DSU_CLIENT_REMOTE_SETTINGS:
+         case MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_REMOTE_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dsu_client_remote_settings_list);
+            break;
+#endif
          default:
-            break; /* Fall through to string-based lookup below */
+            goto slow_path;
       }
 
       return 0;
    }
 
+slow_path:
    /* Slow path: fall back to O(n) string comparison for labels
     * not matched by enum_idx (e.g. dynamically generated labels) */
    if (strcmp(label, "null") != 0)

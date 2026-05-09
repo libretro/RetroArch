@@ -26,6 +26,7 @@
 #include "config.h"
 #endif
 
+#include "verbosity.h"
 #include "msg_hash.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
@@ -702,7 +703,10 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
 #endif
    if (ret && strcmp(ret, "null") != 0)
       return ret;
-   return msg_hash_to_str_us(msg);
+
+   ret = msg_hash_to_str_us(msg);
+
+   return ret;
 }
 
 uint32_t msg_hash_calculate(const char *s)

@@ -1426,6 +1426,10 @@ MENU
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+#include "../input/input_dsu.c"
+#endif
+
 #if defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http_parse.c"
 #endif

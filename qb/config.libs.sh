@@ -213,6 +213,7 @@ check_enabled NETWORKING TRANSLATE OCR 'Networking is' false
 check_enabled NETWORKING HAVE_NETPLAYDISCOVERY 'Netplay discovery' 'Networking is' false
 
 check_enabled NETWORKING NETWORKGAMEPAD 'the networked game pad' 'Networking is' true
+check_enabled NETWORKING DSU 'DSU protocol support' 'Networking is' true
 
 check_lib '' STDIN_CMD "$CLIB" fcntl
 

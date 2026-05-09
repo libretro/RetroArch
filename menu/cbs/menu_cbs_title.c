@@ -599,6 +599,7 @@ DEFAULT_TITLE_MACRO(action_get_disk_options_list,               MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_frontend_counters_list,          MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS)
 DEFAULT_TITLE_MACRO(action_get_core_counters_list,              MENU_ENUM_LABEL_VALUE_CORE_COUNTERS)
 DEFAULT_TITLE_MACRO(action_get_recording_settings_list,         MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_auxiliary_screen_streaming_list, MENU_ENUM_LABEL_VALUE_AUXILIARY_SCREEN_STREAMING)
 DEFAULT_TITLE_MACRO(action_get_playlist_settings_list,          MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_playlist_manager_list,           MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST)
 DEFAULT_TITLE_MACRO(action_get_input_retropad_binds_settings_list,MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS)
@@ -806,6 +807,37 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_game_ai_options_list,       ME
 #ifdef HAVE_SMBCLIENT
 DEFAULT_TITLE_MACRO(action_get_smb_client_settings_list,                      MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS)
 #endif
+#ifdef HAVE_DSU
+DEFAULT_TITLE_MACRO(action_get_dsu_client_settings_list,                      MENU_ENUM_LABEL_VALUE_DSU_CLIENT_SETTINGS)
+
+static int action_get_dsu_client_player_settings_list(
+      const char *path, const char *label,
+      unsigned menu_type, char *s, size_t len)
+{
+   if (path && *path)
+      strlcpy(s, path, len);
+   else
+      strlcpy(s, "DSU Player Settings", len);
+   return 0;
+}
+
+static int action_get_dsu_client_remote_settings_list(
+      const char *path, const char *label,
+      unsigned menu_type, char *s, size_t len)
+{
+   strlcpy(s, "DSU Stream/Remote Settings", len);
+   return 0;
+}
+
+static int action_get_aux_screen_settings_list(
+      const char *path, const char *label,
+      unsigned menu_type, char *s, size_t len)
+{
+   unsigned val = path ? atoi(path) : 1;
+   snprintf(s, len, "Screen %u Settings", val);
+   return 0;
+}
+#endif
 
 static int action_get_title_deferred_database_manager_list(
       const char *path, const char *label,
@@ -958,6 +990,18 @@ static int action_get_title_input_binds_list(
    return 0;
 }
 
+static int action_get_title_aux_screen_settings_list(
+      const char *path, const char *label,
+      unsigned menu_type, char *s, size_t len)
+{
+   unsigned val;
+   if (!path || !*path)
+      return 0;
+   val = (((unsigned)path[0]) - 49) + 1;
+   snprintf(s, len, "Screen %u Settings", val);
+   return 0;
+}
+
 static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
@@ -1010,6 +1054,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST,             action_get_ai_service_settings_list},
 #ifdef HAVE_SMBCLIENT
       {MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST,             action_get_smb_client_settings_list},
+#endif
+#ifdef HAVE_DSU
+      {MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_SETTINGS_LIST,             action_get_dsu_client_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_PLAYER_SETTINGS_LIST,      action_get_dsu_client_player_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_REMOTE_SETTINGS_LIST,        action_get_dsu_client_remote_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUX_SCREEN_SETTINGS_LIST, action_get_aux_screen_settings_list},
 #endif
       {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST,          action_get_accessibility_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST,       action_get_power_management_settings_list},
@@ -1070,6 +1120,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST,               action_get_user_accounts_facebook_list},
       {MENU_ENUM_LABEL_ONLINE_UPDATER,                                action_get_online_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST,              action_get_recording_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUXILIARY_SCREEN_STREAMING_LIST,      action_get_auxiliary_screen_streaming_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST,          action_get_video_scaling_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST,              action_get_video_hdr_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST,           action_get_video_output_settings_list},
@@ -1206,6 +1257,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_online_pl_thumbnails_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST,
          action_get_title_input_binds_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUX_SCREEN_SETTINGS_LIST,
+         action_get_title_aux_screen_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST,
          action_get_input_retropad_binds_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST,
@@ -1296,6 +1349,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
          action_get_smb_client_settings_list},
 #endif
+#ifdef HAVE_DSU
+      {MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS,
+         action_get_dsu_client_settings_list},
+#endif
    };
 
    if (cbs->setting)
@@ -1312,7 +1369,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
    {
-      if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
+      const char *enum_str = msg_hash_to_str(info_list[i].type);
+      if (string_is_equal(label, enum_str))
       {
          BIND_ACTION_GET_TITLE(cbs, info_list[i].cb);
          return 0;
@@ -1410,6 +1468,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS,                                  action_get_title_deferred_playlist_list},
       {MENU_ENUM_LABEL_PLAYLISTS_TAB,                                                       action_get_title_collection},
       {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST,                                   action_get_title_manual_content_scan_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUX_SCREEN_SETTINGS_LIST,                                   action_get_title_aux_screen_settings_list},
    };
 
    if (!cbs)
@@ -1427,7 +1486,8 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
    {
-      if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
+      const char *enum_str = msg_hash_to_str(info_list[i].type);
+      if (string_is_equal(label, enum_str))
       {
          BIND_ACTION_GET_TITLE(cbs, info_list[i].cb);
          return 0;

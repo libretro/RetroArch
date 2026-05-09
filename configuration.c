@@ -1759,7 +1759,7 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("test_input_file_general",       settings->paths.test_input_file_general, false, NULL, true);
 #endif
 
-   SETTING_ARRAY("log_dir",                      settings->paths.log_dir, true, NULL, true);
+   SETTING_PATH("log_dir",                       settings->paths.log_dir, true, NULL, true);
    SETTING_ARRAY("app_icon",                     settings->paths.app_icon, true, NULL, true);
 
    *size = count;
@@ -3179,6 +3179,16 @@ void config_set_defaults(void *data)
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
       input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = (unsigned)i;
+      settings->bools.network_dsu_player_keyboard[i] = false;
+      settings->paths.network_dsu_player_server_address[i][0] = '\0';
+      settings->paths.aux_screen_url[i][0] = '\0';
+      settings->paths.aux_screen_title[i][0] = '\0';
+      settings->paths.aux_screen_config[i][0] = '\0';
+      settings->uints.network_dsu_player_server_port[i] = 26760;
+      settings->uints.aux_screen_port[i] = 0;
+      settings->uints.aux_screen_quality[i] = RECORD_CONFIG_TYPE_STREAMING_CUSTOM;
+      settings->uints.aux_screen_scale_factor[i] = 0;
+      settings->uints.aux_screen_mode[i] = 0;
    }
 
    custom_vp->width  = 0;
@@ -4080,6 +4090,184 @@ static bool config_load_file(global_t *global,
          if (config_get_bool(conf, tmp, &tmp_bool))
             configuration_set_bool(settings,
                   settings->bools.network_remote_enable_user[i], tmp_bool);
+      }
+   }
+#endif
+#ifdef HAVE_DSU
+   {
+     char tmp[64];
+     size_t _len;
+     _len = strlcpy(tmp, "network_dsu_player_broadcast_state_p", sizeof(tmp));
+     for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = false;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_broadcast_state[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_allow_remote_commands_p", sizeof(tmp));
+     for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = false;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_allow_remote_commands[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_allow_stream_control_p", sizeof(tmp));
+     for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = false;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_allow_stream_control[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_allow_aux_streaming_p", sizeof(tmp));
+     for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = false;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_allow_aux_streaming[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_addon_p", sizeof(tmp));
+     for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = false;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_addon[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_accel_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = true;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_accel[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_gyro_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = true;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_gyro[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_touch_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = true;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_touch[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_keyboard_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = false;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_keyboard[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_mouse_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = false;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_mouse[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_gamepad_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         bool v = false;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &v))
+            settings->bools.network_dsu_player_gamepad[i] = v;
+      }
+      _len = strlcpy(tmp, "network_dsu_player_server_address_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char *str_val = NULL;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_string(conf, tmp, &str_val) && str_val)
+         {
+            strlcpy(settings->paths.network_dsu_player_server_address[i],
+                  str_val, sizeof(settings->paths.network_dsu_player_server_address[i]));
+         }
+      }
+      _len = strlcpy(tmp, "network_dsu_player_server_port_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         int v = 0;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_int(conf, tmp, &v))
+            settings->uints.network_dsu_player_server_port[i] = (unsigned)v;
+      }
+      _len = strlcpy(tmp, "aux_screen_url_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char *str_val = NULL;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_string(conf, tmp, &str_val) && str_val)
+         {
+            strlcpy(settings->paths.aux_screen_url[i],
+                  str_val, sizeof(settings->paths.aux_screen_url[i]));
+         }
+      }
+      _len = strlcpy(tmp, "aux_screen_title_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char *str_val = NULL;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_string(conf, tmp, &str_val) && str_val)
+         {
+            strlcpy(settings->paths.aux_screen_title[i],
+                  str_val, sizeof(settings->paths.aux_screen_title[i]));
+         }
+      }
+      _len = strlcpy(tmp, "aux_screen_config_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char *str_val = NULL;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_string(conf, tmp, &str_val) && str_val)
+         {
+            strlcpy(settings->paths.aux_screen_config[i],
+                  str_val, sizeof(settings->paths.aux_screen_config[i]));
+         }
+      }
+      _len = strlcpy(tmp, "aux_screen_port_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         int v = 0;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_int(conf, tmp, &v))
+            settings->uints.aux_screen_port[i] = (unsigned)v;
+      }
+      _len = strlcpy(tmp, "aux_screen_quality_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         int v = 0;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_int(conf, tmp, &v))
+            settings->uints.aux_screen_quality[i] = (unsigned)v;
+      }
+      _len = strlcpy(tmp, "aux_screen_scale_factor_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         int v = 0;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_int(conf, tmp, &v))
+            settings->uints.aux_screen_scale_factor[i] = (unsigned)v;
+      }
+      _len = strlcpy(tmp, "aux_screen_mode_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         int v = 0;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_int(conf, tmp, &v))
+            settings->uints.aux_screen_mode[i] = (unsigned)v;
       }
    }
 #endif
@@ -6315,6 +6503,192 @@ bool config_save_file(const char *path)
       }
    }
 #endif
+#ifdef HAVE_DSU
+   {
+      char tmp[64];
+      size_t _len;
+      _len = strlcpy(tmp, "network_dsu_player_broadcast_state_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_broadcast_state[i] != defaults->bools.network_dsu_player_broadcast_state[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_broadcast_state[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_allow_remote_commands_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_allow_remote_commands[i] != defaults->bools.network_dsu_player_allow_remote_commands[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_allow_remote_commands[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_allow_stream_control_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_allow_stream_control[i] != defaults->bools.network_dsu_player_allow_stream_control[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_allow_stream_control[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_allow_aux_streaming_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_allow_aux_streaming[i] != defaults->bools.network_dsu_player_allow_aux_streaming[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_allow_aux_streaming[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_addon_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_addon[i] != defaults->bools.network_dsu_player_addon[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_addon[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_accel_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_accel[i] != defaults->bools.network_dsu_player_accel[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_accel[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_gyro_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_gyro[i] != defaults->bools.network_dsu_player_gyro[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_gyro[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_touch_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_touch[i] != defaults->bools.network_dsu_player_touch[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_touch[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_keyboard_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_keyboard[i] != defaults->bools.network_dsu_player_keyboard[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_keyboard[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_mouse_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_mouse[i] != defaults->bools.network_dsu_player_mouse[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_mouse[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_gamepad_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->bools.network_dsu_player_gamepad[i] != defaults->bools.network_dsu_player_gamepad[i])
+            config_set_string(conf, tmp, settings->bools.network_dsu_player_gamepad[i] ? "true" : "false");
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_server_address_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || !string_is_empty(settings->paths.network_dsu_player_server_address[i]))
+            config_set_string(conf, tmp, settings->paths.network_dsu_player_server_address[i]);
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "network_dsu_player_server_port_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->uints.network_dsu_player_server_port[i] != 0)
+            config_set_uint(conf, tmp, settings->uints.network_dsu_player_server_port[i]);
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "aux_screen_url_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || !string_is_empty(settings->paths.aux_screen_url[i]))
+            config_set_string(conf, tmp, settings->paths.aux_screen_url[i]);
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "aux_screen_title_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || !string_is_empty(settings->paths.aux_screen_title[i]))
+            config_set_string(conf, tmp, settings->paths.aux_screen_title[i]);
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "aux_screen_config_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || !string_is_empty(settings->paths.aux_screen_config[i]))
+            config_set_string(conf, tmp, settings->paths.aux_screen_config[i]);
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "aux_screen_port_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->uints.aux_screen_port[i] != 0)
+            config_set_int(conf, tmp, settings->uints.aux_screen_port[i]);
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "aux_screen_quality_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->uints.aux_screen_quality[i] != 0)
+            config_set_int(conf, tmp, settings->uints.aux_screen_quality[i]);
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "aux_screen_scale_factor_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->uints.aux_screen_scale_factor[i] != 0)
+            config_set_int(conf, tmp, settings->uints.aux_screen_scale_factor[i]);
+         else
+            config_unset(conf, tmp);
+      }
+      _len = strlcpy(tmp, "aux_screen_mode_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (!minimal || settings->uints.aux_screen_mode[i] != 0)
+            config_set_int(conf, tmp, settings->uints.aux_screen_mode[i]);
+         else
+            config_unset(conf, tmp);
+      }
+   }
+#endif
 
 #ifdef HAVE_MENU
    /* menu_show_start_screen is force-written in minimal mode because the SETTING_BOOL
@@ -7244,7 +7618,7 @@ bool input_remapping_save_file(const char *path)
          {
             if (remap_id == RARCH_UNMAPPED)
             {
-               if (!runloop_st->system.input_desc_btn[i][j] 
+               if (!runloop_st->system.input_desc_btn[i][j]
                 || !*runloop_st->system.input_desc_btn[i][j])
                   config_unset(conf, _ident);
                else

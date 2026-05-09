@@ -37,6 +37,7 @@
 #endif
 
 #include "input_driver.h"
+#include "input_defines.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
 #include "input_osk.h"
@@ -594,9 +595,39 @@ float input_driver_get_sensor(
       if (input->get_sensor_input)
       {
          void *current_data = input_driver_st.current_data;
-         return input->get_sensor_input(current_data, port, id);
+         float v = input->get_sensor_input(current_data, port, id);
+         if (v != 0.0f)
+            return v;
       }
    }
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   if (input_driver_st.dsu)
+   {
+      bool use_dsu_sensor = false;
+      switch (id)
+      {
+         case RETRO_SENSOR_ACCELEROMETER_X:
+         case RETRO_SENSOR_ACCELEROMETER_Y:
+         case RETRO_SENSOR_ACCELEROMETER_Z:
+            use_dsu_sensor = dsu_port_has_accel(input_driver_st.dsu, port);
+            break;
+         case RETRO_SENSOR_GYROSCOPE_X:
+         case RETRO_SENSOR_GYROSCOPE_Y:
+         case RETRO_SENSOR_GYROSCOPE_Z:
+            use_dsu_sensor = dsu_port_has_gyro(input_driver_st.dsu, port);
+            break;
+         default:
+            use_dsu_sensor = false;
+            break;
+      }
+      if (use_dsu_sensor && dsu_has_sensor(input_driver_st.dsu, port))
+      {
+         RARCH_LOG("[DSU] input_driver_get_sensor: port=%u id=%u using DSU sensor\n", port, id);
+         return dsu_get_sensor(input_driver_st.dsu, port, id);
+      }
+   }
+#endif
 
    return 0.0f;
 }
@@ -623,7 +654,7 @@ const input_device_driver_t *input_joypad_init_driver(
       }
    }
    /* Fall back to first available driver */
-   return input_joypad_init_first(data); 
+   return input_joypad_init_first(data);
 }
 
 static bool input_driver_button_combo_hold(
@@ -1827,6 +1858,287 @@ input_remote_t *input_driver_init_remote(
 }
 #endif
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+#include "input_dsu.h"
+#include "../record/record_driver.h"
+
+static void input_dsu_resolve_state_strings(char *game_name,
+      size_t game_name_size, char *platform_name, size_t platform_name_size,
+      char *core_name, size_t core_name_size)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   playlist_t *playlist        = playlist_get_cached();
+   core_info_t *core_info      = NULL;
+   const char *content_path    = path_get(RARCH_PATH_CONTENT);
+   const char *content_label   = NULL;
+   const char *core_label      = NULL;
+   const char *platform_label  = NULL;
+
+   if (game_name_size)
+      game_name[0] = '\0';
+   if (platform_name_size)
+      platform_name[0] = '\0';
+   if (core_name_size)
+      core_name[0] = '\0';
+
+   if (runloop_st->name.label[0])
+      content_label = runloop_st->name.label;
+
+   if ((!content_label || !*content_label) && content_path && *content_path)
+      content_label = path_basename_nocompression(content_path);
+
+   if (playlist && content_path && *content_path)
+   {
+      const struct playlist_entry *entry = NULL;
+      playlist_get_index_by_path(playlist, content_path, &entry);
+      if (entry)
+      {
+         if ((!content_label || !*content_label) && entry->label && *entry->label)
+            content_label = entry->label;
+         if (entry->db_name && *entry->db_name)
+            platform_label = path_basename_nocompression(entry->db_name);
+      }
+   }
+
+   core_info_get_current_core(&core_info);
+   if (core_info)
+   {
+      if (core_info->display_name && *core_info->display_name)
+         core_label = core_info->display_name;
+      else if (core_info->core_name && *core_info->core_name)
+         core_label = core_info->core_name;
+
+      if ((!platform_label || !*platform_label) && core_info->systemname && *core_info->systemname)
+         platform_label = core_info->systemname;
+      else if ((!platform_label || !*platform_label) && core_info->system_id && *core_info->system_id)
+         platform_label = core_info->system_id;
+   }
+
+   if ((!core_label || !*core_label) && runloop_st->system.info.library_name && *runloop_st->system.info.library_name)
+      core_label = runloop_st->system.info.library_name;
+
+   if (content_label && game_name_size)
+      strlcpy(game_name, content_label, game_name_size);
+   if (platform_label && platform_name_size)
+      strlcpy(platform_name, platform_label, platform_name_size);
+   if (core_label && core_name_size)
+      strlcpy(core_name, core_label, core_name_size);
+}
+
+void input_dsu_broadcast_current_state(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   dsu_state_t *dsu               = input_st->dsu;
+   char game_name[64];
+   char platform_name[64];
+   char core_name[64];
+   uint8_t state_flags            = 0;
+
+   if (!dsu)
+      return;
+
+   input_dsu_resolve_state_strings(game_name, sizeof(game_name),
+         platform_name, sizeof(platform_name),
+         core_name, sizeof(core_name));
+
+   if (game_name[0] != '\0')
+      state_flags |= 1;
+
+   dsu_send_state(dsu,
+         game_name[0] ? game_name : NULL,
+         platform_name[0] ? platform_name : NULL,
+         core_name[0] ? core_name : NULL,
+         state_flags);
+}
+
+void input_dsu_broadcast_stream_status(uint32_t state, uint32_t error_code,
+      uint32_t stream_type, uint8_t screen_id, const char *url)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   dsu_state_t *dsu = input_st->dsu;
+   if (dsu)
+      dsu_broadcast_stream_status_to_all(dsu, state, error_code,
+            stream_type, screen_id, url);
+}
+
+void input_dsu_broadcast_aux_stream_status(unsigned player, uint32_t state,
+      uint32_t error_code, uint32_t stream_type, const char *url)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   dsu_state_t *dsu = input_st->dsu;
+   if (dsu)
+      dsu_broadcast_aux_stream_status(dsu, player, state, error_code,
+            stream_type, url);
+}
+
+bool input_dsu_init(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   settings_t *settings           = config_get_ptr();
+   dsu_state_t *dsu;
+   int i;
+   bool any_player_configured = false;
+
+   RARCH_LOG("[DSU] input_dsu_init called\n");
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (settings->bools.network_dsu_player_addon[i] ||
+          settings->bools.network_dsu_player_accel[i] ||
+          settings->bools.network_dsu_player_gyro[i] ||
+          settings->bools.network_dsu_player_touch[i] ||
+          settings->bools.network_dsu_player_keyboard[i] ||
+          settings->bools.network_dsu_player_mouse[i] ||
+          settings->bools.network_dsu_player_gamepad[i])
+      {
+         any_player_configured = true;
+         break;
+      }
+   }
+
+   if (!any_player_configured)
+   {
+      RARCH_LOG("[DSU] No player configured for DSU, skipping init\n");
+      return false;
+   }
+
+   if (input_st->dsu)
+   {
+      RARCH_LOG("[DSU] DSU state already exists, deinitializing first\n");
+      input_dsu_deinit();
+   }
+
+   dsu = (dsu_state_t*)calloc(1, sizeof(dsu_state_t));
+   if (!dsu)
+   {
+      RARCH_ERR("[DSU] Failed to allocate dsu_state_t\n");
+      return false;
+   }
+
+   dsu->enabled        = true;
+   dsu->client_enabled = true;
+   dsu->socket_fd = -1;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      dsu->player_addon[i]   = settings->bools.network_dsu_player_addon[i];
+      dsu->player_accel[i]   = settings->bools.network_dsu_player_accel[i];
+      dsu->player_gyro[i]    = settings->bools.network_dsu_player_gyro[i];
+      dsu->player_touch[i]   = settings->bools.network_dsu_player_touch[i];
+      dsu->player_keyboard[i]= settings->bools.network_dsu_player_keyboard[i];
+      dsu->player_mouse[i]   = settings->bools.network_dsu_player_mouse[i];
+      dsu->player_gamepad[i] = settings->bools.network_dsu_player_gamepad[i];
+      dsu->player_broadcast_state[i] = settings->bools.network_dsu_player_broadcast_state[i];
+      dsu->player_allow_remote_commands[i] = settings->bools.network_dsu_player_allow_remote_commands[i];
+      dsu->player_allow_stream_control[i] = settings->bools.network_dsu_player_allow_stream_control[i];
+      dsu->player_allow_aux_streaming[i] = settings->bools.network_dsu_player_allow_aux_streaming[i];
+      dsu->player_addon_attached[i] = false;
+      if (dsu->player_addon[i] || dsu->player_accel[i] || dsu->player_gyro[i] ||
+          dsu->player_touch[i] || dsu->player_keyboard[i] || dsu->player_mouse[i] || dsu->player_gamepad[i])
+         RARCH_LOG("[DSU] P%u: addon=%d accel=%d gyro=%d touch=%d keyboard=%d mouse=%d gamepad=%d broadcast=%d remote=%d stream=%d aux=%d\n",
+               i, dsu->player_addon[i], dsu->player_accel[i], dsu->player_gyro[i],
+               dsu->player_touch[i], dsu->player_keyboard[i], dsu->player_mouse[i], dsu->player_gamepad[i],
+               dsu->player_broadcast_state[i], dsu->player_allow_remote_commands[i],
+               dsu->player_allow_stream_control[i], dsu->player_allow_aux_streaming[i]);
+      strlcpy(dsu->player_server_address[i],
+            settings->paths.network_dsu_player_server_address[i],
+            sizeof(dsu->player_server_address[i]));
+      dsu->player_server_port[i] = (uint16_t)settings->uints.network_dsu_player_server_port[i];
+      dsu->port_map[i]       = -1;
+   }
+
+   for (i = 0; i < DSU_MAX_CONTROLLERS; i++)
+      dsu->controllers[i].attached_port = -1;
+
+   if (!dsu_client_init(dsu))
+      RARCH_WARN("[DSU] Client init failed.\n");
+   else
+      RARCH_LOG("[DSU] Client started.\n");
+
+   input_st->dsu = dsu;
+   return true;
+}
+
+void input_dsu_deinit(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   dsu_state_t *dsu               = input_st->dsu;
+
+   RARCH_LOG("[DSU] input_dsu_deinit called\n");
+
+   if (!dsu)
+   {
+      RARCH_LOG("[DSU] DSU state is NULL, nothing to deinit\n");
+      return;
+   }
+
+   dsu_client_deinit(dsu);
+   free(dsu);
+   input_st->dsu = NULL;
+
+   /* Tear down any aux stream slots previously activated via DSU. */
+   {
+      unsigned i;
+      for (i = 0; i < 4; i++)
+         recording_deinit_aux(i);
+   }
+}
+
+void input_dsu_reassign_slots(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   dsu_state_t *dsu               = input_st->dsu;
+   settings_t *settings           = config_get_ptr();
+   int i;
+
+   if (!dsu)
+      return;
+
+   RARCH_LOG("[DSU] Reassigning slots based on current settings\n");
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      dsu->player_addon[i] = settings->bools.network_dsu_player_addon[i];
+      dsu->player_addon_attached[i] = false;
+      dsu->player_accel[i] = settings->bools.network_dsu_player_accel[i];
+      dsu->player_gyro[i]  = settings->bools.network_dsu_player_gyro[i];
+      dsu->player_touch[i] = settings->bools.network_dsu_player_touch[i];
+      dsu->player_keyboard[i] = settings->bools.network_dsu_player_keyboard[i];
+      dsu->player_mouse[i] = settings->bools.network_dsu_player_mouse[i];
+      dsu->player_gamepad[i] = settings->bools.network_dsu_player_gamepad[i];
+      dsu->player_broadcast_state[i] = settings->bools.network_dsu_player_broadcast_state[i];
+      dsu->player_allow_remote_commands[i] = settings->bools.network_dsu_player_allow_remote_commands[i];
+      dsu->player_allow_stream_control[i] = settings->bools.network_dsu_player_allow_stream_control[i];
+      dsu->player_allow_aux_streaming[i] = settings->bools.network_dsu_player_allow_aux_streaming[i];
+      strlcpy(dsu->player_server_address[i],
+            settings->paths.network_dsu_player_server_address[i],
+            sizeof(dsu->player_server_address[i]));
+      dsu->player_server_port[i] = (uint16_t)settings->uints.network_dsu_player_server_port[i];
+      dsu->port_map[i]     = -1;
+   }
+
+   for (i = 0; i < DSU_MAX_CONTROLLERS; i++)
+      dsu->controllers[i].attached_port = -1;
+
+   RARCH_LOG("[DSU] Slot reassignment complete\n");
+}
+
+void input_dsu_poll(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   dsu_state_t *dsu               = input_st->dsu;
+   static int poll_call_count = 0;
+
+   poll_call_count++;
+
+   if (!dsu || !dsu->enabled)
+      return;
+
+   if (dsu->client_enabled)
+      dsu_client_poll(dsu);
+}
+#endif
+
 static int16_t input_state_device(
       input_driver_state_t *input_st,
       settings_t *settings,
@@ -1842,7 +2154,6 @@ static int16_t input_state_device(
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-
          if (id < RARCH_FIRST_META_KEY)
          {
 #ifdef HAVE_NETWORKGAMEPAD
@@ -1903,6 +2214,40 @@ static int16_t input_state_device(
                }
 #endif
             }
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+            if (input_st->dsu)
+            {
+               bool is_fullpad         = dsu_port_is_fullpad(input_st->dsu, port);
+               bool addon_with_gamepad = input_st->dsu->player_addon_attached[port]
+                  && input_st->dsu->player_gamepad[port];
+               if (is_fullpad || addon_with_gamepad)
+               {
+                  uint16_t dsu_btns = dsu_get_buttons(input_st->dsu, port);
+                  if (dsu_btns & (1 << id))
+                     res |= 1;
+
+                  if (id == RETRO_DEVICE_ID_JOYPAD_UP || id == RETRO_DEVICE_ID_JOYPAD_DOWN ||
+                      id == RETRO_DEVICE_ID_JOYPAD_LEFT || id == RETRO_DEVICE_ID_JOYPAD_RIGHT)
+                  {
+                     float axis_threshold = settings->floats.input_axis_threshold;
+                     int16_t lx = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+                     int16_t ly = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
+                     float norm_lx = (float)lx / 32767.0f;
+                     float norm_ly = (float)ly / 32767.0f;
+
+                     if ((id == RETRO_DEVICE_ID_JOYPAD_LEFT) && (norm_lx < -axis_threshold))
+                        res |= 1;
+                     else if ((id == RETRO_DEVICE_ID_JOYPAD_RIGHT) && (norm_lx > axis_threshold))
+                        res |= 1;
+                     else if ((id == RETRO_DEVICE_ID_JOYPAD_UP) && (norm_ly < -axis_threshold))
+                        res |= 1;
+                     else if ((id == RETRO_DEVICE_ID_JOYPAD_DOWN) && (norm_ly > axis_threshold))
+                        res |= 1;
+                  }
+               }
+            }
+#endif
 
             if (id <= RETRO_DEVICE_ID_JOYPAD_R3)
             {
@@ -2073,6 +2418,11 @@ static int16_t input_state_device(
 
          if (id < RETROK_LAST)
          {
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+            if (input_st->dsu && dsu_port_has_keyboard(input_st->dsu, port)
+                  && dsu_get_keyboard_key(input_st->dsu, port, id))
+               res |= 1;
+#endif
 #ifdef HAVE_OVERLAY
             if (port == 0)
             {
@@ -2215,12 +2565,68 @@ static int16_t input_state_device(
                else if (val2)
                   res          |= val2;
             }
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+            if (input_st->dsu && (dsu_port_is_fullpad(input_st->dsu, port) ||
+                (input_st->dsu->player_addon_attached[port] && input_st->dsu->player_gamepad[port])))
+            {
+               int16_t dsu_val_x = dsu_get_analog(input_st->dsu, port, idx, RETRO_DEVICE_ID_ANALOG_X);
+               int16_t dsu_val_y = dsu_get_analog(input_st->dsu, port, idx, RETRO_DEVICE_ID_ANALOG_Y);
+               int16_t dsu_val   = (id == RETRO_DEVICE_ID_ANALOG_X) ? dsu_val_x : dsu_val_y;
+
+               if (dsu_val != 0)
+               {
+                  float input_analog_deadzone    = settings->floats.input_analog_deadzone;
+                  float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
+
+                  if (input_analog_deadzone > 0.0f)
+                  {
+                     float x       = (float)dsu_val_x / 0x7fff;
+                     float y       = (float)dsu_val_y / 0x7fff;
+                     float mag     = sqrtf(x * x + y * y);
+
+                     if (mag <= input_analog_deadzone)
+                        dsu_val = 0;
+                     else
+                     {
+                        float dz_scale = (mag - input_analog_deadzone) / (1.0f - input_analog_deadzone);
+                        float inv_mag  = (mag > 1.0f) ? (1.0f / mag) : 1.0f;
+                        if (dz_scale > 1.0f) dz_scale = 1.0f;
+                        dsu_val = (int16_t)((float)dsu_val * inv_mag * dz_scale);
+                     }
+                  }
+
+                  if (dsu_val != 0 && input_analog_sensitivity != 1.0f)
+                  {
+                     int new_val = (int)((float)dsu_val * input_analog_sensitivity);
+                     if (new_val >  0x7fff) new_val =  0x7fff;
+                     if (new_val < -0x7fff) new_val = -0x7fff;
+                     dsu_val = (int16_t)new_val;
+                  }
+
+                  /* Merge with local analog using max magnitude */
+                  if (dsu_val != 0)
+                  {
+                     if (res == 0)
+                        res = dsu_val;
+                     else
+                     {
+                        int16_t dsu_abs = (dsu_val >= 0) ? dsu_val : -dsu_val;
+                        int16_t res_abs = (res >= 0)     ? res     : -res;
+                        if (dsu_abs > res_abs)
+                           res = dsu_val;
+                     }
+                  }
+               }
+            }
+#endif
          }
          break;
 
       case RETRO_DEVICE_MOUSE:
       case RETRO_DEVICE_LIGHTGUN:
       case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
 
 #ifdef HAVE_OVERLAY
          if (     (input_st->overlay_ptr)
@@ -2232,10 +2638,10 @@ static int16_t input_state_device(
                   input_st->overlay_ptr, port, device, idx, id);
 #endif
 
-         if (res || input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
-            break;
-
-         if (id < RARCH_FIRST_META_KEY)
+         /* If overlay or BLOCK flag has input, skip local hardware
+          * (preserve original behavior) - but DSU will still merge below */
+         if (!(res || input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
+               && id < RARCH_FIRST_META_KEY)
          {
             bool bind_valid = input_st->libretro_input_binds[port]
                && (*input_st->libretro_input_binds[port])[id].valid;
@@ -2251,6 +2657,94 @@ static int16_t input_state_device(
                   res = ret;
             }
          }
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+         /* DSU merges with local: OR buttons, sum deltas, override position
+          * only when DSU is actively reporting touch/mouse activity. */
+         if (input_st->dsu
+               && (device == RETRO_DEVICE_POINTER
+                  || device == RARCH_DEVICE_POINTER_SCREEN)
+               && dsu_port_has_touch(input_st->dsu, port)
+               && dsu_get_pointer_count(input_st->dsu, port) > 0)
+         {
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  res = dsu_get_pointer_x(input_st->dsu, port, idx);
+                  break;
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  res = dsu_get_pointer_y(input_st->dsu, port, idx);
+                  break;
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  if (dsu_get_pointer_pressed(input_st->dsu, port, idx))
+                     res |= 1;
+                  break;
+               case RETRO_DEVICE_ID_POINTER_COUNT:
+               {
+                  int16_t dsu_cnt = dsu_get_pointer_count(input_st->dsu, port);
+                  if (dsu_cnt > res)
+                     res = dsu_cnt;
+                  break;
+               }
+               default:
+                  break;
+            }
+         }
+
+         if (input_st->dsu && device == RETRO_DEVICE_MOUSE
+               && dsu_port_has_mouse(input_st->dsu, port))
+         {
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_X:
+               {
+                  int delta_x, delta_y;
+                  dsu_get_mouse_delta(input_st->dsu, port, &delta_x, &delta_y);
+                  res = (int16_t)(res + delta_x);
+                  break;
+               }
+               case RETRO_DEVICE_ID_MOUSE_Y:
+               {
+                  int delta_x, delta_y;
+                  dsu_get_mouse_delta(input_st->dsu, port, &delta_x, &delta_y);
+                  res = (int16_t)(res + delta_y);
+                  break;
+               }
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  if (dsu_get_mouse_button(input_st->dsu, port, 0)) res |= 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  if (dsu_get_mouse_button(input_st->dsu, port, 1)) res |= 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  if (dsu_get_mouse_button(input_st->dsu, port, 2)) res |= 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+                  if (dsu_get_mouse_button(input_st->dsu, port, 3)) res |= 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+                  if (dsu_get_mouse_button(input_st->dsu, port, 4)) res |= 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  if (dsu_get_mouse_button(input_st->dsu, port, 5)) res |= 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  if (dsu_get_mouse_button(input_st->dsu, port, 6)) res |= 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+                  if (dsu_get_mouse_button(input_st->dsu, port, 7)) res |= 1;
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+                  if (dsu_get_mouse_button(input_st->dsu, port, 8)) res |= 1;
+                  break;
+               default:
+                  break;
+            }
+         }
+
+         if (input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
+            res = 0;
+#endif
 
          break;
    }
@@ -3402,7 +3896,7 @@ void input_overlay_load_active(
 /**
  * input_overlay_next_move_touch_masks
  * @ol : Overlay handle.
- * 
+ *
  * Finds similar descs in the next overlay (i.e. same location and type)
  * and moves touch masks from active overlay to next.
  */
@@ -5186,6 +5680,26 @@ const char *joypad_driver_name(unsigned i)
    return input_driver_st.primary_joypad->name(i);
 }
 
+bool input_joypad_port_has_hardware_gamepad(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx;
+
+   if (port >= MAX_USERS)
+      return false;
+   if (!settings)
+      return false;
+   if (!input_driver_st.primary_joypad || !input_driver_st.primary_joypad->query_pad)
+      return false;
+
+   joy_idx = settings->uints.input_joypad_index[port];
+
+   if (joy_idx >= MAX_USERS)
+      return false;
+
+   return input_driver_st.primary_joypad->query_pad(joy_idx);
+}
+
 void joypad_driver_reinit(void *data, const char *joypad_driver_name)
 {
    if (input_driver_st.primary_joypad)
@@ -5393,6 +5907,19 @@ bool input_set_rumble_state(unsigned port,
          scaled_strength      = (rumble_gain * strength) / 100.0;
       }
    }
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   if (input_driver_st.dsu && input_driver_st.dsu->client_enabled)
+   {
+      int slot = (port < MAX_USERS) ? input_driver_st.dsu->port_map[port] : -1;
+      if (slot >= 0 && slot < DSU_MAX_CONTROLLERS)
+      {
+         uint8_t motor = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
+         uint8_t intensity = (uint8_t)(scaled_strength >> 8);
+         dsu_send_rumble(input_driver_st.dsu, (unsigned)slot, motor, intensity);
+      }
+   }
+#endif
 
    return input_driver_set_rumble(
       port, joy_idx, effect, scaled_strength);
@@ -6609,14 +7136,14 @@ static void input_keys_pressed(
       else
          input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
    }
-      
+
 #ifdef HAVE_MENU
    /* Prevent triggering menu actions after binding */
    if (     !(input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
          && menu_state_get_ptr()->input_driver_flushing_input)
       input_st->flags |= INP_FLAG_WAIT_INPUT_RELEASE;
 #endif
-   
+
    /* Check libretro input if emulated device type is active,
     * except device type must be always active in menu. */
    if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
@@ -6631,6 +7158,37 @@ static void input_keys_pressed(
             kb_blocked,
             port, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   if (input_st->dsu)
+   {
+      bool is_fullpad         = dsu_port_is_fullpad(input_st->dsu, port);
+      bool addon_with_gamepad = input_st->dsu->player_addon_attached[port]
+         && input_st->dsu->player_gamepad[port];
+
+      if (is_fullpad || addon_with_gamepad)
+      {
+         uint16_t dsu_btns = dsu_get_buttons(input_st->dsu, port);
+         int16_t lx        = dsu_get_analog(input_st->dsu, port,
+               RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+         int16_t ly        = dsu_get_analog(input_st->dsu, port,
+               RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
+         float norm_lx     = (float)lx / 32767.0f;
+         float norm_ly     = (float)ly / 32767.0f;
+         float threshold   = joypad_info->axis_threshold;
+
+         ret |= dsu_btns;
+         if (norm_lx < -threshold)
+            ret |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
+         else if (norm_lx > threshold)
+            ret |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         if (norm_ly < -threshold)
+            ret |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+         else if (norm_ly > threshold)
+            ret |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      }
+   }
+#endif
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -7526,6 +8084,10 @@ void input_driver_poll(void)
       }
    }
 #endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+   if (input_st->dsu)
+      input_dsu_poll();
+#endif
 #ifdef HAVE_BSV_MOVIE
    if (BSV_MOVIE_IS_PLAYBACK_ON())
       bsv_movie_poll(input_st);
@@ -8031,7 +8593,9 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
+            {
                BIT256_SET_PTR(current_bits, ids[i][1]);
+            }
          }
       }
       else if (display_kb && input && input->input_state)

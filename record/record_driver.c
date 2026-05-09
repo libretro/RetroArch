@@ -179,7 +179,7 @@ void streaming_set_state(bool state)
    recording_st->streaming_enable  = state;
 }
 
-/* ---- Auxiliary stream slot management ---- */
+/* ---- Auxiliary stream slot management (DSU multi-screen casting) ---- */
 
 static enum record_config_type
 aux_preset_from_bitrate(unsigned bitrate_kbps)

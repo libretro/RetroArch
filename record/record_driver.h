@@ -169,7 +169,7 @@ void streaming_set_state(bool state);
 /**
  * recording_init_aux:
  * Initialize a single auxiliary stream slot (idx 0..3, screen_id-1) with
- * the supplied stream parameters. The slot gets its own record driver
+ * the supplied DSU stream parameters. The slot gets its own record driver
  * instance that receives frames via recording_dump_frame_ext() when the
  * core submits auxiliary screens through video_refresh_ext.
  *

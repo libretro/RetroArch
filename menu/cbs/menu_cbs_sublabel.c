@@ -1455,6 +1455,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_game_ai_show_debug,            MENU_
 #ifdef HAVE_SMBCLIENT
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_settings,                         MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_enable,                           MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE)
+#endif
+#ifdef HAVE_DSU
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dsu_client_settings,                         MENU_ENUM_SUBLABEL_DSU_CLIENT_SETTINGS)
+#endif
+#ifdef HAVE_SMBCLIENT
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_auth_mode,                        MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_server,                           MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_share,                            MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE)
@@ -5894,6 +5899,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SMB_CLIENT_BROWSE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_browse);
+            break;
+#endif
+#ifdef HAVE_DSU
+         case MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dsu_client_settings);
             break;
 #endif
          default:

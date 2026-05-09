@@ -380,7 +380,7 @@ static int filebrowser_parse(
          for (j = 0; j < search_terms->size; j++)
          {
             const char *search_term = search_terms->terms[j];
-            if (search_term && *search_term 
+            if (search_term && *search_term
                 && !strcasestr(file_path, search_term))
             {
                skip_entry = true;
@@ -416,7 +416,7 @@ static int filebrowser_parse(
                   ? FILE_TYPE_VIDEO_FONT
                   : (enum msg_file_type)type_default;
 
-            if (   type == DISPLAYLIST_CORES_DETECTED 
+            if (   type == DISPLAYLIST_CORES_DETECTED
                 && path_is_compressed_file(file_path))
                file_type = FILE_TYPE_CARCHIVE;
             break;
@@ -3190,8 +3190,12 @@ int menu_displaylist_parse_settings_enum(
    enum setting_type precond   = precond_lut[parse_type];
    size_t             count    = 0;
 
+
+
    if (!setting)
+   {
       return -1;
+   }
 
    flags                       = setting->flags;
 
@@ -3598,6 +3602,10 @@ static int menu_displaylist_parse_load_content_settings(
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
          recording_state_t *recording_st = recording_state_get_ptr();
+         bool aux_active = false;
+         unsigned aux_i;
+         for (aux_i = 0; aux_i < 4; aux_i++)
+            aux_active |= recording_st->aux_streams[aux_i].active;
          if (!recording_st->enable)
          {
             if (!settings->bools.kiosk_mode_enable)
@@ -3621,6 +3629,23 @@ static int menu_displaylist_parse_load_content_settings(
                            MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING, MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
                }
+
+               if (memcmp(settings->arrays.record_driver,
+                        "ffmpeg", STRLEN_CONST("ffmpeg")) == 0)
+               {
+                  enum msg_hash_enums aux_label = aux_active
+                     ? MENU_ENUM_LABEL_QUICK_MENU_STOP_AUX_STREAMING
+                     : MENU_ENUM_LABEL_QUICK_MENU_START_AUX_STREAMING;
+                  const char *aux_label_str = aux_active
+                     ? MENU_ENUM_LABEL_QUICK_MENU_STOP_AUX_STREAMING_STR
+                     : MENU_ENUM_LABEL_QUICK_MENU_START_AUX_STREAMING_STR;
+
+                  if (menu_entries_append(list,
+                           msg_hash_to_str(aux_label),
+                           aux_label_str,
+                           aux_label, MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
+               }
             }
          }
          else
@@ -3632,6 +3657,15 @@ static int menu_displaylist_parse_load_content_settings(
                         MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING_STR,
                         MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING, MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
+
+               if (aux_active)
+               {
+                  if (menu_entries_append(list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_AUX_STREAMING),
+                           MENU_ENUM_LABEL_QUICK_MENU_STOP_AUX_STREAMING_STR,
+                           MENU_ENUM_LABEL_QUICK_MENU_STOP_AUX_STREAMING, MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
+               }
             }
             else
             {
@@ -3983,17 +4017,17 @@ static int menu_displaylist_parse_horizontal_content_actions(
                         || string_ends_with_size(menu_st->thumbnail_path_data->system, "_history",
                               menu_st->thumbnail_path_data->system_len, STRLEN_CONST("_history"));
 
-                  /* An annoyance: if the user navigates to the 
-                   * information menu, then to the database entry, 
+                  /* An annoyance: if the user navigates to the
+                   * information menu, then to the database entry,
                    * the thumbnail system will be changed.
-                   * This breaks the above 'remove_entry_enabled' 
-                   * check for the history and favorites playlists. 
-                   * We therefore have to check the playlist file 
+                   * This breaks the above 'remove_entry_enabled'
+                   * check for the history and favorites playlists.
+                   * We therefore have to check the playlist file
                    * name as well... */
                   if (   !remove_entry_enabled
                       && settings->bools.quick_menu_show_information
                       && (playlist_file && *playlist_file))
-                     remove_entry_enabled = 
+                     remove_entry_enabled =
                            string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY)
                         || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES);
                }
@@ -5134,7 +5168,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       if (core_info_find(core_path, &core_info))
       {
-         core_supports_no_game = (core_info->flags 
+         core_supports_no_game = (core_info->flags
                                 & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
          if (core_info->display_name && *core_info->display_name)
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
@@ -7162,6 +7196,23 @@ unsigned menu_displaylist_build_list(
    unsigned count             = 0;
    uint32_t flags             = runloop_get_flags();
    struct menu_state *menu_st = menu_state_get_ptr();
+
+   const char *type_str = "UNKNOWN";
+   switch (type)
+   {
+      case DISPLAYLIST_NONE: type_str = "DISPLAYLIST_NONE"; break;
+      case DISPLAYLIST_DROPDOWN_LIST: type_str = "DISPLAYLIST_DROPDOWN_LIST"; break;
+      case DISPLAYLIST_MAIN_MENU: type_str = "DISPLAYLIST_MAIN_MENU"; break;
+      case DISPLAYLIST_SETTINGS_ALL: type_str = "DISPLAYLIST_SETTINGS_ALL"; break;
+      case DISPLAYLIST_RECORDING_SETTINGS_LIST: type_str = "DISPLAYLIST_RECORDING_SETTINGS_LIST"; break;
+      case DISPLAYLIST_AUX_SCREEN_SETTINGS_LIST: type_str = "DISPLAYLIST_AUX_SCREEN_SETTINGS_LIST"; break;
+      case DISPLAYLIST_AUXILIARY_SCREEN_STREAMING_LIST: type_str = "DISPLAYLIST_AUXILIARY_SCREEN_STREAMING_LIST"; break;
+      case DISPLAYLIST_VIDEO_SETTINGS_LIST: type_str = "DISPLAYLIST_VIDEO_SETTINGS_LIST"; break;
+      case DISPLAYLIST_AUDIO_SETTINGS_LIST: type_str = "DISPLAYLIST_AUDIO_SETTINGS_LIST"; break;
+      case DISPLAYLIST_INPUT_SETTINGS_LIST: type_str = "DISPLAYLIST_INPUT_SETTINGS_LIST"; break;
+      case DISPLAYLIST_CORE_OPTIONS: type_str = "DISPLAYLIST_CORE_OPTIONS"; break;
+      default: type_str = "OTHER"; break;
+   }
 
    switch (type)
    {
@@ -9314,9 +9365,13 @@ unsigned menu_displaylist_build_list(
             bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
             bool network_cmd_enable      = settings->bools.network_cmd_enable;
             bool network_remote_enable   = settings->bools.network_remote_enable;
+
             static menu_displaylist_build_info_selective_t build_list[] = {
 #ifdef HAVE_SMBCLIENT
                {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,                PARSE_ACTION,      true},
+#endif
+#ifdef HAVE_DSU
+               {MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS,                PARSE_ACTION,      true},
 #endif
                {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,            PARSE_ONLY_BOOL,   true},
@@ -9361,8 +9416,13 @@ unsigned menu_displaylist_build_list(
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
+
                if (!build_list[i].checked && !include_everything)
+               {
                   continue;
+               }
+
+
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      build_list[i].enum_idx, build_list[i].parse_type,
                      false) == 0)
@@ -9436,6 +9496,209 @@ unsigned menu_displaylist_build_list(
                      build_list[i].enum_idx, build_list[i].parse_type,
                      false) == 0)
                   count++;
+            }
+         }
+         break;
+#ifdef HAVE_DSU
+      case DISPLAYLIST_DSU_CLIENT_SETTINGS_LIST:
+         {
+            unsigned user;
+            unsigned max_users = 8;
+
+            RARCH_LOG("[DSU] Building DSU client settings list: max_users=%u\n",
+                  max_users);
+
+            for (user = 0; user < max_users; user++)
+            {
+               char player_label[32];
+
+               snprintf(player_label, sizeof(player_label),
+                     "Player %u", user + 1);
+
+               if (menu_entries_append(list,
+                        player_label,
+                        MENU_ENUM_LABEL_DSU_CLIENT_PLAYER_SETTINGS_STR,
+                        MENU_ENUM_LABEL_DSU_CLIENT_PLAYER_SETTINGS,
+                        MENU_SETTING_ACTION, user, 0, NULL))
+               {
+                  RARCH_LOG("[DSU] Added DSU client player menu entry: %s\n",
+                        player_label);
+                  count++;
+               }
+            }
+         }
+         break;
+      case DISPLAYLIST_DSU_CLIENT_PLAYER_SETTINGS_LIST:
+         {
+            const char *menu_path = NULL;
+            unsigned player       = 1;
+
+            menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+            if (!string_is_empty(menu_path))
+               player = (unsigned)strtoul(menu_path, NULL, 10);
+
+            if (player == 0)
+               player = 1;
+            if (player > MAX_USERS)
+               player = MAX_USERS;
+
+            RARCH_LOG("[DSU] Building DSU client player settings list: player=%u\n",
+                  player);
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_SERVER_ADDRESS + player - 1),
+                     PARSE_ONLY_STRING, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_SERVER_PORT + player - 1),
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_KEYBOARD + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_BROADCAST_STATE + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ALLOW_REMOTE_COMMANDS + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ALLOW_STREAM_CONTROL + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ALLOW_AUX_STREAMING + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ADDON + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_ACCEL + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_GYRO + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_TOUCH + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_MOUSE + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_DSU_PLAYER_1_GAMEPAD + player - 1),
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+
+            RARCH_LOG("[DSU] DSU client player settings list added %u entries for player=%u\n",
+                  count, player);
+         }
+         break;
+#endif
+      case DISPLAYLIST_AUXILIARY_SCREEN_STREAMING_LIST:
+         {
+            unsigned screen;
+            unsigned max_screens = 4;
+            static const char *aux_screen_str[] = {
+               MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS_STR,
+               MENU_ENUM_LABEL_AUX_SCREEN_2_SETTINGS_STR,
+               MENU_ENUM_LABEL_AUX_SCREEN_3_SETTINGS_STR,
+               MENU_ENUM_LABEL_AUX_SCREEN_4_SETTINGS_STR
+            };
+
+            for (screen = 0; screen < max_screens; screen++)
+            {
+               char screen_label[32];
+
+               snprintf(screen_label, sizeof(screen_label),
+                     "Screen %u", screen + 1);
+
+               if (menu_entries_append(list,
+                        screen_label,
+                        aux_screen_str[screen],
+                        MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS + screen,
+                        MENU_SETTING_ACTION, screen, 0, NULL))
+               {
+                  count++;
+               }
+            }
+         }
+         break;
+      case DISPLAYLIST_AUX_SCREEN_SETTINGS_LIST:
+         {
+            const char *menu_path = NULL;
+            unsigned screen       = 1;
+
+            menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+            if (!string_is_empty(menu_path))
+               screen = (unsigned)strtoul(menu_path, NULL, 10);
+
+            if (screen == 0)
+               screen = 1;
+            if (screen > 4)
+               screen = 4;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_MODE + screen - 1),
+                     PARSE_ONLY_UINT, false) == 0)
+            {
+               count++;
+            }
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_QUALITY + screen - 1),
+                     PARSE_ONLY_UINT, false) == 0)
+            {
+               count++;
+            }
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_TITLE + screen - 1),
+                     PARSE_ONLY_STRING, false) == 0)
+            {
+               count++;
+            }
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_CONFIG + screen - 1),
+                     PARSE_ONLY_PATH, false) == 0)
+            {
+               count++;
+            }
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_URL + screen - 1),
+                     PARSE_ONLY_STRING, false) == 0)
+            {
+               count++;
             }
          }
          break;
@@ -9648,6 +9911,7 @@ unsigned menu_displaylist_build_list(
                || !strcmp(
                      settings->arrays.record_driver, "avfoundation");
             static menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_AUXILIARY_SCREEN_STREAMING,                            PARSE_ACTION,              true},
                {MENU_ENUM_LABEL_RECORD_DRIVER,                                         PARSE_ONLY_STRING_OPTIONS, true},
                {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,           false},
                {MENU_ENUM_LABEL_RECORD_CONFIG,                                         PARSE_ONLY_PATH,           false},
@@ -9671,6 +9935,7 @@ unsigned menu_displaylist_build_list(
             build_list[8].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_STREAM_CONFIG */
             build_list[9].checked  = is_ffmpeg; /* MENU_ENUM_LABEL_STREAMING_TITLE */
             build_list[10].checked = is_ffmpeg; /* MENU_ENUM_LABEL_STREAMING_URL */
+            build_list[11].checked = is_ffmpeg; /* MENU_ENUM_LABEL_UDP_STREAM_PORT */
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -12587,6 +12852,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 {
    struct menu_state   *menu_st   = menu_state_get_ptr();
    menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+
    bool push_list                 = (menu_st->driver_ctx->list_push
          && menu_st->driver_ctx->list_push(menu_st->driver_data,
             menu_st->userdata, info, type) == 0);
@@ -14961,6 +15227,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          case DISPLAYLIST_OPTIONS_DISK:
+#ifdef HAVE_DSU
+         case DISPLAYLIST_OPTIONS_DSU_CLIENT:
+#endif
          case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
          case DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST:
          case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
@@ -14971,6 +15240,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST:
          case DISPLAYLIST_ACCOUNTS_FACEBOOK_LIST:
          case DISPLAYLIST_RECORDING_SETTINGS_LIST:
+         case DISPLAYLIST_AUXILIARY_SCREEN_STREAMING_LIST:
+         case DISPLAYLIST_AUX_SCREEN_SETTINGS_LIST:
          case DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST:
          case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
          case DISPLAYLIST_NETWORK_SETTINGS_LIST:
@@ -15044,6 +15315,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_SMBCLIENT
          case DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST:
          case DISPLAYLIST_OPTIONS_SMB_CLIENT:
+#endif
+#ifdef HAVE_DSU
+         case DISPLAYLIST_DSU_CLIENT_SETTINGS_LIST:
+         case DISPLAYLIST_DSU_CLIENT_PLAYER_SETTINGS_LIST:
+         case DISPLAYLIST_DSU_CLIENT_REMOTE_SETTINGS_LIST:
 #endif
          case DISPLAYLIST_OPTIONS_OVERRIDES:
             menu_entries_clear(info->list);
@@ -15444,7 +15720,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (settings->bools.menu_show_load_core)
                      {
 #ifdef HAVE_DYNAMIC
-                        if (    sys_info->info.library_name 
+                        if (    sys_info->info.library_name
                             && *sys_info->info.library_name)
                         {
                            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
@@ -15742,7 +16018,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
             if (menu_entries_append(info->list, info->path,
-                     info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0,
+                     info->label, info->enum_idx, info->type, info->directory_ptr, 0,
                      NULL))
                count++;
 

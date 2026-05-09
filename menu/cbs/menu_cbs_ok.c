@@ -420,6 +420,14 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
       case ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST;
 #endif
+#ifdef HAVE_DSU
+      case ACTION_OK_DL_DSU_CLIENT_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_SETTINGS_LIST;
+      case ACTION_OK_DL_DSU_CLIENT_PLAYER_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_PLAYER_SETTINGS_LIST;
+      case ACTION_OK_DL_DSU_CLIENT_REMOTE_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_REMOTE_SETTINGS_LIST;
+#endif
       case ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST;
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
@@ -490,6 +498,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST;
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST;
+      case ACTION_OK_DL_AUXILIARY_SCREEN_STREAMING_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_AUXILIARY_SCREEN_STREAMING_LIST;
+      case ACTION_OK_DL_AUX_SCREEN_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_AUX_SCREEN_SETTINGS_LIST;
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST;
       case ACTION_OK_DL_PLAYLIST_MANAGER_LIST:
@@ -678,8 +690,6 @@ static const char *menu_driver_get_last_start_directory(void)
        || !*menu->last_start_content.directory
        || !path_is_directory(menu->last_start_content.directory))
       return default_directory;
-
-   return menu->last_start_content.directory;
 }
 
 int generic_action_ok_displaylist_push(
@@ -998,6 +1008,15 @@ int generic_action_ok_displaylist_push(
          info_path          = label;
          info_label         = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR;
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_AUX_SCREEN_SETTINGS_LIST:
+         info.type          = type;
+         info.directory_ptr = idx + 1;
+         snprintf(menu->scratch_buf, sizeof(menu->scratch_buf), "%u", (unsigned)(idx + 1));
+         info_path          = menu->scratch_buf;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_AUX_SCREEN_SETTINGS_LIST_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_AUX_SCREEN_SETTINGS_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_MUSIC:
@@ -1753,6 +1772,41 @@ int generic_action_ok_displaylist_push(
          ACTION_OK_DL_LBL(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          info.type          = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN + player_no;
       }
+         break;
+#ifdef HAVE_DSU
+      case ACTION_OK_DL_DSU_CLIENT_SETTINGS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_SETTINGS_LIST_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_SETTINGS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DSU_CLIENT_PLAYER_SETTINGS_LIST:
+         info.directory_ptr = idx + 1;
+         info.type          = type;
+         snprintf(menu->scratch_buf, sizeof(menu->scratch_buf), "%u", (unsigned)(idx + 1));
+         info_path          = menu->scratch_buf;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_PLAYER_SETTINGS_LIST_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_PLAYER_SETTINGS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DSU_CLIENT_REMOTE_SETTINGS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = label;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_REMOTE_SETTINGS_LIST_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_REMOTE_SETTINGS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+#endif
+      case ACTION_OK_DL_AUXILIARY_SCREEN_STREAMING_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_AUXILIARY_SCREEN_STREAMING_LIST_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_AUXILIARY_SCREEN_STREAMING_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_ACCOUNTS_LIST:
       case ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST:
@@ -4570,6 +4624,56 @@ static int action_ok_stop_streaming(const char *path,
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
+static int action_ok_start_aux_streaming(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      const char *url = settings->paths.aux_screen_url[i];
+      unsigned bitrate = settings->uints.aux_screen_quality[i];
+      unsigned mode    = settings->uints.aux_screen_mode[i];
+      char stream_url[8192];
+
+      strlcpy(stream_url, url, sizeof(stream_url));
+      if (     (string_is_empty(stream_url)
+             || string_starts_with(stream_url, "udp://127.0.0.1:")
+             || string_starts_with(stream_url, "udp://localhost:"))
+            && !string_is_empty(settings->paths.network_dsu_player_server_address[i]))
+         snprintf(stream_url, sizeof(stream_url), "udp://%s:%u",
+               settings->paths.network_dsu_player_server_address[i],
+               56400 + i);
+
+      if (!string_is_empty(stream_url))
+      {
+         if (recording_init_aux(i, stream_url, bitrate, 0, 0, 0))
+         {
+#ifdef HAVE_DSU
+            input_dsu_broadcast_aux_stream_status(i, 1u, 0u,
+                  mode, stream_url);
+#endif
+         }
+      }
+   }
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+}
+
+static int action_ok_stop_aux_streaming(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned i;
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      recording_deinit_aux(i);
+#ifdef HAVE_DSU
+      input_dsu_broadcast_aux_stream_status(i, 0u, 0u,
+            STREAMING_MODE_CUSTOM, "");
+#endif
+   }
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+}
+
 #ifdef HAVE_CHEATS
 static int action_ok_cheat_add_top(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -6590,7 +6694,10 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_directory_push, ACTION_OK_DL_DIRECTORY_P
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_configurations_list, ACTION_OK_DL_CONFIGURATIONS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_saving_list, ACTION_OK_DL_SAVING_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cloud_sync_list, ACTION_OK_DL_CLOUD_SYNC_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIST)
+static int action_ok_network_list(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx, entry_idx, ACTION_OK_DL_NETWORK_SETTINGS_LIST);
+}
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_kick_list, ACTION_OK_DL_NETPLAY_KICK_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_ban_list, ACTION_OK_DL_NETPLAY_BAN_LIST)
@@ -6706,6 +6813,11 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_ai_service_settings_list, ACTION_OK
 #ifdef HAVE_SMBCLIENT
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_smb_client_settings_list, ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST)
 #endif
+#ifdef HAVE_DSU
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_dsu_client_settings_list, ACTION_OK_DL_DSU_CLIENT_SETTINGS_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_dsu_client_player_settings_list, ACTION_OK_DL_DSU_CLIENT_PLAYER_SETTINGS_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_dsu_client_remote_settings_list, ACTION_OK_DL_DSU_CLIENT_REMOTE_SETTINGS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accessibility_settings_list, ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_settings_list, ACTION_OK_DL_INPUT_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_menu_settings_list, ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST)
@@ -6713,7 +6825,15 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_turbo_fire_settings_list, ACT
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_haptic_feedback_settings_list, ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_sensor_settings_list, ACTION_OK_DL_INPUT_SENSOR_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_latency_settings_list, ACTION_OK_DL_LATENCY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_recording_settings_list, ACTION_OK_DL_RECORDING_SETTINGS_LIST)
+static int action_ok_push_recording_settings_list(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx, entry_idx, ACTION_OK_DL_RECORDING_SETTINGS_LIST);
+}
+static int action_ok_push_auxiliary_screen_streaming_list(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx, entry_idx, ACTION_OK_DL_AUXILIARY_SCREEN_STREAMING_LIST);
+}
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_aux_screen_settings_list, ACTION_OK_DL_AUX_SCREEN_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_playlist_settings_list, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_playlist_manager_list, ACTION_OK_DL_PLAYLIST_MANAGER_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_retropad_binds_list, ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST)
@@ -9174,8 +9294,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       static const temp_ok_list_t ok_list[] = {
          {MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING,          action_ok_start_recording},
          {MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,          action_ok_start_streaming},
-         {MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,           action_ok_stop_recording},
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING,           action_ok_stop_streaming},
+         {MENU_ENUM_LABEL_QUICK_MENU_START_AUX_STREAMING,      action_ok_start_aux_streaming},
+         {MENU_ENUM_LABEL_QUICK_MENU_STOP_AUX_STREAMING,       action_ok_stop_aux_streaming},
 #ifdef HAVE_CHEATS
          {MENU_ENUM_LABEL_CHEAT_START_OR_CONT,                 action_ok_cheat_start_or_cont},
          {MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,                   action_ok_cheat_add_top},
@@ -9358,6 +9479,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,                 action_ok_push_smb_client_settings_list},
          {MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,                   action_ok_smb_browse},
 #endif
+#ifdef HAVE_DSU
+         {MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS,                 action_ok_push_dsu_client_settings_list},
+         {MENU_ENUM_LABEL_DSU_CLIENT_PLAYER_SETTINGS,            action_ok_push_dsu_client_player_settings_list},
+         {MENU_ENUM_LABEL_DSU_CLIENT_REMOTE_SETTINGS,            action_ok_push_dsu_client_remote_settings_list},
+#endif
          {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
          {MENU_ENUM_LABEL_CORE_CREATE_BACKUP,                  action_ok_core_create_backup},
          {MENU_ENUM_LABEL_DELETE_PLAYLIST,                     action_ok_delete_playlist},
@@ -9389,6 +9515,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,     action_ok_playlist_clean},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,   action_ok_playlist_refresh},
          {MENU_ENUM_LABEL_RECORDING_SETTINGS,                  action_ok_push_recording_settings_list},
+         {MENU_ENUM_LABEL_AUXILIARY_SCREEN_STREAMING,          action_ok_push_auxiliary_screen_streaming_list},
          {MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,                action_ok_push_input_retropad_binds_list},
          {MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,                  action_ok_push_input_hotkey_binds_list},
          {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
@@ -9529,6 +9656,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
          {MENU_ENUM_LABEL_EXPLORE_TAB,                         action_ok_push_default},
          {MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB,               action_ok_push_default},
+         {MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS,               action_ok_push_aux_screen_settings_list},
+         {MENU_ENUM_LABEL_AUX_SCREEN_2_SETTINGS,               action_ok_push_aux_screen_settings_list},
+         {MENU_ENUM_LABEL_AUX_SCREEN_3_SETTINGS,               action_ok_push_aux_screen_settings_list},
+         {MENU_ENUM_LABEL_AUX_SCREEN_4_SETTINGS,               action_ok_push_aux_screen_settings_list},
       };
 
       for (i = 0; i < ARRAY_SIZE(ok_list); i++)
@@ -9606,11 +9737,24 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
       const char *label, const char *menu_label, unsigned type)
 {
+   unsigned actual_enum_idx = cbs->enum_idx;
+
+   /* If enum_idx is MSG_UNKNOWN or 0, try to get it from setting */
+   if (cbs->enum_idx == MSG_UNKNOWN || cbs->enum_idx == 0)
+   {
+      if (cbs->setting)
+         actual_enum_idx = cbs->setting->enum_idx;
+   }
+
    if (type == MENU_SET_CDROM_LIST)
    {
       BIND_ACTION_OK(cbs, action_ok_dump_cdrom);
    }
 #ifdef HAVE_LAKKA
+   else if (type == MENU_SETTINGS_NETPLAY_LAN_SCAN)
+   {
+      BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
+   }
    else if (type == MENU_SET_EJECT_DISC)
    {
       BIND_ACTION_OK(cbs, action_ok_eject_disc);
@@ -9626,6 +9770,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    }
    else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
          type == MENU_SETTINGS_CUSTOM_BIND)
+   {
+      BIND_ACTION_OK(cbs, action_ok_lookup_setting);
+   }
+   else if (actual_enum_idx >= MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_URL
+         && actual_enum_idx <= MENU_ENUM_LABEL_NETWORK_AUX_SCREEN_1_CONFIG + 3)
    {
       BIND_ACTION_OK(cbs, action_ok_lookup_setting);
    }

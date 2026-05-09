@@ -3621,6 +3621,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   bool init_result = recording_init_aux(0, settings->paths.aux_screen_url[0], 0,
                         info->screen_width, info->screen_height, 0);
                   RARCH_LOG("[Environ] recording_init_aux returned: %s\n", init_result ? "SUCCESS" : "FAILED");
+#if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
+                  if (init_result)
+                     input_dsu_broadcast_aux_stream_status(0, 1u, 0u,
+                           settings->uints.aux_screen_mode[0],
+                           settings->paths.aux_screen_url[0]);
+#endif
                }
             }
          }

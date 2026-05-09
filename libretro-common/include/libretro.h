@@ -2532,7 +2532,7 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_MULTI_SCREEN_ACTIVE 83
                                            /* struct retro_multi_screen_query * --
                                             * Queries which screens the frontend wants active.
-                                            * Useful when streaming/casting auxiliary screens. */
+                                            * Useful when streaming/casting auxiliary screens via DSU protocol. */
 
 /**
  * Returns the device's current power state as reported by the frontend.
