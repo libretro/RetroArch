@@ -1397,8 +1397,6 @@ void dsu_client_poll(dsu_state_t *dsu)
                   uint8_t remote_slot = payload[0];
                   int controller_slot = dsu_find_controller_slot(dsu,
                         source_address, source_port, remote_slot);
-                  uint16_t old_btns;
-                  uint16_t new_btns;
                   bool old_touch1_active;
                   bool old_touch2_active;
 
@@ -1410,7 +1408,6 @@ void dsu_client_poll(dsu_state_t *dsu)
                   if (controller_slot < 0)
                      break;
 
-                  old_btns = dsu->controllers[controller_slot].buttons;
                   old_touch1_active = dsu->controllers[controller_slot].touch1_active;
                   old_touch2_active = dsu->controllers[controller_slot].touch2_active;
 #ifdef HAVE_THREADS
@@ -1424,7 +1421,6 @@ void dsu_client_poll(dsu_state_t *dsu)
 #ifdef HAVE_THREADS
                   slock_unlock(dsu->state_lock);
 #endif
-                  new_btns = dsu->controllers[controller_slot].buttons;
                   if (old_touch1_active != dsu->controllers[controller_slot].touch1_active
                         || old_touch2_active != dsu->controllers[controller_slot].touch2_active
                         || dsu->controllers[controller_slot].touch1_active

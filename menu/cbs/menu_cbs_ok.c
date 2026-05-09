@@ -690,6 +690,8 @@ static const char *menu_driver_get_last_start_directory(void)
        || !*menu->last_start_content.directory
        || !path_is_directory(menu->last_start_content.directory))
       return default_directory;
+
+   return menu->last_start_content.directory;
 }
 
 int generic_action_ok_displaylist_push(
@@ -9294,6 +9296,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       static const temp_ok_list_t ok_list[] = {
          {MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING,          action_ok_start_recording},
          {MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,          action_ok_start_streaming},
+         {MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,           action_ok_stop_recording},
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING,           action_ok_stop_streaming},
          {MENU_ENUM_LABEL_QUICK_MENU_START_AUX_STREAMING,      action_ok_start_aux_streaming},
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_AUX_STREAMING,       action_ok_stop_aux_streaming},

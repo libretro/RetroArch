@@ -7197,23 +7197,6 @@ unsigned menu_displaylist_build_list(
    uint32_t flags             = runloop_get_flags();
    struct menu_state *menu_st = menu_state_get_ptr();
 
-   const char *type_str = "UNKNOWN";
-   switch (type)
-   {
-      case DISPLAYLIST_NONE: type_str = "DISPLAYLIST_NONE"; break;
-      case DISPLAYLIST_DROPDOWN_LIST: type_str = "DISPLAYLIST_DROPDOWN_LIST"; break;
-      case DISPLAYLIST_MAIN_MENU: type_str = "DISPLAYLIST_MAIN_MENU"; break;
-      case DISPLAYLIST_SETTINGS_ALL: type_str = "DISPLAYLIST_SETTINGS_ALL"; break;
-      case DISPLAYLIST_RECORDING_SETTINGS_LIST: type_str = "DISPLAYLIST_RECORDING_SETTINGS_LIST"; break;
-      case DISPLAYLIST_AUX_SCREEN_SETTINGS_LIST: type_str = "DISPLAYLIST_AUX_SCREEN_SETTINGS_LIST"; break;
-      case DISPLAYLIST_AUXILIARY_SCREEN_STREAMING_LIST: type_str = "DISPLAYLIST_AUXILIARY_SCREEN_STREAMING_LIST"; break;
-      case DISPLAYLIST_VIDEO_SETTINGS_LIST: type_str = "DISPLAYLIST_VIDEO_SETTINGS_LIST"; break;
-      case DISPLAYLIST_AUDIO_SETTINGS_LIST: type_str = "DISPLAYLIST_AUDIO_SETTINGS_LIST"; break;
-      case DISPLAYLIST_INPUT_SETTINGS_LIST: type_str = "DISPLAYLIST_INPUT_SETTINGS_LIST"; break;
-      case DISPLAYLIST_CORE_OPTIONS: type_str = "DISPLAYLIST_CORE_OPTIONS"; break;
-      default: type_str = "OTHER"; break;
-   }
-
    switch (type)
    {
       case DISPLAYLIST_OPTIONS_OVERRIDES:
@@ -10049,8 +10032,8 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = (gfx_widgets && !cheevos_autopad);
                      break;
                   case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H:
-                     build_list[i].checked = ((gfx_widgets && !cheevos_autopad) && 
-                     !(cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER || 
+                     build_list[i].checked = ((gfx_widgets && !cheevos_autopad) &&
+                     !(cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER ||
                         cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER));
                      break;
                   default:

@@ -26390,32 +26390,6 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
 
    for (i = 0; i < ARRAY_SIZE(list_types); i++)
    {
-      const char *list_type_str = "UNKNOWN";
-      switch (list_types[i])
-      {
-         case SETTINGS_LIST_MAIN_MENU: list_type_str = "MAIN_MENU"; break;
-         case SETTINGS_LIST_DRIVERS: list_type_str = "DRIVERS"; break;
-         case SETTINGS_LIST_CORE: list_type_str = "CORE"; break;
-         case SETTINGS_LIST_CONFIGURATION: list_type_str = "CONFIGURATION"; break;
-         case SETTINGS_LIST_LOGGING: list_type_str = "LOGGING"; break;
-         case SETTINGS_LIST_SAVING: list_type_str = "SAVING"; break;
-         case SETTINGS_LIST_CLOUD_SYNC: list_type_str = "CLOUD_SYNC"; break;
-         case SETTINGS_LIST_REWIND: list_type_str = "REWIND"; break;
-         case SETTINGS_LIST_CHEATS: list_type_str = "CHEATS"; break;
-         case SETTINGS_LIST_VIDEO: list_type_str = "VIDEO"; break;
-         case SETTINGS_LIST_AUDIO: list_type_str = "AUDIO"; break;
-         case SETTINGS_LIST_INPUT: list_type_str = "INPUT"; break;
-         case SETTINGS_LIST_RECORDING: list_type_str = "RECORDING"; break;
-         case SETTINGS_LIST_PLAYLIST: list_type_str = "PLAYLIST"; break;
-         case SETTINGS_LIST_NETPLAY: list_type_str = "NETPLAY"; break;
-#ifdef HAVE_SMBCLIENT
-         case SETTINGS_LIST_SMBCLIENT: list_type_str = "SMBCLIENT"; break;
-#endif
-#ifdef HAVE_DSU
-         case SETTINGS_LIST_DSU_CLIENT: list_type_str = "DSU_CLIENT"; break;
-#endif
-         default: break;
-      }
       if (!setting_append_list(
                settings, global,
                list_types[i], &list, list_info, root))
