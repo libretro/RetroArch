@@ -9954,32 +9954,6 @@ static void xmb_context_destroy(void *data)
    menu_screensaver_context_destroy(xmb->screensaver);
 }
 
-static void xmb_fade_out(xmb_handle_t *xmb)
-{
-   if (xmb)
-      xmb->alpha = 0;
-}
-
-static void xmb_fade_in(xmb_handle_t *xmb)
-{
-   gfx_animation_ctx_entry_t anim_entry;
-   uintptr_t tag           = 0;
-
-   if (!xmb)
-      return;
-
-   tag                     = (uintptr_t)&xmb->textures.bg;
-
-   anim_entry.duration     = XMB_DELAY * 1.25f;
-   anim_entry.subject      = &xmb->alpha;
-   anim_entry.easing_enum  = EASING_IN_QUINT;
-   anim_entry.tag          = tag;
-   anim_entry.cb           = NULL;
-   anim_entry.target_value = xmb->items_active_alpha;
-
-   gfx_animation_push(&anim_entry);
-}
-
 static void xmb_toggle(void *userdata, bool menu_on)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)userdata;
@@ -9993,7 +9967,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
    if (!menu_on)
    {
-      xmb_fade_out(xmb);
+      xmb->alpha = 0;
       return;
    }
 
@@ -10019,19 +9993,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
    xmb_toggle_horizontal_list(xmb);
 
-   /* Skip the fade-in on the very first frame after init: at
-    * startup xmb_toggle(true) fires from retroarch_menu_running()
-    * before the first xmb_frame, and xmb_fade_in animates xmb->alpha
-    * from its init value of 0 up to items_active_alpha over ~200ms.
-    * xmb->alpha gates the entire menu including the wallpaper, so
-    * the first ~12 frames render as a fully black screen before the
-    * menu appears. The menu has no prior state to fade in from at
-    * startup, so jump straight to full opacity instead. Subsequent
-    * toggles (menu hotkey from gameplay) are unaffected. */
-   if (xmb->is_first_frame)
-      xmb->alpha = xmb->items_active_alpha;
-   else
-      xmb_fade_in(xmb);
+   xmb->alpha = xmb->items_active_alpha;
 }
 
 static int xmb_deferred_push_content_actions(menu_displaylist_info_t *info)

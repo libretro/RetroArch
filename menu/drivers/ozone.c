@@ -13036,41 +13036,9 @@ static void ozone_toggle(void *userdata, bool menu_on)
    if (!ozone)
       return;
 
-   /* Fade in animation
-    *
-    * Skip on the very first frame after init: ozone_toggle(true)
-    * fires from retroarch_menu_running() at startup *before* the
-    * first ozone_frame, and this fade-in zeros out
-    * animations.alpha — which scales the alpha of sidebar text,
-    * entry text and entry icons, but NOT the title text, date
-    * text or the background/sidebar quads.  The result is a few
-    * frames of half-rendered menu (background + header but no
-    * entries) until the alpha animates up to 1.0 over ~200ms.
-    *
-    * The menu has no prior state to fade in from at startup, so
-    * skipping the animation here is the right move; it matches
-    * the "is_first_frame -> animate=false" pattern already used
-    * in ozone_populate_entries (ozone_list_open call). Subsequent
-    * toggles (menu hotkey from gameplay) are unaffected because
-    * OZONE_FLAG_FIRST_FRAME has been cleared by then. */
-   if (menu_on && !(ozone->flags & OZONE_FLAG_FIRST_FRAME))
-   {
-      struct gfx_animation_ctx_entry entry;
-
-      ozone->animations.alpha      = 0.0f;
-
-      entry.cb                     = NULL;
-      entry.duration               = ANIMATION_PUSH_ENTRY_DURATION * 1.25f;
-      entry.easing_enum            = OZONE_EASING_ALPHA;
-      entry.subject                = &ozone->animations.alpha;
-      entry.tag                    = (uintptr_t)NULL;
-      entry.target_value           = 1.0f;
-
-      gfx_animation_push(&entry);
-   }
-
    /* Reset */
    ozone->animations.list_alpha    = 1.0f;
+   ozone->animations.alpha         = 1.0f;
 
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
