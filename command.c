@@ -503,6 +503,25 @@ bool command_get_config_param(command_t *cmd, const char* arg)
          strlcpy(value_dynamic, "0 0 0", sizeof(value_dynamic));
    }
    #endif
+#ifdef HAVE_MENU
+   else if (memcmp(arg, "menu_active", sizeof("menu_active")) == 0)
+   {
+      struct menu_state* menu_st = menu_state_get_ptr();
+      if (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
+         value = "true";
+      else
+         value = "false";
+   }
+#endif
+#ifdef HAVE_CHEEVOS
+   else if (memcmp(arg, "cheevos_enable", sizeof("cheevos_enable")) == 0)
+   {
+      if (settings->bools.cheevos_enable)
+         value = "true";
+      else
+         value = "false";
+   }
+#endif
    /* TODO: query any string */
    _len  = strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
    _len += strlcpy(reply + _len, arg, sizeof(reply)  - _len);
@@ -811,6 +830,33 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
       if ((ret = content_load_state(state_path, false, false)))
          command_post_state_loaded();
    }
+   else
+      ret = false;
+
+   cmd->replier(cmd, reply, _len);
+   return ret;
+}
+
+bool command_save_state_slot(command_t* cmd, const char* arg)
+{
+   char state_path[PATH_MAX_LENGTH] = "";
+   size_t _len                  = 0;
+   char reply[128]              = "";
+   unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
+   bool savestates_enabled      = core_info_current_supports_savestate();
+   bool ret = false;
+   _len = strlcpy(reply, "SAVE_STATE_SLOT ", sizeof(reply));
+   _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
+   if (savestates_enabled)
+   {
+      size_t info_size;
+      runloop_get_savestate_path(state_path, sizeof(state_path), slot);
+
+      info_size          = core_serialize_size();
+      savestates_enabled = (info_size > 0);
+   }
+   if (savestates_enabled)
+      ret = content_save_state(state_path, true);
    else
       ret = false;
 
