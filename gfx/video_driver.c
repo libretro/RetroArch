@@ -5551,14 +5551,17 @@ static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video
 
       if (init)
       {
+         if (!scanline_total)
+            scanline_total = video_height;
+
          if (scanline)
             wait = true;
          else if (scanline_total > video_height)
             init = false;
-
-         if (scanline_total < scanline)
-            scanline_total = scanline + 1;
       }
+
+      if (scanline >= scanline_total)
+         scanline_total = scanline + 1;
    }
 
    video_st->scanline[SCANLINE_TOTAL] = scanline_total;
