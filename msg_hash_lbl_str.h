@@ -1297,6 +1297,7 @@
 #define MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE_STR "video_msg_color_blue"
 #define MENU_ENUM_LABEL_FRAMECOUNT_SHOW_STR "framecount_show"
 #define MENU_ENUM_LABEL_MEMORY_SHOW_STR "memory_show"
+#define MENU_ENUM_LABEL_TIME_SHOW_STR "time_show"
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY_STR "video_window_opacity"
 #define MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY_STR "audio_resampler_quality"
 #define MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC_STR "sinc"

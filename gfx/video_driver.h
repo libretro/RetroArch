@@ -388,6 +388,7 @@ typedef struct video_frame_info
    unsigned current_subframe;
    unsigned fps_update_interval;
    unsigned memory_update_interval;
+   unsigned time_show;
    unsigned msg_queue_delay;
 
    float menu_wallpaper_opacity;

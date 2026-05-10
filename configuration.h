@@ -200,6 +200,7 @@ typedef struct settings
 
       unsigned fps_update_interval;
       unsigned memory_update_interval;
+      unsigned video_time_show;
 
       unsigned input_block_timeout;
 

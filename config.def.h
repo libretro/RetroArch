@@ -1287,6 +1287,9 @@
 /* Includes displaying the current memory usage/total with FPS/Frames. */
 #define DEFAULT_MEMORY_SHOW false
 
+/* Displays the current time in the preferred format. */
+#define DEFAULT_TIME_SHOW TIME_SHOW_OFF
+
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
 
