@@ -32,6 +32,10 @@
 #include "../common/x11_common.h"
 #endif
 
+#ifdef _WIN32
+#include "../common/win32_common.h"
+#endif
+
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -422,6 +426,10 @@ static void *sdl2_gfx_init(const video_info_t *video,
 
 #if defined(_WIN32)
    sdl2_set_handles(vid->window, RARCH_DISPLAY_WIN32);
+   {
+      WNDCLASSEX wndclass = {0};
+      win32_window_init(&wndclass, true, NULL);
+   }
 #elif defined(HAVE_COCOA)
    sdl2_set_handles(vid->window, RARCH_DISPLAY_OSX);
 #else
