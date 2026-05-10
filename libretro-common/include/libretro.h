@@ -2603,6 +2603,59 @@ enum retro_mod
 */
 #define RETRO_ENVIRONMENT_GET_NETPLAY_CLIENT_INDEX (82 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/**
+ * Allocates a region of executable memory, optionally dual-mapped.
+ *
+ * The frontend allocates memory suitable for JIT code generation and returns
+ * it to the core.  The returned mode tells the core how to use the memory:
+ *
+ *  - \c RETRO_EXEC_MEM_MODE_UNRESTRICTED: The platform has no restrictions
+ *    on executable memory.  The core should self-allocate.  Do not call
+ *    this environment with a non-zero size in this mode.
+ *  - \c RETRO_EXEC_MEM_MODE_RWX: Single mapping, read-write-execute.
+ *    \c rx and \c rw point to the same region.
+ *  - \c RETRO_EXEC_MEM_MODE_WX_TOGGLE: Single mapping, write XOR execute.
+ *    \c rx and \c rw point to the same region; the core must toggle
+ *    protections itself (e.g. mprotect) before writing or executing.
+ *  - \c RETRO_EXEC_MEM_MODE_DUAL_MAP: Separate read-execute and read-write
+ *    mappings of the same physical pages.  The core writes through \c rw
+ *    and executes from \c rx.
+ *
+ * Returned memory is page-aligned.  The frontend tracks all allocations
+ * and frees any outstanding ones when the core is unloaded.
+ *
+ * The core sets \c version and \c size before calling.  The frontend fills
+ * in \c mode, \c rx, and \c rw on success.
+ *
+ * If \c size is 0, this is a probe: the frontend returns \c true and sets
+ * \c mode to indicate what kind of memory it would provide, but does not
+ * allocate.  \c rx and \c rw will be NULL.  Cores can use this to decide
+ * whether to take a JIT code path before committing to an allocation.
+ *
+ * @param[in,out] data <tt>struct retro_exec_mem_alloc *</tt>.
+ * @return \c true if the allocation succeeded, \c false otherwise.
+ *         If the frontend does not support this call, returns \c false
+ *         and the core should fall back to managing its own executable memory.
+ * @see retro_exec_mem_alloc
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_FREE
+ */
+#define RETRO_ENVIRONMENT_EXEC_MEM_ALLOC 83
+
+/**
+ * Frees a region of executable memory previously allocated with
+ * \c RETRO_ENVIRONMENT_EXEC_MEM_ALLOC.
+ *
+ * This is optional; the frontend will free all outstanding allocations
+ * when the core is unloaded.  Cores that never need to release memory
+ * mid-session need not call this.
+ *
+ * @param[in] data <tt>struct retro_exec_mem_free *</tt>.
+ * @return \c true if the memory was freed, \c false otherwise.
+ * @see retro_exec_mem_free
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_ALLOC
+ */
+#define RETRO_ENVIRONMENT_EXEC_MEM_FREE  84
+
 /**@}*/
 
 /**
@@ -7431,6 +7484,45 @@ struct retro_device_power
     * so do not assume that this will be 100 in the \c RETRO_POWERSTATE_CHARGED state.
     */
    int8_t percent;
+};
+
+/** @} */
+
+/** @defgroup Executable Memory Modes
+ * Describes how the frontend provisions executable memory.
+ * @{
+ */
+
+#define RETRO_EXEC_MEM_MODE_UNAVAILABLE  0 /**< No executable memory available */
+#define RETRO_EXEC_MEM_MODE_UNRESTRICTED 1 /**< No restrictions; core should self-allocate */
+#define RETRO_EXEC_MEM_MODE_RWX          2 /**< Single mapping, read-write-execute */
+#define RETRO_EXEC_MEM_MODE_WX_TOGGLE    3 /**< Single mapping, write XOR execute (core toggles) */
+#define RETRO_EXEC_MEM_MODE_DUAL_MAP     4 /**< Separate R-X and R-W mappings of same pages */
+
+/**
+ * Parameters for \c RETRO_ENVIRONMENT_EXEC_MEM_ALLOC.
+ *
+ * The core fills in \c version and \c size before calling.
+ * The frontend fills in \c mode, \c rx, and \c rw on success.
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_ALLOC
+ */
+struct retro_exec_mem_alloc
+{
+   unsigned version;  /**< Set by core (currently 1). */
+   size_t   size;     /**< Set by core: requested bytes.  */
+   unsigned mode;     /**< Set by frontend: one of \c RETRO_EXEC_MEM_MODE_*. */
+   void    *rx;       /**< Set by frontend: execute from this pointer. */
+   void    *rw;       /**< Set by frontend: write through this pointer.
+                           Equal to \c rx when mode is RWX or WX_TOGGLE. */
+};
+
+/**
+ * Parameters for \c RETRO_ENVIRONMENT_EXEC_MEM_FREE.
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_FREE
+ */
+struct retro_exec_mem_free
+{
+   void *rx;  /**< The \c rx pointer returned by a previous alloc call. */
 };
 
 /** @} */
