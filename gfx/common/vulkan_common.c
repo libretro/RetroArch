@@ -801,12 +801,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
    }
 
-   if (cached_device_vk && cached_destroy_device_vk)
-   {
-      vk->context.destroy_device = cached_destroy_device_vk;
-      cached_destroy_device_vk   = NULL;
-   }
-
    vkGetPhysicalDeviceProperties(vk->context.gpu,
          &vk->context.gpu_properties);
    vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
@@ -931,6 +925,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
+
+         if (cached_destroy_device_vk)
+         {
+            vk->context.destroy_device = cached_destroy_device_vk;
+            cached_destroy_device_vk   = NULL;
+         }
 
          video_st->flags   |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
          RARCH_LOG("[Vulkan] Using cached Vulkan context.\n");
