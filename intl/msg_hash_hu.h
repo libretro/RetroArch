@@ -6528,10 +6528,6 @@ MSG_HASH(
    "\"Játékállás mentés/töltés visszavonása\" látható"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "A játékállás mentés/töltés visszavonásának lehetőségei jelenjenek meg."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "\"Mag beállításai\" látható"
    )
@@ -14098,10 +14094,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Játékállás betöltése visszavonva."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Játékállás mentés visszavonása folyamatban"
    )
 MSG_HASH(
    MSG_UNKNOWN,

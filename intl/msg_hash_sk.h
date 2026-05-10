@@ -6488,10 +6488,6 @@ MSG_HASH(
    "Zobraziť 'Vrátiť uloženie/načítanie stavu'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Zobraziť možnosti pre vrátenie uloženia/načítania stavu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "Zobraziť 'Voľby jadra'"
    )
@@ -14014,10 +14010,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Načítanie stavu vrátené."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Vracia sa uložený stav"
    )
 MSG_HASH(
    MSG_UNKNOWN,

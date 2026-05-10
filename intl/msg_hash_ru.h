@@ -2543,6 +2543,10 @@ MSG_HASH(
    "VSync используется до снижения производительности ниже целевой частоты обновления. Повышает энергоэффективность и помогает минимизировать замедления при падении скорости. Несовместимо с 'Задержкой кадра'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Синхронизация Scanline"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Задержка кадра"
    )
@@ -6562,10 +6566,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Показывать 'Отменить сохранение/загрузку'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Показывать опции отмены сохранения/загрузки состояния."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -11819,6 +11819,14 @@ MSG_HASH(
    "Всегда сворачивать боковую панель слева."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Показать боковую панель"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Разрешить левую боковую навигацию и плейлисты."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Сокращать имена плейлистов"
    )
@@ -14370,10 +14378,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Загрузка сохранения отменена."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Отмена сохранения состояния"
    )
 MSG_HASH(
    MSG_UNKNOWN,

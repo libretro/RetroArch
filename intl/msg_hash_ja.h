@@ -5728,10 +5728,6 @@ MSG_HASH(
    "[ステートセーブ/ロードを元に戻す] を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "[ステートロード/セーブを元に戻す] オプションを表示します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "[コアオプション] を表示"
    )
@@ -12942,10 +12938,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "ステートロードを取り消しました。"
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "ステートセーブを取り消しています"
    )
 MSG_HASH(
    MSG_UNKNOWN,

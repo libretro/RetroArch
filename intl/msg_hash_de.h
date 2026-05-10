@@ -6428,10 +6428,6 @@ MSG_HASH(
    "\"Speichern/Laden des Savestates rückgängig machen\" anzeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Optionen für das Zurücksetzen des Speicherns/Ladens eines Savestates anzeigen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "„Core-Einstellungen“ anzeigen"
    )
@@ -14030,10 +14026,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Laden des Spielstands wurde rückgängig gemacht."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Speichern des Savestates wird rückgängig gemacht"
    )
 MSG_HASH(
    MSG_UNKNOWN,

@@ -5340,10 +5340,6 @@ MSG_HASH(
    "Desfez o carregamento do estado."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Desfazendo a gravação do estado"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Desconhecido"
    )

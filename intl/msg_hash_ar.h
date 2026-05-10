@@ -8560,10 +8560,6 @@ MSG_HASH(
    "تم التراجع عن تحميل الحالة."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "جار التراجع عن حفظ اللقطة"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "غير معروف"
    )

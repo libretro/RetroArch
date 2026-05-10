@@ -6196,10 +6196,6 @@ MSG_HASH(
    "'Durum Kaydetme/Yükleme Geri Alı' Göster"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Durum kaydetme/yükleme geri alma seçeneklerini gösterin."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "'Çekirdek Seçeneklerini' Göster"
    )
@@ -13842,10 +13838,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Durum yüklemesi geri alındı."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Durum kaydı geri alınıyor."
    )
 MSG_HASH(
    MSG_UNKNOWN,

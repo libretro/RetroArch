@@ -6504,10 +6504,6 @@ MSG_HASH(
    "Показати 'Скасувати збереження/Завантаження'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Показувати опції скасування збереження/завантаження."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "Показувати 'Головне налаштування'"
    )
@@ -14286,10 +14282,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Стан вивантаження."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Скасувати збереження стану"
    )
 MSG_HASH(
    MSG_UNKNOWN,

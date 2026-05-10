@@ -6337,6 +6337,10 @@ MSG_HASH(
    "Afficher 'Jeu en réseau'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "Afficher l'entrée 'Jeu en réseau' dans le menu principal ou les listes de lecture."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Afficher 'Historique'"
    )
@@ -6514,10 +6518,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Afficher l'annulation du chargement/de l'enregistrement des sauvegardes instantanées"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Afficher les options pour annuler le chargement/l'enregistrement d'une sauvegarde instantanée."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -11537,6 +11537,10 @@ MSG_HASH(
    "Facteur de fondu vertical"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Afficher la liste horizontale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Afficher l'en-tête du titre"
    )
@@ -14334,10 +14338,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Chargement de la sauvegarde instantanée annulé."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Annulation de la sauvegarde instantanée"
    )
 MSG_HASH(
    MSG_UNKNOWN,

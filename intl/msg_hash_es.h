@@ -6548,10 +6548,6 @@ MSG_HASH(
    "Mostrar opciones para deshacer guardados rápidos"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Muestra las opciones para deshacer los guardados rápidos y las cargas rápidas."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "Mostrar Opciones del núcleo"
    )
@@ -14358,10 +14354,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Se ha anulado la carga del guardado rápido."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Deshaciendo guardado rápido."
    )
 MSG_HASH(
    MSG_UNKNOWN,

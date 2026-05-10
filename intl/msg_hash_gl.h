@@ -6424,10 +6424,6 @@ MSG_HASH(
    "Mostrar \"Desfacer gardar/cargar estado\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostra as opcións para desfacer o estado de gardar/cargar."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "Mostrar \"Opcións Núcleo\""
    )
@@ -14134,10 +14130,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Desfixo o estado de carga."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Desfacendo o estado de gardado"
    )
 MSG_HASH(
    MSG_UNKNOWN,

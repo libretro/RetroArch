@@ -6556,10 +6556,6 @@ MSG_HASH(
    "Taispeáin 'Cealaigh Stádas Sábháil/Lódála'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Taispeáin na roghanna chun an staid sábhála/lódála a chealú."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "Taispeáin 'Croí-Roghanna'"
    )
@@ -14446,10 +14442,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Stádas lódála cealaithe."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Ag cealú an stáit shábhála"
    )
 MSG_HASH(
    MSG_UNKNOWN,

@@ -5900,10 +5900,6 @@ MSG_HASH(
    "Zobrazit 'Vrátit Uložení/Načtení pozice'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Zobrazení možností pro zrušení uložení/nahrání pozice."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "Zobrazit 'Možnosti jádra'"
    )
@@ -13194,10 +13190,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Načtení pozice bylo neúspěšné."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Vrácení uložené pozice"
    )
 MSG_HASH(
    MSG_UNKNOWN,

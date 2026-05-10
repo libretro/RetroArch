@@ -6585,7 +6585,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Hiển thị tùy chọn hoàn tác thao tác lưu/tải trạng thái."
+   "Hiển thị các tùy chọn để hoàn tác lưu/tải trò chơi. Nút Start trên RetroPad sẽ kích hoạt hoàn tác lưu/tải khi bị ẩn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -14441,7 +14441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Đang hoàn tác trạng thái lưu"
+   "Đang hoàn tác lưu trò chơi..."
    )
 MSG_HASH(
    MSG_UNKNOWN,

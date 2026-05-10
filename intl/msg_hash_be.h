@@ -5984,10 +5984,6 @@ MSG_HASH(
    "Паказваць 'Адмяніць захаванне/загрузку'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Паказваць опцыі адмены захавання/загрузкі стану."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "Паказ 'Опцыі ядра'"
    )
@@ -13450,10 +13446,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Загрузка захавання адменена."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Адмена захавання стану"
    )
 MSG_HASH(
    MSG_UNKNOWN,

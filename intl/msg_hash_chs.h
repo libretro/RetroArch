@@ -6236,10 +6236,6 @@ MSG_HASH(
    "显示「撤消保存/加载状态」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "显示「撤消保存/加载状态」选项。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "显示“核心选项”"
    )
@@ -13834,10 +13830,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "已撤销状态加载。"
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "正在撤销保存状态"
    )
 MSG_HASH(
    MSG_UNKNOWN,

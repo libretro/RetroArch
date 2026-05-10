@@ -6241,6 +6241,10 @@ MSG_HASH(
    "แสดง 'ออนไลน์ Netplay'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "แสดงรายการ 'การเล่นออนไลน์ (Net Play)' ในเมนูหลักหรือเพลย์ลิสต์"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "แสดง 'ประวัติ'"
    )
@@ -6418,10 +6422,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "แสดง เลิกทำ 'บันทึก/โหลดสถานะ'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "แสดงตัวเลือกสำหรับการเลิกทำ บันทึก/โหลดสถานะ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -11085,6 +11085,10 @@ MSG_HASH(
    "ค่าการจางหายในแนวตั้ง"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "แสดงรายการแนวนอน"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "แสดงส่วนหัวชื่อเรื่อง"
    )
@@ -11261,6 +11265,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "ทำให้แถบด้านข้างพับเก็บอยู่เสมอ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "แสดงแถบด้านข้าง"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "อนุญาตการนำทางด้วยแถบด้านข้างซ้ายและเพลย์ลิสต์"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -13686,10 +13698,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "ยกเลิกการโหลดสถานะบันทึกแล้ว"
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "กำลังยกเลิกการบันทึกสถานะ"
    )
 MSG_HASH(
    MSG_UNKNOWN,

@@ -6412,10 +6412,6 @@ MSG_HASH(
    "Mostra 'Annulla salva/carica salvataggio rapido'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostra le opzioni per annullare il salvataggio/caricamento di un salvataggio rapido."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "Mostra 'Opzioni Core'"
    )
@@ -13950,10 +13946,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Annullamento del caricamento del salvataggio"
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Annullamento salvataggio rapido"
    )
 MSG_HASH(
    MSG_UNKNOWN,

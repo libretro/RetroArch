@@ -5772,10 +5772,6 @@ MSG_HASH(
    "顯示「還原成載入前」「還原成儲存前」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "顯示「還原成載入前」 「還原成儲存前」選項。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "顯示「核心選項」"
    )
@@ -13302,10 +13298,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "已還原載入即時存檔。"
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "已還原儲存即時存檔"
    )
 MSG_HASH(
    MSG_UNKNOWN,

@@ -6492,10 +6492,6 @@ MSG_HASH(
    "Mostrar 'Desfazer Salvar/Carregar Ponto de Save'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostraras opções para desfazer salvar/carregar ponto de save."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    "Mostrar \"Configurações do núcleo\""
    )
@@ -14218,10 +14214,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Desfez o carregamento de jogo salvo."
-   )
-MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Desfazendo ponto de save"
    )
 MSG_HASH(
    MSG_UNKNOWN,
