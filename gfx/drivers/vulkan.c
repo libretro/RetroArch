@@ -4770,6 +4770,49 @@ static void vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore)
    vk->hw.signal_semaphore = semaphore;
 }
 
+/* Drop every reference the frontend holds to core-owned GPU objects.
+ *
+ * Called immediately before core_reset(). Vulkan-context cores
+ * typically destroy and recreate their renderer inside retro_reset(), 
+ * which invalidates the VkImage/VkImageView whose handles are cached 
+ * in vk->hw.image, plus any per-frame semaphores still referenced 
+ * via vk->hw.semaphores[] and vk->hw.signal_semaphore.
+ *
+ * vkDeviceWaitIdle ensures the previous frame's submit, which may
+ * still hold these handles in waitSemaphores or in descriptor sets
+ * bound by the filter chain, has fully retired before we let
+ * retro_reset() free them.
+ *
+ * After this returns, vulkan_frame()'s "vk->hw.image && ..." gate
+ * will fail and the existing fallback path will substitute the
+ * driver's default black texture for one frame, until the core's
+ * first post-reset retro_run() calls set_image() with fresh
+ * resources. */
+static void vulkan_invalidate_hw_render_cache(void *data)
+{
+   vk_t *vk = (vk_t*)data;
+
+   if (!vk || !(vk->flags & VK_FLAG_HW_ENABLE))
+      return;
+
+   if (vk->context && vk->context->device)
+   {
+#ifdef HAVE_THREADS
+      slock_lock(vk->context->queue_lock);
+#endif
+      vkDeviceWaitIdle(vk->context->device);
+#ifdef HAVE_THREADS
+      slock_unlock(vk->context->queue_lock);
+#endif
+   }
+
+   vk->hw.image            = NULL;
+   vk->hw.num_semaphores   = 0;
+   vk->hw.signal_semaphore = VK_NULL_HANDLE;
+   vk->hw.num_cmd          = 0;
+   vk->flags              &= ~VK_FLAG_HW_VALID_SEMAPHORE;
+}
+
 static void vulkan_init_hw_render(vk_t *vk)
 {
    struct retro_hw_render_interface_vulkan *iface   =
@@ -8359,6 +8402,7 @@ video_driver_t video_vulkan = {
    vulkan_shader_load_begin,
    vulkan_shader_load_step,
 #ifdef HAVE_GFX_WIDGETS
-   vulkan_gfx_widgets_enabled
+   vulkan_gfx_widgets_enabled,
 #endif
+   vulkan_invalidate_hw_render_cache
 };

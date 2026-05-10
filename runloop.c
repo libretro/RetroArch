@@ -8105,6 +8105,12 @@ void core_reset(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
    video_driver_state_t *video_st = video_state_get_ptr();
+
+   /* Drop video-driver caches of core-owned GPU resources before
+    * retro_reset() is allowed to destroy them. No-op on software
+    * cores or on drivers that do not implement the hook. */
+   video_driver_invalidate_hw_render_cache();
+
    video_st->frame_cache_data     = NULL;
    runloop_st->current_core.retro_reset();
 }

@@ -784,6 +784,14 @@ typedef struct video_driver
     * if set to false, will use OSD as a fallback */
    bool (*gfx_widgets_enabled)(void *data);
 #endif
+   /* Optional. Invoked by the runloop immediately before core_reset()
+    * (and any other path that may invalidate core-owned GPU resources
+    * referenced by the driver's HW render cache). Implementations must
+    * wait for any in-flight GPU work that could still reference those
+    * resources, then drop all cached pointers/handles supplied by the
+    * core through the libretro HW render interface. May be called
+    * when no HW context is active; implementations must tolerate that. */
+   void (*invalidate_hw_render_cache)(void *data);
 } video_driver_t;
 
 typedef struct
@@ -961,6 +969,8 @@ void video_driver_apply_state_changes(void);
 void video_driver_cached_frame(void);
 
 bool video_driver_is_hw_context(void);
+
+void video_driver_invalidate_hw_render_cache(void);
 
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
 
