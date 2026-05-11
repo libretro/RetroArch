@@ -2293,6 +2293,8 @@ static bool menu_driver_displaylist_push_internal(
 {
    if (string_is_equal(label, MENU_ENUM_LABEL_HISTORY_TAB_STR))
       return menu_displaylist_ctl(DISPLAYLIST_HISTORY, info, settings);
+   else if (string_is_equal(label, MENU_ENUM_LABEL_MOST_PLAYED_TAB_STR))
+      return menu_displaylist_ctl(DISPLAYLIST_MOST_PLAYED, info, settings);
    else if (string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_TAB_STR))
       return menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info, settings);
    else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_TAB_STR))
@@ -3355,6 +3357,7 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
    /* > Check for playlists */
    filter_enabled =    (type == MENU_SETTING_HORIZONTAL_MENU)
                     || (type == MENU_HISTORY_TAB)
+                    || (type == MENU_MOST_PLAYED_TAB)
                     || (type == MENU_FAVORITES_TAB)
                     || (type == MENU_IMAGES_TAB)
                     || (type == MENU_MUSIC_TAB)
@@ -3363,6 +3366,7 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
 
    if (!filter_enabled && label && *label)
       filter_enabled =    string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+                       || string_is_equal(label, MENU_ENUM_LABEL_LOAD_MOST_PLAYED_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)

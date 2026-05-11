@@ -4217,6 +4217,13 @@ bool command_event(enum event_command cmd, void *data)
          }
          g_defaults.content_history = NULL;
 
+         if (g_defaults.content_most_played)
+         {
+            playlist_write_file(g_defaults.content_most_played);
+            playlist_free(g_defaults.content_most_played);
+         }
+         g_defaults.content_most_played = NULL;
+
          if (g_defaults.music_history)
          {
             playlist_write_file(g_defaults.music_history);
@@ -4248,6 +4255,7 @@ bool command_event(enum event_command cmd, void *data)
             const char *_msg                       = NULL;
             bool history_list_enable               = settings->bools.history_list_enable;
             const char *path_content_history       = settings->paths.path_content_history;
+            const char *path_content_most_played   = settings->paths.path_content_most_played;
             const char *path_content_music_history = settings->paths.path_content_music_history;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             const char *path_content_video_history = settings->paths.path_content_video_history;
@@ -4279,6 +4287,20 @@ bool command_event(enum event_command cmd, void *data)
                g_defaults.content_history = playlist_init(&playlist_config);
                playlist_set_sort_mode(
                      g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
+            }
+
+            if (     path_content_most_played
+                  && *path_content_most_played
+                  && settings->uints.content_most_played_size)
+            {
+               playlist_config.capacity = settings->uints.content_most_played_size;
+               RARCH_LOG("[Playlist] %s: \"%s\".\n", _msg,
+                     path_content_most_played);
+               playlist_config_set_path(&playlist_config, path_content_most_played);
+               g_defaults.content_most_played = playlist_init(&playlist_config);
+               playlist_set_sort_mode(
+                     g_defaults.content_most_played, PLAYLIST_SORT_MODE_OFF);
+               playlist_config.capacity = settings->uints.content_history_size;
             }
 
 #ifdef HAVE_IMAGEVIEWER

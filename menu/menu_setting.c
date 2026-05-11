@@ -9322,6 +9322,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES:
       case MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES_FIRST:
       case MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_MOST_PLAYED:
       case MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES:
       case MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC:
       case MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO:
@@ -20288,6 +20289,21 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_content_show_most_played,
+                  MENU_ENUM_LABEL_CONTENT_SHOW_MOST_PLAYED,
+                  MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MOST_PLAYED,
+                  DEFAULT_CONTENT_SHOW_MOST_PLAYED,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
 #ifdef HAVE_NETWORKING
             CONFIG_UINT(
                   list, list_info,
@@ -22741,6 +22757,21 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,
                MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
                DEFAULT_CONTENT_HISTORY_SIZE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by     = 1;
+         menu_settings_list_current_add_range(list, list_info, 1.0f, 9999.0f, 1.0f, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.content_most_played_size,
+               MENU_ENUM_LABEL_CONTENT_MOST_PLAYED_SIZE,
+               MENU_ENUM_LABEL_VALUE_CONTENT_MOST_PLAYED_SIZE,
+               DEFAULT_CONTENT_MOST_PLAYED_SIZE,
                &group_info,
                &subgroup_info,
                parent_group,

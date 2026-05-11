@@ -126,6 +126,9 @@ typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
       const struct playlist_entry *b);
 
+static uint64_t playlist_runtime_seconds(
+      const struct playlist_entry *entry);
+
 /* TODO/FIXME - hack for allowing the explore view to switch
  * over to a playlist item */
 void playlist_set_cached_external(playlist_t* pl)
@@ -990,6 +993,7 @@ bool playlist_push_runtime(playlist_t *playlist,
    playlist_path_id_t *path_id = NULL;
    size_t i, _len;
    char real_core_path[PATH_MAX_LENGTH];
+   struct playlist_entry update_entry;
 
    if (!playlist || !entry)
       goto error;
@@ -1020,9 +1024,8 @@ bool playlist_push_runtime(playlist_t *playlist,
    _len = RBUF_LEN(playlist->entries);
    for (i = 0; i < _len; i++)
    {
-      struct playlist_entry tmp;
       bool equal_path  = ((!path_id->real_path || !*path_id->real_path)
-            && (!playlist->entries[i].path || *playlist->entries[i].path));
+            && (!playlist->entries[i].path || !*playlist->entries[i].path));
 
       equal_path       = equal_path || playlist_path_matches_entry(
             path_id, &playlist->entries[i], &playlist->config);
@@ -1030,74 +1033,21 @@ bool playlist_push_runtime(playlist_t *playlist,
       if (!equal_path)
          continue;
 
-      /* Core name can have changed while still being the same core.
-       * Differentiate based on the core path only. */
-      if (!playlist_core_path_equal(real_core_path, playlist->entries[i].core_path, &playlist->config))
-         continue;
+      update_entry           = *entry;
+      update_entry.core_path = real_core_path;
 
-      /* If top entry, we don't want to push a new entry since
-       * the top and the entry to be pushed are the same. */
-      if (i == 0)
-         goto error;
-
-      /* Seen it before, bump to top. */
-      tmp = playlist->entries[i];
-      memmove(playlist->entries + 1, playlist->entries,
-            i * sizeof(struct playlist_entry));
-      playlist->entries[0] = tmp;
-
+      playlist_update(playlist, i, &update_entry);
+      playlist_update_runtime(playlist, i, &update_entry, true);
       goto success;
    }
 
-   if (playlist->config.capacity == 0)
+   update_entry           = *entry;
+   update_entry.core_path = real_core_path;
+
+   if (!playlist_push(playlist, &update_entry))
       goto error;
 
-   if (_len == playlist->config.capacity)
-   {
-      struct playlist_entry *last_entry = &playlist->entries[_len - 1];
-      playlist_free_entry(last_entry);
-      _len--;
-   }
-   else
-   {
-      /* Allocate memory to fit one more item and resize the buffer */
-      if (!RBUF_TRYFIT(playlist->entries, _len + 1))
-         goto error; /* out of memory */
-      RBUF_RESIZE(playlist->entries, _len + 1);
-   }
-
-   if (playlist->entries)
-   {
-      memmove(playlist->entries + 1, playlist->entries,
-            _len * sizeof(struct playlist_entry));
-
-      /* Zero all fields to avoid stale data from shifted entries */
-      memset(&playlist->entries[0], 0, sizeof(struct playlist_entry));
-
-      if (path_id->real_path && *path_id->real_path)
-         playlist->entries[0].path            = strdup(path_id->real_path);
-      playlist->entries[0].path_id            = path_id;
-      path_id                                 = NULL;
-
-      if (*real_core_path)
-         playlist->entries[0].core_path       = strdup(real_core_path);
-
-      playlist->entries[0].runtime_status     = entry->runtime_status;
-      playlist->entries[0].runtime_hours      = entry->runtime_hours;
-      playlist->entries[0].runtime_minutes    = entry->runtime_minutes;
-      playlist->entries[0].runtime_seconds    = entry->runtime_seconds;
-      playlist->entries[0].last_played_year   = entry->last_played_year;
-      playlist->entries[0].last_played_month  = entry->last_played_month;
-      playlist->entries[0].last_played_day    = entry->last_played_day;
-      playlist->entries[0].last_played_hour   = entry->last_played_hour;
-      playlist->entries[0].last_played_minute = entry->last_played_minute;
-      playlist->entries[0].last_played_second = entry->last_played_second;
-
-      if (entry->runtime_str && *entry->runtime_str)
-         playlist->entries[0].runtime_str     = strdup(entry->runtime_str);
-      if (entry->last_played_str && *entry->last_played_str)
-         playlist->entries[0].last_played_str = strdup(entry->last_played_str);
-   }
+   playlist_update_runtime(playlist, 0, &update_entry, true);
 
 success:
    if (path_id)
@@ -1704,6 +1654,9 @@ void playlist_write_file(playlist_t *playlist)
    size_t i, _len;
    intfstream_t *file = NULL;
    bool compressed    = false;
+   bool runtime_fields = string_is_equal(
+         path_basename_nocompression(playlist->config.path),
+         FILE_PATH_CONTENT_MOST_PLAYED);
 
    /* Playlist will be written if any of the
     * following are true:
@@ -1987,6 +1940,72 @@ void playlist_write_file(playlist_t *playlist)
          rjsonwriter_add_string(writer, playlist->entries[i].db_name);
 
          /* Conditional rows must add "," first */
+
+         if (runtime_fields && playlist_runtime_seconds(&playlist->entries[i]) > 0)
+         {
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "runtime_hours");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_rawf(writer, "%u", playlist->entries[i].runtime_hours);
+
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "runtime_minutes");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_rawf(writer, "%u", playlist->entries[i].runtime_minutes);
+
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "runtime_seconds");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_rawf(writer, "%u", playlist->entries[i].runtime_seconds);
+
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "last_played_year");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_year);
+
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "last_played_month");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_month);
+
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "last_played_day");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_day);
+
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "last_played_hour");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_hour);
+
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "last_played_minute");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_minute);
+
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "last_played_second");
+            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_rawf(writer, "%u", playlist->entries[i].last_played_second);
+         }
 
          /* Typecast required because playlist_entry.entry_slot is unsigned,
           * and 0 and -1 are redundant, but runloop.entry_state_slot is int16_t
@@ -3102,6 +3121,32 @@ static int playlist_qsort_func(const void *a_ptr,
    return strcasecmp(a_str, b_str);
 }
 
+static uint64_t playlist_runtime_seconds(
+      const struct playlist_entry *entry)
+{
+   if (!entry)
+      return 0;
+   return    ((uint64_t)entry->runtime_hours   * 60 * 60)
+           + ((uint64_t)entry->runtime_minutes * 60)
+           +  (uint64_t)entry->runtime_seconds;
+}
+
+static int playlist_qsort_runtime_func(const void *a_ptr,
+      const void *b_ptr)
+{
+   const struct playlist_entry *a = (const struct playlist_entry *)a_ptr;
+   const struct playlist_entry *b = (const struct playlist_entry *)b_ptr;
+   uint64_t a_runtime             = playlist_runtime_seconds(a);
+   uint64_t b_runtime             = playlist_runtime_seconds(b);
+
+   if (a_runtime > b_runtime)
+      return -1;
+   if (a_runtime < b_runtime)
+      return 1;
+
+   return playlist_qsort_func(a_ptr, b_ptr);
+}
+
 void playlist_qsort(playlist_t *playlist)
 {
    /* Avoid inadvertent sorting if 'sort mode'
@@ -3114,6 +3159,16 @@ void playlist_qsort(playlist_t *playlist)
    qsort(playlist->entries, RBUF_LEN(playlist->entries),
          sizeof(struct playlist_entry),
          playlist_qsort_func);
+}
+
+void playlist_qsort_runtime_descending(playlist_t *playlist)
+{
+   if (!playlist || !playlist->entries)
+      return;
+
+   qsort(playlist->entries, RBUF_LEN(playlist->entries),
+         sizeof(struct playlist_entry),
+         playlist_qsort_runtime_func);
 }
 
 void command_playlist_push_write(
@@ -3281,9 +3336,10 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
         * (i.e. ignore history/favourites) */
        if (
               (conf_path_basename && *conf_path_basename)
-           && !string_is_equal(conf_path_basename, FILE_PATH_CONTENT_HISTORY)
-           && !string_is_equal(conf_path_basename, FILE_PATH_CONTENT_FAVORITES)
-           )
+	           && !string_is_equal(conf_path_basename, FILE_PATH_CONTENT_HISTORY)
+	           && !string_is_equal(conf_path_basename, FILE_PATH_CONTENT_MOST_PLAYED)
+	           && !string_is_equal(conf_path_basename, FILE_PATH_CONTENT_FAVORITES)
+	           )
            *db_name = conf_path_basename;
        else
        {

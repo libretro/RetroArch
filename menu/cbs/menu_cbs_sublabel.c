@@ -624,6 +624,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_ctx_scaling,             MENU_
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_history_list_enable,           MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_history_size,          MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_most_played_size,      MENU_ENUM_SUBLABEL_CONTENT_MOST_PLAYED_SIZE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_favorites_size,        MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_unified_controls,   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_disable_info_button,     MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON)
@@ -670,6 +671,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_list,                  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_subsystem_settings,            MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_special,               MENU_ENUM_SUBLABEL_LOAD_CONTENT_SPECIAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_content_history,          MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_most_played,              MENU_ENUM_SUBLABEL_LOAD_MOST_PLAYED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_network_information,           MENU_ENUM_SUBLABEL_NETWORK_INFORMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_system_information,            MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION)
 #ifdef HAVE_LAKKA
@@ -1234,6 +1236,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_netplay_tab,                   
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_settings_tab,                     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_settings_tab_enable_password,     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_history_tab,                      MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_most_played_tab,                  MENU_ENUM_SUBLABEL_CONTENT_SHOW_MOST_PLAYED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_import_content_entry,             MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_playlists_tab,                    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_playlist_tabs,                    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS)
@@ -2832,6 +2835,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_history_tab);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_SHOW_MOST_PLAYED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_most_played_tab);
             break;
          case MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_settings_tab);
@@ -4538,6 +4544,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_content_history);
             break;
+         case MENU_ENUM_LABEL_LOAD_MOST_PLAYED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_most_played);
+            break;
          case MENU_ENUM_LABEL_START_CORE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_start_core);
             break;
@@ -5521,6 +5530,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_history_size);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_MOST_PLAYED_SIZE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_most_played_size);
             break;
          case MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_favorites_size);

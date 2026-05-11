@@ -3345,6 +3345,7 @@ static void menu_displaylist_set_new_playlist(
    const char *playlist_file_name      = path_basename_nocompression(path);
    int content_favorites_size          = settings->ints.content_favorites_size;
    unsigned content_history_size       = settings->uints.content_history_size;
+   unsigned content_most_played_size   = settings->uints.content_most_played_size;
    bool playlist_sort_alphabetical     = settings->bools.playlist_sort_alphabetical;
 
    playlist_config_set_path(&playlist_config, path);
@@ -3367,6 +3368,8 @@ static void menu_displaylist_set_new_playlist(
       if (string_ends_with_size(playlist_file_name, "_history.lpl",
                strlen(playlist_file_name), STRLEN_CONST("_history.lpl")))
          playlist_config.capacity = content_history_size;
+      else if (!strcmp(playlist_file_name, FILE_PATH_CONTENT_MOST_PLAYED))
+         playlist_config.capacity = content_most_played_size;
       else if (!strcmp(playlist_file_name, FILE_PATH_CONTENT_FAVORITES)
             && (content_favorites_size >= 0))
          playlist_config.capacity = (unsigned)content_favorites_size;
@@ -3992,9 +3995,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
                   if (   !remove_entry_enabled
                       && settings->bools.quick_menu_show_information
                       && (playlist_file && *playlist_file))
-                     remove_entry_enabled = 
+                     remove_entry_enabled =
                            string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY)
-                        || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES);
+                        || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES)
+                        || string_is_equal(playlist_file, FILE_PATH_CONTENT_MOST_PLAYED);
                }
                break;
          }
@@ -4260,6 +4264,8 @@ static unsigned menu_displaylist_parse_playlists(
             MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB);
       bool show_netplay      = (settings->uints.menu_content_show_netplay ==
             MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB);
+      bool show_most_played  = settings->bools.menu_content_show_most_played
+            && settings->bools.content_runtime_log_aggregate;
       bool show_history      = !menu_history_in_main_menu(menu_ident, settings);
 
       if (show_history)
@@ -4281,6 +4287,14 @@ static unsigned menu_displaylist_parse_playlists(
                         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
+
+            if (show_most_played && g_defaults.content_most_played)
+               if (menu_entries_append(info_list,
+                        playlist_get_conf_path(g_defaults.content_most_played),
+                        MENU_ENUM_LABEL_LOAD_MOST_PLAYED_STR,
+                        MENU_ENUM_LABEL_LOAD_MOST_PLAYED,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
          }
          else
          {
@@ -4297,6 +4311,14 @@ static unsigned menu_displaylist_parse_playlists(
                         playlist_get_conf_path(g_defaults.content_favorites),
                         MENU_ENUM_LABEL_GOTO_FAVORITES_STR,
                         MENU_ENUM_LABEL_GOTO_FAVORITES,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
+            if (show_most_played && g_defaults.content_most_played)
+               if (menu_entries_append(info_list,
+                        playlist_get_conf_path(g_defaults.content_most_played),
+                        MENU_ENUM_LABEL_LOAD_MOST_PLAYED_STR,
+                        MENU_ENUM_LABEL_LOAD_MOST_PLAYED,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
          }
@@ -4446,7 +4468,9 @@ static unsigned menu_displaylist_parse_playlists(
                string_ends_with_size(path, "_history.lpl",
                   strlen(path), STRLEN_CONST("_history.lpl"))
             || string_is_equal(playlist_file,
-               FILE_PATH_CONTENT_FAVORITES))
+               FILE_PATH_CONTENT_FAVORITES)
+            || string_is_equal(playlist_file,
+               FILE_PATH_CONTENT_MOST_PLAYED))
          continue;
 
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
@@ -4684,7 +4708,8 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(file_list_t *list,
           * > content_history + favorites are handled separately
           * > music/video/image_history are ignored */
          if (     string_ends_with_size(path, "_history.lpl", strlen(path), STRLEN_CONST("_history.lpl"))
-               || !strcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES))
+               || !strcmp(playlist_file, FILE_PATH_CONTENT_FAVORITES)
+               || !strcmp(playlist_file, FILE_PATH_CONTENT_MOST_PLAYED))
             continue;
 
          fill_pathname(playlist_display_name, playlist_file, "",
@@ -4749,7 +4774,9 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
                   string_ends_with_size(path, "_history.lpl",
                   strlen(path), STRLEN_CONST("_history.lpl"))
                || !strcmp(playlist_file,
-                  FILE_PATH_CONTENT_FAVORITES))
+                  FILE_PATH_CONTENT_FAVORITES)
+               || !strcmp(playlist_file,
+                  FILE_PATH_CONTENT_MOST_PLAYED))
             continue;
 
          menu_entries_append(list, path, "",
@@ -4823,6 +4850,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
 {
    bool is_content_history      = false;
    bool is_media_history        = false;
+   bool is_most_played          = false;
    enum msg_hash_enums right_thumbnail_label_value;
    enum msg_hash_enums left_thumbnail_label_value;
    const char *playlist_file    = NULL;
@@ -4862,6 +4890,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          || string_ends_with_size(
                playlist_path, "_video_history.lpl", strlen(playlist_path),
                STRLEN_CONST("_video_history.lpl"));
+   is_most_played = string_is_equal(playlist_file, FILE_PATH_CONTENT_MOST_PLAYED);
 
    /* Label display mode */
    menu_entries_append(list,
@@ -4916,7 +4945,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
 
    /* Sorting mode
     * > Not relevant for history playlists  */
-   if (!is_content_history)
+   if (!is_content_history && !is_most_played)
       menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE),
             MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE_STR,
@@ -4927,6 +4956,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
     * > This is only shown for collection playlists
     *   (i.e. it is not relevant for history/favourites) */
    if (   !is_content_history
+       && !is_most_played
        && !string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
    {
       menu_entries_append(list,
@@ -7366,6 +7396,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,          PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,                PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_CONTENT_MOST_PLAYED_SIZE,            PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE,              PARSE_ONLY_INT,  true},
                {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,        PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME, PARSE_ONLY_BOOL, false},
@@ -10515,6 +10546,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLIST_TABS,                            PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY,                                  PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_CONTENT_SHOW_MOST_PLAYED,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES_FIRST,                          PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,                                   PARSE_ONLY_BOOL, true  },
@@ -13907,6 +13939,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      return menu_displaylist_process(info);
                   return false;
                }
+
+               if (!strcmp(info->path, FILE_PATH_CONTENT_MOST_PLAYED))
+               {
+                  if (menu_displaylist_ctl(DISPLAYLIST_MOST_PLAYED, info, settings))
+                     return menu_displaylist_process(info);
+                  return false;
+               }
             }
 
             {
@@ -14009,6 +14048,36 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                /* Playlists themselves are sorted
                 * > Display lists generated from playlists
                 *   must never be sorted */
+               info->flags &= ~MD_FLAG_NEED_SORT;
+               info->flags |=  MD_FLAG_NEED_REFRESH
+                            |  MD_FLAG_NEED_PUSH;
+            }
+            break;
+         case DISPLAYLIST_MOST_PLAYED:
+            {
+               const char *path_content_most_played = settings->paths.path_content_most_played;
+
+               menu_entries_clear(info->list);
+               count = menu_displaylist_parse_playlist_generic(menu, info,
+                     settings, "most_played",
+                     STRLEN_CONST("most_played"),
+                     path_content_most_played,
+                     false, /* Not a conventional collection */
+                     false, /* Runtime order is written into the playlist */
+                     &ret);
+
+               if (count == 0)
+               {
+                  if (menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_MOST_PLAYED_AVAILABLE),
+                        MENU_ENUM_LABEL_NO_MOST_PLAYED_AVAILABLE_STR,
+                        MENU_ENUM_LABEL_NO_MOST_PLAYED_AVAILABLE,
+                        MENU_INFO_MESSAGE, 0, 0, NULL))
+                     count++;
+                  info->flags       &= ~MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
+               }
+
+               ret                   = 0;
                info->flags &= ~MD_FLAG_NEED_SORT;
                info->flags |=  MD_FLAG_NEED_REFRESH
                             |  MD_FLAG_NEED_PUSH;
@@ -15508,7 +15577,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
                }
 
-               /* Show History and Favorites in menus without sidebar/tabs */
+               /* Show History, Favorites and Most Played in menus without sidebar/tabs */
                if (menu_history_in_main_menu(menu_ident, settings))
                {
                   if (settings->bools.menu_content_show_favorites_first)
@@ -15528,6 +15597,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
                            count++;
+
+                     if (     settings->bools.menu_content_show_most_played
+                           && settings->bools.content_runtime_log_aggregate
+                           && g_defaults.content_most_played)
+                        if (menu_entries_append(info->list,
+                                 playlist_get_conf_path(g_defaults.content_most_played),
+                                 MENU_ENUM_LABEL_LOAD_MOST_PLAYED_STR,
+                                 MENU_ENUM_LABEL_LOAD_MOST_PLAYED,
+                                 MENU_SETTING_ACTION, 0, 0, NULL))
+                           count++;
                   }
                   else
                   {
@@ -15544,6 +15623,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  playlist_get_conf_path(g_defaults.content_favorites),
                                  MENU_ENUM_LABEL_GOTO_FAVORITES_STR,
                                  MENU_ENUM_LABEL_GOTO_FAVORITES,
+                                 MENU_SETTING_ACTION, 0, 0, NULL))
+                           count++;
+
+                     if (     settings->bools.menu_content_show_most_played
+                           && settings->bools.content_runtime_log_aggregate
+                           && g_defaults.content_most_played)
+                        if (menu_entries_append(info->list,
+                                 playlist_get_conf_path(g_defaults.content_most_played),
+                                 MENU_ENUM_LABEL_LOAD_MOST_PLAYED_STR,
+                                 MENU_ENUM_LABEL_LOAD_MOST_PLAYED,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
                            count++;
                   }

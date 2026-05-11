@@ -622,6 +622,59 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 }
 #endif
 
+static void runloop_update_most_played_playlist(
+      runloop_state_t *runloop_st,
+      runtime_log_t *runtime_log)
+{
+   char runtime_str[64];
+   const struct playlist_entry *history_entry = NULL;
+   struct playlist_entry entry                = {0};
+
+   if (     !runloop_st
+         || !runtime_log
+         || !g_defaults.content_most_played
+         || !runtime_log_has_runtime(runtime_log))
+      return;
+
+   if (g_defaults.content_history)
+      playlist_get_index_by_path(g_defaults.content_history,
+            runloop_st->runtime_content_path, &history_entry);
+
+   runtime_str[0] = '\0';
+   runtime_log_get_runtime_str(runtime_log, runtime_str,
+         sizeof(runtime_str));
+
+   entry.path           = runloop_st->runtime_content_path;
+   entry.core_path      = runloop_st->runtime_core_path;
+   entry.runtime_str    = runtime_str;
+   entry.runtime_status = PLAYLIST_RUNTIME_VALID;
+   entry.runtime_hours  = runtime_log->runtime.hours;
+   entry.runtime_minutes = runtime_log->runtime.minutes;
+   entry.runtime_seconds = runtime_log->runtime.seconds;
+
+   runtime_log_get_last_played(runtime_log,
+         &entry.last_played_year,
+         &entry.last_played_month,
+         &entry.last_played_day,
+         &entry.last_played_hour,
+         &entry.last_played_minute,
+         &entry.last_played_second);
+
+   if (history_entry)
+   {
+      entry.label     = history_entry->label;
+      entry.core_name = history_entry->core_name;
+      entry.db_name   = history_entry->db_name;
+      entry.crc32     = history_entry->crc32;
+   }
+
+   if (playlist_push_runtime(g_defaults.content_most_played, &entry))
+   {
+      playlist_qsort_runtime_descending(g_defaults.content_most_played);
+      playlist_write_file(g_defaults.content_most_played);
+   }
+}
+
 static void runloop_update_runtime_log(
       runloop_state_t *runloop_st,
       const char *dir_runtime_log,
@@ -654,6 +707,9 @@ static void runloop_update_runtime_log(
 
    /* Save runtime log file */
    runtime_log_save(runtime_log);
+
+   if (!log_per_core)
+      runloop_update_most_played_playlist(runloop_st, runtime_log);
 
    /* Clean up */
    free(runtime_log);
