@@ -5663,6 +5663,14 @@ MSG_HASH(
    "Zobrazenie použitia pamäte sa bude aktualizovať v nastavenom intervale v snímkach."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Zobraziť čas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Zobraziť aktuálny čas v preferovanom formáte."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Zobraziť netplay ping"
    )
@@ -6486,6 +6494,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Zobraziť 'Vrátiť uloženie/načítanie stavu'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Zobraziť možnosti vrátenia uloženia/načítania stavu. Štart na RetroPade spustí vrátenie uloženia/načítania, keď je skryté."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -14010,6 +14022,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Načítanie stavu vrátené."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Vracia sa uložený stav..."
    )
 MSG_HASH(
    MSG_UNKNOWN,

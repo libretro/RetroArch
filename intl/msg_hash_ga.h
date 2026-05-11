@@ -5735,6 +5735,14 @@ MSG_HASH(
    "Déanfar an taispeáint úsáide cuimhne a nuashonrú ag an eatramh socraithe i bhfrámaí."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Am Taispeána"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Taispeáin an t-am reatha san fhormáid is fearr leat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Ping Líonra Taispeána"
    )
@@ -6554,6 +6562,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Taispeáin 'Cealaigh Stádas Sábháil/Lódála'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Taispeáin na roghanna chun an staid sábhála/luchtaithe a chealú. Spreagann RetroPad Start cealú sábháil/luchtaithe nuair a bhíonn sé i bhfolach."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -14442,6 +14454,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Stádas lódála cealaithe."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Ag cealú an stáit shábhála..."
    )
 MSG_HASH(
    MSG_UNKNOWN,

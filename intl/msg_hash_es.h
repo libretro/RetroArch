@@ -5727,6 +5727,14 @@ MSG_HASH(
    "El contador de consumo de memoria en pantalla se actualizará a la velocidad asignada en fotogramas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Mostrar hora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Muestra la hora actual en el formato preferido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Mostrar latencia de red"
    )
@@ -6546,6 +6554,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Mostrar opciones para deshacer guardados rápidos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Muestra las opciones para deshacer los guardados rápidos y las cargas rápidas. Si se oculta esta opción, puedes deshacer los guardados o cargas pulsando RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -14354,6 +14366,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Se ha anulado la carga del guardado rápido."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Deshaciendo guardado rápido..."
    )
 MSG_HASH(
    MSG_UNKNOWN,

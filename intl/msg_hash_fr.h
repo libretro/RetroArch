@@ -5699,6 +5699,14 @@ MSG_HASH(
    "L'affichage de l'utilisation de la mémoire sera actualisé à l'intervalle défini en images."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Afficher l'heure"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Affiche l'heure courante dans le format préféré."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Afficher le ping du jeu en réseau"
    )
@@ -6518,6 +6526,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Afficher l'annulation du chargement/de l'enregistrement des sauvegardes instantanées"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Afficher les options pour annuler l'enregistrement/le chargement d'une sauvegarde instantanée. Start sur la RetroManette déclenche l'annulation de l'enregistrement/du chargement lorsque ces options sont masquées."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -14338,6 +14350,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Chargement de la sauvegarde instantanée annulé."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Annulation de la sauvegarde instantanée..."
    )
 MSG_HASH(
    MSG_UNKNOWN,

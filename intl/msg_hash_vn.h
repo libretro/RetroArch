@@ -5759,6 +5759,14 @@ MSG_HASH(
    "Hiển thị mức sử dụng bộ nhớ sẽ được cập nhật theo khoảng thời gian đã đặt, tính bằng khung hình."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Hiển thị thời gian"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Hiển thị thời gian hiện tại theo định dạng ưu tiên."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Hiển thị độ trễ Trò chơi trực tuyến"
    )

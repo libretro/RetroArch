@@ -5611,6 +5611,14 @@ MSG_HASH(
    "Die Anzeige der Speichernutzung wird im eingestellten Intervall in Frames aktualisiert."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Zeit anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Die aktuelle Uhrzeit im bevorzugten Format anzeigen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Netzwerkspiel-Ping anzeigen"
    )
@@ -6426,6 +6434,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "\"Speichern/Laden des Savestates rückgängig machen\" anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Die Optionen zum Rückgängigmachen des Speicherns/Ladens anzeigen. RetroPad Start löst das Rückgängigmachen des Speicherns/Ladens aus, wenn es ausgeblendet ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -14026,6 +14038,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Laden des Spielstands wurde rückgängig gemacht."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Savestate wird rückgängig gemacht …"
    )
 MSG_HASH(
    MSG_UNKNOWN,

@@ -5731,6 +5731,14 @@ MSG_HASH(
    "El comptador de memòria en pantalla s'actualitzarà a la velocitat assignada a fotogrames."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Mostra l'hora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Mostra el temps actual en el format preferit."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Mostra el ping del joc en línia"
    )
@@ -6546,6 +6554,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Mostra “Desfés el desament/càrrega d’estat”"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Mostra les opcions per desfer el guardat/carregat d'estats. Si ocultes aquesta opció, podràs desfer els desats o carregats ràpids clicant a RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -14278,6 +14290,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "S'ha desfet la càrrega del desat ràpid."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Desfer desat ràpid..."
    )
 MSG_HASH(
    MSG_UNKNOWN,

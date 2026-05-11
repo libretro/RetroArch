@@ -5684,7 +5684,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   "Mostra uma breve animação como retorno ao carregar um conteúdo."
+   "Exibe uma breve animação de feedback de inicialização ao carregar o conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -5736,7 +5736,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   "Notificações ao restaurar o disco inicial"
+   "Notificações de Disco Inicial Restaurado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -5824,7 +5824,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Exibe mensagens não essenciais do jogo em rede na tela."
+   "Exibe mensagens não essenciais de netplay na tela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
@@ -6490,6 +6490,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Mostrar 'Desfazer Salvar/Carregar Ponto de Save'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Exibe as opções para desfazer o salvamento ou carregamento de ponto de save. O botão Start do RetroPad aciona o 'desfazer de ponto de save' quando oculto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -14214,6 +14218,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Desfez o carregamento de jogo salvo."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Desfazendo ponto de save..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
