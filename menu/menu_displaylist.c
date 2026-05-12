@@ -9300,7 +9300,7 @@ unsigned menu_displaylist_build_list(
                   if (counters[i] && counters[i]->ident)
                      if (menu_entries_append(list,
                               counters[i]->ident, "",
-                              (enum msg_hash_enums)(id + i),
+                              MSG_UNKNOWN,
                               id + i , 0, 0, NULL))
                         count++;
             }
