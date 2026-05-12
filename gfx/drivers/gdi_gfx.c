@@ -539,6 +539,7 @@ static void gdi_menu_surface_clear(gdi_t *gdi, uint8_t r, uint8_t g, uint8_t b)
       FillRect(gdi->memDC, &rect, gdi->brush_cached);
 }
 
+#ifdef HAVE_MENU
 /* StretchDIBits-upscale a core frame into bmp_menu, scaling up to
  * the menu compositing surface size.  Used as a "background
  * underlay" pass for textured menus over a running game so the menu
@@ -623,6 +624,7 @@ static void gdi_upload_core_frame_to_menu(gdi_t *gdi,
          0, 0, frame_w, frame_h,
          src, (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
 }
+#endif
 
 #ifdef GDI_HAS_ALPHABLEND
 /* Composite RGUI's RGBA4444 menu_frame onto bmp_menu using

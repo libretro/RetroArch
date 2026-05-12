@@ -80,6 +80,19 @@ extern "C" {
 }
 #endif
 
+/* Replace characters unsafe in URLs / file names with '_' */
+static QString scrub_qstring(QString str)
+{
+   static const char chars[] = "&*/:`\"<>?\\|";
+   QByteArray buf            = str.toUtf8();
+   char *s                   = buf.data();
+   size_t i;
+   for (i = 0; i < sizeof(chars) - 1; i++)
+      string_replace_all_chars(s, chars[i], '_');
+   return QString::fromUtf8(s);
+}
+
+
 #ifdef HAVE_MENU
 static const QRegularExpression decimalsRegex("%.(\\d)f");
 
@@ -107,18 +120,6 @@ static inline void add_sublabel_and_whats_this(
 static inline QString sanitize_ampersand(QString input)
 {
    return input.replace("&", "&&");
-}
-
-/* Replace characters unsafe in URLs / file names with '_' */
-static QString scrub_qstring(QString str)
-{
-   static const char chars[] = "&*/:`\"<>?\\|";
-   QByteArray buf            = str.toUtf8();
-   char *s                   = buf.data();
-   size_t i;
-   for (i = 0; i < sizeof(chars) - 1; i++)
-      string_replace_all_chars(s, chars[i], '_');
-   return QString::fromUtf8(s);
 }
 
 static inline QString form_label(rarch_setting_t *setting)
