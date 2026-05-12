@@ -555,8 +555,11 @@ int rmsgpack_dom_read_into(intfstream_t *fd, ...)
             case RDT_STRING:
                buff_value     = va_arg(ap, char *);
                uint_value     = va_arg(ap, uint64_t *);
-               min_len        = (value->val.string.len + 1 > *uint_value) ?
-                  *uint_value : value->val.string.len + 1;
+               /* Cast to uint64_t before adding 1 to avoid uint32_t
+                * overflow when string.len == UINT32_MAX, which would
+                * wrap the sum to 0 and collapse the bounds check. */
+               min_len        = ((uint64_t)value->val.string.len + 1 > *uint_value) ?
+                  *uint_value : (uint64_t)value->val.string.len + 1;
                *uint_value    = min_len;
 
                memcpy(buff_value, value->val.string.buff, (size_t)min_len);
