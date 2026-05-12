@@ -7226,6 +7226,7 @@ int runloop_iterate(void)
    bool cheevos_enable                    = settings->bools.cheevos_enable;
 #endif
    bool audio_sync                        = settings->bools.audio_sync;
+   bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st            = discord_state_get_ptr();
 
@@ -7470,7 +7471,8 @@ int runloop_iterate(void)
 #endif
 
    /* Check if we should save state automatically */
-   content_save_state_automatic();
+   if (savestate_automatic_enable)
+      content_save_state_automatic();
 
 end:
    if (vrr_runloop_enable)
