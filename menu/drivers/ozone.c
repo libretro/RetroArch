@@ -5226,9 +5226,10 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                   texturepath, ozone->icons_path, "default.png",
                   sizeof(texturepath));
 
-         gfx_display_load_icon(texturepath, supports_rgba,
-               &node->icon, ozone_icon_load_gen,
-               &ozone_icon_load_gen);
+         /* Load sidebar playlist icons at once */
+         gfx_display_reset_icon_texture(
+               texturepath, &node->icon,
+               TEXTURE_FILTER_LINEAR, NULL, NULL);
 
          strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          fill_pathname_join_special(
