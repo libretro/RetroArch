@@ -216,7 +216,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       vertices[i].a = *color++;
    }
 
-   vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, &vita2d->mvp_no_rot);
+   vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, vita2d->mvp_no_rot.data);
 }
 
 static void gfx_display_vita2d_scissor_begin(void *data,
