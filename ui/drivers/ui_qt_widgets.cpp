@@ -5466,6 +5466,14 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
    }
 }
 
+/* All of the OptionsCategory/OptionsPage implementations below
+ * build trees of the menu settings widgets (FormLayout,
+ * SettingsGroup, CheckBox, etc.) and call into the menu code
+ * (menu_displaylist_build_list, menu_setting_find_enum). Their
+ * declarations are gated in ui_qt_widgets.h; the implementations
+ * are gated to match. */
+#ifdef HAVE_MENU
+
 AchievementsCategory::AchievementsCategory(QWidget *parent) :
    OptionsCategory(parent)
 {
@@ -7160,6 +7168,8 @@ QVector<OptionsPage*> FrameThrottleCategory::pages()
          MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS, this);
    return pages;
 }
+
+#endif /* HAVE_MENU - OptionsCategory/OptionsPage implementations */
 
 PlaylistModel::PlaylistModel(QObject *parent)
    : QAbstractListModel(parent)
