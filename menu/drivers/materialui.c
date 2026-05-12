@@ -2577,7 +2577,7 @@ static void materialui_update_savestate_thumbnail_image(void *data)
             &mui->thumbnails.savestate,
             config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
 
-   mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
+   mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
 }
 
 static void materialui_context_reset_textures(materialui_handle_t *mui)
@@ -2700,9 +2700,12 @@ static void materialui_draw_thumbnail(
                   mui->colors.thumbnail_background,
                   NULL);
 
+            if (thumbnail->flags & GFX_THUMB_FLAG_BG_ONLY)
+               break;
+
             /* Icon */
             gfx_display_set_alpha(
-                  mui->colors.missing_thumbnail_icon, alpha);
+                  mui->colors.missing_thumbnail_icon, alpha * 0.5f);
 
             materialui_draw_icon(
                   userdata, p_disp,

@@ -4026,7 +4026,7 @@ static void ozone_update_savestate_thumbnail_image(void *data)
             &ozone->thumbnails.savestate,
             thumbnail_upscale_threshold);
 
-   ozone->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
+   ozone->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
 }
 
 static void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone,
@@ -6466,6 +6466,7 @@ static void ozone_draw_thumbnail_bar(
    int bottom_row_y_position         = 0;
    bool show_right_thumbnail         = false;
    bool show_left_thumbnail          = false;
+   bool show_bg_only                 = false;
    bool thumbnail_background         = settings->bools.menu_thumbnail_background_enable;
    unsigned sidebar_height           = video_height
          - ozone->dimensions.header_height
@@ -6543,6 +6544,7 @@ static void ozone_draw_thumbnail_bar(
          || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT))
    {
       ozone->flags2                  |= OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
+      show_bg_only                    = ozone->thumbnails.savestate.flags & GFX_THUMB_FLAG_BG_ONLY;
       show_left_thumbnail             = false;
       show_right_thumbnail            =
                ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE
@@ -6599,11 +6601,11 @@ static void ozone_draw_thumbnail_bar(
    if (     (ozone->flags2 & OZONE_FLAG2_SELECTION_CORE_IS_VIEWER)
          && (!show_right_thumbnail && !show_left_thumbnail))
    {
-      float background_color[16]        = {
-            0.05f, 0.05f, 0.05f, 1.0f,
-            0.05f, 0.05f, 0.05f, 1.0f,
-            0.05f, 0.05f, 0.05f, 1.0f,
-            0.05f, 0.05f, 0.05f, 1.0f,
+      float background_color[16] = {
+            0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
       };
 
       /* Darken background */
@@ -6620,6 +6622,9 @@ static void ozone_draw_thumbnail_bar(
             video_height,
             background_color,
             NULL);
+
+      if (show_bg_only)
+         return;
 
       ozone_draw_no_thumbnail_available(
             ozone,

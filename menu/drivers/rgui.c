@@ -2984,6 +2984,10 @@ static void rgui_render_mini_thumbnail(
             rgui->colors.shadow_color,
             false);
 
+      /* TODO: Reserve text label only for missing state files
+       * instead of missing image files */
+      return;
+
       /* Draw "N/A" label */
       rgui_blit_line(rgui, fb_width, text_x, text_y,
             msg,

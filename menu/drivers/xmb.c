@@ -1879,7 +1879,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
             &xmb->thumbnails.savestate,
             upscale_threshold);
 
-   xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
+   xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
 }
 
 /* Is called when the pointer position changes
@@ -8778,20 +8778,21 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                background_color,
                NULL);
 
-         xmb_draw_no_thumbnail_available(
-               xmb,
-               p_disp,
-               userdata,
-               video_width,
-               video_height,
-               thumb_x,
-               thumb_y,
-               scaled_thumb_width,
-               scaled_thumb_height,
-               shadows_enable,
-               false,
-               xmb_item_color,
-               NULL);
+         if (!(xmb->thumbnails.savestate.flags & GFX_THUMB_FLAG_BG_ONLY))
+            xmb_draw_no_thumbnail_available(
+                  xmb,
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  thumb_x,
+                  thumb_y,
+                  scaled_thumb_width,
+                  scaled_thumb_height,
+                  shadows_enable,
+                  false,
+                  xmb_item_color,
+                  NULL);
       }
    }
    else if (xmb->fullscreen_thumbnails_available && !xmb->show_fullscreen_thumbnails)
