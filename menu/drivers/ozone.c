@@ -4293,8 +4293,6 @@ end:
 static void ozone_go_to_sidebar(ozone_handle_t *ozone,
       bool ozone_collapse_sidebar, uintptr_t tag)
 {
-   struct gfx_animation_ctx_entry entry;
-
    ozone->selection_old           = ozone->selection;
 
    if (!ozone->show_sidebar)
@@ -4566,7 +4564,6 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone,
       bool ozone_collapse_sidebar, uintptr_t tag,
       unsigned remember_selection_type)
 {
-   struct gfx_animation_ctx_entry entry;
    bool ozone_main_tab_selected     = false;
 
    ozone_update_content_metadata(ozone);
