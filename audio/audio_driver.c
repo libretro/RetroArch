@@ -90,6 +90,17 @@
  * a consistent pitch when fast-forwarding. */
 #define AUDIO_FF_EXP_AVG_SAMPLES       16
 
+/* Assumed content fps when av_info.timing.fps is unset or implausible
+ * (cold start before core load, etc.). Used only to bootstrap the DRC
+ * threshold; once a core is loaded and SET_SYSTEM_AV_INFO has fired,
+ * audio_driver_update_drc_threshold uses the actual fps. */
+#define AUDIO_DRC_FALLBACK_FPS         60.0
+
+/* Floor on the DRC threshold (int16 stereo samples). Guards against
+ * pathological input rates or fps values resulting in a near-zero
+ * threshold that would fire on every call. ~10 ms at 48 kHz stereo. */
+#define AUDIO_DRC_MIN_THRESHOLD_INT16S 1024
+
 #define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac|wav"
 
  /* Converts decibels to voltage gain. Returns voltage gain value. */
@@ -482,8 +493,9 @@ bool audio_driver_find_driver(const char *audio_drv,
  * free_samples_buf[] for diagnostics, and ticks free_samples_count.
  *
  * Caller is responsible for checking that AUDIO_FLAG_CONTROL is set
- * before calling this; it doesn't do that itself, so the body runs
- * unconditionally once invoked.
+ * before calling this, and for sample-count rate-limiting (we don't
+ * want to call audio->write_avail more often than the DRC time
+ * constant warrants - see audio_driver_state_t::drc_threshold_int16s).
  *
  * Used by both the write_raw fast path (which applies the result
  * as rate_adjust) and the resampler slow path (which multiplies
@@ -491,7 +503,9 @@ bool audio_driver_find_driver(const char *audio_drv,
  * sites previously duplicated this body verbatim.
  *
  * Returns the rate-adjust factor (typically very near 1.0, within
- * rate_control_delta).
+ * rate_control_delta) and also stores it in audio_st->cached_rate_adjust
+ * so callers that skip the recompute can read the most recent value
+ * without re-running the DRC.
  **/
 static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
 {
@@ -514,9 +528,50 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
    double effective_delta = (audio_st->src_ratio_orig > 1.0)
          ? audio_st->rate_control_delta / audio_st->src_ratio_orig
          : audio_st->rate_control_delta;
+   double rate_adjust     = 1.0 + effective_delta * direction;
 
    audio_st->free_samples_buf[write_idx] = avail;
-   return 1.0 + effective_delta * direction;
+   audio_st->cached_rate_adjust          = rate_adjust;
+   audio_st->samples_since_drc           = 0;
+   return rate_adjust;
+}
+
+/**
+ * audio_driver_update_drc_threshold:
+ *
+ * Recompute drc_threshold_int16s for the current sample rate / fps.
+ * The threshold is one game-frame's worth of stereo int16 samples at
+ * the core's input rate: (input_rate / fps) * 2.
+ *
+ * Called by audio_driver_init_internal once input rate is set, and
+ * implicitly re-runs through it on every SET_SYSTEM_AV_INFO since
+ * that envcall forces an audio driver reinit. So rate/fps changes
+ * mid-session are picked up automatically.
+ *
+ * Uses video_state's av_info for fps. If fps is unset or implausibly
+ * small (cold start before core load), falls back to
+ * AUDIO_DRC_FALLBACK_FPS (60 Hz) so the menu audio path still has a
+ * sensible threshold. The minimum threshold is floored at
+ * AUDIO_DRC_MIN_THRESHOLD_INT16S to handle pathological rate/fps
+ * combinations.
+ **/
+void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   double fps                     = (video_st->av_info.timing.fps > 1.0)
+         ? video_st->av_info.timing.fps
+         : AUDIO_DRC_FALLBACK_FPS;
+   double input_rate              = (audio_st->input > 0.0f)
+         ? audio_st->input
+         : (double)config_get_ptr()->uints.audio_output_sample_rate;
+   /* (samples per frame at the core's submission rate) * 2 channels.
+    * Floor at AUDIO_DRC_MIN_THRESHOLD_INT16S so pathological inputs
+    * don't push the threshold below ~10 ms worth of audio. */
+   size_t threshold               = (size_t)floor(input_rate / fps) * 2;
+
+   if (threshold < AUDIO_DRC_MIN_THRESHOLD_INT16S)
+      threshold                   = AUDIO_DRC_MIN_THRESHOLD_INT16S;
+   audio_st->drc_threshold_int16s = threshold;
 }
 
 static void audio_driver_flush(audio_driver_state_t *audio_st,
@@ -557,9 +612,19 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       double rate_adjust             = 1.0;
       unsigned input_rate            = (unsigned)audio_st->input;
 
-      /* Rate control for A/V sync */
+      /* Rate control for A/V sync. The DRC compute is gated on a
+       * sample-count threshold so multi-batch cores don't fire it on
+       * every batch_cb; intermediate calls reuse the cached factor.
+       * Single-batch cores cross the threshold on the first call so
+       * behaviour is unchanged for them. */
       if (audio_st->flags & AUDIO_FLAG_CONTROL)
-         rate_adjust = audio_driver_compute_rate_adjust(audio_st);
+      {
+         audio_st->samples_since_drc += samples;
+         if (audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
+            rate_adjust = audio_driver_compute_rate_adjust(audio_st);
+         else
+            rate_adjust = audio_st->cached_rate_adjust;
+      }
 
       if (is_slowmotion)
          rate_adjust                *= slowmotion_ratio;
@@ -618,25 +683,33 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
    /* Now the resampler will write to the driver state's scratch buffer */
 
-   /* Readjust the audio input rate. */
+   /* Readjust the audio input rate. Gated on a sample-count threshold
+    * so multi-batch cores update the resampler ratio approximately
+    * once per frame rather than once per batch_cb call. When the
+    * threshold isn't reached, src_ratio_curr retains its previous
+    * value and the resampler runs with the existing ratio. */
    if (audio_st->flags & AUDIO_FLAG_CONTROL)
    {
-      double adjust            = audio_driver_compute_rate_adjust(audio_st);
-      audio_st->src_ratio_curr = audio_st->src_ratio_orig * adjust;
+      audio_st->samples_since_drc += samples;
+      if (audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
+      {
+         double adjust            = audio_driver_compute_rate_adjust(audio_st);
+         audio_st->src_ratio_curr = audio_st->src_ratio_orig * adjust;
 
 #if 0
-      if (verbosity_is_enabled())
-      {
-         RARCH_LOG_OUTPUT("[Audio] Audio buffer is %u%% full\n",
-               (unsigned)(100 - (audio_st->free_samples_buf[
-                  (audio_st->free_samples_count - 1)
-                  & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1)] * 100) /
-                  audio_st->buffer_size));
-         RARCH_LOG_OUTPUT("[Audio] New rate: %lf, Orig rate: %lf\n",
-               audio_st->src_ratio_curr,
-               audio_st->src_ratio_orig);
-      }
+         if (verbosity_is_enabled())
+         {
+            RARCH_LOG_OUTPUT("[Audio] Audio buffer is %u%% full\n",
+                  (unsigned)(100 - (audio_st->free_samples_buf[
+                     (audio_st->free_samples_count - 1)
+                     & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1)] * 100) /
+                     audio_st->buffer_size));
+            RARCH_LOG_OUTPUT("[Audio] New rate: %lf, Orig rate: %lf\n",
+                  audio_st->src_ratio_curr,
+                  audio_st->src_ratio_orig);
+         }
 #endif
+      }
    }
 
    src_data.ratio           = audio_st->src_ratio_curr;
@@ -1018,6 +1091,16 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
    audio_driver_st.free_samples_count = 0;
+
+   /* Reset DRC rate-limit state. cached_rate_adjust defaults to 1.0
+    * (no adjustment) for the brief window before the first compute
+    * crosses audio_st->drc_threshold_int16s. drc_threshold_int16s is
+    * recomputed from the just-set input rate and av_info.timing.fps;
+    * since SET_SYSTEM_AV_INFO drives audio reinit, mid-session rate
+    * or fps changes flow through this same path. */
+   audio_driver_st.cached_rate_adjust = 1.0;
+   audio_driver_st.samples_since_drc  = 0;
+   audio_driver_update_drc_threshold(&audio_driver_st);
 
 #ifdef HAVE_AUDIOMIXER
    audio_mixer_init(settings->uints.audio_output_sample_rate);
