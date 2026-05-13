@@ -9,7 +9,7 @@ class GameXComponentController extends XComponentController{
     retroApi.surfaceChanged(parseInt(surfaceId), 0, 0)
   }
   onSurfaceChanged(surfaceId: string, rect: SurfaceRect): void {
-    retroApi.surfaceChanged(parseInt(surfaceId), 800, 800)
+    retroApi.surfaceChanged(parseInt(surfaceId), rect.surfaceWidth, rect.surfaceHeight)
   }
   onSurfaceDestroyed(surfaceId: string): void {
   }

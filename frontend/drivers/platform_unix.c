@@ -3932,10 +3932,11 @@ static napi_value SurfaceChanged(napi_env env, napi_callback_info info)
    napi_get_value_int64(env, args[0], &surfaceId);
    napi_get_value_int32(env, args[1], &width);
    napi_get_value_int32(env, args[2], &height);
-   if(g_ohos == NULL || width == 0)
+   if(g_ohos == NULL || width == 0 || height == 0)
         return NULL;
-   g_ohos->width = width;
-   g_ohos->height = height;
+   g_ohos->content_rect.width = width;
+   g_ohos->content_rect.height = height;
+   g_ohos->content_rect.changed = true;
    if(g_ohos->window == NULL){
         OH_NativeWindow_CreateNativeWindowFromSurfaceId(surfaceId, &g_ohos->window);
    } else{

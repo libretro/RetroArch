@@ -15,8 +15,6 @@
  */
 #include <stdint.h>
 
-#include <sys/system_properties.h>
-
 #include <formats/image.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
@@ -70,7 +68,7 @@ static void *ohos_gfx_ctx_vk_init(void *video_driver)
    if (!ohos_app || !and)
       return NULL;
 
-   if (!vulkan_context_init(&and->vk, VULKAN_WSI_ohos))
+   if (!vulkan_context_init(&and->vk, VULKAN_WSI_OHOS))
    {
       ohos_gfx_ctx_vk_destroy(and);
       return NULL;
@@ -159,9 +157,9 @@ static bool ohos_gfx_ctx_vk_set_video_mode(void *data,
 {
    struct ohos_app *ohos_app = (struct ohos_app*)g_ohos;
    ohos_ctx_data_vk_t *and      = (ohos_ctx_data_vk_t*)data;
-   and->width                      = ANativeWindow_getWidth(ohos_app->window);
-   and->height                     = ANativeWindow_getHeight(ohos_app->window);
-   if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ohos,
+   and->width                      = ohos_app->content_rect.width;
+   and->height                     = ohos_app->content_rect.height;
+   if (!vulkan_surface_create(&and->vk, VULKAN_WSI_OHOS,
             NULL, ohos_app->window,
             and->width, and->height, and->swap_interval))
    {

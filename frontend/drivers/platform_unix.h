@@ -93,8 +93,6 @@ struct ohos_app
    void (*onAppCmd)(struct ohos_app* app, int32_t cmd);
 
    void* ohos_input;
-   int width;
-   int height;
 
 
    /* When non-NULL, this is the window surface that the app can draw in. */

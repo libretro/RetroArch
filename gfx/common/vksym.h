@@ -39,6 +39,10 @@
 #define VK_USE_PLATFORM_ANDROID_KHR
 #endif
 
+#ifdef __OHOS__
+#define VK_USE_PLATFORM_OHOS_KHR
+#endif
+
 #ifdef HAVE_XCB
 #define VK_USE_PLATFORM_XCB_KHR
 #endif
