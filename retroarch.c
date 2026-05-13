@@ -3554,6 +3554,21 @@ bool command_event(enum event_command cmd, void *data)
               runloop_st->pending_windowed_scale))
             return false;
          break;
+      case CMD_VIDEO_FILTER_TOGGLE:
+#ifdef HAVE_VIDEO_FILTER
+         /* Allow video filter toggle only when there is an active core. */
+         if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+            break;
+         settings->bools.video_filter_enable = !(settings->bools.video_filter_enable);
+         const char *_msg =
+               settings->bools.video_filter_enable ?
+               msg_hash_to_str(MSG_VIDEO_FILTER_ENABLE_ON) :
+               msg_hash_to_str(MSG_VIDEO_FILTER_ENABLE_OFF);
+
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 60, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
+         break;
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)

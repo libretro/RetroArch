@@ -703,6 +703,7 @@ typedef struct settings
       bool video_framecount_show;
       bool video_memory_show;
       bool video_msg_bgcolor_enable;
+      bool video_filter_enable;
 #ifdef _3DS
       bool video_3ds_lcd_bottom;
 #endif

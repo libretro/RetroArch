@@ -360,6 +360,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_hdr_settings_list,           M
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_output_settings_list,           MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_crt_switchres_settings_list,           MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_suspend_screensaver_enable,    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_filter_enable,    MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_scale,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_opacity,          MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_show_decorations, MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS)
@@ -486,6 +487,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ui_companion_toggle,   ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_vrr_runloop_toggle,    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_runahead_toggle,       MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_preempt_toggle,        MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_video_filter_toggle,   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fps_toggle,            MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_statistics_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ai_service,            MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE)
@@ -2439,6 +2441,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
                return 0;
             case RARCH_PREEMPT_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_preempt_toggle);
+               return 0;
+            case RARCH_VIDEO_FILTER_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_video_filter_toggle);
                return 0;
             case RARCH_FPS_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fps_toggle);
@@ -5494,6 +5499,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_suspend_screensaver_enable);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_filter_enable);
             break;
          case MENU_ENUM_LABEL_VIDEO_SCALE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_scale);
