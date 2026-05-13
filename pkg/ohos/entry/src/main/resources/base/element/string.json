@@ -2,15 +2,15 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "module description"
+      "value": "RetroArch by HarmonyOS"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "description"
+      "value": "RetroArch by HarmonyOS"
     },
     {
       "name": "EntryAbility_label",
-      "value": "label"
+      "value": "RetroArch"
     }
   ]
 }

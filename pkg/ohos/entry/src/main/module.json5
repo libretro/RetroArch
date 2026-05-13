@@ -12,6 +12,12 @@
     "deliveryWithInstall": true,
     "installationFree": false,
     "pages": "$profile:main_pages",
+    "requestPermissions": [
+      {"name":"ohos.permission.INTERNET"},
+      {"name": "ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY"},
+      {"name": "ohos.permission.LOCK_WINDOW_CURSOR"},
+      {"name": "ohos.permission.NDK_START_SELF_UI_ABILITY"}
+    ],
     "abilities": [
       {
         "name": "EntryAbility",

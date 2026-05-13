@@ -1,26 +1,56 @@
-import { hilog } from '@kit.PerformanceAnalysisKit';
-import testNapi from 'libentry.so';
+import testNapi, { StartParams } from 'libretroarch.so';
+import { fileIo } from '@kit.CoreFileKit';
 
-const DOMAIN = 0x0000;
+class GameXComponentController extends XComponentController{
+  onSurfaceCreated(surfaceId: string): void {
+    testNapi.surfaceChanged(parseInt(surfaceId), 0, 0)
+  }
+  onSurfaceChanged(surfaceId: string, rect: SurfaceRect): void {
+    testNapi.surfaceChanged(parseInt(surfaceId), 800, 800)
+  }
+  onSurfaceDestroyed(surfaceId: string): void {
+  }
+}
 
 @Entry
 @Component
 struct Index {
-  @State message: string = 'Hello World';
+  xController = new GameXComponentController();
+  aboutToAppear(): void {
 
+  }
   build() {
     Row() {
-      Column() {
-        Text(this.message)
-          .fontSize($r('app.float.page_text_font_size'))
-          .fontWeight(FontWeight.Bold)
-          .onClick(() => {
-            this.message = 'Welcome';
-            hilog.info(DOMAIN, 'testTag', 'Test NAPI 2 + 3 = %{public}d', testNapi.add(2, 3));
+      XComponent({id:"game", type: XComponentType.TEXTURE, controller: this.xController})
+        .backgroundColor(Color.Black)
+        .width('100%')
+        .height('100%')
+        .constraintSize({ maxWidth: '100%', maxHeight: '100%' })
+        .onLoad(()=>{
+          setTimeout(()=>{
+
+          }, 1000)
+        }).onTouch((e: TouchEvent)=>{
+
+          testNapi.onTouchEvent({
+            id: e.target.id ?? 0,
+            type: e.type,
+            timestamp: e.timestamp,
+            touches: e.touches.map((t)=>{
+              return {
+                id: t.id,
+                x: this.vpToPx(t.x),
+                y: this.vpToPx(t.y)
+              } as TouchObject
+            })
           })
-      }
-      .width('100%')
+      })
     }
     .height('100%')
   }
+  public vpToPx(vp: number){
+    return this.getUIContext().vp2px(vp)
+  }
+
+
 }

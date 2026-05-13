@@ -59,6 +59,9 @@
 #if defined(ANDROID)
 #define DEFAULT_MAX_PADS 8
 #define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
+#elif defined(OHOS)
+#define DEFAULT_MAX_PADS 8
+#define OHOS_KEYBOARD_PORT DEFAULT_MAX_PADS
 #elif defined(_3DS)
 #define DEFAULT_MAX_PADS 1
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
@@ -1219,6 +1222,7 @@ extern hid_driver_t *hid_drivers[];
 #endif
 
 extern input_driver_t input_android;
+extern input_driver_t input_ohos;
 extern input_driver_t input_sdl;
 extern input_driver_t input_sdl_dingux;
 extern input_driver_t input_dinput;
@@ -1262,6 +1266,7 @@ extern input_device_driver_t gx_joypad;
 extern input_device_driver_t wiiu_joypad;
 extern input_device_driver_t hid_joypad;
 extern input_device_driver_t android_joypad;
+extern input_device_driver_t ohos_joypad;
 extern input_device_driver_t qnx_joypad;
 extern input_device_driver_t mfi_joypad;
 extern input_device_driver_t dos_joypad;

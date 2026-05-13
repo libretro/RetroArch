@@ -2913,6 +2913,9 @@ static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
 #if defined(ANDROID)
    &gfx_ctx_vk_android,
 #endif
+#if defined(OHOS)
+   &gfx_ctx_vk_ohos,
+#endif
 #if defined(HAVE_WAYLAND)
    &gfx_ctx_vk_wayland,
 #endif

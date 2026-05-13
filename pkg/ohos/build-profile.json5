@@ -1,6 +1,20 @@
 {
   "app": {
-    "signingConfigs": [],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "/Users/xiaobai/.ohos/config/default_ohos_NRpVdvCdN7uTmxeSRYEU0CFVk8nmTgVfywCsdsAKJu0=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001BC6905140037DE0E197240868183D577AA1714F99054F39F44053737C248601A6BC3C562A8351CC",
+          "profile": "/Users/xiaobai/.ohos/config/default_ohos_NRpVdvCdN7uTmxeSRYEU0CFVk8nmTgVfywCsdsAKJu0=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/xiaobai/.ohos/config/default_ohos_NRpVdvCdN7uTmxeSRYEU0CFVk8nmTgVfywCsdsAKJu0=.p12",
+          "storePassword": "0000001B6FCA6AEA379E03FC801728FB01DD3AF0CC89187347396D2DF9047A2029C6BD60C51AC2335B66CF"
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",

@@ -48,6 +48,9 @@
 #ifdef ANDROID
 #include <android/log.h>
 #endif
+#ifdef __OHOS__
+#include <hilog/log.h>
+#endif
 
 #if defined(_WIN32)
 
@@ -67,7 +70,6 @@
 #include <compat/fopen_utf8.h>
 #include <time/rtime.h>
 #include <retro_miscellaneous.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -262,7 +264,30 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
       }
    }
-
+#elif __OHOS__
+    {
+      FILE *fp = main_verbosity_st.fp;
+      if (main_verbosity_st.initialized && fp)
+      {
+         /* Already logging to file: single write path, no ohos log overhead */
+         vfprintf(fp, fmt, ap);
+         fflush(fp);
+      }
+      else
+      {
+         int prio = LOG_INFO;
+         if (tag)
+         {
+            if (memcmp(tag, FILE_PATH_LOG_WARN, sizeof(FILE_PATH_LOG_WARN)) == 0)
+               prio = LOG_WARN;
+            else if (memcmp(tag, FILE_PATH_LOG_ERROR, sizeof(FILE_PATH_LOG_ERROR)) == 0)
+               prio = LOG_ERROR;
+         }
+         char buffer[2048];
+         int written = vsnprintf(buffer, sizeof(buffer), fmt, ap);
+          OH_LOG_Print(LOG_APP, prio, 0xFF00, FILE_PATH_PROGRAM_NAME, "%{public}s", buffer);
+      }
+   }
 #else
    {
       FILE       *fp    = main_verbosity_st.fp;

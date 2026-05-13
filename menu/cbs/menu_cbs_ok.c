@@ -8988,6 +8988,7 @@ static int action_ok_playlist_refresh(const char *path,
          msg_subject = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
       _len = fill_pathname_join_special(msg, msg_prefix, msg_subject, sizeof(msg));
       RARCH_ERR(log_text, msg_subject);
+
       runloop_msg_queue_push(msg, _len, 1, 150, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       /* Even though this is a failure condition, we

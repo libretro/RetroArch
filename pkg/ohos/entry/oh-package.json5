@@ -6,6 +6,6 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "libentry.so": "file:./src/main/cpp/types/libentry"
+    "libretroarch.so": "file:./src/main/cpp/types/libretroarch"
   }
 }

@@ -217,7 +217,8 @@ enum input_driver_enum
    INPUT_RWEBINPUT,
    INPUT_DOS,
    INPUT_WINRAW,
-   INPUT_NULL
+   INPUT_NULL,
+   INPUT_OHOS
 };
 
 enum joypad_driver_enum
@@ -236,6 +237,7 @@ enum joypad_driver_enum
    JOYPAD_UDEV,
    JOYPAD_LINUXRAW,
    JOYPAD_ANDROID,
+   JOYPAD_OHOS,
    JOYPAD_SDL,
    JOYPAD_SDL_DINGUX,
    JOYPAD_DOS,
@@ -252,6 +254,7 @@ enum camera_driver_enum
    CAMERA_V4L2              = JOYPAD_NULL + 1,
    CAMERA_RWEBCAM,
    CAMERA_ANDROID,
+   CAMERA_OHOS,
    CAMERA_AVFOUNDATION,
    CAMERA_PIPEWIRE,
    CAMERA_FFMPEG,
@@ -448,6 +451,8 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
 #elif defined(HAVE_VITA2D)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
+#elif defined (OHOS)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL_CORE;
 #elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE) && !defined(__HAIKU__)
@@ -633,6 +638,8 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
 #elif defined(ANDROID)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
+#elif defined (OHOS)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_OHOS;
 #elif defined(EMSCRIPTEN) && defined(HAVE_SDL2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(WEBOS) && defined(HAVE_SDL2)
@@ -713,6 +720,8 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL_DINGUX;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DINPUT;
 #elif defined(HAVE_UDEV)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_UDEV;
+#elif defined(OHOS)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_OHOS;
 #elif defined(__linux) && !defined(ANDROID)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_LINUXRAW;
 #elif defined(HAVE_WINRAWINPUT)
@@ -1187,6 +1196,8 @@ const char *config_get_default_input(void)
    {
       case INPUT_ANDROID:
          return "android";
+      case INPUT_OHOS:
+         return "ohos";
       case INPUT_PS4:
          return "ps4";
       case INPUT_PS3:
@@ -1291,6 +1302,8 @@ const char *config_get_default_joypad(void)
          return "linuxraw";
       case JOYPAD_ANDROID:
          return "android";
+      case JOYPAD_OHOS:
+         return "ohos";
       case JOYPAD_SDL:
 #ifdef HAVE_SDL2
          return "sdl2";

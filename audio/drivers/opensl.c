@@ -18,6 +18,10 @@
 #ifdef ANDROID
 #include <SLES/OpenSLES_Android.h>
 #endif
+#ifdef __OHOS__
+#include <SLES/OpenSLES_OpenHarmony.h>
+#include "string.h"
+#endif
 
 #include <rthreads/rthreads.h>
 
@@ -43,7 +47,12 @@ typedef struct sl
 
    SLObjectItf output_mix;
    SLObjectItf buffer_queue_object;
+   #ifdef ANDROID
    SLAndroidSimpleBufferQueueItf buffer_queue;
+   #endif
+   #ifdef __OHOS__
+   SLOHBufferQueueItf buffer_queue;
+   #endif
    SLPlayItf player;
 
    slock_t *lock;
@@ -56,13 +65,23 @@ typedef struct sl
    bool nonblock;
    bool is_paused;
 } sl_t;
-
-static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
+#ifdef ANDROID
+static void opensl_callback( SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
    sl_t *sl = (sl_t*)ctx;
    __sync_fetch_and_sub(&sl->buffered_blocks, 1);
    scond_signal(sl->cond);
 }
+#else
+static void opensl_callback(SLOHBufferQueueItf bq, void *ctx, SLuint32 size)
+{
+   sl_t *sl = (sl_t*)ctx;
+   __sync_fetch_and_sub(&sl->buffered_blocks, 1);
+   scond_signal(sl->cond);
+}
+#endif
+
+
 
 #define GOTO_IF_FAIL(x) do { \
    if ((res = (x)) != SL_RESULT_SUCCESS) \
@@ -105,17 +124,26 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    SLDataFormat_PCM fmt_pcm                        = {0};
    SLDataSource audio_src                          = {0};
    SLDataSink audio_sink                           = {0};
+   #ifdef ANDROID
    SLDataLocator_AndroidSimpleBufferQueue loc_bufq = {0};
+   #endif
+   #ifdef OHOS
+   SLDataLocator_BufferQueue loc_bufq = {0};
+   #endif
    SLDataLocator_OutputMix loc_outmix              = {0};
    SLresult res                                    = 0;
+   #ifdef __ANDROID__ 
    SLInterfaceID                                id = SL_IID_ANDROIDSIMPLEBUFFERQUEUE;
+   #endif
+   #ifdef OHOS
+   SLInterfaceID                                id = SL_IID_OH_BUFFERQUEUE;
+   #endif
    SLboolean                                req    = SL_BOOLEAN_TRUE;
    sl_t                                        *sl = (sl_t*)calloc(1, sizeof(sl_t));
 
    (void)device;
    if (!sl)
       goto error;
-
    RARCH_LOG("[OpenSL] Requested audio latency: %u ms.\n", latency);
 
    GOTO_IF_FAIL(slCreateEngine(&sl->engine_object, 0, NULL, 0, NULL, NULL));
@@ -132,10 +160,14 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
 
    sl->buf_count    = (latency * 4 * rate + 500) / 1000;
    sl->buf_count    = (sl->buf_count + sl->buf_size / 2) / sl->buf_size;
+    
+   
 
    if (sl->buf_count < 2)
       sl->buf_count = 2;
-
+   #ifdef __OHOS__
+        sl->buf_count = 3;
+   #endif
    sl->buffer       = (uint8_t**)calloc(sizeof(uint8_t*), sl->buf_count);
    if (!sl->buffer)
       goto error;
@@ -160,8 +192,12 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
 
    audio_src.pLocator     = &loc_bufq;
    audio_src.pFormat      = &fmt_pcm;
-
+   #ifdef __ANDROID__ 
    loc_bufq.locatorType   = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
+   #endif
+   #ifdef __OHOS__ 
+   loc_bufq.locatorType = SL_DATALOCATOR_BUFFERQUEUE;
+   #endif
    loc_bufq.numBuffers    = sl->buf_count;
 
    loc_outmix.locatorType = SL_DATALOCATOR_OUTPUTMIX;
@@ -173,9 +209,13 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
             &audio_src, &audio_sink,
             1, &id, &req));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->buffer_queue_object, SL_BOOLEAN_FALSE));
-
+   #ifdef __ANDROID__ 
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_ANDROIDSIMPLEBUFFERQUEUE,
             &sl->buffer_queue));
+   #else
+   GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_OH_BUFFERQUEUE,
+            &sl->buffer_queue));
+   #endif
 
    sl->cond               = scond_new();
    sl->lock               = slock_new();
@@ -186,8 +226,9 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    sl->buffered_blocks    = sl->buf_count;
    sl->buffer_index       = 0;
 
-   for (i = 0; i < sl->buf_count; i++)
-      (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[i], sl->buf_size);
+   for (i = 0; i <  sl->buf_count; i++)
+         (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[i], sl->buf_size);
+     
 
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_PLAY, &sl->player));
    GOTO_IF_FAIL(SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING));

@@ -406,7 +406,6 @@ void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id)
 #ifdef CONSOLE_LOG
 PrintConsole* ctrConsole;
 #endif
-
 static void frontend_ctr_init(void* data)
 {
 #ifndef IS_SALAMANDER

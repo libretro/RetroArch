@@ -75,7 +75,7 @@
 
 #include "../verbosity.c"
 
-#if defined(HAVE_LOGGER) && !defined(ANDROID)
+#if defined(HAVE_LOGGER) && !defined(ANDROID) && !defined(OHOS)
 #include "../network/net_logger.c"
 #endif
 
@@ -310,6 +310,12 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/android_vk_ctx.c"
 #endif
 #include "../gfx/display_servers/dispserv_android.c"
+#elif defined(OHOS)
+#include "../gfx/drivers_context/ohos_ctx.c"
+#if defined(HAVE_VULKAN)
+#include "../gfx/drivers_context/ohos_vk_ctx.c"
+#endif
+#include "../gfx/display_servers/dispserv_ohos.c"
 #elif defined(__QNX__)
 #include "../gfx/drivers_context/qnx_ctx.c"
 #elif defined(EMSCRIPTEN)
@@ -699,6 +705,9 @@ INPUT
 #elif defined(ANDROID)
 #include "../input/drivers/android_input.c"
 #include "../input/drivers_joypad/android_joypad.c"
+#elif defined(OHOS)
+#include "../input/drivers/ohos_input.c"
+#include "../input/drivers_joypad/ohos_joypad.c"
 #elif defined(__QNX__)
 #include "../input/drivers/qnx_input.c"
 #include "../input/drivers_joypad/qnx_joypad.c"
@@ -734,7 +743,7 @@ INPUT
 #endif
 #endif
 
-#if defined(__linux__) && !defined(ANDROID)
+#if defined(__linux__) && !defined(ANDROID) && !defined(OHOS)
 #include "../input/common/linux_common.c"
 #include "../input/drivers/linuxraw_input.c"
 #include "../input/drivers_joypad/linuxraw_joypad.c"

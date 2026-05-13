@@ -1,0 +1,12 @@
+
+export interface  StartParams{
+  CONFIGFILE: string;
+  DATADIR: string;
+  IME: string;
+  EXTERNAL: string;
+  ROM: string;
+  LIBRETRO: string;
+}
+export const startApp: (args: StartParams) => number;
+export const surfaceChanged: (surfaceId: number, width:number, height:number)=>number;
+export const onTouchEvent: (touch: any)=>number;

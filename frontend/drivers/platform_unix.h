@@ -18,6 +18,7 @@
 #ifndef _PLATFORM_UNIX_H
 #define _PLATFORM_UNIX_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <boolean.h>
@@ -27,6 +28,225 @@
 
 #ifndef MAX_AXIS
 #define MAX_AXIS 10
+#endif
+
+#ifdef __OHOS__
+#include <rthreads/rthreads.h>
+#include "../../input/input_driver.h"
+#include <native_window/external_window.h>
+#define PROP_VALUE_MAX 92
+struct ohos_app;
+
+
+enum
+{
+   EVENT_ACTION_DOWN,
+   EVENT_ACTION_UP,
+   EVENT_ACTION_MOVE,
+   EVENT_ACTION_Cancel,
+   EVENT_ACTION_HOVER_ENTER,
+   EVENT_ACTION_HOVER_MOVE,
+   EVENT_ACTION_HOVER_HOVER_EXIT,
+   EVENT_ACTION_HOVER_HOVER_HOVER_CANCELT,
+};
+typedef struct {
+   int id;
+   double x;
+   double  y;
+} TouchPoint;
+
+typedef struct {
+   int id;
+   int type;
+   int pointerCount;
+   TouchPoint touchPoints[10];
+   int64_t eventTime;
+} TouchEvent;
+
+char internal_storage_path[PATH_MAX_LENGTH];
+char internal_storage_app_path[PATH_MAX_LENGTH];
+
+
+typedef struct {
+    char CONFIGFILE[PATH_MAX_LENGTH];
+    char IME[NAME_MAX];
+    char LIBRETRO[PATH_MAX_LENGTH];
+    char ROM[PATH_MAX_LENGTH];
+    char HAP[DIR_MAX_LENGTH];
+    char EXTERNAL[PATH_MAX_LENGTH];
+    char DATADIR[PATH_MAX_LENGTH];
+} StartParams;
+
+
+extern struct ohos_app *g_ohos;
+
+struct ohos_app
+{
+   /* The application can place a pointer to its own state object
+    * here if it likes. */
+   void* userData;
+   StartParams* startParams;    
+
+   /* Fill this in with the function to process main app commands (APP_CMD_*) */
+   void (*onAppCmd)(struct ohos_app* app, int32_t cmd);
+
+   void* ohos_input;
+   int width;
+   int height;
+
+
+   /* When non-NULL, this is the window surface that the app can draw in. */
+   OHNativeWindow* window;
+
+   /* Current state of the app's activity.  May be either APP_CMD_START,
+    * APP_CMD_RESUME, APP_CMD_PAUSE, or APP_CMD_STOP; see below. */
+   int activityState;
+
+   int reinitRequested;
+
+   /* This is non-zero when the application's NativeActivity is being
+    * destroyed and waiting for the app thread to complete. */
+   int destroyRequested;
+
+   /* Below are "private" implementation of the glue code. */
+   slock_t *mutex;
+   scond_t *cond;
+
+   int msgread;
+   int msgwrite;
+
+   sthread_t *thread;
+
+   int running;
+   int stateSaved;
+   int destroyed;
+   OHNativeWindow* pendingWindow;
+
+   /*  Below are "private" implementation of RA code. */
+   bool unfocused;
+   unsigned accelerometer_event_rate;
+   unsigned gyroscope_event_rate;
+   uint64_t sensor_state_mask;
+   unsigned detected_screen_rotation;
+   float    gravity_accum_x;
+   float    gravity_accum_y;
+   unsigned gravity_sample_count;
+   bool     gravity_calibrated;
+   char current_ime[NAME_MAX_LENGTH];
+   bool input_alive;
+   int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
+   int8_t hat_state[DEFAULT_MAX_PADS][2];
+
+   struct
+   {
+      unsigned width, height;
+      bool changed;
+   } content_rect;
+   uint16_t rumble_last_strength_strong[MAX_USERS];
+   uint16_t rumble_last_strength_weak[MAX_USERS];
+   uint16_t rumble_last_strength[MAX_USERS];
+   int id[MAX_USERS];
+
+   bool is_play_store_build;
+
+};
+
+enum
+{
+   APP_CMD_INPUT_CHANGED,
+   /**
+    * Command from main thread: a new ANativeWindow is ready for use.  Upon
+    * receiving this command, android_app->window will contain the new window
+    * surface.
+    */
+   APP_CMD_INIT_WINDOW,
+
+   /**
+    * Command from main thread: the existing ANativeWindow needs to be
+    * terminated.  Upon receiving this command, android_app->window still
+    * contains the existing window; after calling android_app_exec_cmd
+    * it will be set to NULL.
+    */
+   APP_CMD_TERM_WINDOW,
+
+   /**
+    * Command from main thread: the current ANativeWindow has been resized.
+    * Please redraw with its new size.
+    */
+   APP_CMD_WINDOW_RESIZED,
+
+   /**
+    * Command from main thread: the system needs that the current ANativeWindow
+    * be redrawn.  You should redraw the window before handing this to
+    * android_app_exec_cmd() in order to avoid transient drawing glitches.
+    */
+   APP_CMD_WINDOW_REDRAW_NEEDED,
+
+   /**
+    * Command from main thread: the content area of the window has changed,
+    * such as from the soft input window being shown or hidden.  You can
+    * find the new content rect in android_app::contentRect.
+    */
+   APP_CMD_CONTENT_RECT_CHANGED,
+
+   /**
+    * Command from main thread: the app's activity window has gained
+    * input focus.
+    */
+   APP_CMD_GAINED_FOCUS,
+
+   /**
+    * Command from main thread: the app's activity window has lost
+    * input focus.
+    */
+   APP_CMD_LOST_FOCUS,
+
+   /**
+    * Command from main thread: the current device configuration has changed.
+    */
+   APP_CMD_CONFIG_CHANGED,
+
+   /**
+    * Command from main thread: the system is running low on memory.
+    * Try to reduce your memory use.
+    */
+   APP_CMD_LOW_MEMORY,
+
+   /**
+    * Command from main thread: the app's activity has been started.
+    */
+   APP_CMD_START,
+
+   /**
+    * Command from main thread: the app's activity has been resumed.
+    */
+   APP_CMD_RESUME,
+
+   /**
+    * Command from main thread: the app should generate a new saved state
+    * for itself, to restore from later if needed.
+    */
+   APP_CMD_SAVE_STATE,
+
+   /**
+    * Command from main thread: the app's activity has been paused.
+    */
+   APP_CMD_PAUSE,
+
+   /**
+    * Command from main thread: the app's activity has been stopped.
+    */
+   APP_CMD_STOP,
+
+   /**
+    * Command from main thread: the app's activity is being destroyed,
+    * and waiting for the app thread to clean up and exit before proceeding.
+    */
+   APP_CMD_DESTROY,
+
+   APP_CMD_REINIT_DONE
+};
+
 #endif
 
 #ifdef ANDROID

@@ -4517,8 +4517,8 @@ static void *gl2_init(const video_info_t *video,
    renderer = (const char*)glGetString(GL_RENDERER);
    version  = (const char*)glGetString(GL_VERSION);
 
-   RARCH_LOG("[GL] Vendor: %s, Renderer: %s.\n", vendor, renderer);
-   RARCH_LOG("[GL] Version: %s.\n", version);
+   RARCH_LOG("[GL] Vendor: %p, Renderer: %p.\n", vendor, renderer);
+   RARCH_LOG("[GL] Version: %p.\n", version);
 
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
