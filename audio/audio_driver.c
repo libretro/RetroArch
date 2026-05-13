@@ -472,6 +472,53 @@ bool audio_driver_find_driver(const char *audio_drv,
  * @param is_slowmotion True if the core is currently running in slow motion.
  * @param is_fastmotion True if the core is currently running in fast-forward.
  **/
+/**
+ * audio_driver_compute_rate_adjust:
+ *
+ * Compute the rate-control adjustment factor used to nudge the
+ * resampler ratio for A/V sync, by sampling the audio driver's
+ * FIFO write-available count and comparing it to the half-full
+ * mark. Records the sampled value in the rolling history at
+ * free_samples_buf[] for diagnostics, and ticks free_samples_count.
+ *
+ * Caller is responsible for checking that AUDIO_FLAG_CONTROL is set
+ * before calling this; it doesn't do that itself, so the body runs
+ * unconditionally once invoked.
+ *
+ * Used by both the write_raw fast path (which applies the result
+ * as rate_adjust) and the resampler slow path (which multiplies
+ * src_ratio_orig by the result to produce src_ratio_curr). The two
+ * sites previously duplicated this body verbatim.
+ *
+ * Returns the rate-adjust factor (typically very near 1.0, within
+ * rate_control_delta).
+ **/
+static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
+{
+   unsigned write_idx     =
+         audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+   int avail              = (int)audio_st->current_audio->write_avail(
+         audio_st->context_audio_data);
+   int half_size          = (int)(audio_st->buffer_size / 2);
+   int delta_mid          = avail - half_size;
+   double direction       = (double)delta_mid / half_size;
+   /* Scale rate_control_delta inversely with the resampling ratio
+    * so the effective loop gain stays constant regardless of output
+    * sample rate (e.g. 96 kHz+).  Without this, high ratios amplify
+    * the correction and the controller oscillates, causing audible
+    * volume pumping.
+    *
+    * Only scale down (ratio > 1.0).  At sub-unity ratios the original
+    * delta is already well-tuned and dividing by a fraction would
+    * over-amplify corrections. */
+   double effective_delta = (audio_st->src_ratio_orig > 1.0)
+         ? audio_st->rate_control_delta / audio_st->src_ratio_orig
+         : audio_st->rate_control_delta;
+
+   audio_st->free_samples_buf[write_idx] = avail;
+   return 1.0 + effective_delta * direction;
+}
+
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const int16_t *data, size_t samples,
@@ -512,30 +559,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
       /* Rate control for A/V sync */
       if (audio_st->flags & AUDIO_FLAG_CONTROL)
-      {
-         unsigned write_idx          =
-               audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-         int avail                   = (int)audio->write_avail(
-               audio_st->context_audio_data);
-         int half_size               = (int)(audio_st->buffer_size / 2);
-         int delta_mid               = avail - half_size;
-         double direction            = (double)delta_mid / half_size;
-         /* Scale rate_control_delta inversely with the resampling ratio
-          * so the effective loop gain stays constant regardless of
-          * output sample rate (e.g. 96 kHz+).  Without this, high
-          * ratios amplify the correction and the controller oscillates,
-          * causing audible volume pumping.
-          *
-          * Only scale down (ratio > 1.0).  At sub-unity ratios the
-          * original delta is already well-tuned and dividing by a
-          * fraction would over-amplify corrections. */
-         double effective_delta      = (audio_st->src_ratio_orig > 1.0)
-               ? audio_st->rate_control_delta / audio_st->src_ratio_orig
-               : audio_st->rate_control_delta;
-
-         audio_st->free_samples_buf[write_idx] = avail;
-         rate_adjust                 = 1.0 + effective_delta * direction;
-      }
+         rate_adjust = audio_driver_compute_rate_adjust(audio_st);
 
       if (is_slowmotion)
          rate_adjust                *= slowmotion_ratio;
@@ -594,48 +618,25 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
    /* Now the resampler will write to the driver state's scratch buffer */
 
-   /* Count samples. */
+   /* Readjust the audio input rate. */
+   if (audio_st->flags & AUDIO_FLAG_CONTROL)
    {
-      unsigned write_idx             =
-            audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-
-      /* Readjust the audio input rate. */
-      if (audio_st->flags & AUDIO_FLAG_CONTROL)
-      {
-         int avail                   = (int)audio->write_avail(
-               audio_st->context_audio_data);
-         int half_size               = (int)(audio_st->buffer_size / 2);
-         int delta_mid               = avail - half_size;
-         double direction            = (double)delta_mid / half_size;
-         /* Scale rate_control_delta inversely with the resampling ratio
-          * so the effective loop gain stays constant regardless of
-          * output sample rate (e.g. 96 kHz+).  Without this, high
-          * ratios amplify the correction and the controller oscillates,
-          * causing audible volume pumping.
-          *
-          * Only scale down (ratio > 1.0).  At sub-unity ratios the
-          * original delta is already well-tuned and dividing by a
-          * fraction would over-amplify corrections. */
-         double effective_delta      = (audio_st->src_ratio_orig > 1.0)
-               ? audio_st->rate_control_delta / audio_st->src_ratio_orig
-               : audio_st->rate_control_delta;
-         double adjust               = 1.0 + effective_delta * direction;
-
-         audio_st->free_samples_buf[write_idx] = avail;
-         audio_st->src_ratio_curr = audio_st->src_ratio_orig * adjust;
+      double adjust            = audio_driver_compute_rate_adjust(audio_st);
+      audio_st->src_ratio_curr = audio_st->src_ratio_orig * adjust;
 
 #if 0
-         if (verbosity_is_enabled())
-         {
-            RARCH_LOG_OUTPUT("[Audio] Audio buffer is %u%% full\n",
-                  (unsigned)(100 - (avail * 100) /
-                     audio_st->buffer_size));
-            RARCH_LOG_OUTPUT("[Audio] New rate: %lf, Orig rate: %lf\n",
-                  audio_st->src_ratio_curr,
-                  audio_st->src_ratio_orig);
-         }
-#endif
+      if (verbosity_is_enabled())
+      {
+         RARCH_LOG_OUTPUT("[Audio] Audio buffer is %u%% full\n",
+               (unsigned)(100 - (audio_st->free_samples_buf[
+                  (audio_st->free_samples_count - 1)
+                  & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1)] * 100) /
+                  audio_st->buffer_size));
+         RARCH_LOG_OUTPUT("[Audio] New rate: %lf, Orig rate: %lf\n",
+               audio_st->src_ratio_curr,
+               audio_st->src_ratio_orig);
       }
+#endif
    }
 
    src_data.ratio           = audio_st->src_ratio_curr;
