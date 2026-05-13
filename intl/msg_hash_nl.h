@@ -3860,11 +3860,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
-   "Vooruitlopende frames (omschakelen)"
+   "Preemptive Frames (omschakelen)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
-   "Zet Vooruitlopende frames aan of uit."
+   "Zet Preemptive Frames aan of uit."
    )
 
 MSG_HASH(
@@ -4216,12 +4216,12 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
-   "Voer extra core-logica uit om latentie te verminderen. Enkele instantie draait om een toekomstig frame, en laadt daarna de huidige status opnieuw. Tweede instantie houdt een kerninstantie met alleen video op een toekomstig frame om problemen met audiostaten te voorkomen. Preëmptieve Frames draait oude frames met nieuwe invoer wanneer nodig, voor efficiëntie."
+   "Voer extra core-logica uit om latentie te verminderen. Enkele instantie draait om een toekomstig frame, en laadt daarna de huidige status opnieuw. Tweede instantie houdt een kerninstantie met alleen video op een toekomstig frame om problemen met audiostaten te voorkomen. Preemptive Frames draait oude frames met nieuwe invoer wanneer nodig, voor efficiëntie."
    )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
-   "Voer extra kern-logica uit om latentie te verminderen. Enkele instantie draait om een toekomstige frame, en laadt daarna de huidige status opnieuw. Preëmptieve Frames draait in het verleden frames met nieuwe invoer wanneer nodig, voor efficiëntie."
+   "Voer extra kern-logica uit om latentie te verminderen. Enkele instantie draait om een toekomstige frame, en laadt daarna de huidige status opnieuw. Preemptive Frames draait in het verleden frames met nieuwe invoer wanneer nodig, voor efficiëntie."
    )
 #endif
 MSG_HASH(
@@ -4234,7 +4234,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
-   " Preëmptieve Frames mode"
+   " Preemptive Frames-modus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4246,7 +4246,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
-   "Aantal preëmptieve Frames"
+   "Aantal preemptive Frames"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
@@ -8097,7 +8097,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
-   "Opgeslagen bestanedn"
+   "Opgeslagen bestanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
@@ -13536,6 +13536,10 @@ MSG_HASH(
    "Zoeken voltooid"
    )
 MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Zoeken mislukt"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Shader gevonden"
    )
@@ -13548,8 +13552,36 @@ MSG_HASH(
    "Map-specifieke core-opties gevonden in"
    )
 MSG_HASH(
+   MSG_GOT_INVALID_DISK_INDEX,
+   "Ongeldige disc index."
+   )
+MSG_HASH(
+   MSG_GRAB_MOUSE_STATE,
+   "Haal muisstatus"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_ON,
+   "Spelfocus aan"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_OFF,
+   "Spelfocus uit"
+   )
+MSG_HASH(
    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
    "Libretro core is hardware-geaccelereerd. Must use post-shaded recording as well."
+   )
+MSG_HASH(
+   MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
+   "De controlesom komt niet overeen met de CRC32."
+   )
+MSG_HASH(
+   MSG_INPUT_CHEAT,
+   "Cheat invoeren"
+   )
+MSG_HASH(
+   MSG_INPUT_CHEAT_FILENAME,
+   "Cheatbestandsnaam invoeren"
    )
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
@@ -13560,12 +13592,40 @@ MSG_HASH(
    "Overrides voor bestandsnaam"
    )
 MSG_HASH(
+   MSG_INPUT_REMAP_FILENAME,
+   "Remap-bestandsnaam invoeren"
+   )
+MSG_HASH(
+   MSG_INPUT_RENAME_ENTRY,
+   "Remap-titel"
+   )
+MSG_HASH(
    MSG_INTERNAL_STORAGE,
    "Interne Opslag"
    )
 MSG_HASH(
+   MSG_REMOVABLE_STORAGE,
+   "Verwijderbare opslag"
+   )
+MSG_HASH(
+   MSG_INVALID_NICKNAME_SIZE,
+   "Ongeldige bijnaamgrootte"
+   )
+MSG_HASH(
+   MSG_LIBRETRO_ABI_BREAK,
+   "is gecompileerd tegen een andere versie van libretro dan deze libretro implementatie."
+   )
+MSG_HASH(
    MSG_LIBRETRO_FRONTEND,
    "Front-end voor libretro"
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Onderbrekingspunt geladen van slot: %d"
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Onderbrekingspunt geladen van slot: Automatisch"
    )
 MSG_HASH(
    MSG_LOADING,
@@ -13576,12 +13636,28 @@ MSG_HASH(
    "Firmware bestanden ontbreken"
    )
 MSG_HASH(
+   MSG_LOADING_CONTENT_FILE,
+   "Inhoudsbestand aan het laden"
+   )
+MSG_HASH(
+   MSG_LOADING_HISTORY_FILE,
+   "Geschiedenisbestand aan het laden"
+   )
+MSG_HASH(
    MSG_LOADING_FAVORITES_FILE,
    "Favorietenbestand laden"
    )
 MSG_HASH(
+   MSG_LOADING_STATE,
+   "Onderbrekingspunt aan het laden"
+   )
+MSG_HASH(
    MSG_MEMORY,
    "Geheugen"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Ingevoerde filmherhaling is geen geldig REPLAY-bestand"
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -13590,6 +13666,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
    "Movie playback ended."
+   )
+MSG_HASH(
+   MSG_MOVIE_RECORD_STOPPED,
+   "Filmopname aan het stoppen."
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED,
+   "Netplay initialiseren mislukt"
+   )
+MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Kern ondersteunt geen netplay."
+   )
+MSG_HASH(
+   MSG_NO_CONTENT_STARTING_DUMMY_CORE,
+   "Geen inhoud, dummy core wordt gestart"
+   )
+MSG_HASH(
+   MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
+   "Er is nog geen onderbrekingspunt overschreven."
+   )
+MSG_HASH(
+   MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+   "Er is nog geen onderbrekingspunt geladen"
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
@@ -13624,6 +13724,10 @@ MSG_HASH(
    "Gepauzeerd."
    )
 MSG_HASH(
+   MSG_READING_FIRST_DATA_TRACK,
+   "Eerste datatrack aan het lezen..."
+   )
+MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Opname beëindigd als gevolg van gewijzigd grootte."
    )
@@ -13632,24 +13736,76 @@ MSG_HASH(
    "Opnemen naar"
    )
 MSG_HASH(
+   MSG_REDIRECTING_CHEATFILE_TO,
+   "Het cheatbestand wordt omgeleid naar"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVEFILE_TO,
+   "Het cheatbestand is omgeleid naar"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVESTATE_TO,
+   "Het onderbrekingspunt wordt omgeleid naar"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+   "Bitmap-bestand succesvol opgeslagen."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+   "Bitmap-bestand succesvol verwijderd."
+   )
+MSG_HASH(
    MSG_REMAP_FILE_RESET,
    "Alle remap-opties gereset naar de standaardwaarden"
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Schijf uit de lade verwijderd."
+   )
+MSG_HASH(
+   MSG_REMOVING_TEMPORARY_CONTENT_FILE,
+   "Tijdelijk inhoudsbestand aan het verwijderen"
    )
 MSG_HASH(
    MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
    "Opname wordt opnieuw gestart door een stuurprogramma herinitialisatie."
    )
 MSG_HASH(
+   MSG_RESTORED_OLD_SAVE_STATE,
+   "Oud onderbrekingspunt geladen."
+   )
+MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
    "Shaders: herstellen van standaard shader preset naar"
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+   "Map voor opslagbestanden aan het terugzetten naar"
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+   "Onderbrekingspunt map aan het terugzetten naar"
    )
 MSG_HASH(
    MSG_REWINDING,
    "Terugspoelen."
    )
 MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Buffercapaciteit onvoldoende."
+   )
+MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
    "Terugspoelen is niet beschikbaar omdat deze core geen geserialiseerde onderbrekingspunt heeft."
+   )
+MSG_HASH(
+   MSG_REWIND_INIT,
+   "Terugspoelbuffer aan het initialiseren met grootte"
+   )
+MSG_HASH(
+   MSG_REWIND_INIT_FAILED,
+   "Kan de terugspoelbuffer niet initialiseren. Terugspoelen zal uitgeschakeld worden."
    )
 MSG_HASH(
    MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
@@ -13660,6 +13816,22 @@ MSG_HASH(
    "Einde bereikt van terugspoel buffer."
    )
 MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Configuratie opgeslagen in"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Onderbrekingspunt opgeslagen in slot: %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Onderbrekingspunt opgeslagen in slot: Auto."
+   )
+MSG_HASH(
+   MSG_SAVED_SUCCESSFULLY_TO,
+   "Met succes opgeslagen in"
+   )
+MSG_HASH(
    MSG_SAVING_RAM_TYPE,
    "RAM-type aan het opslaan"
    )
@@ -13668,16 +13840,72 @@ MSG_HASH(
    "Onderbrekingspunt aan het opslaan"
    )
 MSG_HASH(
+   MSG_SCANNING,
+   "Aan het scannen"
+   )
+MSG_HASH(
+   MSG_SCANNING_OF_DIRECTORY_FINISHED,
+   "Scannen van map voltooid."
+   )
+MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Scannen mislukt, geen database gevonden."
+   )
+MSG_HASH(
+   MSG_SENDING_COMMAND,
+   "Commando aan het verzenden"
+   )
+MSG_HASH(
+   MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
+   "Verscheidene patches zijn expliciet gedefinieerd, alles wordt genegeerd..."
+   )
+MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
    "Shader preset succesvol opgeslagen."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION,
+   "Slow motion."
    )
 MSG_HASH(
    MSG_FAST_FORWARD,
    "Vooruitspoelen."
    )
 MSG_HASH(
+   MSG_SLOW_MOTION_REWIND,
+   "Terugspoelen in slow motion"
+   )
+MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "SRAM laden wordt overgeslagen."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM zal niet opgeslagen worden."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "SRAM overschrijven wordt geblokkeerd"
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_PLAYBACK,
+   "De film wordt afgespeeld."
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_RECORD_TO,
+   "Filmopname aan het starten naar"
+   )
+MSG_HASH(
+   MSG_STATE_SIZE,
+   "Onderbrekingspuntgrootte"
+   )
+MSG_HASH(
+   MSG_STATE_SLOT,
+   "Onderbrekingspuntslot"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Harhalingsslot"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
@@ -13716,20 +13944,72 @@ MSG_HASH(
    "Beste: %s" /* Best: [value] */
    )
 MSG_HASH(
+   MSG_CHANGE_THUMBNAIL_TYPE,
+   "Miniatuurtype wijzigen"
+   )
+MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "Voorbeeldweergave op volledig scherm"
+   )
+MSG_HASH(
    MSG_TOGGLE_CONTENT_METADATA,
    "Metagegevens Omschakelen"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_AVAILABLE,
+   "Geen miniatuur beschikbaar"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Alle mogelijke miniatuurdownloads zijn al geprobeerd voor deze afspeellijst."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_QUIT,
+   "Druk nogmaals om te stoppen..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Druk nogmaals om de inhoud te sluiten..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Druk nogmaals om te resetten..."
+   )
+MSG_HASH(
+   MSG_TO,
+   "naar"
    )
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "Laden van state ongedaan gemaakt."
    )
 MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Onderbrekingspunt ongedaan maken..."
+   )
+MSG_HASH(
    MSG_UNKNOWN,
    "Onbekend"
    )
 MSG_HASH(
+   MSG_UNPAUSED,
+   "Ongepauzeerd."
+   )
+MSG_HASH(
+   MSG_UNRECOGNIZED_COMMAND,
+   "Niet-herkend commando \"%s\" ontvangen.\n"
+   )
+MSG_HASH(
+   MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
+   "De core-naam gebruiken voor de nieuwe configuratie."
+   )
+MSG_HASH(
    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
    "Libretro dummy core aan het gebruiken. Opname wordt overgeslagen."
+   )
+MSG_HASH(
+   MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+   "Verbind apparaat vanaf een geldige poort."
    )
 MSG_HASH(
    MSG_VALUE_REBOOTING,
@@ -13746,6 +14026,82 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Weergave grootte berekening mislukt! Zal doorgaan met rauw gegevens. Dit werkt waarschijnlijk niet goed..."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Virtuele schijflade uitwerpen mislukt."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Virtuele schijflade sluiten mislukt."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Automatisch onderbrekingspunt aan het laden vanaf"
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Automatisch onderbrekingspunt laden vanaf \"%s\" mislukt."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "Automatisch onderbrekingspunt laden vanaf \"%s\" gelukt."
+   )
+MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s geconfigureerd in poort %u"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s losgekoppeld van poort %u"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) niet geconfigureerd"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) niet geconfigureerd, terugvalopties worden gebruikt"
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Bluetooth scan voltooid."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Koppeling verwijderd. Herstart RetroArch opnieuw om opnieuw te verbinden/koppelen."
+   )
+MSG_HASH(
+   MSG_WIFI_SCAN_COMPLETE,
+   "Wi-Fi scan voltooid."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Bluetooth apparaten aan het scannen..."
+   )
+MSG_HASH(
+   MSG_SCANNING_WIRELESS_NETWORKS,
+   "Draadloze apparaten aan het scannen..."
+   )
+MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Wi-Fi aan het inschakelen..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "Wi-Fi aan het uitschakelen..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Verbinding met Wi-Fi aan het verbreken..."
+   )
+MSG_HASH(
+   MSG_NETPLAY_LAN_SCANNING,
+   "Aan het zoeken naar netplay hosts..."
+   )
+MSG_HASH(
+   MSG_PREPARING_FOR_CONTENT_SCAN,
+   "Voorbereiden voor inhoudsscan..."
    )
 MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
@@ -13776,12 +14132,84 @@ MSG_HASH(
    "Configuratie-override geladen."
    )
 MSG_HASH(
+   MSG_GAME_REMAP_FILE_LOADED,
+   "Spel-remap-bestand geladen."
+   )
+MSG_HASH(
+   MSG_DIRECTORY_REMAP_FILE_LOADED,
+   "Inhoudsmap-remap-bestand geladen."
+   )
+MSG_HASH(
+   MSG_CORE_REMAP_FILE_LOADED,
+   "Core-remap-bestand geladen."
+   )
+MSG_HASH(
    MSG_REMAP_FILE_FLUSHED,
    "remap-opties opgeslagen naar:"
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSH_FAILED,
    "Het is niet gelukt om remap-opties op te slaan naar:"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Run-Ahead ingeschakeld. Latentieframes verwijderd: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Run-Ahead ingeschakeld met secundaire instantie. Latency frames verwijderd: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Run-Ahead uitgeschakeld."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Run-Ahead is uitgeschakeld omdat deze kern geen onderbrekingpunten ondersteunt."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "Run-Ahead is niet beschikbaar omdat deze core geen ondersteuning biedt voor deterministische onderbrekingspunten."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "Onderbrekingspunt aanmaking mislukt. Ren-Ahead is uitgeschakeld."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "Onderbrekingspunt aanmaking mislukt. Ren-Ahead is uitgeschakeld."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "Het maken van een tweede instantie is mislukt. Run-Ahead zal nu maar één instantie gebruiken."
+   )
+MSG_HASH(
+   MSG_PREEMPT_ENABLED,
+   "Preemptive Frames ingeschakeld. Latentieframes verwijderd: %u."
+   )
+MSG_HASH(
+   MSG_PREEMPT_DISABLED,
+   "Preemptive Frames uitgeschakeld."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Preemptive Frames zijn uitgeschakeld omdat deze core geen onderbrekingspunten ondersteund."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
+   "Preemptive Frames niet beschikbaar omdat de core geen deterministische onderbrekingspunten ondersteund."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_ALLOCATE,
+   "Geheugen toewijzen voor Preemptive Frames mislukt."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_SAVE_STATE,
+   "Onderbrekingspunt opslaan mislukt. Preemptive Frames is uitgeschakeld."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_LOAD_STATE,
+   "Onderbrekingspunt laden mislukt. Preemptive Frames is uitgeschakeld."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
