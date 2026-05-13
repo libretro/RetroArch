@@ -8267,16 +8267,27 @@ void core_run(void)
 #ifdef HAVE_GAME_AI
    {
       settings_t *settings           = config_get_ptr();
-      video_driver_state_t *video_st = video_state_get_ptr();
-      game_ai_think(
-            settings->bools.game_ai_override_p1,
-            settings->bools.game_ai_override_p2,
-            settings->bools.game_ai_show_debug,
-            video_st->frame_cache_data,
-            video_st->frame_cache_width,
-            video_st->frame_cache_height,
-            video_st->frame_cache_pitch,
-            video_st->pix_fmt);
+      bool override_p1               = settings->bools.game_ai_override_p1;
+      bool override_p2               = settings->bools.game_ai_override_p2;
+      bool show_debug                = settings->bools.game_ai_show_debug;
+
+      /* Skip the call entirely when no GameAI feature is active for this
+       * frame. Avoids per-frame indirect dispatch into the loaded GameAI
+       * library (game_ai_lib_set_show_debug) that game_ai_think runs
+       * unconditionally when an AI has been instantiated. */
+      if (override_p1 || override_p2 || show_debug)
+      {
+         video_driver_state_t *video_st = video_state_get_ptr();
+         game_ai_think(
+               override_p1,
+               override_p2,
+               show_debug,
+               video_st->frame_cache_data,
+               video_st->frame_cache_width,
+               video_st->frame_cache_height,
+               video_st->frame_cache_pitch,
+               video_st->pix_fmt);
+      }
    }
 #endif
 
