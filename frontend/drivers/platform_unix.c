@@ -1462,8 +1462,12 @@ static size_t frontend_unix_get_os(char *s,
    frontend_android_get_version(major, minor, &rel);
    _len = strlcpy(s, "Android", len);
 #elif __OHOS__
-   int rel;
-   _len = strlcpy(s, "ohos", len);
+   *major = 0;
+   char buffer[128];
+   const char* os = OH_GetDistributionOSName();
+   const char* version = OH_GetDistributionOSVersion();
+   snprintf(buffer, sizeof(buffer), "%s %s", os, version);
+  _len = strlcpy(s, buffer, len);
 #else
    char *ptr;
    struct utsname buffer;
@@ -3491,6 +3495,14 @@ enum retro_language frontend_unix_get_user_language(void)
          (*env)->ReleaseStringUTFChars(env, jstr, lang_str);
       }
    }
+#elifdef __OHOS__
+      if (!g_ohos)
+         return RETRO_LANGUAGE_CHINESE_SIMPLIFIED;
+      if (!string_is_equal(g_ohos->startParams->Lang, ""))
+         lang = retroarch_get_language_from_iso(g_ohos->startParams->Lang);
+      else
+         return RETRO_LANGUAGE_CHINESE_SIMPLIFIED;
+      
 #else
    char *envvar = getenv("LANG");
    if (envvar)
@@ -3737,7 +3749,19 @@ static enum rarch_display_type frontend_unix_get_display_type(void)
 }
 
 #ifdef __OHOS__
-void  ohos_input_poll_touch_event(void* ohos_input, TouchEvent data);
+void ohos_input_poll_touch_event(void* ohos_input, TouchEvent data);
+
+static void frontend_ohos_shutdown(bool unused)
+{
+   (void)unused;
+   /* Cleaner approaches don't work sadly. */
+   exit(0);
+}
+void frontend_ohos_get_name(char *s, size_t len)
+{
+   const char *product = OH_GetProductModel();
+   strcpy(s, product);
+}
 
 void ohos_app_write_cmd(struct ohos_app *ohos_app, int8_t cmd)
 {
@@ -3793,16 +3817,13 @@ static napi_value StartApp(napi_env env, napi_callback_info info)
      size_t str_len;
      napi_get_value_string_utf8(env, name_value, params.LIBRETRO, sizeof(params.LIBRETRO), &str_len);
    }
+   if (napi_get_named_property(env, args[0], "Lang", &name_value) == napi_ok) {
+     size_t str_len;
+     napi_get_value_string_utf8(env, name_value, params.Lang, sizeof(params.Lang), &str_len);
+   }
 
    int msgpipe[2];
-   struct ohos_app *ohos_app =
-      (struct ohos_app*)calloc(1, sizeof(*ohos_app));
-   if (!ohos_app)
-   {
-      RARCH_ERR("Failed to initialize android_app.\n");
-      return NULL;
-   }
-   g_ohos = ohos_app;
+   struct ohos_app *ohos_app = g_ohos;
 
    ohos_app->startParams = &params;
    ohos_app->mutex    = slock_new();
@@ -3925,13 +3946,36 @@ static napi_value SurfaceChanged(napi_env env, napi_callback_info info)
             OH_NativeWindow_CreateNativeWindowFromSurfaceId(surfaceId, &g_ohos->window);
         }
     }
+    
    return NULL;
 }
 
+enum {
+  App_SHUTDOWN
+};
+static napi_value SendCtl(napi_env env, napi_callback_info info)
+{
+   size_t argc = 1;
+   napi_value args[1];
+   napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+   int cmdId ;
+   napi_get_value_int32(env, args[0], &cmdId);
+   if (cmdId == App_SHUTDOWN){
+      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+   }
+ 
+   return NULL;
+}
 
 static napi_value Init(napi_env env, napi_value exports)
 {
+   if (g_ohos == NULL)
+   {
+      struct ohos_app *ohos_app = (struct ohos_app*)calloc(1, sizeof(*ohos_app));
+      g_ohos = ohos_app;
+   }
     napi_property_descriptor desc[] = {
+       { "sendCtl", NULL, SendCtl, NULL, NULL, NULL, napi_default, NULL },
        { "surfaceChanged", NULL, SurfaceChanged, NULL, NULL, NULL, napi_default, NULL },
        { "startApp", NULL, StartApp, NULL, NULL, NULL, napi_default, NULL },
        { "onTouchEvent", NULL, OnTouchEvent, NULL, NULL, NULL, napi_default, NULL }
@@ -3974,6 +4018,9 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #ifdef ANDROID
    frontend_android_shutdown,    /* shutdown */
    frontend_android_get_name,    /* get_name */
+#elif __OHOS__
+   frontend_ohos_shutdown,    /* shutdown */
+   frontend_ohos_get_name,    /* get_name */
 #else
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
@@ -4021,6 +4068,8 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_display_type,
 #ifdef ANDROID
    "android",                    /* ident               */
+#elifdef __OHOS__
+   "ohos",                    /* ident               */
 #else
    "unix",                       /* ident               */
 #endif

@@ -31,6 +31,7 @@
 #endif
 
 #ifdef __OHOS__
+#include <deviceinfo.h>
 #include <rthreads/rthreads.h>
 #include "../../input/input_driver.h"
 #include <native_window/external_window.h>
@@ -75,6 +76,7 @@ typedef struct {
     char HAP[DIR_MAX_LENGTH];
     char EXTERNAL[PATH_MAX_LENGTH];
     char DATADIR[PATH_MAX_LENGTH];
+    char Lang[NAME_MAX];
 } StartParams;
 
 

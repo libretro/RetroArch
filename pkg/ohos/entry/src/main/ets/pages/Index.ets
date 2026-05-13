@@ -1,12 +1,15 @@
-import testNapi, { StartParams } from 'libretroarch.so';
-import { fileIo } from '@kit.CoreFileKit';
+import retroApi, { StartParams } from 'libretroarch.so';
+
+enum CtlType{
+  App_SHUTDOWN = 0
+}
 
 class GameXComponentController extends XComponentController{
   onSurfaceCreated(surfaceId: string): void {
-    testNapi.surfaceChanged(parseInt(surfaceId), 0, 0)
+    retroApi.surfaceChanged(parseInt(surfaceId), 0, 0)
   }
   onSurfaceChanged(surfaceId: string, rect: SurfaceRect): void {
-    testNapi.surfaceChanged(parseInt(surfaceId), 800, 800)
+    retroApi.surfaceChanged(parseInt(surfaceId), 800, 800)
   }
   onSurfaceDestroyed(surfaceId: string): void {
   }
@@ -32,7 +35,7 @@ struct Index {
           }, 1000)
         }).onTouch((e: TouchEvent)=>{
 
-          testNapi.onTouchEvent({
+          retroApi.onTouchEvent({
             id: e.target.id ?? 0,
             type: e.type,
             timestamp: e.timestamp,
@@ -50,6 +53,11 @@ struct Index {
   }
   public vpToPx(vp: number){
     return this.getUIContext().vp2px(vp)
+  }
+  onBackPress(): boolean | void {
+    // TODO 弹出提示退出
+    retroApi.sendCtl(CtlType.App_SHUTDOWN)
+    return true;
   }
 
 
