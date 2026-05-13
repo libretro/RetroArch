@@ -164,6 +164,9 @@ private_lane :ra_build_app do |options|
     xcconfig: options[:xcconfig],
     xcodebuild_formatter: 'xcbeautify --renderer github-actions',
     buildlog_path: "buildlog",
+    derived_data_path: "build/DerivedData",
+    archive_path: "build/RetroArch.xcarchive",
+    output_directory: "build",
     export_method: "app-store",
     include_symbols: true,
     export_options: {
