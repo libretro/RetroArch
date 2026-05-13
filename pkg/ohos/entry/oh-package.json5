@@ -6,6 +6,7 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "libretroarch.so": "file:./src/main/cpp/types/libretroarch"
+    "libretroarch.so": "file:./src/main/cpp/types/libretroarch",
+    "xb_components":"file:../xb_components"
   }
 }

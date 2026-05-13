@@ -52,6 +52,10 @@
           ]
         }
       ]
+    },
+    {
+      "name": "xb_components",
+      "srcPath": "./xb_components",
     }
   ]
 }
