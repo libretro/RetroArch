@@ -5046,15 +5046,25 @@ bool config_load_remap(const char *directory_input_remapping,
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
 
-   /* Reset defaults if we have no core */
-   if (!core_name || !*core_name)
-   {
-      input_remapping_set_defaults(false);
-      return false;
-   }
+   /* Always reset the in-memory remap state on entry.  This is the
+    * load-path counterpart to input_remapping_cache_global_config()
+    * in runloop.c: when a content load reaches this point, any
+    * unsaved per-port edits from a previous session must be
+    * cleared before either a tier file is loaded or we fall
+    * through with no file (otherwise stale edits persist into
+    * the new session, since the unload-paths in runloop /
+    * retroarch only call set_defaults when a remap file or
+    * REMAPS_*_ACTIVE flag was in effect).
+    *
+    * If a tier file is found below, input_remapping_load_file()
+    * calls input_remapping_set_defaults() itself before applying
+    * the file's bindings, so this reset is harmless on the
+    * found-file path. */
+   input_remapping_set_defaults(false);
 
-   /* Cannot load remaps if remap directory is unset */
-   if (!directory_input_remapping || !*directory_input_remapping)
+   /* Cannot load remaps if we have no core or no remap directory */
+   if (   (!core_name || !*core_name)
+       || (!directory_input_remapping || !*directory_input_remapping))
       return false;
 
    core_path[0]    = '\0';
