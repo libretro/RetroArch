@@ -6376,7 +6376,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_ENUM_LABEL_CORE_UPDATER_LIST,
                MENU_SETTING_ACTION, 0, 0, NULL);
 #endif
-#ifndef IOS
+#if !defined (IOS) && !defined(OHOS)
          menu_entries_append(info_list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
                MENU_ENUM_LABEL_SIDELOAD_CORE_LIST_STR,

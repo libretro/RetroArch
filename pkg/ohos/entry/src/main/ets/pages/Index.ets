@@ -1,4 +1,5 @@
 import retroApi, { StartParams } from 'libretroarch.so';
+import { emitter } from '@kit.BasicServicesKit';
 
 enum CtlType{
   App_SHUTDOWN = 0
@@ -16,25 +17,24 @@ class GameXComponentController extends XComponentController{
 }
 
 @Entry
-@Component
+@ComponentV2
 struct Index {
-  xController = new GameXComponentController();
-  aboutToAppear(): void {
 
+  xController = new GameXComponentController();
+  @Local loading: boolean = true;
+  aboutToAppear(): void {
+    emitter.on({eventId: 100000}, ()=>{
+        this.loading = false
+    })
   }
   build() {
-    Row() {
+    Stack() {
       XComponent({id:"game", type: XComponentType.TEXTURE, controller: this.xController})
         .backgroundColor(Color.Black)
         .width('100%')
         .height('100%')
         .constraintSize({ maxWidth: '100%', maxHeight: '100%' })
-        .onLoad(()=>{
-          setTimeout(()=>{
-
-          }, 1000)
-        }).onTouch((e: TouchEvent)=>{
-
+        .onLoad(()=>{ }).onTouch((e: TouchEvent)=>{
           retroApi.onTouchEvent({
             id: e.target.id ?? 0,
             type: e.type,
@@ -48,7 +48,12 @@ struct Index {
             })
           })
       })
-    }
+      if(this.loading){
+        Row () {
+          Text("加载资源中").fontColor(Color.White)
+        }
+      }
+    }.alignContent(Alignment.Center)
     .height('100%')
   }
   public vpToPx(vp: number){
@@ -59,6 +64,5 @@ struct Index {
     retroApi.sendCtl(CtlType.App_SHUTDOWN)
     return true;
   }
-
 
 }

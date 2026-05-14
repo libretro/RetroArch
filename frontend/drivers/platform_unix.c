@@ -1956,14 +1956,14 @@ static void frontend_unix_get_env(int *argc,
 
 //   frontend_android_get_version(&major, &minor, &rel);
 
-   OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
-      "RetroArch", "[ENV] ohos version (major : %d, minor : %d, rel : %d)\n",
+   OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
+      "RetroArch", "[ENV] ohos version (major : %{public}d, minor : %{public}d, rel : %{public}d)\n",
          major, minor, rel);
-   OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+   OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
       "RetroArch", "[ENV] Checking arguments passed from intent ...\n");
 
    /* Config file. */
-   if (ohos_app->startParams)
+   if (!string_is_equal(ohos_app->startParams->CONFIGFILE, ""))
    {
       static char config_path[PATH_MAX_LENGTH] = {0};
       const char *argv = ohos_app->startParams->CONFIGFILE;
@@ -1971,38 +1971,38 @@ static void frontend_unix_get_env(int *argc,
       if (argv && *argv)
          strlcpy(config_path, argv, sizeof(config_path));
 
-      OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+      OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
          "RetroArch", "[ENV] Config file: \"%{public}s\".\n", config_path);
       if (args && *config_path)
          args->config_path = config_path;
    }
 
    /* Current IME. */;
-   if (ohos_app->startParams)
+   if (!string_is_equal(ohos_app->startParams->IME, ""))
    {
       const char *argv = ohos_app->startParams->IME;
       strlcpy(ohos_app->current_ime, argv,
             sizeof(ohos_app->current_ime));
-      OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+      OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
          "RetroArch", "[ENV] Current IME: \"%{public}s\".\n", ohos_app->current_ime);
    }
 
    /* LIBRETRO. */
-   if (ohos_app->startParams)
+   if (!string_is_equal(ohos_app->startParams->LIBRETRO, ""))
    {
       static char core_path[PATH_MAX_LENGTH];
       const char *argv = ohos_app->startParams->LIBRETRO;
       *core_path = '\0';
       if (argv && *argv)
          strlcpy(core_path, argv, sizeof(core_path));
-      OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+      OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
          "RetroArch", "[ENV] Libretro path: \"%{public}s\".\n", core_path);
       if (args && *core_path)
          args->libretro_path = core_path;
    }
 
    /* Content. */
-   if (ohos_app->startParams)
+    if (!string_is_equal(ohos_app->startParams->ROM, ""))
    {
       static char path[PATH_MAX_LENGTH];
       const char *argv = ohos_app->startParams->ROM;
@@ -2011,30 +2011,14 @@ static void frontend_unix_get_env(int *argc,
          strlcpy(path, argv, sizeof(path));
       if (*path)
       {
-         OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
+         OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
             "RetroArch", "[ENV] Auto-start game \"%{public}s\".\n", path);
          if (args && *path)
             args->content_path = path;
       }
    }
 
-   if (ohos_app->startParams)
-   {
-      static char apk_dir[DIR_MAX_LENGTH];
-      const char *argv = ohos_app->startParams->HAP;
-
-      *apk_dir = '\0';
-
-      if (argv && *argv)
-         strlcpy(apk_dir, argv, sizeof(apk_dir));
-      if (*apk_dir)
-      {
-         OH_LOG_Print(LOG_APP, LOG_ERROR, 0xFF00,
-            "RetroArch", "[ENV] APK location \"%{public}s\".\n", apk_dir);
-      }
-   }
-
-   if (ohos_app->startParams)
+   if (!string_is_equal(ohos_app->startParams->EXTERNAL, ""))
    {
       const char *argv = ohos_app->startParams->EXTERNAL;
       *internal_storage_app_path = '\0';
@@ -2052,7 +2036,7 @@ static void frontend_unix_get_env(int *argc,
    }
 
    /* Content. */
-   if (ohos_app->startParams)
+  if (!string_is_equal(ohos_app->startParams->DATADIR, ""))
    {
       const char *argv = ohos_app->startParams->DATADIR;
 
@@ -2071,11 +2055,7 @@ static void frontend_unix_get_env(int *argc,
             "RetroArch", "[ENV] Application location: \"%{public}s\".\n", app_dir);
          if (args && *app_dir)
          {
-
-            /* this section populates the paths for the assets that are bundled
-               with the APK.
-               TODO/FIXME: change the extraction method so it honors the user defined paths instead
-            */
+                
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], app_dir,
                   "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], app_dir,
@@ -2084,8 +2064,8 @@ static void frontend_unix_get_env(int *argc,
                   "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], app_dir,
                   "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
-
-            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], app_dir,
+            
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], ohos_app->startParams->LIBRETRO,
                   "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
                   app_dir, "info",
@@ -2109,9 +2089,9 @@ static void frontend_unix_get_env(int *argc,
                   sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
 
             strlcpy(parent_path, app_dir, sizeof(parent_path));
-//            if (internal_storage_app_path != NULL){
-//               strlcpy(parent_path, internal_storage_app_path, sizeof(parent_path));
-//            }
+            if (!string_is_equal(ohos_app->startParams->EXTERNAL, "")){
+               strlcpy(parent_path, internal_storage_app_path, sizeof(parent_path));
+            }
 
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
                   parent_path, "saves",
@@ -2176,9 +2156,9 @@ static void frontend_unix_get_env(int *argc,
     *
     * */
 
-   g_defaults.settings_video_refresh_rate =  60.0;
+   g_defaults.settings_video_refresh_rate =  120.0;
    g_defaults.overlay_set    = true;
-   g_defaults.overlay_enable = false;
+   g_defaults.overlay_enable = true;
    strlcpy(g_defaults.settings_menu, "ozone", sizeof(g_defaults.settings_menu));
 #else
    char base_path[PATH_MAX] = {0};
