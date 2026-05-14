@@ -4825,7 +4825,30 @@ bool runloop_event_init_core(
    input_remapping_cache_global_config();
 #ifdef HAVE_CONFIGFILE
    if (auto_remaps_enable)
+   {
+      /* Reset the in-memory remap state before searching for
+       * tier files. The unload paths in runloop_event_deinit_core
+       * and CMD_EVENT_UNLOAD_CORE only call set_defaults when a
+       * REMAPS_*_ACTIVE flag is set or a remapfile name is cached;
+       * unsaved per-port edits made via the Quick Menu set neither,
+       * so the per-port input_remap_ids arrays survive content
+       * close. Without this reset, those stale edits leak into the
+       * next session even when no remap file is present.
+       *
+       * Placed at the content-load call site rather than inside
+       * config_load_remap itself, so the menu remap-file deletion
+       * path (menu_cbs_ok.c) is unaffected: deleting a non-active
+       * tier file while a higher-priority tier is active continues
+       * to leave the active tier in place, and deleting the active
+       * tier still falls back to the next-priority tier as before.
+       *
+       * If a tier file is found below, input_remapping_load_file()
+       * calls set_defaults() itself before applying the file's
+       * bindings, so this reset is harmless on the found-file
+       * path. */
+      input_remapping_set_defaults(false);
       config_load_remap(dir_input_remapping, &runloop_st->system);
+   }
 #endif
 
    video_st->frame_cache_data              = NULL;
