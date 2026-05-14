@@ -3314,7 +3314,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->preemptive_frames           = settings->bools.preemptive_frames_enable;
    video_info->runahead_frames             = settings->uints.run_ahead_frames;
    video_info->fps_show                    = settings->bools.video_fps_show;
-   video_info->filter_enable                    = settings->bools.video_filter_enable;
+   video_info->filter_enable               = settings->bools.video_filter_enable;
    video_info->memory_show                 = settings->bools.video_memory_show;
    video_info->statistics_show             = settings->bools.video_statistics_show;
    video_info->framecount_show             = settings->bools.video_framecount_show;
