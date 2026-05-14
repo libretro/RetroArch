@@ -2112,6 +2112,7 @@ MSG_HASH(
    "Sync to exact content frame rate disabled."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

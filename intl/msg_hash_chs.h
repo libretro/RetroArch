@@ -14492,6 +14492,7 @@ MSG_HASH(
    "视频刷新率更改为 %s Hz。"
    )
 
+
 /* Lakka */
 
 MSG_HASH(

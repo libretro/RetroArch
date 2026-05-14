@@ -14952,6 +14952,7 @@ MSG_HASH(
    "S'ha canviat la freqüència d'actualització a %s Hz."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

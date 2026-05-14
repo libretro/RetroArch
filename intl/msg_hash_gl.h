@@ -14780,6 +14780,7 @@ MSG_HASH(
    "A taxa de actualización do vídeo cambiou a %s Hz."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

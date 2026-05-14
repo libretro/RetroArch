@@ -13656,6 +13656,7 @@ MSG_HASH(
    "Prędkość odświeżania wideo zmieniona na %s Hz."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

@@ -1686,7 +1686,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
-   "Invoegen van Zwart Frame - Donkere Frames"
+   "Zwarte Frame Injectie - Donkere Frames"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
@@ -14212,6 +14212,10 @@ MSG_HASH(
    "Onderbrekingspunt laden mislukt. Preemptive Frames is uitgeschakeld."
    )
 MSG_HASH(
+   MSG_SCANNING_OF_FILE_FINISHED,
+   "Scannen van bestand voltooid."
+   )
+MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
    "Zoeken naar cheats succesvol gestart"
    )
@@ -14224,8 +14228,40 @@ MSG_HASH(
    "Zoeken is niet geïnitialiseerd/gestart."
    )
 MSG_HASH(
+   MSG_CHEAT_SEARCH_FOUND_MATCHES,
+   "Nieuw aantal overeenkomsten = %u"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "%u overeenkomsten toegevoegd."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Toevoegen van overeenkomsten mislukt."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Code van overeenkomst aangemaakt."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Code aanmaken mislukt."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Overeenkomst verwijderd."
+   )
+MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
    "Niet genoeg ruimte. Het maximum aantal gelijktijdige cheats is 100."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_TOP_SUCCESS,
+   "Nieuwe cheat toegevoegd aan de top van de lijst."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+   "Nieuwe cheat toegevoegd aan de onderkant van de lijst."
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
@@ -14234,6 +14270,54 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_RELOAD_ALL_SUCCESS,
    "Alle cheats herladen."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BEFORE_SUCCESS,
+   "Nieuwe cheat toegevoegd voor deze."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_AFTER_SUCCESS,
+   "Nieuwe cheat toegevoegd na deze."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_BEFORE_SUCCESS,
+   "Cheat gekopieerd voor deze."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_AFTER_SUCCESS,
+   "Cheat gekopieerd na deze."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_SUCCESS,
+   "Cheat verwijderd."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Schijf instellen mislukt."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Laatst gebruikte schijf instellen mislukt."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Verbinding met de client mislukt."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Verbinding met de host mislukt."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Netplay host vol."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Je bent verbannen van deze host."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Header van de host ontvangen mislukt."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOGGED_IN_AS_USER,
@@ -14264,6 +14348,14 @@ MSG_HASH(
    "Netplay host moet worden bijgewerkt. Hardcore-modus voor achievements is  uitgeschakeld voor huidige sessie."
    )
 MSG_HASH(
+   MSG_CHEEVOS_MASTERED_GAME,
+   "%s beheerst"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_COMPLETED_GAME,
+   "%s voltooid"
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
    "Hardcore-modus voor achievements is ingeschakeld. Onderbrekingspunten en terugspoelen zijn uitgeschakeld"
    )
@@ -14284,12 +14376,32 @@ MSG_HASH(
    "Je hebt %d van de %d achievements ontgrendeld"
 )
 MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d niet ondersteund"
+)
+MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_WARNING,
    "Niet-ondersteunde achievements gedetecteerd. Probeer een andere core of werk RetroArch bij."
 )
 MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "%s aan het toeschouwen"
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
    "Hardcore gepauzeerd. Handmatige instelling voor video-vertraging is niet toegestaan."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Hardcore onderbroken. Vsync swap interval boven 1 niet toegestaan."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Hardcore gepauzeerd. Zwarte Frame Injectie is niet toegestaan."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Hardcore gepauzeerd. Instelling niet toegestaan: %s=%s"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
@@ -14332,8 +14444,28 @@ MSG_HASH(
    "Hoogst"
    )
 MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Waarschuwing: Ontbrekende assets, gebruik de Online Updater indien beschikbaar."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Waarschuwing: Ontbrekende lettertypen voor de geselecteerde taal, gebruik de Online Updater indien beschikbaar."
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Waarschuwing: niet-ondersteunde taal - Engels wordt gebruikt."
+   )
+MSG_HASH(
    MSG_DUMPING_DISC,
    "Disk dumpt..."
+   )
+MSG_HASH(
+   MSG_DRIVE_NUMBER,
+   "Schijf %d"
+   )
+MSG_HASH(
+   MSG_LOAD_CORE_FIRST,
+   "Laad a.u.b. eerst een kern."
    )
 MSG_HASH(
    MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
@@ -14344,6 +14476,10 @@ MSG_HASH(
    "Schrijven naar schijf mislukt. Dump afgebroken."
    )
 MSG_HASH(
+   MSG_NO_DISC_INSERTED,
+   "Er is geen schijf in het station geplaatst."
+   )
+MSG_HASH(
    MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
    "Shader preset succesvol verwijderd."
    )
@@ -14352,12 +14488,177 @@ MSG_HASH(
    "Fout bij verwijderen shader."
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Ongeldige arcade-DAT-bestand geselecteerd."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "Het geselecteerde arcade-DAT-bestand is te groot (onvoldoende beschikbaar geheugen)."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
+   "Arcade-DAT-bestand laden mislukt (ongeldig formaat?)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Ongeldige handleidingscanconfiguratie."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Geen geldige inhoud gevonden."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_START,
+   "Inhoud aan het scannen: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "Huidige items aan het controleren: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
+   "Aan het scannen: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
+   "M3U items aan het opruimen: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_END,
+   "Scan voltooid: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_SCANNING_CORE,
+   "Core aan het scannen: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_ALREADY_EXISTS,
+   "Backup van de geïnstalleerde core bestaat al: "
+   )
+MSG_HASH(
+   MSG_BACKING_UP_CORE,
+   "Back-up aan het maken van de core: "
+   )
+MSG_HASH(
+   MSG_PRUNING_CORE_BACKUP_HISTORY,
+   "Oude back-ups aan het verwijderen: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_COMPLETE,
+   "Core-back-up voltooid: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_ALREADY_INSTALLED,
+   "Geselecteerde core back-up is al geïnstalleerd: "
+   )
+MSG_HASH(
+   MSG_RESTORING_CORE,
+   "Core aan het herstellen: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_COMPLETE,
+   "Core-herstel voltooid:"
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
+   "Geselecteerd core-bestand is al geïnstalleerd: "
+   )
+MSG_HASH(
    MSG_INSTALLING_CORE,
    "Core installeren: "
    )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_COMPLETE,
+   "Core-installatie voltooid: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_INVALID_CONTENT,
+   "Ongeldig core-bestand geselecteerd: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_FAILED,
+   "Core back-up mislukt: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_FAILED,
+   "Core herstellen mislukt: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_FAILED,
+   "Core-installatie mislukt: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_DISABLED,
+   "Core-herstel uitgeschakeld - core is vergrendeld: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_DISABLED,
+   "Core-installatie uitgeschakeld - core is vergrendeld: "
+   )
+MSG_HASH(
+   MSG_CORE_LOCK_FAILED,
+   "Core vergrendelen mislukt: "
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Core ontrgrendelen mislukt: "
+   )
+MSG_HASH(
+   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   "Mislukt om core te verwijderen uit de \"Inhoudloze Cores\" lijst: "
+   )
+MSG_HASH(
+   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   "Mislukt om core toe te voegen aan de \"Inhoudloze Cores\" lijst: "
+   )
+MSG_HASH(
+   MSG_CORE_DELETE_DISABLED,
+   "Core-verwijdering uitgeschakeld - core is vergrendeld: "
+   )
+MSG_HASH(
+   MSG_UNSUPPORTED_VIDEO_MODE,
+   "Niet-ondersteunde videomodus"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Kan niet schrijven naar core-info-map - core-info-cache zal uitgeschakeld worden"
+   )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Startpunt gevonden in "
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Startpunt aan het laden vanaf"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "GameMode gebruiken mislukt"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "GameMode gebruiken mislukt - zorg ervoor dat GameMode daemon is geïnstalleerd/uitgevoerd"
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_ENABLED,
+   "Synchroniseren met exacte inhoudsframerate ingeschakeld."
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_DISABLED,
+   "Synchroniseren met exacte inhoudsframerate uitgeschakeld."
+   )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Video verversingssnelheid gewijzigd naar %s Hz."
+   )
+
 
 /* Lakka */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
+   "Lakka bijwerken"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    "Front-end naam"
@@ -14374,6 +14675,10 @@ MSG_HASH(
 /* Environment Specific Settings */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   "Gesplitste Joy-Con"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    "Grafische Widgets Schaal Overschrijven"
    )
@@ -14384,6 +14689,50 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Scherm Resolutie"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Schermresolutie: Standaard"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Schermresolutie: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Schermresolutie: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Toepassen: Standaard"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Toepassen: %dx%d\nSTART om te resetten"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Toepassen: %dx%d - %s\nSTART om te resetten"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Resetten naar: Standaard"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Resetten naar: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Resetten naar: %dx%d - %s"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Selecteer weergavemodus (opnieuw opstarten vereist)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHUTDOWN,
+   "Afsluiten"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
@@ -14402,6 +14751,10 @@ MSG_HASH(
    "Open een andere map met behulp van de systeemsbestandskiezer"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   "Video gamma"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    "Soft Filter Enable"
    )
@@ -14410,12 +14763,148 @@ MSG_HASH(
    "Bluetooth Activeren"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+   "Scan naar bluetooth apparaten en verbind ze."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   "Zoek naar draadloze netwerken en verbind."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   "Wi-Fi inschakelen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   "Verbind met netwerk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   "Verbind met netwerk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Verbinding verbreken"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+   "Ontflikker"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    "VI Scherm Breedte Instellen"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+   "Overscan-correctie (top)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+   "Pas de overscan-uitsnijding van het scherm aan door de beeldgrootte te verkleinen met een opgegeven aantal scanlijnen (genomen vanaf de bovenkant van het scherm). Dit kan schaalartefacten veroorzaken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   "Overscan-correctie (onderkant)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   "Pas de overscan-uitsnijding van het scherm aan door de beeldgrootte te verkleinen met een opgegeven aantal scanlijnen (genomen vanaf de onderkant van het scherm). Dit kan schaalartefacten veroorzaken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+   "Duurzame prestatiemodus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
+   "CPU-prestaties en kracht"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
+   "Beleid"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE,
+   "Governing-modus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Handmatig"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Hiermee kunt u handmatig elk detail van elke CPU aanpassen: governor, frequenties, enz. Alleen aanbevolen voor gevorderde gebruikers."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Prestaties (beheerd)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
    "Standaard en aanbevolen modus. Maximale prestaties tijdens het afspelen, en energie besparen tijdens het pauzeren of browsen van menu's."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Aangepast beheerd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Maakt het mogelijk om te kiezen welke governors te gebruiken in menu's en tijdens gameplay. Performance, Ondemand of Schedutil worden aanbevolen tijdens het spel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Maximale prestaties"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Altijd maximale prestaties: hoogste frequenties voor beste ervaring."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Minimaal verbruik"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Gebruik de laagste beschikbare frequentie om energie te besparen. Nuttig op de energiezuinig apparaten, maar de prestaties zullen aanzienlijk dalen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Gebalanceerd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Past zich aan de huidige werkbelasting aan. Werkt goed met de meeste apparaten en emulators en helpt energie te besparen. Bij veeleisende games en cores kan de prestatie op sommige apparaten afnemen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   "Minimale frequentie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
+   "Maximale frequentie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
+   "Minimale CPU-frequentie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
+   "Maximale CPU-frequentie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
+   "CPU governor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
+   "Core governor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
+   "Menu governor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "GameMode"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
@@ -14434,8 +14923,20 @@ MSG_HASH(
    "RetroArch Opnieuw Opstarten"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
+   "Sluit RetroArch af en start het opnieuw op. Dit is nodig voor het activeren van bepaalde menu-instellingen (bijvoorbeeld bij het wijzigen van de menudriver)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    "Blok Frames"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+   "Voorkeur aanraking aan de voorkant"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
+   "Gebruikt aanraakingsinvoer aan de voorkant i.p.v. de achterkant"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
@@ -14453,12 +14954,80 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    "Small Keyboard Enable"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
+   "invoers-blok-timeout."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
+   "Het aantal milliseconden dat gewacht moet worden om een ​​volledig invoersignaal te ontvangen. Gebruik dit als je problemen ondervindt met gelijktijdige knopdrukken (alleen Android)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
+   "Toon \"Herstart\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+   "Toon de \"Herstart\" optie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
+   "Toon \"Afsluiten\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
+   "Toon de \"Afsluiten\" optie."
+   )
+MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Met wachtwoord"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (niet verbindbaar)"
+   )
+MSG_HASH(
+   MSG_LOCAL,
+   "Lokaal"
+   )
+MSG_HASH(
+   MSG_READ_WRITE,
+   "Interne opslag status: lezen/schrijven"
+   )
+MSG_HASH(
+   MSG_READ_ONLY,
+   "Interne opslag status: alleen-lezen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Schermhelderheid"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "Verhoog of verlaag de schermhelderheid."
+   )
 #ifdef HAVE_LIBNX
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+   "CPU overklok"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "Overklok de Switch CPU."
+   )
 #endif
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
    "Bluetooth Activeren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
+   "Bepaal de status van Bluetooth."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
+   "Beheer services op besturingssysteemniveau."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
@@ -14475,6 +15044,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SSH_ENABLE,
    "Enable or disable remote command line access."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+   "Wi-Fi toegangspunt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+   "Schakel Wi-Fi toegangspunt in of uit."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "Tijdzone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "Selecteer je tijdzone om de datum en tijd van je locatie aan te passen."
    )
 #ifdef HAVE_RETROFLAG
 MSG_HASH(
@@ -14494,30 +15079,206 @@ MSG_HASH(
 #endif
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TIMEZONE,
+   "Toont een lijst met beschikbare tijdzones. Na het selecteren van een tijdzone, worden tijd en datum aangepast aan de geselecteerde tijdzone. Het gaat ervan uit dat systeem/hardware klok op UTC staat."
+   )
 #ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Nintendo Switch opties"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Beheer Nintendo Switch Specifieke Opties."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "CPU overklok"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+   "CPU-overklok-frequenties inschakelen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+   "CEC Ondersteuning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "Schakel CEC-handshake met de tv in tijdens het docken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+   "Bluetooth ERTM Uitschakelen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+   "Schakel Bluetooth ERTM uit om de koppeling van sommige apparaten te repareren"
+   )
 #endif
+MSG_HASH(
+   MSG_LOCALAP_SWITCHING_OFF,
+   "Wi-Fi toegangspunt aan het uitschakelin."
+   )
+MSG_HASH(
+   MSG_WIFI_DISCONNECT_FROM,
+   "Verbinding met Wi-Fi \"%s\" aan het verbreken."
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "Verbinden aan het maken met Wi-Fi \"%s\""
+   )
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[Geen SSID]"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ALREADY_RUNNING,
+   "Wi-Fi toegangspunt is al gestart"
+   )
+MSG_HASH(
+   MSG_LOCALAP_NOT_RUNNING,
+   "Wi-Fi toegangspunt is niet actief"
+   )
+MSG_HASH(
+   MSG_LOCALAP_STARTING,
+   "Wi-Fi-toegangspunt aan het starten met met SSID=%s en wachtwoord=%s"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_CREATE,
+   "Kon het Wi-Fi-toegangspunt-configuratiebestand niet maken."
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   "Verkeerd configuratiebestand - kon APNAME of PASSWORD niet vinden in %s"
+   )
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+   "Muisschaal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+   "X/y schaal aanpassen voor de Wiimote light gun."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "Aanrakeningsschaal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "Pas de x/y-schaal van de touchscreencoördinaten aan om rekening te houden met de schaalvergroting van het besturingssysteem."
+   )
 #ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "Virtuele muis als Pointer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Schakel om aanraakgebeurtenissen door te geven vanuit het aanraakscherm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Virtuele muis als muis"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Schakel virtuele muisemulatie in met aanraakgebeurtenissen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Virtuele muis als touchpad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Activeer samen met de muis om het touchpad scherm te gebruiken als touchpad."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Virtuele muis als trackball"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Activeer samen met de muis om het touchscreen als een trackbal te gebruiken, en inertie aan de aanwijzer toe te voegen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Gebaren voor de virtuele muis."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Schakel aanraakscherm-gebaren in, waaronder tikken, tikken en slepen, en vegen met de vinger."
+   )
 #endif
 #ifdef HAVE_ODROIDGO2
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
+   "RGA schalen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
+   "RGA schalen en bicubic filteren. Kan widgets breken."
+   )
 #else
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+   "Context specifieke schaling"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+   "Hardwarecontextschaling (indien beschikbaar)."
+   )
 #endif
 #ifdef _3DS
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+   "Activeer New3DS kloksnelheid / L2 cache"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+   "Activeer de New3DS kloksnelheid (804MHz) en L2 cache."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
    "3DS onderste scherm"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
+   "Schakel statusinformatie in op het onderste scherm. Schakel uit om de batterijduur te verhogen en de prestaties te verbeteren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
    "3DS weergavemodus"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
+   "Selecteert tussen 3D en 2D weergavemodus. In \"3D\" modus, zijn pixels vierkant en een diepte-effect wordt toegepast bij het bekijken van het Snel Menu. \"2D\" modus biedt de beste prestaties."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
+   "2D (pixel-raster-effect)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
+   "2D (hoge Resolutie)"
+   )
+MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
    "Raak aan voor\nRetroArch-menu"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "Asset(s) niet gevonden"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "Geen\ngegevens"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
@@ -14535,6 +15296,62 @@ MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
    "Bewaarpunt\nladen"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+   "Onderste scherm assetmap"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
+   "De map met assets voor het onderste scherm moet \"bottom_menu.png\" bevatten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
+   "Lettertype inschakelen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   "Lettertype van het onderste menu weergeven. Inschakelen om knopbeschrijvingen op het onderste scherm weer te geven. Heeft geen effect op onderbrekingspunten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "Letterkleur rood"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   "Pas de rode kleur van het lettertype onderaan het scherm aan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "Letterkleur groen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   "Pas de groene kleur van het lettertype onderaan het scherm aan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Letterkleur blauw"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   "Pas de blauwe kleur van het lettertype onderaan het scherm aan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   "Doorzichtigheid letters"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   "Past de doorzichtigheid aan van letters op het onderste scharm"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+   "Lettergrootteschaal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+   "Pas de lettergrootte van het onderste scherm aan."
+   )
 #endif
 #ifdef HAVE_QT
 MSG_HASH(
@@ -14542,6 +15359,14 @@ MSG_HASH(
    "Scan voltooid.<br><br>\nOm deze inhoud correct te scannen, moet je:\n<ul><li>een compatibele core al gedownload hebben</li>\n<li>Up-to-date core-infobestanden hebben via de online updater</li>\n<li>Up-to-date \"Databases\" hebben via de online updater</li>\n<li>RetroArch herstarten wanneer één of meer van de bovenstaande stapppen pas gedaan zijn</li></ul>\nUiteindelijk moet de inhoud overeen komen met bestaande databses van  <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">hier</a>. Als het nog steeds niet werkt, overweeg om<a href=\"https://www.github.com/libretro/RetroArch/issues\">een bugverslag te plaatsen</a>."
    )
 #endif
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_ENABLED,
+   "Touch muis is ingeschakeld"
+   )
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_DISABLED,
+   "Touch muis is uitgeschakeld"
+   )
 MSG_HASH(
    MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
    "sdl2 microfoon vereist sdl2 audiostuurprogramma"
@@ -14555,11 +15380,159 @@ MSG_HASH(
    "gestopt."
    )
 #ifdef HAVE_GAME_AI
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+   "AI-speler overschrijven"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
+   "Spel-AI"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P1,
+   "S1 overschrijven"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
+   "Overschrijf speler 01"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
+   "S2 overschrijven"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2,
+   "Overschrijf speler 02"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_SHOW_DEBUG,
+   "Debuginformatie weergeven"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_SHOW_DEBUG,
+   "Debuginformatie weergeven"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
+   "Toon \"Spel-AI\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
+   "Toon de \"Spel-AI\" optie"
+   )
 #endif
 #ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "SMB netwerkinstellingen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Configureer de instellingen voor SMB-netwerkshares."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "SMB client inschakelen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Schakel toegang tot SMB-netwerkshares in. Ethernet wordt sterk aanbevolen boven Wi-Fi voor een betrouwbaardere verbinding. Let op: het wijzigen van deze instellingen vereist een herstart van RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "SMB-server"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Server IP-adres of hostnaam."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "SMB share naam"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Naam van de netwerkshare waartoe toegang moet worden verkregen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "SMB submap (optioneel)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Pad naar submap op de share."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "SMB gebruikersnaam"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Gebruikersnaam voor authenticatie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "SMB wachtwoord"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Wachtwoord voor verificatie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "SMB werkgroep"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Werkgroep of domeinnaam."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "SMB authenticatiemodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Selecteer de authenticatie gebruikt in je omgeving."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "SMB maximale verbindingen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Selecteer het maximale aantal verbindingen dat in he omgeving wordt gebruikt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "SMB time-out"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Selecteer standaard timeout in seconden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Blader door SMB share"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Blader door bestanden op de geconfigureerde SMB share."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Toon \"SMB client\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Toon de \"SMB client\" instelling"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "SMB share"
+   )
 #endif

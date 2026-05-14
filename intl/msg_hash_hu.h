@@ -14760,6 +14760,7 @@ MSG_HASH(
    "A képfrissítési gyakoriság %s Hz-re változott."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

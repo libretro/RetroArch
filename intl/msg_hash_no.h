@@ -4784,6 +4784,7 @@ MSG_HASH(
    "Video modusen støttes ikke"
    )
 
+
 /* Lakka */
 
 MSG_HASH(

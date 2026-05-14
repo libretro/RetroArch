@@ -15116,6 +15116,7 @@ MSG_HASH(
    "Tốc độ làm mới video đã thay đổi thành %s Hz."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

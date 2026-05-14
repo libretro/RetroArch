@@ -15128,6 +15128,7 @@ MSG_HASH(
    "비디오 주사율이 %s Hz로 변경되었습니다."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

@@ -15020,6 +15020,7 @@ MSG_HASH(
    "Fréquence de rafraîchissement vidéo changée à %s Hz."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

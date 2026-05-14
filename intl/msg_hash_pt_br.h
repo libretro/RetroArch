@@ -1741,6 +1741,14 @@ MSG_HASH(
    "Altera as configurações de sincronização de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Aplica o Filtro de Vídeo. É uma sugestão que não precisa ser necessariamente seguida."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   " Ativar Filtro de Vídeo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Desativar protetor de tela"
    )
@@ -3967,6 +3975,14 @@ MSG_HASH(
    "Alterna a Antecipação de Quadros entre ligado/desligado."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Aplicar Filtro de Vídeo (Alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Ativa/desativa o software 'Filtro de Vídeo'."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Mostrar FPS (alternar)"
@@ -14883,6 +14899,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Taxa de atualização de vídeo alterada para %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Filtro de Vídeo: Ativado"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Filtro de Vídeo: Desativado"
+   )
+
 
 /* Lakka */
 

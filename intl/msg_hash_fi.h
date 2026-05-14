@@ -12840,6 +12840,7 @@ MSG_HASH(
    "Videon virkistystaajuus vaihdettu %s Hz:iin."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

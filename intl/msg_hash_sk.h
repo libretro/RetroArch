@@ -14692,6 +14692,7 @@ MSG_HASH(
    "Obnovovacia frekvencia videa zmenená na %s Hz."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

@@ -5528,6 +5528,7 @@ MSG_HASH(
    "Sincronização com a frequência de fotogramas exata do conteúdo desativada."
    )
 
+
 /* Lakka */
 
 MSG_HASH(

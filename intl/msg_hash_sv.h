@@ -14272,6 +14272,7 @@ MSG_HASH(
    "Videouppdateringsfrekvens ändrad till %s Hz."
    )
 
+
 /* Lakka */
 
 MSG_HASH(
