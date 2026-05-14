@@ -6850,7 +6850,9 @@ QWidget *VideoPage::widget()
    syncGroup->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
+#ifdef HAVE_VIDEO_FILTER
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE);
+#endif
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
