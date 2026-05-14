@@ -331,6 +331,11 @@ static void command_stdin_poll(command_t *handle)
    {
       char *last_newline = NULL;
       stdincmd->stdin_buf_ptr                      += ret;
+      
+      /* Ensure we don't write past buffer bounds */
+      if (stdincmd->stdin_buf_ptr >= CMD_BUF_SIZE)
+         stdincmd->stdin_buf_ptr = CMD_BUF_SIZE - 1;
+         
       stdincmd->stdin_buf[stdincmd->stdin_buf_ptr]  = '\0';
 
       last_newline = strrchr(stdincmd->stdin_buf, '\n');
