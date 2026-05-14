@@ -5046,10 +5046,15 @@ bool config_load_remap(const char *directory_input_remapping,
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
 
-   /* > Cannot load remaps if we have no core
-    * > Cannot load remaps if remap directory is unset */
-   if (   (!core_name || !*core_name)
-       || (!directory_input_remapping || !*directory_input_remapping))
+   /* Reset defaults if we have no core */
+   if (!core_name || !*core_name)
+   {
+      input_remapping_set_defaults(false);
+      return false;
+   }
+
+   /* Cannot load remaps if remap directory is unset */
+   if (!directory_input_remapping || !*directory_input_remapping)
       return false;
 
    core_path[0]    = '\0';
