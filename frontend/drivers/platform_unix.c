@@ -167,7 +167,7 @@ typedef struct inotify_data
 #endif
 
 int system_property_get(const char *command,
-      const char *args, char *value)
+      const char *args, char *value, size_t value_size)
 {
    FILE *pipe;
    char buffer[BUFSIZ];
@@ -175,6 +175,9 @@ int system_property_get(const char *command,
    char *pos                  = NULL;
    size_t __len               = 0;
    size_t _len                = strlcpy(cmd, command, sizeof(cmd));
+
+   if (value_size == 0)
+      return 0;
 
    cmd[  _len]                = ' ';
    cmd[++_len]                = '\0';
@@ -194,6 +197,20 @@ int system_property_get(const char *command,
       if (fgets(buffer, sizeof(buffer), pipe))
       {
          size_t _len = strlen(buffer);
+         
+         /* Prevent buffer overflow by checking available space */
+         if (__len + _len >= value_size - 1)
+         {
+            /* Copy only what fits, leaving space for null terminator */
+            size_t remaining = value_size - __len - 1;
+            if (remaining > 0)
+            {
+               memcpy(pos, buffer, remaining);
+               pos += remaining;
+               __len += remaining;
+            }
+            break;
+         }
 
          memcpy(pos, buffer, _len);
 
@@ -562,7 +579,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 
 void frontend_android_get_name(char *s, size_t len)
 {
-   system_property_get("getprop", "ro.product.model", s);
+   system_property_get("getprop", "ro.product.model", s, len);
 }
 
 static void frontend_android_get_version(int32_t *major,
@@ -570,7 +587,7 @@ static void frontend_android_get_version(int32_t *major,
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("getprop", "ro.build.version.release",
-         os_version_str);
+         os_version_str, sizeof(os_version_str));
    *major  = 0;
    *minor  = 0;
    *rel    = 0;
@@ -598,7 +615,7 @@ static void frontend_android_get_version(int32_t *major,
 void frontend_android_get_version_sdk(int32_t *sdk)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.build.version.sdk", os_version_str);
+   system_property_get("getprop", "ro.build.version.sdk", os_version_str, sizeof(os_version_str));
    *sdk = 0;
    if (os_version_str[0])
       *sdk = (int32_t)strtol(os_version_str, NULL, 10);
@@ -1883,7 +1900,7 @@ static void frontend_unix_get_env(int *argc,
       }
    }
 
-   system_property_get("getprop", "ro.product.model", device_model);
+   system_property_get("getprop", "ro.product.model", device_model, sizeof(device_model));
 
    /* Set automatic default values per device */
    if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
@@ -2377,7 +2394,7 @@ static void frontend_unix_init(void *data)
          g_platform_android_flags |= PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE;
    }
 
-   system_property_get("getprop", "ro.product.model", device_model);
+   system_property_get("getprop", "ro.product.model", device_model, sizeof(device_model));
 
    /* Check if we are a game console device */
    if (device_is_game_console(device_model))
