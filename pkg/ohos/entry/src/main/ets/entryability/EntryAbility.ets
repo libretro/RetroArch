@@ -81,6 +81,7 @@ export default class EntryAbility extends UIAbility {
   async initAssets(dataDir: string){
     await this.installAssets(dataDir, "assets");
     await this.installAssets(dataDir, "overlays");
+    await this.installAssets(dataDir, "info");
   }
 
   async installAssets(dataDir: string, name: string){
