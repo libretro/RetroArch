@@ -2067,6 +2067,7 @@ static void frontend_unix_get_env(int *argc,
             
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], ohos_app->startParams->LIBRETRO,
                   "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+                
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
                   app_dir, "info",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
@@ -2778,7 +2779,20 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
    }
-
+#elifdef __OHOS__
+    menu_entries_append(list,
+            g_ohos->startParams->DATADIR,
+            msg_hash_to_str(MSG_INTERNAL_STORAGE),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+    if(!string_is_equal(g_ohos->startParams->EXTERNAL, "")){
+         menu_entries_append(list,
+            g_ohos->startParams->EXTERNAL,
+            msg_hash_to_str(MSG_INTERNAL_STORAGE),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+    }
+    
 #elif defined(WEBOS)
    if (path_is_directory("/media/developer/temp"))
       menu_entries_append(list, "/media/developer/temp",
@@ -2868,6 +2882,8 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
 #ifdef ANDROID
    if (!g_android->is_play_store_build)
+#elifdef __OHOS__
+   if (0)     
 #else
    if (1)
 #endif

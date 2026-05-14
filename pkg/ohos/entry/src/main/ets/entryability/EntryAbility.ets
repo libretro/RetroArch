@@ -67,7 +67,7 @@ export default class EntryAbility extends UIAbility {
     }catch (e) {
       console.error("testTag", e)
     }
-    let coresDir =  this.context.bundleCodeDir + "/libs/arm64"
+    let coresDir =  this.context.bundleCodeDir + "/libs/arm64/cores"
 
     emitter.emit({eventId:100000});
     retroApi.startApp({

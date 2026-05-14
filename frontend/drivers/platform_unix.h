@@ -64,7 +64,6 @@ typedef struct {
    int64_t eventTime;
 } TouchEvent;
 
-char internal_storage_path[PATH_MAX_LENGTH];
 char internal_storage_app_path[PATH_MAX_LENGTH];
 
 
