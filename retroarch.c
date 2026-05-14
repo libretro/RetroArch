@@ -3187,10 +3187,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_VIDEO_FILTER_INIT:
       {
 #ifdef HAVE_VIDEO_FILTER
-	const enum retro_pixel_format
-	   video_driver_pix_fmt                = video_st->pix_fmt;
-	settings_t  *settings          = config_get_ptr();
-        video_driver_init_filter(video_driver_pix_fmt, settings);
+         const enum retro_pixel_format
+            video_driver_pix_fmt       = video_st->pix_fmt;
+         settings_t  *settings      = config_get_ptr();
+         video_driver_init_filter(video_driver_pix_fmt, settings);
 #endif
          break;
       }
