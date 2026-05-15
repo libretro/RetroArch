@@ -459,6 +459,9 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #if defined(_WIN32) && !defined(_XBOX)
             if (!stream->fh)
                goto error;
+#elif defined(__APPLE__)
+            if (!stream->iokit_mmc)
+               goto error;
 #else
             if (!stream->fp)
                goto error;
