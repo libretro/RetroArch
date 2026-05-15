@@ -1777,6 +1777,14 @@ MSG_HASH(
    "Thay đổi cài đặt đồng bộ hóa video."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Áp dụng bộ lọc video. Đây là một gợi ý và trình điều khiển video không nhất thiết phải thực hiện theo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Bật bộ lọc video"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Tạm dừng trình bảo vệ màn hình"
    )
@@ -4043,6 +4051,10 @@ MSG_HASH(
    "Bật/tắt tính năng Khung Hình Ưu Tiên."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Áp dụng bộ lọc video (Chuyển đổi)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Hiển thị FPS (Bật/Tắt)"
@@ -15114,6 +15126,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Tốc độ làm mới video đã thay đổi thành %s Hz."
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Bộ lọc video: Bật"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Bộ lọc video: Tắt"
    )
 
 

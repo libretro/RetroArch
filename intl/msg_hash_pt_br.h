@@ -3980,10 +3980,6 @@ MSG_HASH(
    "Aplicar Filtro de Vídeo (Alternar)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
-   "Ativa/desativa o software 'Filtro de Vídeo'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Mostrar FPS (alternar)"
    )

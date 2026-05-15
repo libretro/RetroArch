@@ -1773,6 +1773,14 @@ MSG_HASH(
    "Athraigh socruithe sioncrónaithe físe."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Cuir Scagaire Físe i bhFeidhm. Leid nach gá don tiománaí físe a chomhlíonadh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Cumasaigh Scagaire Físeáin"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Cuir an Scáileán ar Fionraí"
    )
@@ -4023,6 +4031,10 @@ MSG_HASH(
    "Casann sé Frámaí Réamhghníomhacha air/as."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Cuir Scagaire Físe i bhFeidhm (Tógáil)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Taispeáin FPS (Scoránaigh)"
@@ -15122,6 +15134,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Athraíodh ráta athnuachana físe go %s Hz."
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Scagaire Físe: Cumasaigh"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Scagaire Físe: Díchumasaigh"
    )
 
 

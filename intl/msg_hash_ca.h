@@ -1757,6 +1757,14 @@ MSG_HASH(
    "Canvia les opcions de sincronització de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Aplica el filtre de vídeo: És una petició que el controlador de vídeo no té per què respectar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Activa el filtre de vídeo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Suspensió de l'estalvi de pantalla"
    )
@@ -4027,6 +4035,10 @@ MSG_HASH(
    "Activa o desactiva el sistema de fotogrames preventius."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Aplica el filtre de vídeo (alternar)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Mostra els FPS (commuta)"
@@ -14950,6 +14962,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "S'ha canviat la freqüència d'actualització a %s Hz."
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Filtre de vídeo: Activat"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Filtre de vídeo: Desactivat"
    )
 
 
