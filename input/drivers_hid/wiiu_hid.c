@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <retro_endianness.h>
 #include "../include/wiiu/hid.h"
 #include <wiiu/os/atomic.h>
 #include <string/stdstring.h>
