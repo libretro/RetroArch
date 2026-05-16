@@ -28,6 +28,7 @@
 #endif
 
 #include <retro_timers.h>
+#include <retro_endianness.h>
 #include <time.h>
 
 #include <math/float_minmax.h>
@@ -689,7 +690,7 @@ static uint32_t netplay_impl_magic(void)
 static uint32_t netplay_platform_magic(void)
 {
    uint32_t ret =
-       ((1 == htonl(1)) << 30)
+       (RETRO_IS_BIG_ENDIAN << 30)
       |(sizeof(size_t)  << 15)
       |(sizeof(long));
    return ret;
