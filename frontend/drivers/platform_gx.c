@@ -141,11 +141,11 @@ static void gx_devthread(void *a)
          {
             if (!gx_devices[i].interface->isInserted())
             {
-               size_t _len;
+               /* Device names ("sd", "usb") are <= 3 chars,
+                * so 8 bytes is comfortably large for "<name>:\0". */
                char n[8];
+               snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
                gx_devices[i].mounted = false;
-               _len = strlcpy(n, gx_devices[i].name, sizeof(n));
-               strlcpy(n + _len, ":", sizeof(n) - _len);
                fatUnmount(n);
             }
          }
@@ -316,12 +316,16 @@ static void frontend_gx_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
       g_defaults.dirs[DEFAULT_DIR_PORT], "logs",
       sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-      g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
-      sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   /* MENU_CONFIG must be filled BEFORE REMAP since the latter
+    * derives its root from the former. Pre-patch had these two
+    * statements in the opposite order, producing a REMAP path
+    * rooted at the empty / stale MENU_CONFIG value. */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
       g_defaults.dirs[DEFAULT_DIR_PORT], "config",
       sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+      g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
 
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
@@ -395,6 +399,17 @@ static void frontend_gx_deinit(void *data)
    slock_unlock(gx_device_cond_mutex);
    scond_signal(gx_device_cond);
    sthread_join(gx_device_thread);
+
+   /* Release the sync primitives allocated in frontend_gx_init.
+    * Without this, a frontend re-init (e.g. CMD_EVENT_QUIT followed
+    * by relaunch) leaks one mutex+cond+mutex triple every cycle. */
+   slock_free(gx_device_mutex);
+   slock_free(gx_device_cond_mutex);
+   scond_free(gx_device_cond);
+   gx_device_mutex      = NULL;
+   gx_device_cond_mutex = NULL;
+   gx_device_cond       = NULL;
+   gx_device_thread     = NULL;
 #endif
 }
 
@@ -409,7 +424,8 @@ static void frontend_gx_exitspawn(char *s, size_t len, char *args)
 {
    bool should_load_game = false;
 #if defined(IS_SALAMANDER)
-   if (gx_rom_path && *gx_rom_path)
+   /* gx_rom_path is an array, so the null-check folded away cleanly. */
+   if (*gx_rom_path)
       should_load_game = true;
 #elif defined(HW_RVL)
    char salamander_basename[NAME_MAX_LENGTH];
@@ -483,8 +499,6 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         gx_fork_mode  = fork_mode;
-         break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
          gx_fork_mode  = fork_mode;
          break;
@@ -558,7 +572,11 @@ static uint64_t frontend_gx_get_total_mem(void)
 
 static uint64_t frontend_gx_get_free_mem(void)
 {
-   uint64_t total = SYSMEM1_SIZE - (SYSMEM1_SIZE - SYS_GetArena1Size());
+   /* SYS_GetArena1Size() reports remaining MEM1 directly;
+    * the previous expression was SYSMEM1_SIZE - (SYSMEM1_SIZE - that),
+    * which the compiler folds anyway but reads as if it meant
+    * something. */
+   uint64_t total = SYS_GetArena1Size();
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
    total += (gx_mem2_total() - gx_mem2_used());
 #endif

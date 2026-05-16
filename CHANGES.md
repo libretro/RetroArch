@@ -369,6 +369,7 @@
 - VITA: Fixes
 - WINDOWS: Win32 socket improvements
 - WII: Fixes
+- WII: Audit pass on Wii/libogc-side code: fix strndup OOB read, calloc overflow check, gx_joypad button truncation, RGUI 21:9 menu_tex overflow + DCFlushRange size, MEM_K0_TO_K1 framebuffer & g_tex leak on driver re-init, device-thread mutex/cond leak, DEFAULT_DIR_REMAP ordering, hoist check_port0_active out of poll loop
 - WIIU: Fixes
 - WEBPLAYER: Update core list for 1.20.0
 
