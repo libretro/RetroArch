@@ -4056,6 +4056,10 @@ MSG_HASH(
    "Áp dụng bộ lọc video (Chuyển đổi)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Bật/tắt bộ lọc video bằng phần mềm."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Hiển thị FPS (Bật/Tắt)"
    )

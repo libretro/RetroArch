@@ -1741,6 +1741,14 @@ MSG_HASH(
    "Zmena nastavenia synchronizácie videa."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Použiť video filter. Ide o odporúčanie, ktoré ovládač grafickej karty nemusí nutne rešpektovať."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Povoliť video filter"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Pozastaviť šetrič obrazovky"
    )
@@ -3951,6 +3959,14 @@ MSG_HASH(
    "Zapne/vypne preemptívne snímky."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Použiť video filter (prepnúť)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Prepne zapnutie softvérového video filtra."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Zobraziť FPS (prepnúť)"
@@ -14690,6 +14706,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Obnovovacia frekvencia videa zmenená na %s Hz."
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Video filter: Povoliť"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Video filter: Zakázať"
    )
 
 

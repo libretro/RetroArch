@@ -4040,6 +4040,10 @@ MSG_HASH(
    "Aplica el filtre de vídeo (alternar)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Canvia l'estat de funcionament el programari 'Video Filter'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Mostra els FPS (commuta)"
    )

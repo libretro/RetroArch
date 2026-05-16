@@ -4004,6 +4004,10 @@ MSG_HASH(
    "Appliquer le filtre vidéo (activer/désactiver)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Active/désactive le 'Filtre vidéo' logiciel."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Afficher/masquer les images/s"
    )
