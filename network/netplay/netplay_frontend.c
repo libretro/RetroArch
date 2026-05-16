@@ -676,10 +676,11 @@ static uint32_t netplay_impl_magic(void)
 }
 
 /**
- * netplay_platform_magic
+ * NETPLAY_PLATFORM_MAGIC
  *
  * Just enough info to tell us if our platforms mismatch: Endianness and a
- * couple of type sizes.
+ * couple of type sizes. All operands are integer constant expressions, so
+ * the whole word resolves at compile time.
  *
  * Format:
  *    bit 31:     Reserved
@@ -687,14 +688,10 @@ static uint32_t netplay_impl_magic(void)
  *    bits 29-15: sizeof(size_t)
  *    bits 14-0:  sizeof(long)
  */
-static uint32_t netplay_platform_magic(void)
-{
-   uint32_t ret =
-       (RETRO_IS_BIG_ENDIAN << 30)
-      |(sizeof(size_t)  << 15)
-      |(sizeof(long));
-   return ret;
-}
+#define NETPLAY_PLATFORM_MAGIC \
+   (  ((uint32_t)RETRO_IS_BIG_ENDIAN << 30) \
+    | ((uint32_t)sizeof(size_t)      << 15) \
+    |  (uint32_t)sizeof(long))
 
 /**
  * netplay_endian_mismatch
@@ -767,7 +764,7 @@ static bool netplay_handshake_init_send(netplay_t *netplay,
    settings_t *settings = config_get_ptr();
 
    header[0] = htonl(NETPLAY_MAGIC);
-   header[1] = htonl(netplay_platform_magic());
+   header[1] = htonl(NETPLAY_PLATFORM_MAGIC);
    header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
 
    if (netplay->is_server)
@@ -1073,7 +1070,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    /* We only care about platform magic if our core is quirky */
    if (netplay->quirks & NETPLAY_QUIRK_PLATFORM_DEPENDENT)
    {
-      if (ntohl(header[1]) != netplay_platform_magic())
+      if (ntohl(header[1]) != NETPLAY_PLATFORM_MAGIC)
       {
          _msg = msg_hash_to_str(MSG_NETPLAY_PLATFORM_DEPENDENT);
          RARCH_ERR("[Netplay] %s\n", _msg);
@@ -1085,7 +1082,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    }
    else if (netplay->quirks & NETPLAY_QUIRK_ENDIAN_DEPENDENT)
    {
-      if (netplay_endian_mismatch(netplay_platform_magic(), ntohl(header[1])))
+      if (netplay_endian_mismatch(NETPLAY_PLATFORM_MAGIC, ntohl(header[1])))
       {
          _msg = msg_hash_to_str(MSG_NETPLAY_ENDIAN_DEPENDENT);
          RARCH_ERR("[Netplay] %s\n", _msg);
