@@ -82,6 +82,7 @@
 #include <errno.h>
 
 #include <compat/strl.h>
+#include <retro_endianness.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
@@ -168,27 +169,6 @@ static int rsnd_poll(struct pollfd *fd, int numfd, int timeout);
 
 static void rsnd_cb_thread(void *thread_data);
 static void rsnd_thread(void *thread_data);
-
-/* Determine whether we're running big- or little endian */
-static INLINE int rsnd_is_little_endian(void)
-{
-   uint16_t i = 1;
-   return *((uint8_t*)&i);
-}
-
-/* Simple functions for swapping bytes */
-static INLINE void rsnd_swap_endian_16(uint16_t *x)
-{
-   *x = (*x>>8) | (*x<<8);
-}
-
-static INLINE void rsnd_swap_endian_32(uint32_t *x)
-{
-   *x =  (*x >> 24)
-      | ((*x<<8) & 0x00FF0000)
-      | ((*x>>8) & 0x0000FF00)
-      |  (*x << 24);
-}
 
 static INLINE int rsnd_format_to_samplesize(uint16_t fmt)
 {
@@ -297,8 +277,14 @@ error:
 #define SET32(buf,offset,x) (*((uint32_t*)(buf+offset)) = x)
 #define SET16(buf,offset,x) (*((uint16_t*)(buf+offset)) = x)
 
-#define LSB16(x) if (!rsnd_is_little_endian()) { rsnd_swap_endian_16(&(x)); }
-#define LSB32(x) if (!rsnd_is_little_endian()) { rsnd_swap_endian_32(&(x)); }
+/* In-place byteswap to little-endian (no-op on little-endian hosts). */
+#if RETRO_IS_BIG_ENDIAN
+#define LSB16(x) ((x) = SWAP16(x))
+#define LSB32(x) ((x) = SWAP32(x))
+#else
+#define LSB16(x) ((void)0)
+#define LSB32(x) ((void)0)
+#endif
 
 #define HEADER_SIZE 44
 #define RATE 24
@@ -335,29 +321,17 @@ static int rsnd_send_header_info(rsound_t *rd)
    switch (temp_format)
    {
       case RSD_S16_NE:
-         if (rsnd_is_little_endian())
-            temp_format = RSD_S16_LE;
-         else
-            temp_format = RSD_S16_BE;
+         temp_format = RETRO_IS_LITTLE_ENDIAN ? RSD_S16_LE : RSD_S16_BE;
          break;
 
       case RSD_U16_NE:
-         if (rsnd_is_little_endian())
-            temp_format = RSD_U16_LE;
-         else
-            temp_format = RSD_U16_BE;
+         temp_format = RETRO_IS_LITTLE_ENDIAN ? RSD_U16_LE : RSD_U16_BE;
          break;
       case RSD_S32_NE:
-         if (rsnd_is_little_endian())
-            temp_format = RSD_S32_LE;
-         else
-            temp_format = RSD_S32_BE;
+         temp_format = RETRO_IS_LITTLE_ENDIAN ? RSD_S32_LE : RSD_S32_BE;
          break;
       case RSD_U32_NE:
-         if (rsnd_is_little_endian())
-            temp_format = RSD_U32_LE;
-         else
-            temp_format = RSD_U32_BE;
+         temp_format = RETRO_IS_LITTLE_ENDIAN ? RSD_U32_LE : RSD_U32_BE;
          break;
 
       default:
@@ -464,11 +438,10 @@ static int rsnd_get_backend_info(rsound_t *rd)
    /* Again, we can't be 100% certain that sizeof(backend_info_t)
     * is equal on every system */
 
-   if (rsnd_is_little_endian())
-   {
-      rsnd_swap_endian_32(&rsnd_header[LATENCY]);
-      rsnd_swap_endian_32(&rsnd_header[CHUNKSIZE]);
-   }
+#if RETRO_IS_LITTLE_ENDIAN
+   rsnd_header[LATENCY]   = SWAP32(rsnd_header[LATENCY]);
+   rsnd_header[CHUNKSIZE] = SWAP32(rsnd_header[CHUNKSIZE]);
+#endif
 
    rd->backend_info.latency    = rsnd_header[LATENCY];
    rd->backend_info.chunk_size = rsnd_header[CHUNKSIZE];
