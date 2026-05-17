@@ -1257,12 +1257,14 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
    }
 
    /* Update time uniform - mirrors d3d10 ubo_values.time increment.
-    * Wrap once per period (2*pi*100) to keep fp32 increments precise
-    * over long sessions. Subtracting a full trig period is invisible
-    * to sin(t)/cos(t) animations in the menu pipeline shaders. */
+    * Wrap at 65536 to keep fp32 increments precise. 0.01 stays
+    * exactly representable up to t ~ 167772 (where 0.5*ulp first
+    * exceeds 0.01), so 65536 has wide margin and wraps roughly
+    * every 30 h of cumulative menu time, making the discontinuity
+    * effectively unobservable. */
    t += 0.01f;
-   if (t > 628.318530f)
-      t -= 628.318530f;
+   if (t > 65536.0f)
+      t -= 65536.0f;
 
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;

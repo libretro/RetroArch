@@ -920,11 +920,13 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
          d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    d3d11->ubo_values.time += 0.01f;
-   /* Wrap once per period (2*pi*100) to keep fp32 increments precise
-    * over long sessions. Subtracting a full trig period is invisible
-    * to sin(t)/cos(t) animations in the menu pipeline shaders. */
-   if (d3d11->ubo_values.time > 628.318530f)
-      d3d11->ubo_values.time -= 628.318530f;
+   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
+    * exactly representable up to t ~ 167772 (where 0.5*ulp first
+    * exceeds 0.01), so 65536 has wide margin and wraps roughly
+    * every 30 h of cumulative menu time, making the discontinuity
+    * effectively unobservable. */
+   if (d3d11->ubo_values.time > 65536.0f)
+      d3d11->ubo_values.time -= 65536.0f;
 
    {
       D3D11_MAPPED_SUBRESOURCE mapped_ubo;
