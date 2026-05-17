@@ -689,7 +689,12 @@ static void gfx_display_gl2_draw_pipeline(
          gl->shader->use(gl, gl->shader_data, draw->pipeline_id,
                true);
 
-         t += 0.01;
+         t += 0.01f;
+         /* Wrap once per period (2*pi*100) to keep fp32 increments precise
+          * over long sessions. Subtracting a full trig period is invisible
+          * to sin(t)/cos(t) animations in the menu pipeline shaders. */
+         if (t > 628.318530f)
+            t -= 628.318530f;
 
          uniform_param.type              = UNIFORM_1F;
          uniform_param.enabled           = true;

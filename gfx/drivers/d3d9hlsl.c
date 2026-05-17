@@ -1256,8 +1256,13 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
          return;
    }
 
-   /* Update time uniform - mirrors d3d10 ubo_values.time increment */
+   /* Update time uniform - mirrors d3d10 ubo_values.time increment.
+    * Wrap once per period (2*pi*100) to keep fp32 increments precise
+    * over long sessions. Subtracting a full trig period is invisible
+    * to sin(t)/cos(t) animations in the menu pipeline shaders. */
    t += 0.01f;
+   if (t > 628.318530f)
+      t -= 628.318530f;
 
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;

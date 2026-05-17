@@ -713,6 +713,12 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
                static float t = 0.0f;
                CGparameter param;
                t += 0.01f;
+               /* Wrap once per period (2*pi*100) to keep fp32 increments
+                * precise over long sessions. Subtracting a full trig period
+                * is invisible to sin(t)/cos(t) animations in the menu
+                * pipeline shaders. */
+               if (t > 628.318530f)
+                  t -= 628.318530f;
 
                param = cgGetNamedParameter(
                      (CGprogram)_chain->pipeline_vprg[idx], "time");

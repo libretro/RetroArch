@@ -1868,11 +1868,11 @@ static void gfx_display_vk_draw_pipeline(
    }
 
    t += 0.01f;
-   /* Wrap to maintain float precision over long sessions.
-    * Period of 2*pi*100 ensures trig-based shader animations
-    * (sin(t), cos(t)) cycle seamlessly. */
-   if (t > 628.0f)
-      t = fmodf(t, 628.318530f);
+   /* Wrap once per period (2*pi*100) to keep fp32 increments precise
+    * over long sessions. Subtracting a full trig period is invisible
+    * to sin(t)/cos(t) animations in the menu pipeline shaders. */
+   if (t > 628.318530f)
+      t -= 628.318530f;
 }
 #endif
 
