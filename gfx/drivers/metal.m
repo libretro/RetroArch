@@ -2576,6 +2576,11 @@ static const NSUInteger kConstantAlignment = 4;
    }
 
    _uniforms.time += 0.01;
+   /* Wrap once per period (2*pi*100) to keep fp32 increments precise
+    * over long sessions. Subtracting a full trig period is invisible
+    * to sin(t)/cos(t) animations in the menu pipeline shaders. */
+   if (_uniforms.time > 628.318530f)
+      _uniforms.time -= 628.318530f;
 }
 
 - (void)draw:(gfx_display_ctx_draw_t *)draw

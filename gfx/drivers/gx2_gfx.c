@@ -597,7 +597,14 @@ static void gfx_display_wiiu_draw_pipeline(
       wiiu->menu_shader_ubo->time = 0.0f;
    }
    else
+   {
       wiiu->menu_shader_ubo->time += 0.01f;
+      /* Wrap once per period (2*pi*100) to keep fp32 increments precise
+       * over long sessions. Subtracting a full trig period is invisible
+       * to sin(t)/cos(t) animations in the menu pipeline shaders. */
+      if (wiiu->menu_shader_ubo->time > 628.318530f)
+         wiiu->menu_shader_ubo->time -= 628.318530f;
+   }
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->menu_shader_ubo, sizeof(*wiiu->menu_shader_ubo));
    GX2SetVertexUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);

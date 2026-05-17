@@ -1221,6 +1221,11 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    d3d12->ubo_values.time  += 0.01f;
+   /* Wrap once per period (2*pi*100) to keep fp32 increments precise
+    * over long sessions. Subtracting a full trig period is invisible
+    * to sin(t)/cos(t) animations in the menu pipeline shaders. */
+   if (d3d12->ubo_values.time > 628.318530f)
+      d3d12->ubo_values.time -= 628.318530f;
    d3d12->ubo_values.alpha  = draw->color ? draw->color[3] : 1.0f;
 
    {

@@ -920,6 +920,11 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
          d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    d3d11->ubo_values.time += 0.01f;
+   /* Wrap once per period (2*pi*100) to keep fp32 increments precise
+    * over long sessions. Subtracting a full trig period is invisible
+    * to sin(t)/cos(t) animations in the menu pipeline shaders. */
+   if (d3d11->ubo_values.time > 628.318530f)
+      d3d11->ubo_values.time -= 628.318530f;
 
    {
       D3D11_MAPPED_SUBRESOURCE mapped_ubo;
