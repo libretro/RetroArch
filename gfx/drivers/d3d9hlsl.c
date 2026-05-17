@@ -2402,10 +2402,16 @@ static void d3d9_hlsl_renderchain_render_pass(
             (float)vp_height };
          float frame_cnt;
 
-         frame_cnt = (float)chain->chain.frame_count;
          if (pass->info.pass->frame_count_mod)
             frame_cnt = (float)(chain->chain.frame_count
                   % pass->info.pass->frame_count_mod);
+         else
+            /* SM2/SM3 has no uint registers, so frame_count must be
+             * bound as a float. fp32 mantissa is 23 bits, so values
+             * above 2^24 cannot be represented exactly. Mask to 24
+             * bits when the shader pass has not declared its own
+             * modulo, to keep the cast bit-exact in long sessions. */
+            frame_cnt = (float)(chain->chain.frame_count & 0xFFFFFFu);
 
          if (pd->ps_map.video_size >= 0
                && pd->ps_map.video_size == pd->ps_map.texture_size)
