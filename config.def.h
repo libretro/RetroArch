@@ -1204,7 +1204,7 @@
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
+#if defined(ANDROID) || defined (OHOS) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #define DEFAULT_IN_LATENCY 128
@@ -1213,8 +1213,14 @@
 #define DEFAULT_IN_LATENCY 64
 #endif
 
+#ifdef __OHOS__
+/* OHOS has a bug that blocks the thread */
+#define DEFAULT_AUDIO_SYNC false
+#else
+
 /* Will sync audio. (recommended) */
 #define DEFAULT_AUDIO_SYNC true
+#endif
 
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)

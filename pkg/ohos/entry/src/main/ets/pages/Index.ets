@@ -36,7 +36,7 @@ struct Index {
         .constraintSize({ maxWidth: '100%', maxHeight: '100%' })
         .onLoad(()=>{ }).onTouch((e: TouchEvent)=>{
           retroApi.onTouchEvent({
-            id: e.target.id ?? 0,
+            id: e.touches[e.touches.length - 1]?.id ?? 0,
             type: e.type,
             timestamp: e.timestamp,
             touches: e.touches.map((t)=>{
