@@ -62,7 +62,8 @@ enum
 {
    EVENT_NATIVE_OPEN_KEYBOARD,
    EVENT_NATIVE_APP_SHUTDOWN,
-   EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE
+   EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE,
+   EVENT_NATIVE_SET_SCREEN_ORIENTATION,
 };
 enum {
    KEY_EVENT_ACTION_DOWN,
@@ -102,6 +103,7 @@ typedef struct {
     char EXTERNAL[PATH_MAX_LENGTH];
     char DATADIR[PATH_MAX_LENGTH];
     char Lang[NAME_MAX];
+    int  DPI;
 } StartParams;
 
 
@@ -117,16 +119,7 @@ struct ohos_app
 
    /* When non-NULL, this is the window surface that the app can draw in. */
    OHNativeWindow* window;
-
-   /* Current state of the app's activity.  May be either APP_CMD_START,
-    * APP_CMD_RESUME, APP_CMD_PAUSE, or APP_CMD_STOP; see below. */
-   int activityState;
-
-   int reinitRequested;
-
-   /* This is non-zero when the application's NativeActivity is being
-    * destroyed and waiting for the app thread to complete. */
-   int destroyRequested;
+   
 
    /* Below are "private" implementation of the glue code. */
    slock_t *mutex;

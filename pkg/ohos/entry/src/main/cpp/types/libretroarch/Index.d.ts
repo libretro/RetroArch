@@ -6,6 +6,8 @@ export interface StartParams{
   EXTERNAL: string;
   ROM: string;
   LIBRETRO: string;
+  Lang: string;
+  Dpi: number;
 }
 
 export const startApp: (args: StartParams) => number;

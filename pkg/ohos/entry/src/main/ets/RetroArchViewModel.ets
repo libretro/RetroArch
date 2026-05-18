@@ -2,7 +2,9 @@ import { fileIo, fileUri, picker } from '@kit.CoreFileKit';
 import retroApi, { StartParams } from 'libretroarch.so';
 import zlib from '@ohos.zlib';
 import { common } from '@kit.AbilityKit';
-
+import { displaySync } from '@kit.ArkGraphics2D';
+import { display } from '@kit.ArkUI';
+import window from '@ohos.window';
 
 async function initDownloadDir(context: Context) : Promise<string | undefined>{
   try {
@@ -21,7 +23,8 @@ async function initDownloadDir(context: Context) : Promise<string | undefined>{
 enum NativeEventId{
   EVENT_NATIVE_OPEN_KEYBOARD,
   EVENT_NATIVE_APP_SHUTDOWN,
-  EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE
+  EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE,
+  EVENT_NATIVE_SET_SCREEN_ORIENTATION
 }
 
 @ObservedV2
@@ -46,6 +49,23 @@ export class RetroArchViewModel{
       if(eventId == NativeEventId.EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE){
         this.fullScreen = value == 1;
       }
+      if(eventId == NativeEventId.EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE){
+        this.fullScreen = value == 1;
+      }
+      if(eventId == NativeEventId.EVENT_NATIVE_SET_SCREEN_ORIENTATION){
+        if(value == 0){
+          this.context?.windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.AUTO_ROTATION)
+        }
+        if(value == 1){
+          this.context?.windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.LANDSCAPE)
+        }
+        if(value == 2){
+          this.context?.windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.LANDSCAPE_INVERTED)
+        }
+        if(value == 3){
+          this.context?.windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.PORTRAIT_INVERTED)
+        }
+      }
     })
   }
   async StartApp(){
@@ -65,13 +85,14 @@ export class RetroArchViewModel{
       console.error("testTag", e)
     }
     let coresDir =  this.context!.bundleCodeDir + "/libs/arm64/cores"
-
+    let dpi = display.getDefaultDisplaySync().densityDPI
     retroApi.startApp({
       CONFIGFILE: configPath,
       IME:"",
       DATADIR: dataDir,
       LIBRETRO: coresDir,
       ROM: "",
+      Dpi: dpi,
     } as StartParams);
 
   }

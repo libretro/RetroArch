@@ -3822,6 +3822,9 @@ static napi_value StartApp(napi_env env, napi_callback_info info)
      size_t str_len;
      napi_get_value_string_utf8(env, name_value, params.Lang, sizeof(params.Lang), &str_len);
    }
+   if (napi_get_named_property(env, args[0], "Dpi", &name_value) == napi_ok) {
+      napi_get_value_int32(env, name_value, &params.DPI);
+   }
 
    int msgpipe[2];
    struct ohos_app *ohos_app = g_ohos;

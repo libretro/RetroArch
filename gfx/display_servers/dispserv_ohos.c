@@ -33,34 +33,7 @@ static void ohos_display_server_set_screen_orientation(void *data,
 {
    if (!g_ohos)
       return;
-  // if (g_ohos->setScreenOrientation)
-}
-
-static void ohos_display_dpi_get_density(char *s, size_t len)
-{
-   static bool inited_once             = false;
-   static bool inited2_once            = false;
-   static char string[PROP_VALUE_MAX]  = {0};
-   static char string2[PROP_VALUE_MAX] = {0};
-   if (!inited_once)
-   {
-      system_property_get("getprop", "ro.sf.lcd_density", string);
-      inited_once = true;
-   }
-
-   if (*string)
-   {
-      strlcpy(s, string, len);
-      return;
-   }
-
-   if (!inited2_once)
-   {
-      system_property_get("wm", "density", string2);
-      inited2_once = true;
-   }
-
-   strlcpy(s, string2, len);
+    ohos_send_native_event(EVENT_NATIVE_SET_SCREEN_ORIENTATION, rotation);
 }
 
 bool ohos_display_get_metrics(void *data,
@@ -76,12 +49,9 @@ bool ohos_display_get_metrics(void *data,
       case DISPLAY_METRIC_DPI:
          if (dpi == -1)
          {
-            char density[PROP_VALUE_MAX];
-            ohos_display_dpi_get_density(density, sizeof(density));
-            if (!*density)
+            if (g_ohos->startParams->DPI == 0)
                goto dpi_fallback;
-            if ((dpi = atoi(density)) <= 0)
-               goto dpi_fallback;
+            dpi = g_ohos->startParams->DPI;
          }
          *value = (float)dpi;
          break;
