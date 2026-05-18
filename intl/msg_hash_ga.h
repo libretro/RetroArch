@@ -4036,6 +4036,10 @@ MSG_HASH(
    "Cuir Scagaire Físe i bhFeidhm (Tógáil)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Casann sé 'Scagaire Físe' an bhogearra air/as."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Taispeáin FPS (Scoránaigh)"
    )

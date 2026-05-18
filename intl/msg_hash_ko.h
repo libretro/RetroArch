@@ -1789,6 +1789,14 @@ MSG_HASH(
    "비디오 동기화 설정을 변경합니다."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "비디오 필터를 적용합니다. 비디오 드라이버에서 반드시 따를 필요없는 힌트입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "비디오 필터 활성화"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "화면보호기 동작 차단"
    )
@@ -3991,7 +3999,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
-   "터보 입력을 켜거나 끕니다."
+   "터보 입력을 사용/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -4052,6 +4060,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "비디오 필터 적용 (켜기/끄기)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "소프트웨어 '비디오 필터'를 사용/해제합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "FPS 표시 (켜기/끄기)"
    )
@@ -4065,7 +4081,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
-   "온스크린 기술적 통계 표시를 켜거나 끕니다."
+   "온스크린 기술적 통계 표시를 사용/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
@@ -4073,7 +4089,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "키보드 오버레이를 켜거나 끕니다."
+   "키보드 오버레이를 사용/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -4098,7 +4114,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
-   "현재 넷플레이 방의 핑 카운터 표시 여부를 켜거나 끕니다."
+   "현재 넷플레이 방의 핑 카운터를 표시/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
@@ -5763,6 +5779,14 @@ MSG_HASH(
    "메모리 사용량을 갱신할 프레임 간격입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "시간 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "현재 시간을 선호하는 형식으로 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "넷플레이 핑 표시"
    )
@@ -6405,6 +6429,10 @@ MSG_HASH(
    "'넷플레이' 표시"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "메인 메뉴 또는 실행목록 메뉴에 '넷플레이' 항목을 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "'최근 실행' 표시"
    )
@@ -6582,6 +6610,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "'상태저장/불러오기 되돌리기' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "상태저장/불러오기를 되돌리는 옵션을 표시합니다. 옵션을 숨길 경우 RetroPad 시작을 눌러 상태저장/불러오기를 되돌릴 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -11589,6 +11621,10 @@ MSG_HASH(
    "수직 페이드 양"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "가로 목록 표시"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "제목 헤더 표시"
    )
@@ -11861,6 +11897,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "왼쪽 사이드바를 항상 작게 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "사이드바 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "왼쪽 사이드바로 실행목록 등을 탐색합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -14464,6 +14508,10 @@ MSG_HASH(
    "상태저장 불러오기 취소."
    )
 MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "상태저장 되돌리는 중..."
+   )
+MSG_HASH(
    MSG_UNKNOWN,
    "알 수 없음"
    )
@@ -15126,6 +15174,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "비디오 주사율이 %s Hz로 변경되었습니다."
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "비디오 필터: 활성"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "비디오 필터: 비활성"
    )
 
 

@@ -3928,6 +3928,10 @@ MSG_HASH(
    "Videofilter anwenden (Umschalten)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Schaltet die Software „Videofilter“ ein bzw. aus."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "FPS anzeigen (Umschalten)"
    )
