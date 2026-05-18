@@ -14,7 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef __OHOS__
 #include "vulkan/vulkan_ohos.h"
+#endif
 #include <retro_assert.h>
 #include <dynamic/dylib.h>
 #include <lists/string_list.h>
