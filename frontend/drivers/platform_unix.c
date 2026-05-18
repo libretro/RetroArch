@@ -136,7 +136,7 @@ static pthread_key_t thread_key;
 static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct ohos_app *g_ohos            = NULL;
-static uint8_t g_platform_android_flags  = 0;
+static napi_threadsafe_function g_native_event_tsfn = NULL;
 #else
 #define PROC_APM_PATH                    "/proc/apm"
 #define PROC_ACPI_BATTERY_PATH           "/proc/acpi/battery"
@@ -3745,14 +3745,28 @@ static enum rarch_display_type frontend_unix_get_display_type(void)
 }
 
 #ifdef __OHOS__
+typedef struct {
+    int event_id; 
+    int value;
+} NativeEventData;    
 void ohos_input_poll_touch_event(void* ohos_input, TouchEvent data);
 void ohos_input_poll_key_event(void* ohos_input, KeyEvent* data);
+
+
+bool ohos_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
+                                const char *label,
+                                input_keyboard_line_complete_t callback, void *userdata){
+    
+   ohos_send_native_event(EVENT_NATIVE_OPEN_KEYBOARD, 0);
+   return true;
+}
+
 
 static void frontend_ohos_shutdown(bool unused)
 {
    (void)unused;
    /* Cleaner approaches don't work sadly. */
-   exit(0);
+   ohos_send_native_event(EVENT_NATIVE_APP_SHUTDOWN, 0);
 }
 void frontend_ohos_get_name(char *s, size_t len)
 {
@@ -3868,6 +3882,7 @@ static napi_value StartApp(napi_env env, napi_callback_info info)
   
    return NULL;
 }
+
 static napi_value OnTouchEvent(napi_env env, napi_callback_info info)
 {
     if(g_ohos == NULL || g_ohos->ohos_input == NULL)
@@ -3919,6 +3934,19 @@ static napi_value OnTouchEvent(napi_env env, napi_callback_info info)
     return NULL;
 }
 
+void ohos_send_native_event(int event_id, int value) {
+   if (g_native_event_tsfn == NULL) {
+        return;
+    }
+    NativeEventData* event = (NativeEventData*)malloc(sizeof(NativeEventData));
+    if (event == NULL) {
+        return;
+    }
+    event->event_id = event_id;
+    event->value = value;
+    napi_call_threadsafe_function(g_native_event_tsfn, event, napi_tsfn_blocking);
+}
+
 static napi_value OnKeyEvent(napi_env env, napi_callback_info info)
 {
     if(g_ohos == NULL || g_ohos->ohos_input == NULL)
@@ -3945,6 +3973,56 @@ static napi_value OnKeyEvent(napi_env env, napi_callback_info info)
   
     ohos_input_poll_key_event(g_ohos->ohos_input, &event);
     return NULL;
+}
+static void CallJsCallback(napi_env env, napi_value js_callback, void* context, void* data) {
+     NativeEventData* event = (NativeEventData*)data;
+    
+    if (event == NULL) {
+        return;
+    }
+    
+    napi_value argv[2];  
+    napi_status status;
+    
+    status = napi_create_int32(env, event->event_id, &argv[0]);
+    if (status != napi_ok) {
+        free(event);
+        return;
+    }
+    
+    status = napi_create_int32(env, event->value, &argv[1]);
+    if (status != napi_ok) {
+        free(event);
+        return;
+    }
+    napi_value undefined;
+    status = napi_call_function(env, NULL, js_callback, 2, argv, &undefined);
+    free(event);
+}
+
+static napi_value OnNativeEvent(napi_env env, napi_callback_info info)
+{
+   if(g_ohos == NULL)
+        return NULL;
+   size_t argc = 1;
+   napi_value args[1];
+   napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+   napi_value resource_name;
+   napi_create_string_utf8(env, "NativeEventCallback", NAPI_AUTO_LENGTH, &resource_name);
+   status = napi_create_threadsafe_function(
+     env,
+     args[0],
+     NULL,
+     resource_name,
+     0,
+     1,        
+     NULL,
+     NULL,
+     NULL,
+     CallJsCallback,
+     &g_native_event_tsfn
+   );
+   return NULL;
 }
 
 static napi_value SurfaceChanged(napi_env env, napi_callback_info info)
@@ -4005,6 +4083,7 @@ static napi_value Init(napi_env env, napi_value exports)
        { "sendCtl", NULL, SendCtl, NULL, NULL, NULL, napi_default, NULL },
        { "surfaceChanged", NULL, SurfaceChanged, NULL, NULL, NULL, napi_default, NULL },
        { "startApp", NULL, StartApp, NULL, NULL, NULL, napi_default, NULL },
+       { "onNativeEvent", NULL, OnNativeEvent, NULL, NULL, NULL, napi_default, NULL },
        { "onTouchEvent", NULL, OnTouchEvent, NULL, NULL, NULL, napi_default, NULL },
        { "onKeyEvent", NULL, OnKeyEvent, NULL, NULL, NULL, napi_default, NULL }
     };

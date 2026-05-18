@@ -1563,6 +1563,8 @@
 #define DEFAULT_MENU_SCALE_FACTOR 1.5f
 #elif defined(__ANDROID__)
 #define DEFAULT_MENU_SCALE_FACTOR 0.75f
+#elif defined(__OHOS__)
+#define DEFAULT_MENU_SCALE_FACTOR 1.5f
 #else
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
 #endif

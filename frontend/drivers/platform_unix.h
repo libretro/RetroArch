@@ -36,8 +36,15 @@
 #include "../../input/input_driver.h"
 #include <native_window/external_window.h>
 #define PROP_VALUE_MAX 92
-struct ohos_app;
 
+
+typedef void (*input_keyboard_line_complete_t)(void *userdata, const char *line);
+extern bool ohos_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
+                                const char *label,
+                                input_keyboard_line_complete_t callback, void *userdata);
+extern void ohos_send_native_event(int event_id, int value);
+
+struct ohos_app;
 
 enum
 {
@@ -49,6 +56,12 @@ enum
    EVENT_ACTION_HOVER_MOVE,
    EVENT_ACTION_HOVER_HOVER_EXIT,
    EVENT_ACTION_HOVER_HOVER_HOVER_CANCELT,
+};
+
+enum
+{
+   EVENT_NATIVE_OPEN_KEYBOARD,
+   EVENT_NATIVE_APP_SHUTDOWN
 };
 enum {
    KEY_EVENT_ACTION_DOWN,
@@ -78,7 +91,6 @@ typedef struct {
 } KeyEvent;
 
 char internal_storage_app_path[PATH_MAX_LENGTH];
-
 
 typedef struct {
     char CONFIGFILE[PATH_MAX_LENGTH];

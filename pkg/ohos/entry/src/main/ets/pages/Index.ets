@@ -1,10 +1,12 @@
 import retroApi, { StartParams } from 'libretroarch.so';
 import { emitter } from '@kit.BasicServicesKit';
+import { common, UIAbility } from '@kit.AbilityKit';
+import { KeyCode } from '@kit.InputKit';
 
-enum CtlType{
-  App_SHUTDOWN = 0
+enum NativeEventId{
+  EVENT_NATIVE_OPEN_KEYBOARD,
+  EVENT_NATIVE_APP_SHUTDOWN
 }
-
 class GameXComponentController extends XComponentController{
   onSurfaceCreated(surfaceId: string): void {
     retroApi.surfaceChanged(parseInt(surfaceId), 0, 0)
@@ -22,9 +24,18 @@ struct Index {
 
   xController = new GameXComponentController();
   @Local loading: boolean = true;
+  @Local openKeyboard: boolean = false
   aboutToAppear(): void {
     emitter.on({eventId: 100000}, ()=>{
         this.loading = false
+    })
+    retroApi.onNativeEvent((eventId: number, value: number)=>{
+      if(eventId == NativeEventId.EVENT_NATIVE_APP_SHUTDOWN){
+        (this.getUIContext().getHostContext() as common.UIAbilityContext)?.terminateSelf();
+      }
+      if(eventId == NativeEventId.EVENT_NATIVE_OPEN_KEYBOARD){
+        this.openKeyboard = true;
+      }
     })
   }
   build() {
@@ -61,22 +72,31 @@ struct Index {
   public vpToPx(vp: number){
     return this.getUIContext().vp2px(vp)
   }
-   onBackPress(): boolean | void {
+  onBackPress(): boolean | void {
     // TODO 弹出提示退出
-    retroApi.onKeyEvent({
-      type: 0,
-      keyCode: 2055,
-      source: KeySource.Keyboard,
-    })
-     setTimeout(()=>{
-       retroApi.onKeyEvent({
-         type: 1,
-         keyCode: 2055,
-         source: KeySource.Keyboard,
-       })
-     }, 100)
+    if(this.openKeyboard){
+      this.openKeyboard = false
+      this.SendKeyEvent(KeyCode.KEYCODE_ENTER)
+    }else{
+      this.SendKeyEvent(KeyCode.KEYCODE_DEL)
+    }
 
     return true;
+  }
+
+  private SendKeyEvent(keycode: number){
+    retroApi.onKeyEvent({
+      type: 0,
+      keyCode: keycode,
+      source: KeySource.Keyboard,
+    })
+    setTimeout(()=>{
+      retroApi.onKeyEvent({
+        type: 1,
+        keyCode: keycode,
+        source: KeySource.Keyboard,
+      })
+    }, 100)
   }
 
 }
