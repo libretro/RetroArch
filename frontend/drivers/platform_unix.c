@@ -131,7 +131,7 @@ static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
 static uint8_t g_platform_android_flags  = 0;
-#elif __OHOS__
+#elif defined(__OHOS__)
 static pthread_key_t thread_key;
 static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
@@ -732,7 +732,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
    }
 #endif
 }
-#elif __OHOS__
+#elif defined(__OHOS__)
 
 #elif !defined(DINGUX)
 static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
@@ -1275,7 +1275,7 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
    *percent = battery_level;
 
    ret = (enum frontend_powerstate)powerstate;
-#elif __OHOS__
+#elif defined(__OHOS__)
 
 #elif defined(RETROFW)
    *percent = retrofw_get_battery_level(&ret);
@@ -1461,7 +1461,7 @@ static size_t frontend_unix_get_os(char *s,
    int rel;
    frontend_android_get_version(major, minor, &rel);
    _len = strlcpy(s, "Android", len);
-#elif __OHOS__
+#elif defined(__OHOS__)
    *major = 0;
    char buffer[128];
    const char* os = OH_GetDistributionOSName();
@@ -1936,7 +1936,7 @@ static void frontend_unix_get_env(int *argc,
       g_defaults.overlay_enable = false;
       strlcpy(g_defaults.settings_menu, "ozone", sizeof(g_defaults.settings_menu));
    }
-#elif __OHOS__
+#elif defined(__OHOS__)
    int32_t major, minor, rel;
    struct rarch_main_wrap      *args  = NULL;
    struct ohos_app   *ohos_app  = (struct ohos_app*)data;
@@ -2505,7 +2505,7 @@ static void frontend_unix_deinit(void *data)
 
 static void frontend_unix_init(void *data)
 {
-#ifdef __OHOS__
+#if defined(__OHOS__)
 struct ohos_app* ohos_app  = (struct ohos_app*)data;
 slock_lock(ohos_app->mutex);
 ohos_app->running = 1;
@@ -2779,7 +2779,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
    }
-#elifdef __OHOS__
+#elif defined(__OHOS__)
     menu_entries_append(list,
             g_ohos->startParams->DATADIR,
             msg_hash_to_str(MSG_INTERNAL_STORAGE),
@@ -2882,7 +2882,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
 #ifdef ANDROID
    if (!g_android->is_play_store_build)
-#elifdef __OHOS__
+#elif defined(__OHOS__)
    if (0)     
 #else
    if (1)
@@ -3491,7 +3491,7 @@ enum retro_language frontend_unix_get_user_language(void)
          (*env)->ReleaseStringUTFChars(env, jstr, lang_str);
       }
    }
-#elifdef __OHOS__
+#elif defined(__OHOS__)
       if (!g_ohos)
          return RETRO_LANGUAGE_CHINESE_SIMPLIFIED;
       if (!string_is_equal(g_ohos->startParams->Lang, ""))
@@ -4046,7 +4046,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #ifdef ANDROID
    frontend_android_shutdown,    /* shutdown */
    frontend_android_get_name,    /* get_name */
-#elif __OHOS__
+#elif defined(__OHOS__)
    frontend_ohos_shutdown,    /* shutdown */
    frontend_ohos_get_name,    /* get_name */
 #else
@@ -4096,7 +4096,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_display_type,
 #ifdef ANDROID
    "android",                    /* ident               */
-#elifdef __OHOS__
+#elif defined(__OHOS__)
    "ohos",                    /* ident               */
 #else
    "unix",                       /* ident               */

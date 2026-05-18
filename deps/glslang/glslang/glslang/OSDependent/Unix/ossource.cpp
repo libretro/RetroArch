@@ -72,7 +72,7 @@ void OS_CleanupThreadData(void)
 {
 #ifdef __ANDROID__
     DetachThreadLinux(NULL);
-#elifdef  __OHOS__
+#elif defined(__OHOS__)
     DetachThreadLinux(NULL);
 #else
     int old_cancel_state, old_cancel_type;
