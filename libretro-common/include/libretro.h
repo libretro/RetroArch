@@ -3251,6 +3251,12 @@ enum retro_hw_render_interface_type
     */
    RETRO_HW_RENDER_INTERFACE_GSKIT_PS2  = 5,
 
+   /**
+    * Indicates a \c retro_hw_render_interface for deko3d (Switch / Tegra X1).
+    * @see retro_hw_render_interface_deko3d
+    */
+   RETRO_HW_RENDER_INTERFACE_DEKO3D     = 6,
+
    /** @private Defined to ensure <tt>sizeof(retro_hw_render_interface_type) == sizeof(int)</tt>.
     * Do not use. */
    RETRO_HW_RENDER_INTERFACE_DUMMY      = INT_MAX
@@ -5188,6 +5194,9 @@ enum retro_hw_context_type
 
    /* Direct3D9, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
    RETRO_HW_CONTEXT_D3D9             = 10,
+
+   /* deko3d (Switch / Tegra X1), see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_DEKO3D           = 11,
 
    /** Dummy value to ensure sizeof(enum retro_hw_context_type) == sizeof(int). Do not use. */
    RETRO_HW_CONTEXT_DUMMY = INT_MAX

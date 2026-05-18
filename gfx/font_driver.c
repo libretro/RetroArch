@@ -373,6 +373,21 @@ static bool font_init_first(
          }
          break;
 #endif
+#ifdef HAVE_DEKO3D
+      case FONT_DRIVER_RENDER_DEKO3D_API:
+         {
+            void *data = deko3d_font.init(
+                  video_data, font_path, font_size,
+                  is_threaded);
+            if (data)
+            {
+               *font_driver = &deko3d_font;
+               *font_handle = data;
+               return true;
+            }
+         }
+         break;
+#endif
 #ifdef HAVE_GCM
       case FONT_DRIVER_RENDER_RSX:
          {

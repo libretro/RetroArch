@@ -160,6 +160,7 @@ extern font_renderer_t gdi_font;
 extern font_renderer_t vga_font;
 extern font_renderer_t sixel_font;
 extern font_renderer_t switch_font;
+extern font_renderer_t deko3d_font;
 extern font_renderer_t rsx_font;
 extern font_renderer_t sdl2_raster_font;
 
