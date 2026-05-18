@@ -750,6 +750,9 @@ static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_V4L2;
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 #elif defined(ANDROID)
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
+#elif defined(__OHOS__)
+// TODO
+static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
 #elif defined(HAVE_PIPEWIRE)
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_PIPEWIRE;
 #elif defined(HAVE_FFMPEG)
@@ -1350,6 +1353,8 @@ const char *config_get_default_camera(void)
          return "rwebcam";
       case CAMERA_ANDROID:
          return "android";
+      case CAMERA_OHOS:
+         return "ohos";
       case CAMERA_AVFOUNDATION:
          return "avfoundation";
       case CAMERA_PIPEWIRE:
