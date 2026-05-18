@@ -3777,6 +3777,11 @@ static void ohos_app_entry(void *data)
 
    rarch_main(argc, argv, data);
 }
+static napi_value StopApp(napi_env env, napi_callback_info info){
+    retroarch_main_quit();
+    return NULL;
+}
+    
 static napi_value StartApp(napi_env env, napi_callback_info info)
 {
    size_t argc = 1;
@@ -4078,7 +4083,9 @@ static napi_value Init(napi_env env, napi_value exports)
        { "startApp", NULL, StartApp, NULL, NULL, NULL, napi_default, NULL },
        { "onNativeEvent", NULL, OnNativeEvent, NULL, NULL, NULL, napi_default, NULL },
        { "onTouchEvent", NULL, OnTouchEvent, NULL, NULL, NULL, napi_default, NULL },
-       { "onKeyEvent", NULL, OnKeyEvent, NULL, NULL, NULL, napi_default, NULL }
+       { "onKeyEvent", NULL, OnKeyEvent, NULL, NULL, NULL, napi_default, NULL },
+       { "stopApp", NULL, StopApp, NULL, NULL, NULL, napi_default, NULL },
+        
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;

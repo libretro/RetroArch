@@ -36,7 +36,9 @@ export class RetroArchViewModel{
   @Trace fullScreen: boolean = false;
   constructor() {
   }
-
+  stopApp(){
+    retroApi.stopApp()
+  }
   init(context: common.UIAbilityContext){
     this.context = context;
     retroApi.onNativeEvent((eventId: number, value: number)=>{

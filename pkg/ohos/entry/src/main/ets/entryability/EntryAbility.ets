@@ -20,6 +20,9 @@ export default class EntryAbility extends UIAbility {
   onDestroy(): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onDestroy');
   }
+  onWindowStageWillDestroy(windowStage: window.WindowStage): void {
+    retroArchVM.stopApp()
+  }
 
   async onWindowStageCreate(windowStage: window.WindowStage): Promise<void> {
     // Main window is created, set main page for this ability
