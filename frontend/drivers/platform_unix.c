@@ -3746,6 +3746,7 @@ static enum rarch_display_type frontend_unix_get_display_type(void)
 
 #ifdef __OHOS__
 void ohos_input_poll_touch_event(void* ohos_input, TouchEvent data);
+void ohos_input_poll_key_event(void* ohos_input, KeyEvent* data);
 
 static void frontend_ohos_shutdown(bool unused)
 {
@@ -3917,6 +3918,35 @@ static napi_value OnTouchEvent(napi_env env, napi_callback_info info)
     ohos_input_poll_touch_event(g_ohos->ohos_input, event);
     return NULL;
 }
+
+static napi_value OnKeyEvent(napi_env env, napi_callback_info info)
+{
+    if(g_ohos == NULL || g_ohos->ohos_input == NULL)
+        return NULL;
+    size_t argc = 1;
+    napi_value args[1];
+    napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+    KeyEvent event;
+    napi_value temp_val;
+     napi_get_named_property(env, args[0], "deviceId", &temp_val);
+    napi_get_value_int32(env, temp_val, &event.deviceId);
+    
+    // 提取 type
+    napi_get_named_property(env, args[0], "type", &temp_val);
+    napi_get_value_int32(env, temp_val, &event.type);
+    
+    // 提取 pointerCount
+    napi_get_named_property(env, args[0], "keyCode", &temp_val);
+    napi_get_value_int32(env, temp_val, &event.keyCode);
+    
+    // 提取 eventTime (uint64_t)
+    napi_get_named_property(env, args[0], "timestamp", &temp_val);
+    napi_get_value_int64(env, temp_val, &event.timestamp);
+  
+    ohos_input_poll_key_event(g_ohos->ohos_input, &event);
+    return NULL;
+}
+
 static napi_value SurfaceChanged(napi_env env, napi_callback_info info)
 {
    size_t argc = 3;
@@ -3975,7 +4005,8 @@ static napi_value Init(napi_env env, napi_value exports)
        { "sendCtl", NULL, SendCtl, NULL, NULL, NULL, napi_default, NULL },
        { "surfaceChanged", NULL, SurfaceChanged, NULL, NULL, NULL, napi_default, NULL },
        { "startApp", NULL, StartApp, NULL, NULL, NULL, napi_default, NULL },
-       { "onTouchEvent", NULL, OnTouchEvent, NULL, NULL, NULL, napi_default, NULL }
+       { "onTouchEvent", NULL, OnTouchEvent, NULL, NULL, NULL, napi_default, NULL },
+       { "onKeyEvent", NULL, OnKeyEvent, NULL, NULL, NULL, napi_default, NULL }
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;

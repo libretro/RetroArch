@@ -11,5 +11,6 @@ export interface StartParams{
 export const startApp: (args: StartParams) => number;
 export const surfaceChanged: (surfaceId: number, width:number, height:number)=>number;
 export const onTouchEvent: (touch: any)=>number;
+export const onKeyEvent: (touch: any)=>number;
 
 export const sendCtl: (ctl: number) => number;

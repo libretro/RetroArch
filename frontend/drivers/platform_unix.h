@@ -50,6 +50,11 @@ enum
    EVENT_ACTION_HOVER_HOVER_EXIT,
    EVENT_ACTION_HOVER_HOVER_HOVER_CANCELT,
 };
+enum {
+   KEY_EVENT_ACTION_DOWN,
+   KEY_EVENT_ACTION_UP,
+};
+
 typedef struct {
    int id;
    double x;
@@ -63,6 +68,14 @@ typedef struct {
    TouchPoint touchPoints[10];
    int64_t eventTime;
 } TouchEvent;
+
+typedef struct {
+   int type;
+   int keyCode;
+   int keySource;
+   int deviceId;
+   int64_t timestamp;
+} KeyEvent;
 
 char internal_storage_app_path[PATH_MAX_LENGTH];
 

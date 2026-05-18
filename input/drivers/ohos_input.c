@@ -17,7 +17,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-
+#include <multimodalinput/oh_key_code.h>
 
 #include "../../frontend/drivers/platform_unix.h"
 #include "../../retroarch.h"
@@ -174,6 +174,63 @@ void ohos_input_poll_touch_event(
 
 }
 
+void ohos_input_poll_key_event(
+    void  *ohos_input, KeyEvent *event)
+{
+   int action   = event->type;
+   int keycode = event->keyCode;
+   int keydown           = (action == KEY_EVENT_ACTION_DOWN);
+   unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(keycode);
+   /* Set keyboard modifier based on shift,ctrl and alt state */
+   uint16_t mod          = 0;
+//   int meta              = AKeyEvent_getMetaState(event);
+//   if (meta & AMETA_ALT_ON)
+//      mod |= RETROKMOD_ALT;
+//   if (meta & AMETA_CTRL_ON)
+//      mod |= RETROKMOD_CTRL;
+//   if (meta & AMETA_SHIFT_ON)
+//      mod |= RETROKMOD_SHIFT;
+//   if (meta & AMETA_CAPS_LOCK_ON)
+//      mod |= RETROKMOD_CAPSLOCK;
+//   if (meta & AMETA_NUM_LOCK_ON)
+//      mod |= RETROKMOD_NUMLOCK;
+//   if (meta & AMETA_SCROLL_LOCK_ON)
+//      mod |= RETROKMOD_SCROLLOCK;
+//   if (meta & AMETA_META_ON)
+//      mod |= RETROKMOD_META;
+   input_keyboard_event(keydown, keyboardcode,
+         keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
+   uint8_t *buf = ohos_key_state[OHOS_KEYBOARD_PORT];
+
+   int keysym  = keycode;
+   /* Handle 'duplicate' inputs that correspond
+    * to the same RETROK_* key */
+   switch (keycode)
+   {
+      case KEYCODE_DPAD_CENTER:
+         keysym = KEYCODE_ENTER;
+      default:
+         break;
+   }
+   /* some controllers send both the up and down events at once
+    * when the button is released for "special" buttons, like menu buttons
+    * work around that by only using down events for meta keys (which get
+    * cleared every poll anyway)
+    */
+   switch (action)
+   {
+      case KEY_EVENT_ACTION_UP:
+         BIT_CLEAR(buf, keysym);
+         break;
+      case KEY_EVENT_ACTION_DOWN:
+         BIT_SET(buf, keysym);
+         break;
+   }
+}
+
+
+
+
 //static void ohos_input_reinit(void)
 //{
 //   struct android_app *android_app = (struct android_app*)g_android;
@@ -221,6 +278,8 @@ static void *ohos_input_init(const char *joypad_driver)
    ohos->mouse_activated = false;
    ohos->pads_connected = 0;
    ohos->quick_tap_time = 0;
+    
+   input_keymaps_init_keyboard_lut(rarch_key_map_ohos);
    // TODO sensors
    {
       settings_t *settings = config_get_ptr();

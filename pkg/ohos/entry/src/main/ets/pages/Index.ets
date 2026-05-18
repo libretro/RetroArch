@@ -47,6 +47,8 @@ struct Index {
               } as TouchObject
             })
           })
+      }).defaultFocus(true).focusable(true).onKeyEvent((e: KeyEvent)=>{
+        retroApi.onKeyEvent(e)
       })
       if(this.loading){
         Row () {
@@ -59,9 +61,21 @@ struct Index {
   public vpToPx(vp: number){
     return this.getUIContext().vp2px(vp)
   }
-  onBackPress(): boolean | void {
+   onBackPress(): boolean | void {
     // TODO 弹出提示退出
-    retroApi.sendCtl(CtlType.App_SHUTDOWN)
+    retroApi.onKeyEvent({
+      type: 0,
+      keyCode: 2055,
+      source: KeySource.Keyboard,
+    })
+     setTimeout(()=>{
+       retroApi.onKeyEvent({
+         type: 1,
+         keyCode: 2055,
+         source: KeySource.Keyboard,
+       })
+     }, 100)
+
     return true;
   }
 
