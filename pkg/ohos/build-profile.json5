@@ -7,11 +7,11 @@
         "material": {
           "certpath": "/Users/xiaobai/.ohos/config/default_ohos_NRpVdvCdN7uTmxeSRYEU0CFVk8nmTgVfywCsdsAKJu0=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B89B2CD9DFAD5BC6FC3992BD44E3249AD603CBFBE5E94E6DE5EBC0E447F7D21AA93FBE1CA5C16D3",
+          "keyPassword": "0000001BD07341BBB8D2E5550A1EAE09455FBD84A3F3DBBD153DB3A06EDF59CEE00216761A372468CC405D",
           "profile": "/Users/xiaobai/.ohos/config/default_ohos_NRpVdvCdN7uTmxeSRYEU0CFVk8nmTgVfywCsdsAKJu0=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/xiaobai/.ohos/config/default_ohos_NRpVdvCdN7uTmxeSRYEU0CFVk8nmTgVfywCsdsAKJu0=.p12",
-          "storePassword": "0000001BE3F77C010D748C96BB3D418785EA4DC584F5980E9670E25E51F2AEEEF6B64024A541A25EECBEA0"
+          "storePassword": "0000001BA7BEAC83C89713B8107D95B55492810635F8C0F0336A8859DFD3777BA4CD59CDD131F8C766FB65"
         }
       }
     ],

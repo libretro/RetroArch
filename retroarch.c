@@ -6284,7 +6284,7 @@ int rarch_main(int argc, char *argv[], void *data)
    }
 
    settings = config_get_ptr();
-
+  
 #ifdef HAVE_SMBCLIENT
    retroarch_smb_init();
 #endif

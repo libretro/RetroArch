@@ -1954,8 +1954,6 @@ static void frontend_unix_get_env(int *argc,
       args->state_path = NULL;
    }
 
-//   frontend_android_get_version(&major, &minor, &rel);
-
    OH_LOG_Print(LOG_APP, LOG_DEBUG, 0xFF00,
       "RetroArch", "[ENV] ohos version (major : %{public}d, minor : %{public}d, rel : %{public}d)\n",
          major, minor, rel);
@@ -2505,25 +2503,20 @@ static void frontend_unix_deinit(void *data)
 
 static void frontend_unix_init(void *data)
 {
-#if defined(__OHOS__)
-struct ohos_app* ohos_app  = (struct ohos_app*)data;
-slock_lock(ohos_app->mutex);
-ohos_app->running = 1;
-scond_broadcast(ohos_app->cond);
-slock_unlock(ohos_app->mutex);
+   #if defined(__OHOS__)
+   struct ohos_app* ohos_app  = (struct ohos_app*)data;
+   slock_lock(ohos_app->mutex);
+   ohos_app->running = 1;
+   scond_broadcast(ohos_app->cond);
+   slock_unlock(ohos_app->mutex);
 
-while (!ohos_app->window)
-{
-     if(ohos_app->window != NULL){
-         break;
-     }
-//   if (!ohos_run_events(ohos_app))
-//   {
-//      frontend_unix_deinit(ohos_app);
-//      //frontend_android_shutdown(ohos_app);
-//      return;
-//   }
-}
+       
+   while (!ohos_app->window)
+   {
+        if(ohos_app->window != NULL){
+            break;
+        }
+   }
 #endif
 #ifdef ANDROID
    char device_model[PROP_VALUE_MAX] = {0};
@@ -3762,23 +3755,20 @@ bool ohos_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
 }
 
 
+
 static void frontend_ohos_shutdown(bool unused)
 {
    (void)unused;
    /* Cleaner approaches don't work sadly. */
    ohos_send_native_event(EVENT_NATIVE_APP_SHUTDOWN, 0);
 }
+
 void frontend_ohos_get_name(char *s, size_t len)
 {
    const char *product = OH_GetProductModel();
    strcpy(s, product);
 }
 
-void ohos_app_write_cmd(struct ohos_app *ohos_app, int8_t cmd)
-{
-   if (ohos_app)
-      write(ohos_app->msgwrite, &cmd, sizeof(cmd));
-}
 static void ohos_app_entry(void *data)
 {
    char arguments[]  = "retroarch";
@@ -3885,53 +3875,53 @@ static napi_value StartApp(napi_env env, napi_callback_info info)
 
 static napi_value OnTouchEvent(napi_env env, napi_callback_info info)
 {
-    if(g_ohos == NULL || g_ohos->ohos_input == NULL)
-        return NULL;
-    size_t argc = 1;
-    napi_value args[1];
-    napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
-    TouchEvent event;
-    napi_value temp_val;
-     napi_get_named_property(env, args[0], "id", &temp_val);
-    napi_get_value_int32(env, temp_val, &event.id);
+   if(g_ohos == NULL || g_ohos->ohos_input == NULL)
+      return NULL;
+   size_t argc = 1;
+   napi_value args[1];
+   napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+   TouchEvent event;
+   napi_value temp_val;
+   napi_get_named_property(env, args[0], "id", &temp_val);
+   napi_get_value_int32(env, temp_val, &event.id);
+   
+   // 提取 type
+   napi_get_named_property(env, args[0], "type", &temp_val);
+   napi_get_value_int32(env, temp_val, &event.type);
+   
+   // 提取 pointerCount
+   napi_get_named_property(env, args[0], "pointerCount", &temp_val);
+   napi_get_value_int32(env, temp_val, &event.pointerCount);
+   
+   // 提取 eventTime (uint64_t)
+   napi_get_named_property(env, args[0], "timestamp", &temp_val);
+   napi_get_value_int64(env, temp_val, &event.eventTime);
+   
+   // 提取 touchPoints 数组
+   napi_value touchPoints_arr;
+   napi_get_named_property(env, args[0], "touches", &touchPoints_arr);
+   
+   uint32_t arr_len;
+   napi_get_array_length(env, touchPoints_arr, &arr_len);
+   
+   event.pointerCount = (arr_len < 10) ? arr_len : 10;
     
-    // 提取 type
-    napi_get_named_property(env, args[0], "type", &temp_val);
-    napi_get_value_int32(env, temp_val, &event.type);
-    
-    // 提取 pointerCount
-    napi_get_named_property(env, args[0], "pointerCount", &temp_val);
-    napi_get_value_int32(env, temp_val, &event.pointerCount);
-    
-    // 提取 eventTime (uint64_t)
-    napi_get_named_property(env, args[0], "timestamp", &temp_val);
-    napi_get_value_int64(env, temp_val, &event.eventTime);
-    
-    // 提取 touchPoints 数组
-    napi_value touchPoints_arr;
-    napi_get_named_property(env, args[0], "touches", &touchPoints_arr);
-    
-    uint32_t arr_len;
-    napi_get_array_length(env, touchPoints_arr, &arr_len);
-    
-    event.pointerCount = (arr_len < 10) ? arr_len : 10;
-    
-    for (uint32_t i = 0; i < arr_len && i < 10; i++) {
-        napi_value point_obj;
-        napi_value point_id, point_x, point_y;
-        
-        napi_get_element(env, touchPoints_arr, i, &point_obj);
-        
-        napi_get_named_property(env, point_obj, "id", &point_id);
-        napi_get_named_property(env, point_obj, "x", &point_x);
-        napi_get_named_property(env, point_obj, "y", &point_y);
-        
-        napi_get_value_int32(env, point_id, &event.touchPoints[i].id);
-        napi_get_value_double(env, point_x, &event.touchPoints[i].x);
-        napi_get_value_double(env, point_y, &event.touchPoints[i].y);
-    }
-    ohos_input_poll_touch_event(g_ohos->ohos_input, event);
-    return NULL;
+   for (uint32_t i = 0; i < arr_len && i < 10; i++) {
+     napi_value point_obj;
+     napi_value point_id, point_x, point_y;
+     
+     napi_get_element(env, touchPoints_arr, i, &point_obj);
+     
+     napi_get_named_property(env, point_obj, "id", &point_id);
+     napi_get_named_property(env, point_obj, "x", &point_x);
+     napi_get_named_property(env, point_obj, "y", &point_y);
+     
+     napi_get_value_int32(env, point_id, &event.touchPoints[i].id);
+     napi_get_value_double(env, point_x, &event.touchPoints[i].x);
+     napi_get_value_double(env, point_y, &event.touchPoints[i].y);
+   }
+   ohos_input_poll_touch_event(g_ohos->ohos_input, event);
+   return NULL;
 }
 
 void ohos_send_native_event(int event_id, int value) {

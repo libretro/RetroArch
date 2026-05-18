@@ -278,6 +278,9 @@ static void *ohos_input_init(const char *joypad_driver)
    ohos->mouse_activated = false;
    ohos->pads_connected = 0;
    ohos->quick_tap_time = 0;
+   // to handle fullscreen
+   settings_t *settings = config_get_ptr();
+   ohos_send_native_event(EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE, settings->bools.video_notch_write_over_enable ? 1: 0);
     
    input_keymaps_init_keyboard_lut(rarch_key_map_ohos);
    // TODO sensors
