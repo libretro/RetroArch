@@ -890,16 +890,29 @@ static size_t rsnd_get_ptr(rsound_t *rd)
 
 static int rsnd_send_identity_info(rsound_t *rd)
 {
-   char tmpbuf[RSD_PROTO_MAXSIZE];
-   char sendbuf[RSD_PROTO_MAXSIZE];
+   char    tmpbuf[RSD_PROTO_MAXSIZE];
+   char    sendbuf[RSD_PROTO_MAXSIZE];
+   size_t  tmp_len;
+   size_t  send_len;
+   int     n;
 
-   snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " IDENTITY %s", rd->identity);
+   /* snprintf returns the number of bytes that would have been
+    * written had the buffer been large enough; clamp to the
+    * actually-written length so it can be passed straight to
+    * send() without an extra strlen pass. */
+   n = snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " IDENTITY %s", rd->identity);
    tmpbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
-   snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%s", (int)strlen(tmpbuf), tmpbuf);
-   sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
+   tmp_len = (n < 0) ? 0
+           : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
 
-   if (     rsnd_send_chunk(rd->conn.ctl_socket, sendbuf, strlen(sendbuf), 0)
-         != (ssize_t)strlen(sendbuf))
+   n = snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%s",
+         (int)tmp_len, tmpbuf);
+   sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
+   send_len = (n < 0) ? 0
+            : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
+
+   if (rsnd_send_chunk(rd->conn.ctl_socket, sendbuf, send_len, 0)
+         != (ssize_t)send_len)
       return -1;
 
    return 0;
