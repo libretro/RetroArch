@@ -3835,14 +3835,14 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
 
       if (ret)
       {
-         const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+         msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
       {
-         const char *_msg = msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+         msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_ERROR_SAVING_SHADER_PRESET);
+         runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       }
    }
@@ -3853,8 +3853,8 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
                path_dir_video_shader,
                path_dir_menu_config))
       {
-         const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+         msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_MENU
@@ -3863,8 +3863,8 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
       }
       else
       {
-         const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+         msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_ERROR_REMOVING_SHADER_PRESET);
+         runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       }
    }

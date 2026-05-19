@@ -261,8 +261,8 @@ static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
       input_st->bsv_movie_state_handle. */
    if (!(state = bsv_movie_init_internal(path, RARCH_MOVIE_RECORD)))
    {
-      const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
-      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+      msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_FAILED_TO_START_MOVIE_RECORD);
+      runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_ERR("[Replay] %s\n", _msg);
       return false;
@@ -401,10 +401,10 @@ bool movie_stop_record(input_driver_state_t *input_st)
 {
    bsv_movie_t *movie = input_st->bsv_movie_state_handle;
    uint32_t frame_count;
-   const char *_msg = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);
+   msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_MOVIE_RECORD_STOPPED);
    if (!movie)
       return false;
-   runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, true, NULL,
+   runloop_msg_queue_push(_p.s, _p.len, 2, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[Replay] %s\n", _msg);
 #ifdef HAVE_STATESTREAM

@@ -2458,8 +2458,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             if (rec_st->data)
             {
-               const char *_msg = msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT);
-               runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,
+               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT);
+               runloop_msg_queue_push(_p.s, _p.len, 2, 180, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                if (rec_st->streaming_enable)
                {
@@ -2698,8 +2698,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
              * the recording. */
             if (rec_st->data)
             {
-               const char *_msg = msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT);
-               runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,
+               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT);
+               runloop_msg_queue_push(_p.s, _p.len, 2, 180, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                if (rec_st->streaming_enable)
                {
@@ -3710,9 +3710,9 @@ bool runloop_init_libretro_symbols(
                            path_get_realsize(RARCH_PATH_CORE)
                            )))
                {
-                  const char *_msg = msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE);
-                  RARCH_ERR("[Core] %s: \"%s\"\nError(s): %s\n", _msg, path, dylib_error());
-                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_FAILED_TO_OPEN_LIBRETRO_CORE);
+                  RARCH_ERR("[Core] %s: \"%s\"\nError(s): %s\n", _p.s, path, dylib_error());
+                  runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return false;
                }
@@ -4918,8 +4918,8 @@ void runloop_pause_checks(void)
       if (!widgets_active)
 #endif
       {
-         const char *_msg = msg_hash_to_str(MSG_PAUSED);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 1, true, NULL,
+         msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_PAUSED);
+         runloop_msg_queue_push(_p.s, _p.len, 1, 1, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
@@ -5253,8 +5253,8 @@ bool core_options_remove_override(bool game_specific)
 
 
    {
-      const char *_msg = msg_hash_to_str(MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY);
-      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+      msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY);
+      runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
    }
 
@@ -5265,8 +5265,8 @@ bool core_options_remove_override(bool game_specific)
 
 error:
    {
-      const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_CORE_OPTIONS_FILE);
-      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+      msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_ERROR_REMOVING_CORE_OPTIONS_FILE);
+      runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 
@@ -5344,8 +5344,8 @@ void core_options_reset(const char* label)
    }
 
    {
-      const char *_msg = msg_hash_to_str(MSG_CORE_OPTIONS_RESET);
-      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+      msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CORE_OPTIONS_RESET);
+      runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
@@ -5889,13 +5889,13 @@ static enum runloop_state_enum runloop_check_state(
 
          if (!trig_reset_key)
          {
-            const char *_msg = msg_hash_to_str(MSG_PRESS_AGAIN_TO_RESET);
+            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_PRESS_AGAIN_TO_RESET);
             float target_hz  = 0.0;
 
             runloop_environment_cb(
                   RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
 
-            runloop_msg_queue_push(_msg, strlen(_msg), 1, QUIT_DELAY_USEC * target_hz / 1000000,
+            runloop_msg_queue_push(_p.s, _p.len, 1, QUIT_DELAY_USEC * target_hz / 1000000,
                   true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
          }
       }
@@ -5926,13 +5926,13 @@ static enum runloop_state_enum runloop_check_state(
 
          if (!trig_close_key)
          {
-            const char *_msg = msg_hash_to_str(MSG_PRESS_AGAIN_TO_CLOSE_CONTENT);
+            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_PRESS_AGAIN_TO_CLOSE_CONTENT);
             float target_hz  = 0.0;
 
             runloop_environment_cb(
                   RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
 
-            runloop_msg_queue_push(_msg, strlen(_msg), 1, QUIT_DELAY_USEC * target_hz / 1000000,
+            runloop_msg_queue_push(_p.s, _p.len, 1, QUIT_DELAY_USEC * target_hz / 1000000,
                   true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
          }
       }
@@ -5973,13 +5973,13 @@ static enum runloop_state_enum runloop_check_state(
 
          if (!trig_quit_key)
          {
-            const char *_msg = msg_hash_to_str(MSG_PRESS_AGAIN_TO_QUIT);
+            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_PRESS_AGAIN_TO_QUIT);
             float target_hz  = 0.0;
 
             runloop_environment_cb(
                   RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
 
-            runloop_msg_queue_push(_msg, strlen(_msg), 1, QUIT_DELAY_USEC * target_hz / 1000000,
+            runloop_msg_queue_push(_p.s, _p.len, 1, QUIT_DELAY_USEC * target_hz / 1000000,
                   true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
          }
       }
@@ -6994,8 +6994,8 @@ static enum runloop_state_enum runloop_check_state(
          if (   (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
              && settings->bools.notification_show_fast_forward)
          {
-            const char *_msg = msg_hash_to_str(MSG_FAST_FORWARD);
-            runloop_msg_queue_push(_msg, strlen(_msg), 1, 1, false, NULL,
+            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_FAST_FORWARD);
+            runloop_msg_queue_push(_p.s, _p.len, 1, 1, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
       }
@@ -7062,15 +7062,15 @@ static enum runloop_state_enum runloop_check_state(
                if (rewind_st->flags
                      & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED)
                {
-                  const char *_msg = msg_hash_to_str(MSG_SLOW_MOTION_REWIND);
-                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 1, false, NULL,
+                  msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_SLOW_MOTION_REWIND);
+                  runloop_msg_queue_push(_p.s, _p.len, 1, 1, false, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }
                else
 #endif
                {
-                  const char *_msg = msg_hash_to_str(MSG_SLOW_MOTION);
-                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 1, false, NULL,
+                  msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_SLOW_MOTION);
+                  runloop_msg_queue_push(_p.s, _p.len, 1, 1, false, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }
             }

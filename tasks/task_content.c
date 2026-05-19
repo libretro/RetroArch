@@ -2846,9 +2846,9 @@ bool content_init(void)
          case MSG_FAILED_TO_LOAD_CONTENT:
          case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
             {
-               const char *_msg = msg_hash_to_str(error_enum);
-               RARCH_ERR("[Content] %s\n", _msg);
-               runloop_msg_queue_push(_msg, strlen(_msg), 2, ret ? 1 : 180, false, NULL,
+               msg_hash_str_pair_t _p = msg_hash_to_str_pair(error_enum);
+               RARCH_ERR("[Content] %s\n", _p.s);
+               runloop_msg_queue_push(_p.s, _p.len, 2, ret ? 1 : 180, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
             break;

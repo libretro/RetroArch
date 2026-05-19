@@ -716,8 +716,8 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
-               const char *_msg = msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED);
-               runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
+               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_NETPLAY_NEED_CONTENT_LOADED);
+               runloop_msg_queue_push(_p.s, _p.len, 1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #endif
             }
