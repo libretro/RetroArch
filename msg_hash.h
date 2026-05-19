@@ -4170,7 +4170,26 @@ enum msg_hash_enums
 
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 
+/* Paired result: string and its length together.  Returned by
+ * msg_hash_to_str_pair in one switch dispatch so callers that
+ * need both (the runloop_msg_queue_push pattern) don't pay the
+ * cost of two separate lookups OR a runtime strlen on the
+ * returned literal. */
+typedef struct msg_hash_str_pair
+{
+   const char *s;
+   size_t      len;
+} msg_hash_str_pair_t;
+
+msg_hash_str_pair_t msg_hash_to_str_pair(enum msg_hash_enums msg);
+
+/* Convenience: just the length.  Delegates to msg_hash_to_str_pair;
+ * the cost is one extra function call over _pair itself.  Useful
+ * when the caller never needs the string body (rare). */
+size_t      msg_hash_to_str_len(enum msg_hash_enums msg);
+
 const char *msg_hash_to_str_us(enum msg_hash_enums msg);
+msg_hash_str_pair_t msg_hash_to_str_pair_us(enum msg_hash_enums msg);
 int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);

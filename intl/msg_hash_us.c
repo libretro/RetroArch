@@ -567,3 +567,56 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
     return "null";
 }
+
+/* Paired string+length variant of msg_hash_to_str_us.  Each MSG_HASH
+ * case sets both p.s (the literal) and p.len (sizeof(literal)-1, a
+ * compile-time constant) and returns the pair, so one switch dispatch
+ * yields both values.  Returns {NULL, 0} when no case matches; the
+ * dispatcher in msg_hash.c falls back to a {"null", 4} pair to
+ * preserve the invariant p.s == msg_hash_to_str(msg).  Strict MSVC
+ * C89: declarations only at top of function/block. */
+msg_hash_str_pair_t msg_hash_to_str_pair_us(enum msg_hash_enums msg)
+{
+   msg_hash_str_pair_t p;
+   p.s   = NULL;
+   p.len = 0;
+
+#ifdef HAVE_MENU
+   /* The hotkey-bind range is dynamic (snprintf-built per call).  Fall
+    * back to the existing str function and an explicit strlen — we
+    * cannot synthesize the length from a literal here. */
+   if (   msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END
+       && msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
+   {
+      p.s   = msg_hash_to_str_us(msg);
+      p.len = strlen(p.s);
+      return p;
+   }
+
+   /* Label-enum table first, mirroring msg_hash_to_str_us. */
+   switch (msg)
+   {
+#undef MSG_HASH
+#define MSG_HASH(Id, str) case Id: p.s = str; p.len = sizeof(str) - 1; return p;
+#include "msg_hash_lbl.h"
+#undef MSG_HASH
+#define MSG_HASH(Id, str) case Id: return str;
+      default:
+         break;
+   }
+#endif
+
+   /* Main US table. */
+   switch (msg)
+   {
+#undef MSG_HASH
+#define MSG_HASH(Id, str) case Id: p.s = str; p.len = sizeof(str) - 1; return p;
+#include "msg_hash_us.h"
+#undef MSG_HASH
+#define MSG_HASH(Id, str) case Id: return str;
+      default:
+         break;
+   }
+
+   return p;  /* p.s == NULL signals "not found" */
+}
