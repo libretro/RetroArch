@@ -2158,7 +2158,7 @@ static void frontend_unix_get_env(int *argc,
    g_defaults.settings_video_refresh_rate =  120.0;
    g_defaults.overlay_set    = true;
    g_defaults.overlay_enable = true;
-   strlcpy(g_defaults.settings_menu, "ozone", sizeof(g_defaults.settings_menu));
+   strlcpy(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
 #else
    char base_path[PATH_MAX] = {0};
 #if defined(RARCH_UNIX_CWD_ENV)

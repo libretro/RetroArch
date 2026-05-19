@@ -34,6 +34,7 @@ export class RetroArchViewModel{
   @Trace loading: boolean = true;
   @Trace openKeyboard: boolean = false;
   @Trace fullScreen: boolean = false;
+  @Trace currentRotation: number = 0
   constructor() {
   }
   stopApp(){
@@ -41,6 +42,9 @@ export class RetroArchViewModel{
   }
   init(context: common.UIAbilityContext){
     this.context = context;
+    display.on("change", ()=>{
+      this.currentRotation = display.getDefaultDisplaySync().rotation
+    })
     retroApi.onNativeEvent((eventId: number, value: number)=>{
       if(eventId == NativeEventId.EVENT_NATIVE_APP_SHUTDOWN){
         this.context?.terminateSelf();
