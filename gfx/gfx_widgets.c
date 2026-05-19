@@ -1842,6 +1842,8 @@ void gfx_widgets_frame(void *data)
       const char *txt;
       size_t      txt_len;
       int         txt_width;
+      int         total_width;
+      int         status_txt_x;
 
       if (*p_dispwidget->gfx_widgets_status_text == '\0')
       {
@@ -1858,13 +1860,13 @@ void gfx_widgets_frame(void *data)
          txt_len = p_dispwidget->gfx_widgets_status_text_len;
       }
 
-      txt_width = font_driver_get_message_width(
+      txt_width    = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
             txt, txt_len, 1.0f);
-      int total_width       = txt_width
+      total_width  = txt_width
          + p_dispwidget->simple_widget_padding * 2;
 
-      int status_txt_x     = top_right_x_advance
+      status_txt_x = top_right_x_advance
          - p_dispwidget->simple_widget_padding - txt_width;
       /* Ensure that left hand side of text does
        * not bleed off the edge of the screen */
