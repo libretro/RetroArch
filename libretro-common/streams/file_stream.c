@@ -28,6 +28,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <wchar.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -215,19 +216,31 @@ int filestream_getc(RFILE *stream)
 
 /* ---- internal scanf engine ----------------------------------------
  *
- * The previous implementation built a per-conversion sub-format
- * string (e.g. "%d%n") and invoked sscanf() for every specifier.
- * sscanf on most libcs runs strlen() over the entire remaining
- * input and (on glibc) allocates a transient FILE-stream state
- * per call. For input parsed one conversion at a time this is
- * the dominant cost.
+ * The previous implementation walked the format string and for each
+ * %-spec built a per-conversion sub-format string (e.g. "%d%n") and
+ * invoked sscanf() for every specifier. sscanf on most libcs runs
+ * strlen() over the entire remaining input on every call to compute
+ * the internal FILE-stream length, and glibc additionally allocates
+ * transient state per call. For input parsed one conversion at a
+ * time this is the dominant cost.
  *
- * The native engine below scans common conversions in place
- * (%d %i %u %o %x %X %c %s %[ %n %%) with optional '*' suppress,
- * width, and length modifiers hh/h/l/ll/z. Floats, %p, the
- * j/t/L length modifiers, and wide-char variants fall back to
- * the original sscanf+%n path to preserve exact behavior.
- */
+ * The native engine below scans every supported conversion in place
+ * with no sscanf call anywhere in the path:
+ *
+ *   %d %i %u %o %x %X      - via fs_scan_int (custom digit loop)
+ *   %f %e %g %a (+caps)    - via fs_scan_float (uses strtod, which
+ *                            unlike sscanf does not strlen the buffer
+ *                            or allocate per-call state)
+ *   %p                     - via fs_scan_pointer (hex parse)
+ *   %s %c %[..]            - via fs_scan_str/char/set (byte loop)
+ *   %ls %lc %l[..]         - via fs_scan_wide (mbrtowc decoding)
+ *   %n                     - direct write of chars-consumed-so-far
+ *   %%                     - literal match
+ *
+ * with the full grammar: '*' assignment suppression, decimal width,
+ * and length modifiers hh / h / l / ll / z / j / t / L (plus the
+ * MSVC-only I / I32 / I64 size prefixes that some legacy core code
+ * still uses). */
 
 #define FS_LM_NONE  0
 #define FS_LM_HH    1
@@ -337,8 +350,10 @@ static void fs_store_int(const fs_scan_spec_t *sp, va_list *args,
          case FS_LM_HH: *va_arg(*args, signed char*) = (signed char)v; break;
          case FS_LM_H:  *va_arg(*args, short*)       = (short)v;       break;
          case FS_LM_L:  *va_arg(*args, long*)        = (long)v;        break;
-         case FS_LM_LL: *va_arg(*args, int64_t*)   = (int64_t)v;   break;
+         case FS_LM_LL: *va_arg(*args, int64_t*)     = (int64_t)v;     break;
          case FS_LM_Z:  *va_arg(*args, size_t*)      = (size_t)v;      break;
+         case FS_LM_J:  *va_arg(*args, intmax_t*)    = (intmax_t)v;    break;
+         case FS_LM_T:  *va_arg(*args, ptrdiff_t*)   = (ptrdiff_t)v;   break;
          default:       *va_arg(*args, int*)         = (int)v;         break;
       }
    }
@@ -350,8 +365,10 @@ static void fs_store_int(const fs_scan_spec_t *sp, va_list *args,
          case FS_LM_HH: *va_arg(*args, unsigned char*)      = (unsigned char)uv;      break;
          case FS_LM_H:  *va_arg(*args, unsigned short*)     = (unsigned short)uv;     break;
          case FS_LM_L:  *va_arg(*args, unsigned long*)      = (unsigned long)uv;      break;
-         case FS_LM_LL: *va_arg(*args, uint64_t*) = (uint64_t)uv; break;
+         case FS_LM_LL: *va_arg(*args, uint64_t*)           = (uint64_t)uv;           break;
          case FS_LM_Z:  *va_arg(*args, size_t*)             = (size_t)uv;             break;
+         case FS_LM_J:  *va_arg(*args, uintmax_t*)          = (uintmax_t)uv;          break;
+         case FS_LM_T:  *va_arg(*args, size_t*)             = (size_t)uv;             break;
          default:       *va_arg(*args, unsigned int*)       = (unsigned int)uv;       break;
       }
    }
@@ -582,25 +599,38 @@ static void fs_store_n(const fs_scan_spec_t *sp, va_list *args, int n)
    }
 }
 
-/* Decides whether the native engine can handle a given
- * (specifier, length_mod) combination. Combinations that can't be
- * served natively without changing the va_arg destination type
- * (e.g. %ls writes wchar_t*, %jd writes intmax_t*) are routed to
- * fs_fallback which knows the right va_arg dispatch. */
+/* Decides whether the engine can serve a (specifier, length_mod)
+ * combination at all. All standard combinations are now handled
+ * natively (no sscanf calls remain). Returns false only for an
+ * unrecognized specifier or an out-of-spec length modifier
+ * (e.g. %hf, %jc), in which case the dispatch breaks the parse
+ * loop the same way the prior engine did on malformed input. */
 static bool fs_native_handles(char specifier, int length_mod)
 {
    switch (specifier)
    {
       case 'd': case 'i': case 'u': case 'o': case 'x': case 'X':
-         /* j (intmax_t) / t (ptrdiff_t) / non-standard L need fallback. */
+         /* Integers: every standard length modifier is supported.
+          * The MSVC "I" prefix maps to LL/NONE/Z in fs_parse_spec. */
          return length_mod == FS_LM_NONE
              || length_mod == FS_LM_HH
              || length_mod == FS_LM_H
              || length_mod == FS_LM_L
              || length_mod == FS_LM_LL
-             || length_mod == FS_LM_Z;
+             || length_mod == FS_LM_Z
+             || length_mod == FS_LM_J
+             || length_mod == FS_LM_T;
+      case 'f': case 'e': case 'g': case 'a':
+      case 'F': case 'E': case 'G': case 'A':
+         /* Floats: NONE -> float, L -> double, BIG_L -> long double. */
+         return length_mod == FS_LM_NONE
+             || length_mod == FS_LM_L
+             || length_mod == FS_LM_BIG_L;
       case 's': case 'c': case '[':
-         /* l means wchar_t* — fallback. */
+         /* Strings/chars/scansets: NONE writes char, L writes wchar_t. */
+         return length_mod == FS_LM_NONE
+             || length_mod == FS_LM_L;
+      case 'p':
          return length_mod == FS_LM_NONE;
       case 'n':
          /* All standard int length mods are handled by fs_store_n. */
@@ -613,104 +643,217 @@ static bool fs_native_handles(char specifier, int length_mod)
              || length_mod == FS_LM_J
              || length_mod == FS_LM_T;
       default:
-         /* Floats (%f/e/g/a), %p, and anything unknown — fallback. */
          return false;
    }
 }
 
-/* Fallback for specifiers and (specifier, length-mod) combinations
- * the native engine does not handle:
- *   - floats (f, e, g, a, F, E, G, A) with any length mod
- *   - %p (pointer)
- *   - integer conversions with the j (intmax_t/uintmax_t),
- *     t (ptrdiff_t/size_t) or L (non-standard) length modifiers
- *   - %ls / %lc / %l[ (wide-char destinations)
- *
- * Behavior matches the prior sscanf+%n approach byte-for-byte. */
-static int fs_fallback(const char **pp, const char *fmt_pct,
-      const char *fmt_next, const fs_scan_spec_t *sp, va_list *args)
+/* Scan a floating-point conversion.  Handles %f / %e / %g / %a and
+ * their capitalized siblings.  Uses strtod() — which is C89 and,
+ * unlike sscanf, does not run strlen() across the rest of the
+ * buffer or allocate any per-call FILE-stream state.  Width is
+ * honored by copying at most `width` non-whitespace bytes into a
+ * stack scratch buffer, NUL-terminating, and letting strtod parse
+ * that.  For %Lf, strtod's double result is cast to long double:
+ * on platforms where long double is wider than double (notably
+ * x86 with 80-bit extended), this loses precision relative to a
+ * hypothetical strtold call — but strtold is C99 and not available
+ * in strict MSVC C89, and %Lf via filestream_scanf is essentially
+ * unused, so we accept the trade. */
+static int fs_scan_float(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
 {
-   char   subfmt[64];
-   size_t fmt_len = (size_t)(fmt_next - fmt_pct);
-   int    sublen  = 0;
-   int    v       = 0;
+   const char  *start = *pp;
+   const char  *p     = start;
+   char        *endp;
+   double       val;
+   ptrdiff_t    advance;
 
-   if (fmt_len + 3 > sizeof(subfmt))
+   while (isspace((unsigned char)*p))
+      p++;
+   if (!*p)
       return -1;
-   memcpy(subfmt, fmt_pct, fmt_len);
-   subfmt[fmt_len]     = '%';
-   subfmt[fmt_len + 1] = 'n';
-   subfmt[fmt_len + 2] = '\0';
 
-   if (sp->suppress)
+   if (sp->width > 0)
    {
-      v = sscanf(*pp, subfmt, &sublen);
-      if (v == EOF || sublen == 0)
+      char  tmp[64];
+      int   w     = sp->width;
+      int   i;
+      if (w >= (int)sizeof(tmp))
+         w = (int)sizeof(tmp) - 1;
+      for (i = 0; i < w && p[i] && !isspace((unsigned char)p[i]); i++)
+         tmp[i] = p[i];
+      tmp[i] = '\0';
+      val = strtod(tmp, &endp);
+      if (endp == tmp)
          return -1;
-      *pp += sublen;
-      return sublen;
+      advance = endp - tmp;
+   }
+   else
+   {
+      val = strtod(p, &endp);
+      if (endp == p)
+         return -1;
+      advance = endp - p;
+   }
+   p += advance;
+
+   if (!sp->suppress)
+   {
+      switch (sp->length_mod)
+      {
+         case FS_LM_NONE:  *va_arg(*args, float*)       = (float)val;       break;
+         case FS_LM_L:     *va_arg(*args, double*)      = val;              break;
+         case FS_LM_BIG_L: *va_arg(*args, long double*) = (long double)val; break;
+         default: return -1;
+      }
+   }
+   *pp = p;
+   return (int)(p - start);
+}
+
+/* %p — implementation-defined per C99, but the de-facto format
+ * everywhere (glibc, musl, BSD, MSVC's CRT for the common case)
+ * is hex digits with an optional "0x"/"0X" prefix, optionally
+ * preceded by whitespace.  Parse that, store as void*. */
+static int fs_scan_pointer(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
+{
+   const char *start = *pp;
+   const char *p     = start;
+   const char *digit_start;
+   uint64_t    acc    = 0;
+   int         width  = sp->width > 0 ? sp->width : INT_MAX;
+   int         digits = 0;
+
+   while (isspace((unsigned char)*p))
+      p++;
+
+   if (*p == '0' && (p[1] == 'x' || p[1] == 'X') && width >= 2)
+   {
+      p     += 2;
+      width -= 2;
+   }
+   digit_start = p;
+   while (*p && (p - digit_start) < width)
+   {
+      unsigned char c = (unsigned char)*p;
+      int           d;
+      if      (c >= '0' && c <= '9') d = c - '0';
+      else if (c >= 'a' && c <= 'f') d = c - 'a' + 10;
+      else if (c >= 'A' && c <= 'F') d = c - 'A' + 10;
+      else                           break;
+      acc = (acc << 4) | (uint64_t)d;
+      p++;
+      digits++;
+   }
+   if (digits == 0)
+      return -1;
+   if (!sp->suppress)
+      *va_arg(*args, void**) = (void*)(uintptr_t)acc;
+   *pp = p;
+   return (int)(p - start);
+}
+
+/* Wide-character scanset membership.  Set elements in the format
+ * string are encoded as bytes; we promote each to wchar_t by zero
+ * extension via unsigned char.  This is exact for ASCII set chars
+ * (the typical case) and is the same convention glibc uses for
+ * wide scansets with ASCII format strings. */
+static bool fs_wscanset_match(const char *set, const char *end,
+      bool negate, wchar_t c)
+{
+   const char *p      = set;
+   bool        in_set = false;
+   if (p < end && *p == ']')
+   {
+      if (c == (wchar_t)']') in_set = true;
+      p++;
+   }
+   while (p < end)
+   {
+      if (p + 2 < end && p[1] == '-' && p[2] != ']')
+      {
+         wchar_t lo = (wchar_t)(unsigned char)p[0];
+         wchar_t hi = (wchar_t)(unsigned char)p[2];
+         if (lo > hi) { wchar_t t = lo; lo = hi; hi = t; }
+         if (c >= lo && c <= hi) in_set = true;
+         p += 3;
+      }
+      else
+      {
+         if ((wchar_t)(unsigned char)*p == c) in_set = true;
+         p++;
+      }
+   }
+   return negate ? !in_set : in_set;
+}
+
+/* Wide-char scanf primitive.  `mode` selects the variant:
+ *   's' — skip ws, read non-ws wide chars until ws/width/end; NUL-terminate
+ *   'c' — read exactly width wide chars (default 1); no ws skip; no NUL
+ *   '[' — read wide chars while scanset matches; NUL-terminate
+ * Multibyte input is decoded via mbrtowc() using a local conversion
+ * state so the call is reentrant. */
+static int fs_scan_wide(const char **pp, const fs_scan_spec_t *sp,
+      char mode, va_list *args)
+{
+   const char *start = *pp;
+   const char *p     = start;
+   wchar_t    *out;
+   int         n     = 0;
+   int         width = sp->width;
+   int         max_n;
+   mbstate_t   state;
+
+   memset(&state, 0, sizeof state);
+
+   if (mode == 's')
+   {
+      while (isspace((unsigned char)*p))
+         p++;
+      max_n = (width > 0) ? width : INT_MAX;
+   }
+   else if (mode == 'c')
+      max_n = (width > 0) ? width : 1;
+   else /* '[' */
+      max_n = (width > 0) ? width : INT_MAX;
+
+   out = sp->suppress ? NULL : va_arg(*args, wchar_t*);
+
+   while (n < max_n)
+   {
+      wchar_t wc;
+      size_t  len;
+      if (!*p)
+         break;
+      len = mbrtowc(&wc, p, MB_CUR_MAX, &state);
+      if (len == (size_t)-1 || len == (size_t)-2)
+         return -1;
+      if (len == 0)
+         break;
+      if (mode == 's' && isspace((unsigned char)*p))
+         break;
+      if (mode == '[' && !fs_wscanset_match(sp->set_start, sp->set_end,
+               sp->set_negate, wc))
+         break;
+      if (out)
+         out[n] = wc;
+      n++;
+      p += len;
    }
 
-   switch (sp->specifier)
-   {
-      case 'f': case 'e': case 'g': case 'a':
-      case 'F': case 'E': case 'G': case 'A':
-         switch (sp->length_mod)
-         {
-            case FS_LM_NONE:
-               v = sscanf(*pp, subfmt, va_arg(*args, float*),       &sublen); break;
-            case FS_LM_L:
-               v = sscanf(*pp, subfmt, va_arg(*args, double*),      &sublen); break;
-            case FS_LM_BIG_L:
-               v = sscanf(*pp, subfmt, va_arg(*args, long double*), &sublen); break;
-            default:
-               return -1;
-         }
-         break;
-      case 'p':
-         v = sscanf(*pp, subfmt, va_arg(*args, void**), &sublen);
-         break;
-      /* Signed integer specifiers with length mods we don't handle natively. */
-      case 'd': case 'i':
-         switch (sp->length_mod)
-         {
-            case FS_LM_J:
-               v = sscanf(*pp, subfmt, va_arg(*args, intmax_t*),  &sublen); break;
-            case FS_LM_T:
-               v = sscanf(*pp, subfmt, va_arg(*args, ptrdiff_t*), &sublen); break;
-            default:
-               return -1;
-         }
-         break;
-      /* Unsigned integer specifiers. C99 §7.19.6.2: %t-prefixed
-       * unsigned conversions take the unsigned type corresponding
-       * to ptrdiff_t, which is size_t for the purposes of va_arg. */
-      case 'u': case 'o': case 'x': case 'X':
-         switch (sp->length_mod)
-         {
-            case FS_LM_J:
-               v = sscanf(*pp, subfmt, va_arg(*args, uintmax_t*), &sublen); break;
-            case FS_LM_T:
-               v = sscanf(*pp, subfmt, va_arg(*args, size_t*),    &sublen); break;
-            default:
-               return -1;
-         }
-         break;
-      /* String-family with wide-char destination. */
-      case 's': case 'c': case '[':
-         if (sp->length_mod == FS_LM_L)
-            v = sscanf(*pp, subfmt, va_arg(*args, wchar_t*), &sublen);
-         else
-            return -1;
-         break;
-      default:
-         return -1;
-   }
-
-   if (v != 1 || sublen == 0)
+   /* %lc must read exactly max_n wide chars; falling short is failure. */
+   if (mode == 'c' && n < max_n)
       return -1;
-   *pp += sublen;
-   return sublen;
+   /* %ls / %l[ must match at least one wide char. */
+   if (mode != 'c' && n == 0)
+      return -1;
+   /* %ls and %l[ NUL-terminate; %lc does not. */
+   if (mode != 'c' && out)
+      out[n] = 0;
+
+   *pp = p;
+   return (int)(p - start);
 }
 
 int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
@@ -741,7 +884,6 @@ int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
       if (*fmt == '%')
       {
          fs_scan_spec_t  sp;
-         const char     *fmt_pct = fmt;  /* points at '%' */
          const char     *fmt_next;
          int             consumed = -1;
 
@@ -762,11 +904,9 @@ int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
             break;  /* malformed spec — stop, matching prior behavior */
 
          if (!fs_native_handles(sp.specifier, sp.length_mod))
-         {
-            consumed = fs_fallback(&bufiter, fmt_pct, fmt_next,
-                  &sp, &args_copy);
-         }
-         else switch (sp.specifier)
+            break;  /* unsupported combination — stop, matching prior behavior */
+
+         switch (sp.specifier)
          {
             case 'd':
                consumed = fs_scan_int(&bufiter, &sp, 10, true,  &args_copy); break;
@@ -779,12 +919,29 @@ int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
             case 'x':
             case 'X':
                consumed = fs_scan_int(&bufiter, &sp, 16, false, &args_copy); break;
+            case 'f': case 'e': case 'g': case 'a':
+            case 'F': case 'E': case 'G': case 'A':
+               consumed = fs_scan_float(&bufiter, &sp, &args_copy); break;
+            case 'p':
+               consumed = fs_scan_pointer(&bufiter, &sp, &args_copy); break;
             case 's':
-               consumed = fs_scan_str(&bufiter, &sp, &args_copy); break;
+               if (sp.length_mod == FS_LM_L)
+                  consumed = fs_scan_wide(&bufiter, &sp, 's', &args_copy);
+               else
+                  consumed = fs_scan_str(&bufiter, &sp, &args_copy);
+               break;
             case 'c':
-               consumed = fs_scan_char(&bufiter, &sp, &args_copy); break;
+               if (sp.length_mod == FS_LM_L)
+                  consumed = fs_scan_wide(&bufiter, &sp, 'c', &args_copy);
+               else
+                  consumed = fs_scan_char(&bufiter, &sp, &args_copy);
+               break;
             case '[':
-               consumed = fs_scan_set(&bufiter, &sp, &args_copy); break;
+               if (sp.length_mod == FS_LM_L)
+                  consumed = fs_scan_wide(&bufiter, &sp, '[', &args_copy);
+               else
+                  consumed = fs_scan_set(&bufiter, &sp, &args_copy);
+               break;
             case 'n':
                fs_store_n(&sp, &args_copy, (int)(bufiter - buf));
                consumed = 0;  /* succeeds, consumes no input */
