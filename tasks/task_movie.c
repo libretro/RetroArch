@@ -264,7 +264,7 @@ static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
       msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_FAILED_TO_START_MOVIE_RECORD);
       runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_ERR("[Replay] %s\n", _msg);
+      RARCH_ERR("[Replay] %s\n", _p.s);
       return false;
    }
 
@@ -406,7 +406,7 @@ bool movie_stop_record(input_driver_state_t *input_st)
       return false;
    runloop_msg_queue_push(_p.s, _p.len, 2, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("[Replay] %s\n", _msg);
+   RARCH_LOG("[Replay] %s\n", _p.s);
 #ifdef HAVE_STATESTREAM
 #if DEBUG
    RARCH_DBG("[Replay] superblock histogram\n");

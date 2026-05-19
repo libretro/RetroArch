@@ -1249,7 +1249,7 @@ void runahead_run(void *data,
          if (!runahead_hide_warnings)
             runloop_msg_queue_push(_p.s, _p.len, 0, 2 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead] %s\n", _msg);
+         RARCH_WARN("[Run-Ahead] %s\n", _p.s);
          goto force_input_dirty;
       }
    }
@@ -1301,7 +1301,7 @@ void runahead_run(void *data,
                   msg_hash_to_str_pair(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
                runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead] %s\n", _msg);
+               RARCH_WARN("[Run-Ahead] %s\n", _p.s);
                return;
             }
          }
@@ -1313,7 +1313,7 @@ void runahead_run(void *data,
                msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
                runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead] %s\n", _msg);
+               RARCH_WARN("[Run-Ahead] %s\n", _p.s);
                return;
             }
          }
@@ -1330,7 +1330,7 @@ void runahead_run(void *data,
          runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
          runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead] %s\n", _msg);
+         RARCH_WARN("[Run-Ahead] %s\n", _p.s);
          goto force_input_dirty;
       }
 
@@ -1352,7 +1352,7 @@ void runahead_run(void *data,
             msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
             runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead] %s\n", _msg);
+            RARCH_WARN("[Run-Ahead] %s\n", _p.s);
             return;
          }
 
@@ -1361,7 +1361,7 @@ void runahead_run(void *data,
             msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
             runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead] %s\n", _msg);
+            RARCH_WARN("[Run-Ahead] %s\n", _p.s);
             return;
          }
 

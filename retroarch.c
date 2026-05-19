@@ -3645,7 +3645,7 @@ bool command_event(enum event_command cmd, void *data)
                msg_hash_to_str_pair(MSG_FAILED_TO_LOAD_MOVIE_FILE);
             runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_ERR("[Replay] %s.\n", _msg);
+            RARCH_ERR("[Replay] %s.\n", _p.s);
          }
          return res;
 #else
@@ -3677,7 +3677,7 @@ bool command_event(enum event_command cmd, void *data)
             msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_FAILED_TO_START_MOVIE_RECORD);
             runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_ERR("[Replay] %s.\n", _msg);
+            RARCH_ERR("[Replay] %s.\n", _p.s);
          }
          return res;
 #else
