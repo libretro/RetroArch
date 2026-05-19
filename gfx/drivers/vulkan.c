@@ -7971,13 +7971,37 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       if (!is_idle)
          video_driver_cached_frame();
 
+      {
+         /* Wait specifically on the frame submission that recorded
+          * the readback copy.  vulkan_frame attaches its fence at
+          * swapchain_fences[current_frame_index] and sets the
+          * matching swapchain_fences_signalled[] entry to true, so
+          * waiting on that fence guarantees the readback copy
+          * recorded into vk->cmd has completed -- without draining
+          * the entire queue or holding queue_lock across the wait.
+          *
+          * If the fence is not yet signalled (extremely early in
+          * startup, or the is_idle path where no new submission
+          * happened on this slot), fall back to a queue drain so
+          * synchronisation remains correct. */
+         unsigned slot       = vk->context->current_frame_index;
+         VkFence frame_fence = vk->context->swapchain_fences[slot];
+
+         if (     frame_fence != VK_NULL_HANDLE
+               && vk->context->swapchain_fences_signalled[slot])
+            vkWaitForFences(vk->context->device, 1,
+                  &frame_fence, VK_TRUE, UINT64_MAX);
+         else
+         {
 #ifdef HAVE_THREADS
-      slock_lock(vk->context->queue_lock);
+            slock_lock(vk->context->queue_lock);
 #endif
-      vkQueueWaitIdle(vk->context->queue);
+            vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
-      slock_unlock(vk->context->queue_lock);
+            slock_unlock(vk->context->queue_lock);
 #endif
+         }
+      }
 
       if (!staging->memory)
       {
