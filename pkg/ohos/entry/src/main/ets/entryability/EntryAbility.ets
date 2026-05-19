@@ -27,7 +27,7 @@ export default class EntryAbility extends UIAbility {
   async onWindowStageCreate(windowStage: window.WindowStage): Promise<void> {
     // Main window is created, set main page for this ability
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
-    windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.AUTO_ROTATION)
+    windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.AUTO_ROTATION_UNSPECIFIED)
     windowStage.getMainWindowSync().setWindowSystemBarEnable([])
     windowStage.loadContent('pages/Index', async (err) => {
       await retroArchVM.StartApp();

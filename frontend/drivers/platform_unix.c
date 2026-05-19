@@ -3954,7 +3954,7 @@ static napi_value OnKeyEvent(napi_env env, napi_callback_info info)
     napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
     KeyEvent event;
     napi_value temp_val;
-     napi_get_named_property(env, args[0], "deviceId", &temp_val);
+    napi_get_named_property(env, args[0], "deviceId", &temp_val);
     napi_get_value_int32(env, temp_val, &event.deviceId);
     
     // 提取 type

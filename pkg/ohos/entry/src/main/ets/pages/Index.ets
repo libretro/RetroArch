@@ -23,10 +23,10 @@ struct Index {
   }
   GetAspectRatio(): number{
     if(this.viewmodel.currentRotation == window.Orientation.PORTRAIT || this.viewmodel.currentRotation == window.Orientation.PORTRAIT_INVERTED){
-      return 16 /9
+      return 16 / 9
     }
     else
-      return  9/16
+      return 8 / 16
   }
 
   build() {

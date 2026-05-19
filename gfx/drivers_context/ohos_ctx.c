@@ -110,7 +110,7 @@ static void *ohos_gfx_ctx_init(void *video_driver)
       free(and);
       return NULL;
    }
-
+ 
 #ifdef HAVE_OPENGLES
   // if (g_es3)
       //attribs[1]                        = EGL_OPENGL_ES3_BIT_KHR;
@@ -136,9 +136,7 @@ static void *ohos_gfx_ctx_init(void *video_driver)
       ohos_gfx_ctx_destroy(and);
       return NULL;
    }
-
-   //OHNativeWindow_setBuffersGeometry(ohos_app->window, 0, 0, format);
-
+   g_ohos->video_started = true;
    slock_unlock(ohos_app->mutex);
    return and;
 
@@ -243,7 +241,6 @@ static bool ohos_gfx_ctx_bind_api(void *data,
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
 #endif
-
    return false;
 }
 

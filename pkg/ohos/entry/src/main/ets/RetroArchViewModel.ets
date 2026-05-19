@@ -60,7 +60,7 @@ export class RetroArchViewModel{
       }
       if(eventId == NativeEventId.EVENT_NATIVE_SET_SCREEN_ORIENTATION){
         if(value == 0){
-          this.context?.windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.AUTO_ROTATION)
+          this.context?.windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.AUTO_ROTATION_UNSPECIFIED)
         }
         if(value == 1){
           this.context?.windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.LANDSCAPE)

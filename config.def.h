@@ -497,8 +497,11 @@
 
 /* Only applies to Android 9.0 (API 28) and up */
 /* Choose if the screen will be able to write around the notch or not */
+#ifdef __OHOS__
+#define DEFAULT_NOTCH_WRITE_OVER_ENABLE true
+#else
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
-
+#endif
 /* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
 
@@ -758,8 +761,11 @@
 #ifdef HAVE_NETWORKING
 #define DEFAULT_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS true
 #endif
-
+#ifdef __OHOS__
+#define DEFAULT_MENU_SHOW_ONLINE_UPDATER false
+#else
 #define DEFAULT_MENU_SHOW_ONLINE_UPDATER true
+#endif
 #if defined(HAVE_LAKKA) || defined(VITA)
 #define DEFAULT_MENU_SHOW_CORE_UPDATER false
 #else
@@ -835,6 +841,8 @@
 #endif
 #if defined(HAVE_NETWORKING)
 #if defined(_3DS)
+#define DEFAULT_CONTENT_SHOW_NETPLAY false
+#elif defined(__OHOS__)
 #define DEFAULT_CONTENT_SHOW_NETPLAY false
 #else
 #define DEFAULT_CONTENT_SHOW_NETPLAY true
@@ -957,7 +965,7 @@
 #define DEFAULT_INPUT_BACKTOUCH_TOGGLE false
 #endif
 
-#if defined(ANDROID) || defined(IOS)
+#if defined(ANDROID) || defined(IOS) || defined (__OHOS__)
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
 #else
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED false
