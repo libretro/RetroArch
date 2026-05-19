@@ -5587,18 +5587,25 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
 
          config_unset(conf, key);
 
-         /* Also unset joykey, axis, and mbutton keys */
-         fill_pathname_join_delim(temp_key, prefix, base, '_', sizeof(temp_key));
-         strlcat(temp_key, "_btn", sizeof(temp_key));
-         config_unset(conf, temp_key);
-
-         fill_pathname_join_delim(temp_key, prefix, base, '_', sizeof(temp_key));
-         strlcat(temp_key, "_axis", sizeof(temp_key));
-         config_unset(conf, temp_key);
-
-         fill_pathname_join_delim(temp_key, prefix, base, '_', sizeof(temp_key));
-         strlcat(temp_key, "_mbtn", sizeof(temp_key));
-         config_unset(conf, temp_key);
+         /* Also unset joykey, axis, and mbutton keys.  Build the
+          * "prefix_base" stem once and overwrite just the suffix
+          * at the known offset for each variant; the prior form
+          * called fill_pathname_join_delim three times and let
+          * each strlcat re-scan temp_key from the start to find
+          * its end. */
+         {
+            size_t _len = fill_pathname_join_delim(temp_key,
+                  prefix, base, '_', sizeof(temp_key));
+            if (_len + sizeof("_axis") <= sizeof(temp_key))
+            {
+               memcpy(temp_key + _len, "_btn", sizeof("_btn"));
+               config_unset(conf, temp_key);
+               memcpy(temp_key + _len, "_axis", sizeof("_axis"));
+               config_unset(conf, temp_key);
+               memcpy(temp_key + _len, "_mbtn", sizeof("_mbtn"));
+               config_unset(conf, temp_key);
+            }
+         }
       }
    }
 }
