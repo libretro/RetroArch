@@ -406,6 +406,12 @@ typedef struct
    unsigned dirty_x_min, dirty_y_min;
    unsigned dirty_x_max, dirty_y_max;
 
+   /* Recycled fence used by vulkan_raster_font_flush to scope
+    * the wait for the atlas upload submission. Lazy-created on
+    * first use; reset on subsequent uses to avoid per-frame
+    * vkCreateFence/vkDestroyFence churn. */
+   VkFence upload_fence;
+
    bool needs_update;
 } vulkan_raster_t;
 
@@ -1536,19 +1542,38 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                submit_info.signalSemaphoreCount = 0;
                submit_info.pSignalSemaphores    = NULL;
 
-#ifdef HAVE_THREADS
-               slock_lock(vk->context->queue_lock);
-#endif
-               vkQueueSubmit(vk->context->queue,
-                     1, &submit_info, VK_NULL_HANDLE);
+               {
+                  /* Wait only on this submission, not the entire
+                   * queue, and release queue_lock immediately after
+                   * submit so other threads can proceed in parallel
+                   * with the transfer. If fence creation fails, fall
+                   * back to a queue drain for correct synchronisation. */
+                  VkFence fence = VK_NULL_HANDLE;
+                  VkFenceCreateInfo fence_info;
+                  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+                  fence_info.pNext = NULL;
+                  fence_info.flags = 0;
+                  vkCreateFence(vk->context->device,
+                        &fence_info, NULL, &fence);
 
-               /* TODO: Very crude, but texture uploads only happen
-                * during init, so waiting for GPU to complete transfer
-                * and blocking isn't a big deal. */
-               vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
-               slock_unlock(vk->context->queue_lock);
+                  slock_lock(vk->context->queue_lock);
 #endif
+                  vkQueueSubmit(vk->context->queue,
+                        1, &submit_info, fence);
+                  if (fence == VK_NULL_HANDLE)
+                     vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+                  slock_unlock(vk->context->queue_lock);
+#endif
+
+                  if (fence != VK_NULL_HANDLE)
+                  {
+                     vkWaitForFences(vk->context->device,
+                           1, &fence, VK_TRUE, UINT64_MAX);
+                     vkDestroyFence(vk->context->device, fence, NULL);
+                  }
+               }
 
                vkFreeCommandBuffers(vk->context->device,
                      vk->staging_pool, 1, &staging);
@@ -2135,6 +2160,8 @@ static void vulkan_font_free(void *data, bool is_threaded)
       font->font_driver->free(font->font_data);
 
    vkQueueWaitIdle(font->vk->context->queue);
+   if (font->upload_fence != VK_NULL_HANDLE)
+      vkDestroyFence(font->vk->context->device, font->upload_fence, NULL);
    vulkan_destroy_texture(
          font->vk->context->device, &font->texture);
    vulkan_destroy_texture(
@@ -2514,9 +2541,11 @@ static void vulkan_font_render_msg(
     */
 
    /* Upload dirty atlas region to the GPU before the draw.
-    * Use a dedicated staging command buffer with vkQueueWaitIdle
-    * to guarantee the transfer is complete before the fragment
-    * shader samples the atlas in the main command buffer. */
+    * Use a dedicated staging command buffer with a recycled
+    * per-submit fence to guarantee the transfer is complete
+    * before the fragment shader samples the atlas in the main
+    * command buffer, without serialising the entire queue or
+    * holding queue_lock across the wait. */
    if (font->needs_update)
    {
       struct vk_texture *dynamic_tex = &font->texture_optimal;
@@ -2643,27 +2672,50 @@ static void vulkan_font_render_msg(
 
             vkEndCommandBuffer(staging_cmd);
 
+            {
+               /* Lazy-create the recycled fence on first use;
+                * subsequent uses reset it. If creation has failed
+                * previously (or fails now), fall back to a queue
+                * drain so we still have correct synchronisation. */
+               VkFence fence = font->upload_fence;
+               if (fence == VK_NULL_HANDLE)
+               {
+                  VkFenceCreateInfo fence_info;
+                  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+                  fence_info.pNext = NULL;
+                  fence_info.flags = 0;
+                  vkCreateFence(vk->context->device,
+                        &fence_info, NULL, &font->upload_fence);
+                  fence = font->upload_fence;
+               }
+               else
+                  vkResetFences(vk->context->device, 1, &fence);
+
+               submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+               submit_info.pNext                = NULL;
+               submit_info.waitSemaphoreCount   = 0;
+               submit_info.pWaitSemaphores      = NULL;
+               submit_info.pWaitDstStageMask    = NULL;
+               submit_info.commandBufferCount   = 1;
+               submit_info.pCommandBuffers      = &staging_cmd;
+               submit_info.signalSemaphoreCount = 0;
+               submit_info.pSignalSemaphores    = NULL;
+
 #ifdef HAVE_THREADS
-            slock_lock(vk->context->queue_lock);
+               slock_lock(vk->context->queue_lock);
+#endif
+               vkQueueSubmit(vk->context->queue,
+                     1, &submit_info, fence);
+               if (fence == VK_NULL_HANDLE)
+                  vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+               slock_unlock(vk->context->queue_lock);
 #endif
 
-            submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submit_info.pNext                = NULL;
-            submit_info.waitSemaphoreCount   = 0;
-            submit_info.pWaitSemaphores      = NULL;
-            submit_info.pWaitDstStageMask    = NULL;
-            submit_info.commandBufferCount   = 1;
-            submit_info.pCommandBuffers      = &staging_cmd;
-            submit_info.signalSemaphoreCount = 0;
-            submit_info.pSignalSemaphores    = NULL;
-            vkQueueSubmit(vk->context->queue,
-                  1, &submit_info, VK_NULL_HANDLE);
-
-            vkQueueWaitIdle(vk->context->queue);
-
-#ifdef HAVE_THREADS
-            slock_unlock(vk->context->queue_lock);
-#endif
+               if (fence != VK_NULL_HANDLE)
+                  vkWaitForFences(vk->context->device,
+                        1, &fence, VK_TRUE, UINT64_MAX);
+            }
 
             vkFreeCommandBuffers(vk->context->device,
                   vk->staging_pool, 1, &staging_cmd);
