@@ -582,13 +582,16 @@ msg_hash_str_pair_t msg_hash_to_str_pair_us(enum msg_hash_enums msg)
    p.len = 0;
 
 #ifdef HAVE_MENU
-   /* The hotkey-bind range is dynamic (snprintf-built per call).  Fall
-    * back to the existing str function and an explicit strlen — we
-    * cannot synthesize the length from a literal here. */
+   /* The hotkey-bind range is dynamic (snprintf-built per call).
+    * Skip the msg_hash_to_str_us wrapper and call the label-enum
+    * helper directly — both end up in the same static buffer in
+    * menu_hash_to_str_us_label_enum, but going through the wrapper
+    * pays for an extra function call and a string_is_equal("null")
+    * check that always returns false for hotkey IDs. */
    if (   msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END
        && msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
    {
-      p.s   = msg_hash_to_str_us(msg);
+      p.s   = menu_hash_to_str_us_label_enum(msg);
       p.len = strlen(p.s);
       return p;
    }
