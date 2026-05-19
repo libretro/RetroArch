@@ -25,6 +25,9 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <limits.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -210,150 +213,625 @@ int filestream_getc(RFILE *stream)
    return EOF;
 }
 
+/* ---- internal scanf engine ----------------------------------------
+ *
+ * The previous implementation built a per-conversion sub-format
+ * string (e.g. "%d%n") and invoked sscanf() for every specifier.
+ * sscanf on most libcs runs strlen() over the entire remaining
+ * input and (on glibc) allocates a transient FILE-stream state
+ * per call. For input parsed one conversion at a time this is
+ * the dominant cost.
+ *
+ * The native engine below scans common conversions in place
+ * (%d %i %u %o %x %X %c %s %[ %n %%) with optional '*' suppress,
+ * width, and length modifiers hh/h/l/ll/z. Floats, %p, the
+ * j/t/L length modifiers, and wide-char variants fall back to
+ * the original sscanf+%n path to preserve exact behavior.
+ */
+
+#define FS_LM_NONE  0
+#define FS_LM_HH    1
+#define FS_LM_H     2
+#define FS_LM_L     3
+#define FS_LM_LL    4
+#define FS_LM_J     5
+#define FS_LM_Z     6
+#define FS_LM_T     7
+#define FS_LM_BIG_L 8
+
+typedef struct
+{
+   int  width;       /* 0 means unbounded */
+   int  length_mod;  /* FS_LM_* */
+   char specifier;   /* d i u o x X c s [ n % f e g a F E G A p */
+   bool suppress;    /* %* */
+   /* For '[' specifiers: bounds of the scanset (after '[' or '[^',
+    * up to but not including ']'). */
+   const char *set_start;
+   const char *set_end;
+   bool        set_negate;
+} fs_scan_spec_t;
+
+/* Parse one conversion specifier starting at `fmt` (which points
+ * just past '%'). Returns updated fmt position, or NULL if the
+ * specifier is malformed. */
+static const char *fs_parse_spec(const char *fmt, fs_scan_spec_t *sp)
+{
+   sp->width      = 0;
+   sp->length_mod = FS_LM_NONE;
+   sp->specifier  = '\0';
+   sp->suppress   = false;
+   sp->set_start  = NULL;
+   sp->set_end    = NULL;
+   sp->set_negate = false;
+
+   if (*fmt == '*')
+   {
+      sp->suppress = true;
+      fmt++;
+   }
+   while (*fmt >= '0' && *fmt <= '9')
+   {
+      sp->width = sp->width * 10 + (*fmt - '0');
+      fmt++;
+   }
+   switch (*fmt)
+   {
+      case 'h':
+         if (fmt[1] == 'h') { sp->length_mod = FS_LM_HH; fmt += 2; }
+         else               { sp->length_mod = FS_LM_H;  fmt += 1; }
+         break;
+      case 'l':
+         if (fmt[1] == 'l') { sp->length_mod = FS_LM_LL; fmt += 2; }
+         else               { sp->length_mod = FS_LM_L;  fmt += 1; }
+         break;
+      case 'j': sp->length_mod = FS_LM_J;     fmt++; break;
+      case 'z': sp->length_mod = FS_LM_Z;     fmt++; break;
+      case 't': sp->length_mod = FS_LM_T;     fmt++; break;
+      case 'L': sp->length_mod = FS_LM_BIG_L; fmt++; break;
+      /* MSVC-style "I" size prefix: I64 -> __int64 (==int64_t), I32
+       * -> 32-bit (==int), I alone -> ptrdiff_t / size_t.  This is a
+       * Microsoft extension some libretro core authors use on
+       * older MSVC toolchains that predate full C99 %lld support. */
+      case 'I':
+         if (fmt[1] == '6' && fmt[2] == '4')
+            { sp->length_mod = FS_LM_LL;   fmt += 3; }
+         else if (fmt[1] == '3' && fmt[2] == '2')
+            { sp->length_mod = FS_LM_NONE; fmt += 3; }
+         else
+            { sp->length_mod = FS_LM_Z;    fmt += 1; }
+         break;
+      default: break;
+   }
+   if (!*fmt)
+      return NULL;
+   sp->specifier = *fmt++;
+   if (sp->specifier == '[')
+   {
+      if (*fmt == '^')
+      {
+         sp->set_negate = true;
+         fmt++;
+      }
+      sp->set_start = fmt;
+      /* literal ']' as first scanset char is part of the set */
+      if (*fmt == ']')
+         fmt++;
+      while (*fmt && *fmt != ']')
+         fmt++;
+      if (*fmt != ']')
+         return NULL;
+      sp->set_end = fmt;
+      fmt++;
+   }
+   return fmt;
+}
+
+static void fs_store_int(const fs_scan_spec_t *sp, va_list *args,
+      int64_t v, bool is_signed)
+{
+   if (is_signed)
+   {
+      switch (sp->length_mod)
+      {
+         case FS_LM_HH: *va_arg(*args, signed char*) = (signed char)v; break;
+         case FS_LM_H:  *va_arg(*args, short*)       = (short)v;       break;
+         case FS_LM_L:  *va_arg(*args, long*)        = (long)v;        break;
+         case FS_LM_LL: *va_arg(*args, int64_t*)   = (int64_t)v;   break;
+         case FS_LM_Z:  *va_arg(*args, size_t*)      = (size_t)v;      break;
+         default:       *va_arg(*args, int*)         = (int)v;         break;
+      }
+   }
+   else
+   {
+      uint64_t uv = (uint64_t)v;
+      switch (sp->length_mod)
+      {
+         case FS_LM_HH: *va_arg(*args, unsigned char*)      = (unsigned char)uv;      break;
+         case FS_LM_H:  *va_arg(*args, unsigned short*)     = (unsigned short)uv;     break;
+         case FS_LM_L:  *va_arg(*args, unsigned long*)      = (unsigned long)uv;      break;
+         case FS_LM_LL: *va_arg(*args, uint64_t*) = (uint64_t)uv; break;
+         case FS_LM_Z:  *va_arg(*args, size_t*)             = (size_t)uv;             break;
+         default:       *va_arg(*args, unsigned int*)       = (unsigned int)uv;       break;
+      }
+   }
+}
+
+/* Scan one integer conversion. `base` is 0 for %i (auto-detect),
+ * else the explicit base (8/10/16). Returns chars consumed, or
+ * -1 on parse failure. On success, advances *pp.
+ *
+ * Width handling: a width of 0 from sp->width means "unlimited" — we
+ * normalize that to INT_MAX up front so every subsequent comparison
+ * is a single check (no special-casing of "<= 0 means unbounded"
+ * which broke when width was legitimately consumed down to 0 by
+ * the sign/0x prefix). */
+static int fs_scan_int(const char **pp, const fs_scan_spec_t *sp,
+      int base, bool is_signed, va_list *args)
+{
+   const char        *start  = *pp;
+   const char        *p      = start;
+   const char        *digit_start;
+   uint64_t acc    = 0;
+   int                neg    = 0;
+   int                width  = sp->width > 0 ? sp->width : INT_MAX;
+   int                digits = 0;
+
+   /* skip leading whitespace */
+   while (isspace((unsigned char)*p))
+      p++;
+
+   /* optional sign */
+   if ((*p == '+' || *p == '-') && width > 0)
+   {
+      if (*p == '-')
+         neg = 1;
+      p++;
+      width--;
+   }
+
+   /* base autodetect / optional 0x prefix.
+    * Note: sscanf's "%x" / "%i" treat "0x" with no following hex
+    * digit as a successful match of the value 0, consuming the
+    * "0x" (2 chars). We mirror that by counting the leading "0"
+    * as our first digit when we commit to base 16 via "0x". */
+   if (base == 0)
+   {
+      if (*p == '0')
+      {
+         if ((p[1] == 'x' || p[1] == 'X') && width >= 2)
+         {
+            base    = 16;
+            acc     = 0;
+            digits  = 1;          /* the "0" counts as a digit */
+            p      += 2;
+            width  -= 2;
+         }
+         else
+            base = 8;
+      }
+      else
+         base = 10;
+   }
+   else if (base == 16)
+   {
+      if (*p == '0' && (p[1] == 'x' || p[1] == 'X') && width >= 2)
+      {
+         acc     = 0;
+         digits  = 1;             /* the "0" counts as a digit */
+         p      += 2;
+         width  -= 2;
+      }
+   }
+
+   digit_start = p;
+   while (*p && (p - digit_start) < width)
+   {
+      unsigned char c = (unsigned char)*p;
+      int           d;
+      if      (c >= '0' && c <= '9') d = c - '0';
+      else if (c >= 'a' && c <= 'f') d = c - 'a' + 10;
+      else if (c >= 'A' && c <= 'F') d = c - 'A' + 10;
+      else                           break;
+      if (d >= base)
+         break;
+      acc = acc * (uint64_t)base + (uint64_t)d;
+      p++;
+      digits++;
+   }
+
+   if (digits == 0)
+      return -1;
+
+   if (!sp->suppress)
+   {
+      int64_t sv = neg
+         ? -(int64_t)acc
+         :  (int64_t)acc;
+      fs_store_int(sp, args, sv, is_signed);
+   }
+   *pp = p;
+   return (int)(p - start);
+}
+
+/* %s — skip leading ws, copy non-ws up to width (default unbounded).
+ * Always NUL-terminates output. Fails only on no chars matched. */
+static int fs_scan_str(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
+{
+   const char *start = *pp;
+   const char *p     = start;
+   char       *out   = NULL;
+   int         n     = 0;
+   int         width = sp->width;
+
+   while (isspace((unsigned char)*p))
+      p++;
+
+   if (!sp->suppress)
+      out = va_arg(*args, char*);
+
+   while (*p && !isspace((unsigned char)*p) && (width <= 0 || n < width))
+   {
+      if (out) out[n] = *p;
+      n++;
+      p++;
+   }
+   if (n == 0)
+      return -1;
+   if (out) out[n] = '\0';
+   *pp = p;
+   return (int)(p - start);
+}
+
+/* %c — read exactly width chars (default 1). Does NOT skip
+ * whitespace. Does NOT NUL-terminate. Fails if fewer than width
+ * chars available. */
+static int fs_scan_char(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
+{
+   const char *p     = *pp;
+   int         width = sp->width > 0 ? sp->width : 1;
+   int         i;
+   char       *out   = sp->suppress ? NULL : va_arg(*args, char*);
+
+   for (i = 0; i < width; i++)
+   {
+      if (!p[i])
+         return -1;
+      if (out)
+         out[i] = p[i];
+   }
+   *pp = p + width;
+   return width;
+}
+
+/* Test scanset membership. `set` points just after '[' (or after
+ * '[^' if negated); `end` points at the closing ']'. */
+static bool fs_scanset_match(const char *set, const char *end,
+      bool negate, unsigned char c)
+{
+   const char *p      = set;
+   bool        in_set = false;
+   /* literal ']' as first char is part of the set */
+   if (p < end && *p == ']')
+   {
+      if (c == ']') in_set = true;
+      p++;
+   }
+   while (p < end)
+   {
+      if (p + 2 < end && p[1] == '-' && p[2] != ']')
+      {
+         unsigned char lo = (unsigned char)p[0];
+         unsigned char hi = (unsigned char)p[2];
+         if (lo > hi) { unsigned char t = lo; lo = hi; hi = t; }
+         if (c >= lo && c <= hi) in_set = true;
+         p += 3;
+      }
+      else
+      {
+         if ((unsigned char)*p == c) in_set = true;
+         p++;
+      }
+   }
+   return negate ? !in_set : in_set;
+}
+
+/* %[..] — does NOT skip leading whitespace. */
+static int fs_scan_set(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
+{
+   const char *start = *pp;
+   const char *p     = start;
+   char       *out   = sp->suppress ? NULL : va_arg(*args, char*);
+   int         n     = 0;
+   int         width = sp->width;
+
+   while (*p && (width <= 0 || n < width)
+         && fs_scanset_match(sp->set_start, sp->set_end,
+               sp->set_negate, (unsigned char)*p))
+   {
+      if (out) out[n] = *p;
+      n++;
+      p++;
+   }
+   if (n == 0)
+      return -1;
+   if (out) out[n] = '\0';
+   *pp = p;
+   return n;
+}
+
+/* %n — store chars-consumed-so-far into the destination of the
+ * appropriate width. Suppressed %n is a no-op. */
+static void fs_store_n(const fs_scan_spec_t *sp, va_list *args, int n)
+{
+   if (sp->suppress)
+      return;
+   switch (sp->length_mod)
+   {
+      case FS_LM_HH: *va_arg(*args, signed char*) = (signed char)n; break;
+      case FS_LM_H:  *va_arg(*args, short*)       = (short)n;       break;
+      case FS_LM_L:  *va_arg(*args, long*)        = (long)n;        break;
+      case FS_LM_LL: *va_arg(*args, int64_t*)   = (int64_t)n;   break;
+      case FS_LM_Z:  *va_arg(*args, size_t*)      = (size_t)n;      break;
+      case FS_LM_J:  *va_arg(*args, intmax_t*)    = (intmax_t)n;    break;
+      case FS_LM_T:  *va_arg(*args, ptrdiff_t*)   = (ptrdiff_t)n;   break;
+      default:       *va_arg(*args, int*)         = n;              break;
+   }
+}
+
+/* Decides whether the native engine can handle a given
+ * (specifier, length_mod) combination. Combinations that can't be
+ * served natively without changing the va_arg destination type
+ * (e.g. %ls writes wchar_t*, %jd writes intmax_t*) are routed to
+ * fs_fallback which knows the right va_arg dispatch. */
+static bool fs_native_handles(char specifier, int length_mod)
+{
+   switch (specifier)
+   {
+      case 'd': case 'i': case 'u': case 'o': case 'x': case 'X':
+         /* j (intmax_t) / t (ptrdiff_t) / non-standard L need fallback. */
+         return length_mod == FS_LM_NONE
+             || length_mod == FS_LM_HH
+             || length_mod == FS_LM_H
+             || length_mod == FS_LM_L
+             || length_mod == FS_LM_LL
+             || length_mod == FS_LM_Z;
+      case 's': case 'c': case '[':
+         /* l means wchar_t* — fallback. */
+         return length_mod == FS_LM_NONE;
+      case 'n':
+         /* All standard int length mods are handled by fs_store_n. */
+         return length_mod == FS_LM_NONE
+             || length_mod == FS_LM_HH
+             || length_mod == FS_LM_H
+             || length_mod == FS_LM_L
+             || length_mod == FS_LM_LL
+             || length_mod == FS_LM_Z
+             || length_mod == FS_LM_J
+             || length_mod == FS_LM_T;
+      default:
+         /* Floats (%f/e/g/a), %p, and anything unknown — fallback. */
+         return false;
+   }
+}
+
+/* Fallback for specifiers and (specifier, length-mod) combinations
+ * the native engine does not handle:
+ *   - floats (f, e, g, a, F, E, G, A) with any length mod
+ *   - %p (pointer)
+ *   - integer conversions with the j (intmax_t/uintmax_t),
+ *     t (ptrdiff_t/size_t) or L (non-standard) length modifiers
+ *   - %ls / %lc / %l[ (wide-char destinations)
+ *
+ * Behavior matches the prior sscanf+%n approach byte-for-byte. */
+static int fs_fallback(const char **pp, const char *fmt_pct,
+      const char *fmt_next, const fs_scan_spec_t *sp, va_list *args)
+{
+   char   subfmt[64];
+   size_t fmt_len = (size_t)(fmt_next - fmt_pct);
+   int    sublen  = 0;
+   int    v       = 0;
+
+   if (fmt_len + 3 > sizeof(subfmt))
+      return -1;
+   memcpy(subfmt, fmt_pct, fmt_len);
+   subfmt[fmt_len]     = '%';
+   subfmt[fmt_len + 1] = 'n';
+   subfmt[fmt_len + 2] = '\0';
+
+   if (sp->suppress)
+   {
+      v = sscanf(*pp, subfmt, &sublen);
+      if (v == EOF || sublen == 0)
+         return -1;
+      *pp += sublen;
+      return sublen;
+   }
+
+   switch (sp->specifier)
+   {
+      case 'f': case 'e': case 'g': case 'a':
+      case 'F': case 'E': case 'G': case 'A':
+         switch (sp->length_mod)
+         {
+            case FS_LM_NONE:
+               v = sscanf(*pp, subfmt, va_arg(*args, float*),       &sublen); break;
+            case FS_LM_L:
+               v = sscanf(*pp, subfmt, va_arg(*args, double*),      &sublen); break;
+            case FS_LM_BIG_L:
+               v = sscanf(*pp, subfmt, va_arg(*args, long double*), &sublen); break;
+            default:
+               return -1;
+         }
+         break;
+      case 'p':
+         v = sscanf(*pp, subfmt, va_arg(*args, void**), &sublen);
+         break;
+      /* Signed integer specifiers with length mods we don't handle natively. */
+      case 'd': case 'i':
+         switch (sp->length_mod)
+         {
+            case FS_LM_J:
+               v = sscanf(*pp, subfmt, va_arg(*args, intmax_t*),  &sublen); break;
+            case FS_LM_T:
+               v = sscanf(*pp, subfmt, va_arg(*args, ptrdiff_t*), &sublen); break;
+            default:
+               return -1;
+         }
+         break;
+      /* Unsigned integer specifiers. C99 §7.19.6.2: %t-prefixed
+       * unsigned conversions take the unsigned type corresponding
+       * to ptrdiff_t, which is size_t for the purposes of va_arg. */
+      case 'u': case 'o': case 'x': case 'X':
+         switch (sp->length_mod)
+         {
+            case FS_LM_J:
+               v = sscanf(*pp, subfmt, va_arg(*args, uintmax_t*), &sublen); break;
+            case FS_LM_T:
+               v = sscanf(*pp, subfmt, va_arg(*args, size_t*),    &sublen); break;
+            default:
+               return -1;
+         }
+         break;
+      /* String-family with wide-char destination. */
+      case 's': case 'c': case '[':
+         if (sp->length_mod == FS_LM_L)
+            v = sscanf(*pp, subfmt, va_arg(*args, wchar_t*), &sublen);
+         else
+            return -1;
+         break;
+      default:
+         return -1;
+   }
+
+   if (v != 1 || sublen == 0)
+      return -1;
+   *pp += sublen;
+   return sublen;
+}
+
 int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
 {
-   char buf[4096];
-   char subfmt[256];
-   va_list args_copy;
-   const char *bufiter  = buf;
-   int        ret       = 0;
-   int64_t startpos     = filestream_tell(stream);
-   int64_t maxlen       = filestream_read(stream, buf, sizeof(buf) - 1);
- 
+   char        buf[4096];
+   va_list     args_copy;
+   const char *bufiter;
+   const char *fmt      = format;
+   int         ret      = 0;
+   int64_t     startpos = filestream_tell(stream);
+   int64_t     maxlen   = filestream_read(stream, buf, sizeof(buf) - 1);
+
    if (maxlen <= 0)
       return EOF;
- 
+
    buf[maxlen] = '\0';
- 
+
 #ifdef __va_copy
    __va_copy(args_copy, *args);
 #else
    va_copy(args_copy, *args);
 #endif
- 
-   while (*format && *bufiter)
+
+   bufiter = buf;
+
+   while (*fmt && *bufiter)
    {
-      if (*format == '%')
+      if (*fmt == '%')
       {
-         int        sublen     = 0; /* Fix 4: initialize to 0 */
-         char      *subfmtiter = subfmt;
-         char      *subfmtend  = subfmt + sizeof(subfmt) - 4; /* reserve room for %n\0 */
-         bool       asterisk   = false;
- 
-         *subfmtiter++ = *format++; /* '%' */
- 
-         /* handle %% literal percent */
-         if (*format == '%')
+         fs_scan_spec_t  sp;
+         const char     *fmt_pct = fmt;  /* points at '%' */
+         const char     *fmt_next;
+         int             consumed = -1;
+
+         fmt++;  /* past '%' */
+
+         /* literal %% */
+         if (*fmt == '%')
          {
             if (*bufiter != '%')
                break;
             bufiter++;
-            format++;
+            fmt++;
             continue;
          }
- 
-         /* %[*][width][length]specifier */
-         if (*format == '*')
+
+         fmt_next = fs_parse_spec(fmt, &sp);
+         if (!fmt_next)
+            break;  /* malformed spec — stop, matching prior behavior */
+
+         if (!fs_native_handles(sp.specifier, sp.length_mod))
          {
-            asterisk      = true;
-            *subfmtiter++ = *format++;
+            consumed = fs_fallback(&bufiter, fmt_pct, fmt_next,
+                  &sp, &args_copy);
          }
- 
-         /* width digits */
-         while (*format >= '0' && *format <= '9' && subfmtiter < subfmtend)
-            *subfmtiter++ = *format++;
- 
-         /* length modifier */
-         if (*format == 'h' || *format == 'l')
+         else switch (sp.specifier)
          {
-            if (format[1] == format[0] && subfmtiter < subfmtend)
-               *subfmtiter++ = *format++;
-            if (subfmtiter < subfmtend)
-               *subfmtiter++ = *format++;
-         }
-         else if (*format == 'j' || *format == 'z'
-               || *format == 't' || *format == 'L')
-         {
-            if (subfmtiter < subfmtend)
-               *subfmtiter++ = *format++;
-         }
- 
-         /* specifier */
-         if (*format == '[')
-         {
-            /* Fix 2: bounds-check subfmt and guard against missing ']' */
-            *subfmtiter++ = *format++; /* '[' */
- 
-            /* handle negation */
-            if (*format == '^' && subfmtiter < subfmtend)
-               *subfmtiter++ = *format++;
- 
-            /* handle literal ']' as first character in scanset */
-            if (*format == ']' && subfmtiter < subfmtend)
-               *subfmtiter++ = *format++;
- 
-            while (*format && *format != ']' && subfmtiter < subfmtend)
-               *subfmtiter++ = *format++;
- 
-            if (*format == ']')
-               *subfmtiter++ = *format++;
-            else
-               break; /* malformed format string — missing ']' */
-         }
-         else if (*format)
-            *subfmtiter++ = *format++;
-         else
-            break; /* format string ended after '%' + modifiers with no specifier */
- 
-         /* append %n to measure consumed characters */
-         *subfmtiter++ = '%';
-         *subfmtiter++ = 'n';
-         *subfmtiter   = '\0';
- 
-         if (asterisk)
-         {
-            int v = sscanf(bufiter, subfmt, &sublen);
-            if (v == EOF)
+            case 'd':
+               consumed = fs_scan_int(&bufiter, &sp, 10, true,  &args_copy); break;
+            case 'i':
+               consumed = fs_scan_int(&bufiter, &sp,  0, true,  &args_copy); break;
+            case 'u':
+               consumed = fs_scan_int(&bufiter, &sp, 10, false, &args_copy); break;
+            case 'o':
+               consumed = fs_scan_int(&bufiter, &sp,  8, false, &args_copy); break;
+            case 'x':
+            case 'X':
+               consumed = fs_scan_int(&bufiter, &sp, 16, false, &args_copy); break;
+            case 's':
+               consumed = fs_scan_str(&bufiter, &sp, &args_copy); break;
+            case 'c':
+               consumed = fs_scan_char(&bufiter, &sp, &args_copy); break;
+            case '[':
+               consumed = fs_scan_set(&bufiter, &sp, &args_copy); break;
+            case 'n':
+               fs_store_n(&sp, &args_copy, (int)(bufiter - buf));
+               consumed = 0;  /* succeeds, consumes no input */
                break;
-            /* Fix 1: do NOT increment ret for suppressed assignments */
-            if (sublen == 0)
-               break; /* no input consumed — stop */
-         }
-         else
-         {
-            int v = sscanf(bufiter, subfmt, va_arg(args_copy, void*), &sublen);
-            if (v == EOF)
+            default:
+               /* Unreachable: fs_native_handles returned false for
+                * anything not in this switch. */
+               consumed = -1;
                break;
-            if (v != 1)
-               break;
-            ret++;  /* Fix 1: only increment for actual assignments */
          }
- 
-         bufiter += sublen;
+
+         if (consumed < 0)
+            break;
+
+         /* %n doesn't count toward the return value; nor do
+          * assignment-suppressed conversions. */
+         if (!sp.suppress && sp.specifier != 'n')
+            ret++;
+
+         /* Suppressed conversion that consumed nothing — bail,
+          * matching the prior "sublen == 0" guard. */
+         if (sp.suppress && sp.specifier != 'n' && consumed == 0)
+            break;
+
+         fmt = fmt_next;
       }
-      else if (isspace((unsigned char)*format))
+      else if (isspace((unsigned char)*fmt))
       {
-         /* a single whitespace in format matches zero or more in input */
          while (isspace((unsigned char)*bufiter))
             bufiter++;
-         /* skip all contiguous whitespace in format too */
-         while (isspace((unsigned char)*format))
-            format++;
+         while (isspace((unsigned char)*fmt))
+            fmt++;
       }
       else
       {
-         if (*bufiter != *format)
+         if (*bufiter != *fmt)
             break;
          bufiter++;
-         format++;
+         fmt++;
       }
    }
- 
+
    va_end(args_copy);
- 
+
    filestream_seek(stream, startpos + (bufiter - buf),
          RETRO_VFS_SEEK_POSITION_START);
- 
+
    return ret;
 }
 
