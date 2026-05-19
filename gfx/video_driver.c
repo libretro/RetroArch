@@ -4472,13 +4472,13 @@ void video_driver_frame(const void *data, unsigned width,
             status_text[++_len] = '|';
             status_text[++_len] = ' ';
             status_text[++_len] = '\0';
-            strlcpy(
+            _len               += strlcpy(
                   status_text         + _len,
                   runloop_st->core_status_msg.str,
                   sizeof(status_text) - _len);
          }
          else
-            strlcpy(status_text,
+            _len = strlcpy(status_text,
                   runloop_st->core_status_msg.str,
                   sizeof(status_text));
       }
@@ -4492,8 +4492,6 @@ void video_driver_frame(const void *data, unsigned width,
       static retro_time_t next_time_update;
       static unsigned time_show_last_format;
       time_t time_;
-
-      _len = strlen(status_text);
 
       if (_len > 0)
       {
@@ -4539,7 +4537,7 @@ void video_driver_frame(const void *data, unsigned width,
          next_time_update = new_time + time_update_interval;
       }
 
-      strlcpy(status_text + _len, time_text, sizeof(status_text) - _len);
+      _len += strlcpy(status_text + _len, time_text, sizeof(status_text) - _len);
    }
 
    /* Slightly messy code,
@@ -4839,16 +4837,34 @@ void video_driver_frame(const void *data, unsigned width,
    {
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
-         strlcpy(
-               p_dispwidget->gfx_widgets_status_text,
-               status_text,
-               sizeof(p_dispwidget->gfx_widgets_status_text)
-               );
+      {
+         /* Cap to widget buffer.  _len is the source length; if it
+          * would overflow, fall back to a clamping strlcpy and use
+          * its return as the new length. */
+         if (_len < sizeof(p_dispwidget->gfx_widgets_status_text))
+         {
+            memcpy(p_dispwidget->gfx_widgets_status_text,
+                  status_text, _len + 1);
+            p_dispwidget->gfx_widgets_status_text_len = _len;
+         }
+         else
+         {
+            p_dispwidget->gfx_widgets_status_text_len = strlcpy(
+                  p_dispwidget->gfx_widgets_status_text,
+                  status_text,
+                  sizeof(p_dispwidget->gfx_widgets_status_text));
+            if (p_dispwidget->gfx_widgets_status_text_len
+                  >= sizeof(p_dispwidget->gfx_widgets_status_text))
+               p_dispwidget->gfx_widgets_status_text_len =
+                  sizeof(p_dispwidget->gfx_widgets_status_text) - 1;
+         }
+      }
       else
 #endif
       {
-         /* TODO/FIXME - get rid of strlen here */
-         runloop_msg_queue_push(status_text, strlen(status_text), 2, 1, true, NULL,
+         /* _len was tracked accurately through the status_text
+          * build above — no strlen needed. */
+         runloop_msg_queue_push(status_text, _len, 2, 1, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
