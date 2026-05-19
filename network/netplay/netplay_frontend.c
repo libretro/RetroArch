@@ -608,18 +608,28 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
 
       if (subsystem && subsystem->size > 0)
       {
-         unsigned i = 0;
+         /* Build "name1|name2|name3" via offset tracking; the prior
+          * strlcat-in-loop form re-scanned the buffer from the start
+          * on every append, giving O(subsystems^2) total cost. */
+         unsigned i;
+         size_t   buf_len = 0;
+         size_t   avail   = sizeof(ad_packet_buffer.content);
 
-         for (;;)
+         ad_packet_buffer.content[0] = '\0';
+
+         for (i = 0; i < subsystem->size && buf_len + 1 < avail; i++)
          {
-            strlcat(ad_packet_buffer.content,
-               path_basename(subsystem->elems[i].data),
-               sizeof(ad_packet_buffer.content));
-            if (++i >= subsystem->size)
-               break;
-            strlcat(ad_packet_buffer.content, "|",
-               sizeof(ad_packet_buffer.content));
+            const char *base = path_basename(subsystem->elems[i].data);
+            size_t      blen = strlen(base);
+
+            if (i > 0)
+               ad_packet_buffer.content[buf_len++] = '|';
+            if (blen >= avail - buf_len)
+               blen = avail - buf_len - 1;
+            memcpy(ad_packet_buffer.content + buf_len, base, blen);
+            buf_len += blen;
          }
+         ad_packet_buffer.content[buf_len] = '\0';
 
          strlcpy(ad_packet_buffer.subsystem_name,
             path_get(RARCH_PATH_SUBSYSTEM),
@@ -8658,18 +8668,28 @@ static void netplay_announce(netplay_t *netplay)
 
    if (subsystem && subsystem->size > 0)
    {
-      unsigned i = 0;
-      buf[0]     = '\0';
-      for (;;)
+      /* Build "name1|name2|name3" via offset tracking; the prior
+       * strlcat-in-loop form re-scanned the buffer from the start
+       * on every append, giving O(subsystems^2) total cost. */
+      unsigned i;
+      size_t   buf_len = 0;
+      size_t   avail   = sizeof(host_room->gamename);
+
+      buf[0] = '\0';
+
+      for (i = 0; i < subsystem->size && buf_len + 1 < avail; i++)
       {
-         /* TODO/FIXME - is last param OK here */
-         strlcat(buf, path_basename(subsystem->elems[i].data),
-            sizeof(host_room->gamename));
-         if (++i >= subsystem->size)
-            break;
-         /* TODO/FIXME - is last param OK here */
-         strlcat(buf, "|", sizeof(host_room->gamename));
+         const char *base = path_basename(subsystem->elems[i].data);
+         size_t      blen = strlen(base);
+
+         if (i > 0)
+            buf[buf_len++] = '|';
+         if (blen >= avail - buf_len)
+            blen = avail - buf_len - 1;
+         memcpy(buf + buf_len, base, blen);
+         buf_len += blen;
       }
+      buf[buf_len] = '\0';
 
       net_http_urlencode(&gamename, buf);
       strlcpy(buf, path_get(RARCH_PATH_SUBSYSTEM),
