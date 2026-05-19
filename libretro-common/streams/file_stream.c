@@ -28,7 +28,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <wchar.h>
+#include <encodings/utf.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -233,7 +233,9 @@ int filestream_getc(RFILE *stream)
  *                            or allocate per-call state)
  *   %p                     - via fs_scan_pointer (hex parse)
  *   %s %c %[..]            - via fs_scan_str/char/set (byte loop)
- *   %ls %lc %l[..]         - via fs_scan_wide (mbrtowc decoding)
+ *   %ls %lc %l[..]         - via fs_scan_wide (UTF-8 decoding via
+ *                            libretro-common's utf8_walk; no
+ *                            mbrtowc dependency)
  *   %n                     - direct write of chars-consumed-so-far
  *   %%                     - literal match
  *
@@ -792,8 +794,13 @@ static bool fs_wscanset_match(const char *set, const char *end,
  *   's' — skip ws, read non-ws wide chars until ws/width/end; NUL-terminate
  *   'c' — read exactly width wide chars (default 1); no ws skip; no NUL
  *   '[' — read wide chars while scanset matches; NUL-terminate
- * Multibyte input is decoded via mbrtowc() using a local conversion
- * state so the call is reentrant. */
+ *
+ * Multibyte input is decoded as UTF-8 via libretro-common's stateless
+ * utf8_walk(); this avoids any dependency on the host libc's
+ * mbrtowc/mbstate_t (absent in DJGPP and other older toolchains) and
+ * gives the same behavior across platforms. The lead byte's UTF-8
+ * width is checked against the buffer's NUL boundary before walking
+ * so truncated input never reads past the terminator. */
 static int fs_scan_wide(const char **pp, const fs_scan_spec_t *sp,
       char mode, va_list *args)
 {
@@ -803,9 +810,6 @@ static int fs_scan_wide(const char **pp, const fs_scan_spec_t *sp,
    int         n     = 0;
    int         width = sp->width;
    int         max_n;
-   mbstate_t   state;
-
-   memset(&state, 0, sizeof state);
 
    if (mode == 's')
    {
@@ -822,24 +826,41 @@ static int fs_scan_wide(const char **pp, const fs_scan_spec_t *sp,
 
    while (n < max_n)
    {
-      wchar_t wc;
-      size_t  len;
+      const char   *before;
+      unsigned char lead;
+      int           needed;
+      int           k;
+      uint32_t      cp;
+
       if (!*p)
-         break;
-      len = mbrtowc(&wc, p, MB_CUR_MAX, &state);
-      if (len == (size_t)-1 || len == (size_t)-2)
-         return -1;
-      if (len == 0)
          break;
       if (mode == 's' && isspace((unsigned char)*p))
          break;
+
+      /* Bounds-check the UTF-8 sequence width against the NUL
+       * boundary before letting utf8_walk advance past it. */
+      lead = (unsigned char)*p;
+      if      (lead < 0x80) needed = 1;
+      else if (lead < 0xC0) return -1;  /* stray continuation byte */
+      else if (lead < 0xE0) needed = 2;
+      else if (lead < 0xF0) needed = 3;
+      else                  needed = 4;
+      for (k = 1; k < needed; k++)
+         if (!p[k])
+            return -1;
+
+      before = p;
+      cp     = utf8_walk(&p);
+
       if (mode == '[' && !fs_wscanset_match(sp->set_start, sp->set_end,
-               sp->set_negate, wc))
+               sp->set_negate, (wchar_t)cp))
+      {
+         p = before;  /* codepoint rejected — do not consume */
          break;
+      }
       if (out)
-         out[n] = wc;
+         out[n] = (wchar_t)cp;
       n++;
-      p += len;
    }
 
    /* %lc must read exactly max_n wide chars; falling short is failure. */
