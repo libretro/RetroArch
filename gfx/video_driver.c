@@ -4792,6 +4792,10 @@ void video_driver_frame(const void *data, unsigned width,
                   " Run-Ahead:   %2u frames\n"
                   " - Preemptive Frames\n",
                   video_info.runahead_frames);
+
+         /* Tracked length of stat_text; consumed by driver frame()
+          * callbacks instead of strlen on every frame. */
+         video_info.stat_text_len = __len;
       }
    }
 

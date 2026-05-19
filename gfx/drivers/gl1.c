@@ -1852,7 +1852,7 @@ static bool gl1_frame(void *data, const void *frame,
       if (video_info->statistics_show)
       {
          if (osd_params)
-            font_driver_render_msg(gl1, video_info->stat_text, strlen(video_info->stat_text),
+            font_driver_render_msg(gl1, video_info->stat_text, video_info->stat_text_len,
                   osd_params, NULL);
       }
 

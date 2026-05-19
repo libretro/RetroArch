@@ -2307,7 +2307,7 @@ static bool gx2_frame(void *data, const void *frame,
       if (statistics_show)
       {
          if (osd_params)
-            font_driver_render_msg(wiiu, video_info->stat_text, strlen(video_info->stat_text),
+            font_driver_render_msg(wiiu, video_info->stat_text, video_info->stat_text_len,
                   osd_params, NULL);
       }
 

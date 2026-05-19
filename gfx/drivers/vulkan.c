@@ -6927,7 +6927,7 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          if (osd_params)
             font_driver_render_msg(vk,
-                  stat_text, strlen(stat_text),
+                  stat_text, video_info->stat_text_len,
                   osd_params, NULL);
       }
 #endif

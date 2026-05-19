@@ -4741,7 +4741,7 @@ static bool d3d11_gfx_frame(
                   context, 0, 1, &d3d11->sprites.vbo, &stride, &offset);
          }
          font_driver_render_msg(d3d11,
-               stat_text, strlen(stat_text),
+               stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
       }
    }

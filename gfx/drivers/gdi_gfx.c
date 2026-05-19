@@ -3031,7 +3031,7 @@ static bool gdi_frame(void *data, const void *frame,
     * achievement panel with a semi-transparent background should
     * obscure the stats it overlaps, not vice-versa. */
    if (show_stats)
-      font_driver_render_msg(gdi, stat_text, strlen(stat_text), osd_params, NULL);
+      font_driver_render_msg(gdi, stat_text, video_info->stat_text_len, osd_params, NULL);
 
    /* --- Step 10b: input overlay (touch / virtual gamepad images).
     *

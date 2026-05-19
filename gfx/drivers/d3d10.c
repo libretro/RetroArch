@@ -3337,7 +3337,7 @@ static bool d3d10_gfx_frame(
                   context, 0, 1, (D3D10Buffer* const)&d3d10->sprites.vbo,
                   &stride, &offset);
             font_driver_render_msg(d3d10,
-                  stat_text, strlen(stat_text),
+                  stat_text, video_info->stat_text_len,
                   (const struct font_params*)osd_params, NULL);
          }
       }

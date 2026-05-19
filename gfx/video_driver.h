@@ -428,6 +428,7 @@ typedef struct video_frame_info
    uint16_t frame_time_target;
 
    char stat_text[1024];
+   size_t stat_text_len;
 
    bool widgets_active;
    bool notifications_hidden;

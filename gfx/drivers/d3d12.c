@@ -5792,7 +5792,7 @@ static bool d3d12_gfx_frame(
             cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
             cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
             cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
-            font_driver_render_msg(d3d12, stat_text, strlen(stat_text),
+            font_driver_render_msg(d3d12, stat_text, video_info->stat_text_len,
                   (const struct font_params*)osd_params, NULL);
          }
       }

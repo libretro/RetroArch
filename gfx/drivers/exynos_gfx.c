@@ -1334,7 +1334,7 @@ static bool exynos_frame(void *data, const void *frame, unsigned width,
          (struct font_params*)&video_info->osd_stat_params : NULL;
 
       if (osd_params)
-         font_driver_render_msg(vid, video_info->stat_text, strlen(video_info->stat_text),
+         font_driver_render_msg(vid, video_info->stat_text, video_info->stat_text_len,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 

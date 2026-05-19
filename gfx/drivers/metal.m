@@ -4110,7 +4110,7 @@ font_renderer_t metal_raster_font = {
       {
          struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
          if (osd_params)
-            font_driver_render_msg(data, video_info->stat_text, strlen(video_info->stat_text), osd_params, NULL);
+            font_driver_render_msg(data, video_info->stat_text, video_info->stat_text_len, osd_params, NULL);
       }
 
 #ifdef HAVE_GFX_WIDGETS

@@ -455,7 +455,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
    /* Set up the global OSD font (video_font_driver) using our
     * sdl2_raster_font.  Required for the "Display Statistics"
     * overlay - the central video_driver_frame path renders that
-    * via font_driver_render_msg(driver_data, stat_text, strlen(stat_text), params, NULL),
+    * via font_driver_render_msg(driver_data, stat_text, video_info->stat_text_len, params, NULL),
     * and font_driver_render_msg falls through to video_font_driver
     * when font_data is NULL.  Without this, video_font_driver stays
     * NULL on SDL2 and statistics never render.
@@ -591,7 +591,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
          screen_vp_stats.h = (int)vid->vp.full_height;
          SDL_RenderSetViewport(vid->renderer, &screen_vp_stats);
 
-         font_driver_render_msg(vid, stat_text, strlen(stat_text), osd_params, NULL);
+         font_driver_render_msg(vid, stat_text, video_info->stat_text_len, osd_params, NULL);
 
          SDL_RenderSetViewport(vid->renderer, &saved_vp_stats);
       }

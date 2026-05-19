@@ -2305,7 +2305,7 @@ static bool ctr_frame(void* data, const void* frame,
    {
       if (osd_params)
       {
-         font_driver_render_msg(ctr, stat_text, strlen(stat_text),
+         font_driver_render_msg(ctr, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
       }
    }
