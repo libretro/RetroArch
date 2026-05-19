@@ -119,8 +119,7 @@ struct ohos_app
 
    /* When non-NULL, this is the window surface that the app can draw in. */
    OHNativeWindow* window;
-   bool video_started;
-
+    
    /* Below are "private" implementation of the glue code. */
    slock_t *mutex;
    scond_t *cond;

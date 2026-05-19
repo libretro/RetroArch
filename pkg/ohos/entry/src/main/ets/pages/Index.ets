@@ -38,6 +38,8 @@ struct Index {
         .constraintSize({ maxWidth: '100%', maxHeight: '100%' })
         .aspectRatio(!this.viewmodel.fullScreen ? this.GetAspectRatio(): undefined)
         .onLoad(()=>{ }).onTouch((e: TouchEvent)=>{
+          if(this.viewmodel.loading)
+            return;
           retroApi.onTouchEvent({
             id: e.touches[e.touches.length - 1]?.id ?? 0,
             type: e.type,

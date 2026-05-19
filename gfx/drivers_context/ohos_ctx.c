@@ -136,7 +136,7 @@ static void *ohos_gfx_ctx_init(void *video_driver)
       ohos_gfx_ctx_destroy(and);
       return NULL;
    }
-   g_ohos->video_started = true;
+ 
    slock_unlock(ohos_app->mutex);
    return and;
 

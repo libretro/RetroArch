@@ -126,7 +126,8 @@ static float TouchEvent_getY(TouchEvent event, int touchId){
 void ohos_input_poll_touch_event(
    void  *ohos_input, TouchEvent event)
 {
-   if(ohos_input == NULL || !g_ohos->video_started)
+   video_driver_state_t *video_st   = video_state_get_ptr();
+   if(ohos_input == NULL || video_st->data == NULL)
       return;
    ohos_input_t* ohos = (ohos_input_t*)ohos_input;
    int motion_ptr = event.id;
