@@ -1414,7 +1414,7 @@ static int d3d12_font_get_message_width(void* data,
 static void d3d12_font_render_msg(
       void *userdata,
       void* data,
-      const char* msg,
+      const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    float line_height;
@@ -1539,7 +1539,7 @@ static void d3d12_font_render_msg(
       font->atlas->dirty = false;
    }
 
-   total_len = strlen(msg);
+   total_len = msg_len;
    if (has_shadow)
       total_len *= 2;
 
@@ -5792,7 +5792,7 @@ static bool d3d12_gfx_frame(
             cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
             cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
             cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
-            font_driver_render_msg(d3d12, stat_text,
+            font_driver_render_msg(d3d12, stat_text, strlen(stat_text),
                   (const struct font_params*)osd_params, NULL);
          }
       }
@@ -5844,7 +5844,7 @@ static bool d3d12_gfx_frame(
       cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
       cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
-      font_driver_render_msg(d3d12, msg, NULL, NULL);
+      font_driver_render_msg(d3d12, msg, strlen(msg), NULL, NULL);
    }
    d3d12->flags &= ~D3D12_ST_FLAG_SPRITES_ENABLE;
 
@@ -6802,13 +6802,13 @@ static void d3d12_gfx_apply_state_changes(void* data)
 }
 
 static void d3d12_gfx_set_osd_msg(
-      void* data, const char *msg,
+      void* data, const char *msg, size_t msg_len,
       const struct font_params *params,
       void* font)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
    if (d3d12 && (d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE))
-      font_driver_render_msg(d3d12, msg, params, font);
+      font_driver_render_msg(d3d12, msg, msg_len, params, font);
 }
 
 #ifdef HAVE_THREADS

@@ -177,7 +177,7 @@ static void xshm_poke_set_texture_frame(void *data,
 static void xshm_poke_texture_enable(void *data,
       bool enable, bool full_screen) { }
 static void xshm_poke_set_osd_msg(void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params, void *font) { }
 static void xshm_show_mouse(void *data, bool state) { }
 static void xshm_grab_mouse_toggle(void *data) { }

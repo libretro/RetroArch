@@ -2257,7 +2257,7 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
 static void vulkan_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float line_height;
@@ -2334,7 +2334,7 @@ static void vulkan_font_render_msg(
     * Line scan below discovers actual length; this uses strlen
     * only for the allocation upper bound. */
    {
-      size_t max_glyphs = strlen(msg);
+      size_t max_glyphs = msg_len;
       if (drop_x || drop_y)
          max_glyphs *= 2;
 
@@ -6927,7 +6927,7 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          if (osd_params)
             font_driver_render_msg(vk,
-                  stat_text,
+                  stat_text, strlen(stat_text),
                   osd_params, NULL);
       }
 #endif
@@ -6938,7 +6938,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
       if (message_visible)
-          font_driver_render_msg(vk, msg, NULL, NULL);
+          font_driver_render_msg(vk, msg, strlen(msg), NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
       if (widgets_active)

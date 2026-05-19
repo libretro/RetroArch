@@ -449,7 +449,7 @@ void gfx_display_draw_text(
 
    if (video_st->poke && video_st->poke->set_osd_msg)
       video_st->poke->set_osd_msg(video_st->data,
-            text, &params, (void*)font);
+            text, strlen(text), &params, (void*)font);
 }
 
 void gfx_display_draw_bg(

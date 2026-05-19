@@ -3409,7 +3409,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
    @autoreleasepool
    {
-      size_t max_glyphs = strlen(msg);
+      size_t max_glyphs = msg_len;
       if (drop_x || drop_y)
          max_glyphs *= 2;
 
@@ -3479,7 +3479,7 @@ static int metal_raster_font_get_message_width(void *data, const char *msg,
 
 static void metal_raster_font_render_msg(
       void *userdata,
-      void *data, const char *msg,
+      void *data, const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    MetalRaster *r       = (__bridge MetalRaster *)data;
@@ -4110,7 +4110,7 @@ font_renderer_t metal_raster_font = {
       {
          struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
          if (osd_params)
-            font_driver_render_msg(data, video_info->stat_text, osd_params, NULL);
+            font_driver_render_msg(data, video_info->stat_text, strlen(video_info->stat_text), osd_params, NULL);
       }
 
 #ifdef HAVE_GFX_WIDGETS
@@ -4127,7 +4127,7 @@ font_renderer_t metal_raster_font = {
          if (msg_bgcolor_enable)
          {
             int msg_width         = font_driver_get_message_width(NULL,
-                  msg, strlen(msg), 1.0f);
+                  msg, msg_len, 1.0f);
             float font_size       = settings->floats.video_font_size;
             unsigned bgcolor_red  = settings->uints.video_msg_bgcolor_red;
             unsigned bgcolor_green= settings->uints.video_msg_bgcolor_green;
@@ -4154,7 +4154,7 @@ font_renderer_t metal_raster_font = {
             [_context drawQuadX:x y:y w:bg_w h:bg_h r:r g:g b:b a:a];
          }
 
-         font_driver_render_msg(data, msg, NULL, NULL);
+         font_driver_render_msg(data, msg, strlen(msg), NULL, NULL);
       }
 
       /* End-of-frame HDR composite.  Menu / overlay / OSD / widgets have
