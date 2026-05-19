@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <boolean.h>
@@ -734,7 +735,37 @@ static size_t frontend_switch_get_os(
 
    LIB_ASSERT_OK(fail_object, ipc_send(set_sys, &rq, &ipc_default_response_fmt));
 
-   sscanf(firmware_version + 0x68, "%d.%d.%d", major, minor, &patch);
+   /* Parse "<major>.<minor>.<patch>" without sscanf.
+    * Matches prior best-effort semantics: a field that fails to
+    * parse leaves itself and subsequent fields at their current
+    * values. */
+   {
+      const char *p = firmware_version + 0x68;
+      char       *endp;
+      long        v;
+
+      v = strtol(p, &endp, 10);
+      if (endp != p)
+      {
+         *major = (int)v;
+         if (*endp == '.')
+         {
+            p = endp + 1;
+            v = strtol(p, &endp, 10);
+            if (endp != p)
+            {
+               *minor = (int)v;
+               if (*endp == '.')
+               {
+                  p = endp + 1;
+                  v = strtol(p, &endp, 10);
+                  if (endp != p)
+                     patch = (int)v;
+               }
+            }
+         }
+      }
+   }
 
 fail_object:
    ipc_close(set_sys);

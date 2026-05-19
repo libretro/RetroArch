@@ -19,6 +19,7 @@
 #include <TargetConditionals.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -1711,13 +1712,31 @@ static int action_bind_sublabel_input_remap_port(
    /* We need the actual frontend port index.
     * This is difficult to obtain here - the only
     * way to get it is to parse the entry label
-    * (input_remap_port_p<port_index+1>) */
-   if (   !*entry.label
-       || (sscanf(entry.label,
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
-                  &display_port) != 1)
-       || (display_port >= MAX_USERS + 1))
-      return 0;
+    * (input_remap_port_p<port_index+1>).
+    *
+    * The label format string is "input_remap_port_p%u"
+    * (MENU_ENUM_LABEL_INPUT_REMAP_PORT_STR). Match the literal
+    * prefix and then parse the trailing %u with strtoul to avoid
+    * the per-call strlen()/malloc() overhead some libcs incur on
+    * sscanf. */
+   {
+      static const char prefix[] = "input_remap_port_p";
+      const char       *p;
+      char             *endp;
+      unsigned long     v;
+
+      if (   !*entry.label
+          || !string_starts_with_size(entry.label, prefix,
+                STRLEN_CONST(prefix)))
+         return 0;
+      p = entry.label + STRLEN_CONST(prefix);
+      v = strtoul(p, &endp, 10);
+      if (endp == p)
+         return 0;
+      display_port = (unsigned)v;
+      if (display_port >= MAX_USERS + 1)
+         return 0;
+   }
 
    _len = snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT),
