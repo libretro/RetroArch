@@ -5652,84 +5652,6 @@ static INLINE bool runloop_is_libretro_running(runloop_state_t* runloop_st, bool
       &&    runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
 }
 
-#ifdef HAVE_MENU
-/* Menu pacing sources.  In the menu state, the runloop avoids
- * an artificial retro_sleep() throttle when any external
- * mechanism is already pacing the iteration -- the display's
- * VRR engine, the audio buffer's blocking write, the mixer's
- * voice playback, vsync, or scanline sync.  Each pacer below
- * sets a flag in the result of runloop_menu_pace_compute().
- *
- * Adding a future pacer = define a new flag, OR it into the
- * appropriate action mask below, and add one check to the
- * compute function. */
-enum runloop_menu_pace_flag
-{
-   MENU_PACE_VRR_RUNLOOP        = (1 << 0),
-   MENU_PACE_AUDIO_BACKPRESSURE = (1 << 1),
-   MENU_PACE_AUDIO_MIXER        = (1 << 2),
-   MENU_PACE_VSYNC              = (1 << 3),
-   MENU_PACE_SCANLINE_SYNC      = (1 << 4)
-};
-
-/* Pacers that pace via blocking audio writes -- treat as audio
- * source, skip sleep entirely (frame_limit_minimum_time = 0). */
-#define MENU_PACE_AUDIO_MASK   \
-   (MENU_PACE_AUDIO_BACKPRESSURE | MENU_PACE_AUDIO_MIXER)
-
-/* Pacers that pace via a blocking present call -- the present
- * itself throttles, sleep block is a no-op on the next iter. */
-#define MENU_PACE_DISPLAY_MASK \
-   (MENU_PACE_VSYNC | MENU_PACE_SCANLINE_SYNC)
-
-static INLINE uint32_t runloop_menu_pace_compute(
-      runloop_state_t      *runloop_st,
-      video_driver_state_t *video_st,
-      audio_driver_state_t *audio_st,
-      settings_t           *settings,
-      bool                  menu_pause_libretro,
-      bool                  focused)
-{
-   uint32_t flags = 0;
-
-   /* Sync-to-content-framerate + menu throttle off = explicit
-    * 'let the display pace the menu' opt-in. */
-   if (     settings->bools.vrr_runloop_enable
-         && !settings->bools.menu_throttle_framerate)
-      flags |= MENU_PACE_VRR_RUNLOOP;
-
-   /* core_run() -> audio_driver_write() blocks on the audio
-    * buffer's drain rate when sync is on and a core is running
-    * (overlay menu case). */
-   if (     settings->bools.audio_sync
-         && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
-      flags |= MENU_PACE_AUDIO_BACKPRESSURE;
-
-#ifdef HAVE_AUDIOMIXER
-   /* Menu BGM / sound effects -- if any mixer voice is actively
-    * playing, the audio buffer is being drained and the sleep
-    * fallback would cause underruns.  Uses the voice-playing
-    * counter rather than AUDIO_FLAG_MIXER_ACTIVE since the flag
-    * is sticky (set on first stream, cleared only on deinit). */
-   if (audio_st->mixer_streams_playing > 0)
-      flags |= MENU_PACE_AUDIO_MIXER;
-#endif
-
-   /* Display-side pacers only count when the window has focus;
-    * unfocused windows often don't get vsync. */
-   if (focused)
-   {
-      if (settings->bools.video_vsync)
-         flags |= MENU_PACE_VSYNC;
-      if (     settings->bools.video_scanline_sync
-            && video_st->scanline[SCANLINE_NEXT])
-         flags |= MENU_PACE_SCANLINE_SYNC;
-   }
-
-   return flags;
-}
-#endif /* HAVE_MENU */
-
 static enum runloop_state_enum runloop_check_state(
       input_driver_state_t *input_st,
       audio_driver_state_t *audio_st,
@@ -7663,52 +7585,39 @@ int runloop_iterate(void)
 #endif
 
 #ifdef HAVE_MENU
-         /* Menu pacing: pick the highest-precedence external
-          * pacer that's active and skip the sleep fallback.
-          * See runloop_menu_pace_compute() for the source of
-          * each flag. */
+         /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
+         if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
+            return 0;
+         /* When content is actively running behind the menu (menu_pause_libretro
+          * is off), core_run() -> audio_driver_write() already paces the iterate
+          * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
+          * Layering the refresh-rate retro_sleep() throttle below on top of that
+          * is redundant double-pacing, and retro_sleep() resolves to OS Sleep()
+          * whose granularity is ~15 ms on Windows by default -- coarser than
+          * typical audio low-water marks, so the sleep overshoots and stutters
+          * audio.  Defer pacing to the audio backpressure path. */
+         else if (   audio_sync
+                  && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
          {
-            const uint32_t pace = runloop_menu_pace_compute(
-                  runloop_st, video_st, audio_st, settings,
-                  menu_pause_libretro,
-                  !!(runloop_st->flags & RUNLOOP_FLAG_FOCUSED));
-
-            /* VRR runloop opt-in: bail out of iterate entirely,
-             * outer loop is paced by display refresh. */
-            if (pace & MENU_PACE_VRR_RUNLOOP)
-               return 0;
-
-            /* Audio-paced: the blocking write or active mixer
-             * voice playback drains the buffer at the right
-             * rate.  Layering retro_sleep() on top double-paces
-             * and would cause underruns since retro_sleep() ->
-             * OS Sleep() granularity (~15 ms on Windows) is
-             * coarser than typical audio low-water marks. */
-            if (pace & MENU_PACE_AUDIO_MASK)
-            {
-               /* Zero the limit so the sleep block at end:
-                * doesn't fire even if a stale value remains. */
-               runloop_st->frame_limit_minimum_time = 0;
-               goto end;
-            }
-
-            /* Display-paced: vsync/scanline-sync's blocking
-             * present is the pacer.  No need to set the limit
-             * -- the menu condition in the sleep block requires
-             * !video_vsync, so it won't fire. */
-            if (pace & MENU_PACE_DISPLAY_MASK)
-               goto end;
-
-            /* No external pacer -- sleep-based throttle at
-             * video refresh rate. */
-            if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-               runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
-                        ((video_st->video_refresh_rate_original)
-                        ? video_st->video_refresh_rate_original
-                        : settings->floats.video_refresh_rate));
-            else
-               runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
+            /* Make sure no stale frame_limit_minimum_time from a prior
+             * iteration (e.g. just before menu_pause_libretro was toggled
+             * off) leaks into the sleep block below. */
+            runloop_st->frame_limit_minimum_time = 0;
+            goto end;
          }
+         else if ((  (settings->bools.video_vsync)
+                  || (settings->bools.video_scanline_sync && video_st->scanline[SCANLINE_NEXT]))
+               && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
+            goto end;
+
+         /* Otherwise run menu in video refresh rate speed. */
+         if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
+                     ((video_st->video_refresh_rate_original)
+                     ? video_st->video_refresh_rate_original
+                     : settings->floats.video_refresh_rate));
+         else
+            runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
 #endif
          goto end;
       case RUNLOOP_STATE_ITERATE:
