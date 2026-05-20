@@ -1806,14 +1806,14 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
                      if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, (mask << (byte_part * bits)),
                            cheat_st->big_endian, curr_val))
                      {
-                        msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL);
-                        runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+                        const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
                      }
                      else
                      {
-                        msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS);
-                        runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+                        const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
                      }
                      return;
@@ -1859,14 +1859,14 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
                      if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, 0xFF,
                            cheat_st->big_endian, curr_val))
                      {
-                        msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL);
-                        runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+                        const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      }
                      else
                      {
-                        msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS);
-                        runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+                        const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      }
                      return;

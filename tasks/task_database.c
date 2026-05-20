@@ -1990,8 +1990,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                         = manual_content_scan_get_content_list(
                            manual_scan->task_config)))
                {
-                  msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
-                  runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,\
+                  const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,\
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   goto task_finished;
                }
@@ -2006,8 +2006,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      logiqx_dat_init(
                         manual_scan->task_config->dat_file_path)))
                {
-                  msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR);
-                  runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,
+                  const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   goto task_finished;
                }
@@ -2554,9 +2554,9 @@ bool task_push_manual_content_scan(
    if (!manual_content_scan_get_task_config(
          manual_scan->task_config, playlist_dir))
    {
-      msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG);
+      const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG);
       RARCH_ERR("[Scanner] Invalid scan config\n");
-      runloop_msg_queue_push(_p.s, _p.len, 1, 100, true, NULL,
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto error;
    }

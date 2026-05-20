@@ -1244,12 +1244,12 @@ void runahead_run(void *data,
 
       if (!runahead_create(runloop_st))
       {
-         msg_hash_str_pair_t _p =
-            msg_hash_to_str_pair(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES);
+         const char *_msg =
+            msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES);
          if (!runahead_hide_warnings)
-            runloop_msg_queue_push(_p.s, _p.len, 0, 2 * 60, true, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead] %s\n", _p.s);
+         RARCH_WARN("[Run-Ahead] %s\n", _msg);
          goto force_input_dirty;
       }
    }
@@ -1297,11 +1297,11 @@ void runahead_run(void *data,
          {
             if (!runahead_save_state(runloop_st))
             {
-               msg_hash_str_pair_t _p =
-                  msg_hash_to_str_pair(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
-               runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
+               const char *_msg =
+                  msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead] %s\n", _p.s);
+               RARCH_WARN("[Run-Ahead] %s\n", _msg);
                return;
             }
          }
@@ -1310,10 +1310,10 @@ void runahead_run(void *data,
          {
             if (!runahead_load_state(runloop_st))
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
-               runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead] %s\n", _p.s);
+               RARCH_WARN("[Run-Ahead] %s\n", _msg);
                return;
             }
          }
@@ -1324,13 +1324,13 @@ void runahead_run(void *data,
 #if HAVE_DYNAMIC
       if (!secondary_core_ensure_exists(runloop_st, config_get_ptr()))
       {
-         msg_hash_str_pair_t _p =
-            msg_hash_to_str_pair(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE);
+         const char *_msg =
+            msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE);
          runahead_secondary_core_destroy(runloop_st);
          runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
-         runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
+         runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead] %s\n", _p.s);
+         RARCH_WARN("[Run-Ahead] %s\n", _msg);
          goto force_input_dirty;
       }
 
@@ -1349,19 +1349,19 @@ void runahead_run(void *data,
 
          if (!runahead_save_state(runloop_st))
          {
-            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
-            runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
+            const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead] %s\n", _p.s);
+            RARCH_WARN("[Run-Ahead] %s\n", _msg);
             return;
          }
 
          if (!runahead_load_state_secondary(runloop_st, settings))
          {
-            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
-            runloop_msg_queue_push(_p.s, _p.len, 0, 3 * 60, true, NULL,
+            const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead] %s\n", _p.s);
+            RARCH_WARN("[Run-Ahead] %s\n", _msg);
             return;
          }
 

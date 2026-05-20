@@ -3146,8 +3146,8 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
          if (rcheevos_hardcore_active())
          {
-            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE);
-            runloop_msg_queue_push(_p.s, _p.len, 0, 180, true, NULL,
+            const char *_msg = msg_hash_to_str(MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, true, NULL,
                                    MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
             return false;
          }
@@ -3323,8 +3323,8 @@ bool command_event(enum event_command cmd, void *data)
          {
             if (!core_info_current_supports_runahead())
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 100, false, NULL,
+               const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                break;
             }
@@ -3354,8 +3354,8 @@ bool command_event(enum event_command cmd, void *data)
             }
             else
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RUNAHEAD_DISABLED);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 100, false, NULL,
+               const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_DISABLED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
 
@@ -3382,8 +3382,8 @@ bool command_event(enum event_command cmd, void *data)
 
             if (old_inited && !runloop_st->preempt_data)
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_PREEMPT_DISABLED);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 100, false, NULL,
+               const char *_msg = msg_hash_to_str(MSG_PREEMPT_DISABLED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
             else if (runloop_st->preempt_data)
@@ -3523,8 +3523,8 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE);
-               runloop_msg_queue_push(_p.s, _p.len, 0, 180, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
                return false;
             }
@@ -3592,9 +3592,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_RESET:
          {
-            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_RESET);
-            RARCH_LOG("[Core] %s.\n", _p.s);
-            runloop_msg_queue_push(_p.s, _p.len, 1, 120, true, NULL,
+            const char *_msg = msg_hash_to_str(MSG_RESET);
+            RARCH_LOG("[Core] %s.\n", _msg);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
             core_reset();
@@ -3641,11 +3641,11 @@ bool command_event(enum event_command cmd, void *data)
             res = movie_start_playback(input_st, replay_path);
          if (!res)
          {
-            msg_hash_str_pair_t _p =
-               msg_hash_to_str_pair(MSG_FAILED_TO_LOAD_MOVIE_FILE);
-            runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+            const char *_msg        =
+               msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_ERR("[Replay] %s.\n", _p.s);
+            RARCH_ERR("[Replay] %s.\n", _msg);
          }
          return res;
 #else
@@ -3674,10 +3674,10 @@ bool command_event(enum event_command cmd, void *data)
             configuration_set_int(settings, settings->ints.replay_slot, replay_slot);
          if (!res)
          {
-            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_FAILED_TO_START_MOVIE_RECORD);
-            runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+            const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_ERR("[Replay] %s.\n", _p.s);
+            RARCH_ERR("[Replay] %s.\n", _msg);
          }
          return res;
 #else
@@ -4192,8 +4192,8 @@ bool command_event(enum event_command cmd, void *data)
                input_st->flags |=  INP_FLAG_KB_LINEFEED_ENABLE;
             else
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_OSK_OVERLAY_NOT_SET);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 100, false, NULL,
+               const char *_msg = msg_hash_to_str(MSG_OSK_OVERLAY_NOT_SET);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
 
@@ -4628,10 +4628,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SHUTDOWN:
          {
 #if defined(__linux__) && !defined(ANDROID)
-            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_VALUE_SHUTTING_DOWN);
+            const char *_msg = msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN);
             if (settings->bools.config_save_on_exit)
                command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-            runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
             system("nohup /usr/bin/lakka-shutdown.sh 2>&1 >/dev/null & exit");
@@ -4645,10 +4645,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REBOOT:
          {
 #if defined(__linux__) && !defined(ANDROID)
-            msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_VALUE_REBOOTING);
+            const char *_msg = msg_hash_to_str(MSG_VALUE_REBOOTING);
             if (settings->bools.config_save_on_exit)
                command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-            runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
             system("nohup /usr/bin/lakka-reboot.sh 2>&1 >/dev/null & exit");
@@ -4684,8 +4684,8 @@ bool command_event(enum event_command cmd, void *data)
             if (     playlist_size(g_defaults.content_favorites)
                   >= playlist_capacity(g_defaults.content_favorites))
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_ADD_TO_FAVORITES_FAILED);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_ADD_TO_FAVORITES_FAILED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
                return true;
             }
@@ -4767,8 +4767,8 @@ bool command_event(enum event_command cmd, void *data)
                   if (     playlist_size(playlist)
                         >= playlist_capacity(playlist))
                   {
-                     msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_ADD_TO_PLAYLIST_FAILED);
-                     runloop_msg_queue_push(_p.s, _p.len, 1, 180, true, NULL,
+                     const char *_msg = msg_hash_to_str(MSG_ADD_TO_PLAYLIST_FAILED);
+                     runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
                      return true;
                   }
@@ -5205,15 +5205,15 @@ bool command_event(enum event_command cmd, void *data)
             else if (!task_push_netplay_content_reload(NULL))
             {
 #ifdef HAVE_DYNAMIC
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED);
+               const char *_msg = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED);
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
-               runloop_msg_queue_push(_p.s, _p.len, 1, 480, true, NULL,
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_NETPLAY_NEED_CONTENT_LOADED);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 480, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #endif
 
@@ -5341,8 +5341,8 @@ bool command_event(enum event_command cmd, void *data)
                return command_event_disk_control_append_image(path);
             else
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 120, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
@@ -5379,8 +5379,8 @@ bool command_event(enum event_command cmd, void *data)
             }
             else
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 120, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
@@ -5407,8 +5407,8 @@ bool command_event(enum event_command cmd, void *data)
             }
             else
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 120, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
@@ -5435,8 +5435,8 @@ bool command_event(enum event_command cmd, void *data)
             }
             else
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 120, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
@@ -5455,8 +5455,8 @@ bool command_event(enum event_command cmd, void *data)
                disk_control_set_index(&sys_info->disk_control, *index, false);
             else
             {
-               msg_hash_str_pair_t _p = msg_hash_to_str_pair(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
-               runloop_msg_queue_push(_p.s, _p.len, 1, 120, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
