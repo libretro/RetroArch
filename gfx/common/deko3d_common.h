@@ -194,6 +194,7 @@ typedef struct dk3d
 
    /* HW render path: set_image hands us this. Pointers must stay valid
     * for the duration of the corresponding video_refresh call. */
+   bool               hw_bottom_left;
    const DkImage     *hw_image;
    unsigned           hw_image_width;
    unsigned           hw_image_height;

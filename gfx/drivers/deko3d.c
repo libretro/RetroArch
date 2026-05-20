@@ -881,6 +881,10 @@ static void *dk3d_init(const video_info_t *video,
       goto fail;
 
    dk3d_init_hw_interface(dk3d);
+   {
+      struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+      dk3d->hw_bottom_left = hwr ? hwr->bottom_left_origin : true;
+   }
    dk3d->menu_alpha   = 1.0f;
    dk3d->acquired_slot = -1;
 
@@ -1337,7 +1341,8 @@ static bool dk3d_frame(void *data, const void *frame,
 
          dk3d_blit_sub(dk3d, f, src, blit_src_x, blit_src_y, src_w, src_h,
                swap_img, &dst_rect,
-               (dk3d->smooth ? DK3D_BLIT_LINEAR : 0) | DK3D_BLIT_FLIP_Y);
+               (dk3d->smooth ? DK3D_BLIT_LINEAR : 0)
+               | (dk3d->hw_bottom_left ? 0 : DK3D_BLIT_FLIP_Y));
       }
    }
 
