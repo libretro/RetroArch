@@ -5693,10 +5693,12 @@ static INLINE uint32_t runloop_menu_pace_compute(
    uint32_t flags = 0;
 
    /* Sync-to-content-framerate + menu throttle off = explicit
-    * 'let the display pace the menu' opt-in. */
+    * 'let the display pace the menu' opt-in.  Highest
+    * precedence; if set, nothing else affects the dispatch
+    * (the caller bails out of iterate entirely). */
    if (     settings->bools.vrr_runloop_enable
          && !settings->bools.menu_throttle_framerate)
-      flags |= MENU_PACE_VRR_RUNLOOP;
+      return MENU_PACE_VRR_RUNLOOP;
 
    /* core_run() -> audio_driver_write() blocks on the audio
     * buffer's drain rate when sync is on and a core is running
@@ -5714,6 +5716,14 @@ static INLINE uint32_t runloop_menu_pace_compute(
    if (audio_st->mixer_streams_playing > 0)
       flags |= MENU_PACE_AUDIO_MIXER;
 #endif
+
+   /* Audio pacers outrank display pacers: if any audio source
+    * is alive, the display-side checks below cannot change the
+    * dispatch outcome (both end up in 'goto end' anyway, but
+    * the audio path zeroes the frame limit while display does
+    * not). */
+   if (flags & MENU_PACE_AUDIO_MASK)
+      return flags;
 
    /* Display-side pacers only count when the window has focus;
     * unfocused windows often don't get vsync. */
