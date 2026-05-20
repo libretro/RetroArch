@@ -3579,6 +3579,18 @@ static void d3d12_gfx_free(void* data)
     * before we release. */
    if (d3d12->sw_fb.buffer)
    {
+      /* Mirror the guard in d3d12_sw_fb_ensure: if frame_cache_data
+       * is still pointing into our persistent map, NULL it so any
+       * post-teardown video_driver_cached_frame() can't UAF.  The
+       * runloop also NULLs frame_cache_data at driver-teardown
+       * boundaries, but doing it locally keeps the resource's
+       * lifecycle self-coherent. */
+      {
+         video_driver_state_t *video_st = video_state_get_ptr();
+         if (   video_st->frame_cache_data
+             && video_st->frame_cache_data == d3d12->sw_fb.mapped)
+            video_st->frame_cache_data = NULL;
+      }
       if (d3d12->sw_fb.mapped)
       {
          d3d12->sw_fb.buffer->lpVtbl->Unmap(d3d12->sw_fb.buffer, 0, NULL);
@@ -7083,6 +7095,18 @@ static bool d3d12_sw_fb_ensure(d3d12_video_t* d3d12,
     * does a full Signal+Wait before invoking us. */
    if (d3d12->sw_fb.buffer)
    {
+      /* If the runloop is still holding a frame_cache_data pointer
+       * into this buffer's persistent map (last video_cb passed it
+       * direct_fb_data which got cached), NULL the field so a
+       * subsequent video_driver_cached_frame() -- screenshot, menu
+       * reopen, pause render -- doesn't UAF into freed memory.
+       * Mirrors vulkan_deinit_textures's guard on swapchain texture
+       * destruction. */
+      video_driver_state_t *video_st = video_state_get_ptr();
+      if (   video_st->frame_cache_data
+          && video_st->frame_cache_data == d3d12->sw_fb.mapped)
+         video_st->frame_cache_data = NULL;
+
       Release(d3d12->sw_fb.buffer);
       d3d12->sw_fb.buffer = NULL;
       d3d12->sw_fb.mapped = NULL;
