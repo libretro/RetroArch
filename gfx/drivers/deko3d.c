@@ -1226,16 +1226,8 @@ static bool dk3d_frame(void *data, const void *frame,
    if (!dk3d)
       return false;
 
-   /* DIAG-BEGIN: per-phase wall-time inside dk3d_frame, sampled every 120
-    * frames so we can stat the spread. Remove after the jitter is located. */
-   retro_time_t _ts_entry = cpu_features_get_time_usec();
-   retro_time_t _ts_after_resize, _ts_after_wait, _ts_after_acquire;
-   retro_time_t _ts_after_blit, _ts_after_overlay, _ts_after_present;
-   /* DIAG-END */
-
    /* Pick up dock <-> handheld transitions before we use the surface dims. */
    dk3d_check_resize(dk3d);
-   /* DIAG */ _ts_after_resize = cpu_features_get_time_usec();
 
    sw = dk3d->surface_width;
    sh = dk3d->surface_height;
@@ -1248,8 +1240,6 @@ static bool dk3d_frame(void *data, const void *frame,
       f->done_fence_valid = false;
    }
    dkCmdBufClear(f->cmdbuf);
-   /* DIAG */ _ts_after_wait = cpu_features_get_time_usec();
-
    /* Reset per-frame menu bump allocators. Safe here: the cmdbuf for this
     * frame slot was waited above (done_fence), so the GPU is no longer
     * reading from these memblocks. */
@@ -1262,8 +1252,6 @@ static bool dk3d_frame(void *data, const void *frame,
    if (dk3d->acquired_slot < 0)
       return false;
    swap_img = &dk3d->sc_images[dk3d->acquired_slot].image;
-   /* DIAG */ _ts_after_acquire = cpu_features_get_time_usec();
-
    /* Bind the swapchain image as render target so the clear lands on it.
     * Content blit (below) uses the 3D engine (shader pipeline) for the HW
     * path, or the 2D engine (dkCmdBufBlitImage) for the SW path. A single
@@ -1351,8 +1339,6 @@ static bool dk3d_frame(void *data, const void *frame,
     * image was touched by the 3D engine and will be read by the 2D engine. */
    dkCmdBufBarrier(f->cmdbuf, DkBarrier_Fragments,
          DkInvalidateFlags_Image);
-   /* DIAG */ _ts_after_blit = cpu_features_get_time_usec();
-
    /* Menu overlay (rgui set_texture_frame). */
 #ifdef HAVE_MENU
    if (dk3d->menu_enable && dk3d->menu_stage.valid)
@@ -1396,8 +1382,6 @@ static bool dk3d_frame(void *data, const void *frame,
    if (video_info->widgets_active)
       gfx_widgets_frame(video_info);
 #endif
-   /* DIAG */ _ts_after_overlay = cpu_features_get_time_usec();
-
    /* Signal frame fence (also acts as release_fence carrier for hw path). */
    if (dk3d->hw_release_fence)
       dkCmdBufSignalFence(f->cmdbuf, dk3d->hw_release_fence, true);
@@ -1427,40 +1411,6 @@ static bool dk3d_frame(void *data, const void *frame,
       if (wait_f->done_fence_valid)
          dkFenceWait(&wait_f->done_fence, -1);
    }
-
-   /* DIAG */ _ts_after_present = cpu_features_get_time_usec();
-   /* DIAG-BEGIN: per-phase breakdown plus inter-entry wall time.
-    * inter_entry   = time since previous dk3d_frame ENTRY.
-    * outside       = time since previous dk3d_frame END (time spent outside the
-    *                 driver: retro_run/audio/SubmitCmdBuf/set_image/RA dispatch).
-    *                 inter_entry - outside = TOTAL of the previous frame. */
-   {
-      static uint64_t     s_next_log_frame   = 0;
-      static retro_time_t s_prev_ts_entry    = 0;
-      static retro_time_t s_prev_frame_end   = 0;
-      long long inter_entry_us  = s_prev_ts_entry
-                                     ? (long long)(_ts_entry - s_prev_ts_entry)
-                                     : 0;
-      long long outside_gap_us  = s_prev_frame_end
-                                     ? (long long)(_ts_entry - s_prev_frame_end)
-                                     : 0;
-      s_prev_ts_entry  = _ts_entry;
-      s_prev_frame_end = _ts_after_present;
-      if (dk3d->frame_count >= s_next_log_frame)
-      {
-         RARCH_LOG("[deko3d] dk3d_frame us: inter_entry=%lld outside=%lld resize=%lld wait=%lld acq=%lld blit=%lld overlay=%lld present=%lld TOTAL=%lld\n",
-               inter_entry_us, outside_gap_us,
-               (long long)(_ts_after_resize  - _ts_entry),
-               (long long)(_ts_after_wait    - _ts_after_resize),
-               (long long)(_ts_after_acquire - _ts_after_wait),
-               (long long)(_ts_after_blit    - _ts_after_acquire),
-               (long long)(_ts_after_overlay - _ts_after_blit),
-               (long long)(_ts_after_present - _ts_after_overlay),
-               (long long)(_ts_after_present - _ts_entry));
-         s_next_log_frame = dk3d->frame_count + 100 + (rand() % 101);
-      }
-   }
-   /* DIAG-END */
 
    /* Advance frame ring. */
    dk3d->current_frame = (dk3d->current_frame + 1) % dk3d->num_frames_in_flight;
