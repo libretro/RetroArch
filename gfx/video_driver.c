@@ -3216,6 +3216,78 @@ void video_driver_cached_frame(void)
    recording_st->data             = recording;
 }
 
+/* Commit 1 of the frame-cache redesign: new API surface implemented
+ * as thin wrappers over the existing video_driver_state_t fields.
+ * No behavioural change vs accessing frame_cache_data directly.
+ * Lifetime / thread-safety guarantees described in the headers are
+ * NOT yet enforced -- they become real in the later commit that
+ * makes the storage private and adds the lifetime lock.  Until
+ * then these wrappers are equivalent to direct field reads and
+ * exist so consumers can be migrated one at a time without
+ * waiting on the structural work.
+ */
+bool video_driver_cached_frame_info(
+      unsigned *width, unsigned *height, size_t *pitch,
+      bool *has_cpu_pixels)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   const void           *data     = video_st->frame_cache_data;
+
+   if (!data)
+   {
+      /* No cached frame yet, or it was invalidated.  Zero outputs
+       * and report not-available so the caller can branch. */
+      if (width)          *width          = 0;
+      if (height)         *height         = 0;
+      if (pitch)          *pitch          = 0;
+      if (has_cpu_pixels) *has_cpu_pixels = false;
+      return false;
+   }
+
+   if (width)          *width          = video_st->frame_cache_width;
+   if (height)         *height         = video_st->frame_cache_height;
+   if (pitch)          *pitch          = video_st->frame_cache_pitch;
+   if (has_cpu_pixels) *has_cpu_pixels =
+      (data != RETRO_HW_FRAME_BUFFER_VALID);
+   return true;
+}
+
+void video_driver_cached_frame_read(
+      void *userdata,
+      void (*cb)(void *userdata,
+                 const void *data,
+                 unsigned width, unsigned height, size_t pitch))
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   const void           *data;
+
+   if (!cb)
+      return;
+
+   data = video_st->frame_cache_data;
+   /* Hand the callback NULL when no CPU pixels are available, so
+    * the consumer doesn't have to special-case the HW-render
+    * sentinel or a yet-uninitialised cache.  Same convention as
+    * cached_frame_info()'s has_cpu_pixels=false. */
+   if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      cb(userdata, NULL, 0, 0, 0);
+      return;
+   }
+
+   cb(userdata, data,
+      video_st->frame_cache_width,
+      video_st->frame_cache_height,
+      video_st->frame_cache_pitch);
+}
+
+bool video_driver_cached_frame_is_hw_render(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return    video_st->frame_cache_data
+          && video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
+}
+
 bool video_driver_has_focus(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
