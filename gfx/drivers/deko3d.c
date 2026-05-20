@@ -1042,76 +1042,17 @@ static void dk3d_check_resize(dk3d_t *dk3d)
  *  Per-frame helpers: SW upload, blit, present
  * ====================================================================== */
 
-/* CPU half: format-convert pixels into stage->cpu_memblock (always
- * stored as RGBA8 internally) and record dimensions. Sets
- * needs_gpu_upload so the frame loop knows to record the corresponding
- * CopyBufferToImage on the next valid cmdbuf — calling this outside of
- * frame() is therefore safe; the GPU op only lands when frame() is
- * actually building commands. */
-static bool dk3d_stage_upload_cpu(dk3d_stage_t *stage,
-      const void *pixels, unsigned width, unsigned height,
-      unsigned src_pitch, bool rgb32)
+/* Mark the stage contents as dirty so dk3d_frame issues a
+ * CopyBufferToImage on the next command buffer.  Every path that
+ * writes fresh pixels into stage->cpu_ptr (menu or core SW frame)
+ * calls this to share the small amount of stage state management. */
+static void dk3d_stage_mark_dirty(dk3d_stage_t *stage,
+      unsigned width, unsigned height)
 {
-   uint32_t needed = width * height * 4;
-
-   if (needed > stage->cpu_capacity)
-      return false;
-
-   /* The stage image was created at fixed format (RGBA8) so SW frames in
-    * RGB565 must be expanded on the fly. We can do this in-CPU here, or
-    * point an RGB565-format pitch-linear staging image at the bytes. To
-    * stay format-flexible, we just upcast RGB565 -> RGBA8 on the CPU. */
-   if (!rgb32)
-   {
-      uint32_t *dst = (uint32_t*)stage->cpu_ptr;
-      const uint8_t *src_row = (const uint8_t*)pixels;
-      unsigned y, x;
-      for (y = 0; y < height; y++, src_row += src_pitch)
-      {
-         const uint16_t *s16 = (const uint16_t*)src_row;
-         uint32_t *drow = dst + y * width;
-         for (x = 0; x < width; x++)
-         {
-            uint16_t p = s16[x];
-            uint32_t r = (p >> 11) & 0x1f;
-            uint32_t g = (p >> 5)  & 0x3f;
-            uint32_t b =  p        & 0x1f;
-            r = (r << 3) | (r >> 2);
-            g = (g << 2) | (g >> 4);
-            b = (b << 3) | (b >> 2);
-            drow[x] = 0xff000000u | (b << 16) | (g << 8) | r;
-         }
-      }
-   }
-   else
-   {
-      /* ARGB8888 -> RGBA8 (channel reorder). */
-      const uint8_t *src_row = (const uint8_t*)pixels;
-      uint8_t *dst_row       = (uint8_t*)stage->cpu_ptr;
-      unsigned y;
-      for (y = 0; y < height; y++,
-            src_row += src_pitch, dst_row += width * 4)
-      {
-         unsigned x;
-         for (x = 0; x < width; x++)
-         {
-            uint8_t b = src_row[x*4 + 0];
-            uint8_t g = src_row[x*4 + 1];
-            uint8_t r = src_row[x*4 + 2];
-            uint8_t a = src_row[x*4 + 3];
-            dst_row[x*4 + 0] = r;
-            dst_row[x*4 + 1] = g;
-            dst_row[x*4 + 2] = b;
-            dst_row[x*4 + 3] = a;
-         }
-      }
-   }
-
    stage->used_width       = width;
    stage->used_height      = height;
    stage->valid            = true;
    stage->needs_gpu_upload = true;
-   return true;
 }
 
 /* GPU half: record the CopyBufferToImage onto the supplied cmdbuf and
@@ -1144,17 +1085,57 @@ static void dk3d_stage_upload_record(dk3d_stage_t *stage, DkCmdBuf cmd)
    stage->needs_gpu_upload = false;
 }
 
-/* Convenience wrapper: CPU pack + immediate GPU record. Caller must
- * already be inside dk3d_frame's command-recording window. Used for the
- * SW-frame path where the source pixels arrive in the same call as
- * frame() and there's no risk of dkCmdBufClear discarding the upload. */
+/* Convenience wrapper: CPU format-convert + immediate GPU record for the
+ * core SW-frame path.  Caller must already be inside dk3d_frame's command-
+ * recording window (no dkCmdBufClear after this).  The stage image is
+ * always RGBA8 (4 bytes/pixel) regardless of the source format.
+ * Cores emit RGB565 when !rgb32; the menu path (set_texture_frame) emits
+ * RGBA4444 and is handled separately. */
 static bool dk3d_stage_upload(dk3d_t *dk3d, dk3d_stage_t *stage,
       const void *pixels, unsigned width, unsigned height,
       unsigned src_pitch, bool rgb32)
 {
    dk3d_frame_t *f = &dk3d->frames[dk3d->current_frame];
-   if (!dk3d_stage_upload_cpu(stage, pixels, width, height, src_pitch, rgb32))
+   uint32_t needed = width * height * 4;
+   if (needed > stage->cpu_capacity)
       return false;
+
+   if (rgb32)
+   {
+      /* XRGB8888 source (BGRA in memory on LE) matches our stage format
+       * (RGBA8_Unorm → HW A8R8G8B8 → BGRA byte order), just copy. */
+      const uint8_t *src_row = (const uint8_t*)pixels;
+      uint8_t *dst_row       = (uint8_t*)stage->cpu_ptr;
+      unsigned y;
+      for (y = 0; y < height;
+            y++, src_row += src_pitch, dst_row += width * 4)
+         memcpy(dst_row, src_row, width * 4);
+   }
+   else
+   {
+      /* RGB565 -> RGBA8.  Cores output RGB565 when rgb32=false. */
+      uint32_t *dst = (uint32_t*)stage->cpu_ptr;
+      const uint8_t *src_row = (const uint8_t*)pixels;
+      unsigned y, x;
+      for (y = 0; y < height; y++, src_row += src_pitch)
+      {
+         const uint16_t *s16 = (const uint16_t*)src_row;
+         uint32_t *drow = dst + y * width;
+         for (x = 0; x < width; x++)
+         {
+            uint16_t p = s16[x];
+            uint32_t r = (p >> 11) & 0x1f;
+            uint32_t g = (p >> 5)  & 0x3f;
+            uint32_t b =  p        & 0x1f;
+            r = (r << 3) | (r >> 2);
+            g = (g << 2) | (g >> 4);
+            b = (b << 3) | (b >> 2);
+            drow[x] = 0xff000000u | (r << 16) | (g << 8) | b;
+         }
+      }
+   }
+
+   dk3d_stage_mark_dirty(stage, width, height);
    dk3d_stage_upload_record(stage, f->cmdbuf);
    return true;
 }
@@ -1360,7 +1341,7 @@ static bool dk3d_frame(void *data, const void *frame,
          dk3d_compute_dst_rect(sw, sh, mw, mh, 0.0f, &dst_rect);
       dk3d_blit(dk3d, f, &dk3d->menu_stage.image.image, mw, mh,
             swap_img, &dst_rect,
-            DK3D_BLIT_LINEAR | DK3D_BLIT_PREMULT_BLEND | DK3D_BLIT_FLIP_Y);
+            DK3D_BLIT_FLIP_Y);
    }
 
    if (menu_is_alive)
@@ -2389,15 +2370,48 @@ static void dk3d_set_texture_frame(void *data,
       unsigned width, unsigned height, float alpha)
 {
    dk3d_t *dk3d = (dk3d_t*)data;
+   dk3d_stage_t *stage;
+   uint32_t needed;
+
    if (!dk3d || !frame || !width || !height)
       return;
+
+   /* RGUI always sends RGBA4444 via the pixel format map entry. */
+   if (rgb32)
+      return;
+
    dk3d->menu_alpha = alpha;
-   /* CPU pack only — the GPU CopyBufferToImage gets recorded in
-    * dk3d_frame after dkCmdBufClear, so it survives. set_texture_frame
-    * may be called from outside frame()'s command window. */
-   dk3d_stage_upload_cpu(&dk3d->menu_stage,
-         frame, width, height,
-         width * (rgb32 ? 4 : 2), rgb32);
+
+   /* RGUI sends RGBA4444 (16 bpp).  The 2D engine maps RGBA4_Unorm to the
+    * BGR5A1 surface format, so blitting it directly would reinterpret
+    * the 4:4:4:4 bit fields as 5:5:5:1.  Convert to RGBA8 on the CPU
+    * instead.  The GPU CopyBufferToImage is deferred to dk3d_frame
+    * after dkCmdBufClear, so recording it outside the frame window
+    * is safe. */
+   stage  = &dk3d->menu_stage;
+   needed = width * height * 4;
+   if (needed > stage->cpu_capacity)
+      return;
+
+   {
+      const uint16_t *src = (const uint16_t*)frame;
+      uint32_t *dst       = (uint32_t*)stage->cpu_ptr;
+      unsigned i;
+      for (i = 0; i < width * height; i++)
+      {
+         uint16_t p = src[i];
+         uint8_t r = ((p >> 12) & 0xf) * 17;
+         uint8_t g = ((p >> 8)  & 0xf) * 17;
+         uint8_t b = ((p >> 4)  & 0xf) * 17;
+         uint8_t a = ( p        & 0xf) * 17;
+         dst[i] = ((uint32_t)a << 24)
+                | ((uint32_t)r << 16)
+                | ((uint32_t)g << 8)
+                |  b;
+      }
+   }
+
+   dk3d_stage_mark_dirty(stage, width, height);
 }
 
 static void dk3d_set_texture_enable(void *data, bool enable, bool full_screen)
