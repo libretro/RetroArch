@@ -88,9 +88,9 @@ static void command_post_state_loaded(void)
    {
      video_driver_state_t *video_st                 =
        video_state_get_ptr();
-     bool frame_time_counter_reset_after_load_state =
-       config_get_ptr()->bools.frame_time_counter_reset_after_load_state;
-     if (frame_time_counter_reset_after_load_state)
+     bool frame_time_counter_auto_reset             =
+       config_get_ptr()->bools.frame_time_counter_auto_reset;
+     if (frame_time_counter_auto_reset)
         video_st->frame_time_count = 0;
    }
 #if defined(HAVE_GFX_WIDGETS) && defined(HAVE_SCREENSHOTS)
@@ -2413,8 +2413,8 @@ bool command_event_main_state(unsigned cmd)
                      settings->bools.savestate_auto_index;
                unsigned savestate_max_keep                    =
                      settings->uints.savestate_max_keep;
-               bool frame_time_counter_reset_after_save_state =
-                     settings->bools.frame_time_counter_reset_after_save_state;
+               bool frame_time_counter_auto_reset             =
+                     settings->bools.frame_time_counter_auto_reset;
 
                if (cmd == CMD_EVENT_SAVE_STATE)
                   content_save_state(state_path, true);
@@ -2425,7 +2425,7 @@ bool command_event_main_state(unsigned cmd)
                if (savestate_auto_index && (savestate_max_keep > 0))
                   command_event_set_savestate_garbage_collect(settings);
 
-               if (frame_time_counter_reset_after_save_state)
+               if (frame_time_counter_auto_reset)
                   video_st->frame_time_count = 0;
 
                ret      = true;

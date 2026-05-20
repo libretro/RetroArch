@@ -2266,9 +2266,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("playlist_use_filename",         &settings->bools.playlist_use_filename, true, DEFAULT_PLAYLIST_USE_FILENAME, false);
    SETTING_BOOL("playlist_allow_non_png",        &settings->bools.playlist_allow_non_png, true, DEFAULT_PLAYLIST_ALLOW_NON_PNG, false);
 
-   SETTING_BOOL("frame_time_counter_reset_after_fastforwarding", &settings->bools.frame_time_counter_reset_after_fastforwarding, true, false, false);
-   SETTING_BOOL("frame_time_counter_reset_after_load_state",     &settings->bools.frame_time_counter_reset_after_load_state, true, false, false);
-   SETTING_BOOL("frame_time_counter_reset_after_save_state",     &settings->bools.frame_time_counter_reset_after_save_state, true, false, false);
+   SETTING_BOOL("frame_time_counter_auto_reset",                 &settings->bools.frame_time_counter_auto_reset, true, DEFAULT_FRAME_TIME_COUNTER_AUTO_RESET, false);
 
 #ifdef HAVE_COMMAND
    SETTING_BOOL("network_cmd_enable",            &settings->bools.network_cmd_enable, true, DEFAULT_NETWORK_CMD_ENABLE, false);

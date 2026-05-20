@@ -4008,7 +4008,7 @@ static bool core_unload_game(void)
 }
 
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
-      bool frame_time_counter_reset_after_fastforwarding,
+      bool frame_time_counter_auto_reset,
       float fastforward_ratio_default,
       bool audio_fastforward_mute)
 {
@@ -4059,7 +4059,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
       /* Reset frame time counter when toggling
        * fast-forward off, if required */
       if ( !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-          && frame_time_counter_reset_after_fastforwarding)
+          && frame_time_counter_auto_reset)
          video_st->frame_time_count = 0;
 
       /* Ensure fast forward widget is disabled when
@@ -4150,7 +4150,7 @@ void runloop_event_deinit_core(void)
    if (runloop_st->fastmotion_override.pending)
    {
       runloop_apply_fastmotion_override(runloop_st,
-            settings->bools.frame_time_counter_reset_after_fastforwarding,
+            settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
             settings->bools.audio_fastforward_mute
             );
@@ -6923,7 +6923,7 @@ static enum runloop_state_enum runloop_check_state(
    if (runloop_st->fastmotion_override.pending)
    {
       runloop_apply_fastmotion_override(runloop_st,
-            settings->bools.frame_time_counter_reset_after_fastforwarding,
+            settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
             settings->bools.audio_fastforward_mute);
       runloop_st->fastmotion_override.pending = false;
@@ -6963,7 +6963,7 @@ static enum runloop_state_enum runloop_check_state(
       if (check2)
       {
          bool audio_fastforward_mute = settings->bools.audio_fastforward_mute;
-         bool frame_time_counter_reset_after_ffwd = settings->bools.frame_time_counter_reset_after_fastforwarding;
+         bool frame_time_counter_auto_reset = settings->bools.frame_time_counter_auto_reset;
          if (input_st->flags & INP_FLAG_NONBLOCKING)
          {
             input_st->flags                     &= ~INP_FLAG_NONBLOCKING;
@@ -6987,7 +6987,7 @@ static enum runloop_state_enum runloop_check_state(
          /* Reset frame time counter when toggling
           * fast-forward off, if required */
          if ( !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-             && frame_time_counter_reset_after_ffwd)
+             && frame_time_counter_auto_reset)
             video_st->frame_time_count  = 0;
       }
 

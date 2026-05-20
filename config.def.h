@@ -431,6 +431,19 @@
  * of slower convergence after content load. */
 #define DEFAULT_FRAME_TIME_SAMPLE_GATED false
 
+/* When true, drains the 'Estimated Screen Refresh Rate' sample
+ * buffer after fast-forward, save state, or load state -- events
+ * whose timing doesn't reflect normal frame cadence and would
+ * skew the deviation measurement.  Best-effort cleanup for users
+ * who haven't enabled DEFAULT_FRAME_TIME_SAMPLE_GATED (which
+ * prevents the contamination at the source).
+ *
+ * Replaces three separate per-event reset toggles
+ * (frame_time_counter_reset_after_{fastforwarding,load_state,
+ * save_state}).  Defaults to false to match the prior aggregate
+ * behaviour (all three off). */
+#define DEFAULT_FRAME_TIME_COUNTER_AUTO_RESET false
+
 /* Duplicates frames for the purposes of running Shaders at a higher framerate
  * than content framerate. Requires running screen at multiple of 60hz, and
  * don't combine with Swap_interval > 1, or BFI. (Though BFI can be done in a shader

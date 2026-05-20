@@ -794,9 +794,7 @@ typedef struct settings
 #endif
 
       /* Frame time counter */
-      bool frame_time_counter_reset_after_fastforwarding;
-      bool frame_time_counter_reset_after_load_state;
-      bool frame_time_counter_reset_after_save_state;
+      bool frame_time_counter_auto_reset;
 
       /* Menu */
       bool menu_enable_widgets;
