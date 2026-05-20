@@ -829,8 +829,6 @@ typedef struct
 
    void *current_display_server_data;
 
-   const void *frame_cache_data;
-
    const struct
       retro_hw_render_context_negotiation_interface *
       hw_render_context_negotiation;
@@ -849,7 +847,6 @@ typedef struct
    uintptr_t display;
    uintptr_t window;
 
-   size_t frame_cache_pitch;
    size_t window_title_len;
 
    uint32_t flags;
@@ -858,8 +855,6 @@ typedef struct
    unsigned state_scale;
    unsigned state_out_bpp;
 #endif
-   unsigned frame_cache_width;
-   unsigned frame_cache_height;
    unsigned width;
    unsigned height;
    unsigned scale_width;

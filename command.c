@@ -2578,27 +2578,29 @@ void command_event_reinit(const int flags)
       *sec_joypad                 = NULL;
 #endif
    /* Snapshot the last cached core frame before tearing the video
-    * driver down.  video_driver_free() nulls frame_cache_data as part
-    * of the reinit cycle (the pointer was borrowed from the core's
-    * own framebuffer and isn't guaranteed to stay live across the
-    * driver swap), so without a snapshot the new driver would come
-    * up with no core image to replay.  Restored + replayed below so
-    * the paused-core background remains visible when reinit is
-    * triggered from inside the menu (e.g. HDR mode toggle).
+    * driver down.  video_driver_free() invalidates the cache as
+    * part of the reinit cycle (the pointer was borrowed from the
+    * core's own framebuffer and isn't guaranteed to stay live
+    * across the driver swap), so without a snapshot the new
+    * driver would come up with no core image to replay.  Restored
+    * + replayed below so the paused-core background remains
+    * visible when reinit is triggered from inside the menu (e.g.
+    * HDR mode toggle).
     *
     * The snapshot buffer is static and reused across reinits — we
-    * need it to outlive command_event_reinit because we hand the
-    * pointer to video_st->frame_cache_data for the new driver to
-    * read via video_driver_cached_frame(), and the core's next real
-    * frame will replace the pointer at its leisure.  Resizing in
-    * place on each call keeps it bounded at one buffer's worth.
+    * need it to outlive command_event_reinit because we publish
+    * the pointer back through video_driver_cached_frame_publish
+    * for the new driver to read via video_driver_cached_frame(),
+    * and the core's next real frame will replace the pointer at
+    * its leisure.  Resizing in place on each call keeps it
+    * bounded at one buffer's worth.
     *
-    * The actual copy happens inside the cached_frame_read callback
-    * (which is what this function was hand-rolling before the
-    * unified read API existed -- exactly the same pattern,
-    * lifted into one place).  HW-render frames are skipped: the
-    * callback receives data == NULL for those, so we don't even
-    * allocate. */
+    * The actual copy happens inside the cached_frame_read
+    * callback (which is what this function was hand-rolling
+    * before the unified read API existed -- exactly the same
+    * pattern, lifted into one place).  HW-render frames are
+    * skipped: the callback receives data == NULL for those, so
+    * we don't even allocate. */
    static void  *cached_snapshot      = NULL;
    static size_t cached_snapshot_cap  = 0;
    unsigned      cached_snapshot_w    = 0;

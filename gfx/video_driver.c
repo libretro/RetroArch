@@ -492,6 +492,18 @@ static video_driver_state_t video_driver_st = { 0 };
 static const video_display_server_t *current_display_server =
 &dispserv_null;
 
+/* Cached-frame state.  Private to this TU; all access goes through
+ * video_driver_cached_frame_{info,read,is_hw_render,publish,
+ * invalidate} (any-thread, locked) or the same-thread
+ * video_driver_cached_frame() replay path.  Extracted from
+ * video_driver_state_t after the API migration landed so the
+ * privacy is structural (file-scope static) rather than
+ * convention (struct field accessed only through helpers). */
+static const void *frame_cache_data    = NULL;
+static unsigned    frame_cache_width   = 0;
+static unsigned    frame_cache_height  = 0;
+static size_t      frame_cache_pitch   = 0;
+
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 {
    video_driver_state_t *video_st         = &video_driver_st;
@@ -2462,8 +2474,8 @@ static void video_viewport_get_scaled_integer(
    int padding_y                   = 0;
    float vp_bias_x                 = settings->floats.video_vp_bias_x;
    float vp_bias_y                 = settings->floats.video_vp_bias_y;
-   unsigned content_width          = video_st->frame_cache_width;
-   unsigned content_height         = video_st->frame_cache_height;
+   unsigned content_width          = frame_cache_width;
+   unsigned content_height         = frame_cache_height;
 #if defined(RARCH_MOBILE)
    if (width < height)
    {
@@ -2611,8 +2623,8 @@ static void video_viewport_get_scaled_integer(
 
             /* Reset width to exact width */
             content_width = (rotation % 2)
-                  ? ((video_st->frame_cache_height <= 4) ? video_st->av_info.geometry.base_height : video_st->frame_cache_height)
-                  : ((video_st->frame_cache_width  <= 4) ? video_st->av_info.geometry.base_width  : video_st->frame_cache_width);
+                  ? ((frame_cache_height <= 4) ? video_st->av_info.geometry.base_height : frame_cache_height)
+                  : ((frame_cache_width  <= 4) ? video_st->av_info.geometry.base_width  : frame_cache_width);
 
             overscale_w   = (width / content_width) + !!(width % content_width);
 
@@ -3206,12 +3218,12 @@ void video_driver_cached_frame(void)
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
       cbs->frame_cb(
-            (video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
-            ? video_st->frame_cache_data
+            (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
+            ? frame_cache_data
             : NULL,
-            video_st->frame_cache_width,
-            video_st->frame_cache_height,
-            video_st->frame_cache_pitch);
+            frame_cache_width,
+            frame_cache_height,
+            frame_cache_pitch);
 
    recording_st->data             = recording;
 }
@@ -3266,14 +3278,14 @@ bool video_driver_cached_frame_info(
    bool                  has_frame;
 
    cached_frame_lock_acquire();
-   data      = video_st->frame_cache_data;
+   data      = frame_cache_data;
    has_frame = (data != NULL);
 
    if (has_frame)
    {
-      if (width)          *width          = video_st->frame_cache_width;
-      if (height)         *height         = video_st->frame_cache_height;
-      if (pitch)          *pitch          = video_st->frame_cache_pitch;
+      if (width)          *width          = frame_cache_width;
+      if (height)         *height         = frame_cache_height;
+      if (pitch)          *pitch          = frame_cache_pitch;
       if (has_cpu_pixels) *has_cpu_pixels =
          (data != RETRO_HW_FRAME_BUFFER_VALID);
    }
@@ -3315,13 +3327,13 @@ void video_driver_cached_frame_read(
     * guarantee the redesign introduces: the pointer handed to the
     * callback cannot be freed out from under it. */
    cached_frame_lock_acquire();
-   data        = video_st->frame_cache_data;
+   data        = frame_cache_data;
    hw_or_empty = (!data || data == RETRO_HW_FRAME_BUFFER_VALID);
    if (!hw_or_empty)
    {
-      width  = video_st->frame_cache_width;
-      height = video_st->frame_cache_height;
-      pitch  = video_st->frame_cache_pitch;
+      width  = frame_cache_width;
+      height = frame_cache_height;
+      pitch  = frame_cache_pitch;
    }
 
    /* Hand the callback NULL when no CPU pixels are available, so
@@ -3337,8 +3349,8 @@ bool video_driver_cached_frame_is_hw_render(void)
    video_driver_state_t *video_st = &video_driver_st;
    bool                  is_hw;
    cached_frame_lock_acquire();
-   is_hw =    video_st->frame_cache_data
-           && video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
+   is_hw =    frame_cache_data
+           && frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
    cached_frame_lock_release();
    return is_hw;
 }
@@ -3355,10 +3367,10 @@ void video_driver_cached_frame_publish(
    video_driver_state_t *video_st = &video_driver_st;
    cached_frame_lock_acquire();
    if (data)
-      video_st->frame_cache_data = data;
-   video_st->frame_cache_width   = width;
-   video_st->frame_cache_height  = height;
-   video_st->frame_cache_pitch   = pitch;
+      frame_cache_data = data;
+   frame_cache_width   = width;
+   frame_cache_height  = height;
+   frame_cache_pitch   = pitch;
    cached_frame_lock_release();
 }
 
@@ -3373,10 +3385,10 @@ void video_driver_cached_frame_invalidate(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
    cached_frame_lock_acquire();
-   video_st->frame_cache_data   = NULL;
-   video_st->frame_cache_width  = 0;
-   video_st->frame_cache_height = 0;
-   video_st->frame_cache_pitch  = 0;
+   frame_cache_data   = NULL;
+   frame_cache_width  = 0;
+   frame_cache_height = 0;
+   frame_cache_pitch  = 0;
    cached_frame_lock_release();
 }
 
@@ -4892,8 +4904,8 @@ void video_driver_frame(const void *data, unsigned width,
                " Blocking:   %6.2f %%\n"
                " Samples:  %8d\n"
                ,
-               video_st->frame_cache_width,
-               video_st->frame_cache_height,
+               frame_cache_width,
+               frame_cache_height,
                av_info->geometry.base_width,
                av_info->geometry.base_height,
                av_info->geometry.max_width,
@@ -4907,9 +4919,9 @@ void video_driver_frame(const void *data, unsigned width,
                video_info.scale_width,
                video_info.scale_height,
                (float)video_info.scale_width  / ((rotation % 2)
-                     ? (float)video_st->frame_cache_height : (float)video_st->frame_cache_width),
+                     ? (float)frame_cache_height : (float)frame_cache_width),
                (float)video_info.scale_height / ((rotation % 2)
-                     ? (float)video_st->frame_cache_width : (float)video_st->frame_cache_height),
+                     ? (float)frame_cache_width : (float)frame_cache_height),
                video_info.refresh_rate,
                last_fps,
                frame_time / 1000.0f,
