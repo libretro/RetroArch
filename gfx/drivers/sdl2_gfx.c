@@ -869,7 +869,7 @@ static void sdl2_poke_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const font_data_t *fd = (const font_data_t*)font;
       if (fd->renderer && fd->renderer->render_msg)
       {
-         fd->renderer->render_msg(vid, fd->renderer_data, msg, params);
+         fd->renderer->render_msg(vid, fd->renderer_data, msg, msg_len, params);
          return;
       }
    }
