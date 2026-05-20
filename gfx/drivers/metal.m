@@ -1990,20 +1990,57 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
    dstStride = _viewport.width * 3;
    dst       = buffer + (_viewport.height - 1) * dstStride;
 
-   for (y = 0; y < _viewport.height; y++, dst -= dstStride)
+   /* With "Smart"/"Overscale" integer scaling the viewport deliberately
+    * overscans the drawable: _viewport.x / _viewport.y may be negative and
+    * _viewport.width / _viewport.height may exceed the source texture.
+    * Indexing srcTex at the raw viewport offsets then walks off the texture
+    * (Metal asserts "Region height OOB" on AGX and segfaults inside the AMD
+    * driver, see issue #19038), and the in-row copy reads past the scratch
+    * row.  Clamp every access to the texture bounds and leave the off-screen
+    * remainder black; the screenshot task crops the saved image back to the
+    * on-screen size afterwards. */
    {
-      size_t x;
-      [srcTex getBytes:row
-           bytesPerRow:rowBytes
-            fromRegion:MTLRegionMake2D(0, (NSUInteger)_viewport.y + y,
-                                       srcTex.width, 1)
-           mipmapLevel:0];
+      int texW     = (int)srcTex.width;
+      int texH     = (int)srcTex.height;
+      /* Output-column span [colStart, colEnd) whose source column
+       * (_viewport.x + x) lands inside [0, texW). */
+      int colStart = -_viewport.x;
+      int colEnd   = texW - _viewport.x;
+      if (colStart < 0)
+         colStart = 0;
+      if (colEnd > (int)_viewport.width)
+         colEnd   = (int)_viewport.width;
 
-      for (x = 0; x < _viewport.width; x++)
+      for (y = 0; y < _viewport.height; y++, dst -= dstStride)
       {
-         dst[3 * x + 0] = row[4 * (_viewport.x + x) + 0];
-         dst[3 * x + 1] = row[4 * (_viewport.x + x) + 1];
-         dst[3 * x + 2] = row[4 * (_viewport.x + x) + 2];
+         size_t x;
+         int    srcRow = _viewport.y + (int)y;
+
+         /* Row entirely outside the texture (top/bottom overscan) or no
+          * horizontally-visible columns: emit a black scanline. */
+         if (srcRow < 0 || srcRow >= texH || colEnd <= colStart)
+         {
+            memset(dst, 0, dstStride);
+            continue;
+         }
+
+         [srcTex getBytes:row
+              bytesPerRow:rowBytes
+               fromRegion:MTLRegionMake2D(0, (NSUInteger)srcRow,
+                                          (NSUInteger)texW, 1)
+              mipmapLevel:0];
+
+         /* Black out left/right overscan before copying the visible span. */
+         if (colStart > 0 || colEnd < (int)_viewport.width)
+            memset(dst, 0, dstStride);
+
+         for (x = (size_t)colStart; x < (size_t)colEnd; x++)
+         {
+            int srcCol     = _viewport.x + (int)x;
+            dst[3 * x + 0] = row[4 * srcCol + 0];
+            dst[3 * x + 1] = row[4 * srcCol + 1];
+            dst[3 * x + 2] = row[4 * srcCol + 2];
+         }
       }
    }
 
