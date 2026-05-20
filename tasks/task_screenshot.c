@@ -345,15 +345,17 @@ static bool screenshot_dump(
    if (savestate)
    {
       /* Use native core output dimensions */
+      unsigned cache_w = 0, cache_h = 0;
       video_driver_state_t *video_st = video_state_get_ptr();
+      video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
       if (video_st)
       {
-         state->out_width        = (video_st->frame_cache_width  <= 4)
+         state->out_width        = (cache_w <= 4)
                ? video_st->av_info.geometry.base_width
-               : video_st->frame_cache_width;
-         state->out_height       = (video_st->frame_cache_height <= 4)
+               : cache_w;
+         state->out_height       = (cache_h <= 4)
                ? video_st->av_info.geometry.base_height
-               : video_st->frame_cache_height;
+               : cache_h;
       }
 
       /* Fallback to display size if smaller than core output */

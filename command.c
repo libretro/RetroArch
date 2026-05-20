@@ -2510,6 +2510,50 @@ bool command_event_disk_control_append_image(
    return true;
 }
 
+/* Read-side callback for the snapshot phase of command_event_reinit.
+ * Receives the cached frame's pixels (or NULL if HW-render / no
+ * cached frame), copies into the static reuse buffer, and reports
+ * dims back to the caller via userdata.  Skips the work entirely
+ * if data is NULL -- caller checks the reported size to know
+ * whether a snapshot was actually taken. */
+struct command_reinit_snapshot_ctx
+{
+   void   **buf_p;       /* static cached_snapshot in the caller */
+   size_t  *cap_p;       /* static cached_snapshot_cap in the caller */
+   unsigned w, h;
+   size_t   p, size;
+};
+
+static void command_reinit_snapshot_cb(void *userdata,
+      const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   struct command_reinit_snapshot_ctx *ctx
+      = (struct command_reinit_snapshot_ctx*)userdata;
+   size_t want;
+
+   if (!ctx || !data || !width || !height || !pitch)
+      return;
+
+   want = pitch * height;
+   if (want > *ctx->cap_p)
+   {
+      void *tmp = realloc(*ctx->buf_p, want);
+      if (!tmp)
+         return;
+      *ctx->buf_p = tmp;
+      *ctx->cap_p = want;
+   }
+   if (!*ctx->buf_p)
+      return;
+
+   memcpy(*ctx->buf_p, data, want);
+   ctx->w    = width;
+   ctx->h    = height;
+   ctx->p    = pitch;
+   ctx->size = want;
+}
+
 void command_event_reinit(const int flags)
 {
    settings_t *settings           = config_get_ptr();
@@ -2547,39 +2591,36 @@ void command_event_reinit(const int flags)
     * pointer to video_st->frame_cache_data for the new driver to
     * read via video_driver_cached_frame(), and the core's next real
     * frame will replace the pointer at its leisure.  Resizing in
-    * place on each call keeps it bounded at one buffer's worth. */
+    * place on each call keeps it bounded at one buffer's worth.
+    *
+    * The actual copy happens inside the cached_frame_read callback
+    * (which is what this function was hand-rolling before the
+    * unified read API existed -- exactly the same pattern,
+    * lifted into one place).  HW-render frames are skipped: the
+    * callback receives data == NULL for those, so we don't even
+    * allocate. */
    static void  *cached_snapshot      = NULL;
    static size_t cached_snapshot_cap  = 0;
-   size_t        want_size            = 0;
    unsigned      cached_snapshot_w    = 0;
    unsigned      cached_snapshot_h    = 0;
    size_t        cached_snapshot_p    = 0;
+   size_t        cached_snapshot_size = 0;
 
-   if (     video_st
-         && video_st->frame_cache_data
-         && video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID
-         && video_st->frame_cache_height
-         && video_st->frame_cache_pitch)
-      want_size = video_st->frame_cache_pitch
-                * video_st->frame_cache_height;
-   if (want_size > cached_snapshot_cap)
    {
-      void *tmp = realloc(cached_snapshot, want_size);
-      if (tmp)
-      {
-         cached_snapshot     = tmp;
-         cached_snapshot_cap = want_size;
-      }
-      else
-         want_size           = 0;
+      struct command_reinit_snapshot_ctx ctx;
+      ctx.buf_p = &cached_snapshot;
+      ctx.cap_p = &cached_snapshot_cap;
+      ctx.w     = 0;
+      ctx.h     = 0;
+      ctx.p     = 0;
+      ctx.size  = 0;
+      video_driver_cached_frame_read(&ctx, command_reinit_snapshot_cb);
+      cached_snapshot_w    = ctx.w;
+      cached_snapshot_h    = ctx.h;
+      cached_snapshot_p    = ctx.p;
+      cached_snapshot_size = ctx.size;
    }
-   if (want_size && cached_snapshot)
-   {
-      memcpy(cached_snapshot, video_st->frame_cache_data, want_size);
-      cached_snapshot_w = video_st->frame_cache_width;
-      cached_snapshot_h = video_st->frame_cache_height;
-      cached_snapshot_p = video_st->frame_cache_pitch;
-   }
+   (void)cached_snapshot_size;
 
    video_driver_reinit(flags);
 
