@@ -1025,6 +1025,46 @@ void video_driver_cached_frame_read(
  */
 bool video_driver_cached_frame_is_hw_render(void);
 
+/**
+ * video_driver_cached_frame_publish:
+ *
+ * Producer-side install: set the cached frame's (data, dims) tuple
+ * atomically under the lifetime lock.  Called by video_driver_frame
+ * after each successful core frame, and by lifecycle hooks (the
+ * command_event_reinit replay path, the SW-readback-and-restore
+ * dance in screenshot_dump_choice) that need to publish a frame
+ * which didn't come through the regular core->driver pipeline.
+ *
+ * data == NULL is treated as "do not change the data pointer"
+ * (matching the prior direct-field-write behaviour), useful when
+ * only dims change.  To clear the cache entirely use
+ * video_driver_cached_frame_invalidate() instead.
+ *
+ * Safe from any thread; blocks until any in-flight
+ * cached_frame_read callback has returned.
+ */
+void video_driver_cached_frame_publish(
+      const void *data, unsigned width, unsigned height, size_t pitch);
+
+/**
+ * video_driver_cached_frame_invalidate:
+ *
+ * Producer-side clear: NULL out the cached frame's data pointer
+ * and zero its dims, atomically, under the lifetime lock.  Called
+ * from driver-resource teardown sites that are about to free
+ * memory the cached frame might point into (vulkan's
+ * swapchain-texture deinit, d3d12's SW FB Release / Unmap), and
+ * from runloop lifecycle transitions (content unload, core
+ * deinit, video driver reinit).
+ *
+ * On return, the buffer the cached frame previously pointed at
+ * is safe to free -- any concurrent reader has completed.  This
+ * is the key contract the rest of the redesign rests on.
+ *
+ * Safe from any thread.
+ */
+void video_driver_cached_frame_invalidate(void);
+
 bool video_driver_is_hw_context(void);
 
 void video_driver_invalidate_hw_render_cache(void);

@@ -2636,10 +2636,8 @@ void command_event_reinit(const int flags)
     * leak benign in practice, so we leave it. */
    if (cached_snapshot_p && cached_snapshot_h)
    {
-      video_st->frame_cache_data   = cached_snapshot;
-      video_st->frame_cache_width  = cached_snapshot_w;
-      video_st->frame_cache_height = cached_snapshot_h;
-      video_st->frame_cache_pitch  = cached_snapshot_p;
+      video_driver_cached_frame_publish(cached_snapshot,
+            cached_snapshot_w, cached_snapshot_h, cached_snapshot_p);
 
 #ifdef HAVE_MENU
       /* If the menu is alive across the reinit, the runloop's

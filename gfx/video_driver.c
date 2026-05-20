@@ -3226,14 +3226,60 @@ void video_driver_cached_frame(void)
  * exist so consumers can be migrated one at a time without
  * waiting on the structural work.
  */
+/* Lifetime lock for the frame_cache_* fields.  Reads
+ * (cached_frame_info / cached_frame_read / cached_frame_is_hw_render)
+ * take it shared with writes (publish / invalidate).  The
+ * cached_frame_read callback runs inside the lock so that any
+ * buffer the cached pointer references is guaranteed to remain
+ * mapped / allocated for the duration of the callback -- the
+ * write side (in particular the driver-resource teardown paths
+ * that previously had to use cooperative defensive NULL-outs)
+ * blocks here until the callback returns.
+ *
+ * HAVE_THREADS-gated: builds without threading support degenerate
+ * to no-op locking, same as the rest of video_driver.c.
+ */
+#ifdef HAVE_THREADS
+static slock_t *cached_frame_lock = NULL;
+
+static INLINE void cached_frame_lock_acquire(void)
+{
+   if (cached_frame_lock)
+      slock_lock(cached_frame_lock);
+}
+static INLINE void cached_frame_lock_release(void)
+{
+   if (cached_frame_lock)
+      slock_unlock(cached_frame_lock);
+}
+#else
+#define cached_frame_lock_acquire() ((void)0)
+#define cached_frame_lock_release() ((void)0)
+#endif
+
 bool video_driver_cached_frame_info(
       unsigned *width, unsigned *height, size_t *pitch,
       bool *has_cpu_pixels)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   const void           *data     = video_st->frame_cache_data;
+   const void           *data;
+   bool                  has_frame;
 
-   if (!data)
+   cached_frame_lock_acquire();
+   data      = video_st->frame_cache_data;
+   has_frame = (data != NULL);
+
+   if (has_frame)
+   {
+      if (width)          *width          = video_st->frame_cache_width;
+      if (height)         *height         = video_st->frame_cache_height;
+      if (pitch)          *pitch          = video_st->frame_cache_pitch;
+      if (has_cpu_pixels) *has_cpu_pixels =
+         (data != RETRO_HW_FRAME_BUFFER_VALID);
+   }
+   cached_frame_lock_release();
+
+   if (!has_frame)
    {
       /* No cached frame yet, or it was invalidated.  Zero outputs
        * and report not-available so the caller can branch. */
@@ -3243,12 +3289,6 @@ bool video_driver_cached_frame_info(
       if (has_cpu_pixels) *has_cpu_pixels = false;
       return false;
    }
-
-   if (width)          *width          = video_st->frame_cache_width;
-   if (height)         *height         = video_st->frame_cache_height;
-   if (pitch)          *pitch          = video_st->frame_cache_pitch;
-   if (has_cpu_pixels) *has_cpu_pixels =
-      (data != RETRO_HW_FRAME_BUFFER_VALID);
    return true;
 }
 
@@ -3260,32 +3300,84 @@ void video_driver_cached_frame_read(
 {
    video_driver_state_t *video_st = &video_driver_st;
    const void           *data;
+   unsigned              width    = 0;
+   unsigned              height   = 0;
+   size_t                pitch    = 0;
+   bool                  hw_or_empty;
 
    if (!cb)
       return;
 
-   data = video_st->frame_cache_data;
+   /* Hold the lock for the duration of the callback so that any
+    * concurrent driver-resource teardown (vulkan_deinit_textures,
+    * d3d12_sw_fb_ensure / _gfx_free, runloop lifecycle resets)
+    * blocks until the callback returns.  This is the core safety
+    * guarantee the redesign introduces: the pointer handed to the
+    * callback cannot be freed out from under it. */
+   cached_frame_lock_acquire();
+   data        = video_st->frame_cache_data;
+   hw_or_empty = (!data || data == RETRO_HW_FRAME_BUFFER_VALID);
+   if (!hw_or_empty)
+   {
+      width  = video_st->frame_cache_width;
+      height = video_st->frame_cache_height;
+      pitch  = video_st->frame_cache_pitch;
+   }
+
    /* Hand the callback NULL when no CPU pixels are available, so
     * the consumer doesn't have to special-case the HW-render
     * sentinel or a yet-uninitialised cache.  Same convention as
     * cached_frame_info()'s has_cpu_pixels=false. */
-   if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
-   {
-      cb(userdata, NULL, 0, 0, 0);
-      return;
-   }
-
-   cb(userdata, data,
-      video_st->frame_cache_width,
-      video_st->frame_cache_height,
-      video_st->frame_cache_pitch);
+   cb(userdata, hw_or_empty ? NULL : data, width, height, pitch);
+   cached_frame_lock_release();
 }
 
 bool video_driver_cached_frame_is_hw_render(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   return    video_st->frame_cache_data
-          && video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
+   bool                  is_hw;
+   cached_frame_lock_acquire();
+   is_hw =    video_st->frame_cache_data
+           && video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
+   cached_frame_lock_release();
+   return is_hw;
+}
+
+/* Producer-side publish: install a new cached frame metadata
+ * tuple.  Called from video_driver_frame, from the
+ * command_event_reinit replay path, and from the
+ * task_screenshot.c::supports_read_frame_raw block.  Takes the
+ * lock; any in-flight cached_frame_read callback completes before
+ * the publish becomes visible. */
+void video_driver_cached_frame_publish(
+      const void *data, unsigned width, unsigned height, size_t pitch)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   cached_frame_lock_acquire();
+   if (data)
+      video_st->frame_cache_data = data;
+   video_st->frame_cache_width   = width;
+   video_st->frame_cache_height  = height;
+   video_st->frame_cache_pitch   = pitch;
+   cached_frame_lock_release();
+}
+
+/* Producer-side invalidate: clear the cached frame.  Drivers call
+ * this before releasing any buffer they suspect the cached frame
+ * might point into; runloop calls it at content / core / driver
+ * lifecycle transitions.  Takes the lock; any in-flight
+ * cached_frame_read callback completes before the invalidation
+ * becomes visible, so the buffer is safe to free immediately
+ * after this returns. */
+void video_driver_cached_frame_invalidate(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   cached_frame_lock_acquire();
+   video_st->frame_cache_data   = NULL;
+   video_st->frame_cache_width  = 0;
+   video_st->frame_cache_height = 0;
+   video_st->frame_cache_pitch  = 0;
+   cached_frame_lock_release();
 }
 
 bool video_driver_has_focus(void)
@@ -3831,6 +3923,14 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       video_driver_init_filter(video_driver_pix_fmt, settings);
 #endif
 
+#ifdef HAVE_THREADS
+   /* Lazily allocate the cached-frame lifetime lock on first video
+    * driver init.  Kept across video driver reinits (HDR toggle,
+    * fullscreen change) -- only freed at deinit_drivers / shutdown. */
+   if (!cached_frame_lock)
+      cached_frame_lock = slock_new();
+#endif
+
    max_dim   = MAX(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale     = MAX(scale, 1);
@@ -4170,12 +4270,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
 
    if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
-   {
-      video_st->frame_cache_data    = &dummy_pixels;
-      video_st->frame_cache_width   = 4;
-      video_st->frame_cache_height  = 4;
-      video_st->frame_cache_pitch   = 8;
-   }
+      video_driver_cached_frame_publish(&dummy_pixels, 4, 4, 8);
 
 #if defined(PSP)
    if (     video_st->poke
@@ -4268,11 +4363,14 @@ void video_driver_frame(const void *data, unsigned width,
          || runloop_st->core_run_time > runloop_st->core_runtime_last)
       runloop_st->core_run_time     = 0;
 
-   if (data)
-      video_st->frame_cache_data = data;
-   video_st->frame_cache_width   = width;
-   video_st->frame_cache_height  = height;
-   video_st->frame_cache_pitch   = pitch;
+   /* Publish the new cached frame metadata atomically under the
+    * lifetime lock so concurrent off-thread readers (task workers
+    * for screenshots / translation) see a consistent (data,
+    * dims) tuple.  Same-thread cached_frame_replay callers
+    * (drivers' read_viewport setup, paused render) read without
+    * the lock -- they're on the runloop thread same as the
+    * producer here, so there's no race for them to lose. */
+   video_driver_cached_frame_publish(data, width, height, pitch);
 
    if (
             video_st->scaler_ptr

@@ -242,6 +242,34 @@
 
 #if HAVE_GAME_AI
 #include "ai/game_ai.h"
+
+/* Context for the cached_frame_read callback that dispatches into
+ * game_ai_think.  Lets the per-frame GameAI processing pull from
+ * the cached frame through the lifetime-safe API instead of
+ * touching frame_cache_data directly. */
+struct game_ai_think_ctx
+{
+   bool                    override_p1;
+   bool                    override_p2;
+   bool                    show_debug;
+   enum retro_pixel_format pix_fmt;
+};
+
+static void runloop_game_ai_think_cb(void *userdata,
+      const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   struct game_ai_think_ctx *ctx = (struct game_ai_think_ctx*)userdata;
+   if (!ctx)
+      return;
+   game_ai_think(
+         ctx->override_p1,
+         ctx->override_p2,
+         ctx->show_debug,
+         data,
+         width, height, pitch,
+         ctx->pix_fmt);
+}
 #endif
 
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
@@ -3960,7 +3988,7 @@ static bool core_unload_game(void)
 
    video_driver_free_hw_context();
 
-   video_st->frame_cache_data     = NULL;
+   video_driver_cached_frame_invalidate();
 
    if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
    {
@@ -4106,7 +4134,7 @@ void runloop_event_deinit_core(void)
       input_st->core_gyro_rate       = 0;
    }
 
-   video_st->frame_cache_data  = NULL;
+   video_driver_cached_frame_invalidate();
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
@@ -4851,7 +4879,7 @@ bool runloop_event_init_core(
    }
 #endif
 
-   video_st->frame_cache_data              = NULL;
+   video_driver_cached_frame_invalidate();
 
    runloop_st->current_core.retro_init();
    runloop_st->current_core.flags         |= RETRO_CORE_FLAG_INITED;
@@ -6011,7 +6039,7 @@ static enum runloop_state_enum runloop_check_state(
             if (!take_screenshot(settings->paths.directory_screenshot,
                      screenshot_path,
                      false,
-                     video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                     video_driver_cached_frame_is_hw_render(),
                      fullpath,
                      false))
             {
@@ -8131,7 +8159,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
 
-   video_st->frame_cache_data     = NULL;
+   video_driver_cached_frame_invalidate();
 
 #ifdef HAVE_RUNAHEAD
    runahead_set_load_content_info(runloop_st, load_info);
@@ -8272,7 +8300,7 @@ void core_reset(void)
     * cores or on drivers that do not implement the hook. */
    video_driver_invalidate_hw_render_cache();
 
-   video_st->frame_cache_data     = NULL;
+   video_driver_cached_frame_invalidate();
    runloop_st->current_core.retro_reset();
 }
 
@@ -8323,15 +8351,15 @@ void core_run(void)
       if (override_p1 || override_p2 || show_debug)
       {
          video_driver_state_t *video_st = video_state_get_ptr();
-         game_ai_think(
-               override_p1,
-               override_p2,
-               show_debug,
-               video_st->frame_cache_data,
-               video_st->frame_cache_width,
-               video_st->frame_cache_height,
-               video_st->frame_cache_pitch,
-               video_st->pix_fmt);
+         struct game_ai_think_ctx ctx;
+         ctx.override_p1 = override_p1;
+         ctx.override_p2 = override_p2;
+         ctx.show_debug  = show_debug;
+         ctx.pix_fmt     = video_st->pix_fmt;
+         /* Same-thread access (we're on the runloop thread, same as
+          * the producer), but route through cached_frame_read for
+          * lifecycle correctness once the field becomes private. */
+         video_driver_cached_frame_read(&ctx, runloop_game_ai_think_cb);
       }
    }
 #endif

@@ -1589,7 +1589,7 @@ void drivers_init(
 #ifdef HAVE_VIDEO_FILTER
       video_driver_filter_free();
 #endif
-      video_st->frame_cache_data  = NULL;
+      video_driver_cached_frame_invalidate();
       if (!video_driver_init_internal(&video_is_threaded,
                verbosity_enabled))
          retroarch_fail(1, "video_driver_init_internal()");
@@ -1902,7 +1902,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       video_st->context_lock      = NULL;
 #endif
       video_st->data              = NULL;
-      video_st->frame_cache_data  = NULL;
+      video_driver_cached_frame_invalidate();
    }
 
    if (flags & DRIVER_AUDIO_MASK)
@@ -1967,7 +1967,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
                        );
    video_st->record_gpu_buffer          = NULL;
    video_st->current_video              = NULL;
-   video_st->frame_cache_data           = NULL;
+   video_driver_cached_frame_invalidate();
 
    /* Audio */
    audio_state_get_ptr()->flags        &= ~AUDIO_FLAG_ACTIVE;
@@ -3756,11 +3756,10 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_SCREENSHOTS
          {
             const char *dir_screenshot      = settings->paths.directory_screenshot;
-            video_driver_state_t *video_st  = video_state_get_ptr();
             if (!take_screenshot(dir_screenshot,
                      runloop_st->runtime_content_path_basename,
                      false,
-                     video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                     video_driver_cached_frame_is_hw_render(),
                      false,
                      true))
                return false;

@@ -8567,8 +8567,13 @@ static void general_write_handler(rarch_setting_t *setting)
                custom_vp->x         = 0;
                custom_vp->y         = 0;
 
-               base_width           = (geom->base_width)  ? geom->base_width  : video_st->frame_cache_width;
-               base_height          = (geom->base_height) ? geom->base_height : video_st->frame_cache_height;
+               {
+                  unsigned cache_w  = 0;
+                  unsigned cache_h  = 0;
+                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
+                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
+                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+               }
 
                if (base_width <= 4 || base_height <= 4)
                {
@@ -8914,8 +8919,13 @@ static void general_write_handler(rarch_setting_t *setting)
                custom_vp->x         = 0;
                custom_vp->y         = 0;
 
-               base_width           = (geom->base_width)  ? geom->base_width  : video_st->frame_cache_width;
-               base_height          = (geom->base_height) ? geom->base_height : video_st->frame_cache_height;
+               {
+                  unsigned cache_w  = 0;
+                  unsigned cache_h  = 0;
+                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
+                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
+                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+               }
 
                if (base_width <= 4 || base_height <= 4)
                {

@@ -1272,7 +1272,7 @@ static void ctr_bottom_menu_control(void* data,
                   take_screenshot(NULL,
                         screenshot_full_path,
                         true,
-                        video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                        video_driver_cached_frame_is_hw_render(),
                         true,
                         true);
                }

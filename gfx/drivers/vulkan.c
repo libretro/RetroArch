@@ -1732,8 +1732,6 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
  */
 static void vulkan_set_viewport(void *data, unsigned vp_width,
       unsigned vp_height, bool force_full, bool allow_rotate);
-static bool vulkan_is_mapped_swapchain_texture_ptr(const vk_t* vk,
-      const void* ptr);
 
 #ifdef HAVE_OVERLAY
 static void vulkan_overlay_free(vk_t *vk);
@@ -4001,11 +3999,14 @@ static void vulkan_init_textures(vk_t *vk)
 static void vulkan_deinit_textures(vk_t *vk)
 {
    int i;
-   video_driver_state_t *video_st = video_state_get_ptr();
-   /* Avoid memcpying from a destroyed/unmapped texture later on. */
-   const void *cached_frame       = video_st->frame_cache_data;
-   if (vulkan_is_mapped_swapchain_texture_ptr(vk, cached_frame))
-      video_st->frame_cache_data  = NULL;
+   /* Invalidate the cached frame unconditionally before destroying
+    * the swapchain textures.  The new API's lifetime lock blocks
+    * here if an off-thread consumer is mid-read of pixels that
+    * may live in one of those mapped textures, so the destroy
+    * below cannot race a reader.  Cheaper and simpler than the
+    * previous conditional check (which only covered the
+    * synchronous case via a pointer-in-mapped-range test). */
+   video_driver_cached_frame_invalidate();
 
    vkDestroySampler(vk->context->device, vk->samplers.nearest,        NULL);
    vkDestroySampler(vk->context->device, vk->samplers.linear,         NULL);
@@ -7488,19 +7489,6 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       framebuffer->memory_flags |= RETRO_MEMORY_TYPE_CACHED;
 
    return true;
-}
-
-static bool vulkan_is_mapped_swapchain_texture_ptr(const vk_t* vk,
-      const void* ptr)
-{
-   int i;
-   for (i = 0; i < (int) vk->num_swapchain_images; i++)
-   {
-      if (ptr == vk->swapchain[i].texture.mapped)
-         return true;
-   }
-
-   return false;
 }
 
 static bool vulkan_get_hw_render_interface(void *data,

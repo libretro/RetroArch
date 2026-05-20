@@ -721,21 +721,23 @@ static bool take_screenshot_choice(
 
    if (supports_read_frame_raw)
    {
-      const void *old_data         = video_st->frame_cache_data;
-      unsigned old_width           = video_st->frame_cache_width;
-      unsigned old_height          = video_st->frame_cache_height;
-      size_t old_pitch             = video_st->frame_cache_pitch;
-      void *frame_data             = video_driver_read_frame_raw(
-            &old_width, &old_height, &old_pitch);
-
-      video_st->frame_cache_data   = old_data;
-      video_st->frame_cache_width  = old_width;
-      video_st->frame_cache_height = old_height;
-      video_st->frame_cache_pitch  = old_pitch;
+      /* video_driver_read_frame_raw's w/h/p are pure out-params --
+       * the driver writes the dimensions of the buffer it
+       * returns.  On success we publish (frame_data, dims) into
+       * the cache before invoking take_screenshot_raw, which then
+       * pulls dims via cached_frame_info() and uses frame_data
+       * directly as a caller-owned snapshot.  On failure
+       * (frame_data == NULL) we leave the existing cache state
+       * untouched -- cleaner than the previous save-and-restore
+       * dance that mixed old data with new dims. */
+      unsigned w   = 0;
+      unsigned h   = 0;
+      size_t   p   = 0;
+      void *frame_data = video_driver_read_frame_raw(&w, &h, &p);
 
       if (frame_data)
       {
-         video_st->frame_cache_data = frame_data;
+         video_driver_cached_frame_publish(frame_data, w, h, p);
          return take_screenshot_raw(video_st, screenshot_dir,
                name_base, frame_data, savestate, runloop_flags, fullpath, use_thread,
                pixel_format_type);
