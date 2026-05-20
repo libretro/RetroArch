@@ -4486,15 +4486,89 @@ void video_driver_frame(const void *data, unsigned width,
    {
       unsigned fps_update_interval              = video_info.fps_update_interval;
       unsigned memory_update_interval           = video_info.memory_update_interval;
-      /* Set this to 1 to avoid an offset issue */
-      unsigned write_index                      = video_st->frame_time_count++
-                                               & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
       frame_time                                = new_time - fps_time;
-      /* Don't let fast-forward frame times and startup hiccups to skew the stats */
-      video_st->frame_time_samples[write_index] = (  video_info.input_driver_nonblock_state
-                                                  || video_st->frame_count < 8)
-                                                   ? video_info.frame_time_target : frame_time;
       fps_time                                  = new_time;
+
+      /* Frame-time sampling.  Two modes:
+       *
+       *   1. Legacy (default; video_frame_time_sample_gated == false):
+       *      sample every frame, substituting frame_time_target for
+       *      fast-forward and startup frames.  This is the historical
+       *      behaviour the reset toggles (Reset After Save State / Load
+       *      State / Fast-Forward) were designed around -- the buffer
+       *      accumulates contamination from menu sleep, blocking I/O,
+       *      pause transitions, etc., and the toggles offer one-shot
+       *      drains for known contaminators.
+       *
+       *   2. Gated (opt-in; video_frame_time_sample_gated == true):
+       *      skip the write entirely when we're not in a steady-state
+       *      that the buffer is supposed to be measuring.  The ring
+       *      retains its last N clean samples; samples taken during
+       *      menu, pause, fast-forward, or with frame_time outside a
+       *      sanity envelope are not written and frame_time_count is
+       *      not advanced.  The reset toggles become redundant under
+       *      this mode since contamination never enters the buffer.
+       *
+       * Both modes still record the dropped-frame counter below
+       * (separate from the rate-estimation buffer).
+       */
+      if (settings->bools.video_frame_time_sample_gated)
+      {
+         /* The clean-sample predicate.  Inline rather than factored
+          * out so all conditions are visible in one place. */
+         bool sample_clean    = true;
+         retro_time_t expected_us = (retro_time_t)video_info.frame_time_target;
+
+         /* Startup warmup (same threshold the legacy path uses for
+          * its substitution; here we just skip instead of substituting). */
+         if (video_st->frame_count < 8)
+            sample_clean      = false;
+         /* Fast-forward / rewind: deltas are tiny and meaningless
+          * for refresh estimation. */
+         else if (video_info.input_driver_nonblock_state)
+            sample_clean      = false;
+         /* Paused: no new core advancement, only menu/cached_frame
+          * replays. */
+         else if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+            sample_clean      = false;
+         /* Menu with libretro paused: only menu replays are firing,
+          * pace reflects menu throttle (sleep / vsync), not core.
+          * Menu with content actively running behind it (overlay-
+          * menu, menu_pause_libretro == false) is still a valid
+          * sample of core cadence and is allowed through. */
+         else if (    menu_is_alive
+                  &&  settings->bools.menu_pause_libretro)
+            sample_clean      = false;
+         /* Sanity envelope on the delta itself: reject anything
+          * obviously outside steady-state.  Catches blocking I/O
+          * gaps (save/load state, content boot, shader compile)
+          * that don't have a per-frame flag we can check. */
+         else if (expected_us > 0
+                  && (   frame_time > expected_us * 2
+                      || frame_time < expected_us / 2))
+            sample_clean      = false;
+
+         if (sample_clean)
+         {
+            unsigned write_index                      = video_st->frame_time_count++
+                                                     & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+            video_st->frame_time_samples[write_index] = frame_time;
+         }
+         /* else: skip the write, don't advance count.  Ring keeps
+          * its last N clean samples; statistics computed over them
+          * remain meaningful even though the loop has been doing
+          * other things since. */
+      }
+      else
+      {
+         /* Legacy path -- unchanged from pre-gating behaviour. */
+         unsigned write_index                      = video_st->frame_time_count++
+                                                  & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+         /* Don't let fast-forward frame times and startup hiccups to skew the stats */
+         video_st->frame_time_samples[write_index] = (  video_info.input_driver_nonblock_state
+                                                     || video_st->frame_count < 8)
+                                                      ? video_info.frame_time_target : frame_time;
+      }
 
       /* Try to count dropped frames */
       if (     video_st->frame_count > 8

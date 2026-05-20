@@ -2651,6 +2651,14 @@ MSG_HASH(
    "Attempt to hold desired 'Frame Delay' target and minimize frame drops. Starting point is 3/4 frame time when 'Frame Delay' is 0 (Auto)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Sample Frame Time Only In Stable State"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Restrict 'Estimated Screen Refresh Rate' sampling to frames where content is running cleanly (not menu, not paused, not fast-forwarding, frame time within a sanity envelope). The diagnostic readout becomes a real signal at the cost of slower convergence after content load."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "Auto"
    )

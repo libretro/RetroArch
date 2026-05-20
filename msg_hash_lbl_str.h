@@ -1070,6 +1070,7 @@
 #define MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE_STR "video_force_srgb_disable"
 #define MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_STR "video_frame_delay"
 #define MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO_STR "video_frame_delay_auto"
+#define MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED_STR "video_frame_time_sample_gated"
 #define MENU_ENUM_LABEL_VIDEO_SHADER_DELAY_STR "video_shader_delay"
 #define MENU_ENUM_LABEL_VIDEO_FULLSCREEN_STR "video_fullscreen"
 #define MENU_ENUM_LABEL_VIDEO_GAMMA_STR "video_gamma"

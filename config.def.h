@@ -416,6 +416,21 @@
 #define MAXIMUM_FRAME_DELAY 99
 #define DEFAULT_FRAME_DELAY_AUTO false
 
+/* When true, the frame-time ring buffer that backs the "Estimated
+ * Screen Refresh Rate" diagnostic + the AUTO-apply menu action is
+ * sampled only when the runloop is in a "clean" steady state
+ * (content running, not paused, not in fast-forward, not in
+ * menu-with-paused-libretro, frame time within a sanity envelope
+ * around the expected period).
+ *
+ * Disabled by default to preserve the existing measurement
+ * behaviour and the reset toggles that depend on it.  When
+ * enabled, the deviation in the diagnostic readout becomes a real
+ * signal again (the polluting samples from sleep / menu / save /
+ * load never enter the buffer in the first place), at the cost
+ * of slower convergence after content load. */
+#define DEFAULT_FRAME_TIME_SAMPLE_GATED false
+
 /* Duplicates frames for the purposes of running Shaders at a higher framerate
  * than content framerate. Requires running screen at multiple of 60hz, and
  * don't combine with Swap_interval > 1, or BFI. (Though BFI can be done in a shader
