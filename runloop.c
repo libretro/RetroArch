@@ -7560,6 +7560,23 @@ int runloop_iterate(void)
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
          if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
             return 0;
+         /* When content is actively running behind the menu (menu_pause_libretro
+          * is off), core_run() -> audio_driver_write() already paces the iterate
+          * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
+          * Layering the refresh-rate retro_sleep() throttle below on top of that
+          * is redundant double-pacing, and retro_sleep() resolves to OS Sleep()
+          * whose granularity is ~15 ms on Windows by default -- coarser than
+          * typical audio low-water marks, so the sleep overshoots and stutters
+          * audio.  Defer pacing to the audio backpressure path. */
+         else if (   audio_sync
+                  && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
+         {
+            /* Make sure no stale frame_limit_minimum_time from a prior
+             * iteration (e.g. just before menu_pause_libretro was toggled
+             * off) leaks into the sleep block below. */
+            runloop_st->frame_limit_minimum_time = 0;
+            goto end;
+         }
          else if ((  (settings->bools.video_vsync)
                   || (settings->bools.video_scanline_sync && video_st->scanline[SCANLINE_NEXT]))
                && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
