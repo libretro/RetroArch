@@ -5762,6 +5762,9 @@ bool command_event(enum event_command cmd, void *data)
                      settings->bools.vrr_runloop_enable ? MSG_VRR_RUNLOOP_ENABLED
                      : MSG_VRR_RUNLOOP_DISABLED);
             settings->bools.vrr_runloop_enable = !(settings->bools.vrr_runloop_enable);
+            /* vrr_runloop_enable contributes to the menu pacing
+             * static_mask; force a recompute. */
+            runloop_menu_pace_static_mask_dirty_set();
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }

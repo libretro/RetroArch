@@ -5653,90 +5653,103 @@ static INLINE bool runloop_is_libretro_running(runloop_state_t* runloop_st, bool
 }
 
 #ifdef HAVE_MENU
-/* Menu pacing sources.  In the menu state, the runloop avoids
- * an artificial retro_sleep() throttle when any external
- * mechanism is already pacing the iteration -- the display's
- * VRR engine, the audio buffer's blocking write, the mixer's
- * voice playback, vsync, or scanline sync.  Each pacer below
- * sets a flag in the result of runloop_menu_pace_compute().
- *
- * Adding a future pacer = define a new flag, OR it into the
- * appropriate action mask below, and add one check to the
- * compute function. */
-enum runloop_menu_pace_flag
+/* Menu pacing: see runloop.h for full architecture.  This file
+ * implements the dual-mask infrastructure -- static_mask is
+ * recomputed lazily when the dirty flag is set; dynamic_mask is
+ * updated at event sites.  Per-frame compute is one AND, plus
+ * runtime carve-outs for the few gates that aren't event-driven
+ * yet (libretro_running, scanline target). */
+
+static void runloop_menu_pace_static_mask_recompute(settings_t *settings)
 {
-   MENU_PACE_VRR_RUNLOOP        = (1 << 0),
-   MENU_PACE_AUDIO_BACKPRESSURE = (1 << 1),
-   MENU_PACE_AUDIO_MIXER        = (1 << 2),
-   MENU_PACE_VSYNC              = (1 << 3),
-   MENU_PACE_SCANLINE_SYNC      = (1 << 4)
-};
+   uint32_t m = 0;
 
-/* Pacers that pace via blocking audio writes -- treat as audio
- * source, skip sleep entirely (frame_limit_minimum_time = 0). */
-#define MENU_PACE_AUDIO_MASK   \
-   (MENU_PACE_AUDIO_BACKPRESSURE | MENU_PACE_AUDIO_MIXER)
+   /* VRR_RUNLOOP -- fully static (vrr_runloop_enable +
+    * menu_throttle_framerate).  Highest precedence; caller bails
+    * out of iterate entirely. */
+   if (     settings->bools.vrr_runloop_enable
+         && !settings->bools.menu_throttle_framerate)
+      m |= MENU_PACE_VRR_RUNLOOP;
 
-/* Pacers that pace via a blocking present call -- the present
- * itself throttles, sleep block is a no-op on the next iter. */
-#define MENU_PACE_DISPLAY_MASK \
-   (MENU_PACE_VSYNC | MENU_PACE_SCANLINE_SYNC)
+   /* AUDIO_BACKPRESSURE -- static gate (audio_sync setting + no
+    * menu_pause_libretro override).  Dynamic gate
+    * (libretro actually running) is runtime-checked in compute
+    * because RUNLOOP_FLAG_CORE_RUNNING / PAUSED / IS_INITED
+    * transitions aren't yet event-driven. */
+   if (     settings->bools.audio_sync
+         && !settings->bools.menu_pause_libretro)
+      m |= MENU_PACE_AUDIO_BACKPRESSURE;
+
+   /* VSYNC + SCANLINE_SYNC -- static gates only.  Dynamic side
+    * (window focus, plus scanline target for the scanline pacer)
+    * is in dynamic_mask. */
+   if (settings->bools.video_vsync)
+      m |= MENU_PACE_VSYNC;
+   if (settings->bools.video_scanline_sync)
+      m |= MENU_PACE_SCANLINE_SYNC;
+
+   runloop_state.menu_pace_static_mask        = m;
+   runloop_state.menu_pace_static_mask_dirty  = false;
+}
+
+void runloop_menu_pace_init(void)
+{
+   /* Default-on bits in dynamic_mask for pacers whose dynamic
+    * gate is nonexistent (pure-static) or runtime-checked.  The
+    * remaining bits (AUDIO_MIXER) are managed by event hooks. */
+   runloop_state.menu_pace_dynamic_mask =
+        MENU_PACE_VRR_RUNLOOP         /* pure static          */
+      | MENU_PACE_AUDIO_BACKPRESSURE  /* runtime-checked gate */
+      | MENU_PACE_VSYNC               /* assume focused at boot */
+      | MENU_PACE_SCANLINE_SYNC;      /* assume focused at boot */
+   runloop_state.menu_pace_static_mask_dirty = true;
+}
+
+void runloop_menu_pace_static_mask_dirty_set(void)
+{
+   runloop_state.menu_pace_static_mask_dirty = true;
+}
+
+void runloop_menu_pace_dynamic_mask_set(uint32_t bits)
+{
+   runloop_state.menu_pace_dynamic_mask |= bits;
+}
+
+void runloop_menu_pace_dynamic_mask_clear(uint32_t bits)
+{
+   runloop_state.menu_pace_dynamic_mask &= ~bits;
+}
 
 static INLINE uint32_t runloop_menu_pace_compute(
       runloop_state_t      *runloop_st,
       video_driver_state_t *video_st,
-      audio_driver_state_t *audio_st,
       settings_t           *settings,
-      bool                  menu_pause_libretro,
-      bool                  focused)
+      bool                  menu_pause_libretro)
 {
-   uint32_t flags = 0;
+   uint32_t pace;
 
-   /* Sync-to-content-framerate + menu throttle off = explicit
-    * 'let the display pace the menu' opt-in.  Highest
-    * precedence; if set, nothing else affects the dispatch
-    * (the caller bails out of iterate entirely). */
-   if (     settings->bools.vrr_runloop_enable
-         && !settings->bools.menu_throttle_framerate)
-      return MENU_PACE_VRR_RUNLOOP;
+   if (runloop_st->menu_pace_static_mask_dirty)
+      runloop_menu_pace_static_mask_recompute(settings);
 
-   /* core_run() -> audio_driver_write() blocks on the audio
-    * buffer's drain rate when sync is on and a core is running
-    * (overlay menu case). */
-   if (     settings->bools.audio_sync
-         && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
-      flags |= MENU_PACE_AUDIO_BACKPRESSURE;
+   pace = runloop_st->menu_pace_static_mask
+        & runloop_st->menu_pace_dynamic_mask;
 
-#ifdef HAVE_AUDIOMIXER
-   /* Menu BGM / sound effects -- if any mixer voice is actively
-    * playing, the audio buffer is being drained and the sleep
-    * fallback would cause underruns.  Uses the voice-playing
-    * counter rather than AUDIO_FLAG_MIXER_ACTIVE since the flag
-    * is sticky (set on first stream, cleared only on deinit). */
-   if (audio_st->mixer_streams_playing > 0)
-      flags |= MENU_PACE_AUDIO_MIXER;
-#endif
+   /* Runtime carve-out 1: AUDIO_BACKPRESSURE's dynamic gate is
+    * the libretro_running predicate (IS_INITED && !PAUSED &&
+    * CORE_RUNNING).  Not yet event-driven; check inline. */
+   if (    (pace & MENU_PACE_AUDIO_BACKPRESSURE)
+        && !runloop_is_libretro_running(runloop_st, menu_pause_libretro))
+      pace &= ~MENU_PACE_AUDIO_BACKPRESSURE;
 
-   /* Audio pacers outrank display pacers: if any audio source
-    * is alive, the display-side checks below cannot change the
-    * dispatch outcome (both end up in 'goto end' anyway, but
-    * the audio path zeroes the frame limit while display does
-    * not). */
-   if (flags & MENU_PACE_AUDIO_MASK)
-      return flags;
+   /* Runtime carve-out 2: SCANLINE_SYNC requires the video
+    * driver to have computed a 'next scanline' target this
+    * frame.  Genuinely per-frame data, can't be reasonably
+    * event-driven without restructuring the scanline sync code. */
+   if (    (pace & MENU_PACE_SCANLINE_SYNC)
+        && !video_st->scanline[SCANLINE_NEXT])
+      pace &= ~MENU_PACE_SCANLINE_SYNC;
 
-   /* Display-side pacers only count when the window has focus;
-    * unfocused windows often don't get vsync. */
-   if (focused)
-   {
-      if (settings->bools.video_vsync)
-         flags |= MENU_PACE_VSYNC;
-      if (     settings->bools.video_scanline_sync
-            && video_st->scanline[SCANLINE_NEXT])
-         flags |= MENU_PACE_SCANLINE_SYNC;
-   }
-
-   return flags;
+   return pace;
 }
 #endif /* HAVE_MENU */
 
@@ -5884,9 +5897,21 @@ static enum runloop_state_enum runloop_check_state(
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
 
    if (is_focused)
+   {
       runloop_st->flags |=  RUNLOOP_FLAG_FOCUSED;
+#ifdef HAVE_MENU
+      runloop_menu_pace_dynamic_mask_set(
+            MENU_PACE_VSYNC | MENU_PACE_SCANLINE_SYNC);
+#endif
+   }
    else
+   {
       runloop_st->flags &= ~RUNLOOP_FLAG_FOCUSED;
+#ifdef HAVE_MENU
+      runloop_menu_pace_dynamic_mask_clear(
+            MENU_PACE_VSYNC | MENU_PACE_SCANLINE_SYNC);
+#endif
+   }
 
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_enable)
@@ -7679,9 +7704,7 @@ int runloop_iterate(void)
           * each flag. */
          {
             const uint32_t pace = runloop_menu_pace_compute(
-                  runloop_st, video_st, audio_st, settings,
-                  menu_pause_libretro,
-                  !!(runloop_st->flags & RUNLOOP_FLAG_FOCUSED));
+                  runloop_st, video_st, settings, menu_pause_libretro);
 
             /* VRR runloop opt-in: bail out of iterate entirely,
              * outer loop is paced by display refresh. */

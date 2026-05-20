@@ -8635,6 +8635,9 @@ static void general_write_handler(rarch_setting_t *setting)
             configuration_set_bool(settings,
                settings->bools.vrr_runloop_enable,
                0);
+            /* vrr_runloop_enable contributes to the menu pacing
+             * static_mask; force a recompute. */
+            runloop_menu_pace_static_mask_dirty_set();
             configuration_set_uint(settings,
                settings->uints.video_shader_subframes,
                1);
@@ -9400,6 +9403,17 @@ static void frontend_log_level_change_handler(rarch_setting_t *setting)
       return;
 
    verbosity_set_log_level(*setting->value.target.unsigned_integer);
+}
+
+/* Attached to any setting whose value contributes to
+ * runloop_menu_pace_static_mask.  See runloop.h for the list
+ * (vrr_runloop_enable, menu_throttle_framerate,
+ * menu_pause_libretro, audio_sync, video_vsync,
+ * video_scanline_sync). */
+static void menu_pace_static_setting_change_handler(rarch_setting_t *setting)
+{
+   (void)setting;
+   runloop_menu_pace_static_mask_dirty_set();
 }
 
 #ifdef HAVE_RUNAHEAD
@@ -14416,6 +14430,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+            (*list)[list_info->index - 1].change_handler = menu_pace_static_setting_change_handler;
 
             CONFIG_UINT(
                   list, list_info,
@@ -14578,6 +14593,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
+            (*list)[list_info->index - 1].change_handler = menu_pace_static_setting_change_handler;
 #endif
 
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
@@ -15254,6 +15270,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         (*list)[list_info->index - 1].change_handler = menu_pace_static_setting_change_handler;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_UINT(
@@ -17137,6 +17154,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok    = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_left  = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+         (*list)[list_info->index - 1].change_handler = menu_pace_static_setting_change_handler;
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
@@ -17155,6 +17173,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED
                );
+         (*list)[list_info->index - 1].change_handler = menu_pace_static_setting_change_handler;
 
          CONFIG_FLOAT(
                list, list_info,
@@ -18896,6 +18915,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_CMD_APPLY_AUTO
                );
+         (*list)[list_info->index - 1].change_handler = menu_pace_static_setting_change_handler;
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_PAUSE_LIBRETRO);
 
          CONFIG_BOOL(

@@ -412,6 +412,20 @@ static bool audio_driver_deinit_internal(bool audio_enable)
 }
 
 #ifdef HAVE_AUDIOMIXER
+/* Keep the menu pacing dynamic mask in sync with the mixer's
+ * playing-stream counter.  Called from every site that ++/--'s
+ * audio_driver_st.mixer_streams_playing.  When at least one
+ * voice is playing, the mixer is actively producing samples and
+ * the menu pacing path must skip its sleep fallback to avoid
+ * audio underruns. */
+static INLINE void audio_driver_mixer_pace_mask_sync(void)
+{
+   if (audio_driver_st.mixer_streams_playing > 0)
+      runloop_menu_pace_dynamic_mask_set(MENU_PACE_AUDIO_MIXER);
+   else
+      runloop_menu_pace_dynamic_mask_clear(MENU_PACE_AUDIO_MIXER);
+}
+
 static void audio_driver_mixer_deinit(void)
 {
    unsigned i;
@@ -1386,6 +1400,7 @@ static void audio_mixer_play_stop_cb(
             audio_driver_st.mixer_streams[i].voice   = NULL;
             if (audio_driver_st.mixer_streams_playing > 0)
                audio_driver_st.mixer_streams_playing--;
+            audio_driver_mixer_pace_mask_sync();
          }
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
@@ -1410,6 +1425,7 @@ static void audio_mixer_menu_stop_cb(
             audio_driver_st.mixer_streams[i].volume  = 0.0f;
             if (audio_driver_st.mixer_streams_playing > 0)
                audio_driver_st.mixer_streams_playing--;
+            audio_driver_mixer_pace_mask_sync();
          }
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
@@ -1449,6 +1465,7 @@ static void audio_mixer_play_stop_sequential_cb(
             audio_driver_st.mixer_streams[i].voice          = NULL;
             if (audio_driver_st.mixer_streams_playing > 0)
                audio_driver_st.mixer_streams_playing--;
+            audio_driver_mixer_pace_mask_sync();
 
             i++;
 
@@ -1603,6 +1620,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
        || params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED
        || params->state == AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL)
       audio_driver_st.mixer_streams_playing++;
+   audio_driver_mixer_pace_mask_sync();
 
    return true;
 }
@@ -1632,6 +1650,7 @@ static void audio_driver_mixer_play_stream_internal(
                audio_driver_st.mixer_streams[i].stop_cb);
          audio_driver_st.mixer_streams[i].state = (enum audio_mixer_state)type;
          audio_driver_st.mixer_streams_playing++;
+         audio_driver_mixer_pace_mask_sync();
          break;
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
@@ -1872,6 +1891,7 @@ void audio_driver_mixer_stop_stream(unsigned i)
             audio_driver_st.mixer_streams[i].volume  = 1.0f;
             if (audio_driver_st.mixer_streams_playing > 0)
                audio_driver_st.mixer_streams_playing--;
+            audio_driver_mixer_pace_mask_sync();
          }
          break;
       case AUDIO_STREAM_STATE_STOPPED:

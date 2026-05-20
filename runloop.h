@@ -273,6 +273,12 @@ struct runloop
 #endif
 
    uint32_t flags;
+   /* Menu pacing: pre-computed bitmasks consulted in the menu
+    * state branch to decide whether to sleep.  See
+    * runloop_menu_pace_static_mask_dirty_set() and the
+    * runloop_menu_pace_dynamic_mask_* functions in runloop.h. */
+   uint32_t menu_pace_static_mask;
+   uint32_t menu_pace_dynamic_mask;
    uint8_t pending_disk_control_insert;
    int8_t run_frames_and_pause;
 
@@ -309,6 +315,7 @@ struct runloop
 
    bool perfcnt_enable;
    bool paused_hotkey;
+   bool menu_pace_static_mask_dirty;
 };
 
 typedef struct runloop runloop_state_t;
@@ -442,6 +449,64 @@ void runloop_path_set_redirect(settings_t *settings, const char *a, const char *
 void runloop_path_set_special(char **argv, unsigned num_content);
 
 void runloop_path_deinit_subsystem(void);
+
+/* Menu pacing infrastructure.
+ *
+ * The menu state branch consults two pre-computed bitmasks
+ * (static + dynamic) to decide whether to fall through to the
+ * retro_sleep() throttle.  Both masks share the same
+ * MENU_PACE_* bit layout below.
+ *
+ * runloop_menu_pace_static_mask  -- bits reflecting user-settings
+ *   conditions for each pacer.  Recomputed lazily on the next
+ *   menu pacing query after runloop_menu_pace_static_mask_dirty_set()
+ *   is called.  Callers from anywhere that writes one of the
+ *   relevant settings (vrr_runloop_enable, menu_throttle_framerate,
+ *   menu_pause_libretro, audio_sync, video_vsync,
+ *   video_scanline_sync) should call dirty_set after the write.
+ *
+ * runloop_menu_pace_dynamic_mask -- bits reflecting runtime state
+ *   for each pacer.  Each bit's set/clear is driven by the
+ *   event(s) that change the underlying state (focus transition,
+ *   mixer voice start/stop, etc.).  Pacers whose dynamic gate is
+ *   nonexistent or not yet event-driven are 'default-on' so
+ *   static_mask alone determines them (with optional runtime
+ *   carve-outs in the compute function).
+ *
+ * Per-frame cost in the menu state is one mask AND plus the
+ * scanline runtime carve-out -- constant regardless of how many
+ * pacers exist. */
+enum
+{
+   MENU_PACE_VRR_RUNLOOP        = (1 << 0), /* pure static          */
+   MENU_PACE_AUDIO_BACKPRESSURE = (1 << 1), /* static + runtime gate */
+   MENU_PACE_AUDIO_MIXER        = (1 << 2), /* pure dynamic         */
+   MENU_PACE_VSYNC              = (1 << 3), /* static + focus       */
+   MENU_PACE_SCANLINE_SYNC      = (1 << 4)  /* static + focus + scl */
+};
+
+/* Action masks (same as runloop.c internal dispatch).  Pacers that
+ * pace via audio writes (backpressure or mixer voice playback)
+ * want frame_limit_minimum_time zeroed; pacers that pace via the
+ * present call just need to skip the sleep block. */
+#define MENU_PACE_AUDIO_MASK   \
+   (MENU_PACE_AUDIO_BACKPRESSURE | MENU_PACE_AUDIO_MIXER)
+#define MENU_PACE_DISPLAY_MASK \
+   (MENU_PACE_VSYNC | MENU_PACE_SCANLINE_SYNC)
+
+/* Initialise dynamic_mask to its default-on bits and mark the
+ * static_mask dirty.  Call from configuration.c after config has
+ * been loaded (initial boot and CMD_EVENT_RELOAD_CONFIG). */
+void runloop_menu_pace_init(void);
+
+/* Mark the static_mask as needing recompute on next menu pacing
+ * query.  Cheap; recompute is deferred. */
+void runloop_menu_pace_static_mask_dirty_set(void);
+
+/* Set/clear bits in the dynamic_mask.  Called from event sites
+ * (focus changed, mixer voice started/stopped, etc.). */
+void runloop_menu_pace_dynamic_mask_set(uint32_t bits);
+void runloop_menu_pace_dynamic_mask_clear(uint32_t bits);
 
 /**
  * init_libretro_symbols:

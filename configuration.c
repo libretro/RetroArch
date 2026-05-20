@@ -3563,6 +3563,9 @@ void config_load(void *data)
 #ifdef HAVE_CONFIGFILE
    config_parse_file(global);
 #endif
+   /* Initialise menu pacing masks now that settings are stable.
+    * Also called from CMD_EVENT_RELOAD_CONFIG via this same path. */
+   runloop_menu_pace_init();
 }
 
 #ifdef HAVE_CONFIGFILE
@@ -4907,6 +4910,10 @@ bool config_load_override(void *data)
    else
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
+   /* Override files may have changed any of the static_mask
+    * inputs; force a recompute. */
+   runloop_menu_pace_static_mask_dirty_set();
+
    return true;
 }
 
@@ -4949,6 +4956,9 @@ bool config_load_override_file(const char *config_path)
       runloop_state_get_ptr()->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
    else
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+
+   /* See config_load_override above. */
+   runloop_menu_pace_static_mask_dirty_set();
 
    return true;
 }
@@ -5007,6 +5017,10 @@ bool config_unload_override(void)
    /* Reset save paths */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
+
+   /* Unloading the override restores base settings; any of the
+    * static_mask inputs may have changed. */
+   runloop_menu_pace_static_mask_dirty_set();
 
    return true;
 }
