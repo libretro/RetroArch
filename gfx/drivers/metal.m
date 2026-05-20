@@ -3409,7 +3409,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
    @autoreleasepool
    {
-      size_t max_glyphs = msg_len;
+      size_t max_glyphs = strlen(msg);
       if (drop_x || drop_y)
          max_glyphs *= 2;
 
@@ -4127,7 +4127,7 @@ font_renderer_t metal_raster_font = {
          if (msg_bgcolor_enable)
          {
             int msg_width         = font_driver_get_message_width(NULL,
-                  msg, msg_len, 1.0f);
+                  msg, strlen(msg), 1.0f);
             float font_size       = settings->floats.video_font_size;
             unsigned bgcolor_red  = settings->uints.video_msg_bgcolor_red;
             unsigned bgcolor_green= settings->uints.video_msg_bgcolor_green;
