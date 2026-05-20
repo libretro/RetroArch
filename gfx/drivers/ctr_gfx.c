@@ -1353,6 +1353,8 @@ static void ctr_bottom_menu_control(void* data,
 static void font_driver_render_msg_bottom(ctr_video_t *ctr,
       const char *msg, const void *_params)
 {
+   if (!msg)
+      return;
    ctr->render_font_bottom = true;
    font_driver_render_msg(ctr, msg, strlen(msg), _params, NULL);
    ctr->render_font_bottom = false;
