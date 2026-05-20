@@ -3555,6 +3555,33 @@ font_renderer_t metal_raster_font = {
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce;
 @end
 
+/* Context for the cached_frame_read callback that pulls the last
+ * cached core frame into the FrameView after a driver
+ * (re-)init.  The callback runs inside the cached_frame_read
+ * lifetime envelope, so the pixel pointer is safe for the
+ * duration of the [view updateFrame:pitch:] call -- no need for
+ * the conditional NULL-checks the previous direct-field-read
+ * version had to do, and no UAF window if a concurrent core
+ * close races the render thread. */
+struct metal_pull_cached_ctx
+{
+   FrameView *view;
+   bool      *uploaded_flag;
+};
+
+static void metal_pull_cached_frame_cb(void *userdata,
+      const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   struct metal_pull_cached_ctx *ctx
+      = (struct metal_pull_cached_ctx*)userdata;
+   if (!ctx || !data || !width || !height || !pitch)
+      return;
+   ctx->view.size = CGSizeMake(width, height);
+   [ctx->view updateFrame:data pitch:pitch];
+   *ctx->uploaded_flag = true;
+}
+
 @implementation MetalDriver
 {
    FrameView *_frameView;
@@ -4021,21 +4048,19 @@ font_renderer_t metal_raster_font = {
           * the menu.  Pull the cached frame so the core image reappears
           * under the menu immediately instead of waiting for an F1
           * cycle.  Safe to do every frame while the flag is clear; we
-          * latch it after the first successful upload. */
-         video_driver_state_t *video_st = video_state_get_ptr();
-         if (     video_st
-               && video_st->frame_cache_data
-               && video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID
-               && video_st->frame_cache_width
-               && video_st->frame_cache_height
-               && video_st->frame_cache_pitch)
-         {
-            _frameView.size    = CGSizeMake(video_st->frame_cache_width,
-                                            video_st->frame_cache_height);
-            [_frameView updateFrame:video_st->frame_cache_data
-                              pitch:video_st->frame_cache_pitch];
-            _frameEverUploaded = true;
-         }
+          * latch it after the first successful upload.
+          *
+          * Routes through video_driver_cached_frame_read so the read
+          * is lifetime-safe: the callback runs inside the cached
+          * frame's lock, so a concurrent core-close / driver-reinit
+          * can't free the source buffer while we're uploading.  HW-
+          * render frames are skipped automatically -- the API hands
+          * the callback a NULL data pointer for those, which the
+          * callback's guard short-circuits. */
+         struct metal_pull_cached_ctx ctx;
+         ctx.view          = _frameView;
+         ctx.uploaded_flag = &_frameEverUploaded;
+         video_driver_cached_frame_read(&ctx, metal_pull_cached_frame_cb);
       }
 
       /* Acquire the frame encoder.  In SDR mode this lazily opens a pass
