@@ -8320,7 +8320,7 @@ static bool ozone_is_current_entry_settings(size_t current_selection)
    else
       entry_value = last_entry.value;
 
-   entry_file_type = msg_hash_to_file_type(msg_hash_calculate(entry_value));
+   entry_file_type = msg_hash_to_file_type(entry_value);
    entry_type      = last_entry.type;
 
    /* Logic below taken from materialui_pointer_up_swipe_horz_default */

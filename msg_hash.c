@@ -19,8 +19,8 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h> /* for string_replace_substring */
-#include <lrc_hash.h>
 #include <libretro.h>
+#include <retro_miscellaneous.h> /* ARRAY_SIZE */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -705,265 +705,151 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
    return msg_hash_to_str_us(msg);
 }
 
-uint32_t msg_hash_calculate(const char *s)
+/* String-table lookup for menu entry values and file extensions.
+ *
+ * Historically this dispatched through DJB2 hashes of the value
+ * string against ~80 precomputed magic hex constants — readable
+ * only via reverse-engineering, prone to silent collisions if a
+ * new extension hashed to the same value as an existing one, and
+ * carried 79 TOC entries on PPC64 (which contributed to the PS3
+ * griffin build crossing the 64K TOC limit).
+ *
+ * The hash dispatch saved ~2 us/frame in menu-mode file browsing
+ * vs a linear strcmp scan — not enough to justify the obscurity.
+ *
+ * Callers passing case-insensitively must lowercase their input
+ * before calling this; only the lowercase entries below are
+ * checked for those cases (jpg, png, etc. include uppercase
+ * variants because the menu callers may receive either). */
+enum msg_file_type msg_hash_to_file_type(const char *value)
 {
-   return djb2_calculate(s);
-}
-
-#define MENU_VALUE_FILE_WEBM                                                   0x7ca00b50U
-#define MENU_VALUE_FILE_F4F                                                    0x0b886be5U
-#define MENU_VALUE_FILE_F4V                                                    0x0b886bf5U
-#define MENU_VALUE_FILE_OGM                                                    0x0b8898c8U
-#define MENU_VALUE_FILE_MKV                                                    0x0b8890d3U
-#define MENU_VALUE_FILE_AVI                                                    0x0b885f25U
-#define MENU_VALUE_FILE_M4A                                                    0x0b8889a7U
-#define MENU_VALUE_FILE_3GP                                                    0x0b87998fU
-#define MENU_VALUE_FILE_MP4                                                    0x0b889136U
-#define MENU_VALUE_FILE_MP3                                                    0x0b889135U
-#define MENU_VALUE_FILE_FLAC                                                   0x7c96d67bU
-#define MENU_VALUE_FILE_OGG                                                    0x0b8898c2U
-#define MENU_VALUE_FILE_MOD                                                    0x0b889145U
-#define MENU_VALUE_FILE_S3M                                                    0x0b88a318U
-#define MENU_VALUE_FILE_XM                                                     0x00597a2aU
-#define MENU_VALUE_FILE_FLV                                                    0x0b88732dU
-#define MENU_VALUE_FILE_WAV                                                    0x0b88ba13U
-#define MENU_VALUE_FILE_MOV                                                    0x0b889157U
-#define MENU_VALUE_FILE_WMV                                                    0x0b88bb9fU
-#define MENU_VALUE_FILE_3G2                                                    0x0b879951U
-#define MENU_VALUE_FILE_MPG                                                    0x0b889169U
-#define MENU_VALUE_FILE_MPEG                                                   0x7c9abeaeU
-#define MENU_VALUE_FILE_VOB                                                    0x0b88b78cU
-#define MENU_VALUE_FILE_ASF                                                    0x0b885ebfU
-#define MENU_VALUE_FILE_DIVX                                                   0x7c95b3c0U
-#define MENU_VALUE_FILE_M2P                                                    0x0b888974U
-#define MENU_VALUE_FILE_M2TS                                                   0x7c99b8ebU
-#define MENU_VALUE_FILE_PS                                                     0x00597928U
-#define MENU_VALUE_FILE_TS                                                     0x005979acU
-#define MENU_VALUE_FILE_MXF                                                    0x0b889270U
-#define MENU_VALUE_FILE_WMA                                                    0x0b88bb8aU
-
-#define MENU_VALUE_FILE_JPG                                                    0x0b8884a6U
-#define MENU_VALUE_FILE_JPEG                                                   0x7c99198bU
-#define MENU_VALUE_FILE_JPG_CAPS                                               0x0b87f846U
-#define MENU_VALUE_FILE_JPEG_CAPS                                              0x7c87010bU
-#define MENU_VALUE_FILE_PNG                                                    0x0b889deaU
-#define MENU_VALUE_FILE_PNG_CAPS                                               0x0b88118aU
-#define MENU_VALUE_FILE_GONG                                                   0x7c977150U
-#define MENU_VALUE_FILE_GONG_CAPS                                              0x7c8558d0U
-#define MENU_VALUE_FILE_TGA                                                    0x0b88ae01U
-#define MENU_VALUE_FILE_BMP                                                    0x0b886244U
-#define MENU_VALUE_FILE_WEBP                                                   0x7ca00b53U
-#define MENU_VALUE_FILE_WEBP_CAPS                                              0x7c8df2d3U
-
-#define MENU_VALUE_MD5                                                         0x0b888fabU
-#define MENU_VALUE_SHA1                                                        0x7c9de632U
-#define MENU_VALUE_CRC                                                         0x0b88671dU
-#define MENU_VALUE_MORE                                                        0x0b877cafU
-#define MENU_VALUE_CFILE                                                       0xac3ec4f9U
-#define MENU_VALUE_ON                                                          0x005974c2U
-#define MENU_VALUE_OFF                                                         0x0b880c40U
-#define MENU_VALUE_COMP                                                        0x6a166ba5U
-#define MENU_VALUE_MUSIC                                                       0xc4a73997U
-#define MENU_VALUE_IMAGE                                                       0xbab7ebf9U
-#define MENU_VALUE_MOVIE                                                       0xc43c4bf6U
-#define MENU_VALUE_CORE                                                        0x6a167f7fU
-#define MENU_VALUE_FILE                                                        0x6a496536U
-#define MENU_VALUE_RDB                                                         0x0b00f54eU
-#define MENU_VALUE_DIR                                                         0x0af95f55U
-#define MENU_VALUE_GLSLP                                                       0x0f840c87U
-#define MENU_VALUE_CGP                                                         0x0b8865bfU
-#define MENU_VALUE_GLSL                                                        0x7c976537U
-#define MENU_VALUE_HLSL                                                        0x7c97f198U
-#define MENU_VALUE_HLSLP                                                       0x0f962508U
-#define MENU_VALUE_CG                                                          0x0059776fU
-#define MENU_VALUE_SLANG                                                       0x105ce63aU
-#define MENU_VALUE_SLANGP                                                      0x1bf9adeaU
-
-#define FILE_HASH_APK                                                          0x0b885e61U
-
-#define HASH_EXTENSION_7Z                                                      0x005971d6U
-#define HASH_EXTENSION_7Z_UPP                                                  0x005971b6U
-#define HASH_EXTENSION_ZIP                                                     0x0b88c7d8U
-#define HASH_EXTENSION_ZIP_UPP                                                 0x0b883b78U
-#define HASH_EXTENSION_CUE                                                     0x0b886782U
-#define HASH_EXTENSION_CUE_UPPERCASE                                           0x0b87db22U
-#define HASH_EXTENSION_GDI                                                     0x00b887659
-#define HASH_EXTENSION_GDI_UPPERCASE                                           0x00b87e9f9
-#define HASH_EXTENSION_ISO                                                     0x0b8880d0U
-#define HASH_EXTENSION_ISO_UPPERCASE                                           0x0b87f470U
-#define HASH_EXTENSION_LUTRO                                                   0x0fe37b7bU
-#define HASH_EXTENSION_CHD                                                     0x0b8865d4U
-
-enum msg_file_type msg_hash_to_file_type(uint32_t hash)
-{
-   switch (hash)
-   {
-      case MENU_VALUE_COMP:
-      case HASH_EXTENSION_7Z:
-      case HASH_EXTENSION_7Z_UPP:
-      case HASH_EXTENSION_ZIP:
-      case HASH_EXTENSION_ZIP_UPP:
-      case FILE_HASH_APK:
-         return FILE_TYPE_COMPRESSED;
-      case MENU_VALUE_CFILE:
-         return FILE_TYPE_IN_CARCHIVE;
-      case MENU_VALUE_MORE:
-         return FILE_TYPE_MORE;
-      case MENU_VALUE_CORE:
-         return FILE_TYPE_CORE;
-      case MENU_VALUE_RDB:
-         return FILE_TYPE_RDB;
-      case MENU_VALUE_FILE:
-         return FILE_TYPE_PLAIN;
-      case MENU_VALUE_DIR:
-         return FILE_TYPE_DIRECTORY;
-      case MENU_VALUE_MUSIC:
-         return FILE_TYPE_MUSIC;
-      case MENU_VALUE_IMAGE:
-         return FILE_TYPE_IMAGE;
-      case MENU_VALUE_MOVIE:
-         return FILE_TYPE_MOVIE;
-      case MENU_VALUE_ON:
-         return FILE_TYPE_BOOL_ON;
-      case MENU_VALUE_OFF:
-         return FILE_TYPE_BOOL_OFF;
-      case MENU_VALUE_GLSL:
-         return FILE_TYPE_SHADER_GLSL;
-      case MENU_VALUE_HLSL:
-         return FILE_TYPE_SHADER_HLSL;
-      case MENU_VALUE_CG:
-         return FILE_TYPE_SHADER_CG;
-      case MENU_VALUE_SLANG:
-         return FILE_TYPE_SHADER_SLANG;
-      case MENU_VALUE_GLSLP:
-         return FILE_TYPE_SHADER_PRESET_GLSLP;
-      case MENU_VALUE_HLSLP:
-         return FILE_TYPE_SHADER_PRESET_HLSLP;
-      case MENU_VALUE_CGP:
-         return FILE_TYPE_SHADER_PRESET_CGP;
-      case MENU_VALUE_SLANGP:
-         return FILE_TYPE_SHADER_PRESET_SLANGP;
-      case MENU_VALUE_CRC:
-         return FILE_TYPE_CRC;
-      case MENU_VALUE_SHA1:
-         return FILE_TYPE_SHA1;
-      case MENU_VALUE_MD5:
-         return FILE_TYPE_MD5;
+   size_t i;
+   struct ft_entry {
+      const char *value;
+      enum msg_file_type type;
+   };
+   /* Order roughly by expected hit frequency to minimize average
+    * compare count for the common cases (game ROMs hitting CHD,
+    * ISO, CUE, ZIP first; image viewers hitting PNG/JPG). */
+   static const struct ft_entry table[] = {
+      /* disc / archive containers — top of file-browser traffic */
+      { "chd",       FILE_TYPE_CHD },
+      { "iso",       FILE_TYPE_ISO },
+      { "ISO",       FILE_TYPE_ISO },
+      { "cue",       FILE_TYPE_CUE },
+      { "CUE",       FILE_TYPE_CUE },
+      { "gdi",       FILE_TYPE_GDI },
+      { "GDI",       FILE_TYPE_GDI },
+      { "zip",       FILE_TYPE_COMPRESSED },
+      { "ZIP",       FILE_TYPE_COMPRESSED },
+      { "7z",        FILE_TYPE_COMPRESSED },
+      { "7Z",        FILE_TYPE_COMPRESSED },
+      { "apk",       FILE_TYPE_COMPRESSED },
+      { "(COMP)",    FILE_TYPE_COMPRESSED },
+      { "lutro",     FILE_TYPE_LUTRO },
+      /* menu placeholder values from displaylist enumeration */
+      { "(CFILE)",   FILE_TYPE_IN_CARCHIVE },
+      { "...",       FILE_TYPE_MORE },
+      { "(CORE)",    FILE_TYPE_CORE },
+      { "(RDB)",     FILE_TYPE_RDB },
+      { "(FILE)",    FILE_TYPE_PLAIN },
+      { "(DIR)",     FILE_TYPE_DIRECTORY },
+      { "(MUSIC)",   FILE_TYPE_MUSIC },
+      { "(IMAGE)",   FILE_TYPE_IMAGE },
+      { "(MOVIE)",   FILE_TYPE_MOVIE },
+      { "ON",        FILE_TYPE_BOOL_ON },
+      { "OFF",       FILE_TYPE_BOOL_OFF },
+      /* shader source extensions */
+      { "glsl",      FILE_TYPE_SHADER_GLSL },
+      { "hlsl",      FILE_TYPE_SHADER_HLSL },
+      { "cg",        FILE_TYPE_SHADER_CG },
+      { "slang",     FILE_TYPE_SHADER_SLANG },
+      { "glslp",     FILE_TYPE_SHADER_PRESET_GLSLP },
+      { "hlslp",     FILE_TYPE_SHADER_PRESET_HLSLP },
+      { "cgp",       FILE_TYPE_SHADER_PRESET_CGP },
+      { "slangp",    FILE_TYPE_SHADER_PRESET_SLANGP },
+      /* checksum / hash labels */
+      { "crc",       FILE_TYPE_CRC },
+      { "sha1",      FILE_TYPE_SHA1 },
+      { "md5",       FILE_TYPE_MD5 },
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-      case MENU_VALUE_FILE_OGM:
-         return FILE_TYPE_OGM;
-      case MENU_VALUE_FILE_MKV:
-         return FILE_TYPE_MKV;
-      case MENU_VALUE_FILE_AVI:
-         return FILE_TYPE_AVI;
-      case MENU_VALUE_FILE_MP4:
-         return FILE_TYPE_MP4;
-      case MENU_VALUE_FILE_FLV:
-         return FILE_TYPE_FLV;
-      case MENU_VALUE_FILE_WEBM:
-         return FILE_TYPE_WEBM;
-      case MENU_VALUE_FILE_3GP:
-         return FILE_TYPE_3GP;
-      case MENU_VALUE_FILE_F4F:
-         return FILE_TYPE_F4F;
-      case MENU_VALUE_FILE_F4V:
-         return FILE_TYPE_F4V;
-      case MENU_VALUE_FILE_MOV:
-         return FILE_TYPE_MOV;
-      case MENU_VALUE_FILE_WMV:
-         return FILE_TYPE_WMV;
-      case MENU_VALUE_FILE_M4A:
-         return FILE_TYPE_M4A;
-      case MENU_VALUE_FILE_3G2:
-         return FILE_TYPE_3G2;
-      case MENU_VALUE_FILE_MPG:
-         return FILE_TYPE_MPG;
-      case MENU_VALUE_FILE_MPEG:
-         return FILE_TYPE_MPEG;
-      case MENU_VALUE_FILE_VOB:
-         return FILE_TYPE_VOB;
-      case MENU_VALUE_FILE_ASF:
-         return FILE_TYPE_ASF;
-      case MENU_VALUE_FILE_DIVX:
-         return FILE_TYPE_DIVX;
-      case MENU_VALUE_FILE_M2P:
-         return FILE_TYPE_M2P;
-      case MENU_VALUE_FILE_M2TS:
-         return FILE_TYPE_M2TS;
-      case MENU_VALUE_FILE_PS:
-         return FILE_TYPE_PS;
-      case MENU_VALUE_FILE_TS:
-         return FILE_TYPE_TS;
-      case MENU_VALUE_FILE_MXF:
-         return FILE_TYPE_MXF;
-      case MENU_VALUE_FILE_WMA:
-         return FILE_TYPE_WMA;
+      /* video containers */
+      { "ogm",       FILE_TYPE_OGM },
+      { "mkv",       FILE_TYPE_MKV },
+      { "avi",       FILE_TYPE_AVI },
+      { "mp4",       FILE_TYPE_MP4 },
+      { "flv",       FILE_TYPE_FLV },
+      { "webm",      FILE_TYPE_WEBM },
+      { "3gp",       FILE_TYPE_3GP },
+      { "f4f",       FILE_TYPE_F4F },
+      { "f4v",       FILE_TYPE_F4V },
+      { "mov",       FILE_TYPE_MOV },
+      { "wmv",       FILE_TYPE_WMV },
+      { "m4a",       FILE_TYPE_M4A },
+      { "3g2",       FILE_TYPE_3G2 },
+      { "mpg",       FILE_TYPE_MPG },
+      { "mpeg",      FILE_TYPE_MPEG },
+      { "vob",       FILE_TYPE_VOB },
+      { "asf",       FILE_TYPE_ASF },
+      { "divx",      FILE_TYPE_DIVX },
+      { "m2p",       FILE_TYPE_M2P },
+      { "m2ts",      FILE_TYPE_M2TS },
+      { "ps",        FILE_TYPE_PS },
+      { "ts",        FILE_TYPE_TS },
+      { "mxf",       FILE_TYPE_MXF },
+      { "wma",       FILE_TYPE_WMA },
 #endif
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_MP3)
-      case MENU_VALUE_FILE_MP3:
-         return FILE_TYPE_MP3;
+      { "mp3",       FILE_TYPE_MP3 },
 #endif
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_STB_VORBIS)
-      case MENU_VALUE_FILE_OGG:
-         return FILE_TYPE_OGG;
+      { "ogg",       FILE_TYPE_OGG },
 #endif
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_FLAC)
-      case MENU_VALUE_FILE_FLAC:
-         return FILE_TYPE_FLAC;
+      { "flac",      FILE_TYPE_FLAC },
 #endif
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RWAV)
-      case MENU_VALUE_FILE_WAV:
-         return FILE_TYPE_WAV;
+      { "wav",       FILE_TYPE_WAV },
 #endif
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_IBXM)
-       case MENU_VALUE_FILE_MOD:
-           return FILE_TYPE_MOD;
-       case MENU_VALUE_FILE_S3M:
-           return FILE_TYPE_S3M;
-       case MENU_VALUE_FILE_XM:
-           return FILE_TYPE_XM;
+      { "mod",       FILE_TYPE_MOD },
+      { "s3m",       FILE_TYPE_S3M },
+      { "xm",        FILE_TYPE_XM },
 #endif
 #endif
 #ifdef HAVE_IMAGEVIEWER
-      case MENU_VALUE_FILE_JPG:
-      case MENU_VALUE_FILE_JPG_CAPS:
-      case MENU_VALUE_FILE_JPEG:
-      case MENU_VALUE_FILE_JPEG_CAPS:
-         return FILE_TYPE_JPEG;
-      case MENU_VALUE_FILE_PNG:
-      case MENU_VALUE_FILE_PNG_CAPS:
-         return FILE_TYPE_PNG;
-      case MENU_VALUE_FILE_TGA:
-         return FILE_TYPE_TGA;
-      case MENU_VALUE_FILE_BMP:
-         return FILE_TYPE_BMP;
-      case MENU_VALUE_FILE_WEBP:
-      case MENU_VALUE_FILE_WEBP_CAPS:
-         return FILE_TYPE_WEBP;
+      { "jpg",       FILE_TYPE_JPEG },
+      { "JPG",       FILE_TYPE_JPEG },
+      { "jpeg",      FILE_TYPE_JPEG },
+      { "JPEG",      FILE_TYPE_JPEG },
+      { "png",       FILE_TYPE_PNG },
+      { "PNG",       FILE_TYPE_PNG },
+      { "tga",       FILE_TYPE_TGA },
+      { "bmp",       FILE_TYPE_BMP },
+      { "webp",      FILE_TYPE_WEBP },
+      { "WEBP",      FILE_TYPE_WEBP },
 #endif
 #ifdef HAVE_EASTEREGG
-      case MENU_VALUE_FILE_GONG:
-      case MENU_VALUE_FILE_GONG_CAPS:
-         return FILE_TYPE_GONG;
+      { "gong",      FILE_TYPE_GONG },
+      { "GONG",      FILE_TYPE_GONG },
 #endif
-      case HASH_EXTENSION_CUE:
-      case HASH_EXTENSION_CUE_UPPERCASE:
-         return FILE_TYPE_CUE;
-      case HASH_EXTENSION_GDI:
-      case HASH_EXTENSION_GDI_UPPERCASE:
-         return FILE_TYPE_GDI;
-      case HASH_EXTENSION_ISO:
-      case HASH_EXTENSION_ISO_UPPERCASE:
-         return FILE_TYPE_ISO;
-      case HASH_EXTENSION_LUTRO:
-         return FILE_TYPE_LUTRO;
-      case HASH_EXTENSION_CHD:
-         return FILE_TYPE_CHD;
-      default:
-         break;
-   }
+   };
 
+   if (!value || !*value)
+      return FILE_TYPE_NONE;
+
+   for (i = 0; i < ARRAY_SIZE(table); i++)
+   {
+      /* Inline short string compare: most entries are 2-6 bytes so
+       * the strcmp/string_is_equal overhead would dominate.  Bail
+       * on first mismatch. */
+      const char *a = value;
+      const char *b = table[i].value;
+      while (*a && *a == *b) { a++; b++; }
+      if (!*a && !*b)
+         return table[i].type;
+   }
    return FILE_TYPE_NONE;
 }
 

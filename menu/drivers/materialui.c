@@ -4380,8 +4380,7 @@ static void materialui_render_menu_entry_default(
       entry_value          = entry->value;
    entry_type              = entry->type;
 
-   entry_file_type         = msg_hash_to_file_type(
-         msg_hash_calculate(entry_value));
+   entry_file_type         = msg_hash_to_file_type(entry_value);
    entry_value_type        = materialui_get_entry_value_type(
          mui, entry_value, entry->flags & MENU_ENTRY_FLAG_CHECKED,
          entry_type, entry_file_type, entry->setting_type);
@@ -5337,8 +5336,7 @@ static void materialui_render_menu_entry_savestate_list(
 
    entry_value             = entry->value;
    entry_type              = entry->type;
-   entry_file_type         = msg_hash_to_file_type(
-         msg_hash_calculate(entry_value));
+   entry_file_type         = msg_hash_to_file_type(entry_value);
    entry_value_type        = materialui_get_entry_value_type(
          mui, entry_value, entry->flags & MENU_ENTRY_FLAG_CHECKED,
          entry_type, entry_file_type, entry->setting_type);
@@ -10912,8 +10910,7 @@ static int materialui_pointer_up_swipe_horz_default(
          else
             entry_value          = last_entry.value;
          entry_type                     = last_entry.type;
-         entry_file_type                = msg_hash_to_file_type(
-               msg_hash_calculate(entry_value));
+         entry_file_type                = msg_hash_to_file_type(entry_value);
          entry_value_type               = materialui_get_entry_value_type(
                mui, entry_value, last_entry.flags & MENU_ENTRY_FLAG_CHECKED,
                entry_type, entry_file_type, entry->setting_type);

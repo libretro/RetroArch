@@ -4175,7 +4175,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-enum msg_file_type msg_hash_to_file_type(uint32_t hash);
+enum msg_file_type msg_hash_to_file_type(const char *value);
 
 unsigned *msg_hash_get_uint(enum msg_hash_action type);
 
@@ -4207,8 +4207,6 @@ void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
  *   be found by passing said pointer to the current font
  *   rendering implementation */
 const char *msg_hash_get_wideglyph_str(void);
-
-uint32_t msg_hash_calculate(const char *s);
 
 const char *get_user_language_iso639_1(bool limit);
 

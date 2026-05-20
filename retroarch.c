@@ -2790,26 +2790,10 @@ static void ram_state_to_file(void)
       command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }
 
-/**
- * Compute DJB2 hash of a short string, lowercasing ASCII on the fly.
- * Assumes ext points to a valid, short (extension-length) string.
- */
-static INLINE uint32_t djb2_calculate_lower(const char *s)
-{
-   uint32_t h = 5381;
-   for (; *s; s++)
-   {
-      unsigned char c = (unsigned char)*s;
-      /* Branchless ASCII tolower: set bit 5 if uppercase letter */
-      c |= ((unsigned int)c - 'A' < 26u) ? 0x20 : 0x00;
-      h = (h << 5) + h + c;
-   }
-   return h;
-}
-
 enum rarch_content_type path_is_media_type(const char *path)
 {
    const char *ext;
+   char ext_lower[16];
 
    if (!path || !*path)
       return RARCH_CONTENT_NONE;
@@ -2844,9 +2828,21 @@ enum rarch_content_type path_is_media_type(const char *path)
    if (!ext || !*ext)
       return RARCH_CONTENT_NONE;
 
-   /* Hash the extension directly, lowercasing during hashing —
-    * eliminates strlcpy, string_to_lower, and the stack buffer. */
-   switch (msg_hash_to_file_type(djb2_calculate_lower(ext)))
+   /* Lowercase the extension into a tiny stack buffer so the
+    * value-table lookup matches the lowercase entries regardless
+    * of what case the filesystem returned (e.g. "MP4" vs "mp4").
+    * Real file extensions are short; truncate at 15 chars. */
+   {
+      size_t i;
+      for (i = 0; i < sizeof(ext_lower) - 1 && ext[i]; i++)
+      {
+         unsigned char c = (unsigned char)ext[i];
+         ext_lower[i] = (c >= 'A' && c <= 'Z') ? (char)(c | 0x20) : (char)c;
+      }
+      ext_lower[i] = '\0';
+   }
+
+   switch (msg_hash_to_file_type(ext_lower))
    {
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case FILE_TYPE_OGM:

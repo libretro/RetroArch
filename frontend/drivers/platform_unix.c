@@ -780,8 +780,6 @@ static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
     return true;
 }
 
-#define ACPI_VAL_CHARGING_DISCHARGING  0xf268327aU
-
 static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
