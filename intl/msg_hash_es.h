@@ -2567,6 +2567,14 @@ MSG_HASH(
    "Intenta mantener el retraso de fotogramas objetivo y minimizar la pérdida de fotogramas. Si el retraso de fotogramas es 0 (automático), el punto de partida será un 75 % de la duración de fotogramas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Muestrear duración de fotogramas solo en situaciones estables"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Limita la toma de muestras de la opción Frecuencia estimada del monitor a aquellos fotogramas en los que el contenido se esté ejecutando de forma limpia (fuera de menús, sin estar pausado, sin usar el avance rápido... Una duración en una situación normal). La lectura del diagnóstico será más precisa a costa de una convergencia más lenta nada más cargar un contenido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "Automático"
    )
@@ -5069,6 +5077,15 @@ MSG_HASH(
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Autorestablecer tras situaciones perturbadoras"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Borra el búfer de muestras de la opción Frecuencia estimada del monitor tras utilizar el avance rápido, guardar o cargar rápidamente. Estas operaciones introducen muestras que no reflejan la cadencia de fotogramas normal y distorsionarían la medición. Es una limpieza de esfuerzo razonable, no surtirá efecto si la opción Muestrear duración de fotogramas solo en situaciones estables está activada (opción que evita la contaminación en su origen)."
+   )
 
 /* Settings > Recording */
 
