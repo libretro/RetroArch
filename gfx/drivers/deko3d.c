@@ -1102,14 +1102,24 @@ static bool dk3d_stage_upload(dk3d_t *dk3d, dk3d_stage_t *stage,
 
    if (rgb32)
    {
-      /* XRGB8888 source (BGRA in memory on LE) matches our stage format
-       * (RGBA8_Unorm → HW A8R8G8B8 → BGRA byte order), just copy. */
-      const uint8_t *src_row = (const uint8_t*)pixels;
-      uint8_t *dst_row       = (uint8_t*)stage->cpu_ptr;
-      unsigned y;
+      const uint32_t *src;
+      uint32_t       *dst;
+      const uint8_t  *src_row = (const uint8_t*)pixels;
+      uint32_t       *dst_row = (uint32_t*)stage->cpu_ptr;
+      unsigned y, x;
       for (y = 0; y < height;
-            y++, src_row += src_pitch, dst_row += width * 4)
-         memcpy(dst_row, src_row, width * 4);
+            y++, src_row += src_pitch, dst_row += width)
+      {
+         src = (const uint32_t*)src_row;
+         dst = dst_row;
+         for (x = 0; x < width; x++)
+         {
+            uint32_t p = src[x];
+            dst[x] = (p & 0xff00ff00u)
+                    | ((p & 0x00ff0000u) >> 16)
+                    | ((p & 0x000000ffu) << 16);
+         }
+      }
    }
    else
    {
