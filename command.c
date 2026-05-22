@@ -160,7 +160,16 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
             RARCH_ERR("[Command] Command \"%s\" failed.\n", arg);
       }
       else
-         handle->state[map[index].id] = true;
+      {
+         /* For MENU_TOGGLE, bypass the press-and-release mechanism
+          * by directly invoking the command event.  This avoids
+          * timing issues with runahead (single-instance) where the
+          * 1-frame pulse from network commands can be lost. */
+         if (map[index].id == RARCH_MENU_TOGGLE)
+            command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+         else
+            handle->state[map[index].id] = true;
+      }
    }
    else
       RARCH_WARN(msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND), tok);

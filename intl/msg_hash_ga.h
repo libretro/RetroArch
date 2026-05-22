@@ -2567,6 +2567,14 @@ MSG_HASH(
    "Déan iarracht an sprioc atá uait 'Moill Fráma' a choinneáil agus titim fráma a íoslaghdú. Is é an pointe tosaigh 3/4 d'am fráma nuair a bhíonn 'Moill Fráma' 0 (Uathoibríoch)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Am Fráma Samplach Amháin i Riocht Cobhsaí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Srian a chur le sampláil 'Ráta Athnuachana Scáileáin Measta' do fhrámaí ina bhfuil an t-ábhar ag rith go glan (ní roghchlár, ní sos, ní luasghéarú, am fráma laistigh de chlúdach meabhrach). Éiríonn an léamh diagnóiseach ina fhíorchomhartha ar chostas comhtháthaithe níos moille tar éis luchtú ábhair."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "Uathoibríoch"
    )
@@ -5074,6 +5082,14 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Athshocraigh Uathoibríoch Tar éis Imeachtaí Suaiteacha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Glan an maolán samplach 'Ráta Athnuachana Scáileáin Measta' tar éis luasghéarú, staid shábháilte, nó staid lódála. Tugann na hoibríochtaí seo samplaí ama isteach nach léiríonn gnáth-rath fráma agus a chuirfeadh isteach ar an tomhas diall. Glanadh is fearr-iarrachta; níl aon éifeacht aige nuair a bhíonn 'Am Fráma Samplach i Staid Chobhsaí Amháin' cumasaithe (rud a chuireann cosc ​​ar an éilliú ag an bhfoinse)."
+   )
 
 /* Settings > Recording */
 
