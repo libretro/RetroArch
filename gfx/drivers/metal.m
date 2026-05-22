@@ -1990,20 +1990,57 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
    dstStride = _viewport.width * 3;
    dst       = buffer + (_viewport.height - 1) * dstStride;
 
-   for (y = 0; y < _viewport.height; y++, dst -= dstStride)
+   /* With "Smart"/"Overscale" integer scaling the viewport deliberately
+    * overscans the drawable: _viewport.x / _viewport.y may be negative and
+    * _viewport.width / _viewport.height may exceed the source texture.
+    * Indexing srcTex at the raw viewport offsets then walks off the texture
+    * (Metal asserts "Region height OOB" on AGX and segfaults inside the AMD
+    * driver, see issue #19038), and the in-row copy reads past the scratch
+    * row.  Clamp every access to the texture bounds and leave the off-screen
+    * remainder black; the screenshot task crops the saved image back to the
+    * on-screen size afterwards. */
    {
-      size_t x;
-      [srcTex getBytes:row
-           bytesPerRow:rowBytes
-            fromRegion:MTLRegionMake2D(0, (NSUInteger)_viewport.y + y,
-                                       srcTex.width, 1)
-           mipmapLevel:0];
+      int texW     = (int)srcTex.width;
+      int texH     = (int)srcTex.height;
+      /* Output-column span [colStart, colEnd) whose source column
+       * (_viewport.x + x) lands inside [0, texW). */
+      int colStart = -_viewport.x;
+      int colEnd   = texW - _viewport.x;
+      if (colStart < 0)
+         colStart = 0;
+      if (colEnd > (int)_viewport.width)
+         colEnd   = (int)_viewport.width;
 
-      for (x = 0; x < _viewport.width; x++)
+      for (y = 0; y < _viewport.height; y++, dst -= dstStride)
       {
-         dst[3 * x + 0] = row[4 * (_viewport.x + x) + 0];
-         dst[3 * x + 1] = row[4 * (_viewport.x + x) + 1];
-         dst[3 * x + 2] = row[4 * (_viewport.x + x) + 2];
+         size_t x;
+         int    srcRow = _viewport.y + (int)y;
+
+         /* Row entirely outside the texture (top/bottom overscan) or no
+          * horizontally-visible columns: emit a black scanline. */
+         if (srcRow < 0 || srcRow >= texH || colEnd <= colStart)
+         {
+            memset(dst, 0, dstStride);
+            continue;
+         }
+
+         [srcTex getBytes:row
+              bytesPerRow:rowBytes
+               fromRegion:MTLRegionMake2D(0, (NSUInteger)srcRow,
+                                          (NSUInteger)texW, 1)
+              mipmapLevel:0];
+
+         /* Black out left/right overscan before copying the visible span. */
+         if (colStart > 0 || colEnd < (int)_viewport.width)
+            memset(dst, 0, dstStride);
+
+         for (x = (size_t)colStart; x < (size_t)colEnd; x++)
+         {
+            int srcCol     = _viewport.x + (int)x;
+            dst[3 * x + 0] = row[4 * srcCol + 0];
+            dst[3 * x + 1] = row[4 * srcCol + 1];
+            dst[3 * x + 2] = row[4 * srcCol + 2];
+         }
       }
    }
 
@@ -3479,7 +3516,7 @@ static int metal_raster_font_get_message_width(void *data, const char *msg,
 
 static void metal_raster_font_render_msg(
       void *userdata,
-      void *data, const char *msg,
+      void *data, const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    MetalRaster *r       = (__bridge MetalRaster *)data;
@@ -3554,6 +3591,33 @@ font_renderer_t metal_raster_font = {
 - (instancetype)initWithContext:(Context *)context;
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce;
 @end
+
+/* Context for the cached_frame_read callback that pulls the last
+ * cached core frame into the FrameView after a driver
+ * (re-)init.  The callback runs inside the cached_frame_read
+ * lifetime envelope, so the pixel pointer is safe for the
+ * duration of the [view updateFrame:pitch:] call -- no need for
+ * the conditional NULL-checks the previous direct-field-read
+ * version had to do, and no UAF window if a concurrent core
+ * close races the render thread. */
+struct metal_pull_cached_ctx
+{
+   FrameView *view;
+   bool      *uploaded_flag;
+};
+
+static void metal_pull_cached_frame_cb(void *userdata,
+      const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   struct metal_pull_cached_ctx *ctx
+      = (struct metal_pull_cached_ctx*)userdata;
+   if (!ctx || !data || !width || !height || !pitch)
+      return;
+   ctx->view.size = CGSizeMake(width, height);
+   [ctx->view updateFrame:data pitch:pitch];
+   *ctx->uploaded_flag = true;
+}
 
 @implementation MetalDriver
 {
@@ -4021,21 +4085,19 @@ font_renderer_t metal_raster_font = {
           * the menu.  Pull the cached frame so the core image reappears
           * under the menu immediately instead of waiting for an F1
           * cycle.  Safe to do every frame while the flag is clear; we
-          * latch it after the first successful upload. */
-         video_driver_state_t *video_st = video_state_get_ptr();
-         if (     video_st
-               && video_st->frame_cache_data
-               && video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID
-               && video_st->frame_cache_width
-               && video_st->frame_cache_height
-               && video_st->frame_cache_pitch)
-         {
-            _frameView.size    = CGSizeMake(video_st->frame_cache_width,
-                                            video_st->frame_cache_height);
-            [_frameView updateFrame:video_st->frame_cache_data
-                              pitch:video_st->frame_cache_pitch];
-            _frameEverUploaded = true;
-         }
+          * latch it after the first successful upload.
+          *
+          * Routes through video_driver_cached_frame_read so the read
+          * is lifetime-safe: the callback runs inside the cached
+          * frame's lock, so a concurrent core-close / driver-reinit
+          * can't free the source buffer while we're uploading.  HW-
+          * render frames are skipped automatically -- the API hands
+          * the callback a NULL data pointer for those, which the
+          * callback's guard short-circuits. */
+         struct metal_pull_cached_ctx ctx;
+         ctx.view          = _frameView;
+         ctx.uploaded_flag = &_frameEverUploaded;
+         video_driver_cached_frame_read(&ctx, metal_pull_cached_frame_cb);
       }
 
       /* Acquire the frame encoder.  In SDR mode this lazily opens a pass
@@ -4110,7 +4172,7 @@ font_renderer_t metal_raster_font = {
       {
          struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
          if (osd_params)
-            font_driver_render_msg(data, video_info->stat_text, osd_params, NULL);
+            font_driver_render_msg(data, video_info->stat_text, video_info->stat_text_len, osd_params, NULL);
       }
 
 #ifdef HAVE_GFX_WIDGETS
@@ -4154,7 +4216,7 @@ font_renderer_t metal_raster_font = {
             [_context drawQuadX:x y:y w:bg_w h:bg_h r:r g:g b:b a:a];
          }
 
-         font_driver_render_msg(data, msg, NULL, NULL);
+         font_driver_render_msg(data, msg, strlen(msg), NULL, NULL);
       }
 
       /* End-of-frame HDR composite.  Menu / overlay / OSD / widgets have

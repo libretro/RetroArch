@@ -88,9 +88,9 @@ static void command_post_state_loaded(void)
    {
      video_driver_state_t *video_st                 =
        video_state_get_ptr();
-     bool frame_time_counter_reset_after_load_state =
-       config_get_ptr()->bools.frame_time_counter_reset_after_load_state;
-     if (frame_time_counter_reset_after_load_state)
+     bool frame_time_counter_auto_reset             =
+       config_get_ptr()->bools.frame_time_counter_auto_reset;
+     if (frame_time_counter_auto_reset)
         video_st->frame_time_count = 0;
    }
 #if defined(HAVE_GFX_WIDGETS) && defined(HAVE_SCREENSHOTS)
@@ -2413,8 +2413,8 @@ bool command_event_main_state(unsigned cmd)
                      settings->bools.savestate_auto_index;
                unsigned savestate_max_keep                    =
                      settings->uints.savestate_max_keep;
-               bool frame_time_counter_reset_after_save_state =
-                     settings->bools.frame_time_counter_reset_after_save_state;
+               bool frame_time_counter_auto_reset             =
+                     settings->bools.frame_time_counter_auto_reset;
 
                if (cmd == CMD_EVENT_SAVE_STATE)
                   content_save_state(state_path, true);
@@ -2425,7 +2425,7 @@ bool command_event_main_state(unsigned cmd)
                if (savestate_auto_index && (savestate_max_keep > 0))
                   command_event_set_savestate_garbage_collect(settings);
 
-               if (frame_time_counter_reset_after_save_state)
+               if (frame_time_counter_auto_reset)
                   video_st->frame_time_count = 0;
 
                ret      = true;
@@ -2510,6 +2510,50 @@ bool command_event_disk_control_append_image(
    return true;
 }
 
+/* Read-side callback for the snapshot phase of command_event_reinit.
+ * Receives the cached frame's pixels (or NULL if HW-render / no
+ * cached frame), copies into the static reuse buffer, and reports
+ * dims back to the caller via userdata.  Skips the work entirely
+ * if data is NULL -- caller checks the reported size to know
+ * whether a snapshot was actually taken. */
+struct command_reinit_snapshot_ctx
+{
+   void   **buf_p;       /* static cached_snapshot in the caller */
+   size_t  *cap_p;       /* static cached_snapshot_cap in the caller */
+   unsigned w, h;
+   size_t   p, size;
+};
+
+static void command_reinit_snapshot_cb(void *userdata,
+      const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   struct command_reinit_snapshot_ctx *ctx
+      = (struct command_reinit_snapshot_ctx*)userdata;
+   size_t want;
+
+   if (!ctx || !data || !width || !height || !pitch)
+      return;
+
+   want = pitch * height;
+   if (want > *ctx->cap_p)
+   {
+      void *tmp = realloc(*ctx->buf_p, want);
+      if (!tmp)
+         return;
+      *ctx->buf_p = tmp;
+      *ctx->cap_p = want;
+   }
+   if (!*ctx->buf_p)
+      return;
+
+   memcpy(*ctx->buf_p, data, want);
+   ctx->w    = width;
+   ctx->h    = height;
+   ctx->p    = pitch;
+   ctx->size = want;
+}
+
 void command_event_reinit(const int flags)
 {
    settings_t *settings           = config_get_ptr();
@@ -2534,52 +2578,51 @@ void command_event_reinit(const int flags)
       *sec_joypad                 = NULL;
 #endif
    /* Snapshot the last cached core frame before tearing the video
-    * driver down.  video_driver_free() nulls frame_cache_data as part
-    * of the reinit cycle (the pointer was borrowed from the core's
-    * own framebuffer and isn't guaranteed to stay live across the
-    * driver swap), so without a snapshot the new driver would come
-    * up with no core image to replay.  Restored + replayed below so
-    * the paused-core background remains visible when reinit is
-    * triggered from inside the menu (e.g. HDR mode toggle).
+    * driver down.  video_driver_free() invalidates the cache as
+    * part of the reinit cycle (the pointer was borrowed from the
+    * core's own framebuffer and isn't guaranteed to stay live
+    * across the driver swap), so without a snapshot the new
+    * driver would come up with no core image to replay.  Restored
+    * + replayed below so the paused-core background remains
+    * visible when reinit is triggered from inside the menu (e.g.
+    * HDR mode toggle).
     *
     * The snapshot buffer is static and reused across reinits — we
-    * need it to outlive command_event_reinit because we hand the
-    * pointer to video_st->frame_cache_data for the new driver to
-    * read via video_driver_cached_frame(), and the core's next real
-    * frame will replace the pointer at its leisure.  Resizing in
-    * place on each call keeps it bounded at one buffer's worth. */
+    * need it to outlive command_event_reinit because we publish
+    * the pointer back through video_driver_cached_frame_publish
+    * for the new driver to read via video_driver_cached_frame(),
+    * and the core's next real frame will replace the pointer at
+    * its leisure.  Resizing in place on each call keeps it
+    * bounded at one buffer's worth.
+    *
+    * The actual copy happens inside the cached_frame_read
+    * callback (which is what this function was hand-rolling
+    * before the unified read API existed -- exactly the same
+    * pattern, lifted into one place).  HW-render frames are
+    * skipped: the callback receives data == NULL for those, so
+    * we don't even allocate. */
    static void  *cached_snapshot      = NULL;
    static size_t cached_snapshot_cap  = 0;
-   size_t        want_size            = 0;
    unsigned      cached_snapshot_w    = 0;
    unsigned      cached_snapshot_h    = 0;
    size_t        cached_snapshot_p    = 0;
+   size_t        cached_snapshot_size = 0;
 
-   if (     video_st
-         && video_st->frame_cache_data
-         && video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID
-         && video_st->frame_cache_height
-         && video_st->frame_cache_pitch)
-      want_size = video_st->frame_cache_pitch
-                * video_st->frame_cache_height;
-   if (want_size > cached_snapshot_cap)
    {
-      void *tmp = realloc(cached_snapshot, want_size);
-      if (tmp)
-      {
-         cached_snapshot     = tmp;
-         cached_snapshot_cap = want_size;
-      }
-      else
-         want_size           = 0;
+      struct command_reinit_snapshot_ctx ctx;
+      ctx.buf_p = &cached_snapshot;
+      ctx.cap_p = &cached_snapshot_cap;
+      ctx.w     = 0;
+      ctx.h     = 0;
+      ctx.p     = 0;
+      ctx.size  = 0;
+      video_driver_cached_frame_read(&ctx, command_reinit_snapshot_cb);
+      cached_snapshot_w    = ctx.w;
+      cached_snapshot_h    = ctx.h;
+      cached_snapshot_p    = ctx.p;
+      cached_snapshot_size = ctx.size;
    }
-   if (want_size && cached_snapshot)
-   {
-      memcpy(cached_snapshot, video_st->frame_cache_data, want_size);
-      cached_snapshot_w = video_st->frame_cache_width;
-      cached_snapshot_h = video_st->frame_cache_height;
-      cached_snapshot_p = video_st->frame_cache_pitch;
-   }
+   (void)cached_snapshot_size;
 
    video_driver_reinit(flags);
 
@@ -2595,10 +2638,8 @@ void command_event_reinit(const int flags)
     * leak benign in practice, so we leave it. */
    if (cached_snapshot_p && cached_snapshot_h)
    {
-      video_st->frame_cache_data   = cached_snapshot;
-      video_st->frame_cache_width  = cached_snapshot_w;
-      video_st->frame_cache_height = cached_snapshot_h;
-      video_st->frame_cache_pitch  = cached_snapshot_p;
+      video_driver_cached_frame_publish(cached_snapshot,
+            cached_snapshot_w, cached_snapshot_h, cached_snapshot_p);
 
 #ifdef HAVE_MENU
       /* If the menu is alive across the reinit, the runloop's

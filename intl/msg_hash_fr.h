@@ -2559,6 +2559,14 @@ MSG_HASH(
    "Tente de maintenir la cible du 'Retard d'images' désirée et de minimiser les sautes d'images. Le point de départ est de 3/4 du temps d'image lorsque 'Retard d'images' est de 0 (Auto)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Échantillon de temps par image dans un état stable uniquement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Restreindre l'échantillonnage de la 'Fréquence estimée de l'écran' aux images où le contenu s'exécute proprement (pas de menu, pas de pause, pas d'avance rapide, temps par image dans une enveloppe de cohérence). Le résultat du diagnostic devient un véritable signal au prix d'une convergence plus lente après le chargement de contenu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    "effectif"
    )
@@ -5043,28 +5051,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Réinitialiser après l'avance rapide"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Réinitialisation automatique après événements perturbateurs"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Réinitialise le compteur de temps par images après l'avance rapide."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Réinitialiser après le chargement d'une sauvegarde instantanée"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Réinitialise le compteur de temps par images après le chargement d'une sauvegarde instantanée."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Réinitialiser après une sauvegarde instantanée"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Réinitialise le compteur de temps par images après une sauvegarde instantanée."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Efface le tampon d'échantillonnage de la 'Fréquence estimée de l'écran' après l'avance rapide, la sauvegarde instantanée ou le chargement de sauvegarde instantanée. Ces opérations introduisent des échantillons de synchronisation qui ne reflètent pas la cadence normale des images et faussent la mesure de la déviation. Nettoyage le plus efficace ; n'a pas d'effet lorsque 'Échantillon de temps par image seulement dans un état stable' est activé (ce qui empêche la contamination à la [...]"
    )
 
 /* Settings > Recording */

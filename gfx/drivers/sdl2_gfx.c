@@ -455,7 +455,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
    /* Set up the global OSD font (video_font_driver) using our
     * sdl2_raster_font.  Required for the "Display Statistics"
     * overlay - the central video_driver_frame path renders that
-    * via font_driver_render_msg(driver_data, stat_text, params, NULL),
+    * via font_driver_render_msg(driver_data, stat_text, video_info->stat_text_len, params, NULL),
     * and font_driver_render_msg falls through to video_font_driver
     * when font_data is NULL.  Without this, video_font_driver stays
     * NULL on SDL2 and statistics never render.
@@ -591,7 +591,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
          screen_vp_stats.h = (int)vid->vp.full_height;
          SDL_RenderSetViewport(vid->renderer, &screen_vp_stats);
 
-         font_driver_render_msg(vid, stat_text, osd_params, NULL);
+         font_driver_render_msg(vid, stat_text, video_info->stat_text_len, osd_params, NULL);
 
          SDL_RenderSetViewport(vid->renderer, &saved_vp_stats);
       }
@@ -841,7 +841,7 @@ static void sdl2_poke_texture_enable(void *data,
    vid->menu.active = enable;
 }
 
-static void sdl2_poke_set_osd_msg(void *data, const char *msg,
+static void sdl2_poke_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
@@ -869,7 +869,7 @@ static void sdl2_poke_set_osd_msg(void *data, const char *msg,
       const font_data_t *fd = (const font_data_t*)font;
       if (fd->renderer && fd->renderer->render_msg)
       {
-         fd->renderer->render_msg(vid, fd->renderer_data, msg, params);
+         fd->renderer->render_msg(vid, fd->renderer_data, msg, msg_len, params);
          return;
       }
    }
@@ -1760,7 +1760,7 @@ static void sdl2_raster_font_render_message(
 static void sdl2_raster_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    sdl2_raster_t *font = (sdl2_raster_t*)data;

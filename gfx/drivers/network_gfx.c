@@ -334,7 +334,7 @@ static bool network_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(network, msg, NULL, NULL);
+      font_driver_render_msg(network, msg, strlen(msg), NULL, NULL);
 
    return true;
 }

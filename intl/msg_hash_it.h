@@ -4918,30 +4918,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Ripristina dopo Avanzamento Rapido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Ripristina il contatore del tempo del fotogramma dopo l'avanzamento veloce."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Ripristina dopo aver caricato lo stato"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reimposta il contatore di tempo frame dopo aver caricato uno stato."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Ripristina dopo salvataggio rapido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reimposta il contatore del tempo dei fotogrammi dopo un salvataggio rapido."
-   )
 
 /* Settings > Recording */
 

@@ -4894,30 +4894,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reset Na Snel-Vooruitspoelen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Stel de frametijdteller opnieuw in na snel-vooruitspoelen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reset Na Laden Status"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reset de frametijdteller na het laden van een status."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reset Na Status Opslaan"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reset de frametijdteller nadat u een status hebt opgeslagen."
-   )
 
 /* Settings > Recording */
 

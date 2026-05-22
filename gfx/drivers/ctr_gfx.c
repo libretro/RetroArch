@@ -708,7 +708,7 @@ static void ctr_font_render_message(
 
 static void ctr_font_render_msg(
       void *userdata,
-      void* data, const char* msg,
+      void* data, const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    int drop_x, drop_y;
@@ -1272,7 +1272,7 @@ static void ctr_bottom_menu_control(void* data,
                   take_screenshot(NULL,
                         screenshot_full_path,
                         true,
-                        video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                        video_driver_cached_frame_is_hw_render(),
                         true,
                         true);
                }
@@ -1353,8 +1353,10 @@ static void ctr_bottom_menu_control(void* data,
 static void font_driver_render_msg_bottom(ctr_video_t *ctr,
       const char *msg, const void *_params)
 {
+   if (!msg)
+      return;
    ctr->render_font_bottom = true;
-   font_driver_render_msg(ctr, msg, _params, NULL);
+   font_driver_render_msg(ctr, msg, strlen(msg), _params, NULL);
    ctr->render_font_bottom = false;
 }
 
@@ -2305,7 +2307,7 @@ static bool ctr_frame(void* data, const void* frame,
    {
       if (osd_params)
       {
-         font_driver_render_msg(ctr, stat_text,
+         font_driver_render_msg(ctr, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
       }
    }
@@ -2335,7 +2337,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(ctr, msg, NULL, NULL);
+      font_driver_render_msg(ctr, msg, strlen(msg), NULL, NULL);
 
    GPU_FinishDrawing();
    GPU_Finalize();
@@ -2970,13 +2972,13 @@ void ctr_overlay_interface(void *data, const video_overlay_interface_t **iface)
 }
 #endif
 
-static void ctr_set_osd_msg(void *data, const char *msg,
+static void ctr_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(data, msg, params, font);
+      font_driver_render_msg(data, msg, msg_len, params, font);
 }
 
 static uint32_t ctr_get_flags(void *data)

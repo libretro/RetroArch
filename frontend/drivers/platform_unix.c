@@ -780,8 +780,6 @@ static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
     return true;
 }
 
-#define ACPI_VAL_CHARGING_DISCHARGING  0xf268327aU
-
 static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
@@ -2823,7 +2821,12 @@ static uint64_t frontend_unix_get_total_mem(void)
       if (string_starts_with_size(line, PROC_MEMINFO_MEM_TOTAL_TAG,
             STRLEN_CONST(PROC_MEMINFO_MEM_TOTAL_TAG)))
       {
-         sscanf(line, PROC_MEMINFO_MEM_TOTAL_TAG " %lu kB", &mem_total);
+         /* Prefix already matched above; strtoul skips leading
+          * whitespace and stops at the first non-digit, so the
+          * trailing " kB" need not be matched (sscanf "%lu kB"
+          * did not require it either). */
+         mem_total = strtoul(line + STRLEN_CONST(PROC_MEMINFO_MEM_TOTAL_TAG),
+               NULL, 10);
          break;
       }
    }
@@ -2872,7 +2875,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_MEM_AVAILABLE_TAG)))
          {
             mem_available_found = true;
-            sscanf(line, PROC_MEMINFO_MEM_AVAILABLE_TAG " %lu kB", &mem_available);
+            mem_available = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_MEM_AVAILABLE_TAG), NULL, 10);
             break;
          }
 
@@ -2881,7 +2885,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_MEM_FREE_TAG)))
          {
             mem_free_found = true;
-            sscanf(line, PROC_MEMINFO_MEM_FREE_TAG " %lu kB", &mem_free);
+            mem_free = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_MEM_FREE_TAG), NULL, 10);
          }
 
       if (!buffers_found)
@@ -2889,7 +2894,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_BUFFERS_TAG)))
          {
             buffers_found = true;
-            sscanf(line, PROC_MEMINFO_BUFFERS_TAG " %lu kB", &buffers);
+            buffers = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_BUFFERS_TAG), NULL, 10);
          }
 
       if (!cached_found)
@@ -2897,7 +2903,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_CACHED_TAG)))
          {
             cached_found = true;
-            sscanf(line, PROC_MEMINFO_CACHED_TAG " %lu kB", &cached);
+            cached = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_CACHED_TAG), NULL, 10);
          }
 
       if (!shmem_found)
@@ -2905,7 +2912,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_SHMEM_TAG)))
          {
             shmem_found = true;
-            sscanf(line, PROC_MEMINFO_SHMEM_TAG " %lu kB", &shmem);
+            shmem = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_SHMEM_TAG), NULL, 10);
          }
    }
 

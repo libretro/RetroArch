@@ -2651,6 +2651,14 @@ MSG_HASH(
    "Attempt to hold desired 'Frame Delay' target and minimize frame drops. Starting point is 3/4 frame time when 'Frame Delay' is 0 (Auto)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Sample Frame Time Only In Stable State"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Restrict 'Estimated Screen Refresh Rate' sampling to frames where content is running cleanly (not menu, not paused, not fast-forwarding, frame time within a sanity envelope). The diagnostic readout becomes a real signal at the cost of slower convergence after content load."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "Auto"
    )
@@ -5179,28 +5187,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reset After Fast-Forward"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Auto-Reset After Disruptive Events"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reset the frame time counter after fast-forwarding."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reset After Load State"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reset the frame time counter after loading a state."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reset After Save State"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reset the frame time counter after saving a state."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Clear the 'Estimated Screen Refresh Rate' sample buffer after fast-forwarding, save state, or load state. These operations introduce timing samples that don't reflect normal frame cadence and would skew the deviation measurement. Best-effort cleanup; has no effect when 'Sample Frame Time Only In Stable State' is enabled (which prevents the contamination at the source)."
    )
 
 /* Settings > Recording */

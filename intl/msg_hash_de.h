@@ -2483,6 +2483,14 @@ MSG_HASH(
    "Versucht das gewünschte Ziel der \"Bildverzögerung\" zu halten und Frame-Drops zu minimieren. Ausgangspunkt ist die 3/4 Frame-Zeit, wenn \"Bildverzögerung\" 0 (Automatisch) ist."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Bildwiederholrate nur in stabilem Zustand erfassen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Die Erfassung für „Geschätzte Bildwiederholrate“ sollte auf Bilder beschränkt werden, bei denen der Inhalt reibungslos wiedergegeben wird (kein Menü, keine Pause, kein Schnellvorlauf, Bilddauer innerhalb eines akzeptablen Bereichs). Die Diagnoseanzeige wird so zu einem realen Signal, allerdings auf Kosten einer langsameren Konvergenz nach dem Laden des Inhalts."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "Automatisch"
    )
@@ -4959,28 +4967,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Nach Vorspulen zurücksetzen"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Nach störenden Ereignissen automatisch zurücksetzen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Den Frame-Zeit-Zähler nach dem Vorspulen zurücksetzen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Nach Savestate-Laden zurücksetzen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Den Frame-Zeit-Zähler nach dem Laden eines Savestates zurücksetzen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Nach Savestate-Speichern zurücksetzen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Den Frame-Zeit-Zähler nach dem Erstellen eines Savestates zurücksetzen."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Den Samplepuffer für die „Geschätzte Bildwiederholrate“ nach dem Vorspulen, Speichern oder Laden eines Zustands löschen. Diese Vorgänge führen zu Zeitmesswerten, die nicht den normalen Bildrhythmus widerspiegeln und die Abweichungsmessung verfälschen würden. Die Bereinigung erfolgt nach bestem Ermessen – sie hat keine Auswirkung, wenn die Option „Bildwiederholrate nur im stabilen Zustand erfassen“ aktiviert ist (wodurch die Störung an der Quelle verhindert wird)."
    )
 
 /* Settings > Recording */

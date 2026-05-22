@@ -4942,30 +4942,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "รีเซ็ตหลังจากเร่งความเร็ว"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "รีเซ็ตตัวนับเวลาเฟรม หลังจากหยุดการเร่งความเร็ว"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "รีเซ็ตหลังจากโหลดสถานะ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "รีเซ็ตตัวนับเวลาเฟรม หลังจากโหลดสถานะ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "รีเซ็ตหลังจากบันทึกสถานะ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "รีเซ็ตตัวนับเวลาเฟรมหลังจากทำการบันทึกสถานะ"
-   )
 
 /* Settings > Recording */
 

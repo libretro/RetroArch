@@ -5014,30 +5014,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reiniciar Após o Avanço Rápido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reinicia o contador de tempo do quadro após o avanço rápido."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reiniciar Após Carregar o Ponto de Save"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reiniciar o contador de tempo do quadro após carregar um jogo salvo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reiniciar Após o Ponto de Save"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reinicia o contador de tempo de frame após salvar um ponto de save."
-   )
 
 /* Settings > Recording */
 

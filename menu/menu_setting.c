@@ -8567,8 +8567,13 @@ static void general_write_handler(rarch_setting_t *setting)
                custom_vp->x         = 0;
                custom_vp->y         = 0;
 
-               base_width           = (geom->base_width)  ? geom->base_width  : video_st->frame_cache_width;
-               base_height          = (geom->base_height) ? geom->base_height : video_st->frame_cache_height;
+               {
+                  unsigned cache_w  = 0;
+                  unsigned cache_h  = 0;
+                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
+                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
+                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+               }
 
                if (base_width <= 4 || base_height <= 4)
                {
@@ -8914,8 +8919,13 @@ static void general_write_handler(rarch_setting_t *setting)
                custom_vp->x         = 0;
                custom_vp->y         = 0;
 
-               base_width           = (geom->base_width)  ? geom->base_width  : video_st->frame_cache_width;
-               base_height          = (geom->base_height) ? geom->base_height : video_st->frame_cache_height;
+               {
+                  unsigned cache_w  = 0;
+                  unsigned cache_h  = 0;
+                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
+                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
+                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+               }
 
                if (base_width <= 4 || base_height <= 4)
                {
@@ -12453,10 +12463,10 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.frame_time_counter_reset_after_fastforwarding,
-               MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-               MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-               false,
+               &settings->bools.video_frame_time_sample_gated,
+               MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+               MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+               DEFAULT_FRAME_TIME_SAMPLE_GATED,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -12465,28 +12475,19 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+         /* Toggling this setting hides/shows
+          * 'frame_time_counter_auto_reset' below, so the menu
+          * needs a rebuild on change. */
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.frame_time_counter_reset_after_load_state,
-               MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-               MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-               false,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.frame_time_counter_reset_after_save_state,
-               MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-               MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-               false,
+               &settings->bools.frame_time_counter_auto_reset,
+               MENU_ENUM_LABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+               MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+               DEFAULT_FRAME_TIME_COUNTER_AUTO_RESET,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

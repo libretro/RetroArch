@@ -1448,6 +1448,7 @@ enum msg_hash_enums
    MENU_LBL_H(VIDEO_SCAN_SUBFRAMES),
    MENU_LBL_H(VIDEO_FRAME_DELAY),
    MENU_LBL_H(VIDEO_FRAME_DELAY_AUTO),
+   MENU_LABEL(VIDEO_FRAME_TIME_SAMPLE_GATED),
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    MENU_LABEL(VIDEO_SHADER_DELAY),
@@ -3232,9 +3233,7 @@ enum msg_hash_enums
    MENU_LABEL(OVERLAY_SETTINGS),
    MENU_LABEL(REWIND_SETTINGS),
    MENU_LABEL(FRAME_TIME_COUNTER_SETTINGS),
-   MENU_LABEL(FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING),
-   MENU_LABEL(FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE),
-   MENU_LABEL(FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE),
+   MENU_LABEL(FRAME_TIME_COUNTER_AUTO_RESET),
    MENU_LABEL(CHEAT_SETTINGS),
    MENU_LABEL(CHEAT_DETAILS_SETTINGS),
    MENU_LABEL(CHEAT_SEARCH_SETTINGS),
@@ -4175,7 +4174,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-enum msg_file_type msg_hash_to_file_type(uint32_t hash);
+enum msg_file_type msg_hash_to_file_type(const char *value);
 
 unsigned *msg_hash_get_uint(enum msg_hash_action type);
 
@@ -4207,8 +4206,6 @@ void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
  *   be found by passing said pointer to the current font
  *   rendering implementation */
 const char *msg_hash_get_wideglyph_str(void);
-
-uint32_t msg_hash_calculate(const char *s);
 
 const char *get_user_language_iso639_1(bool limit);
 

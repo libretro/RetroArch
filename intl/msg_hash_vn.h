@@ -2587,6 +2587,14 @@ MSG_HASH(
    "Cố gắng duy trì mục tiêu 'Trễ khung hình' mong muốn và giảm thiểu tình trạng mất khung hình. Điểm khởi đầu là 3/4 thời gian khung hình khi 'Trễ khung hình' bằng 0 (Tự động)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Chỉ lấy thời gian khung hình mẫu trong trạng thái ổn định"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Giới hạn việc lấy mẫu “Tốc độ làm mới màn hình ước tính” chỉ trong các khung hình mà nội dung đang chạy ổn định (không ở menu, không bị tạm dừng, không tua nhanh, và thời gian khung hình nằm trong ngưỡng hợp lý). Phần hiển thị chẩn đoán sẽ trở thành một tín hiệu thực sự đáng tin cậy, nhưng đổi lại tốc độ hội tụ sẽ chậm hơn sau khi tải nội dung."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "Tự động"
    )
@@ -5095,28 +5103,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Đặt lại sau Tua nhanh"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Tự động đặt lại sau khi bị gián đoạn"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Đặt lại bộ đếm thời gian khung hình sau khi tua nhanh."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Đặt lại sau Tải trạng thái"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Đặt lại bộ đếm thời gian khung hình sau khi tải trạng thái."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Đặt lại sau khi Lưu trạng thái"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Đặt lại bộ đếm thời gian khung hình sau khi lưu trạng thái."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Xóa bộ đệm mẫu “Estimated Screen Refresh Rate” sau khi tua nhanh, lưu trạng thái hoặc tải trạng thái. Các thao tác này tạo ra những mẫu thời gian không phản ánh nhịp khung hình bình thường và sẽ làm sai lệch phép đo độ lệch. Đây là cơ chế dọn dẹp theo mức tốt nhất; không có tác dụng khi bật “Sample Frame Time Only In Stable State” (vì tùy chọn này ngăn nhiễu ngay từ nguồn)."
    )
 
 /* Settings > Recording */

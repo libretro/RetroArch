@@ -730,18 +730,29 @@ const char *x11_display_server_get_output_options(void *data)
    if (!(res = XRRGetScreenResources(dpy, root)))
       return NULL;
 
-   for (i = 0; i < res->noutput; i++)
+   /* Build "out1|out2|out3" via offset tracking; the prior
+    * strlcat-in-loop form re-scanned `s` from the start on every
+    * append, giving O(outputs^2) total cost.  Also resets `s` at
+    * the start of the loop — without that, subsequent calls would
+    * append to leftover content in the static buffer. */
    {
-      size_t _len;
-      if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
-         return NULL;
-
-      _len = strlcat(s, info->name, sizeof(s));
-      if ((i+1) < res->noutput)
+      size_t buf_len = 0;
+      size_t avail   = sizeof(s);
+      s[0] = '\0';
+      for (i = 0; i < res->noutput && buf_len + 1 < avail; i++)
       {
-         s[  _len] = '|';
-         s[++_len] = '\0';
+         size_t nlen;
+         if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
+            return NULL;
+         nlen = strlen(info->name);
+         if (i > 0)
+            s[buf_len++] = '|';
+         if (nlen >= avail - buf_len)
+            nlen = avail - buf_len - 1;
+         memcpy(s + buf_len, info->name, nlen);
+         buf_len += nlen;
       }
+      s[buf_len] = '\0';
    }
 
    return s;

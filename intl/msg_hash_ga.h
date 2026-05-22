@@ -5074,30 +5074,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Athshocraigh Tar éis Tapáil Ar Aghaidh"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Athshocraigh an cuntar ama fráma tar éis luasghéarú."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Athshocraigh Tar éis Staid Luchtaithe"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Athshocraigh an cuntar ama fráma tar éis stát a lódáil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Athshocraigh Tar éis Stádas Sábháil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Athshocraigh an cuntar ama fráma tar éis staid a shábháil."
-   )
 
 /* Settings > Recording */
 

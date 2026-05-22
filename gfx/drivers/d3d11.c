@@ -1091,7 +1091,7 @@ static int d3d11_font_get_message_width(void* data, const char* msg, size_t msg_
 static void d3d11_font_render_msg(
       void *userdata,
       void* data,
-      const char* msg,
+      const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    float line_height;
@@ -4741,7 +4741,7 @@ static bool d3d11_gfx_frame(
                   context, 0, 1, &d3d11->sprites.vbo, &stride, &offset);
          }
          font_driver_render_msg(d3d11,
-               stat_text,
+               stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
       }
    }
@@ -4787,7 +4787,7 @@ static bool d3d11_gfx_frame(
          NULL, D3D11_DEFAULT_SAMPLE_MASK);
       context->lpVtbl->IASetVertexBuffers(
             context, 0, 1, &d3d11->sprites.vbo, &stride, &offset);
-      font_driver_render_msg(d3d11, msg, NULL, NULL);
+      font_driver_render_msg(d3d11, msg, strlen(msg), NULL, NULL);
    }
    d3d11->flags &= ~D3D11_ST_FLAG_SPRITES_ENABLE;
 
@@ -5480,13 +5480,13 @@ static void d3d11_gfx_apply_state_changes(void* data)
 }
 
 static void d3d11_gfx_set_osd_msg(
-      void* data, const char *msg,
+      void* data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (d3d11 && (d3d11->flags & D3D11_ST_FLAG_SPRITES_ENABLE))
-      font_driver_render_msg(d3d11, msg, params, font);
+      font_driver_render_msg(d3d11, msg, msg_len, params, font);
 }
 
 #ifdef HAVE_THREADS

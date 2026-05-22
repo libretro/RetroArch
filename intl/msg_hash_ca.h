@@ -2555,6 +2555,14 @@ MSG_HASH(
    "Intentar mantenir el desfasament de fotogrames objectiu i minimitzar els fotogrames perduts. Si el desfasament de fotogrames està establert a 0 (automàtic), el punt de partida serà de 3/4 parts de la duració dels fotogrames."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Temps de fotograma de mostra només en estat estable"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Restringeix el mostreig de la \"Freqüència d'actualització de pantalla estimada\" als fotogrames on el contingut s'executa correctament (no és de menú, no està en pausa, no s'avança ràpidament, el temps del fotograma està dins d'un envoltant de sanitat). La lectura de diagnòstic esdevé un senyal real a costa d'una convergència més lenta després de la càrrega del contingut."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "Automàtic"
    )
@@ -5075,28 +5083,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reiniciar després d'utilitzar l'avançament ràpid"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Fes un reinici automàtic després d'un event disruptiu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reinicia el comptador de duració de fotogrames després d'un avançament ràpid."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reiniciar després de carregar un desat ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reinicia el comptador de duració de fotogrames després de carregar un estat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reiniciar després de generar un desat ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reinicia el comptador de duració de fotogrames després de desar un estat."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Esborra la memòria intermèdia de mostres de la \"Freqüència d'actualització de pantalla estimada\" després d'avançar ràpidament, desar o carregar. Aquestes operacions introdueixen mostres de temps que no reflecteixen la cadència normal dels fotogrames i distorsionarien la mesura de la desviació. Neteja optimitzada; no té cap efecte quan l'opció \"Només temps de fotogrames de mostra en estat estable\" està habilitada (cosa que evita la contaminació a l'origen)."
    )
 
 /* Settings > Recording */

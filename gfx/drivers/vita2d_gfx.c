@@ -499,7 +499,7 @@ static void vita2d_font_render_message(
 static void vita2d_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    int drop_x, drop_y;
@@ -835,7 +835,7 @@ static bool vita2d_frame(void *data, const void *frame,
    else if (statistics_show)
    {
       if (osd_params)
-         font_driver_render_msg(vita, video_info->stat_text,
+         font_driver_render_msg(vita, video_info->stat_text, video_info->stat_text_len,
                osd_params, NULL);
    }
 
@@ -849,7 +849,7 @@ static bool vita2d_frame(void *data, const void *frame,
       gfx_widgets_frame(video_info);
 #endif
    if (msg && *msg)
-      font_driver_render_msg(vita, msg, NULL, NULL);
+      font_driver_render_msg(vita, msg, strlen(msg), NULL, NULL);
 
    vita2d_end_drawing();
    vita2d_swap_buffers();

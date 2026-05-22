@@ -242,6 +242,34 @@
 
 #if HAVE_GAME_AI
 #include "ai/game_ai.h"
+
+/* Context for the cached_frame_read callback that dispatches into
+ * game_ai_think.  Lets the per-frame GameAI processing pull from
+ * the cached frame through the lifetime-safe API instead of
+ * touching frame_cache_data directly. */
+struct game_ai_think_ctx
+{
+   bool                    override_p1;
+   bool                    override_p2;
+   bool                    show_debug;
+   enum retro_pixel_format pix_fmt;
+};
+
+static void runloop_game_ai_think_cb(void *userdata,
+      const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   struct game_ai_think_ctx *ctx = (struct game_ai_think_ctx*)userdata;
+   if (!ctx)
+      return;
+   game_ai_think(
+         ctx->override_p1,
+         ctx->override_p2,
+         ctx->show_debug,
+         data,
+         width, height, pitch,
+         ctx->pix_fmt);
+}
 #endif
 
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
@@ -3973,7 +4001,7 @@ static bool core_unload_game(void)
 
    video_driver_free_hw_context();
 
-   video_st->frame_cache_data     = NULL;
+   video_driver_cached_frame_invalidate();
 
    if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
    {
@@ -3993,7 +4021,7 @@ static bool core_unload_game(void)
 }
 
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
-      bool frame_time_counter_reset_after_fastforwarding,
+      bool frame_time_counter_auto_reset,
       float fastforward_ratio_default,
       bool audio_fastforward_mute)
 {
@@ -4044,7 +4072,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
       /* Reset frame time counter when toggling
        * fast-forward off, if required */
       if ( !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-          && frame_time_counter_reset_after_fastforwarding)
+          && frame_time_counter_auto_reset)
          video_st->frame_time_count = 0;
 
       /* Ensure fast forward widget is disabled when
@@ -4119,7 +4147,7 @@ void runloop_event_deinit_core(void)
       input_st->core_gyro_rate       = 0;
    }
 
-   video_st->frame_cache_data  = NULL;
+   video_driver_cached_frame_invalidate();
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
@@ -4135,7 +4163,7 @@ void runloop_event_deinit_core(void)
    if (runloop_st->fastmotion_override.pending)
    {
       runloop_apply_fastmotion_override(runloop_st,
-            settings->bools.frame_time_counter_reset_after_fastforwarding,
+            settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
             settings->bools.audio_fastforward_mute
             );
@@ -4864,7 +4892,7 @@ bool runloop_event_init_core(
    }
 #endif
 
-   video_st->frame_cache_data              = NULL;
+   video_driver_cached_frame_invalidate();
 
    runloop_st->current_core.retro_init();
    runloop_st->current_core.flags         |= RETRO_CORE_FLAG_INITED;
@@ -6024,7 +6052,7 @@ static enum runloop_state_enum runloop_check_state(
             if (!take_screenshot(settings->paths.directory_screenshot,
                      screenshot_path,
                      false,
-                     video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                     video_driver_cached_frame_is_hw_render(),
                      fullpath,
                      false))
             {
@@ -6908,7 +6936,7 @@ static enum runloop_state_enum runloop_check_state(
    if (runloop_st->fastmotion_override.pending)
    {
       runloop_apply_fastmotion_override(runloop_st,
-            settings->bools.frame_time_counter_reset_after_fastforwarding,
+            settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
             settings->bools.audio_fastforward_mute);
       runloop_st->fastmotion_override.pending = false;
@@ -6948,7 +6976,7 @@ static enum runloop_state_enum runloop_check_state(
       if (check2)
       {
          bool audio_fastforward_mute = settings->bools.audio_fastforward_mute;
-         bool frame_time_counter_reset_after_ffwd = settings->bools.frame_time_counter_reset_after_fastforwarding;
+         bool frame_time_counter_auto_reset = settings->bools.frame_time_counter_auto_reset;
          if (input_st->flags & INP_FLAG_NONBLOCKING)
          {
             input_st->flags                     &= ~INP_FLAG_NONBLOCKING;
@@ -6972,7 +7000,7 @@ static enum runloop_state_enum runloop_check_state(
          /* Reset frame time counter when toggling
           * fast-forward off, if required */
          if ( !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-             && frame_time_counter_reset_after_ffwd)
+             && frame_time_counter_auto_reset)
             video_st->frame_time_count  = 0;
       }
 
@@ -7573,6 +7601,23 @@ int runloop_iterate(void)
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
          if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
             return 0;
+         /* When content is actively running behind the menu (menu_pause_libretro
+          * is off), core_run() -> audio_driver_write() already paces the iterate
+          * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
+          * Layering the refresh-rate retro_sleep() throttle below on top of that
+          * is redundant double-pacing, and retro_sleep() resolves to OS Sleep()
+          * whose granularity is ~15 ms on Windows by default -- coarser than
+          * typical audio low-water marks, so the sleep overshoots and stutters
+          * audio.  Defer pacing to the audio backpressure path. */
+         else if (   audio_sync
+                  && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
+         {
+            /* Make sure no stale frame_limit_minimum_time from a prior
+             * iteration (e.g. just before menu_pause_libretro was toggled
+             * off) leaks into the sleep block below. */
+            runloop_st->frame_limit_minimum_time = 0;
+            goto end;
+         }
          else if ((  (settings->bools.video_vsync)
                   || (settings->bools.video_scanline_sync && video_st->scanline[SCANLINE_NEXT]))
                && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
@@ -8127,7 +8172,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
 
-   video_st->frame_cache_data     = NULL;
+   video_driver_cached_frame_invalidate();
 
 #ifdef HAVE_RUNAHEAD
    runahead_set_load_content_info(runloop_st, load_info);
@@ -8268,7 +8313,7 @@ void core_reset(void)
     * cores or on drivers that do not implement the hook. */
    video_driver_invalidate_hw_render_cache();
 
-   video_st->frame_cache_data     = NULL;
+   video_driver_cached_frame_invalidate();
    runloop_st->current_core.retro_reset();
 }
 
@@ -8319,15 +8364,15 @@ void core_run(void)
       if (override_p1 || override_p2 || show_debug)
       {
          video_driver_state_t *video_st = video_state_get_ptr();
-         game_ai_think(
-               override_p1,
-               override_p2,
-               show_debug,
-               video_st->frame_cache_data,
-               video_st->frame_cache_width,
-               video_st->frame_cache_height,
-               video_st->frame_cache_pitch,
-               video_st->pix_fmt);
+         struct game_ai_think_ctx ctx;
+         ctx.override_p1 = override_p1;
+         ctx.override_p2 = override_p2;
+         ctx.show_debug  = show_debug;
+         ctx.pix_fmt     = video_st->pix_fmt;
+         /* Same-thread access (we're on the runloop thread, same as
+          * the producer), but route through cached_frame_read for
+          * lifecycle correctness once the field becomes private. */
+         video_driver_cached_frame_read(&ctx, runloop_game_ai_think_cb);
       }
    }
 #endif

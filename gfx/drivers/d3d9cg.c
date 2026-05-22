@@ -1466,7 +1466,7 @@ static INLINE Vertex *d3d9_cg_font_get_scratch(
 
 static void d3d9_cg_font_render_msg(
       void *userdata, void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
@@ -3640,7 +3640,7 @@ static void d3d9_set_font_rect(
 }
 
 static void d3d9_cg_set_osd_msg(void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
@@ -3648,7 +3648,7 @@ static void d3d9_cg_set_osd_msg(void *data,
 
    d3d9_set_font_rect(d3d, params);
    IDirect3DDevice9_BeginScene(dev);
-   font_driver_render_msg(d3d, msg, params, font);
+   font_driver_render_msg(d3d, msg, msg_len, params, font);
    IDirect3DDevice9_EndScene(dev);
 }
 
@@ -4557,7 +4557,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       {
          IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
          IDirect3DDevice9_BeginScene(d3d->dev);
-         font_driver_render_msg(d3d, stat_text,
+         font_driver_render_msg(d3d, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
          IDirect3DDevice9_EndScene(d3d->dev);
       }
@@ -4619,7 +4619,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    {
       IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
       IDirect3DDevice9_BeginScene(d3d->dev);
-      font_driver_render_msg(d3d, msg, NULL, NULL);
+      font_driver_render_msg(d3d, msg, strlen(msg), NULL, NULL);
       IDirect3DDevice9_EndScene(d3d->dev);
    }
 

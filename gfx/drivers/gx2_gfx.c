@@ -924,7 +924,7 @@ static void gx2_font_render_message(
 static void gx2_font_render_msg(
       void *userdata,
       void* data,
-      const char* msg,
+      const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
@@ -2307,7 +2307,7 @@ static bool gx2_frame(void *data, const void *frame,
       if (statistics_show)
       {
          if (osd_params)
-            font_driver_render_msg(wiiu, video_info->stat_text,
+            font_driver_render_msg(wiiu, video_info->stat_text, video_info->stat_text_len,
                   osd_params, NULL);
       }
 
@@ -2317,7 +2317,7 @@ static bool gx2_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(wiiu, msg, NULL, NULL);
+      font_driver_render_msg(wiiu, msg, strlen(msg), NULL, NULL);
 
    wiiu->render_msg_enabled = false;
 
@@ -2520,12 +2520,12 @@ static void gx2_set_texture_enable(void *data, bool state, bool full_screen)
       wiiu->menu.enable = state;
 }
 
-static void gx2_set_osd_msg(void *data, const char *msg,
+static void gx2_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *)data;
    if (wiiu && wiiu->render_msg_enabled)
-      font_driver_render_msg(wiiu, msg, params, font);
+      font_driver_render_msg(wiiu, msg, msg_len, params, font);
 }
 
 static uint32_t gx2_get_flags(void *data)

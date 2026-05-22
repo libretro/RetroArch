@@ -1777,6 +1777,14 @@ MSG_HASH(
    "Настройки синхронизации изображения."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Применять выбранный фильтр изображения. Может игнорироваться видеодрайвером."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Вкл. графический фильтр"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Блокировать скринсейвер"
    )
@@ -2544,7 +2552,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
-   "Синхронизация Scanline"
+   "Синхронизация с полосой развёртки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Синхронизировать вывод изображения с позицией полосы развёртки. Уменьшает задержку, но повышает риск появления разрывов изображения. Требуется отключение VSync."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -3705,7 +3717,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
-   "Переключение между замедлением и обычной скоростью."
+   "Переключение между замедленной и обычной скоростью."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
@@ -4035,6 +4047,14 @@ MSG_HASH(
    "Включает/выключает упреждающие кадры."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Применить видеофильтр (переключение)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Включает/выключает программный фильтр изображения."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Показать FPS (переключение)"
@@ -4437,7 +4457,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
-   "Разрешать ядрам смену видеодрайвера"
+   "Разрешать смену видеодрайвера"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
@@ -5070,30 +5090,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Сброс после ускорения"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Сбрасывать счётчик времени кадра при ускоренной перемотке."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Сброс после загрузки сохранения"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Сбрасывать счётчик времени кадра при загрузке быстрого сохранения."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Сброс после создания сохранения"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Сбрасывать счётчик времени кадра при создании быстрого сохранения."
-   )
 
 /* Settings > Recording */
 
@@ -5284,15 +5280,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
-   "Отображение событий ввода на экранном оверлее. В режиме 'С сенсорного экрана' элементы оверлея подсвечиваются при фактическом нажатии/касании. В режиме 'С физ. контроллера' подсвечиваются события ввода, получаемые ядром от подключенного контроллера/клавиатуры."
+   "Отображение событий ввода на экранном оверлее. В режиме 'Сенсорный экран' подсвечиваются элементы оверлея при фактическом нажатии/касании. В режиме 'Физический (контроллер)' подсвечиваются нажатия, получаемые ядром от подключенного контроллера/клавиатуры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
-   "С сенсорного экрана"
+   "Сенсорный экран"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
-   "С физ. контроллера"
+   "Физический (контроллер)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
@@ -5300,7 +5296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "Прослушивать выбранный порт устройства ввода, если для опции 'Показывать нажатия на оверлее' указан режим 'С физ. контроллера'."
+   "Прослушивать заданный порт устройства ввода, если для опции 'Показывать нажатия на оверлее' выбран режим 'Физический (контроллер)'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -5745,6 +5741,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "Счётчик памяти будет обновляться с заданным интервалом (в кадрах)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Показывать время"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Отображать текущее время в выбранном формате."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -6389,6 +6393,10 @@ MSG_HASH(
    "Показывать 'Сетевая игра'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "Показывать опцию 'Сетевая игра' в главного меню или в плейлистах."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Показывать 'История запуска'"
    )
@@ -6566,6 +6574,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Показывать 'Отменить сохранение/загрузку'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Показывать опции отмены сохранения/загрузки состояния. Если опции скрыты, отмена сохранения/загрузки производится нажатием Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7568,11 +7580,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   "Обход NAT в Netplay"
+   "Обход NAT в сетевой игре"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-   "В режиме хоста пытаться слушать подключения из публичного Интернет, используя UPnP или схожие протоколы во избежание локальных сетей."
+   "При запуске в режиме хоста пытаться слушать подключения из публичного Интернет, используя UPnP или схожие протоколы для избежания локальных сетей."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
@@ -8047,7 +8059,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Разрешать приложению Discord показ сведений о текущем контенте.\nДоступно только для официального настольного клиента."
+   "Разрешать Discord отображать сведения о запущенном контенте.\nДоступно только для официального настольного клиента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -11585,6 +11597,10 @@ MSG_HASH(
    "Затемнение по вертикали"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Горизонтальное представление меню"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Название в заголовке"
    )
@@ -11820,11 +11836,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
-   "Показать боковую панель"
+   "Показывать боковую панель"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
-   "Разрешить левую боковую навигацию и плейлисты."
+   "Разрешить плейлисты и панель навигации слева."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -13080,7 +13096,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NATIVE,
-   "Нативное"
+   "Исходное"
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
@@ -14380,6 +14396,10 @@ MSG_HASH(
    "Загрузка сохранения отменена."
    )
 MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Отмена сохранения состояния..."
+   )
+MSG_HASH(
    MSG_UNKNOWN,
    "Неизвестно"
    )
@@ -15043,6 +15063,14 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Частота обновления установлена на %s Гц."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Графический фильтр: включен"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Графический фильтр: выключен"
+   )
 
 
 /* Lakka */
@@ -15581,7 +15609,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
-   "Включите для передачи событий касания при вводе с сенсорного экрана."
+   "Включите для передачи касаний при вводе с сенсорного экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,

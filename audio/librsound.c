@@ -890,16 +890,29 @@ static size_t rsnd_get_ptr(rsound_t *rd)
 
 static int rsnd_send_identity_info(rsound_t *rd)
 {
-   char tmpbuf[RSD_PROTO_MAXSIZE];
-   char sendbuf[RSD_PROTO_MAXSIZE];
+   char    tmpbuf[RSD_PROTO_MAXSIZE];
+   char    sendbuf[RSD_PROTO_MAXSIZE];
+   size_t  tmp_len;
+   size_t  send_len;
+   int     n;
 
-   snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " IDENTITY %s", rd->identity);
+   /* snprintf returns the number of bytes that would have been
+    * written had the buffer been large enough; clamp to the
+    * actually-written length so it can be passed straight to
+    * send() without an extra strlen pass. */
+   n = snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " IDENTITY %s", rd->identity);
    tmpbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
-   snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%s", (int)strlen(tmpbuf), tmpbuf);
-   sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
+   tmp_len = (n < 0) ? 0
+           : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
 
-   if (     rsnd_send_chunk(rd->conn.ctl_socket, sendbuf, strlen(sendbuf), 0)
-         != (ssize_t)strlen(sendbuf))
+   n = snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%s",
+         (int)tmp_len, tmpbuf);
+   sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
+   send_len = (n < 0) ? 0
+            : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
+
+   if (rsnd_send_chunk(rd->conn.ctl_socket, sendbuf, send_len, 0)
+         != (ssize_t)send_len)
       return -1;
 
    return 0;
@@ -1003,9 +1016,10 @@ static int rsnd_update_server_info(rsound_t *rd)
    /* We read until we have the last (most recent) data in the network buffer. */
    for (;;)
    {
-      ssize_t rc;
-      char *tmpstr;
-      const char *substr;
+      ssize_t       rc;
+      char         *tmpstr;
+      const char   *substr;
+      long int      len;
       memset(temp, 0, sizeof(temp));
 
       /* We first receive the small header. We just use the larger buffer as it is disposable. */
@@ -1024,7 +1038,7 @@ static int rsnd_update_server_info(rsound_t *rd)
       substr += 3;
 
       /* The length of the argument message is stored in the small 8 byte header. */
-      long int len = strtol(substr, NULL, 0);
+      len = strtol(substr, NULL, 0);
 
       /* Receive the rest of the data. */
       if (rsnd_recv_chunk(rd->conn.ctl_socket, temp, len, 0) < len)
@@ -1088,9 +1102,20 @@ static int rsnd_update_server_info(rsound_t *rd)
 static void rsnd_thread(void * thread_data)
 {
    /* We share data between thread and callable functions */
-   int rc;
-   rsound_t *rd = thread_data;
-   char buffer[rd->backend_info.chunk_size];
+   int        rc;
+   rsound_t  *rd          = thread_data;
+   size_t     chunk_size  = rd->backend_info.chunk_size;
+   char      *buffer      = (char *)malloc(chunk_size);
+
+   if (!buffer)
+   {
+      /* Allocation failed at thread start — match the existing
+       * unrecoverable-error pattern below. */
+      rsnd_reset(rd);
+      scond_signal(rd->thread.cond);
+      sthread_detach(rd->thread.thread);
+      return;
+   }
 
    /* Plays back data as long as there is data in the buffer.
     * Else, sleep until it can.
@@ -1125,9 +1150,9 @@ static void rsnd_thread(void * thread_data)
 
          _TEST_CANCEL();
          slock_lock(rd->thread.mutex);
-         fifo_read(rd->fifo_buffer, buffer, sizeof(buffer));
+         fifo_read(rd->fifo_buffer, buffer, chunk_size);
          slock_unlock(rd->thread.mutex);
-         rc = rsnd_send_chunk(rd->conn.socket, buffer, sizeof(buffer), 1);
+         rc = rsnd_send_chunk(rd->conn.socket, buffer, chunk_size, 1);
 
          /* If this happens, we should make sure that subsequent
           * and current calls to rsd_write() will fail. */
@@ -1141,6 +1166,7 @@ static void rsnd_thread(void * thread_data)
 
             /* This thread will not be joined, so detach. */
             sthread_detach(rd->thread.thread);
+            free(buffer);
             return;
          }
 
@@ -1190,6 +1216,7 @@ static void rsnd_thread(void * thread_data)
       else /* Abort request, chap. */
       {
          scond_signal(rd->thread.cond);
+         free(buffer);
          return;
       }
 
@@ -1199,45 +1226,58 @@ static void rsnd_thread(void * thread_data)
 /* Callback thread */
 static void rsnd_cb_thread(void *thread_data)
 {
-   rsound_t *rd = thread_data;
-   size_t read_size = rd->backend_info.chunk_size;
+   rsound_t *rd          = thread_data;
+   size_t    chunk_size  = rd->backend_info.chunk_size;
+   size_t    read_size   = chunk_size;
+   uint8_t  *buffer;
+
    if (rd->cb_max_size != 0 && rd->cb_max_size < read_size)
       read_size = rd->cb_max_size;
 
-   uint8_t buffer[rd->backend_info.chunk_size];
+   if (!(buffer = (uint8_t *)malloc(chunk_size)))
+   {
+      /* Allocation failed at thread start — match the existing
+       * unrecoverable-error pattern below. */
+      rsnd_reset(rd);
+      sthread_detach(rd->thread.thread);
+      rd->error_callback(rd->cb_data);
+      return;
+   }
 
    while (rd->thread_active)
    {
-      size_t has_read = 0;
+      size_t  has_read = 0;
+      ssize_t sent;
 
-      while (has_read < rd->backend_info.chunk_size)
+      while (has_read < chunk_size)
       {
-         ssize_t ret;
-         size_t will_read = read_size < rd->backend_info.chunk_size - has_read
-            ? read_size : rd->backend_info.chunk_size - has_read;
+         ssize_t cb_ret;
+         size_t  will_read = read_size < chunk_size - has_read
+            ? read_size : chunk_size - has_read;
 
          rsd_callback_lock(rd);
-         ret = rd->audio_callback(buffer + has_read, will_read, rd->cb_data);
+         cb_ret = rd->audio_callback(buffer + has_read, will_read, rd->cb_data);
          rsd_callback_unlock(rd);
 
-         if (ret < 0)
+         if (cb_ret < 0)
          {
+            free(buffer);
             rsnd_reset(rd);
             sthread_detach(rd->thread.thread);
             rd->error_callback(rd->cb_data);
             return;
          }
 
-         has_read += ret;
+         has_read += cb_ret;
 
-         if (ret < (ssize_t)will_read)
+         if (cb_ret < (ssize_t)will_read)
          {
             if ((int)rsd_delay_ms(rd) < rd->max_latency / 2)
             {
                RSD_DEBUG("[RSound] Callback thread: Requested %d bytes, got %d.\n",
-                     (int)will_read, (int)ret);
-               memset(buffer + has_read, 0, will_read - ret);
-               has_read += will_read - ret;
+                     (int)will_read, (int)cb_ret);
+               memset(buffer + has_read, 0, will_read - cb_ret);
+               has_read += will_read - cb_ret;
             }
             else
             {
@@ -1252,9 +1292,10 @@ static void rsnd_cb_thread(void *thread_data)
          }
       }
 
-      ssize_t ret = rsnd_send_chunk(rd->conn.socket, buffer, rd->backend_info.chunk_size, 1);
-      if (ret != (ssize_t)rd->backend_info.chunk_size)
+      sent = rsnd_send_chunk(rd->conn.socket, buffer, chunk_size, 1);
+      if (sent != (ssize_t)chunk_size)
       {
+         free(buffer);
          rsnd_reset(rd);
          sthread_detach(rd->thread.thread);
          rd->error_callback(rd->cb_data);
@@ -1268,7 +1309,7 @@ static void rsnd_cb_thread(void *thread_data)
          rd->has_written = 1;
       }
 
-      rd->total_written += rd->backend_info.chunk_size;
+      rd->total_written += chunk_size;
 
       if (     (rd->conn_type & RSD_CONN_PROTO)
             && (rd->total_written > rd->channels * rd->rate * rd->samplesize))
@@ -1280,6 +1321,8 @@ static void rsnd_cb_thread(void *thread_data)
       if (rd->has_written)
          rsd_delay_wait(rd);
    }
+
+   free(buffer);
 }
 
 static int rsnd_reset(rsound_t *rd)
@@ -1386,15 +1429,26 @@ int rsd_exec(rsound_t *rsound)
 #endif
 
    /* Flush the buffer */
-   if (FIFO_READ_AVAIL(rsound->fifo_buffer) > 0)
    {
-      char buffer[FIFO_READ_AVAIL(rsound->fifo_buffer)];
-      fifo_read(rsound->fifo_buffer, buffer, sizeof(buffer));
-      if (rsnd_send_chunk(fd, buffer, sizeof(buffer), 1) != (ssize_t)sizeof(buffer))
+      size_t avail = FIFO_READ_AVAIL(rsound->fifo_buffer);
+      if (avail > 0)
       {
-         RSD_DEBUG("[RSound] Failed flushing buffer.\n");
-         net_socketclose(fd);
-         return -1;
+         char *buffer = (char *)malloc(avail);
+         if (!buffer)
+         {
+            RSD_DEBUG("[RSound] Failed allocating flush buffer.\n");
+            net_socketclose(fd);
+            return -1;
+         }
+         fifo_read(rsound->fifo_buffer, buffer, avail);
+         if (rsnd_send_chunk(fd, buffer, avail, 1) != (ssize_t)avail)
+         {
+            RSD_DEBUG("[RSound] Failed flushing buffer.\n");
+            free(buffer);
+            net_socketclose(fd);
+            return -1;
+         }
+         free(buffer);
       }
    }
 

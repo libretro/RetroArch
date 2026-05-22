@@ -428,6 +428,7 @@ typedef struct video_frame_info
    uint16_t frame_time_target;
 
    char stat_text[1024];
+   size_t stat_text_len;
 
    bool widgets_active;
    bool notifications_hidden;
@@ -644,7 +645,7 @@ typedef struct video_poke_interface
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
    void (*set_osd_msg)(void *data,
-         const char *msg,
+         const char *msg, size_t msg_len,
          const struct font_params *params, void *font);
 
    void (*show_mouse)(void *data, bool state);
@@ -828,8 +829,6 @@ typedef struct
 
    void *current_display_server_data;
 
-   const void *frame_cache_data;
-
    const struct
       retro_hw_render_context_negotiation_interface *
       hw_render_context_negotiation;
@@ -848,7 +847,6 @@ typedef struct
    uintptr_t display;
    uintptr_t window;
 
-   size_t frame_cache_pitch;
    size_t window_title_len;
 
    uint32_t flags;
@@ -857,8 +855,6 @@ typedef struct
    unsigned state_scale;
    unsigned state_out_bpp;
 #endif
-   unsigned frame_cache_width;
-   unsigned frame_cache_height;
    unsigned width;
    unsigned height;
    unsigned scale_width;
@@ -968,6 +964,101 @@ void video_driver_update_viewport(struct video_viewport* vp,
 void video_driver_apply_state_changes(void);
 
 void video_driver_cached_frame(void);
+
+/**
+ * video_driver_cached_frame_info:
+ *
+ * Reads the metadata of the last cached frame without touching the
+ * pixel data.  Returns true if a frame has been cached and the
+ * out-parameters are populated; false if no frame is cached yet
+ * (post-init / post-content-unload / after a driver reinit
+ * invalidation).  has_cpu_pixels is set to false for HW-render
+ * frames (no CPU-side pixel buffer; use cached_frame_replay
+ * if you need them on the display) and true for SW-rendered
+ * frames where cached_frame_read would yield pixels.
+ *
+ * Safe to call from any thread.
+ */
+bool video_driver_cached_frame_info(
+      unsigned *width, unsigned *height, size_t *pitch,
+      bool *has_cpu_pixels);
+
+/**
+ * video_driver_cached_frame_read:
+ *
+ * Synchronous, callback-based read of the last cached frame's
+ * pixels.  The callback is invoked exactly once with a pointer
+ * that is guaranteed valid for the duration of the call; the
+ * caller MUST NOT retain the pointer past the callback's return.
+ * If no CPU-side pixels are available (HW render, uninitialised,
+ * post-invalidation), the callback is invoked with data == NULL
+ * so the caller can branch cleanly.
+ *
+ * Safe to call from any thread.  Holds the cached-frame lifetime
+ * lock for the duration of the callback, so the caller should
+ * copy out anything it needs to retain.  Concurrent core close /
+ * driver reinit will block until the callback returns; keep the
+ * callback short.
+ */
+void video_driver_cached_frame_read(
+      void *userdata,
+      void (*cb)(void *userdata,
+                 const void *data,
+                 unsigned width, unsigned height, size_t pitch));
+
+/**
+ * video_driver_cached_frame_is_hw_render:
+ *
+ * True iff the last cached frame was an HW-render submission
+ * (the core passed RETRO_HW_FRAME_BUFFER_VALID rather than a
+ * CPU-side pixel buffer).  Cheap pointer compare; safe from any
+ * thread.
+ *
+ * Equivalent to (cached_frame_info(&w,&h,&p,&has)==true && !has),
+ * but expressed as a single call for clarity at the savestate /
+ * screenshot dispatch sites that only need the sentinel.
+ */
+bool video_driver_cached_frame_is_hw_render(void);
+
+/**
+ * video_driver_cached_frame_publish:
+ *
+ * Producer-side install: set the cached frame's (data, dims) tuple
+ * atomically under the lifetime lock.  Called by video_driver_frame
+ * after each successful core frame, and by lifecycle hooks (the
+ * command_event_reinit replay path, the SW-readback-and-restore
+ * dance in screenshot_dump_choice) that need to publish a frame
+ * which didn't come through the regular core->driver pipeline.
+ *
+ * data == NULL is treated as "do not change the data pointer"
+ * (matching the prior direct-field-write behaviour), useful when
+ * only dims change.  To clear the cache entirely use
+ * video_driver_cached_frame_invalidate() instead.
+ *
+ * Safe from any thread; blocks until any in-flight
+ * cached_frame_read callback has returned.
+ */
+void video_driver_cached_frame_publish(
+      const void *data, unsigned width, unsigned height, size_t pitch);
+
+/**
+ * video_driver_cached_frame_invalidate:
+ *
+ * Producer-side clear: NULL out the cached frame's data pointer
+ * and zero its dims, atomically, under the lifetime lock.  Called
+ * from driver-resource teardown sites that are about to free
+ * memory the cached frame might point into (vulkan's
+ * swapchain-texture deinit, d3d12's SW FB Release / Unmap), and
+ * from runloop lifecycle transitions (content unload, core
+ * deinit, video driver reinit).
+ *
+ * On return, the buffer the cached frame previously pointed at
+ * is safe to free -- any concurrent reader has completed.  This
+ * is the key contract the rest of the redesign rests on.
+ *
+ * Safe from any thread.
+ */
+void video_driver_cached_frame_invalidate(void);
 
 bool video_driver_is_hw_context(void);
 

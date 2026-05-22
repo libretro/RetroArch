@@ -679,6 +679,7 @@ typedef struct settings
       bool video_ctx_scaling;
       bool video_force_aspect;
       bool video_frame_delay_auto;
+      bool video_frame_time_sample_gated;
       bool video_crop_overscan;
       bool video_aspect_ratio_auto;
       bool video_dingux_ipu_keep_aspect;
@@ -793,9 +794,7 @@ typedef struct settings
 #endif
 
       /* Frame time counter */
-      bool frame_time_counter_reset_after_fastforwarding;
-      bool frame_time_counter_reset_after_load_state;
-      bool frame_time_counter_reset_after_save_state;
+      bool frame_time_counter_auto_reset;
 
       /* Menu */
       bool menu_enable_widgets;

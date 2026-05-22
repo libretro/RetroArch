@@ -1,5 +1,6 @@
 # Future
 - 3DS: Remove bottom screen fade out animation
+- AI/TRANSLATION: Fix for drawing translation overlay within viewport
 - ANDROID: Fix Enter key not working on keyboards
 - ANDROID: Enable ZSTD compression usage
 - ANDROID: Preserve OpenGL context when app is paused
@@ -7,6 +8,7 @@
 - ANDROID: Allow launchers to pass content:// URIs to RetroArch
 - ANDROID: Enable network commands
 - ANDROID: Fix dual-motor rumble for USB-connected DS4 and DualSense controllers
+- AUDIO: ASIO driver for Windows platforms
 - AUDIO/MICROPHONE: Fix resampling, apple drivers
 - APPLE: Use coreaudio3 resampling
 - APPLE: Add coreaudio3 driver to iOS/TVOS
@@ -17,6 +19,7 @@
 - COMMAND: Only allow pause when there is a core running
 - CHEEVOS: Update to rcheevos 12.3
 - CHEEVOS: Download badges on demand only
+- CHEEVOS: Fix for PS2/PSP CHD hashing with RetroAchievements
 - CLOUDSYNC: Google Drive cloud sync driver
 - CONFIG: Fix saving main configuration after load configuration
 - DOS: RetroArch for DOS can now start up and handle keyboard correctly
@@ -49,8 +52,10 @@
 - LIBRETRO: Performance improvements for crc32 computation
 - LIBRETRO: Enable Linux ARM64 compilation for RetroArch (and several cores)
 - LIBRETRO: Fix CHD handling of MODE1/RAW MODE2/RAW tracks
+- LIBRETRO: API for coordinating executable memory regions 
 - LOCALIZATION: Add Thai language
 - MACOS: Fix OpenGL color on wide gamut displays
+- MACOS: Support for physical optical discs
 - MENU: Do hard reset when pushing RetroPad Start on Restart menu item
 - MENU: Remove "Missing firmware check" option
 - MENU: Show keyboard overlay selection even if it is not loaded
@@ -68,13 +73,21 @@
 - MENU: Rename Quick Menu Restart to Reset
 - MENU: Add sublabels for built-in cores and show them in core manager list
 - MENU: Cheat menu rework
+- MENU: Add Load State to Run menu
+- MENU: Fix crash when closing content with runahead and remaps active
+- MENU: Default core downloader URL on ARM64 Linux platforms
+- MENU: New "Display Time" on-screen panel
+- MENU: New hotkey for Toggle Video Filter
 - MENU/EXPLORE: Improve merging metadata of similar items (mostly for NES db)
 - MENU/GLUI: Add Dracula color theme
 - MENU/OZONE: Add dynamic header icon option
 - MENU/OZONE: Fix occasional left mouse click selection error
+- MENU/OZONE: Left sidebar is now optional
 - MENU/XMB: Current menu icon refactor
 - MENU/XMB: Left thumbnail and handheld mode fixes
 - MENU/XMB: Tab change possible by gestures
+- MENU/XMB: Horizontal menu is now optional
+- NETWORK: New network commands SAVE_STATE_SLOT N and GET_CONFIG_PARAM
 - OVERLAY: Allow overlays to position the viewport
 - OVERLAY: Hold button function
 - OVERLAY: Allow interaction during next overlay swap
@@ -83,7 +96,7 @@
 - PS2: Improve driver usage
 - PS2: Fix booting from internal HDD
 - RECORD: Fix GPU recording performance
-- RPNG: Add Neon and SSE2 optimized codepaths
+- RJPEG, RPNG: Optimizations, Add Neon and SSE2 optimized codepaths
 - SCAN: Fix 3DS content scanning skipping all files
 - SCAN: Fix CHD scanning skipping some files
 - SCAN: Improve Saturn content recognition
@@ -94,14 +107,23 @@
 - SCAN: Improve GDI content recognition
 - SHADER: Display on-screen error when preset load fails
 - SHADER: Add gyroscope / accelerometer uniforms for shaders
+- SHADER: Add aggressive shader caching to slang shader backend
 - VIDEO: Throttle framerate when VSync is enabled but window is not focused
+- VIDEO: New video filters de-dither, pixel-art-AA, ntsc, crop-borders
 - VIDEO/GL: Fix some issues with GLSL shaders when using GLCore driver
 - VIDEO/SDL2: Add shared context
 - VIDEO/D3D9: Various rendering fixes and improvements
+- VIDEO/D3D9: d3d9_hlsl is now the default on Windows XP
 - VIDEO/D3D11/D3D12/VULKAN: Major HDR update. Inverse tone mapping uses RGB maxing instead of luminance, better full-spectrum remapping of SDR space to HDR, Contrast option remove. Performance improved. HDR menu settings exposed to shaders, fast HDR single-pass scanline simulation added.
 - VIDEO/D3D11/D3D12/VULKAN: Multi-mode HDR Expand Gamut selection
 - VIDEO/D3D11/D3D12/VULKAN: scRGB (HDR16) support
 - VIDEO/D3D11/D3D12/VULKAN: Show only supported HDR modes in menu
+- VIDEO/D3D11/D3D12: HDR screenshot support
+- VIDEO/D3D12: Support for scanline sync with d3dkmt
+- VIDEO/GDI: Various fixes and improvements
+- VIDEO/METAL: Add HDR10/scRGB output support
+- VIDEO/METAL: Add support for GPU index
+- VIDEO/SDL2: Add hardware-accelerated support for widgets, XMB, Ozone
 - VIDEO/VULKAN: VK_EXT_full_screen_exclusive is now optional
 - VIDEO/WAYLAND: Fix fullscreen window offset/incorrect sizing
 - VIDEO/WAYLAND: Fix issue with tiny menu in case of fullscreen

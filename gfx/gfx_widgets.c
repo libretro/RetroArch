@@ -1839,17 +1839,34 @@ void gfx_widgets_frame(void *data)
    /* On-Screen Panels (FPS, framecount, memory, core status message, time) */
    if (onscreen_panels)
    {
-      const char *txt      = *p_dispwidget->gfx_widgets_status_text == '\0'
-         ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-         : p_dispwidget->gfx_widgets_status_text;
+      const char *txt;
+      size_t      txt_len;
+      int         txt_width;
+      int         total_width;
+      int         status_txt_x;
 
-      int txt_width        = font_driver_get_message_width(
+      if (*p_dispwidget->gfx_widgets_status_text == '\0')
+      {
+         /* Rare fallback when no panel content is set this frame. */
+         txt     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+         txt_len = strlen(txt);
+      }
+      else
+      {
+         /* Length was cached by the producer in video_driver.c —
+          * no per-frame strlen on a string that can be up to 256
+          * bytes long. */
+         txt     = p_dispwidget->gfx_widgets_status_text;
+         txt_len = p_dispwidget->gfx_widgets_status_text_len;
+      }
+
+      txt_width    = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            txt, strlen(txt), 1.0f);
-      int total_width       = txt_width
+            txt, txt_len, 1.0f);
+      total_width  = txt_width
          + p_dispwidget->simple_widget_padding * 2;
 
-      int status_txt_x     = top_right_x_advance
+      status_txt_x = top_right_x_advance
          - p_dispwidget->simple_widget_padding - txt_width;
       /* Ensure that left hand side of text does
        * not bleed off the edge of the screen */

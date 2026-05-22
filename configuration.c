@@ -1958,6 +1958,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_ctx_scaling",             &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
    SETTING_BOOL("video_frame_delay_auto",        &settings->bools.video_frame_delay_auto, true, DEFAULT_FRAME_DELAY_AUTO, false);
+   SETTING_BOOL("video_frame_time_sample_gated", &settings->bools.video_frame_time_sample_gated, true, DEFAULT_FRAME_TIME_SAMPLE_GATED, false);
 #if defined(DINGUX)
    SETTING_BOOL("video_dingux_ipu_keep_aspect",  &settings->bools.video_dingux_ipu_keep_aspect, true, DEFAULT_DINGUX_IPU_KEEP_ASPECT, false);
 #endif
@@ -2265,9 +2266,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("playlist_use_filename",         &settings->bools.playlist_use_filename, true, DEFAULT_PLAYLIST_USE_FILENAME, false);
    SETTING_BOOL("playlist_allow_non_png",        &settings->bools.playlist_allow_non_png, true, DEFAULT_PLAYLIST_ALLOW_NON_PNG, false);
 
-   SETTING_BOOL("frame_time_counter_reset_after_fastforwarding", &settings->bools.frame_time_counter_reset_after_fastforwarding, true, false, false);
-   SETTING_BOOL("frame_time_counter_reset_after_load_state",     &settings->bools.frame_time_counter_reset_after_load_state, true, false, false);
-   SETTING_BOOL("frame_time_counter_reset_after_save_state",     &settings->bools.frame_time_counter_reset_after_save_state, true, false, false);
+   SETTING_BOOL("frame_time_counter_auto_reset",                 &settings->bools.frame_time_counter_auto_reset, true, DEFAULT_FRAME_TIME_COUNTER_AUTO_RESET, false);
 
 #ifdef HAVE_COMMAND
    SETTING_BOOL("network_cmd_enable",            &settings->bools.network_cmd_enable, true, DEFAULT_NETWORK_CMD_ENABLE, false);
@@ -5588,18 +5587,25 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
 
          config_unset(conf, key);
 
-         /* Also unset joykey, axis, and mbutton keys */
-         fill_pathname_join_delim(temp_key, prefix, base, '_', sizeof(temp_key));
-         strlcat(temp_key, "_btn", sizeof(temp_key));
-         config_unset(conf, temp_key);
-
-         fill_pathname_join_delim(temp_key, prefix, base, '_', sizeof(temp_key));
-         strlcat(temp_key, "_axis", sizeof(temp_key));
-         config_unset(conf, temp_key);
-
-         fill_pathname_join_delim(temp_key, prefix, base, '_', sizeof(temp_key));
-         strlcat(temp_key, "_mbtn", sizeof(temp_key));
-         config_unset(conf, temp_key);
+         /* Also unset joykey, axis, and mbutton keys.  Build the
+          * "prefix_base" stem once and overwrite just the suffix
+          * at the known offset for each variant; the prior form
+          * called fill_pathname_join_delim three times and let
+          * each strlcat re-scan temp_key from the start to find
+          * its end. */
+         {
+            size_t _len = fill_pathname_join_delim(temp_key,
+                  prefix, base, '_', sizeof(temp_key));
+            if (_len + sizeof("_axis") <= sizeof(temp_key))
+            {
+               memcpy(temp_key + _len, "_btn", sizeof("_btn"));
+               config_unset(conf, temp_key);
+               memcpy(temp_key + _len, "_axis", sizeof("_axis"));
+               config_unset(conf, temp_key);
+               memcpy(temp_key + _len, "_mbtn", sizeof("_mbtn"));
+               config_unset(conf, temp_key);
+            }
+         }
       }
    }
 }

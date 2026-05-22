@@ -1334,7 +1334,7 @@ static bool exynos_frame(void *data, const void *frame, unsigned width,
          (struct font_params*)&video_info->osd_stat_params : NULL;
 
       if (osd_params)
-         font_driver_render_msg(vid, video_info->stat_text,
+         font_driver_render_msg(vid, video_info->stat_text, video_info->stat_text_len,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
@@ -1446,7 +1446,7 @@ static void exynos_set_texture_enable(void *data, bool state, bool full_screen)
       vid->menu_active = state;
 }
 
-static void exynos_set_osd_msg(void *data, const char *msg,
+static void exynos_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params) { }
 static void exynos_show_mouse(void *data, bool state) { }
 

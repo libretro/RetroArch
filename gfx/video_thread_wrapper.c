@@ -1197,14 +1197,15 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void thread_set_osd_msg(void *data,
-      const char *msg, const struct font_params *params, void *font)
+      const char *msg, size_t msg_len,
+      const struct font_params *params, void *font)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
    /* TODO : find a way to determine if the calling
     * thread is the driver thread or not. */
    if (thr && thr->driver_data && thr->poke && thr->poke->set_osd_msg)
-      thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
+      thr->poke->set_osd_msg(thr->driver_data, msg, msg_len, params, font);
 }
 
 static void thread_show_mouse(void *data, bool state)

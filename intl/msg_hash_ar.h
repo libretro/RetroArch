@@ -3254,22 +3254,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "إعادة تعيين بعد التقديم السريع"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "إعادة تعيين عداد الوقت للإطار بعد التقديم السريع."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "إعادة تعيين عداد الوقت للإطار بعد تحميل الحالة."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "إعادة تعيين عداد الوقت للإطار بعد حفظ الحالة."
-   )
 
 /* Settings > Recording */
 

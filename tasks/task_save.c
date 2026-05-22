@@ -666,7 +666,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t len)
       state->size           = len;
       state->flags         |= SAVE_TASK_FLAG_UNDO_SAVE;
       state->state_slot     = settings->ints.state_slot;
-      if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+      if (video_driver_cached_frame_is_hw_render())
          state->flags      |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
       if (settings->bools.savestate_file_compression)
@@ -1249,7 +1249,7 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
       state->flags               |= SAVE_TASK_FLAG_THUMBNAIL_ENABLE;
    }
    state->state_slot             = settings->ints.state_slot;
-   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+   if (video_driver_cached_frame_is_hw_render())
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1375,7 +1375,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    if (load_to_backup_buffer)
       state->flags             |= SAVE_TASK_FLAG_MUTE;
    state->state_slot            = settings->ints.state_slot;
-   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+   if (video_driver_cached_frame_is_hw_render())
       state->flags             |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1469,8 +1469,7 @@ bool content_auto_save_state(const char *path)
    {
       video_driver_state_t *video_st = video_state_get_ptr();
       const char *dir_screenshot = settings->paths.directory_screenshot;
-      bool validfb = video_st->frame_cache_data &&
-                     video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
+      bool validfb = video_driver_cached_frame_is_hw_render();
 
       take_screenshot(dir_screenshot, path, true, validfb, false, false);
    }
@@ -1654,7 +1653,7 @@ bool content_load_state(const char *path,
    if (autoload)
       state->flags             |= SAVE_TASK_FLAG_AUTOLOAD;
    state->state_slot            = settings->ints.state_slot;
-   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+   if (video_driver_cached_frame_is_hw_render())
       state->flags             |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)

@@ -1106,7 +1106,7 @@ static void gl2_raster_font_setup_viewport(
 static void gl2_raster_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    GLfloat color[4];
@@ -3810,7 +3810,7 @@ static bool gl2_frame(void *data, const void *frame,
    else if (statistics_show)
    {
       if (osd_params)
-         font_driver_render_msg(gl, stat_text,
+         font_driver_render_msg(gl, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
    }
 #endif
@@ -3829,7 +3829,7 @@ static bool gl2_frame(void *data, const void *frame,
    {
       if (msg_bgcolor_enable)
          gl2_render_osd_background(gl, video_scale_integer, msg);
-      font_driver_render_msg(gl, msg, NULL, NULL);
+      font_driver_render_msg(gl, msg, strlen(msg), NULL, NULL);
    }
 
    if (gl->ctx_driver->update_window_title)

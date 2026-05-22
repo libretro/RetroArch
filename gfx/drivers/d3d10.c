@@ -963,7 +963,7 @@ static int d3d10_font_get_message_width(void* data,
 static void d3d10_font_render_msg(
       void *userdata,
       void* data,
-      const char* msg,
+      const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    float line_height;
@@ -1071,7 +1071,7 @@ static void d3d10_font_render_msg(
    }
 
    /* Single VBO map for all geometry (drop shadow + main text) */
-   if (d3d10->sprites.offset + strlen(msg) * (has_drop ? 2 : 1)
+   if (d3d10->sprites.offset + msg_len * (has_drop ? 2 : 1)
          > (unsigned)d3d10->sprites.capacity)
       d3d10->sprites.offset = 0;
 
@@ -3337,7 +3337,7 @@ static bool d3d10_gfx_frame(
                   context, 0, 1, (D3D10Buffer* const)&d3d10->sprites.vbo,
                   &stride, &offset);
             font_driver_render_msg(d3d10,
-                  stat_text,
+                  stat_text, video_info->stat_text_len,
                   (const struct font_params*)osd_params, NULL);
          }
       }
@@ -3391,7 +3391,7 @@ static bool d3d10_gfx_frame(
             d3d10->device, 0, 1,
             (D3D10Buffer* const)&d3d10->sprites.vbo,
             &stride, &offset);
-      font_driver_render_msg(d3d10, msg, NULL, NULL);
+      font_driver_render_msg(d3d10, msg, strlen(msg), NULL, NULL);
    }
    d3d10->flags &= ~D3D10_ST_FLAG_SPRITES_ENABLE;
 
@@ -3608,7 +3608,7 @@ static void d3d10_gfx_apply_state_changes(void* data)
 }
 
 static void d3d10_gfx_set_osd_msg(
-      void* data, const char *msg,
+      void* data, const char *msg, size_t msg_len,
       const struct font_params *params, void* font)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
@@ -3616,7 +3616,7 @@ static void d3d10_gfx_set_osd_msg(
    if (d3d10)
    {
       if (d3d10->flags & D3D10_ST_FLAG_SPRITES_ENABLE)
-         font_driver_render_msg(d3d10, msg, params, font);
+         font_driver_render_msg(d3d10, msg, msg_len, params, font);
    }
 }
 

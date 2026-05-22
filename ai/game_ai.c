@@ -178,13 +178,19 @@ void game_ai_think(bool override_p1, bool override_p2, bool show_debug,
 
       if (ga)
       {
-         char data_path[1024] = {0};
-         
-         /* Build path safely with proper length checking */
-         strlcpy(data_path, game_ai_lib_path, sizeof(data_path));
-         strlcat(data_path, "/data/", sizeof(data_path));
-         strlcat(data_path, g_game_name, sizeof(data_path));
-         if (strlen(data_path) >= sizeof(data_path) - 1)
+         char   data_path[1024];
+         size_t _len;
+         size_t sz = sizeof(data_path);
+
+         /* Build path safely with proper length checking.  Tracking
+          * the running length explicitly avoids the strlcat-then-
+          * strlen scan-from-start cost on each append. */
+         _len  = strlcpy(data_path, game_ai_lib_path, sz);
+         if (_len < sz)
+            _len += strlcpy(data_path + _len, "/data/",       sz - _len);
+         if (_len < sz)
+            _len += strlcpy(data_path + _len, g_game_name,    sz - _len);
+         if (_len >= sz - 1)
             return; /* Path too long, abort safely */
 
          game_ai_lib_init(ga, (void *) g_ram_ptr, g_ram_size);

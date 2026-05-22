@@ -327,6 +327,31 @@ typedef struct
       int                             rotation;
    } frame;
 
+   /* Cached, stable upload buffer for RETRO_ENVIRONMENT_GET_CURRENT_
+    * SOFTWARE_FRAMEBUFFER.  Decoupled from frame.texture[] history
+    * rotation so the core sees the same buffer (and therefore the
+    * previous frame's pixels) every call -- this matters for cores
+    * that read back the framebuffer they just wrote, e.g. for a
+    * cross-fade / screen-wipe between game states.
+    *
+    * The buffer is allocated in a CUSTOM heap with CPU page property
+    * WRITE_BACK and memory pool L0 (system memory): the CPU side is
+    * fully cached, so the core gets fast reads AND fast writes, and
+    * the GPU still reaches it via the same PCIe path the regular
+    * D3D12_HEAP_TYPE_UPLOAD heap uses -- per-frame upload bandwidth
+    * is unchanged.  Persistently mapped: the mapped pointer is valid
+    * for the lifetime of the resource. */
+   struct
+   {
+      D3D12Resource                       buffer;
+      D3D12_PLACED_SUBRESOURCE_FOOTPRINT  layout;
+      void                               *mapped;
+      UINT64                              total_bytes;
+      UINT                                width;
+      UINT                                height;
+      DXGI_FORMAT                         format;
+   } sw_fb;
+
 #ifdef HAVE_DXGI_HDR
    struct
    {
@@ -1414,7 +1439,7 @@ static int d3d12_font_get_message_width(void* data,
 static void d3d12_font_render_msg(
       void *userdata,
       void* data,
-      const char* msg,
+      const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    float line_height;
@@ -1539,7 +1564,7 @@ static void d3d12_font_render_msg(
       font->atlas->dirty = false;
    }
 
-   total_len = strlen(msg);
+   total_len = msg_len;
    if (has_shadow)
       total_len *= 2;
 
@@ -3547,6 +3572,28 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->sprites.vbo);
    Release(d3d12->menu_pipeline_vbo);
 
+   /* Cached SW framebuffer upload buffer (lazily allocated by
+    * d3d12_sw_fb_ensure on first GET_CURRENT_SOFTWARE_FRAMEBUFFER
+    * call).  The fence wait at the top of d3d12_gfx_free guarantees
+    * any in-flight CopyTextureRegion reading from it has finished
+    * before we release. */
+   if (d3d12->sw_fb.buffer)
+   {
+      /* Invalidate frame_cache before freeing the persistent map.
+       * Same pattern as d3d12_sw_fb_ensure: the invalidate call
+       * takes the cached-frame lifetime lock, ensuring no
+       * off-thread consumer is mid-read on the mapped pages when
+       * we Unmap and Release. */
+      video_driver_cached_frame_invalidate();
+      if (d3d12->sw_fb.mapped)
+      {
+         d3d12->sw_fb.buffer->lpVtbl->Unmap(d3d12->sw_fb.buffer, 0, NULL);
+         d3d12->sw_fb.mapped = NULL;
+      }
+      Release(d3d12->sw_fb.buffer);
+      d3d12->sw_fb.buffer = NULL;
+   }
+
 #ifdef HAVE_DXGI_HDR
    Release(d3d12->hdr.ubo);
    Release(d3d12->hdr.ubo_post);
@@ -5014,13 +5061,13 @@ static bool d3d12_gfx_frame(
                d3d12->frame.texture[0] = tmp;
             }
 
-            /* History rotation moved texture[0] to a history slot.
-             * If the core wrote directly into its upload buffer via
-             * get_current_software_framebuffer, that data now lives in
-             * frame.texture[1].  The recycled texture[0] has no valid
-             * data, so clear the flag and let the normal copy run. */
-            if (d3d12->flags & D3D12_ST_FLAG_SW_FRAMEBUFFER_READY)
-               d3d12->flags &= ~D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
+            /* History rotation moves texture[0] to a history slot,
+             * but the SW framebuffer the core wrote into lives in
+             * the separate d3d12->sw_fb buffer, not in any of the
+             * rotated d3d12_texture_t slots.  Rotation therefore
+             * leaves SW_FRAMEBUFFER_READY validly set, and the GPU
+             * upload below sources from sw_fb.buffer regardless of
+             * which physical texture is in the front slot. */
          }
       }
 
@@ -5034,9 +5081,13 @@ static bool d3d12_gfx_frame(
          d3d12_release_texture(&d3d12->frame.texture[0]);
          d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
 
-         /* Texture was recreated — upload buffer the core wrote to
-          * via get_current_software_framebuffer has been freed. */
-         d3d12->flags &= ~D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
+         /* texture[0] was recreated, but the SW framebuffer the
+          * core wrote into lives in d3d12->sw_fb and is unaffected
+          * by texture lifecycle.  sw_fb.layout's Footprint is
+          * identical to a fresh texture[0].layout for the same
+          * width/height/format (both come from GetCopyableFootprints
+          * with the same description), so the GPU copy below is
+          * correct without further bookkeeping. */
       }
 
       if (d3d12->flags & D3D12_ST_FLAG_RESIZE_RTS)
@@ -5100,18 +5151,31 @@ static bool d3d12_gfx_frame(
       {
          if (d3d12->flags & D3D12_ST_FLAG_SW_FRAMEBUFFER_READY)
          {
-            /* Core wrote directly into the upload buffer via
-             * get_current_software_framebuffer — skip the
-             * redundant Map/dxgi_copy/Unmap in d3d12_update_texture
-             * and just mark dirty for the GPU copy. */
-            d3d12->frame.texture[0].dirty = true;
+            /* Core wrote directly into the cached SW FB buffer
+             * (d3d12->sw_fb).  GPU-copy from there into the front
+             * frame texture by temporarily pointing texture[0]'s
+             * upload_buffer / layout at sw_fb's, calling the
+             * standard upload helper, then restoring -- this reuses
+             * the existing CopyTextureRegion + mipmap-generate
+             * plumbing without a signature change. */
+            D3D12Resource                       saved_buf
+               = d3d12->frame.texture[0].upload_buffer;
+            D3D12_PLACED_SUBRESOURCE_FOOTPRINT  saved_layout
+               = d3d12->frame.texture[0].layout;
+            d3d12->frame.texture[0].upload_buffer = d3d12->sw_fb.buffer;
+            d3d12->frame.texture[0].layout        = d3d12->sw_fb.layout;
+            d3d12_upload_texture(cmd, &d3d12->frame.texture[0], d3d12);
+            d3d12->frame.texture[0].upload_buffer = saved_buf;
+            d3d12->frame.texture[0].layout        = saved_layout;
             d3d12->flags &= ~D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
          }
-         else if (d3d12->frame.texture[0].upload_buffer)
-            d3d12_update_texture(width, height, pitch, d3d12->format,
-                  frame, &d3d12->frame.texture[0]);
-
-         d3d12_upload_texture(cmd, &d3d12->frame.texture[0], d3d12);
+         else
+         {
+            if (d3d12->frame.texture[0].upload_buffer)
+               d3d12_update_texture(width, height, pitch, d3d12->format,
+                     frame, &d3d12->frame.texture[0]);
+            d3d12_upload_texture(cmd, &d3d12->frame.texture[0], d3d12);
+         }
       }
    }
    cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
@@ -5792,7 +5856,7 @@ static bool d3d12_gfx_frame(
             cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
             cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
             cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
-            font_driver_render_msg(d3d12, stat_text,
+            font_driver_render_msg(d3d12, stat_text, video_info->stat_text_len,
                   (const struct font_params*)osd_params, NULL);
          }
       }
@@ -5844,7 +5908,7 @@ static bool d3d12_gfx_frame(
       cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
       cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
-      font_driver_render_msg(d3d12, msg, NULL, NULL);
+      font_driver_render_msg(d3d12, msg, strlen(msg), NULL, NULL);
    }
    d3d12->flags &= ~D3D12_ST_FLAG_SPRITES_ENABLE;
 
@@ -6802,13 +6866,13 @@ static void d3d12_gfx_apply_state_changes(void* data)
 }
 
 static void d3d12_gfx_set_osd_msg(
-      void* data, const char *msg,
+      void* data, const char *msg, size_t msg_len,
       const struct font_params *params,
       void* font)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
    if (d3d12 && (d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE))
-      font_driver_render_msg(d3d12, msg, params, font);
+      font_driver_render_msg(d3d12, msg, msg_len, params, font);
 }
 
 #ifdef HAVE_THREADS
@@ -6986,52 +7050,178 @@ static bool d3d12_get_hw_render_interface(
    return ((d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE) > 0);
 }
 
+/* Allocate (or reallocate) the cached SW framebuffer upload buffer
+ * for the given dimensions / format.  Returns false on failure.
+ *
+ * The buffer lives in a CUSTOM heap with CPU page property
+ * WRITE_BACK and memory pool L0 (system memory).  Unlike the
+ * standard D3D12_HEAP_TYPE_UPLOAD heap, which is write-combined
+ * and gives catastrophic CPU read performance (~100x slower than
+ * cached RAM), WRITE_BACK memory is fully cached on the CPU side
+ * -- the core can both write into and read back from the buffer
+ * at normal memory speeds.  GPU access goes through the same
+ * PCIe / fabric path as a regular UPLOAD heap, so per-frame
+ * upload bandwidth to texture[0] is unchanged.
+ *
+ * The buffer is persistently mapped: the mapped pointer is valid
+ * for the resource's lifetime, so we don't pay Map/Unmap overhead
+ * each frame. */
+static bool d3d12_sw_fb_ensure(d3d12_video_t* d3d12,
+      UINT width, UINT height, DXGI_FORMAT format)
+{
+   D3D12_RESOURCE_DESC                tex_desc;
+   D3D12_RESOURCE_DESC                buf_desc;
+   D3D12_HEAP_PROPERTIES              heap_props;
+   D3D12_RANGE                        read_range;
+   UINT                               num_rows;
+   UINT64                             row_size_in_bytes;
+   UINT64                             total_bytes;
+   HRESULT                            hr;
+
+   if (     d3d12->sw_fb.buffer
+         && d3d12->sw_fb.width  == width
+         && d3d12->sw_fb.height == height
+         && d3d12->sw_fb.format == format)
+      return true;
+
+   /* Release any previous allocation.  GPU must be idle on this
+    * resource; the caller (d3d12_get_current_software_framebuffer)
+    * does a full Signal+Wait before invoking us. */
+   if (d3d12->sw_fb.buffer)
+   {
+      /* Invalidate frame_cache_data unconditionally before freeing
+       * the buffer.  Under the new cached-frame API the invalidate
+       * call takes the lifetime lock, so any in-flight off-thread
+       * cached_frame_read callback completes before we free the
+       * mapped pages -- no more UAF window even for async
+       * consumers (task_screenshot / task_translation).
+       *
+       * Cost is one mutex acquire on a code path that already
+       * does a full GPU fence-wait (the caller's responsibility),
+       * so the lock cost is below noise. */
+      video_driver_cached_frame_invalidate();
+      Release(d3d12->sw_fb.buffer);
+      d3d12->sw_fb.buffer = NULL;
+      d3d12->sw_fb.mapped = NULL;
+   }
+
+   /* Compute the placed-subresource layout the buffer needs to
+    * impersonate texture[0] as a CopyTextureRegion source.  Same
+    * width / height / format produces an identical layout. */
+   tex_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+   tex_desc.Alignment          = 0;
+   tex_desc.Width              = width;
+   tex_desc.Height             = height;
+   tex_desc.DepthOrArraySize   = 1;
+   tex_desc.MipLevels          = 1;
+   tex_desc.Format             = format;
+   tex_desc.SampleDesc.Count   = 1;
+   tex_desc.SampleDesc.Quality = 0;
+   tex_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+   tex_desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
+
+   d3d12->device->lpVtbl->GetCopyableFootprints(
+         d3d12->device, &tex_desc, 0, 1, 0,
+         &d3d12->sw_fb.layout, &num_rows,
+         &row_size_in_bytes, &total_bytes);
+
+   /* CUSTOM heap with WRITE_BACK + L0: cached system memory,
+    * CPU read+write fast, GPU reaches it over the same path as
+    * a standard upload heap.  Spec-required for getting truthful
+    * RETRO_MEMORY_TYPE_CACHED semantics. */
+   heap_props.Type                 = D3D12_HEAP_TYPE_CUSTOM;
+   heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
+   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
+   heap_props.CreationNodeMask     = 1;
+   heap_props.VisibleNodeMask      = 1;
+
+   buf_desc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buf_desc.Alignment          = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+   buf_desc.Width              = total_bytes;
+   buf_desc.Height             = 1;
+   buf_desc.DepthOrArraySize   = 1;
+   buf_desc.MipLevels          = 1;
+   buf_desc.Format             = DXGI_FORMAT_UNKNOWN;
+   buf_desc.SampleDesc.Count   = 1;
+   buf_desc.SampleDesc.Quality = 0;
+   buf_desc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buf_desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
+
+   hr = d3d12->device->lpVtbl->CreateCommittedResource(
+         d3d12->device, &heap_props, D3D12_HEAP_FLAG_NONE,
+         &buf_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL,
+         uuidof(ID3D12Resource), (void**)&d3d12->sw_fb.buffer);
+   if (FAILED(hr) || !d3d12->sw_fb.buffer)
+   {
+      d3d12->sw_fb.buffer = NULL;
+      return false;
+   }
+
+   /* Persistent map: full-range read so the pointer covers the
+    * whole buffer for the core's lifetime use. */
+   read_range.Begin = 0;
+   read_range.End   = (SIZE_T)total_bytes;
+   hr = d3d12->sw_fb.buffer->lpVtbl->Map(
+         d3d12->sw_fb.buffer, 0, &read_range, &d3d12->sw_fb.mapped);
+   if (FAILED(hr))
+   {
+      Release(d3d12->sw_fb.buffer);
+      d3d12->sw_fb.buffer = NULL;
+      d3d12->sw_fb.mapped = NULL;
+      return false;
+   }
+
+   /* Zero the buffer so the very first frame (before any core
+    * write) sees deterministic black rather than uninitialised
+    * memory, which would otherwise leak into a wipe / readback
+    * on the first transition. */
+   memset(d3d12->sw_fb.mapped, 0, (size_t)total_bytes);
+
+   d3d12->sw_fb.total_bytes = total_bytes;
+   d3d12->sw_fb.width       = width;
+   d3d12->sw_fb.height      = height;
+   d3d12->sw_fb.format      = format;
+   return true;
+}
+
 static bool d3d12_get_current_software_framebuffer(
       void* data, struct retro_framebuffer* fb)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
-   D3D12_RANGE read_range;
-   uint8_t *mapped_ptr = NULL;
 
    if (!d3d12 || !fb)
       return false;
 
-   /* Ensure the frame texture is large enough for the requested size.
-    * If it doesn't match, return false so the core uses its own
-    * buffer this frame.  d3d12_gfx_frame will recreate the texture
-    * (after its GPU sync) and the core will get the SW
-    * framebuffer on the next call. */
-   if (     d3d12->frame.texture[0].desc.Width  != fb->width
-         || d3d12->frame.texture[0].desc.Height != fb->height)
-      return false;
-
-   if (!d3d12->frame.texture[0].upload_buffer)
+   /* Ensure the cached SW framebuffer buffer exists and is sized
+    * for the requested dimensions / format. */
+   if (!d3d12_sw_fb_ensure(d3d12, fb->width, fb->height, d3d12->format))
       return false;
 
    /* The SW framebuffer optimisation only works when the core's
     * natural pitch (width * bytes-per-pixel) equals the upload
     * buffer's RowPitch.  D3D12 aligns RowPitch to 256 bytes, so
-    * for many resolutions there is padding at the end of each row.
-    * Most cores render with width*bpp stride regardless of what
-    * fb.pitch reports, which silently corrupts the layout.
+    * for many resolutions there is padding at the end of each
+    * row.  Most cores render with width*bpp stride regardless of
+    * what fb.pitch reports, which silently corrupts the layout.
     * When the pitches don't match, return false so the core falls
     * back to its own buffer and d3d12_update_texture handles the
     * pitch conversion efficiently via dxgi_copy. */
    {
-      int bpp        = (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM) ? 4 : 2;
+      int bpp         = (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM) ? 4 : 2;
       int tight_pitch = (int)fb->width * bpp;
-      if (tight_pitch != (int)d3d12->frame.texture[0].layout.Footprint.RowPitch)
+      if (tight_pitch != (int)d3d12->sw_fb.layout.Footprint.RowPitch)
          return false;
    }
 
-   /* Wait for the GPU to finish any in-flight commands that may be
-    * reading from this upload buffer (e.g. CopyTextureRegion from
-    * the previous frame).  Without this, the core would write into
-    * the buffer while the GPU is still copying from it — a data race.
+   /* Wait for the GPU to finish any in-flight commands that may
+    * be reading from the cached SW FB buffer (e.g. the previous
+    * frame's CopyTextureRegion).  Without this the core would
+    * write into the buffer while the GPU is still copying from
+    * it -- a data race.
     *
-    * This is the same Signal-then-Wait pattern used at the top of
-    * d3d12_gfx_frame.  The subsequent fence wait there will see the
-    * fence already satisfied and skip without blocking. */
+    * Same Signal-then-Wait pattern used at the top of
+    * d3d12_gfx_frame; the subsequent fence wait there will see
+    * the fence already satisfied and skip without blocking. */
    {
       D3D12Fence fence = d3d12->queue.fence;
       d3d12->queue.handle->lpVtbl->Signal(
@@ -7044,29 +7234,21 @@ static bool d3d12_get_current_software_framebuffer(
       }
    }
 
-   /* Map the upload buffer so the core can write directly into it.
-    * D3D12 upload heaps are persistently mappable — the pointer
-    * remains valid after Unmap, so the core can safely use it. */
-   read_range.Begin = 0;
-   read_range.End   = 0;
-
-   if (FAILED(d3d12->frame.texture[0].upload_buffer->lpVtbl->Map(
-               d3d12->frame.texture[0].upload_buffer,
-               0, &read_range, (void**)&mapped_ptr)))
-      return false;
-
-   d3d12->frame.texture[0].upload_buffer->lpVtbl->Unmap(
-         d3d12->frame.texture[0].upload_buffer, 0, NULL);
-
-   fb->data         = mapped_ptr + d3d12->frame.texture[0].layout.Offset;
-   fb->pitch        = d3d12->frame.texture[0].layout.Footprint.RowPitch;
+   fb->data         = (uint8_t *)d3d12->sw_fb.mapped
+                    + d3d12->sw_fb.layout.Offset;
+   fb->pitch        = d3d12->sw_fb.layout.Footprint.RowPitch;
    fb->format       = (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM)
       ? RETRO_PIXEL_FORMAT_XRGB8888
       : RETRO_PIXEL_FORMAT_RGB565;
-   fb->memory_flags = RETRO_MEMORY_ACCESS_WRITE;
+   /* The buffer is host-cached (WRITE_BACK).  Report this to the
+    * core so it can use it for read-modify-write patterns (e.g.
+    * libretro-prboom's screen-wipe capture) without falling back
+    * to its own staging buffer. */
+   fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
 
-   /* Signal d3d12_gfx_frame that the core will write directly
-    * into the upload buffer, so dxgi_copy can be skipped. */
+   /* Signal d3d12_gfx_frame that the core wrote directly into
+    * the cached SW FB buffer; the GPU copy at upload time should
+    * source from there instead of texture[0].upload_buffer. */
    d3d12->flags    |= D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
 
    return true;

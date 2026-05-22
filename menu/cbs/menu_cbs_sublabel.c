@@ -19,6 +19,7 @@
 #include <TargetConditionals.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -302,9 +303,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_settings_list,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_recording_settings_list,       MENU_ENUM_SUBLABEL_RECORDING_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_throttle_settings_list,  MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_settings_list,  MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_reset_after_fastforwarding,  MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_reset_after_load_state,  MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_reset_after_save_state,  MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_frame_time_counter_auto_reset,                MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_onscreen_display_settings_list,MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_settings_list,            MENU_ENUM_SUBLABEL_CORE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_information_list_list,         MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST)
@@ -527,6 +526,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_thumbnail_background_enab
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_add_content_list,              MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_delay,             MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_delay_auto,        MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_time_sample_gated, MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_shader_delay,            MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_black_frame_insertion,   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_bfi_dark_frames,         MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES)
@@ -1711,13 +1711,31 @@ static int action_bind_sublabel_input_remap_port(
    /* We need the actual frontend port index.
     * This is difficult to obtain here - the only
     * way to get it is to parse the entry label
-    * (input_remap_port_p<port_index+1>) */
-   if (   !*entry.label
-       || (sscanf(entry.label,
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
-                  &display_port) != 1)
-       || (display_port >= MAX_USERS + 1))
-      return 0;
+    * (input_remap_port_p<port_index+1>).
+    *
+    * The label format string is "input_remap_port_p%u"
+    * (MENU_ENUM_LABEL_INPUT_REMAP_PORT_STR). Match the literal
+    * prefix and then parse the trailing %u with strtoul to avoid
+    * the per-call strlen()/malloc() overhead some libcs incur on
+    * sscanf. */
+   {
+      static const char prefix[] = "input_remap_port_p";
+      const char       *p;
+      char             *endp;
+      unsigned long     v;
+
+      if (   !*entry.label
+          || !string_starts_with_size(entry.label, prefix,
+                STRLEN_CONST(prefix)))
+         return 0;
+      p = entry.label + STRLEN_CONST(prefix);
+      v = strtoul(p, &endp, 10);
+      if (endp == p)
+         return 0;
+      display_port = (unsigned)v;
+      if (display_port >= MAX_USERS + 1)
+         return 0;
+   }
 
    _len = snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT),
@@ -2901,14 +2919,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_frame_throttle);
             break;
-         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_frame_time_counter_reset_after_fastforwarding);
-            break;
-         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_frame_time_counter_reset_after_load_state);
-            break;
-         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_frame_time_counter_reset_after_save_state);
+         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_AUTO_RESET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_frame_time_counter_auto_reset);
             break;
          case MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_recording);
@@ -5049,6 +5061,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_frame_delay_auto);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_frame_time_sample_gated);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_DELAY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_shader_delay);

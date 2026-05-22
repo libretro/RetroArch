@@ -49,20 +49,26 @@ static smb_sync_state_t smb_st = {0};
 static void smb_sync_build_path(char *dest, size_t dest_size,
       const char *subdir, const char *path)
 {
+   size_t _len = 0;
+
    dest[0] = '\0';
 
    if (subdir && *subdir)
    {
-      strlcpy(dest, subdir, dest_size);
-      if (dest[0] && dest[strlen(dest) - 1] != '/')
-         strlcat(dest, "/", dest_size);
+      _len = strlcpy(dest, subdir, dest_size);
+      if (_len > 0 && _len < dest_size && dest[_len - 1] != '/')
+      {
+         dest[_len++] = '/';
+         dest[_len  ] = '\0';
+      }
    }
 
    if (path)
    {
       while (*path == '/')
          path++;
-      strlcat(dest, path, dest_size);
+      if (_len < dest_size)
+         strlcpy(dest + _len, path, dest_size - _len);
    }
 }
 
@@ -186,12 +192,18 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 
    /* Build cloud sync subdir: {smb_client_subdir}/cloud_sync */
    smb_st.subdir[0] = '\0';
-   if (subdir && *subdir)
    {
-      strlcpy(smb_st.subdir, subdir, sizeof(smb_st.subdir));
-      strlcat(smb_st.subdir, "/", sizeof(smb_st.subdir));
+      size_t _len = 0;
+      size_t sz   = sizeof(smb_st.subdir);
+      if (subdir && *subdir)
+      {
+         _len  = strlcpy(smb_st.subdir, subdir, sz);
+         if (_len < sz)
+            _len += strlcpy(smb_st.subdir + _len, "/", sz - _len);
+      }
+      if (_len < sz)
+         strlcpy(smb_st.subdir + _len, "cloud_sync", sz - _len);
    }
-   strlcat(smb_st.subdir, "cloud_sync", sizeof(smb_st.subdir));
 
    /* Ensure subdir exists */
    {

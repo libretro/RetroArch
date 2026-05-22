@@ -2133,7 +2133,7 @@ done:
 static void gdi_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float    x, y, scale, drop_mod, drop_alpha;
@@ -3031,7 +3031,7 @@ static bool gdi_frame(void *data, const void *frame,
     * achievement panel with a semi-transparent background should
     * obscure the stats it overlaps, not vice-versa. */
    if (show_stats)
-      font_driver_render_msg(gdi, stat_text, osd_params, NULL);
+      font_driver_render_msg(gdi, stat_text, video_info->stat_text_len, osd_params, NULL);
 
    /* --- Step 10b: input overlay (touch / virtual gamepad images).
     *
@@ -3089,7 +3089,7 @@ static bool gdi_frame(void *data, const void *frame,
     * notification panels — the OSD msg is a one-shot event and
     * needs to be visible. */
    if (msg)
-      font_driver_render_msg(gdi, msg, NULL, NULL);
+      font_driver_render_msg(gdi, msg, strlen(msg), NULL, NULL);
 
    /* --- Step 13: final deselection.  If bmp_menu is still selected,
     * pop it now so memDC is back to its baseline (no bitmap selected,

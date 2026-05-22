@@ -35,7 +35,7 @@ typedef struct font_renderer
          float font_size, bool is_threaded);
    void (*free)(void *data, bool is_threaded);
    void (*render_msg)(void *userdata,
-         void *data, const char *msg,
+         void *data, const char *msg, size_t msg_len,
          const struct font_params *params);
    const char *ident;
 
@@ -107,7 +107,8 @@ int font_renderer_create_default(
       const char *font_path, unsigned font_size);
 
 void font_driver_render_msg(void *data,
-      const char *msg, const struct font_params *params, void *font_data);
+      const char *msg, size_t msg_len,
+      const struct font_params *params, void *font_data);
 
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 

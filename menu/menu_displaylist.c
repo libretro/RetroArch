@@ -2803,27 +2803,6 @@ static int create_string_list_rdb_entry_int(
    return 0;
 }
 
-static enum msg_file_type extension_to_file_hash_type(const char *ext)
-{
-   if (     ext[0] == 's'
-         && ext[1] == 'h'
-         && ext[2] == 'a'
-         && ext[3] == '1'
-         && ext[4] == '\0')
-      return FILE_TYPE_SHA1;
-   else if (     ext[0] == 'c'
-              && ext[1] == 'r'
-              && ext[2] == 'c'
-              && ext[3] == '\0')
-      return FILE_TYPE_CRC;
-   else if (     ext[0] == 'm'
-              && ext[1] == 'd'
-              && ext[2] == '5'
-              && ext[3] == '\0')
-      return FILE_TYPE_MD5;
-   return FILE_TYPE_NONE;
-}
-
 static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       menu_displaylist_info_t *info,
       bool show_advanced_settings,
@@ -2919,7 +2898,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
                   if (hash_type)
                   {
-                     switch (extension_to_file_hash_type(hash_type))
+                     switch (msg_hash_to_file_type(hash_type))
                      {
                         case FILE_TYPE_CRC:
                            match_found = string_is_equal(crc_str, elem0);
@@ -11955,9 +11934,7 @@ unsigned menu_displaylist_build_list(
          {
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO, PARSE_ONLY_FLOAT, true},
-               {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING, PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE, PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE, PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED, PARSE_ONLY_BOOL, true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -11965,6 +11942,18 @@ unsigned menu_displaylist_build_list(
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
+                  count++;
+            }
+
+            /* Auto-reset toggle is redundant when gated sampling
+             * is active (no contamination enters the buffer to
+             * begin with), so hide it in that case to keep the
+             * menu focused. */
+            if (!settings->bools.video_frame_time_sample_gated)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+                        PARSE_ONLY_BOOL, false) == 0)
                   count++;
             }
          }
