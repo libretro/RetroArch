@@ -1362,12 +1362,12 @@ static bool dk3d_frame(void *data, const void *frame,
          (const struct font_params*)&video_info->osd_stat_params;
       if (osd_params)
          font_driver_render_msg(dk3d, video_info->stat_text,
-               osd_params, NULL);
+               strlen(video_info->stat_text), osd_params, NULL);
    }
 #endif
 
    if (msg)
-      font_driver_render_msg(dk3d, msg, NULL, NULL);
+      font_driver_render_msg(dk3d, msg, strlen(msg), NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
    if (video_info->widgets_active)
@@ -1904,7 +1904,7 @@ static void dk3d_font_render_line(dk3d_font_t *f, dk3d_t *dk3d,
 }
 
 static void dk3d_font_render_msg(void *userdata, void *data,
-      const char *msg, const struct font_params *params)
+      const char *msg, size_t msg_len, const struct font_params *params)
 {
    dk3d_t      *dk3d = (dk3d_t*)userdata;
    dk3d_font_t *f    = (dk3d_font_t*)data;
