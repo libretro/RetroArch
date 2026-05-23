@@ -3616,9 +3616,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                settings_t *settings = config_get_ptr();
                if (settings && !string_is_empty(settings->paths.aux_screen_url[0]))
                {
+                  bool init_result;
                   RARCH_LOG("[Environ] Auto-initializing aux stream slot 0: '%s' width=%u height=%u\n",
                         settings->paths.aux_screen_url[0], info->screen_width, info->screen_height);
-                  bool init_result = recording_init_aux(0, settings->paths.aux_screen_url[0], 0,
+                  init_result = recording_init_aux(0, settings->paths.aux_screen_url[0], 0,
                         info->screen_width, info->screen_height, 0);
                   RARCH_LOG("[Environ] recording_init_aux returned: %s\n", init_result ? "SUCCESS" : "FAILED");
 #if defined(HAVE_NETWORKING) && defined(HAVE_DSU)
@@ -3643,12 +3644,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             /* Return currently active screens */
             query->num_active_screens = 0;
-            for (unsigned i = 0; i < 5; i++)
             {
-               if (video_st->active_screen_mask & (1 << i))
+               unsigned i;
+               for (i = 0; i < 5; i++)
                {
-                  query->active_screen_ids[query->num_active_screens] = i;
-                  query->num_active_screens++;
+                  if (video_st->active_screen_mask & (1 << i))
+                  {
+                     query->active_screen_ids[query->num_active_screens] = i;
+                     query->num_active_screens++;
+                  }
                }
             }
          }

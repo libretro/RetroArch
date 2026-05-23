@@ -1317,9 +1317,10 @@ void dsu_client_poll(dsu_state_t *dsu)
    if (!dsu->enabled || dsu->socket_fd < 0)
       return;
 
-   poll_count++;
+   {
+      uint16_t source_port = 0;
 
-   uint16_t source_port = 0;
+   poll_count++;
 
    now = dsu_get_time_us();
 
@@ -1353,9 +1354,12 @@ void dsu_client_poll(dsu_state_t *dsu)
       }
 
       {
-         uint32_t msg_type = dsu_read_u32_le(dsu->recv_buf + 16);
-         const uint8_t *payload = dsu->recv_buf + DSU_HEADER_SIZE;
-         size_t payload_len     = (size_t)ret - DSU_HEADER_SIZE;
+         uint32_t msg_type;
+         const uint8_t *payload;
+         size_t payload_len;
+         msg_type    = dsu_read_u32_le(dsu->recv_buf + 16);
+         payload     = dsu->recv_buf + DSU_HEADER_SIZE;
+         payload_len = (size_t)ret - DSU_HEADER_SIZE;
 
          /* Auto-configure multicast stream URL for new DSU connections */
          {
@@ -1395,11 +1399,13 @@ void dsu_client_poll(dsu_state_t *dsu)
             case DSU_MSG_DATA:
                if (payload_len >= 80)
                {
-                  uint8_t remote_slot = payload[0];
-                  int controller_slot = dsu_find_controller_slot(dsu,
-                        source_address, source_port, remote_slot);
+                  uint8_t remote_slot;
+                  int controller_slot;
                   bool old_touch1_active;
                   bool old_touch2_active;
+                  remote_slot     = payload[0];
+                  controller_slot = dsu_find_controller_slot(dsu,
+                        source_address, source_port, remote_slot);
 
                   if (remote_slot >= DSU_MAX_CONTROLLERS)
                      break;
@@ -1493,12 +1499,14 @@ void dsu_client_poll(dsu_state_t *dsu)
                   {
                      for (word = 0; word < DSU_KEYBOARD_WORDS; word++)
                      {
-                        uint32_t changed = old_bits[word] ^ new_bits[word];
+                        uint32_t changed;
+                        changed = old_bits[word] ^ new_bits[word];
 
                         while (changed)
                         {
-                           unsigned bit = 0;
+                           unsigned bit;
                            unsigned key;
+                           bit = 0;
 
                            while (((changed >> bit) & 1U) == 0U)
                               bit++;
@@ -1506,7 +1514,8 @@ void dsu_client_poll(dsu_state_t *dsu)
                            key = (unsigned)(word * 32 + bit);
                            if (key < RETROK_LAST)
                            {
-                              bool down = ((new_bits[word] >> bit) & 1U) != 0U;
+                              bool down;
+                              down = ((new_bits[word] >> bit) & 1U) != 0U;
                               input_keyboard_event(down, key,
                                     down ? dsu->controllers[controller_slot].keyboard_character : 0,
                                     dsu->controllers[controller_slot].keyboard_mod,
@@ -1612,12 +1621,15 @@ void dsu_client_poll(dsu_state_t *dsu)
             case DSU_MSG_CONTROLLER:
                if (payload_len >= 12)
                {
-                  uint8_t remote_slot = payload[0];
-                  bool connected = (payload[1] == DSU_CONN_CONNECTED);
-                  int controller_slot = dsu_find_controller_slot(dsu,
-                        source_address, source_port, remote_slot);
+                  uint8_t remote_slot;
+                  bool connected;
+                  int controller_slot;
                   bool was_connected;
                   int attached_port;
+                  remote_slot     = payload[0];
+                  connected       = (payload[1] == DSU_CONN_CONNECTED);
+                  controller_slot = dsu_find_controller_slot(dsu,
+                        source_address, source_port, remote_slot);
 
                   if (remote_slot >= DSU_MAX_CONTROLLERS)
                      break;
@@ -1674,7 +1686,8 @@ void dsu_client_poll(dsu_state_t *dsu)
             case DSU_MSG_VERSION:
                if (payload_len >= 2)
                {
-                  uint16_t ver = dsu_read_u16_le(payload);
+                  uint16_t ver;
+                  ver = dsu_read_u16_le(payload);
                   RARCH_LOG("[DSU] Server protocol version: %u\n", ver);
                }
                break;
@@ -1733,6 +1746,7 @@ void dsu_client_poll(dsu_state_t *dsu)
                break;
          }
       }
+   }
    }
 }
 

@@ -99,19 +99,26 @@ static int16_t uwp_input_state(
                settings_t *settings = config_get_ptr();
                if (input_st && input_st->dsu && settings)
                {
-                  bool is_fullpad = dsu_port_is_fullpad(input_st->dsu, port);
-                  bool addon_with_gamepad = input_st->dsu->player_addon_attached[port] && input_st->dsu->player_gamepad[port];
+                  bool is_fullpad;
+                  bool addon_with_gamepad;
+                  is_fullpad         = dsu_port_is_fullpad(input_st->dsu, port);
+                  addon_with_gamepad = input_st->dsu->player_addon_attached[port] && input_st->dsu->player_gamepad[port];
                   if (is_fullpad || addon_with_gamepad)
                   {
-                     uint16_t dsu_btns = dsu_get_buttons(input_st->dsu, port);
-                     ret |= dsu_btns;
+                     uint16_t dsu_btns;
+                     float axis_threshold;
+                     int16_t lx;
+                     int16_t ly;
+                     float norm_lx;
+                     float norm_ly;
+                     dsu_btns        = dsu_get_buttons(input_st->dsu, port);
+                     ret            |= dsu_btns;
 
-                     /* DSU analog-to-digital for menu navigation */
-                     float axis_threshold = settings->floats.input_axis_threshold;
-                     int16_t lx = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
-                     int16_t ly = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
-                     float norm_lx = (float)lx / 32767.0f;
-                     float norm_ly = (float)ly / 32767.0f;
+                     axis_threshold  = settings->floats.input_axis_threshold;
+                     lx              = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+                     ly              = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
+                     norm_lx         = (float)lx / 32767.0f;
+                     norm_ly         = (float)ly / 32767.0f;
 
                      if (norm_lx < -axis_threshold)
                         ret |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
@@ -148,11 +155,14 @@ static int16_t uwp_input_state(
                settings_t *settings = config_get_ptr();
                if (input_st && input_st->dsu && settings)
                {
-                  bool is_fullpad = dsu_port_is_fullpad(input_st->dsu, port);
-                  bool addon_with_gamepad = input_st->dsu->player_addon_attached[port] && input_st->dsu->player_gamepad[port];
+                  bool is_fullpad;
+                  bool addon_with_gamepad;
+                  is_fullpad         = dsu_port_is_fullpad(input_st->dsu, port);
+                  addon_with_gamepad = input_st->dsu->player_addon_attached[port] && input_st->dsu->player_gamepad[port];
                   if (is_fullpad || addon_with_gamepad)
                   {
-                     uint16_t dsu_btns = dsu_get_buttons(input_st->dsu, port);
+                     uint16_t dsu_btns;
+                     dsu_btns = dsu_get_buttons(input_st->dsu, port);
                      if ((id < RARCH_FIRST_CUSTOM_BIND) && (dsu_btns & (1 << id)))
                         return 1;
                      if ((id == RARCH_MENU_TOGGLE) && dsu_get_home(input_st->dsu, port))
@@ -162,11 +172,16 @@ static int16_t uwp_input_state(
                      if (id == RETRO_DEVICE_ID_JOYPAD_UP || id == RETRO_DEVICE_ID_JOYPAD_DOWN ||
                          id == RETRO_DEVICE_ID_JOYPAD_LEFT || id == RETRO_DEVICE_ID_JOYPAD_RIGHT)
                      {
-                        float axis_threshold = settings->floats.input_axis_threshold;
-                        int16_t lx = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
-                        int16_t ly = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
-                        float norm_lx = (float)lx / 32767.0f;
-                        float norm_ly = (float)ly / 32767.0f;
+                        float axis_threshold;
+                        int16_t lx;
+                        int16_t ly;
+                        float norm_lx;
+                        float norm_ly;
+                        axis_threshold = settings->floats.input_axis_threshold;
+                        lx             = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+                        ly             = dsu_get_analog(input_st->dsu, port, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
+                        norm_lx        = (float)lx / 32767.0f;
+                        norm_ly        = (float)ly / 32767.0f;
 
                         if ((id == RETRO_DEVICE_ID_JOYPAD_LEFT) && (norm_lx < -axis_threshold))
                            return 1;
@@ -242,31 +257,43 @@ static int16_t uwp_input_state_analog(
                settings_t *settings = config_get_ptr();
                if (input_st && input_st->dsu && settings)
                {
-                  bool is_fullpad = dsu_port_is_fullpad(input_st->dsu, port);
-                  bool addon_with_gamepad = input_st->dsu->player_addon_attached[port] && input_st->dsu->player_gamepad[port];
+                  bool is_fullpad;
+                  bool addon_with_gamepad;
+                  is_fullpad         = dsu_port_is_fullpad(input_st->dsu, port);
+                  addon_with_gamepad = input_st->dsu->player_addon_attached[port] && input_st->dsu->player_gamepad[port];
                   if (is_fullpad || addon_with_gamepad)
                   {
-                     int16_t dsu_val_x = dsu_get_analog(input_st->dsu, port, index, RETRO_DEVICE_ID_ANALOG_X);
-                     int16_t dsu_val_y = dsu_get_analog(input_st->dsu, port, index, RETRO_DEVICE_ID_ANALOG_Y);
-                     int16_t dsu_val   = (id == RETRO_DEVICE_ID_ANALOG_X) ? dsu_val_x : dsu_val_y;
+                     int16_t dsu_val_x;
+                     int16_t dsu_val_y;
+                     int16_t dsu_val;
+                     dsu_val_x = dsu_get_analog(input_st->dsu, port, index, RETRO_DEVICE_ID_ANALOG_X);
+                     dsu_val_y = dsu_get_analog(input_st->dsu, port, index, RETRO_DEVICE_ID_ANALOG_Y);
+                     dsu_val   = (id == RETRO_DEVICE_ID_ANALOG_X) ? dsu_val_x : dsu_val_y;
 
                      if (dsu_val != 0)
                      {
-                        float input_analog_deadzone    = settings->floats.input_analog_deadzone;
-                        float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
+                        float input_analog_deadzone;
+                        float input_analog_sensitivity;
+                        input_analog_deadzone    = settings->floats.input_analog_deadzone;
+                        input_analog_sensitivity = settings->floats.input_analog_sensitivity;
 
                         if (input_analog_deadzone > 0.0f)
                         {
-                           float x   = (float)dsu_val_x / 0x7fff;
-                           float y   = (float)dsu_val_y / 0x7fff;
-                           float mag = sqrtf(x * x + y * y);
+                           float x;
+                           float y;
+                           float mag;
+                           x   = (float)dsu_val_x / 0x7fff;
+                           y   = (float)dsu_val_y / 0x7fff;
+                           mag = sqrtf(x * x + y * y);
 
                            if (mag <= input_analog_deadzone)
                               dsu_val = 0;
                            else
                            {
-                              float dz_scale = (mag - input_analog_deadzone) / (1.0f - input_analog_deadzone);
-                              float inv_mag  = (mag > 1.0f) ? (1.0f / mag) : 1.0f;
+                              float dz_scale;
+                              float inv_mag;
+                              dz_scale = (mag - input_analog_deadzone) / (1.0f - input_analog_deadzone);
+                              inv_mag  = (mag > 1.0f) ? (1.0f / mag) : 1.0f;
                               if (dz_scale > 1.0f) dz_scale = 1.0f;
                               dsu_val = (int16_t)((float)dsu_val * inv_mag * dz_scale);
                            }
@@ -274,7 +301,8 @@ static int16_t uwp_input_state_analog(
 
                         if (dsu_val != 0 && input_analog_sensitivity != 1.0f)
                         {
-                           int new_val = (int)((float)dsu_val * input_analog_sensitivity);
+                           int new_val;
+                           new_val = (int)((float)dsu_val * input_analog_sensitivity);
                            if (new_val >  0x7fff) new_val =  0x7fff;
                            if (new_val < -0x7fff) new_val = -0x7fff;
                            dsu_val = (int16_t)new_val;
@@ -287,8 +315,10 @@ static int16_t uwp_input_state_analog(
                               ret = dsu_val;
                            else
                            {
-                              int16_t dsu_abs = (dsu_val >= 0) ? dsu_val : -dsu_val;
-                              int16_t ret_abs = (ret >= 0)     ? ret     : -ret;
+                              int16_t dsu_abs;
+                              int16_t ret_abs;
+                              dsu_abs = (dsu_val >= 0) ? dsu_val : -dsu_val;
+                              ret_abs = (ret >= 0)     ? ret     : -ret;
                               if (dsu_abs > ret_abs)
                                  ret = dsu_val;
                            }
