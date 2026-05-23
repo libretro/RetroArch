@@ -595,7 +595,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Блокировать ядро"
+   "Заблокировать ядро"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
@@ -1638,7 +1638,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-   "Фреймов в аудиоблоке микрофона"
+   "Количество фреймов в блоке микрофона"
    )
 #endif
 MSG_HASH(
@@ -2705,11 +2705,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Заглушать звук при включении ускорения"
+   "Заглушать звук при ускоренной перемотке"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   "Автоматически заглушать звук при ускоренной перемотке."
+   "Автоматически заглушать звук во время ускоренной перемотки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
@@ -2725,7 +2725,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
-   "Автоматически заглушать звук при обратной перемотке."
+   "Автоматически заглушать звук во время обратной перемотки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2812,11 +2812,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "Изменить стандартное устройство, используемое драйвером звука. Зависит от драйвера."
+   "Переопределение устройства ввода, используемого драйвером микрофона. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "Изменить стандартное устройство, используемое драйвером звука. Зависит от драйвера."
+   "Переопределение устройства ввода, используемого драйвером микрофона. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
@@ -2859,11 +2859,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
-   "Изменить стандартное устройство ввода, используемое драйвером микрофона. Зависит от драйвера."
+   "Переопределение устройства ввода, используемого драйвером микрофона. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
-   "Изменить стандартное устройство ввода, используемое драйвером микрофона. Зависит от драйвера."
+   "Переопределение устройства ввода, используемого драйвером микрофона. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -2871,7 +2871,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
-   "Низкие значения повышают производительность/снижают задержку, но ухудшают качество звука. Высокие улучшают качество звука, но снижают производительность/увеличивают отставание."
+   "Понижайте значение, чтобы улучшить производительность и уменьшить задержку за счёт снижения качества звука. Повышайте для улучшения качества звука ценой снижения производительности и увеличения задержки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
@@ -2923,7 +2923,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-   "Низкие значения повышают производительность/снижают задержку, но ухудшают качество звука. Высокие улучшают качество звука, но снижают производительность/увеличивают отставание."
+   "Понижайте значение, чтобы улучшить производительность и уменьшить задержку за счёт снижения качества звука. Повышайте для улучшения качества звука ценой снижения производительности и увеличения задержки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
@@ -7536,11 +7536,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
-   "Разрешить паузу"
+   "Разрешать паузу"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Разрешать игрокам приостанавливать эмуляцию во время сетевой игры."
+   "Разрешать игрокам ставить эмуляцию на паузу во время сеанса сетевой игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -15372,7 +15372,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   "Фреймов в блоке"
+   "Количество фреймов в блоке"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
