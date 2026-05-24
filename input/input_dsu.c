@@ -43,6 +43,7 @@
 #include "../record/record_driver.h"
 #include "../gfx/video_driver.h"
 #include "../playlist.h"
+#include "../command.h"
 #include "../core_info.h"
 #include <lists/dir_list.h>
 #include <file/file_path.h>
@@ -1207,7 +1208,7 @@ static bool dsu_get_packet_endpoint(const struct sockaddr_storage *addr,
 {
    const struct sockaddr_in *addr_in;
 
-   if (!addr || addr->ss_family != AF_INET)
+   if (!addr || ((const struct sockaddr*)addr)->sa_family != AF_INET)
       return false;
 
    addr_in = (const struct sockaddr_in*)addr;
