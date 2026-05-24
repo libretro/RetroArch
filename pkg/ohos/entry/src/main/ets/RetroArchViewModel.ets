@@ -24,7 +24,8 @@ enum NativeEventId{
   EVENT_NATIVE_OPEN_KEYBOARD,
   EVENT_NATIVE_APP_SHUTDOWN,
   EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE,
-  EVENT_NATIVE_SET_SCREEN_ORIENTATION
+  EVENT_NATIVE_SET_SCREEN_ORIENTATION,
+  EVENT_NATIVE_SHOW_FILE_PICKER
 }
 
 @ObservedV2
@@ -58,6 +59,12 @@ export class RetroArchViewModel{
       if(eventId == NativeEventId.EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE){
         this.fullScreen = value == 1;
       }
+      if(eventId == NativeEventId.EVENT_NATIVE_SHOW_FILE_PICKER){
+        const documentSaveOptions = new picker.DocumentSelectOptions();
+        documentSaveOptions.selectMode = picker.DocumentSelectMode.FILE;
+        const documentViewPicker = new picker.DocumentViewPicker(context);
+        documentViewPicker.select(documentSaveOptions)
+      }
       if(eventId == NativeEventId.EVENT_NATIVE_SET_SCREEN_ORIENTATION){
         if(value == 0){
           this.context?.windowStage.getMainWindowSync().setPreferredOrientation(window.Orientation.AUTO_ROTATION_UNSPECIFIED)
@@ -90,7 +97,7 @@ export class RetroArchViewModel{
     }catch (e) {
       console.error("testTag", e)
     }
-    let coresDir =  this.context!.bundleCodeDir + "/libs/arm64/cores"
+    let coresDir =  this.context!.bundleCodeDir + "/libs/arm64"
     let dpi = display.getDefaultDisplaySync().densityDPI
     retroApi.startApp({
       CONFIGFILE: configPath,

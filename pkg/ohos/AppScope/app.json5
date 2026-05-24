@@ -1,6 +1,6 @@
 {
   "app": {
-    "bundleName": "com.retroarch.ohos",
+    "bundleName": "org.xbstudio.retroarch",
     "vendor": "example",
     "versionCode": 1000000,
     "versionName": "1.0.0",

@@ -3789,7 +3789,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* Set prev textures. */
    gl2_renderchain_bind_prev_texture(gl,
          chain, &gl->tex_info);
-
+     
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
       gl2_render_overlay(gl);
@@ -4520,8 +4520,8 @@ static void *gl2_init(const video_info_t *video,
    renderer = (const char*)glGetString(GL_RENDERER);
    version  = (const char*)glGetString(GL_VERSION);
 
-   RARCH_LOG("[GL] Vendor: %p, Renderer: %p.\n", vendor, renderer);
-   RARCH_LOG("[GL] Version: %p.\n", version);
+   RARCH_LOG("[GL] Vendor: %s, Renderer: %s.\n", vendor, renderer);
+   RARCH_LOG("[GL] Version: %s.\n", version);
 
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;

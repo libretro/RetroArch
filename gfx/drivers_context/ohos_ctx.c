@@ -86,11 +86,14 @@ static void *ohos_gfx_ctx_init(void *video_driver)
    bool debug                           = hwr->debug_context;
 #endif
    EGLint attribs[]                     = {
-    EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_RED_SIZE, EGL_RED_SIZE_DEFAULT, EGL_GREEN_SIZE, EGL_GREEN_SIZE_DEFAULT,
-    EGL_BLUE_SIZE, EGL_BLUE_SIZE_DEFAULT, EGL_ALPHA_SIZE, EGL_ALPHA_SIZE_DEFAULT, EGL_RENDERABLE_TYPE,
-    EGL_OPENGL_ES2_BIT,
-    // End.
-    EGL_NONE
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+      EGL_BLUE_SIZE, 8,
+      EGL_GREEN_SIZE, 8,
+      EGL_RED_SIZE, 8,
+      EGL_ALPHA_SIZE, 8,
+      EGL_DEPTH_SIZE, 16,
+      EGL_NONE
    };
 #endif
    struct ohos_app *ohos_app      = (struct ohos_app*)g_ohos;
@@ -112,8 +115,8 @@ static void *ohos_gfx_ctx_init(void *video_driver)
    }
  
 #ifdef HAVE_OPENGLES
-  // if (g_es3)
-      //attribs[1]                        = EGL_OPENGL_ES3_BIT_KHR;
+   if (g_es3)
+      attribs[1]                        = EGL_OPENGL_ES3_BIT_KHR;
 #endif
 
 #ifdef HAVE_EGL

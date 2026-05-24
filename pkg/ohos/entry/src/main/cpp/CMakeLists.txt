@@ -238,6 +238,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME}
     ace_napi.z
+    ace_ndk.z
     GLESv3
     EGL
     OpenSLES

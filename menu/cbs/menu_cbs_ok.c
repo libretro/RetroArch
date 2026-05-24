@@ -101,6 +101,9 @@
 #ifdef IOS
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #endif
+#ifdef __OHOS__
+#include "../../frontend/drivers/platform_unix.h"
+#endif
 
 #if defined(ANDROID)
 #include "../../file_path_special.h"
@@ -6789,6 +6792,9 @@ static int action_ok_open_picker(const char *path,
    return 0;
 #elif defined(ANDROID) && defined(HAVE_SAF)
    android_show_saf_tree_picker();
+   return 0;
+#elif defined(__OHOS__)
+   ohos_show_file_picker();
    return 0;
 #else
    char *new_path = NULL;

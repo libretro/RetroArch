@@ -18,6 +18,7 @@
 #ifndef _PLATFORM_UNIX_H
 #define _PLATFORM_UNIX_H
 
+#include <ace/xcomponent/native_interface_xcomponent.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -42,6 +43,8 @@ typedef void (*input_keyboard_line_complete_t)(void *userdata, const char *line)
 extern bool ohos_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
                                 const char *label,
                                 input_keyboard_line_complete_t callback, void *userdata);
+
+extern void ohos_show_file_picker(void);
 extern void ohos_send_native_event(int event_id, int value);
 
 struct ohos_app;
@@ -64,6 +67,7 @@ enum
    EVENT_NATIVE_APP_SHUTDOWN,
    EVENT_NATIVE_VIDEO_NOTCH_WRITE_OVER_ENABLE,
    EVENT_NATIVE_SET_SCREEN_ORIENTATION,
+   EVENT_NATIVE_SHOW_FILE_PICKER,
 };
 enum {
    KEY_EVENT_ACTION_DOWN,
@@ -119,6 +123,8 @@ struct ohos_app
 
    /* When non-NULL, this is the window surface that the app can draw in. */
    OHNativeWindow* window;
+    
+   OH_NativeXComponent *nativeComponent;
     
    /* Below are "private" implementation of the glue code. */
    slock_t *mutex;

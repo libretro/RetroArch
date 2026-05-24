@@ -17,6 +17,11 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <GameControllerKit/game_controller_type.h>
+#include <GameControllerKit/game_device.h>
+#include <GameControllerKit/game_device_event.h>
+#include <GameControllerKit/game_pad.h>
+#include <GameControllerKit/game_pad_event.h>
 #include <multimodalinput/oh_key_code.h>
 
 #include "../../frontend/drivers/platform_unix.h"
@@ -67,25 +72,11 @@ struct input_pointer
    int16_t full_x, full_y;
 };
 
-enum
-{
-   AXIS_X        = 0,
-   AXIS_Y        = 1,
-   AXIS_Z        = 11,
-   AXIS_RZ       = 14,
-   AXIS_HAT_X    = 15,
-   AXIS_HAT_Y    = 16,
-   AXIS_LTRIGGER = 17,
-   AXIS_RTRIGGER = 18,
-   AXIS_GAS      = 22,
-   AXIS_BRAKE    = 23
-};
-
 typedef struct state_device
 {
-   int id;
+   char id[NAME_MAX];
    int port;
-   char name[256];
+   char name[NAME_MAX];
 } state_device_t;
 
 typedef struct ohos_input
@@ -108,23 +99,8 @@ typedef struct ohos_input
    char device_model[256];
 } ohos_input_t;
 
-static float TouchEvent_getX(TouchEvent event, int touchId){
-    for(int i=0; i< event.pointerCount; i++){
-        if(event.touchPoints[i].id == touchId)
-            return event.touchPoints[i].x;
-    }
-    return 0;
-}
-static float TouchEvent_getY(TouchEvent event, int touchId){
-    for(int i=0; i< event.pointerCount; i++){
-        if(event.touchPoints[i].id == touchId)
-            return event.touchPoints[i].y;
-    }
-    return 0;
-}
-
 void ohos_input_poll_touch_event(
-   void  *ohos_input, TouchEvent event)
+   void *ohos_input, OH_NativeXComponent_TouchEvent event)
 {
    video_driver_state_t *video_st   = video_state_get_ptr();
    if(ohos_input == NULL || video_st->data == NULL)
@@ -133,8 +109,10 @@ void ohos_input_poll_touch_event(
    int motion_ptr = event.id;
    int action        = event.type;
    bool keyup        = (
-            action == EVENT_ACTION_UP
-         || action == EVENT_ACTION_Cancel);
+         action == OH_NATIVEXCOMPONENT_UP
+         || action == OH_NATIVEXCOMPONENT_CANCEL
+         || action == OH_NATIVEXCOMPONENT_UNKNOWN
+    );
    if (keyup && motion_ptr < MAX_TOUCH)
    {
       memmove(ohos->pointer + motion_ptr,
@@ -145,14 +123,19 @@ void ohos_input_poll_touch_event(
    }
    else
    {
-      int pointer_max  = MIN(event.pointerCount, MAX_TOUCH);
+      int pointer_max  = MIN(event.numPoints, MAX_TOUCH);
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
          struct video_viewport vp = {0};
-         float x = TouchEvent_getX(event, motion_ptr);
-         float y = TouchEvent_getY(event, motion_ptr);;
-      
-        
+         float x = event.touchPoints[motion_ptr].x;
+         float y = event.touchPoints[motion_ptr].y;
+         
+         vp.x                        = 0;
+         vp.y                        = 0;
+         vp.width                    = 0;
+         vp.height                   = 0;
+         vp.full_width               = 0;
+         vp.full_height              = 0;
          video_driver_translate_coord_viewport_confined_wrap(
                &vp,
                x, y,
@@ -230,29 +213,94 @@ void ohos_input_poll_key_event(
          break;
    }
 }
+static int ohos_input_get_id_port(ohos_input_t *ohos, char* id,
+      int source)
+{
+   unsigned i;
+   int ret = -1;
+   if (source)
+      ret = 0; /* touch overlay is always user 1 */
+   for (i = 0; i < ohos->pads_connected; i++)
+   {
+      if (strcmp(ohos->pad_states[i].id, id))
+      {
+         ret = i;
+         break;
+      }
+   }
 
+   return ret;
+}
 
+static void engine_handle_dpad_getaxisvalue(struct ohos_app *ohos, const struct GamePad_AxisEvent *axisEvent, int port)
+{
+   double x           = 0;
+   double y           = 0;
+   double z           = 0;
+   double rz          = 0;
+   double hatx        = 0;
+   double haty        = 0;
+   double ltrig       = 0;
+   double rtrig       = 0;
+   double brake       = 0;
+   double gas         = 0;
+   OH_GamePad_AxisEvent_GetXAxisValue(axisEvent, &x);
+   OH_GamePad_AxisEvent_GetYAxisValue(axisEvent, &y);
+   OH_GamePad_AxisEvent_GetZAxisValue(axisEvent, &z);
+   OH_GamePad_AxisEvent_GetRZAxisValue(axisEvent, &rz);
+   OH_GamePad_AxisEvent_GetHatXAxisValue(axisEvent, &hatx);
+   OH_GamePad_AxisEvent_GetHatYAxisValue(axisEvent, &haty);
+   OH_GamePad_AxisEvent_GetBrakeAxisValue(axisEvent, &brake);
+   OH_GamePad_AxisEvent_GetGasAxisValue(axisEvent, &gas);
+//   OH_GamePad_AxisEvent_GetBrakeAxisValue(axisEvent, &ltrig);
+//   OH_GamePad_AxisEvent_GetGasAxisValue(axisEvent, &rtrig);
+    
+   ohos->hat_state[port][0]    = (int)hatx;
+   ohos->hat_state[port][1]    = (int)haty;
 
+   ohos->analog_state[port][0] = (int16_t)(x * 32767.0f);
+   ohos->analog_state[port][1] = (int16_t)(y * 32767.0f);
+   ohos->analog_state[port][2] = (int16_t)(z * 32767.0f);
+   ohos->analog_state[port][3] = (int16_t)(rz * 32767.0f);
+   ohos->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
+   ohos->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
+//   ohos->analog_state[port][8] = (int16_t)(brake * 32767.0f);
+//   ohos->analog_state[port][9] = (int16_t)(gas * 32767.0f);
+}
+static void OnAxisEvent(const struct GamePad_AxisEvent *axisEvent){
+   char *deviceId = NULL;
+   OH_GameDevice_DeviceInfo_GetDeviceId(axisEvent, &deviceId);
+   free(deviceId);
+   int port = ohos_input_get_id_port(g_ohos->ohos_input, deviceId, 0);
+   engine_handle_dpad_getaxisvalue(g_ohos, axisEvent, port);
+}
+static void OnDeviceChanged(const struct GameDevice_DeviceEvent *deviceEvent){
+    GameDevice_StatusChangedType type;
+    GameController_ErrorCode err = OH_GameDevice_DeviceEvent_GetChangedType(deviceEvent, &type);
+    if (err != GAME_CONTROLLER_SUCCESS) {
+        return;
+    }
+    GameDevice_DeviceInfo *deviceInfo = NULL;
+    err = OH_GameDevice_DeviceEvent_GetDeviceInfo(deviceEvent, &deviceInfo);
+    if (err != GAME_CONTROLLER_SUCCESS || !deviceInfo) {
+        return;
+    }
+    char *deviceId = NULL;
+    err = OH_GameDevice_DeviceInfo_GetDeviceId(deviceInfo, &deviceId);
+    if (err != GAME_CONTROLLER_SUCCESS) {
+        OH_GameDevice_DestroyDeviceInfo(&deviceInfo);
+        return;
+    }
+   char *name = NULL;
+   OH_GameDevice_DeviceInfo_GetName(deviceInfo, &name);
+   ohos_input_t* ohos = g_ohos->ohos_input;
+   int port = ohos->pads_connected;
+   strlcpy(ohos->pad_states[port].id, deviceId, sizeof(ohos->pad_states[port].id));
+   ohos->pad_states[ohos->pads_connected].port = port;
+   strlcpy(ohos->pad_states[port].name, name, sizeof(ohos->pad_states[port].name));
+   ohos->pads_connected ++;
+}
 
-//static void ohos_input_reinit(void)
-//{
-//   struct android_app *android_app = (struct android_app*)g_android;
-//   uint32_t runloop_flags = runloop_get_flags();
-//
-//   if (runloop_flags & RUNLOOP_FLAG_PAUSED)
-//   {
-//      /* When using OpenGL, pausing the app (e.g. by opening the app switcher)
-//       * will result in the EGL window surface being destroyed, but the actual
-//       * OpenGL context will be preserved on most devices, so we may be able to
-//       * get away with reinitializing only the window surface without having to
-//       * do a full video driver reinitialization. */
-//      video_driver_state_t *state = video_state_get_ptr();
-//      if (state->current_video_context.create_surface == NULL || !state->current_video_context.create_surface(state->context_data))
-//         command_event(CMD_EVENT_REINIT, NULL);
-//   }
-//
-//   ohos_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
-//}
 static int ohos_check_quick_tap(ohos_input_t *ohos)
 {
    /* Check if the touch screen has been been quick tapped
@@ -300,6 +348,12 @@ static void *ohos_input_init(const char *joypad_driver)
             rate = DEFAULT_ASENSOR_EVENT_RATE;
       }
    }
+//   OH_GameDevice_RegisterDeviceMonitor(OnDeviceChanged);
+//   OH_GamePad_LeftThumbstick_RegisterAxisInputMonitor(OnAxisEvent);
+//   OH_GamePad_RightThumbstick_RegisterAxisInputMonitor(OnAxisEvent);
+//   OH_GamePad_LeftTrigger_RegisterAxisInputMonitor(OnAxisEvent);
+//   OH_GamePad_RightTrigger_RegisterAxisInputMonitor(OnAxisEvent);
+//   OH_GamePad_Dpad_RegisterAxisInputMonitor(OnAxisEvent);
    return ohos;
 }
 

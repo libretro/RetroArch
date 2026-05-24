@@ -19,7 +19,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "ANGLE/GLES2/gl2.h"
+#include "ANGLE/GLES3/gl32.h"
 #include "input/input_driver.h"
+#include <stdbool.h>
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -3508,8 +3511,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
+
 #if TARGET_OS_IPHONE
             *(bool*)data             = jit_available();
+#elif defined (__OHOS__)
+            *(bool*)data             =  false;
 #else
             *(bool*)data             = true;
 #endif
@@ -4666,7 +4672,7 @@ static void core_init_libretro_cbs(runloop_state_t *runloop_st,
 {
    retro_input_state_t state_cb = core_input_state_poll_return_cb();
 
-   runloop_st->current_core.retro_set_video_refresh(video_driver_frame);
+   //runloop_st->current_core.retro_set_video_refresh(video_driver_frame);
    runloop_st->current_core.retro_set_audio_sample(audio_driver_sample);
    runloop_st->current_core.retro_set_audio_sample_batch(audio_driver_sample_batch);
    runloop_st->current_core.retro_set_input_state(state_cb);
@@ -7800,6 +7806,8 @@ bool core_set_default_callbacks(void *data)
    return true;
 }
 
+
+
 #ifdef HAVE_NETWORKING
 /**
  * core_set_netplay_callbacks:
@@ -8148,8 +8156,17 @@ void core_run(void)
       input_driver_poll();
    else if (late_polling)
       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
-
+   struct timespec start, end;
+   long long diff_us;
+    clock_gettime(CLOCK_MONOTONIC, &start);
    current_core->retro_run();
+   clock_gettime(CLOCK_MONOTONIC, &end);
+   diff_us = (end.tv_sec - start.tv_sec) * 1000000LL + 
+           (end.tv_nsec - start.tv_nsec) / 1000LL;
+   if (diff_us > 5000) { // 超过 5ms 才记录
+       double fps = 1000000.0 / diff_us;
+       RARCH_LOG("[PERF] FPS: %.2f\n", fps);
+   }
 
 #ifdef HAVE_GAME_AI
    {

@@ -31,7 +31,7 @@ struct Index {
 
   build() {
     Stack() {
-      XComponent({id:"game", type: XComponentType.TEXTURE, controller: this.xController})
+      XComponent({id:"game", type: XComponentType.TEXTURE,libraryname: "retroarch", controller: this.xController})
         .backgroundColor(Color.Black)
         .width('100%')
         .height('100%')

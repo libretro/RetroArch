@@ -16,6 +16,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -63,6 +64,7 @@
 #endif
 #endif
 #ifdef __OHOS__
+#include <ace/xcomponent/native_interface_xcomponent.h>
 #include "napi/native_api.h"
 #include "hilog/log.h"
 #endif
@@ -2785,7 +2787,11 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
     }
-    
+    menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+         MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+         MENU_SETTING_ACTION, 0, 0, NULL);
 #elif defined(WEBOS)
    if (path_is_directory("/media/developer/temp"))
       menu_entries_append(list, "/media/developer/temp",
@@ -3742,18 +3748,17 @@ typedef struct {
     int event_id; 
     int value;
 } NativeEventData;    
-void ohos_input_poll_touch_event(void* ohos_input, TouchEvent data);
+void ohos_input_poll_touch_event(void* ohos_input, OH_NativeXComponent_TouchEvent data);
 void ohos_input_poll_key_event(void* ohos_input, KeyEvent* data);
-
-
 bool ohos_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
                                 const char *label,
                                 input_keyboard_line_complete_t callback, void *userdata){
-    
    ohos_send_native_event(EVENT_NATIVE_OPEN_KEYBOARD, 0);
    return true;
 }
-
+void ohos_show_file_picker(){
+   ohos_send_native_event(EVENT_NATIVE_SHOW_FILE_PICKER, 0);
+}
 
 
 static void frontend_ohos_shutdown(bool unused)
@@ -3881,56 +3886,6 @@ static napi_value StartApp(napi_env env, napi_callback_info info)
    return NULL;
 }
 
-static napi_value OnTouchEvent(napi_env env, napi_callback_info info)
-{
-   if(g_ohos == NULL || g_ohos->ohos_input == NULL)
-      return NULL;
-   size_t argc = 1;
-   napi_value args[1];
-   napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
-   TouchEvent event;
-   napi_value temp_val;
-   napi_get_named_property(env, args[0], "id", &temp_val);
-   napi_get_value_int32(env, temp_val, &event.id);
-   
-   // 提取 type
-   napi_get_named_property(env, args[0], "type", &temp_val);
-   napi_get_value_int32(env, temp_val, &event.type);
-   
-   // 提取 pointerCount
-   napi_get_named_property(env, args[0], "pointerCount", &temp_val);
-   napi_get_value_int32(env, temp_val, &event.pointerCount);
-   
-   // 提取 eventTime (uint64_t)
-   napi_get_named_property(env, args[0], "timestamp", &temp_val);
-   napi_get_value_int64(env, temp_val, &event.eventTime);
-   
-   // 提取 touchPoints 数组
-   napi_value touchPoints_arr;
-   napi_get_named_property(env, args[0], "touches", &touchPoints_arr);
-   
-   uint32_t arr_len;
-   napi_get_array_length(env, touchPoints_arr, &arr_len);
-   
-   event.pointerCount = (arr_len < 10) ? arr_len : 10;
-    
-   for (uint32_t i = 0; i < arr_len && i < 10; i++) {
-     napi_value point_obj;
-     napi_value point_id, point_x, point_y;
-     
-     napi_get_element(env, touchPoints_arr, i, &point_obj);
-     
-     napi_get_named_property(env, point_obj, "id", &point_id);
-     napi_get_named_property(env, point_obj, "x", &point_x);
-     napi_get_named_property(env, point_obj, "y", &point_y);
-     
-     napi_get_value_int32(env, point_id, &event.touchPoints[i].id);
-     napi_get_value_double(env, point_x, &event.touchPoints[i].x);
-     napi_get_value_double(env, point_y, &event.touchPoints[i].y);
-   }
-   ohos_input_poll_touch_event(g_ohos->ohos_input, event);
-   return NULL;
-}
 
 void ohos_send_native_event(int event_id, int value) {
    if (g_native_event_tsfn == NULL) {
@@ -4022,7 +3977,49 @@ static napi_value OnNativeEvent(napi_env env, napi_callback_info info)
    );
    return NULL;
 }
+static void OnSurfaceCreatedCB(OH_NativeXComponent *component, void *window)
+{
+    if ((NULL == component) || (NULL == window)) {
+        return;
+    }
+    g_ohos->nativeComponent = component;
+    g_ohos->window = window;
+    OH_NativeXComponent_ExpectedRateRange frameRateRange;
+    frameRateRange.min = 60;      // 最小帧率 60fps
+    frameRateRange.max = 60;      // 最大帧率 60fps
+    frameRateRange.expected = 60; // 期望帧率 60fps
 
+    OH_NativeXComponent_SetExpectedFrameRateRange(component, &frameRateRange);
+}
+
+static void OnSurfaceChangedCB(OH_NativeXComponent *component, void *window)
+{
+    if ((NULL == component) || (NULL == window)) {
+        return;
+    }
+   uint64_t width;
+   uint64_t height;
+   OH_NativeXComponent_GetXComponentSize(component, window, &width, &height);
+   g_ohos->content_rect.changed = true;
+   g_ohos->content_rect.width   = width;
+   g_ohos->content_rect.height  = height;
+}
+
+static void OnSurfaceDestroyedCB(OH_NativeXComponent *component, void *window)
+{
+    if ((NULL == component) || (NULL == window)) {
+        return;
+    }
+}
+static void DispatchTouchEventCB(OH_NativeXComponent *component, void *window)
+{
+   if ((NULL == component) || (NULL == window)) {
+     return;
+   }
+   OH_NativeXComponent_TouchEvent touchEvent;
+   OH_NativeXComponent_GetTouchEvent(component,window, &touchEvent);
+   ohos_input_poll_touch_event(g_ohos->ohos_input, touchEvent);
+}
 static napi_value SurfaceChanged(napi_env env, napi_callback_info info)
 {
    size_t argc = 3;
@@ -4049,24 +4046,33 @@ static napi_value SurfaceChanged(napi_env env, napi_callback_info info)
             OH_NativeWindow_CreateNativeWindowFromSurfaceId(surfaceId, &g_ohos->window);
         }
     }
-    
    return NULL;
 }
-
-enum {
-  App_SHUTDOWN
+static OH_NativeXComponent_Callback renderCallback = {
+   OnSurfaceCreatedCB,
+   OnSurfaceChangedCB,
+   OnSurfaceDestroyedCB,
+   DispatchTouchEventCB
 };
-static napi_value SendCtl(napi_env env, napi_callback_info info)
+void init_surface(napi_env env, napi_value exports){
+   napi_value exportInstance = NULL;
+    if (napi_ok != napi_get_named_property(env, exports, OH_NATIVE_XCOMPONENT_OBJ, &exportInstance)) {
+        return;
+    }
+    if (napi_ok != napi_unwrap(env, exportInstance, (void **)(&g_ohos->nativeComponent))) {
+        return;
+   }
+   OH_NativeXComponent_RegisterCallback(g_ohos->nativeComponent, &renderCallback);
+}
+static napi_value OpenFile (napi_env env, napi_callback_info info)
 {
    size_t argc = 1;
    napi_value args[1];
    napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
-   int cmdId ;
-   napi_get_value_int32(env, args[0], &cmdId);
-   if (cmdId == App_SHUTDOWN){
-      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   }
- 
+   size_t str_len;
+   char filePath[PATH_MAX_LENGTH];
+   napi_get_value_string_utf8(env, args[0],filePath, sizeof(filePath), &str_len);
+   
    return NULL;
 }
 
@@ -4077,18 +4083,17 @@ static napi_value Init(napi_env env, napi_value exports)
       struct ohos_app *ohos_app = (struct ohos_app*)calloc(1, sizeof(*ohos_app));
       g_ohos = ohos_app;
    }
-    napi_property_descriptor desc[] = {
-       { "sendCtl", NULL, SendCtl, NULL, NULL, NULL, napi_default, NULL },
-       { "surfaceChanged", NULL, SurfaceChanged, NULL, NULL, NULL, napi_default, NULL },
-       { "startApp", NULL, StartApp, NULL, NULL, NULL, napi_default, NULL },
-       { "onNativeEvent", NULL, OnNativeEvent, NULL, NULL, NULL, napi_default, NULL },
-       { "onTouchEvent", NULL, OnTouchEvent, NULL, NULL, NULL, napi_default, NULL },
-       { "onKeyEvent", NULL, OnKeyEvent, NULL, NULL, NULL, napi_default, NULL },
-       { "stopApp", NULL, StopApp, NULL, NULL, NULL, napi_default, NULL },
-        
-    };
-    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
-    return exports;
+   init_surface(env, exports);
+   napi_property_descriptor desc[] = {
+      { "surfaceChanged", NULL, SurfaceChanged, NULL, NULL, NULL, napi_default, NULL },
+      { "startApp", NULL, StartApp, NULL, NULL, NULL, napi_default, NULL },
+      { "onNativeEvent", NULL, OnNativeEvent, NULL, NULL, NULL, napi_default, NULL },
+      { "openFile", NULL, OpenFile, NULL, NULL, NULL, napi_default, NULL },
+      { "onKeyEvent", NULL, OnKeyEvent, NULL, NULL, NULL, napi_default, NULL },
+      { "stopApp", NULL, StopApp, NULL, NULL, NULL, napi_default, NULL },
+   };
+   napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+   return exports;
 }
 static napi_module retroArchModule = {
     .nm_version = 1,
