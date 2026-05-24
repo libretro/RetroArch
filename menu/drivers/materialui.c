@@ -11985,6 +11985,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_TWITCH_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_KICK_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_BLUETOOTH_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_WIFI_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_NETWORK_SETTINGS_STR)
