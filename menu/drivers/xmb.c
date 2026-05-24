@@ -1362,7 +1362,7 @@ static void xmb_render_messagebox_internal(
             video_height,
             xmb->alpha,
             0,
-            scale_factor,
+            1,
             col,
             xmb->shadow_offset / 2,
             mymat);
@@ -1435,7 +1435,7 @@ static void xmb_render_messagebox_internal(
             video_height,
             xmb->alpha,
             0,
-            scale_factor,
+            1,
             col,
             xmb->shadow_offset / 2,
             mymat);
