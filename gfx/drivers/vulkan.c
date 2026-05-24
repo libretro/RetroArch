@@ -6877,7 +6877,18 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
 #ifdef HAVE_OVERLAY
-      if ((vk->flags & VK_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
+      /* Render background overlay (behind game viewport) */
+      if ((vk->flags & VK_FLAG_OVERLAY_ENABLE) && (vk->flags & VK_FLAG_OVERLAY_BACKGROUND_FILL))
+      {
+         uint64_t saved_flags = vk->flags & VK_FLAG_OVERLAY_FULLSCREEN;
+
+         vk->flags |= VK_FLAG_OVERLAY_FULLSCREEN;
+         vulkan_render_overlay(vk, video_width, video_height);
+
+         if (!saved_flags)
+            vk->flags &= ~VK_FLAG_OVERLAY_FULLSCREEN;
+      }
+      else if ((vk->flags & VK_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
          vulkan_render_overlay(vk, video_width, video_height);
 #endif
 
@@ -6934,7 +6945,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-      if ((vk->flags & VK_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu)
+      if ((vk->flags & VK_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu
+            && !(vk->flags & VK_FLAG_OVERLAY_BACKGROUND_FILL))
          vulkan_render_overlay(vk, video_width, video_height);
 #endif
 
@@ -8093,6 +8105,18 @@ static void vulkan_overlay_full_screen(void *data, bool enable)
       vk->flags &= ~VK_FLAG_OVERLAY_FULLSCREEN;
 }
 
+static void vulkan_overlay_background_fill(void *data, bool enable)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk)
+      return;
+
+   if (enable)
+      vk->flags |=  VK_FLAG_OVERLAY_BACKGROUND_FILL;
+   else
+      vk->flags &= ~VK_FLAG_OVERLAY_BACKGROUND_FILL;
+}
+
 static void vulkan_overlay_free(vk_t *vk)
 {
    int i;
@@ -8418,6 +8442,7 @@ static const video_overlay_interface_t vulkan_overlay_interface = {
    vulkan_overlay_vertex_geom,
    vulkan_overlay_full_screen,
    vulkan_overlay_set_alpha,
+   vulkan_overlay_background_fill,
 };
 
 static void vulkan_get_overlay_interface(void *data,

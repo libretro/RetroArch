@@ -108,7 +108,8 @@ enum vk_flags
    VK_FLAG_READBACK_STREAMED   = (1 << 13),
    VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
    VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15),
-   VK_FLAG_SDR_PIPELINE        = (1 << 16)
+   VK_FLAG_OVERLAY_BACKGROUND_FILL = (1 << 16),
+   VK_FLAG_SDR_PIPELINE        = (1 << 17)
 };
 
 enum vk_texture_type

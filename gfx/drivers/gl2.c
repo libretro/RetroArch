@@ -3752,6 +3752,29 @@ static bool gl2_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
+#ifdef HAVE_OVERLAY
+   /* Render background overlay (behind game viewport) */
+   if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && (gl->flags & GL2_FLAG_OVERLAY_BACKGROUND_FILL))
+   {
+      uint64_t saved_flags = gl->flags & GL2_FLAG_OVERLAY_FULLSCREEN;
+      struct video_coords saved_coords = gl->coords;
+
+      gl->flags |= GL2_FLAG_OVERLAY_FULLSCREEN;
+
+      gl2_render_overlay(gl);
+
+      /* Restore state */
+      if (!saved_flags)
+         gl->flags &= ~GL2_FLAG_OVERLAY_FULLSCREEN;
+
+      gl->coords = saved_coords;
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+
+      /* Re-bind game texture since overlay rendering left overlay texture bound */
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   }
+#endif
+
    params.vp_width         = gl->out_vp_width;
    params.vp_height        = gl->out_vp_height;
    params.width            = frame_width;
@@ -3795,7 +3818,8 @@ static bool gl2_frame(void *data, const void *frame,
          chain, &gl->tex_info);
 
 #ifdef HAVE_OVERLAY
-   if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
+   if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu
+         && !(gl->flags & GL2_FLAG_OVERLAY_BACKGROUND_FILL))
       gl2_render_overlay(gl);
 #endif
 
@@ -3816,7 +3840,8 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu)
+   if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu
+         && !(gl->flags & GL2_FLAG_OVERLAY_BACKGROUND_FILL))
       gl2_render_overlay(gl);
 #endif
 
@@ -5230,6 +5255,18 @@ static void gl2_overlay_full_screen(void *data, bool enable)
       gl->flags &= ~GL2_FLAG_OVERLAY_FULLSCREEN;
 }
 
+static void gl2_overlay_background_fill(void *data, bool enable)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl)
+      return;
+
+   if (enable)
+      gl->flags |=  GL2_FLAG_OVERLAY_BACKGROUND_FILL;
+   else
+      gl->flags &= ~GL2_FLAG_OVERLAY_BACKGROUND_FILL;
+}
+
 static void gl2_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    GLfloat *color;
@@ -5252,6 +5289,7 @@ static const video_overlay_interface_t gl2_overlay_interface = {
    gl2_overlay_vertex_geom,
    gl2_overlay_full_screen,
    gl2_overlay_set_alpha,
+   gl2_overlay_background_fill,
 };
 
 static void gl2_get_overlay_interface(void *data,

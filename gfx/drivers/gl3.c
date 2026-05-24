@@ -3229,6 +3229,18 @@ static void gl3_overlay_full_screen(void *data, bool enable)
    }
 }
 
+static void gl3_overlay_background_fill(void *data, bool enable)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (gl)
+   {
+      if (enable)
+         gl->flags |=  GL3_FLAG_OVERLAY_BACKGROUND_FILL;
+      else
+         gl->flags &= ~GL3_FLAG_OVERLAY_BACKGROUND_FILL;
+   }
+}
+
 static void gl3_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    GLfloat *color = NULL;
@@ -3251,6 +3263,7 @@ static const video_overlay_interface_t gl3_overlay_interface = {
    gl3_overlay_vertex_geom,
    gl3_overlay_full_screen,
    gl3_overlay_set_alpha,
+   gl3_overlay_background_fill,
 };
 
 static void gl3_get_overlay_interface(void *data,
@@ -4231,6 +4244,22 @@ static bool gl3_frame(void *data, const void *frame,
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);
 
+#ifdef HAVE_OVERLAY
+      /* Render background overlay (behind game viewport) */
+      if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && (gl->flags & GL3_FLAG_OVERLAY_BACKGROUND_FILL))
+      {
+         /* Save current fullscreen state and force full screen for background overlay */
+         uint64_t saved_flags = gl->flags & GL3_FLAG_OVERLAY_FULLSCREEN;
+         gl->flags |= GL3_FLAG_OVERLAY_FULLSCREEN;
+
+         gl3_render_overlay(gl, width, height);
+
+         /* Restore fullscreen state */
+         if (!saved_flags)
+            gl->flags &= ~GL3_FLAG_OVERLAY_FULLSCREEN;
+      }
+#endif
+
       gl->chain.shader->set_params(&params, gl->chain.shader_data);
 
       gl->chain.coords.vertices = 4;
@@ -4342,6 +4371,23 @@ static bool gl3_frame(void *data, const void *frame,
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);
+
+#ifdef HAVE_OVERLAY
+      /* Render background overlay (behind game viewport) */
+      if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && (gl->flags & GL3_FLAG_OVERLAY_BACKGROUND_FILL))
+      {
+         /* Save current fullscreen state and force full screen for background overlay */
+         uint64_t saved_flags = gl->flags & GL3_FLAG_OVERLAY_FULLSCREEN;
+         gl->flags |= GL3_FLAG_OVERLAY_FULLSCREEN;
+
+         gl3_render_overlay(gl, width, height);
+
+         /* Restore fullscreen state */
+         if (!saved_flags)
+            gl->flags &= ~GL3_FLAG_OVERLAY_FULLSCREEN;
+      }
+#endif
+
       gl3_filter_chain_build_viewport_pass(filter_chain,
             &gl->filter_chain_vp,
             (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT)
@@ -4352,7 +4398,8 @@ static bool gl3_frame(void *data, const void *frame,
 #endif /* HAVE_SLANG */
 
 #ifdef HAVE_OVERLAY
-   if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
+   if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && overlay_behind_menu
+         && !(gl->flags & GL3_FLAG_OVERLAY_BACKGROUND_FILL))
       gl3_render_overlay(gl, width, height);
 #endif
 
@@ -4372,7 +4419,8 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu)
+   if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu
+         && !(gl->flags & GL3_FLAG_OVERLAY_BACKGROUND_FILL))
       gl3_render_overlay(gl, width, height);
 #endif
 

@@ -3396,6 +3396,10 @@ void input_overlay_load_active(
    if (ol->iface->full_screen)
       ol->iface->full_screen(ol->iface_data,
             (ol->active->flags & OVERLAY_FULL_SCREEN));
+
+   if (ol->iface->background_fill)
+      ol->iface->background_fill(ol->iface_data,
+            (ol->active->flags & OVERLAY_BACKGROUND_FILL));
 }
 
 /**
