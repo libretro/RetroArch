@@ -5908,7 +5908,6 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Check double press if enabled */
       if (     trig_reset_key
-            && settings->bools.menu_show_confirm
             && settings->bools.confirm_reset)
       {
          static retro_time_t reset_key_time   = 0;
@@ -5946,7 +5945,6 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Check double press if enabled */
       if (     trig_close_key
-            && settings->bools.menu_show_confirm
             && settings->bools.confirm_close)
       {
          static retro_time_t close_key_time   = 0;
@@ -5995,7 +5993,6 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Check double press if enabled */
       if (     trig_quit_key
-            && settings->bools.menu_show_confirm
             && settings->bools.confirm_quit)
       {
          static retro_time_t quit_key_time   = 0;
