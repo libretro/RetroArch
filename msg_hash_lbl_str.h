@@ -1212,6 +1212,7 @@
 #define MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR "detect_core_list_push_dir"
 #define MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE_STR "menu_battery_level_enable"
 #define MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS_STR "menu_show_sublabels"
+#define MENU_ENUM_LABEL_MENU_SHOW_CONFIRM_STR "menu_show_confirm"
 #define MENU_ENUM_LABEL_BROWSE_URL_STR "browse_url"
 #define MENU_ENUM_LABEL_BROWSE_START_STR "browse_start"
 #define MENU_ENUM_LABEL_SHADER_PIPELINE_BOKEH_STR "shader_pipeline_bokeh"

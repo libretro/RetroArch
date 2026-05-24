@@ -2032,6 +2032,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
    SETTING_BOOL("menu_show_sublabels",           &settings->bools.menu_show_sublabels, true, DEFAULT_MENU_SHOW_SUBLABELS, false);
+   SETTING_BOOL("menu_show_confirm",             &settings->bools.menu_show_confirm, true, DEFAULT_MENU_SHOW_CONFIRM, false);
    SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE, false);
    SETTING_BOOL("menu_ticker_smooth",            &settings->bools.menu_ticker_smooth, true, DEFAULT_MENU_TICKER_SMOOTH, false);
    SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, DEFAULT_MENU_SCROLL_FAST, false);

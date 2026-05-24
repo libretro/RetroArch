@@ -6640,6 +6640,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Show additional information for menu items."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Show Confirmation Boxes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Ask for confirmation before quitting, resetting or closing content. When disabled these actions happen immediately."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Display Start Screen"

@@ -5870,7 +5870,7 @@ int action_ok_quit(const char *path, const char *label, unsigned type, size_t id
 {
    settings_t *settings       = config_get_ptr();
 
-   if (settings->bools.confirm_quit)
+   if (settings->bools.menu_show_confirm && settings->bools.confirm_quit)
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       menu_dialog_confirm_set(menu_st, MSG_PRESS_AGAIN_TO_QUIT, CMD_EVENT_QUIT);
@@ -5883,7 +5883,7 @@ int action_ok_restart_content(const char *path, const char *label, unsigned type
 {
    settings_t *settings       = config_get_ptr();
 
-   if (settings->bools.confirm_reset)
+   if (settings->bools.menu_show_confirm && settings->bools.confirm_reset)
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       menu_dialog_confirm_set(menu_st, MSG_PRESS_AGAIN_TO_RESET, CMD_EVENT_RESET);
@@ -5896,7 +5896,7 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
 {
    settings_t *settings       = config_get_ptr();
 
-   if (settings->bools.confirm_close)
+   if (settings->bools.menu_show_confirm && settings->bools.confirm_close)
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       menu_dialog_confirm_set(menu_st, MSG_PRESS_AGAIN_TO_CLOSE_CONTENT, CMD_EVENT_CLOSE_CONTENT);

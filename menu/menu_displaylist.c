@@ -10543,6 +10543,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CORE_ENABLE,                                           PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,                                   PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_MENU_SHOW_CONFIRM,                                     PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,                                PARSE_ONLY_BOOL, true  },
             };
 
