@@ -17056,11 +17056,12 @@ static bool setting_append_list(
                /* Add per-player menu entries */
                for (u = 0; u < aux_max_users; u++)
                {
+                  enum msg_hash_enums screen_enum;
+
                   snprintf(s1, sizeof(s1), "Screen %u", u + 1);
 
                   snprintf(s2, sizeof(s2), "%u_player_aux_streaming", u + 1);
 
-                  enum msg_hash_enums screen_enum;
                   switch (u)
                   {
                      case 0: screen_enum = MENU_ENUM_LABEL_AUX_SCREEN_1_SETTINGS; break;

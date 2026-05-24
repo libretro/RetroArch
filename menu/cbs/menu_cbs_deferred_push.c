@@ -327,7 +327,6 @@ GENERIC_DEFERRED_PUSH(deferred_push_smb_client_options,             DISPLAYLIST_
 static int deferred_push_dsu_client_settings_list(menu_displaylist_info_t *info)
 {
    settings_t *settings = config_get_ptr();
-   RARCH_LOG("[DSU] deferred_push_dsu_client_settings_list called, pushing DISPLAYLIST_DSU_CLIENT_SETTINGS_LIST\n");
    return deferred_push_dlist(info, DISPLAYLIST_DSU_CLIENT_SETTINGS_LIST, settings);
 }
 static int deferred_push_dsu_client_player_settings_list(menu_displaylist_info_t *info)
@@ -344,9 +343,6 @@ static int deferred_push_dsu_client_player_settings_list(menu_displaylist_info_t
    if (info->path)
       free(info->path);
    info->path = strdup(player_label);
-
-   RARCH_LOG("[DSU] deferred_push_dsu_client_player_settings_list called, player=%u\n",
-         player);
 
    return deferred_push_dlist(info, DISPLAYLIST_DSU_CLIENT_PLAYER_SETTINGS_LIST, settings);
 }
@@ -1254,7 +1250,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #endif
 #ifdef HAVE_DSU
          case MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS:
-            RARCH_LOG("[DSU] case MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS hit, binding deferred_push_dsu_client_settings_list\n");
          case MENU_ENUM_LABEL_VALUE_DSU_CLIENT_SETTINGS:
          case MENU_ENUM_LABEL_DEFERRED_DSU_CLIENT_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dsu_client_settings_list);

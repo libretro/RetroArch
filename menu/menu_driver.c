@@ -2444,8 +2444,6 @@ static bool menu_driver_displaylist_push(
       cbs       = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
    }
 
-   RARCH_LOG("[DSU] menu_driver_displaylist_push called, label=%s\n", label ? label : "NULL");
-
    if (cbs)
       enum_idx    = cbs->enum_idx;
 
@@ -2470,19 +2468,11 @@ static bool menu_driver_displaylist_push(
 
    if (cbs)
    {
-      if (cbs->enum_idx == MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS)
-         RARCH_LOG("[DSU] menu_driver_displaylist_push: cbs->enum_idx = MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS (%d)\n", cbs->enum_idx);
       if (cbs->action_deferred_push)
       {
-         if (cbs->enum_idx == MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS)
-            RARCH_LOG("[DSU] menu_driver_displaylist_push: action_deferred_push is set, calling it\n");
          if (cbs->action_deferred_push(&info) != 0)
             goto error;
-         if (cbs->enum_idx == MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS)
-            RARCH_LOG("[DSU] menu_driver_displaylist_push: action_deferred_push returned successfully\n");
       }
-      else if (cbs->enum_idx == MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS)
-         RARCH_LOG("[DSU] menu_driver_displaylist_push: action_deferred_push is NULL!\n");
    }
 
    ret = true;
@@ -7598,9 +7588,6 @@ int generic_menu_entry_action(
    size_t selection_buf_size      = selection_buf ? selection_buf->size : 0;
    menu_file_list_cbs_t *cbs      = selection_buf && selection_buf->size ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
-
-   if (cbs && cbs->enum_idx == MENU_ENUM_LABEL_DSU_CLIENT_SETTINGS)
-      RARCH_LOG("[DSU] generic_menu_entry_action: entry clicked, enum_idx=%d, action=%d\n", cbs->enum_idx, action);
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable      = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;

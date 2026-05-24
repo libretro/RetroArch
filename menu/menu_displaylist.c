@@ -9490,9 +9490,6 @@ unsigned menu_displaylist_build_list(
             unsigned user;
             unsigned max_users = 8;
 
-            RARCH_LOG("[DSU] Building DSU client settings list: max_users=%u\n",
-                  max_users);
-
             for (user = 0; user < max_users; user++)
             {
                char player_label[32];
@@ -9505,11 +9502,7 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_DSU_CLIENT_PLAYER_SETTINGS_STR,
                         MENU_ENUM_LABEL_DSU_CLIENT_PLAYER_SETTINGS,
                         MENU_SETTING_ACTION, user, 0, NULL))
-               {
-                  RARCH_LOG("[DSU] Added DSU client player menu entry: %s\n",
-                        player_label);
                   count++;
-               }
             }
          }
          break;
@@ -9527,9 +9520,6 @@ unsigned menu_displaylist_build_list(
                player = 1;
             if (player > MAX_USERS)
                player = MAX_USERS;
-
-            RARCH_LOG("[DSU] Building DSU client player settings list: player=%u\n",
-                  player);
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      (enum msg_hash_enums)
@@ -9597,8 +9587,6 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
 
-            RARCH_LOG("[DSU] DSU client player settings list added %u entries for player=%u\n",
-                  count, player);
          }
          break;
 #endif
