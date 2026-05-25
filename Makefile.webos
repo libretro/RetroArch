@@ -19,6 +19,10 @@ WEBOS_LIB_DIR         ?= $(STAGING_DIR)/lib
 
 ADD_SDL2_LIB          ?= 0
 SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.12-webos.1/SDL2-2.30.12-webos-abi.tar.gz
+64TO32_BRIDGE_DIR     ?= /media/developer/apps/usr/palm/applications/org.webosbrew.bridge-64to32
+ELF_INTERPRETER_BIN   ?= /lib/ld-linux-aarch64.so.1
+SET_ELF_INTERPRETER   ?= 0
+SET_BUILD_ID          ?= 0
 
 #########################
 #########################
@@ -62,7 +66,7 @@ HAVE_DR_MP3 = 1
 HAVE_DYNAMIC = 1
 HAVE_DYLIB = 1
 HAVE_EGL ?= 0
-HAVE_FREETYPE = 1
+HAVE_FREETYPE ?= 1
 HAVE_GDI = 0
 HAVE_GETADDRINFO = 1
 HAVE_GETOPT_LONG = 1
@@ -95,13 +99,13 @@ HAVE_OPENDINGUX_FBDEV = 0
 HAVE_OPENGL = 0
 HAVE_OPENGL1 = 0
 HAVE_OPENGL_CORE = 0
-HAVE_OPENGLES = 1
+HAVE_OPENGLES ?= 1
 HAVE_OPENGLES3 ?= 0
 HAVE_OPENGLES3_1 ?= 0
 HAVE_OPENGLES3_2 ?= 0
 HAVE_OPENSSL = 0
 HAVE_OVERLAY = 1
-HAVE_PULSE = 1
+HAVE_PULSE ?= 1
 HAVE_RBMP = 1
 HAVE_RJPEG = 1
 HAVE_RPILED = 0
@@ -117,8 +121,12 @@ HAVE_STDIN_CMD = 1
 HAVE_STRCASESTR = 1
 HAVE_THREADS = 1
 HAVE_TINYALSA ?= 0
+ifeq ($(findstring arm64,$(ARCH)),arm64)
+HAVE_UDEV ?= 1
+else
 # udev is only supported on webOS 4 and above
 HAVE_UDEV ?= 0
+endif
 HAVE_RGUI = 1
 HAVE_MATERIALUI = 0
 HAVE_XMB = 1
@@ -138,6 +146,8 @@ HAVE_WEBOS_EXTRA_PROTOS ?= 0
 HAVE_CORE_INFO_CACHE = 1
 HAVE_WAYLAND ?= 0
 HAVE_WAYLAND_BACKPORT ?= 1
+HAVE_WAYLAND_CLIENTSTUB ?= 0
+HAVE_64TO32BIT_BRIDGE ?= 0
 
 OS = Linux
 TARGET = retroarch
@@ -159,6 +169,12 @@ CFLAGS += -DWEBOS_APP_ID=\"$(APP_PACKAGE_NAME)\"
 CXXFLAGS := $(ARCHFLAGS) -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS := $(ARCHFLAGS)
 LDFLAGS := -Wl,-rpath=\$$ORIGIN/lib,--gc-sections
+ifeq ($(SET_BUILD_ID),1)
+  LDFLAGS +=  -Wl,--build-id=sha1
+endif
+ifeq ($(HAVE_64TO32BIT_BRIDGE),1)
+LDFLAGS += -Wl,-rpath=$(64TO32_BRIDGE_DIR)/lib
+endif
 INCLUDE_DIRS = -I$(WEBOS_INC_DIR)
 LIBRARY_DIRS = -L$(WEBOS_USR_LIB_DIR)
 DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
@@ -167,7 +183,9 @@ DEFINES += -DHAVE_GETOPT_LONG=1 -DHAVE_STRCASESTR=1 -DHAVE_DYNAMIC=1
 DEFINES += -DHAVE_FILTERS_BUILTIN
 DEFINES += -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES
 DEFINES += -DHAVE_NETWORKGAMEPAD
-DEFINES += -DHAVE_FREETYPE
+ifeq ($(HAVE_FREETYPE),1)
+  DEFINES += -DHAVE_FREETYPE
+endif
 DEFINES += -DHAVE_UPDATE_CORE_INFO
 EGL_LIBS = -lEGL
 OPENGLES_LIBS = -lGLESv2
@@ -187,9 +205,16 @@ ifeq ($(HAVE_OPENGLES3_2),1)
 endif
 ifeq ($(HAVE_WAYLAND),1)
   DEFINES += -DHAVE_WAYLAND=1
-  WAYLAND_LIBS = -lwayland-client -lwayland-cursor
+  ifeq ($(HAVE_WAYLAND_CLIENTSTUB),1)
+    WAYLAND_LIBS = -lwayland-client-stub
+  endif
+  WAYLAND_LIBS += -lwayland-client -lwayland-cursor
   ifeq ($(HAVE_EGL),1)
     WAYLAND_LIBS += -lwayland-egl
+  endif
+  ifeq ($(HAVE_WAYLAND_CLIENTSTUB),1)
+    WAYLAND_LIBS += \
+      -Wl,--no-as-needed -lwayland-client -Wl,--as-needed
   endif
 endif
 ifeq ($(HAVE_WEBOS_EXTRA_PROTOS),1)
@@ -215,6 +240,9 @@ ifeq ($(HAVE_PULSE),1)
 endif
 ifeq ($(HAVE_SDL2),1)
   DEFINES += -DHAVE_SDL2
+endif
+ifeq ($(SET_ELF_INTERPRETER), 1)
+  ELF_INTERPRETER ?= $(64TO32_BRIDGE_DIR)$(ELF_INTERPRETER_BIN)
 endif
 
 PKG_CONFIG=pkg-config
@@ -369,6 +397,9 @@ ifeq ($(ADD_SDL2_LIB), 1)
 endif
 ifneq ($(DEBUG), 1)
 	$(STRIP) webos/dist/$(TARGET)
+endif
+ifeq ($(SET_ELF_INTERPRETER), 1)
+	patchelf --set-interpreter $(ELF_INTERPRETER) $(TARGET)
 endif
 	cd webos && ares-package dist
 

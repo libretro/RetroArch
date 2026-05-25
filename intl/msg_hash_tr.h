@@ -4730,30 +4730,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "İleri Sarmadan Sonra Sıfırla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Hızlı ileri sarmadan sonra kare süresi sayacını sıfırlayın."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Durum Yüklemesinden Sonra Sıfırla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Bir durum yükledikten sonra kare süresi sayacını sıfırlayın."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Durumu Kaydettikten Sonra Sıfırla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Bir durumu kaydettikten sonra kare zaman sayacını sıfırlayın."
-   )
 
 /* Settings > Recording */
 
@@ -6194,10 +6170,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "'Durum Kaydetme/Yükleme Geri Alı' Göster"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Durum kaydetme/yükleme geri alma seçeneklerini gösterin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7728,6 +7700,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Facebook Gaming Akış Anahtarı"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -13844,10 +13819,6 @@ MSG_HASH(
    "Durum yüklemesi geri alındı."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Durum kaydı geri alınıyor."
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Bilinmiyor"
    )
@@ -14503,6 +14474,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Video yenileme hızı %s Hz olarak değiştirildi."
    )
+
 
 /* Lakka */
 

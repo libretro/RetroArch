@@ -5042,30 +5042,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Nullázás gyorsítás után"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "A képkocka időmérés nullázása gyorsítás után."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Nullázás játékállás betöltése után"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "A képkocka időmérés nullázása játékállás betöltése után."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Nullázás játékállás mentése után"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "A képkocka időmérés nullázása játékállás mentése után."
-   )
 
 /* Settings > Recording */
 
@@ -6526,10 +6502,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "\"Játékállás mentés/töltés visszavonása\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "A játékállás mentés/töltés visszavonásának lehetőségei jelenjenek meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -8072,6 +8044,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Facebook Gaming stream kulcs"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -14100,10 +14075,6 @@ MSG_HASH(
    "Játékállás betöltése visszavonva."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Játékállás mentés visszavonása folyamatban"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Ismeretlen"
    )
@@ -14767,6 +14738,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "A képfrissítési gyakoriság %s Hz-re változott."
    )
+
 
 /* Lakka */
 

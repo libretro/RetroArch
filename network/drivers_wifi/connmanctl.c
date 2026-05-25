@@ -79,7 +79,6 @@ static void connmanctl_refresh_services(connman_t *connman)
    while (fgets(line, 512, serv_file))
    {
       int i;
-      size_t ssid_len;
       wifi_network_info_t entry;
       struct string_list* list = NULL;
       size_t _len              = strlen(line);
@@ -103,13 +102,29 @@ static void connmanctl_refresh_services(connman_t *connman)
       if (list->size == 0)
          continue;
 
-      for (i = 0; i < list->size-1; i++)
+      /* Join ssid tokens with spaces via offset tracking; the prior
+       * paired-strlcat form re-scanned entry.ssid from the start on
+       * every append, giving O(tokens^2) total cost.  The trailing
+       * strlen() that was used to strip the final space is also
+       * eliminated — we just stop one byte short of writing it. */
       {
-         strlcat(entry.ssid, list->elems[i].data, sizeof(entry.ssid));
-         strlcat(entry.ssid, " ", sizeof(entry.ssid)-1);
+         size_t avail   = sizeof(entry.ssid);
+         size_t ssid_off = 0;
+         entry.ssid[0]  = '\0';
+         for (i = 0; i < (int)list->size - 1 && ssid_off + 1 < avail; i++)
+         {
+            const char *tok  = list->elems[i].data;
+            size_t      tlen = strlen(tok);
+
+            if (i > 0)
+               entry.ssid[ssid_off++] = ' ';
+            if (tlen >= avail - ssid_off)
+               tlen = avail - ssid_off - 1;
+            memcpy(entry.ssid + ssid_off, tok, tlen);
+            ssid_off += tlen;
+         }
+         entry.ssid[ssid_off] = '\0';
       }
-      if ((ssid_len = strlen(entry.ssid)) > 0)
-         entry.ssid[ssid_len - 1] = 0;
 
       /* Store the connman network id here, for later */
       strlcpy(entry.netid, list->elems[list->size-1].data, sizeof(entry.netid));

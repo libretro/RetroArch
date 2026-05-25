@@ -4970,30 +4970,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Restablecer despois do avance rápido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Restablece o contador de tempo de fotograma despois do avance rápido."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Restablecer despois do estado de carga"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Restablece o contador de tempo de fotograma despois de cargar un estado."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Restablecer despois de gardar o estado"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Restablece o contador de tempo de fotograma despois de gardar un estado."
-   )
 
 /* Settings > Recording */
 
@@ -6422,10 +6398,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Mostrar \"Desfacer gardar/cargar estado\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostra as opcións para desfacer o estado de gardar/cargar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7944,6 +7916,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Chave de fluxo de Facebook Gamming"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -14136,10 +14111,6 @@ MSG_HASH(
    "Desfixo o estado de carga."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Desfacendo o estado de gardado"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Descoñecido"
    )
@@ -14787,6 +14758,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "A taxa de actualización do vídeo cambiou a %s Hz."
    )
+
 
 /* Lakka */
 

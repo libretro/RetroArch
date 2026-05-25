@@ -333,7 +333,7 @@ static void fpga_set_texture_frame(void *data,
 }
 
 /* TODO/FIXME - implement */
-static void fpga_set_osd_msg(void *data, const char *msg,
+static void fpga_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font) { }
 static void fpga_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len) { }

@@ -1749,6 +1749,14 @@ MSG_HASH(
    "Modifier les réglages de synchronisation vidéo."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Applique le filtre vidéo. C'est une requête qui n'est pas nécessairement honorée par le pilote vidéo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Filtre vidéo activé"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Suspendre l'économiseur d'écran"
    )
@@ -2549,6 +2557,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Tente de maintenir la cible du 'Retard d'images' désirée et de minimiser les sautes d'images. Le point de départ est de 3/4 du temps d'image lorsque 'Retard d'images' est de 0 (Auto)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Échantillon de temps par image dans un état stable uniquement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Restreindre l'échantillonnage de la 'Fréquence estimée de l'écran' aux images où le contenu s'exécute proprement (pas de menu, pas de pause, pas d'avance rapide, temps par image dans une enveloppe de cohérence). Le résultat du diagnostic devient un véritable signal au prix d'une convergence plus lente après le chargement de contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -3992,6 +4008,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Appliquer le filtre vidéo (activer/désactiver)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Active/désactive le 'Filtre vidéo' logiciel."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Afficher/masquer les images/s"
    )
@@ -5027,28 +5051,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Réinitialiser après l'avance rapide"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Réinitialisation automatique après événements perturbateurs"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Réinitialise le compteur de temps par images après l'avance rapide."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Réinitialiser après le chargement d'une sauvegarde instantanée"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Réinitialise le compteur de temps par images après le chargement d'une sauvegarde instantanée."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Réinitialiser après une sauvegarde instantanée"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Réinitialise le compteur de temps par images après une sauvegarde instantanée."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Efface le tampon d'échantillonnage de la 'Fréquence estimée de l'écran' après l'avance rapide, la sauvegarde instantanée ou le chargement de sauvegarde instantanée. Ces opérations introduisent des échantillons de synchronisation qui ne reflètent pas la cadence normale des images et faussent la mesure de la déviation. Nettoyage le plus efficace ; n'a pas d'effet lorsque 'Échantillon de temps par image seulement dans un état stable' est activé (ce qui empêche la contamination à la [...]"
    )
 
 /* Settings > Recording */
@@ -5699,6 +5707,14 @@ MSG_HASH(
    "L'affichage de l'utilisation de la mémoire sera actualisé à l'intervalle défini en images."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Afficher l'heure"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Affiche l'heure courante dans le format préféré."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Afficher le ping du jeu en réseau"
    )
@@ -6337,6 +6353,10 @@ MSG_HASH(
    "Afficher 'Jeu en réseau'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "Afficher l'entrée 'Jeu en réseau' dans le menu principal ou les listes de lecture."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Afficher 'Historique'"
    )
@@ -6452,6 +6472,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Afficher des informations supplémentaires pour les éléments du menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Afficher les boîtes de confirmation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Demander confirmation avant d'arrêter, de réinitialiser ou de fermer le contenu. Lorsque cette option est désactivée, ces actions se produisent immédiatement."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Afficher l'écran de configuration initiale"
@@ -6517,7 +6545,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Afficher les options pour annuler le chargement/l'enregistrement d'une sauvegarde instantanée."
+   "Afficher les options pour annuler l'enregistrement/le chargement d'une sauvegarde instantanée. Start sur la RetroManette déclenche l'annulation de l'enregistrement/du chargement lorsque ces options sont masquées."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -8051,6 +8079,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Clé de stream Facebook Gaming "
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Clé de streaming Kick "
    )
 
 /* Settings > Directory */
@@ -11537,6 +11572,10 @@ MSG_HASH(
    "Facteur de fondu vertical"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Afficher la liste horizontale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Afficher l'en-tête du titre"
    )
@@ -14337,7 +14376,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Annulation de la sauvegarde instantanée"
+   "Annulation de la sauvegarde instantanée..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -15003,6 +15042,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Fréquence de rafraîchissement vidéo changée à %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Filtre vidéo : activer"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Filtre vidéo : désactiver"
+   )
+
 
 /* Lakka */
 

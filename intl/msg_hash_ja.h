@@ -4354,30 +4354,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "早送り後にリセット"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "早送り後にフレームタイムカウンターをリセットします。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "ステートロード後にリセット"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "ステートロード後にフレームタイムカウンターをリセットします。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "ステートセーブ後にリセット"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "ステートセーブ後にフレームタイムカウンターをリセットします。"
-   )
 
 /* Settings > Recording */
 
@@ -5726,10 +5702,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "[ステートセーブ/ロードを元に戻す] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "[ステートロード/セーブを元に戻す] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7232,6 +7204,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Facebook Gaming ストリームキー"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -12944,10 +12919,6 @@ MSG_HASH(
    "ステートロードを取り消しました。"
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "ステートセーブを取り消しています"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "不明"
    )
@@ -13567,6 +13538,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "ビデオのリフレッシュレートを %s Hz に変更しました。"
    )
+
 
 /* Lakka */
 

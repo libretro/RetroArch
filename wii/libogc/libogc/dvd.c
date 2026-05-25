@@ -440,7 +440,7 @@ static void __dvd_clearwaitingqueue()
 static s32 __dvd_checkwaitingqueue()
 {
 	u32 i;
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	for(i=0;i<4;i++) {
@@ -452,7 +452,7 @@ static s32 __dvd_checkwaitingqueue()
 
 static s32 __dvd_pushwaitingqueue(s32 prio,dvdcmdblk *block)
 {
-	u32 level;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	__lwp_queue_appendI(&__dvd_waitingqueue[prio],&block->node);
 	_CPU_ISR_Restore(level);
@@ -461,7 +461,7 @@ static s32 __dvd_pushwaitingqueue(s32 prio,dvdcmdblk *block)
 
 static dvdcmdblk* __dvd_popwaitingqueueprio(s32 prio)
 {
-	u32 level;
+	u32 level = 0;
 	dvdcmdblk *ret = NULL;
 	_CPU_ISR_Disable(level);
 	ret = (dvdcmdblk*)__lwp_queue_firstnodeI(&__dvd_waitingqueue[prio]);
@@ -471,7 +471,8 @@ static dvdcmdblk* __dvd_popwaitingqueueprio(s32 prio)
 
 static dvdcmdblk* __dvd_popwaitingqueue()
 {
-	u32 i,level;
+	u32 i;
+	u32 level = 0;
 	dvdcmdblk *ret = NULL;
 	_CPU_ISR_Disable(level);
 	for(i=0;i<4;i++) {
@@ -594,7 +595,7 @@ static u32 __ProcessNextCmd()
 
 static void __DVDLowWATypeSet(u32 workaround,u32 workaroundseek)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	__dvd_workaround = workaround;
@@ -1356,7 +1357,7 @@ static void __dvd_unlockdrivecb(s32 result)
 
 void __dvd_resetasync(dvdcbcallback cb)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	__dvd_clearwaitingqueue();
@@ -1616,7 +1617,7 @@ void __dvd_stategotoretry()
 s32 __issuecommand(s32 prio,dvdcmdblk *block)
 {
 	s32 ret;
-	u32 level;
+	u32 level = 0;
 	if(__dvd_autoinvalidation &&
 		(block->cmd==0x0001 || block->cmd==0x00004
 		|| block->cmd==0x0005 || block->cmd==0x000e)) DCInvalidateRange(block->buf,block->len);
@@ -2056,7 +2057,7 @@ s32 DVD_InquiryAsync(dvdcmdblk *block,dvddrvinfo *info,dvdcbcallback cb)
 
 s32 DVD_Inquiry(dvdcmdblk *block,dvddrvinfo *info)
 {
-	u32 level;
+	u32 level = 0;
 	s32 state,ret;
 	ret = DVD_InquiryAsync(block,info,__dvd_inquirysynccb);
 	if(!ret) return -1;
@@ -2075,7 +2076,7 @@ s32 DVD_Inquiry(dvdcmdblk *block,dvddrvinfo *info)
 
 s32 DVD_ReadPrio(dvdcmdblk *block,void *buf,u32 len,s64 offset,s32 prio)
 {
-	u32 level;
+	u32 level = 0;
 	s32 state,ret;
 	if(offset>=0 && offset<8511160320LL) {
 		ret = DVD_ReadAbsAsyncPrio(block,buf,len,offset,__dvd_readsynccb,prio);
@@ -2097,7 +2098,7 @@ s32 DVD_ReadPrio(dvdcmdblk *block,void *buf,u32 len,s64 offset,s32 prio)
 
 s32 DVD_SeekPrio(dvdcmdblk *block,s64 offset,s32 prio)
 {
-	u32 level;
+	u32 level = 0;
 	s32 state,ret;
 	if(offset>0 && offset<8511160320LL) {
 		ret = DVD_SeekAbsAsyncPrio(block,offset,__dvd_seeksynccb,prio);
@@ -2120,7 +2121,7 @@ s32 DVD_SeekPrio(dvdcmdblk *block,s64 offset,s32 prio)
 
 s32 DVD_CancelAllAsync(dvdcbcallback cb)
 {
-	u32 level;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	DVD_Pause();
 	_CPU_ISR_Restore(level);
@@ -2137,7 +2138,7 @@ s32 DVD_StopStreamAtEndAsync(dvdcmdblk *block,dvdcbcallback cb)
 s32 DVD_StopStreamAtEnd(dvdcmdblk *block)
 {
 	s32 ret,state;
-	u32 level;
+	u32 level = 0;
 	ret = DVD_StopStreamAtEndAsync(block,__dvd_streamatendsynccb);
 	if(!ret) return -1;
 
@@ -2165,7 +2166,7 @@ s32 DVD_SpinUpDriveAsync(dvdcmdblk *block,dvdcbcallback cb)
 s32 DVD_SpinUpDrive(dvdcmdblk *block)
 {
 	s32 ret,state;
-	u32 level;
+	u32 level = 0;
 	ret = DVD_SpinUpDriveAsync(block,__dvd_spinupdrivesynccb);
 	if(!ret) return -1;
 
@@ -2192,7 +2193,7 @@ s32 DVD_ControlDriveAsync(dvdcmdblk *block,u32 cmd,dvdcbcallback cb)
 s32 DVD_ControlDrive(dvdcmdblk *block,u32 cmd)
 {
 	s32 ret,state;
-	u32 level;
+	u32 level = 0;
 	ret = DVD_ControlDriveAsync(block,cmd,__dvd_motorcntrlsynccb);
 
 	_CPU_ISR_Disable(level);
@@ -2218,7 +2219,7 @@ s32 DVD_SetGCMOffsetAsync(dvdcmdblk *block,s64 offset,dvdcbcallback cb)
 s32 DVD_SetGCMOffset(dvdcmdblk *block,s64 offset)
 {
 	s32 ret,state;
-	u32 level;
+	u32 level = 0;
 	ret = DVD_SetGCMOffsetAsync(block,offset,__dvd_setgcmsynccb);
 
 	_CPU_ISR_Disable(level);
@@ -2235,7 +2236,7 @@ s32 DVD_SetGCMOffset(dvdcmdblk *block,s64 offset)
 
 s32 DVD_GetCmdBlockStatus(dvdcmdblk *block)
 {
-	u32 level;
+	u32 level = 0;
 	s32 ret = -1;
 
 	_CPU_ISR_Disable(level);
@@ -2249,7 +2250,7 @@ s32 DVD_GetCmdBlockStatus(dvdcmdblk *block)
 s32 DVD_GetDriveStatus()
 {
 	s32 ret;
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	if(__dvd_fatalerror) ret = -1;
@@ -2266,7 +2267,7 @@ s32 DVD_GetDriveStatus()
 
 void DVD_Pause()
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	__dvd_pauseflag = 1;
@@ -2315,7 +2316,7 @@ s32 DVD_Mount()
 {
 	s32 ret = 0;
 	s32 state;
-	u32 level;
+	u32 level = 0;
 
 	ret = DVD_MountAsync(&__dvd_block$15,__dvd_mountsynccb);
 	if(!ret) return -1;

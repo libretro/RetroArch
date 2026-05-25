@@ -1757,6 +1757,14 @@ MSG_HASH(
    "Canvia les opcions de sincronització de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Aplica el filtre de vídeo: És una petició que el controlador de vídeo no té per què respectar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Activa el filtre de vídeo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Suspensió de l'estalvi de pantalla"
    )
@@ -2545,6 +2553,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Intentar mantenir el desfasament de fotogrames objectiu i minimitzar els fotogrames perduts. Si el desfasament de fotogrames està establert a 0 (automàtic), el punt de partida serà de 3/4 parts de la duració dels fotogrames."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Temps de fotograma de mostra només en estat estable"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Restringeix el mostreig de la \"Freqüència d'actualització de pantalla estimada\" als fotogrames on el contingut s'executa correctament (no és de menú, no està en pausa, no s'avança ràpidament, el temps del fotograma està dins d'un envoltant de sanitat). La lectura de diagnòstic esdevé un senyal real a costa d'una convergència més lenta després de la càrrega del contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -4028,6 +4044,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Aplica el filtre de vídeo (alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Canvia l'estat de funcionament el programari 'Video Filter'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Mostra els FPS (commuta)"
    )
@@ -5059,28 +5083,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reiniciar després d'utilitzar l'avançament ràpid"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Fes un reinici automàtic després d'un event disruptiu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reinicia el comptador de duració de fotogrames després d'un avançament ràpid."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reiniciar després de carregar un desat ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reinicia el comptador de duració de fotogrames després de carregar un estat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reiniciar després de generar un desat ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reinicia el comptador de duració de fotogrames després de desar un estat."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Esborra la memòria intermèdia de mostres de la \"Freqüència d'actualització de pantalla estimada\" després d'avançar ràpidament, desar o carregar. Aquestes operacions introdueixen mostres de temps que no reflecteixen la cadència normal dels fotogrames i distorsionarien la mesura de la desviació. Neteja optimitzada; no té cap efecte quan l'opció \"Només temps de fotogrames de mostra en estat estable\" està habilitada (cosa que evita la contaminació a l'origen)."
    )
 
 /* Settings > Recording */
@@ -5729,6 +5737,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "El comptador de memòria en pantalla s'actualitzarà a la velocitat assignada a fotogrames."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Mostra l'hora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Mostra el temps actual en el format preferit."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -6484,6 +6500,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Mostra informació addicional pels elements del menú."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Mostra missatge de confirmació"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Pregunta per confirmació abans de sortir, reiniciar o tancar el contingut. Si està desactivat, aquestes accions seran immediates."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Mostra la pantalla inicial"
@@ -6549,7 +6573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostra les opcions per desfer el desament o càrrega d’estat."
+   "Mostra les opcions per desfer el guardat/carregat d'estats. Si ocultes aquesta opció, podràs desfer els desats o carregats ràpids clicant a RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -8091,6 +8115,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Clau de retransmissió de Facebook Gaming"
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Clau de transmissió de Kick"
    )
 
 /* Settings > Directory */
@@ -14285,7 +14316,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Desfer desat ràpid"
+   "Desfer desat ràpid..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14943,6 +14974,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "S'ha canviat la freqüència d'actualització a %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Filtre de vídeo: Activat"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Filtre de vídeo: Desactivat"
+   )
+
 
 /* Lakka */
 

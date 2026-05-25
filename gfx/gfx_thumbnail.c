@@ -531,8 +531,7 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    thumbnail->height      = 0;
    thumbnail->alpha       = 0.0f;
    thumbnail->delay_timer = 0.0f;
-   thumbnail->flags      &= ~(GFX_THUMB_FLAG_FADE_ACTIVE
-                            | GFX_THUMB_FLAG_CORE_ASPECT);
+   thumbnail->flags       = 0;
 }
 
 /* Stream processing */

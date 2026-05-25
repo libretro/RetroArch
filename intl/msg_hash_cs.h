@@ -4478,30 +4478,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Obnovení po rychlém přetočení"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Vynulování počítadla času snímku po rychlém převíjení vpřed."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Obnovení po načtení pozice"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Vynulování čítače času snímku po načtení pozice."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Obnovení po uložení pozice"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Resetování čítače času snímku po uložení pozice."
-   )
 
 /* Settings > Recording */
 
@@ -5898,10 +5874,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Zobrazit 'Vrátit Uložení/Načtení pozice'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Zobrazení možností pro zrušení uložení/nahrání pozice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7416,6 +7388,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Klíč k hernímu streamu na Facebooku"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -13196,10 +13171,6 @@ MSG_HASH(
    "Načtení pozice bylo neúspěšné."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Vrácení uložené pozice"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Neznámý"
    )
@@ -13847,6 +13818,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Obnovovací frekvence videa změněna na %s Hz."
    )
+
 
 /* Lakka */
 

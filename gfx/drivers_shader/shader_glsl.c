@@ -1146,19 +1146,30 @@ static void *gl_glsl_init(void *data, const char *path)
 #endif
 
    /* Find all aliases we use in our GLSLP and add #defines for them so
-    * that a shader can choose a fallback if we are not using a preset. */
-   *glsl->alias_define = '\0';
-   for (i = 0; i < glsl->shader->passes; i++)
+    * that a shader can choose a fallback if we are not using a preset.
+    *
+    * Track a running offset into alias_define and let snprintf write
+    * directly at that offset; the prior strlcat-in-loop form scanned
+    * the buffer from the start on every iteration to find its end,
+    * giving O(passes^2) total cost. */
    {
-      if (*glsl->shader->pass[i].alias)
+      size_t alias_len   = 0;
+      size_t alias_avail = sizeof(glsl->alias_define);
+      glsl->alias_define[0] = '\0';
+      for (i = 0; i < glsl->shader->passes; i++)
       {
-         char define[128];
-
-         define[0] = '\0';
-
-         snprintf(define, sizeof(define), "#define %s_ALIAS\n",
+         int n;
+         if (!*glsl->shader->pass[i].alias)
+            continue;
+         if (alias_len + 1 >= alias_avail)
+            break;
+         n = snprintf(glsl->alias_define + alias_len,
+               alias_avail - alias_len,
+               "#define %s_ALIAS\n",
                glsl->shader->pass[i].alias);
-         strlcat(glsl->alias_define, define, sizeof(glsl->alias_define));
+         if (n < 0 || (size_t)n >= alias_avail - alias_len)
+            break;
+         alias_len += (size_t)n;
       }
    }
 

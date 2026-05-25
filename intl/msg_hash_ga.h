@@ -1773,6 +1773,14 @@ MSG_HASH(
    "Athraigh socruithe sioncrónaithe físe."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Cuir Scagaire Físe i bhFeidhm. Leid nach gá don tiománaí físe a chomhlíonadh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Cumasaigh Scagaire Físeáin"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Cuir an Scáileán ar Fionraí"
    )
@@ -2557,6 +2565,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Déan iarracht an sprioc atá uait 'Moill Fráma' a choinneáil agus titim fráma a íoslaghdú. Is é an pointe tosaigh 3/4 d'am fráma nuair a bhíonn 'Moill Fráma' 0 (Uathoibríoch)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Am Fráma Samplach Amháin i Riocht Cobhsaí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Srian a chur le sampláil 'Ráta Athnuachana Scáileáin Measta' do fhrámaí ina bhfuil an t-ábhar ag rith go glan (ní roghchlár, ní sos, ní luasghéarú, am fráma laistigh de chlúdach meabhrach). Éiríonn an léamh diagnóiseach ina fhíorchomhartha ar chostas comhtháthaithe níos moille tar éis luchtú ábhair."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -4024,6 +4040,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Cuir Scagaire Físe i bhFeidhm (Tógáil)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Casann sé 'Scagaire Físe' an bhogearra air/as."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Taispeáin FPS (Scoránaigh)"
    )
@@ -5059,28 +5083,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Athshocraigh Tar éis Tapáil Ar Aghaidh"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Athshocraigh Uathoibríoch Tar éis Imeachtaí Suaiteacha"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Athshocraigh an cuntar ama fráma tar éis luasghéarú."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Athshocraigh Tar éis Staid Luchtaithe"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Athshocraigh an cuntar ama fráma tar éis stát a lódáil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Athshocraigh Tar éis Stádas Sábháil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Athshocraigh an cuntar ama fráma tar éis staid a shábháil."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Glan an maolán samplach 'Ráta Athnuachana Scáileáin Measta' tar éis luasghéarú, staid shábháilte, nó staid lódála. Tugann na hoibríochtaí seo samplaí ama isteach nach léiríonn gnáth-rath fráma agus a chuirfeadh isteach ar an tomhas diall. Glanadh is fearr-iarrachta; níl aon éifeacht aige nuair a bhíonn 'Am Fráma Samplach i Staid Chobhsaí Amháin' cumasaithe (rud a chuireann cosc ​​ar an éilliú ag an bhfoinse)."
    )
 
 /* Settings > Recording */
@@ -5733,6 +5741,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "Déanfar an taispeáint úsáide cuimhne a nuashonrú ag an eatramh socraithe i bhfrámaí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Am Taispeána"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Taispeáin an t-am reatha san fhormáid is fearr leat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -6557,7 +6573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Taispeáin na roghanna chun an staid sábhála/lódála a chealú."
+   "Taispeáin na roghanna chun an staid sábhála/luchtaithe a chealú. Spreagann RetroPad Start cealú sábháil/luchtaithe nuair a bhíonn sé i bhfolach."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -8099,6 +8115,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Eochair Srutha Cearrbhachais Facebook"
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Eochair Srutha Kick"
    )
 
 /* Settings > Directory */
@@ -14449,7 +14472,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Ag cealú an stáit shábhála"
+   "Ag cealú an stáit shábhála..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -15115,6 +15138,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Athraíodh ráta athnuachana físe go %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Scagaire Físe: Cumasaigh"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Scagaire Físe: Díchumasaigh"
+   )
+
 
 /* Lakka */
 

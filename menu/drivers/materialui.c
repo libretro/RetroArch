@@ -2577,7 +2577,7 @@ static void materialui_update_savestate_thumbnail_image(void *data)
             &mui->thumbnails.savestate,
             config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
 
-   mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
+   mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
 }
 
 static void materialui_context_reset_textures(materialui_handle_t *mui)
@@ -2700,9 +2700,12 @@ static void materialui_draw_thumbnail(
                   mui->colors.thumbnail_background,
                   NULL);
 
+            if (thumbnail->flags & GFX_THUMB_FLAG_BG_ONLY)
+               break;
+
             /* Icon */
             gfx_display_set_alpha(
-                  mui->colors.missing_thumbnail_icon, alpha);
+                  mui->colors.missing_thumbnail_icon, alpha * 0.5f);
 
             materialui_draw_icon(
                   userdata, p_disp,
@@ -2796,19 +2799,29 @@ static void materialui_render_messagebox(
       void *userdata,
       unsigned video_width,
       unsigned video_height,
-      int y_centre, const char *msg)
+      int y_centre,
+      const char *msg,
+      math_matrix_4x4 *mymat)
 {
    int i;
-   int x                    = 0;
-   int y                    = 0;
-   int usable_width         = 0;
-   int longest_width        = 0;
-   int line_count           = 0;
-   size_t wrapped_len       = 0;
+   int x                      = 0;
+   int y                      = 0;
+   int usable_width           = 0;
+   int longest_width          = 0;
+   int line_count             = 0;
+   int slice_x                = 0;
+   int slice_y                = 0;
+   int slice_w                = 0;
+   int slice_h                = 0;
+   size_t wrapped_len         = 0;
    char wrapped_msg[MENU_LABEL_MAX_LENGTH];
    const char *lines[64];
    int lengths[64];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   bool confirm_dialog        = (menu_st->dialog_st.confirm_cmd) ? true : false;
+
    wrapped_msg[0] = '\0';
+
    /* Sanity check */
    if (  (!msg || !*msg)
        || !mui
@@ -2861,13 +2874,27 @@ static void materialui_render_messagebox(
    {
       if (lengths[i] > 0)
       {
-         int width     = font_driver_get_message_width(
+         int msg_width     = font_driver_get_message_width(
                mui->font_data.list.font,
                lines[i], lengths[i], 1.0f);
-         longest_width = (width > longest_width) ?
-               width : longest_width;
+         longest_width = (msg_width > longest_width)
+               ? msg_width : longest_width;
       }
    }
+
+   /* Narrow font can make the box too narrow for Back & OK */
+   if (confirm_dialog && longest_width < (int)video_width / 4)
+      longest_width = video_width / 4;
+
+   slice_x                 = x - longest_width / 2.0 - mui->margin * 2.0;
+   slice_y                 = y - mui->margin * 2.0;
+   slice_w                 = longest_width + mui->margin * 4.0;
+   slice_h                 = mui->font_data.list.line_height * line_count + mui->margin * 4.0;
+
+   /* Extra room for confirm buttons */
+   if (confirm_dialog)
+      slice_h             += (mui->font_data.list.line_height + mui->margin) * 2;
+
    /* Draw message box background */
    gfx_display_set_alpha(
          mui->colors.surface_background, mui->transition_alpha);
@@ -2876,10 +2903,10 @@ static void materialui_render_messagebox(
          userdata,
          video_width,
          video_height,
-         x - longest_width / 2.0 - mui->margin * 2.0,
-         y - mui->margin * 2.0,
-         longest_width + mui->margin * 4.0,
-         mui->font_data.list.line_height * line_count + mui->margin * 4.0,
+         slice_x,
+         slice_y,
+         slice_w,
+         slice_h,
          video_width,
          video_height,
          mui->colors.surface_background,
@@ -2895,6 +2922,156 @@ static void materialui_render_messagebox(
                   + mui->font_data.list.line_ascender,
                video_width, video_height, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
+   }
+
+   if (confirm_dialog)
+   {
+      float frame_color[16]                  = {
+            0.5f, 0.5f, 0.5f, 0.1f,
+            0.5f, 0.5f, 0.5f, 0.1f,
+            0.5f, 0.5f, 0.5f, 0.1f,
+            0.5f, 0.5f, 0.5f, 0.1f,
+      };
+      gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
+      const char *str_back                   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK);
+      const char *str_ok                     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
+      unsigned str_back_width                = font_driver_get_message_width(mui->font_data.list.font, str_back, strlen(str_back), 1.0f);
+      unsigned str_ok_width                  = font_driver_get_message_width(mui->font_data.list.font, str_ok, strlen(str_ok), 1.0f);
+      float scale_factor                     = mui->last_scale_factor;
+      float icon_size                        = 50 * scale_factor;
+      float icon_padding                     = 10 * scale_factor;
+      float icon_x                           = x - (slice_w / 2) + icon_size + (icon_padding * 2);
+      float icon_y                           = video_height - y + (slice_h / 2) - icon_size - (icon_padding * 2);
+      float label_y                          = icon_y + ((mui->font_data.list.line_height + mui->margin) / 1.75f);
+      int cursor_x                           = icon_x - icon_padding;
+      int cursor_y                           = icon_y - icon_padding;
+      int cursor_w                           = icon_size + (icon_padding * 4) + str_back_width;
+      int cursor_h                           = icon_size + (icon_padding * 2);
+
+      gfx_display_set_alpha(mui->colors.list_icon, 0.25f);
+
+      /* Back */
+      if (     mui->pointer.x >= cursor_x
+            && mui->pointer.x <= cursor_x + cursor_w
+            && mui->pointer.y >= cursor_y
+            && mui->pointer.y <= cursor_y + cursor_h)
+      {
+         menu_st->dialog_st.confirm_hover_back = true;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               cursor_x,
+               cursor_y,
+               cursor_w,
+               cursor_h,
+               video_width,
+               video_height,
+               frame_color,
+               NULL);
+      }
+      else
+         menu_st->dialog_st.confirm_hover_back = false;
+
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      materialui_draw_icon(
+            userdata, p_disp,
+            video_width,
+            video_height,
+            (unsigned)icon_size,
+            mui->textures.list[MUI_TEXTURE_BACK],
+            icon_x,
+            icon_y,
+            0.0f,
+            1.0f,
+            mui->colors.list_icon,
+            mymat);
+
+      gfx_display_draw_text(
+            mui->font_data.list.font,
+            str_back,
+            icon_x + icon_size + icon_padding,
+            label_y,
+            video_width,
+            video_height,
+            mui->colors.list_text,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+
+      /* OK */
+      icon_x  += slice_w - (icon_size * 2) - (icon_padding * 8) - mui->margin - str_ok_width;
+
+      cursor_x = icon_x - icon_padding;
+      cursor_w = icon_size + (icon_padding * 4) + str_ok_width;
+
+      if (     mui->pointer.x >= cursor_x
+            && mui->pointer.x <= cursor_x + cursor_w
+            && mui->pointer.y >= cursor_y
+            && mui->pointer.y <= cursor_y + cursor_h)
+      {
+         menu_st->dialog_st.confirm_hover_ok = true;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               cursor_x,
+               cursor_y,
+               cursor_w,
+               cursor_h,
+               video_width,
+               video_height,
+               frame_color,
+               NULL);
+      }
+      else
+         menu_st->dialog_st.confirm_hover_ok = false;
+
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      materialui_draw_icon(
+            userdata, p_disp,
+            video_width,
+            video_height,
+            (unsigned)icon_size,
+            mui->textures.list[MUI_TEXTURE_CHECKMARK],
+            icon_x,
+            icon_y,
+            0.0f,
+            1.0f,
+            mui->colors.list_icon,
+            mymat);
+
+      gfx_display_draw_text(
+            mui->font_data.list.font,
+            str_ok,
+            icon_x + icon_size + icon_padding,
+            label_y,
+            video_width,
+            video_height,
+            mui->colors.list_text,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+      gfx_display_set_alpha(mui->colors.list_icon, mui->transition_alpha);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }
 
@@ -4377,8 +4554,7 @@ static void materialui_render_menu_entry_default(
       entry_value          = entry->value;
    entry_type              = entry->type;
 
-   entry_file_type         = msg_hash_to_file_type(
-         msg_hash_calculate(entry_value));
+   entry_file_type         = msg_hash_to_file_type(entry_value);
    entry_value_type        = materialui_get_entry_value_type(
          mui, entry_value, entry->flags & MENU_ENTRY_FLAG_CHECKED,
          entry_type, entry_file_type, entry->setting_type);
@@ -5334,8 +5510,7 @@ static void materialui_render_menu_entry_savestate_list(
 
    entry_value             = entry->value;
    entry_type              = entry->type;
-   entry_file_type         = msg_hash_to_file_type(
-         msg_hash_calculate(entry_value));
+   entry_file_type         = msg_hash_to_file_type(entry_value);
    entry_value_type        = materialui_get_entry_value_type(
          mui, entry_value, entry->flags & MENU_ENTRY_FLAG_CHECKED,
          entry_type, entry_file_type, entry->setting_type);
@@ -8096,7 +8271,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 4, msg);
+            video_height / 4, msg,
+            &mymat);
 
       /* Draw onscreen keyboard */
       {
@@ -8139,7 +8315,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 2, mui->msgbox);
+            video_height / 2, mui->msgbox,
+            &mymat);
       mui->msgbox[0] = '\0';
 
       /* Flush message box text
@@ -10909,8 +11086,7 @@ static int materialui_pointer_up_swipe_horz_default(
          else
             entry_value          = last_entry.value;
          entry_type                     = last_entry.type;
-         entry_file_type                = msg_hash_to_file_type(
-               msg_hash_calculate(entry_value));
+         entry_file_type                = msg_hash_to_file_type(entry_value);
          entry_value_type               = materialui_get_entry_value_type(
                mui, entry_value, last_entry.flags & MENU_ENTRY_FLAG_CHECKED,
                entry_type, entry_file_type, entry->setting_type);
@@ -11985,6 +12161,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_TWITCH_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_KICK_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_BLUETOOTH_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_WIFI_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_NETWORK_SETTINGS_STR)

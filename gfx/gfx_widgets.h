@@ -265,6 +265,12 @@ typedef struct dispgfx_widget
    uint8_t flags;
 
    char gfx_widgets_status_text[NAME_MAX_LENGTH];
+   /* Cached strlen of gfx_widgets_status_text, written by the
+    * producer in video_driver.c.  Lets the per-frame widget render
+    * skip a strlen on a string that can be up to NAME_MAX_LENGTH
+    * (256) bytes long when statistics or core status messages are
+    * active.  Zero means the buffer is empty. */
+   size_t gfx_widgets_status_text_len;
    char assets_pkg_dir[DIR_MAX_LENGTH];
    char xmb_path[PATH_MAX_LENGTH];                /* TODO/FIXME - decouple from XMB */
    char ozone_path[PATH_MAX_LENGTH];              /* TODO/FIXME - decouple from Ozone */

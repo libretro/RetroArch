@@ -3081,6 +3081,9 @@ MSG_HASH(
    "Facebook Spilll strømmingsnøkkel"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -4783,6 +4786,7 @@ MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Video modusen støttes ikke"
    )
+
 
 /* Lakka */
 

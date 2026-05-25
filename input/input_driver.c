@@ -26,7 +26,6 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
-#include <retro_endianness.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -7571,13 +7570,29 @@ void input_driver_poll(void)
    /* Cache sensor values so shader backends on the video thread
     * read a consistent per-frame snapshot instead of calling into
     * the input subsystem directly.
-    * Uses the internal variant to avoid 6 redundant config_get_ptr() calls. */
-   input_st->sensor_gyroscope_cache[0]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_X);
-   input_st->sensor_gyroscope_cache[1]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Y);
-   input_st->sensor_gyroscope_cache[2]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Z);
-   input_st->sensor_accelerometer_cache[0] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_X);
-   input_st->sensor_accelerometer_cache[1] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Y);
-   input_st->sensor_accelerometer_cache[2] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Z);
+    * Uses the internal variant to avoid 6 redundant config_get_ptr() calls.
+    *
+    * When the master input_sensors_enable toggle is off (the common
+    * default), input_get_sensor_state_internal would return 0.0 for
+    * every call after two settings reads and a couple of branches per
+    * call. Short-circuit that to a single memset since the result is
+    * the same. */
+   if (!settings->bools.input_sensors_enable)
+   {
+      memset(input_st->sensor_gyroscope_cache,     0,
+            sizeof(input_st->sensor_gyroscope_cache));
+      memset(input_st->sensor_accelerometer_cache, 0,
+            sizeof(input_st->sensor_accelerometer_cache));
+   }
+   else
+   {
+      input_st->sensor_gyroscope_cache[0]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_X);
+      input_st->sensor_gyroscope_cache[1]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Y);
+      input_st->sensor_gyroscope_cache[2]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Z);
+      input_st->sensor_accelerometer_cache[0] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_X);
+      input_st->sensor_accelerometer_cache[1] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Y);
+      input_st->sensor_accelerometer_cache[2] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Z);
+   }
 
 #ifdef HAVE_OVERLAY
    if (      input_st->overlay_ptr
@@ -8545,6 +8560,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
        * port 0 */
       if (!display_kb && input && input->input_state)
       {
+         struct menu_state *menu_st  = menu_state_get_ptr();
+         bool swap_ok_cancel_buttons = settings->bools.input_menu_swap_ok_cancel_buttons;
          unsigned i;
          unsigned ids[][2] =
          {
@@ -8568,6 +8585,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             {0,                RARCH_UI_COMPANION_TOGGLE     },
             {0,                RARCH_FPS_TOGGLE              },
             {0,                RARCH_NETPLAY_HOST_TOGGLE     },
+            {0,                RARCH_BIND_LIST_END_NULL      },
          };
 
          ids[14][0] = input_config_binds[0][RARCH_QUIT_KEY].key;
@@ -8575,8 +8593,14 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          ids[16][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
          ids[17][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
          ids[18][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
+         ids[19][0] = RETROK_ESCAPE;
 
-         if (settings->bools.input_menu_swap_ok_cancel_buttons)
+         /* Escape cancels dialogs */
+         if (menu_st && menu_st->driver_data && *menu_st->driver_data->menu_state_msg)
+            ids[19][1] = (swap_ok_cancel_buttons)
+                  ? RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
+
+         if (swap_ok_cancel_buttons)
          {
             ids[0][1] = RETRO_DEVICE_ID_JOYPAD_B;
             ids[1][1] = RETRO_DEVICE_ID_JOYPAD_A;
@@ -8594,6 +8618,11 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
             {
+               /* Wait for release when closing dialogs with Escape,
+                * otherwise quit hotkey will also get triggered */
+               if (ids[i][0] == RETROK_ESCAPE && ids[19][1] != RARCH_BIND_LIST_END_NULL)
+                  input_st->flags |= INP_FLAG_WAIT_INPUT_RELEASE;
+
                BIT256_SET_PTR(current_bits, ids[i][1]);
             }
          }

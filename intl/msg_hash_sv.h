@@ -4846,30 +4846,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Nollställ efter snabbspolning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Nollställ bildtidsräknaren efter snabbspolning framåt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Nollställ efter inläsning av tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Nollställ bildruteräknaren efter att ett tillstånd har lästs in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Återställ efter sparat tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Nollställ bildtidsräknaren efter sparning av ett tillstånd."
-   )
 
 /* Settings > Recording */
 
@@ -6270,10 +6246,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Visa 'Ångra Spara/Läs in tillstånd'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Visa alternativen för att Ångra Spara/Läs in tillstånd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7792,6 +7764,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Strömningsnyckel för Facebook Gaming"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -13624,10 +13599,6 @@ MSG_HASH(
    "Ångrade inläsningstillstånd."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Ångrar sparat tillstånd"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Okänd"
    )
@@ -14279,6 +14250,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Videouppdateringsfrekvens ändrad till %s Hz."
    )
+
 
 /* Lakka */
 

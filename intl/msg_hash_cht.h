@@ -4434,30 +4434,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "關閉快轉模式後重置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "關閉快轉模式後重置目前畫面更新率。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "載入即時存檔後重置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "載入即時存檔後重置目前畫面更新率。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "儲存即時存檔後重置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "儲存即時存檔後重置目前畫面更新率。"
-   )
 
 /* Settings > Recording */
 
@@ -5770,10 +5746,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "顯示「還原成載入前」「還原成儲存前」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "顯示「還原成載入前」 「還原成儲存前」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7304,6 +7276,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Facebook Gaming 串流金鑰"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -13304,10 +13279,6 @@ MSG_HASH(
    "已還原載入即時存檔。"
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "已還原儲存即時存檔"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "未知"
    )
@@ -13799,6 +13770,7 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "已關閉準確同步執行幀率。"
    )
+
 
 /* Lakka */
 

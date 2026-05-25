@@ -3401,6 +3401,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Facebook Gaming */
 
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -5340,10 +5343,6 @@ MSG_HASH(
    "Desfez o carregamento do estado."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Desfazendo a gravação do estado"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Desconhecido"
    )
@@ -5531,6 +5530,7 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Sincronização com a frequência de fotogramas exata do conteúdo desativada."
    )
+
 
 /* Lakka */
 

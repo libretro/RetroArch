@@ -3021,6 +3021,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Facebook Gaming */
 
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -3991,6 +3994,7 @@ MSG_HASH(
    MSG_PRUNING_CORE_BACKUP_HISTORY,
    "Menghapus cadangan yang usang: "
    )
+
 
 /* Lakka */
 

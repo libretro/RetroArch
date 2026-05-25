@@ -64,7 +64,10 @@
 #define VULKAN_EMULATE_MAILBOX
 #endif
 
-/* TODO/FIXME - static globals */
+/* TODO/FIXME - static globals
+ * WARNING: These globals prevent safe use of multiple concurrent
+ * Vulkan contexts (multi-window, etc.). The cached_device_vk
+ * mechanism assumes single-context ownership. */
 static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
 static VkDevice                      cached_device_vk;
@@ -103,14 +106,48 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
       const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
       void *pUserData)
 {
-   if (     (msg_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-         && (msg_type     == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT))
+   const char *severity = "";
+   const char *type     = "";
+
+   switch (msg_severity)
    {
-      RARCH_ERR("[Vulkan] Validation Error: %s.\n", pCallbackData->pMessage);
+      case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+         severity = "ERROR";
+         break;
+      case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+         severity = "WARNING";
+         break;
+      case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+         severity = "INFO";
+         break;
+      default:
+         severity = "VERBOSE";
+         break;
    }
+
+   switch (msg_type)
+   {
+      case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
+         type = "Validation";
+         break;
+      case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+         type = "Performance";
+         break;
+      default:
+         type = "General";
+         break;
+   }
+
+   RARCH_LOG("[Vulkan] %s %s: %s.\n", severity, type, pCallbackData->pMessage);
    return VK_FALSE;
 }
 #endif
+
+/* Timeout for the emulated mailbox background thread's
+ * vkAcquireNextImageKHR call. Using a finite timeout instead
+ * of UINT64_MAX guarantees the thread can check the DEAD flag
+ * and exit promptly during swapchain teardown, preventing TDRs. */
+#define VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS  500000000  /* 500 ms */
 
 static void vulkan_emulated_mailbox_deinit(
       struct vulkan_emulated_mailbox *mailbox)
@@ -121,6 +158,10 @@ static void vulkan_emulated_mailbox_deinit(
       mailbox->flags |= VK_MAILBOX_FLAG_DEAD;
       scond_signal(mailbox->cond);
       slock_unlock(mailbox->lock);
+      /* Wait for the background thread to see the DEAD flag.
+       * The thread uses a finite timeout on vkAcquireNextImageKHR
+       * so it will unblock within VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS
+       * and exit the loop. */
       sthread_join(mailbox->thread);
    }
 
@@ -177,7 +218,19 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
    mailbox->flags |= VK_MAILBOX_FLAG_HAS_PENDING_REQUEST;
 
    while (!(mailbox->flags & VK_MAILBOX_FLAG_ACQUIRED))
-      scond_wait(mailbox->cond, mailbox->lock);
+   {
+      /* scond_wait_timeout prevents indefinite blocking
+       * if the background thread hits an error path that
+       * doesn't set ACQUIRED. */
+      if (!scond_wait_timeout(mailbox->cond, mailbox->lock,
+                VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS / 1000000))
+      {
+         /* Timed out - the background thread may be stuck.
+          * Return VK_TIMEOUT to let the caller handle it. */
+         slock_unlock(mailbox->lock);
+         return VK_TIMEOUT;
+      }
+   }
 
    if ((res = mailbox->result) == VK_SUCCESS)
       *index                    = mailbox->index;
@@ -220,8 +273,13 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
       mailbox->flags &= ~VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       slock_unlock(mailbox->lock);
 
+      /* Use a finite timeout so the thread can regularly check
+       * for the DEAD flag and exit promptly during teardown.
+       * UINT64_MAX would block forever, causing sthread_join
+       * in vulkan_emulated_mailbox_deinit to deadlock. */
       mailbox->result          = vkAcquireNextImageKHR(
-            mailbox->device, mailbox->swapchain, UINT64_MAX,
+            mailbox->device, mailbox->swapchain,
+            VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS,
             VK_NULL_HANDLE, fence, &mailbox->index);
 
       /* VK_SUBOPTIMAL_KHR can be returned on Android 10
@@ -235,7 +293,16 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
 
       if (mailbox->result == VK_SUCCESS)
       {
-         vkWaitForFences(mailbox->device, 1, &fence, true, UINT64_MAX);
+         VkResult wait_res;
+         wait_res  = vkWaitForFences(mailbox->device, 1,
+               &fence, true, VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS);
+         if (wait_res == VK_TIMEOUT)
+         {
+            /* Fence not signaled in time - unlikely but handle
+             * gracefully. Loop back to retry. */
+            mailbox->result = VK_TIMEOUT;
+            continue;
+         }
          vkResetFences(mailbox->device, 1, &fence);
 
          slock_lock(mailbox->lock);
@@ -243,8 +310,31 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
          scond_signal(mailbox->cond);
          slock_unlock(mailbox->lock);
       }
+      else if (   mailbox->result == VK_TIMEOUT
+               || mailbox->result == VK_NOT_READY)
+      {
+         /* No image available this round.
+          * Check DEAD flag without clearing request,
+          * then loop back to try again. */
+         slock_lock(mailbox->lock);
+         if (mailbox->flags & VK_MAILBOX_FLAG_DEAD)
+         {
+            slock_unlock(mailbox->lock);
+            break;
+         }
+         slock_unlock(mailbox->lock);
+      }
       else
+      {
+         /* VK_ERROR_OUT_OF_DATE_KHR, VK_ERROR_DEVICE_LOST, etc.
+          * Propagate to the main thread via ACQUIRED + result.
+          * The caller (non-blocking acquire) will return this error. */
          vkResetFences(mailbox->device, 1, &fence);
+         slock_lock(mailbox->lock);
+         mailbox->flags |= VK_MAILBOX_FLAG_ACQUIRED;
+         scond_signal(mailbox->cond);
+         slock_unlock(mailbox->lock);
+      }
    }
 
    vkDestroyFence(mailbox->device, fence, NULL);
@@ -645,6 +735,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    if (!vulkan_context_init_gpu(vk))
       return false;
 
+   vkGetPhysicalDeviceFeatures(vk->context.gpu, &features);
+
    if (!cached_device_vk && iface && iface->create_device)
    {
       struct retro_vulkan_context context = { 0 };
@@ -707,12 +799,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          RARCH_WARN("[Vulkan] Failed to create device with negotiation interface. Falling back to default path.\n");
       }
-   }
-
-   if (cached_device_vk && cached_destroy_device_vk)
-   {
-      vk->context.destroy_device = cached_destroy_device_vk;
-      cached_destroy_device_vk   = NULL;
    }
 
    vkGetPhysicalDeviceProperties(vk->context.gpu,
@@ -839,6 +925,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
+
+         if (cached_destroy_device_vk)
+         {
+            vk->context.destroy_device = cached_destroy_device_vk;
+            cached_destroy_device_vk   = NULL;
+         }
 
          video_st->flags   |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
          RARCH_LOG("[Vulkan] Using cached Vulkan context.\n");
@@ -1732,16 +1824,20 @@ retry:
 
       if (vk->context.swapchain_acquire_semaphore)
       {
-#ifdef HAVE_THREADS
-         slock_lock(vk->context.queue_lock);
-#endif
+         VkSemaphore old_sem                = vk->context.swapchain_acquire_semaphore;
+         vk->context.swapchain_acquire_semaphore = semaphore;
+         /* Swap out the old semaphore first, then destroy it
+          * outside queue_lock.  The old semaphore may still be
+          * in use by a pending queue submission, so we need
+          * vkDeviceWaitIdle before destruction -- but we must
+          * NOT hold queue_lock during the wait, otherwise
+          * vkQueuePresentKHR (which also takes queue_lock)
+          * stalls and can trigger a TDR (0x887A0006). */
          vkDeviceWaitIdle(vk->context.device);
-         vkDestroySemaphore(vk->context.device, vk->context.swapchain_acquire_semaphore, NULL);
-#ifdef HAVE_THREADS
-         slock_unlock(vk->context.queue_lock);
-#endif
+         vkDestroySemaphore(vk->context.device, old_sem, NULL);
       }
-      vk->context.swapchain_acquire_semaphore = semaphore;
+      else
+         vk->context.swapchain_acquire_semaphore = semaphore;
    }
    else
    {
@@ -1872,6 +1968,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          && (vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX)
          && vsync)
    {
+      RARCH_LOG("[Vulkan] swap_interval 0 (vsync off) overridden to %d because "
+            "VK_DATA_FLAG_EMULATE_MAILBOX requires non-zero swap_interval.\n",
+            adaptive_vsync ? -1 : 1);
       swap_interval  =  (adaptive_vsync) ? -1 : 1;
       vk->flags     |=  VK_DATA_FLAG_EMULATING_MAILBOX;
    }
@@ -1895,8 +1994,13 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       if (     (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
             && (vk->mailbox.swapchain == VK_NULL_HANDLE))
       {
-         vulkan_emulated_mailbox_init(
-               &vk->mailbox, vk->context.device, vk->swapchain);
+         if (!vulkan_emulated_mailbox_init(
+               &vk->mailbox, vk->context.device, vk->swapchain))
+         {
+            RARCH_WARN("[Vulkan] Failed to initialize emulated mailbox -- "
+                  "falling back to blocking acquire.\n");
+            vk->flags &= ~VK_DATA_FLAG_EMULATING_MAILBOX;
+         }
          vk->flags                &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
          return true;
       }
@@ -2305,6 +2409,12 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          && (desired_swapchain_images > surface_properties.maxImageCount))
       desired_swapchain_images = surface_properties.maxImageCount;
 
+   /* Clamp up to minImageCount to satisfy the spec requirement.
+    * Some drivers (MESA) are lenient, but Vulkan requires
+    * minImageCount >= max(minImageCount, 1). */
+   if (desired_swapchain_images < surface_properties.minImageCount)
+      desired_swapchain_images = surface_properties.minImageCount;
+
    /* Cap our request to what we can actually hold. Per-image arrays
     * (swapchain_images, swapchain_fences, the various semaphore
     * arrays, vk->swapchain[], readback.staging[]) are all sized to
@@ -2480,7 +2590,14 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vulkan_create_wait_fences(vk);
 
    if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
-      vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
+   {
+      if (!vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain))
+      {
+         RARCH_WARN("[Vulkan] Failed to initialize emulated mailbox -- "
+               "falling back to blocking acquire.\n");
+         vk->flags &= ~VK_DATA_FLAG_EMULATING_MAILBOX;
+      }
+   }
 
    /* This flag needs to be cleared otherwise elsewhere it can be perceived as if there's a new swapchain created everytime its being called */
    vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
@@ -2729,15 +2846,19 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    {
       if (vk->context.device)
       {
+         /* Call the frontend's destroy_device callback BEFORE
+          * vkDestroyDevice, so the frontend can clean up its
+          * per-device resources while the device handle is still
+          * valid. */
+         if (vk->context.destroy_device)
+            vk->context.destroy_device();
+         vk->context.destroy_device = NULL;
          vkDestroyDevice(vk->context.device, NULL);
          vk->context.device = NULL;
       }
 
       if (vk->context.instance)
       {
-         if (vk->context.destroy_device)
-            vk->context.destroy_device();
-
          vkDestroyInstance(vk->context.instance, NULL);
          vk->context.instance = NULL;
 

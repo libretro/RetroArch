@@ -78,12 +78,15 @@ static void get_first_valid_core(char* path_return, size_t len)
 
    if (dir)
    {
-      while (ent = readdir(dir))
+      size_t ext_len = strlen(extension);
+      while ((ent = readdir(dir)))
       {
+         size_t name_len;
          if (!ent)
             break;
-         if (strlen(ent->d_name) > strlen(extension)
-               && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
+         name_len = strlen(ent->d_name);
+         if (   name_len > ext_len
+             && !strcmp(ent->d_name + name_len - ext_len, extension))
          {
             size_t _len = strlcpy(path_return, "sdmc:/retroarch/cores/", len);
             strlcpy(path_return + _len, ent->d_name, len - _len);

@@ -189,12 +189,6 @@ static int menu_cbs_init_bind_cancel_compare_type(menu_file_list_cbs_t *cbs,
          break;
    }
 
-   if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
-   {
-      BIND_ACTION_CANCEL(cbs, action_cancel_state_slot_run);
-      return 0;
-   }
-
 #ifdef HAVE_CHEATS
    switch (cbs->enum_idx)
    {

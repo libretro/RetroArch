@@ -4918,30 +4918,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Ripristina dopo Avanzamento Rapido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Ripristina il contatore del tempo del fotogramma dopo l'avanzamento veloce."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Ripristina dopo aver caricato lo stato"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reimposta il contatore di tempo frame dopo aver caricato uno stato."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Ripristina dopo salvataggio rapido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reimposta il contatore del tempo dei fotogrammi dopo un salvataggio rapido."
-   )
 
 /* Settings > Recording */
 
@@ -6410,10 +6386,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Mostra 'Annulla salva/carica salvataggio rapido'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostra le opzioni per annullare il salvataggio/caricamento di un salvataggio rapido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7924,6 +7896,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Gioco su Facebook Stream Key"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -13952,10 +13927,6 @@ MSG_HASH(
    "Annullamento del caricamento del salvataggio"
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Annullamento salvataggio rapido"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Sconosciuto"
    )
@@ -14619,6 +14590,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Velocità di aggiornamento video cambiata a %s Hz."
    )
+
 
 /* Lakka */
 

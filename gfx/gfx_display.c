@@ -420,6 +420,15 @@ void gfx_display_draw_text(
    struct font_params params;
    video_driver_state_t *video_st = video_state_get_ptr();
 
+   /* NULL text is a no-op: ozone_draw_footer and similar menu code can
+    * legitimately reach here with text==NULL for unset/optional fields,
+    * and the original code path passed it straight through to
+    * font_driver_render_msg whose (msg && *msg) check turned it into
+    * a no-op.  Now that we strlen() at this boundary, NULL has to be
+    * caught before the strlen. */
+   if (!text)
+      return;
+
    if ((color & 0x000000FF) == 0)
       return;
 
@@ -449,7 +458,7 @@ void gfx_display_draw_text(
 
    if (video_st->poke && video_st->poke->set_osd_msg)
       video_st->poke->set_osd_msg(video_st->data,
-            text, &params, (void*)font);
+            text, strlen(text), &params, (void*)font);
 }
 
 void gfx_display_draw_bg(

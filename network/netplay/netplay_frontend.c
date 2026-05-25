@@ -28,6 +28,7 @@
 #endif
 
 #include <retro_timers.h>
+#include <retro_endianness.h>
 #include <time.h>
 
 #include <math/float_minmax.h>
@@ -607,18 +608,28 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
 
       if (subsystem && subsystem->size > 0)
       {
-         unsigned i = 0;
+         /* Build "name1|name2|name3" via offset tracking; the prior
+          * strlcat-in-loop form re-scanned the buffer from the start
+          * on every append, giving O(subsystems^2) total cost. */
+         unsigned i;
+         size_t   buf_len = 0;
+         size_t   avail   = sizeof(ad_packet_buffer.content);
 
-         for (;;)
+         ad_packet_buffer.content[0] = '\0';
+
+         for (i = 0; i < subsystem->size && buf_len + 1 < avail; i++)
          {
-            strlcat(ad_packet_buffer.content,
-               path_basename(subsystem->elems[i].data),
-               sizeof(ad_packet_buffer.content));
-            if (++i >= subsystem->size)
-               break;
-            strlcat(ad_packet_buffer.content, "|",
-               sizeof(ad_packet_buffer.content));
+            const char *base = path_basename(subsystem->elems[i].data);
+            size_t      blen = strlen(base);
+
+            if (i > 0)
+               ad_packet_buffer.content[buf_len++] = '|';
+            if (blen >= avail - buf_len)
+               blen = avail - buf_len - 1;
+            memcpy(ad_packet_buffer.content + buf_len, base, blen);
+            buf_len += blen;
          }
+         ad_packet_buffer.content[buf_len] = '\0';
 
          strlcpy(ad_packet_buffer.subsystem_name,
             path_get(RARCH_PATH_SUBSYSTEM),
@@ -675,10 +686,11 @@ static uint32_t netplay_impl_magic(void)
 }
 
 /**
- * netplay_platform_magic
+ * NETPLAY_PLATFORM_MAGIC
  *
  * Just enough info to tell us if our platforms mismatch: Endianness and a
- * couple of type sizes.
+ * couple of type sizes. All operands are integer constant expressions, so
+ * the whole word resolves at compile time.
  *
  * Format:
  *    bit 31:     Reserved
@@ -686,14 +698,10 @@ static uint32_t netplay_impl_magic(void)
  *    bits 29-15: sizeof(size_t)
  *    bits 14-0:  sizeof(long)
  */
-static uint32_t netplay_platform_magic(void)
-{
-   uint32_t ret =
-       ((1 == htonl(1)) << 30)
-      |(sizeof(size_t)  << 15)
-      |(sizeof(long));
-   return ret;
-}
+#define NETPLAY_PLATFORM_MAGIC \
+   (  ((uint32_t)RETRO_IS_BIG_ENDIAN << 30) \
+    | ((uint32_t)sizeof(size_t)      << 15) \
+    |  (uint32_t)sizeof(long))
 
 /**
  * netplay_endian_mismatch
@@ -766,7 +774,7 @@ static bool netplay_handshake_init_send(netplay_t *netplay,
    settings_t *settings = config_get_ptr();
 
    header[0] = htonl(NETPLAY_MAGIC);
-   header[1] = htonl(netplay_platform_magic());
+   header[1] = htonl(NETPLAY_PLATFORM_MAGIC);
    header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
 
    if (netplay->is_server)
@@ -1072,7 +1080,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    /* We only care about platform magic if our core is quirky */
    if (netplay->quirks & NETPLAY_QUIRK_PLATFORM_DEPENDENT)
    {
-      if (ntohl(header[1]) != netplay_platform_magic())
+      if (ntohl(header[1]) != NETPLAY_PLATFORM_MAGIC)
       {
          _msg = msg_hash_to_str(MSG_NETPLAY_PLATFORM_DEPENDENT);
          RARCH_ERR("[Netplay] %s\n", _msg);
@@ -1084,7 +1092,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    }
    else if (netplay->quirks & NETPLAY_QUIRK_ENDIAN_DEPENDENT)
    {
-      if (netplay_endian_mismatch(netplay_platform_magic(), ntohl(header[1])))
+      if (netplay_endian_mismatch(NETPLAY_PLATFORM_MAGIC, ntohl(header[1])))
       {
          _msg = msg_hash_to_str(MSG_NETPLAY_ENDIAN_DEPENDENT);
          RARCH_ERR("[Netplay] %s\n", _msg);
@@ -8660,18 +8668,28 @@ static void netplay_announce(netplay_t *netplay)
 
    if (subsystem && subsystem->size > 0)
    {
-      unsigned i = 0;
-      buf[0]     = '\0';
-      for (;;)
+      /* Build "name1|name2|name3" via offset tracking; the prior
+       * strlcat-in-loop form re-scanned the buffer from the start
+       * on every append, giving O(subsystems^2) total cost. */
+      unsigned i;
+      size_t   buf_len = 0;
+      size_t   avail   = sizeof(host_room->gamename);
+
+      buf[0] = '\0';
+
+      for (i = 0; i < subsystem->size && buf_len + 1 < avail; i++)
       {
-         /* TODO/FIXME - is last param OK here */
-         strlcat(buf, path_basename(subsystem->elems[i].data),
-            sizeof(host_room->gamename));
-         if (++i >= subsystem->size)
-            break;
-         /* TODO/FIXME - is last param OK here */
-         strlcat(buf, "|", sizeof(host_room->gamename));
+         const char *base = path_basename(subsystem->elems[i].data);
+         size_t      blen = strlen(base);
+
+         if (i > 0)
+            buf[buf_len++] = '|';
+         if (blen >= avail - buf_len)
+            blen = avail - buf_len - 1;
+         memcpy(buf + buf_len, base, blen);
+         buf_len += blen;
       }
+      buf[buf_len] = '\0';
 
       net_http_urlencode(&gamename, buf);
       strlcpy(buf, path_get(RARCH_PATH_SUBSYSTEM),

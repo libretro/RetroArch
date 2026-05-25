@@ -4790,30 +4790,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Resetuj po przyspieszeniu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Zresetuj licznik czasu klatki po przyspieszeniu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Zresetuj po załadowaniu stanu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Resetuj licznik czasu klatki po załadowaniu stanu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Resetuj po zapisaniu stanu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Resetuj licznik czasu klatki po zapisie stanu."
-   )
 
 /* Settings > Recording */
 
@@ -5994,10 +5970,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Pokaż 'Cofnij Zapisz/Wczytaj stan'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Pokaż opcje cofania zapisu/wczytywania."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7352,6 +7324,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Klucz strumienia na Facebooku"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -13000,10 +12975,6 @@ MSG_HASH(
    "Anulować stan zapisu."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Cofanie stanu zapisu"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Nieznany"
    )
@@ -13663,6 +13634,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Prędkość odświeżania wideo zmieniona na %s Hz."
    )
+
 
 /* Lakka */
 

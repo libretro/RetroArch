@@ -49,6 +49,13 @@ class QPaintEvent;
 class QResizeEvent;
 class QSettings;
 class QVBoxLayout;
+/* Forward decls kept unconditional so that callers holding bare
+ * pointers to these (e.g. ui_qt.h's QPointer<ShaderParamsDialog>
+ * member) parse cleanly when HAVE_MENU is not defined. The full
+ * declarations below are gated; all use sites in ui_qt.cpp are
+ * already gated as well. */
+class ShaderPass;
+class ShaderParamsDialog;
 
 #ifdef HAVE_MENU
 class QWidget;
@@ -77,6 +84,14 @@ struct PlaylistEntry
    unsigned index = 0;
 };
 Q_DECLARE_METATYPE(PlaylistEntry)
+
+/* All of the settings widgets below take rarch_setting_t* or
+ * msg_hash_enums and call menu_* APIs in their implementations,
+ * so they are only meaningful when HAVE_MENU is enabled. Gating
+ * the declarations here lets moc skip generating metaobject code
+ * for them in --disable-menu builds (provided $(DEFINES) is passed
+ * to moc, which the top-level Makefile now does). */
+#ifdef HAVE_MENU
 
 class FormLayout : public QFormLayout
 {
@@ -579,6 +594,8 @@ protected:
    QColor color();
 };
 
+#endif /* HAVE_MENU - settings widgets block */
+
 class FileDropWidget : public QStackedWidget
 {
    Q_OBJECT
@@ -720,6 +737,13 @@ protected:
    void paintEvent(QPaintEvent *event);
 };
 
+/* Shader-preset editor. Implementation lives behind both HAVE_MENU
+ * and HAVE_CG/GLSL/SLANG/HLSL in the .cpp; gate the declarations to
+ * match so moc does not emit metaobject code for a class that has
+ * no defined methods. Forward declarations above keep external
+ * pointer-typed members valid. */
+#ifdef HAVE_MENU
+
 class ShaderPass
 {
 public:
@@ -789,6 +813,8 @@ protected:
    void resizeEvent(QResizeEvent *event);
    void paintEvent(QPaintEvent *event);
 };
+
+#endif /* HAVE_MENU - shader-preset editor */
 
 class ViewOptionsWidget : public QWidget
 {
@@ -882,6 +908,11 @@ private:
    QComboBox *m_databaseComboBox;
    QCheckBox *m_extensionArchiveCheckBox;
 };
+
+/* Options dialog category/page hierarchy. Every widget() implementation
+ * builds a tree of the settings widgets above and calls menu_*
+ * functions, so this whole hierarchy is HAVE_MENU-only. */
+#ifdef HAVE_MENU
 
 class OptionsPage : public QObject
 {
@@ -1398,5 +1429,7 @@ inline QWidget *SimplePage::widget()
 {
    return create_widget(m_state);
 }
+
+#endif /* HAVE_MENU - options dialog hierarchy */
 
 #endif

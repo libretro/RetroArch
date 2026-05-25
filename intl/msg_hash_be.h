@@ -4538,30 +4538,6 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Скіданне пасля перамоткі наперад"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Скідаць лічыльнік часу кадра пасля перамоткі наперад."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Скіданне пасля загрузкі стану"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Скідаць лічыльнік часу кадра пасля загрузкі стану."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Скіданне пасля захавання стану"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Скідаць лічыльнік часу кадра пасля захавання стану."
-   )
 
 /* Settings > Recording */
 
@@ -5982,10 +5958,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Паказваць 'Адмяніць захаванне/загрузку'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Паказваць опцыі адмены захавання/загрузкі стану."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7512,6 +7484,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Ключ стрымінгу Facebook Gaming"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -13452,10 +13427,6 @@ MSG_HASH(
    "Загрузка захавання адменена."
    )
 MSG_HASH(
-   MSG_UNDOING_SAVE_STATE,
-   "Адмена захавання стану"
-   )
-MSG_HASH(
    MSG_UNKNOWN,
    "Невядомы"
    )
@@ -14107,6 +14078,7 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Частата абнаўлення ўсталявана на %s Гц."
    )
+
 
 /* Lakka */
 

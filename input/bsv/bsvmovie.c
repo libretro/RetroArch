@@ -1173,6 +1173,7 @@ bool replay_get_serialized_data(void* buffer)
       buf                     = ((uint8_t *)buffer) + sizeof(uint32_t);
       intfstream_rewind(handle->file);
       read_amt                = intfstream_read(handle->file, buf, file_end);
+      intfstream_seek(handle->file, file_end, SEEK_SET);
       if (handle->frame_counter > UINT32_MAX) {
          RARCH_ERR("[Replay] Frame counter too big to fit in 32 bits\n");
          return false;

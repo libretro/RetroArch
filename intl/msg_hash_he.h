@@ -1385,6 +1385,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Facebook Gaming */
 
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -1621,6 +1624,7 @@ MSG_HASH(
 
 
 /* Notifications */
+
 
 
 

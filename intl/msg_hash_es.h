@@ -1769,6 +1769,14 @@ MSG_HASH(
    "Cambia los ajustes de sincronización de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Aplica el filtro de vídeo. Es posible que el controlador de vídeo no respete este ajuste."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Activar filtro de vídeo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Suspender salvapantallas"
    )
@@ -2557,6 +2565,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Intenta mantener el retraso de fotogramas objetivo y minimizar la pérdida de fotogramas. Si el retraso de fotogramas es 0 (automático), el punto de partida será un 75 % de la duración de fotogramas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Muestrear duración de fotogramas solo en situaciones estables"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Limita la toma de muestras de la opción Frecuencia estimada del monitor a aquellos fotogramas en los que el contenido se esté ejecutando de forma limpia (fuera de menús, sin estar pausado, sin usar el avance rápido... Una duración en una situación normal). La lectura del diagnóstico será más precisa a costa de una convergencia más lenta nada más cargar un contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -4020,6 +4036,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Aplicar filtro de vídeo (alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Activa o desactiva el filtro de vídeo por software."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Mostrar FPS (alternar)"
    )
@@ -5055,28 +5079,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reiniciar tras usar avance rápido"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Autorestablecer tras situaciones perturbadoras"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reinicia el contador de duración de fotogramas al usar el avance rápido."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reiniciar tras cargar un guardado rápido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reinicia el contador de duración de fotogramas al cargar un guardado rápido."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reiniciar tras generar un guardado rápido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reinicia el contador de duración de fotogramas al generar un guardado rápido."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Borra el búfer de muestras de la opción Frecuencia estimada del monitor tras utilizar el avance rápido, guardar o cargar rápidamente. Estas operaciones introducen muestras que no reflejan la cadencia de fotogramas normal y distorsionarían la medición. Es una limpieza de esfuerzo razonable, no surtirá efecto si la opción Muestrear duración de fotogramas solo en situaciones estables está activada (opción que evita la contaminación en su origen)."
    )
 
 /* Settings > Recording */
@@ -5725,6 +5733,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "El contador de consumo de memoria en pantalla se actualizará a la velocidad asignada en fotogramas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Mostrar hora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Muestra la hora actual en el formato preferido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -6549,7 +6565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Muestra las opciones para deshacer los guardados rápidos y las cargas rápidas."
+   "Muestra las opciones para deshacer los guardados rápidos y las cargas rápidas. Si se oculta esta opción, puedes deshacer los guardados o cargas pulsando RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -8087,6 +8103,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Clave de transmisión de Facebook Gaming"
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Clave de transmisión de Kick"
    )
 
 /* Settings > Directory */
@@ -14361,7 +14384,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Deshaciendo guardado rápido."
+   "Deshaciendo guardado rápido..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -15023,6 +15046,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Frecuencia de actualización de vídeo cambiada a %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Filtro de vídeo: activado"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Filtro de vídeo: desactivado"
+   )
+
 
 /* Lakka */
 

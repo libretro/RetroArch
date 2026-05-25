@@ -3355,8 +3355,10 @@ bool menu_shader_manager_save_auto_preset(
 }
 #endif
 
-static enum action_iterate_type action_iterate_type(const char *label)
+static enum action_iterate_type action_iterate_type(const char *label, struct menu_state *menu_st)
 {
+   if (menu_st->dialog_st.confirm_msg && menu_st->dialog_st.confirm_cmd)
+      return ITERATE_TYPE_CONFIRM;
    if (!strcmp(label, "info_screen"))
       return ITERATE_TYPE_INFO;
    if (string_starts_with_size(label, "help", STRLEN_CONST("help")))
@@ -5572,6 +5574,18 @@ unsigned menu_event(
          if (ok_trigger)
             ok_enum_idx = entry.enum_idx;
 
+         /* Trigger on release during dialog boxes */
+         if (*menu->menu_state_msg)
+         {
+            if (ok_trigger)
+               ok_enum_idx = MENU_ENUM_LABEL_MESSAGE;
+
+            if (ok_enum_idx != MENU_ENUM_LABEL_MESSAGE)
+               ok_trigger_release = 0;
+
+            ok_trigger = ok_trigger_release;
+         }
+
          /* Single-click playlist entries */
          if (     settings->bools.input_menu_singleclick_playlists
                && (  entry.enum_idx == MENU_ENUM_LABEL_RUN
@@ -5741,7 +5755,7 @@ unsigned menu_event(
       {
          if (      (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
                || !(input_st->flags & INP_FLAG_BLOCK_HOTKEY))
-         ret = MENU_ACTION_NOOP;
+            ret = MENU_ACTION_NOOP;
       }
 
       if (ret != MENU_ACTION_NOOP)
@@ -6143,10 +6157,18 @@ static int menu_input_post_iterate(
          }
          /* Message boxes override normal menu input...
           * > If a message box is shown, any kind of pointer
-          *   gesture should close it */
+          *   gesture should close it
+          * > If a confirmation box is show, ignore gestures
+          *   outside of Back/OK buttons */
          else if (messagebox_active)
-            menu_input_pointer_close_messagebox(
-                  menu_st);
+         {
+            menu_input_pointer_close_messagebox(menu_st);
+
+            if (menu_st->dialog_st.confirm_hover_ok)
+               menu_dialog_confirm(menu_st);
+            else if (menu_st->dialog_st.confirm_hover_back)
+               menu_dialog_confirm_clear(menu_st);
+         }
          /* Normal menu input */
          else
          {
@@ -6271,7 +6293,10 @@ static int menu_input_post_iterate(
    {
       /* If currently showing a message box, close it */
       if (messagebox_active)
+      {
          menu_input_pointer_close_messagebox(menu_st);
+         menu_dialog_confirm_clear(menu_st);
+      }
       /* If onscreen keyboard is shown, send a 'backspace' */
       else if (osk_active)
          input_keyboard_event(true, '\x7f', '\x7f',
@@ -6396,6 +6421,9 @@ void menu_driver_toggle(
    bool video_scanline_sync           = false;
    bool video_vsync                   = false;
    bool video_frame_delay_auto        = false;
+#ifdef HAVE_VIDEO_FILTER
+   bool video_filter_enable           = true;
+#endif
 
    if (settings)
    {
@@ -7197,7 +7225,7 @@ static int generic_menu_iterate(
 
    menu->menu_state_msg[0]         = '\0';
 
-   iterate_type                    = action_iterate_type(label);
+   iterate_type                    = action_iterate_type(label, menu_st);
    menu_st->flags                 &= ~MENU_ST_FLAG_IS_BINDING;
 
    if (     action != MENU_ACTION_NOOP
@@ -7234,6 +7262,38 @@ static int generic_menu_iterate(
                || (action == MENU_ACTION_CANCEL)
             )
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+         break;
+      case ITERATE_TYPE_CONFIRM:
+         strlcpy(menu->menu_state_msg,
+               msg_hash_to_str(menu_st->dialog_st.confirm_msg),
+               sizeof(menu->menu_state_msg));
+
+#ifdef HAVE_ACCESSIBILITY
+         if (     (iterate_type != last_iterate_type)
+               && is_accessibility_enabled(
+                  accessibility_enable,
+                  access_st->enabled))
+            accessibility_speak_priority(
+                  accessibility_enable,
+                  accessibility_narrator_speech_speed,
+                  menu->menu_state_msg, 10);
+#endif
+
+         BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
+         BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
+         if (     action == MENU_ACTION_OK
+               || action == MENU_ACTION_SELECT
+               || action == MENU_ACTION_CANCEL
+               || action == MENU_ACTION_INFO)
+            BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+
+         if (menu_st->dialog_st.confirm_cmd)
+         {
+            if (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT)
+               menu_dialog_confirm(menu_st);
+            else if (action == MENU_ACTION_CANCEL || action == MENU_ACTION_INFO)
+               menu_dialog_confirm_clear(menu_st);
+         }
          break;
       case ITERATE_TYPE_BIND:
          {
@@ -7974,118 +8034,6 @@ int generic_menu_entry_action(
                speak_string, 10);
    }
 #endif
-
-   if (   (menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
-       || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
-   {
-      const char *deferred_path = menu ? menu->deferred_path : NULL;
-      const char *flush_target  = MENU_ENUM_LABEL_MAIN_MENU_STR;
-      size_t stack_offset       = 1;
-      unsigned i                = 0;
-      bool reset_navigation     = true;
-
-      /* Loop backwards through the menu stack to
-       * find a known reference point */
-      while (menu_stack && (menu_stack->size >= stack_offset))
-      {
-         const char *parent_label = menu_stack->list[
-            menu_stack->size - stack_offset].label;
-
-         if (!parent_label || !*parent_label)
-            continue;
-
-         /* If core was launched via a playlist or Explore, flush
-          * to playlist entry menu */
-         if (     (  string_is_equal(parent_label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
-                  || string_is_equal(parent_label, MENU_ENUM_LABEL_EXPLORE_TAB_STR))
-               && deferred_path && *deferred_path
-            )
-         {
-            if (string_is_equal(parent_label, MENU_ENUM_LABEL_EXPLORE_TAB_STR))
-               flush_target = MENU_ENUM_LABEL_EXPLORE_TAB_STR;
-            else
-               flush_target = MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR;
-            break;
-         }
-         /* If core was launched via 'Contentless Cores' menu,
-          * flush to 'Contentless Cores' menu */
-         else if (   string_is_equal(parent_label,
-                        MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR)
-                  || string_is_equal(parent_label,
-                        MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST_STR))
-         {
-            flush_target     = parent_label;
-            reset_navigation = false;
-            break;
-         }
-
-         stack_offset++;
-      }
-
-      if (!(menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
-         command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-
-      menu_entries_flush_stack(flush_target, 0);
-      /* An annoyance - some menu drivers (Ozone...) set
-       * MENU_ST_FLAG_PREVENT_POPULATE in awkward
-       * places, which can cause breakage here when flushing
-       * the menu stack. We therefore have to unset
-       * MENU_ST_FLAG_PREVENT_POPULATE */
-      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
-
-      /* Single-click playlist return */
-      if (settings->bools.input_menu_singleclick_playlists && reset_navigation)
-      {
-         size_t new_selection = menu_st->selection_ptr;
-         menu_entries_pop_stack(&new_selection, 0, 0);
-         menu_st->selection_ptr = new_selection;
-         reset_navigation = false;
-      }
-
-      /* Ozone requires thumbnail refreshing */
-      if (menu_st->driver_ctx && menu_st->driver_ctx->refresh_thumbnail_image)
-         menu_st->driver_ctx->refresh_thumbnail_image(
-               menu_st->userdata, i);
-
-      if (reset_navigation)
-         menu_st->selection_ptr = 0;
-
-      menu_st->flags &= ~(MENU_ST_FLAG_PENDING_CLOSE_CONTENT
-                        | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
-      menu_st->pending_env_shutdown_content_path[0] = '\0';
-
-      /* Reload core on launch failure if manually loaded */
-      if (     !path_is_empty(RARCH_PATH_CORE_LAST)
-            && !(menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE))
-      {
-         menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
-         menu_st->flags |= MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH;
-      }
-   }
-   else if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
-   {
-#ifdef HAVE_DYNAMIC
-      const char *a = path_get(RARCH_PATH_CORE_LAST);
-#endif
-      menu_st->flags &= ~MENU_ST_FLAG_PENDING_RELOAD_CORE;
-
-#ifdef HAVE_DYNAMIC
-      if (a && *a)
-      {
-         content_ctx_info_t content_info = {0};
-         if (task_push_load_new_core(a,
-                     NULL,
-                     &content_info,
-                     CORE_TYPE_PLAIN,
-                     NULL, NULL))
-         {
-            menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                            |  MENU_ST_FLAG_PREVENT_POPULATE;
-         }
-      }
-#endif
-   }
-
    return ret;
 }
 
@@ -8358,4 +8306,36 @@ size_t menu_playlist_random_selection(size_t selection, bool is_explore_list)
       new_selection = random_range((unsigned)(selection_start), (unsigned)(selection_total - 1));
 
    return new_selection;
+}
+
+/* Modal dialog handling */
+static void menu_dialog_confirm_reset(struct menu_state *menu_st)
+{
+   menu_st->dialog_st.confirm_msg = MSG_UNKNOWN;
+   menu_st->dialog_st.confirm_cmd = CMD_EVENT_NONE;
+
+   menu_st->dialog_st.confirm_hover_ok     = false;
+   menu_st->dialog_st.confirm_hover_back   = false;
+
+   BIT64_CLEAR(menu_st->driver_data->state, MENU_STATE_RENDER_MESSAGEBOX);
+   menu_st->driver_data->menu_state_msg[0] = '\0';
+}
+
+void menu_dialog_confirm_set(struct menu_state *menu_st, unsigned msg, unsigned cmd)
+{
+   menu_st->dialog_st.confirm_msg = msg;
+   menu_st->dialog_st.confirm_cmd = cmd;
+   menu_st->dialog_st.pending_cmd = CMD_EVENT_NONE;
+}
+
+void menu_dialog_confirm_clear(struct menu_state *menu_st)
+{
+   menu_st->dialog_st.pending_cmd = CMD_EVENT_NONE;
+   menu_dialog_confirm_reset(menu_st);
+}
+
+void menu_dialog_confirm(struct menu_state *menu_st)
+{
+   menu_st->dialog_st.pending_cmd = menu_st->dialog_st.confirm_cmd;
+   menu_dialog_confirm_reset(menu_st);
 }

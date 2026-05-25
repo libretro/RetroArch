@@ -20,7 +20,8 @@
 #include "../../frontend/drivers/platform_unix.h"
 
 /* FORWARD DECLARATIONS */
-int system_property_get(const char *cmd, const char *args, char *value);
+int system_property_get(const char *cmd, const char *args,
+      char *value, size_t value_size);
 
 static void* android_display_server_init(void) { return NULL; }
 static void android_display_server_destroy(void *data) { }
@@ -49,7 +50,7 @@ static void android_display_dpi_get_density(char *s, size_t len)
    static char string2[PROP_VALUE_MAX] = {0};
    if (!inited_once)
    {
-      system_property_get("getprop", "ro.sf.lcd_density", string);
+      system_property_get("getprop", "ro.sf.lcd_density", string, sizeof(string));
       inited_once = true;
    }
 
@@ -61,7 +62,7 @@ static void android_display_dpi_get_density(char *s, size_t len)
 
    if (!inited2_once)
    {
-      system_property_get("wm", "density", string2);
+      system_property_get("wm", "density", string2, sizeof(string2));
       inited2_once = true;
    }
 

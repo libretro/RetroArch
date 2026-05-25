@@ -148,13 +148,25 @@ bool getMountInfo(char *path, char *mountPoint, char *partition, char *newCWD)
       return false;
    }
 
-   sprintf(partition, "%s:%s",
-            str_list->elems[0].data, str_list->elems[1].data);
-   sprintf(mountPoint, "%s:",
-            str_list->elems[2].data);
-   sprintf(newCWD, "%s%s",
-            mountPoint,
-            str_list->size >= 4 ? str_list->elems[3].data : "");
+   /* Build partition string: "device:path" using strlcpy offsets */
+   size_t len = strlcpy(partition, str_list->elems[0].data, 50);
+   if (len < 50) {
+      len += strlcpy(partition + len, ":", 50 - len);
+      if (len < 50)
+         strlcpy(partition + len, str_list->elems[1].data, 50 - len);
+   }
+
+   /* Build mountPoint string: "mount:" using strlcpy offset */
+   len = strlcpy(mountPoint, str_list->elems[2].data, 10);
+   if (len < 10)
+      strlcpy(mountPoint + len, ":", 10 - len);
+
+   /* Build newCWD string using strlcpy offset */
+   len = strlcpy(newCWD, mountPoint, FILENAME_MAX);
+   if (len < FILENAME_MAX)
+      strlcpy(newCWD + len,
+            str_list->size >= 4 ? str_list->elems[3].data : "",
+            FILENAME_MAX - len);
 
    string_list_free(str_list);
    return true;

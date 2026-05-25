@@ -654,7 +654,14 @@ static void gfx_display_gl3_draw_pipeline(
    }
 #endif
 
-   t += 0.01;
+   t += 0.01f;
+   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
+    * exactly representable up to t ~ 167772 (where 0.5*ulp first
+    * exceeds 0.01), so 65536 has wide margin and wraps roughly
+    * every 30 h of cumulative menu time, making the discontinuity
+    * effectively unobservable. */
+   if (t > 65536.0f)
+      t -= 65536.0f;
 #endif
 }
 
@@ -1229,7 +1236,7 @@ static void gl3_raster_font_setup_viewport(
 static void gl3_raster_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    GLfloat color[4];
@@ -4359,7 +4366,7 @@ static bool gl3_frame(void *data, const void *frame,
    else if (statistics_show)
    {
       if (osd_params)
-         font_driver_render_msg(gl, stat_text,
+         font_driver_render_msg(gl, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
    }
 #endif
@@ -4380,7 +4387,7 @@ static bool gl3_frame(void *data, const void *frame,
       if (msg_bgcolor_enable)
          gl3_render_osd_background(gl, video_info, msg);
 #endif
-      font_driver_render_msg(gl, msg, NULL, NULL);
+      font_driver_render_msg(gl, msg, strlen(msg), NULL, NULL);
    }
 
    if (gl->ctx_driver->update_window_title)

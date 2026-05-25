@@ -967,59 +967,43 @@ static void runahead_remove_input_state_hook(runloop_state_t *runloop_st)
    }
 }
 
-static void *runahead_save_state_alloc(void)
-{
-   runloop_state_t     *runloop_st       = runloop_state_get_ptr();
-   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)
-      malloc(sizeof(retro_ctx_serialize_info_t));
-
-   if (!savestate)
-      return NULL;
-
-   savestate->data          = NULL;
-   savestate->data_const    = NULL;
-   savestate->size          = 0;
-
-   if (     (runloop_st->runahead_save_state_size > 0)
-         && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN))
-   {
-      savestate->data       = malloc(runloop_st->runahead_save_state_size);
-      savestate->data_const = savestate->data;
-      /* Only record a non-zero size on successful alloc.  Pre-
-       * patch: on OOM data was left NULL but size was set to the
-       * requested value, which made downstream consumers treat
-       * the entry as a valid serialized-state buffer of that
-       * size and dereference data when reading.  Keeping size=0
-       * on failure matches the initial-state invariant above
-       * (data/data_const = NULL, size = 0) and makes the
-       * savestate a no-op placeholder that teardown
-       * (runahead_save_state_free) correctly handles via its
-       * free(savestate->data) with NULL being a safe no-op. */
-      if (savestate->data)
-         savestate->size    = runloop_st->runahead_save_state_size;
-   }
-
-   return savestate;
-}
-
-static void runahead_save_state_free(void *data)
-{
-   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)data;
-   if (!savestate)
-      return;
-   free(savestate->data);
-   free(savestate);
-}
-
-static void runahead_save_state_list_init(
+static bool runahead_savestate_info_init(
       runloop_state_t *runloop_st,
       size_t save_state_size)
 {
-   runloop_st->runahead_save_state_size  = save_state_size;
-   runloop_st->flags                    |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
+   retro_ctx_serialize_info_t *info       = &runloop_st->runahead_savestate_info;
 
-   mylist_create(&runloop_st->runahead_save_state_list, 16,
-         runahead_save_state_alloc, runahead_save_state_free);
+   runloop_st->runahead_save_state_size   = save_state_size;
+   runloop_st->flags                     |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
+
+   /* Free any previous buffer so callers can safely re-init.  The
+    * matching invariant (data NULL when nothing allocated) lets the
+    * per-frame save_state/load_state path use the buffer pointer as
+    * its readiness check. */
+   free(info->data);
+   info->data       = NULL;
+   info->data_const = NULL;
+   info->size       = 0;
+
+   if (save_state_size == 0)
+      return false;
+
+   info->data       = malloc(save_state_size);
+   if (!info->data)
+      return false;
+
+   info->data_const = info->data;
+   info->size       = save_state_size;
+   return true;
+}
+
+static void runahead_savestate_info_free(runloop_state_t *runloop_st)
+{
+   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
+   free(info->data);
+   info->data       = NULL;
+   info->data_const = NULL;
+   info->size       = 0;
 }
 
 /* Hooks - Hooks to cleanup, and add dirty input hooks */
@@ -1043,7 +1027,7 @@ static void runahead_remove_hooks(runloop_state_t *runloop_st)
 
 static void runahead_destroy(runloop_state_t *runloop_st)
 {
-   mylist_destroy(&runloop_st->runahead_save_state_list);
+   runahead_savestate_info_free(runloop_st);
    runahead_remove_hooks(runloop_st);
    runahead_clear_variables(runloop_st);
 }
@@ -1093,7 +1077,7 @@ static void runahead_add_hooks(runloop_state_t *runloop_st)
 static void runahead_err(runloop_state_t *runloop_st)
 {
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_AVAILABLE;
-   mylist_destroy(&runloop_st->runahead_save_state_list);
+   runahead_savestate_info_free(runloop_st);
    runahead_remove_hooks(runloop_st);
    runloop_st->runahead_save_state_size       = 0;
    runloop_st->flags                         |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
@@ -1105,33 +1089,28 @@ static bool runahead_create(runloop_state_t *runloop_st)
    video_driver_state_t *video_st = video_state_get_ptr();
    size_t info_size               = core_serialize_size_special();
 
-   runahead_save_state_list_init(runloop_st, info_size);
-   if (video_st->flags & VIDEO_FLAG_ACTIVE)
-      video_st->flags |=  VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
-   else
-      video_st->flags &= ~VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
-
-   if (      (runloop_st->runahead_save_state_size == 0)
-         || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN))
+   if (!runahead_savestate_info_init(runloop_st, info_size))
    {
       runahead_err(runloop_st);
       return false;
    }
 
+   if (video_st->flags & VIDEO_FLAG_ACTIVE)
+      video_st->flags |=  VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
+   else
+      video_st->flags &= ~VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
+
    runahead_add_hooks(runloop_st);
    runloop_st->flags |= RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
-   if (runloop_st->runahead_save_state_list)
-      mylist_resize(runloop_st->runahead_save_state_list, 1, true);
    return true;
 }
 
 static bool runahead_save_state(runloop_state_t *runloop_st)
 {
-   if (runloop_st->runahead_save_state_list)
+   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
+   if (info->data)
    {
-      retro_ctx_serialize_info_t *serialize_info =
-         (retro_ctx_serialize_info_t*)runloop_st->runahead_save_state_list->data[0];
-      if (core_serialize_special(serialize_info))
+      if (core_serialize_special(info))
          return true;
       runahead_err(runloop_st);
    }
@@ -1140,15 +1119,13 @@ static bool runahead_save_state(runloop_state_t *runloop_st)
 
 static bool runahead_load_state(runloop_state_t *runloop_st)
 {
-   retro_ctx_serialize_info_t *serialize_info =
-      (retro_ctx_serialize_info_t*)
-      runloop_st->runahead_save_state_list->data[0];
-   bool last_dirty                            = (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) ? true : false;
-   bool ret                                   = core_unserialize_special(serialize_info);
+   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
+   bool last_dirty                  = (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) ? true : false;
+   bool ret                         = core_unserialize_special(info);
    if (last_dirty)
-      runloop_st->flags                      |=  RUNLOOP_FLAG_INPUT_IS_DIRTY;
+      runloop_st->flags             |=  RUNLOOP_FLAG_INPUT_IS_DIRTY;
    else
-      runloop_st->flags                      &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+      runloop_st->flags             &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
 
    if (!ret)
       runahead_err(runloop_st);
@@ -1159,11 +1136,10 @@ static bool runahead_load_state(runloop_state_t *runloop_st)
 #if HAVE_DYNAMIC
 static bool runahead_load_state_secondary(runloop_state_t *runloop_st, settings_t *settings)
 {
-   retro_ctx_serialize_info_t *serialize_info =
-      (retro_ctx_serialize_info_t*)runloop_st->runahead_save_state_list->data[0];
+   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
 
    if (!secondary_core_deserialize(runloop_st, settings,
-            serialize_info->data_const, serialize_info->size))
+            info->data_const, info->size))
    {
       runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
       runahead_err(runloop_st);

@@ -169,7 +169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "Онлайн-обновления"
+   "Онлайн-обновление"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
@@ -595,7 +595,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Блокировать ядро"
+   "Заблокировать ядро"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
@@ -1084,7 +1084,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
-   "Если включено, миниатюры изображений будут синхронизированы с облаком. Рекомендуется использовать только при большом количестве пользовательских миниатюр. В остальных случаях лучше предпочесть загрузчик миниатюр."
+   "Если включено, файлы миниатюр будут синхронизироваться с облаком. Рекомендуется включать только для больших коллекций пользовательских изображений. В остальных случаях предпочтительней пользоваться загрузкой миниатюр."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
@@ -1638,7 +1638,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-   "Фреймов в аудиоблоке микрофона"
+   "Количество фреймов в блоке микрофона"
    )
 #endif
 MSG_HASH(
@@ -1777,6 +1777,14 @@ MSG_HASH(
    "Настройки синхронизации изображения."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Применять выбранный фильтр изображения. Может игнорироваться видеодрайвером."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Вкл. графический фильтр"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Блокировать скринсейвер"
    )
@@ -1910,15 +1918,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Применить программный графический фильтр. Некоторые фильтры совместимы только с ядрами, использующими 32- или 16-битный цвет. Возможно сильное снижение производительности."
+   "Выбор программного графического фильтра. Возможно сильное снижение производительности. Часть фильтров совместима только с ядрами, использующими 32- или 16-битную глубину цвета."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
-   "Применить программный графический фильтр. Некоторые фильтры совместимы только с ядрами, использующими 32- или 16-битный цвет. Возможно сильное снижение производительности. Доступен выбор графических фильтров из динамически связанных библиотек."
+   "Применить программный графический фильтр. Возможно сильное снижение производительности. Часть фильтров совместима только с ядрами, использующими 32- или 16-битную глубину цвета. Поддерживается выбор фильтров из динамически связанных библиотек."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
-   "Применить программный графический фильтр. Некоторые фильтры совместимы только с ядрами, использующими 32- или 16-битный цвет. Возможно сильное снижение производительности. Доступен выбор графических фильтров из встроенных библиотек."
+   "Применить программный графический фильтр. Возможно сильное снижение производительности. Часть фильтров совместима только с ядрами, использующими 32- или 16-битную глубину цвета. Поддерживается выбор фильтров из встроенных библиотек."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -2030,7 +2038,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   "Принудительный поворот изображения на указанное значение. Прибавляется к вращениям, задаваемым ядром."
+   "Принудительный поворот изображения на заданное значение. Добавляется к вращению по выбору ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
@@ -2038,7 +2046,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   "Установить одно из системных значений ориентации экрана."
+   "Принудительно установить один из системных режимов ориентации экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
@@ -2094,7 +2102,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Автопереключение частоты обновления"
+   "Автоматическая смена частоты обновления"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
@@ -2114,11 +2122,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   "Автом. порог частоты обновления PAL"
+   "Автоматическое ограничение частоты обновления PAL"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   "Максимальная частота обновления для PAL."
+   "Максимальная частота обновления, определяемая для PAL."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -2171,7 +2179,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "Ручная установка ширины для неоконного полноэкранного режима. Если не задано, будет использоваться разрешение рабочего стола."
+   "Ручная настройка ширины неоконного полноэкранного режима. Если не задано, используется разрешение рабочего стола."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
@@ -2179,7 +2187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "Ручная установка высоты для неоконного полноэкранного режима. Если не задано, будет использоваться разрешение рабочего стола."
+   "Ручная настройка высоты неоконного полноэкранного режима. Если не задано, используется разрешение рабочего стола."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -2321,7 +2329,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Настройка соотношения сторон"
+   "Конфигурация соотношения сторон"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
@@ -2337,7 +2345,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
-   "Ручная установка"
+   "Ручная настройка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
@@ -2355,19 +2363,19 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   "Пользовательское соотношение сторон (сдвиг по X)"
+   "Ручная настройка соотношения сторон (ось X)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Установка смещения для определения положения области просмотра по оси X."
+   "Смещение, используемое для определения положения области просмотра по оси X."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Пользовательское соотношение сторон (сдвиг по Y)"
+   "Ручная настройка соотношения сторон (ось Y)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Установка смещения для определения положения области просмотра по оси Y."
+   "Смещение, используемое для определения положения области просмотра по оси Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
@@ -2421,19 +2429,19 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Ручная установка соотношения сторон (ширина)"
+   "Ручная настройка соотношения сторон (ширина)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Ручная установка ширины области изображения для пользовательского соотношения сторон."
+   "Ширина окна, используемая при выборе значения 'Ручная настройка' для соотношения сторон."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Ручная установка соотношения сторон (высота)"
+   "Ручная настройка соотношения сторон (высота)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Ручная установка высоты области изображения для пользовательского соотношения сторон."
+   "Высота окна, используемая при выборе значения 'Ручная настройка' для соотношения сторон."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
@@ -2543,6 +2551,14 @@ MSG_HASH(
    "VSync используется до снижения производительности ниже целевой частоты обновления. Повышает энергоэффективность и помогает минимизировать замедления при падении скорости. Несовместимо с 'Задержкой кадра'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Синхронизация с полосой развёртки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Синхронизировать вывод изображения с позицией полосы развёртки. Уменьшает задержку, но повышает риск появления разрывов изображения. Требуется отключение VSync."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Задержка кадра"
    )
@@ -2565,6 +2581,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Пытаться сохранять целевую 'Задержку кадра' и минимизировать выпадение кадров. При значении 'Задержки кадра' 0 (автоматически) начальная точка равна 3/4 времени кадра."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Выборка времени кадра только в стабильном состоянии"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Ограничивать выборку 'Расчётной частоты обновления экрана' кадрами, при которых контент выполняется чисто (не в меню, не на паузе, не в режиме ускорения, время кадра в допустимом диапазоне). Результаты диагностики преобразуются в полезные данные за счёт более медленной схо[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2681,15 +2705,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Заглушать звук при включении ускорения"
+   "Заглушать звук при ускоренной перемотке"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   "Автоматически заглушать звук при ускоренной перемотке."
+   "Автоматически заглушать звук во время ускоренной перемотки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Ускорять звук при включении ускорения"
+   "Ускорять звук при ускоренной перемотке"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -2701,7 +2725,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
-   "Автоматически заглушать звук при обратной перемотке."
+   "Автоматически заглушать звук во время обратной перемотки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2788,11 +2812,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "Изменить стандартное устройство, используемое драйвером звука. Зависит от драйвера."
+   "Переопределение устройства ввода, используемого драйвером микрофона. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "Изменить стандартное устройство, используемое драйвером звука. Зависит от драйвера."
+   "Переопределение устройства ввода, используемого драйвером микрофона. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
@@ -2835,11 +2859,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
-   "Изменить стандартное устройство ввода, используемое драйвером микрофона. Зависит от драйвера."
+   "Переопределение устройства ввода, используемого драйвером микрофона. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
-   "Изменить стандартное устройство ввода, используемое драйвером микрофона. Зависит от драйвера."
+   "Переопределение устройства ввода, используемого драйвером микрофона. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -2847,7 +2871,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
-   "Низкие значения повышают производительность/снижают задержку, но ухудшают качество звука. Высокие улучшают качество звука, но снижают производительность/увеличивают отставание."
+   "Понижайте значение, чтобы улучшить производительность и уменьшить задержку за счёт снижения качества звука. Повышайте для улучшения качества звука ценой снижения производительности и увеличения задержки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
@@ -2899,7 +2923,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-   "Низкие значения повышают производительность/снижают задержку, но ухудшают качество звука. Высокие улучшают качество звука, но снижают производительность/увеличивают отставание."
+   "Понижайте значение, чтобы улучшить производительность и уменьшить задержку за счёт снижения качества звука. Повышайте для улучшения качества звука ценой снижения производительности и увеличения задержки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
@@ -3701,7 +3725,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
-   "Переключение между замедлением и обычной скоростью."
+   "Переключение между замедленной и обычной скоростью."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
@@ -4031,6 +4055,14 @@ MSG_HASH(
    "Включает/выключает упреждающие кадры."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Применить видеофильтр (переключение)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Включает/выключает программный фильтр изображения."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Показать FPS (переключение)"
@@ -4433,7 +4465,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
-   "Разрешать ядрам смену видеодрайвера"
+   "Разрешать смену видеодрайвера"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
@@ -4998,7 +5030,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "Максимальная частота контента при ускорении (напр., 5.0x для контента в 60 FPS = максимум 300 FPS). Значение 0.0x убирает предел ускорения (без ограничения FPS)."
+   "Максимальная частота контента в режиме ускоренной перемотки (напр., 5.0x для контента в 60 FPS = максимум 300 FPS). Значение 0.0x отключает предел ускорения (без ограничения FPS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
@@ -5067,28 +5099,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Сброс после ускорения"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Автосброс после событий прерывания"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Сбрасывать счётчик времени кадра при ускоренной перемотке."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Сброс после загрузки сохранения"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Сбрасывать счётчик времени кадра при загрузке быстрого сохранения."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Сброс после создания сохранения"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Сбрасывать счётчик времени кадра при создании быстрого сохранения."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Очищать буфер выборки 'Расчётной частоты обновления экрана' при ускоренной перемотке, загрузке или сохранении состояния. Данные операции вносят сэмплы, которые не отражают нормальную последовательность кадров и искажают измерения. Не имеет эффекта, если включена опция '[...]"
    )
 
 /* Settings > Recording */
@@ -5099,7 +5115,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
-   "Ручная установка"
+   "Ручная настройка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
@@ -5159,7 +5175,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
-   "Ручная установка"
+   "Ручная настройка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
@@ -5167,7 +5183,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
-   "Ручная установка"
+   "Ручная настройка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
@@ -5280,15 +5296,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
-   "Отображение событий ввода на экранном оверлее. В режиме 'С сенсорного экрана' элементы оверлея подсвечиваются при фактическом нажатии/касании. В режиме 'С физ. контроллера' подсвечиваются события ввода, получаемые ядром от подключенного контроллера/клавиатуры."
+   "Отображение событий ввода на экранном оверлее. В режиме 'Сенсорный экран' подсвечиваются элементы оверлея при фактическом нажатии/касании. В режиме 'Физический (контроллер)' подсвечиваются нажатия, получаемые ядром от подключенного контроллера/клавиатуры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
-   "С сенсорного экрана"
+   "Сенсорный экран"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
-   "С физ. контроллера"
+   "Физический (контроллер)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
@@ -5296,7 +5312,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "Прослушивать выбранный порт устройства ввода, если для опции 'Показывать нажатия на оверлее' указан режим 'С физ. контроллера'."
+   "Прослушивать заданный порт устройства ввода, если для опции 'Показывать нажатия на оверлее' выбран режим 'Физический (контроллер)'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -5741,6 +5757,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "Счётчик памяти будет обновляться с заданным интервалом (в кадрах)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Показывать время"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Отображать текущее время в выбранном формате."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -6270,11 +6294,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   "Показывать 'Онлайн-обновления'"
+   "Показывать 'Онлайн-обновление'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   "Показывать опцию 'Онлайн-обновления' в главном меню."
+   "Показывать опцию 'Онлайн-обновление' в главном меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
@@ -6282,7 +6306,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-   "Показывать опции для скачивания ядер и информационных файлов в 'Онлайн-обновлениях'."
+   "Показывать опции для скачивания ядер (и их информационных файлов) в меню 'Онлайн-обновление'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -6383,6 +6407,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Показывать 'Сетевая игра'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "Показывать опцию 'Сетевая игра' в главного меню или в плейлистах."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6500,6 +6528,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Показывать дополнительную информацию для элементов меню."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Показывать окна подтверждения"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Запрашивать подтверждение перед выходом, перезагрузкой или закрытием контента. Если выключено, данные действия выполняются немедленно."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Приветствие"
@@ -6565,7 +6601,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Показывать опции отмены сохранения/загрузки состояния."
+   "Показывать опции отмены сохранения/загрузки состояния. Если опции скрыты, отмена сохранения/загрузки производится нажатием Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7420,7 +7456,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
-   "Ручная установка"
+   "Ручная настройка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
@@ -7432,7 +7468,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   "TCP-порт Netplay"
+   "TCP-порт"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
@@ -7508,11 +7544,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
-   "Разрешить паузу"
+   "Разрешать паузу"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Разрешать игрокам приостанавливать эмуляцию во время сетевой игры."
+   "Разрешать игрокам ставить эмуляцию на паузу во время сеанса сетевой игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -7568,11 +7604,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   "Обход NAT в Netplay"
+   "Обход NAT в сетевой игре"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-   "В режиме хоста пытаться слушать подключения из публичного Интернет, используя UPnP или схожие протоколы во избежание локальных сетей."
+   "При запуске в режиме хоста пытаться слушать подключения из публичного Интернет, используя UPnP или схожие протоколы для избежания локальных сетей."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
@@ -7671,7 +7707,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
-   "Автоматически создавать резервные копии установленных ядер при онлайн-обновлении. В случае регресса обеспечивает простой откат к рабочей версии ядра."
+   "Автоматически создавать резервные копии установленных ядер при онлайн-обновлении. Обеспечивает простой откат к рабочей версии ядра, если обновление вызывает ошибки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -7918,7 +7954,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   "Если включено, поиск миниатюр будет производиться по именам файлов вместо названий записей."
+   "Если включено, поиск миниатюр вместо названия записи будет использовать имя файла."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
@@ -7926,7 +7962,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
-   "Если включено, позволяет добавлять локальные миниатюры в любых поддерживаемых RetroArch графических форматах (напр., jpeg). Возможно небольшое снижение производительности."
+   "Если включено, разрешает добавлять миниатюры во всех графических форматах, поддерживаемых RetroArch (напр., jpeg). Возможно небольшое снижение производительности."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
@@ -8047,7 +8083,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Разрешать приложению Discord показ сведений о текущем контенте.\nДоступно только для официального настольного клиента."
+   "Разрешать Discord отображать сведения о запущенном контенте.\nДоступно только для официального настольного клиента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8107,6 +8143,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Ключ трансляции Facebook Gaming"
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Ключ трансляции Kick"
    )
 
 /* Settings > Directory */
@@ -10821,7 +10864,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
-   "Ручная установка"
+   "Ручная настройка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
@@ -11291,7 +11334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
-   "Ручная установка"
+   "Ручная настройка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED,
@@ -11585,6 +11628,10 @@ MSG_HASH(
    "Затемнение по вертикали"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Горизонтальное представление меню"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Название в заголовке"
    )
@@ -11633,7 +11680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
-   "Ручная установка"
+   "Ручная настройка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
@@ -11817,6 +11864,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "Всегда сворачивать боковую панель слева."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Показывать боковую панель"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Разрешить плейлисты и панель навигации слева."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -12279,7 +12334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
-   "Ручная установка..."
+   "Ручная настройка..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
@@ -13072,7 +13127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NATIVE,
-   "Нативное"
+   "Исходное"
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
@@ -14373,7 +14428,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Отмена сохранения состояния"
+   "Отмена сохранения состояния..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14833,11 +14888,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "Внимание: отсутствуют ресурсы меню, воспользуйтесь онлайн-обновлением."
+   "Внимание: отсутствуют ресурсы, воспользуйтесь онлайн-обновлением."
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
-   "Внимание: отсутствуют шрифты для выбранного языка, воспользуйтесь Онлайн-обновлением."
+   "Внимание: отсутствуют шрифты для выбранного языка, воспользуйтесь онлайн-обновлением."
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
@@ -15039,6 +15094,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Частота обновления установлена на %s Гц."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Графический фильтр: включен"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Графический фильтр: выключен"
+   )
+
 
 /* Lakka */
 
@@ -15323,7 +15387,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   "Фреймов в блоке"
+   "Количество фреймов в блоке"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
@@ -15576,7 +15640,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
-   "Включите для передачи событий касания при вводе с сенсорного экрана."
+   "Включите для передачи касаний при вводе с сенсорного экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,

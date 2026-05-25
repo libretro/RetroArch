@@ -418,7 +418,7 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
          break;
       case 'D': /* DVD */
          stream->frame_size   = hd->unitbytes;
-         meta.frames          = hd->totalhunks;
+         meta.frames          = hd->totalhunks * (hd->hunkbytes / hd->unitbytes);
          break;
       default:
          stream->frame_size   = hd->unitbytes;

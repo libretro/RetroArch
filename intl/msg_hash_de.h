@@ -1705,6 +1705,14 @@ MSG_HASH(
    "Videosynchronisationseinstellungen ändern."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Videofilter anwenden. Dies ist ein Hinweis, der nicht unbedingt vom Treiber respektiert werden muss."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Videofilter aktivieren"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Bildschirmschoner unterdrücken"
    )
@@ -2473,6 +2481,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Versucht das gewünschte Ziel der \"Bildverzögerung\" zu halten und Frame-Drops zu minimieren. Ausgangspunkt ist die 3/4 Frame-Zeit, wenn \"Bildverzögerung\" 0 (Automatisch) ist."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Bildwiederholrate nur in stabilem Zustand erfassen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Die Erfassung für „Geschätzte Bildwiederholrate“ sollte auf Bilder beschränkt werden, bei denen der Inhalt reibungslos wiedergegeben wird (kein Menü, keine Pause, kein Schnellvorlauf, Bilddauer innerhalb eines akzeptablen Bereichs). Die Diagnoseanzeige wird so zu einem realen Signal, allerdings auf Kosten einer langsameren Konvergenz nach dem Laden des Inhalts."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -3916,6 +3932,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Videofilter anwenden (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Schaltet die Software „Videofilter“ ein bzw. aus."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "FPS anzeigen (Umschalten)"
    )
@@ -4943,28 +4967,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Nach Vorspulen zurücksetzen"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Nach störenden Ereignissen automatisch zurücksetzen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Den Frame-Zeit-Zähler nach dem Vorspulen zurücksetzen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Nach Savestate-Laden zurücksetzen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Den Frame-Zeit-Zähler nach dem Laden eines Savestates zurücksetzen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Nach Savestate-Speichern zurücksetzen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Den Frame-Zeit-Zähler nach dem Erstellen eines Savestates zurücksetzen."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Den Samplepuffer für die „Geschätzte Bildwiederholrate“ nach dem Vorspulen, Speichern oder Laden eines Zustands löschen. Diese Vorgänge führen zu Zeitmesswerten, die nicht den normalen Bildrhythmus widerspiegeln und die Abweichungsmessung verfälschen würden. Die Bereinigung erfolgt nach bestem Ermessen – sie hat keine Auswirkung, wenn die Option „Bildwiederholrate nur im stabilen Zustand erfassen“ aktiviert ist (wodurch die Störung an der Quelle verhindert wird)."
    )
 
 /* Settings > Recording */
@@ -5609,6 +5617,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "Die Anzeige der Speichernutzung wird im eingestellten Intervall in Frames aktualisiert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Zeit anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Die aktuelle Uhrzeit im bevorzugten Format anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -6364,6 +6380,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Zusätzliche Informationen zu Menüeinträgen anzeigen."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Bestätigungsfenster anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Vor dem Beenden, Zurücksetzen oder Schließen von Inhalten eine Bestätigung anfordern. Wenn deaktiviert, werden diese Aktionen sofort durchgeführt."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Zeige Startbildschirm"
@@ -6429,7 +6453,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Optionen für das Zurücksetzen des Speicherns/Ladens eines Savestates anzeigen."
+   "Die Optionen zum Rückgängigmachen des Speicherns/Ladens anzeigen. RetroPad Start löst das Rückgängigmachen des Speicherns/Ladens aus, wenn es ausgeblendet ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7943,6 +7967,9 @@ MSG_HASH(
 
 
 /* Settings > User > Accounts > Facebook Gaming */
+
+
+/* Settings > User > Accounts > Kick */
 
 
 /* Settings > Directory */
@@ -14033,7 +14060,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Speichern des Savestates wird rückgängig gemacht"
+   "Savestate wird rückgängig gemacht …"
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14695,6 +14722,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Videoaktualisierungsrate auf %s Hz geändert."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Videofilter: Einschalten"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Videofilter: Ausschalten"
+   )
+
 
 /* Lakka */
 

@@ -1777,6 +1777,14 @@ MSG_HASH(
    "Thay đổi cài đặt đồng bộ hóa video."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Áp dụng bộ lọc video. Đây là một gợi ý và trình điều khiển video không nhất thiết phải thực hiện theo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Bật bộ lọc video"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Tạm dừng trình bảo vệ màn hình"
    )
@@ -2577,6 +2585,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Cố gắng duy trì mục tiêu 'Trễ khung hình' mong muốn và giảm thiểu tình trạng mất khung hình. Điểm khởi đầu là 3/4 thời gian khung hình khi 'Trễ khung hình' bằng 0 (Tự động)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Chỉ lấy thời gian khung hình mẫu trong trạng thái ổn định"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Giới hạn việc lấy mẫu “Tốc độ làm mới màn hình ước tính” chỉ trong các khung hình mà nội dung đang chạy ổn định (không ở menu, không bị tạm dừng, không tua nhanh, và thời gian khung hình nằm trong ngưỡng hợp lý). Phần hiển thị chẩn đoán sẽ trở thành một tín hiệu thực sự đáng tin cậy, nhưng đổi lại tốc độ hội tụ sẽ chậm hơn sau khi tải nội dung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -4044,6 +4060,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Áp dụng bộ lọc video (Chuyển đổi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Bật/tắt bộ lọc video bằng phần mềm."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Hiển thị FPS (Bật/Tắt)"
    )
@@ -5079,28 +5103,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Đặt lại sau Tua nhanh"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Tự động đặt lại sau khi bị gián đoạn"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Đặt lại bộ đếm thời gian khung hình sau khi tua nhanh."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Đặt lại sau Tải trạng thái"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Đặt lại bộ đếm thời gian khung hình sau khi tải trạng thái."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Đặt lại sau khi Lưu trạng thái"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Đặt lại bộ đếm thời gian khung hình sau khi lưu trạng thái."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Xóa bộ đệm mẫu “Estimated Screen Refresh Rate” sau khi tua nhanh, lưu trạng thái hoặc tải trạng thái. Các thao tác này tạo ra những mẫu thời gian không phản ánh nhịp khung hình bình thường và sẽ làm sai lệch phép đo độ lệch. Đây là cơ chế dọn dẹp theo mức tốt nhất; không có tác dụng khi bật “Sample Frame Time Only In Stable State” (vì tùy chọn này ngăn nhiễu ngay từ nguồn)."
    )
 
 /* Settings > Recording */
@@ -5757,6 +5765,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "Hiển thị mức sử dụng bộ nhớ sẽ được cập nhật theo khoảng thời gian đã đặt, tính bằng khung hình."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Hiển thị thời gian"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Hiển thị thời gian hiện tại theo định dạng ưu tiên."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -6585,7 +6601,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Hiển thị tùy chọn hoàn tác thao tác lưu/tải trạng thái."
+   "Hiển thị các tùy chọn để hoàn tác lưu/tải trò chơi. Nút Start trên RetroPad sẽ kích hoạt hoàn tác lưu/tải khi bị ẩn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -8128,6 +8144,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Khóa phát trực tiếp Facebook Gaming"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 
@@ -14441,7 +14460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Đang hoàn tác trạng thái lưu"
+   "Đang hoàn tác lưu trò chơi..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -15107,6 +15126,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Tốc độ làm mới video đã thay đổi thành %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Bộ lọc video: Bật"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Bộ lọc video: Tắt"
+   )
+
 
 /* Lakka */
 

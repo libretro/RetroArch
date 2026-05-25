@@ -455,6 +455,13 @@ static void gl_cg_set_params(void *dat, void *shader_data)
       unsigned modulo = cg->shader->pass[cg->active_idx - 1].frame_count_mod;
       if (modulo)
          frame_count %= modulo;
+      else
+         /* fp32 mantissa is 23 bits; integers above 2^24 cannot be
+          * represented exactly. Mask to 24 bits when the shader pass
+          * has not declared its own modulo, so (float)frame_count stays
+          * bit-exact and time-based Cg shaders keep animating beyond
+          * ~77 h of continuous play. */
+         frame_count &= 0xFFFFFFu;
 
       cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_cnt_f, (float)frame_count);
       cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_cnt_v, (float)frame_count);

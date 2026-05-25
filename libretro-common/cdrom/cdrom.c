@@ -60,6 +60,19 @@
 #include <ntddscsi.h>
 #endif
 
+#if defined(__APPLE__)
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/IOBSD.h>
+#include <IOKit/IOCFPlugIn.h>
+#include <IOKit/scsi/SCSITaskLib.h>
+#include <IOKit/storage/IOCDMediaBSDClient.h>
+#include <IOKit/storage/IOCDTypes.h>
+#endif
+
 #define CDROM_CUE_TRACK_BYTES 107
 #define CDROM_MAX_SENSE_BYTES 16
 #define CDROM_MAX_RETRIES 10
@@ -371,6 +384,354 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
 }
 #endif
 
+#if defined(__APPLE__)
+/* macOS exposes no raw SCSI pass-through for consumer optical drives,
+ * so there is no cdrom_send_command_macos analogous to the linux/win32
+ * ones: dispatch by CDB opcode to either the curated MMC plug-in
+ * (metadata) or a DKIOC ioctl on /dev/rdiskN (sector reads, speed).
+ * Unmappable CDBs are stubbed success or illegal-request. */
+static int cdrom_send_command_macos(libretro_vfs_implementation_file *stream,
+      CDROM_CMD_Direction dir, void *buf, size_t len,
+      unsigned char *cmd, size_t cmd_len,
+      unsigned char *sense, size_t sense_len)
+{
+   MMCDeviceInterface **mmc = (MMCDeviceInterface **)stream->iokit_mmc;
+   SCSITaskStatus       ts  = kSCSITaskStatus_GOOD;
+   SCSI_Sense_Data      ss  = {0};
+   IOReturn             r   = kIOReturnSuccess;
+
+   switch (cmd[0])
+   {
+      case 0x00: /* TEST UNIT READY */
+         if (!mmc) return 1;
+         r = (*mmc)->TestUnitReady(mmc, &ts, &ss);
+         break;
+
+      case 0x12: /* INQUIRY (standard page only) */
+         if (!mmc || !buf) return 1;
+         r = (*mmc)->Inquiry(mmc,
+               (SCSICmd_INQUIRY_StandardData *)buf,
+               (UInt32)(len > 36 ? 36 : len),
+               &ts, &ss);
+         break;
+
+      case 0x43: /* READ TOC / PMA / ATIP */
+         if (!mmc || !buf) return 1;
+         r = (*mmc)->ReadTableOfContents(mmc,
+               (cmd[1] >> 1) & 0x1                   /* MSF       */,
+               cmd[2] & 0x0F                         /* FORMAT    */,
+               cmd[6]                                /* TRACK/SES */,
+               buf, (SCSICmdField2Byte)len, &ts, &ss);
+         break;
+
+      case 0x46: /* GET CONFIGURATION */
+         if (!mmc || !buf) return 1;
+         r = (*mmc)->GetConfiguration(mmc,
+               cmd[1] & 0x03                         /* RT        */,
+               (SCSICmdField2Byte)(((unsigned)cmd[2] << 8) | cmd[3]),
+               buf, (SCSICmdField2Byte)len, &ts, &ss);
+         break;
+
+      case 0x52: /* READ TRACK INFORMATION */
+         if (!mmc || !buf) return 1;
+         r = (*mmc)->ReadTrackInformation(mmc,
+               cmd[1] & 0x03                         /* ADDR TYPE */,
+               ((UInt32)cmd[2] << 24) | ((UInt32)cmd[3] << 16)
+                  | ((UInt32)cmd[4] << 8) | (UInt32)cmd[5],
+               buf, (SCSICmdField2Byte)len, &ts, &ss);
+         break;
+
+      case 0x55: /* MODE SELECT(10) - MMC only exposes the write-
+                  * parameters page, which RetroArch never sets.  Stub
+                  * success so read-cache-disable etc. don't error. */
+         (void)sense; (void)sense_len;
+         return 0;
+
+      case 0x5A: /* MODE SENSE(10) */
+         if (!mmc || !buf) return 1;
+         r = (*mmc)->ModeSense10(mmc,
+               (cmd[1] >> 4) & 0x1                   /* LLBAA     */,
+               (cmd[1] >> 3) & 0x1                   /* DBD       */,
+               (cmd[2] >> 6) & 0x3                   /* PC        */,
+               cmd[2] & 0x3F                         /* PAGE_CODE */,
+               buf, (SCSICmdField2Byte)len, &ts, &ss);
+         break;
+
+      case 0xBB: /* SET CD SPEED -> DKIOCCDSETSPEED */
+         {
+            UInt32   spd_be = ((UInt32)cmd[2] << 24) | ((UInt32)cmd[3] << 16)
+                            | ((UInt32)cmd[4] << 8)  |  (UInt32)cmd[5];
+            uint16_t spd    = spd_be > 0xFFFF ? 0xFFFF : (uint16_t)spd_be;
+            if (stream->fd < 0) return 1;
+            return ioctl(stream->fd, DKIOCCDSETSPEED, &spd) == 0 ? 0 : 1;
+         }
+
+      /* The shared dispatcher normalizes both opcodes to a start MSF
+       * in cmd[3..5] and calls this once per sector. */
+      case 0xB9: /* READ CD MSF */
+      case 0xBE: /* READ CD -> DKIOCCDREAD */
+         {
+            dk_cd_read_t arg     = {0};
+            UInt8        fmt     = cmd[9];
+            UInt8        sub_sel = cmd[10] & 0x07;
+            UInt8        sec_t   = (cmd[1] >> 2) & 0x07;
+            unsigned     lba;
+            UInt8        area    = 0;
+
+            if (stream->fd < 0 || !buf) return 1;
+
+            /* cmd[3..5] is the starting MSF for this iteration. */
+            lba = cdrom_msf_to_lba(cmd[3], cmd[4], cmd[5]);
+            if (lba < 150) return 1;
+            lba -= 150;
+
+            if (fmt & 0x80) area |= kCDSectorAreaSync;
+            switch ((fmt >> 5) & 0x3)
+            {
+               case 1: area |= kCDSectorAreaHeader;                              break;
+               case 2: area |= kCDSectorAreaSubHeader;                           break;
+               case 3: area |= kCDSectorAreaHeader | kCDSectorAreaSubHeader;     break;
+            }
+            if (fmt & 0x10)        area |= kCDSectorAreaUser;
+            if (fmt & 0x08)        area |= kCDSectorAreaAuxiliary;
+            if ((fmt >> 1) & 0x03) area |= kCDSectorAreaErrorFlags;
+
+            switch (sub_sel)
+            {
+               case 1: area |= kCDSectorAreaSubChannel;  break;
+               case 2: area |= kCDSectorAreaSubChannelQ; break;
+            }
+
+            switch (sec_t)
+            {
+               case 1:  arg.sectorType = kCDSectorTypeCDDA;       break;
+               case 2:  arg.sectorType = kCDSectorTypeMode1;      break;
+               case 3:  arg.sectorType = kCDSectorTypeMode2;      break;
+               case 4:  arg.sectorType = kCDSectorTypeMode2Form1; break;
+               case 5:  arg.sectorType = kCDSectorTypeMode2Form2; break;
+               default: arg.sectorType = kCDSectorTypeUnknown;    break;
+            }
+
+            arg.offset       = (uint64_t)lba * 2352;
+            arg.sectorArea   = area;
+            arg.bufferLength = (uint32_t)len;
+            arg.buffer       = buf;
+
+            if (ioctl(stream->fd, DKIOCCDREAD, &arg) != 0)
+            {
+               /* Synthesize a medium-error sense so the outer dispatcher
+                * recognizes this as retryable. */
+               if (sense && sense_len >= 14)
+               {
+                  memset(sense, 0, sense_len);
+                  sense[0]  = 0x70; /* current error               */
+                  sense[2]  = 0x03; /* MEDIUM ERROR                */
+                  sense[12] = 0x11; /* UNRECOVERED READ            */
+               }
+               return 1;
+            }
+            return 0;
+         }
+
+      default:
+         /* Unhandled CDB: synthesize an ILLEGAL REQUEST sense so the
+          * outer dispatcher reports failure without retrying. */
+         if (sense && sense_len >= 14)
+         {
+            memset(sense, 0, sense_len);
+            sense[0]  = 0x70;
+            sense[2]  = 0x05; /* ILLEGAL REQUEST                   */
+            sense[12] = 0x20; /* INVALID COMMAND OPERATION CODE    */
+         }
+         return 1;
+   }
+
+   /* MMC paths converge here. */
+   if (r != kIOReturnSuccess || ts != kSCSITaskStatus_GOOD)
+   {
+      if (ts == kSCSITaskStatus_CHECK_CONDITION && sense && sense_len)
+         memcpy(sense, &ss,
+                sense_len < sizeof(ss) ? sense_len : sizeof(ss));
+      return 1;
+   }
+   (void)dir; (void)cmd_len;
+   return 0;
+}
+
+/* The classes that actually publish a usable user client on macOS.
+ * IOSCSIPeripheralDeviceType05 is unregistered/unmatched on modern
+ * macOS; the MMC user client is vended one level down by these
+ * media-kind-specific service classes. */
+static const char *cdrom_macos_service_classes[] =
+{
+   "IODVDServices",
+   "IOCompactDiscServices",
+   "IOBDServices",
+   "IOAuthoringServices"
+};
+
+/* Recursively walk the IOService subtree for the first whole-disk
+ * IOMedia and return its BSD name (e.g. "disk28"). */
+static bool cdrom_macos_find_bsd(io_service_t parent,
+      char *bsd, size_t bsd_len)
+{
+   io_iterator_t iter  = IO_OBJECT_NULL;
+   io_service_t  child;
+   bool          found = false;
+
+   if (IORegistryEntryCreateIterator(parent, kIOServicePlane,
+            kIORegistryIterateRecursively, &iter) != KERN_SUCCESS)
+      return false;
+
+   while ((child = IOIteratorNext(iter)) != IO_OBJECT_NULL)
+   {
+      if (!found && IOObjectConformsTo(child, "IOMedia"))
+      {
+         CFTypeRef whole = IORegistryEntryCreateCFProperty(child,
+               CFSTR("Whole"), NULL, 0);
+         if (     whole
+               && CFGetTypeID(whole) == CFBooleanGetTypeID()
+               && CFBooleanGetValue((CFBooleanRef)whole))
+         {
+            CFTypeRef name = IORegistryEntryCreateCFProperty(child,
+                  CFSTR(kIOBSDNameKey), NULL, 0);
+            if (     name
+                  && CFGetTypeID(name) == CFStringGetTypeID()
+                  && CFStringGetCString((CFStringRef)name,
+                     bsd, bsd_len, kCFStringEncodingUTF8))
+               found = true;
+            if (name)
+               CFRelease(name);
+         }
+         if (whole)
+            CFRelease(whole);
+      }
+      IOObjectRelease(child);
+   }
+   IOObjectRelease(iter);
+   return found;
+}
+
+/* Return the io_service_t for the index-th optical drive in a stable
+ * ordering (same ordering cdrom_get_available_drives uses).  Caller
+ * releases the returned service. */
+static io_service_t cdrom_macos_service_at(int index,
+      char *bsd, size_t bsd_len)
+{
+   size_t ci;
+   int    seen = 0;
+
+   for (ci = 0; ci < sizeof(cdrom_macos_service_classes)
+                   / sizeof(cdrom_macos_service_classes[0]); ci++)
+   {
+      CFMutableDictionaryRef match;
+      io_iterator_t          iter = IO_OBJECT_NULL;
+      io_service_t           svc;
+
+      match = IOServiceMatching(cdrom_macos_service_classes[ci]);
+      if (!match)
+         continue;
+      if (IOServiceGetMatchingServices(kIOMainPortDefault, match, &iter)
+            != KERN_SUCCESS)
+         continue;
+
+      while ((svc = IOIteratorNext(iter)) != IO_OBJECT_NULL)
+      {
+         if (seen == index)
+         {
+            if (bsd && bsd_len)
+               cdrom_macos_find_bsd(svc, bsd, bsd_len);
+            IOObjectRelease(iter);
+            return svc;
+         }
+         seen++;
+         IOObjectRelease(svc);
+      }
+      IOObjectRelease(iter);
+   }
+   return IO_OBJECT_NULL;
+}
+
+int cdrom_macos_open(int index, void **out_plugin, void **out_mmc, int *out_fd)
+{
+   IOCFPlugInInterface **plugin = NULL;
+   MMCDeviceInterface  **mmc    = NULL;
+   io_service_t          svc;
+   SInt32                score  = 0;
+   IOReturn              r;
+   HRESULT               hr;
+   char                  bsd[64] = {0};
+
+   /* out_plugin and out_mmc are required: the plug-in must be handed
+    * back so it outlives the MMC interface (destroying it tears down
+    * the IPC connection the interface depends on). */
+   if (!out_plugin || !out_mmc)
+      return 1;
+   *out_plugin = NULL;
+   *out_mmc    = NULL;
+   if (out_fd)
+      *out_fd = -1;
+
+   svc = cdrom_macos_service_at(index, bsd, sizeof(bsd));
+   if (svc == IO_OBJECT_NULL)
+      return 1;
+
+   r = IOCreatePlugInInterfaceForService(svc,
+         kIOMMCDeviceUserClientTypeID,
+         kIOCFPlugInInterfaceID,
+         &plugin, &score);
+   IOObjectRelease(svc);
+   if (r != kIOReturnSuccess || !plugin)
+      return 1;
+
+   hr = (*plugin)->QueryInterface(plugin,
+         CFUUIDGetUUIDBytes(kIOMMCDeviceInterfaceID),
+         (LPVOID *)&mmc);
+   if (hr != S_OK || !mmc)
+   {
+      IODestroyPlugInInterface(plugin);
+      return 1;
+   }
+
+   if (out_fd)
+   {
+      char rdev[80];
+      int  fd;
+      if (!*bsd)
+      {
+         (*mmc)->Release(mmc);
+         IODestroyPlugInInterface(plugin);
+         return 1;
+      }
+      snprintf(rdev, sizeof(rdev), "/dev/r%s", bsd);
+      fd = open(rdev, O_RDONLY);
+      if (fd < 0)
+      {
+         (*mmc)->Release(mmc);
+         IODestroyPlugInInterface(plugin);
+         return 1;
+      }
+      *out_fd = fd;
+   }
+
+   *out_plugin = plugin;
+   *out_mmc    = mmc;
+   return 0;
+}
+
+void cdrom_macos_close(void *plugin, void *mmc, int fd)
+{
+   /* Order matters: release the queried interface before destroying
+    * the plug-in that owns the IPC connection. */
+   if (mmc)
+      (*(MMCDeviceInterface **)mmc)->Release((MMCDeviceInterface **)mmc);
+   if (plugin)
+      IODestroyPlugInInterface((IOCFPlugInInterface **)plugin);
+   if (fd >= 0)
+      close(fd);
+}
+#endif
+
 static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir,
       void *s, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
 {
@@ -484,10 +845,10 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
 retry:
 #if defined(__linux__) && !defined(ANDROID)
       if (cached_read || !cdrom_send_command_linux(stream, dir, xfer_buf_pos, request_len, cmd, cmd_len, sense, sizeof(sense)))
-#else
-#if defined(_WIN32) && !defined(_XBOX)
+#elif defined(_WIN32) && !defined(_XBOX)
       if (cached_read || !cdrom_send_command_win32(stream, dir, xfer_buf_pos, request_len, cmd, cmd_len, sense, sizeof(sense)))
-#endif
+#elif defined(__APPLE__)
+      if (cached_read || !cdrom_send_command_macos(stream, dir, xfer_buf_pos, request_len, cmd, cmd_len, sense, sizeof(sense)))
 #endif
       {
          rv = 0;
@@ -1463,6 +1824,47 @@ struct string_list* cdrom_get_available_drives(void)
       }
    }
 #endif
+#if defined(__APPLE__)
+   {
+      int idx;
+
+      for (idx = 0; idx < 10; idx++)
+      {
+         libretro_vfs_implementation_file tmp;
+         void                            *plugin     = NULL;
+         void                            *mmc        = NULL;
+         bool                             is_cdrom   = false;
+         char                             drive_model[32] = {0};
+         char                             drive_string[33];
+         union string_list_elem_attr      attr       = {0};
+
+         /* MMC only (no /dev/rdiskN): INQUIRY works without media and
+          * without the raw device, so enumeration never needs the fd. */
+         if (cdrom_macos_open(idx, &plugin, &mmc, NULL) != 0)
+            break;
+
+         memset(&tmp, 0, sizeof(tmp));
+         tmp.iokit_plugin = plugin;
+         tmp.iokit_mmc    = mmc;
+         tmp.fd           = -1;
+
+         cdrom_get_inquiry(&tmp, drive_model, sizeof(drive_model), &is_cdrom);
+         cdrom_macos_close(plugin, mmc, -1);
+
+         if (!is_cdrom)
+            continue;
+
+         attr.i = '0' + idx;
+
+         if (*drive_model)
+            strlcpy(drive_string, drive_model, sizeof(drive_string));
+         else
+            strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));
+
+         string_list_append(list, drive_string, attr);
+      }
+   }
+#endif
    return list;
 }
 
@@ -1672,7 +2074,7 @@ size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char trac
          _len += strlcpy(s + _len, ":/drive.cue", len - _len);
          return _len;
 #else
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
          size_t _len = strlcpy(s, "cdrom://drive", len);
          if (len > _len + 1)
          {
@@ -1696,7 +2098,7 @@ size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char trac
          _len += snprintf(s + _len, len - _len, ":/drive-track%02d.bin", track);
          return _len;
 #else
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
          size_t _len = strlcpy(s, "cdrom://drive", len);
          if (len > _len)
             s[_len++] = drive;

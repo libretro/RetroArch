@@ -80,6 +80,19 @@ extern "C" {
 }
 #endif
 
+/* Replace characters unsafe in URLs / file names with '_' */
+static QString scrub_qstring(QString str)
+{
+   static const char chars[] = "&*/:`\"<>?\\|";
+   QByteArray buf            = str.toUtf8();
+   char *s                   = buf.data();
+   size_t i;
+   for (i = 0; i < sizeof(chars) - 1; i++)
+      string_replace_all_chars(s, chars[i], '_');
+   return QString::fromUtf8(s);
+}
+
+
 #ifdef HAVE_MENU
 static const QRegularExpression decimalsRegex("%.(\\d)f");
 
@@ -107,18 +120,6 @@ static inline void add_sublabel_and_whats_this(
 static inline QString sanitize_ampersand(QString input)
 {
    return input.replace("&", "&&");
-}
-
-/* Replace characters unsafe in URLs / file names with '_' */
-static QString scrub_qstring(QString str)
-{
-   static const char chars[] = "&*/:`\"<>?\\|";
-   QByteArray buf            = str.toUtf8();
-   char *s                   = buf.data();
-   size_t i;
-   for (i = 0; i < sizeof(chars) - 1; i++)
-      string_replace_all_chars(s, chars[i], '_');
-   return QString::fromUtf8(s);
 }
 
 static inline QString form_label(rarch_setting_t *setting)
@@ -5465,6 +5466,14 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
    }
 }
 
+/* All of the OptionsCategory/OptionsPage implementations below
+ * build trees of the menu settings widgets (FormLayout,
+ * SettingsGroup, CheckBox, etc.) and call into the menu code
+ * (menu_displaylist_build_list, menu_setting_find_enum). Their
+ * declarations are gated in ui_qt_widgets.h; the implementations
+ * are gated to match. */
+#ifdef HAVE_MENU
+
 AchievementsCategory::AchievementsCategory(QWidget *parent) :
    OptionsCategory(parent)
 {
@@ -6052,6 +6061,7 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_FRAMECOUNT_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL);
+   notificationsGroup->add(MENU_ENUM_LABEL_TIME_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_STATISTICS_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_NETPLAY_PING_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
@@ -6652,6 +6662,7 @@ QWidget *AccountsPage::widget()
    SettingsGroup *youtubeGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE));
    SettingsGroup *twitchGroup   = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH));
    SettingsGroup *facebookGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK));
+   SettingsGroup *kickGroup     = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK));
 #ifdef HAVE_CHEEVOS
    SettingsGroup *cheevosGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS));
 
@@ -6672,6 +6683,10 @@ QWidget *AccountsPage::widget()
    facebookGroup->add(MENU_ENUM_LABEL_FACEBOOK_STREAM_KEY);
 
    layout->addWidget(facebookGroup);
+
+   kickGroup->add(MENU_ENUM_LABEL_KICK_STREAM_KEY);
+
+   layout->addWidget(kickGroup);
 
    layout->addStretch();
 
@@ -6840,6 +6855,9 @@ QWidget *VideoPage::widget()
    syncGroup->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
+#ifdef HAVE_VIDEO_FILTER
+   miscGroup->add(MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE);
+#endif
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
@@ -7158,6 +7176,8 @@ QVector<OptionsPage*> FrameThrottleCategory::pages()
          MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS, this);
    return pages;
 }
+
+#endif /* HAVE_MENU - OptionsCategory/OptionsPage implementations */
 
 PlaylistModel::PlaylistModel(QObject *parent)
    : QAbstractListModel(parent)

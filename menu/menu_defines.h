@@ -72,6 +72,7 @@ enum action_iterate_type
    ITERATE_TYPE_DEFAULT = 0,
    ITERATE_TYPE_HELP,
    ITERATE_TYPE_INFO,
+   ITERATE_TYPE_CONFIRM,
    ITERATE_TYPE_BIND
 };
 
@@ -594,6 +595,11 @@ struct menu_dialog
 {
    unsigned              current_id;
    enum menu_dialog_type current_type;
+   unsigned              confirm_msg;
+   unsigned              confirm_cmd;
+   unsigned              pending_cmd;
+   bool                  confirm_hover_ok;
+   bool                  confirm_hover_back;
    bool                  pending_push;
 };
 

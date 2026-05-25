@@ -2637,6 +2637,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Facebook Gaming */
 
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -3375,6 +3378,7 @@ MSG_HASH(
    MSG_STATE_SLOT,
    "شیار وضعیت"
    )
+
 
 /* Lakka */
 
