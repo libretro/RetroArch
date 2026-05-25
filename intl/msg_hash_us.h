@@ -1489,7 +1489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Video driver to use."
+   "Video driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1589,7 +1589,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Audio driver to use."
+   "Audio driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1650,7 +1650,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Microphone driver to use."
+   "Microphone driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1691,7 +1691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Camera driver to use."
+   "Camera driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
@@ -1699,7 +1699,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Bluetooth driver to use."
+   "Bluetooth driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
@@ -1707,7 +1707,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Wi-Fi driver to use."
+   "Wi-Fi driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1715,7 +1715,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Location driver to use."
+   "Location driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1747,7 +1747,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Record driver to use."
+   "Record driver to use. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
@@ -1755,7 +1755,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "MIDI driver to use."
+   "MIDI driver to use. (Restart required)"
    )
 
 /* Settings > Video */
@@ -3190,7 +3190,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Maximum amount of users supported by RetroArch."
+   "Maximum amount of users supported by RetroArch. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
