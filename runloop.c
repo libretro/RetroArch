@@ -6235,6 +6235,23 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Iterate the menu driver for one frame. */
 
+#ifdef HAVE_CONFIGFILE
+      /* If a configuration file load was requested on the previous
+       * frame, perform it now - before the menu is iterated and while
+       * no menu list/driver pointers are held on the stack.
+       * config_replace() triggers a full driver/menu reinit (and may
+       * free and recreate the menu driver), so it must never run from
+       * within menu iteration. Exit afterwards to start the next frame
+       * with a freshly (re)built menu. */
+      if (menu_st->flags & MENU_ST_FLAG_PENDING_CONFIG_REPLACE)
+      {
+         bool config_save_on_exit = settings->bools.config_save_on_exit;
+         menu_st->flags          &= ~MENU_ST_FLAG_PENDING_CONFIG_REPLACE;
+         config_replace(config_save_on_exit, menu_st->pending_config_path);
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+      }
+#endif
+
       /* If the user had requested that the Quick Menu
        * be spawned during the previous frame, do this now
        * and exit the function to go to the next frame. */
