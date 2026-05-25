@@ -7865,6 +7865,9 @@ MSG_HASH(
    "Facebook Gaming streamsleutel"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

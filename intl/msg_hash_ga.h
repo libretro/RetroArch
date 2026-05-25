@@ -8117,6 +8117,13 @@ MSG_HASH(
    "Eochair Srutha Cearrbhachais Facebook"
    )
 
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Eochair Srutha Kick"
+   )
+
 /* Settings > Directory */
 
 MSG_HASH(

@@ -3081,6 +3081,9 @@ MSG_HASH(
    "Facebook Spilll strømmingsnøkkel"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

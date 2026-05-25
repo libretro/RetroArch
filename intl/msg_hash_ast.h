@@ -1593,6 +1593,10 @@ MSG_HASH(
    "Guardar la configuración al colar"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Guarda namás la configuración que s'estreme de la predeterminada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    "Cargar automáticamente los ficheros d'anulación"
    )
@@ -2368,6 +2372,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Clave d'emisión de Facebook Gaming"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 

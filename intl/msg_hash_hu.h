@@ -8045,6 +8045,9 @@ MSG_HASH(
    "Facebook Gaming stream kulcs"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

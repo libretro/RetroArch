@@ -8001,6 +8001,9 @@ MSG_HASH(
    "Ігровий ключ потоку Facebook"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

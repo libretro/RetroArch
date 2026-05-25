@@ -8129,6 +8129,9 @@ MSG_HASH(
    "Facebook Gaming 스트림 키"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

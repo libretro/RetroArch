@@ -8145,6 +8145,9 @@ MSG_HASH(
    "Khóa phát trực tiếp Facebook Gaming"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
