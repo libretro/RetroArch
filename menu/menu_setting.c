@@ -8786,10 +8786,21 @@ static void general_write_handler(rarch_setting_t *setting)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
-         settings->flags                  |= SETTINGS_FLG_MODIFIED;
-         settings->uints.video_hdr_mode    = *setting->value.target.unsigned_integer;
+         {
+            struct menu_state *menu_st     = menu_state_get_ptr();
+            settings->flags               |= SETTINGS_FLG_MODIFIED;
+            settings->uints.video_hdr_mode = *setting->value.target.unsigned_integer;
 
-         rarch_cmd = CMD_EVENT_REINIT;
+            rarch_cmd                      = CMD_EVENT_REINIT;
+
+            /* Switching HDR on/off shows or hides the dependent HDR
+             * items (paper white, expand gamut, scanlines, ...), so
+             * force the page to rebuild immediately. This fires for
+             * both left/right scroll and dropdown OK selection
+             * because they both invoke setting->change_handler. */
+            menu_st->flags                |= MENU_ST_FLAG_PREVENT_POPULATE
+                                           | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+         }
          break;
       case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
          {
@@ -8827,12 +8838,18 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES:
          {
             video_driver_state_t *video_st               = video_state_get_ptr();
+            struct menu_state *menu_st                   = menu_state_get_ptr();
             settings->flags                              |= SETTINGS_FLG_MODIFIED;
             settings->bools.video_hdr_scanlines          = *setting->value.target.boolean;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_scanlines)
                video_st->poke->set_hdr_scanlines(video_st->data,
                      settings->bools.video_hdr_scanlines);
+
+            /* Scanlines on/off shows or hides the subpixel layout
+             * item, so force the page to rebuild immediately. */
+            menu_st->flags                               |= MENU_ST_FLAG_PREVENT_POPULATE
+                                                          | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_SUBPIXEL_LAYOUT:
