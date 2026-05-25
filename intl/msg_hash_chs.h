@@ -7749,6 +7749,9 @@ MSG_HASH(
    "Facebook 游戏直播密钥"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

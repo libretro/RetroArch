@@ -1167,6 +1167,12 @@ static void xmb_render_messagebox_internal(
    int longest_width                   = 0;
    int usable_width                    = 0;
    unsigned y_position                 = 0;
+   int slice_x                         = 0;
+   int slice_y                         = 0;
+   int slice_w                         = 0;
+   int slice_h                         = 0;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   bool confirm_dialog                 = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool input_dialog_display_kb        = false;
    size_t wrapped_len                  = 0;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
@@ -1192,17 +1198,16 @@ static void xmb_render_messagebox_internal(
 
    while (start < end && line_count < 512)
    {
-      int width;
       nl = (char *)memchr(start, '\n', end - start);
       if (nl)
          *nl = '\0';
       lines[line_count++] = start;
       if (*start)
       {
-         width = font_driver_get_message_width(
+         int msg_width = font_driver_get_message_width(
                xmb->font, start, (nl ? nl : end) - start, 1.0f);
-         if (width > longest_width)
-            longest_width = width;
+         if (msg_width > longest_width)
+            longest_width = msg_width;
          if (longest_width > usable_width)
             longest_width = usable_width;
       }
@@ -1219,6 +1224,19 @@ static void xmb_render_messagebox_internal(
    x                       = video_width / 2;
    y                       = y_position - (line_count - 1) * line_height / 2;
 
+   /* Narrow font can make the box too narrow for Back & OK */
+   if (confirm_dialog && longest_width < (int)video_width / 4)
+      longest_width = video_width / 4;
+
+   slice_x                 = x - (longest_width / 2) - xmb->margins_dialog;
+   slice_y                 = y + xmb->margins_slice - xmb->margins_dialog;
+   slice_w                 = longest_width + (xmb->margins_dialog * 2);
+   slice_h                 = (line_height * line_count) + (xmb->margins_dialog * 2);
+
+   /* Extra room for confirm buttons */
+   if (confirm_dialog)
+      slice_h             += (line_height * 2);
+
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
@@ -1227,16 +1245,22 @@ static void xmb_render_messagebox_internal(
          userdata,
          video_width,
          video_height,
-         x - (longest_width / 2) - xmb->margins_dialog,
-         y + xmb->margins_slice - xmb->margins_dialog,
-         256, 256,
-         longest_width + (xmb->margins_dialog * 2),
-         (line_height * line_count) + (xmb->margins_dialog * 2),
-         video_width, video_height,
+         slice_x,
+         slice_y,
+         256,
+         256,
+         slice_w,
+         slice_h,
+         video_width,
+         video_height,
          NULL,
-         xmb->margins_slice, xmb->last_scale_factor,
+         xmb->margins_slice,
+         xmb->last_scale_factor,
          xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE],
          mymat);
+
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 
    for (i = 0; i < line_count; i++)
    {
@@ -1262,6 +1286,176 @@ static void xmb_render_messagebox_internal(
             input_st->osk_grid,
             input_st->osk_ptr,
             0xffffffff);
+   }
+
+   if (confirm_dialog)
+   {
+      float frame_color[16]                  = {
+            0.75f, 0.75f, 0.75f, 0.5f,
+            0.75f, 0.75f, 0.75f, 0.5f,
+            0.75f, 0.75f, 0.75f, 0.5f,
+            0.75f, 0.75f, 0.75f, 0.5f,
+      };
+      settings_t  *settings                  = config_get_ptr();
+      bool input_menu_swap_ok_cancel_buttons = settings->bools.input_menu_swap_ok_cancel_buttons;
+      const char *str_back                   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK);
+      const char *str_ok                     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
+      unsigned str_back_width                = font_driver_get_message_width(xmb->font, str_back, strlen(str_back), 1.0f);
+      unsigned str_ok_width                  = font_driver_get_message_width(xmb->font, str_ok, strlen(str_ok), 1.0f);
+      float *col                             = xmb->item_color_base;
+      float scale_factor                     = xmb->last_scale_factor;
+      float icon_size                        = 50 * scale_factor;
+      float icon_padding                     = 10 * scale_factor;
+      float icon_x                           = x - (slice_w / 2) + icon_size + (icon_padding * 4);
+      float icon_y                           = video_height - y + (slice_h / 2) + (xmb->margins_slice / 2);
+      float label_y                          = icon_y - (line_height / 2.2f);
+      int cursor_x                           = icon_x - icon_padding;
+      int cursor_y                           = icon_y - icon_padding - icon_size;
+      int cursor_w                           = icon_size + (icon_padding * 4) + str_back_width;
+      int cursor_h                           = icon_size + (icon_padding * 2);
+
+      gfx_display_set_alpha(col, 0.5f);
+
+      /* Back */
+      if (     xmb->pointer.x >= cursor_x
+            && xmb->pointer.x <= cursor_x + cursor_w
+            && xmb->pointer.y >= cursor_y
+            && xmb->pointer.y <= cursor_y + cursor_h)
+      {
+         menu_st->dialog_st.confirm_hover_back = true;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               cursor_x,
+               cursor_y,
+               cursor_w,
+               cursor_h,
+               video_width,
+               video_height,
+               frame_color,
+               NULL);
+      }
+      else
+         menu_st->dialog_st.confirm_hover_back = false;
+
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      xmb_draw_icon(
+            userdata,
+            p_disp,
+            dispctx,
+            video_width,
+            video_height,
+            true,
+            icon_size,
+            icon_size,
+            input_menu_swap_ok_cancel_buttons
+                  ? xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R]
+                  : xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D],
+            icon_x,
+            icon_y,
+            video_width,
+            video_height,
+            xmb->alpha,
+            0,
+            1,
+            col,
+            xmb->shadow_offset / 2,
+            mymat);
+
+      gfx_display_draw_text(
+            xmb->font2,
+            str_back,
+            icon_x + icon_size + icon_padding,
+            label_y,
+            video_width,
+            video_height,
+            0x444444ff,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+
+      /* OK */
+      icon_x  += slice_w - (icon_size * 2) - (icon_padding * 8) - xmb->margins_dialog - str_ok_width;
+
+      cursor_x = icon_x - icon_padding;
+      cursor_w = icon_size + (icon_padding * 4) + str_ok_width;
+
+      if (     xmb->pointer.x >= cursor_x
+            && xmb->pointer.x <= cursor_x + cursor_w
+            && xmb->pointer.y >= cursor_y
+            && xmb->pointer.y <= cursor_y + cursor_h)
+      {
+         menu_st->dialog_st.confirm_hover_ok = true;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               cursor_x,
+               cursor_y,
+               cursor_w,
+               cursor_h,
+               video_width,
+               video_height,
+               frame_color,
+               NULL);
+      }
+      else
+         menu_st->dialog_st.confirm_hover_ok = false;
+
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      xmb_draw_icon(
+            userdata,
+            p_disp,
+            dispctx,
+            video_width,
+            video_height,
+            true,
+            icon_size,
+            icon_size,
+            input_menu_swap_ok_cancel_buttons
+                  ? xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D]
+                  : xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R],
+            icon_x,
+            icon_y,
+            video_width,
+            video_height,
+            xmb->alpha,
+            0,
+            1,
+            col,
+            xmb->shadow_offset / 2,
+            mymat);
+
+      gfx_display_draw_text(
+            xmb->font2,
+            str_ok,
+            icon_x + icon_size + icon_padding,
+            label_y,
+            video_width,
+            video_height,
+            0x444444ff,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }
 
@@ -7111,7 +7305,8 @@ static void xmb_render(void *data,
    /* Direction locking for horizontal category dragging */
    if (xmb->pointer.type != MENU_POINTER_DISABLED)
    {
-      if (xmb->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+      if (     xmb->pointer.flags & MENU_INP_PTR_FLG_PRESSED
+            && !*menu_st->driver_data->menu_state_msg)
       {
          if (xmb->drag_mode == XMB_DRAG_DETECTING)
          {

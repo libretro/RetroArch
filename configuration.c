@@ -1640,6 +1640,7 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("youtube_stream_key",           settings->arrays.youtube_stream_key, true, NULL, true);
    SETTING_ARRAY("twitch_stream_key",            settings->arrays.twitch_stream_key, true, NULL, true);
    SETTING_ARRAY("facebook_stream_key",          settings->arrays.facebook_stream_key, true, NULL, true);
+   SETTING_ARRAY("kick_stream_key",              settings->arrays.kick_stream_key, true, NULL, true);
    SETTING_ARRAY("discord_app_id",               settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
    SETTING_ARRAY("ai_service_url",               settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
 #endif
@@ -2031,6 +2032,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
    SETTING_BOOL("menu_show_sublabels",           &settings->bools.menu_show_sublabels, true, DEFAULT_MENU_SHOW_SUBLABELS, false);
+   SETTING_BOOL("menu_show_confirm",             &settings->bools.menu_show_confirm, true, DEFAULT_MENU_SHOW_CONFIRM, false);
    SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE, false);
    SETTING_BOOL("menu_ticker_smooth",            &settings->bools.menu_ticker_smooth, true, DEFAULT_MENU_TICKER_SMOOTH, false);
    SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, DEFAULT_MENU_SCROLL_FAST, false);
@@ -2464,6 +2466,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("time_show",                     &settings->uints.video_time_show, true, DEFAULT_TIME_SHOW, false);
    SETTING_UINT("core_updater_auto_backup_history_size", &settings->uints.core_updater_auto_backup_history_size, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, false);
    SETTING_UINT("autosave_interval",             &settings->uints.autosave_interval,  true, DEFAULT_AUTOSAVE_INTERVAL, false);
+   SETTING_UINT("savestate_automatic_interval",  &settings->uints.savestate_automatic_interval, true, DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL, false);
    SETTING_UINT("rewind_granularity",            &settings->uints.rewind_granularity, true, DEFAULT_REWIND_GRANULARITY, false);
    SETTING_UINT("rewind_buffer_size_step",       &settings->uints.rewind_buffer_size_step, true, DEFAULT_REWIND_BUFFER_SIZE_STEP, false);
    SETTING_UINT("run_ahead_frames",              &settings->uints.run_ahead_frames, true, DEFAULT_RUN_AHEAD_FRAMES,  false);

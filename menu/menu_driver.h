@@ -765,6 +765,11 @@ void menu_update_runahead_mode(void);
 size_t menu_playlist_random_selection(
       size_t selection, bool is_explore_list);
 
+void menu_dialog_confirm_set(struct menu_state *menu_st,
+      unsigned msg, unsigned cmd);
+void menu_dialog_confirm_clear(struct menu_state *menu_st);
+void menu_dialog_confirm(struct menu_state *menu_st);
+
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 extern menu_ctx_driver_t menu_ctx_ozone;

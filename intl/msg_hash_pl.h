@@ -7325,6 +7325,9 @@ MSG_HASH(
    "Klucz strumienia na Facebooku"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

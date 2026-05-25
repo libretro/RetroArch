@@ -8029,6 +8029,9 @@ MSG_HASH(
    "Facebook Gaming stream key"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

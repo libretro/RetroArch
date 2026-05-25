@@ -8105,6 +8105,13 @@ MSG_HASH(
    "Clave de transmisión de Facebook Gaming"
    )
 
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Clave de transmisión de Kick"
+   )
+
 /* Settings > Directory */
 
 MSG_HASH(

@@ -7765,6 +7765,9 @@ MSG_HASH(
    "Strömningsnyckel för Facebook Gaming"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

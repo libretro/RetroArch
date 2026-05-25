@@ -502,6 +502,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST;
       case ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST;
+      case ACTION_OK_DL_ACCOUNTS_KICK_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_KICK_LIST;
       case ACTION_OK_DL_DUMP_DISC_LIST:
          return MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST;
 #ifdef HAVE_LAKKA
@@ -1847,6 +1849,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
       case ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST:
+      case ACTION_OK_DL_ACCOUNTS_KICK_LIST:
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
       case ACTION_OK_DL_FAVORITES_LIST:
       case ACTION_OK_DL_BROWSE_URL_LIST:
@@ -5825,79 +5828,87 @@ static int action_ok_core_options_flush(const char *path,
    return 0;
 }
 
+static int action_ok_dialog_init(struct menu_state *menu_st)
+{
+   menu_displaylist_info_t info;
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
+   size_t selection              = menu_st->selection_ptr;
+   settings_t *settings          = config_get_ptr();
+#ifdef HAVE_AUDIOMIXER
+   bool audio_enable_menu        = settings->bools.audio_enable_menu;
+   bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
+#endif
+
+   menu_displaylist_info_init(&info);
+
+   info.list                    = menu_stack;
+   info.directory_ptr           = selection;
+   info.enum_idx                = MENU_ENUM_LABEL_INFO_SCREEN;
+   info.label                   = strdup(MENU_ENUM_LABEL_INFO_SCREEN_STR);
+
+   if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info, settings))
+      goto error;
+
+#ifdef HAVE_AUDIOMIXER
+   if (audio_enable_menu && audio_enable_menu_notice)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+#endif
+
+   if (!menu_displaylist_process(&info))
+      goto error;
+
+   menu_displaylist_info_free(&info);
+   return 0;
+
+error:
+   menu_displaylist_info_free(&info);
+   return -1;
+}
+
+int action_ok_quit(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings       = config_get_ptr();
+
+   if (settings->bools.menu_show_confirm && settings->bools.confirm_quit)
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_dialog_confirm_set(menu_st, MSG_PRESS_AGAIN_TO_QUIT, CMD_EVENT_QUIT);
+      return action_ok_dialog_init(menu_st);
+   }
+   return generic_action_ok_command(CMD_EVENT_QUIT);
+}
+
+int action_ok_restart_content(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings       = config_get_ptr();
+
+   if (settings->bools.menu_show_confirm && settings->bools.confirm_reset)
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_dialog_confirm_set(menu_st, MSG_PRESS_AGAIN_TO_RESET, CMD_EVENT_RESET);
+      return action_ok_dialog_init(menu_st);
+   }
+   return generic_action_ok_command(CMD_EVENT_RESET);
+}
+
 int action_ok_close_content(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   int ret;
-   struct menu_state   *menu_st = menu_state_get_ptr();
-   bool contentless_core        = false;
+   settings_t *settings       = config_get_ptr();
 
-   /* Reset navigation pointer
-    * > If we are returning to the quick menu, want
-    *   the active entry to be 'Run' (first item in
-    *   menu list) */
-   menu_st->selection_ptr       = 0;
-
-   /* Check if we need to quit */
-   if (should_quit_on_close())
-      return generic_action_ok_command(CMD_EVENT_QUIT);
-
-   /* Otherwise, unload core */
-   ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
-
-   /* If close content was selected via any means other than
-    * 'Playlist > Quick Menu', have to flush the menu stack
-    * (otherwise users will be presented with an empty
-    * 'No items' quick menu, requiring needless backwards
-    * navigation) */
-   if (type == MENU_SETTING_ACTION_CLOSE)
+   if (settings->bools.menu_show_confirm && settings->bools.confirm_close)
    {
-      const char *parent_label   = NULL;
-      const char *flush_target   = MENU_ENUM_LABEL_MAIN_MENU_STR;
-      file_list_t *list          = NULL;
-      if (menu_st->entries.list)
-         list                    = MENU_LIST_GET(menu_st->entries.list, 0);
-      if (list && (list->size > 1))
-      {
-         parent_label = list->list[list->size - 2].label;
-
-         if (   string_is_equal(parent_label, MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR)
-             || string_is_equal(parent_label, MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST_STR))
-         {
-            flush_target = parent_label;
-            contentless_core = true;
-         }
-      }
-
-      menu_entries_flush_stack(flush_target, 0);
-      /* An annoyance - some menu drivers (Ozone...) set
-       * MENU_ST_FLAG_PREVENT_POPULATE in awkward places,
-       * which can cause breakage here when flushing
-       * the menu stack. We therefore have to unset
-       * MENU_ST_FLAG_PREVENT_POPULATE */
-      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_dialog_confirm_set(menu_st, MSG_PRESS_AGAIN_TO_CLOSE_CONTENT, CMD_EVENT_CLOSE_CONTENT);
+      return action_ok_dialog_init(menu_st);
    }
-
-   /* Single-click playlist return */
-   if (config_get_ptr()->bools.input_menu_singleclick_playlists && !contentless_core)
-   {
-      size_t new_selection = menu_st->selection_ptr;
-      menu_entries_pop_stack(&new_selection, 0, 0);
-      menu_st->selection_ptr = new_selection;
-      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
-   }
-
-   /* Try to reload last core if loaded manually */
-   menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
-
-   return ret;
+   return generic_action_ok_command(CMD_EVENT_CLOSE_CONTENT);
 }
 
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_cheat_apply_changes,      CMD_EVENT_CHEATS_APPLY)
-STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_quit,                     CMD_EVENT_QUIT)
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_save_new_config,          CMD_EVENT_MENU_SAVE_CONFIG)
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_save_main_config,         CMD_EVENT_MENU_SAVE_MAIN_CONFIG)
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_resume_content,           CMD_EVENT_RESUME)
-STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_restart_content,          CMD_EVENT_RESET)
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_screenshot,               CMD_EVENT_TAKE_SCREENSHOT)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 STATIC_DEFAULT_ACTION_OK_CMD_FUNC(action_ok_shader_apply_changes,     CMD_EVENT_SHADERS_APPLY_CHANGES)
@@ -6725,6 +6736,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_facebook_list, ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_kick_list, ACTION_OK_DL_ACCOUNTS_KICK_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_dump_disc_list, ACTION_OK_DL_DUMP_DISC_LIST)
 #ifdef HAVE_LAKKA
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
@@ -9396,6 +9408,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,                    action_ok_push_accounts_youtube_list},
          {MENU_ENUM_LABEL_ACCOUNTS_TWITCH,                     action_ok_push_accounts_twitch_list},
          {MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK,                   action_ok_push_accounts_facebook_list},
+         {MENU_ENUM_LABEL_ACCOUNTS_KICK,                       action_ok_push_accounts_kick_list},
          {MENU_ENUM_LABEL_DUMP_DISC,                           action_ok_push_dump_disc_list},
 #ifdef HAVE_LAKKA
          {MENU_ENUM_LABEL_EJECT_DISC,                          action_ok_push_eject_disc},

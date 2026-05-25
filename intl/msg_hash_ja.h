@@ -7205,6 +7205,9 @@ MSG_HASH(
    "Facebook Gaming ストリームキー"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

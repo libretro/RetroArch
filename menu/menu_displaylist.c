@@ -9830,6 +9830,12 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_STRING, false) == 0)
             count++;
          break;
+      case DISPLAYLIST_ACCOUNTS_KICK_LIST:
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_KICK_STREAM_KEY,
+                  PARSE_ONLY_STRING, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
             bool kiosk_mode_enable   = settings->bools.kiosk_mode_enable;
@@ -9858,10 +9864,13 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,                                   PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME,                               PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,                                 PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_QUIT_ON_CLOSE_CONTENT,                                 PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,                               PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_STARTUP_PAGE,                                     PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_QUIT_ON_CLOSE_CONTENT,                                 PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_CONFIRM_QUIT,                                          PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_CONFIRM_CLOSE,                                         PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_CONFIRM_RESET,                                         PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,                              PARSE_ONLY_STRING, false},
@@ -10534,6 +10543,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CORE_ENABLE,                                           PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,                                   PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_MENU_SHOW_CONFIRM,                                     PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,                                PARSE_ONLY_BOOL, true  },
             };
 
@@ -10579,6 +10589,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,                       PARSE_ACTION},
                {MENU_ENUM_LABEL_ACCOUNTS_TWITCH,                        PARSE_ACTION},
                {MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK,                      PARSE_ACTION},
+               {MENU_ENUM_LABEL_ACCOUNTS_KICK,                          PARSE_ACTION},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -11208,6 +11219,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,    PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,                  PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL,      PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,               PARSE_ONLY_BOOL, true},
 #if defined(HAVE_ZLIB)
                {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,              PARSE_ONLY_BOOL, true},
@@ -14992,6 +15004,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CHEEVOS_VISIBILITY_SETTINGS_LIST:
          case DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST:
          case DISPLAYLIST_ACCOUNTS_FACEBOOK_LIST:
+         case DISPLAYLIST_ACCOUNTS_KICK_LIST:
          case DISPLAYLIST_RECORDING_SETTINGS_LIST:
          case DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST:
          case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:

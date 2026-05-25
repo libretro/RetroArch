@@ -349,6 +349,7 @@ enum settings_list_type
    SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
    SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
    SETTINGS_LIST_USER_ACCOUNTS_FACEBOOK,
+   SETTINGS_LIST_USER_ACCOUNTS_KICK,
    SETTINGS_LIST_DIRECTORY,
    SETTINGS_LIST_PRIVACY,
    SETTINGS_LIST_MIDI,
@@ -3053,6 +3054,9 @@ static size_t setting_get_string_representation_streaming_mode(
          case STREAMING_MODE_FACEBOOK:
             return strlcpy(s, msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK), len);
+         case STREAMING_MODE_KICK:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_KICK), len);
          case STREAMING_MODE_LOCAL:
             return strlcpy(s, msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL), len);
@@ -12038,6 +12042,26 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_autosave_interval;
 #endif
+
+#ifdef HAVE_THREADS
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.savestate_automatic_interval,
+                  MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+                  MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+                  DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_autosave_interval;
+#endif
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.savestate_auto_index,
@@ -21210,6 +21234,21 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_show_confirm,
+               MENU_ENUM_LABEL_MENU_SHOW_CONFIRM,
+               MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+               DEFAULT_MENU_SHOW_CONFIRM,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -24650,6 +24689,14 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_ACCOUNTS_KICK,
+               MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK,
+               &group_info,
+               &subgroup_info,
+               parent_group);
 #endif
 #endif
 
@@ -24727,6 +24774,34 @@ static bool setting_append_list(
                sizeof(settings->arrays.facebook_stream_key),
                MENU_ENUM_LABEL_FACEBOOK_STREAM_KEY,
                MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               update_streaming_url_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      case SETTINGS_LIST_USER_ACCOUNTS_KICK:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK),
+               parent_group);
+
+         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.kick_stream_key,
+               sizeof(settings->arrays.kick_stream_key),
+               MENU_ENUM_LABEL_KICK_STREAM_KEY,
+               MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
                "",
                &group_info,
                &subgroup_info,
@@ -25948,6 +26023,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
       SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
       SETTINGS_LIST_USER_ACCOUNTS_FACEBOOK,
+      SETTINGS_LIST_USER_ACCOUNTS_KICK,
       SETTINGS_LIST_DIRECTORY,
       SETTINGS_LIST_PRIVACY,
       SETTINGS_LIST_MIDI,

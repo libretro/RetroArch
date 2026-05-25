@@ -7389,6 +7389,9 @@ MSG_HASH(
    "Klíč k hernímu streamu na Facebooku"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

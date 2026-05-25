@@ -6420,6 +6420,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Mostre as informações adicionais para os itens do menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Mostrar Caixas de Confirmação"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Pede confirmação antes de sair, reiniciar ou fechar o conteúdo. Quando desativada, essas ações acontecem imediatamente."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Exibir tela inicial"
@@ -8028,6 +8036,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Chave de transmissão do Facebook Gaming"
    )
+
+/* Settings > User > Accounts > Kick */
+
 
 /* Settings > Directory */
 

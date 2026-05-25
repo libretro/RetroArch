@@ -7897,6 +7897,9 @@ MSG_HASH(
    "Gioco su Facebook Stream Key"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

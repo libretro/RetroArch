@@ -7277,6 +7277,9 @@ MSG_HASH(
    "Facebook Gaming 串流金鑰"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

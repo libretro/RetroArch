@@ -7917,6 +7917,9 @@ MSG_HASH(
    "Chave de fluxo de Facebook Gamming"
    )
 
+/* Settings > User > Accounts > Kick */
+
+
 /* Settings > Directory */
 
 MSG_HASH(

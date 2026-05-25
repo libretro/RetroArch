@@ -5983,6 +5983,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 
    /* Check quit hotkey */
+   if (!(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE))
    {
       static bool quit_key     = false;
       static bool old_quit_key = false;
@@ -6553,7 +6554,20 @@ static enum runloop_state_enum runloop_check_state(
       old_input                 = current_bits;
       old_action                = action;
 
-      if (!focused || (runloop_st->flags & RUNLOOP_FLAG_IDLE))
+      /* Handle dialog confirmed event */
+      if (menu_st->dialog_st.pending_cmd != CMD_EVENT_NONE)
+      {
+         /* Event also wants to resume */
+         if (!command_event(menu_st->dialog_st.pending_cmd, NULL))
+            command_event(CMD_EVENT_RESUME, NULL);
+
+         menu_dialog_confirm_clear(menu_st);
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+      }
+
+      if (     !focused
+            || (runloop_st->flags & RUNLOOP_FLAG_IDLE)
+            || (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
@@ -7451,6 +7465,7 @@ int runloop_iterate(void)
    bool cheevos_enable                    = settings->bools.cheevos_enable;
 #endif
    bool audio_sync                        = settings->bools.audio_sync;
+   bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st            = discord_state_get_ptr();
 
@@ -7549,6 +7564,8 @@ int runloop_iterate(void)
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
+         if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+            return -1;
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
@@ -7710,6 +7727,10 @@ int runloop_iterate(void)
    if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
       autosave_unlock();
 #endif
+
+   /* Check if we should save state automatically */
+   if (savestate_automatic_enable)
+      content_save_state_automatic();
 
 end:
    if (vrr_runloop_enable)

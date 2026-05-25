@@ -6472,6 +6472,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Afficher des informations supplémentaires pour les éléments du menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Afficher les boîtes de confirmation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Demander confirmation avant d'arrêter, de réinitialiser ou de fermer le contenu. Lorsque cette option est désactivée, ces actions se produisent immédiatement."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Afficher l'écran de configuration initiale"
@@ -8071,6 +8079,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Clé de stream Facebook Gaming "
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Clé de streaming Kick "
    )
 
 /* Settings > Directory */

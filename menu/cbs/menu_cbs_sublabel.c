@@ -832,6 +832,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_file_compression,         MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_file_compression,    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_max_keep,            MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_autosave_interval,             MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_automatic_interval,  MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_max_keep,               MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_interval,    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_deserialize, MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE)
@@ -996,6 +997,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_style,                     
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_date_separator,               MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_battery_level_enable,                  MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_sublabels,                   MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_confirm,                     MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_navigation_wraparound,                 MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_quality,               MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_host,                   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST)
@@ -3713,6 +3715,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_sublabels);
             break;
+         case MENU_ENUM_LABEL_MENU_SHOW_CONFIRM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_confirm);
+            break;
          case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timedate_enable);
             break;
@@ -4112,6 +4117,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_autosave_interval);
+            break;
+         case MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_automatic_interval);
             break;
          case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_replay_checkpoint_interval);
