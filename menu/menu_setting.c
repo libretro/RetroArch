@@ -12042,6 +12042,26 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_autosave_interval;
 #endif
+
+#ifdef HAVE_THREADS
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.savestate_automatic_interval,
+                  MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+                  MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+                  DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_autosave_interval;
+#endif
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.savestate_auto_index,
