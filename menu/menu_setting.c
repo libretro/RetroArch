@@ -8785,6 +8785,19 @@ static void general_write_handler(rarch_setting_t *setting)
          if (!settings->bools.video_fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
+      case MENU_ENUM_LABEL_REWIND_ENABLE:
+         {
+            struct menu_state *menu_st = menu_state_get_ptr();
+            /* Toggling rewind support shows or hides the dependent
+             * rewind items (granularity, buffer size, ...), so force
+             * the page to rebuild immediately. The setting value is
+             * already written by the framework before this handler
+             * runs, and the CMD_EVENT_REWIND_TOGGLE attached to the
+             * setting still fires via rarch_cmd below. */
+            menu_st->flags            |= MENU_ST_FLAG_PREVENT_POPULATE
+                                       | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+         }
+         break;
       case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
          {
             struct menu_state *menu_st     = menu_state_get_ptr();

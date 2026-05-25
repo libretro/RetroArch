@@ -11985,6 +11985,14 @@ unsigned menu_displaylist_build_list(
                if (!build_list[i].checked && !include_everything)
                   continue;
 
+               /* Every item other than the toggle itself depends on
+                * rewind support being enabled; hide them while it is
+                * off (but keep them reachable from global search). */
+               if (     !include_everything
+                     && !settings->bools.rewind_enable
+                     &&  build_list[i].enum_idx != MENU_ENUM_LABEL_REWIND_ENABLE)
+                  continue;
+
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
