@@ -5679,7 +5679,7 @@ void video_frame_delay(video_driver_state_t *video_st,
 
 void video_driver_scanline_init(void)
 {
-   video_driver_state_t *video_st = video_state_get_ptr();
+   video_driver_state_t *video_st     = video_state_get_ptr();
    video_st->scanline[SCANLINE_NEXT]  = 1;
    video_st->scanline[SCANLINE_HOLD]  = 1;
    video_st->scanline[SCANLINE_TOTAL] = 0;
@@ -5732,7 +5732,7 @@ static INLINE void video_driver_scanline_before_frame(video_driver_state_t *vide
    }
 
    /* Shift overflow */
-   if (scanline >= (int)video_height + scanline_next)
+   if (scanline > (int)video_height - (scanline_blank * 4))
       scanline -= video_height;
 
    /* Allow change */
@@ -5744,7 +5744,7 @@ static INLINE void video_driver_scanline_before_frame(video_driver_state_t *vide
       if (     scanline > -scanline_blank
             && scanline < corelines + scanline_blank)
          scanline_next -= 2;
-      else if (scanline_next <= scanline + corelines)
+      else if (scanline_next <= scanline + corelines + scanline_blank)
          scanline_next += 4;
 
       if (     scanline > 0
@@ -5755,15 +5755,10 @@ static INLINE void video_driver_scanline_before_frame(video_driver_state_t *vide
             || scanline < -scanline_blank)
          scanline_next++;
 
-      /* Core time based minimum nudge */
-      while (  corelines > 0
-            && scanline > scanline_blank
-            && scanline_next >= -corelines
-            && core_run_time <= frame_time_target / 2)
-      {
-         scanline_next--;
-         corelines--;
-      }
+      /* Cap to avoid visible tear in bottom */
+      if (     scanline_next > corelines
+            && scanline_next < video_height - corelines - scanline_blank)
+         scanline_next = video_height - corelines - scanline_blank;
 
       /* Skip unsynced */
       if (!scanline_next)
@@ -5772,10 +5767,10 @@ static INLINE void video_driver_scanline_before_frame(video_driver_state_t *vide
    else if (scanline_hold)
       scanline_hold--;
 
-   /* Resync on overflow */
+   /* Wrap overflow */
    if (     scanline_next >= (int)video_height
          || scanline_next <= (int)-video_height)
-      scanline_next = 1;
+      scanline_next = -1;
 
    video_st->scanline[SCANLINE_NEXT] = scanline_next;
    video_st->scanline[SCANLINE_HOLD] = scanline_hold;
@@ -5791,6 +5786,7 @@ static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video
    int16_t scanline_total  = video_st->scanline[SCANLINE_TOTAL];
    int16_t scanline_blank  = video_st->scanline[SCANLINE_TOTAL] - video_height;
    int16_t scanline_target = (scanline_next < 0) ? video_height + scanline_next : scanline_next;
+   int16_t scanline        = scanline_next;
    uint16_t min_run_time   = (scanline_blank > 0) ? (double)scanline_blank / (double)video_height * (double)frame_time_target : 1000;
    bool init               = (!scanline_total) ? true : false;
    bool wait               = true;
@@ -5801,7 +5797,7 @@ static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video
 
    /* Reset */
    if (scanline_next == 1)
-      scanline_target = video_height - 1;
+      scanline_target = video_height;
 
    /* Minimum usage is vblank */
    core_run_time = (core_run_time < min_run_time) ? min_run_time : core_run_time;
@@ -5822,7 +5818,7 @@ static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video
 
    while (wait)
    {
-      int16_t scanline = video_driver_scanline_get();
+      scanline = video_driver_scanline_get();
 
       if (scanline >= scanline_target)
          wait = false;
@@ -5842,5 +5838,6 @@ static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video
          scanline_total = scanline + 1;
    }
 
+   video_st->scanline[SCANLINE_NEXT]  = scanline;
    video_st->scanline[SCANLINE_TOTAL] = scanline_total;
 }
