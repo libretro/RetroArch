@@ -2885,6 +2885,23 @@ static void input_overlay_get_analog_state(
    x_val_sat = x_val   / desc->analog_saturate_pct;
    y_val_sat = y_val   / desc->analog_saturate_pct;
 
+   if (desc->four_way)
+   {
+      float abs_x = fabs(x_val_sat);
+      float abs_y = fabs(y_val_sat);
+      
+      if (abs_x > abs_y)
+      {
+         x_val_sat = (x_val_sat >= 0.0f) ? 1.0f : -1.0f;
+         y_val_sat = 0.0f;
+      }
+      else
+      {
+         y_val_sat = (y_val_sat >= 0.0f) ? 1.0f : -1.0f;
+         x_val_sat = 0.0f;
+      }
+   }
+
    out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
    out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
 }

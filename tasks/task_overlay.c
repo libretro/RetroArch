@@ -568,6 +568,12 @@ static bool task_overlay_load_desc(
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->range_mod = tmp_float;
 
+   strlcpy(conf_key + _len, "_4way",   sizeof(conf_key) - _len);
+   desc->four_way = false;
+   if (config_get_bool(conf, conf_key, &tmp_bool)
+         && tmp_bool)
+      desc->four_way = true;
+
    strlcpy(conf_key + _len, "_exclusive",   sizeof(conf_key) - _len);
    desc->flags &= ~OVERLAY_DESC_EXCLUSIVE;
    if (config_get_bool(conf, conf_key, &tmp_bool)

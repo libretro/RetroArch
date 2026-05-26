@@ -261,6 +261,7 @@ struct overlay_desc
    uint32_t touch_mask;
    uint32_t old_touch_mask;
 
+   bool four_way;
    uint8_t flags;
 };
 
