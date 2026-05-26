@@ -56,6 +56,7 @@
 #include "../menu_shader.h"
 #endif
 #include "../menu_input.h"
+#include "../../profile_manager.h"
 
 #include "../../core.h"
 #include "../../configuration.h"
@@ -4137,6 +4138,192 @@ DEFAULT_ACTION_DIALOG_START(action_ok_save_as_config,
    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG),
    (unsigned)idx,
    menu_input_st_string_cb_config_file_save_as)
+
+static char g_cached_profile_name[128] = {0};
+
+static void menu_input_st_string_cb_profile_create(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      strlcpy(g_cached_profile_name, str, sizeof(g_cached_profile_name));
+      menu_input_dialog_end();
+      generic_action_ok_displaylist_push(NULL, NULL, MENU_ENUM_LABEL_PROFILE_ICON_SELECT_STR, 0, 0, 0, ACTION_OK_DL_PUSH_DEFAULT);
+   }
+   else
+   {
+      menu_input_dialog_end();
+   }
+}
+
+DEFAULT_ACTION_DIALOG_START(action_ok_profile_save_new,
+   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PROFILE_SAVE_NEW),
+   (unsigned)idx,
+   menu_input_st_string_cb_profile_create)
+
+/* Keep old create alias */
+DEFAULT_ACTION_DIALOG_START(action_ok_profile_create,
+   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PROFILE_CREATE),
+   (unsigned)idx,
+   menu_input_st_string_cb_profile_create)
+
+/* Parse the profile index  */
+static int profile_index_from_label(const char *label, const char *prefix)
+{
+   size_t prefix_len = strlen(prefix);
+   if (label && strncmp(label, prefix, prefix_len) == 0)
+      return atoi(label + prefix_len);
+   return -1;
+}
+
+static int action_ok_profile_select(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int profile_idx = profile_index_from_label(label, "profile_select_");
+   /* Fallback to entry_idx if label parsing fails */
+   if (profile_idx < 0)
+      profile_idx = (int)entry_idx;
+
+   {
+      char new_cfg_path[PATH_MAX_LENGTH];
+      char msg[256];
+      char name[128];
+      char icon[PATH_MAX_LENGTH];
+      size_t _len;
+      settings_t *settings         = config_get_ptr();
+      bool config_save_on_exit     = settings->bools.config_save_on_exit;
+
+      if (!profile_manager_get_config_path_for_index(profile_idx,
+               new_cfg_path, sizeof(new_cfg_path)))
+      {
+         runloop_msg_queue_push("Failed to resolve profile config path.",
+               strlen("Failed to resolve profile config path."),
+               1, 150, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_ERROR);
+         return 0;
+      }
+
+      if (profile_manager_get_active_index() != profile_idx)
+      {
+         bool pending_push = false;
+
+         /* Mark the new profile as active in profiles.cfg */
+         if (!profile_manager_set_active(profile_idx))
+            return 0;
+
+         profile_manager_get_active(name, sizeof(name), icon, sizeof(icon));
+
+         if (config_save_on_exit)
+            command_event_save_current_config(OVERRIDE_NONE);
+
+         disp_get_ptr()->flags |= GFX_DISP_FLAG_MSG_FORCE;
+         menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+
+         _len = snprintf(msg, sizeof(msg), "Profile changed to '%s'. Restart required.", name);
+         runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+         command_event(CMD_EVENT_RESTART_RETROARCH, NULL);
+
+         return -1;
+      }
+      else
+      {
+         /* Select active profile */
+         profile_manager_get_active(name, sizeof(name), icon, sizeof(icon));
+         _len = snprintf(msg, sizeof(msg), "Profile '%s' is already active.", name);
+         runloop_msg_queue_push(msg, _len, 1, 150, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+   }
+   return 0;
+}
+
+static int action_ok_profile_save_current(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char msg[256];
+   size_t _len;
+   bool success = profile_manager_save_current();
+   if (success)
+   {
+      char name[128];
+      char icon[PATH_MAX_LENGTH];
+      profile_manager_get_active(name, sizeof(name), icon, sizeof(icon));
+      _len = snprintf(msg, sizeof(msg), "Settings saved to profile '%s'.", name);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+   }
+   else
+   {
+      _len = snprintf(msg, sizeof(msg), "Failed to save settings to current profile!");
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   }
+   return 0;
+}
+
+static int action_ok_profile_delete(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int profile_idx = profile_index_from_label(label, "profile_delete_");
+   if (profile_idx < 0)
+      profile_idx = (int)entry_idx;
+
+   if (profile_idx <= 0)
+   {
+      const char *msg = "Cannot delete the Default profile.";
+      runloop_msg_queue_push(msg, strlen(msg), 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      return 0;
+   }
+
+   {
+      char name[128];
+      char msg[256];
+      size_t _len;
+      strlcpy(name, profile_manager_get_list()->profiles[profile_idx].name, sizeof(name));
+
+      if (profile_manager_delete(profile_idx))
+      {
+         struct menu_state *menu_st = menu_state_get_ptr();
+         size_t new_selection_ptr  = menu_st->selection_ptr;
+         _len = snprintf(msg, sizeof(msg), "Profile '%s' deleted.", name);
+         runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+         menu_entries_pop_stack(&new_selection_ptr, 0, 1);
+         menu_st->selection_ptr = new_selection_ptr;
+         menu_st->flags        |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      }
+      else
+      {
+         _len = snprintf(msg, sizeof(msg), "Failed to delete profile '%s'!", name);
+         runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      }
+   }
+   return 0;
+}
+
+static int action_ok_profile_icon_select(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   if (path && *path && g_cached_profile_name[0])
+   {
+      char msg[256];
+      size_t _len;
+      struct menu_state *menu_st = menu_state_get_ptr();
+      size_t new_selection_ptr  = menu_st->selection_ptr;
+      bool success = profile_manager_create(g_cached_profile_name, path);
+      if (success)
+      {
+         _len = snprintf(msg, sizeof(msg), "Profile '%s' created successfully!", g_cached_profile_name);
+         runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+      }
+      else
+      {
+         _len = snprintf(msg, sizeof(msg), "Failed to create profile '%s'!", g_cached_profile_name);
+         runloop_msg_queue_push(msg, _len, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      }
+      g_cached_profile_name[0] = '\0';
+      /* Pop icon selection screen and refresh the profiles list beneath it */
+      menu_entries_pop_stack(&new_selection_ptr, 0, 1);
+      menu_st->selection_ptr = new_selection_ptr;
+      menu_st->flags        |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   }
+   return 0;
+}
+
 
 static void menu_input_st_string_cb_override_file_save_as(
       void *userdata, const char *str)
@@ -9500,6 +9687,13 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_LOAD_CONTENT_LIST,                   action_ok_push_default},
          {MENU_ENUM_LABEL_ADD_CONTENT_LIST,                    action_ok_push_default},
          {MENU_ENUM_LABEL_CONFIGURATIONS_LIST,                 action_ok_push_default},
+         {MENU_ENUM_LABEL_PROFILES_LIST,                       action_ok_push_default},
+         {MENU_ENUM_LABEL_PROFILE_CREATE,                      action_ok_profile_create},
+         {MENU_ENUM_LABEL_PROFILE_SAVE_NEW,                    action_ok_profile_save_new},
+         {MENU_ENUM_LABEL_PROFILE_SAVE_CURRENT,                action_ok_profile_save_current},
+         {MENU_ENUM_LABEL_PROFILE_SELECT,                      action_ok_profile_select},
+         {MENU_ENUM_LABEL_PROFILE_DELETE,                      action_ok_profile_delete},
+         {MENU_ENUM_LABEL_PROFILE_ICON_SELECT,                 action_ok_profile_icon_select},
          {MENU_ENUM_LABEL_HELP_LIST,                           action_ok_push_default},
          {MENU_ENUM_LABEL_INFORMATION_LIST,                    action_ok_push_default},
          {MENU_ENUM_LABEL_INFORMATION,                         action_ok_push_default},

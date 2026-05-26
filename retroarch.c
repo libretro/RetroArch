@@ -3942,21 +3942,15 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_QUIT, NULL);
             break;
          }
-
          /* Closing content via hotkey requires toggling menu
           * and resetting the position later on to prevent
           * going to empty Quick Menu */
          if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+         {
+            menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+            menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
-
-         menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
-         menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
-
-#if defined(HAVE_GFX_WIDGETS)
-         /* Remove stale notifications after reinit */
-         dispwidget_get_ptr()->flags &= ~DISPGFX_WIDGET_FLAG_PERSISTING;
-#endif
-
+         }
 #else
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
@@ -9054,11 +9048,6 @@ bool retroarch_main_quit(void)
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);
 
-   /* Restore original refresh rate, if it has been changed
-    * automatically in SET_SYSTEM_AV_INFO */
-   if (video_st->video_refresh_rate_original)
-      video_display_server_restore_refresh_rate();
-
 #if !defined(HAVE_DYNAMIC)
    {
       /* Salamander sets RUNLOOP_FLAG_SHUTDOWN_INITIATED prior, so we need to handle it separately */
@@ -9089,6 +9078,11 @@ bool retroarch_main_quit(void)
       discord_st->inited         = false;
    }
 #endif
+
+   /* Restore original refresh rate, if it has been changed
+    * automatically in SET_SYSTEM_AV_INFO */
+   if (video_st->video_refresh_rate_original)
+      video_display_server_restore_refresh_rate();
 
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {

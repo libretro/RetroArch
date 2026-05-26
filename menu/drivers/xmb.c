@@ -50,6 +50,7 @@
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../core_info.h"
+#include "../../profile_manager.h"
 #include "../../file_path_special.h"
 #include "../../input/input_osk.h"
 #include "../../tasks/tasks_internal.h"
@@ -9598,6 +9599,33 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   - (!xmb->assets_missing ? xmb->icon_size / 4 * scale_factor : 0),
             xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
             video_width, video_height, xmb->font);
+   }
+
+   /* Profile display */
+   {
+      char profile_name[128];
+      char profile_icon[PATH_MAX_LENGTH];
+      profile_manager_get_active(profile_name, sizeof(profile_name), profile_icon, sizeof(profile_icon));
+
+      if (profile_name[0])
+      {
+         size_t profile_len = strlen(profile_name);
+         size_t profile_width = (unsigned) font_driver_get_message_width(
+               xmb->font, profile_name, profile_len, 1.0f);
+
+         size_t x_pos = title_header_max_width;
+
+         /* Add padding */
+         if (x_pos > 0)
+            x_pos += xmb->icon_size / 2;
+
+         title_header_max_width = x_pos + profile_width;
+
+         xmb_draw_text(shadows_enable, xmb, settings, profile_name,
+               video_width - xmb->margins_title_left - xmb->icon_size / 4 - x_pos,
+               xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
+               video_width, video_height, xmb->font);
+      }
    }
 
    /* Use alternative title if available */
