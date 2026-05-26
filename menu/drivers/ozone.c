@@ -10997,6 +10997,8 @@ static void ozone_draw_header(
       math_matrix_4x4 *mymat)
 {
    char title[NAME_MAX_LENGTH];
+   char ozone_profile_name[128];
+   char ozone_profile_icon[PATH_MAX_LENGTH];
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    unsigned ticker_x_offset                 = 0;
@@ -11006,6 +11008,8 @@ static void ozone_draw_header(
    float scale_factor                       = ozone->last_scale_factor;
    float header_margin                      = 40 * scale_factor;
    float header_margin_min                  = ozone->dimensions.sidebar_entry_icon_padding;
+   float profile_width                      = 0.0f;
+   float profile_icon_size                  = 40 * scale_factor;
    unsigned logo_icon_size;
    unsigned status_icon_size                = 80 * scale_factor;
    unsigned status_row_size;
@@ -11030,16 +11034,11 @@ static void ozone_draw_header(
    menu_ticker_type                         = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    dispctx                                  = p_disp->dispctx;
 
-   char ozone_profile_name[128];
-   char ozone_profile_icon[PATH_MAX_LENGTH];
    profile_manager_get_active(ozone_profile_name, sizeof(ozone_profile_name),
          ozone_profile_icon, sizeof(ozone_profile_icon));
    /* Hide the default "Default" label to keep the header clean */
    if (string_is_equal(ozone_profile_name, "Default"))
       ozone_profile_name[0] = '\0';
-
-   float profile_width = 0.0f;
-   float profile_icon_size = 40 * scale_factor;
 
    if (ozone_profile_name[0])
    {
