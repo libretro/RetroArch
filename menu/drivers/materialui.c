@@ -2819,8 +2819,6 @@ static void materialui_render_messagebox(
    int usable_width           = 0;
    int longest_width          = 0;
    int line_count             = 0;
-   int slice_x                = 0;
-   int slice_y                = 0;
    int slice_w                = 0;
    int slice_h                = 0;
    size_t wrapped_len         = 0;
@@ -2895,8 +2893,6 @@ static void materialui_render_messagebox(
    if (confirm_dialog && longest_width < (int)video_width / 4)
       longest_width = video_width / 4;
 
-   slice_x                 = x - longest_width / 2.0 - mui->margin * 2.0;
-   slice_y                 = y - mui->margin * 2.0;
    slice_w                 = longest_width + mui->margin * 4.0;
    slice_h                 = mui->font_data.list.line_height * line_count + mui->margin * 4.0;
 
