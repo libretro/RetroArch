@@ -1400,10 +1400,6 @@ MSG_HASH(
    "顯示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "設定影像處理使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x 驅動程式。\n系統最低需求: OpenGL 1.1。\n不支援著色器。\n條件允許的情況下, 請使用更高版本的OpenGL驅動程式。"
    )
@@ -1500,10 +1496,6 @@ MSG_HASH(
    "音效"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "設定音訊訊號使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "用於連網音效系統的RSound驅動程式。"
    )
@@ -1561,10 +1553,6 @@ MSG_HASH(
    "麥克風"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "設定麥克風使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "麥克風重新取樣器"
    )
@@ -1602,32 +1590,16 @@ MSG_HASH(
    "鏡頭"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "設定攝像鏡頭使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "藍牙"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "設定藍牙使用的驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "無線網路 (Wi-Fi)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "設定無線網路使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "定位"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "設定全球定位系統使用的驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1658,16 +1630,8 @@ MSG_HASH(
    "錄製"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "設定錄影和直播使用的驅動程式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
    "音樂數位介面 (MIDI)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "設定音樂數位介面使用的驅動程式。"
    )
 
 /* Settings > Video */
@@ -2895,10 +2859,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "最大用戶人數"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "設定應用程式支援控制器的數量。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,

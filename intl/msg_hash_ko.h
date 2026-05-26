@@ -1468,10 +1468,6 @@ MSG_HASH(
    "비디오 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "사용할 비디오 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x 드라이버입니다. 최소 OpenGL 1.1 지원이 필요합니다. 셰이더를 지원하지 않습니다. 가능한 경우 더 최신 버전의 OpenGL 드라이버를 사용하십시오."
    )
@@ -1568,10 +1564,6 @@ MSG_HASH(
    "오디오 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "사용할 오디오 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "네트워크 오디오 시스템을 위한 RSound 드라이버입니다."
    )
@@ -1629,10 +1621,6 @@ MSG_HASH(
    "마이크"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "사용할 마이크 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "마이크 리샘플러"
    )
@@ -1670,32 +1658,16 @@ MSG_HASH(
    "카메라 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "사용할 카메라 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "블루투스"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "사용할 블루투스 드라이버입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "Wi-Fi 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "사용할 Wi-Fi 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "위치 드라이버"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "사용할 위치 드라이버입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1726,16 +1698,8 @@ MSG_HASH(
    "녹화 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "사용할 녹화 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
    "MIDI 드라이버"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "사용할 MIDI 드라이버입니다."
    )
 
 /* Settings > Video */
@@ -3119,10 +3083,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "최대 사용자"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "RetroArch에서 지원할 최대 사용자 수를 설정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,

@@ -1412,10 +1412,6 @@ MSG_HASH(
    "วิดีโอ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "ไดรเวอร์วิดีโอที่จะใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "ไดรเวอร์ OpenGL 1.x เวอร์ชันขั้นต่ำที่ต้องการ: OpenGL 1.1 ไม่รองรับแชเดอร์ (Shaders) ควรใช้ไดรเวอร์ OpenGL เวอร์ชันที่ใหม่กว่าแทน หากทำได้"
    )
@@ -1512,10 +1508,6 @@ MSG_HASH(
    "เสียง"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "ไดรเวอร์เสียงที่ใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "ไดรเวอร์ RSound สำหรับระบบเสียงผ่านเครือข่าย"
    )
@@ -1573,10 +1565,6 @@ MSG_HASH(
    "ไมโครโฟน"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "ไดรเวอร์ไมโครโฟนที่ใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "ความถี่สัญญาณเสียงไมโครโฟน"
    )
@@ -1614,28 +1602,12 @@ MSG_HASH(
    "กล้อง"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "ไดรเวอร์กล้องที่ใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "บลูทูธ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "ไดรเวอร์บลูทูธที่ใช้งาน"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "ไดรเวอร์ Wi-Fi ที่ใช้งาน"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "พิกัดตำแหน่ง"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "ไดรเวอร์พิกัดตำแหน่งที่ใช้งาน"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1664,14 +1636,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "บันทึกวิดีโอ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "ไดรเวอร์การบันทึกที่ใช้งาน"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "ไดรเวอร์ MIDI ที่ใช้งาน"
    )
 
 /* Settings > Video */
@@ -3003,10 +2967,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "จำนวนผู้ใช้สูงสุด"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "จำนวนผู้ใช้สูงสุดที่รองรับโดย RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,

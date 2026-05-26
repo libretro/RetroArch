@@ -1416,10 +1416,6 @@ MSG_HASH(
    "Wideo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Sterownik wideo do użycia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "Sterownik OpenGL 1.x. Wymagana wersja minimalna: OpenGL 1.1. Nie obsługuje shaderów. Jeśli to możliwe, użyj nowszych sterowników OpenGL."
    )
@@ -1512,10 +1508,6 @@ MSG_HASH(
    "Aktualny sterownik wideo."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Sterownik audio do użycia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Sterownik RSound dla sieciowych systemów audio."
    )
@@ -1573,10 +1565,6 @@ MSG_HASH(
    "Mikrofon"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Sterownik mikrofonu do użycia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Resampler mikrofonu"
    )
@@ -1614,24 +1602,8 @@ MSG_HASH(
    "Kamera"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Sterownik kamery do użycia."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Sterownik Bluetooth do użycia."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Sterownik Wi-Fi do użycia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Lokalizacja"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Sterownik lokalizacji do użycia."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -1656,14 +1628,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Nagrywanie"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Sterownik nagrywania do użycia."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Sterownik MIDI do użycia."
    )
 
 /* Settings > Video */
@@ -2991,10 +2955,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Maksymalna liczba użytkowników"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Maksymalna liczba użytkowników obsługiwanych przez RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4546,6 +4506,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    "Automatycznie zapisz niezmienny Zapis Ram w regularnym odstępie (w sekundach)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Zapis stanu: Interwał automatyczny"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Automatycznie zapisz stan w regularnym odstępie (w sekundach). Ustaw 0 aby wyłączyć."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Automatycznie zapisuje stan w regularnych odstępach czasu, mierzonych w sekundach. Jest to przydatne do tworzenia okresowych kopii zapasowych postępu w grze, zwłaszcza na urządzeniach, które mogą nieoczekiwanie zamknąć się z powodu baterii lub innych problemów. Wartość 0 wyłącza tę funkcję."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,

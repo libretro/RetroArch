@@ -1461,7 +1461,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Trình điều khiển video để sử dụng."
+   "Trình điều khiển video sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1561,7 +1561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Trình điều khiển âm thanh để sử dụng."
+   "Trình điều khiển âm thanh sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1622,7 +1622,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Trình điều khiển micro để sử dụng."
+   "Trình điều khiển micro sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1659,7 +1659,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Trình điều khiển camera để sử dụng."
+   "Trình điều khiển camera sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
@@ -1667,7 +1667,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Trình điều khiển Bluetooth để sử dụng."
+   "Trình điều khiển Bluetooth sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
@@ -1675,7 +1675,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Trình điều khiển Wi-Fi để sử dụng."
+   "Trình điều khiển Wi-Fi sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1683,7 +1683,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Trình điều khiển vị trí để sử dụng."
+   "Trình điều khiển định vị sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -1711,11 +1711,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Trình điều khiển ghi âm để sử dụng."
+   "Trình điều khiển ghi hình sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Trình điều khiển MIDI để sử dụng."
+   "Trình điều khiển MIDI sẽ sử dụng. (Cần khởi động lại)"
    )
 
 /* Settings > Video */
@@ -3122,7 +3122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Số lượng người dùng tối đa được RetroArch hỗ trợ."
+   "Số lượng người dùng tối đa được RetroArch hỗ trợ. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4720,6 +4720,18 @@ MSG_HASH(
    "Tự động lưu SRAM không bay hơi theo khoảng thời gian đều đặn. Tùy chọn này mặc định bị tắt trừ khi được đặt khác. Khoảng thời gian được tính bằng giây. Giá trị 0 sẽ tắt tính năng tự động lưu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Lưu trò chơi: Khoảng thời gian tự động lưu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Tự động lưu trạng thái theo khoảng thời gian định kỳ (tính bằng giây). Đặt thành 0 để tắt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Tự động lưu trạng thái theo khoảng thời gian định kỳ, được tính bằng giây. Điều này hữu ích để tạo các bản sao lưu tiến trình chơi game theo chu kỳ, đặc biệt trên các thiết bị có thể bị đóng đột ngột do pin hoặc các vấn đề khác. Giá trị 0 sẽ tắt tính năng này."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Phát lại: Khoảng thời gian tạo điểm kiểm tra"
    )
@@ -5176,6 +5188,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK,
    "Trò chơi trên Facebook"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_KICK,
+   "Đá ra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
@@ -6535,6 +6551,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Hiển thị thông tin bổ sung cho các mục trong menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Hiển thị hộp xác nhận"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Yêu cầu xác nhận trước khi thoát, khởi động lại hoặc đóng nội dung. Khi tắt, các hành động này sẽ diễn ra ngay lập tức."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
@@ -8104,6 +8128,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Thông tin đăng nhập cho tài khoản RetroAchievements của bạn. Truy cập retroachievements.org và đăng ký một tài khoản miễn phí.\nSau khi đăng ký xong, bạn cần nhập tên người dùng và mật khẩu vào RetroArch."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK,
+   "Đá ra"
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -8147,6 +8175,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Kick */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Khóa luồng đá ra"
+   )
 
 /* Settings > Directory */
 
