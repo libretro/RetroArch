@@ -5532,6 +5532,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       unsigned term_mid_point        = 0;
       size_t powerstate_len          = 0;
       size_t timedate_len            = 0;
+      size_t profile_len             = 0;
 
       /* Cache mini thumbnail related parameters, if required */
       if (show_mini_thumbnails)
@@ -5663,7 +5664,6 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       }
 
       /* Profile Name */
-      size_t profile_len = 0;
       {
          char profile_name[128];
          char profile_icon[PATH_MAX_LENGTH];
