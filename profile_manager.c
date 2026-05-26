@@ -306,8 +306,9 @@ int profile_manager_get_active_index(void)
 void profile_manager_get_active(char *name, size_t name_len,
       char *image_path, size_t image_path_len)
 {
+   int idx;
    profile_manager_ensure_init();
-   int idx = g_profile_list.active_index;
+   idx = g_profile_list.active_index;
    if (idx >= 0 && idx < g_profile_list.count)
    {
       strlcpy(name,       g_profile_list.profiles[idx].name,       name_len);
@@ -342,12 +343,12 @@ bool profile_manager_get_config_path_for_index(int index, char *path, size_t len
 
 bool profile_manager_create(const char *name, const char *image_name)
 {
-   profile_manager_ensure_init();
    char sanitized[128];
    char display_name[128];
    char config_name[128];
    char dst_path[PATH_MAX_LENGTH];
    int new_idx;
+   profile_manager_ensure_init();
 
    if (!g_config_dir[0])
    {
@@ -420,9 +421,10 @@ bool profile_manager_set_active(int index)
 
 bool profile_manager_save_current(void)
 {
-   profile_manager_ensure_init();
    char dst_path[PATH_MAX_LENGTH];
-   int idx = g_profile_list.active_index;
+   int idx;
+   profile_manager_ensure_init();
+   idx = g_profile_list.active_index;
 
    if (!g_config_dir[0])
    {
@@ -449,8 +451,8 @@ bool profile_manager_save_current(void)
 
 bool profile_manager_delete(int index)
 {
-   profile_manager_ensure_init();
    int i;
+   profile_manager_ensure_init();
 
    if (index <= 0 || index >= g_profile_list.count)
    {
