@@ -13636,10 +13636,6 @@ MSG_HASH(
    "Core Counters"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "No disc selected"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Frontend Counters"
    )
@@ -13962,10 +13958,6 @@ MSG_HASH(
    "No arguments supplied and no menu built-in, displaying help..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Setting disc in tray"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Waiting for client..."
    )
@@ -14271,14 +14263,6 @@ MSG_HASH(
    "Playlist entry core association has been reset."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Appended disc"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Failed to append disc"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Application Directory"
    )
@@ -14451,14 +14435,6 @@ MSG_HASH(
    "Disconnect device from a valid port."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Closed virtual disc tray."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Ejected virtual disc tray."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Downloading"
    )
@@ -14613,10 +14589,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Failed to receive SRAM data from host."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Failed to remove disc from tray."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14999,10 +14971,6 @@ MSG_HASH(
    "All input remapping options reset to default."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Removed disk from tray."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Removing temporary content file"
    )
@@ -15020,7 +14988,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: restoring default shader preset to"
+   "Shaders: Restoring default shader preset to"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -15273,14 +15241,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Failed to eject virtual disc tray."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Failed to close virtual disc tray."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -15539,8 +15499,48 @@ MSG_HASH(
    "Cheat deleted."
    )
 MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Closed virtual disc tray."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Failed to close virtual disc tray."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Ejected virtual disc tray."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Failed to eject virtual disc tray."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Removed disk from tray."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Failed to remove disc from tray."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "No disc selected"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Appended disc"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Failed to append disc"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Setting disc in tray"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Failed to set disc."
+   "Failed to set disc"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
