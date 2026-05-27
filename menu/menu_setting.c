@@ -12966,8 +12966,9 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_exact;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact;
+         // (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact;
 
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact_input;
          CONFIG_UINT(
                list, list_info,
                &cheat_manager_state.dummy,
