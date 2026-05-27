@@ -8180,9 +8180,14 @@ bool retroarch_main_init(int argc, char *argv[])
                if (frontend && frontend->get_os)
                {
                   frontend->get_os(osbuf, sizeof(osbuf), &major, &minor);
+#ifdef __aarch64__
+                  const char *arch = " (64-bit)";
+#else
+                  const char *arch = " (32-bit)";
+#endif
                   _len += snprintf(str_output + _len, sizeof(str_output) - _len,
-                        FILE_PATH_LOG_INFO " Running on: %s\n",
-                        osbuf);
+                     FILE_PATH_LOG_INFO " Running on: %s%s\n",
+                     osbuf, arch);
                }
             }
          }
