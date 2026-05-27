@@ -146,7 +146,6 @@ HAVE_WEBOS_EXTRA_PROTOS ?= 0
 HAVE_CORE_INFO_CACHE = 1
 HAVE_WAYLAND ?= 0
 HAVE_WAYLAND_BACKPORT ?= 1
-HAVE_WAYLAND_CLIENTSTUB ?= 0
 HAVE_64TO32BIT_BRIDGE ?= 0
 
 OS = Linux
@@ -205,16 +204,9 @@ ifeq ($(HAVE_OPENGLES3_2),1)
 endif
 ifeq ($(HAVE_WAYLAND),1)
   DEFINES += -DHAVE_WAYLAND=1
-  ifeq ($(HAVE_WAYLAND_CLIENTSTUB),1)
-    WAYLAND_LIBS = -lwayland-client-stub
-  endif
   WAYLAND_LIBS += -lwayland-client -lwayland-cursor
   ifeq ($(HAVE_EGL),1)
     WAYLAND_LIBS += -lwayland-egl
-  endif
-  ifeq ($(HAVE_WAYLAND_CLIENTSTUB),1)
-    WAYLAND_LIBS += \
-      -Wl,--no-as-needed -lwayland-client -Wl,--as-needed
   endif
 endif
 ifeq ($(HAVE_WEBOS_EXTRA_PROTOS),1)
