@@ -1428,7 +1428,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Используемый драйвер контроллера (требуется перезапуск)"
+   "Используемый драйвер контроллера. Требуется перезапуск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1462,6 +1462,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Видео"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   "Используемый видеодрайвер. Требуется перезапуск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1560,6 +1564,10 @@ MSG_HASH(
    "Аудио"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+   "Используемый аудиодрайвер. Требуется перезапуск."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Драйвер RSound для сетевых аудиосистем."
    )
@@ -1617,6 +1625,10 @@ MSG_HASH(
    "Микрофон"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Используемый драйвер микрофона. Требуется перезапуск."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Ресемплер микрофона"
    )
@@ -1654,8 +1666,24 @@ MSG_HASH(
    "Камера"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   "Используемый драйвер камеры. Требуется перезапуск."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Используемый драйвер Bluetooth. Требуется перезапуск."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "Используемый драйвер Wi-FI. Требуется перезапуск."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Геолокация"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "Используемый драйвер геолокации. Требуется перезапуск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1663,7 +1691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Используемый драйвер меню (требуется перезапуск)"
+   "Используемый драйвер меню. Требуется перезапуск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1684,6 +1712,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Запись"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Используемый драйвер записи. Требуется перезапуск."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Используемый драйвер MIDI. Требуется перезапуск."
    )
 
 /* Settings > Video */
@@ -3079,6 +3115,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Максимум игроков"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "Максимальное число пользователей, поддерживаемое RetroArch. Требуется перезапуск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4669,11 +4709,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "Автоматическое сохранение энергонезависимой памяти с заданным интервалом."
+   "Автоматически сохранять энергонезависимую память с заданным интервалом."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Автоматически сохраняет энергонезависимую SRAM с заданным интервалом. По умолчанию выключено. Интервал измеряется в секундах. Значение 0 отключает автосохранение."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Быстрые сохранения: интервал автосохранения"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Автоматически сохранять состояние с заданным интервалом. Установите 0 для отключения."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Автоматическое сохранение состояния через заданный промежуток времени. Полезно для периодического резервирования прогресса в игре, особенно на устройствах, которые могут закрыть приложение из-за разряда батареи или по другим причинам. Значение 0 отключает данную функци[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,

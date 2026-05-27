@@ -1452,6 +1452,10 @@ MSG_HASH(
    "Vídeo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   "Controlador de vídeo a usar. (Reinicio necesario)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "Controlador OpenGL 1.x. Versión mínima necesaria: OpenGL 1.1. Non admite sombreadores. Use controladores OpenGL posteriores no seu lugar, se é posible."
    )
@@ -1548,6 +1552,10 @@ MSG_HASH(
    "Son"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+   "Controlador de son a usar. (Reinicio necesario)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Controlador RSound para sistemas de audio na rede."
    )
@@ -1605,6 +1613,10 @@ MSG_HASH(
    "Micrófono"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Controlador de micrófono a usar. (Reinicio necesario)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Micrófono Resampler"
    )
@@ -1642,8 +1654,24 @@ MSG_HASH(
    "Cámara"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   "Controlador de cámara a usar. (Reinicio necesario)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Controlador de Bluetooth a usar. (Reinicio necesario)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "Controlador de Wi-Fi a usar. (Reinicio necesario)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Localización"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "Controlador de localización a usar. (Reinicio necesario)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1672,6 +1700,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Gravación"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Controlador de gravación a usar. (Reinicio necesario)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Controlador MIDI a usar. (Reinicio necesario)"
    )
 
 /* Settings > Video */
@@ -1727,6 +1763,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Cambiar as configuracións de sincronización de vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Aplicar filtro de vídeo. É unha indicación que non necesariamente ten que ser respectada polo controlador de vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Activar filtro de vídeo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -2463,6 +2507,14 @@ MSG_HASH(
    "VSync está activado ata que o rendemento baixe da frecuencia de refresco obxectivo. Pode minimizar os cortes cando o rendemento cae por debaixo do tempo real e ser máis eficiente en canto a consumo de enerxía. Non é compatible con 'Atraso de fotograma'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   "Sincronización por liña de exploración"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   "Sincroniza a presentación do vídeo coa posición da liña de exploración. Reduce a latencia a cambio dun maior risco de “tearing”. VSync debe estar desactivado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Retraso de fotogramas"
    )
@@ -2485,6 +2537,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Intenta manter o obxectivo de 'Retraso de fotogramas' desexado e minimizar as caídas de fotogramas. O punto de partida é 3/4 do tempo de cadro cando o 'Retraso de fotogramas' é 0 (Automático)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Amosar tempo de fotograma só en estado estable"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Limitar a mostraxe da «Taxa estimada de refresco da pantalla» aos fotogramas nos que o contido se executa de forma estable (non no menú, non en pausa, sen avance rápido, tempo de fotograma dentro dun rango razoable). A lectura diagnóstica convértese nun sinal máis fiable en troques dunha converxencia máis lenta tras cargar contido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -2678,6 +2738,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "A lonxitude intermedia do búfer (en fotogramas) cando se usa o controlador WASAPI en modo compartido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   "Abrir panel de control ASIO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   "Abre o panel de control do controlador ASIO para configurar o enrutamento de dispositivos e os axustes de búfer."
    )
 
 /* Settings > Audio > Output */
@@ -2991,6 +3059,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Máximo Usuarios"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "Número máximo de usuarios admitidos por RetroArch. (Reinicio necesario)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3916,6 +3988,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Aplicar filtro de vídeo (alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Activa/desactiva o «Filtro de vídeo» por soporte lóxico."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Mostrar FPS (alternar)"
    )
@@ -4449,6 +4529,18 @@ MSG_HASH(
    "Garda os cambios no ficheiro de configuración ao saír. Útil para os cambios realizados no menú. Sobrescribe o ficheiro de configuración, os #include e os comentarios non se conservan."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
+   "Gardar configuración mínima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL,
+   "Gardar só os axustes que difiren dos valores predeterminados."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
+   "Cando está activado, garda unicamente os valores de configuración que cambiaron respecto aos valores predeterminados. Dá lugar a un ficheiro de configuración máis pequeno e manexable."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "Garda os ficheiros de reasignación ao saír"
    )
@@ -4554,6 +4646,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Garda automaticamente a SRAM non volátil nun intervalo regular. Esta opción está desactivada por defecto a non ser que se estableza o contrario. O intervalo mídese en segundos. Un valor de 0 desactiva o gardado automático."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Gardado de estado: intervalo automático"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Gardar automaticamente un estado a intervalos regulares (en segundos). Establecer en 0 para desactivar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Garda automaticamente un estado a intervalos regulares, medido en segundos. Isto é útil para crear copias de seguridade periódicas do progreso do xogo, especialmente en dispositivos que poden pecharse inesperadamente por batería ou outros problemas. Un valor de 0 desactiva esta función."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
@@ -4930,6 +5034,14 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Reinicio automático tras eventos interrompedores"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Limpar o búfer de mostras da «Taxa estimada de refresco da pantalla» despois de avance rápido, gardar estado ou cargar estado. Estas operacións introducen mostras de tempo que non reflicten a cadencia normal de fotogramas e distorsionarían a medición da desviación. Limpeza “na medida do posible”; non ten efecto cando «Mostrar tempo de fotograma só en estado estable» está activado (xa que evita a contaminación na orixe)."
+   )
 
 /* Settings > Recording */
 
@@ -4988,6 +5100,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
    "Modo de transmisión"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_KICK,
+   "Expulsar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
@@ -5573,6 +5689,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "A visualización do uso da memoria actualizarase no intervalo establecido en fotogramas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Amosar hora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Amosar a hora actual no formato preferido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -6181,6 +6305,10 @@ MSG_HASH(
    "Amosar 'Xogo en Rede'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "Amosar a entrada «Netplay» no menú principal ou nas listas de reprodución."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Mostrar \"Historial\""
    )
@@ -6296,6 +6424,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Mostra información adicional para os elementos do menú."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Amosar caixas de confirmación"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Solicitar confirmación antes de saír, reiniciar ou pechar contido. Cando está desactivado, estas accións execútanse inmediatamente."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Mostrar a pantalla de inicio"
@@ -6358,6 +6494,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Mostrar \"Desfacer gardar/cargar estado\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Amosar as opcións para desfacer gardado/carga de estado. O botón Start do RetroPad activa o desfacer gardar/cargar cando está oculto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7752,6 +7892,10 @@ MSG_HASH(
    "Actualizar lista de reprodución"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Engadir novo contido e eliminar entradas inválidas repetindo a última exploración de contido empregada para crear ou editar a lista de reprodución."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Eliminar lista de reprodución"
    )
@@ -7836,6 +7980,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Detalles de inicio de sesión para a túa conta de RetroAchievements. Visita retroachievements.org e rexístrate para obter unha conta gratuíta.\nDespois de rematar o rexistro, debes introducir o nome de usuario e o contrasinal en RetroArch."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK,
+   "Expulsar"
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -7879,6 +8027,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Kick */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Expulsar clave de transmisión"
+   )
 
 /* Settings > Directory */
 
@@ -8332,6 +8484,14 @@ MSG_HASH(
    "Analiza un ficheiro para buscar contido que coincida coa base de datos."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "Exploración de contido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+   "Exploración configurable baseada nos nomes dos ficheiros de contido e/ou coincidencias coa base de datos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Buscar"
    )
@@ -8397,6 +8557,30 @@ MSG_HASH(
 
 /* Import Content > Content Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+   "Localización do contido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+   "Seleccionar un directorio (ou ficheiro) para explorar contido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Lista de reprodución de destino"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Nome do ficheiro de lista de reprodución xerado, tamén empregado para identificar miniaturas. A configuración automática empregará o mesmo nome ca base de datos coincidente ou o directorio de contido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Nome personalizado da lista de reprodución"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Nome personalizado para o contido explorado."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Núcleo predeterminado"
@@ -11260,6 +11444,10 @@ MSG_HASH(
    "Factor de esvaecemento vertical"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Amosar lista horizontal"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Mostrar cabeceira do título"
    )
@@ -11520,6 +11708,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "Ten a barra lateral esquerda sempre contraída."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
+   "Amosar barra lateral"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SHOW_SIDEBAR,
+   "Permitir navegación pola barra lateral esquerda e polas listas de reprodución."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -14071,6 +14267,10 @@ MSG_HASH(
    "Desfixo o estado de carga."
    )
 MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Desfacendo gardado de estado..."
+   )
+MSG_HASH(
    MSG_UNKNOWN,
    "Descoñecido"
    )
@@ -14717,6 +14917,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "A taxa de actualización do vídeo cambiou a %s Hz."
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Filtro de vídeo: Activar"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Filtro de vídeo: Desactivado"
    )
 
 

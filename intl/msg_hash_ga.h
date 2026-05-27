@@ -1460,6 +1460,10 @@ MSG_HASH(
    "Físeán"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   "Tiománaí físe le húsáid. (Atosú ag teastáil)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "Tiománaí OpenGL 1.x. An leagan íosta atá ag teastáil: OpenGL 1.1. Ní thacaíonn sé le scáthaitheoirí. Bain úsáid as tiománaithe OpenGL níos déanaí ina ionad, más féidir."
    )
@@ -1556,6 +1560,10 @@ MSG_HASH(
    "Fuaim"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+   "Tiománaí fuaime le húsáid. (Atosú ag teastáil)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "Tiománaí rsound le haghaidh córais fuaime líonraithe."
    )
@@ -1613,6 +1621,10 @@ MSG_HASH(
    "Micreafón"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Tiománaí micreafóin le húsáid. (Atosú ag teastáil)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Athshamplálaí Micreafóin"
    )
@@ -1650,8 +1662,24 @@ MSG_HASH(
    "Ceamara"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   "Tiománaí ceamara le húsáid. (Atosú ag teastáil)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Tiománaí Bluetooth le húsáid. (Atosú ag teastáil)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "Tiománaí Wi-Fi le húsáid. (Atosú ag teastáil)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Suíomh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "Tiománaí suímh le húsáid. (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1680,6 +1708,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Taifead"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Taifead an tiománaí le húsáid. (Atosú ag teastáil)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Tiománaí MIDI le húsáid. (Atosú ag teastáil)"
    )
 
 /* Settings > Video */
@@ -3063,6 +3099,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Uasmhéid Úsáideoirí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "Uasmhéid úsáideoirí a dtacaítear leo le RetroArch. (Atosú riachtanach)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,

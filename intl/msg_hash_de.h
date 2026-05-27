@@ -1384,6 +1384,10 @@ MSG_HASH(
    "Videotreiber"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   "Zu verwendender Videotreiber. (Neustart erforderlich)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
    "OpenGL 1.x Treiber. Mindestversion erforderlich: OpenGL 1.1. Unterstützt keine Shader. Stattdessen neuere OpenGL- Treiber verwenden, sofern möglich."
    )
@@ -1480,6 +1484,10 @@ MSG_HASH(
    "Audiotreiber"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+   "Zu verwendender Audiotreiber. (Neustart erforderlich)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "RSound-Treiber für vernetzte Audiosysteme."
    )
@@ -1537,6 +1545,10 @@ MSG_HASH(
    "Mikrofon"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Zu verwendender Mikrofontreiber. (Neustart erforderlich)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Mikrofon Resampler"
    )
@@ -1574,16 +1586,32 @@ MSG_HASH(
    "Kameratreiber"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   "Zu verwendender Kameratreiber. (Neustart erforderlich)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
    "Bluetooth-Treiber"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Zu verwendender Bluetoothtreiber. (Neustart erforderlich)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "WLAN-Treiber"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+   "Zu verwendender WLAN-Treiber. (Neustart erforderlich)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    "Standort-Treiber"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "Zu verwendender Ortungstreiber. (Neustart erforderlich)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1614,8 +1642,16 @@ MSG_HASH(
    "Aufnahmetreiber"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Zu verwendender Aufnahmetreiber. (Neustart erforderlich)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
    "MIDI-Treiber"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Zu verwendender MIDI-Treiber. (Neustart erforderlich)"
    )
 
 /* Settings > Video */
@@ -2967,6 +3003,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    "Maximale Benutzeranzahl"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "Maximale Benutzeranzahl, die von RetroArch unterstützt wird. (Neustart erforderlich)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4549,7 +4589,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
-   "Status speichern: Automatischer Intervall"
+   "Status speichern: Automatisches Intervall"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
@@ -10065,7 +10105,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
-   "Keine Bluetooth-Geräte gefunden"
+   "Keine Bluetoothgeräte gefunden"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
@@ -14124,7 +14164,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_BLUETOOTH_DEVICES,
-   "Suche nach Bluetooth-Geräten..."
+   "Suche nach Bluetoothgeräten ..."
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
@@ -14819,7 +14859,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
-   "Nach Bluetooth-Geräten suchen und mit ihnen verbinden."
+   "Nach Bluetoothgeräten suchen und mit ihnen verbinden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
@@ -15078,7 +15118,7 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
-   "Aktiviere oder deaktiviere Bluetooth."
+   "Bluetooth aktivieren oder deaktivieren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
