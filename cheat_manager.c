@@ -1304,7 +1304,9 @@ int cheat_manager_search_exact_input(rarch_setting_t *setting,
 {
 #ifdef HAVE_MENU
    char value_buf[32];
-   menu_input_ctx_line_t line = {0};
+   menu_input_ctx_line_t line;
+
+   memset(&line, 0, sizeof(line));
 
    snprintf(value_buf, sizeof(value_buf), "%u",
          cheat_manager_state.search_exact_value);
