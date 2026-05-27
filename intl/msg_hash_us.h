@@ -2118,7 +2118,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate.\nThis will be ignored if 'Threaded Video' is enabled."
+   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate. This will be ignored if 'Threaded Video' is enabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -5122,7 +5122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Change settings influencing the frame time counter.\nOnly active when threaded video is disabled."
+   "Change settings influencing the frame time counter. Only active when threaded video is disabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7437,7 +7437,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Shows information about the game being loaded and the user's current progress.\n'All Identified Games' will show summary for games with no published achievements."
+   "Shows information about the game being loaded and the user's current progress. 'All Identified Games' will show summary for games with no published achievements."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7914,7 +7914,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Specify when to tag playlist entries with the currently associated core (if any).\nThis setting is ignored when playlist sublabels are enabled."
+   "Specify when to tag playlist entries with the currently associated core (if any). This setting is ignored when playlist sublabels are enabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -8022,7 +8022,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Select which type of runtime log record to display on playlist sublabels.\nThe corresponding runtime log must be enabled via the 'Saving' options menu."
+   "Select which type of runtime log record to display on playlist sublabels. The corresponding runtime log must be enabled via the 'Saving' options menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8207,7 +8207,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Allow the Discord app to show data about the content played.\nOnly available with the native desktop client."
+   "Allow the Discord app to show data about the content played. Only available with the native desktop client."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8624,7 +8624,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Add this audio track to an available audio stream slot.\nIf no slots are currently available, it will be ignored."
+   "Add this audio track to an available audio stream slot. If no slots are currently available, it will be ignored."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8632,7 +8632,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Add this audio track to an available audio stream slot and play it.\nIf no slots are currently available, it will be ignored."
+   "Add this audio track to an available audio stream slot and play it. If no slots are currently available, it will be ignored."
    )
 
 /* Netplay */
@@ -9734,7 +9734,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "Big Endian: 258 = 0x0102\nLittle Endian: 258 = 0x0201"
+   "Big Endian: 258 = 0x0102, Little Endian: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -10042,6 +10042,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Select a new disc from the filesystem and append it in the index list."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    "Select a new disc from the filesystem and append it in the index list.\nNOTE: This is a legacy feature. It is instead recommended to use M3U playlists for multi-disc titles."
    )
 
