@@ -18,8 +18,6 @@
 #ifndef _PLATFORM_UNIX_H
 #define _PLATFORM_UNIX_H
 
-#include <ace/xcomponent/native_interface_xcomponent.h>
-#include <stdbool.h>
 #include <stdint.h>
 
 #include <boolean.h>
@@ -32,6 +30,8 @@
 #endif
 
 #ifdef __OHOS__
+#include <ace/xcomponent/native_interface_xcomponent.h>
+#include <stdbool.h>
 #include <deviceinfo.h>
 #include <rthreads/rthreads.h>
 #include "../../input/input_driver.h"

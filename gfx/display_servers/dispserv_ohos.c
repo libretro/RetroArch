@@ -19,9 +19,6 @@
 #include "../video_display_server.h"
 #include "../../frontend/drivers/platform_unix.h"
 
-/* FORWARD DECLARATIONS */
-int system_property_get(const char *cmd, const char *args, char *value);
-
 static void* ohos_display_server_init(void) { return NULL; }
 static void ohos_display_server_destroy(void *data) { }
 static bool ohos_display_server_set_window_opacity(void *data, unsigned opacity) { return true; }
