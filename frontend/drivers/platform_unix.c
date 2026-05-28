@@ -3793,13 +3793,13 @@ static napi_value StartApp(napi_env env, napi_callback_info info)
    napi_value args[1];
    napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
    if (status != napi_ok || argc < 1) {
-     napi_throw_error(env, NULL, "参数错误");
+     napi_throw_error(env, NULL, "params error");
      return NULL;
    }
    napi_valuetype valuetype;
    napi_typeof(env, args[0], &valuetype);
    if (valuetype != napi_object) {
-     napi_throw_type_error(env, NULL, "参数必须是对象");
+     napi_throw_type_error(env, NULL, "param not is object");
      return NULL;
    }
    static StartParams params;
@@ -3849,7 +3849,7 @@ static napi_value StartApp(napi_env env, napi_callback_info info)
       if (ohos_app->cond)
          scond_free(ohos_app->cond);
       free(ohos_app);
-      RARCH_ERR("Failed to allocate android_app locks.\n");
+      RARCH_ERR("Failed to allocate ohos_app locks.\n");
       return NULL;
    }
    if (pipe(msgpipe))
@@ -3906,21 +3906,18 @@ static napi_value OnKeyEvent(napi_env env, napi_callback_info info)
         return NULL;
     size_t argc = 1;
     napi_value args[1];
-    napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+   napi_get_cb_info(env, info, &argc, args, NULL, NULL);
     KeyEvent event;
     napi_value temp_val;
     napi_get_named_property(env, args[0], "deviceId", &temp_val);
     napi_get_value_int32(env, temp_val, &event.deviceId);
     
-    // 提取 type
     napi_get_named_property(env, args[0], "type", &temp_val);
     napi_get_value_int32(env, temp_val, &event.type);
     
-    // 提取 pointerCount
     napi_get_named_property(env, args[0], "keyCode", &temp_val);
     napi_get_value_int32(env, temp_val, &event.keyCode);
     
-    // 提取 eventTime (uint64_t)
     napi_get_named_property(env, args[0], "timestamp", &temp_val);
     napi_get_value_int64(env, temp_val, &event.timestamp);
   
@@ -3985,9 +3982,9 @@ static void OnSurfaceCreatedCB(OH_NativeXComponent *component, void *window)
     g_ohos->nativeComponent = component;
     g_ohos->window = window;
     OH_NativeXComponent_ExpectedRateRange frameRateRange;
-    frameRateRange.min = 60;      // 最小帧率 60fps
-    frameRateRange.max = 60;      // 最大帧率 60fps
-    frameRateRange.expected = 60; // 期望帧率 60fps
+    frameRateRange.min = 60;      // min fps 60fps
+    frameRateRange.max = 60;      // max fps 60fps
+    frameRateRange.expected = 60; // expected fps 60fps
 
     OH_NativeXComponent_SetExpectedFrameRateRange(component, &frameRateRange);
 }
