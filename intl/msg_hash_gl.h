@@ -2053,10 +2053,6 @@ MSG_HASH(
    "Tasa de refresco vertical"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Tasa de refresco vertical da túa pantalla. Usado para calcular a adecuada tasa de entrada de audio.\n Isto será ignorado se 'Threaded Video' está habilitado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Taxa de actualización da pantalla estimada"
    )
@@ -4957,10 +4953,6 @@ MSG_HASH(
    "Contador de tempo de fotogramas"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Cambia a configuración que inflúe no contador de tempo de fotogramas.\nSó activo cando o vídeo en conversas está desactivado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "Taxa de avance rápido"
    )
@@ -7196,10 +7188,6 @@ MSG_HASH(
    "Resumo de inicio"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Mostra información sobre o xogo que se está cargando e o progreso actual do usuario.\n\"Todos os xogos identificados\" mostrará un resumo dos xogos sen logros publicados."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Todos os xogos identificados"
    )
@@ -7669,10 +7657,6 @@ MSG_HASH(
    "Mostrar núcleos asociados nas listas de reprodución"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Especifica cando etiquetar as entradas das listas de reprodución co núcleo asociado actualmente (se o hai).\nEsta configuración ignórase cando se activan as subetiquetas das listas de reprodución."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Mostrar subetiquetas da lista de reprodución"
    )
@@ -7775,10 +7759,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Tempo de execución da sub-etiqueta da lista de reprodución"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Seleccione que tipo de rexistro de rexistro de execución quere mostrar nas subetiquetas das listas de reprodución.\nO rexistro de tempo de execución correspondente debe estar activado a través do menú de opcións \"Gardar\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7956,10 +7936,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Discord Rich Presenza"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permite que a aplicación Discord mostre datos sobre o contido reproducido.\nSó dispoñible co cliente de escritorio nativo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8359,16 +8335,8 @@ MSG_HASH(
    "Engadir ao Mesturador"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Engade esta pista de son a unha rañura de emisión de son dispoñible.\nSe non hai rañuras dispoñibles actualmente, ignorarase."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Engadir ao Mesturador e xogar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Engade esta pista de son a unha rañura de emisión de son dispoñible e reproducea.\nSe non hai rañuras dispoñibles neste momento, ignorarase."
    )
 
 /* Netplay */
@@ -9735,10 +9703,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Cargar disco novo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Selecciona un novo disco do sistema de arquivos e engádeo á lista de índices.\nNOTA: Esta é unha función antiga. Recoméndase usar listas de reprodución M3U para títulos de varios discos."
    )
 
 /* Quick Menu > Shaders */
@@ -12692,10 +12656,6 @@ MSG_HASH(
    "Contadores de núcleos"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Non se seleccionou ningún disco"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Contadores frontend"
    )
@@ -13010,10 +12970,6 @@ MSG_HASH(
    "Non se forneceron argumentos e sen menú incorporado, mostrando axuda..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Colocación do disco na bandexa"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Esperando cliente..."
    )
@@ -13319,14 +13275,6 @@ MSG_HASH(
    "Restableceuse a asociación básica da entrada da lista de reprodución."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disco anexo"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Produciuse un erro ao engadir o disco"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Directorio de aplicacións"
    )
@@ -13495,14 +13443,6 @@ MSG_HASH(
    "Desconecta o dispositivo dun porto válido."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Bandexa de disco virtual pechada."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Bandexa de disco virtual expulsada."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Descargando"
    )
@@ -13657,10 +13597,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Produciuse un erro ao recibir os datos SRAM do host."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Produciuse un erro ao eliminar o disco da bandexa."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14035,10 +13971,6 @@ MSG_HASH(
    "Todas as opcións de reasignación de entrada restablecen os valores predeterminados."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Eliminouse o disco da bandexa."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Eliminando o ficheiro de contido temporal"
    )
@@ -14053,10 +13985,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Restableceuse o antigo estado de gardado."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Sombreadores: a restaurar o predefinido de sombreado por defecto a"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14301,14 +14229,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Fallou o cálculo do tamaño da ventana gráfica. Seguirá utilizando datos en bruto. Probablemente isto non funcione ben..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Produciuse un erro ao expulsar a bandexa do disco virtual."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Produciuse un erro ao pechar a bandexa do disco virtual."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14567,8 +14487,44 @@ MSG_HASH(
    "Truco eliminado."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Produciuse un erro ao configurar o disco."
+   MSG_DISK_CLOSED,
+   "Bandexa de disco virtual pechada."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Produciuse un erro ao pechar a bandexa do disco virtual."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Bandexa de disco virtual expulsada."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Produciuse un erro ao expulsar a bandexa do disco virtual."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Eliminouse o disco da bandexa."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Produciuse un erro ao eliminar o disco da bandexa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Non se seleccionou ningún disco"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disco anexo"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Produciuse un erro ao engadir o disco"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Colocación do disco na bandexa"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

@@ -2078,7 +2078,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Вертикальная частота обновления экрана. Используется для вычисления корректной частоты дискретизации звука. Игнорируется при включении опции 'Рендеринг в отдельном потоке'."
+   "Вертикальная частота обновления экрана устройства. Используется для вычисления подходящей частоты дискретизации звука. Игнорируется при включении опции 'Рендеринг в отдельном потоке'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -5034,7 +5034,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Настройки счётчика времени кадра. Действует только при откл. опции 'Рендеринг в отдельном потоке'."
+   "Настройки счётчика времени кадра. Действуют только при отключении опции 'Рендеринг в отдельном потоке'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7325,7 +7325,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Показывать информацию по загружаемой игре и текущий прогресс пользователя. В режиме 'Для всех опознанных игр' будет отображаться сводка по играм без доступных достижений."
+   "Показывать информацию по загруженной игре и текущий прогресс пользователя. В режиме 'Для всех опознанных игр' будет отображаться сводка по играм без доступных достижений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7802,7 +7802,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Добавлять для записей в плейлистах тег привязки ядра (при наличии). Игнорируется, если включено отображение меток в плейлистах."
+   "Добавлять для записей в плейлистах тег привязки ядра (при наличии). Игнорируется при включении отображения меток в плейлистах."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7910,7 +7910,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Выбор типа времени запуска, отображаемого в метках плейлиста. Соответствующая опция должна быть включена в настройках 'Сохранений'."
+   "Выбор типа времени запуска, отображаемого в метках плейлиста. Соответствующая опция должна быть включена в меню 'Сохранения'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8095,7 +8095,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Разрешать Discord отображать сведения о запущенном контенте.\nДоступно только для официального настольного клиента."
+   "Разрешать Discord отображать сведения о запущенном контенте. Доступно только для официального настольного клиента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8492,7 +8492,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Добавить звуковую дорожку в доступный потоковый слот.\nНе учитывается, если нет доступных слотов."
+   "Добавить данную звуковую дорожку в доступный слот потока. Игнорируется при отсутствии свободных слотов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8500,7 +8500,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Добавить звуковую дорожку в доступный потоковый слот и воспроизвести.\nНе учитывается, если нет доступных слотов."
+   "Добавить данную звуковую дорожку в доступный слот потока и воспроизвести. Игнорируется при отсутствии свободных слотов."
    )
 
 /* Netplay */
@@ -9874,7 +9874,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Выберите новый диск из файловой системы и добавьте его в списке индекса.\nПримечание: данная функция является устаревшей. Для игр на нескольких дисках рекомендуется использовать M3U-плейлисты."
+   "Выберите новый диск из файловой системы и добавьте его в списке индекса."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Выберите новый диск из файловой системы и добавьте его в списке индекса.\nПримечание: данная функция является устаревшей. Для мультидисковых игр рекомендуется использовать плейлисты в формате M3U."
    )
 
 /* Quick Menu > Shaders */
@@ -12848,10 +12852,6 @@ MSG_HASH(
    "Счётчики ядра"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Диск не выбран"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Счётчики фронтенда"
    )
@@ -13174,10 +13174,6 @@ MSG_HASH(
    "Отсутствуют аргументы и встроенное меню, загружаю справку..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Установка диска в привод"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Ожидание клиента..."
    )
@@ -13483,14 +13479,6 @@ MSG_HASH(
    "Привязка ядра для записей плейлиста сброшена."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Добавлен диск"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Не удалось добавить диск"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Каталог приложения"
    )
@@ -13663,14 +13651,6 @@ MSG_HASH(
    "Отключить устройство от действительного порта."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Закрыт лоток виртуального cd-привода."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Открыт лоток виртуального cd-привода."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Скачивание"
    )
@@ -13825,10 +13805,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Не удалось получить данные SRAM со стороны хоста."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Не удалось извлечь диск."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14207,10 +14183,6 @@ MSG_HASH(
    "Настройки привязок сброшены к стандартным значениям."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Диск извлечён."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Удалён временный файл контента"
    )
@@ -14225,10 +14197,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Восстановлено старое сохранение."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Шейдеры: восстановлен стандартный пресет шейдера"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14481,14 +14449,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Не удалось рассчитать размеры области просмотра. Будут использованы необработанные данные. Возможны ошибки."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Не удалось открыть лоток виртуального cd-привода."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Не удалось закрыть лоток виртуального cd-привода."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14747,8 +14707,44 @@ MSG_HASH(
    "Чит удалён."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Не удалось установить диск."
+   MSG_DISK_CLOSED,
+   "Закрыт лоток виртуального cd-привода."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Не удалось закрыть лоток виртуального cd-привода."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Открыт лоток виртуального cd-привода."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Не удалось открыть лоток виртуального cd-привода."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Диск извлечён."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Не удалось извлечь диск."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Диск не выбран"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Добавлен диск"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Не удалось добавить диск"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Установка диска в привод"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

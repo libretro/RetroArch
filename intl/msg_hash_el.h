@@ -4764,10 +4764,6 @@ MSG_HASH(
    "Μετρητές Πυρήνων"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Δεν επιλέχθηκε δίσκος"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
    "Οριζόντιο Μενού"
    )
@@ -4912,10 +4908,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
    "Λήφθηκε σύνδεση από: \"%s (%s)\""
-   )
-MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Τοποθέτηση δίσκου στην μονάδα δίσκου"
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
@@ -5285,6 +5277,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    "Λανθασμένος κωδικός."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Δεν επιλέχθηκε δίσκος"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Τοποθέτηση δίσκου στην μονάδα δίσκου"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,

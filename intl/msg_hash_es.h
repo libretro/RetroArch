@@ -2070,7 +2070,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Ajusta la frecuencia de actualización vertical de tu pantalla para calcular la velocidad de audio.\nEste valor se ignorará si la opción «Vídeo multihilo» está activada."
+   "Ajusta la frecuencia de actualización vertical de tu pantalla para calcular la velocidad de audio. Este valor se ignorará si la opción «Vídeo multihilo» está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -5014,7 +5014,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Cambia los ajustes del contador de duración de fotogramas.\nEste valor solo hará efecto al desactivar el vídeo multihilo."
+   "Cambia los ajustes del contador de duración de fotogramas. Este valor solo hará efecto al desactivar el vídeo multihilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7297,7 +7297,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Muestra información sobre el juego que se está cargando y el progreso actual del usuario.\n«Todos los juegos identificados» mostrará el resumen de aquellos juegos que no tengan logros publicados."
+   "Muestra información sobre el juego que se está cargando y el progreso actual del usuario. «Todos los juegos identificados» mostrará el resumen de aquellos juegos que no tengan logros publicados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7774,7 +7774,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Indica si se deben asociar elementos de las listas de reproducción con el núcleo actual asociado (si existe).\nEste ajuste se ignorará si se activan las subetiquetas en las listas."
+   "Indica si se deben asociar elementos de las listas de reproducción con el núcleo actual asociado (si existe). Este ajuste se ignorará si se activan las subetiquetas en las listas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7882,7 +7882,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Selecciona el tipo de registro del tiempo de juego que se mostrará en las subetiquetas de las listas de reproducción.\nEs necesario activar el registro correspondiente dentro de las opciones de Guardado."
+   "Selecciona el tipo de registro del tiempo de juego que se mostrará en las subetiquetas de las listas de reproducción. Es necesario activar el registro correspondiente dentro de las opciones de Guardado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8063,7 +8063,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permite que la aplicación Discord pueda mostrar más información sobre el contenido que estés ejecutando.\nSolo funcionará con el cliente de escritorio de Discord."
+   "Permite que la aplicación Discord pueda mostrar más información sobre el contenido que estés ejecutando. Solo funcionará con el cliente de escritorio de Discord."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8460,7 +8460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Agrega esta pista de audio a un espacio de secuencias de audio.\nSi no hay espacios disponibles, se ignorará."
+   "Agrega esta pista de audio a un espacio de secuencias de audio. Si no hay espacios disponibles, se ignorará."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8468,7 +8468,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Agrega esta pista de audio a un espacio de secuencias de audio y la reproduce.\nSi no hay espacios disponibles, se ignorará."
+   "Agrega esta pista de audio a un espacio de secuencias de audio y la reproduce. Si no hay espacios disponibles, se ignorará."
    )
 
 /* Netplay */
@@ -9838,6 +9838,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Selecciona un disco nuevo del sistema de archivos y lo añade a la lista del índice."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    "Selecciona un disco nuevo del sistema de archivos y lo añade a la lista del índice.\nNOTA: Esta es una característica obsoleta. Se recomienda utilizar listas de reproducción M3U con juegos multidisco."
    )
 
@@ -12828,10 +12832,6 @@ MSG_HASH(
    "Contadores de núcleo"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "No se ha seleccionado un disco"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Contadores del front-end"
    )
@@ -13150,10 +13150,6 @@ MSG_HASH(
    "No se presentaron argumentos y no hay menú integrado, mostrando ayuda..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Introduciendo disco en bandeja"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Esperando al cliente..."
    )
@@ -13459,14 +13455,6 @@ MSG_HASH(
    "Se ha restablecido la asociación del núcleo del elemento de la lista."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disco añadido"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Error al añadir el disco"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Directorio de la aplicación"
    )
@@ -13635,14 +13623,6 @@ MSG_HASH(
    "Desconecte el dispositivo desde un puerto válido."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Se ha cerrado la bandeja de disco virtual."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Se ha abierto la bandeja de disco virtual."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Descargando"
    )
@@ -13793,10 +13773,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Error al recibir los datos SRAM del servidor."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Error al expulsar el disco de la bandeja."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14175,10 +14151,6 @@ MSG_HASH(
    "Todas las opciones de reasignaciones de entrada han sido restablecidas."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "El disco ha sido retirado de la bandeja."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Eliminando el contenido temporal"
    )
@@ -14193,10 +14165,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "El antiguo guardado rápido ha sido restaurado."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: restaurando el preajuste predeterminado en"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14445,14 +14413,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "¡Error al calcular el tamaño del área de visualización! Se continuará utilizando datos en bruto. Probablemente no funcionará bien..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Error al abrir la bandeja de discos virtual."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Error al cerrar la bandeja de discos virtual."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14711,8 +14671,44 @@ MSG_HASH(
    "Truco eliminado."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Error al asignar disco."
+   MSG_DISK_CLOSED,
+   "Se ha cerrado la bandeja de disco virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Error al cerrar la bandeja de discos virtual."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Se ha abierto la bandeja de disco virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Error al abrir la bandeja de discos virtual."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "El disco ha sido retirado de la bandeja."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Error al expulsar el disco de la bandeja."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "No se ha seleccionado un disco"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disco añadido"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Error al añadir el disco"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Introduciendo disco en bandeja"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

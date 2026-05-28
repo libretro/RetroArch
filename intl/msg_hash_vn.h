@@ -2078,7 +2078,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Tốc độ làm mới theo chiều dọc của màn hình. Được sử dụng để tính toán tốc độ đầu vào âm thanh phù hợp.\nThông tin này sẽ bị bỏ qua nếu 'Video luồng' được bật."
+   "Tần số quét dọc của màn hình. Được dùng để tính toán tốc độ đầu vào âm thanh phù hợp. Thiết lập này sẽ bị bỏ qua nếu bật “Video phân luồng”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -5038,7 +5038,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Thay đổi các cài đặt ảnh hưởng đến bộ đếm thời gian khung hình.\nChỉ hoạt động khi video đa luồng bị tắt."
+   "Thay đổi các thiết lập ảnh hưởng đến bộ đếm thời gian khung hình. Chỉ hoạt động khi Video phân luồng bị tắt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -7337,7 +7337,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Hiển thị thông tin về trò chơi đang được tải và tiến trình hiện tại của người dùng.\n“Đã nhận diện tất cả trò chơi” sẽ hiển thị tóm tắt cho các trò chơi chưa có thành tựu công bố."
+   "Hiển thị thông tin về trò chơi đang được tải và tiến trình hiện tại của người dùng. “Tất cả trò chơi đã nhận diện” sẽ hiển thị tóm tắt cho các trò chơi chưa có thành tích được phát hành."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7814,7 +7814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Chỉ định khi nào gắn nhãn các mục trong danh sách phát với core hiện đang liên kết (nếu có).\nCài đặt này bị bỏ qua khi bật nhãn phụ của danh sách phát."
+   "Chỉ định thời điểm gắn lõi hiện được liên kết (nếu có) vào các mục trong danh sách phát. Thiết lập này sẽ bị bỏ qua khi bật nhãn phụ cho danh sách phát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7918,7 +7918,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Chọn loại bản ghi thời lượng hiển thị trên nhãn phụ của danh sách phát.\nBản ghi thời lượng tương ứng phải được bật trong menu tùy chọn ‘Lưu’."
+   "Chọn loại bản ghi thời gian hoạt động sẽ hiển thị trên nhãn phụ của danh sách phát. Bản ghi thời gian hoạt động tương ứng phải được bật trong menu tùy chọn “Lưu dữ liệu”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8103,7 +8103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Cho phép ứng dụng Discord hiển thị dữ liệu về trò chơi đã chơi.\nChỉ có sẵn với phiên bản giao diện máy tính gốc."
+   "Cho phép ứng dụng Discord hiển thị dữ liệu về nội dung đang được phát hoặc chơi. Chỉ khả dụng với ứng dụng máy tính gốc."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8508,7 +8508,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Thêm bản nhạc này vào một khe luồng âm thanh khả dụng.\nNếu không có khe nào hiện có sẵn, thao tác sẽ bị bỏ qua."
+   "Thêm bản âm thanh này vào một khe luồng âm thanh còn trống. Nếu hiện không có khe nào khả dụng thì sẽ bị bỏ qua."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8516,7 +8516,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Thêm bản nhạc này vào một khe luồng âm thanh khả dụng và phát.\nNếu không có khe nào hiện có sẵn, thao tác sẽ bị bỏ qua."
+   "Thêm bản âm thanh này vào một khe luồng âm thanh còn trống và phát nó. Nếu hiện không có khe nào khả dụng thì sẽ bị bỏ qua."
    )
 
 /* Netplay */
@@ -9886,7 +9886,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Chọn một đĩa mới từ hệ thống tệp và thêm nó vào cuối danh sách chỉ mục.\nLƯU Ý: Đây là tính năng cũ (legacy). Thay vào đó, nên dùng playlist M3U cho các game nhiều đĩa."
+   "Chọn một đĩa mới từ hệ thống tập tin và thêm nó vào danh sách chỉ mục."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Chọn một đĩa mới từ hệ thống tập tin và thêm nó vào danh sách chỉ mục.\nLƯU Ý: Đây là tính năng cũ. Thay vào đó, nên dùng danh sách phát M3U cho các trò chơi nhiều đĩa."
    )
 
 /* Quick Menu > Shaders */
@@ -12900,10 +12904,6 @@ MSG_HASH(
    "Bộ đếm Core"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Chưa chọn đĩa"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Bộ đếm Giao diện"
    )
@@ -13226,10 +13226,6 @@ MSG_HASH(
    "Không có tham số nào được cung cấp và không có menu tích hợp, hiển thị hướng dẫn..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Đang đặt đĩa vào khay"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Đang chờ kết nối từ client..."
    )
@@ -13535,14 +13531,6 @@ MSG_HASH(
    "Liên kết core trong mục playlist đã được đặt lại."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Đã thêm đĩa"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Không thể thêm đĩa"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Application Danh mục"
    )
@@ -13715,14 +13703,6 @@ MSG_HASH(
    "Ngắt kết nối thiết bị khỏi cổng hợp lệ."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Đã đóng khay đĩa ảo."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Đã nhả khay đĩa ảo."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Đang tải xuống"
    )
@@ -13877,10 +13857,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Không thể nhận dữ liệu SRAM từ máy chủ."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Không thể lấy đĩa ra khỏi khay."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14259,10 +14235,6 @@ MSG_HASH(
    "Tất cả tùy chọn định nghĩa phím đã được đặt lại mặc định."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Đĩa đã được lấy ra khỏi khay."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Đang xóa tệp trò chơi tạm thời"
    )
@@ -14277,10 +14249,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Đã phục hồi trạng thái lưu cũ."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: khôi phục preset shader mặc định về"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14533,14 +14501,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Tính toán kích thước khung nhìn không thành công! Sẽ tiếp tục sử dụng dữ liệu thô. Có thể cách này sẽ không hoạt động chính xác..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Không thể nhả khay đĩa ảo."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Không thể đóng khay đĩa ảo."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14799,8 +14759,44 @@ MSG_HASH(
    "Cheat đã bị xóa."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Không thể đặt đĩa."
+   MSG_DISK_CLOSED,
+   "Đã đóng khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Không thể đóng khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Đã nhả khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Không thể nhả khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Đĩa đã được lấy ra khỏi khay."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Không thể lấy đĩa ra khỏi khay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Chưa chọn đĩa"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Đã thêm đĩa"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Không thể thêm đĩa"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Đang đặt đĩa vào khay"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

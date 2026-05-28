@@ -7384,10 +7384,6 @@ MSG_HASH(
    "العدادات الأساسية"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "لا يوجد قرص محدد"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "عدادات الواجهة"
    )
@@ -7626,10 +7622,6 @@ MSG_HASH(
    "لا توجد حجج مقدمة ولا قائمة مدمجة، عرض المساعدة..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "إعداد القرص في الصبغة"
-   )
-MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "لقد غادرت اللعبة"
    )
@@ -7821,14 +7813,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESET_CORE_ASSOCIATION,
    "تم إعادة تعيين الرابطة الأساسية لإدخال قائمة التشغيل."
-   )
-MSG_HASH(
-   MSG_APPENDED_DISK,
-   "قرص ملحق"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "فشل في إلحاق القرص"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
@@ -8085,10 +8069,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "فشل استلام بيانات SRAM من المضيف."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "فشل في إزالة القرص من اللعبة."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -8351,10 +8331,6 @@ MSG_HASH(
    "تمت إزالة ملف Remap بنجاح."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "سحب القرص من القارئ."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "إزالة ملف المحتوى المؤقت"
    )
@@ -8369,10 +8345,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "استعادة حالة الحفظ القديمة."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "الظلال: استعادة الإعداد المسبق للمزج الافتراضي إلى"
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
@@ -8665,6 +8637,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "تم حذف الغش."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "سحب القرص من القارئ."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "فشل في إزالة القرص من اللعبة."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "لا يوجد قرص محدد"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "قرص ملحق"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "فشل في إلحاق القرص"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "إعداد القرص في الصبغة"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,

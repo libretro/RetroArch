@@ -1889,10 +1889,6 @@ MSG_HASH(
    "Vertikální obnovovací frekvence"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikální obnovovací frekvence obrazovky. Používá se k výpočtu vhodné vstupní frekvence zvuku.\nTento údaj bude ignorován, pokud je povolena funkce \"Threaded Video\"."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Odhadovaná obnovovací frekvence obrazovky"
    )
@@ -4361,10 +4357,6 @@ MSG_HASH(
    "Počítadlo času snímku"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Změna nastavení ovlivňujícího počítadlo času snímků.\nAktivní pouze při vypnutém vláknovém videu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "Rychlost posunu vpřed"
    )
@@ -6524,10 +6516,6 @@ MSG_HASH(
    "Přehled spuštění"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Zobrazí informace o načítané hře a aktuálním postupu uživatele.\n'Všechny identifikované hry' zobrazí souhrn pro hry bez zveřejněných úspěchů."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Všechny identifikované hry"
    )
@@ -6993,10 +6981,6 @@ MSG_HASH(
    "Zobrazení přidružených jader v playlistu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Určete, kdy se mají položky v playlistu označit aktuálně přidruženým jádrem (pokud existuje).\nToto nastavení se ignoruje, pokud jsou povoleny podznačky v playlistu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Zobrazit podnabídky playlistu"
    )
@@ -7095,10 +7079,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Délka trvání dílčího štítku playlistu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Zvolte, který typ záznamu protokolu běhu se má zobrazit na podznačkách playlistu.\nPříslušný protokol běhu musí být povolen v nabídce možností 'Uložení'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7276,10 +7256,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Discord bohatá presence"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Umožňuje aplikaci Discord zobrazovat údaje o přehrávaném obsahu.\nK dispozici pouze s nativním desktopovým klientem."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -7671,16 +7647,8 @@ MSG_HASH(
    "Přidat do mixeru"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Přidejte tuto zvukovou stopu do dostupného slotu pro zvukový proud.\nPokud nejsou aktuálně k dispozici žádné sloty, bude ignorována."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Přidat do mixéru a přehrát"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Přidejte tuto zvukovou stopu do dostupného slotu pro zvukový proud a přehrajte ji.\nPokud nejsou aktuálně k dispozici žádné sloty, bude ignorována."
    )
 
 /* Netplay */
@@ -11684,10 +11652,6 @@ MSG_HASH(
    "Čítače jádra"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Není vybrán žádný disk"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Čítače Frontendu"
    )
@@ -11990,10 +11954,6 @@ MSG_HASH(
    "Nejsou zadány žádné argumenty a není zabudována žádná nabídka, zobrazuje se nápověda..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Nastavení disku v zásobníku"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Čekání na klienta..."
    )
@@ -12283,14 +12243,6 @@ MSG_HASH(
    "Sdružení pro vstup jádra do playlistu bylo resetováno."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Připojený disk"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Připojení disku se nezdařilo"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Adresář aplikací"
    )
@@ -12451,14 +12403,6 @@ MSG_HASH(
    "Odpojit zařízení od platného portu."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Zavřený zásobník virtuálních disků."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Vysunutý zásobník virtuálního disku."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Stahování"
    )
@@ -12593,10 +12537,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Nepodařilo se získat data SRAM od hostitele."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Nepodařilo se odstranit disk z lišky."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -12931,10 +12871,6 @@ MSG_HASH(
    "Všechny možnosti přemapování vstupů se vrátí na výchozí hodnoty."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Vyjmutí disku z přihrádky."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Odstraňování dočasného obsahu souboru"
    )
@@ -12949,10 +12885,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Obnovení starší uložení pozice."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shadery: obnovení výchozí předvolby shaderu na"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13169,14 +13101,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Výpočet velikosti zobrazení se nezdařil! Bude nadále používat nezpracovaná data. To pravděpodobně nebude fungovat správně..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Nepodařilo se vysunout zásobník virtuálního disku."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Nepodařilo se zavřít zásobník virtuálních disků."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -13431,8 +13355,44 @@ MSG_HASH(
    "Cheat odstraněn."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Nepodařilo se nastavit disk."
+   MSG_DISK_CLOSED,
+   "Zavřený zásobník virtuálních disků."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Nepodařilo se zavřít zásobník virtuálních disků."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Vysunutý zásobník virtuálního disku."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Nepodařilo se vysunout zásobník virtuálního disku."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Vyjmutí disku z přihrádky."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Nepodařilo se odstranit disk z lišky."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Není vybrán žádný disk"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Připojený disk"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Připojení disku se nezdařilo"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Nastavení disku v zásobníku"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

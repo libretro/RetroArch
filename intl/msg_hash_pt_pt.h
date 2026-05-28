@@ -1849,10 +1849,6 @@ MSG_HASH(
    "Taxa de atualização"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Taxa de atualização vertical do ecrã. Usado para calcular uma taxa de entrada de áudio apropriada.\nIsto será ignorado se \"Vídeo segmentado\" estiver ativado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Taxa de atualização estimada do ecrã"
    )
@@ -4602,10 +4598,6 @@ MSG_HASH(
    "O ficheiro já existe. A guardar no buffer de cópia de segurança"
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Colocando o disco na área de notificação"
-   )
-MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Você saiu do jogo"
    )
@@ -4669,10 +4661,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONNECTION_SLOT,
    "Vaga para ligação"
-   )
-MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disco anexado"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
@@ -4909,10 +4897,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Falha ao receber os dados da SRAM do anfitrião."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Falha ao remover o disco da área de notificações."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -5163,10 +5147,6 @@ MSG_HASH(
    "Remapeamento do ficheiro guardado com sucesso."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Disco removido da área de notificação."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Removendo conteúdo temporário do ficheiro"
    )
@@ -5181,10 +5161,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Gravação do estado antigo restaurada."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Sombreamento: restaurando padrões de pré-definição de sombreamento em"
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
@@ -5419,8 +5395,20 @@ MSG_HASH(
    "Correspondência eliminada."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Falha ao definir o disco."
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Disco removido da área de notificação."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Falha ao remover o disco da área de notificações."
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disco anexado"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Colocando o disco na área de notificação"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

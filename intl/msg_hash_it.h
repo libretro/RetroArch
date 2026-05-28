@@ -1961,10 +1961,6 @@ MSG_HASH(
    "Frequenza di aggiornamento verticale"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Frequenza di aggiornamento verticale dello schermo. Usata per calcolare una frequenza di ingresso audio adatta.\nVerrà ignorata se 'Video multithread' è abilitato."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Frequenza di aggiornamento stimata dello schermo"
    )
@@ -4801,10 +4797,6 @@ MSG_HASH(
    "Contatore di tempo dei fotogrammi"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Modifica le impostazioni che influenzano il contatore di tempo fotogrammi.\nAttivo solo quando il video filettato è disabilitato."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "Velocità dell'Avanzamento rapido"
    )
@@ -7036,10 +7028,6 @@ MSG_HASH(
    "Riepilogo all'avvio"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Mostra informazioni sul gioco caricato e sullo stato di progresso attuale dell'utente.\n'Tutti i giochi identificati' mostreranno un riepilogo per i giochi senza obiettivi pubblicati."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Tutti I Giochi Identificati"
    )
@@ -7513,10 +7501,6 @@ MSG_HASH(
    "Mostra i core associati nelle playlist"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Specifica quando etichettare le voci della scaletta con il nucleo attualmente associato (se ce ne sono).\nQuesta impostazione viene ignorata quando i sottomarini della scaletta sono abilitati."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    "Mostra Sotto-Etichette delle scalette"
    )
@@ -7615,10 +7599,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Durata delle sotto-etichetta della scaletta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Seleziona il tipo di registrazione del tempo di gioco da visualizzare nelle sotto-etichetta della scaletta.\nIl corrispondente rapporto del tempo di gioco deve essere abilitato tramite il menu delle opzioni 'Salvataggio'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7792,10 +7772,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Abilita la Rich Presence su Discord"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Consenti all'app Discord di mostrare i dati relativi al contenuto riprodotto.\nDisponibile solo con il client desktop nativo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8183,16 +8159,8 @@ MSG_HASH(
    "Aggiungi al mixer"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Aggiungi questa traccia audio a uno slot disponibile per il flusso audio.\nSe non ci sono slot disponibili, verrà ignorato."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    "Aggiunge al mixer e riproduci"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Aggiunge questa traccia audio a uno slot di flusso audio disponibile e riproducibile.\nSe non sono disponibili slot, questa verrà ignorata."
    )
 
 /* Netplay */
@@ -9183,10 +9151,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
    "Premere Sinistra o Destra per cambiare la dimensione del bit."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "Big Endian: 258 = 0x0102\nPiccolo Endian: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -12328,10 +12292,6 @@ MSG_HASH(
    "Contatori di core"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Nessun disco selezionato"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Contatori di frontend"
    )
@@ -12624,10 +12584,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "Nessun argomento fornito e nessun menu integrato, mostrando aiuto..."
-   )
-MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Impostazioni del disco nel lettore"
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
@@ -12935,14 +12891,6 @@ MSG_HASH(
    "L'associazione core della voce della playlist è stata reimpostata."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Disco aggiunto"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Impossible aggiungere il disco"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Applicazione in corso della Directory"
    )
@@ -13115,14 +13063,6 @@ MSG_HASH(
    "Disconnessione del dispositivo da una porta valida"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Vassoio disco virtuale chiuso."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Vassoio disco virtuale espulso."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Scaricamento in corso del file"
    )
@@ -13277,10 +13217,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Impossibile ricevere dati SRAM dall'host."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Impossibile rimuovere il disco dall'unità."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -13659,10 +13595,6 @@ MSG_HASH(
    "Tutte le opzioni di remapping di input resettate al predefinito."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Rimosso il disco dal vassoio."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Rimosso un file di contenuto temporaneo"
    )
@@ -13677,10 +13609,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Ripristinato un vecchio salvataggio rapido."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shader: ripristino dello shader predefinito preimpostato su"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13925,14 +13853,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Il calcolo della dimensione di visualizzazione è fallito! Continuerà ad utilizzare dati grezzi. Questo probabilmente non funzionerà correttamente..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Impossibile espellere il vassoio del disco virtuale."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Chiusura del vassoio del disco virtuale non riuscita."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14191,8 +14111,44 @@ MSG_HASH(
    "Trucco cancellato."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Impostazione del disco non riuscita."
+   MSG_DISK_CLOSED,
+   "Vassoio disco virtuale chiuso."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Chiusura del vassoio del disco virtuale non riuscita."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Vassoio disco virtuale espulso."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Impossibile espellere il vassoio del disco virtuale."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Rimosso il disco dal vassoio."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Impossibile rimuovere il disco dall'unità."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Nessun disco selezionato"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Disco aggiunto"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Impossible aggiungere il disco"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Impostazioni del disco nel lettore"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
