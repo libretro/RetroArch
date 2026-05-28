@@ -248,6 +248,12 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 
 int cheat_manager_search_exact(rarch_setting_t *setting, size_t idx, bool wraparound);
 
+int cheat_manager_search_exact_input(rarch_setting_t *setting, size_t idx, bool wraparound);
+
+int cheat_manager_search_eqplus_input(rarch_setting_t *setting, size_t idx, bool wraparound);
+
+int cheat_manager_search_eqminus_input(rarch_setting_t *setting, size_t idx, bool wraparound);
+
 int cheat_manager_search_lt(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 int cheat_manager_search_gt(rarch_setting_t *setting, size_t idx, bool wraparound);

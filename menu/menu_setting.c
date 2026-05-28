@@ -349,6 +349,7 @@ enum settings_list_type
    SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
    SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
    SETTINGS_LIST_USER_ACCOUNTS_FACEBOOK,
+   SETTINGS_LIST_USER_ACCOUNTS_KICK,
    SETTINGS_LIST_DIRECTORY,
    SETTINGS_LIST_PRIVACY,
    SETTINGS_LIST_MIDI,
@@ -3053,6 +3054,9 @@ static size_t setting_get_string_representation_streaming_mode(
          case STREAMING_MODE_FACEBOOK:
             return strlcpy(s, msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK), len);
+         case STREAMING_MODE_KICK:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_KICK), len);
          case STREAMING_MODE_LOCAL:
             return strlcpy(s, msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL), len);
@@ -3733,6 +3737,30 @@ static size_t setting_get_string_representation_uint_menu_timedate_date_separato
             return strlcpy(s, "'.'", len);
       }
    }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_time_show(
+   rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case TIME_SHOW_HM:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIMEDATE_HM), len);
+         case TIME_SHOW_HMS:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS), len);
+         case TIME_SHOW_HM_AMPM:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM), len);
+         case TIME_SHOW_HMS_AMPM:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM), len);
+         case TIME_SHOW_OFF:
+         default:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+      }
+   }
+
    return 0;
 }
 
@@ -8543,8 +8571,13 @@ static void general_write_handler(rarch_setting_t *setting)
                custom_vp->x         = 0;
                custom_vp->y         = 0;
 
-               base_width           = (geom->base_width)  ? geom->base_width  : video_st->frame_cache_width;
-               base_height          = (geom->base_height) ? geom->base_height : video_st->frame_cache_height;
+               {
+                  unsigned cache_w  = 0;
+                  unsigned cache_h  = 0;
+                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
+                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
+                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+               }
 
                if (base_width <= 4 || base_height <= 4)
                {
@@ -8752,11 +8785,35 @@ static void general_write_handler(rarch_setting_t *setting)
          if (!settings->bools.video_fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
+      case MENU_ENUM_LABEL_REWIND_ENABLE:
+         {
+            struct menu_state *menu_st = menu_state_get_ptr();
+            /* Toggling rewind support shows or hides the dependent
+             * rewind items (granularity, buffer size, ...), so force
+             * the page to rebuild immediately. The setting value is
+             * already written by the framework before this handler
+             * runs, and the CMD_EVENT_REWIND_TOGGLE attached to the
+             * setting still fires via rarch_cmd below. */
+            menu_st->flags            |= MENU_ST_FLAG_PREVENT_POPULATE
+                                       | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+         }
+         break;
       case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
-         settings->flags                  |= SETTINGS_FLG_MODIFIED;
-         settings->uints.video_hdr_mode    = *setting->value.target.unsigned_integer;
+         {
+            struct menu_state *menu_st     = menu_state_get_ptr();
+            settings->flags               |= SETTINGS_FLG_MODIFIED;
+            settings->uints.video_hdr_mode = *setting->value.target.unsigned_integer;
 
-         rarch_cmd = CMD_EVENT_REINIT;
+            rarch_cmd                      = CMD_EVENT_REINIT;
+
+            /* Switching HDR on/off shows or hides the dependent HDR
+             * items (paper white, expand gamut, scanlines, ...), so
+             * force the page to rebuild immediately. This fires for
+             * both left/right scroll and dropdown OK selection
+             * because they both invoke setting->change_handler. */
+            menu_st->flags                |= MENU_ST_FLAG_PREVENT_POPULATE
+                                           | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+         }
          break;
       case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
          {
@@ -8794,12 +8851,18 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES:
          {
             video_driver_state_t *video_st               = video_state_get_ptr();
+            struct menu_state *menu_st                   = menu_state_get_ptr();
             settings->flags                              |= SETTINGS_FLG_MODIFIED;
             settings->bools.video_hdr_scanlines          = *setting->value.target.boolean;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_scanlines)
                video_st->poke->set_hdr_scanlines(video_st->data,
                      settings->bools.video_hdr_scanlines);
+
+            /* Scanlines on/off shows or hides the subpixel layout
+             * item, so force the page to rebuild immediately. */
+            menu_st->flags                               |= MENU_ST_FLAG_PREVENT_POPULATE
+                                                          | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_SUBPIXEL_LAYOUT:
@@ -8890,8 +8953,13 @@ static void general_write_handler(rarch_setting_t *setting)
                custom_vp->x         = 0;
                custom_vp->y         = 0;
 
-               base_width           = (geom->base_width)  ? geom->base_width  : video_st->frame_cache_width;
-               base_height          = (geom->base_height) ? geom->base_height : video_st->frame_cache_height;
+               {
+                  unsigned cache_w  = 0;
+                  unsigned cache_h  = 0;
+                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
+                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
+                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+               }
 
                if (base_width <= 4 || base_height <= 4)
                {
@@ -9301,6 +9369,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES:
       case MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC:
       case MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY:
       case MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY:
       case MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLIST_TABS:
       case MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE:
@@ -12003,6 +12072,26 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_autosave_interval;
 #endif
+
+#ifdef HAVE_THREADS
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.savestate_automatic_interval,
+                  MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+                  MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+                  DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_autosave_interval;
+#endif
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.savestate_auto_index,
@@ -12428,10 +12517,10 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.frame_time_counter_reset_after_fastforwarding,
-               MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-               MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-               false,
+               &settings->bools.video_frame_time_sample_gated,
+               MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+               MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+               DEFAULT_FRAME_TIME_SAMPLE_GATED,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -12440,28 +12529,19 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+         /* Toggling this setting hides/shows
+          * 'frame_time_counter_auto_reset' below, so the menu
+          * needs a rebuild on change. */
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.frame_time_counter_reset_after_load_state,
-               MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-               MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-               false,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.frame_time_counter_reset_after_save_state,
-               MENU_ENUM_LABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-               MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-               false,
+               &settings->bools.frame_time_counter_auto_reset,
+               MENU_ENUM_LABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+               MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+               DEFAULT_FRAME_TIME_COUNTER_AUTO_RESET,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -12886,8 +12966,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_exact;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact;
-
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_exact_input;
          CONFIG_UINT(
                list, list_info,
                &cheat_manager_state.dummy,
@@ -12986,7 +13065,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_eqplus;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqplus;
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqplus_input;
 
          CONFIG_UINT(
                list, list_info,
@@ -13002,7 +13081,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info,
                0, cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size), 1, true, true);
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_eqminus;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqminus;
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_search_eqminus_input;
 
          CONFIG_UINT(
                list, list_info,
@@ -14766,6 +14845,22 @@ static bool setting_append_list(
                   );
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+#ifdef HAVE_VIDEO_FILTER
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_filter_enable,
+                  MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
             CONFIG_PATH(
                   list, list_info,
                   settings->paths.path_softfilter_plugin,
@@ -14781,7 +14876,8 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_filter;
             MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "filt");
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+                  CMD_EVENT_VIDEO_FILTER_INIT);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             END_SUB_GROUP(list, list_info, parent_group);
@@ -17589,6 +17685,25 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
          menu_settings_list_current_add_range(list, list_info, 1, 512, 1, true, true);
 
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_time_show,
+               MENU_ENUM_LABEL_TIME_SHOW,
+               MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+               DEFAULT_TIME_SHOW,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_time_show;
+         menu_settings_list_current_add_range(list, list_info, 0, TIME_SHOW_LAST - 1, 1, true, true);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.video_statistics_show,
@@ -19604,6 +19719,21 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.menu_xmb_show_horizontal_list,
+                  MENU_ENUM_LABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+                  MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+                  DEFAULT_XMB_SHOW_HORIZONTAL_LIST,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.menu_xmb_show_title_header,
                   MENU_ENUM_LABEL_MENU_XMB_SHOW_TITLE_HEADER,
                   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
@@ -20230,20 +20360,22 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 
 #ifdef HAVE_NETWORKING
-            CONFIG_BOOL(
+            CONFIG_UINT(
                   list, list_info,
-                  &settings->bools.menu_content_show_netplay,
+                  &settings->uints.menu_content_show_netplay,
                   MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY,
                   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
                   DEFAULT_CONTENT_SHOW_NETPLAY,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_add_content_entry_display_type;
+            menu_settings_list_current_add_range(list, list_info, 0, MENU_ADD_CONTENT_ENTRY_DISPLAY_LAST-1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 #endif
 
             CONFIG_UINT(
@@ -21130,6 +21262,21 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_show_confirm,
+               MENU_ENUM_LABEL_MENU_SHOW_CONFIRM,
+               MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+               DEFAULT_MENU_SHOW_CONFIRM,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
 
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -24571,6 +24718,14 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_ACCOUNTS_KICK,
+               MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK,
+               &group_info,
+               &subgroup_info,
+               parent_group);
 #endif
 #endif
 
@@ -24648,6 +24803,34 @@ static bool setting_append_list(
                sizeof(settings->arrays.facebook_stream_key),
                MENU_ENUM_LABEL_FACEBOOK_STREAM_KEY,
                MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               update_streaming_url_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      case SETTINGS_LIST_USER_ACCOUNTS_KICK:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK),
+               parent_group);
+
+         parent_group = MENU_ENUM_LABEL_SETTINGS_STR;
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.kick_stream_key,
+               sizeof(settings->arrays.kick_stream_key),
+               MENU_ENUM_LABEL_KICK_STREAM_KEY,
+               MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
                "",
                &group_info,
                &subgroup_info,
@@ -25869,6 +26052,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
       SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
       SETTINGS_LIST_USER_ACCOUNTS_FACEBOOK,
+      SETTINGS_LIST_USER_ACCOUNTS_KICK,
       SETTINGS_LIST_DIRECTORY,
       SETTINGS_LIST_PRIVACY,
       SETTINGS_LIST_MIDI,

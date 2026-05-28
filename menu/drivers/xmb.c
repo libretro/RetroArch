@@ -128,7 +128,6 @@ enum
 #endif
 #ifdef HAVE_NETWORKING
    XMB_TEXTURE_NETPLAY,
-   XMB_TEXTURE_NETPLAY_ALT,
    XMB_TEXTURE_ROOM,
    XMB_TEXTURE_ROOM_LAN,
    XMB_TEXTURE_ROOM_RELAY,
@@ -481,6 +480,7 @@ typedef struct xmb_handle
    bool show_mouse;
    bool show_screensaver;
    bool show_playlist_tabs;
+   bool show_horizontal_list;
    bool use_ps3_layout;
    bool last_use_ps3_layout;
    bool assets_missing;
@@ -568,6 +568,8 @@ static INLINE float xmb_item_y(const xmb_handle_t *xmb,
 
    if (i < (int)current)
    {
+      if (!xmb->show_horizontal_list)
+         return icon_spacing_vertical * (i - (int)current + xmb->above_subitem_offset);
       if (xmb->depth > 1)
          return icon_spacing_vertical * (i - (int)current + xmb->above_subitem_offset);
       return icon_spacing_vertical    * (i - (int)current + xmb->above_item_offset);
@@ -1165,6 +1167,12 @@ static void xmb_render_messagebox_internal(
    int longest_width                   = 0;
    int usable_width                    = 0;
    unsigned y_position                 = 0;
+   int slice_x                         = 0;
+   int slice_y                         = 0;
+   int slice_w                         = 0;
+   int slice_h                         = 0;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   bool confirm_dialog                 = (menu_st->dialog_st.confirm_cmd) ? true : false;
    bool input_dialog_display_kb        = false;
    size_t wrapped_len                  = 0;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
@@ -1190,17 +1198,16 @@ static void xmb_render_messagebox_internal(
 
    while (start < end && line_count < 512)
    {
-      int width;
       nl = (char *)memchr(start, '\n', end - start);
       if (nl)
          *nl = '\0';
       lines[line_count++] = start;
       if (*start)
       {
-         width = font_driver_get_message_width(
+         int msg_width = font_driver_get_message_width(
                xmb->font, start, (nl ? nl : end) - start, 1.0f);
-         if (width > longest_width)
-            longest_width = width;
+         if (msg_width > longest_width)
+            longest_width = msg_width;
          if (longest_width > usable_width)
             longest_width = usable_width;
       }
@@ -1217,6 +1224,19 @@ static void xmb_render_messagebox_internal(
    x                       = video_width / 2;
    y                       = y_position - (line_count - 1) * line_height / 2;
 
+   /* Narrow font can make the box too narrow for Back & OK */
+   if (confirm_dialog && longest_width < (int)video_width / 4)
+      longest_width = video_width / 4;
+
+   slice_x                 = x - (longest_width / 2) - xmb->margins_dialog;
+   slice_y                 = y + xmb->margins_slice - xmb->margins_dialog;
+   slice_w                 = longest_width + (xmb->margins_dialog * 2);
+   slice_h                 = (line_height * line_count) + (xmb->margins_dialog * 2);
+
+   /* Extra room for confirm buttons */
+   if (confirm_dialog)
+      slice_h             += (line_height * 2);
+
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
@@ -1225,16 +1245,22 @@ static void xmb_render_messagebox_internal(
          userdata,
          video_width,
          video_height,
-         x - (longest_width / 2) - xmb->margins_dialog,
-         y + xmb->margins_slice - xmb->margins_dialog,
-         256, 256,
-         longest_width + (xmb->margins_dialog * 2),
-         (line_height * line_count) + (xmb->margins_dialog * 2),
-         video_width, video_height,
+         slice_x,
+         slice_y,
+         256,
+         256,
+         slice_w,
+         slice_h,
+         video_width,
+         video_height,
          NULL,
-         xmb->margins_slice, xmb->last_scale_factor,
+         xmb->margins_slice,
+         xmb->last_scale_factor,
          xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE],
          mymat);
+
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 
    for (i = 0; i < line_count; i++)
    {
@@ -1260,6 +1286,176 @@ static void xmb_render_messagebox_internal(
             input_st->osk_grid,
             input_st->osk_ptr,
             0xffffffff);
+   }
+
+   if (confirm_dialog)
+   {
+      float frame_color[16]                  = {
+            0.75f, 0.75f, 0.75f, 0.5f,
+            0.75f, 0.75f, 0.75f, 0.5f,
+            0.75f, 0.75f, 0.75f, 0.5f,
+            0.75f, 0.75f, 0.75f, 0.5f,
+      };
+      settings_t  *settings                  = config_get_ptr();
+      bool input_menu_swap_ok_cancel_buttons = settings->bools.input_menu_swap_ok_cancel_buttons;
+      const char *str_back                   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK);
+      const char *str_ok                     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
+      unsigned str_back_width                = font_driver_get_message_width(xmb->font, str_back, strlen(str_back), 1.0f);
+      unsigned str_ok_width                  = font_driver_get_message_width(xmb->font, str_ok, strlen(str_ok), 1.0f);
+      float *col                             = xmb->item_color_base;
+      float scale_factor                     = xmb->last_scale_factor;
+      float icon_size                        = 50 * scale_factor;
+      float icon_padding                     = 10 * scale_factor;
+      float icon_x                           = x - (slice_w / 2) + icon_size + (icon_padding * 4);
+      float icon_y                           = video_height - y + (slice_h / 2) + (xmb->margins_slice / 2);
+      float label_y                          = icon_y - (line_height / 2.2f);
+      int cursor_x                           = icon_x - icon_padding;
+      int cursor_y                           = icon_y - icon_padding - icon_size;
+      int cursor_w                           = icon_size + (icon_padding * 4) + str_back_width;
+      int cursor_h                           = icon_size + (icon_padding * 2);
+
+      gfx_display_set_alpha(col, 0.5f);
+
+      /* Back */
+      if (     xmb->pointer.x >= cursor_x
+            && xmb->pointer.x <= cursor_x + cursor_w
+            && xmb->pointer.y >= cursor_y
+            && xmb->pointer.y <= cursor_y + cursor_h)
+      {
+         menu_st->dialog_st.confirm_hover_back = true;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               cursor_x,
+               cursor_y,
+               cursor_w,
+               cursor_h,
+               video_width,
+               video_height,
+               frame_color,
+               NULL);
+      }
+      else
+         menu_st->dialog_st.confirm_hover_back = false;
+
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      xmb_draw_icon(
+            userdata,
+            p_disp,
+            dispctx,
+            video_width,
+            video_height,
+            true,
+            icon_size,
+            icon_size,
+            input_menu_swap_ok_cancel_buttons
+                  ? xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R]
+                  : xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D],
+            icon_x,
+            icon_y,
+            video_width,
+            video_height,
+            xmb->alpha,
+            0,
+            1,
+            col,
+            xmb->shadow_offset / 2,
+            mymat);
+
+      gfx_display_draw_text(
+            xmb->font2,
+            str_back,
+            icon_x + icon_size + icon_padding,
+            label_y,
+            video_width,
+            video_height,
+            0x444444ff,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+
+      /* OK */
+      icon_x  += slice_w - (icon_size * 2) - (icon_padding * 8) - xmb->margins_dialog - str_ok_width;
+
+      cursor_x = icon_x - icon_padding;
+      cursor_w = icon_size + (icon_padding * 4) + str_ok_width;
+
+      if (     xmb->pointer.x >= cursor_x
+            && xmb->pointer.x <= cursor_x + cursor_w
+            && xmb->pointer.y >= cursor_y
+            && xmb->pointer.y <= cursor_y + cursor_h)
+      {
+         menu_st->dialog_st.confirm_hover_ok = true;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               cursor_x,
+               cursor_y,
+               cursor_w,
+               cursor_h,
+               video_width,
+               video_height,
+               frame_color,
+               NULL);
+      }
+      else
+         menu_st->dialog_st.confirm_hover_ok = false;
+
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      xmb_draw_icon(
+            userdata,
+            p_disp,
+            dispctx,
+            video_width,
+            video_height,
+            true,
+            icon_size,
+            icon_size,
+            input_menu_swap_ok_cancel_buttons
+                  ? xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D]
+                  : xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R],
+            icon_x,
+            icon_y,
+            video_width,
+            video_height,
+            xmb->alpha,
+            0,
+            1,
+            col,
+            xmb->shadow_offset / 2,
+            mymat);
+
+      gfx_display_draw_text(
+            xmb->font2,
+            str_ok,
+            icon_x + icon_size + icon_padding,
+            label_y,
+            video_width,
+            video_height,
+            0x444444ff,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }
 
@@ -1877,7 +2073,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
             &xmb->thumbnails.savestate,
             upscale_threshold);
 
-   xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
+   xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
 }
 
 /* Is called when the pointer position changes
@@ -3235,6 +3431,11 @@ static void xmb_refresh_system_tabs_list(xmb_handle_t *xmb)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
 
+#ifdef HAVE_NETWORKING
+   if (settings->uints.menu_content_show_netplay == MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
+#endif
+
    if (      settings->uints.menu_content_show_add_entry == MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
@@ -3365,6 +3566,7 @@ static void xmb_populate_entries(void *data,
       return;
 
    xmb->show_playlist_tabs            = settings->bools.menu_content_show_playlist_tabs;
+   xmb->show_horizontal_list          = settings->bools.menu_xmb_show_horizontal_list;
 
    xmb->skip_thumbnail_reset          = false;
    if (xmb->is_quick_menu && depth < xmb->old_depth)
@@ -3677,6 +3879,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_MAIN_MENU:
          return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
       case MENU_ENUM_LABEL_SETTINGS_TAB:
+      case MENU_ENUM_LABEL_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_SETTINGS];
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
@@ -5234,7 +5437,7 @@ static int xmb_draw_item(
       if (*entry.value)
       {
          bool found = false;
-         if (memcmp(entry.value, "...", 4) == 0)
+         if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE)))
             found   = true;
          else if (string_starts_with_size(entry.value, "(", STRLEN_CONST("("))
                && string_ends_with(entry.value, ")"))
@@ -6268,6 +6471,22 @@ static enum menu_action xmb_parse_menu_entry_action(
                menu_st->selection_ptr = 0;
                xmb_selection_pointer_changed(xmb, true);
             }
+            else if (!config_get_ptr()->bools.menu_xmb_show_horizontal_list)
+            {
+               /* Reset horizontal list to Main Menu */
+               file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
+               file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+               size_t stack_size          = menu_stack->size;
+
+               if (menu_stack->list[stack_size - 1].label)
+                  free(menu_stack->list[stack_size - 1].label);
+               menu_stack->list[stack_size - 1].label = NULL;
+
+               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+               menu_stack->list[stack_size - 1].type  = MENU_SETTINGS;
+
+               menu_driver_deferred_push_content_list(selection_buf);
+            }
             else if (config_get_ptr()->bools.input_menu_allow_tabs_back)
             {
                /* Jump to Main Menu */
@@ -6639,8 +6858,6 @@ static const char *xmb_texture_path(unsigned id)
 #ifdef HAVE_NETWORKING
       case XMB_TEXTURE_NETPLAY:
          return "netplay.png";
-      case XMB_TEXTURE_NETPLAY_ALT:
-         return "../../../ozone/png/sidebar/netplay.png";
       case XMB_TEXTURE_ROOM:
          return "menu_room.png";
       case XMB_TEXTURE_ROOM_LAN:
@@ -6797,19 +7014,6 @@ static void xmb_context_reset_textures(
    {
       char texpath[PATH_MAX_LENGTH];
       const char *texture_path = xmb_texture_path(i);
-
-#ifdef HAVE_NETWORKING
-      if (     (i == XMB_TEXTURE_NETPLAY)
-            && (menu_xmb_theme == XMB_ICON_THEME_MONOCHROME))
-      {
-         char alt_path[PATH_MAX_LENGTH];
-         fill_pathname_join_special(alt_path,
-               iconpath, xmb_texture_path(XMB_TEXTURE_NETPLAY_ALT),
-               sizeof(alt_path));
-         if (path_is_valid(alt_path))
-            texture_path = xmb_texture_path(XMB_TEXTURE_NETPLAY_ALT);
-      }
-#endif
 
       fill_pathname_join_special(texpath,
             iconpath, texture_path, sizeof(texpath));
@@ -7101,7 +7305,8 @@ static void xmb_render(void *data,
    /* Direction locking for horizontal category dragging */
    if (xmb->pointer.type != MENU_POINTER_DISABLED)
    {
-      if (xmb->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+      if (     xmb->pointer.flags & MENU_INP_PTR_FLG_PRESSED
+            && !*menu_st->driver_data->menu_state_msg)
       {
          if (xmb->drag_mode == XMB_DRAG_DETECTING)
          {
@@ -7124,7 +7329,7 @@ static void xmb_render(void *data,
          {
             /* Only allow horizontal category switching at the top level (depth == 1)
              * When in submenus (depth > 1), horizontal drag is disabled */
-            if (xmb->depth == 1)
+            if (xmb->depth == 1 && xmb->show_horizontal_list)
             {
                /* Apply horizontal drag to categories */
                size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end + 1;
@@ -8597,7 +8802,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       dispctx->blend_begin(userdata);
 
    /* Horizontal tab icons */
-   if (!xmb->assets_missing)
+   if (!xmb->assets_missing && xmb->show_horizontal_list)
    {
       unsigned horizontal_list_size = (xmb->show_playlist_tabs)
             ? (unsigned)xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
@@ -8768,20 +8973,21 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                background_color,
                NULL);
 
-         xmb_draw_no_thumbnail_available(
-               xmb,
-               p_disp,
-               userdata,
-               video_width,
-               video_height,
-               thumb_x,
-               thumb_y,
-               scaled_thumb_width,
-               scaled_thumb_height,
-               shadows_enable,
-               false,
-               xmb_item_color,
-               NULL);
+         if (!(xmb->thumbnails.savestate.flags & GFX_THUMB_FLAG_BG_ONLY))
+            xmb_draw_no_thumbnail_available(
+                  xmb,
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  thumb_x,
+                  thumb_y,
+                  scaled_thumb_width,
+                  scaled_thumb_height,
+                  shadows_enable,
+                  false,
+                  xmb_item_color,
+                  NULL);
       }
    }
    else if (xmb->fullscreen_thumbnails_available && !xmb->show_fullscreen_thumbnails)
@@ -9944,32 +10150,6 @@ static void xmb_context_destroy(void *data)
    menu_screensaver_context_destroy(xmb->screensaver);
 }
 
-static void xmb_fade_out(xmb_handle_t *xmb)
-{
-   if (xmb)
-      xmb->alpha = 0;
-}
-
-static void xmb_fade_in(xmb_handle_t *xmb)
-{
-   gfx_animation_ctx_entry_t anim_entry;
-   uintptr_t tag           = 0;
-
-   if (!xmb)
-      return;
-
-   tag                     = (uintptr_t)&xmb->textures.bg;
-
-   anim_entry.duration     = XMB_DELAY * 1.25f;
-   anim_entry.subject      = &xmb->alpha;
-   anim_entry.easing_enum  = EASING_IN_QUINT;
-   anim_entry.tag          = tag;
-   anim_entry.cb           = NULL;
-   anim_entry.target_value = xmb->items_active_alpha;
-
-   gfx_animation_push(&anim_entry);
-}
-
 static void xmb_toggle(void *userdata, bool menu_on)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)userdata;
@@ -9983,7 +10163,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
    if (!menu_on)
    {
-      xmb_fade_out(xmb);
+      xmb->alpha = 0;
       return;
    }
 
@@ -10009,19 +10189,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
    xmb_toggle_horizontal_list(xmb);
 
-   /* Skip the fade-in on the very first frame after init: at
-    * startup xmb_toggle(true) fires from retroarch_menu_running()
-    * before the first xmb_frame, and xmb_fade_in animates xmb->alpha
-    * from its init value of 0 up to items_active_alpha over ~200ms.
-    * xmb->alpha gates the entire menu including the wallpaper, so
-    * the first ~12 frames render as a fully black screen before the
-    * menu appears. The menu has no prior state to fade in from at
-    * startup, so jump straight to full opacity instead. Subsequent
-    * toggles (menu hotkey from gameplay) are unaffected. */
-   if (xmb->is_first_frame)
-      xmb->alpha = xmb->items_active_alpha;
-   else
-      xmb_fade_in(xmb);
+   xmb->alpha = xmb->items_active_alpha;
 }
 
 static int xmb_deferred_push_content_actions(menu_displaylist_info_t *info)
@@ -10172,7 +10340,7 @@ static int xmb_pointer_up(void *userdata,
    if (xmb->drag_mode == XMB_DRAG_HORIZONTAL || xmb->drag_mode == XMB_DRAG_VERTICAL)
    {
       /* Snap horizontal scrolling to final category position */
-      if (xmb->drag_mode == XMB_DRAG_HORIZONTAL)
+      if (xmb->drag_mode == XMB_DRAG_HORIZONTAL && xmb->show_horizontal_list)
       {
          settings_t *settings      = config_get_ptr();
          bool horizontal_animation = settings->bools.menu_horizontal_animation;

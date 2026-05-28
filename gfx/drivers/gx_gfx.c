@@ -178,9 +178,17 @@ static struct
    GXTexObj obj;
 } g_tex;
 
+/* GX_TF_RGB5A3 stores 16 bpp in 4x4 tiles; convert_texture16
+ * writes two pixels per uint32_t store, so the buffer needs
+ * (max_width * max_height) / 2 uint32_t entries. The largest
+ * RGUI surface gx_set_video_mode hands to convert_texture16
+ * is 560 x 240 (RGUI_ASPECT_RATIO_21_9 cases). The previous
+ * 240*212 sizing overflowed by ~64 KB on 21:9. */
+#define GX_MENU_TEX_MAX_WIDTH  560
+#define GX_MENU_TEX_MAX_HEIGHT 240
 static struct
 {
-   uint32_t data[240 * 212];
+   uint32_t data[(GX_MENU_TEX_MAX_WIDTH * GX_MENU_TEX_MAX_HEIGHT) / 2];
    GXTexObj obj;
 } menu_tex ATTRIBUTE_ALIGN(32);
 
@@ -200,28 +208,30 @@ static size_t display_list_size        = 0;
 
 static GXRModeObj gx_mode;
 
-float verts[16] ATTRIBUTE_ALIGN(32)     = {
+/* All three vertex/colour arrays below are read-only after init.
+ * Move them to .rodata and give them internal linkage. */
+static const float verts[16] ATTRIBUTE_ALIGN(32) = {
    -1,  1, -0.5,
     1,  1, -0.5,
    -1, -1, -0.5,
     1, -1, -0.5,
 };
 
-float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
+static const float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
    0, 0,
    1, 0,
    0, 1,
    1, 1,
 };
 
-u8 color_ptr[16] ATTRIBUTE_ALIGN(32)    = {
+static const u8 color_ptr[16] ATTRIBUTE_ALIGN(32) = {
    0xFF, 0xFF, 0xFF, 0xFF,
    0xFF, 0xFF, 0xFF, 0xFF,
    0xFF, 0xFF, 0xFF, 0xFF,
    0xFF, 0xFF, 0xFF, 0xFF,
 };
 
-unsigned menu_gx_resolutions[][2] = {
+static const unsigned menu_gx_resolutions[][2] = {
    { 0, 0 }, /* Let the system choose its preferred resolution, for NTSC is 640x480 */
    { 512, 192 },
    { 598, 200 },
@@ -714,9 +724,12 @@ static void init_vtx(gx_video_t *gx, const video_info_t *video,
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-   GX_SetArray(GX_VA_POS, verts, 3 * sizeof(float));
-   GX_SetArray(GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
-   GX_SetArray(GX_VA_CLR0, color_ptr, 4 * sizeof(u8));
+   /* GX_SetArray takes void* rather than const void*; the arrays are
+    * read-only from our side, the GP just streams them, so the cast
+    * is well-defined. */
+   GX_SetArray(GX_VA_POS,  (void*)verts,      3 * sizeof(float));
+   GX_SetArray(GX_VA_TEX0, (void*)vertex_ptr, 2 * sizeof(float));
+   GX_SetArray(GX_VA_CLR0, (void*)color_ptr,  4 * sizeof(u8));
 
    GX_SetNumTexGens(1);
    GX_SetNumChans(1);
@@ -1125,26 +1138,26 @@ static void gx_resize(gx_video_t *gx,
 static void gx_blit_line(gx_video_t *gx,
       unsigned x, unsigned y, const char *message)
 {
-   unsigned width, height, h;
-   bool double_width = false;
-   const GXColor b   = { 0x00, 0x00, 0x00, 0xFF };
-   const GXColor w   = { 0xFF, 0xFF, 0xFF, 0xFF };
-
+   /* Null-check before any deref through gx, so the const
+    * initialisers below are safe. */
    if (!gx || !*message)
       return;
-
-   double_width = gx_mode.fbWidth > 400;
-   width        = (double_width ? 2 : 1);
-   height       = FONT_HEIGHT * (gx->double_strike ? 1 : 2);
-
-   for (h = 0; h < height; h++)
    {
-      GX_PokeARGB(x, y + h, b);
-      if (double_width)
-         GX_PokeARGB(x + 1, y + h, b);
-   }
+      const GXColor  b            = { 0x00, 0x00, 0x00, 0xFF };
+      const GXColor  w            = { 0xFF, 0xFF, 0xFF, 0xFF };
+      const bool     double_width = gx_mode.fbWidth > 400;
+      const unsigned width        = double_width ? 2 : 1;
+      const unsigned height       = FONT_HEIGHT * (gx->double_strike ? 1 : 2);
+      unsigned       h;
 
-   x += (double_width ? 2 : 1);
+      for (h = 0; h < height; h++)
+      {
+         GX_PokeARGB(x, y + h, b);
+         if (double_width)
+            GX_PokeARGB(x + 1, y + h, b);
+      }
+
+      x += width;
 
    while (*message)
    {
@@ -1189,8 +1202,9 @@ static void gx_blit_line(gx_video_t *gx,
             GX_PokeARGB(x + (FONT_WIDTH * width) + 1, y + h, b);
       }
 
-      x += FONT_WIDTH_STRIDE * (double_width ? 2 : 1);
+      x += FONT_WIDTH_STRIDE * width;
       message++;
+   }
    }
 }
 
@@ -1519,9 +1533,9 @@ static void gx_get_overlay_interface(void *data,
 
 static void gx_free(void *data)
 {
-#ifdef HAVE_OVERLAY
    gx_video_t *gx = (gx_video_t*)data;
 
+#ifdef HAVE_OVERLAY
    gx_free_overlay(gx);
 #endif
 
@@ -1534,7 +1548,30 @@ static void gx_free(void *data)
 
    if (g_video_cond)
       OSCloseThreadQueue(g_video_cond);
-   g_video_cond = 0;
+   g_video_cond = NULL;
+
+   /* g_tex.data is allocated in init_vtx via memalign(32, ...) and was
+    * previously leaked on every gx_free / re-init pair. */
+   if (g_tex.data)
+   {
+      free(g_tex.data);
+      g_tex.data = NULL;
+   }
+
+   /* Both XFB framebuffers were allocated in setup_video_mode through
+    * memalign + MEM_K0_TO_K1. free() needs the cached alias. */
+   if (gx)
+   {
+      unsigned i;
+      for (i = 0; i < 2; i++)
+      {
+         if (gx->framebuf[i])
+         {
+            free(MEM_K1_TO_K0(gx->framebuf[i]));
+            gx->framebuf[i] = NULL;
+         }
+      }
+   }
 
    free(data);
 }
@@ -1626,9 +1663,13 @@ static bool gx_frame(void *data, const void *frame,
             fb_width,
             fb_height,
             fb_pitch);
+      /* Flush exactly the bytes we wrote: rows * bytes_per_row.
+       * Pre-patch used fb_width * fb_pitch, conflating width and
+       * height and flushing fb_width^2 * 2 bytes, which overshot
+       * by hundreds of KB on 21:9 menus. */
       DCFlushRange(
             menu_tex.data,
-            fb_width * fb_pitch);
+            fb_height * fb_pitch);
    }
 
 #ifdef HAVE_MENU

@@ -164,12 +164,38 @@ private_lane :ra_build_app do |options|
     xcconfig: options[:xcconfig],
     xcodebuild_formatter: 'xcbeautify --renderer github-actions',
     buildlog_path: "buildlog",
+    derived_data_path: "build/DerivedData",
+    archive_path: "build/RetroArch.xcarchive",
+    output_directory: "build",
     export_method: "app-store",
     include_symbols: true,
     export_options: {
       provisioningProfiles: options[:provisioningProfiles]
     }
   )
+end
+
+private_lane :ra_prior_build_in_review do
+  platform_map = { mac: "MAC_OS", ios: "IOS", appletvos: "TV_OS" }
+  plat = platform_map[lane_context[SharedValues::PLATFORM_NAME]]
+  app_id = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
+  in_review = false
+  begin
+    app = Spaceship::ConnectAPI::App.find(app_id)
+    builds = Spaceship::ConnectAPI::Build.all(
+      app_id: app.id,
+      filter: { "preReleaseVersion.platform" => plat },
+      sort: "-uploadedDate",
+      limit: 5
+    )
+    in_review = builds.any? do |b|
+      state = b.beta_app_review_submission&.beta_review_state
+      state == "WAITING_FOR_REVIEW" || state == "IN_REVIEW"
+    end
+  rescue => ex
+    UI.important("Could not check prior build review state (#{ex.message}); proceeding as configured")
+  end
+  in_review
 end
 
 private_lane :ra_upload_to_testflight do |options|
@@ -192,9 +218,15 @@ private_lane :ra_upload_to_testflight do |options|
       UI.message "Using git commit from repo: #{short_hash}"
     end
 
+    make_public = options[:public].nil? || options[:public]
+    if make_public && ra_prior_build_in_review
+      UI.important("A prior build is currently in TestFlight review; uploading without external distribution")
+      make_public = false
+    end
+
     upload_to_testflight(
-      distribute_external: (options[:public].nil? || options[:public]),
-      groups: options[:public].nil? || options[:public] ? ['Invaders', 'Patreons'] : [],
+      distribute_external: make_public,
+      groups: make_public ? ['Invaders', 'Patreons'] : [],
       changelog: "Rebuild frontend for commit #{short_hash}"
     )
   end

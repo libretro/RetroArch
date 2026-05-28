@@ -1461,7 +1461,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Trình điều khiển video để sử dụng."
+   "Trình điều khiển video sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1561,7 +1561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Trình điều khiển âm thanh để sử dụng."
+   "Trình điều khiển âm thanh sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1622,7 +1622,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Trình điều khiển micro để sử dụng."
+   "Trình điều khiển micro sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1659,7 +1659,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Trình điều khiển camera để sử dụng."
+   "Trình điều khiển camera sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
@@ -1667,7 +1667,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Trình điều khiển Bluetooth để sử dụng."
+   "Trình điều khiển Bluetooth sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
@@ -1675,7 +1675,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Trình điều khiển Wi-Fi để sử dụng."
+   "Trình điều khiển Wi-Fi sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1683,7 +1683,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Trình điều khiển vị trí để sử dụng."
+   "Trình điều khiển định vị sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -1711,11 +1711,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Trình điều khiển ghi âm để sử dụng."
+   "Trình điều khiển ghi hình sẽ sử dụng. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Trình điều khiển MIDI để sử dụng."
+   "Trình điều khiển MIDI sẽ sử dụng. (Cần khởi động lại)"
    )
 
 /* Settings > Video */
@@ -1775,6 +1775,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Thay đổi cài đặt đồng bộ hóa video."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Áp dụng bộ lọc video. Đây là một gợi ý và trình điều khiển video không nhất thiết phải thực hiện theo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Bật bộ lọc video"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -2070,7 +2078,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Tốc độ làm mới theo chiều dọc của màn hình. Được sử dụng để tính toán tốc độ đầu vào âm thanh phù hợp.\nThông tin này sẽ bị bỏ qua nếu 'Video luồng' được bật."
+   "Tần số quét dọc của màn hình. Được dùng để tính toán tốc độ đầu vào âm thanh phù hợp. Thiết lập này sẽ bị bỏ qua nếu bật “Video phân luồng”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2577,6 +2585,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Cố gắng duy trì mục tiêu 'Trễ khung hình' mong muốn và giảm thiểu tình trạng mất khung hình. Điểm khởi đầu là 3/4 thời gian khung hình khi 'Trễ khung hình' bằng 0 (Tự động)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Chỉ lấy thời gian khung hình mẫu trong trạng thái ổn định"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Giới hạn việc lấy mẫu “Tốc độ làm mới màn hình ước tính” chỉ trong các khung hình mà nội dung đang chạy ổn định (không ở menu, không bị tạm dừng, không tua nhanh, và thời gian khung hình nằm trong ngưỡng hợp lý). Phần hiển thị chẩn đoán sẽ trở thành một tín hiệu thực sự đáng tin cậy, nhưng đổi lại tốc độ hội tụ sẽ chậm hơn sau khi tải nội dung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -3106,7 +3122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Số lượng người dùng tối đa được RetroArch hỗ trợ."
+   "Số lượng người dùng tối đa được RetroArch hỗ trợ. (Cần khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4044,6 +4060,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Áp dụng bộ lọc video (Chuyển đổi)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Bật/tắt bộ lọc video bằng phần mềm."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Hiển thị FPS (Bật/Tắt)"
    )
@@ -4696,6 +4720,18 @@ MSG_HASH(
    "Tự động lưu SRAM không bay hơi theo khoảng thời gian đều đặn. Tùy chọn này mặc định bị tắt trừ khi được đặt khác. Khoảng thời gian được tính bằng giây. Giá trị 0 sẽ tắt tính năng tự động lưu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Lưu trò chơi: Khoảng thời gian tự động lưu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Tự động lưu trạng thái theo khoảng thời gian định kỳ (tính bằng giây). Đặt thành 0 để tắt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Tự động lưu trạng thái theo khoảng thời gian định kỳ, được tính bằng giây. Điều này hữu ích để tạo các bản sao lưu tiến trình chơi game theo chu kỳ, đặc biệt trên các thiết bị có thể bị đóng đột ngột do pin hoặc các vấn đề khác. Giá trị 0 sẽ tắt tính năng này."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Phát lại: Khoảng thời gian tạo điểm kiểm tra"
    )
@@ -5002,7 +5038,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Thay đổi các cài đặt ảnh hưởng đến bộ đếm thời gian khung hình.\nChỉ hoạt động khi video đa luồng bị tắt."
+   "Thay đổi các thiết lập ảnh hưởng đến bộ đếm thời gian khung hình. Chỉ hoạt động khi Video phân luồng bị tắt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5079,28 +5115,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Đặt lại sau Tua nhanh"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Tự động đặt lại sau khi bị gián đoạn"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Đặt lại bộ đếm thời gian khung hình sau khi tua nhanh."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Đặt lại sau Tải trạng thái"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Đặt lại bộ đếm thời gian khung hình sau khi tải trạng thái."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Đặt lại sau khi Lưu trạng thái"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Đặt lại bộ đếm thời gian khung hình sau khi lưu trạng thái."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Xóa bộ đệm mẫu “Estimated Screen Refresh Rate” sau khi tua nhanh, lưu trạng thái hoặc tải trạng thái. Các thao tác này tạo ra những mẫu thời gian không phản ánh nhịp khung hình bình thường và sẽ làm sai lệch phép đo độ lệch. Đây là cơ chế dọn dẹp theo mức tốt nhất; không có tác dụng khi bật “Sample Frame Time Only In Stable State” (vì tùy chọn này ngăn nhiễu ngay từ nguồn)."
    )
 
 /* Settings > Recording */
@@ -5168,6 +5188,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK,
    "Trò chơi trên Facebook"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_KICK,
+   "Đá ra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
@@ -5757,6 +5781,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    "Hiển thị mức sử dụng bộ nhớ sẽ được cập nhật theo khoảng thời gian đã đặt, tính bằng khung hình."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Hiển thị thời gian"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Hiển thị thời gian hiện tại theo định dạng ưu tiên."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -6402,7 +6434,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Hiển thị menu ‘Trò chơi trực tuyến’."
+   "Hiển thị mục “Netplay” trong Menu chính hoặc trong Danh sách phát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6520,6 +6552,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Hiển thị thông tin bổ sung cho các mục trong menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Hiển thị hộp xác nhận"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Yêu cầu xác nhận trước khi thoát, khởi động lại hoặc đóng nội dung. Khi tắt, các hành động này sẽ diễn ra ngay lập tức."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Hiển thị màn hình khởi động"
@@ -6585,7 +6625,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Hiển thị tùy chọn hoàn tác thao tác lưu/tải trạng thái."
+   "Hiển thị các tùy chọn để hoàn tác lưu/tải trò chơi. Nút Start trên RetroPad sẽ kích hoạt hoàn tác lưu/tải khi bị ẩn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7297,7 +7337,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Hiển thị thông tin về trò chơi đang được tải và tiến trình hiện tại của người dùng.\n“Đã nhận diện tất cả trò chơi” sẽ hiển thị tóm tắt cho các trò chơi chưa có thành tựu công bố."
+   "Hiển thị thông tin về trò chơi đang được tải và tiến trình hiện tại của người dùng. “Tất cả trò chơi đã nhận diện” sẽ hiển thị tóm tắt cho các trò chơi chưa có thành tích được phát hành."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7774,7 +7814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Chỉ định khi nào gắn nhãn các mục trong danh sách phát với core hiện đang liên kết (nếu có).\nCài đặt này bị bỏ qua khi bật nhãn phụ của danh sách phát."
+   "Chỉ định thời điểm gắn lõi hiện được liên kết (nếu có) vào các mục trong danh sách phát. Thiết lập này sẽ bị bỏ qua khi bật nhãn phụ cho danh sách phát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7878,7 +7918,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Chọn loại bản ghi thời lượng hiển thị trên nhãn phụ của danh sách phát.\nBản ghi thời lượng tương ứng phải được bật trong menu tùy chọn ‘Lưu’."
+   "Chọn loại bản ghi thời gian hoạt động sẽ hiển thị trên nhãn phụ của danh sách phát. Bản ghi thời gian hoạt động tương ứng phải được bật trong menu tùy chọn “Lưu dữ liệu”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8063,7 +8103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Cho phép ứng dụng Discord hiển thị dữ liệu về trò chơi đã chơi.\nChỉ có sẵn với phiên bản giao diện máy tính gốc."
+   "Cho phép ứng dụng Discord hiển thị dữ liệu về nội dung đang được phát hoặc chơi. Chỉ khả dụng với ứng dụng máy tính gốc."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8087,6 +8127,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Thông tin đăng nhập cho tài khoản RetroAchievements của bạn. Truy cập retroachievements.org và đăng ký một tài khoản miễn phí.\nSau khi đăng ký xong, bạn cần nhập tên người dùng và mật khẩu vào RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK,
+   "Đá ra"
    )
 
 /* Settings > User > Accounts > RetroAchievements */
@@ -8127,6 +8171,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Khóa phát trực tiếp Facebook Gaming"
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Khóa luồng đá ra"
    )
 
 /* Settings > Directory */
@@ -8457,7 +8508,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Thêm bản nhạc này vào một khe luồng âm thanh khả dụng.\nNếu không có khe nào hiện có sẵn, thao tác sẽ bị bỏ qua."
+   "Thêm bản âm thanh này vào một khe luồng âm thanh còn trống. Nếu hiện không có khe nào khả dụng thì sẽ bị bỏ qua."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8465,7 +8516,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Thêm bản nhạc này vào một khe luồng âm thanh khả dụng và phát.\nNếu không có khe nào hiện có sẵn, thao tác sẽ bị bỏ qua."
+   "Thêm bản âm thanh này vào một khe luồng âm thanh còn trống và phát nó. Nếu hiện không có khe nào khả dụng thì sẽ bị bỏ qua."
    )
 
 /* Netplay */
@@ -9835,7 +9886,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Chọn một đĩa mới từ hệ thống tệp và thêm nó vào cuối danh sách chỉ mục.\nLƯU Ý: Đây là tính năng cũ (legacy). Thay vào đó, nên dùng playlist M3U cho các game nhiều đĩa."
+   "Chọn một đĩa mới từ hệ thống tập tin và thêm nó vào danh sách chỉ mục."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Chọn một đĩa mới từ hệ thống tập tin và thêm nó vào danh sách chỉ mục.\nLƯU Ý: Đây là tính năng cũ. Thay vào đó, nên dùng danh sách phát M3U cho các trò chơi nhiều đĩa."
    )
 
 /* Quick Menu > Shaders */
@@ -11609,6 +11664,10 @@ MSG_HASH(
    "Hệ số làm mờ theo chiều dọc"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Hiển thị danh sách theo chiều ngang"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Hiển thị tiêu đề đầu trang"
    )
@@ -12845,10 +12904,6 @@ MSG_HASH(
    "Bộ đếm Core"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Chưa chọn đĩa"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Bộ đếm Giao diện"
    )
@@ -13171,10 +13226,6 @@ MSG_HASH(
    "Không có tham số nào được cung cấp và không có menu tích hợp, hiển thị hướng dẫn..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Đang đặt đĩa vào khay"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Đang chờ kết nối từ client..."
    )
@@ -13480,14 +13531,6 @@ MSG_HASH(
    "Liên kết core trong mục playlist đã được đặt lại."
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Đã thêm đĩa"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Không thể thêm đĩa"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Application Danh mục"
    )
@@ -13660,14 +13703,6 @@ MSG_HASH(
    "Ngắt kết nối thiết bị khỏi cổng hợp lệ."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Đã đóng khay đĩa ảo."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Đã nhả khay đĩa ảo."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Đang tải xuống"
    )
@@ -13822,10 +13857,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Không thể nhận dữ liệu SRAM từ máy chủ."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Không thể lấy đĩa ra khỏi khay."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14204,10 +14235,6 @@ MSG_HASH(
    "Tất cả tùy chọn định nghĩa phím đã được đặt lại mặc định."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Đĩa đã được lấy ra khỏi khay."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Đang xóa tệp trò chơi tạm thời"
    )
@@ -14222,10 +14249,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Đã phục hồi trạng thái lưu cũ."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: khôi phục preset shader mặc định về"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14437,7 +14460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Đang hoàn tác trạng thái lưu"
+   "Đang hoàn tác lưu trò chơi..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14478,14 +14501,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Tính toán kích thước khung nhìn không thành công! Sẽ tiếp tục sử dụng dữ liệu thô. Có thể cách này sẽ không hoạt động chính xác..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Không thể nhả khay đĩa ảo."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Không thể đóng khay đĩa ảo."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14744,8 +14759,44 @@ MSG_HASH(
    "Cheat đã bị xóa."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Không thể đặt đĩa."
+   MSG_DISK_CLOSED,
+   "Đã đóng khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Không thể đóng khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Đã nhả khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Không thể nhả khay đĩa ảo."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Đĩa đã được lấy ra khỏi khay."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Không thể lấy đĩa ra khỏi khay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Chưa chọn đĩa"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Đã thêm đĩa"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Không thể thêm đĩa"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Đang đặt đĩa vào khay"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -15103,6 +15154,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Tốc độ làm mới video đã thay đổi thành %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Bộ lọc video: Bật"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Bộ lọc video: Tắt"
+   )
+
 
 /* Lakka */
 

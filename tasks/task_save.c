@@ -136,6 +136,9 @@ static struct ram_save_state_buf ram_buf;
 static bool save_state_in_background       = false;
 static bool save_state_disable_undo        = false;
 
+/* Time tracking for automatic savestate interval */
+static time_t last_savestate_automatic_time = 0;
+
 typedef struct rastate_size_info
 {
    size_t total_size;
@@ -666,7 +669,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t len)
       state->size           = len;
       state->flags         |= SAVE_TASK_FLAG_UNDO_SAVE;
       state->state_slot     = settings->ints.state_slot;
-      if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+      if (video_driver_cached_frame_is_hw_render())
          state->flags      |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
       if (settings->bools.savestate_file_compression)
@@ -1249,7 +1252,7 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
       state->flags               |= SAVE_TASK_FLAG_THUMBNAIL_ENABLE;
    }
    state->state_slot             = settings->ints.state_slot;
-   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+   if (video_driver_cached_frame_is_hw_render())
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1375,7 +1378,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    if (load_to_backup_buffer)
       state->flags             |= SAVE_TASK_FLAG_MUTE;
    state->state_slot            = settings->ints.state_slot;
-   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+   if (video_driver_cached_frame_is_hw_render())
       state->flags             |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1469,8 +1472,7 @@ bool content_auto_save_state(const char *path)
    {
       video_driver_state_t *video_st = video_state_get_ptr();
       const char *dir_screenshot = settings->paths.directory_screenshot;
-      bool validfb = video_st->frame_cache_data &&
-                     video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
+      bool validfb = video_driver_cached_frame_is_hw_render();
 
       take_screenshot(dir_screenshot, path, true, validfb, false, false);
    }
@@ -1654,7 +1656,7 @@ bool content_load_state(const char *path,
    if (autoload)
       state->flags             |= SAVE_TASK_FLAG_AUTOLOAD;
    state->state_slot            = settings->ints.state_slot;
-   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+   if (video_driver_cached_frame_is_hw_render())
       state->flags             |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1887,4 +1889,44 @@ void set_save_state_in_background(bool state)
 void set_save_state_disable_undo(bool disable)
 {
    save_state_disable_undo = disable;
+}
+
+bool content_save_state_automatic(void)
+{
+   time_t current_time;
+   char savestate_path[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
+   unsigned savestate_automatic_interval = 
+      settings->uints.savestate_automatic_interval;
+   
+   /* Return early if automatic savestate is disabled,
+      safety checks already happen in content_auto_save_state() */
+   if (savestate_automatic_interval == 0)
+      return false;
+   
+   current_time = time(NULL);
+   
+   /* Check how long since last autosavestate */
+   if ((current_time - last_savestate_automatic_time) < 
+       (time_t)savestate_automatic_interval)
+      return false;
+   
+   /* Generate the savestate path */
+   if (!runloop_get_savestate_path(savestate_path, 
+                                          sizeof(savestate_path), -1))
+   {
+      RARCH_WARN("[State] %s\n",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO));
+      return false;
+   }
+   
+   /* Trigger the savestate */
+   RARCH_LOG("[State] %s (automatic) to \"%s\".\n",
+         msg_hash_to_str(MSG_SAVING_STATE),
+         savestate_path);
+   
+   /* Update the last savestate time, rinse/repeat */
+   last_savestate_automatic_time = current_time;
+   
+   return content_auto_save_state(savestate_path);
 }

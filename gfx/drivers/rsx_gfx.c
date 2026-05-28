@@ -901,7 +901,7 @@ static void rsx_font_setup_viewport(
 static void rsx_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float color[4];
@@ -2341,7 +2341,7 @@ static bool rsx_frame(void* data, const void* frame,
    if (statistics_show)
       if (osd_params)
          font_driver_render_msg(gcm,
-               video_info->stat_text,
+               video_info->stat_text, video_info->stat_text_len,
                osd_params, NULL);
 #endif
 
@@ -2356,7 +2356,7 @@ static bool rsx_frame(void* data, const void* frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(gcm, msg, NULL, NULL);
+      font_driver_render_msg(gcm, msg, strlen(msg), NULL, NULL);
 
 #if 0
    /* TODO: translucid menu */
@@ -2494,12 +2494,12 @@ static void rsx_viewport_info(void* data, struct video_viewport* vp)
  * or can it be removed? */
 static void rsx_set_osd_msg(void *data,
       video_frame_info_t *video_info,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    rsx_t* gcm = (rsx_t*)data;
    if (gcm && gcm->msg_rendering_enabled)
-      font_driver_render_msg(data, msg, params, font);
+      font_driver_render_msg(data, msg, msg_len, params, font);
 }
 #endif
 

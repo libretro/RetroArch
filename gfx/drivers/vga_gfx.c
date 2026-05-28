@@ -104,7 +104,7 @@ static const struct font_glyph *vga_font_get_glyph(
 /* TODO/FIXME -implement font rendering */
 static void vga_font_render_msg(
       void *userdata,
-      void *data, const char *msg,
+      void *data, const char *msg, size_t msg_len,
       const struct font_params *params) { }
 
 font_renderer_t vga_font = {
@@ -343,7 +343,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(data, msg, NULL, NULL);
+      font_driver_render_msg(data, msg, strlen(msg), NULL, NULL);
 
    return true;
 }

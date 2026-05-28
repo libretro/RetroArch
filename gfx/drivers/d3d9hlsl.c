@@ -1256,8 +1256,15 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
          return;
    }
 
-   /* Update time uniform - mirrors d3d10 ubo_values.time increment */
+   /* Update time uniform - mirrors d3d10 ubo_values.time increment.
+    * Wrap at 65536 to keep fp32 increments precise. 0.01 stays
+    * exactly representable up to t ~ 167772 (where 0.5*ulp first
+    * exceeds 0.01), so 65536 has wide margin and wraps roughly
+    * every 30 h of cumulative menu time, making the discontinuity
+    * effectively unobservable. */
    t += 0.01f;
+   if (t > 65536.0f)
+      t -= 65536.0f;
 
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
@@ -1574,7 +1581,7 @@ static INLINE Vertex *d3d9_font_get_scratch(
 
 static void d3d9_font_render_msg(
       void *userdata, void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
@@ -2397,10 +2404,16 @@ static void d3d9_hlsl_renderchain_render_pass(
             (float)vp_height };
          float frame_cnt;
 
-         frame_cnt = (float)chain->chain.frame_count;
          if (pass->info.pass->frame_count_mod)
             frame_cnt = (float)(chain->chain.frame_count
                   % pass->info.pass->frame_count_mod);
+         else
+            /* SM2/SM3 has no uint registers, so frame_count must be
+             * bound as a float. fp32 mantissa is 23 bits, so values
+             * above 2^24 cannot be represented exactly. Mask to 24
+             * bits when the shader pass has not declared its own
+             * modulo, to keep the cast bit-exact in long sessions. */
+            frame_cnt = (float)(chain->chain.frame_count & 0xFFFFFFu);
 
          if (pd->ps_map.video_size >= 0
                && pd->ps_map.video_size == pd->ps_map.texture_size)
@@ -6968,7 +6981,7 @@ static void d3d9_hlsl_set_viewport(void *data,
 }
 
 static void d3d9_hlsl_set_osd_msg(void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
@@ -6976,7 +6989,7 @@ static void d3d9_hlsl_set_osd_msg(void *data,
 
    d3d9_set_font_rect(d3d, params);
    IDirect3DDevice9_BeginScene(dev);
-   font_driver_render_msg(d3d, msg, params, font);
+   font_driver_render_msg(d3d, msg, msg_len, params, font);
    IDirect3DDevice9_EndScene(dev);
 }
 
@@ -7787,7 +7800,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       {
          IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
          IDirect3DDevice9_BeginScene(d3d->dev);
-         font_driver_render_msg(d3d, stat_text,
+         font_driver_render_msg(d3d, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
          IDirect3DDevice9_EndScene(d3d->dev);
       }
@@ -7852,7 +7865,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    {
       IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
       IDirect3DDevice9_BeginScene(d3d->dev);
-      font_driver_render_msg(d3d, msg, NULL, NULL);
+      font_driver_render_msg(d3d, msg, strlen(msg), NULL, NULL);
       IDirect3DDevice9_EndScene(d3d->dev);
    }
 

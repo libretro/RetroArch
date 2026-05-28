@@ -539,6 +539,7 @@ static void gdi_menu_surface_clear(gdi_t *gdi, uint8_t r, uint8_t g, uint8_t b)
       FillRect(gdi->memDC, &rect, gdi->brush_cached);
 }
 
+#ifdef HAVE_MENU
 /* StretchDIBits-upscale a core frame into bmp_menu, scaling up to
  * the menu compositing surface size.  Used as a "background
  * underlay" pass for textured menus over a running game so the menu
@@ -623,6 +624,7 @@ static void gdi_upload_core_frame_to_menu(gdi_t *gdi,
          0, 0, frame_w, frame_h,
          src, (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
 }
+#endif
 
 #ifdef GDI_HAS_ALPHABLEND
 /* Composite RGUI's RGBA4444 menu_frame onto bmp_menu using
@@ -2131,7 +2133,7 @@ done:
 static void gdi_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float    x, y, scale, drop_mod, drop_alpha;
@@ -3029,7 +3031,7 @@ static bool gdi_frame(void *data, const void *frame,
     * achievement panel with a semi-transparent background should
     * obscure the stats it overlaps, not vice-versa. */
    if (show_stats)
-      font_driver_render_msg(gdi, stat_text, osd_params, NULL);
+      font_driver_render_msg(gdi, stat_text, video_info->stat_text_len, osd_params, NULL);
 
    /* --- Step 10b: input overlay (touch / virtual gamepad images).
     *
@@ -3087,7 +3089,7 @@ static bool gdi_frame(void *data, const void *frame,
     * notification panels — the OSD msg is a one-shot event and
     * needs to be visible. */
    if (msg)
-      font_driver_render_msg(gdi, msg, NULL, NULL);
+      font_driver_render_msg(gdi, msg, strlen(msg), NULL, NULL);
 
    /* --- Step 13: final deselection.  If bmp_menu is still selected,
     * pop it now so memDC is back to its baseline (no bitmap selected,

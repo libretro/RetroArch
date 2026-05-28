@@ -19,7 +19,6 @@
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
-#include <retro_endianness.h>
 #include <string/stdstring.h>
 #include <lists/dir_list.h>
 #include <lists/string_list.h>

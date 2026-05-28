@@ -259,20 +259,29 @@ static bool smb_build_path(char *dest, size_t dest_size, const char *relative_pa
    /* Build path from settings */
    temp_path[0] = '\0';
 
-   /* Add base folder if specified */
-   if (smb_cfg->subdir && *smb_cfg->subdir)
    {
-      strlcpy(temp_path, smb_cfg->subdir, sizeof(temp_path));
-      if (temp_path[0] != '\0' && temp_path[strlen(temp_path) - 1] != '/')
-         strlcat(temp_path, "/", sizeof(temp_path));
-   }
+      size_t _len = 0;
+      size_t sz   = sizeof(temp_path);
 
-   /* Add relative path if provided */
-   if (relative_path && relative_path[0])
-   {
-      if (relative_path[0] == '/')
-         relative_path++;
-      strlcat(temp_path, relative_path, sizeof(temp_path));
+      /* Add base folder if specified */
+      if (smb_cfg->subdir && *smb_cfg->subdir)
+      {
+         _len = strlcpy(temp_path, smb_cfg->subdir, sz);
+         if (_len > 0 && _len < sz && temp_path[_len - 1] != '/')
+         {
+            temp_path[_len++] = '/';
+            temp_path[_len  ] = '\0';
+         }
+      }
+
+      /* Add relative path if provided */
+      if (relative_path && relative_path[0])
+      {
+         if (relative_path[0] == '/')
+            relative_path++;
+         if (_len < sz)
+            strlcpy(temp_path + _len, relative_path, sz - _len);
+      }
    }
 
    strlcpy(dest, temp_path, dest_size);

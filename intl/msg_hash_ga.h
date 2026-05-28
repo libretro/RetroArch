@@ -1461,7 +1461,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Tiománaí físe le húsáid."
+   "Tiománaí físe le húsáid. (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1561,7 +1561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Tiománaí fuaime le húsáid."
+   "Tiománaí fuaime le húsáid. (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1622,7 +1622,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Tiománaí micreafón le húsáid."
+   "Tiománaí micreafóin le húsáid. (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1663,15 +1663,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Tiománaí ceamara le húsáid."
+   "Tiománaí ceamara le húsáid. (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Tiománaí Bluetooth le húsáid."
+   "Tiománaí Bluetooth le húsáid. (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Tiománaí Wi-Fi le húsáid."
+   "Tiománaí Wi-Fi le húsáid. (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1679,7 +1679,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Tiománaí suímh le húsáid."
+   "Tiománaí suímh le húsáid. (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1711,11 +1711,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Tiománaí taifeadta le húsáid."
+   "Taifead an tiománaí le húsáid. (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Tiománaí MIDI le húsáid."
+   "Tiománaí MIDI le húsáid. (Atosú ag teastáil)"
    )
 
 /* Settings > Video */
@@ -1771,6 +1771,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Athraigh socruithe sioncrónaithe físe."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
+   "Cuir Scagaire Físe i bhFeidhm. Leid nach gá don tiománaí físe a chomhlíonadh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
+   "Cumasaigh Scagaire Físeáin"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -2062,7 +2070,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Ráta athnuachana ingearach do scáileáin. Úsáidtear é seo chun ráta ionchuir fuaime oiriúnach a ríomh. \nDéanfar neamhaird air seo má tá 'Físeán Snáithithe' cumasaithe."
+   "Ráta athnuachana ingearach do do scáileáin. Úsáidtear é chun ráta ionchuir fuaime oiriúnach a ríomh. Déanfar neamhaird de seo má tá 'Físeán Snáithithe' cumasaithe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2557,6 +2565,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
    "Déan iarracht an sprioc atá uait 'Moill Fráma' a choinneáil agus titim fráma a íoslaghdú. Is é an pointe tosaigh 3/4 d'am fráma nuair a bhíonn 'Moill Fráma' 0 (Uathoibríoch)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Am Fráma Samplach Amháin i Riocht Cobhsaí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   "Srian a chur le sampláil 'Ráta Athnuachana Scáileáin Measta' do fhrámaí ina bhfuil an t-ábhar ag rith go glan (ní roghchlár, ní sos, ní luasghéarú, am fráma laistigh de chlúdach meabhrach). Éiríonn an léamh diagnóiseach ina fhíorchomhartha ar chostas comhtháthaithe níos moille tar éis luchtú ábhair."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -3086,7 +3102,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "Uasmhéid úsáideoirí a dtacaítear leo le RetroArch."
+   "Uasmhéid úsáideoirí a dtacaítear leo le RetroArch. (Atosú riachtanach)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -4024,6 +4040,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Cuir Scagaire Físe i bhFeidhm (Tógáil)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
+   "Casann sé 'Scagaire Físe' an bhogearra air/as."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Taispeáin FPS (Scoránaigh)"
    )
@@ -4676,6 +4700,18 @@ MSG_HASH(
    "Uath-shábháiltear an SRAM neamh-luaineach ag eatramh rialta. Tá sé seo díchumasaithe de réir réamhshocraithe mura socraítear a mhalairt. Tomhaistear an t-eatramh i soicindí. Díchumasaíonn luach 0 an t-uath-shábháil."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Stádas Sábháilte: Eatramh Uathoibríoch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Sábháil staid go huathoibríoch ag eatramh rialta (i soicindí). Socraigh go 0 le díchumasú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
+   "Sábhálann sé staid go huathoibríoch ag eatramh rialta, a thomhaistear i soicindí. Tá sé seo úsáideach chun cúltacaí tréimhsiúla de dhul chun cinn do chluiche a chruthú, go háirithe ar ghléasanna a d'fhéadfadh dúnadh go tobann mar gheall ar cheallraí nó fadhbanna eile. Díchumasaíonn luach 0 an ghné seo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Athsheinm: Eatramh Seiceála"
    )
@@ -4982,7 +5018,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Athraigh socruithe a mbíonn tionchar acu ar an gcuntar ama fráma.\nGníomhach amháin nuair a bhíonn físeán snáithithe díchumasaithe."
+   "Athraigh socruithe a bhfuil tionchar acu ar an gcuntar fráma-ama. Gníomhach ach amháin nuair atá físeán snáithithe díchumasaithe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5059,28 +5095,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Athshocraigh Tar éis Tapáil Ar Aghaidh"
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Athshocraigh Uathoibríoch Tar éis Imeachtaí Suaiteacha"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Athshocraigh an cuntar ama fráma tar éis luasghéarú."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Athshocraigh Tar éis Staid Luchtaithe"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Athshocraigh an cuntar ama fráma tar éis stát a lódáil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Athshocraigh Tar éis Stádas Sábháil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Athshocraigh an cuntar ama fráma tar éis staid a shábháil."
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   "Glan an maolán samplach 'Ráta Athnuachana Scáileáin Measta' tar éis luasghéarú, staid shábháilte, nó staid lódála. Tugann na hoibríochtaí seo samplaí ama isteach nach léiríonn gnáth-rath fráma agus a chuirfeadh isteach ar an tomhas diall. Glanadh is fearr-iarrachta; níl aon éifeacht aige nuair a bhíonn 'Am Fráma Samplach i Staid Chobhsaí Amháin' cumasaithe (rud a chuireann cosc ​​ar an éilliú ag an bhfoinse)."
    )
 
 /* Settings > Recording */
@@ -5735,6 +5755,14 @@ MSG_HASH(
    "Déanfar an taispeáint úsáide cuimhne a nuashonrú ag an eatramh socraithe i bhfrámaí."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_SHOW,
+   "Am Taispeána"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIME_SHOW,
+   "Taispeáin an t-am reatha san fhormáid is fearr leat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Ping Líonra Taispeána"
    )
@@ -6374,7 +6402,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Taispeáin an roghchlár 'Netplay'."
+   "Taispeáin an iontráil 'Netplay' taobh istigh den Phríomh-Roghchlár nó Seinmliostaí."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6492,6 +6520,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Taispeáin faisnéis bhreise le haghaidh míreanna roghchláir."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+   "Taispeáin Boscaí Deimhnithe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+   "Iarr deimhniú sula scoireann tú d’ábhar, sula n-athshocraítear é nó sula ndúnann tú é. Nuair a bhíonn sé díchumasaithe, tarlaíonn na gníomhartha seo láithreach."
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    "Taispeáin an Scáileán Tosaigh"
@@ -6557,7 +6593,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Taispeáin na roghanna chun an staid sábhála/lódála a chealú."
+   "Taispeáin na roghanna chun an staid sábhála/luchtaithe a chealú. Spreagann RetroPad Start cealú sábháil/luchtaithe nuair a bhíonn sé i bhfolach."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -7269,7 +7305,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Taispeánann sé faisnéis faoin gcluiche atá á luchtú agus dul chun cinn reatha an úsáideora. \nTaispeánfaidh 'Gach Cluiche Aitheanta' achoimre ar chluichí nach bhfuil aon éachtaí foilsithe acu."
+   "Taispeánann sé faisnéis faoin gcluiche atá á lódáil agus dul chun cinn reatha an úsáideora. Léireoidh 'Gach Cluichí Aitheanta' achoimre ar chluichí nach bhfuil aon ghnóthachtáil foilsithe acu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7746,7 +7782,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Sonraigh cathain is ceart iontrálacha seinmliosta a chlibeáil leis an croí atá bainteach leis faoi láthair (más ann dó).\nDéantar neamhaird den socrú seo nuair a bhíonn fo-lipéid seinmliosta cumasaithe."
+   "Sonraigh cathain is ceart iontrálacha seinmliosta a chlibeáil leis an gcroí a bhaineann leis faoi láthair (más ann dó). Ní thugtar aird ar an socrú seo nuair atá folipéid seinnliosta cumasaithe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7854,7 +7890,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Roghnaigh cén cineál taifead loga rith-ama atá le taispeáint ar fho-lipéid seinmliosta.\nNí mór an loga rith-ama comhfhreagrach a chumasú tríd an roghchlár roghanna 'Sábháil'."
+   "Roghnaigh an cineál taifid loga ama rite le taispeáint ar fholipéid seinmliosta. Ní mór an loga ama rite comhfhreagrach a chumasú tríd an roghchlár roghanna 'Coigilt'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -8039,7 +8075,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Lig don aip Discord sonraí a thaispeáint faoin ábhar a imríodh. \nAr fáil leis an gcliant deisce dúchais amháin."
+   "Lig don aip Discord sonraí a thaispeáint faoin ábhar a imrítear. Ar fáil leis an gcliant deisce dúchais amháin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8099,6 +8135,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
    "Eochair Srutha Cearrbhachais Facebook"
+   )
+
+/* Settings > User > Accounts > Kick */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   "Eochair Srutha Kick"
    )
 
 /* Settings > Directory */
@@ -8429,7 +8472,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Cuir an rian fuaime seo le sliotán srutha fuaime atá ar fáil.\nMura bhfuil aon sliotáin ar fáil faoi láthair, déanfar neamhaird de."
+   "Cuir an rian fuaime seo le sliotán srutha fuaime atá ar fáil. Mura bhfuil sliotáin ar fáil faoi láthair, déanfar neamhaird de."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8437,7 +8480,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Cuir an rian fuaime seo le sliotán srutha fuaime atá ar fáil agus seinn é.\nMura bhfuil aon sliotáin ar fáil faoi láthair, déanfar neamhaird de."
+   "Cuir an rian fuaime seo le sliotán srutha fuaime atá ar fáil agus seinn é. Mura bhfuil sliotáin ar fáil faoi láthair, déanfar neamhaird de."
    )
 
 /* Netplay */
@@ -9539,7 +9582,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "Endian Mór: 258 = 0x0102\nEndian Beag: 258 = 0x0201"
+   "Endian Mór: 258 = 0x0102, Endian Beag: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -9819,7 +9862,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Roghnaigh diosca nua ón gcóras comhad agus cuir leis an liosta innéacs é.\nNÓTA: Is gné oidhreachta í seo. Moltar seinmliostaí M3U a úsáid ina ionad sin le haghaidh teidil ildhiosca."
+   "Roghnaigh diosca nua ón gcóras comhad agus cuir leis an liosta innéacs é."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
+   "Roghnaigh diosca nua ón gcóras comhad agus cuir leis an liosta innéacs é.\nNÓTA: Gné oidhreachta é seo. Moltar ina ionad sin seinmliostaí M3U a úsáid le haghaidh teidil ildiosca."
    )
 
 /* Quick Menu > Shaders */
@@ -11621,6 +11668,10 @@ MSG_HASH(
    "Fachtóir Céimnithe Ingearach"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   "Taispeáin Liosta Cothrománach"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Taispeáin Ceanntásc an Teidil"
    )
@@ -12865,10 +12916,6 @@ MSG_HASH(
    "Áiritheoirí Croí"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Níl aon diosca roghnaithe"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    "Áiritheoirí Tosaigh"
    )
@@ -13183,10 +13230,6 @@ MSG_HASH(
    "Gan aon argóintí curtha ar fáil agus gan aon roghchlár ionsuite, ag taispeáint cabhrach..."
    )
 MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Ag socrú diosca sa tráidire"
-   )
-MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Ag fanacht leis an gcliant..."
    )
@@ -13488,14 +13531,6 @@ MSG_HASH(
    "Tacar croí: "
    )
 MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Diosca curtha leis"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Theip ar an diosca a chur leis"
-   )
-MSG_HASH(
    MSG_APPLICATION_DIR,
    "Eolaire Feidhmchláir"
    )
@@ -13668,14 +13703,6 @@ MSG_HASH(
    "Dícheangail gléas ó phort bailí."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Tráidire diosca fíorúil dúnta."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Tráidire diosca fíorúil curtha amach."
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Ag íoslódáil"
    )
@@ -13830,10 +13857,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
    "Theip ar shonraí SRAM a fháil ón óstach."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Theip ar an diosca a bhaint as an tráidire."
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
@@ -14212,10 +14235,6 @@ MSG_HASH(
    "Athshocraítear gach rogha athmhapála ionchuir go dtí an réamhshocrú."
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Diosca bainte as an tráidire."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Comhad ábhair shealadaigh á bhaint"
    )
@@ -14230,10 +14249,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Sean-stádas sábhála athchóirithe."
-   )
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Scáthóirí: réamhshocrú scáthóra réamhshocraithe a athbhunú go"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14445,7 +14460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Ag cealú an stáit shábhála"
+   "Ag cealú an stáit shábhála..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14486,14 +14501,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Theip ar ríomh mhéid an radhairc! Leanfar le húsáid sonraí amha. Is dócha nach n-oibreoidh sé seo i gceart..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Theip ar an tráidire diosca fíorúil a dhíbirt."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Theip ar an tráidire diosca fíorúil a dhúnadh."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -14752,8 +14759,44 @@ MSG_HASH(
    "Scriosadh an aicearra."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Theip ar an diosca a shocrú."
+   MSG_DISK_CLOSED,
+   "Tráidire diosca fíorúil dúnta."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Theip ar an tráidire diosca fíorúil a dhúnadh."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Tráidire diosca fíorúil curtha amach."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Theip ar an tráidire diosca fíorúil a dhíbirt."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Diosca bainte as an tráidire."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   "Theip ar an diosca a bhaint as an tráidire."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Níl aon diosca roghnaithe"
+   )
+MSG_HASH(
+   MSG_APPENDED_DISK,
+   "Diosca curtha leis"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Theip ar an diosca a chur leis"
+   )
+MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Ag socrú diosca sa tráidire"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -15111,6 +15154,15 @@ MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
    "Athraíodh ráta athnuachana físe go %s Hz."
    )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_ON,
+   "Scagaire Físe: Cumasaigh"
+   )
+MSG_HASH(
+   MSG_VIDEO_FILTER_ENABLE_OFF,
+   "Scagaire Físe: Díchumasaigh"
+   )
+
 
 /* Lakka */
 

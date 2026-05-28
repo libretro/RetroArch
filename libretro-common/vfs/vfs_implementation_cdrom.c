@@ -32,6 +32,12 @@
 #include <windows.h>
 #endif
 
+#if defined(__APPLE__)
+/* Implemented in cdrom.c; intentionally not in the public cdrom.h. */
+int cdrom_macos_open(int index, void **out_plugin, void **out_mmc, int *out_fd);
+void cdrom_macos_close(void *plugin, void *mmc, int fd);
+#endif
+
 /* TODO/FIXME - static global variable */
 static cdrom_toc_t vfs_cdrom_toc = {0};
 
@@ -315,6 +321,79 @@ void retro_vfs_file_open_cdrom(
       cdrom_get_timeouts(stream,
             &vfs_cdrom_toc.timeouts);
 
+   }
+#endif
+#if defined(__APPLE__)
+   size_t      path_len = strlen(path);
+   const char *ext      = path_get_extension(path);
+   void       *plugin   = NULL;
+   void       *mmc      = NULL;
+   int         fd       = -1;
+   int         index    = 0;
+
+   stream->cdrom.cur_track = 1;
+
+   if (     !(ext[0] == 'c' && ext[1] == 'u' && ext[2] == 'e' && ext[3] == '\0')
+         && !(ext[0] == 'b' && ext[1] == 'i' && ext[2] == 'n' && ext[3] == '\0'))
+      return;
+
+   if (path_len >= (sizeof("drive1-track01.bin")-1))
+   {
+      if (!memcmp(path, "drive", (sizeof("drive")-1)))
+      {
+         if (!memcmp(path + 6, "-track", (sizeof("-track")-1)))
+         {
+            if (     path[12] >= '0' && path[12] <= '9'
+                  && path[13] >= '0' && path[13] <= '9')
+            {
+               unsigned parsed = (path[12] - '0') * 10 + (path[13] - '0');
+               /* Reject track 00 -- track numbers are 1-based, and
+                * cur_track == 0 would later index track[-1] in the
+                * TOC array (OOB read).  Leave the init value (1)
+                * in place on reject. */
+               if (parsed >= 1 && parsed <= 99)
+                  stream->cdrom.cur_track = parsed;
+            }
+         }
+      }
+   }
+
+   if (path_len >= (sizeof("drive1.cue")-1))
+   {
+      if (!memcmp(path, "drive", (sizeof("drive")-1)))
+      {
+         if (path[5] >= '0' && path[5] <= '9')
+         {
+            index               = path[5] - '0';
+            stream->cdrom.drive = path[5];
+            vfs_cdrom_toc.drive = stream->cdrom.drive;
+         }
+      }
+   }
+
+   if (cdrom_macos_open(index, &plugin, &mmc, &fd) != 0)
+      return;
+
+   stream->iokit_plugin = plugin;
+   stream->iokit_mmc    = mmc;
+   stream->fd           = fd;
+
+   if (ext[0] == 'c' && ext[1] == 'u' && ext[2] == 'e' && ext[3] == '\0')
+   {
+      if (stream->cdrom.cue_buf)
+      {
+         free(stream->cdrom.cue_buf);
+         stream->cdrom.cue_buf = NULL;
+      }
+
+      cdrom_write_cue(stream,
+            &stream->cdrom.cue_buf,
+            &stream->cdrom.cue_len,
+            stream->cdrom.drive,
+            &vfs_cdrom_toc.num_tracks,
+            &vfs_cdrom_toc);
+      cdrom_get_timeouts(stream, &vfs_cdrom_toc.timeouts);
+
 #ifdef CDROM_DEBUG
       if (!stream->cdrom.cue_buf || !*stream->cdrom.cue_buf)
       {
@@ -355,6 +434,13 @@ int retro_vfs_file_close_cdrom(libretro_vfs_implementation_file *stream)
 #if defined(_WIN32) && !defined(_XBOX)
    if (!stream->fh || !CloseHandle(stream->fh))
       return -1;
+#elif defined(__APPLE__)
+   if (!stream->iokit_mmc)
+      return -1;
+   cdrom_macos_close(stream->iokit_plugin, stream->iokit_mmc, stream->fd);
+   stream->iokit_plugin = NULL;
+   stream->iokit_mmc    = NULL;
+   stream->fd           = -1;
 #else
    if (!stream->fp || fclose(stream->fp))
       return -1;

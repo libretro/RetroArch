@@ -114,14 +114,13 @@ static const struct font_glyph *caca_font_get_glyph(
 
 static void caca_font_render_msg(
       void *userdata,
-      void *data, const char *msg,
+      void *data, const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float x, y, scale;
    unsigned width, height;
    unsigned newX, newY;
    unsigned align;
-   size_t msg_len;
    caca_raster_t              *font = (caca_raster_t*)data;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
@@ -155,7 +154,6 @@ static void caca_font_render_msg(
    width    = caca_get_canvas_width(font->caca->cv);
    height   = caca_get_canvas_height(font->caca->cv);
    newY     = height - (y * height * scale);
-   msg_len  = strlen(msg);
 
    switch (align)
    {
@@ -318,7 +316,7 @@ static bool caca_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(data, msg, NULL, NULL);
+      font_driver_render_msg(data, msg, strlen(msg), NULL, NULL);
 
    if (draw)
    {

@@ -29,7 +29,7 @@ jobs:
         with:
           repository: "webosbrew/ares-cli-rs"
           latest: true
-          fileName: "ares-package_*.deb"
+          fileName: "ares-package_*_amd64.deb"
           out-file-path: "temp"
 
       - name: Download Manifest Generator

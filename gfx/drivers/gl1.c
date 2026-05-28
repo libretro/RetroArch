@@ -783,7 +783,7 @@ static void gl1_raster_font_setup_viewport(
 static void gl1_raster_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    GLfloat color[4];
@@ -1852,7 +1852,7 @@ static bool gl1_frame(void *data, const void *frame,
       if (video_info->statistics_show)
       {
          if (osd_params)
-            font_driver_render_msg(gl1, video_info->stat_text,
+            font_driver_render_msg(gl1, video_info->stat_text, video_info->stat_text_len,
                   osd_params, NULL);
       }
 
@@ -1867,7 +1867,7 @@ static bool gl1_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(gl1, msg, NULL, NULL);
+      font_driver_render_msg(gl1, msg, strlen(msg), NULL, NULL);
 
    if (gl1->ctx_driver->update_window_title)
       gl1->ctx_driver->update_window_title(

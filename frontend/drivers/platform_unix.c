@@ -179,7 +179,7 @@ typedef struct inotify_data
 #endif
 
 int system_property_get(const char *command,
-      const char *args, char *value)
+      const char *args, char *value, size_t value_size)
 {
    FILE *pipe;
    char buffer[BUFSIZ];
@@ -187,6 +187,9 @@ int system_property_get(const char *command,
    char *pos                  = NULL;
    size_t __len               = 0;
    size_t _len                = strlcpy(cmd, command, sizeof(cmd));
+
+   if (value_size == 0)
+      return 0;
 
    cmd[  _len]                = ' ';
    cmd[++_len]                = '\0';
@@ -206,6 +209,20 @@ int system_property_get(const char *command,
       if (fgets(buffer, sizeof(buffer), pipe))
       {
          size_t _len = strlen(buffer);
+         
+         /* Prevent buffer overflow by checking available space */
+         if (__len + _len >= value_size - 1)
+         {
+            /* Copy only what fits, leaving space for null terminator */
+            size_t remaining = value_size - __len - 1;
+            if (remaining > 0)
+            {
+               memcpy(pos, buffer, remaining);
+               pos += remaining;
+               __len += remaining;
+            }
+            break;
+         }
 
          memcpy(pos, buffer, _len);
 
@@ -573,7 +590,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 
 void frontend_android_get_name(char *s, size_t len)
 {
-   system_property_get("getprop", "ro.product.model", s);
+   system_property_get("getprop", "ro.product.model", s, len);
 }
 
 static void frontend_android_get_version(int32_t *major,
@@ -581,7 +598,7 @@ static void frontend_android_get_version(int32_t *major,
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("getprop", "ro.build.version.release",
-         os_version_str);
+         os_version_str, sizeof(os_version_str));
    *major  = 0;
    *minor  = 0;
    *rel    = 0;
@@ -609,7 +626,7 @@ static void frontend_android_get_version(int32_t *major,
 void frontend_android_get_version_sdk(int32_t *sdk)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.build.version.sdk", os_version_str);
+   system_property_get("getprop", "ro.build.version.sdk", os_version_str, sizeof(os_version_str));
    *sdk = 0;
    if (os_version_str[0])
       *sdk = (int32_t)strtol(os_version_str, NULL, 10);
@@ -774,8 +791,6 @@ static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
     *_ptr = ptr;  /* store for next time. */
     return true;
 }
-
-#define ACPI_VAL_CHARGING_DISCHARGING  0xf268327aU
 
 static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
@@ -1904,7 +1919,7 @@ static void frontend_unix_get_env(int *argc,
       }
    }
 
-   system_property_get("getprop", "ro.product.model", device_model);
+   system_property_get("getprop", "ro.product.model", device_model, sizeof(device_model));
 
    /* Set automatic default values per device */
    if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
@@ -2636,7 +2651,7 @@ static void frontend_unix_init(void *data)
          g_platform_android_flags |= PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE;
    }
 
-   system_property_get("getprop", "ro.product.model", device_model);
+   system_property_get("getprop", "ro.product.model", device_model, sizeof(device_model));
 
    /* Check if we are a game console device */
    if (device_is_game_console(device_model))
@@ -3084,7 +3099,12 @@ static uint64_t frontend_unix_get_total_mem(void)
       if (string_starts_with_size(line, PROC_MEMINFO_MEM_TOTAL_TAG,
             STRLEN_CONST(PROC_MEMINFO_MEM_TOTAL_TAG)))
       {
-         sscanf(line, PROC_MEMINFO_MEM_TOTAL_TAG " %lu kB", &mem_total);
+         /* Prefix already matched above; strtoul skips leading
+          * whitespace and stops at the first non-digit, so the
+          * trailing " kB" need not be matched (sscanf "%lu kB"
+          * did not require it either). */
+         mem_total = strtoul(line + STRLEN_CONST(PROC_MEMINFO_MEM_TOTAL_TAG),
+               NULL, 10);
          break;
       }
    }
@@ -3133,7 +3153,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_MEM_AVAILABLE_TAG)))
          {
             mem_available_found = true;
-            sscanf(line, PROC_MEMINFO_MEM_AVAILABLE_TAG " %lu kB", &mem_available);
+            mem_available = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_MEM_AVAILABLE_TAG), NULL, 10);
             break;
          }
 
@@ -3142,7 +3163,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_MEM_FREE_TAG)))
          {
             mem_free_found = true;
-            sscanf(line, PROC_MEMINFO_MEM_FREE_TAG " %lu kB", &mem_free);
+            mem_free = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_MEM_FREE_TAG), NULL, 10);
          }
 
       if (!buffers_found)
@@ -3150,7 +3172,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_BUFFERS_TAG)))
          {
             buffers_found = true;
-            sscanf(line, PROC_MEMINFO_BUFFERS_TAG " %lu kB", &buffers);
+            buffers = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_BUFFERS_TAG), NULL, 10);
          }
 
       if (!cached_found)
@@ -3158,7 +3181,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_CACHED_TAG)))
          {
             cached_found = true;
-            sscanf(line, PROC_MEMINFO_CACHED_TAG " %lu kB", &cached);
+            cached = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_CACHED_TAG), NULL, 10);
          }
 
       if (!shmem_found)
@@ -3166,7 +3190,8 @@ static uint64_t frontend_unix_get_free_mem(void)
                STRLEN_CONST(PROC_MEMINFO_SHMEM_TAG)))
          {
             shmem_found = true;
-            sscanf(line, PROC_MEMINFO_SHMEM_TAG " %lu kB", &shmem);
+            shmem = strtoul(line
+                  + STRLEN_CONST(PROC_MEMINFO_SHMEM_TAG), NULL, 10);
          }
    }
 

@@ -150,6 +150,7 @@ enum
    ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST,
    ACTION_OK_DL_ACCOUNTS_TWITCH_LIST,
    ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST,
+   ACTION_OK_DL_ACCOUNTS_KICK_LIST,
    ACTION_OK_DL_USER_BINDS_LIST,
    ACTION_OK_DL_CONTENT_LIST,
    ACTION_OK_DL_REMAP_FILE,
@@ -312,7 +313,10 @@ int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path,

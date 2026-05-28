@@ -689,11 +689,11 @@ static INLINE unsigned font_get_arabic_replacement(
 }
 /* clang-format on */
 
-static char* font_driver_reshape_msg(const char* msg, unsigned char *s, size_t len)
+static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
+      unsigned char *s, size_t len, size_t *out_len)
 {
    const unsigned char *src;
    bool                 reverse    = false;
-   size_t               msg_len    = strlen(msg);
    /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
    size_t               _len       = (msg_len * 2) + 1;
    unsigned char       *dst        = s;
@@ -807,16 +807,17 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *s, size_t l
    }
 
    *dst = '\0';
+   *out_len = (size_t)(dst - s);
    return (char*)s;
 }
 #endif
 
-void font_driver_render_msg(void *data, const char *msg,
+void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font_data)
 {
    font_data_t                *font = (font_data_t*)(font_data
          ? font_data : video_font_driver);
-   const font_renderer_t *renderer  = (font && msg && *msg) 
+   const font_renderer_t *renderer  = (font && msg && msg_len)
    ? font->renderer : NULL;
 
    if (renderer && renderer->render_msg)
@@ -825,13 +826,15 @@ void font_driver_render_msg(void *data, const char *msg,
       /* It needs to be this big because of the Statistics text
        * unfortunately */
       unsigned char tmp_buffer[1536];
-      char *new_msg = font_driver_reshape_msg(msg,
-            tmp_buffer, sizeof(tmp_buffer));
+      size_t        new_msg_len     = 0;
+      char         *new_msg         = font_driver_reshape_msg(msg, msg_len,
+            tmp_buffer, sizeof(tmp_buffer), &new_msg_len);
 #else
-      char *new_msg = (char*)msg;
+      char         *new_msg         = (char*)msg;
+      size_t        new_msg_len     = msg_len;
 #endif
       renderer->render_msg(data,
-            font->renderer_data, new_msg, params);
+            font->renderer_data, new_msg, new_msg_len, params);
    }
 }
 
