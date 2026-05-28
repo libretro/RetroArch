@@ -40,6 +40,7 @@
 - INPUT/UDEV: Add wiimote sensor capabilities
 - IOS: Fix external keyboards
 - IOS: Add pd777 core
+- HARMONYOS: Add HarmonyOS support
 - LAKKA: RetroFlag specific options for safe shutdown and reset
 - LIBRETRO: ROM memory type added
 - LIBRETRO: Sensor interface clarifications
