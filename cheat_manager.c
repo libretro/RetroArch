@@ -1264,8 +1264,10 @@ int cheat_manager_search_exact(rarch_setting_t *setting, size_t idx, bool wrapar
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EXACT);
 }
 
-static void cheat_manager_search_exact_input_cb(void *userdata,
-      const char *line)
+static void cheat_manager_search_input_cb_common(
+      const char *line,
+      unsigned *target,
+      enum cheat_search_type search_type)
 {
    char *end             = NULL;
    unsigned long value   = 0;
@@ -1292,15 +1294,48 @@ static void cheat_manager_search_exact_input_cb(void *userdata,
    if (value > max_value)
       value = max_value;
 
-   cheat_manager_state.search_exact_value = (unsigned)value;
+   *target = (unsigned)value;
 
    menu_input_dialog_end();
 
-   cheat_manager_search(CHEAT_SEARCH_TYPE_EXACT);
+   cheat_manager_search(search_type);
 }
 
-int cheat_manager_search_exact_input(rarch_setting_t *setting,
-      size_t idx, bool wraparound)
+static void cheat_manager_search_exact_input_cb(void *userdata,
+      const char *line)
+{
+   cheat_manager_search_input_cb_common(
+         line,
+         &cheat_manager_state.search_exact_value,
+         CHEAT_SEARCH_TYPE_EXACT);
+}
+
+static void cheat_manager_search_eqplus_input_cb(void *userdata,
+      const char *line)
+{
+   cheat_manager_search_input_cb_common(
+         line,
+         &cheat_manager_state.search_eqplus_value,
+         CHEAT_SEARCH_TYPE_EQPLUS);
+}
+
+static void cheat_manager_search_eqminus_input_cb(void *userdata,
+      const char *line)
+{
+   cheat_manager_search_input_cb_common(
+         line,
+         &cheat_manager_state.search_eqminus_value,
+         CHEAT_SEARCH_TYPE_EQMINUS);
+}
+
+static int cheat_manager_search_input_start(
+      rarch_setting_t *setting,
+      size_t idx,
+      bool wraparound,
+      unsigned current_value,
+      enum msg_hash_enums label_value,
+      enum msg_hash_enums label,
+      input_keyboard_line_complete_t cb)
 {
 #ifdef HAVE_MENU
    char value_buf[32];
@@ -1308,20 +1343,67 @@ int cheat_manager_search_exact_input(rarch_setting_t *setting,
 
    memset(&line, 0, sizeof(line));
 
-   snprintf(value_buf, sizeof(value_buf), "%u",
-         cheat_manager_state.search_exact_value);
+   snprintf(value_buf, sizeof(value_buf), "%u", current_value);
 
-   line.label         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT);
+   line.label         = msg_hash_to_str(label_value);
    line.label_setting = value_buf;
-   line.type          = MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT;
+   line.type          = label;
    line.idx           = idx;
-   line.cb            = cheat_manager_search_exact_input_cb;
+   line.cb            = cb;
 
    if (menu_input_dialog_start(&line))
       return 0;
 #endif
 
+   return -1;
+}
+
+int cheat_manager_search_exact_input(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
+{
+   if (cheat_manager_search_input_start(
+            setting,
+            idx,
+            wraparound,
+            cheat_manager_state.search_exact_value,
+            MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
+            MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT,
+            cheat_manager_search_exact_input_cb) == 0)
+      return 0;
+
    return cheat_manager_search_exact(setting, idx, wraparound);
+}
+
+int cheat_manager_search_eqplus_input(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
+{
+   if (cheat_manager_search_input_start(
+            setting,
+            idx,
+            wraparound,
+            cheat_manager_state.search_eqplus_value,
+            MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
+            MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS,
+            cheat_manager_search_eqplus_input_cb) == 0)
+      return 0;
+
+   return cheat_manager_search_eqplus(setting, idx, wraparound);
+}
+
+int cheat_manager_search_eqminus_input(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
+{
+   if (cheat_manager_search_input_start(
+            setting,
+            idx,
+            wraparound,
+            cheat_manager_state.search_eqminus_value,
+            MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
+            MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS,
+            cheat_manager_search_eqminus_input_cb) == 0)
+      return 0;
+
+   return cheat_manager_search_eqminus(setting, idx, wraparound);
 }
 
 int cheat_manager_search_lt(rarch_setting_t *setting, size_t idx, bool wraparound)
